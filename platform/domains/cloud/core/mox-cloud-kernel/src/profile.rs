@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -39,11 +39,7 @@ impl EcProfile {
                 "parity_shards must be >= 1, got {parity_shards}"
             )));
         }
-        Ok(Self {
-            data_shards,
-            parity_shards,
-            min_obj_size,
-        })
+        Ok(Self { data_shards, parity_shards, min_obj_size })
     }
 
     /// Constructor with default `min_obj_size = DEFAULT_MIN_OBJ_SIZE`.
@@ -87,5 +83,67 @@ mod tests {
         assert_eq!(d.min_obj_size, DEFAULT_MIN_OBJ_SIZE);
         assert!(!d.is_replica(DEFAULT_MIN_OBJ_SIZE));
         assert!(d.is_replica(DEFAULT_MIN_OBJ_SIZE - 1));
+    }
+}
+
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    #[test]
+    fn test_default_min_obj_size_constant() {
+        assert_eq!(DEFAULT_MIN_OBJ_SIZE, 65536);
+    }
+
+    #[test]
+    fn test_ec_profile_serialization() {
+        let p = EcProfile::with_default_min_size(4, 2).unwrap();
+        let json = format!("{:?}", p);
+        assert!(json.contains("data_shards"));
+        assert!(json.contains("parity_shards"));
+        assert!(json.contains("min_obj_size"));
+    }
+
+    #[test]
+    fn test_ec_profile_copy_clone() {
+        let p = EcProfile::with_default_min_size(6, 3).unwrap();
+        let p2 = p;
+        assert_eq!(p2.data_shards, 6);
+        assert_eq!(p2.parity_shards, 3);
+    }
+
+    #[test]
+    fn test_ec_profile_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        let p1 = EcProfile::with_default_min_size(4, 2).unwrap();
+        let p2 = EcProfile::with_default_min_size(4, 2).unwrap();
+        set.insert(p1);
+        set.insert(p2);
+        assert_eq!(set.len(), 1);
+    }
+
+    #[test]
+    fn test_ec_profile_debug() {
+        let p = EcProfile::with_default_min_size(4, 2).unwrap();
+        let s = format!("{p:?}");
+        assert!(s.contains("EcProfile"));
+        assert!(s.contains("data_shards"));
+    }
+
+    #[test]
+    fn test_ec_profile_total_shards_saturating() {
+        let p = EcProfile::new(u16::MAX, 1, 100).unwrap();
+        // saturating_add prevents overflow
+        assert_eq!(p.total_shards(), u16::MAX as usize + 1);
+    }
+
+    #[test]
+    fn test_ec_profile_is_replica_boundary() {
+        let p = EcProfile::new(4, 2, 1000).unwrap();
+        assert!(p.is_replica(999));
+        assert!(!p.is_replica(1000));
+        assert!(!p.is_replica(1001));
     }
 }

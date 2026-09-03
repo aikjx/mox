@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -10,8 +10,10 @@
 
 use std::sync::Arc;
 
-use crate::error::{FilerError, FilerResult};
-use crate::meta_trait::{Attr, AttrPatch, DirEntry, MetaStorageProvider};
+use crate::{
+    error::{FilerError, FilerResult},
+    meta_trait::{Attr, AttrPatch, DirEntry, MetaStorageProvider},
+};
 
 #[derive(Clone)]
 pub struct Filer {
@@ -108,13 +110,7 @@ impl Filer {
         }
         a.data[offset as usize..offset as usize + data.len()].copy_from_slice(data);
         self.provider
-            .inode_write_attr(
-                ino,
-                AttrPatch {
-                    data: Some(&a.data),
-                    ..Default::default()
-                },
-            )
+            .inode_write_attr(ino, AttrPatch { data: Some(&a.data), ..Default::default() })
             .await?;
         Ok(data.len())
     }
@@ -159,13 +155,7 @@ impl Filer {
     pub async fn chmod(&self, path: &str, mode: u32) -> FilerResult<()> {
         let ino = self.resolve(path).await?;
         self.provider
-            .inode_write_attr(
-                ino,
-                AttrPatch {
-                    mode: Some(mode),
-                    ..Default::default()
-                },
-            )
+            .inode_write_attr(ino, AttrPatch { mode: Some(mode), ..Default::default() })
             .await
     }
 }

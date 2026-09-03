@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -6,9 +6,7 @@
 //! T4 M1 Cloud Drive 集成测试（≥20 条）
 //! 覆盖 TR4.3 / TR4.4 / TR4.5 / 容量 / 副本 / 心跳 / 快照 / RS / rebuild
 
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
@@ -55,7 +53,7 @@ fn t03_allocate_replica_gt_3_should_fail() {
     let res = master.allocate_volume(1024, 4);
     assert!(res.is_err());
     match res.unwrap_err() {
-        MasterError::InvalidReplicaCount(_) => {}
+        MasterError::InvalidReplicaCount(_) => {},
         other => panic!("expected InvalidReplicaCount, got {:?}", other),
     }
 }
@@ -69,7 +67,7 @@ fn t04_allocate_no_capacity_should_fail() {
     let res = master.allocate_volume(2 * 1024 * 1024, 1);
     assert!(res.is_err());
     match res.unwrap_err() {
-        MasterError::NoCapacity(_) => {}
+        MasterError::NoCapacity(_) => {},
         other => panic!("expected NoCapacity, got {:?}", other),
     }
 }
@@ -91,11 +89,7 @@ fn t05_allocate_100_volumes_exhaust_capacity() {
         }
     }
     // 应当有部分成功，最终耗尽
-    assert!(
-        success < 100,
-        "should exhaust capacity, got {} successes",
-        success
-    );
+    assert!(success < 100, "should exhaust capacity, got {} successes", success);
     assert!(success > 0, "at least some allocation should succeed");
 }
 
@@ -143,18 +137,10 @@ async fn t06_master_heartbeat_dead_detection_tr43() {
 
     // 检查 dead & refill
     let state_b = master.volume_state(&id_b);
-    assert_eq!(
-        state_b,
-        VolumeStatusState::Dead,
-        "idB should be Dead after heartbeat stopped"
-    );
+    assert_eq!(state_b, VolumeStatusState::Dead, "idB should be Dead after heartbeat stopped");
 
     let refill_count = master.start_replica_refill_count();
-    assert!(
-        refill_count >= 1,
-        "replica refill triggers should be >=1, got {}",
-        refill_count
-    );
+    assert!(refill_count >= 1, "replica refill triggers should be >=1, got {}", refill_count);
 
     heartbeat_task.abort();
 }
@@ -242,7 +228,7 @@ fn t09_quorum_write_fail_when_not_enough_healthy() {
         },
     );
     match mgr.check_write_ok("s1") {
-        Err(MasterError::ReplicaQuorum(_)) => {}
+        Err(MasterError::ReplicaQuorum(_)) => {},
         other => panic!("expected ReplicaQuorum err, got {:?}", other),
     }
 }
@@ -276,34 +262,16 @@ fn t10_master_replica_write_quorum_tr44_100_iterations() {
         // Quorum 读：从 v_a 和 v_c 读，必须返回原始内容
         let ra = v_a.read_chunk(&chunk_id).unwrap();
         let rc = v_c.read_chunk(&chunk_id).unwrap();
-        assert_eq!(
-            ra.as_ref(),
-            payload.as_ref(),
-            "iter {} quorum v_a mismatch",
-            iter
-        );
-        assert_eq!(
-            rc.as_ref(),
-            payload.as_ref(),
-            "iter {} quorum v_c mismatch",
-            iter
-        );
+        assert_eq!(ra.as_ref(), payload.as_ref(), "iter {} quorum v_a mismatch", iter);
+        assert_eq!(rc.as_ref(), payload.as_ref(), "iter {} quorum v_c mismatch", iter);
 
         // 2/3 读 = quorum ok
-        let healthy = vec![
-            v_a.has_chunk(&chunk_id),
-            v_b.has_chunk(&chunk_id),
-            v_c.has_chunk(&chunk_id),
-        ]
-        .into_iter()
-        .filter(|&x| x)
-        .count();
-        assert!(
-            healthy >= 2,
-            "iter {} healthy replicas {} < 2",
-            iter,
-            healthy
-        );
+        let healthy =
+            vec![v_a.has_chunk(&chunk_id), v_b.has_chunk(&chunk_id), v_c.has_chunk(&chunk_id)]
+                .into_iter()
+                .filter(|&x| x)
+                .count();
+        assert!(healthy >= 2, "iter {} healthy replicas {} < 2", iter, healthy);
     }
 }
 
@@ -369,9 +337,7 @@ fn t12_snapshot_rollback_md5_tr45() {
 
     // 导出 manifest + master 快照
     let manifest = volume.export_snapshot_manifest();
-    let snap_id = master
-        .store_snapshot_manifest(&vid, manifest.clone())
-        .unwrap();
+    let snap_id = master.store_snapshot_manifest(&vid, manifest.clone()).unwrap();
     assert!(!snap_id.is_empty());
 
     // 删除前 200 个
@@ -384,11 +350,7 @@ fn t12_snapshot_rollback_md5_tr45() {
     // 从 master 取回 manifest，restore
     let restored_manifest = master.get_snapshot_manifest(&vid, &snap_id).unwrap();
     let restored_count = volume.restore_from_manifest(&restored_manifest).unwrap();
-    assert!(
-        restored_count >= 200,
-        "should restore at least 200 chunks, got {}",
-        restored_count
-    );
+    assert!(restored_count >= 200, "should restore at least 200 chunks, got {}", restored_count);
 
     // 重新读取前 200 个，内容必须严格等于原 hash
     for n in 0..200u32 {
@@ -398,11 +360,7 @@ fn t12_snapshot_rollback_md5_tr45() {
             .unwrap_or_else(|_| panic!("chunk {} should be restored", cid));
         let actual_hash = md5_of_data(&data);
         let expected = original_hashes.get(&cid).unwrap();
-        assert_eq!(
-            &actual_hash, expected,
-            "MD5/SHA256 mismatch for chunk {}",
-            cid
-        );
+        assert_eq!(&actual_hash, expected, "MD5/SHA256 mismatch for chunk {}", cid);
     }
 }
 
@@ -413,7 +371,7 @@ fn t13_snapshot_invalid_id_errors() {
     let res = master.restore_snapshot(&vid, "non-existent-snap");
     assert!(res.is_err());
     match res.unwrap_err() {
-        MasterError::SnapshotInvalid(_) => {}
+        MasterError::SnapshotInvalid(_) => {},
         other => panic!("expected SnapshotInvalid, got {:?}", other),
     }
 }
@@ -428,12 +386,7 @@ fn t14_snapshot_id_unique_and_unforgeable() {
     std::thread::sleep(Duration::from_millis(2));
     let sid2 = master.store_snapshot_manifest(&vid, m1).unwrap();
     assert_ne!(sid1, sid2, "两次 snapshot id 必须不同（加盐+时间戳）");
-    assert_eq!(
-        sid1.len(),
-        64,
-        "snapshot id 应为 sha256 hex=64 char, got {}",
-        sid1.len()
-    );
+    assert_eq!(sid1.len(), 64, "snapshot id 应为 sha256 hex=64 char, got {}", sid1.len());
 }
 
 // ============== T5 自研 RS 2+1 XOR ==============
@@ -502,7 +455,7 @@ fn t19_rs_decode_two_missing_should_fail() {
     // 丢 data0 + parity → 2 个丢失，应失败
     let input: [Option<Bytes>; 3] = [None, Some(shards[1].clone()), None];
     match rs.decode_2_1(input) {
-        Err(RSError::TooManyShardsMissing(_)) => {}
+        Err(RSError::TooManyShardsMissing(_)) => {},
         other => panic!("expected TooManyShardsMissing, got {:?}", other),
     }
 }
@@ -528,18 +481,10 @@ fn t20_volume_rebuild_from_peers_success_count() {
 
     let peers = vec!["peer0".into(), "peer1".into()];
     let count = local.rebuild_from_peers(&missing_ids, &peers).unwrap();
-    assert!(
-        count >= 5,
-        "should rebuild at least 5 chunks, got {}",
-        count
-    );
+    assert!(count >= 5, "should rebuild at least 5 chunks, got {}", count);
     // 验证重建后本地有数据
     for mid in &missing_ids {
-        assert!(
-            local.has_chunk(mid),
-            "after rebuild, {} should exist locally",
-            mid
-        );
+        assert!(local.has_chunk(mid), "after rebuild, {} should exist locally", mid);
     }
 }
 
@@ -558,22 +503,10 @@ fn t21_metrics_all_four_keys_present_tr47() {
     let _ = master.snapshot_volume(&vid).unwrap();
 
     let m = master.get_metrics();
-    assert!(
-        m.contains_key("heartbeats_received"),
-        "metrics 缺 heartbeats_received"
-    );
-    assert!(
-        m.contains_key("volumes_allocations_total"),
-        "metrics 缺 volumes_allocations_total"
-    );
-    assert!(
-        m.contains_key("replicas_fill_triggers"),
-        "metrics 缺 replicas_fill_triggers"
-    );
-    assert!(
-        m.contains_key("snapshots_taken"),
-        "metrics 缺 snapshots_taken"
-    );
+    assert!(m.contains_key("heartbeats_received"), "metrics 缺 heartbeats_received");
+    assert!(m.contains_key("volumes_allocations_total"), "metrics 缺 volumes_allocations_total");
+    assert!(m.contains_key("replicas_fill_triggers"), "metrics 缺 replicas_fill_triggers");
+    assert!(m.contains_key("snapshots_taken"), "metrics 缺 snapshots_taken");
 
     // 计数增长：heartbeat 至少 2；allocations 至少 1；snapshots 至少 1
     assert!(*m.get("heartbeats_received").unwrap() >= 2);
@@ -592,7 +525,7 @@ fn t22_volume_capacity_exceeded_error() {
     let res = v.write_chunk("too_much", Bytes::from(vec![1u8; 1]));
     assert!(res.is_err());
     match res.unwrap_err() {
-        VolumeError::CapacityExceeded(_) => {}
+        VolumeError::CapacityExceeded(_) => {},
         other => panic!("expected CapacityExceeded, got {:?}", other),
     }
 }
@@ -607,7 +540,7 @@ fn t23_volume_write_and_read_and_delete() {
     assert_eq!(&r[..], b"xyz");
     v.delete_chunk("c1").unwrap();
     match v.read_chunk("c1") {
-        Err(VolumeError::ChunkNotFound(_)) => {}
+        Err(VolumeError::ChunkNotFound(_)) => {},
         other => panic!("expected ChunkNotFound, got {:?}", other),
     }
 }
@@ -628,43 +561,24 @@ fn t24_allocator_prefers_emptiest_node() {
     master
         .heartbeat(
             &v1,
-            VolumeLoadReport {
-                used_bytes: 900_000,
-                chunk_count: 0,
-                cpu_pct: 0,
-                is_healthy: true,
-            },
+            VolumeLoadReport { used_bytes: 900_000, chunk_count: 0, cpu_pct: 0, is_healthy: true },
         )
         .unwrap();
     master
         .heartbeat(
             &v2,
-            VolumeLoadReport {
-                used_bytes: 500_000,
-                chunk_count: 0,
-                cpu_pct: 0,
-                is_healthy: true,
-            },
+            VolumeLoadReport { used_bytes: 500_000, chunk_count: 0, cpu_pct: 0, is_healthy: true },
         )
         .unwrap();
     master
         .heartbeat(
             &v3,
-            VolumeLoadReport {
-                used_bytes: 10_000,
-                chunk_count: 0,
-                cpu_pct: 0,
-                is_healthy: true,
-            },
+            VolumeLoadReport { used_bytes: 10_000, chunk_count: 0, cpu_pct: 0, is_healthy: true },
         )
         .unwrap();
 
     let alloc = master.allocate_volume(800_000, 1).unwrap();
     // 最空节点应是 v3 (used 10K)
-    assert_eq!(
-        alloc.replica_ids[0], v3,
-        "应选择最空的 v3, got {}",
-        alloc.replica_ids[0]
-    );
+    assert_eq!(alloc.replica_ids[0], v3, "应选择最空的 v3, got {}", alloc.replica_ids[0]);
     let _ = (v1, v2);
 }

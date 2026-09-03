@@ -23,9 +23,11 @@
 use bytes::Bytes;
 use mox_cloud_store_core::StoreBackend;
 use parking_lot::Mutex;
-use std::fmt;
-use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
-use std::thread::{self, JoinHandle};
+use std::{
+    fmt,
+    sync::mpsc::{self, Receiver, Sender, SyncSender},
+    thread::{self, JoinHandle},
+};
 
 /// 写镜像后端契约（同步接口，供 S3 协议层写 chokepoint 调用）。
 pub trait PersistSink: Send + Sync {
@@ -58,23 +60,17 @@ impl StoreCorePersist {
             .name("store-core-persist".into())
             .spawn(move || Self::worker_loop(rx, backend))
             .expect("spawn store-core persist worker");
-        Self {
-            tx: Mutex::new(Some(tx)),
-            worker: Some(worker),
-        }
+        Self { tx: Mutex::new(Some(tx)), worker: Some(worker) }
     }
 
     /// writer 线程主循环：独立 runtime 消费命令并 block_on 落盘。
     fn worker_loop(rx: Receiver<PersistCmd>, backend: StoreBackend) {
-        let rt = match tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-        {
+        let rt = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
             Ok(rt) => rt,
             Err(e) => {
                 tracing::error!("创建 store-core persist runtime 失败: {e}");
                 return;
-            }
+            },
         };
         while let Ok(cmd) = rx.recv() {
             match cmd {
@@ -86,15 +82,15 @@ impl StoreCorePersist {
                     )) {
                         tracing::error!("镜像 put {path} 失败: {e}");
                     }
-                }
+                },
                 PersistCmd::Delete { path } => {
                     if let Err(e) = rt.block_on(backend.object.delete(&path)) {
                         tracing::error!("镜像 delete {path} 失败: {e}");
                     }
-                }
+                },
                 PersistCmd::Flush { ack } => {
                     let _ = ack.send(());
-                }
+                },
             }
         }
     }
@@ -148,11 +144,7 @@ impl fmt::Debug for StoreCorePersist {
 /// 逻辑路径：`{bucket}/{key}`（与 store-core / filer 桥接同构，FS/S3 可互换）。
 /// store-core 侧以 sha256(key) 命名文件，天然免疫 `../` 路径穿越。
 fn logical_path(bucket: &str, key: &str) -> String {
-    format!(
-        "{}/{}",
-        bucket.trim_matches('/'),
-        key.trim_start_matches('/')
-    )
+    format!("{}/{}", bucket.trim_matches('/'), key.trim_start_matches('/'))
 }
 
 #[cfg(test)]
@@ -182,10 +174,7 @@ mod tests {
 
         // 直接用 store-core 后端读回，验证镜像落盘
         let backend = fs_backend(dir.path());
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
         let got = rt.block_on(backend.object.get("docs/a.md")).unwrap();
         assert_eq!(&got[..], "# 标题".as_bytes());
 

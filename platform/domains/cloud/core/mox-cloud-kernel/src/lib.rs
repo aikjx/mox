@@ -36,8 +36,7 @@ pub use backpressure::{
 
 // ── buffer_pool ──
 pub use buffer_pool::{
-    BufferPool, BufferPoolConfig, BufferPoolStats, BufferTierConfig, BufferTierStats,
-    PooledBuffer,
+    BufferPool, BufferPoolConfig, BufferPoolStats, BufferTierConfig, BufferTierStats, PooledBuffer,
 };
 
 // ── gf256_simd ──
@@ -65,9 +64,7 @@ pub use reader_capability::{
 };
 
 // ── reed_solomon ──
-pub use reed_solomon::{RSError, RSResult, ReedSolomon2Plus1, ReedSolomonEngine, shard_size_for};
+pub use reed_solomon::{shard_size_for, RSError, RSResult, ReedSolomon2Plus1, ReedSolomonEngine};
 
 // ── scanner ──
-pub use scanner::{
-    CapacityBudget, IoBudget, ScanBudget, ScanBudgetTracker, ScanStats, TimeBudget,
-};
+pub use scanner::{CapacityBudget, IoBudget, ScanBudget, ScanBudgetTracker, ScanStats, TimeBudget};

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -26,12 +26,16 @@
 //! 写入操作会主动失效相关缓存，保证一致性。
 
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, VecDeque};
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use crate::error::FilerResult;
-use crate::meta_trait::{Attr, DirEntry};
+use crate::{
+    error::FilerResult,
+    meta_trait::{Attr, DirEntry},
+};
 
 // ---------------- 常量 ----------------
 
@@ -227,10 +231,7 @@ impl DirEntryCache {
             .collect();
 
         let entry = CacheEntry {
-            data: DirListValue {
-                entries: entries.clone(),
-                subdirs,
-            },
+            data: DirListValue { entries: entries.clone(), subdirs },
             expire_at_sec: now + self.ttl_secs,
             access_count: 1,
         };
@@ -287,12 +288,12 @@ impl DirEntryCache {
                     LookupValue::Positive(ino) => {
                         stats.hits += 1;
                         Ok(*ino)
-                    }
+                    },
                     LookupValue::Negative => {
                         stats.negative_hits += 1;
                         stats.hits += 1; // 负缓存也算命中
                         Err(crate::error::FilerError::NotFound)
-                    }
+                    },
                 };
                 stats.hit_rate = stats.hits as f64 / stats.total_lookups as f64;
                 drop(cache);
@@ -563,10 +564,7 @@ impl DirEntryCache {
 // ---------------- 辅助函数 ----------------
 
 fn now_secs() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
 // ---------------- 共享类型别名 ----------------

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -6,13 +6,14 @@
 //! MultipartUpload 控制器：Create → UploadPart → Complete → Abort。
 //! Complete 时使用 mox_data_standards_core::etag_crc32c::etag_multipart 算最终 ETag。
 
-use crate::error::{S3Error, S3Result};
-use crate::etag::{checksum_crc32c, etag_for_multipart, etag_small};
+use crate::{
+    error::{S3Error, S3Result},
+    etag::{checksum_crc32c, etag_for_multipart, etag_small},
+};
+use mox_cloud_foundation::PartETag;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use mox_cloud_foundation::PartETag;
+use std::{collections::BTreeMap, sync::Arc};
 
 const MIN_PART_SIZE: u64 = 1; // relaxed for tests（最后一个 part 例外）
 const MAX_PART_SIZE: u64 = 5 * 1024 * 1024 * 1024; // 5 GiB
@@ -63,12 +64,7 @@ impl MultipartManager {
     pub fn create(&self, bucket: &str, key: &str) -> String {
         let mut inner = self.inner.lock();
         inner.counter += 1;
-        let id = format!(
-            "mpu-{}-{:x}-{}",
-            bucket.len(),
-            inner.counter,
-            Self::now_ms()
-        );
+        let id = format!("mpu-{}-{:x}-{}", bucket.len(), inner.counter, Self::now_ms());
         let info = MultipartUploadInfo {
             upload_id: id.clone(),
             bucket: bucket.to_string(),
@@ -95,10 +91,7 @@ impl MultipartManager {
         let etag = etag_small(&data);
         let crc32c = checksum_crc32c(&data);
         let mut inner = self.inner.lock();
-        let up = inner
-            .uploads
-            .get_mut(upload_id)
-            .ok_or(S3Error::NoSuchUpload)?;
+        let up = inner.uploads.get_mut(upload_id).ok_or(S3Error::NoSuchUpload)?;
         up.parts.insert(
             part_number,
             UploadPartInfo {
@@ -109,10 +102,7 @@ impl MultipartManager {
                 crc32c,
             },
         );
-        Ok(PartETag {
-            part_number,
-            etag: etag.trim_matches('"').to_string(),
-        })
+        Ok(PartETag { part_number, etag: etag.trim_matches('"').to_string() })
     }
 
     pub fn upload_part_copy(
@@ -132,10 +122,7 @@ impl MultipartManager {
         requested_parts: &[PartETag],
     ) -> S3Result<(Vec<u8>, String)> {
         let mut inner = self.inner.lock();
-        let up = inner
-            .uploads
-            .remove(upload_id)
-            .ok_or(S3Error::NoSuchUpload)?;
+        let up = inner.uploads.remove(upload_id).ok_or(S3Error::NoSuchUpload)?;
 
         // 构造 part etags 列表（按 part_number 顺序）
         let mut sorted: Vec<&UploadPartInfo> = up.parts.values().collect();

@@ -15,16 +15,21 @@
 //! 设计参考 SeaweedFS 的 Volume 均衡器和 Ceph 的 CRUSH 算法思想，
 //! 支持千亿级文件规模的分布式数据均衡。
 
-use crate::migration_task::{
-    MigrationPhase, MigrationStatus, MigrationTask, MigrationTaskManager,
-    MigrationType, VerificationMethod,
-};
-use crate::placement_strategy::{
-    DataTemperature, PlacementConstraints, PlacementEngine, PlacementNode, PlacementStrategyType,
+use crate::{
+    migration_task::{
+        MigrationPhase, MigrationStatus, MigrationTask, MigrationTaskManager, MigrationType,
+        VerificationMethod,
+    },
+    placement_strategy::{
+        DataTemperature, PlacementConstraints, PlacementEngine, PlacementNode,
+        PlacementStrategyType,
+    },
 };
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 /// 均衡控制器配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,7 +71,7 @@ impl Default for RebalanceConfig {
             max_migrations_per_round: 50,
             max_concurrent_migrations: 4,
             global_bandwidth_limit_bps: 100 * 1024 * 1024, // 100MB/s
-            rebalance_interval_sec: 300, // 5 分钟
+            rebalance_interval_sec: 300,                   // 5 分钟
             off_peak_start_hour: 2,
             off_peak_end_hour: 6,
             off_peak_bandwidth_multiplier: 2.0,
@@ -153,26 +158,11 @@ pub struct RebalanceStats {
 impl RebalanceStats {
     pub fn snapshot(&self) -> HashMap<String, u64> {
         let mut m = HashMap::new();
-        m.insert(
-            "rebalance_rounds_total".into(),
-            *self.rebalance_rounds.lock(),
-        );
-        m.insert(
-            "rebalance_plans_generated".into(),
-            *self.plans_generated.lock(),
-        );
-        m.insert(
-            "rebalance_total_migrated_bytes".into(),
-            *self.total_migrated_bytes.lock(),
-        );
-        m.insert(
-            "rebalance_improvements_total".into(),
-            *self.improvements_total.lock(),
-        );
-        m.insert(
-            "rebalance_failed_rounds".into(),
-            *self.failed_rounds.lock(),
-        );
+        m.insert("rebalance_rounds_total".into(), *self.rebalance_rounds.lock());
+        m.insert("rebalance_plans_generated".into(), *self.plans_generated.lock());
+        m.insert("rebalance_total_migrated_bytes".into(), *self.total_migrated_bytes.lock());
+        m.insert("rebalance_improvements_total".into(), *self.improvements_total.lock());
+        m.insert("rebalance_failed_rounds".into(), *self.failed_rounds.lock());
         m.insert(
             "rebalance_current_score".into(),
             self.current_balance_score.lock().round() as u64,
@@ -207,10 +197,8 @@ impl RebalanceController {
     /// 更新配置
     pub fn update_config(&self, config: RebalanceConfig) {
         self.placement_engine.set_strategy(config.placement_strategy);
-        self.task_manager
-            .set_max_concurrent(config.max_concurrent_migrations);
-        self.task_manager
-            .set_global_bandwidth_limit(config.global_bandwidth_limit_bps);
+        self.task_manager.set_max_concurrent(config.max_concurrent_migrations);
+        self.task_manager.set_global_bandwidth_limit(config.global_bandwidth_limit_bps);
         *self.config.write() = config;
     }
 
@@ -308,9 +296,7 @@ impl RebalanceController {
 
         // 按使用率降序排列源节点
         sources.sort_by(|a, b| {
-            b.usage_pct()
-                .partial_cmp(&a.usage_pct())
-                .unwrap_or(std::cmp::Ordering::Equal)
+            b.usage_pct().partial_cmp(&a.usage_pct()).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         let mut migrations = Vec::new();
@@ -352,7 +338,8 @@ impl RebalanceController {
                 .map(|t| (*t).clone())
                 .collect();
 
-            if let Some(target) = self.placement_engine.select_target(&candidate_list, &constraints) {
+            if let Some(target) = self.placement_engine.select_target(&candidate_list, &constraints)
+            {
                 let actual_bytes = bytes_to_move.min(target.node.free_bytes());
 
                 if actual_bytes == 0 {
@@ -418,8 +405,7 @@ impl RebalanceController {
             estimated_improvement: estimated_improvement_sum,
             trigger_reason: format!(
                 "balance {} < threshold {}%",
-                balance_before as u8,
-                config.balance_threshold_pct as u8
+                balance_before as u8, config.balance_threshold_pct as u8
             ),
         };
 
@@ -430,8 +416,7 @@ impl RebalanceController {
 
     /// 计算平均使用率
     fn compute_average_usage(&self, nodes: &[PlacementNode]) -> f64 {
-        let healthy_nodes: Vec<&PlacementNode> =
-            nodes.iter().filter(|n| n.is_healthy).collect();
+        let healthy_nodes: Vec<&PlacementNode> = nodes.iter().filter(|n| n.is_healthy).collect();
 
         if healthy_nodes.is_empty() {
             return 0.0;
@@ -453,8 +438,7 @@ impl RebalanceController {
 
     /// 执行一次均衡
     pub fn run_rebalance(&self) -> MasterRebalanceResult {
-        let config = self.config.read().clone();
-        drop(config);
+        let _config = self.config.read().clone();
 
         // 生成计划
         *self.state.write() = RebalanceState::Planning;
@@ -466,10 +450,12 @@ impl RebalanceController {
                     plan_id: None,
                     migrations_scheduled: 0,
                     total_bytes: 0,
-                    balance_before: self.placement_engine.compute_cluster_balance(&self.nodes.read()),
+                    balance_before: self
+                        .placement_engine
+                        .compute_cluster_balance(&self.nodes.read()),
                     balance_after: 0.0,
                 };
-            }
+            },
         };
 
         let plan_id = plan.plan_id.clone();
@@ -508,14 +494,13 @@ impl RebalanceController {
         while let Some(task) = self.task_manager.get_next_task() {
             // 实际项目中这里会启动真实的迁移流程
             // 简化实现：直接标记完成（模拟）
-            self.task_manager
-                .report_progress(&task.task_id, task.total_bytes, MigrationPhase::Verification);
+            self.task_manager.report_progress(
+                &task.task_id,
+                task.total_bytes,
+                MigrationPhase::Verification,
+            );
 
-            let verified = if task.verify_after_migration {
-                task.total_bytes
-            } else {
-                0
-            };
+            let verified = if task.verify_after_migration { task.total_bytes } else { 0 };
             self.task_manager.complete_task(&task.task_id, verified);
 
             *self.stats.total_migrated_bytes.lock() += task.total_bytes;
@@ -653,7 +638,7 @@ impl RebalanceController {
         }
 
         // 按优先级排序（高优先级在前）
-        tasks.sort_by(|a, b| b.priority.cmp(&a.priority));
+        tasks.sort_by_key(|b| std::cmp::Reverse(b.priority));
 
         tasks
     }
@@ -708,11 +693,9 @@ impl RebalanceController {
         let hour = (now / 1000 / 60 / 60) % 24;
 
         if config.off_peak_start_hour <= config.off_peak_end_hour {
-            hour >= config.off_peak_start_hour as u64
-                && hour < config.off_peak_end_hour as u64
+            hour >= config.off_peak_start_hour as u64 && hour < config.off_peak_end_hour as u64
         } else {
-            hour >= config.off_peak_start_hour as u64
-                || hour < config.off_peak_end_hour as u64
+            hour >= config.off_peak_start_hour as u64 || hour < config.off_peak_end_hour as u64
         }
     }
 
@@ -817,31 +800,19 @@ fn now_ms() -> u64 {
 fn generate_rebalance_task_id() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    format!(
-        "rebal-{:08x}{:08x}",
-        rng.gen::<u32>(),
-        rng.gen::<u32>()
-    )
+    format!("rebal-{:08x}{:08x}", rng.gen::<u32>(), rng.gen::<u32>())
 }
 
 fn generate_recovery_task_id() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    format!(
-        "recov-{:08x}{:08x}",
-        rng.gen::<u32>(),
-        rng.gen::<u32>()
-    )
+    format!("recov-{:08x}{:08x}", rng.gen::<u32>(), rng.gen::<u32>())
 }
 
 fn generate_plan_id() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    format!(
-        "plan-{:08x}{:08x}",
-        rng.gen::<u32>(),
-        rng.gen::<u32>()
-    )
+    format!("plan-{:08x}{:08x}", rng.gen::<u32>(), rng.gen::<u32>())
 }
 
 // ---------------------------------------------------------------------------
@@ -913,10 +884,8 @@ mod tests {
     #[test]
     fn test_generate_plan() {
         let ctrl = make_controller();
-        let nodes = vec![
-            make_node("n1", 1000, 900, "r1", "z1"),
-            make_node("n2", 1000, 100, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 900, "r1", "z1"), make_node("n2", 1000, 100, "r2", "z1")];
         ctrl.update_nodes(nodes);
 
         let plan = ctrl.generate_plan();
@@ -942,10 +911,8 @@ mod tests {
     #[test]
     fn test_run_rebalance() {
         let ctrl = make_controller();
-        let nodes = vec![
-            make_node("n1", 1000, 900, "r1", "z1"),
-            make_node("n2", 1000, 100, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 900, "r1", "z1"), make_node("n2", 1000, 100, "r2", "z1")];
         ctrl.update_nodes(nodes);
 
         let result = ctrl.run_rebalance();
@@ -958,10 +925,8 @@ mod tests {
     #[test]
     fn test_tick_processes_tasks() {
         let ctrl = make_controller();
-        let nodes = vec![
-            make_node("n1", 1000, 900, "r1", "z1"),
-            make_node("n2", 1000, 100, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 900, "r1", "z1"), make_node("n2", 1000, 100, "r2", "z1")];
         ctrl.update_nodes(nodes);
 
         ctrl.run_rebalance();
@@ -978,10 +943,8 @@ mod tests {
     #[test]
     fn test_pause_and_resume() {
         let ctrl = make_controller();
-        let nodes = vec![
-            make_node("n1", 1000, 900, "r1", "z1"),
-            make_node("n2", 1000, 100, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 900, "r1", "z1"), make_node("n2", 1000, 100, "r2", "z1")];
         ctrl.update_nodes(nodes);
 
         ctrl.run_rebalance();
@@ -997,10 +960,8 @@ mod tests {
     #[test]
     fn test_stop() {
         let ctrl = make_controller();
-        let nodes = vec![
-            make_node("n1", 1000, 900, "r1", "z1"),
-            make_node("n2", 1000, 100, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 900, "r1", "z1"), make_node("n2", 1000, 100, "r2", "z1")];
         ctrl.update_nodes(nodes);
 
         ctrl.run_rebalance();
@@ -1038,10 +999,8 @@ mod tests {
     #[test]
     fn test_get_status_summary() {
         let ctrl = make_controller();
-        let nodes = vec![
-            make_node("n1", 1000, 500, "r1", "z1"),
-            make_node("n2", 1000, 500, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 500, "r1", "z1"), make_node("n2", 1000, 500, "r2", "z1")];
         ctrl.update_nodes(nodes);
 
         let summary = ctrl.get_status_summary();
@@ -1063,19 +1022,14 @@ mod tests {
 
         let new_config = ctrl.get_config();
         assert_eq!(new_config.max_concurrent_migrations, 10);
-        assert_eq!(
-            ctrl.task_manager().get_max_concurrent(),
-            10
-        );
+        assert_eq!(ctrl.task_manager().get_max_concurrent(), 10);
     }
 
     #[test]
     fn test_stats_snapshot() {
         let ctrl = make_controller();
-        let nodes = vec![
-            make_node("n1", 1000, 900, "r1", "z1"),
-            make_node("n2", 1000, 100, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 900, "r1", "z1"), make_node("n2", 1000, 100, "r2", "z1")];
         ctrl.update_nodes(nodes);
 
         ctrl.run_rebalance();
@@ -1121,10 +1075,8 @@ mod tests {
         config.auto_rebalance_enabled = false;
         ctrl.update_config(config);
 
-        let nodes = vec![
-            make_node("n1", 1000, 900, "r1", "z1"),
-            make_node("n2", 1000, 100, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 900, "r1", "z1"), make_node("n2", 1000, 100, "r2", "z1")];
         ctrl.update_nodes(nodes);
 
         assert!(!ctrl.needs_rebalance());

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // ================== 协议：请求 / 响应 ==================
 
@@ -306,7 +307,7 @@ fn count_ms(s: std::time::Instant) -> u64 {
 pub async fn process_handler(
     State(state): State<Arc<AiEngineState>>,
     Json(mut req): Json<ProcessRequest>,
-) -> (StatusCode, Json<ProcessResponse>) {
+) -> ApiResponse<ProcessResponse> {
     let started = std::time::Instant::now();
     state.stats.requests_total.fetch_add(1, Ordering::Relaxed);
     if req.options.compat.is_none() {
@@ -490,13 +491,13 @@ pub async fn process_handler(
         }),
         error: None,
     };
-    (StatusCode::OK, Json(resp))
+    api_ok(resp)
 }
 
 pub async fn analyze_handler(
     State(state): State<Arc<AiEngineState>>,
     Json(req): Json<AnalyzeRequest>,
-) -> (StatusCode, Json<ProcessResponse>) {
+) -> ApiResponse<ProcessResponse> {
     let pr = ProcessRequest {
         query: req.query,
         intent: None,
@@ -531,15 +532,11 @@ pub async fn capabilities_handler(State(state): State<Arc<AiEngineState>>) -> im
             description: Some(format!("capability registry entry for {}", e.capability)),
         })
         .collect();
-    (
-        StatusCode::OK,
-        Json(CapabilitiesResponse {
+    api_ok(CapabilitiesResponse {
             ok: true,
             count: items.len(),
             items,
-        }),
-    )
-}
+        })}
 
 #[derive(Debug, Deserialize, Default)]
 // 说明：struct MetricsQueryParams —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
@@ -572,7 +569,7 @@ pub async fn metrics_handler(
         subservers: serde_json::to_value(crate::subservers::registered_subservers())
             .unwrap_or(serde_json::Value::Array(vec![])),
     };
-    (StatusCode::OK, Json(r))
+    api_ok(r)
 }
 
 // ============== T13: workflow/execute 透传到 sidecar Node ==============
@@ -600,7 +597,7 @@ pub struct WorkflowExecuteRequest {
 pub async fn workflow_execute_handler(
     State(state): State<Arc<AiEngineState>>,
     Json(req): Json<WorkflowExecuteRequest>,
-) -> (StatusCode, Json<ProcessResponse>) {
+) -> ApiResponse<ProcessResponse> {
     let started = std::time::Instant::now();
     state.stats.requests_total.fetch_add(1, Ordering::Relaxed);
     state.stats.local_hits.fetch_add(1, Ordering::Relaxed);
@@ -659,9 +656,7 @@ pub async fn workflow_execute_handler(
     };
 
     let snap = state.sidecar.metrics.snapshot();
-    (
-        StatusCode::OK,
-        Json(ProcessResponse {
+    api_ok(ProcessResponse {
             ok,
             route: Some(RouteInfo {
                 intent: "workflow_execute".to_string(),
@@ -680,9 +675,7 @@ pub async fn workflow_execute_handler(
                 sidecar_fail: snap.fail,
             }),
             error: err,
-        }),
-    )
-}
+        })}
 
 // 允许 process_handler 调用 agent 的 output 字段作为 summary。
 // 说明：trait AgentResultSummary —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口

@@ -14,14 +14,18 @@
 //! 配合带宽限制和业务低峰期调度，实现数据在层间的平滑迁移。
 
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::Arc,
+};
 
 /// 存储层类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum StorageLayer {
     /// 热层：本地 SSD/NVMe，低延迟高 IOPS
+    #[default]
     Hot = 0,
     /// 温层：本地 HDD 或网络存储，大容量
     Warm = 1,
@@ -31,6 +35,7 @@ pub enum StorageLayer {
 
 impl StorageLayer {
     /// 从字符串解析
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "hot" => Some(StorageLayer::Hot),
@@ -60,11 +65,6 @@ impl StorageLayer {
     }
 }
 
-impl Default for StorageLayer {
-    fn default() -> Self {
-        StorageLayer::Hot
-    }
-}
 
 impl std::fmt::Display for StorageLayer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -188,8 +188,8 @@ impl ObjectAccessStats {
         let now = now_ms();
 
         // 基于最近访问时间的分数：最近访问过的分数高
-        let days_since_access = (now.saturating_sub(self.last_access_ms) as f64)
-            / (1000.0 * 60.0 * 60.0 * 24.0);
+        let days_since_access =
+            (now.saturating_sub(self.last_access_ms) as f64) / (1000.0 * 60.0 * 60.0 * 24.0);
         let recency_score = if days_since_access <= 0.0 {
             100.0
         } else {
@@ -215,12 +215,12 @@ impl ObjectAccessStats {
 
         // 加权求和
         let score = recency_score * 0.4 + freq_score * 0.3 + recent_active_score * 0.3;
-        score.max(0.0).min(100.0)
+        score.clamp(0.0, 100.0)
     }
 }
 
 /// 分层策略类型
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TieringPolicyType {
     /// 基于访问频率
     AccessFrequency,
@@ -229,16 +229,12 @@ pub enum TieringPolicyType {
     /// 基于大小
     SizeBased,
     /// 综合策略（频率+年龄+大小）
+    #[default]
     Combined,
     /// 用户指定（手动分层）
     Manual,
 }
 
-impl Default for TieringPolicyType {
-    fn default() -> Self {
-        TieringPolicyType::Combined
-    }
-}
 
 /// 分层策略配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -275,7 +271,7 @@ impl Default for TieringPolicyConfig {
             heat_threshold_warm_to_cold: 10,
             heat_threshold_warm_to_hot: 60,
             large_object_threshold: 100 * 1024 * 1024, // 100MB
-            small_object_threshold: 64 * 1024,          // 64KB
+            small_object_threshold: 64 * 1024,         // 64KB
             promote_on_read: true,
             promote_min_access_count: 3,
         }
@@ -337,8 +333,8 @@ pub struct MigrationScheduleWindow {
 impl Default for MigrationScheduleWindow {
     fn default() -> Self {
         MigrationScheduleWindow {
-            start_hour: 2,    // 凌晨 2 点
-            end_hour: 6,      // 到早上 6 点
+            start_hour: 2,                        // 凌晨 2 点
+            end_hour: 6,                          // 到早上 6 点
             max_bandwidth_bps: 100 * 1024 * 1024, // 100MB/s
             weekdays_only: false,
         }
@@ -396,14 +392,8 @@ impl TierStats {
         m.insert("tier_cold_objects".into(), *self.cold_objects.lock());
         m.insert("tier_down_total".into(), *self.tier_down_total.lock());
         m.insert("tier_up_total".into(), *self.tier_up_total.lock());
-        m.insert(
-            "tier_migration_bytes_total".into(),
-            *self.migration_bytes_total.lock(),
-        );
-        m.insert(
-            "tier_migrations_failed".into(),
-            *self.migrations_failed.lock(),
-        );
+        m.insert("tier_migration_bytes_total".into(), *self.migration_bytes_total.lock());
+        m.insert("tier_migrations_failed".into(), *self.migrations_failed.lock());
         m
     }
 }
@@ -438,7 +428,7 @@ impl StorageTierEngine {
                 high_watermark_pct: 85,
                 low_watermark_pct: 75,
                 max_iops: 1000,
-                max_bandwidth_bps: 1 * 1024 * 1024 * 1024, // 1GB/s
+                max_bandwidth_bps: 1024 * 1024 * 1024, // 1GB/s
                 avg_read_latency_us: 5000,
                 avg_write_latency_us: 10000,
                 cost_per_gb_per_month: 0.15,
@@ -455,8 +445,8 @@ impl StorageTierEngine {
                 low_watermark_pct: 80,
                 max_iops: 100,
                 max_bandwidth_bps: 500 * 1024 * 1024, // 500MB/s
-                avg_read_latency_us: 50000,  // 50ms
-                avg_write_latency_us: 100000, // 100ms
+                avg_read_latency_us: 50000,           // 50ms
+                avg_write_latency_us: 100000,         // 100ms
                 cost_per_gb_per_month: 0.03,
                 backend_path: "s3://cold-storage".to_string(),
             },
@@ -553,7 +543,7 @@ impl StorageTierEngine {
                 } else {
                     StorageLayer::Hot
                 }
-            }
+            },
             _ => {
                 // 默认：小对象保持热层，大对象直接进温层
                 if size >= policy.large_object_threshold {
@@ -561,7 +551,7 @@ impl StorageTierEngine {
                 } else {
                     StorageLayer::Hot
                 }
-            }
+            },
         }
     }
 
@@ -575,25 +565,26 @@ impl StorageTierEngine {
         let current_layer = stats.current_layer;
 
         // 检查是否需要升级
-        if policy.promote_on_read && current_layer != StorageLayer::Hot {
-            if stats.access_count_24h >= policy.promote_min_access_count as u64 {
-                let heat = stats.heat_score();
-                let should_promote = match current_layer {
-                    StorageLayer::Warm => heat >= policy.heat_threshold_warm_to_hot as f64,
-                    StorageLayer::Cold => heat >= policy.heat_threshold_warm_to_cold as f64, // 先升到温
-                    StorageLayer::Hot => false,
+        if policy.promote_on_read
+            && current_layer != StorageLayer::Hot
+            && stats.access_count_24h >= policy.promote_min_access_count as u64
+        {
+            let heat = stats.heat_score();
+            let should_promote = match current_layer {
+                StorageLayer::Warm => heat >= policy.heat_threshold_warm_to_hot as f64,
+                StorageLayer::Cold => heat >= policy.heat_threshold_warm_to_cold as f64, // 先升到温
+                StorageLayer::Hot => false,
+            };
+
+            if should_promote {
+                let target = match current_layer {
+                    StorageLayer::Warm => StorageLayer::Hot,
+                    StorageLayer::Cold => StorageLayer::Warm,
+                    StorageLayer::Hot => StorageLayer::Hot,
                 };
 
-                if should_promote {
-                    let target = match current_layer {
-                        StorageLayer::Warm => StorageLayer::Hot,
-                        StorageLayer::Cold => StorageLayer::Warm,
-                        StorageLayer::Hot => StorageLayer::Hot,
-                    };
-
-                    // 提交升级任务
-                    self.queue_migration(object_id, current_layer, target, stats.size_bytes, 10);
-                }
+                // 提交升级任务
+                self.queue_migration(object_id, current_layer, target, stats.size_bytes, 10);
             }
         }
 
@@ -633,15 +624,15 @@ impl StorageTierEngine {
                 StorageLayer::Hot => {
                     let mut c = self.stats.hot_objects.lock();
                     *c = c.saturating_sub(1);
-                }
+                },
                 StorageLayer::Warm => {
                     let mut c = self.stats.warm_objects.lock();
                     *c = c.saturating_sub(1);
-                }
+                },
                 StorageLayer::Cold => {
                     let mut c = self.stats.cold_objects.lock();
                     *c = c.saturating_sub(1);
-                }
+                },
             }
         }
     }
@@ -658,8 +649,8 @@ impl StorageTierEngine {
         let policy = self.policy.read();
         let now = now_ms();
 
-        let age_days = (now.saturating_sub(stats.created_at_ms) as f64)
-            / (1000.0 * 60.0 * 60.0 * 24.0);
+        let age_days =
+            (now.saturating_sub(stats.created_at_ms) as f64) / (1000.0 * 60.0 * 60.0 * 24.0);
         let heat = stats.heat_score();
         let current = stats.current_layer;
 
@@ -674,11 +665,9 @@ impl StorageTierEngine {
                 } else {
                     None
                 }
-            }
+            },
             TieringPolicyType::AccessFrequency => {
-                if current == StorageLayer::Hot
-                    && heat < policy.heat_threshold_hot_to_warm as f64
-                {
+                if current == StorageLayer::Hot && heat < policy.heat_threshold_hot_to_warm as f64 {
                     Some(StorageLayer::Warm)
                 } else if current == StorageLayer::Warm
                     && heat < policy.heat_threshold_warm_to_cold as f64
@@ -691,10 +680,9 @@ impl StorageTierEngine {
                 } else {
                     None
                 }
-            }
+            },
             TieringPolicyType::SizeBased => {
-                if current == StorageLayer::Hot
-                    && stats.size_bytes >= policy.large_object_threshold
+                if current == StorageLayer::Hot && stats.size_bytes >= policy.large_object_threshold
                 {
                     Some(StorageLayer::Warm)
                 } else if current == StorageLayer::Warm
@@ -704,7 +692,7 @@ impl StorageTierEngine {
                 } else {
                     None
                 }
-            }
+            },
             TieringPolicyType::Combined => {
                 // 综合策略：降级用热度+年龄，升级用热度+访问次数
                 let should_demote_to_warm = current == StorageLayer::Hot
@@ -728,15 +716,14 @@ impl StorageTierEngine {
                 } else {
                     None
                 }
-            }
+            },
             TieringPolicyType::Manual => None,
         }
     }
 
     /// 扫描所有对象，生成分层迁移计划
     pub fn generate_tiering_plan(&self, max_tasks: usize) -> Vec<TierMigrationTask> {
-        let objects: Vec<ObjectAccessStats> =
-            self.access_stats.lock().values().cloned().collect();
+        let objects: Vec<ObjectAccessStats> = self.access_stats.lock().values().cloned().collect();
 
         let mut tasks = Vec::new();
 
@@ -784,7 +771,7 @@ impl StorageTierEngine {
         }
 
         // 按优先级降序排列
-        tasks.sort_by(|a, b| b.priority.cmp(&a.priority));
+        tasks.sort_by_key(|b| std::cmp::Reverse(b.priority));
         tasks
     }
 
@@ -873,26 +860,26 @@ impl StorageTierEngine {
                             StorageLayer::Hot => {
                                 let mut c = self.stats.hot_objects.lock();
                                 *c = c.saturating_sub(1);
-                            }
+                            },
                             StorageLayer::Warm => {
                                 let mut c = self.stats.warm_objects.lock();
                                 *c = c.saturating_sub(1);
-                            }
+                            },
                             StorageLayer::Cold => {
                                 let mut c = self.stats.cold_objects.lock();
                                 *c = c.saturating_sub(1);
-                            }
+                            },
                         }
                         match task.target_layer {
                             StorageLayer::Hot => {
                                 *self.stats.hot_objects.lock() += 1;
-                            }
+                            },
                             StorageLayer::Warm => {
                                 *self.stats.warm_objects.lock() += 1;
-                            }
+                            },
                             StorageLayer::Cold => {
                                 *self.stats.cold_objects.lock() += 1;
-                            }
+                            },
                         }
 
                         // 更新迁移统计
@@ -976,9 +963,7 @@ impl StorageTierEngine {
             .collect();
 
         objects.sort_by(|a, b| {
-            a.heat_score()
-                .partial_cmp(&b.heat_score())
-                .unwrap_or(std::cmp::Ordering::Equal)
+            a.heat_score().partial_cmp(&b.heat_score()).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         let mut tasks = Vec::new();
@@ -1058,11 +1043,7 @@ fn now_ms() -> u64 {
 fn generate_tier_task_id() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    format!(
-        "tier-{:08x}{:08x}",
-        rng.gen::<u32>(),
-        rng.gen::<u32>()
-    )
+    format!("tier-{:08x}{:08x}", rng.gen::<u32>(), rng.gen::<u32>())
 }
 
 // ---------------------------------------------------------------------------
@@ -1154,7 +1135,7 @@ mod tests {
 
         // 刚创建的对象应该有一定热度
         let score1 = stats.heat_score();
-        assert!(score1 >= 0.0 && score1 <= 100.0);
+        assert!((0.0..=100.0).contains(&score1));
 
         // 增加访问次数后热度上升
         for _ in 0..100 {

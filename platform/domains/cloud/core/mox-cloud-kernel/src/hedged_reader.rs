@@ -17,10 +17,12 @@
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::stream::{FuturesUnordered, StreamExt};
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use thiserror::Error;
 
 use crate::reader_capability::{ReadCapabilityError, ReaderCapability};
@@ -53,7 +55,7 @@ pub enum ReadError {
 ///
 /// 按从快到慢排序：Local < SameNode < Remote < Unknown。
 /// 枚举变体的声明顺序即排序顺序（派生 Ord）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum ShardReadCost {
     /// 本地磁盘，最快
     Local,
@@ -62,14 +64,10 @@ pub enum ShardReadCost {
     /// 远端节点
     Remote,
     /// 未知，排最后
+    #[default]
     Unknown,
 }
 
-impl Default for ShardReadCost {
-    fn default() -> Self {
-        ShardReadCost::Unknown
-    }
-}
 
 // ---------------------------------------------------------------------------
 // ShardReader trait
@@ -121,16 +119,9 @@ impl HedgedReader {
     ///
     /// `hedge_delay` 建议取 `min(read_timeout, 100ms)`。
     pub fn new(readers: Vec<Arc<dyn ShardReader>>, hedge_delay: Duration) -> Self {
-        let endpoint_label = readers
-            .iter()
-            .map(|r| r.endpoint().to_string())
-            .collect::<Vec<_>>()
-            .join(",");
-        Self {
-            readers,
-            hedge_delay: hedge_delay.max(Duration::from_micros(1)),
-            endpoint_label,
-        }
+        let endpoint_label =
+            readers.iter().map(|r| r.endpoint().to_string()).collect::<Vec<_>>().join(",");
+        Self { readers, hedge_delay: hedge_delay.max(Duration::from_micros(1)), endpoint_label }
     }
 
     /// 获取 reader 数量
@@ -174,9 +165,7 @@ impl HedgedReader {
         // 启动第一个（最优）reader
         {
             let reader = Arc::clone(sorted[0]);
-            active.push(Box::pin(async move {
-                reader.read_shard(shard_index).await
-            }));
+            active.push(Box::pin(async move { reader.read_shard(shard_index).await }));
         }
         let mut next_idx: usize = 1;
 
@@ -191,9 +180,7 @@ impl HedgedReader {
                 }
                 // 立即补下一个 reader（失败时不等待 hedge_delay）
                 let reader = Arc::clone(sorted[next_idx]);
-                active.push(Box::pin(async move {
-                    reader.read_shard(shard_index).await
-                }));
+                active.push(Box::pin(async move { reader.read_shard(shard_index).await }));
                 next_idx += 1;
                 next_hedge_deadline = Instant::now() + self.hedge_delay;
                 continue;
@@ -201,11 +188,8 @@ impl HedgedReader {
 
             // 计算到下一次 hedge 的剩余时间
             let now = Instant::now();
-            let sleep_dur = if next_hedge_deadline > now {
-                next_hedge_deadline - now
-            } else {
-                Duration::ZERO
-            };
+            let sleep_dur =
+                if next_hedge_deadline > now { next_hedge_deadline - now } else { Duration::ZERO };
 
             tokio::select! {
                 Some(result) = active.next() => {
@@ -332,13 +316,7 @@ mod tests {
             should_fail: bool,
             payload: Bytes,
         ) -> Self {
-            Self {
-                endpoint: endpoint.to_string(),
-                cost,
-                delay,
-                should_fail,
-                payload,
-            }
+            Self { endpoint: endpoint.to_string(), cost, delay, should_fail, payload }
         }
     }
 
@@ -476,7 +454,7 @@ mod tests {
         match result {
             Err(ReadError::AllReadersFailed(shard_idx)) => {
                 assert_eq!(shard_idx, 7);
-            }
+            },
             other => panic!("expected AllReadersFailed, got {other:?}"),
         }
     }
@@ -614,5 +592,180 @@ mod tests {
 
         // 管线能力聚合：hedged reader 支持 hedged_read
         assert!(pipeline.supports_hedged_read());
+    }
+}
+
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    struct MockReader {
+        endpoint: String,
+        cost: ShardReadCost,
+        delay: Duration,
+        should_fail: bool,
+        payload: Bytes,
+    }
+
+    impl MockReader {
+        fn new(
+            endpoint: &str,
+            cost: ShardReadCost,
+            delay: Duration,
+            should_fail: bool,
+            payload: Bytes,
+        ) -> Self {
+            Self { endpoint: endpoint.to_string(), cost, delay, should_fail, payload }
+        }
+    }
+
+    #[async_trait]
+    impl ShardReader for MockReader {
+        async fn read_shard(&self, _shard_index: usize) -> Result<Bytes, ReadError> {
+            if self.delay > Duration::ZERO {
+                tokio::time::sleep(self.delay).await;
+            }
+            if self.should_fail {
+                Err(ReadError::ShardReadFailed(_shard_index, format!("{} fail", self.endpoint)))
+            } else {
+                Ok(self.payload.clone())
+            }
+        }
+        fn read_cost(&self) -> ShardReadCost {
+            self.cost
+        }
+        fn endpoint(&self) -> &str {
+            &self.endpoint
+        }
+    }
+
+    #[test]
+    fn test_read_error_display() {
+        let e1 = ReadError::ShardReadFailed(3, "io error".into());
+        assert!(format!("{e1}").contains("shard 3 read failed"));
+        let e2 = ReadError::AllReadersFailed(5);
+        assert!(format!("{e2}").contains("all readers failed for shard 5"));
+        let e3 = ReadError::Timeout;
+        assert!(format!("{e3}").contains("read timed out"));
+    }
+
+    #[test]
+    fn test_hedged_reader_reader_count() {
+        let readers: Vec<Arc<dyn ShardReader>> = vec![
+            Arc::new(MockReader::new(
+                "a",
+                ShardReadCost::Local,
+                Duration::ZERO,
+                false,
+                Bytes::new(),
+            )),
+            Arc::new(MockReader::new(
+                "b",
+                ShardReadCost::Remote,
+                Duration::ZERO,
+                false,
+                Bytes::new(),
+            )),
+        ];
+        let hr = HedgedReader::new(readers, Duration::from_millis(10));
+        assert_eq!(hr.reader_count(), 2);
+    }
+
+    #[test]
+    fn test_hedged_reader_hedge_delay_accessor() {
+        let readers: Vec<Arc<dyn ShardReader>> = vec![Arc::new(MockReader::new(
+            "a",
+            ShardReadCost::Local,
+            Duration::ZERO,
+            false,
+            Bytes::new(),
+        ))];
+        let hr = HedgedReader::new(readers, Duration::from_millis(50));
+        assert_eq!(hr.hedge_delay(), Duration::from_millis(50));
+    }
+
+    #[test]
+    fn test_hedged_reader_min_read_cost() {
+        let readers: Vec<Arc<dyn ShardReader>> = vec![
+            Arc::new(MockReader::new(
+                "remote",
+                ShardReadCost::Remote,
+                Duration::ZERO,
+                false,
+                Bytes::new(),
+            )),
+            Arc::new(MockReader::new(
+                "local",
+                ShardReadCost::Local,
+                Duration::ZERO,
+                false,
+                Bytes::new(),
+            )),
+            Arc::new(MockReader::new(
+                "same",
+                ShardReadCost::SameNode,
+                Duration::ZERO,
+                false,
+                Bytes::new(),
+            )),
+        ];
+        let hr = HedgedReader::new(readers, Duration::from_millis(10));
+        assert_eq!(hr.min_read_cost(), ShardReadCost::Local);
+    }
+
+    #[test]
+    fn test_hedged_reader_min_read_cost_empty() {
+        let hr = HedgedReader::new(vec![], Duration::from_millis(10));
+        assert_eq!(hr.min_read_cost(), ShardReadCost::Unknown);
+    }
+
+    #[tokio::test]
+    async fn test_read_multiple_empty() {
+        let readers: Vec<Arc<dyn ShardReader>> = vec![Arc::new(MockReader::new(
+            "a",
+            ShardReadCost::Local,
+            Duration::ZERO,
+            false,
+            Bytes::from_static(b"x"),
+        ))];
+        let hr = HedgedReader::new(readers, Duration::from_millis(10));
+        let results = hr.read_multiple(&[]).await.unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_read_multiple_sorted_output() {
+        let readers: Vec<Arc<dyn ShardReader>> = vec![Arc::new(MockReader::new(
+            "a",
+            ShardReadCost::Local,
+            Duration::ZERO,
+            false,
+            Bytes::from_static(b"x"),
+        ))];
+        let hr = HedgedReader::new(readers, Duration::from_millis(10));
+        let results = hr.read_multiple(&[5, 2, 8]).await.unwrap();
+        assert_eq!(results.len(), 3);
+        assert_eq!(results[0].0, 2);
+        assert_eq!(results[1].0, 5);
+        assert_eq!(results[2].0, 8);
+    }
+
+    #[test]
+    fn test_shard_read_cost_clone_copy() {
+        let c = ShardReadCost::Local;
+        let c2 = c;
+        assert_eq!(c, c2);
+    }
+
+    #[test]
+    fn test_shard_read_cost_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ShardReadCost::Local);
+        set.insert(ShardReadCost::Local);
+        assert_eq!(set.len(), 1);
+        set.insert(ShardReadCost::Remote);
+        assert_eq!(set.len(), 2);
     }
 }

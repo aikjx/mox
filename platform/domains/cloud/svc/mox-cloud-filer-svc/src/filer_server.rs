@@ -10,18 +10,19 @@
 
 use mox_cloud_kernel::buffer_pool::BufferPool;
 use parking_lot::Mutex;
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
-use crate::dir_entry_cache::DirEntryCache;
-use crate::error::{FilerError, FilerResult};
-use crate::file_lock::FileLockManager;
-use crate::meta_pg_citus::PgCitusMeta;
-use crate::meta_redis::RedisMeta;
-use crate::meta_sqlite::SqliteMeta;
-use crate::meta_trait::{MetaBackend, MetaStorageProvider, META_BACKENDS};
-use crate::quota_manager::QuotaManager;
-use crate::snapshot_filer::SnapshotManager;
+use crate::{
+    dir_entry_cache::DirEntryCache,
+    error::{FilerError, FilerResult},
+    file_lock::FileLockManager,
+    meta_pg_citus::PgCitusMeta,
+    meta_redis::RedisMeta,
+    meta_sqlite::SqliteMeta,
+    meta_trait::{MetaBackend, MetaStorageProvider, META_BACKENDS},
+    quota_manager::QuotaManager,
+    snapshot_filer::SnapshotManager,
+};
 
 pub struct FilerServer {
     pub active: Mutex<Arc<dyn MetaStorageProvider>>,
@@ -209,9 +210,7 @@ impl ObjectStorage for S3ObjectStorage {
         let data_vec = pooled.into_vec();
         self.rt
             .block_on(async move {
-                client
-                    .put_object(&logical_mv, "application/octet-stream", &data_vec)
-                    .await
+                client.put_object(&logical_mv, "application/octet-stream", &data_vec).await
             })
             .map_err(|e| FilerError::Other(format!("S3 PUT {logical} 失败: {e}")))
     }
@@ -289,10 +288,7 @@ impl InMemoryObjectStorage {
 
     /// 创建带指定缓冲池的实例
     pub fn with_buffer_pool(buffer_pool: Arc<BufferPool>) -> Self {
-        Self {
-            inner: Mutex::new(BTreeMap::new()),
-            buffer_pool,
-        }
+        Self { inner: Mutex::new(BTreeMap::new()), buffer_pool }
     }
 }
 
@@ -307,9 +303,7 @@ impl ObjectStorage for InMemoryObjectStorage {
         // PooledBuffer 推广：从缓冲池获取缓冲区
         let mut pooled = self.buffer_pool.acquire(data.len());
         pooled.extend_from_slice(data);
-        self.inner
-            .lock()
-            .insert((bucket.into(), key.into()), pooled.into_vec());
+        self.inner.lock().insert((bucket.into(), key.into()), pooled.into_vec());
         Ok(())
     }
     fn get(&self, bucket: &str, key: &str) -> FilerResult<Vec<u8>> {
@@ -356,10 +350,10 @@ fn default_object_storage() -> FilerResult<Arc<dyn ObjectStorage>> {
     let backend = std::env::var("STORAGE_BACKEND").unwrap_or_else(|_| "s3".to_string());
     match backend.to_ascii_lowercase().as_str() {
         "memory" | "mem" | "in-memory" => Ok(Arc::new(InMemoryObjectStorage::new())),
-        "s3" | _ => {
+        _ => {
             let s3 = S3ObjectStorage::from_env()?;
             Ok(Arc::new(s3))
-        }
+        },
     }
 }
 
@@ -443,6 +437,6 @@ mod tests {
         // 释放后缓冲区回到池中
         let stats_after = srv.buffer_pool.stats();
         assert_eq!(stats_after.current_in_use, 0);
-        assert!(stats_after.total_reused >= 0);
+        // total_reused 为 u64，恒 >= 0，无需断言
     }
 }

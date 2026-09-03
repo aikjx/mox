@@ -12,10 +12,14 @@
 
 use mox_cloud_s3_svc::{PersistSink, S3Server, StoreCorePersist};
 use mox_cloud_store_core::{create_backend, BackendKind, StoreConfig, StoreError};
-use std::path::Path;
-use std::sync::atomic::{AtomicU16, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
+use std::{
+    path::Path,
+    sync::{
+        atomic::{AtomicU16, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 
 const TEST_AK: &str = "AKIAMOXPERSIST0001";
 const TEST_SK: &str = "mox-persist-secret-v1-2026";
@@ -27,10 +31,7 @@ async fn start_server() -> (String, Arc<StoreCorePersist>, tempfile::TempDir) {
         if port < 1025 {
             continue;
         }
-        if tokio::net::TcpStream::connect(("127.0.0.1", port))
-            .await
-            .is_ok()
-        {
+        if tokio::net::TcpStream::connect(("127.0.0.1", port)).await.is_ok() {
             continue;
         }
         let dir = tempfile::tempdir().unwrap();
@@ -103,21 +104,14 @@ async fn http(
             break;
         }
     }
-    let sp = buf
-        .windows(4)
-        .position(|w| w == b"\r\n\r\n")
-        .unwrap_or(buf.len());
+    let sp = buf.windows(4).position(|w| w == b"\r\n\r\n").unwrap_or(buf.len());
     let head = String::from_utf8_lossy(&buf[..sp]).to_string();
     let code: u16 = head
         .lines()
         .next()
         .and_then(|l| l.split_whitespace().nth(1)?.parse().ok())
         .unwrap_or(0);
-    let bo = if sp + 4 < buf.len() {
-        buf[sp + 4..].to_vec()
-    } else {
-        vec![]
-    };
+    let bo = if sp + 4 < buf.len() { buf[sp + 4..].to_vec() } else { vec![] };
     (code, head, bo)
 }
 
@@ -149,10 +143,7 @@ async fn s3_write_chokepoints_persist_to_store_core() {
         read_store(dir.path(), "persist/docs/a.md").await.unwrap(),
         "hello from s3".as_bytes().to_vec()
     );
-    assert_eq!(
-        read_store(dir.path(), "persist/docs/b.md").await.unwrap(),
-        b"content-b".to_vec()
-    );
+    assert_eq!(read_store(dir.path(), "persist/docs/b.md").await.unwrap(), b"content-b".to_vec());
     assert_eq!(read_store(dir.path(), "persist/media/c.bin").await.unwrap(), big);
 
     // 3. DeleteObject → 镜像删除
@@ -203,10 +194,7 @@ async fn s3_server_without_persist_stays_pure_memory() {
         if port < 1025 {
             continue;
         }
-        if tokio::net::TcpStream::connect(("127.0.0.1", port))
-            .await
-            .is_ok()
-        {
+        if tokio::net::TcpStream::connect(("127.0.0.1", port)).await.is_ok() {
             continue;
         }
         let srv = S3Server::new(port, None);

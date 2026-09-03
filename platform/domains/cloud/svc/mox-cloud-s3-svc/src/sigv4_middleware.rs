@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -8,8 +8,8 @@
 //! 失败 → 403 SignatureDoesNotMatch。
 
 use crate::error::{S3Error, S3Result};
-use std::collections::BTreeMap;
 use mox_data_standards_core::sigv4::sigv4_auth_header;
+use std::collections::BTreeMap;
 
 /// 鉴权凭证存储（AK/SK 查找表）。
 #[derive(Debug, Clone, Default)]
@@ -51,17 +51,12 @@ pub struct SigV4Parts {
 pub fn parse_authorization(auth: &str) -> S3Result<SigV4Parts> {
     // AWS4-HMAC-SHA256 Credential=AK/date/region/service/aws4_request, SignedHeaders=..., Signature=...
     let trimmed = auth.trim();
-    let (algo, rest) = trimmed
-        .split_once(' ')
-        .ok_or(S3Error::SignatureDoesNotMatch)?;
+    let (algo, rest) = trimmed.split_once(' ').ok_or(S3Error::SignatureDoesNotMatch)?;
     if algo != "AWS4-HMAC-SHA256" {
         return Err(S3Error::SignatureDoesNotMatch);
     }
 
-    let mut parts = SigV4Parts {
-        algorithm: algo.to_string(),
-        ..Default::default()
-    };
+    let mut parts = SigV4Parts { algorithm: algo.to_string(), ..Default::default() };
     for chunk in rest.split(',') {
         let chunk = chunk.trim();
         if let Some((k, v)) = chunk.split_once('=') {
@@ -78,14 +73,14 @@ pub fn parse_authorization(auth: &str) -> S3Result<SigV4Parts> {
                     if segs[4] != "aws4_request" {
                         return Err(S3Error::SignatureDoesNotMatch);
                     }
-                }
+                },
                 "SignedHeaders" => {
                     parts.signed_headers = v.split(';').map(|s| s.to_string()).collect();
-                }
+                },
                 "Signature" => {
                     parts.signature = v.to_string();
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
     }
@@ -112,7 +107,7 @@ pub fn parse_query_creds(
             "X-Amz-Date" => date = Some(v.clone()),
             "X-Amz-SignedHeaders" => signed = Some(v.clone()),
             "X-Amz-Signature" => sig = Some(v.clone()),
-            _ => {}
+            _ => {},
         }
     }
     match (algo, cred, date, signed, sig) {
@@ -159,17 +154,12 @@ pub fn verify_request(
     };
 
     // 2) 查 AK → SK
-    let sk = cred_store
-        .get_sk(&parts.ak)
-        .ok_or(S3Error::SignatureDoesNotMatch)?;
+    let sk = cred_store.get_sk(&parts.ak).ok_or(S3Error::SignatureDoesNotMatch)?;
     let user_id = cred_store.get_user(&parts.ak).unwrap_or_default();
 
     // 3) 基于 signed_headers 构造 headers pair（按小写排序）
-    let mut signed_headers_lower: Vec<String> = parts
-        .signed_headers
-        .iter()
-        .map(|s| s.to_lowercase())
-        .collect();
+    let mut signed_headers_lower: Vec<String> =
+        parts.signed_headers.iter().map(|s| s.to_lowercase()).collect();
     signed_headers_lower.sort();
     let mut header_pairs: Vec<(&str, &str)> = Vec::new();
     for sh in &signed_headers_lower {
@@ -184,10 +174,7 @@ pub fn verify_request(
     let mut qpairs: Vec<(String, String)> = query_sorted.to_vec();
     qpairs.retain(|(k, _)| k != "X-Amz-Signature");
     qpairs.sort_by(|a, b| a.0.cmp(&b.0));
-    let qrefs: Vec<(&str, &str)> = qpairs
-        .iter()
-        .map(|(k, v)| (k.as_str(), v.as_str()))
-        .collect();
+    let qrefs: Vec<(&str, &str)> = qpairs.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
 
     // 5) 生成预期签名
     let (expected_auth, _) = sigv4_auth_header(

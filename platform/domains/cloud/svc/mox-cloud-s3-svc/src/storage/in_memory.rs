@@ -53,11 +53,7 @@ impl InMemoryStorageBackend {
 
 #[async_trait]
 impl StorageBackend for InMemoryStorageBackend {
-    async fn put_chunk(
-        &self,
-        chunk_id: &ChunkId,
-        data: &[u8],
-    ) -> Result<ChunkInfo, StorageError> {
+    async fn put_chunk(&self, chunk_id: &ChunkId, data: &[u8]) -> Result<ChunkInfo, StorageError> {
         let info = ChunkInfo {
             chunk_id: chunk_id.clone(),
             size_bytes: data.len() as u64,
@@ -65,22 +61,13 @@ impl StorageBackend for InMemoryStorageBackend {
             checksum: Self::md5_hex(data),
         };
         let mut guard = self.chunks.write();
-        guard.insert(
-            chunk_id.clone(),
-            StoredChunk {
-                data: data.to_vec(),
-                info: info.clone(),
-            },
-        );
+        guard.insert(chunk_id.clone(), StoredChunk { data: data.to_vec(), info: info.clone() });
         Ok(info)
     }
 
     async fn get_chunk(&self, chunk_id: &ChunkId) -> Result<Vec<u8>, StorageError> {
         let guard = self.chunks.read();
-        guard
-            .get(chunk_id)
-            .map(|c| c.data.clone())
-            .ok_or(StorageError::NotFound)
+        guard.get(chunk_id).map(|c| c.data.clone()).ok_or(StorageError::NotFound)
     }
 
     async fn delete_chunk(&self, chunk_id: &ChunkId) -> Result<bool, StorageError> {
@@ -116,12 +103,8 @@ impl StorageBackend for InMemoryStorageBackend {
         };
 
         let limit = limit as usize;
-        let sliced: Vec<ChunkInfo> = items
-            .iter()
-            .skip(start_idx)
-            .take(limit)
-            .map(|c| c.info.clone())
-            .collect();
+        let sliced: Vec<ChunkInfo> =
+            items.iter().skip(start_idx).take(limit).map(|c| c.info.clone()).collect();
 
         let next_idx = start_idx + sliced.len();
         let is_truncated = next_idx < items.len();
@@ -131,11 +114,7 @@ impl StorageBackend for InMemoryStorageBackend {
             None
         };
 
-        Ok(ChunkListPage {
-            items: sliced,
-            next_marker,
-            is_truncated,
-        })
+        Ok(ChunkListPage { items: sliced, next_marker, is_truncated })
     }
 
     fn backend_type(&self) -> BackendType {
@@ -231,24 +210,15 @@ mod tests {
             let id = ChunkId::new(format!("obj:bucket:key:v{}", i));
             backend.put_chunk(&id, &[i as u8]).await.unwrap();
         }
-        backend
-            .put_chunk(&ChunkId::new("other:thing"), b"x")
-            .await
-            .unwrap();
+        backend.put_chunk(&ChunkId::new("other:thing"), b"x").await.unwrap();
 
         // 前缀过滤
-        let page = backend
-            .list_chunks("obj:bucket:key:", None, 100)
-            .await
-            .unwrap();
+        let page = backend.list_chunks("obj:bucket:key:", None, 100).await.unwrap();
         assert_eq!(page.items.len(), 5);
         assert!(!page.is_truncated);
 
         // 分页：limit=2
-        let page1 = backend
-            .list_chunks("obj:bucket:key:", None, 2)
-            .await
-            .unwrap();
+        let page1 = backend.list_chunks("obj:bucket:key:", None, 2).await.unwrap();
         assert_eq!(page1.items.len(), 2);
         assert!(page1.is_truncated);
         assert!(page1.next_marker.is_some());

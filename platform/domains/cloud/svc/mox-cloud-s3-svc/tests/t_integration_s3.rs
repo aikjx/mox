@@ -17,14 +17,16 @@
 //!
 //! 覆盖正常路径、边界条件和错误处理。
 
-use std::sync::atomic::{AtomicU16, Ordering};
-use std::time::Duration;
+use std::{
+    sync::atomic::{AtomicU16, Ordering},
+    time::Duration,
+};
 
 use mox_cloud_s3_svc::S3Server;
 
 const TEST_AK: &str = "AKIAMOXINTEG0001";
 const TEST_SK: &str = "mox-integ-secret-key-v1-2026";
-const TEST_REGION: &str = "us-east-1";
+const _TEST_REGION: &str = "us-east-1";
 static NEXT_PORT: AtomicU16 = AtomicU16::new(22000);
 
 async fn start_server() -> String {
@@ -33,13 +35,10 @@ async fn start_server() -> String {
         if port < 1025 {
             continue;
         }
-        if tokio::net::TcpStream::connect(("127.0.0.1", port))
-            .await
-            .is_ok()
-        {
+        if tokio::net::TcpStream::connect(("127.0.0.1", port)).await.is_ok() {
             continue;
         }
-        let mut srv = S3Server::new(port, None);
+        let srv = S3Server::new(port, None);
         srv.register_credential(TEST_AK, TEST_SK, "mox-user");
         tokio::spawn(async move {
             let _ = srv.run().await;
@@ -90,21 +89,14 @@ async fn http(
             break;
         }
     }
-    let sp = buf
-        .windows(4)
-        .position(|w| w == b"\r\n\r\n")
-        .unwrap_or(buf.len());
+    let sp = buf.windows(4).position(|w| w == b"\r\n\r\n").unwrap_or(buf.len());
     let head = String::from_utf8_lossy(&buf[..sp]).to_string();
     let code: u16 = head
         .lines()
         .next()
         .and_then(|l| l.split_whitespace().nth(1)?.parse().ok())
         .unwrap_or(0);
-    let bo = if sp + 4 < buf.len() {
-        buf[sp + 4..].to_vec()
-    } else {
-        vec![]
-    };
+    let bo = if sp + 4 < buf.len() { buf[sp + 4..].to_vec() } else { vec![] };
     (code, head, bo)
 }
 
@@ -139,7 +131,7 @@ fn extract_header<'a>(head: &'a str, name: &str) -> Option<&'a str> {
 }
 
 fn strip_quotes(s: &str) -> String {
-    s.replace('"', "").replace('\r', "")
+    s.replace(['"', '\r'], "")
 }
 
 // =========================================================================
@@ -224,11 +216,7 @@ async fn is01_07_create_multiple_buckets() {
 
     let (_, _, b) = http(&a, "GET", "/", SKIP, &[]).await;
     for i in 0..5 {
-        assert!(
-            contains(&b, &format!("bucket-{}", i)),
-            "bucket-{} not found in list",
-            i
-        );
+        assert!(contains(&b, &format!("bucket-{}", i)), "bucket-{} not found in list", i);
     }
 }
 
@@ -398,7 +386,7 @@ async fn is02_07_empty_object() {
 
     let (c2, _, body) = http(&a, "GET", "/empty-bucket/empty.txt", SKIP, &[]).await;
     assert_2xx(c2, "get empty object");
-    assert!(body.is_empty() || body.len() == 0);
+    assert!(body.is_empty() || body.is_empty());
 }
 
 /// 测试：大对象 (1MB)
@@ -427,14 +415,7 @@ async fn is02_09_list_objects_v1() {
 
     for i in 0..5 {
         let data = format!("content-{}", i);
-        http(
-            &a,
-            "PUT",
-            &format!("/list-bucket/file-{}.txt", i),
-            SKIP,
-            data.as_bytes(),
-        )
-        .await;
+        http(&a, "PUT", &format!("/list-bucket/file-{}.txt", i), SKIP, data.as_bytes()).await;
     }
 
     let (c, _, b) = http(&a, "GET", "/list-bucket", SKIP, &[]).await;
@@ -442,11 +423,7 @@ async fn is02_09_list_objects_v1() {
     assert!(contains(&b, "ListBucketResult"));
 
     for i in 0..5 {
-        assert!(
-            contains(&b, &format!("file-{}.txt", i)),
-            "file-{}.txt not in list",
-            i
-        );
+        assert!(contains(&b, &format!("file-{}.txt", i)), "file-{}.txt not in list", i);
     }
 }
 
@@ -457,14 +434,7 @@ async fn is02_10_list_objects_v2() {
     http(&a, "PUT", "/listv2-bucket", SKIP, &[]).await;
 
     for i in 0..3 {
-        http(
-            &a,
-            "PUT",
-            &format!("/listv2-bucket/obj-{}.dat", i),
-            SKIP,
-            b"data",
-        )
-        .await;
+        http(&a, "PUT", &format!("/listv2-bucket/obj-{}.dat", i), SKIP, b"data").await;
     }
 
     let (c, _, b) = http(&a, "GET", "/listv2-bucket?list-type=2", SKIP, &[]).await;
@@ -482,10 +452,7 @@ async fn is02_11_copy_object() {
     let data = b"copy source data";
     http(&a, "PUT", "/copy-src/source.txt", SKIP, data).await;
 
-    let headers = [
-        ("x-amz-copy-source", "/copy-src/source.txt"),
-        ("x-test-skip-auth", "1"),
-    ];
+    let headers = [("x-amz-copy-source", "/copy-src/source.txt"), ("x-test-skip-auth", "1")];
     let (c, _, b) = http(&a, "PUT", "/copy-dst/dest.txt", &headers, &[]).await;
     assert_2xx(c, "copy object");
     assert!(contains(&b, "CopyObjectResult"));
@@ -501,14 +468,7 @@ async fn is03_01_create_multipart_upload() {
     let a = start_server().await;
     http(&a, "PUT", "/mpu-bucket", SKIP, &[]).await;
 
-    let (c, _, b) = http(
-        &a,
-        "POST",
-        "/mpu-bucket/large-file?uploads",
-        SKIP,
-        &[],
-    )
-    .await;
+    let (c, _, b) = http(&a, "POST", "/mpu-bucket/large-file?uploads", SKIP, &[]).await;
     assert_2xx(c, "create multipart upload");
     assert!(contains(&b, "InitiateMultipartUploadResult"));
     assert!(contains(&b, "UploadId"));
@@ -522,14 +482,7 @@ async fn is03_02_list_multipart_uploads() {
 
     // 创建几个 MPU
     for i in 0..3 {
-        http(
-            &a,
-            "POST",
-            &format!("/listmpu-bucket/file-{}.bin?uploads", i),
-            SKIP,
-            &[],
-        )
-        .await;
+        http(&a, "POST", &format!("/listmpu-bucket/file-{}.bin?uploads", i), SKIP, &[]).await;
     }
 
     let (c, _, b) = http(&a, "GET", "/listmpu-bucket?uploads", SKIP, &[]).await;
@@ -544,14 +497,7 @@ async fn is03_03_abort_multipart_upload() {
     http(&a, "PUT", "/abortmpu-bucket", SKIP, &[]).await;
 
     // 创建 MPU
-    let (_, _, init_body) = http(
-        &a,
-        "POST",
-        "/abortmpu-bucket/bigfile?uploads",
-        SKIP,
-        &[],
-    )
-    .await;
+    let (_, _, init_body) = http(&a, "POST", "/abortmpu-bucket/bigfile?uploads", SKIP, &[]).await;
 
     // 提取 UploadId
     let body_s = body_str(&init_body);
@@ -559,14 +505,9 @@ async fn is03_03_abort_multipart_upload() {
     assert!(!upload_id.is_empty(), "upload id should not be empty");
 
     // 中止 MPU
-    let (c, _, _) = http(
-        &a,
-        "DELETE",
-        &format!("/abortmpu-bucket/bigfile?uploadId={}", upload_id),
-        SKIP,
-        &[],
-    )
-    .await;
+    let (c, _, _) =
+        http(&a, "DELETE", &format!("/abortmpu-bucket/bigfile?uploadId={}", upload_id), SKIP, &[])
+            .await;
     assert_2xx(c, "abort multipart upload");
 }
 
@@ -577,14 +518,8 @@ async fn is03_04_complete_multipart_upload() {
     http(&a, "PUT", "/completempu-bucket", SKIP, &[]).await;
 
     // 1. Initiate
-    let (_, _, init_body) = http(
-        &a,
-        "POST",
-        "/completempu-bucket/complete.bin?uploads",
-        SKIP,
-        &[],
-    )
-    .await;
+    let (_, _, init_body) =
+        http(&a, "POST", "/completempu-bucket/complete.bin?uploads", SKIP, &[]).await;
     let body_s = body_str(&init_body);
     let upload_id = extract_xml_value(&body_s, "UploadId");
     assert!(!upload_id.is_empty());
@@ -596,10 +531,7 @@ async fn is03_04_complete_multipart_upload() {
     let (_, h1, _) = http(
         &a,
         "PUT",
-        &format!(
-            "/completempu-bucket/complete.bin?uploadId={}&partNumber=1",
-            upload_id
-        ),
+        &format!("/completempu-bucket/complete.bin?uploadId={}&partNumber=1", upload_id),
         SKIP,
         &part1,
     )
@@ -609,10 +541,7 @@ async fn is03_04_complete_multipart_upload() {
     let (_, h2, _) = http(
         &a,
         "PUT",
-        &format!(
-            "/completempu-bucket/complete.bin?uploadId={}&partNumber=2",
-            upload_id
-        ),
+        &format!("/completempu-bucket/complete.bin?uploadId={}&partNumber=2", upload_id),
         SKIP,
         &part2,
     )
@@ -632,10 +561,7 @@ async fn is03_04_complete_multipart_upload() {
     let (c, _, b) = http(
         &a,
         "POST",
-        &format!(
-            "/completempu-bucket/complete.bin?uploadId={}",
-            upload_id
-        ),
+        &format!("/completempu-bucket/complete.bin?uploadId={}", upload_id),
         SKIP,
         complete_xml.as_bytes(),
     )
@@ -650,24 +576,13 @@ async fn is03_05_list_parts() {
     let a = start_server().await;
     http(&a, "PUT", "/listparts-bucket", SKIP, &[]).await;
 
-    let (_, _, init_body) = http(
-        &a,
-        "POST",
-        "/listparts-bucket/parts.bin?uploads",
-        SKIP,
-        &[],
-    )
-    .await;
+    let (_, _, init_body) =
+        http(&a, "POST", "/listparts-bucket/parts.bin?uploads", SKIP, &[]).await;
     let upload_id = extract_xml_value(&body_str(&init_body), "UploadId");
 
-    let (c, _, b) = http(
-        &a,
-        "GET",
-        &format!("/listparts-bucket/parts.bin?uploadId={}", upload_id),
-        SKIP,
-        &[],
-    )
-    .await;
+    let (c, _, b) =
+        http(&a, "GET", &format!("/listparts-bucket/parts.bin?uploadId={}", upload_id), SKIP, &[])
+            .await;
     assert_2xx(c, "list parts");
     assert!(contains(&b, "ListPartsResult"));
 }
@@ -687,14 +602,8 @@ async fn is04_01_enable_versioning() {
   <Status>Enabled</Status>
 </VersioningConfiguration>"#;
 
-    let (c, _, _) = http(
-        &a,
-        "PUT",
-        "/ver-bucket?versioning",
-        SKIP,
-        versioning_xml.as_bytes(),
-    )
-    .await;
+    let (c, _, _) =
+        http(&a, "PUT", "/ver-bucket?versioning", SKIP, versioning_xml.as_bytes()).await;
     assert_2xx(c, "enable versioning");
 
     // GET versioning
@@ -714,14 +623,8 @@ async fn is04_02_suspend_versioning() {
   <Status>Suspended</Status>
 </VersioningConfiguration>"#;
 
-    let (c, _, _) = http(
-        &a,
-        "PUT",
-        "/versus-bucket?versioning",
-        SKIP,
-        versioning_xml.as_bytes(),
-    )
-    .await;
+    let (c, _, _) =
+        http(&a, "PUT", "/versus-bucket?versioning", SKIP, versioning_xml.as_bytes()).await;
     assert_2xx(c, "suspend versioning");
 
     let (c2, _, b2) = http(&a, "GET", "/versus-bucket?versioning", SKIP, &[]).await;
@@ -743,15 +646,11 @@ async fn is04_03_versioned_object_multiple_versions() {
     // 写入多个版本
     let v1 = b"version 1 data";
     let (_, h1, _) = http(&a, "PUT", "/verobj-bucket/ver.txt", SKIP, v1).await;
-    let ver1 = extract_header(&h1, "x-amz-version-id")
-        .map(strip_quotes)
-        .unwrap_or_default();
+    let ver1 = extract_header(&h1, "x-amz-version-id").map(strip_quotes).unwrap_or_default();
 
     let v2 = b"version 2 data updated";
     let (_, h2, _) = http(&a, "PUT", "/verobj-bucket/ver.txt", SKIP, v2).await;
-    let ver2 = extract_header(&h2, "x-amz-version-id")
-        .map(strip_quotes)
-        .unwrap_or_default();
+    let ver2 = extract_header(&h2, "x-amz-version-id").map(strip_quotes).unwrap_or_default();
 
     // 验证版本 ID 不同
     if !ver1.is_empty() && !ver2.is_empty() {
@@ -793,9 +692,8 @@ async fn is04_05_delete_marker() {
     let (c, h, _) = http(&a, "DELETE", "/delmark-bucket/marker.txt", SKIP, &[]).await;
     assert_2xx(c, "delete with versioning creates delete marker");
 
-    let is_delete_marker = extract_header(&h, "x-amz-delete-marker")
-        .map(|v| v == "true")
-        .unwrap_or(false);
+    let is_delete_marker =
+        extract_header(&h, "x-amz-delete-marker").map(|v| v == "true").unwrap_or(false);
     // 可能返回删除标记头，也可能不返回（取决于实现），这里只验证 2xx
     let _ = is_delete_marker;
 }
@@ -856,7 +754,10 @@ async fn is05_02_get_lifecycle_configuration() {
 /// 测试：生命周期 - 冷热迁移
 #[tokio::test]
 async fn is05_03_lifecycle_tier_transition() {
-    use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, LifecycleReplicationStatus, StorageClass, TransitionAction};
+    use mox_cloud_s3_svc::{
+        HotWarmColdLifecycle, LifecycleObjectMeta, LifecycleReplicationStatus, StorageClass,
+        TransitionAction,
+    };
 
     let lifecycle = HotWarmColdLifecycle::default();
     let t0 = 1_700_000_000_000u64;
@@ -887,7 +788,9 @@ async fn is05_03_lifecycle_tier_transition() {
 /// 测试：生命周期 - 过期删除
 #[tokio::test]
 async fn is05_04_lifecycle_expiration() {
-    use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, LifecycleReplicationStatus, StorageClass};
+    use mox_cloud_s3_svc::{
+        HotWarmColdLifecycle, LifecycleObjectMeta, LifecycleReplicationStatus, StorageClass,
+    };
 
     let lifecycle = HotWarmColdLifecycle::default();
     let t0 = 1_700_000_000_000u64;
@@ -927,14 +830,7 @@ async fn is06_01_batch_delete_objects() {
 
     // 创建多个对象
     for i in 0..5 {
-        http(
-            &a,
-            "PUT",
-            &format!("/batch-del-bucket/obj-{}.txt", i),
-            SKIP,
-            b"batch data",
-        )
-        .await;
+        http(&a, "PUT", &format!("/batch-del-bucket/obj-{}.txt", i), SKIP, b"batch data").await;
     }
 
     // 批量删除
@@ -947,14 +843,7 @@ async fn is06_01_batch_delete_objects() {
   </Objects>
 </Delete>"#;
 
-    let (c, _, b) = http(
-        &a,
-        "POST",
-        "/batch-del-bucket?delete",
-        SKIP,
-        delete_xml.as_bytes(),
-    )
-    .await;
+    let (c, _, b) = http(&a, "POST", "/batch-del-bucket?delete", SKIP, delete_xml.as_bytes()).await;
     assert_2xx(c, "batch delete");
     assert!(contains(&b, "DeleteResult"));
 }
@@ -969,9 +858,12 @@ fn is06_02_batch_operation_manager() {
     let manager = BatchOperationManager::new();
 
     // 创建批量复制任务（使用实际 API：create_copy_job）
-    let copy_fn = |_sb: &str, _sk: &str, _db: &str, _dk: &str, _c: StorageClass| -> mox_cloud_s3_svc::S3Result<()> {
-        Ok(())
-    };
+    let copy_fn = |_sb: &str,
+                   _sk: &str,
+                   _db: &str,
+                   _dk: &str,
+                   _c: StorageClass|
+     -> mox_cloud_s3_svc::S3Result<()> { Ok(()) };
 
     let request = BatchCopyRequest {
         source_bucket: "src-bucket".to_string(),
@@ -996,7 +888,7 @@ fn is06_02_batch_operation_manager() {
 /// 测试：批量解冻
 #[test]
 fn is06_03_batch_restore() {
-    use mox_cloud_s3_svc::{BatchOperationType, BatchOperationManager, RestoreTier};
+    use mox_cloud_s3_svc::{BatchOperationManager, RestoreTier};
 
     let manager = BatchOperationManager::new();
     let _tier = RestoreTier::Standard;
@@ -1303,14 +1195,8 @@ async fn is09_05_object_tagging() {
   </TagSet>
 </Tagging>"#;
 
-    let (c, _, _) = http(
-        &a,
-        "PUT",
-        "/tag-bucket/tagged.txt?tagging",
-        SKIP,
-        tagging_xml.as_bytes(),
-    )
-    .await;
+    let (c, _, _) =
+        http(&a, "PUT", "/tag-bucket/tagged.txt?tagging", SKIP, tagging_xml.as_bytes()).await;
     assert_2xx(c, "put object tagging");
 
     let (c2, _, b2) = http(&a, "GET", "/tag-bucket/tagged.txt?tagging", SKIP, &[]).await;

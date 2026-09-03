@@ -15,8 +15,10 @@
 //! - 节点下线迁移：将数据从待下线节点迁出
 
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::Arc,
+};
 
 /// 迁移类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -261,34 +263,13 @@ pub struct MigrationStats {
 impl MigrationStats {
     pub fn snapshot(&self) -> HashMap<String, u64> {
         let mut m = HashMap::new();
-        m.insert(
-            "migration_tasks_submitted".into(),
-            *self.tasks_submitted.lock(),
-        );
-        m.insert(
-            "migration_tasks_completed".into(),
-            *self.tasks_completed.lock(),
-        );
-        m.insert(
-            "migration_tasks_failed".into(),
-            *self.tasks_failed.lock(),
-        );
-        m.insert(
-            "migration_tasks_cancelled".into(),
-            *self.tasks_cancelled.lock(),
-        );
-        m.insert(
-            "migration_bytes_total".into(),
-            *self.bytes_migrated.lock(),
-        );
-        m.insert(
-            "migration_bytes_verified".into(),
-            *self.bytes_verified.lock(),
-        );
-        m.insert(
-            "migration_retries_total".into(),
-            *self.retries_total.lock(),
-        );
+        m.insert("migration_tasks_submitted".into(), *self.tasks_submitted.lock());
+        m.insert("migration_tasks_completed".into(), *self.tasks_completed.lock());
+        m.insert("migration_tasks_failed".into(), *self.tasks_failed.lock());
+        m.insert("migration_tasks_cancelled".into(), *self.tasks_cancelled.lock());
+        m.insert("migration_bytes_total".into(), *self.bytes_migrated.lock());
+        m.insert("migration_bytes_verified".into(), *self.bytes_verified.lock());
+        m.insert("migration_retries_total".into(), *self.retries_total.lock());
         m
     }
 }
@@ -388,12 +369,7 @@ impl MigrationTaskManager {
     }
 
     /// 报告迁移进度（含阶段更新）
-    pub fn report_progress(
-        &self,
-        task_id: &str,
-        migrated_bytes: u64,
-        phase: MigrationPhase,
-    ) {
+    pub fn report_progress(&self, task_id: &str, migrated_bytes: u64, phase: MigrationPhase) {
         let mut running = self.running_tasks.lock();
         if let Some(task) = running.get_mut(task_id) {
             task.migrated_bytes = migrated_bytes.min(task.total_bytes);
@@ -512,21 +488,11 @@ impl MigrationTaskManager {
             return Some(t.clone());
         }
         // 再查 pending
-        if let Some(t) = self
-            .pending_queue
-            .lock()
-            .iter()
-            .find(|t| t.task_id == task_id)
-        {
+        if let Some(t) = self.pending_queue.lock().iter().find(|t| t.task_id == task_id) {
             return Some(t.clone());
         }
         // 最后查 completed
-        if let Some(t) = self
-            .completed_tasks
-            .lock()
-            .iter()
-            .find(|t| t.task_id == task_id)
-        {
+        if let Some(t) = self.completed_tasks.lock().iter().find(|t| t.task_id == task_id) {
             return Some(t.clone());
         }
         None

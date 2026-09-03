@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -48,6 +48,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::market_migration::{audit, find_package_file, now_rfc3339, packages_dir};
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 /// 商城应用状态
 #[derive(Clone)]
@@ -431,16 +432,13 @@ pub fn market_routes() -> Router<MarketState> {
 // ========== Handlers ==========
 
 /// 手动全量备份：`$OUS_HOME/market/backup/manual-<ts>/`
-async fn backup_market() -> Json<serde_json::Value> {
+async fn backup_market() -> ApiResponse<serde_json::Value> {
     match crate::market_migration::backup_now("manual") {
-        Some(dir) => Json(serde_json::json!({
+        Some(dir) => api_ok(serde_json::json!({
             "success": true,
             "backup_dir": dir.display().to_string(),
         })),
-        None => Json(serde_json::json!({
-            "success": false,
-            "error": "备份失败：市场目录不存在或不可写（检查 $OUS_HOME/market）",
-        })),
+        None => api_error(500, "备份失败：市场目录不存在或不可写（检查 $OUS_HOME/market）"),
     }
 }
 
@@ -448,7 +446,7 @@ async fn backup_market() -> Json<serde_json::Value> {
 async fn list_packages(
     State(state): State<MarketState>,
     axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let category = params.get("category");
     let tag = params.get("tag");
     let q = params.get("q").map(|s| s.to_lowercase());
@@ -464,7 +462,7 @@ async fn list_packages(
         created_by.map(|s| s.as_str()),
         perm.map(|s| s.as_str()),
     );
-    Json(serde_json::json!({ "success": true, "total": list.len(), "packages": list }))
+    api_ok(serde_json::json!({ "success": true, "total": list.len(), "packages": list }))
 }
 
 /// 供本模块与 routes 扩展使用的过滤列表实现（按更新时间倒序）
@@ -530,11 +528,11 @@ pub fn list_packages_filtered(
 }
 
 /// 随机返回一个包（用于"随机浏览/随机剪饮"）
-async fn random_package(State(state): State<MarketState>) -> Json<serde_json::Value> {
+async fn random_package(State(state): State<MarketState>) -> ApiResponse<serde_json::Value> {
     let idx = state.index.lock().await;
     let vals: Vec<&PackageMeta> = idx.values().collect();
     if vals.is_empty() {
-        return Json(serde_json::json!({ "success": false, "error": "商城暂无算子包" }));
+        return api_error(500, "商城暂无算子包");
     }
     // 用时间做简单随机
     let i = (chrono::Utc::now()
@@ -551,10 +549,10 @@ async fn random_package(State(state): State<MarketState>) -> Json<serde_json::Va
 async fn get_package(
     State(_state): State<MarketState>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     match load_package(&id) {
-        Ok(pkg) => Json(serde_json::json!({ "success": true, "package": pkg })),
-        Err(e) => Json(serde_json::json!({ "success": false, "error": e })),
+        Ok(pkg) => api_ok(serde_json::json!({ "success": true, "package": pkg })),
+        Err(e) => api_error(500, e),
     }
 }
 
@@ -562,29 +560,16 @@ async fn get_package(
 async fn upload_package(
     State(state): State<MarketState>,
     Json(req): Json<CreatePackageRequest>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     if req.name.trim().is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "success": false, "error": "算子包名称不能为空" })),
-        );
+        return api_error(400, "算子包名称不能为空");
     }
     if req.requirement.trim().is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(
-                serde_json::json!({ "success": false, "error": "需求描述(requirement)不能为空，这是算子包最核心的部分" }),
-            ),
-        );
+        return api_error(400, "需求描述(requirement)不能为空，这是算子包最核心的部分");
     }
     // 版本字段遵循 semver（主.次.补[-预发布]）
     if !req.version.is_empty() && !crate::market_version::is_valid_version(&req.version) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(
-                serde_json::json!({ "success": false, "error": format!("版本号不是合法 semver（主.次.补）: {}", req.version) }),
-            ),
-        );
+        return api_error(400, format!("版本号不是合法 semver（主.次.补）: {}", req.version));
     }
 
     let id = gen_id();
@@ -627,18 +612,11 @@ async fn upload_package(
     };
 
     if let Err(e) = save_package(&pkg) {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "success": false, "error": format!("保存失败: {}", e) })),
-        );
+        return api_error(500, format!("保存失败: {}", e));
     }
     // 更新索引
     state.index.lock().await.insert(pkg.id.clone(), pkg.meta());
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "success": true, "id": id, "package": pkg })),
-    )
-}
+    api_ok(serde_json::json!({ "success": true, "id": id, "package": pkg }))}
 
 /// 全量更新算子包（需求/流程图/功能点都改；自动快照旧版本 + 版本号 bump）
 async fn update_package(
@@ -646,16 +624,12 @@ async fn update_package(
     Path(id): Path<String>,
     headers: axum::http::HeaderMap,
     Json(req): Json<UpdatePackageRequest>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let actor = crate::market_version::actor_from_headers(&headers);
     let mut pkg = match load_package(&id) {
         Ok(p) => p,
         Err(_) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({ "success": false, "error": "算子包不存在" })),
-            )
-        }
+            return api_error(404, "算子包不存在");}
     };
 
     // 版本化：先快照旧版本（best-effort，不阻塞主流程）
@@ -673,12 +647,7 @@ async fn update_package(
     // 归一化：除非显式传了版本，否则每次实质性更新自动 +1 补丁号（版本化）
     if let Some(v) = req.version {
         if !crate::market_version::is_valid_version(&v) {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(
-                    serde_json::json!({ "success": false, "error": format!("版本号不是合法 semver（主.次.补）: {}", v) }),
-                ),
-            );
+            return api_error(400, format!("版本号不是合法 semver（主.次.补）: {}", v));
         }
         pkg.version = v;
     } else {
@@ -720,31 +689,20 @@ async fn update_package(
     pkg.updated_at = now_rfc3339();
 
     if let Err(e) = save_package(&pkg) {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "success": false, "error": format!("保存失败: {}", e) })),
-        );
+        return api_error(500, format!("保存失败: {}", e));
     }
     state.index.lock().await.insert(pkg.id.clone(), pkg.meta());
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "success": true, "package": pkg })),
-    )
-}
+    api_ok(serde_json::json!({ "success": true, "package": pkg }))}
 
 /// 克隆（fork）：复制核心内容到新包，溯源指向原包，原包 clone_count+1
 async fn clone_package(
     State(state): State<MarketState>,
     Path(id): Path<String>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let mut src = match load_package(&id) {
         Ok(p) => p,
         Err(_) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({ "success": false, "error": "源算子包不存在" })),
-            )
-        }
+            return api_error(404, "源算子包不存在");}
     };
 
     // 原包计数 +1
@@ -779,31 +737,24 @@ async fn clone_package(
         ..Default::default()
     };
     if let Err(e) = save_package(&cloned) {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "success": false, "error": format!("克隆保存失败: {}", e) })),
-        );
+        return api_error(500, format!("克隆保存失败: {}", e));
     }
     state
         .index
         .lock()
         .await
         .insert(cloned.id.clone(), cloned.meta());
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "success": true, "id": new_id, "package": cloned })),
-    )
-}
+    api_ok(serde_json::json!({ "success": true, "id": new_id, "package": cloned }))}
 
 /// 删除算子包（含版本快照与变更日志）
 async fn delete_package(
     State(state): State<MarketState>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let path = match find_package_file(&id) {
         Some(p) => p,
         None => {
-            return Json(serde_json::json!({ "success": false, "error": "算子包不存在" }));
+            return api_error(500, "算子包不存在");
         }
     };
     let _ = std::fs::remove_file(&path);
@@ -812,7 +763,7 @@ async fn delete_package(
     let _ = std::fs::remove_file(crate::market_version::changelog_path(&id));
     state.index.lock().await.remove(&id);
     audit("delete", "anonymous", &format!("删除算子包 {}", id));
-    Json(serde_json::json!({ "success": true }))
+    api_ok(serde_json::json!({ "success": true }))
 }
 
 /// 导出归一化 DSL（§28 FlowDefinition）：保持向后兼容（前端 /market/:id/export 依赖）。
@@ -821,15 +772,11 @@ async fn delete_package(
 async fn export_package(
     State(_state): State<MarketState>,
     Path(id): Path<String>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let pkg = match load_package(&id) {
         Ok(p) => p,
         Err(_) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({ "success": false, "error": "算子包不存在" })),
-            )
-        }
+            return api_error(404, "算子包不存在");}
     };
 
     // 归一化投影：nodes -> flow.vertices, edges -> flow.edges, requirement -> spec
@@ -904,11 +851,7 @@ async fn export_package(
         },
     });
 
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "success": true, "dsl": dsl })),
-    )
-}
+    api_ok(serde_json::json!({ "success": true, "dsl": dsl }))}
 
 // ========== 存储辅助 ==========
 

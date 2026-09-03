@@ -132,15 +132,8 @@ impl Default for S3ServiceConfig {
                 enabled: true,
             },
             scan_budget: ScanBudget::default(),
-            replication: ReplicationConfig {
-                timeout_secs: 300,
-                max_retries: 3,
-                parallelism: 4,
-            },
-            inventory: InventoryConfig {
-                interval_secs: 86400,
-                max_concurrent_jobs: 2,
-            },
+            replication: ReplicationConfig { timeout_secs: 300, max_retries: 3, parallelism: 4 },
+            inventory: InventoryConfig { interval_secs: 86400, max_concurrent_jobs: 2 },
             features: FeatureFlags {
                 rustfs_ecstore_backend: false,
                 rustfs_rio_backend: false,
@@ -473,8 +466,14 @@ mod tests {
 
         unsafe {
             for k in &[
-                "TEST_BOOL_TRUE", "TEST_BOOL_1", "TEST_BOOL_YES", "TEST_BOOL_ON",
-                "TEST_BOOL_FALSE", "TEST_BOOL_0", "TEST_BOOL_NO", "TEST_BOOL_OFF",
+                "TEST_BOOL_TRUE",
+                "TEST_BOOL_1",
+                "TEST_BOOL_YES",
+                "TEST_BOOL_ON",
+                "TEST_BOOL_FALSE",
+                "TEST_BOOL_0",
+                "TEST_BOOL_NO",
+                "TEST_BOOL_OFF",
                 "TEST_BOOL_INVALID",
             ] {
                 std::env::remove_var(k);

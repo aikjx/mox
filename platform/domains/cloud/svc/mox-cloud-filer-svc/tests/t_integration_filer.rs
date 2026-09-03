@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -18,19 +18,19 @@
 //! 覆盖正常路径、边界条件和错误处理。
 
 use mox_cloud_filer_svc::{
-    CacheStats, DeadlockResult, DirEntryCache, FileLockManager, Filer, LockRange, LockType,
-    PgCitusMeta, QuotaCheckResult, QuotaLimit, QuotaManager, QuotaType, QuotaUsage, RedisMeta,
+    DeadlockResult, DirEntryCache, FileLockManager, Filer, LockRange, LockType, PgCitusMeta,
+    QuotaCheckResult, QuotaLimit, QuotaManager, QuotaType, QuotaUsage, RedisMeta,
     SharedDirEntryCache, SharedFileLockManager, SharedQuotaManager, SharedSnapshotManager,
     SnapshotInfo, SnapshotManager, SnapshotStatus, SqliteMeta,
 };
 use std::sync::Arc;
-use std::time::Instant;
 
 fn sqlite_filer() -> Filer {
     Filer::new(Arc::new(SqliteMeta::new()))
 }
 
 
+#[allow(clippy::type_complexity)]
 fn mock_snapshot_callbacks() -> (
     impl Fn(u64) -> mox_cloud_filer_svc::FilerResult<mox_cloud_filer_svc::Attr>,
     impl Fn(u64) -> mox_cloud_filer_svc::FilerResult<Vec<mox_cloud_filer_svc::DirEntry>>,
@@ -63,9 +63,15 @@ fn mock_snapshot_callbacks() -> (
     (get_attr, list_dir, read_data)
 }
 
-fn create_snapshot_simple(mgr: &SnapshotManager, source_ino: u64, name: &str, desc: Option<String>) -> SnapshotInfo {
+fn create_snapshot_simple(
+    mgr: &SnapshotManager,
+    source_ino: u64,
+    name: &str,
+    desc: Option<String>,
+) -> SnapshotInfo {
     let (get_attr, list_dir, read_data) = mock_snapshot_callbacks();
-    mgr.create_snapshot(source_ino, name, desc, get_attr, list_dir, read_data).unwrap()
+    mgr.create_snapshot(source_ino, name, desc, get_attr, list_dir, read_data)
+        .unwrap()
 }
 
 // =========================================================================
@@ -330,8 +336,8 @@ async fn if02_10_open_close() {
 async fn if03_01_list_root_directory() {
     let f = sqlite_filer();
     let list = f.readdir("/").await.unwrap();
-    // 根目录至少有 . 和 .. 或者是空的
-    assert!(list.len() >= 0);
+    // 根目录至少有 . 和 .. 或者是空的（list.len() 为 usize，恒 >= 0）
+    let _ = list.len();
 }
 
 /// 测试：列出目录内容
@@ -381,9 +387,7 @@ async fn if03_05_many_files_in_directory() {
     f.mkdir("/many", 0o755).await.unwrap();
 
     for i in 0..100 {
-        f.create(&format!("/many/file_{:04}.txt", i), 0o644)
-            .await
-            .unwrap();
+        f.create(&format!("/many/file_{:04}.txt", i), 0o644).await.unwrap();
     }
 
     let list = f.readdir("/many").await.unwrap();
@@ -532,8 +536,8 @@ fn if04_09_deadlock_detection() {
     // 可能检测到死锁也可能不检测（取决于具体实现）
     // 这里只验证接口返回有效结果
     match result {
-        DeadlockResult::NoDeadlock => {}
-        DeadlockResult::DeadlockDetected(_) => {}
+        DeadlockResult::NoDeadlock => {},
+        DeadlockResult::DeadlockDetected(_) => {},
     }
 }
 
@@ -593,11 +597,7 @@ fn if05_03_quota_check_ok() {
     let result = mgr.check_quota(
         "user-1",
         QuotaType::User,
-        QuotaUsage {
-            used_bytes: 10 * 1024 * 1024,
-            used_files: 100,
-            soft_exceeded_at_sec: 0,
-        },
+        QuotaUsage { used_bytes: 10 * 1024 * 1024, used_files: 100, soft_exceeded_at_sec: 0 },
         1024,
         1,
     );
@@ -625,11 +625,7 @@ fn if05_04_quota_check_soft_exceeded() {
     let result = mgr.check_quota(
         "user-2",
         QuotaType::User,
-        QuotaUsage {
-            used_bytes: 60 * 1024 * 1024,
-            used_files: 100,
-            soft_exceeded_at_sec: 0,
-        },
+        QuotaUsage { used_bytes: 60 * 1024 * 1024, used_files: 100, soft_exceeded_at_sec: 0 },
         1024,
         0,
     );
@@ -657,11 +653,7 @@ fn if05_05_quota_check_hard_exceeded() {
     let result = mgr.check_quota(
         "user-3",
         QuotaType::User,
-        QuotaUsage {
-            used_bytes: 15 * 1024 * 1024,
-            used_files: 50,
-            soft_exceeded_at_sec: 0,
-        },
+        QuotaUsage { used_bytes: 15 * 1024 * 1024, used_files: 50, soft_exceeded_at_sec: 0 },
         1024,
         0,
     );
@@ -698,23 +690,14 @@ fn if05_07_file_count_quota() {
     mgr.set_quota(
         "user-files",
         QuotaType::User,
-        QuotaLimit {
-            hard_bytes: 0,
-            soft_bytes: 0,
-            hard_files: 10,
-            soft_files: 5,
-        },
+        QuotaLimit { hard_bytes: 0, soft_bytes: 0, hard_files: 10, soft_files: 5 },
     );
 
     // 已用 10 个文件，再创建一个应超过硬配额
     let result = mgr.check_quota(
         "user-files",
         QuotaType::User,
-        QuotaUsage {
-            used_bytes: 0,
-            used_files: 10,
-            soft_exceeded_at_sec: 0,
-        },
+        QuotaUsage { used_bytes: 0, used_files: 10, soft_exceeded_at_sec: 0 },
         0,
         1,
     );
@@ -800,9 +783,7 @@ fn if06_04_snapshot_status() {
 
     let info = mgr.get_snapshot(sid).unwrap();
     // 创建后状态应该是 Available 或 Creating
-    assert!(
-        info.status == SnapshotStatus::Available || info.status == SnapshotStatus::Creating
-    );
+    assert!(info.status == SnapshotStatus::Available || info.status == SnapshotStatus::Creating);
 }
 
 /// 测试：快照空间统计
@@ -813,9 +794,9 @@ fn if06_05_snapshot_space_stats() {
     let sid = info.id;
 
     let info = mgr.get_snapshot(sid).unwrap();
-    // 初始快照应该有基本的大小统计
-    assert!(info.total_size == 0 || info.total_size > 0);
-    assert!(info.exclusive_size == 0 || info.exclusive_size > 0);
+    // 初始快照应该有基本的大小统计（total_size/exclusive_size 为 u64，恒 >= 0）
+    let _ = info.total_size;
+    let _ = info.exclusive_size;
 }
 
 /// 测试：共享快照管理器
@@ -867,11 +848,7 @@ async fn if07_02_three_backends_write_read_consistency() {
         f.write("/consistent.txt", 0, test_data).await.unwrap();
 
         let result = f.read_all("/consistent.txt").await.unwrap();
-        assert_eq!(
-            result, test_data,
-            "{} backend: data mismatch after write/read",
-            name
-        );
+        assert_eq!(result, test_data, "{} backend: data mismatch after write/read", name);
     }
 }
 
@@ -966,16 +943,8 @@ fn if08_02_cache_hit_rate() {
 
     // 插入一些缓存条目
     let entries = vec![
-        mox_cloud_filer_svc::DirEntry {
-            name: "file1.txt".to_string(),
-            ino: 100,
-            typ: 2,
-        },
-        mox_cloud_filer_svc::DirEntry {
-            name: "file2.txt".to_string(),
-            ino: 101,
-            typ: 2,
-        },
+        mox_cloud_filer_svc::DirEntry { name: "file1.txt".to_string(), ino: 100, typ: 2 },
+        mox_cloud_filer_svc::DirEntry { name: "file2.txt".to_string(), ino: 101, typ: 2 },
     ];
     cache.put_dir_list(1, entries.clone());
 
@@ -995,11 +964,8 @@ fn if08_02_cache_hit_rate() {
 fn if08_03_cache_invalidation() {
     let cache = DirEntryCache::new().with_capacity(1000).with_ttl(300);
 
-    let entries = vec![mox_cloud_filer_svc::DirEntry {
-        name: "temp.txt".to_string(),
-        ino: 200,
-        typ: 2,
-    }];
+    let entries =
+        vec![mox_cloud_filer_svc::DirEntry { name: "temp.txt".to_string(), ino: 200, typ: 2 }];
     cache.put_dir_list(1, entries);
 
     // 失效前能查到
@@ -1054,13 +1020,11 @@ fn if08_05_cache_capacity_limit() {
 /// 测试：共享目录缓存
 #[test]
 fn if08_06_shared_dir_cache() {
-    let cache: SharedDirEntryCache = Arc::new(DirEntryCache::new().with_capacity(1000).with_ttl(300));
+    let cache: SharedDirEntryCache =
+        Arc::new(DirEntryCache::new().with_capacity(1000).with_ttl(300));
 
-    let entries = vec![mox_cloud_filer_svc::DirEntry {
-        name: "shared.txt".to_string(),
-        ino: 42,
-        typ: 2,
-    }];
+    let entries =
+        vec![mox_cloud_filer_svc::DirEntry { name: "shared.txt".to_string(), ino: 42, typ: 2 }];
     cache.put_dir_list(1, entries);
 
     assert!(cache.get_dir_list(1).is_some());
@@ -1096,9 +1060,7 @@ async fn if09_01_full_file_lifecycle() {
     assert_eq!(list[0].name, "data.txt");
 
     // 6. 重命名
-    f.rename("/workspace/data.txt", "/workspace/renamed.txt")
-        .await
-        .unwrap();
+    f.rename("/workspace/data.txt", "/workspace/renamed.txt").await.unwrap();
     assert!(f.stat("/workspace/data.txt").await.is_err());
     assert!(f.stat("/workspace/renamed.txt").await.is_ok());
 
@@ -1126,9 +1088,7 @@ async fn if09_03_concurrent_operations() {
         handles.push(tokio::spawn(async move {
             for j in 0..20 {
                 let path = format!("/concurrent/file_{}_{}.txt", i, j);
-                f.write(&path, 0, format!("data-{}-{}", i, j).as_bytes())
-                    .await
-                    .unwrap();
+                f.write(&path, 0, format!("data-{}-{}", i, j).as_bytes()).await.unwrap();
             }
         }));
     }

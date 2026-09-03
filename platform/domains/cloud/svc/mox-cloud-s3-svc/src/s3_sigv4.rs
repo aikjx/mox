@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -6,6 +6,9 @@
 //! S3 SigV4 Minimal Signature Implementation (AWS Signature Version 4)
 //!
 //! Pure RustCrypto HMAC-SHA256 implementation matching AWS docs exactly.
+
+#![allow(clippy::too_many_arguments)]
+// SigV4 signing functions carry many parameters by design (AWS signature spec decomposition);
 
 use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
@@ -58,18 +61,13 @@ pub fn authorization_header(
         .join(";");
 
     // Canonical headers section: each header is "name:value\n".
-    let canonical_headers_str: String = canonical_headers
-        .iter()
-        .map(|(k, v)| format!("{}:{}\n", k, v))
-        .collect();
+    let canonical_headers_str: String =
+        canonical_headers.iter().map(|(k, v)| format!("{}:{}\n", k, v)).collect();
 
     // Canonical querystring: sort by key, URL-encode keys and values.
     // For simplicity we match the AWS algorithm: sort pairs by (key, value),
     // output as "k=v&k2=v2". Empty query -> empty string.
-    let mut qp: Vec<(String, String)> = query
-        .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect();
+    let mut qp: Vec<(String, String)> = query.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     qp.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
     let canonical_query: String = qp
         .iter()
@@ -180,9 +178,9 @@ fn uri_encode(s: &str) -> String {
     let mut out = String::with_capacity(s.len() * 3 / 2);
     for b in s.as_bytes() {
         let c = *b;
-        if (c >= b'A' && c <= b'Z')
-            || (c >= b'a' && c <= b'z')
-            || (c >= b'0' && c <= b'9')
+        if c.is_ascii_uppercase()
+            || c.is_ascii_lowercase()
+            || c.is_ascii_digit()
             || c == b'-'
             || c == b'_'
             || c == b'.'
@@ -233,15 +231,11 @@ mod tests {
             .collect::<Vec<&str>>()
             .join(";");
 
-        let canonical_headers_str: String = canonical_headers
-            .iter()
-            .map(|(k, v)| format!("{}:{}\n", k, v))
-            .collect();
+        let canonical_headers_str: String =
+            canonical_headers.iter().map(|(k, v)| format!("{}:{}\n", k, v)).collect();
 
-        let mut qp: Vec<(String, String)> = query
-            .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect();
+        let mut qp: Vec<(String, String)> =
+            query.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
         qp.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
         let canonical_query: String = qp
             .iter()
@@ -324,26 +318,29 @@ mod tests {
         let payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"; // sha256("")
 
         let (auth, _signed_pairs) = auth_with_fixed_ts(
-            ts, date, ak, sk, region, service, method, uri, query, headers, payload_hash,
+            ts,
+            date,
+            ak,
+            sk,
+            region,
+            service,
+            method,
+            uri,
+            query,
+            headers,
+            payload_hash,
         );
 
         // Now independently verify the signature portion using the same
         // fixed-timestamp logic, asserting bitwise equality.
         // (a) Rebuild canonical headers.
-        let mut can_h = vec![
+        let mut can_h = [
             ("x-amz-date".to_string(), ts.to_string()),
             ("host".to_string(), "examplebucket.s3.amazonaws.com".to_string()),
         ];
         can_h.sort_by(|a, b| a.0.cmp(&b.0));
-        let signed_h = can_h
-            .iter()
-            .map(|(k, _)| k.as_str())
-            .collect::<Vec<_>>()
-            .join(";");
-        let can_h_str: String = can_h
-            .iter()
-            .map(|(k, v)| format!("{}:{}\n", k, v))
-            .collect();
+        let signed_h = can_h.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>().join(";");
+        let can_h_str: String = can_h.iter().map(|(k, v)| format!("{}:{}\n", k, v)).collect();
         // query sorted: query=value
         let can_q = "query=value".to_string();
         let canonical_request = format!(
@@ -370,10 +367,7 @@ mod tests {
         let expected_sig = to_hex_lower(&independent_hmac_sha256(&ksg, sts.as_bytes()));
 
         // Extract signature from auth string and compare.
-        let got_sig = auth
-            .split("Signature=")
-            .nth(1)
-            .expect("Signature= present");
+        let got_sig = auth.split("Signature=").nth(1).expect("Signature= present");
         assert_eq!(got_sig, expected_sig, "A1: signature bitwise mismatch");
         assert!(
             auth.contains(&format!("Credential={}/{}/", ak, date)),
@@ -399,14 +393,21 @@ mod tests {
         let headers = &[
             ("host".to_string(), "examplebucket.s3.amazonaws.com".to_string()),
             ("date".to_string(), "Fri, 24 May 2013 00:00:00 GMT".to_string()),
-            (
-                "x-amz-storage-class".to_string(),
-                "REDUCED_REDUNDANCY".to_string(),
-            ),
+            ("x-amz-storage-class".to_string(), "REDUCED_REDUNDANCY".to_string()),
         ];
 
         let (auth, _pairs) = auth_with_fixed_ts(
-            ts, date, ak, sk, region, service, method, uri, query, headers, &payload_hash,
+            ts,
+            date,
+            ak,
+            sk,
+            region,
+            service,
+            method,
+            uri,
+            query,
+            headers,
+            &payload_hash,
         );
 
         // Independently recompute: canonical_request -> string_to_sign -> hmac chain.
@@ -418,14 +419,9 @@ mod tests {
         ];
         can_h.sort_by(|a, b| a.0.cmp(&b.0));
         let signed_h = can_h.iter().map(|(k, _)| k.as_str()).collect::<Vec<_>>().join(";");
-        let can_h_str: String = can_h
-            .iter()
-            .map(|(k, v)| format!("{}:{}\n", k, v))
-            .collect();
-        let canonical_request = format!(
-            "{}\n{}\n\n{}\n{}\n{}",
-            method, uri, can_h_str, signed_h, payload_hash
-        );
+        let can_h_str: String = can_h.iter().map(|(k, v)| format!("{}:{}\n", k, v)).collect();
+        let canonical_request =
+            format!("{}\n{}\n\n{}\n{}\n{}", method, uri, can_h_str, signed_h, payload_hash);
         let scope = format!("{}/{}/{}/aws4_request", date, region, service);
         let cr_hash = sha256_hex(canonical_request.as_bytes());
         let sts = format!("AWS4-HMAC-SHA256\n{}\n{}\n{}", ts, scope, cr_hash);
@@ -451,8 +447,14 @@ mod tests {
         let ak = "AKIAEXAMPLE";
         let sk = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
         let (auth, pairs) = auth_with_fixed_ts(
-            ts, date, ak, sk, "us-east-1", "s3",
-            "PUT", "/bigobject",
+            ts,
+            date,
+            ak,
+            sk,
+            "us-east-1",
+            "s3",
+            "PUT",
+            "/bigobject",
             &[],
             &[("host".to_string(), "bucket.s3.amazonaws.com".to_string())],
             "UNSIGNED-PAYLOAD",
@@ -460,10 +462,7 @@ mod tests {
         // Authorization must be well-formed and mention the SignedHeaders
         // list (which includes x-amz-date + host).
         assert!(auth.starts_with("AWS4-HMAC-SHA256"), "A3: prefix ok");
-        assert!(
-            auth.contains("SignedHeaders="),
-            "A3: SignedHeaders present"
-        );
+        assert!(auth.contains("SignedHeaders="), "A3: SignedHeaders present");
         // Signed headers list sorted: host;x-amz-date
         assert!(
             auth.contains("SignedHeaders=host;x-amz-date"),
@@ -475,10 +474,7 @@ mod tests {
             pairs.iter().any(|(k, _)| k == "x-amz-date"),
             "A3: x-amz-date present in output pairs"
         );
-        assert!(
-            pairs.iter().any(|(k, _)| k == "host"),
-            "A3: host present in output pairs"
-        );
+        assert!(pairs.iter().any(|(k, _)| k == "host"), "A3: host present in output pairs");
     }
 
     // ===== A4. Query sort order =====
@@ -494,8 +490,7 @@ mod tests {
             ("apple".into(), "a".into()),
             ("mango".into(), "m".into()),
         ];
-        let headers: Vec<(String, String)> =
-            vec![("host".into(), "b.s3.amazonaws.com".into())];
+        let headers: Vec<(String, String)> = vec![("host".into(), "b.s3.amazonaws.com".into())];
 
         // We need to extract the canonical querystring ordering. Since the
         // public API returns the Authorization header whose SignedHeaders
@@ -508,12 +503,30 @@ mod tests {
             ("zebra".into(), "z".into()),
         ];
         let (auth_a, _) = auth_with_fixed_ts(
-            ts, date, ak, sk, "us-east-1", "s3", "GET", "/",
-            &scrambled, &headers, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            ts,
+            date,
+            ak,
+            sk,
+            "us-east-1",
+            "s3",
+            "GET",
+            "/",
+            &scrambled,
+            &headers,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         );
         let (auth_b, _) = auth_with_fixed_ts(
-            ts, date, ak, sk, "us-east-1", "s3", "GET", "/",
-            &ordered, &headers, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            ts,
+            date,
+            ak,
+            sk,
+            "us-east-1",
+            "s3",
+            "GET",
+            "/",
+            &ordered,
+            &headers,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         );
         assert_eq!(
             auth_a, auth_b,
@@ -535,14 +548,30 @@ mod tests {
         let query = &[("prefix".into(), "photos/".into()), ("max-keys".into(), "100".into())];
 
         let (first, first_pairs) = auth_with_fixed_ts(
-            ts, date, ak, sk, "us-east-1", "s3", "GET", "/photos",
-            query, headers,
+            ts,
+            date,
+            ak,
+            sk,
+            "us-east-1",
+            "s3",
+            "GET",
+            "/photos",
+            query,
+            headers,
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         );
         for _ in 0..9 {
             let (cur, cur_pairs) = auth_with_fixed_ts(
-                ts, date, ak, sk, "us-east-1", "s3", "GET", "/photos",
-                query, headers,
+                ts,
+                date,
+                ak,
+                sk,
+                "us-east-1",
+                "s3",
+                "GET",
+                "/photos",
+                query,
+                headers,
                 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             );
             assert_eq!(
@@ -550,10 +579,7 @@ mod tests {
                 first.as_bytes(),
                 "A5: Authorization header not bytewise identical across runs"
             );
-            assert_eq!(
-                cur_pairs, first_pairs,
-                "A5: signed header pairs differ across runs"
-            );
+            assert_eq!(cur_pairs, first_pairs, "A5: signed header pairs differ across runs");
         }
     }
 }

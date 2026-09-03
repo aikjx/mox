@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -32,6 +32,7 @@ use std::collections::HashMap;
 
 use crate::market::{load_package, MarketState, OperatorPackage};
 use crate::market_migration::now_rfc3339;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // 复用内核类型
 use mox_ai_agent_svc::flow_engine::{
@@ -436,13 +437,13 @@ pub fn dsl_routes() -> Router<MarketState> {
 async fn dsl_handler(
     State(_s): State<MarketState>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     match load_package(&id) {
         Ok(pkg) => {
             let dsl = package_to_flow_definition(&pkg);
-            Json(serde_json::json!({ "success": true, "dsl": dsl, "schema_version": "2026.1" }))
+            api_ok(serde_json::json!({ "success": true, "dsl": dsl, "schema_version": "2026.1" }))
         }
-        Err(e) => Json(serde_json::json!({ "success": false, "error": e })),
+        Err(e) => api_error(500, e),
     }
 }
 
@@ -450,14 +451,14 @@ async fn dsl_handler(
 async fn workflow_handler(
     State(_s): State<MarketState>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     match load_package(&id) {
         Ok(pkg) => {
             let wf = package_to_business_workflow(&pkg);
             let code = generate_workflow_code(&wf);
-            Json(serde_json::json!({ "success": true, "workflow": wf, "code": code }))
+            api_ok(serde_json::json!({ "success": true, "workflow": wf, "code": code }))
         }
-        Err(e) => Json(serde_json::json!({ "success": false, "error": e })),
+        Err(e) => api_error(500, e),
     }
 }
 
@@ -485,7 +486,7 @@ async fn convert_handler(
     State(_s): State<MarketState>,
     Path(id): Path<String>,
     Json(req): Json<ConvertRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let name = if req.name.is_empty() {
         format!("convert-{}", id)
     } else {
@@ -494,7 +495,7 @@ async fn convert_handler(
     let dsl = flowchart_to_definition(&id, &name, &req.requirement, &req.nodes, &req.edges);
     let wf = flow_definition_to_business_workflow(&dsl);
     let code = generate_workflow_code(&wf);
-    Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "success": true,
         "dsl": dsl,
         "workflow": wf,

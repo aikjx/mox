@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -10,9 +10,11 @@
 
 use std::sync::{Arc, Mutex};
 
-use crate::error::FilerResult;
-use crate::filer_server::{FilerServer, ObjectStorage};
-use crate::meta_trait::{Attr, MetaStorageProvider, META_BACKENDS};
+use crate::{
+    error::FilerResult,
+    filer_server::{FilerServer, ObjectStorage},
+    meta_trait::{Attr, MetaStorageProvider, META_BACKENDS},
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct NameAttr {

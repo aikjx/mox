@@ -63,28 +63,27 @@ impl PlacementNode {
 }
 
 /// 数据温度
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord, Default,
+)]
 pub enum DataTemperature {
+    #[default]
     Hot = 0,
     Warm = 1,
     Cold = 2,
     Archive = 3,
 }
 
-impl Default for DataTemperature {
-    fn default() -> Self {
-        DataTemperature::Hot
-    }
-}
 
 /// 放置策略类型
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum PlacementStrategyType {
     /// 容量优先：选择剩余空间最大的节点
     CapacityFirst,
     /// 负载优先：选择负载最低的节点
     LoadFirst,
     /// 均衡优先：综合容量和负载，使集群最均衡
+    #[default]
     Balanced,
     /// 拓扑感知：优先不同机架/可用区
     TopologyAware,
@@ -92,11 +91,6 @@ pub enum PlacementStrategyType {
     CostOptimized,
 }
 
-impl Default for PlacementStrategyType {
-    fn default() -> Self {
-        PlacementStrategyType::Balanced
-    }
-}
 
 /// 放置策略权重配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -272,31 +266,20 @@ impl PlacementEngine {
         }
 
         // 过滤不符合约束的节点
-        let filtered: Vec<&PlacementNode> = candidates
-            .iter()
-            .filter(|n| self.meets_constraints(n, constraints))
-            .collect();
+        let filtered: Vec<&PlacementNode> =
+            candidates.iter().filter(|n| self.meets_constraints(n, constraints)).collect();
 
         if filtered.is_empty() {
             return Vec::new();
         }
 
         // 计算各项指标的范围，用于归一化
-        let min_usage = filtered
-            .iter()
-            .map(|n| n.usage_pct())
-            .fold(f64::INFINITY, f64::min);
-        let max_usage = filtered
-            .iter()
-            .map(|n| n.usage_pct())
-            .fold(f64::NEG_INFINITY, f64::max);
+        let min_usage = filtered.iter().map(|n| n.usage_pct()).fold(f64::INFINITY, f64::min);
+        let max_usage = filtered.iter().map(|n| n.usage_pct()).fold(f64::NEG_INFINITY, f64::max);
         let usage_range = (max_usage - min_usage).max(1.0);
 
         let min_cpu = filtered.iter().map(|n| n.cpu_pct as f64).fold(f64::INFINITY, f64::min);
-        let max_cpu = filtered
-            .iter()
-            .map(|n| n.cpu_pct as f64)
-            .fold(f64::NEG_INFINITY, f64::max);
+        let max_cpu = filtered.iter().map(|n| n.cpu_pct as f64).fold(f64::NEG_INFINITY, f64::max);
         let cpu_range = (max_cpu - min_cpu).max(1.0);
 
         let min_migrations = filtered
@@ -356,7 +339,7 @@ impl PlacementEngine {
 
                 PlacementCandidate {
                     node: (*node).clone(),
-                    score: total_score.max(0.0).min(100.0),
+                    score: total_score.clamp(0.0, 100.0),
                     score_breakdown: ScoreBreakdown {
                         capacity_score,
                         load_score,
@@ -527,21 +510,14 @@ impl PlacementEngine {
         }
 
         // 计算使用率的标准差
-        let usages: Vec<f64> = healthy_nodes
-            .iter()
-            .map(|n| n.usage_pct())
-            .collect();
+        let usages: Vec<f64> = healthy_nodes.iter().map(|n| n.usage_pct()).collect();
 
         let mean = usages.iter().sum::<f64>() / usages.len() as f64;
         if mean == 0.0 {
             return 100.0;
         }
 
-        let variance = usages
-            .iter()
-            .map(|u| (u - mean).powi(2))
-            .sum::<f64>()
-            / usages.len() as f64;
+        let variance = usages.iter().map(|u| (u - mean).powi(2)).sum::<f64>() / usages.len() as f64;
         let std_dev = variance.sqrt();
 
         // 变异系数 = 标准差 / 均值
@@ -550,7 +526,7 @@ impl PlacementEngine {
         // 转换为 0-100 的均衡度分数：cv 越小越均衡
         // 假设 cv=0 时得 100 分，cv=0.5 时得 0 分
         let balance_score = (1.0 - cv / 0.5) * 100.0;
-        balance_score.max(0.0).min(100.0)
+        balance_score.clamp(0.0, 100.0)
     }
 
     /// 预测迁移后的均衡度改善
@@ -681,8 +657,7 @@ mod tests {
             make_node("n2", 1000, 990, "r2", "z1"), // 10 free
         ];
 
-        let mut constraints = PlacementConstraints::default();
-        constraints.min_free_bytes = 100; // 需要至少 100 bytes 空闲
+        let constraints = PlacementConstraints { min_free_bytes: 100, ..Default::default() }; // 需要至少 100 bytes 空闲
 
         let target = engine.select_target(&nodes, &constraints).unwrap();
         assert_eq!(target.node.node_id, "n1");
@@ -813,10 +788,8 @@ mod tests {
     fn test_constraints_excluded_racks() {
         let engine = PlacementEngine::new();
 
-        let nodes = vec![
-            make_node("n1", 1000, 100, "r1", "z1"),
-            make_node("n2", 1000, 200, "r2", "z1"),
-        ];
+        let nodes =
+            vec![make_node("n1", 1000, 100, "r1", "z1"), make_node("n2", 1000, 200, "r2", "z1")];
 
         let mut constraints = PlacementConstraints::default();
         constraints.excluded_racks.insert("r1".to_string());
@@ -835,8 +808,10 @@ mod tests {
         n2.data_center = "dc2".to_string();
 
         let nodes = vec![n1, n2];
-        let mut constraints = PlacementConstraints::default();
-        constraints.same_data_center = Some("dc1".to_string());
+        let constraints = PlacementConstraints {
+            same_data_center: Some("dc1".to_string()),
+            ..Default::default()
+        };
 
         let target = engine.select_target(&nodes, &constraints).unwrap();
         assert_eq!(target.node.node_id, "n1");

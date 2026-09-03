@@ -1,17 +1,21 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-use crate::error::{MasterError, MasterResult};
-use crate::raft_master::{RaftConfig, RaftMaster, RaftRole};
-use crate::scheduler::DistributedScheduler;
-use crate::snapshot::{now_millis, SnapshotId, SnapshotManager};
-use crate::volume_allocator::{VolumeAllocation, VolumeAllocator, VolumeInfo};
-use crate::volume_replica::{ReplicaHealth, ReplicaInfo, ReplicaSetManager};
+use crate::{
+    error::{MasterError, MasterResult},
+    raft_master::{RaftConfig, RaftMaster, RaftRole},
+    scheduler::DistributedScheduler,
+    snapshot::{now_millis, SnapshotId, SnapshotManager},
+    volume_allocator::{VolumeAllocation, VolumeAllocator, VolumeInfo},
+    volume_replica::{ReplicaHealth, ReplicaInfo, ReplicaSetManager},
+};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 pub type VolumeId = String;
 
@@ -23,10 +27,7 @@ pub struct MasterConfig {
 
 impl Default for MasterConfig {
     fn default() -> Self {
-        MasterConfig {
-            heartbeat_timeout_ms: 1500,
-            max_replica: 3,
-        }
+        MasterConfig { heartbeat_timeout_ms: 1500, max_replica: 3 }
     }
 }
 
@@ -40,12 +41,7 @@ pub struct VolumeLoadReport {
 
 impl Default for VolumeLoadReport {
     fn default() -> Self {
-        VolumeLoadReport {
-            used_bytes: 0,
-            chunk_count: 0,
-            cpu_pct: 0,
-            is_healthy: true,
-        }
+        VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true }
     }
 }
 
@@ -101,18 +97,9 @@ impl Metrics {
 
     pub fn get_all(&self) -> HashMap<String, u64> {
         let mut m = HashMap::new();
-        m.insert(
-            "heartbeats_received".into(),
-            *self.heartbeats_received.lock(),
-        );
-        m.insert(
-            "volumes_allocations_total".into(),
-            *self.volumes_allocations_total.lock(),
-        );
-        m.insert(
-            "replicas_fill_triggers".into(),
-            *self.replicas_fill_triggers.lock(),
-        );
+        m.insert("heartbeats_received".into(), *self.heartbeats_received.lock());
+        m.insert("volumes_allocations_total".into(), *self.volumes_allocations_total.lock());
+        m.insert("replicas_fill_triggers".into(), *self.replicas_fill_triggers.lock());
         m.insert("snapshots_taken".into(), *self.snapshots_taken.lock());
         m
     }
@@ -191,8 +178,7 @@ impl MasterServer {
             rng.gen_range(0..=0xFFFFu32),
             rng.gen_range(0..=0xFFFFu32)
         );
-        self.allocator
-            .register_volume(id.clone(), addr.clone(), capacity);
+        self.allocator.register_volume(id.clone(), addr.clone(), capacity);
         self.volume_capacities.lock().insert(id.clone(), capacity);
         self.last_heartbeat.lock().insert(id.clone(), now_millis());
         id
@@ -207,9 +193,7 @@ impl MasterServer {
         }
         self.metrics.inc_heartbeats();
         let now = now_millis();
-        self.last_heartbeat
-            .lock()
-            .insert(volume_id.to_string(), now);
+        self.last_heartbeat.lock().insert(volume_id.to_string(), now);
 
         // alive 根据 load.is_healthy + 时间综合
         self.allocator.update_heartbeat(volume_id, load.is_healthy);
@@ -342,9 +326,7 @@ impl MasterServer {
         volume_id: &str,
         manifest: BTreeMap<String, Vec<u8>>,
     ) -> MasterResult<SnapshotId> {
-        let sid = self
-            .snapshot_manager
-            .take_snapshot(volume_id, manifest.clone())?;
+        let sid = self.snapshot_manager.take_snapshot(volume_id, manifest.clone())?;
         self.metrics.inc_snapshots();
         self.snapshot_manifest_store
             .lock()
@@ -430,10 +412,7 @@ impl MasterServer {
                 .saturating_add(self.replica_manager.refill_trigger_count()),
         );
         // snapshots_taken 同步 snapshot_manager 计数
-        m.insert(
-            "snapshots_taken".into(),
-            self.snapshot_manager.snapshots_taken_count(),
-        );
+        m.insert("snapshots_taken".into(), self.snapshot_manager.snapshots_taken_count());
         // Raft 指标
         m.extend(self.raft.metrics().snapshot());
         // 调度器指标
@@ -456,10 +435,7 @@ impl MasterServer {
         let leader_id = self.raft.leader_id()?;
         // 从节点列表中查找地址
         let nodes = self.raft.list_nodes();
-        nodes
-            .iter()
-            .find(|n| n.node_id == leader_id)
-            .map(|n| n.addr.clone())
+        nodes.iter().find(|n| n.node_id == leader_id).map(|n| n.addr.clone())
     }
 
     /// 返回 refill 触发总计数（metrics + replica_manager 合计）

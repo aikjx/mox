@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -31,20 +31,12 @@ pub struct ReplicaSet {
 
 impl ReplicaSet {
     pub fn new(set_id: String, replica_count: u8) -> Self {
-        Self {
-            set_id,
-            replicas: Vec::with_capacity(replica_count as usize),
-            replica_count,
-        }
+        Self { set_id, replicas: Vec::with_capacity(replica_count as usize), replica_count }
     }
 
     pub fn add_replica(&mut self, info: ReplicaInfo) {
         // 同 volume_id 已存在则更新
-        if let Some(pos) = self
-            .replicas
-            .iter()
-            .position(|r| r.volume_id == info.volume_id)
-        {
+        if let Some(pos) = self.replicas.iter().position(|r| r.volume_id == info.volume_id) {
             self.replicas[pos] = info;
         } else {
             self.replicas.push(info);
@@ -65,10 +57,7 @@ impl ReplicaSet {
     }
 
     pub fn healthy_count(&self) -> usize {
-        self.replicas
-            .iter()
-            .filter(|r| r.health == ReplicaHealth::Healthy)
-            .count()
+        self.replicas.iter().filter(|r| r.health == ReplicaHealth::Healthy).count()
     }
 
     pub fn check_write_ok(&self) -> MasterResult<()> {

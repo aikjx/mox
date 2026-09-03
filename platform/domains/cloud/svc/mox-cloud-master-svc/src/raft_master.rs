@@ -22,8 +22,10 @@
 
 use crate::error::{MasterError, MasterResult};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::Arc,
+};
 
 /// Master 节点角色
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -306,34 +308,13 @@ impl RaftMetrics {
 
     pub fn snapshot(&self) -> HashMap<String, u64> {
         let mut m = HashMap::new();
-        m.insert(
-            "raft_elections_total".into(),
-            *self.elections_total.lock(),
-        );
-        m.insert(
-            "raft_leader_elections_won".into(),
-            *self.leader_elections_won.lock(),
-        );
-        m.insert(
-            "raft_logs_committed".into(),
-            *self.logs_committed.lock(),
-        );
-        m.insert(
-            "raft_logs_applied".into(),
-            *self.logs_applied.lock(),
-        );
-        m.insert(
-            "raft_snapshots_created".into(),
-            *self.snapshots_created.lock(),
-        );
-        m.insert(
-            "raft_heartbeats_sent".into(),
-            *self.heartbeats_sent.lock(),
-        );
-        m.insert(
-            "raft_heartbeats_received".into(),
-            *self.heartbeats_received.lock(),
-        );
+        m.insert("raft_elections_total".into(), *self.elections_total.lock());
+        m.insert("raft_leader_elections_won".into(), *self.leader_elections_won.lock());
+        m.insert("raft_logs_committed".into(), *self.logs_committed.lock());
+        m.insert("raft_logs_applied".into(), *self.logs_applied.lock());
+        m.insert("raft_snapshots_created".into(), *self.snapshots_created.lock());
+        m.insert("raft_heartbeats_sent".into(), *self.heartbeats_sent.lock());
+        m.insert("raft_heartbeats_received".into(), *self.heartbeats_received.lock());
         m
     }
 }
@@ -478,21 +459,14 @@ impl RaftMaster {
     /// 追加日志条目（仅 Leader 调用）
     pub fn append_log(&self, log_type: RaftLogType, data: Vec<u8>) -> MasterResult<u64> {
         if *self.role.read() != RaftRole::Leader {
-            return Err(MasterError::Internal(
-                "not leader, cannot append log".to_string(),
-            ));
+            return Err(MasterError::Internal("not leader, cannot append log".to_string()));
         }
         let term = *self.current_term.lock();
         let mut log = self.log.lock();
         let base = *self.log_base_index.lock();
         let next_index = log.back().map(|e| e.index + 1).unwrap_or(base + 1);
-        let entry = RaftLogEntry {
-            index: next_index,
-            term,
-            log_type,
-            data,
-            created_at_ms: now_ms(),
-        };
+        let entry =
+            RaftLogEntry { index: next_index, term, log_type, data, created_at_ms: now_ms() };
         log.push_back(entry);
         Ok(next_index)
     }
@@ -542,10 +516,7 @@ impl RaftMaster {
 
         // 如果请求任期小于当前任期，拒绝
         if req.term < *current_term {
-            return RequestVoteResponse {
-                term: *current_term,
-                vote_granted: false,
-            };
+            return RequestVoteResponse { term: *current_term, vote_granted: false };
         }
 
         // 如果请求任期大于当前任期，更新任期并重置投票
@@ -568,15 +539,9 @@ impl RaftMaster {
             *self.voted_for.lock() = Some(req.candidate_id.clone());
             // 重置选举计时器
             *self.last_heartbeat_time_ms.lock() = now_ms();
-            RequestVoteResponse {
-                term: req.term,
-                vote_granted: true,
-            }
+            RequestVoteResponse { term: req.term, vote_granted: true }
         } else {
-            RequestVoteResponse {
-                term: req.term,
-                vote_granted: false,
-            }
+            RequestVoteResponse { term: req.term, vote_granted: false }
         }
     }
 
@@ -615,12 +580,15 @@ impl RaftMaster {
         let mut ps = self.peer_state.lock();
         for node in &nodes {
             if node.node_id != self.config.node_id {
-                ps.insert(node.node_id.clone(), PeerReplicationState {
-                    next_index: last_idx + 1,
-                    match_index: 0,
-                    last_append_time_ms: now_ms(),
-                    snapshot_in_progress: false,
-                });
+                ps.insert(
+                    node.node_id.clone(),
+                    PeerReplicationState {
+                        next_index: last_idx + 1,
+                        match_index: 0,
+                        last_append_time_ms: now_ms(),
+                        snapshot_in_progress: false,
+                    },
+                );
             }
         }
         drop(ps);
@@ -669,10 +637,7 @@ impl RaftMaster {
         // 计算 prev_log_index 和 prev_log_term
         let prev_log_index = next_idx - 1;
         let prev_offset = prev_log_index.saturating_sub(base) as usize;
-        let prev_log_term = log
-            .get(prev_offset)
-            .map(|e| e.term)
-            .unwrap_or(0);
+        let prev_log_term = log.get(prev_offset).map(|e| e.term).unwrap_or(0);
 
         // 收集要发送的日志条目（最多一次发 100 条）
         let start_offset = next_idx.saturating_sub(base) as usize;
@@ -744,12 +709,8 @@ impl RaftMaster {
                 let first_entry_idx = req.entries[0].index;
                 if first_entry_idx <= base {
                     // 这些日志已经在快照里了，跳过前面的
-                    let entries_after_base: Vec<RaftLogEntry> = req
-                        .entries
-                        .iter()
-                        .filter(|e| e.index > base)
-                        .cloned()
-                        .collect();
+                    let entries_after_base: Vec<RaftLogEntry> =
+                        req.entries.iter().filter(|e| e.index > base).cloned().collect();
                     if entries_after_base.is_empty() {
                         // 所有条目都在快照中，直接成功
                         let match_idx = req.entries.last().map(|e| e.index).unwrap_or(base);
@@ -793,8 +754,7 @@ impl RaftMaster {
         }
 
         // 一致性检查通过，追加新日志
-        let mut insert_idx = req.prev_log_index + 1;
-        for entry in &req.entries {
+        for (insert_idx, entry) in (req.prev_log_index + 1..).zip(req.entries.iter()) {
             let offset = insert_idx.saturating_sub(base) as usize;
             if offset < log.len() {
                 // 该位置已有日志
@@ -807,26 +767,16 @@ impl RaftMaster {
             } else {
                 log.push_back(entry.clone());
             }
-            insert_idx += 1;
         }
 
-        let match_index = req
-            .entries
-            .last()
-            .map(|e| e.index)
-            .unwrap_or(req.prev_log_index);
+        let match_index = req.entries.last().map(|e| e.index).unwrap_or(req.prev_log_index);
 
         drop(log);
 
         // 更新 commit_index
         self.update_commit_index(req.leader_commit);
 
-        AppendEntriesResponse {
-            term: req.term,
-            success: true,
-            match_index,
-            conflict_index: None,
-        }
+        AppendEntriesResponse { term: req.term, success: true, match_index, conflict_index: None }
     }
 
     /// 处理 AppendEntries 响应（Leader 调用）
@@ -968,7 +918,11 @@ impl RaftMaster {
 
     /// 创建快照（压缩日志到指定索引）
     /// snapshot_data 由调用方提供状态机序列化后的数据
-    pub fn create_snapshot(&self, up_to_index: u64, snapshot_data: Vec<u8>) -> MasterResult<RaftSnapshotMeta> {
+    pub fn create_snapshot(
+        &self,
+        up_to_index: u64,
+        snapshot_data: Vec<u8>,
+    ) -> MasterResult<RaftSnapshotMeta> {
         let mut log = self.log.lock();
         let base = *self.log_base_index.lock();
 
@@ -1001,7 +955,12 @@ impl RaftMaster {
     }
 
     /// 安装快照（Follower 收到 Leader 的快照后调用）
-    pub fn install_snapshot(&self, last_index: u64, last_term: u64, _data: Vec<u8>) -> MasterResult<()> {
+    pub fn install_snapshot(
+        &self,
+        last_index: u64,
+        last_term: u64,
+        _data: Vec<u8>,
+    ) -> MasterResult<()> {
         // 简化实现：替换日志为快照对应的哨兵条目
         let mut log = self.log.lock();
         log.clear();
@@ -1027,12 +986,8 @@ impl RaftMaster {
         }
         drop(applied);
 
-        let meta = RaftSnapshotMeta {
-            last_index,
-            last_term,
-            created_at_ms: now_ms(),
-            size_bytes: 0,
-        };
+        let meta =
+            RaftSnapshotMeta { last_index, last_term, created_at_ms: now_ms(), size_bytes: 0 };
         *self.snapshot_meta.lock() = Some(meta);
 
         Ok(())
@@ -1066,12 +1021,8 @@ impl RaftMaster {
                 continue;
             }
             // 取该节点的 match_index 作为 prev_log_index
-            let prev_idx = self
-                .peer_state
-                .lock()
-                .get(&node.node_id)
-                .map(|p| p.match_index)
-                .unwrap_or(0);
+            let prev_idx =
+                self.peer_state.lock().get(&node.node_id).map(|p| p.match_index).unwrap_or(0);
 
             let prev_term = if prev_idx == 0 {
                 0
@@ -1104,14 +1055,14 @@ impl RaftMaster {
                 // Leader 检查是否需要发送心跳
                 // 调用方应周期性调用 build_heartbeat
                 RaftTickAction::SendHeartbeat
-            }
+            },
             RaftRole::Follower | RaftRole::Standby => {
                 if self.is_election_timeout() && role == RaftRole::Follower {
                     RaftTickAction::StartElection
                 } else {
                     RaftTickAction::None
                 }
-            }
+            },
         }
     }
 }
@@ -1179,9 +1130,7 @@ mod tests {
         // 先手动设为 Leader 才能 append
         *raft.role.write() = RaftRole::Leader;
 
-        let idx = raft
-            .append_log(RaftLogType::VolumeAllocation, b"test".to_vec())
-            .unwrap();
+        let idx = raft.append_log(RaftLogType::VolumeAllocation, b"test".to_vec()).unwrap();
         assert_eq!(idx, 1);
 
         let entry = raft.get_log_entry(1).unwrap();
@@ -1215,7 +1164,7 @@ mod tests {
 
     #[test]
     fn test_request_vote_old_term_rejected() {
-        let raft1 = make_raft("node1");
+        let _raft1 = make_raft("node1");
         let raft2 = make_raft("node2");
 
         // 让 raft2 的任期更高
@@ -1286,9 +1235,7 @@ mod tests {
         *leader.role.write() = RaftRole::Leader;
 
         // Leader 追加日志
-        let idx = leader
-            .append_log(RaftLogType::VolumeAllocation, b"data1".to_vec())
-            .unwrap();
+        let idx = leader.append_log(RaftLogType::VolumeAllocation, b"data1".to_vec()).unwrap();
         assert_eq!(idx, 1);
 
         // 构造 AppendEntries 请求
@@ -1432,11 +1379,8 @@ mod tests {
 
         // 添加 50 条日志
         for i in 0..50 {
-            raft.append_log(
-                RaftLogType::VolumeAllocation,
-                format!("data-{}", i).into_bytes(),
-            )
-            .unwrap();
+            raft.append_log(RaftLogType::VolumeAllocation, format!("data-{}", i).into_bytes())
+                .unwrap();
         }
 
         assert_eq!(raft.last_log_index(), 50);
@@ -1490,11 +1434,8 @@ mod tests {
         *raft.current_term.lock() = 1;
 
         for i in 0..10 {
-            raft.append_log(
-                RaftLogType::Heartbeat,
-                format!("hb-{}", i).into_bytes(),
-            )
-            .unwrap();
+            raft.append_log(RaftLogType::Heartbeat, format!("hb-{}", i).into_bytes())
+                .unwrap();
         }
 
         // 手动设置 commit_index

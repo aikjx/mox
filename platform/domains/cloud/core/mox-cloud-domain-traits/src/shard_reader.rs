@@ -54,11 +54,7 @@ pub struct HedgeConfig {
 
 impl Default for HedgeConfig {
     fn default() -> Self {
-        Self {
-            hedge_delay_ms: 500,
-            max_attempts: 3,
-            locality_sort: true,
-        }
+        Self { hedge_delay_ms: 500, max_attempts: 3, locality_sort: true }
     }
 }
 
@@ -98,11 +94,7 @@ pub enum ReadError {
     #[error("read timeout after {0:?}")]
     Timeout(Duration),
     #[error("shard corrupted at {location}: expected checksum {expected}, got {actual}")]
-    ShardCorrupted {
-        location: String,
-        expected: String,
-        actual: String,
-    },
+    ShardCorrupted { location: String, expected: String, actual: String },
     #[error("backend unavailable: {0}")]
     BackendUnavailable(String),
 }
@@ -209,9 +201,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_trait_object_safe() {
-        let reader: Box<dyn ShardReader> = Box::new(DummyReader {
-            ep: "reader-1".into(),
-        });
+        let reader: Box<dyn ShardReader> = Box::new(DummyReader { ep: "reader-1".into() });
 
         assert_eq!(reader.endpoint(), "reader-1");
         assert!(!reader.supports_cancellation());

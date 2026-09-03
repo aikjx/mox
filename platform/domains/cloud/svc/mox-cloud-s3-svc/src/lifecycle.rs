@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -29,15 +29,19 @@
 //! 本实现为自研重写，未直接复制代码。
 
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
-use std::sync::Arc;
+use std::{
+    collections::{BTreeMap, HashSet},
+    sync::Arc,
+};
 
 use crate::scanner::{ScanBudget, ScanBudgetTracker, ScanStats};
 
 /// 存储类枚举
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
+#[derive(Default)]
 pub enum StorageClass {
+    #[default]
     Hot,
     Warm,
     Cold,
@@ -56,11 +60,6 @@ impl StorageClass {
     }
 }
 
-impl Default for StorageClass {
-    fn default() -> Self {
-        StorageClass::Hot
-    }
-}
 
 // ---------------------------------------------------------------------------
 // P1: 复制等待门控 — 对象复制状态（生命周期视图，简化枚举）
@@ -75,8 +74,10 @@ impl Default for StorageClass {
 /// 同名但位于不同模块；lib.rs 中以别名 `LifecycleReplicationStatus` 导出以避免冲突。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[derive(Default)]
 pub enum ObjectReplicationStatus {
     /// 未配置复制规则（不门控）
+    #[default]
     None,
     /// 复制待处理（门控 Delete/Transition）
     Pending,
@@ -86,11 +87,6 @@ pub enum ObjectReplicationStatus {
     Failed,
 }
 
-impl Default for ObjectReplicationStatus {
-    fn default() -> Self {
-        Self::None
-    }
-}
 
 /// 未启用版本化时的默认版本 ID（S3 约定）
 fn default_version_id() -> String {
@@ -197,7 +193,7 @@ pub fn replication_status_blocks_lifecycle(
                     | TransitionAction::DeleteVersion
                     | TransitionAction::DeleteAllVersions
             )
-        }
+        },
         _ => false,
     }
 }
@@ -339,16 +335,12 @@ impl HotWarmColdLifecycle {
 
     /// 标记 (bucket, key) 为 DeleteAllVersions 候选（命中桶级全版本删除规则时调用）
     pub fn mark_delete_all_candidate(&self, bucket: &str, key: &str) {
-        self.delete_all_candidates
-            .lock()
-            .insert((bucket.to_string(), key.to_string()));
+        self.delete_all_candidates.lock().insert((bucket.to_string(), key.to_string()));
     }
 
     /// 取消 DeleteAllVersions 候选标记
     pub fn unmark_delete_all_candidate(&self, bucket: &str, key: &str) {
-        self.delete_all_candidates
-            .lock()
-            .remove(&(bucket.to_string(), key.to_string()));
+        self.delete_all_candidates.lock().remove(&(bucket.to_string(), key.to_string()));
     }
 
     /// 设置桶是否启用 Object Lock
@@ -482,7 +474,7 @@ impl HotWarmColdLifecycle {
             StorageClass::Hot => {
                 meta.last_accessed_at_ms = now_ms;
                 Some((StorageClass::Hot, false))
-            }
+            },
             StorageClass::Warm => {
                 meta.class = StorageClass::Hot;
                 meta.last_accessed_at_ms = now_ms;
@@ -490,7 +482,7 @@ impl HotWarmColdLifecycle {
                 *self.restore_counter.lock() += 1;
                 *self.transition_counter.lock() += 1;
                 Some((StorageClass::Hot, true))
-            }
+            },
             StorageClass::Cold => {
                 meta.class = StorageClass::Hot;
                 meta.last_accessed_at_ms = now_ms;
@@ -498,7 +490,7 @@ impl HotWarmColdLifecycle {
                 *self.restore_counter.lock() += 1;
                 *self.transition_counter.lock() += 1;
                 Some((StorageClass::Hot, true))
-            }
+            },
             StorageClass::Glacier => {
                 meta.class = StorageClass::Hot;
                 meta.last_accessed_at_ms = now_ms;
@@ -506,7 +498,7 @@ impl HotWarmColdLifecycle {
                 *self.restore_counter.lock() += 1;
                 *self.transition_counter.lock() += 1;
                 Some((StorageClass::Hot, true))
-            }
+            },
         }
     }
 
@@ -526,15 +518,12 @@ impl HotWarmColdLifecycle {
         let mut plans: Vec<TransitionPlan> = Vec::new();
 
         // v2.3: 如果配置了扫描预算，创建追踪器
-        let budget_tracker: Option<ScanBudgetTracker> = self
-            .scan_budget
-            .as_ref()
-            .map(|b| ScanBudgetTracker::new(b.clone()));
+        let budget_tracker: Option<ScanBudgetTracker> =
+            self.scan_budget.as_ref().map(|b| ScanBudgetTracker::new(b.clone()));
 
         // 快照 DeleteAllVersions 候选集合与 Object Lock 桶集合
         // （避免在持有 objects 锁时嵌套加锁）
-        let delete_all_keys: HashSet<(String, String)> =
-            self.delete_all_candidates.lock().clone();
+        let delete_all_keys: HashSet<(String, String)> = self.delete_all_candidates.lock().clone();
         let object_lock_buckets: HashSet<String> = self.object_lock_buckets.lock().clone();
 
         let mut objs = self.objects.lock();
@@ -555,7 +544,13 @@ impl HotWarmColdLifecycle {
                 let object_lock_enabled = object_lock_buckets.contains(&k.0);
                 let versions = [meta.clone()];
                 if self
-                    .evaluate_delete_all_versions(&k.0, &k.1, &versions, now_ms, object_lock_enabled)
+                    .evaluate_delete_all_versions(
+                        &k.0,
+                        &k.1,
+                        &versions,
+                        now_ms,
+                        object_lock_enabled,
+                    )
                     .is_some()
                 {
                     // 短路：跳过该对象的逐版本迁移评估
@@ -564,10 +559,8 @@ impl HotWarmColdLifecycle {
             }
 
             // 使用 max(created, last_accessed, last_transition) 作为"活跃度锚"
-            let anchor = meta
-                .created_at_ms
-                .max(meta.last_accessed_at_ms)
-                .max(meta.last_transition_ms);
+            let anchor =
+                meta.created_at_ms.max(meta.last_accessed_at_ms).max(meta.last_transition_ms);
             let age = now_ms.saturating_sub(anchor);
             match meta.class {
                 StorageClass::Hot if age >= self.thresholds.hot_to_warm_ms => {
@@ -584,8 +577,7 @@ impl HotWarmColdLifecycle {
                         ),
                     };
                     // ---- P1: 复制等待门控 ----
-                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action)
-                    {
+                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action) {
                         *self.replication_blocked_counter.lock() += 1;
                         continue;
                     }
@@ -599,7 +591,7 @@ impl HotWarmColdLifecycle {
                         }
                     }
                     plans.push(plan);
-                }
+                },
                 StorageClass::Warm if age >= self.thresholds.warm_to_cold_ms => {
                     let plan = TransitionPlan {
                         bucket: k.0.clone(),
@@ -614,8 +606,7 @@ impl HotWarmColdLifecycle {
                         ),
                     };
                     // ---- P1: 复制等待门控 ----
-                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action)
-                    {
+                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action) {
                         *self.replication_blocked_counter.lock() += 1;
                         continue;
                     }
@@ -628,7 +619,7 @@ impl HotWarmColdLifecycle {
                         }
                     }
                     plans.push(plan);
-                }
+                },
                 StorageClass::Cold if age >= self.thresholds.cold_to_glacier_ms => {
                     let plan = TransitionPlan {
                         bucket: k.0.clone(),
@@ -643,8 +634,7 @@ impl HotWarmColdLifecycle {
                         ),
                     };
                     // ---- P1: 复制等待门控 ----
-                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action)
-                    {
+                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action) {
                         *self.replication_blocked_counter.lock() += 1;
                         continue;
                     }
@@ -657,8 +647,8 @@ impl HotWarmColdLifecycle {
                         }
                     }
                     plans.push(plan);
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
 
@@ -686,19 +676,19 @@ impl HotWarmColdLifecycle {
                 StorageClass::Hot => {
                     s.objects_hot += 1;
                     s.bytes_hot += meta.size_bytes;
-                }
+                },
                 StorageClass::Warm => {
                     s.objects_warm += 1;
                     s.bytes_warm += meta.size_bytes;
-                }
+                },
                 StorageClass::Cold => {
                     s.objects_cold += 1;
                     s.bytes_cold += meta.size_bytes;
-                }
+                },
                 StorageClass::Glacier => {
                     s.objects_glacier += 1;
                     s.bytes_glacier += meta.size_bytes;
-                }
+                },
             }
         }
         s
@@ -706,18 +696,12 @@ impl HotWarmColdLifecycle {
 
     /// 查询单个对象当前类
     pub fn class_of(&self, bucket: &str, key: &str) -> Option<StorageClass> {
-        self.objects
-            .lock()
-            .get(&(bucket.to_string(), key.to_string()))
-            .map(|m| m.class)
+        self.objects.lock().get(&(bucket.to_string(), key.to_string())).map(|m| m.class)
     }
 
     /// 查询对象元数据（只读克隆）
     pub fn meta_of(&self, bucket: &str, key: &str) -> Option<LifecycleObjectMeta> {
-        self.objects
-            .lock()
-            .get(&(bucket.to_string(), key.to_string()))
-            .cloned()
+        self.objects.lock().get(&(bucket.to_string(), key.to_string())).cloned()
     }
 
     pub fn object_count(&self) -> usize {
@@ -895,9 +879,7 @@ mod tests {
         lc.upsert_object(make_meta("archive", "2023-finance.zip", t0, 10_000_000));
         {
             let mut objs = lc.objects.lock();
-            let m = objs
-                .get_mut(&("archive".to_string(), "2023-finance.zip".to_string()))
-                .unwrap();
+            let m = objs.get_mut(&("archive".to_string(), "2023-finance.zip".to_string())).unwrap();
             m.class = StorageClass::Cold;
             m.last_transition_ms = t0;
             m.last_accessed_at_ms = t0;
@@ -905,16 +887,15 @@ mod tests {
         // 366 天：超过 365d 阈值
         let t366 = t0 + YEAR_MS + DAY_MS;
         let plans = lc.transition_scan(t366, true);
-        assert!(
-            !plans.is_empty(),
-            "expect ColdToGlacier plan after 366d for COLD object"
-        );
+        assert!(!plans.is_empty(), "expect ColdToGlacier plan after 366d for COLD object");
         // 有一条 ColdToGlacier
-        let glacier_plan = plans
-            .iter()
-            .find(|p| matches!(p.action, TransitionAction::ColdToGlacier));
-        assert!(glacier_plan.is_some(), "ColdToGlacier action missing; got actions: {:?}",
-            plans.iter().map(|p| format!("{:?}", p.action)).collect::<Vec<_>>());
+        let glacier_plan =
+            plans.iter().find(|p| matches!(p.action, TransitionAction::ColdToGlacier));
+        assert!(
+            glacier_plan.is_some(),
+            "ColdToGlacier action missing; got actions: {:?}",
+            plans.iter().map(|p| format!("{:?}", p.action)).collect::<Vec<_>>()
+        );
         let p = glacier_plan.unwrap();
         assert_eq!(p.from, StorageClass::Cold);
         assert_eq!(p.to, StorageClass::Glacier);
@@ -929,18 +910,15 @@ mod tests {
         lc.upsert_object(make_meta("archive", "2023-finance.zip", t0, 1));
         {
             let mut objs = lc.objects.lock();
-            let m = objs
-                .get_mut(&("archive".to_string(), "2023-finance.zip".to_string()))
-                .unwrap();
+            let m = objs.get_mut(&("archive".to_string(), "2023-finance.zip".to_string())).unwrap();
             m.class = StorageClass::Cold;
             m.last_transition_ms = t0;
             m.last_accessed_at_ms = t0;
         }
         let t364 = t0 + YEAR_MS - DAY_MS; // 364 天 < 365d 阈值
         let plans = lc.transition_scan(t364, true);
-        let has_cold_glacier = plans
-            .iter()
-            .any(|p| matches!(p.action, TransitionAction::ColdToGlacier));
+        let has_cold_glacier =
+            plans.iter().any(|p| matches!(p.action, TransitionAction::ColdToGlacier));
         assert!(
             !has_cold_glacier,
             "364d COLD object must NOT generate ColdToGlacier; plans count={}",
@@ -1047,9 +1025,7 @@ mod tests {
         // 将 replication_status 改为 Completed，再次调用，验证生成迁移计划
         {
             let mut objs = lc.objects.lock();
-            let m = objs
-                .get_mut(&("b1".to_string(), "pending-obj".to_string()))
-                .unwrap();
+            let m = objs.get_mut(&("b1".to_string(), "pending-obj".to_string())).unwrap();
             m.replication_status = ObjectReplicationStatus::Completed;
         }
         let plans_completed = lc.transition_scan(t31, true);
@@ -1102,13 +1078,8 @@ mod tests {
         // 有一个版本 Pending → 返回 None
         let mut versions_pending = versions.clone();
         versions_pending[1].replication_status = ObjectReplicationStatus::Pending;
-        let plan_pending = lc.evaluate_delete_all_versions(
-            "b1",
-            "data/file.bin",
-            &versions_pending,
-            now,
-            false,
-        );
+        let plan_pending =
+            lc.evaluate_delete_all_versions("b1", "data/file.bin", &versions_pending, now, false);
         assert!(plan_pending.is_none(), "should NOT short-circuit when any version is Pending");
 
         // 有一个版本被锁定 → 返回 None
@@ -1198,10 +1169,7 @@ mod tests {
 
         // 设置 max_objects_per_scan = 2
         let budget = ScanBudget {
-            capacity: CapacityBudget {
-                max_objects_per_scan: 2,
-                ..Default::default()
-            },
+            capacity: CapacityBudget { max_objects_per_scan: 2, ..Default::default() },
             ..Default::default()
         };
         let lc = HotWarmColdLifecycle::default().with_scan_budget(budget);

@@ -200,7 +200,10 @@ pub trait MetaStorageProvider: Send + Sync {
     /// 批量列目录。
     ///
     /// 默认实现：逐个调用 `inode_list_dir`。
-    async fn batch_list_dir(&self, parents: &[u64]) -> FilerResult<Vec<(u64, FilerResult<Vec<DirEntry>>)>> {
+    async fn batch_list_dir(
+        &self,
+        parents: &[u64],
+    ) -> FilerResult<Vec<(u64, FilerResult<Vec<DirEntry>>)>> {
         let mut results = Vec::with_capacity(parents.len());
         for parent in parents {
             let r = self.inode_list_dir(*parent).await;
@@ -268,24 +271,16 @@ pub trait MetaStorageProvider: Send + Sync {
                     Ok(idx) => idx + 1, // 从标记的下一个开始
                     Err(idx) => idx,    // 插入位置
                 }
-            }
+            },
             None => 0,
         };
 
         let end_idx = (start_idx + page_size).min(all.len());
         let entries: Vec<DirEntry> = all[start_idx..end_idx].to_vec();
         let has_more = end_idx < all.len();
-        let next_marker = if has_more {
-            entries.last().map(|e| e.name.clone())
-        } else {
-            None
-        };
+        let next_marker = if has_more { entries.last().map(|e| e.name.clone()) } else { None };
 
-        Ok(DirListPage {
-            entries,
-            next_marker,
-            has_more,
-        })
+        Ok(DirListPage { entries, next_marker, has_more })
     }
 
     /// 检查后端是否支持原生分页目录列表。
@@ -327,10 +322,7 @@ pub trait MetaBackend {
 /// 共享辅助：当前 unix 秒数。
 pub(crate) fn now_secs() -> u64 {
     use std::time::{SystemTime, UNIX_EPOCH};
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
 /// 内存中通用 Inode store。所有后端都可用此结构实现（可避免外部依赖）。
@@ -389,10 +381,7 @@ impl InMemInodeStore {
             .ok_or(crate::error::FilerError::NotFound)
     }
     pub fn is_dir(&self, ino: u64) -> FilerResult<bool> {
-        let a = self
-            .inodes
-            .get(&ino)
-            .ok_or(crate::error::FilerError::NotFound)?;
+        let a = self.inodes.get(&ino).ok_or(crate::error::FilerError::NotFound)?;
         Ok((a.mode & libc_sifmt()) == S_IFDIR)
     }
 }
@@ -410,8 +399,8 @@ fn libc_sifmt() -> u32 {
 #[cfg(test)]
 mod trait_enhanced_tests {
     use super::*;
-    use async_trait::async_trait;
     use crate::error::FilerError;
+    use async_trait::async_trait;
 
     /// 测试用 mock 后端，基于 InMemInodeStore
     struct MockMeta {
@@ -420,9 +409,7 @@ mod trait_enhanced_tests {
 
     impl MockMeta {
         fn new() -> Self {
-            MockMeta {
-                store: parking_lot::Mutex::new(InMemInodeStore::new()),
-            }
+            MockMeta { store: parking_lot::Mutex::new(InMemInodeStore::new()) }
         }
     }
 
@@ -559,23 +546,14 @@ mod trait_enhanced_tests {
                     } else {
                         2
                     };
-                    out.push(DirEntry {
-                        name: n.clone(),
-                        ino: *ino,
-                        typ: t,
-                    });
+                    out.push(DirEntry { name: n.clone(), ino: *ino, typ: t });
                 }
             }
             out.sort_by(|a, b| a.name.cmp(&b.name));
             Ok(out)
         }
 
-        async fn inode_link(
-            &self,
-            ino: u64,
-            new_parent: u64,
-            new_name: &str,
-        ) -> FilerResult<()> {
+        async fn inode_link(&self, ino: u64, new_parent: u64, new_name: &str) -> FilerResult<()> {
             let mut s = self.store.lock();
             if s.dir_index.contains_key(&(new_parent, new_name.to_string())) {
                 return Err(FilerError::Metadata("exists".into()));
@@ -593,10 +571,8 @@ mod trait_enhanced_tests {
 
         async fn inode_unlink(&self, parent: u64, name: &str) -> FilerResult<()> {
             let mut s = self.store.lock();
-            let ino = s
-                .dir_index
-                .remove(&(parent, name.to_string()))
-                .ok_or(FilerError::NotFound)?;
+            let ino =
+                s.dir_index.remove(&(parent, name.to_string())).ok_or(FilerError::NotFound)?;
             let remove;
             {
                 let a = s.inodes.get_mut(&ino).ok_or(FilerError::NotFound)?;
@@ -609,12 +585,7 @@ mod trait_enhanced_tests {
             Ok(())
         }
 
-        async fn inode_symlink(
-            &self,
-            parent: u64,
-            name: &str,
-            target: &str,
-        ) -> FilerResult<u64> {
+        async fn inode_symlink(&self, parent: u64, name: &str, target: &str) -> FilerResult<u64> {
             let mut s = self.store.lock();
             if s.dir_index.contains_key(&(parent, name.to_string())) {
                 return Err(FilerError::Metadata("exists".into()));
@@ -717,10 +688,7 @@ mod trait_enhanced_tests {
         meta.inode_create(1, "existing.txt", 0o644).await.unwrap();
 
         // 批量创建，包含已存在的
-        let result = meta
-            .batch_create(1, &["existing.txt", "new.txt"], 0o644)
-            .await
-            .unwrap();
+        let result = meta.batch_create(1, &["existing.txt", "new.txt"], 0o644).await.unwrap();
         assert_eq!(result.created.len(), 1);
         assert_eq!(result.created[0].0, "new.txt");
         assert_eq!(result.failed.len(), 1);
@@ -771,7 +739,7 @@ mod trait_enhanced_tests {
         let result = meta.begin_tx().await;
         assert!(result.is_err());
         match result.err().unwrap() {
-            FilerError::Unsupported(_) => {}
+            FilerError::Unsupported(_) => {},
             _ => panic!("expected Unsupported error"),
         }
     }
@@ -796,27 +764,18 @@ mod trait_enhanced_tests {
         assert_eq!(page1.entries[2].name, "file_02.txt");
 
         // 第二页
-        let page2 = meta
-            .list_dir_paged(1, page1.next_marker.as_deref(), 3)
-            .await
-            .unwrap();
+        let page2 = meta.list_dir_paged(1, page1.next_marker.as_deref(), 3).await.unwrap();
         assert_eq!(page2.entries.len(), 3);
         assert!(page2.has_more);
         assert_eq!(page2.entries[0].name, "file_03.txt");
 
         // 第三页
-        let page3 = meta
-            .list_dir_paged(1, page2.next_marker.as_deref(), 3)
-            .await
-            .unwrap();
+        let page3 = meta.list_dir_paged(1, page2.next_marker.as_deref(), 3).await.unwrap();
         assert_eq!(page3.entries.len(), 3);
         assert!(page3.has_more);
 
         // 第四页（最后一页，只有 1 个）
-        let page4 = meta
-            .list_dir_paged(1, page3.next_marker.as_deref(), 3)
-            .await
-            .unwrap();
+        let page4 = meta.list_dir_paged(1, page3.next_marker.as_deref(), 3).await.unwrap();
         assert_eq!(page4.entries.len(), 1);
         assert!(!page4.has_more);
         assert!(page4.next_marker.is_none());
@@ -877,13 +836,7 @@ mod trait_enhanced_tests {
             async fn inode_symlink(&self, _: u64, _: &str, _: &str) -> FilerResult<u64> {
                 Err(FilerError::Unsupported("".into()))
             }
-            async fn inode_rename(
-                &self,
-                _: u64,
-                _: &str,
-                _: u64,
-                _: &str,
-            ) -> FilerResult<()> {
+            async fn inode_rename(&self, _: u64, _: &str, _: u64, _: &str) -> FilerResult<()> {
                 Err(FilerError::Unsupported("".into()))
             }
         }

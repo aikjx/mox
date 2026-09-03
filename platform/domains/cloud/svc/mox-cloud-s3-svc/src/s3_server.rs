@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -11,21 +11,26 @@
 //!
 //! 响应严格遵循 AWS S3 v20060301 XML 格式。
 
-use crate::acl::CannedAcl;
-use crate::bucket_analytics::AnalyticsManager;
-use crate::cors::{CorsConfiguration, CorsRule};
-use crate::error::{S3Error, S3Result};
-use crate::inventory::InventoryManager;
-use crate::lifecycle::StorageClass;
-use crate::mpu::MultipartManager;
-use crate::object_batch_ops::BatchOperationManager;
-use crate::persist::PersistSink;
-use crate::policy::BucketPolicy;
-use crate::replication::ReplicationManager;
-use crate::sigv4_middleware::{verify_request, CredentialStore};
-use crate::storage::InMemoryStorageBackend;
-use crate::tagging::Tagging;
-use crate::versioning::{generate_version_id, VersioningManager, VersioningStatus};
+#![allow(clippy::too_many_arguments)]
+// bundling into structs would add indirection without improving clarity for these linear handlers.
+// S3 API handler functions carry many parameters by design (request context decomposition);
+
+use crate::{
+    acl::CannedAcl,
+    bucket_analytics::AnalyticsManager,
+    cors::{CorsConfiguration, CorsRule},
+    error::{S3Error, S3Result},
+    inventory::InventoryManager,
+    mpu::MultipartManager,
+    object_batch_ops::BatchOperationManager,
+    persist::PersistSink,
+    policy::BucketPolicy,
+    replication::ReplicationManager,
+    sigv4_middleware::{verify_request, CredentialStore},
+    storage::InMemoryStorageBackend,
+    tagging::Tagging,
+    versioning::{generate_version_id, VersioningManager, VersioningStatus},
+};
 use axum::{
     body::Body,
     extract::State,
@@ -35,13 +40,11 @@ use axum::{
 };
 use bytes::Bytes;
 use mox_cloud_domain_traits::{ChunkId, StorageBackend, StorageError};
+use mox_cloud_foundation::PartETag;
 use mox_cloud_kernel::buffer_pool::BufferPool;
 use mox_cloud_master_svc::MasterServer;
-use mox_cloud_foundation::PartETag;
 use parking_lot::Mutex;
-use std::collections::BTreeMap;
-use std::net::SocketAddr;
-use std::sync::Arc;
+use std::{collections::BTreeMap, net::SocketAddr, sync::Arc};
 use tokio::net::TcpListener;
 
 // ---------------- AppState (axum shared state) ----------------
@@ -178,11 +181,11 @@ fn storage_err_to_s3(e: StorageError) -> S3Error {
         StorageError::AlreadyExists => S3Error::InternalError("chunk already exists".into()),
         StorageError::BackendUnavailable => {
             S3Error::InternalError("storage backend unavailable".into())
-        }
+        },
         StorageError::InvalidInput => S3Error::InvalidArgument,
         StorageError::Unsupported => {
             S3Error::InternalError("storage backend operation unsupported".into())
-        }
+        },
         StorageError::IoError(msg) => S3Error::InternalError(format!("storage io error: {}", msg)),
     }
 }
@@ -195,10 +198,7 @@ async fn read_object_data(
     if chunk_id.is_empty() {
         return Ok(vec![]);
     }
-    backend
-        .get_chunk(&ChunkId::new(chunk_id))
-        .await
-        .map_err(storage_err_to_s3)
+    backend.get_chunk(&ChunkId::new(chunk_id)).await.map_err(storage_err_to_s3)
 }
 
 /// 将对象数据写入后端，返回 chunk_id。
@@ -218,17 +218,11 @@ async fn write_object_data(
 }
 
 /// 从后端删除对象数据。chunk_id 为空时跳过（删除标记无数据）。
-async fn delete_object_data(
-    backend: &dyn StorageBackend,
-    chunk_id: &str,
-) -> Result<(), S3Error> {
+async fn delete_object_data(backend: &dyn StorageBackend, chunk_id: &str) -> Result<(), S3Error> {
     if chunk_id.is_empty() {
         return Ok(());
     }
-    backend
-        .delete_chunk(&ChunkId::new(chunk_id))
-        .await
-        .map_err(storage_err_to_s3)?;
+    backend.delete_chunk(&ChunkId::new(chunk_id)).await.map_err(storage_err_to_s3)?;
     Ok(())
 }
 
@@ -305,16 +299,17 @@ impl S3Server {
     ///
     /// 默认 None，op_get_object 走单后端 storage_backend.get_chunk()。
     /// 设置后，GetObject 优先通过 pipeline 读取（支持多后端并发取最快）。
-    pub fn with_reader_pipeline(mut self, pipeline: Arc<crate::storage::reader_pipeline::S3ReaderPipeline>) -> Self {
+    pub fn with_reader_pipeline(
+        mut self,
+        pipeline: Arc<crate::storage::reader_pipeline::S3ReaderPipeline>,
+    ) -> Self {
         self.reader_pipeline = Some(pipeline);
         self
     }
 
     /// 便捷：注册一对 AK/SK 以便测试通过鉴权。
     pub fn register_credential(&self, ak: &str, sk: &str, user_id: &str) {
-        self.creds
-            .lock()
-            .insert(ak.to_string(), user_id.to_string(), sk.to_string());
+        self.creds.lock().insert(ak.to_string(), user_id.to_string(), sk.to_string());
     }
 
     /// 构建 response helper
@@ -343,18 +338,21 @@ impl S3Server {
         for (k, v) in &headers {
             b = b.header(*k, v.as_str());
         }
-        b.body(Body::empty())
-            .unwrap_or_else(|_| Response::new(Body::empty()))
+        b.body(Body::empty()).unwrap_or_else(|_| Response::new(Body::empty()))
     }
 
     pub async fn run(self) -> Result<(), S3Error> {
         // 从环境变量读取绑定主机，默认 127.0.0.1（S3 服务默认本地绑定）
-        let s3_host = std::env::var("MOX_CLOUD_S3_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let s3_host =
+            std::env::var("MOX_CLOUD_S3_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
         let s3_port = std::env::var("MOX_CLOUD_S3_PORT")
             .ok()
             .and_then(|p| p.parse::<u16>().ok())
             .unwrap_or(self.port);
-        let addr = SocketAddr::from((s3_host.parse::<std::net::IpAddr>().unwrap_or([127,0,0,1].into()), s3_port));
+        let addr = SocketAddr::from((
+            s3_host.parse::<std::net::IpAddr>().unwrap_or([127, 0, 0, 1].into()),
+            s3_port,
+        ));
         let state = Arc::new(AppState {
             storage: self.storage.clone(),
             storage_backend: self.storage_backend.clone(),
@@ -432,10 +430,7 @@ async fn dispatch(
     // 鉴权：以 SigV4 校验为准。`x-test-skip-auth: 1` 仅为测试/开发兜底，且仅允许在 debug 构建生效；
     // 生产 release 构建下该头无效，杜绝「加一个头即可绕过 SigV4 鉴权」的后门。
     #[cfg(debug_assertions)]
-    let skip_auth = headers
-        .get("x-test-skip-auth")
-        .map(|s| s == "1")
-        .unwrap_or(false);
+    let skip_auth = headers.get("x-test-skip-auth").map(|s| s == "1").unwrap_or(false);
     #[cfg(not(debug_assertions))]
     let skip_auth = false;
     let user_id = if skip_auth {
@@ -466,8 +461,23 @@ async fn dispatch(
     let query = uri.query().unwrap_or("").to_string();
 
     handle_s3_operation(
-        &method, bucket, key, &query, &headers, body, storage, storage_backend, buffer_pool, reader_pipeline, versioning, mpu, vcounter,
-        analytics, batch_ops, replication, inventory,
+        &method,
+        bucket,
+        key,
+        &query,
+        &headers,
+        body,
+        storage,
+        storage_backend,
+        buffer_pool,
+        reader_pipeline,
+        versioning,
+        mpu,
+        vcounter,
+        analytics,
+        batch_ops,
+        replication,
+        inventory,
     )
     .await
 }
@@ -510,7 +520,7 @@ fn split_bucket_key(path: &str) -> (Option<String>, Option<String>) {
             let b = p[..i].to_string();
             let k = p[i + 1..].to_string();
             (Some(b), if k.is_empty() { None } else { Some(k) })
-        }
+        },
         None => (Some(p.to_string()), None),
     }
 }
@@ -520,10 +530,7 @@ fn query_has(q: &str, key: &str) -> bool {
 }
 
 fn query_val(q: &str, key: &str) -> Option<String> {
-    parse_query(q)
-        .iter()
-        .find(|(k, _)| k == key)
-        .map(|(_, v)| v.clone())
+    parse_query(q).iter().find(|(k, _)| k == key).map(|(_, v)| v.clone())
 }
 
 // ---------------- Operation Dispatcher ----------------
@@ -591,7 +598,7 @@ async fn handle_s3_operation(
                     return op_list_objects_v2(&storage, &bucket, q);
                 }
                 return op_list_objects_v1(&storage, &bucket, q);
-            }
+            },
             (m, q) if m == Method::PUT => {
                 if query_has(q, "versioning") {
                     return op_put_bucket_versioning(&versioning, &bucket, &body);
@@ -612,22 +619,37 @@ async fn handle_s3_operation(
                     return op_put_bucket_lifecycle(&storage, &bucket, &body);
                 }
                 return op_create_bucket(&storage, &bucket, headers);
-            }
+            },
             (m, q) if m == Method::POST && query_has(q, "delete") => {
-                return op_delete_multiple_objects(&storage, storage_backend.as_ref(), &bucket, body).await;
-            }
-            _ => {}
+                return op_delete_multiple_objects(
+                    &storage,
+                    storage_backend.as_ref(),
+                    &bucket,
+                    body,
+                )
+                .await;
+            },
+            _ => {},
         }
     }
 
     // 有 bucket + 有 key → Object-level 操作
     let key = key.unwrap();
     match (method.as_str(), query) {
-        (m, q) if m == "PUT" => {
+        ("PUT", q) => {
             // x-amz-copy-source 指示 CopyObject 或 UploadPartCopy，优先级最高
             if let Some(src) = headers.get("x-amz-copy-source").cloned() {
                 if query_has(q, "uploadId") && query_has(q, "partNumber") {
-                    return op_upload_part_copy(&mpu, &storage, storage_backend.as_ref(), &bucket, &key, q, src).await;
+                    return op_upload_part_copy(
+                        &mpu,
+                        &storage,
+                        storage_backend.as_ref(),
+                        &bucket,
+                        &key,
+                        q,
+                        src,
+                    )
+                    .await;
                 } else {
                     return op_copy_object(
                         &storage,
@@ -681,8 +703,8 @@ async fn handle_s3_operation(
                 &vcounter,
             )
             .await
-        }
-        (m, q) if m == "GET" => {
+        },
+        ("GET", q) => {
             if query_has(q, "uploadId") {
                 return op_list_parts(&mpu, &bucket, &key, q);
             }
@@ -692,22 +714,41 @@ async fn handle_s3_operation(
             if query_has(q, "acl") {
                 return op_get_object_acl(&storage, &bucket, &key);
             }
-            op_get_object(&storage, storage_backend.as_ref(), buffer_pool.as_ref(), reader_pipeline.as_deref(), &bucket, &key, q, headers).await
-        }
-        (m, q) if m == "DELETE" => {
+            op_get_object(
+                &storage,
+                storage_backend.as_ref(),
+                buffer_pool.as_ref(),
+                reader_pipeline.as_deref(),
+                &bucket,
+                &key,
+                q,
+                headers,
+            )
+            .await
+        },
+        ("DELETE", q) => {
             if query_has(q, "uploadId") {
                 match mpu.abort(&query_val(q, "uploadId").unwrap_or_default()) {
                     Ok(()) => S3Server::ok_empty_headers(vec![]),
                     Err(e) => S3Server::error_response(e),
                 }
             } else {
-                op_delete_object(&storage, storage_backend.as_ref(), &bucket, &key, q, &versioning).await
+                op_delete_object(&storage, storage_backend.as_ref(), &bucket, &key, q, &versioning)
+                    .await
             }
-        }
-        (m, _) if m == "HEAD" => op_head_object(&storage, storage_backend.as_ref(), &bucket, &key, headers).await,
-        (m, q) if m == "POST" => {
+        },
+        ("HEAD", _) => {
+            op_head_object(&storage, storage_backend.as_ref(), &bucket, &key, headers).await
+        },
+        ("POST", q) => {
             if query_has(q, "delete") {
-                return op_delete_multiple_objects(&storage, storage_backend.as_ref(), &bucket, body).await;
+                return op_delete_multiple_objects(
+                    &storage,
+                    storage_backend.as_ref(),
+                    &bucket,
+                    body,
+                )
+                .await;
             }
             if query_has(q, "uploads") {
                 return op_create_multipart_upload(&mpu, &bucket, &key, headers);
@@ -728,11 +769,21 @@ async fn handle_s3_operation(
                 .await;
             }
             S3Server::error_response(S3Error::MethodNotAllowed)
-        }
+        },
         (m, q) if m == "COPY" || headers.contains_key("x-amz-copy-source") => {
             let _ = q;
-            op_copy_object(&storage, storage_backend.as_ref(), buffer_pool.as_ref(), &bucket, &key, headers, &versioning, &vcounter).await
-        }
+            op_copy_object(
+                &storage,
+                storage_backend.as_ref(),
+                buffer_pool.as_ref(),
+                &bucket,
+                &key,
+                headers,
+                &versioning,
+                &vcounter,
+            )
+            .await
+        },
         _ => S3Server::error_response(S3Error::NotImplemented(format!(
             "{:?} /{}/{}?{}",
             method, bucket, key, query
@@ -788,25 +839,21 @@ fn op_create_bucket(
         BucketMeta {
             name: bucket.to_string(),
             created_ms: now_ms(),
-            acl: acl,
+            acl,
             policy: None,
             tags: BTreeMap::new(),
             cors: None,
             lifecycle_xml: None,
         },
     );
-    storage
-        .objects
-        .lock()
-        .insert(bucket.to_string(), BTreeMap::new());
+    storage.objects.lock().insert(bucket.to_string(), BTreeMap::new());
     let mut resp = Response::builder()
         .status(StatusCode::OK)
         .header("Location", format!("/{}", bucket))
         .header("x-amz-request-id", new_request_id());
     let _ = headers;
     resp = resp.header("Content-Length", "0");
-    resp.body(Body::empty())
-        .unwrap_or_else(|_| Response::new(Body::empty()))
+    resp.body(Body::empty()).unwrap_or_else(|_| Response::new(Body::empty()))
 }
 
 // --- 3. DeleteBucket ---
@@ -846,13 +893,9 @@ fn op_list_objects_v1(storage: &InMemoryStorage, bucket: &str, query: &str) -> R
     }
     let prefix = query_val(query, "prefix").unwrap_or_default();
     let marker = query_val(query, "marker").unwrap_or_default();
-    let max_keys = query_val(query, "max-keys")
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(1000u32);
+    let max_keys = query_val(query, "max-keys").and_then(|v| v.parse().ok()).unwrap_or(1000u32);
     let delimiter = query_val(query, "delimiter").unwrap_or_default();
-    list_objects_render(
-        storage, bucket, &prefix, &marker, max_keys, &delimiter, false,
-    )
+    list_objects_render(storage, bucket, &prefix, &marker, max_keys, &delimiter, false)
 }
 
 // --- 6. ListObjectsV2 ---
@@ -863,18 +906,10 @@ fn op_list_objects_v2(storage: &InMemoryStorage, bucket: &str, query: &str) -> R
     let prefix = query_val(query, "prefix").unwrap_or_default();
     let _start_after = query_val(query, "start-after").unwrap_or_default();
     let cont_token = query_val(query, "continuation-token").unwrap_or_default();
-    let marker = if !cont_token.is_empty() {
-        cont_token
-    } else {
-        String::new()
-    };
-    let max_keys = query_val(query, "max-keys")
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(1000u32);
+    let marker = if !cont_token.is_empty() { cont_token } else { String::new() };
+    let max_keys = query_val(query, "max-keys").and_then(|v| v.parse().ok()).unwrap_or(1000u32);
     let delimiter = query_val(query, "delimiter").unwrap_or_default();
-    list_objects_render(
-        storage, bucket, &prefix, &marker, max_keys, &delimiter, true,
-    )
+    list_objects_render(storage, bucket, &prefix, &marker, max_keys, &delimiter, true)
 }
 
 fn list_objects_render(
@@ -970,10 +1005,7 @@ fn list_objects_render(
         xml.push_str("  </Contents>\n");
     }
     for cp in &common_prefixes {
-        xml.push_str(&format!(
-            "  <CommonPrefixes><Prefix>{}</Prefix></CommonPrefixes>\n",
-            cp
-        ));
+        xml.push_str(&format!("  <CommonPrefixes><Prefix>{}</Prefix></CommonPrefixes>\n", cp));
     }
     if is_v2 && is_truncated {
         xml.push_str(&format!(
@@ -1124,11 +1156,7 @@ async fn op_put_object(
     let etag = crate::etag::etag_small(data);
     let crc32c = crate::etag::checksum_crc32c(data);
     // 持久化镜像：仅当挂载钩子时保留数据副本（无钩子零开销）
-    let mirror_data = if storage.persist.is_some() {
-        Some(data.to_vec())
-    } else {
-        None
-    };
+    let mirror_data = if storage.persist.is_some() { Some(data.to_vec()) } else { None };
     let content_type = headers
         .get("content-type")
         .cloned()
@@ -1239,9 +1267,11 @@ async fn op_get_object(
     let obj_data: Vec<u8> = if let Some(pipeline) = reader_pipeline {
         match pipeline.read_object(&meta.chunk_id).await {
             Ok(d) => d,
-            Err(e) => return S3Server::error_response(S3Error::InternalError(format!(
-                "reader pipeline read failed: {e}"
-            ))),
+            Err(e) => {
+                return S3Server::error_response(S3Error::InternalError(format!(
+                    "reader pipeline read failed: {e}"
+                )))
+            },
         }
     } else {
         match read_object_data(storage_backend, &meta.chunk_id).await {
@@ -1258,11 +1288,7 @@ async fn op_get_object(
             Some(p) => p,
             None => return S3Server::error_response(S3Error::InvalidArgument),
         };
-        let start: u64 = if start_s.is_empty() {
-            0
-        } else {
-            start_s.parse().unwrap_or(0)
-        };
+        let start: u64 = if start_s.is_empty() { 0 } else { start_s.parse().unwrap_or(0) };
         let total = meta.size;
         let end: u64 = if end_s.is_empty() {
             total.saturating_sub(1)
@@ -1296,18 +1322,14 @@ async fn op_get_object(
         .header("Last-Modified", http_date(meta.last_modified_ms))
         .header("Accept-Ranges", "bytes")
         .header("x-amz-request-id", new_request_id())
-        .header(
-            "x-amz-checksum-crc32c",
-            crate::etag::checksum_crc32c_base64(&data),
-        );
+        .header("x-amz-checksum-crc32c", crate::etag::checksum_crc32c_base64(&data));
     if let Some(cr) = range_resp {
         resp = resp.header("Content-Range", cr);
     }
     if !meta.version_id.is_empty() {
         resp = resp.header("x-amz-version-id", meta.version_id.as_str());
     }
-    resp.body(Body::from(data))
-        .unwrap_or_else(|_| Response::new(Body::empty()))
+    resp.body(Body::from(data)).unwrap_or_else(|_| Response::new(Body::empty()))
 }
 
 // --- 11. DeleteObject ---
@@ -1442,15 +1464,14 @@ async fn op_head_object(
     if !meta.version_id.is_empty() {
         resp = resp.header("x-amz-version-id", meta.version_id.as_str());
     }
-    resp.body(body)
-        .unwrap_or_else(|_| Response::new(Body::empty()))
+    resp.body(body).unwrap_or_else(|_| Response::new(Body::empty()))
 }
 
 // --- 13. CopyObject ---
 async fn op_copy_object(
     storage: &InMemoryStorage,
     storage_backend: &dyn StorageBackend,
-    buffer_pool: &BufferPool,
+    _buffer_pool: &BufferPool,
     bucket: &str,
     key: &str,
     headers: &BTreeMap<String, String>,
@@ -1507,7 +1528,9 @@ async fn op_copy_object(
     };
 
     let new_meta = ObjectMeta {
-        chunk_id: match write_object_data(storage_backend, bucket, key, &version_id, &src_data).await {
+        chunk_id: match write_object_data(storage_backend, bucket, key, &version_id, &src_data)
+            .await
+        {
             Ok(cid) => cid,
             Err(e) => return S3Server::error_response(e),
         },
@@ -1597,9 +1620,7 @@ fn op_upload_part(
         Some(v) => v,
         None => return S3Server::error_response(S3Error::NoSuchUpload),
     };
-    let pn = query_val(query, "partNumber")
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(0u16);
+    let pn = query_val(query, "partNumber").and_then(|v| v.parse().ok()).unwrap_or(0u16);
     if pn == 0 {
         return S3Server::error_response(S3Error::InvalidArgument);
     }
@@ -1634,8 +1655,7 @@ async fn op_upload_part_copy(
     };
     let src_chunk_id = {
         let objs = storage.objects.lock();
-        objs
-            .get(&src_b)
+        objs.get(&src_b)
             .and_then(|m| m.get(&src_k))
             .and_then(|v| v.last())
             .map(|m| m.chunk_id.clone())
@@ -1659,7 +1679,7 @@ async fn op_upload_part_copy(
                 p.etag
             );
             S3Server::xml_response(StatusCode::OK, body_xml)
-        }
+        },
         Err(e) => S3Server::error_response(e),
     }
 }
@@ -1683,10 +1703,9 @@ async fn op_complete_or_abort_mpu(
     };
 
     // UploadPartCopy via x-amz-copy-source header + partNumber
-    if let (Some(pn_s), Some(src)) = (
-        query_val(query, "partNumber"),
-        headers.get("x-amz-copy-source"),
-    ) {
+    if let (Some(pn_s), Some(src)) =
+        (query_val(query, "partNumber"), headers.get("x-amz-copy-source"))
+    {
         if let Ok(pn) = pn_s.parse::<u16>() {
             // copy source data
             let src_path = src.trim_start_matches('/');
@@ -1696,8 +1715,7 @@ async fn op_complete_or_abort_mpu(
             };
             let src_chunk_id = {
                 let objs = storage.objects.lock();
-                objs
-                    .get(&src_b)
+                objs.get(&src_b)
                     .and_then(|m| m.get(&src_k))
                     .and_then(|v| v.last())
                     .map(|m| m.chunk_id.clone())
@@ -1710,22 +1728,22 @@ async fn op_complete_or_abort_mpu(
                 None => return S3Server::error_response(S3Error::NoSuchKey),
             };
             match mpu.upload_part_copy(&uid, pn, data) {
-                    Ok(p) => {
-                        let body_xml = format!(
-                            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+                Ok(p) => {
+                    let body_xml = format!(
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
                              <CopyPartResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n\
                                <LastModified>{}</LastModified>\n\
                                <ETag>\"{}\"</ETag>\n\
                              </CopyPartResult>",
-                            iso8601(now_ms()),
-                            p.etag
-                        );
-                        return S3Server::xml_response(StatusCode::OK, body_xml);
-                    }
-                    Err(e) => return S3Server::error_response(e),
-                }
+                        iso8601(now_ms()),
+                        p.etag
+                    );
+                    return S3Server::xml_response(StatusCode::OK, body_xml);
+                },
+                Err(e) => return S3Server::error_response(e),
             }
         }
+    }
 
     // 如果 method 不是 PUT（如 DELETE query uploadId → abort），上层已处理 DELETE。
     let parts = match parse_complete_body(&body) {
@@ -1738,11 +1756,7 @@ async fn op_complete_or_abort_mpu(
             let size = data.len() as u64;
             let crc32c = crate::etag::checksum_crc32c(&data);
             // 持久化镜像：仅当挂载钩子时保留数据副本
-            let mirror_data = if storage.persist.is_some() {
-                Some(data.clone())
-            } else {
-                None
-            };
+            let mirror_data = if storage.persist.is_some() { Some(data.clone()) } else { None };
             let v_status = versioning.get(bucket);
             let version_id = if v_status.should_generate_version() {
                 let mut c = vcounter.lock();
@@ -1755,7 +1769,9 @@ async fn op_complete_or_abort_mpu(
                 String::new()
             };
             let meta = ObjectMeta {
-                chunk_id: match write_object_data(storage_backend, bucket, key, &version_id, &data).await {
+                chunk_id: match write_object_data(storage_backend, bucket, key, &version_id, &data)
+                    .await
+                {
                     Ok(cid) => cid,
                     Err(e) => return S3Server::error_response(e),
                 },
@@ -1804,7 +1820,7 @@ async fn op_complete_or_abort_mpu(
                 b = b.header("x-amz-version-id", version_id);
             }
             b.body(Body::from(body_xml)).unwrap()
-        }
+        },
         Err(e) => S3Server::error_response(e),
     }
 }
@@ -1821,7 +1837,7 @@ fn parse_complete_body(body: &[u8]) -> S3Result<Vec<PartETag>> {
         match e.map_err(|x| S3Error::BadRequest(x.to_string()))? {
             XmlEvent::StartElement { .. } => {
                 text.clear();
-            }
+            },
             XmlEvent::Characters(ss) => text.push_str(&ss),
             XmlEvent::EndElement { name, .. } => {
                 match name.local_name.as_str() {
@@ -1834,12 +1850,12 @@ fn parse_complete_body(body: &[u8]) -> S3Result<Vec<PartETag>> {
                                 etag: std::mem::take(&mut cur_etag),
                             });
                         }
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
                 text.clear();
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
     Ok(parts)
@@ -1856,13 +1872,8 @@ fn op_list_multipart_uploads(mpu: &MultipartManager, bucket: &str, query: &str) 
         inner.push_str("  <Upload>\n");
         inner.push_str(&format!("    <Key>{}</Key>\n", up.key));
         inner.push_str(&format!("    <UploadId>{}</UploadId>\n", up.upload_id));
-        inner.push_str(&format!(
-            "    <Initiated>{}</Initiated>\n",
-            iso8601(up.initiated_ms)
-        ));
-        inner.push_str(
-            "    <Initiator><ID>mox</ID><DisplayName>mox</DisplayName></Initiator>\n",
-        );
+        inner.push_str(&format!("    <Initiated>{}</Initiated>\n", iso8601(up.initiated_ms)));
+        inner.push_str("    <Initiator><ID>mox</ID><DisplayName>mox</DisplayName></Initiator>\n");
         inner.push_str("    <Owner><ID>mox</ID><DisplayName>mox</DisplayName></Owner>\n");
         inner.push_str("    <StorageClass>STANDARD</StorageClass>\n");
         inner.push_str("  </Upload>\n");
@@ -1904,10 +1915,7 @@ fn op_list_parts(mpu: &MultipartManager, _bucket: &str, _key: &str, query: &str)
     for p in &parts {
         inner.push_str("  <Part>\n");
         inner.push_str(&format!("    <PartNumber>{}</PartNumber>\n", p.part_number));
-        inner.push_str(&format!(
-            "    <LastModified>{}</LastModified>\n",
-            iso8601(now_ms())
-        ));
+        inner.push_str(&format!("    <LastModified>{}</LastModified>\n", iso8601(now_ms())));
         inner.push_str(&format!("    <ETag>{}</ETag>\n", p.etag));
         inner.push_str(&format!("    <Size>{}</Size>\n", p.size));
         inner.push_str("  </Part>\n");
@@ -1964,7 +1972,10 @@ async fn op_delete_multiple_objects(
                                 if let Some(m) = objs.get_mut(bucket) {
                                     if let Some(vers) = m.get_mut(&cur_key) {
                                         let ids = if let Some(vid) = cur_vid.as_ref() {
-                                            vers.iter().filter(|v| &v.version_id == vid).map(|v| v.chunk_id.clone()).collect()
+                                            vers.iter()
+                                                .filter(|v| &v.version_id == vid)
+                                                .map(|v| v.chunk_id.clone())
+                                                .collect()
                                         } else {
                                             vers.iter().map(|v| v.chunk_id.clone()).collect()
                                         };
@@ -1993,12 +2004,12 @@ async fn op_delete_multiple_objects(
                         }
                         cur_key.clear();
                         cur_vid = None;
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
                 text.clear();
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
     let mut inner = String::new();
@@ -2052,8 +2063,8 @@ fn op_put_bucket_versioning(
                     status = text.trim().to_string();
                 }
                 text.clear();
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
     let st = VersioningStatus::parse(&status).unwrap_or(VersioningStatus::Off);
@@ -2075,10 +2086,7 @@ fn op_list_object_versions(storage: &InMemoryStorage, bucket: &str, query: &str)
             items.push((k.clone(), v.clone()));
         }
     }
-    items.sort_by(|a, b| {
-        a.0.cmp(&b.0)
-            .then(a.1.last_modified_ms.cmp(&b.1.last_modified_ms))
-    });
+    items.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.last_modified_ms.cmp(&b.1.last_modified_ms)));
 
     let mut xml = String::new();
     xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -2301,13 +2309,7 @@ fn iso8601(ms: u64) -> String {
     let m = (secs / 60) % 60;
     let h = (secs / 3600) % 24;
     let d = (secs / 86400) + 1; // 近似 1970-01-01
-    format!(
-        "1970-01-{:02}T{:02}:{:02}:{:02}.000Z",
-        (d.min(28)) as u8,
-        h as u8,
-        m as u8,
-        s as u8
-    )
+    format!("1970-01-{:02}T{:02}:{:02}:{:02}.000Z", (d.min(28)) as u8, h as u8, m as u8, s as u8)
 }
 
 fn http_date(ms: u64) -> String {
@@ -2327,8 +2329,10 @@ mod di_tests {
         BackendCapabilities, BackendType, ChunkId, ChunkInfo, ChunkListPage, ConsistencyModel,
         StorageBackend, StorageError,
     };
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::Arc;
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
 
     /// 记录调用次数的 mock StorageBackend，包装 InMemoryStorageBackend
     struct CountingBackend {
@@ -2625,6 +2629,9 @@ mod di_tests {
 
         // 缓冲池应记录更多分配（put + range copy）
         let stats = buffer_pool.stats();
-        assert!(stats.total_allocated >= 2, "pool should have at least 2 allocations (put + range)");
+        assert!(
+            stats.total_allocated >= 2,
+            "pool should have at least 2 allocations (put + range)"
+        );
     }
 }

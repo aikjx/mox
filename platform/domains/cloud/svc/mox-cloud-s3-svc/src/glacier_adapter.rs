@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -11,10 +11,15 @@
 //! server (TcpListener + thread) in unit tests and against real endpoints in
 //! production.
 
-use std::collections::HashMap;
-use std::io::{Read, Write};
-use std::net::TcpStream;
-use std::time::{SystemTime, UNIX_EPOCH};
+#![allow(clippy::too_many_arguments)]
+// Glacier adapter handler functions carry many parameters by design.
+
+use std::{
+    collections::HashMap,
+    io::{Read, Write},
+    net::TcpStream,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
@@ -88,9 +93,7 @@ fn hmac_sha256(key: &[u8], data: &[u8]) -> Vec<u8> {
 
 fn aws_now() -> (String, String) {
     // (x-amz-date "YYYYMMDDTHHMMSSZ", credential-date "YYYYMMDD")
-    let dur = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default();
+    let dur = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
     let secs = dur.as_secs();
     // Convert to UTC via chrono-free math — we accept approximation in tests
     // that only check presence / prefix.
@@ -102,10 +105,7 @@ fn aws_now() -> (String, String) {
 
     // Days since 1970-01-01 → Gregorian Y/M/D.  Use simple proleptic calc.
     let (y, m, d) = days_to_ymd(days_since_epoch as i64);
-    let full = format!(
-        "{:04}{:02}{:02}T{:02}{:02}{:02}Z",
-        y, m, d, hh, mm, ss
-    );
+    let full = format!("{:04}{:02}{:02}T{:02}{:02}{:02}Z", y, m, d, hh, mm, ss);
     let short = format!("{:04}{:02}{:02}", y, m, d);
     (full, short)
 }
@@ -113,11 +113,7 @@ fn aws_now() -> (String, String) {
 fn days_to_ymd(mut days: i64) -> (i32, u32, u32) {
     // Shift from 1970-01-01 to a proleptic Gregorian epoch.
     days += 719_468; // days between 0000-00-00-ish and 1970-01-01
-    let era = if days >= 0 {
-        days / 146_097
-    } else {
-        (days - 146_096) / 146_097
-    };
+    let era = if days >= 0 { days / 146_097 } else { (days - 146_096) / 146_097 };
     let day_of_era = days - era * 146_097;
     let yoe = (day_of_era - day_of_era / 1460 + day_of_era / 36524 - day_of_era / 146096) / 365;
     let year = yoe + era * 400;
@@ -135,11 +131,11 @@ fn uri_encode(s: &str, encode_slash: bool) -> String {
         match b {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
                 out.push(b as char);
-            }
+            },
             b'/' if !encode_slash => out.push('/'),
             _ => {
                 out.push_str(&format!("%{:02X}", b));
-            }
+            },
         }
     }
     out
@@ -163,8 +159,8 @@ fn sigv4_auth_header(
     region: &str,
     service: &str,
     method: &str,
-    path: &str,       // already URI-encoded
-    query: &str,      // canonical query string (sorted)
+    path: &str,                        // already URI-encoded
+    query: &str,                       // canonical query string (sorted)
     headers: &HashMap<String, String>, // lowercase key → value
     payload_hex: &str,
     amz_date: &str,
@@ -173,11 +169,7 @@ fn sigv4_auth_header(
     // 1. canonical request
     let mut keys: Vec<&String> = headers.keys().collect();
     keys.sort();
-    let signed_headers = keys
-        .iter()
-        .map(|k| k.as_str())
-        .collect::<Vec<_>>()
-        .join(";");
+    let signed_headers = keys.iter().map(|k| k.as_str()).collect::<Vec<_>>().join(";");
 
     let canonical_headers = keys
         .iter()
@@ -198,10 +190,7 @@ fn sigv4_auth_header(
 
     // 2. string to sign
     let scope = format!("{}/{}/{}/aws4_request", date_short, region, service);
-    let sts = format!(
-        "AWS4-HMAC-SHA256\n{}\n{}\n{}",
-        amz_date, scope, cr_hex
-    );
+    let sts = format!("AWS4-HMAC-SHA256\n{}\n{}\n{}", amz_date, scope, cr_hex);
 
     // 3. signature
     let k_sign = derive_signing_key(sk, date_short, region, service);
@@ -233,11 +222,7 @@ fn split_endpoint(endpoint: &str) -> (String, String) {
     // Strip trailing /
     let rest = rest.trim_end_matches('/');
     // host:port or host
-    let host_port = if let Some((h, _p)) = rest.split_once('/') {
-        h
-    } else {
-        rest
-    };
+    let host_port = if let Some((h, _p)) = rest.split_once('/') { h } else { rest };
     let host_port = host_port.to_string();
     (host_port.clone(), host_port)
 }
@@ -261,20 +246,14 @@ fn send_http(
         req.push_str(&format!("{}: {}\r\n", k, v));
     }
     req.push_str("\r\n");
-    stream
-        .write_all(req.as_bytes())
-        .map_err(|e| format!("write headers: {}", e))?;
+    stream.write_all(req.as_bytes()).map_err(|e| format!("write headers: {}", e))?;
     if !body.is_empty() {
-        stream
-            .write_all(body)
-            .map_err(|e| format!("write body: {}", e))?;
+        stream.write_all(body).map_err(|e| format!("write body: {}", e))?;
     }
     stream.flush().map_err(|e| format!("flush: {}", e))?;
 
     let mut buf = Vec::new();
-    stream
-        .read_to_end(&mut buf)
-        .map_err(|e| format!("read response: {}", e))?;
+    stream.read_to_end(&mut buf).map_err(|e| format!("read response: {}", e))?;
 
     parse_http_response(&buf)
 }
@@ -296,10 +275,7 @@ fn parse_http_response(raw: &[u8]) -> Result<HttpResponse, String> {
     // "HTTP/1.1 200 OK"
     let mut parts = status_line.split_whitespace();
     let _version = parts.next().unwrap_or("");
-    let code: u16 = parts
-        .next()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(500);
+    let code: u16 = parts.next().and_then(|s| s.parse().ok()).unwrap_or(500);
 
     let mut headers: HashMap<String, String> = HashMap::new();
     for line in lines {
@@ -325,11 +301,7 @@ fn parse_http_response(raw: &[u8]) -> Result<HttpResponse, String> {
         }
     };
 
-    Ok(HttpResponse {
-        _status: code,
-        headers,
-        body,
-    })
+    Ok(HttpResponse { _status: code, headers, body })
 }
 
 fn decode_chunked(data: &[u8]) -> Vec<u8> {
@@ -343,11 +315,7 @@ fn decode_chunked(data: &[u8]) -> Vec<u8> {
         };
         let size_line = &data[i..cr];
         // skip extension
-        let size_hex: Vec<u8> = size_line
-            .iter()
-            .take_while(|b| **b != b';')
-            .copied()
-            .collect();
+        let size_hex: Vec<u8> = size_line.iter().take_while(|b| **b != b';').copied().collect();
         let size_str = String::from_utf8_lossy(&size_hex);
         let size = match usize::from_str_radix(size_str.trim(), 16) {
             Ok(s) => s,
@@ -394,7 +362,7 @@ impl GlacierAdapter {
         method: &str,
         bucket: &str,
         key: &str,
-        query: &str,       // raw query string WITHOUT "?" — sorted canonical
+        query: &str,                // raw query string WITHOUT "?" — sorted canonical
         extra: &[(String, String)], // extra headers, values as-is
         body: &[u8],
     ) -> Result<HttpResponse, String> {
@@ -408,15 +376,9 @@ impl GlacierAdapter {
         signed.insert("host".to_string(), host_port.clone());
         signed.insert("x-amz-date".to_string(), amz_date.clone());
         signed.insert("content-sha256".to_string(), payload_hex.clone());
-        signed.insert(
-            "content-length".to_string(),
-            body.len().to_string(),
-        );
+        signed.insert("content-length".to_string(), body.len().to_string());
         // Content-Type default
-        signed.insert(
-            "content-type".to_string(),
-            "application/octet-stream".to_string(),
-        );
+        signed.insert("content-type".to_string(), "application/octet-stream".to_string());
         for (k, v) in extra {
             signed.insert(k.to_lowercase(), v.clone());
         }
@@ -447,11 +409,7 @@ impl GlacierAdapter {
             wire.insert(k.clone(), v.clone());
         }
 
-        let pq = if query.is_empty() {
-            path.clone()
-        } else {
-            format!("{}?{}", path, query)
-        };
+        let pq = if query.is_empty() { path.clone() } else { format!("{}?{}", path, query) };
         send_http(&self.endpoint, method, &pq, &wire, body)
     }
 
@@ -478,26 +436,14 @@ impl GlacierAdapter {
             .get("x-amz-storage-class")
             .cloned()
             .unwrap_or_else(|| "STANDARD".to_string());
-        let restore = resp
-            .headers
-            .get("x-amz-restore")
-            .and_then(|v| parse_restore(v));
+        let restore = resp.headers.get("x-amz-restore").and_then(|v| parse_restore(v));
         let content_length = resp
             .headers
             .get("content-length")
             .and_then(|v| v.parse::<u64>().ok())
             .unwrap_or(0);
-        let etag = resp
-            .headers
-            .get("etag")
-            .cloned()
-            .unwrap_or_default();
-        Ok(HeadResult {
-            storage_class,
-            restore,
-            content_length,
-            etag,
-        })
+        let etag = resp.headers.get("etag").cloned().unwrap_or_default();
+        Ok(HeadResult { storage_class, restore, content_length, etag })
     }
 
     pub fn initiate_restore(
@@ -518,11 +464,7 @@ impl GlacierAdapter {
         let resp = self.request("POST", bucket, key, "restore", &[], body.as_bytes())?;
         let status = resp._status;
         if (200..300).contains(&status) {
-            Ok(resp
-                .headers
-                .get("x-amz-restore-output-location")
-                .cloned()
-                .unwrap_or_default())
+            Ok(resp.headers.get("x-amz-restore-output-location").cloned().unwrap_or_default())
         } else {
             Err(format!(
                 "POST restore {}/{} -> HTTP {} body={}",
@@ -540,10 +482,7 @@ impl GlacierAdapter {
         if (200..300).contains(&status) {
             Ok(resp.body)
         } else {
-            Err(format!(
-                "GET {}/{} -> HTTP {}",
-                bucket, key, status
-            ))
+            Err(format!("GET {}/{} -> HTTP {}", bucket, key, status))
         }
     }
 }
@@ -552,9 +491,7 @@ fn parse_restore(value: &str) -> Option<RestoreStatus> {
     let v = value.trim();
     // ongoing-request="true" => Ongoing
     // ongoing-request="false", expiry-date="Wed, 07 Dec 2022 00:00:00 GMT" => Available
-    let ongoing_true = v
-        .contains("ongoing-request")
-        && v.contains("=\"true\"");
+    let ongoing_true = v.contains("ongoing-request") && v.contains("=\"true\"");
     if ongoing_true {
         return Some(RestoreStatus::Ongoing);
     }
@@ -566,14 +503,11 @@ fn parse_restore(value: &str) -> Option<RestoreStatus> {
             // Convert to RFC3339-like string: accept whatever the server gave,
             // but if it's a GMT format reformat it.
             let rfc3339 = http_date_to_rfc3339(expiry_raw);
-            return Some(RestoreStatus::Available {
-                expiry_rfc3339: rfc3339,
-            });
+            return Some(RestoreStatus::Available { expiry_rfc3339: rfc3339 });
         }
     }
     Some(RestoreStatus::Ongoing)
 }
-
 
 
 // Simple HTTP-date → RFC3339 converter.  Only handles the common
@@ -605,10 +539,7 @@ fn http_date_to_rfc3339(s: &str) -> String {
             let h: u32 = hh.parse().unwrap_or(0);
             let mi: u32 = mm.parse().unwrap_or(0);
             let sec: u32 = ss.parse().unwrap_or(0);
-            return format!(
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00",
-                y, m, d, h, mi, sec
-            );
+            return format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00", y, m, d, h, mi, sec);
         }
     }
     s.to_string()
@@ -621,10 +552,12 @@ fn http_date_to_rfc3339(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{BufRead, BufReader, Write};
-    use std::net::TcpListener;
-    use std::thread;
-    use std::time::Duration;
+    use std::{
+        io::{BufRead, BufReader, Write},
+        net::TcpListener,
+        thread,
+        time::Duration,
+    };
 
     fn spawn_mock<F>(handler: F) -> String
     where
@@ -658,10 +591,7 @@ mod tests {
                 headers.insert(k.trim().to_lowercase(), v.trim().to_string());
             }
         }
-        let cl: usize = headers
-            .get("content-length")
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(0);
+        let cl: usize = headers.get("content-length").and_then(|s| s.parse().ok()).unwrap_or(0);
         let mut body = vec![0u8; cl];
         if cl > 0 {
             reader.read_exact(&mut body).unwrap();
@@ -691,20 +621,25 @@ mod tests {
     }
 
     fn adapter(endpoint: &str) -> GlacierAdapter {
-        GlacierAdapter::new(endpoint, "us-east-1", "AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+        GlacierAdapter::new(
+            endpoint,
+            "us-east-1",
+            "AKIAIOSFODNN7EXAMPLE",
+            "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        )
     }
 
     // --- A1: valid signature prefix + X-Amz-Date ---
     #[test]
     fn t25_glacier_put_signature_valid() {
-        let endpoint = spawn_mock(|mut stream| {
+        let endpoint = spawn_mock(|stream| {
             let (method, path, headers, _body) = read_request(&stream);
             assert_eq!(method, "PUT");
             assert_eq!(path, "/b/k");
             let auth = headers.get("authorization").expect("auth header").clone();
             assert!(auth.starts_with("AWS4-HMAC-SHA256"), "auth={}", auth);
             assert!(headers.contains_key("x-amz-date"), "x-amz-date missing");
-            write_response(&mut stream, 200, &[], b"");
+            write_response(&stream, 200, &[], b"");
         });
         let a = adapter(&endpoint);
         a.put_object("b", "k", b"hello").expect("put ok");
@@ -713,14 +648,17 @@ mod tests {
     // --- A2: HEAD parses storage-class + restore expiry ---
     #[test]
     fn t25_glacier_head_parse_storage_class_and_restore() {
-        let endpoint = spawn_mock(|mut stream| {
+        let endpoint = spawn_mock(|stream| {
             let (_method, _path, _headers, _body) = read_request(&stream);
             write_response(
-                &mut stream,
+                &stream,
                 200,
                 &[
                     ("x-amz-storage-class", "GLACIER"),
-                    ("x-amz-restore", "ongoing-request=\"false\", expiry-date=\"Wed, 07 Dec 2022 00:00:00 GMT\""),
+                    (
+                        "x-amz-restore",
+                        "ongoing-request=\"false\", expiry-date=\"Wed, 07 Dec 2022 00:00:00 GMT\"",
+                    ),
                     ("content-length", "4"),
                     ("etag", "\"abc123\""),
                 ],
@@ -733,7 +671,7 @@ mod tests {
         match r.restore {
             Some(RestoreStatus::Available { expiry_rfc3339 }) => {
                 assert_eq!(expiry_rfc3339, "2022-12-07T00:00:00+00:00");
-            }
+            },
             other => panic!("unexpected restore {:?}", other),
         }
         assert_eq!(r.content_length, 4);
@@ -743,28 +681,26 @@ mod tests {
     // --- A3: initiate restore POST body check ---
     #[test]
     fn t25_glacier_initiate_restore_standard_body() {
-        let endpoint = spawn_mock(|mut stream| {
+        let endpoint = spawn_mock(|stream| {
             let (method, path, _headers, body) = read_request(&stream);
             assert_eq!(method, "POST");
             assert!(path.contains("restore"), "path={}", path);
             let s = String::from_utf8_lossy(&body);
             assert!(s.contains("<Days>1</Days>"), "body={}", s);
             assert!(s.contains("<Tier>Standard</Tier>"), "body={}", s);
-            write_response(&mut stream, 202, &[("x-amz-restore-output-location", "job-xyz")], b"");
+            write_response(&stream, 202, &[("x-amz-restore-output-location", "job-xyz")], b"");
         });
         let a = adapter(&endpoint);
-        let job_id = a
-            .initiate_restore("b", "k", Tier::Standard, 1)
-            .expect("restore ok");
+        let job_id = a.initiate_restore("b", "k", Tier::Standard, 1).expect("restore ok");
         assert_eq!(job_id, "job-xyz");
     }
 
     // --- A4: GET bytes match ---
     #[test]
     fn t25_glacier_get_object_bytes_match() {
-        let endpoint = spawn_mock(|mut stream| {
+        let endpoint = spawn_mock(|stream| {
             let (_method, _path, _headers, _body) = read_request(&stream);
-            write_response(&mut stream, 200, &[], &[0xAA, 0xBB, 0xCC, 0xDD]);
+            write_response(&stream, 200, &[], &[0xAA, 0xBB, 0xCC, 0xDD]);
         });
         let a = adapter(&endpoint);
         let got = a.get_object("b", "k").expect("get ok");
@@ -774,7 +710,7 @@ mod tests {
     // --- A5: 5 random operations (PUT, HEAD, POST restore, GET, HEAD) ---
     #[test]
     fn t25_glacier_5_methods() {
-        let endpoint = spawn_mock(|mut stream| {
+        let endpoint = spawn_mock(|stream| {
             // Server handles ONE connection with multiple pipelined requests is
             // complex; we instead keep it simple: accept 5 sequential
             // connections by not returning early.  Our caller makes 5 calls in
@@ -800,7 +736,7 @@ mod tests {
                 _ => vec![],
             };
             let extra_refs: Vec<(&str, &str)> = extra.iter().map(|(a, b)| (*a, *b)).collect();
-            write_response(&mut stream, 200, &extra_refs, &body);
+            write_response(&stream, 200, &extra_refs, &body);
         });
 
         // To exercise all 5 operations through the one-shot mock, we re-bind
@@ -817,30 +753,26 @@ mod tests {
             format!("http://127.0.0.1:{}", addr.port())
         };
 
-        fn put_h(mut stream: TcpStream) {
+        fn put_h(stream: TcpStream) {
             let _ = read_request(&stream);
-            write_response(&mut stream, 200, &[], b"");
+            write_response(&stream, 200, &[], b"");
         }
-        fn head_h(mut stream: TcpStream) {
+        fn head_h(stream: TcpStream) {
             let _ = read_request(&stream);
             write_response(
-                &mut stream,
+                &stream,
                 200,
-                &[
-                    ("x-amz-storage-class", "GLACIER"),
-                    ("content-length", "4"),
-                    ("etag", "\"h\""),
-                ],
+                &[("x-amz-storage-class", "GLACIER"), ("content-length", "4"), ("etag", "\"h\"")],
                 b"",
             );
         }
-        fn post_h(mut stream: TcpStream) {
+        fn post_h(stream: TcpStream) {
             let _ = read_request(&stream);
-            write_response(&mut stream, 202, &[("x-amz-restore-output-location", "j")], b"");
+            write_response(&stream, 202, &[("x-amz-restore-output-location", "j")], b"");
         }
-        fn get_h(mut stream: TcpStream) {
+        fn get_h(stream: TcpStream) {
             let _ = read_request(&stream);
-            write_response(&mut stream, 200, &[], &[1, 2, 3, 4]);
+            write_response(&stream, 200, &[], &[1, 2, 3, 4]);
         }
 
         let ep_put = make_one(put_h);
@@ -857,9 +789,7 @@ mod tests {
         assert_eq!(r.storage_class, "GLACIER");
 
         let a_p = adapter(&ep_post);
-        let id = a_p
-            .initiate_restore("b", "k", Tier::Bulk, 10)
-            .expect("restore");
+        let id = a_p.initiate_restore("b", "k", Tier::Bulk, 10).expect("restore");
         assert_eq!(id, "j");
 
         let a_g = adapter(&ep_get);

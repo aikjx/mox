@@ -40,8 +40,7 @@ pub use storage_backend::{
 
 // L4 元数据存储
 pub use meta_storage::{
-    ConcurrencyModel, DirEntry, DirListPage, EntryType, MetaError, MetaKey, MetaStorage,
-    MetaValue,
+    ConcurrencyModel, DirEntry, DirListPage, EntryType, MetaError, MetaKey, MetaStorage, MetaValue,
 };
 
 // L4 生命周期
@@ -56,6 +55,4 @@ pub use shard_reader::{
 };
 
 // L4 分片写入
-pub use shard_writer::{
-    ConcurrencyHint, WriteError, WriteQuorum, WriteResult, ShardWriter,
-};
+pub use shard_writer::{ConcurrencyHint, ShardWriter, WriteError, WriteQuorum, WriteResult};

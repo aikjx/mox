@@ -1,10 +1,9 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-use std::error::Error;
-use std::fmt;
+use std::{error::Error, fmt};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VolumeError {
@@ -39,10 +38,10 @@ impl From<VolumeError> for mox_cloud_domain_traits::CloudError {
         match e {
             VolumeError::BackpressureRejected(msg) => {
                 mox_cloud_domain_traits::CloudError::BackpressureRejected(msg)
-            }
+            },
             VolumeError::ChunkNotFound(id) => {
                 mox_cloud_domain_traits::CloudError::NotFound(format!("chunk: {id}"))
-            }
+            },
             other => mox_cloud_domain_traits::CloudError::Volume(other.to_string()),
         }
     }

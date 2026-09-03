@@ -23,12 +23,16 @@
 //! 调用方可通过 Job ID 查询执行状态与结果报告。
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use crate::error::{S3Error, S3Result};
-use crate::lifecycle::StorageClass;
+use crate::{
+    error::{S3Error, S3Result},
+    lifecycle::StorageClass,
+};
 
 // ---------------- 常量 ----------------
 
@@ -191,6 +195,7 @@ pub enum RestoreTier {
 }
 
 impl RestoreTier {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "Standard" => Some(RestoreTier::Standard),
@@ -274,17 +279,12 @@ impl BatchOperationManager {
 
     /// 检查幂等令牌，若存在则返回已有 Job ID
     pub fn check_idempotency(&self, client_token: &str) -> Option<String> {
-        self.idempotency_map
-            .lock()
-            .get(client_token)
-            .cloned()
+        self.idempotency_map.lock().get(client_token).cloned()
     }
 
     /// 注册幂等令牌
     fn register_idempotency(&self, client_token: &str, job_id: &str) {
-        self.idempotency_map
-            .lock()
-            .insert(client_token.to_string(), job_id.to_string());
+        self.idempotency_map.lock().insert(client_token.to_string(), job_id.to_string());
     }
 
     /// 创建批量删除任务
@@ -335,7 +335,7 @@ impl BatchOperationManager {
                         error_code: None,
                         error_message: None,
                     });
-                }
+                },
                 Err(e) => {
                     response.errors.push(DeleteError {
                         key: obj.key.clone(),
@@ -350,7 +350,7 @@ impl BatchOperationManager {
                         error_code: Some(e.code().to_string()),
                         error_message: Some(e.message()),
                     });
-                }
+                },
             }
         }
 
@@ -482,7 +482,7 @@ impl BatchOperationManager {
                         error_code: None,
                         error_message: None,
                     });
-                }
+                },
                 Err(e) => {
                     failed.push(BatchObjectResult {
                         key: src_key.clone(),
@@ -491,7 +491,7 @@ impl BatchOperationManager {
                         error_code: Some(e.code().to_string()),
                         error_message: Some(e.message()),
                     });
-                }
+                },
             }
         }
 
@@ -591,7 +591,7 @@ impl BatchOperationManager {
                         error_code: None,
                         error_message: None,
                     });
-                }
+                },
                 Err(e) => {
                     failed.push(BatchObjectResult {
                         key: key.clone(),
@@ -600,7 +600,7 @@ impl BatchOperationManager {
                         error_code: Some(e.code().to_string()),
                         error_message: Some(e.message()),
                     });
-                }
+                },
             }
         }
 
@@ -629,15 +629,13 @@ impl BatchOperationManager {
     /// 取消任务（仅 Pending 状态可取消）
     pub fn cancel_job(&self, job_id: &str) -> S3Result<()> {
         let mut jobs = self.jobs.lock();
-        let job = jobs
-            .get_mut(job_id)
-            .ok_or(S3Error::NoSuchKey)?;
+        let job = jobs.get_mut(job_id).ok_or(S3Error::NoSuchKey)?;
 
         match job.status {
             BatchJobStatus::Pending => {
                 job.status = BatchJobStatus::Cancelled;
                 Ok(())
-            }
+            },
             _ => Err(S3Error::InvalidArgument),
         }
     }
@@ -657,9 +655,7 @@ impl BatchOperationManager {
     /// 获取任务报告
     pub fn get_job_report(&self, job_id: &str) -> S3Result<BatchJobReport> {
         let jobs = self.jobs.lock();
-        jobs.get(job_id)
-            .map(|j| j.report.clone())
-            .ok_or(S3Error::NoSuchKey)
+        jobs.get(job_id).map(|j| j.report.clone()).ok_or(S3Error::NoSuchKey)
     }
 }
 
@@ -713,9 +709,7 @@ mod tests {
             quiet: false,
         };
 
-        let response = mgr
-            .create_delete_job("test-bucket", request, None, delete_fn)
-            .unwrap();
+        let response = mgr.create_delete_job("test-bucket", request, None, delete_fn).unwrap();
 
         assert_eq!(response.deleted.len(), 2);
         assert_eq!(response.errors.len(), 1);
@@ -754,9 +748,7 @@ mod tests {
             quiet: true, // 静默模式
         };
 
-        let response = mgr
-            .create_delete_job("test-bucket", request, None, delete_fn)
-            .unwrap();
+        let response = mgr.create_delete_job("test-bucket", request, None, delete_fn).unwrap();
 
         // 静默模式下成功的不返回
         assert_eq!(response.deleted.len(), 0);
@@ -768,16 +760,10 @@ mod tests {
         let mgr = BatchOperationManager::new();
 
         let objects: Vec<DeleteObjectIdentifier> = (0..1001)
-            .map(|i| DeleteObjectIdentifier {
-                key: format!("obj{}.txt", i),
-                version_id: None,
-            })
+            .map(|i| DeleteObjectIdentifier { key: format!("obj{}.txt", i), version_id: None })
             .collect();
 
-        let request = DeleteObjectsRequest {
-            objects,
-            quiet: false,
-        };
+        let request = DeleteObjectsRequest { objects, quiet: false };
 
         let result = mgr.create_delete_job("bucket", request, None, |_, _, _| Ok(()));
         assert!(result.is_err());
@@ -796,22 +782,19 @@ mod tests {
             .insert(("src-bucket".to_string(), "file2.txt".to_string()), b"world".to_vec());
 
         let storage_clone = storage.clone();
-        let copy_fn = move |
-            src_bucket: &str,
-            src_key: &str,
-            dst_bucket: &str,
-            dst_key: &str,
-            _class: StorageClass,
-        | -> S3Result<()> {
+        let copy_fn = move |src_bucket: &str,
+                            src_key: &str,
+                            dst_bucket: &str,
+                            dst_key: &str,
+                            _class: StorageClass|
+              -> S3Result<()> {
             let s = storage_clone.lock();
             let data = s
                 .get(&(src_bucket.to_string(), src_key.to_string()))
                 .cloned()
                 .ok_or(S3Error::NoSuchKey)?;
             drop(s);
-            storage_clone
-                .lock()
-                .insert((dst_bucket.to_string(), dst_key.to_string()), data);
+            storage_clone.lock().insert((dst_bucket.to_string(), dst_key.to_string()), data);
             Ok(())
         };
 
@@ -848,10 +831,11 @@ mod tests {
         let restored = Arc::new(parking_lot::Mutex::new(Vec::new()));
         let restored_clone = restored.clone();
 
-        let restore_fn = move |bucket: &str, key: &str, _days: u32, _tier: RestoreTier| -> S3Result<()> {
-            restored_clone.lock().push(format!("{}/{}", bucket, key));
-            Ok(())
-        };
+        let restore_fn =
+            move |bucket: &str, key: &str, _days: u32, _tier: RestoreTier| -> S3Result<()> {
+                restored_clone.lock().push(format!("{}/{}", bucket, key));
+                Ok(())
+            };
 
         let request = BatchRestoreRequest {
             bucket: "archive-bucket".into(),
@@ -883,19 +867,17 @@ mod tests {
             storage_class: StorageClass::Hot,
         };
 
-        let copy_fn = |_sb: &str, _sk: &str, _db: &str, _dk: &str, _c: StorageClass| -> S3Result<()> {
-            Ok(())
-        };
+        let copy_fn =
+            |_sb: &str, _sk: &str, _db: &str, _dk: &str, _c: StorageClass| -> S3Result<()> {
+                Ok(())
+            };
 
         let token = "unique-client-token-123";
-        let job_id1 = mgr
-            .create_copy_job(request.clone(), Some(token.to_string()), &copy_fn)
-            .unwrap();
+        let job_id1 =
+            mgr.create_copy_job(request.clone(), Some(token.to_string()), copy_fn).unwrap();
 
         // 使用相同令牌再次请求，应返回相同的 Job ID
-        let job_id2 = mgr
-            .create_copy_job(request, Some(token.to_string()), &copy_fn)
-            .unwrap();
+        let job_id2 = mgr.create_copy_job(request, Some(token.to_string()), copy_fn).unwrap();
 
         assert_eq!(job_id1, job_id2);
     }
@@ -905,9 +887,10 @@ mod tests {
         let mgr = BatchOperationManager::new();
 
         // 创建几个不同状态的任务
-        let copy_fn = |_sb: &str, _sk: &str, _db: &str, _dk: &str, _c: StorageClass| -> S3Result<()> {
-            Ok(())
-        };
+        let copy_fn =
+            |_sb: &str, _sk: &str, _db: &str, _dk: &str, _c: StorageClass| -> S3Result<()> {
+                Ok(())
+            };
 
         let req1 = BatchCopyRequest {
             source_bucket: "s".into(),
@@ -917,7 +900,7 @@ mod tests {
             source_prefix: None,
             storage_class: StorageClass::Hot,
         };
-        let job1 = mgr.create_copy_job(req1, None, &copy_fn).unwrap();
+        let job1 = mgr.create_copy_job(req1, None, copy_fn).unwrap();
 
         // 列出所有任务
         let all_jobs = mgr.list_jobs(None);
@@ -957,13 +940,14 @@ mod tests {
     fn test_partial_failure_report() {
         let mgr = BatchOperationManager::new();
 
-        let restore_fn = |_bucket: &str, key: &str, _days: u32, _tier: RestoreTier| -> S3Result<()> {
-            if key.starts_with("bad-") {
-                Err(S3Error::InvalidArgument)
-            } else {
-                Ok(())
-            }
-        };
+        let restore_fn =
+            |_bucket: &str, key: &str, _days: u32, _tier: RestoreTier| -> S3Result<()> {
+                if key.starts_with("bad-") {
+                    Err(S3Error::InvalidArgument)
+                } else {
+                    Ok(())
+                }
+            };
 
         let request = BatchRestoreRequest {
             bucket: "bkt".into(),

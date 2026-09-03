@@ -63,10 +63,17 @@
         </span>
       </div>
 
-      <!-- 加载 / 空 / 网格 -->
+      <!-- 加载 / 错误 / 空 / 网格 -->
       <div v-if="loading" class="state-box">
         <div class="loading-spinner"></div>
         <p>正在加载专家列表…</p>
+      </div>
+
+      <div v-else-if="error" class="state-box">
+        <div class="state-icon">⚠️</div>
+        <h4>加载失败</h4>
+        <p>{{ error }}</p>
+        <el-button type="primary" size="small" @click="loadExperts">重试</el-button>
       </div>
 
       <div v-else-if="filteredExperts.length === 0" class="state-box">
@@ -574,6 +581,7 @@ const loading = ref(true)
 const loadingMore = ref(false)
 const allLoaded = ref(false)
 const searchLoading = ref(false)
+const error = ref('')
 const searchKeyword = ref('')
 const activeQuickTab = ref('all')
 const selectedCategory = ref('all')
@@ -590,7 +598,7 @@ const showRanking = ref(false)
 const rankingTab = ref('consult')
 const reviewFilter = ref('all')
 
-// ===== Mock 数据 =====
+// ===== 专家类型配置 =====
 const expertTypes = {
   algorithm: { label: '算法专家', color: '#6366f1' },
   architecture: { label: '架构专家', color: '#0891b2' },
@@ -663,10 +671,10 @@ const quickTabs = [
 
 // 平台统计：调用 GET /api/experts/stats
 const heroStats = ref([
-  { key: 'experts', value: '128+', label: '入驻专家', icon: User, trend: '+12%', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-  { key: 'consults', value: '8,520', label: '累计咨询', icon: ChatDotRound, trend: '+23%', gradient: 'linear-gradient(135deg, #06b6d4, #0ea5e9)' },
-  { key: 'rate', value: '98.6%', label: '好评率', icon: Star, trend: '+2.1%', gradient: 'linear-gradient(135deg, #10b981, #14b8a6)' },
-  { key: 'response', value: '3.2min', label: '平均响应', icon: Timer, trend: '-18%', gradient: 'linear-gradient(135deg, #f59e0b, #f97316)' }
+  { key: 'experts', value: '0', label: '入驻专家', icon: User, trend: '', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
+  { key: 'consults', value: '0', label: '累计咨询', icon: ChatDotRound, trend: '', gradient: 'linear-gradient(135deg, #06b6d4, #0ea5e9)' },
+  { key: 'rate', value: '0%', label: '好评率', icon: Star, trend: '', gradient: 'linear-gradient(135deg, #10b981, #14b8a6)' },
+  { key: 'response', value: '-', label: '平均响应', icon: Timer, trend: '', gradient: 'linear-gradient(135deg, #f59e0b, #f97316)' }
 ])
 
 async function loadStats() {
@@ -678,40 +686,32 @@ async function loadStats() {
       if (s.good_rate != null) heroStats.value[2].value = s.good_rate + '%'
       if (s.avg_response != null) heroStats.value[3].value = s.avg_response
     }
-  } catch (e) { console.error('[ExpertPlaza] load stats failed:', e) }
+  } catch (e) {
+    console.error('[ExpertPlaza] load stats failed:', e)
+    ElMessage.error('平台统计加载失败：' + (e.message || '未知错误'))
+  }
 }
 
 
 const experts = ref([])
 // 我的预约列表：调用 GET /api/experts/bookings/mine
-const myBookings = ref([
-  {
-    id: 'bk_001', expertName: '林墨白', expertType: '算法专家',
-    expertEmoji: '🧠', expertGradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    topic: '路径优化算法选型咨询', date: '2024-09-05', timeSlot: '14:00-15:00',
-    description: '想咨询一下物流路径优化问题，目前有几个算法方案不确定怎么选。',
-    status: 'pending'
-  },
-  {
-    id: 'bk_002', expertName: '苏清瑶', expertType: '架构专家',
-    expertEmoji: '🏛️', expertGradient: 'linear-gradient(135deg, #0891b2, #06b6d4)',
-    topic: '微服务拆分设计评审', date: '2024-08-28', timeSlot: '10:00-11:00',
-    description: '我们的单体系统准备拆微服务，需要专家帮忙评审拆分方案。',
-    status: 'completed'
-  }
-])
+const myBookings = ref([])
 
 async function loadMyBookings() {
   try {
     const data = await getMyBookings()
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) {
       myBookings.value = data.map(b => ({
         ...b,
         expertEmoji: b.expertEmoji || getEmojiByType(b.expertType),
         expertGradient: b.expertGradient || 'linear-gradient(135deg, #6366f1, #8b5cf6)'
       }))
     }
-  } catch (e) { console.error('[ExpertPlaza] load stats failed:', e) }
+  } catch (e) {
+    console.error('[ExpertPlaza] load my bookings failed:', e)
+    ElMessage.error('预约记录加载失败：' + (e.message || '未知错误'))
+    myBookings.value = []
+  }
 }
 
 // 预约表单
@@ -824,12 +824,16 @@ function getLevelLabel(level) {
 
 async function loadExperts() {
   loading.value = true
+  error.value = ''
   try {
     const data = await getExperts()
     experts.value = processExperts(data)
+    allLoaded.value = true
   } catch (e) {
     console.error('[ExpertPlaza] API 加载失败:', e)
+    error.value = e?.message || '专家列表加载失败'
     experts.value = []
+    ElMessage.error('专家列表加载失败：' + (e.message || '未知错误'))
   } finally {
     loading.value = false
   }
@@ -842,13 +846,12 @@ function processExperts(list) {
       ...e,
       typeLabel: typeInfo.label,
       typeColor: typeInfo.color,
-      // 确保字段存在，缺失的用默认值
-      consultCount: e.consultCount || Math.floor(Math.random() * 500) + 50,
-      goodRate: e.goodRate || (90 + Math.random() * 9).toFixed(1),
-      responseTime: e.responseTime || (2 + Math.random() * 6).toFixed(1) + 'min',
-      avgRating: e.avgRating || (4.0 + Math.random() * 0.9).toFixed(2),
-      price: e.price ?? 99,
-      online: e.online ?? Math.random() > 0.3,
+      consultCount: e.consultCount ?? 0,
+      goodRate: e.goodRate ?? '0.0',
+      responseTime: e.responseTime ?? '-',
+      avgRating: e.avgRating ?? '0.0',
+      price: e.price ?? 0,
+      online: e.online ?? false,
       recommended: e.recommended ?? false,
       favorited: e.favorited ?? false,
       hot: e.hot ?? false,
@@ -858,12 +861,12 @@ function processExperts(list) {
       avatarEmoji: e.avatarEmoji || getEmojiByType(e.type),
       avatarGradient: e.avatarGradient || getGradientByType(e.type),
       department: e.department || '专家联盟',
-      phone: e.phone || '138****8888',
-      email: e.email || `${e.name || 'expert'}@expert.com`,
-      joinDate: e.joinDate || '2024-01-01',
+      phone: e.phone || '-',
+      email: e.email || '-',
+      joinDate: e.joinDate || '-',
       bioParagraphs: e.bioParagraphs || [e.description || '暂无详细介绍'],
       reviews: e.reviews || [],
-      monthGrowth: e.monthGrowth || Math.floor(Math.random() * 50) + 10
+      monthGrowth: e.monthGrowth ?? 0
     }
   })
 }
@@ -893,10 +896,7 @@ function lightenColor(hex, percent) {
 }
 
 function handleSearch() {
-  searchLoading.value = true
-  setTimeout(() => {
-    searchLoading.value = false
-  }, 300)
+  // 搜索基于已加载的 experts 数据做前端过滤
 }
 
 function resetFilters() {
@@ -951,7 +951,7 @@ function selectTimeSlot(slot) {
   bookingForm.timeSlot = slot
 }
 
-// 专家预约创建：调用 POST /api/experts/bookings，失败保留本地模拟
+// 专家预约创建：调用 POST /api/experts/bookings
 async function submitBooking() {
   if (!bookingForm.date) {
     ElMessage.warning('请选择预约日期')
@@ -976,13 +976,7 @@ async function submitBooking() {
       time_slot: bookingForm.timeSlot,
       description: bookingForm.description
     }
-    let created
-    try {
-      created = await createBooking(payload)
-    } catch (e) {
-      // API 不可用时降级为本地模拟
-      created = { id: 'bk_' + Date.now(), ...payload, status: 'pending' }
-    }
+    const created = await createBooking(payload)
 
     const newBooking = {
       id: created.id || 'bk_' + Date.now(),
@@ -1001,7 +995,7 @@ async function submitBooking() {
     ElMessage.success('预约成功！专家将在24小时内确认')
     showBookingDialog.value = false
   } catch (e) {
-    ElMessage.error('预约失败：' + e.message)
+    ElMessage.error('预约失败：' + (e.message || '未知错误'))
   } finally {
     submittingBooking.value = false
   }
@@ -1053,12 +1047,11 @@ async function startConsult(booking) {
   try {
     const room = await enterConsultRoom(booking.id)
     ElMessage.success('已进入咨询室')
-    // 可在此处跳转咨询页面或打开咨询窗口
     if (room && room.url) {
       window.open(room.url, '_blank')
     }
   } catch (e) {
-    ElMessage.info('正在进入咨询室…')
+    ElMessage.error('进入咨询室失败：' + (e.message || '未知错误'))
   }
 }
 
@@ -1079,7 +1072,7 @@ async function addToTeam() {
     }
     ElMessage.success('已加入团队协作列表')
   } catch (e) {
-    ElMessage.success('已加入团队协作列表')
+    ElMessage.error('加入团队失败：' + (e.message || '未知错误'))
   }
 }
 
@@ -1096,17 +1089,14 @@ async function startConsultNow(expert) {
       window.open(result.url, '_blank')
     }
   } catch (e) {
-    ElMessage.info('正在连接专家咨询室…')
+    ElMessage.error('连接咨询室失败：' + (e.message || '未知错误'))
   }
 }
 
 function loadMore() {
-  loadingMore.value = true
-  setTimeout(() => {
-    loadingMore.value = false
-    allLoaded.value = true
-    ElMessage.info('已加载全部专家')
-  }, 800)
+  // 专家列表已在 loadExperts 中全量加载，标记为已全部加载
+  allLoaded.value = true
+  ElMessage.info('已加载全部专家')
 }
 
 function buildRankingData() {

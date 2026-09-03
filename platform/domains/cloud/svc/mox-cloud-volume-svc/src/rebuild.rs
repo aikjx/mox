@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -7,16 +7,20 @@
 //! directory, reconstructs the missing shards, writes them back, updates the
 //! manifest crc64 and bumps the `REBUILD_COUNT` metric.
 
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::atomic::Ordering,
+};
 
-use crate::error::{VolumeError, VolumeResult};
-use crate::fs_layout::{manifest_path, shard_path};
-use crate::manifest::{crc64_ecma, EcManifest};
-use crate::metrics::REBUILD_COUNT;
-use crate::profile::EcProfile;
-use crate::reed_solomon::{ReedSolomonEngine, RSResult, RSError};
+use crate::{
+    error::{VolumeError, VolumeResult},
+    fs_layout::{manifest_path, shard_path},
+    manifest::{crc64_ecma, EcManifest},
+    metrics::REBUILD_COUNT,
+    profile::EcProfile,
+    reed_solomon::{RSError, RSResult, ReedSolomonEngine},
+};
 
 /// High-level job descriptor used by the rebuild orchestrator.
 #[derive(Debug, Clone)]
@@ -46,8 +50,10 @@ impl RebuildJob {
     /// Load the manifest for this object.
     pub fn load_manifest(&self) -> VolumeResult<EcManifest> {
         let path = manifest_path(&self.mountpath, &self.bucket_prefix, &self.oid);
-        let raw = fs::read(&path).map_err(|e| VolumeError::IOError(format!("read manifest: {e}")))?;
-        serde_json::from_slice(&raw).map_err(|e| VolumeError::Internal(format!("decode manifest: {e}")))
+        let raw =
+            fs::read(&path).map_err(|e| VolumeError::IOError(format!("read manifest: {e}")))?;
+        serde_json::from_slice(&raw)
+            .map_err(|e| VolumeError::Internal(format!("decode manifest: {e}")))
     }
 
     /// Run the rebuild.  Returns the number of shard files written.
@@ -63,12 +69,12 @@ impl RebuildJob {
         let total = profile.total_shards();
         // Read all shards we can find.
         let mut slots: Vec<Option<Vec<u8>>> = vec![None; total];
-        for i in 0..total {
+        for (i, slot) in slots.iter_mut().enumerate() {
             let p = shard_path(&self.mountpath, &self.bucket_prefix, &self.oid, i);
             if p.exists() {
-                let data =
-                    fs::read(&p).map_err(|e| VolumeError::IOError(format!("read shard {i}: {e}")))?;
-                slots[i] = Some(data);
+                let data = fs::read(&p)
+                    .map_err(|e| VolumeError::IOError(format!("read shard {i}: {e}")))?;
+                *slot = Some(data);
             }
         }
         let engine = ReedSolomonEngine::new();

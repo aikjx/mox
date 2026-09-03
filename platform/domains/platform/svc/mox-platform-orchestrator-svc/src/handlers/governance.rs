@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -445,7 +445,7 @@ pub struct GovernanceReportSummary {
 /// - 业务璇玑 / 开发璇玑平均健康分
 pub async fn dashboard_handler(
     State(gs): State<Arc<GovernanceState>>,
-) -> ApiResult<Json<DashboardData>> {
+) -> ApiResponse<DashboardData> {
     let audit_chain = gs.audit_chain.lock().await;
     let chain_verified = audit_chain.verify();
     let audit_count = audit_chain.events.len();
@@ -509,7 +509,7 @@ pub async fn dashboard_handler(
     let approved_flows = recent.len().saturating_sub(blocked);
     let draft_flows = total_events.saturating_sub(approved_flows + blocked);
 
-    Ok(Json(DashboardData {
+    api_ok(DashboardData {
         timestamp: unix_ts(),
         total_flows: total_events,
         approved_flows,
@@ -523,7 +523,7 @@ pub async fn dashboard_handler(
         audit_chain_verified: chain_verified,
         business_league_health: business_health,
         dev_league_health: dev_health,
-    }))
+    })
 }
 
 // ============================================================================
@@ -536,7 +536,7 @@ pub async fn dashboard_handler(
 /// 每个专家含：健康分、启用状态、否决次数、总检查数、最近更新时间。
 pub async fn experts_status_handler(
     State(gs): State<Arc<GovernanceState>>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResponse<Value> {
     let states = gs.expert_states.read().await;
 
     let business_league = [
@@ -576,7 +576,7 @@ pub async fn experts_status_handler(
         0.0
     };
 
-    Ok(Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "timestamp": unix_ts(),
         "mox": "double-league-14-dim",
         "business_league": {
@@ -590,7 +590,7 @@ pub async fn experts_status_handler(
             "average_health": avg_dev,
         },
         "mox": "algo-verification-supreme",
-    })))
+    }))
 }
 
 // ============================================================================
@@ -618,7 +618,7 @@ pub struct VetoQuery {
 pub async fn veto_events_handler(
     State(gs): State<Arc<GovernanceState>>,
     Query(query): Query<VetoQuery>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResponse<Value> {
     let vetoes = gs.veto_events.lock().await;
 
     let page = query.page.unwrap_or(1).max(1);
@@ -646,13 +646,13 @@ pub async fn veto_events_handler(
         .cloned()
         .collect();
 
-    Ok(Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "events": page_items,
         "total": total,
         "page": page,
         "page_size": page_size,
         "total_pages": total_pages,
-    })))
+    }))
 }
 
 // ============================================================================
@@ -666,7 +666,7 @@ pub async fn veto_events_handler(
 pub async fn audit_logs_handler(
     State(gs): State<Arc<GovernanceState>>,
     Query(query): Query<AuditLogQuery>,
-) -> ApiResult<Json<AuditLogResponse>> {
+) -> ApiResponse<AuditLogResponse> {
     let chain = gs.audit_chain.lock().await;
 
     let page = query.page.unwrap_or(1).max(1);
@@ -704,13 +704,13 @@ pub async fn audit_logs_handler(
         })
         .collect();
 
-    Ok(Json(AuditLogResponse {
+    api_ok(AuditLogResponse {
         entries,
         total,
         page,
         page_size,
         total_pages,
-    }))
+    })
 }
 
 // ============================================================================
@@ -722,9 +722,9 @@ pub async fn audit_logs_handler(
 /// 返回当前 RBAC 配置（角色权限映射）。
 pub async fn get_rbac_config_handler(
     State(gs): State<Arc<GovernanceState>>,
-) -> ApiResult<Json<RbacConfig>> {
+) -> ApiResponse<RbacConfig> {
     let config = gs.rbac_config.read().await;
-    Ok(Json(config.clone()))
+    api_ok(config.clone())
 }
 
 /// PUT /api/governance/config/rbac
@@ -742,7 +742,7 @@ pub struct UpdateRbacRequest {
 pub async fn update_rbac_config_handler(
     State(gs): State<Arc<GovernanceState>>,
     Json(req): Json<UpdateRbacRequest>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResponse<Value> {
     let mut config = gs.rbac_config.write().await;
     config.version += 1;
     config.updated_at = unix_ts();
@@ -762,12 +762,12 @@ pub async fn update_rbac_config_handler(
     .await;
 
     let config = gs.rbac_config.read().await;
-    Ok(Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "success": true,
         "message": "RBAC 配置已更新",
         "version": new_version,
         "config": &*config,
-    })))
+    }))
 }
 
 /// GET /api/governance/config/experts
@@ -775,9 +775,9 @@ pub async fn update_rbac_config_handler(
 /// 返回专家权重和阈值配置。
 pub async fn get_expert_config_handler(
     State(gs): State<Arc<GovernanceState>>,
-) -> ApiResult<Json<ExpertConfig>> {
+) -> ApiResponse<ExpertConfig> {
     let config = gs.expert_config.read().await;
-    Ok(Json(config.clone()))
+    api_ok(config.clone())
 }
 
 /// PUT /api/governance/config/experts
@@ -796,7 +796,7 @@ pub struct UpdateExpertConfigRequest {
 pub async fn update_expert_config_handler(
     State(gs): State<Arc<GovernanceState>>,
     Json(req): Json<UpdateExpertConfigRequest>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResponse<Value> {
     let mut config = gs.expert_config.write().await;
     config.version += 1;
     config.updated_at = unix_ts();
@@ -842,12 +842,12 @@ pub async fn update_expert_config_handler(
     };
     let _ = gs.state_broadcast.send(change);
 
-    Ok(Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "success": true,
         "message": "专家配置已更新",
         "version": new_version,
         "config": new_config,
-    })))
+    }))
 }
 
 // ============================================================================
@@ -1131,9 +1131,10 @@ pub struct AssessRequest {
 pub async fn assess_handler(
     State(gs): State<Arc<GovernanceState>>,
     Json(req): Json<AssessRequest>,
-) -> ApiResult<Json<GovernanceReportSummary>> {
+) -> ApiResponse<GovernanceReportSummary> {
     let summary = trigger_governance(&gs, &req.flow_id, &req.flow_name, &req.flow).await;
-    Ok(Json(summary))
+    api_ok(summary)
 }
 
 use futures_util::StreamExt;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};

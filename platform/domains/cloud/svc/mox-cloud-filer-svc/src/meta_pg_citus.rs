@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -24,14 +24,17 @@
 use async_trait::async_trait;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::BTreeMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use crate::error::FilerResult;
-use crate::meta_trait::{
-    Attr, AttrPatch, BatchCreateResult, BatchDeleteResult, BatchReadAttrResult, DirEntry,
-    InMemInodeStore, MetaBackend, MetaStorageProvider,
+use crate::{
+    error::FilerResult,
+    meta_trait::{
+        Attr, AttrPatch, BatchCreateResult, BatchDeleteResult, BatchReadAttrResult, DirEntry,
+        InMemInodeStore, MetaBackend, MetaStorageProvider,
+    },
 };
 
 #[derive(Debug, Default)]
@@ -207,11 +210,7 @@ pub(crate) fn meta_mkdir(
     if store.dir_index.contains_key(&(parent, name.to_string())) {
         return Err(crate::error::FilerError::Metadata("exists".into()));
     }
-    let p = store
-        .inodes
-        .get(&parent)
-        .ok_or(crate::error::FilerError::NotFound)?
-        .clone();
+    let p = store.inodes.get(&parent).ok_or(crate::error::FilerError::NotFound)?.clone();
     if (p.mode & 0o170000) != S_IFDIR {
         return Err(crate::error::FilerError::AttrInvalid);
     }
@@ -251,11 +250,7 @@ pub(crate) fn meta_create(
     if store.dir_index.contains_key(&(parent, name.to_string())) {
         return Err(crate::error::FilerError::Metadata("exists".into()));
     }
-    let p = store
-        .inodes
-        .get(&parent)
-        .ok_or(crate::error::FilerError::NotFound)?
-        .clone();
+    let p = store.inodes.get(&parent).ok_or(crate::error::FilerError::NotFound)?.clone();
     if (p.mode & 0o170000) != S_IFDIR {
         return Err(crate::error::FilerError::AttrInvalid);
     }
@@ -290,10 +285,7 @@ pub(crate) fn meta_write_attr(
     ino: u64,
     patch: AttrPatch<'_>,
 ) -> FilerResult<()> {
-    let a = store
-        .inodes
-        .get_mut(&ino)
-        .ok_or(crate::error::FilerError::NotFound)?;
+    let a = store.inodes.get_mut(&ino).ok_or(crate::error::FilerError::NotFound)?;
     if let Some(v) = patch.size {
         a.size = v;
     }
@@ -363,11 +355,7 @@ impl Default for ShardConfig {
         for i in 0..16 {
             shard_nodes.insert(i, format!("node-{}", i / 4));
         }
-        ShardConfig {
-            strategy: ShardStrategy::InodeModulo,
-            num_shards: 16,
-            shard_nodes,
-        }
+        ShardConfig { strategy: ShardStrategy::InodeModulo, num_shards: 16, shard_nodes }
     }
 }
 
@@ -488,11 +476,7 @@ impl TxManager {
     pub fn log_operation(&self, tx_id: u64, op: &str, args: Vec<String>, before: Option<String>) {
         let mut txs = self.transactions.lock();
         if let Some(tx) = txs.get_mut(&tx_id) {
-            tx.log.push(TxLogEntry {
-                op: op.to_string(),
-                args,
-                before,
-            });
+            tx.log.push(TxLogEntry { op: op.to_string(), args, before });
             tx.last_active_ms = now_ms_citus();
         }
     }
@@ -659,7 +643,7 @@ impl Default for ConnectionPoolConfig {
         ConnectionPoolConfig {
             max_connections_per_node: 32,
             min_idle_connections: 4,
-            max_lifetime_ms: 3600_000, // 1 小时
+            max_lifetime_ms: 3_600_000,       // 1 小时
             health_check_interval_ms: 10_000, // 10 秒
         }
     }
@@ -789,10 +773,12 @@ impl ConnectionPoolManager {
         let mut recovered = 0;
 
         for (node_id, h) in health.iter_mut() {
-            if now.saturating_sub(h.last_check_ms) >= self.config.health_check_interval_ms || !h.healthy {
+            if now.saturating_sub(h.last_check_ms) >= self.config.health_check_interval_ms
+                || !h.healthy
+            {
                 h.last_check_ms = now;
                 // 模拟：延迟 0-5ms 随机
-                h.latency_ms = (now % 5) as u64;
+                h.latency_ms = now % 5;
 
                 if !h.healthy {
                     // 模拟：检查后恢复健康
@@ -864,11 +850,11 @@ impl ConnectionPoolManager {
 impl PgCitusMeta {
     /// 使用指定分片数创建
     pub fn with_shards(num_shards: u32) -> Self {
-        let mut store = PgStore::default();
-        store.shards = (0..num_shards as u64).map(|i| (i, ())).collect();
-        Self {
-            inner: Mutex::new(store),
-        }
+        let store = PgStore {
+            shards: (0..num_shards as u64).map(|i| (i, ())).collect(),
+            ..Default::default()
+        };
+        Self { inner: Mutex::new(store) }
     }
 
     /// 获取分片配置
@@ -879,11 +865,7 @@ impl PgCitusMeta {
         for i in 0..num_shards {
             shard_nodes.insert(i, format!("node-{}", i / 4));
         }
-        ShardConfig {
-            strategy: ShardStrategy::InodeModulo,
-            num_shards,
-            shard_nodes,
-        }
+        ShardConfig { strategy: ShardStrategy::InodeModulo, num_shards, shard_nodes }
     }
 
     /// 按目录 hash 计算分片 ID
@@ -902,19 +884,11 @@ impl PgCitusMeta {
     /// 获取分片上的 inode 数量
     pub fn shard_inode_count(&self, shard_id: u64) -> usize {
         let s = self.inner.lock();
-        s.ino_shard
-            .iter()
-            .filter(|(_, &sid)| sid == shard_id)
-            .count()
+        s.ino_shard.iter().filter(|(_, &sid)| sid == shard_id).count()
     }
 
     /// 批量创建文件
-    pub fn batch_create(
-        &self,
-        parent: u64,
-        names: &[&str],
-        mode: u32,
-    ) -> BatchCreateResult {
+    pub fn batch_create(&self, parent: u64, names: &[&str], mode: u32) -> BatchCreateResult {
         let mut result = BatchCreateResult::default();
         let mut store = self.inner.lock();
 
@@ -923,10 +897,10 @@ impl PgCitusMeta {
                 Ok(ino) => {
                     Self::track_shard(&mut store, ino);
                     result.created.push((name.to_string(), ino));
-                }
+                },
                 Err(e) => {
                     result.failed.push((name.to_string(), e.to_string()));
-                }
+                },
             }
         }
 
@@ -942,10 +916,10 @@ impl PgCitusMeta {
             match store.store.inodes.get(&ino) {
                 Some(attr) => {
                     result.found.push(attr.clone());
-                }
+                },
                 None => {
                     result.not_found.push(ino);
-                }
+                },
             }
         }
 
@@ -962,10 +936,10 @@ impl PgCitusMeta {
                 Ok(()) => {
                     store.ino_shard.remove(&ino);
                     result.deleted.push(ino);
-                }
+                },
                 Err(e) => {
                     result.failed.push((ino, e.to_string()));
-                }
+                },
             }
         }
 
@@ -999,10 +973,7 @@ pub(crate) fn meta_delete(store: &mut InMemInodeStore, ino: u64) -> FilerResult<
     if ino == 1 {
         return Err(crate::error::FilerError::AttrInvalid);
     }
-    let a = store
-        .inodes
-        .remove(&ino)
-        .ok_or(crate::error::FilerError::NotFound)?;
+    let a = store.inodes.remove(&ino).ok_or(crate::error::FilerError::NotFound)?;
     store.dir_index.remove(&(a.parent, a.name));
     Ok(())
 }
@@ -1011,11 +982,7 @@ pub(crate) fn meta_list_dir(
     store: &mut InMemInodeStore,
     parent: u64,
 ) -> FilerResult<Vec<DirEntry>> {
-    let p = store
-        .inodes
-        .get(&parent)
-        .ok_or(crate::error::FilerError::NotFound)?
-        .clone();
+    let p = store.inodes.get(&parent).ok_or(crate::error::FilerError::NotFound)?.clone();
     if (p.mode & 0o170000) != S_IFDIR {
         return Err(crate::error::FilerError::AttrInvalid);
     }
@@ -1034,11 +1001,7 @@ pub(crate) fn meta_list_dir(
             } else {
                 2
             };
-            out.push(DirEntry {
-                name: n.clone(),
-                ino: *ino,
-                typ: t,
-            });
+            out.push(DirEntry { name: n.clone(), ino: *ino, typ: t });
         }
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));
@@ -1051,25 +1014,17 @@ pub(crate) fn meta_link(
     new_parent: u64,
     new_name: &str,
 ) -> FilerResult<()> {
-    if store
-        .dir_index
-        .contains_key(&(new_parent, new_name.to_string()))
-    {
+    if store.dir_index.contains_key(&(new_parent, new_name.to_string())) {
         return Err(crate::error::FilerError::Metadata("exists".into()));
     }
     {
-        let a = store
-            .inodes
-            .get_mut(&ino)
-            .ok_or(crate::error::FilerError::NotFound)?;
+        let a = store.inodes.get_mut(&ino).ok_or(crate::error::FilerError::NotFound)?;
         if (a.mode & 0o170000) == S_IFDIR {
             return Err(crate::error::FilerError::AttrInvalid);
         }
         a.nlink += 1;
     }
-    store
-        .dir_index
-        .insert((new_parent, new_name.to_string()), ino);
+    store.dir_index.insert((new_parent, new_name.to_string()), ino);
     Ok(())
 }
 
@@ -1080,10 +1035,7 @@ pub(crate) fn meta_unlink(store: &mut InMemInodeStore, parent: u64, name: &str) 
         .ok_or(crate::error::FilerError::NotFound)?;
     let remove;
     {
-        let a = store
-            .inodes
-            .get_mut(&ino)
-            .ok_or(crate::error::FilerError::NotFound)?;
+        let a = store.inodes.get_mut(&ino).ok_or(crate::error::FilerError::NotFound)?;
         if (a.mode & 0o170000) == S_IFDIR {
             let empty = !store.dir_index.keys().any(|(p, _)| *p == ino);
             if !empty {
@@ -1153,12 +1105,8 @@ pub(crate) fn meta_rename(
             if (tattr.mode & 0o170000) == S_IFDIR {
                 let empty = !store.dir_index.keys().any(|(p, _)| *p == target_ino);
                 if !empty {
-                    store
-                        .dir_index
-                        .insert((new_parent, new_name.to_string()), target_ino);
-                    store
-                        .dir_index
-                        .insert((old_parent, old_name.to_string()), ino);
+                    store.dir_index.insert((new_parent, new_name.to_string()), target_ino);
+                    store.dir_index.insert((old_parent, old_name.to_string()), ino);
                     return Err(crate::error::FilerError::NotEmpty);
                 }
             }
@@ -1168,9 +1116,7 @@ pub(crate) fn meta_rename(
             }
         }
     }
-    store
-        .dir_index
-        .insert((new_parent, new_name.to_string()), ino);
+    store.dir_index.insert((new_parent, new_name.to_string()), ino);
     if let Some(a) = store.inodes.get_mut(&ino) {
         a.parent = new_parent;
         a.name = new_name.to_string();
@@ -1287,7 +1233,7 @@ mod citus_enhanced_tests {
         let mgr = TxManager::new();
 
         let tx1 = mgr.begin_tx();
-        let tx2 = mgr.begin_tx();
+        let _tx2 = mgr.begin_tx();
         mgr.prepare(tx1);
         mgr.commit(tx1);
 
@@ -1358,7 +1304,7 @@ mod citus_enhanced_tests {
 
         // 创建子目录
         let store = meta.inner.lock();
-        let mut s = store.store.clone();
+        let _s = store.store.clone();
         drop(store);
 
         // 用现有的 inode_mkdir 创建子目录
@@ -1470,8 +1416,8 @@ mod citus_enhanced_tests {
         meta.batch_create(1, &["f1", "f2", "f3", "f4", "f5"], 0o644);
 
         let shard0_count = meta.shard_inode_count(0);
-        // 至少有一些文件在分片 0
-        assert!(shard0_count >= 0);
+        // shard0_count 为 usize，恒 >= 0；至少有一些文件在分片 0
+        let _ = shard0_count;
 
         let total_shards = meta.list_shards().len();
         assert_eq!(total_shards, 16);

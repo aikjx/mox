@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -21,13 +21,7 @@ pub struct Tagging {
 
 impl Tagging {
     pub fn from_map(m: &BTreeMap<String, String>) -> Self {
-        let tags = m
-            .iter()
-            .map(|(k, v)| Tag {
-                key: k.clone(),
-                value: v.clone(),
-            })
-            .collect();
+        let tags = m.iter().map(|(k, v)| Tag { key: k.clone(), value: v.clone() }).collect();
         Tagging { tags }
     }
 
@@ -74,7 +68,7 @@ impl Tagging {
                     if name.local_name == "Tag" {
                         cur_tag = Some(Tag::default());
                     }
-                }
+                },
                 XmlEvent::Characters(s) => text.push_str(&s),
                 XmlEvent::EndElement { name, .. } => {
                     let tag_name = name.local_name.as_str();
@@ -83,22 +77,22 @@ impl Tagging {
                             if let Some(t) = cur_tag.as_mut() {
                                 t.key = text.trim().to_string();
                             }
-                        }
+                        },
                         "Value" => {
                             if let Some(t) = cur_tag.as_mut() {
                                 t.value = text.trim().to_string();
                             }
-                        }
+                        },
                         "Tag" => {
                             if let Some(t) = cur_tag.take() {
                                 tags.push(t);
                             }
-                        }
-                        _ => {}
+                        },
+                        _ => {},
                     }
                     text.clear();
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
         Ok(Tagging { tags })

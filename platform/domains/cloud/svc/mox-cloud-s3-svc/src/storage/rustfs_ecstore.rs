@@ -48,10 +48,7 @@ impl RustFsEcstoreBackend {
     ///
     /// **接入点已定义，实际 RustFS 进程/FFI 对接待后续阶段。**
     pub fn new(endpoint: String, pool_name: String) -> Self {
-        Self {
-            endpoint,
-            pool_name,
-        }
+        Self { endpoint, pool_name }
     }
 
     /// 检查后端是否可用。
@@ -180,22 +177,10 @@ mod tests {
         let backend = RustFsEcstoreBackend::new("ep".into(), "pool".into());
         let id = ChunkId::new("test-chunk");
 
-        assert!(matches!(
-            backend.put_chunk(&id, b"data").await,
-            Err(StorageError::Unsupported)
-        ));
-        assert!(matches!(
-            backend.get_chunk(&id).await,
-            Err(StorageError::Unsupported)
-        ));
-        assert!(matches!(
-            backend.delete_chunk(&id).await,
-            Err(StorageError::Unsupported)
-        ));
-        assert!(matches!(
-            backend.chunk_exists(&id).await,
-            Err(StorageError::Unsupported)
-        ));
+        assert!(matches!(backend.put_chunk(&id, b"data").await, Err(StorageError::Unsupported)));
+        assert!(matches!(backend.get_chunk(&id).await, Err(StorageError::Unsupported)));
+        assert!(matches!(backend.delete_chunk(&id).await, Err(StorageError::Unsupported)));
+        assert!(matches!(backend.chunk_exists(&id).await, Err(StorageError::Unsupported)));
         assert!(matches!(
             backend.list_chunks("prefix", None, 10).await,
             Err(StorageError::Unsupported)

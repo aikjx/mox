@@ -17,13 +17,14 @@
 use async_trait::async_trait;
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
-use crate::error::{FilerError, FilerResult};
-use crate::meta_trait::{
-    now_secs, Attr, AttrPatch, DirEntry, InMemInodeStore, MetaBackend, MetaStorageProvider,
-    S_IFDIR, S_IFLNK, S_IFREG,
+use crate::{
+    error::{FilerError, FilerResult},
+    meta_trait::{
+        now_secs, Attr, AttrPatch, DirEntry, InMemInodeStore, MetaBackend, MetaStorageProvider,
+        S_IFDIR, S_IFLNK, S_IFREG,
+    },
 };
 
 // ============================================================================
@@ -81,7 +82,8 @@ impl RealRedisStore {
 
     async fn get_inode(&self, ino: u64) -> FilerResult<Attr> {
         let mut con = self.con.clone();
-        let raw: Option<String> = con.get(Self::inode_key(ino))
+        let raw: Option<String> = con
+            .get(Self::inode_key(ino))
             .await
             .map_err(|e| FilerError::Other(format!("Redis GET inode {ino} 失败: {e}")))?;
         let raw = raw.ok_or(FilerError::NotFound)?;
@@ -93,7 +95,8 @@ impl RealRedisStore {
         let mut con = self.con.clone();
         let raw = serde_json::to_string(attr)
             .map_err(|e| FilerError::Other(format!("inode JSON 序列化失败: {e}")))?;
-        let _: () = con.set(Self::inode_key(attr.ino), raw)
+        let _: () = con
+            .set(Self::inode_key(attr.ino), raw)
             .await
             .map_err(|e| FilerError::Other(format!("Redis SET inode {} 失败: {e}", attr.ino)))?;
         Ok(())
@@ -101,7 +104,8 @@ impl RealRedisStore {
 
     async fn delete_inode(&self, ino: u64) -> FilerResult<()> {
         let mut con = self.con.clone();
-        let _: () = con.del(Self::inode_key(ino))
+        let _: () = con
+            .del(Self::inode_key(ino))
             .await
             .map_err(|e| FilerError::Other(format!("Redis DEL inode {ino} 失败: {e}")))?;
         Ok(())
@@ -109,7 +113,8 @@ impl RealRedisStore {
 
     async fn next_ino(&self) -> FilerResult<u64> {
         let mut con = self.con.clone();
-        let v: u64 = con.incr("filer:next_ino", 1)
+        let v: u64 = con
+            .incr("filer:next_ino", 1)
             .await
             .map_err(|e| FilerError::Other(format!("Redis INCR next_ino 失败: {e}")))?;
         Ok(v)
@@ -117,7 +122,8 @@ impl RealRedisStore {
 
     async fn dir_get(&self, parent: u64, name: &str) -> FilerResult<Option<u64>> {
         let mut con = self.con.clone();
-        let v: Option<String> = con.hget(Self::dir_key(parent), name)
+        let v: Option<String> = con
+            .hget(Self::dir_key(parent), name)
             .await
             .map_err(|e| FilerError::Other(format!("Redis HGET dir {parent}/{name} 失败: {e}")))?;
         Ok(v.and_then(|s| s.parse::<u64>().ok()))
@@ -125,7 +131,8 @@ impl RealRedisStore {
 
     async fn dir_set(&self, parent: u64, name: &str, ino: u64) -> FilerResult<()> {
         let mut con = self.con.clone();
-        let _: () = con.hset(Self::dir_key(parent), name, ino.to_string())
+        let _: () = con
+            .hset(Self::dir_key(parent), name, ino.to_string())
             .await
             .map_err(|e| FilerError::Other(format!("Redis HSET dir {parent}/{name} 失败: {e}")))?;
         Ok(())
@@ -133,7 +140,8 @@ impl RealRedisStore {
 
     async fn dir_remove(&self, parent: u64, name: &str) -> FilerResult<()> {
         let mut con = self.con.clone();
-        let _: () = con.hdel(Self::dir_key(parent), name)
+        let _: () = con
+            .hdel(Self::dir_key(parent), name)
             .await
             .map_err(|e| FilerError::Other(format!("Redis HDEL dir {parent}/{name} 失败: {e}")))?;
         Ok(())
@@ -141,7 +149,8 @@ impl RealRedisStore {
 
     async fn dir_all(&self, parent: u64) -> FilerResult<BTreeMap<String, u64>> {
         let mut con = self.con.clone();
-        let raw: BTreeMap<String, String> = con.hgetall(Self::dir_key(parent))
+        let raw: BTreeMap<String, String> = con
+            .hgetall(Self::dir_key(parent))
             .await
             .map_err(|e| FilerError::Other(format!("Redis HGETALL dir {parent} 失败: {e}")))?;
         let mut out = BTreeMap::new();
@@ -175,11 +184,13 @@ impl RealRedisStore {
         let raw = serde_json::to_string(&root)
             .map_err(|e| FilerError::Other(format!("root inode JSON 序列化失败: {e}")))?;
         // SET NX：仅当不存在时设置（幂等）
-        let _: () = con.set_nx(Self::inode_key(1), raw)
+        let _: () = con
+            .set_nx(Self::inode_key(1), raw)
             .await
             .map_err(|e| FilerError::Other(format!("Redis SET root inode 失败: {e}")))?;
         // next_ino 初始化为 2（root=1）
-        let _: () = con.set_nx("filer:next_ino", "2")
+        let _: () = con
+            .set_nx("filer:next_ino", "2")
             .await
             .map_err(|e| FilerError::Other(format!("Redis SET next_ino 失败: {e}")))?;
         Ok(())
@@ -190,7 +201,8 @@ impl RealRedisStore {
     /// 对 inode 键设置真实 Redis EXPIRE（秒）。
     pub async fn expire(&self, ino: u64, ttl_seconds: u64) -> FilerResult<()> {
         let mut con = self.con.clone();
-        let _: () = con.expire(Self::inode_key(ino), ttl_seconds as i64)
+        let _: () = con
+            .expire(Self::inode_key(ino), ttl_seconds as i64)
             .await
             .map_err(|e| FilerError::Other(format!("Redis EXPIRE inode {ino} 失败: {e}")))?;
         Ok(())
@@ -199,7 +211,8 @@ impl RealRedisStore {
     /// 真实 GET（返回 inode JSON 字符串）。
     pub async fn get(&self, ino: u64) -> FilerResult<Option<String>> {
         let mut con = self.con.clone();
-        let v: Option<String> = con.get(Self::inode_key(ino))
+        let v: Option<String> = con
+            .get(Self::inode_key(ino))
             .await
             .map_err(|e| FilerError::Other(format!("Redis GET inode {ino} 失败: {e}")))?;
         Ok(v)
@@ -239,8 +252,7 @@ struct RedisInode {
 
 impl InMemoryRedisStore {
     pub fn new() -> Self {
-        let mut s = InMemRedisState::default();
-        s.next_ino = 2;
+        let mut s = InMemRedisState { next_ino: 2, ..Default::default() };
         // 初始化 root
         let t = now_secs();
         s.inodes.insert(
@@ -264,9 +276,7 @@ impl InMemoryRedisStore {
                 expire_at: 0,
             },
         );
-        Self {
-            inner: parking_lot::Mutex::new(s),
-        }
+        Self { inner: parking_lot::Mutex::new(s) }
     }
 
     fn sync_store_to_redis(s: &mut InMemRedisState) {
@@ -295,10 +305,7 @@ impl InMemoryRedisStore {
         for (ino, a) in s.store.inodes.iter() {
             s.inodes
                 .entry(*ino)
-                .or_insert(RedisInode {
-                    attr: a.clone(),
-                    expire_at: 0,
-                })
+                .or_insert(RedisInode { attr: a.clone(), expire_at: 0 })
                 .attr = a.clone();
         }
         // dirs 完全重建
@@ -328,16 +335,12 @@ impl RedisMeta {
     /// 连接失败返回真实错误，不静默降级。
     pub async fn new() -> FilerResult<Self> {
         let store = RealRedisStore::connect_from_env().await?;
-        Ok(Self {
-            backend: RedisBackend::Real(store),
-        })
+        Ok(Self { backend: RedisBackend::Real(store) })
     }
 
     /// 显式使用内存实现（测试 / 无 Redis 环境用）。
     pub fn new_in_memory() -> Self {
-        Self {
-            backend: RedisBackend::InMemory(Arc::new(InMemoryRedisStore::new())),
-        }
+        Self { backend: RedisBackend::InMemory(Arc::new(InMemoryRedisStore::new())) }
     }
 
     /// 是否为真实 Redis 后端。
@@ -366,7 +369,7 @@ impl MetaStorageProvider for RedisMeta {
                 let r = crate::meta_pg_citus::meta_mkdir(&mut lock.store, parent, name, mode);
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 
@@ -378,7 +381,7 @@ impl MetaStorageProvider for RedisMeta {
                 let r = crate::meta_pg_citus::meta_create(&mut lock.store, parent, name, mode);
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 
@@ -387,12 +390,12 @@ impl MetaStorageProvider for RedisMeta {
             RedisBackend::Real(r) => {
                 let v = r.dir_get(parent, name).await?;
                 v.ok_or(FilerError::NotFound)
-            }
+            },
             RedisBackend::InMemory(m) => {
                 let mut lock = m.inner.lock();
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 lock.store.lookup_name(parent, name)
-            }
+            },
         }
     }
 
@@ -404,7 +407,7 @@ impl MetaStorageProvider for RedisMeta {
                 let r = crate::meta_pg_citus::meta_write_attr(&mut lock.store, ino, patch);
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 
@@ -416,7 +419,7 @@ impl MetaStorageProvider for RedisMeta {
                 let r = crate::meta_pg_citus::meta_delete(&mut lock.store, ino);
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 
@@ -426,12 +429,8 @@ impl MetaStorageProvider for RedisMeta {
             RedisBackend::InMemory(m) => {
                 let mut lock = m.inner.lock();
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
-                lock.store
-                    .inodes
-                    .get(&ino)
-                    .cloned()
-                    .ok_or(FilerError::NotFound)
-            }
+                lock.store.inodes.get(&ino).cloned().ok_or(FilerError::NotFound)
+            },
         }
     }
 
@@ -443,7 +442,7 @@ impl MetaStorageProvider for RedisMeta {
                 let r = crate::meta_pg_citus::meta_list_dir(&mut lock.store, parent);
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 
@@ -455,7 +454,7 @@ impl MetaStorageProvider for RedisMeta {
                 let r = crate::meta_pg_citus::meta_link(&mut lock.store, ino, new_parent, new_name);
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 
@@ -467,7 +466,7 @@ impl MetaStorageProvider for RedisMeta {
                 let r = crate::meta_pg_citus::meta_unlink(&mut lock.store, parent, name);
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 
@@ -479,7 +478,7 @@ impl MetaStorageProvider for RedisMeta {
                 let r = crate::meta_pg_citus::meta_symlink(&mut lock.store, parent, name, target);
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 
@@ -491,7 +490,9 @@ impl MetaStorageProvider for RedisMeta {
         new_name: &str,
     ) -> FilerResult<()> {
         match &self.backend {
-            RedisBackend::Real(r) => real_rename(r, old_parent, old_name, new_parent, new_name).await,
+            RedisBackend::Real(r) => {
+                real_rename(r, old_parent, old_name, new_parent, new_name).await
+            },
             RedisBackend::InMemory(m) => {
                 let mut lock = m.inner.lock();
                 let r = crate::meta_pg_citus::meta_rename(
@@ -503,7 +504,7 @@ impl MetaStorageProvider for RedisMeta {
                 );
                 InMemoryRedisStore::sync_store_to_redis(&mut lock);
                 r
-            }
+            },
         }
     }
 }
@@ -641,7 +642,7 @@ async fn real_list_dir(r: &RealRedisStore, parent: u64) -> FilerResult<Vec<DirEn
                 } else {
                     2
                 }
-            }
+            },
             Err(_) => 2,
         };
         out.push(DirEntry { name, ino, typ });
@@ -650,7 +651,12 @@ async fn real_list_dir(r: &RealRedisStore, parent: u64) -> FilerResult<Vec<DirEn
     Ok(out)
 }
 
-async fn real_link(r: &RealRedisStore, ino: u64, new_parent: u64, new_name: &str) -> FilerResult<()> {
+async fn real_link(
+    r: &RealRedisStore,
+    ino: u64,
+    new_parent: u64,
+    new_name: &str,
+) -> FilerResult<()> {
     if r.dir_get(new_parent, new_name).await?.is_some() {
         return Err(FilerError::Metadata("exists".into()));
     }
@@ -693,7 +699,12 @@ async fn real_unlink(r: &RealRedisStore, parent: u64, name: &str) -> FilerResult
     Ok(())
 }
 
-async fn real_symlink(r: &RealRedisStore, parent: u64, name: &str, target: &str) -> FilerResult<u64> {
+async fn real_symlink(
+    r: &RealRedisStore,
+    parent: u64,
+    name: &str,
+    target: &str,
+) -> FilerResult<u64> {
     if r.dir_get(parent, name).await?.is_some() {
         return Err(FilerError::Metadata("exists".into()));
     }
@@ -726,10 +737,7 @@ async fn real_rename(
     new_parent: u64,
     new_name: &str,
 ) -> FilerResult<()> {
-    let ino = r
-        .dir_get(old_parent, old_name)
-        .await?
-        .ok_or(FilerError::NotFound)?;
+    let ino = r.dir_get(old_parent, old_name).await?.ok_or(FilerError::NotFound)?;
     // 处理目标已存在
     if let Some(target_ino) = r.dir_get(new_parent, new_name).await? {
         if let Ok(tattr) = r.get_inode(target_ino).await {
@@ -786,10 +794,7 @@ mod tests {
         let result = RealRedisStore::connect("redis://127.0.0.1:1/").await;
         assert!(result.is_err(), "应返回连接错误");
         let err = result.unwrap_err();
-        assert!(
-            matches!(err, FilerError::Other(_)),
-            "应为 Other 类型错误: {err:?}"
-        );
+        assert!(matches!(err, FilerError::Other(_)), "应为 Other 类型错误: {err:?}");
     }
 
     #[test]

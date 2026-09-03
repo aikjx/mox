@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -15,8 +15,7 @@
 //! compile exit code = 101 → 0 passed; 38 failed-to-compile (RED)
 //! ```
 
-use std::sync::Arc;
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use mox_cloud_filer_svc::{
     Filer, FuseClient, InMemoryObjectStorage, ObjectStorage, PgCitusMeta, RedisMeta, SqliteMeta,
@@ -343,9 +342,7 @@ async fn tr8_4_fio_rand_write() {
     let start = Instant::now();
     let mut state: u64 = 0xC0FFEE;
     for _ in 0..total_ops {
-        state = state
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
         let off = (state % (FIO_SIZE / FIO_BLOCK) as u64) as usize * FIO_BLOCK;
         f.write("/rw.bin", off as u64, &block).await.unwrap();
         ops += 1;
@@ -367,9 +364,7 @@ async fn tr8_4_fio_rand_read() {
     let start = Instant::now();
     let mut state: u64 = 0xDEADBEEF;
     for _ in 0..total_ops {
-        state = state
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
         let off = (state % (FIO_SIZE / FIO_BLOCK) as u64) as usize * FIO_BLOCK;
         let n = f.read("/rr.bin", off as u64, &mut buf).await.unwrap();
         assert_eq!(n, FIO_BLOCK);
@@ -454,10 +449,7 @@ fn tr8_6_boundary_grep_zero_no_third_party_posix_gateway() {
         ["g", "o", "o", "f", "y", "s"].concat(),
     ];
     for w in forbidden.iter() {
-        assert!(
-            !low.contains(w),
-            "found forbidden literal '{w}' in crate source"
-        );
+        assert!(!low.contains(w), "found forbidden literal '{w}' in crate source");
     }
 }
 
@@ -559,11 +551,8 @@ fn tr8_9_atlas_verify_m3() {
     // Inline 三注册表：crate / services / platforms —— 以字符串存在性确认。
     let crate_id = env!("CARGO_PKG_NAME");
     assert_eq!(crate_id, "mox-cloud-filer-svc");
-    let three_registries = [
-        "crate:mox-cloud-filer-svc",
-        "service:m3_posix_filer",
-        "platform:mox_cloud",
-    ];
+    let three_registries =
+        ["crate:mox-cloud-filer-svc", "service:m3_posix_filer", "platform:mox_cloud"];
     for r in three_registries {
         assert!(r.contains(':'), "registry id format invalid: {r}");
     }

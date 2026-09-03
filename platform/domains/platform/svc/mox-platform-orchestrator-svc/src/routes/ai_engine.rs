@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -37,6 +37,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 pub fn ai_engine_routes(state: Arc<AiEngineState>) -> Router {
     Router::new()
@@ -114,7 +115,7 @@ pub struct AllianceCapabilities {
 /// GET /alliance/capabilities（FR-GW-02）
 pub async fn alliance_capabilities_handler(
     State(_state): State<Arc<AiEngineState>>,
-) -> Json<AllianceCapabilities> {
+) -> ApiResponse<AllianceCapabilities> {
     use mox_ai_expert_svc::alliance::constants as c;
     use mox_ai_expert_svc::ir::Dimension;
 
@@ -153,7 +154,7 @@ pub async fn alliance_capabilities_handler(
     hc.insert("EAF-4.3.timeout_s",  c::EXPERT_TIMEOUT_SECS.to_string());
     hc.insert("EAF-4.3.max_tokens", c::DEBATE_MAX_TOKENS_PER_ROUND.to_string());
 
-    Json(AllianceCapabilities {
+    api_ok(AllianceCapabilities {
         version: "3.0.0-alliance",
         phases: c::PHASE_NAMES,
         intent_classes_7: c::INTENT_CLASSES,
@@ -244,13 +245,13 @@ pub struct ReportQuery {
 pub async fn alliance_report_handler(
     State(_state): State<Arc<AiEngineState>>,
     Query(q): Query<ReportQuery>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     use mox_ai_expert_svc::alliance::constants as c;
     let tid = q
         .trace_id
         .clone()
         .unwrap_or_else(|| Uuid::new_v4().to_string());
-    Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "trace_id": tid,
         "quality_formula": c::QUALITY_FORMULA,
         "report_version": "3.0.0-alliance",

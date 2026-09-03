@@ -26,12 +26,7 @@ pub struct WriteQuorum {
 
 impl Default for WriteQuorum {
     fn default() -> Self {
-        Self {
-            min_acks: 1,
-            stall_timeout_ms: 5000,
-            absolute_cap: 16,
-            allow_stragglers: true,
-        }
+        Self { min_acks: 1, stall_timeout_ms: 5000, absolute_cap: 16, allow_stragglers: true }
     }
 }
 
@@ -140,12 +135,7 @@ mod tests {
                 });
             }
             let succeeded: Vec<usize> = (0..count).collect();
-            Ok(WriteResult {
-                succeeded,
-                failed: vec![],
-                stragglers: vec![],
-                duration_ms: 10,
-            })
+            Ok(WriteResult { succeeded, failed: vec![], stragglers: vec![], duration_ms: 10 })
         }
 
         fn concurrency_hint(&self) -> ConcurrencyHint {
@@ -182,9 +172,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_trait_object_safe() {
-        let writer: Box<dyn ShardWriter> = Box::new(DummyWriter {
-            ep: "writer-1".into(),
-        });
+        let writer: Box<dyn ShardWriter> = Box::new(DummyWriter { ep: "writer-1".into() });
 
         assert_eq!(writer.endpoint(), "writer-1");
         assert_eq!(writer.concurrency_hint(), ConcurrencyHint::Parallel(4));
@@ -210,14 +198,8 @@ mod tests {
         assert!(result.failed.is_empty());
 
         // quorum 不满足时应返回错误
-        let strict_quorum = WriteQuorum {
-            min_acks: 5,
-            ..Default::default()
-        };
-        let err = writer
-            .write_shards(&shards, &locations, &strict_quorum)
-            .await
-            .unwrap_err();
+        let strict_quorum = WriteQuorum { min_acks: 5, ..Default::default() };
+        let err = writer.write_shards(&shards, &locations, &strict_quorum).await.unwrap_err();
         assert!(matches!(err, WriteError::QuorumNotReached { .. }));
     }
 }

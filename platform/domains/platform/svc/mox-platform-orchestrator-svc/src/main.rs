@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -51,6 +51,7 @@ use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tracing_subscriber::{prelude::*, EnvFilter};
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // ========== 标准接口契约模块 ==========
 // api_standard: RFC 9457 Problem+JSON 统一错误契约 + 响应标准化中间件
@@ -677,7 +678,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("  🌐 访问地址: http://localhost:{}", port);
     tracing::info!("══════════════════════════════════════════════════════════");
 
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    let listener = tokio::net::TcpListener::bind(addr.clone()).await?;
     tracing::info!(service = "platform-orchestrator", addr = %addr, "TCP listener bound");
     // 生产级优雅关闭：收到 SIGINT/SIGTERM 时停止接收新连接，等待在途请求完成
     axum::serve(listener, app)
@@ -1196,7 +1197,7 @@ fn normalize_flow_to_graph(v: &serde_json::Value) -> mox_ai_flow_svc::model::Flo
 }
 async fn mox_optimize_handler(
     Json(req): Json<MoxOptimizeRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let tenant = match req.tenant.as_deref() {
         Some("gov") => mox_ai_expert_svc::context::Tenant::new("gov", "gov-ns").regulated(true),
         _ => mox_ai_expert_svc::context::Tenant::new("default", "default"),
@@ -1238,10 +1239,10 @@ async fn mox_optimize_handler(
             opt.insert("algorithm".to_string(), json!(report.algo.summary));
         }
     }
-    Json(v)
+    api_ok(v)
 }
 
-async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> Json<serde_json::Value> {
+async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> ApiResponse<serde_json::Value> {
     use mox_ai_expert_svc::context::{GovernContext, Principal, Tenant};
     let ctx = GovernContext::new(
         Tenant::new("default", "default"),
@@ -1281,7 +1282,7 @@ async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> Json<serde_j
         if !report.gate.approved {
             reasons.push(format!("治理门禁未通过：{}", report.gate.reason));
         }
-        return Json(json!({
+        return api_ok(json!({
             "published": false,
             "blocked": true,
             "dual_acceptance": false,
@@ -1301,7 +1302,7 @@ async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> Json<serde_j
         Some(&report),
         req.task_id.clone(),
     ) {
-        Ok(pkg) => Json(json!({
+        Ok(pkg) => api_ok(json!({
             "package": { "id": pkg.id, "name": pkg.name, "category": pkg.category, "nodes": pkg.nodes.len(), "edges": pkg.edges.len() },
             "published": true,
             "dual_acceptance": true,
@@ -1309,7 +1310,7 @@ async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> Json<serde_j
             "governance": { "score": score, "gate": format!("{:?}", report.gate.status) },
             "optimization": { "critical_path_ms": report.optimization.gains.critical_path_ms, "conflicts_found": report.optimization.gains.conflicts_found },
         })),
-        Err(e) => Json(json!({ "published": false, "error": e.to_string() })),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
@@ -1330,7 +1331,7 @@ struct MoxPublishRequest {
     task_id: Option<String>,
 }
 
-async fn mox_health() -> Json<serde_json::Value> {
+async fn mox_health() -> ApiResponse<serde_json::Value> {
     let dims: Vec<&str> = vec![
         "Business",
         "Algorithm",
@@ -1347,7 +1348,7 @@ async fn mox_health() -> Json<serde_json::Value> {
         "Cost",
         "Sensitive",
     ];
-    Json(json!({
+    api_ok(json!({
         "mox": "double-league-14-dim",
         "verification": "algo-verification-supreme",
         "business_league": ["Business","Algorithm","Permission","Resource","Security","Data","Observability"],
@@ -1360,15 +1361,15 @@ async fn mox_health() -> Json<serde_json::Value> {
     }))
 }
 
-async fn list_operators(State(state): State<Arc<AppState>>) -> Json<Vec<OperatorInfo>> {
+async fn list_operators(State(state): State<Arc<AppState>>) -> ApiResponse<Vec<OperatorInfo>> {
     let ops = state.operators.lock().await;
-    Json(ops.clone())
+    api_ok(ops.clone())
 }
 
 async fn register_operator(
     State(state): State<Arc<AppState>>,
     Json(req): Json<RegisterOperatorRequest>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let mut ops = state.operators.lock().await;
     let mut custom = state.custom_operators.lock().await;
 
@@ -1393,11 +1394,7 @@ async fn register_operator(
         },
     );
 
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({"success": true, "message": "算子注册成功", "operator": op_info})),
-    )
-}
+    api_ok(serde_json::json!({"success": true, "message": "算子注册成功", "operator": op_info}))}
 
 // 内部复用：真正执行算子/工作流的核心逻辑，供 HTTP handler 与 MCP 兼容层共用
 pub(crate) async fn run_workflow_inner(
@@ -1754,13 +1751,13 @@ pub(crate) async fn run_workflow_inner(
 async fn execute_workflow(
     State(state): State<Arc<AppState>>,
     Json(req): Json<ExecuteRequest>,
-) -> Json<ExecuteResponse> {
-    Json(run_workflow_inner(&state, req).await)
+) -> ApiResponse<ExecuteResponse> {
+    api_ok(run_workflow_inner(&state, req).await)
 }
 
 // ========== 知识图谱API ==========
 
-async fn get_graph(State(state): State<Arc<AppState>>) -> Json<GraphData> {
+async fn get_graph(State(state): State<Arc<AppState>>) -> ApiResponse<GraphData> {
     let kg = state.knowledge_graph.lock().await;
     let centrality = kg.centrality_metrics();
     let stats = kg.stats();
@@ -1821,59 +1818,59 @@ async fn get_graph(State(state): State<Arc<AppState>>) -> Json<GraphData> {
         })
         .collect();
 
-    Json(GraphData {
+    api_ok(GraphData {
         nodes,
         edges,
         stats,
     })
 }
 
-async fn get_graph_stats(State(state): State<Arc<AppState>>) -> Json<GraphStats> {
+async fn get_graph_stats(State(state): State<Arc<AppState>>) -> ApiResponse<GraphStats> {
     let kg = state.knowledge_graph.lock().await;
-    Json(kg.stats())
+    api_ok(kg.stats())
 }
 
-async fn get_centrality(State(state): State<Arc<AppState>>) -> Json<CentralityMetrics> {
+async fn get_centrality(State(state): State<Arc<AppState>>) -> ApiResponse<CentralityMetrics> {
     let kg = state.knowledge_graph.lock().await;
-    Json(kg.centrality_metrics())
+    api_ok(kg.centrality_metrics())
 }
 
-async fn get_communities(State(state): State<Arc<AppState>>) -> Json<Vec<Community>> {
+async fn get_communities(State(state): State<Arc<AppState>>) -> ApiResponse<Vec<Community>> {
     let kg = state.knowledge_graph.lock().await;
-    Json(kg.detect_communities(20))
+    api_ok(kg.detect_communities(20))
 }
 
 async fn get_shortest_path(
     State(state): State<Arc<AppState>>,
     Query(query): Query<PathQuery>,
-) -> Json<Option<PathResult>> {
+) -> ApiResponse<Option<PathResult>> {
     let kg = state.knowledge_graph.lock().await;
     match kg.shortest_path(&query.source, &query.target) {
-        Ok(path) => Json(path),
-        Err(_) => Json(None),
+        Ok(path) => api_ok(path),
+        Err(_) => api_ok(None),
     }
 }
 
-async fn get_pagerank(State(state): State<Arc<AppState>>) -> Json<HashMap<String, f64>> {
+async fn get_pagerank(State(state): State<Arc<AppState>>) -> ApiResponse<HashMap<String, f64>> {
     let kg = state.knowledge_graph.lock().await;
-    Json(kg.pagerank(30))
+    api_ok(kg.pagerank(30))
 }
 
 async fn get_neighbors(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Json<Vec<(String, f64, String)>> {
+) -> ApiResponse<Vec<(String, f64, String)>> {
     let kg = state.knowledge_graph.lock().await;
     match kg.neighbors(&id) {
-        Ok(neighbors) => Json(neighbors),
-        Err(_) => Json(vec![]),
+        Ok(neighbors) => api_ok(neighbors),
+        Err(_) => api_ok(vec![]),
     }
 }
 
 async fn add_node(
     State(state): State<Arc<AppState>>,
     Json(req): Json<AddNodeRequest>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let mut kg = state.knowledge_graph.lock().await;
     kg.add_node(KnowledgeNode {
         id: req.id.clone(),
@@ -1884,11 +1881,7 @@ async fn add_node(
         activation: 0.0,
         metadata: HashMap::new(),
     });
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({"success": true, "id": req.id})),
-    )
-}
+    api_ok(serde_json::json!({"success": true, "id": req.id}))}
 
 async fn add_edge(
     State(state): State<Arc<AppState>>,
@@ -1908,17 +1901,17 @@ async fn add_edge(
 async fn propagate_activation(
     State(state): State<Arc<AppState>>,
     Json(req): Json<ActivationRequest>,
-) -> Json<HashMap<String, f64>> {
+) -> ApiResponse<HashMap<String, f64>> {
     let mut kg = state.knowledge_graph.lock().await;
-    Json(kg.propagate_activation(&req.start_nodes, req.iterations.unwrap_or(10)))
+    api_ok(kg.propagate_activation(&req.start_nodes, req.iterations.unwrap_or(10)))
 }
 
 async fn recommend_nodes(
     State(state): State<Arc<AppState>>,
     Json(req): Json<RecommendRequest>,
-) -> Json<Vec<NodeRecommendation>> {
+) -> ApiResponse<Vec<NodeRecommendation>> {
     let kg = state.knowledge_graph.lock().await;
-    Json(kg.recommend(&req.context_nodes, req.limit.unwrap_or(10)))
+    api_ok(kg.recommend(&req.context_nodes, req.limit.unwrap_or(10)))
 }
 
 // ============ 对话自动→知识图谱 自动整理 API ============
@@ -1927,15 +1920,11 @@ async fn recommend_nodes(
 async fn graph_search(
     State(state): State<Arc<AppState>>,
     Query(params): Query<HashMap<String, String>>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let q = match params.get("q") {
         Some(q) if !q.trim().is_empty() => q.clone(),
         _ => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({"success": false, "error": "缺少查询参数 q"})),
-            )
-        }
+            return api_error(400, "缺少查询参数 q");}
     };
     let limit = params
         .get("limit")
@@ -1943,11 +1932,8 @@ async fn graph_search(
         .unwrap_or(20);
 
     match state.ai_agent.dialogue_graph().search(&q, limit).await {
-        Ok(result) => (StatusCode::OK, Json(serde_json::to_value(&result).unwrap())),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"success": false, "error": format!("搜索失败: {e}")})),
-        ),
+        Ok(result) => api_ok(serde_json::to_value(&result).unwrap()),
+        Err(e) => api_error(500, format!("搜索失败: {e}")),
     }
 }
 
@@ -1955,56 +1941,36 @@ async fn graph_search(
 async fn toggle_auto_sync(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<serde_json::Value>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let enabled = payload
         .get("enabled")
         .and_then(|v| v.as_bool())
         .unwrap_or(true);
     state.ai_agent.dialogue_graph().set_auto_sync(enabled).await;
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "auto_sync": enabled, "message": "已更新对话自动同步设置" })),
-    )
-}
+    api_ok(serde_json::json!({ "auto_sync": enabled, "message": "已更新对话自动同步设置" }))}
 
 /// 查询全自动同步状态
 async fn auto_sync_status(
     State(state): State<Arc<AppState>>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let enabled = state.ai_agent.dialogue_graph().is_auto_sync().await;
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "auto_sync": enabled })),
-    )
-}
+    api_ok(serde_json::json!({ "auto_sync": enabled }))}
 
 /// 列出对话会话
 async fn list_dialogue_sessions(
     State(state): State<Arc<AppState>>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     match state.ai_agent.dialogue_graph().list_sessions().await {
-        Ok(sessions) => (
-            StatusCode::OK,
-            Json(serde_json::json!({ "sessions": sessions })),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"success": false, "error": format!("列出会话失败: {e}")})),
-        ),
+        Ok(sessions) => api_ok(serde_json::json!({ "sessions": sessions })),
+        Err(e) => api_error(500, format!("列出会话失败: {e}")),
     }
 }
 
 /// 导出：对话 + 知识图谱 打包为单文件迁移包
-async fn graph_export(State(state): State<Arc<AppState>>) -> (StatusCode, Json<serde_json::Value>) {
+async fn graph_export(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     match state.ai_agent.dialogue_graph().export_bundle().await {
-        Ok(bundle) => (
-            StatusCode::OK,
-            Json(serde_json::to_value(&bundle).unwrap_or(serde_json::json!({}))),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"success": false, "error": format!("导出失败: {e}")})),
-        ),
+        Ok(bundle) => api_ok(serde_json::to_value(&bundle).unwrap_or(serde_json::json!({}))),
+        Err(e) => api_error(500, format!("导出失败: {e}")),
     }
 }
 
@@ -2012,11 +1978,9 @@ async fn graph_export(State(state): State<Arc<AppState>>) -> (StatusCode, Json<s
 async fn graph_import(
     State(state): State<Arc<AppState>>,
     Json(bundle): Json<ExportBundle>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     match state.ai_agent.dialogue_graph().import_bundle(bundle).await {
-        Ok(report) => (
-            StatusCode::OK,
-            Json(serde_json::json!({
+        Ok(report) => api_ok(serde_json::json!({
                 "imported": {
                     "sessions": report.sessions,
                     "messages": report.messages,
@@ -2025,29 +1989,25 @@ async fn graph_import(
                 },
                 "message": "导入完成，已自动优化布局"
             })),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"success": false, "error": format!("导入失败: {e}")})),
-        ),
+        Err(e) => api_error(500, format!("导入失败: {e}")),
     }
 }
 
-async fn list_plugins(State(state): State<Arc<AppState>>) -> Json<Vec<String>> {
+async fn list_plugins(State(state): State<Arc<AppState>>) -> ApiResponse<Vec<String>> {
     let pm = state.plugin_manager.lock().await;
-    Json(pm.list())
+    api_ok(pm.list())
 }
 
-async fn get_logs(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn get_logs(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let logs = state.execution_logs.lock().await;
-    Json(serde_json::json!({ "logs": *logs }))
+    api_ok(serde_json::json!({ "logs": *logs }))
 }
 
 /// GET /api/audit — RBAC 访问审计查询（admin / auditor 专属）。
 ///
 /// 返回认证+授权两层产生的全部审计事件（放行 allowed / 拒绝 forbidden），
 /// 每条均带 HMAC 签名，可独立验真（见 rbac_middleware::AuditEvent::verify_signature）。
-async fn get_access_audit(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn get_access_audit(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let events = state.audit.events();
     let total = state.audit.count();
     // 逐条验签（签名密钥与写入时一致；验真失败标记 tampered，供合规审计确认完整性）
@@ -2066,7 +2026,7 @@ async fn get_access_audit(State(state): State<Arc<AppState>>) -> Json<serde_json
         .iter()
         .filter(|v| v.get("signature_valid").and_then(|b| b.as_bool()) == Some(false))
         .count();
-    Json(serde_json::json!({ "audit": verified, "total": total, "tampered": tampered }))
+    api_ok(serde_json::json!({ "audit": verified, "total": total, "tampered": tampered }))
 }
 
 // ========== AI智能对话API ==========
@@ -2074,7 +2034,7 @@ async fn get_access_audit(State(state): State<Arc<AppState>>) -> Json<serde_json
 async fn ai_chat(
     State(state): State<Arc<AppState>>,
     Json(req): Json<ChatRequest>,
-) -> Json<ChatResponse> {
+) -> ApiResponse<ChatResponse> {
     let session_id = req
         .session_id
         .unwrap_or_else(|| format!("session-{}", &uuid::Uuid::new_v4().to_string()[..8]));
@@ -2104,15 +2064,15 @@ async fn ai_chat(
         tracing::info!("AI推荐工作流: {:?}", wf);
     }
 
-    Json(response)
+    api_ok(response)
 }
 
 async fn get_chat_history(
     State(state): State<Arc<AppState>>,
     Path(session): Path<String>,
-) -> Json<Vec<mox_ai_agent_svc::ChatMessage>> {
+) -> ApiResponse<Vec<mox_ai_agent_svc::ChatMessage>> {
     let sessions = state.chat_sessions.lock().await;
-    Json(sessions.get(&session).cloned().unwrap_or_default())
+    api_ok(sessions.get(&session).cloned().unwrap_or_default())
 }
 
 // ========== 草莓多平台：对话驱动系统生成 API ==========
@@ -2136,7 +2096,7 @@ struct CaomeiRefineRequest {
 async fn caomei_compile(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CaomeiCompileRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let name = req.name.unwrap_or_else(|| "未命名系统".to_string());
     let tags = req.tags.unwrap_or_default();
     match state
@@ -2144,7 +2104,7 @@ async fn caomei_compile(
         .compile_requirement(&req.requirement, &name, tags)
         .await
     {
-        Ok(bp) => Json(serde_json::json!({
+        Ok(bp) => api_ok(serde_json::json!({
             "success": true,
             "blueprint_id": bp.id,
             "name": bp.name,
@@ -2152,7 +2112,7 @@ async fn caomei_compile(
             "entities": bp.entities.keys().collect::<Vec<_>>(),
             "flow": bp.flow,
         })),
-        Err(e) => Json(serde_json::json!({ "success": false, "error": e.to_string() })),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
@@ -2160,19 +2120,19 @@ async fn caomei_compile(
 async fn caomei_refine(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CaomeiRefineRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     match state
         .ai_agent
         .refine_blueprint(&req.blueprint_id, &req.addition)
         .await
     {
-        Ok(bp) => Json(serde_json::json!({
+        Ok(bp) => api_ok(serde_json::json!({
             "success": true,
             "blueprint_id": bp.id,
             "feature_count": bp.features.len(),
             "flow": bp.flow,
         })),
-        Err(e) => Json(serde_json::json!({ "success": false, "error": e.to_string() })),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
@@ -2180,13 +2140,13 @@ async fn caomei_refine(
 async fn caomei_templates(
     State(state): State<Arc<AppState>>,
     axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let domain = params.get("domain").cloned();
     let keyword = params.get("keyword").cloned();
     let market = state.market.index.lock().await;
     // MarketState 以 HashMap 存模板元信息，这里直接返回概览
     let total = market.len();
-    Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "success": true,
         "total": total,
         "domain_filter": domain,
@@ -2213,7 +2173,7 @@ struct SpiralAnalysisRequest {
     speed: Option<f64>,
 }
 
-async fn analyze_spiral_handler(Json(req): Json<SpiralAnalysisRequest>) -> Json<serde_json::Value> {
+async fn analyze_spiral_handler(Json(req): Json<SpiralAnalysisRequest>) -> ApiResponse<serde_json::Value> {
     let consts = mox_data_catalog_svc::spiral::PhysicalConstants::default();
     let speed = req.speed.unwrap_or(consts.c);
     let params = SpiralParams {
@@ -2223,7 +2183,7 @@ async fn analyze_spiral_handler(Json(req): Json<SpiralAnalysisRequest>) -> Json<
         radius: req.radius,
     };
     let report = analyze_spiral(&params, speed, &consts);
-    Json(serde_json::to_value(report).unwrap_or(serde_json::json!({"error": "序列化失败"})))
+    api_error(500, "序列化失败")
 }
 
 // ========== 算法分析 API ==========
@@ -2231,7 +2191,7 @@ async fn analyze_spiral_handler(Json(req): Json<SpiralAnalysisRequest>) -> Json<
 async fn analyze_algorithm(
     State(state): State<Arc<AppState>>,
     Json(req): Json<AnalyzeAlgorithmRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let algo_type = match req.algorithm_type.as_deref() {
         Some("sorting") | Some("排序") => AlgorithmType::Sorting,
         Some("search") | Some("搜索") => AlgorithmType::Search,
@@ -2247,14 +2207,14 @@ async fn analyze_algorithm(
 
     match state.ai_agent.analyze_algorithm(&req.code, algo_type).await {
         Ok(flow) => {
-            Json(serde_json::to_value(flow).unwrap_or(serde_json::json!({"error": "序列化失败"})))
+            api_error(500, "序列化失败")
         }
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
-async fn list_algorithm_types() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
+async fn list_algorithm_types() -> ApiResponse<serde_json::Value> {
+    api_ok(serde_json::json!({
         "types": [
             {"id": "sorting", "name": "排序算法", "algorithms": ["快速排序", "归并排序", "堆排序", "冒泡排序"]},
             {"id": "search", "name": "搜索算法", "algorithms": ["二分查找", "广度优先", "深度优先", "A*"]},
@@ -2269,10 +2229,10 @@ async fn list_algorithm_types() -> Json<serde_json::Value> {
 
 // ========== 全资源管理API ==========
 
-async fn get_resources(State(state): State<Arc<AppState>>) -> Json<ResourcePanorama> {
+async fn get_resources(State(state): State<Arc<AppState>>) -> ApiResponse<ResourcePanorama> {
     match state.ai_agent.get_resource_status().await {
-        Ok(panorama) => Json(panorama),
-        Err(_) => Json(ResourcePanorama {
+        Ok(panorama) => api_ok(panorama),
+        Err(_) => api_ok(ResourcePanorama {
             timestamp: chrono::Utc::now(),
             resources: HashMap::new(),
             active_plugins: 0,
@@ -2283,24 +2243,24 @@ async fn get_resources(State(state): State<Arc<AppState>>) -> Json<ResourcePanor
     }
 }
 
-async fn resource_health(State(state): State<Arc<AppState>>) -> Json<ResourceHealthReport> {
+async fn resource_health(State(state): State<Arc<AppState>>) -> ApiResponse<ResourceHealthReport> {
     let rm = state.ai_agent.resource_manager();
     let rm_guard = rm.read().await;
-    Json(rm_guard.health_check())
+    api_ok(rm_guard.health_check())
 }
 
 // ========== 插件互通API ==========
 
-async fn list_ai_plugins(State(state): State<Arc<AppState>>) -> Json<Vec<PluginInfo>> {
+async fn list_ai_plugins(State(state): State<Arc<AppState>>) -> ApiResponse<Vec<PluginInfo>> {
     let bus = state.ai_agent.plugin_bus();
     let bus_guard = bus.read().await;
-    Json(bus_guard.list_plugins())
+    api_ok(bus_guard.list_plugins())
 }
 
 async fn register_ai_plugin(
     State(state): State<Arc<AppState>>,
     Json(req): Json<RegisterPluginRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let plugin_type = match req.plugin_type.as_deref() {
         Some("wasm") => PluginType::Wasm,
         Some("external") => PluginType::External,
@@ -2325,23 +2285,21 @@ async fn register_ai_plugin(
     let mut bus_guard = bus.write().await;
 
     match bus_guard.register(plugin) {
-        Ok(()) => Json(
-            serde_json::json!({"success": true, "message": "插件注册成功", "plugin_id": req.id}),
-        ),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(()) => api_ok(serde_json::json!({"success": true, "message": "插件注册成功", "plugin_id": req.id}),),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
-async fn plugin_topology(State(state): State<Arc<AppState>>) -> Json<PluginTopology> {
+async fn plugin_topology(State(state): State<Arc<AppState>>) -> ApiResponse<PluginTopology> {
     let bus = state.ai_agent.plugin_bus();
     let bus_guard = bus.read().await;
-    Json(bus_guard.get_topology())
+    api_ok(bus_guard.get_topology())
 }
 
 async fn send_plugin_message(
     State(state): State<Arc<AppState>>,
     Json(req): Json<PluginMessageRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let mut msg = mox_ai_agent_svc::PluginMessage::new(&req.source, &req.topic, req.payload);
     if let Some(target) = req.target {
         msg = msg.to_target(&target);
@@ -2354,15 +2312,15 @@ async fn send_plugin_message(
     let bus_guard = bus.read().await;
 
     match bus_guard.route_message(msg).await {
-        Ok(Some(response)) => Json(serde_json::json!({"success": true, "response": response})),
-        Ok(None) => Json(serde_json::json!({"success": true, "message": "消息已投递"})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(Some(response)) => api_ok(serde_json::json!({"success": true, "response": response})),
+        Ok(None) => api_ok(serde_json::json!({"success": true, "message": "消息已投递"})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 // ========== 业务流程自动化API ==========
 
-async fn list_workflow_templates(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn list_workflow_templates(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let engine = state.ai_agent.workflow_engine();
     let engine_guard = engine.read().await;
     let templates: Vec<_> = engine_guard
@@ -2374,10 +2332,10 @@ async fn list_workflow_templates(State(state): State<Arc<AppState>>) -> Json<ser
             })
         })
         .collect();
-    Json(serde_json::json!({"templates": templates}))
+    api_ok(serde_json::json!({"templates": templates}))
 }
 
-async fn list_workflows(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn list_workflows(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let engine = state.ai_agent.workflow_engine();
     let engine_guard = engine.read().await;
     let saved = state.saved_workflows.lock().await;
@@ -2390,13 +2348,13 @@ async fn list_workflows(State(state): State<Arc<AppState>>) -> Json<serde_json::
         wfs.push(serde_json::json!({"id": w.id, "name": w.name, "description": w.description, "nodes_count": w.nodes.len(), "is_saved": true}));
     }
 
-    Json(serde_json::json!({"workflows": wfs}))
+    api_ok(serde_json::json!({"workflows": wfs}))
 }
 
 async fn execute_business_workflow(
     State(state): State<Arc<AppState>>,
     Json(req): Json<WorkflowExecuteRequest>,
-) -> Json<WorkflowResult> {
+) -> ApiResponse<WorkflowResult> {
     // 如果指定了模板ID，从模板创建
     if let Some(template_id) = req.template_id {
         let engine = state.ai_agent.workflow_engine();
@@ -2406,9 +2364,9 @@ async fn execute_business_workflow(
                 if let Some(wf) = engine_guard.get_workflow(&instance_id).cloned() {
                     drop(engine_guard);
                     match state.ai_agent.execute_workflow(wf).await {
-                        Ok(result) => return Json(result),
+                        Ok(result) => return api_ok(result),
                         Err(e) => {
-                            return Json(WorkflowResult {
+                            return api_ok(WorkflowResult {
                                 instance: mox_ai_agent_svc::WorkflowInstance {
                                     id: "error".to_string(),
                                     workflow_id: template_id,
@@ -2428,7 +2386,7 @@ async fn execute_business_workflow(
                 }
             }
             Err(e) => {
-                return Json(WorkflowResult {
+                return api_ok(WorkflowResult {
                     instance: mox_ai_agent_svc::WorkflowInstance {
                         id: "error".to_string(),
                         workflow_id: template_id,
@@ -2450,8 +2408,8 @@ async fn execute_business_workflow(
     // 执行自定义工作流
     if let Some(workflow) = req.workflow {
         match state.ai_agent.execute_workflow(workflow).await {
-            Ok(result) => Json(result),
-            Err(e) => Json(WorkflowResult {
+            Ok(result) => api_ok(result),
+            Err(e) => api_ok(WorkflowResult {
                 instance: mox_ai_agent_svc::WorkflowInstance {
                     id: "error".to_string(),
                     workflow_id: "custom".to_string(),
@@ -2468,7 +2426,7 @@ async fn execute_business_workflow(
             }),
         }
     } else {
-        Json(WorkflowResult {
+        api_ok(WorkflowResult {
             instance: mox_ai_agent_svc::WorkflowInstance {
                 id: "error".to_string(),
                 workflow_id: "none".to_string(),
@@ -2489,13 +2447,13 @@ async fn execute_business_workflow(
 async fn save_workflow(
     State(state): State<Arc<AppState>>,
     Json(workflow): Json<BusinessWorkflow>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let mut saved = state.saved_workflows.lock().await;
     saved.insert(workflow.id.clone(), workflow.clone());
-    Json(serde_json::json!({"success": true, "message": "工作流已保存", "id": workflow.id}))
+    api_ok(serde_json::json!({"success": true, "message": "工作流已保存", "id": workflow.id}))
 }
 
-async fn list_workflow_instances(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn list_workflow_instances(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let engine = state.ai_agent.workflow_engine();
     let engine_guard = engine.read().await;
     let instances: Vec<_> = engine_guard
@@ -2509,12 +2467,12 @@ async fn list_workflow_instances(State(state): State<Arc<AppState>>) -> Json<ser
             })
         })
         .collect();
-    Json(serde_json::json!({"instances": instances}))
+    api_ok(serde_json::json!({"instances": instances}))
 }
 
 // ========== 系统状态API ==========
 
-async fn get_status(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn get_status(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let kg = state.knowledge_graph.lock().await;
     let pm = state.plugin_manager.lock().await;
     let ops = state.operators.lock().await;
@@ -2522,7 +2480,7 @@ async fn get_status(State(state): State<Arc<AppState>>) -> Json<serde_json::Valu
     let custom = state.custom_operators.lock().await;
     let stats = kg.stats();
 
-    Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "status": "running",
         "version": "3.0.0-ai-full-dimensional",
         "operators_count": ops.len(),
@@ -2546,7 +2504,7 @@ async fn get_status(State(state): State<Arc<AppState>>) -> Json<serde_json::Valu
     }))
 }
 
-async fn get_full_status(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn get_full_status(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let basic = get_status(State(state.clone())).await;
     let resources = get_resources(State(state.clone())).await;
     let health = resource_health(State(state.clone())).await;
@@ -2556,11 +2514,11 @@ async fn get_full_status(State(state): State<Arc<AppState>>) -> Json<serde_json:
     let engine_guard = engine.read().await;
     let templates_count = engine_guard.list_templates().len();
 
-    Json(serde_json::json!({
-        "system": basic.0,
-        "resources": resources.0,
-        "health": health.0,
-        "ai_plugins": plugins.0,
+    api_ok(serde_json::json!({
+        "system": basic.data.unwrap_or_default(),
+        "resources": resources.data.unwrap(),
+        "health": health.data.unwrap(),
+        "ai_plugins": plugins.data.unwrap(),
         "workflow_templates": templates_count,
         "modules": {
             "conversation": "active",
@@ -2575,11 +2533,11 @@ async fn get_full_status(State(state): State<Arc<AppState>>) -> Json<serde_json:
 }
 
 // ========== LLM配置Handlers ==========
-async fn get_llm_config(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn get_llm_config(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let llm = state.ai_agent.llm_client();
     let client = llm.read().await;
     let config = client.get_config();
-    Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "api_base": config.api_base,
         "model": config.model,
         "temperature": config.temperature,
@@ -2592,7 +2550,7 @@ async fn get_llm_config(State(state): State<Arc<AppState>>) -> Json<serde_json::
 async fn update_llm_config(
     State(state): State<Arc<AppState>>,
     Json(req): Json<LLMConfigRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let llm = state.ai_agent.llm_client();
     let mut client = llm.write().await;
     let mut config = client.get_config().clone();
@@ -2615,7 +2573,7 @@ async fn update_llm_config(
         config.enabled = v;
     }
     client.update_config(config.clone());
-    Json(serde_json::json!({"success": true, "config": {
+    api_ok(serde_json::json!({"success": true, "config": {
         "api_base": config.api_base,
         "model": config.model,
         "temperature": config.temperature,
@@ -2624,15 +2582,15 @@ async fn update_llm_config(
     }}))
 }
 
-async fn test_llm_connection(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn test_llm_connection(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     match state.ai_agent.test_llm_connection().await {
-        Ok(result) => Json(serde_json::json!({"success": true, "result": result})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(result) => api_ok(serde_json::json!({"success": true, "result": result})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 // ========== 浏览器自动化Handlers ==========
-async fn list_browser_templates(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn list_browser_templates(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let b = browser.read().await;
     let templates: Vec<_> = b
@@ -2649,10 +2607,10 @@ async fn list_browser_templates(State(state): State<Arc<AppState>>) -> Json<serd
             })
         })
         .collect();
-    Json(serde_json::json!({"templates": templates}))
+    api_ok(serde_json::json!({"templates": templates}))
 }
 
-async fn list_browser_sessions(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn list_browser_sessions(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let b = browser.read().await;
     let sessions: Vec<_> = b
@@ -2669,93 +2627,89 @@ async fn list_browser_sessions(State(state): State<Arc<AppState>>) -> Json<serde
             })
         })
         .collect();
-    Json(serde_json::json!({"sessions": sessions}))
+    api_ok(serde_json::json!({"sessions": sessions}))
 }
 
 async fn get_browser_session(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let b = browser.read().await;
     match b.get_session(&id) {
-        Some(s) => Json(serde_json::json!(s)),
-        None => Json(serde_json::json!({"error": "session not found"})),
+        Some(s) => api_ok(serde_json::json!(s)),
+        None => api_error(500, "session not found"),
     }
 }
 
 async fn close_browser_session(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.close_session(&id) {
-        Ok(()) => Json(serde_json::json!({"success": true})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(()) => api_ok(serde_json::json!({"success": true})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 async fn execute_browser_task(
     State(state): State<Arc<AppState>>,
     Json(req): Json<BrowserTaskRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let task_id = req.task_id.unwrap_or_else(|| "web-search".to_string());
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.execute_task(&task_id, req.variables).await {
-        Ok(result) => Json(serde_json::json!(result)),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(result) => api_ok(serde_json::json!(result)),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 async fn execute_browser_steps(
     State(state): State<Arc<AppState>>,
     Json(req): Json<BrowserTaskRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let steps = req.steps.unwrap_or_default();
     if steps.is_empty() {
-        return Json(serde_json::json!({"success": false, "error": "no steps provided"}));
+        return api_error(500, "no steps provided");
     }
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.execute_custom_steps(steps, req.start_url).await {
-        Ok(result) => Json(serde_json::json!(result)),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(result) => api_ok(serde_json::json!(result)),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 async fn execute_browser_action(
     State(state): State<Arc<AppState>>,
     Json(req): Json<BrowserActionRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.execute_action(&req.session_id, req.action).await {
-        Ok(result) => Json(serde_json::json!(result)),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(result) => api_ok(serde_json::json!(result)),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 async fn browser_natural(
     State(state): State<Arc<AppState>>,
     Json(req): Json<BrowserNaturalRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let (url, steps) = mox_ai_agent_svc::BrowserAutomationEngine::parse_natural_language(&req.prompt);
     if steps.is_empty() {
-        return Json(serde_json::json!({
-            "success": false,
-            "error": "无法解析浏览器操作指令，请提供URL或明确的操作描述",
-            "parsed_url": url
-        }));
+        return api_error(500, "无法解析浏览器操作指令，请提供URL或明确的操作描述");
     }
     let browser = state.ai_agent.browser();
     let mut b = browser.write().await;
     match b.execute_custom_steps(steps, url).await {
         Ok(result) => {
-            Json(serde_json::json!({"success": true, "result": result, "ai_parsed": true}))
+            api_ok(serde_json::json!({"success": true, "result": result, "ai_parsed": true}))
         }
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
@@ -2777,75 +2731,72 @@ async fn update_flow(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
     Json(flow): Json<FlowDefinition>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     if flow.id != id {
-        return Json(serde_json::json!({
-            "success": false,
-            "error": format!("路径 id（{}）与请求体 flow.id（{}）不一致", id, flow.id),
-        }));
+        return api_error(500, format!("路径 id（{}）与请求体 flow.id（{}）不一致", id, flow.id));
     }
     if let Err(e) = AIAgent::validate_flow(&flow) {
-        return Json(serde_json::json!({"success": false, "error": format!("验证失败: {}", e)}));
+        return api_error(500, format!("验证失败: {}", e));
     }
     match state.ai_agent.update_flow(flow).await {
-        Ok(updated) => Json(serde_json::json!({"success": true, "flow": updated})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(updated) => api_ok(serde_json::json!({"success": true, "flow": updated})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
-async fn list_flows(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+async fn list_flows(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {
     match state.ai_agent.list_flows().await {
-        Ok(flows) => Json(serde_json::json!({"success": true, "flows": flows})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(flows) => api_ok(serde_json::json!({"success": true, "flows": flows})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 async fn create_flow(
     State(state): State<Arc<AppState>>,
     Json(flow): Json<FlowDefinition>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     // 先验证
     if let Err(e) = AIAgent::validate_flow(&flow) {
-        return Json(serde_json::json!({"success": false, "error": format!("验证失败: {}", e)}));
+        return api_error(500, format!("验证失败: {}", e));
     }
     match state.ai_agent.create_flow(flow).await {
-        Ok(created) => Json(serde_json::json!({"success": true, "flow": created})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(created) => api_ok(serde_json::json!({"success": true, "flow": created})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 async fn get_flow(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     match state.ai_agent.get_flow(&id).await {
-        Ok(Some(flow)) => Json(serde_json::json!({"success": true, "flow": flow})),
-        Ok(None) => Json(serde_json::json!({"success": false, "error": "流程图不存在"})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(Some(flow)) => api_ok(serde_json::json!({"success": true, "flow": flow})),
+        Ok(None) => api_error(500, "流程图不存在"),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 async fn delete_flow(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     match state.ai_agent.delete_flow(&id).await {
-        Ok(true) => Json(serde_json::json!({"success": true})),
-        Ok(false) => Json(serde_json::json!({"success": false, "error": "流程图不存在"})),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Ok(true) => api_ok(serde_json::json!({"success": true})),
+        Ok(false) => api_error(500, "流程图不存在"),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
 async fn validate_flow(
     State(_state): State<Arc<AppState>>,
     Json(req): Json<ValidateFlowRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     match AIAgent::validate_flow(&req.flow) {
         Ok(()) => {
-            Json(serde_json::json!({"success": true, "valid": true, "message": "流程图验证通过"}))
+            api_ok(serde_json::json!({"success": true, "valid": true, "message": "流程图验证通过"}))
         }
         Err(e) => {
-            Json(serde_json::json!({"success": true, "valid": false, "error": e.to_string()}))
+            api_error(500, e.to_string())
         }
     }
 }
@@ -2853,18 +2804,18 @@ async fn validate_flow(
 async fn execute_flow(
     State(state): State<Arc<AppState>>,
     Json(req): Json<ExecuteFlowRequest>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let input = req.input.unwrap_or_default();
     match state.ai_agent.execute_flow(&req.flow_id, input).await {
-        Ok(result) => Json(serde_json::json!({
+        Ok(result) => api_ok(serde_json::json!({
             "success": result.success,
             "result": result
         })),
-        Err(e) => Json(serde_json::json!({"success": false, "error": e.to_string()})),
+        Err(e) => api_error(500, e.to_string()),
     }
 }
 
-async fn list_flow_node_types() -> Json<serde_json::Value> {
+async fn list_flow_node_types() -> ApiResponse<serde_json::Value> {
     let node_types = vec![
         serde_json::json!({"type": "Start", "name": "开始节点", "description": "流程图起始点", "config_fields": []}),
         serde_json::json!({"type": "End", "name": "结束节点", "description": "流程图结束点", "config_fields": []}),
@@ -2903,7 +2854,7 @@ async fn list_flow_node_types() -> Json<serde_json::Value> {
             {"name": "branches", "label": "并行分支", "type": "textarea"}
         ]}),
     ];
-    Json(serde_json::json!({"success": true, "node_types": node_types}))
+    api_ok(serde_json::json!({"success": true, "node_types": node_types}))
 }
 
 // ============ MCP 兼容层实现（Model Context Protocol over JSON-RPC 2.0）============
@@ -2938,16 +2889,16 @@ struct McpRpcErr {
     message: String,
 }
 
-fn mcp_ok(id: serde_json::Value, result: serde_json::Value) -> Json<McpRpcRes> {
-    Json(McpRpcRes {
+fn mcp_ok(id: serde_json::Value, result: serde_json::Value) -> ApiResponse<McpRpcRes> {
+    api_ok(McpRpcRes {
         jsonrpc: "2.0".into(),
         id,
         result: Some(result),
         error: None,
     })
 }
-fn mcp_err(id: serde_json::Value, code: i32, message: String) -> Json<McpRpcRes> {
-    Json(McpRpcRes {
+fn mcp_err(id: serde_json::Value, code: i32, message: String) -> ApiResponse<McpRpcRes> {
+    api_ok(McpRpcRes {
         jsonrpc: "2.0".into(),
         id,
         result: None,
@@ -2982,7 +2933,7 @@ fn operator_to_mcp_tool(op: &OperatorInfo) -> serde_json::Value {
 async fn handle_mcp_rpc(
     State(state): State<Arc<AppState>>,
     Json(req): Json<McpRpcReq>,
-) -> Json<McpRpcRes> {
+) -> ApiResponse<McpRpcRes> {
     let id = req.id.clone();
     match req.method.as_str() {
         "initialize" => mcp_ok(

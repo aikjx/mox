@@ -60,12 +60,7 @@ pub struct MetaValue {
 
 impl Default for MetaValue {
     fn default() -> Self {
-        Self {
-            attributes: HashMap::new(),
-            created_at_ms: 0,
-            updated_at_ms: 0,
-            version: 0,
-        }
+        Self { attributes: HashMap::new(), created_at_ms: 0, updated_at_ms: 0, version: 0 }
     }
 }
 
@@ -211,11 +206,7 @@ mod tests {
             _marker: Option<&str>,
             _limit: u32,
         ) -> Result<DirListPage, MetaError> {
-            Ok(DirListPage {
-                entries: vec![],
-                next_marker: None,
-                is_truncated: false,
-            })
+            Ok(DirListPage { entries: vec![], next_marker: None, is_truncated: false })
         }
 
         async fn create(&self, _key: &MetaKey, _value: &MetaValue) -> Result<(), MetaError> {
@@ -243,12 +234,8 @@ mod tests {
 
         let mut attrs = HashMap::new();
         attrs.insert("content-type".into(), "text/plain".into());
-        let value = MetaValue {
-            attributes: attrs,
-            created_at_ms: 100,
-            updated_at_ms: 200,
-            version: 3,
-        };
+        let value =
+            MetaValue { attributes: attrs, created_at_ms: 100, updated_at_ms: 200, version: 3 };
         assert_eq!(value.version, 3);
         assert_eq!(value.attributes.get("content-type").unwrap(), "text/plain");
 
@@ -264,11 +251,7 @@ mod tests {
         };
         assert_eq!(entry.entry_type, EntryType::File);
 
-        let page = DirListPage {
-            entries: vec![entry],
-            next_marker: None,
-            is_truncated: false,
-        };
+        let page = DirListPage { entries: vec![entry], next_marker: None, is_truncated: false };
         assert_eq!(page.entries.len(), 1);
 
         assert_eq!(EntryType::Directory.to_string(), "directory");

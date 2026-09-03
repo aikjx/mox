@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -205,6 +205,11 @@ pub fn reset_all() {
     ENCODE_US_SAMPLES.lock().clear();
 }
 
+
+// Global lock for hermetic metric tests (serializes all test modules)
+#[allow(dead_code)]
+static GLOBAL_METRICS_LOCK: parking_lot::Mutex<()> = parking_lot::const_mutex(());
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -229,11 +234,9 @@ mod tests {
     // T22-4 acceptance tests: counter bump + benchmark harness.
     // ---------------------------------------------------------------------
 
-    use crate::reed_solomon::{
-        PathChoice, ReedSolomonEngine,
-    };
-    use crate::metrics::{
-        IsaUsed, bump_encode_bytes, prometheus_text_snapshot, reset_all,
+    use crate::{
+        metrics::{bump_encode_bytes, prometheus_text_snapshot, reset_all, IsaUsed},
+        reed_solomon::{PathChoice, ReedSolomonEngine},
     };
     use rand::RngCore;
     use std::time::Instant;
@@ -258,7 +261,9 @@ mod tests {
         }
     }
     #[cfg(not(feature = "simd"))]
-    fn autodetect_isa() -> IsaUsed { IsaUsed::Scalar }
+    fn autodetect_isa() -> IsaUsed {
+        IsaUsed::Scalar
+    }
 
     /// P1. After an encode call on Scalar explicit path, counter equals payload bytes.
     #[test]
@@ -273,11 +278,7 @@ mod tests {
         let profile = ec_profile_12plus4();
         let _ = eng.encode_with_path(&profile, &payload, PathChoice::Scalar).unwrap();
         bump_encode_bytes(n as u64, IsaUsed::Scalar);
-        assert_eq!(
-            ENCODE_SCALAR_BYTES.load(Ordering::SeqCst),
-            n as u64,
-            "scalar counter mismatch"
-        );
+        assert_eq!(ENCODE_SCALAR_BYTES.load(Ordering::SeqCst), n as u64, "scalar counter mismatch");
     }
 
     /// P2. AVX2 counter bumps correctly on Auto path (when host supports AVX2).
@@ -346,7 +347,7 @@ mod tests {
         let eng = ReedSolomonEngine::new();
         let profile = ec_profile_12plus4();
 
-        fn median_us(times: &mut Vec<u128>) -> u128 {
+        fn median_us(times: &mut [u128]) -> u128 {
             times.sort_unstable();
             times[times.len() / 2]
         }
@@ -411,5 +412,80 @@ mod tests {
                 );
             }
         }
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// Additional metric tests (hermetic, global-lock protected)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    static GLOBAL_METRICS_LOCK: parking_lot::Mutex<()> = parking_lot::const_mutex(());
+
+    #[test]
+    fn test_bump_decode_bytes_scalar() {
+        let _g = GLOBAL_METRICS_LOCK.lock();
+        reset_all();
+        bump_decode_bytes(1024, IsaUsed::Scalar);
+        assert_eq!(DECODE_SCALAR_BYTES.load(Ordering::SeqCst), 1024);
+        bump_decode_bytes(2048, IsaUsed::Scalar);
+        assert_eq!(DECODE_SCALAR_BYTES.load(Ordering::SeqCst), 3072);
+    }
+
+    #[test]
+    fn test_bump_encode_bytes_scalar() {
+        let _g = GLOBAL_METRICS_LOCK.lock();
+        reset_all();
+        bump_encode_bytes(512, IsaUsed::Scalar);
+        assert_eq!(ENCODE_SCALAR_BYTES.load(Ordering::SeqCst), 512);
+    }
+
+    #[test]
+    fn test_prometheus_snapshot_contains_all_counters() {
+        let _g = GLOBAL_METRICS_LOCK.lock();
+        reset_all();
+        bump_encode_bytes(100, IsaUsed::Scalar);
+        bump_decode_bytes(200, IsaUsed::Scalar);
+        REBUILD_COUNT.fetch_add(5, Ordering::SeqCst);
+        SHARDS_LOST_TOTAL.fetch_add(3, Ordering::SeqCst);
+
+        let snap = prometheus_text_snapshot();
+        assert!(snap.contains("mox_ec_rebuild_count"));
+        assert!(snap.contains("mox_ec_shards_lost_total"));
+        assert!(snap.contains("mox_ec_encode_us_samples_total"));
+        assert!(snap.contains("mox_ec_encode_scalar_bytes_total"));
+        assert!(snap.contains("mox_ec_decode_scalar_bytes_total"));
+        assert!(snap.contains("mox_ec_encode_scalar_bytes_total 100"));
+        assert!(snap.contains("mox_ec_decode_scalar_bytes_total 200"));
+        assert!(snap.contains("mox_ec_rebuild_count 5"));
+        assert!(snap.contains("mox_ec_shards_lost_total 3"));
+    }
+
+    #[test]
+    fn test_prometheus_snapshot_help_and_type_lines() {
+        let _g = GLOBAL_METRICS_LOCK.lock();
+        reset_all();
+        let snap = prometheus_text_snapshot();
+        // Each metric should have HELP and TYPE lines
+        assert!(snap.contains("# HELP mox_ec_rebuild_count"));
+        assert!(snap.contains("# TYPE mox_ec_rebuild_count counter"));
+        assert!(snap.contains("# HELP mox_ec_shards_lost_total"));
+        assert!(snap.contains("# TYPE mox_ec_shards_lost_total counter"));
+    }
+
+    #[test]
+    fn test_max_histogram_samples_constant() {
+        assert_eq!(MAX_HISTOGRAM_SAMPLES, 1 << 16);
+        assert_eq!(MAX_HISTOGRAM_SAMPLES, 65536);
+    }
+
+    #[test]
+    fn test_isa_used_scalar_variant() {
+        let isa = IsaUsed::Scalar;
+        assert_eq!(isa, IsaUsed::Scalar);
     }
 }

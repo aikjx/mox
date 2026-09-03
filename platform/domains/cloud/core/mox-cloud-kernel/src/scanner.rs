@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -16,9 +16,13 @@
 //! 未直接复制 RustFS 源码。
 
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::{
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Mutex,
+    },
+    time::{Duration, Instant},
+};
 
 // ---------------------------------------------------------------------------
 // 三维预算配置
@@ -36,7 +40,7 @@ pub struct ScanBudget {
 }
 
 /// 时间预算
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TimeBudget {
     /// 单次扫描最大时长（None = 不限制）
     pub max_duration: Option<Duration>,
@@ -71,16 +75,8 @@ pub struct CapacityBudget {
 impl Default for ScanBudget {
     fn default() -> Self {
         Self {
-            time: TimeBudget {
-                max_duration: None,
-                window_start_hour: None,
-                window_end_hour: None,
-            },
-            io: IoBudget {
-                max_objects_per_sec: 0,
-                max_io_per_sec: 0,
-                max_parallelism: 4,
-            },
+            time: TimeBudget { max_duration: None, window_start_hour: None, window_end_hour: None },
+            io: IoBudget { max_objects_per_sec: 0, max_io_per_sec: 0, max_parallelism: 4 },
             capacity: CapacityBudget {
                 max_bytes_per_scan: 0,
                 max_migration_bytes: 0,
@@ -90,23 +86,10 @@ impl Default for ScanBudget {
     }
 }
 
-impl Default for TimeBudget {
-    fn default() -> Self {
-        Self {
-            max_duration: None,
-            window_start_hour: None,
-            window_end_hour: None,
-        }
-    }
-}
 
 impl Default for IoBudget {
     fn default() -> Self {
-        Self {
-            max_objects_per_sec: 0,
-            max_io_per_sec: 0,
-            max_parallelism: 4,
-        }
+        Self { max_objects_per_sec: 0, max_io_per_sec: 0, max_parallelism: 4 }
     }
 }
 
@@ -325,10 +308,9 @@ impl ScanBudgetTracker {
     /// - 正常窗口（start <= end）：当前小时 ∈ [start, end)
     /// - 跨午夜窗口（start > end，如 22:00-06:00）：当前小时 >= start 或 < end
     pub fn is_in_window(&self) -> bool {
-        let (Some(start), Some(end)) = (
-            self.budget.time.window_start_hour,
-            self.budget.time.window_end_hour,
-        ) else {
+        let (Some(start), Some(end)) =
+            (self.budget.time.window_start_hour, self.budget.time.window_end_hour)
+        else {
             return true; // 未配置窗口，不限制
         };
 
@@ -353,10 +335,7 @@ fn current_hour_24() -> u8 {
     use std::time::{SystemTime, UNIX_EPOCH};
     // 简化实现：基于 UNIX 时间戳 + 8 小时（UTC+8，中国时区）计算小时
     // 生产环境应使用 chrono::Local，但此处避免额外依赖
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+    let secs = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
     // UTC+8
     let hours_utc8 = (secs / 3600 + 8) % 24;
     hours_utc8 as u8
@@ -394,10 +373,7 @@ mod tests {
 
         // 设置 max_objects_per_scan = 2
         let budget = ScanBudget {
-            capacity: CapacityBudget {
-                max_objects_per_scan: 2,
-                ..Default::default()
-            },
+            capacity: CapacityBudget { max_objects_per_scan: 2, ..Default::default() },
             ..Default::default()
         };
         let t = ScanBudgetTracker::new(budget);
@@ -410,10 +386,7 @@ mod tests {
 
         // 设置 max_bytes_per_scan = 500
         let budget2 = ScanBudget {
-            capacity: CapacityBudget {
-                max_bytes_per_scan: 500,
-                ..Default::default()
-            },
+            capacity: CapacityBudget { max_bytes_per_scan: 500, ..Default::default() },
             ..Default::default()
         };
         let t2 = ScanBudgetTracker::new(budget2);
@@ -428,11 +401,7 @@ mod tests {
     fn test_budget_tracker_rate_limit() {
         // 设置极低速率：2 对象/秒，桶容量 = 2
         let budget = ScanBudget {
-            io: IoBudget {
-                max_objects_per_sec: 2,
-                max_io_per_sec: 0,
-                max_parallelism: 1,
-            },
+            io: IoBudget { max_objects_per_sec: 2, max_io_per_sec: 0, max_parallelism: 1 },
             ..Default::default()
         };
         let t = ScanBudgetTracker::new(budget);
@@ -534,7 +503,7 @@ mod tests {
         };
         let t_night = ScanBudgetTracker::new(budget_night);
         let h = current_hour_24();
-        let expected = h >= 22 || h < 6;
+        let expected = !(6..22).contains(&h);
         assert_eq!(t_night.is_in_window(), expected, "hour={}", h);
     }
 
@@ -542,11 +511,7 @@ mod tests {
     #[test]
     fn test_budget_tracker_io_rate_limit() {
         let budget = ScanBudget {
-            io: IoBudget {
-                max_objects_per_sec: 0,
-                max_io_per_sec: 2,
-                max_parallelism: 1,
-            },
+            io: IoBudget { max_objects_per_sec: 0, max_io_per_sec: 2, max_parallelism: 1 },
             ..Default::default()
         };
         let t = ScanBudgetTracker::new(budget);
@@ -562,5 +527,117 @@ mod tests {
         );
         assert_eq!(t.stats().io_ops, 3);
         assert!(t.stats().throttled_count >= 1);
+    }
+}
+
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    #[test]
+    fn test_scan_stats_default() {
+        let s = ScanStats {
+            objects_scanned: 0,
+            bytes_scanned: 0,
+            bytes_migrated: 0,
+            io_ops: 0,
+            elapsed_ms: 0,
+            throttled_count: 0,
+            budget_exceeded: false,
+        };
+        assert_eq!(s.objects_scanned, 0);
+        assert!(!s.budget_exceeded);
+    }
+
+    #[test]
+    fn test_scan_stats_serialization() {
+        let s = ScanStats {
+            objects_scanned: 10,
+            bytes_scanned: 1024,
+            bytes_migrated: 512,
+            io_ops: 20,
+            elapsed_ms: 100,
+            throttled_count: 3,
+            budget_exceeded: true,
+        };
+        let json = format!("{:?}", s);
+        assert!(json.contains("objects_scanned"));
+        assert!(json.contains("budget_exceeded"));
+        assert!(json.contains("true"));
+    }
+
+    #[test]
+    fn test_time_budget_default() {
+        let t = TimeBudget::default();
+        assert!(t.max_duration.is_none());
+        assert!(t.window_start_hour.is_none());
+        assert!(t.window_end_hour.is_none());
+    }
+
+    #[test]
+    fn test_capacity_budget_default() {
+        let c = CapacityBudget::default();
+        assert_eq!(c.max_bytes_per_scan, 0);
+        assert_eq!(c.max_migration_bytes, 0);
+        assert_eq!(c.max_objects_per_scan, 0);
+    }
+
+    #[test]
+    fn test_io_budget_default() {
+        let io = IoBudget::default();
+        assert_eq!(io.max_objects_per_sec, 0);
+        assert_eq!(io.max_io_per_sec, 0);
+        assert_eq!(io.max_parallelism, 4);
+    }
+
+    #[test]
+    fn test_scan_budget_clone() {
+        let b = ScanBudget::default();
+        let b2 = b.clone();
+        assert_eq!(b.io.max_parallelism, b2.io.max_parallelism);
+    }
+
+    #[test]
+    fn test_budget_tracker_budget_accessor() {
+        let b = ScanBudget::default();
+        let t = ScanBudgetTracker::new(b);
+        assert_eq!(t.budget().io.max_parallelism, 4);
+    }
+
+    #[test]
+    fn test_budget_tracker_max_migration_bytes() {
+        let budget = ScanBudget {
+            capacity: CapacityBudget { max_migration_bytes: 100, ..Default::default() },
+            ..Default::default()
+        };
+        let t = ScanBudgetTracker::new(budget);
+        assert!(t.can_continue());
+        t.record_migration(50);
+        assert!(t.can_continue());
+        t.record_migration(60); // 110 >= 100
+        assert!(!t.can_continue());
+        assert!(t.stats().budget_exceeded);
+    }
+
+    #[test]
+    fn test_budget_tracker_zero_budget_continues() {
+        // All budgets 0 = unlimited
+        let t = ScanBudgetTracker::new(ScanBudget::default());
+        for _ in 0..100 {
+            t.record_object(1000);
+            t.record_io();
+            t.record_migration(1000);
+            assert!(t.can_continue());
+        }
+    }
+
+    #[test]
+    fn test_budget_tracker_elapsed_ms_increases() {
+        let t = ScanBudgetTracker::new(ScanBudget::default());
+        let e1 = t.stats().elapsed_ms;
+        std::thread::sleep(Duration::from_millis(10));
+        let e2 = t.stats().elapsed_ms;
+        assert!(e2 >= e1);
     }
 }

@@ -11,6 +11,7 @@ name = "operator-server"
 path = "src/main.rs"
 
 [dependencies]
+mox-api-protocol = { workspace = true }
 mox-platform-foundation = { workspace = true }
 mox-flow-operator-core = { workspace = true }
 mox-kg-algo-core = { workspace = true }

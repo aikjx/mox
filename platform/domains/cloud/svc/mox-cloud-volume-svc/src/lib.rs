@@ -61,10 +61,13 @@ pub use backpressure::{
     BackpressurePermit, BackpressureState,
 };
 pub use buffer_pool::{
-    BufferPool, BufferPoolConfig, BufferPoolStats, BufferTierConfig, BufferTierStats,
-    PooledBuffer,
+    BufferPool, BufferPoolConfig, BufferPoolStats, BufferTierConfig, BufferTierStats, PooledBuffer,
 };
 pub use chunk_rebuild::{InMemoryPeerFetcher, PeerChunkFetcher, RebuildCoordinator};
+pub use config::{
+    ErasureCodingConfig, ReadArbitrationConfig, VolumeFeatureFlags, VolumeServiceConfig,
+    WriteArbitrationConfig,
+};
 pub use erasure_coding_ext::{
     CauchyReedSolomon, ChecksumType, IncrementalEncoder, IncrementalUpdate,
     IncrementalUpdateResult, IntegrityChecker, ProgressiveRebuildJob, ProgressiveRebuilder,
@@ -72,28 +75,23 @@ pub use erasure_coding_ext::{
 };
 pub use error::{VolumeError, VolumeResult};
 pub use fs_layout::{ec_object_dir, manifest_path, parse_shard_path, shard_path};
+pub use gf256_simd::{gf_vec_mul_auto, is_avx2_supported, SIMD_CHUNK};
 pub use hedged_reader::{HedgedReader, ReadError, ShardReadCost, ShardReader};
 pub use manifest::{crc64_ecma, crc64_ecma_update, EcManifest, StorageTier};
 pub use metrics::{
-    encode_us_samples_snapshot, observe_encode_us, reset_all, REBUILD_COUNT, SHARDS_LOST_TOTAL,
-    ENCODE_US_COUNT, MAX_HISTOGRAM_SAMPLES,
+    encode_us_samples_snapshot, observe_encode_us, reset_all, ENCODE_US_COUNT,
+    MAX_HISTOGRAM_SAMPLES, REBUILD_COUNT, SHARDS_LOST_TOTAL,
 };
-pub use multi_writer::{MultiWriter, WriteError, WriteProgressPolicy, WriteResult, ShardWriter};
+pub use multi_writer::{MultiWriter, ShardWriter, WriteError, WriteProgressPolicy, WriteResult};
 pub use profile::{EcProfile, DEFAULT_MIN_OBJ_SIZE};
 pub use reader_capability::{
-    probe_capabilities, ReaderCapabilitiesSummary, ReaderCapability, ReadCapabilityError,
+    probe_capabilities, ReadCapabilityError, ReaderCapabilitiesSummary, ReaderCapability,
     ReaderPipeline, SimpleReader,
 };
 pub use rebuild::{encode_and_write, RebuildJob};
-pub use reed_solomon::{RSError, RSResult, ReedSolomon2Plus1, ReedSolomonEngine, shard_size_for};
+pub use reed_solomon::{shard_size_for, RSError, RSResult, ReedSolomon2Plus1, ReedSolomonEngine};
 pub use storage_tier::{
-    MigrationStatus, MigrationScheduleWindow, ObjectAccessStats, StorageLayer,
-    StorageLayerConfig, StorageTierEngine, TierMigrationTask, TierStats, TieringPolicyConfig,
-    TieringPolicyType,
+    MigrationScheduleWindow, MigrationStatus, ObjectAccessStats, StorageLayer, StorageLayerConfig,
+    StorageTierEngine, TierMigrationTask, TierStats, TieringPolicyConfig, TieringPolicyType,
 };
-pub use gf256_simd::{gf_vec_mul_auto, is_avx2_supported, SIMD_CHUNK};
 pub use volume_server::{crc32c_bytes, sha256_hex, ChunkAck, VolumeId, VolumeServer};
-pub use config::{
-    ErasureCodingConfig, ReadArbitrationConfig, VolumeFeatureFlags,
-    VolumeServiceConfig, WriteArbitrationConfig,
-};

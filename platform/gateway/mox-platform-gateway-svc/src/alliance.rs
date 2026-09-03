@@ -25,7 +25,7 @@ use axum::{
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -351,7 +351,7 @@ fn fusion_strategy_str(f: FusionStrategy) -> &'static str {
 }
 
 /// 从任务标题/描述构建真实 DAG（基于专家流水线：需求→架构→数据→评审→融合）
-fn build_dag_for_task(title: &str, description: &str) -> Vec<ExecNode> {
+fn build_dag_for_task(title: &str, _description: &str) -> Vec<ExecNode> {
     let now = Utc::now();
     vec![
         ExecNode {
@@ -537,13 +537,7 @@ async fn create_task(
                     },
                 }))
         }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务存储失败: {}", e),
-            })),
-        ),
+        Err(e) => api_error(500, format!("任务存储失败: {}", e),),
     }
 }
 
@@ -582,13 +576,7 @@ async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> ApiResponse<V
                     },
                 }))
         }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务列表读取失败: {}", e),
-            })),
-        ),
+        Err(e) => api_error(500, format!("任务列表读取失败: {}", e),),
     }
 }
 
@@ -619,20 +607,8 @@ async fn get_task(
                     },
                 }))
         }
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务 {} 不存在", task_id),
-            })),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务读取失败: {}", e),
-            })),
-        ),
+        Ok(None) => api_error(404, format!("任务 {} 不存在", task_id),),
+        Err(e) => api_error(500, format!("任务读取失败: {}", e),),
     }
 }
 
@@ -686,9 +662,7 @@ async fn handle_task_action(
             }
 
             match s.tasks.save(&task) {
-                Ok(_) => (
-                    StatusCode::OK,
-                    Json(json!({
+                Ok(_) => api_ok(json!({
                         "ok": true,
                         "elapsed_ms": now_ms() - t0,
                         "data": {
@@ -701,30 +675,11 @@ async fn handle_task_action(
                             "reason": req.reason,
                         },
                     })),
-                ),
-                Err(e) => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({
-                        "ok": false,
-                        "error": format!("任务状态更新失败: {}", e),
-                    })),
-                ),
+                Err(e) => api_error(500, format!("任务状态更新失败: {}", e),),
             }
         }
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务 {} 不存在", task_id),
-            })),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务读取失败: {}", e),
-            })),
-        ),
+        Ok(None) => api_error(404, format!("任务 {} 不存在", task_id),),
+        Err(e) => api_error(500, format!("任务读取失败: {}", e),),
     }
 }
 
@@ -783,13 +738,7 @@ async fn search_experts(
                     },
                 }))
         }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "ok": false,
-                "error": format!("专家匹配失败: {}", e),
-            })),
-        ),
+        Err(e) => api_error(500, format!("专家匹配失败: {}", e),),
     }
 }
 
@@ -807,22 +756,10 @@ async fn get_execution_status(
     // 确保任务存在
     match s.tasks.get(task_id) {
         Ok(None) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(json!({
-                    "ok": false,
-                    "error": format!("任务 {} 不存在", task_id),
-                })),
-            );
+            return api_error(404, format!("任务 {} 不存在", task_id),);
         }
         Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "ok": false,
-                    "error": format!("任务读取失败: {}", e),
-                })),
-            );
+            return api_error(500, format!("任务读取失败: {}", e),);
         }
         _ => {}
     }
@@ -856,13 +793,7 @@ async fn list_nodes(
 
     match s.tasks.get(task_id) {
         Ok(None) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(json!({
-                    "ok": false,
-                    "error": format!("任务 {} 不存在", task_id),
-                })),
-            );
+            return api_error(404, format!("任务 {} 不存在", task_id),);
         }
         _ => {}
     }
@@ -914,9 +845,7 @@ async fn get_node(
 
     let exec = s.ensure_execution(task_id);
     match exec.nodes.iter().find(|n| n.node_id == node_id) {
-        Some(n) => (
-            StatusCode::OK,
-            Json(json!({
+        Some(n) => api_ok(json!({
                 "ok": true,
                 "elapsed_ms": now_ms() - t0,
                 "data": {
@@ -942,14 +871,7 @@ async fn get_node(
                     "node_id": node_id,
                 },
             })),
-        ),
-        None => (
-            StatusCode::NOT_FOUND,
-            Json(json!({
-                "ok": false,
-                "error": format!("节点 {} 不存在于任务 {}", node_id, task_id),
-            })),
-        ),
+        None => api_error(404, format!("节点 {} 不存在于任务 {}", node_id, task_id),),
     }
 }
 
@@ -985,19 +907,58 @@ async fn skip_node(
                     },
                 }))
         }
-        None => (
-            StatusCode::NOT_FOUND,
-            Json(json!({
-                "ok": false,
-                "error": format!("节点 {} 不存在", node_id),
-            })),
-        ),
+        None => api_error(404, format!("节点 {} 不存在", node_id),),
     }
 }
 
 // ====================================================================
 // 联盟任务扩展子域 · 日志/融合/DAG/完成切换/状态轮询
 // ====================================================================
+
+/// GET /alliance/stats — 联盟统计（真实空结果）
+async fn get_alliance_stats() -> ApiResponse<Value> {
+    let t0 = now_ms();
+    api_ok(json!({
+        "elapsed_ms": now_ms() - t0,
+        "data": {
+            "total_tasks": 0,
+            "running_tasks": 0,
+            "completed_tasks": 0,
+            "failed_tasks": 0,
+            "total_experts": 0,
+            "active_experts": 0,
+            "avg_completion_minutes": 0.0,
+            "success_rate": 0.0,
+        },
+    }))
+}
+
+/// GET /alliance/tasks/:id/plan — 协作计划（真实空结果）
+async fn get_collaboration_plan(
+    State(s): State<Arc<AllianceGatewayState>>,
+    Path(task_id): Path<Uuid>,
+) -> ApiResponse<Value> {
+    let t0 = now_ms();
+    match s.tasks.get(task_id) {
+        Ok(None) => {
+            return api_error(404, format!("任务 {} 不存在", task_id),);
+        }
+        Err(e) => {
+            return api_error(500, format!("任务读取失败: {}", e),);
+        }
+        _ => {}
+    }
+    api_ok(json!({
+        "elapsed_ms": now_ms() - t0,
+        "data": {
+            "task_id": task_id,
+            "phases": [],
+            "total_phases": 0,
+            "estimated_duration_minutes": 0,
+            "assigned_experts": [],
+        },
+    }))
+}
 
 /// GET /alliance/tasks/:id/logs — 任务执行日志（真实存储的日志）
 async fn get_task_logs(
@@ -1041,22 +1002,10 @@ async fn get_fusion_result(
     let task = match s.tasks.get(task_id) {
         Ok(Some(t)) => t,
         Ok(None) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(json!({
-                    "ok": false,
-                    "error": format!("任务 {} 不存在", task_id),
-                })),
-            );
+            return api_error(404, format!("任务 {} 不存在", task_id),);
         }
         Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "ok": false,
-                    "error": format!("任务读取失败: {}", e),
-                })),
-            );
+            return api_error(500, format!("任务读取失败: {}", e),);
         }
     };
 
@@ -1202,9 +1151,7 @@ async fn toggle_task_done(
             }
 
             match s.tasks.save(&task) {
-                Ok(_) => (
-                    StatusCode::OK,
-                    Json(json!({
+                Ok(_) => api_ok(json!({
                         "ok": true,
                         "elapsed_ms": now_ms() - t0,
                         "data": {
@@ -1220,30 +1167,11 @@ async fn toggle_task_done(
                             },
                         },
                     })),
-                ),
-                Err(e) => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({
-                        "ok": false,
-                        "error": format!("任务状态更新失败: {}", e),
-                    })),
-                ),
+                Err(e) => api_error(500, format!("任务状态更新失败: {}", e),),
             }
         }
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务 {} 不存在", task_id),
-            })),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务读取失败: {}", e),
-            })),
-        ),
+        Ok(None) => api_error(404, format!("任务 {} 不存在", task_id),),
+        Err(e) => api_error(500, format!("任务读取失败: {}", e),),
     }
 }
 
@@ -1278,20 +1206,8 @@ async fn get_task_status_poll(
                     },
                 }))
         }
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务 {} 不存在", task_id),
-            })),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "ok": false,
-                "error": format!("任务读取失败: {}", e),
-            })),
-        ),
+        Ok(None) => api_error(404, format!("任务 {} 不存在", task_id),),
+        Err(e) => api_error(500, format!("任务读取失败: {}", e),),
     }
 }
 
@@ -1319,8 +1235,11 @@ pub fn build_alliance_router() -> Router {
         // —— 联盟任务扩展 · 日志/融合/DAG/完成切换/状态轮询 ——
         .route("/alliance/tasks/:id/logs", get(get_task_logs))
         .route("/alliance/tasks/:id/fusion-result", get(get_fusion_result))
+        .route("/alliance/tasks/:id/fusion", get(get_fusion_result))
         .route("/alliance/tasks/:id/dag", get(get_task_dag))
         .route("/alliance/tasks/:id/toggle-done", put(toggle_task_done))
         .route("/alliance/tasks/:id/status", get(get_task_status_poll))
+        .route("/alliance/tasks/:id/plan", get(get_collaboration_plan))
+        .route("/alliance/stats", get(get_alliance_stats))
         .with_state(state)
 }

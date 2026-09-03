@@ -61,7 +61,7 @@ use std::{
 use tokio::sync::broadcast;
 
 use crate::GatewayState;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // =====================================================================
 // 工具函数
@@ -421,109 +421,132 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 93] = [
-    // ---- L0 接入通用 ----
-    r("l0-health", "GET", "/health", "L0", "System", "ready", "存活检查"),
-    r("l0-metrics", "GET", "/metrics", "L0", "System", "ready", "Prometheus 指标"),
-    r("l0-status", "GET", "/api/v1/status", "L0", "System", "ready", "网关状态"),
-    r("l0-domains", "GET", "/api/v1/domains", "L0", "System", "ready", "业务域描述符"),
-    // ---- Actuator 管理面（默认不可停用，防自锁）----
-    r("actuator-index", "GET", "/actuator", "L0", "Actuator", "ready", "管理端点索引"),
-    r("actuator-health", "GET", "/actuator/health", "L0", "Actuator", "ready", "健康检查"),
-    r("actuator-info", "GET", "/actuator/info", "L0", "Actuator", "ready", "构建信息"),
-    r("actuator-mappings", "GET", "/actuator/mappings", "L0", "Actuator", "ready", "API 注册表"),
-    r("actuator-metrics", "GET", "/actuator/metrics", "L0", "Actuator", "ready", "运行时指标"),
-    r("actuator-env", "GET", "/actuator/env", "L0", "Actuator", "ready", "网关配置"),
-    r("actuator-loggers", "ANY", "/actuator/loggers", "L0", "Actuator", "ready", "日志级别查看/调整"),
-    r("actuator-logs", "ANY", "/actuator/logs", "L0", "Actuator", "ready", "在线日志查询/清空"),
-    r("actuator-logs-tail", "GET", "/actuator/logs/tail", "L0", "Actuator", "ready", "SSE 实时日志流"),
-    r("actuator-api", "ANY", "/actuator/api/:id", "L0", "Actuator", "ready", "API 启停管理"),
-    // ---- L2 KG ----
-    r("kg-neighborhood", "GET", "/kg/v1/neighborhood", "L2", "KG", "ready", "邻域子图"),
-    r("kg-path", "GET", "/kg/v1/path", "L2", "KG", "ready", "K 条路径"),
-    r("kg-shortest-path", "GET", "/kg/v1/shortest-path", "L2", "KG", "ready", "最短路径"),
-    r("kg-centrality", "GET", "/kg/v1/centrality", "L2", "KG", "ready", "中心性分析"),
-    r("kg-communities", "GET", "/kg/v1/communities", "L2", "KG", "ready", "社区发现"),
-    r("kg-stats", "GET", "/kg/v1/stats", "L2", "KG", "ready", "图谱统计"),
-    // ---- L3 AI ----
-    r("ai-process", "POST", "/ai/engine/process", "L3", "AI", "ready", "意图识别→能力路由"),
-    r("ai-analyze", "POST", "/ai/engine/analyze", "L3", "AI", "ready", "显式能力执行"),
-    r("ai-capabilities", "GET", "/ai/engine/capabilities", "L3", "AI", "ready", "能力矩阵"),
-    r("ai-metrics", "GET", "/ai/engine/metrics", "L3", "AI", "ready", "AI 引擎指标"),
-    // ---- L2 KB（mox-kb-svc 100% 自研）----
-    r("kb-documents", "ANY", "/kb/documents", "L2", "KB", "ready", "文档列表/创建"),
-    r("kb-document", "ANY", "/kb/documents/:id", "L2", "KB", "ready", "文档详情/改/删"),
-    r("kb-document-analyze", "POST", "/kb/documents/:id/analyze", "L2", "KB", "ready", "专家联盟分析"),
-    r("kb-batch-analyze", "POST", "/kb/batch-analyze", "L2", "KB", "ready", "批量分析"),
-    r("kb-categories", "GET", "/kb/categories", "L2", "KB", "ready", "分类列表"),
-    r("kb-tags", "GET", "/kb/tags", "L2", "KB", "ready", "标签列表"),
-    r("kb-search", "POST", "/kb/search", "L2", "KB", "ready", "文档+图谱检索"),
-    r("kb-versions", "ANY", "/kb/documents/:id/versions", "L2", "KB", "ready", "版本列表/创建"),
-    r("kb-version", "GET", "/kb/documents/:id/versions/:ver", "L2", "KB", "ready", "版本详情"),
-    r("kb-version-compare", "POST", "/kb/documents/:id/versions/compare", "L2", "KB", "ready", "版本对比"),
-    r("kb-version-revert", "POST", "/kb/documents/:id/versions/revert", "L2", "KB", "ready", "版本回滚"),
-    r("kb-entities", "GET", "/kb/documents/:id/entities", "L2", "KB", "ready", "实体/关系"),
-    r("kb-graph-link", "ANY", "/kb/documents/:id/graph-link", "L2", "KB", "ready", "图谱挂图/反挂图"),
-    r("kb-doc-history", "GET", "/kb/documents/:id/history", "L2", "KB", "ready", "文档历史"),
-    r("kb-stats", "GET", "/kb/stats", "L2", "KB", "ready", "知识库统计"),
-    r("kb-history", "GET", "/kb/history", "L2", "KB", "ready", "全局操作历史"),
-    // ---- L4 Alliance ----
-    r("alliance-tasks", "ANY", "/alliance/v1/tasks", "L4", "Alliance", "ready", "任务创建/列表"),
-    r("alliance-task-detail", "ANY", "/alliance/v1/tasks/:task_id", "L4", "Alliance", "ready", "任务详情/动作"),
-    r("alliance-experts-search", "POST", "/alliance/v1/experts/search", "L4", "Alliance", "ready", "专家搜索"),
-    r("alliance-task-status", "GET", "/alliance/v1/tasks/:task_id/status", "L4", "Alliance", "ready", "执行状态"),
-    r("alliance-task-nodes", "GET", "/alliance/v1/tasks/:task_id/nodes", "L4", "Alliance", "ready", "节点列表"),
-    r("alliance-task-node", "ANY", "/alliance/v1/tasks/:task_id/nodes/:node_id", "L4", "Alliance", "ready", "节点详情/跳过"),
-    // ---- L5 系统管理（IAM 真实链路）----
-    r("sys-permissions", "GET", "/api/system/permissions", "L5", "System", "ready", "当前用户权限"),
-    r("sys-dept", "ANY", "/api/system/dept", "L5", "System", "ready", "部门列表/新增"),
-    r("sys-dept-tree", "GET", "/api/system/dept/tree", "L5", "System", "ready", "部门树"),
-    r("sys-dept-detail", "ANY", "/api/system/dept/:id", "L5", "System", "ready", "部门详情/改/删"),
-    r("sys-dept-users", "GET", "/api/system/dept/:id/users", "L5", "System", "ready", "部门用户"),
-    r("sys-post", "ANY", "/api/system/post", "L5", "System", "ready", "岗位列表/新增"),
-    r("sys-post-dept", "GET", "/api/system/post/dept/:deptId", "L5", "System", "ready", "部门岗位"),
-    r("sys-post-detail", "ANY", "/api/system/post/:id", "L5", "System", "ready", "岗位详情/改/删"),
-    r("sys-user", "ANY", "/api/system/user", "L5", "System", "ready", "用户列表/新增"),
-    r("sys-user-detail", "ANY", "/api/system/user/:id", "L5", "System", "ready", "用户详情/改/删"),
-    r("sys-user-resetpwd", "PUT", "/api/system/user/:id/resetPwd", "L5", "System", "ready", "重置密码"),
-    r("sys-user-status", "PUT", "/api/system/user/:id/changeStatus", "L5", "System", "ready", "变更用户状态"),
-    r("sys-user-roles", "ANY", "/api/system/user/:id/roles", "L5", "System", "ready", "用户角色分配"),
-    r("sys-role", "ANY", "/api/system/role", "L5", "System", "ready", "角色列表/新增"),
-    r("sys-role-detail", "ANY", "/api/system/role/:id", "L5", "System", "ready", "角色详情/改/删"),
-    r("sys-role-menus", "ANY", "/api/system/role/:id/menuPerms", "L5", "System", "ready", "角色菜单权限"),
-    r("sys-role-datapers", "ANY", "/api/system/role/:id/dataPerms", "L5", "System", "ready", "角色数据权限"),
-    r("sys-role-users", "GET", "/api/system/role/:id/users", "L5", "System", "ready", "角色用户"),
-    r("sys-role-copy", "POST", "/api/system/role/:id/copy", "L5", "System", "ready", "复制角色"),
-    r("sys-menu-tree", "GET", "/api/system/menu/tree", "L5", "System", "ready", "菜单树"),
-    r("sys-menu", "ANY", "/api/system/menu", "L5", "System", "ready", "菜单列表/新增"),
-    r("sys-menu-detail", "ANY", "/api/system/menu/:id", "L5", "System", "ready", "菜单详情/改/删"),
-    r("sys-dict-type", "ANY", "/api/system/dict/type", "L5", "System", "ready", "字典类型列表/新增"),
-    r("sys-dict-type-all", "GET", "/api/system/dict/type/all", "L5", "System", "ready", "全部字典类型"),
-    r("sys-dict-type-detail", "ANY", "/api/system/dict/type/:id", "L5", "System", "ready", "字典类型详情/改/删"),
-    r("sys-dict-data", "ANY", "/api/system/dict/data", "L5", "System", "ready", "字典数据列表/新增"),
-    r("sys-dict-data-type", "GET", "/api/system/dict/data/type/:dictType", "L5", "System", "ready", "按类型字典数据"),
-    r("sys-dict-data-detail", "ANY", "/api/system/dict/data/:id", "L5", "System", "ready", "字典数据详情/改/删"),
-    r("sys-config", "ANY", "/api/system/config", "L5", "System", "ready", "参数配置列表/新增"),
-    r("sys-config-refresh", "DELETE", "/api/system/config/refresh-cache", "L5", "System", "ready", "刷新配置缓存"),
-    r("sys-config-detail", "ANY", "/api/system/config/:id", "L5", "System", "ready", "参数配置详情/改/删"),
-    r("sys-config-key", "GET", "/api/system/config/key/:key", "L5", "System", "ready", "按 key 查配置"),
-    r("sys-operlog", "GET", "/api/system/operlog", "L5", "System", "ready", "操作日志列表"),
-    r("sys-operlog-clean", "DELETE", "/api/system/operlog/clean", "L5", "System", "ready", "清空操作日志"),
-    r("sys-operlog-detail", "ANY", "/api/system/operlog/:id", "L5", "System", "ready", "操作日志详情/删"),
-    r("sys-operlog-export", "GET", "/api/system/operlog/export", "L5", "System", "ready", "导出操作日志"),
-    r("sys-loginlog", "GET", "/api/system/logininfor", "L5", "System", "ready", "登录日志列表"),
-    r("sys-loginlog-clean", "DELETE", "/api/system/logininfor/clean", "L5", "System", "ready", "清空登录日志"),
-    r("sys-loginlog-detail", "DELETE", "/api/system/logininfor/:id", "L5", "System", "ready", "删除登录日志"),
-    r("sys-loginlog-export", "GET", "/api/system/logininfor/export", "L5", "System", "ready", "导出登录日志"),
-    // ---- L5 安全域 ----
-    r("sec-status", "GET", "/api/security/status", "L5", "Security", "ready", "安全状态"),
-    r("sec-api-keys", "ANY", "/api/security/api-keys", "L5", "Security", "ready", "凭证列表/创建"),
-    r("sec-api-key-revoke", "DELETE", "/api/security/api-keys/:id", "L5", "Security", "ready", "吊销凭证"),
-    r("sec-api-key-validate", "POST", "/api/security/validate", "L5", "Security", "ready", "校验凭证"),
-    r("sec-audit-log", "GET", "/api/security/audit-log", "L5", "Security", "ready", "审计日志"),
-    // ---- L6 业务域反向代理（网关→编排器/PrimiFlow）----
-    r("proxy-orchestrator", "ANY", "/api/{*path}", "L6", "Proxy", "proxy", "转发编排器(:3001)"),
-    r("proxy-primiflow", "ANY", "/api/projects/{*path}", "L6", "Proxy", "proxy", "转发 PrimiFlow(:8000)"),
+pub static ROUTES: [ApiRoute; 98] = [
+    // =====================================================================
+    // Actuator 域（L0·Spring Boot 风格管理面·/actuator/*）
+    // =====================================================================
+    r("actuator.index", "GET", "/actuator", "L0", "actuator", "ready", "管理面端点索引"),
+    r("actuator.health", "GET", "/actuator/health", "L0", "actuator", "ready", "健康检查（Spring Boot 风格）"),
+    r("actuator.info", "GET", "/actuator/info", "L0", "actuator", "ready", "构建信息（版本/时间/Git）"),
+    r("actuator.mappings", "GET", "/actuator/mappings", "L0", "actuator", "ready", "全部 API 注册表（?layer&domain&status&q&only_enabled）"),
+    r("actuator.metrics", "GET", "/actuator/metrics", "L0", "actuator", "ready", "运行时指标（JVM/CPU/内存/GC/线程/请求）"),
+    r("actuator.env", "GET", "/actuator/env", "L0", "actuator", "ready", "网关配置（密钥脱敏）"),
+    r("actuator.loggers", "ANY", "/actuator/loggers", "L0", "actuator", "ready", "日志级别查看/动态调整"),
+    r("actuator.logs", "ANY", "/actuator/logs", "L0", "actuator", "ready", "在线日志查询（?level&search&limit&offset）"),
+    r("actuator.logs_tail", "GET", "/actuator/logs/tail", "L0", "actuator", "ready", "SSE 实时日志流（curl -N）"),
+    r("actuator.api", "ANY", "/actuator/api/:id", "L0", "actuator", "ready", "按 API 启停管理（/enable|/disable）"),
+
+    // =====================================================================
+    // Platform 域（L0·通用接入·/health /metrics /api/v1/* + L6 反向代理）
+    // =====================================================================
+    r("platform.health", "GET", "/health", "L0", "platform", "ready", "存活探针（网关 Rust axum 版本）"),
+    r("platform.metrics", "GET", "/metrics", "L0", "platform", "ready", "Prometheus 指标端点（占位）"),
+    r("platform.status", "GET", "/api/v1/status", "L0", "platform", "ready", "网关状态（域就绪统计+认证+限流）"),
+    r("platform.domains", "GET", "/api/v1/domains", "L0", "platform", "ready", "31 业务域描述符列表（自描述）"),
+    r("platform.proxy_orchestrator", "ANY", "/api/{*path}", "L6", "platform", "ready", "业务域反向代理→编排器（默认 :3001，catch-all）"),
+    r("platform.proxy_primiflow", "ANY", "/api/projects/{*path}", "L6", "platform", "ready", "项目域反向代理→PrimiFlow（默认 :8000）"),
+
+    // =====================================================================
+    // KG 域（L2·知识图谱·/kg/v1/*·mox-kg-service-svc 真实算法）
+    // =====================================================================
+    r("kg.graph.neighborhood", "GET", "/kg/v1/neighborhood", "L2", "kg", "ready", "实体邻域查询（多跳邻居+边）"),
+    r("kg.graph.path", "GET", "/kg/v1/path", "L2", "kg", "ready", "两实体间路径枚举（BFS）"),
+    r("kg.graph.shortest_path", "GET", "/kg/v1/shortest-path", "L2", "kg", "ready", "最短路径（Dijkstra 边权重）"),
+    r("kg.graph.centrality", "GET", "/kg/v1/centrality", "L2", "kg", "ready", "中心性分析（度/介数/接近）"),
+    r("kg.graph.communities", "GET", "/kg/v1/communities", "L2", "kg", "ready", "社区发现（Louvain 模块度）"),
+    r("kg.graph.stats", "GET", "/kg/v1/stats", "L2", "kg", "ready", "图谱统计（节点/边/标签分布）"),
+
+    // =====================================================================
+    // AI 域（L3·AI 引擎·/ai/v1/*·归一化版本前缀）
+    // =====================================================================
+    r("ai.engine.process", "POST", "/ai/v1/process", "L3", "ai", "ready", "AI 引擎统一处理（多模型路由）"),
+    r("ai.engine.analyze", "POST", "/ai/v1/analyze", "L3", "ai", "ready", "AI 深度分析（结构化输出）"),
+    r("ai.engine.capabilities", "GET", "/ai/v1/capabilities", "L3", "ai", "ready", "AI 引擎能力清单（模型/工具/配额）"),
+    r("ai.engine.metrics", "GET", "/ai/v1/metrics", "L3", "ai", "ready", "AI 引擎运行指标（调用量/延迟/成功率）"),
+
+    // =====================================================================
+    // KB 域（L2·云盘知识库·/kb/v1/*·mox-kb-svc 100% 自研·归一化版本前缀）
+    // =====================================================================
+    r("kb.documents.list", "ANY", "/kb/v1/documents", "L2", "kb", "ready", "文档列表/上传/搜索（云盘根目录）"),
+    r("kb.documents.detail", "ANY", "/kb/v1/documents/:id", "L2", "kb", "ready", "文档详情/下载/删除/元数据更新"),
+    r("kb.documents.analyze", "POST", "/kb/v1/documents/:id/analyze", "L2", "kb", "ready", "文档 AI 分析（摘要/关键词/实体）"),
+    r("kb.documents.batch_analyze", "POST", "/kb/v1/batch-analyze", "L2", "kb", "ready", "批量文档分析（异步任务）"),
+    r("kb.categories.list", "GET", "/kb/v1/categories", "L2", "kb", "ready", "知识库分类树"),
+    r("kb.tags.list", "GET", "/kb/v1/tags", "L2", "kb", "ready", "标签云/标签列表"),
+    r("kb.search.query", "POST", "/kb/v1/search", "L2", "kb", "ready", "全文检索（向量+关键词混合）"),
+    r("kb.versions.list", "ANY", "/kb/v1/documents/:id/versions", "L2", "kb", "ready", "文档版本列表"),
+    r("kb.versions.detail", "GET", "/kb/v1/documents/:id/versions/:ver", "L2", "kb", "ready", "指定版本详情/下载"),
+    r("kb.versions.compare", "POST", "/kb/v1/documents/:id/versions/compare", "L2", "kb", "ready", "版本差异对比（diff）"),
+    r("kb.versions.revert", "POST", "/kb/v1/documents/:id/versions/revert", "L2", "kb", "ready", "回滚到指定版本"),
+    r("kb.entities.list", "GET", "/kb/v1/documents/:id/entities", "L2", "kb", "ready", "文档实体抽取结果"),
+    r("kb.graph.link", "ANY", "/kb/v1/documents/:id/graph-link", "L2", "kb", "ready", "文档→知识图谱关联/挂图"),
+    r("kb.documents.history", "GET", "/kb/v1/documents/:id/history", "L2", "kb", "ready", "文档操作历史（审计）"),
+    r("kb.stats.summary", "GET", "/kb/v1/stats", "L2", "kb", "ready", "知识库统计（文档数/容量/活跃度）"),
+    r("kb.history.list", "GET", "/kb/v1/history", "L2", "kb", "ready", "全局操作历史（最近活动）"),
+
+    // =====================================================================
+    // Alliance 域（L4·专家联盟·/alliance/v1/*·scheduler-core 真实存储+匹配+执行）
+    // =====================================================================
+    r("alliance.tasks.list", "ANY", "/alliance/v1/tasks", "L4", "alliance", "ready", "联盟任务列表/创建（InMemoryTaskRepository 真实存储）"),
+    r("alliance.tasks.detail", "ANY", "/alliance/v1/tasks/:task_id", "L4", "alliance", "ready", "任务详情/操作（暂停/恢复/取消）"),
+    r("alliance.experts.search", "POST", "/alliance/v1/experts/search", "L4", "alliance", "ready", "专家匹配搜索（RuleBasedExpertMatcher 真实匹配）"),
+    r("alliance.tasks.status", "GET", "/alliance/v1/tasks/:task_id/status", "L4", "alliance", "ready", "执行状态查询（真实节点统计）"),
+    r("alliance.tasks.nodes", "GET", "/alliance/v1/tasks/:task_id/nodes", "L4", "alliance", "ready", "执行节点列表（真实 DAG 节点）"),
+    r("alliance.tasks.node", "ANY", "/alliance/v1/tasks/:task_id/nodes/:node_id", "L4", "alliance", "ready", "节点详情/跳过（人工干预）"),
+    r("alliance.tasks.logs", "GET", "/alliance/v1/tasks/:id/logs", "L4", "alliance", "ready", "任务执行日志（真实存储）"),
+    r("alliance.tasks.fusion", "GET", "/alliance/v1/tasks/:id/fusion-result", "L4", "alliance", "ready", "融合结果（真实从节点输出融合）"),
+    r("alliance.tasks.dag", "GET", "/alliance/v1/tasks/:id/dag", "L4", "alliance", "ready", "DAG 节点+边（真实存储的 DAG）"),
+    r("alliance.tasks.toggle_done", "PUT", "/alliance/v1/tasks/:id/toggle-done", "L4", "alliance", "ready", "完成状态切换（真实状态流转）"),
+    r("alliance.tasks.status_poll", "GET", "/alliance/v1/tasks/:id/status", "L4", "alliance", "ready", "任务状态轮询（供前端轮询）"),
+
+    // =====================================================================
+    // System 域（L5·系统管理+安全·/api/v1/system/* · /api/v1/security/*·IAM SQLite 真实数据链路）
+    // =====================================================================
+    r("system.permissions.current", "GET", "/api/v1/system/permissions", "L5", "system", "ready", "当前用户权限/角色/菜单"),
+    r("system.dept.list", "ANY", "/api/v1/system/dept", "L5", "system", "ready", "部门列表/创建"),
+    r("system.dept.tree", "GET", "/api/v1/system/dept/tree", "L5", "system", "ready", "部门树"),
+    r("system.dept.detail", "ANY", "/api/v1/system/dept/:id", "L5", "system", "ready", "部门详情/更新/删除"),
+    r("system.dept.users", "GET", "/api/v1/system/dept/:id/users", "L5", "system", "ready", "部门用户列表"),
+    r("system.post.list", "ANY", "/api/v1/system/post", "L5", "system", "ready", "岗位列表/创建"),
+    r("system.post.by_dept", "GET", "/api/v1/system/post/dept/:deptId", "L5", "system", "ready", "按部门查询岗位"),
+    r("system.post.detail", "ANY", "/api/v1/system/post/:id", "L5", "system", "ready", "岗位详情/更新/删除"),
+    r("system.user.list", "ANY", "/api/v1/system/user", "L5", "system", "ready", "用户列表/创建"),
+    r("system.user.detail", "ANY", "/api/v1/system/user/:id", "L5", "system", "ready", "用户详情/更新/删除"),
+    r("system.user.reset_pwd", "PUT", "/api/v1/system/user/:id/resetPwd", "L5", "system", "ready", "重置用户密码"),
+    r("system.user.change_status", "PUT", "/api/v1/system/user/:id/changeStatus", "L5", "system", "ready", "用户状态切换（启用/停用）"),
+    r("system.user.roles", "ANY", "/api/v1/system/user/:id/roles", "L5", "system", "ready", "用户角色查询/分配"),
+    r("system.role.list", "ANY", "/api/v1/system/role", "L5", "system", "ready", "角色列表/创建"),
+    r("system.role.detail", "ANY", "/api/v1/system/role/:id", "L5", "system", "ready", "角色详情/更新/删除"),
+    r("system.role.menu_perms", "ANY", "/api/v1/system/role/:id/menuPerms", "L5", "system", "ready", "角色菜单权限查询/设置"),
+    r("system.role.data_perms", "ANY", "/api/v1/system/role/:id/dataPerms", "L5", "system", "ready", "角色数据权限查询/设置"),
+    r("system.role.users", "GET", "/api/v1/system/role/:id/users", "L5", "system", "ready", "角色用户列表"),
+    r("system.role.copy", "POST", "/api/v1/system/role/:id/copy", "L5", "system", "ready", "复制角色"),
+    r("system.menu.tree", "GET", "/api/v1/system/menu/tree", "L5", "system", "ready", "菜单树（用户可见）"),
+    r("system.menu.list", "ANY", "/api/v1/system/menu", "L5", "system", "ready", "菜单列表/创建"),
+    r("system.menu.detail", "ANY", "/api/v1/system/menu/:id", "L5", "system", "ready", "菜单详情/更新/删除"),
+    r("system.dict_type.list", "ANY", "/api/v1/system/dict/type", "L5", "system", "ready", "字典类型列表/创建"),
+    r("system.dict_type.all", "GET", "/api/v1/system/dict/type/all", "L5", "system", "ready", "全部字典类型"),
+    r("system.dict_type.detail", "ANY", "/api/v1/system/dict/type/:id", "L5", "system", "ready", "字典类型详情/更新/删除"),
+    r("system.dict_data.list", "ANY", "/api/v1/system/dict/data", "L5", "system", "ready", "字典数据列表/创建"),
+    r("system.dict_data.by_type", "GET", "/api/v1/system/dict/data/type/:dictType", "L5", "system", "ready", "按类型查询字典数据"),
+    r("system.dict_data.detail", "ANY", "/api/v1/system/dict/data/:id", "L5", "system", "ready", "字典数据详情/更新/删除"),
+    r("system.config.list", "ANY", "/api/v1/system/config", "L5", "system", "ready", "参数配置列表/创建"),
+    r("system.config.refresh", "DELETE", "/api/v1/system/config/refresh-cache", "L5", "system", "ready", "刷新配置缓存"),
+    r("system.config.detail", "ANY", "/api/v1/system/config/:id", "L5", "system", "ready", "配置详情/更新/删除"),
+    r("system.config.by_key", "GET", "/api/v1/system/config/key/:key", "L5", "system", "ready", "按键查询配置"),
+    r("system.operlog.list", "GET", "/api/v1/system/operlog", "L5", "system", "ready", "操作日志列表"),
+    r("system.operlog.clean", "DELETE", "/api/v1/system/operlog/clean", "L5", "system", "ready", "清空操作日志"),
+    r("system.operlog.detail", "ANY", "/api/v1/system/operlog/:id", "L5", "system", "ready", "操作日志详情/删除"),
+    r("system.operlog.export", "GET", "/api/v1/system/operlog/export", "L5", "system", "ready", "导出操作日志（CSV）"),
+    r("system.loginlog.list", "GET", "/api/v1/system/logininfor", "L5", "system", "ready", "登录日志列表"),
+    r("system.loginlog.clean", "DELETE", "/api/v1/system/logininfor/clean", "L5", "system", "ready", "清空登录日志"),
+    r("system.loginlog.detail", "DELETE", "/api/v1/system/logininfor/:id", "L5", "system", "ready", "删除登录日志"),
+    r("system.loginlog.export", "GET", "/api/v1/system/logininfor/export", "L5", "system", "ready", "导出登录日志（CSV）"),
+    r("system.security.status", "GET", "/api/v1/security/status", "L5", "system", "ready", "安全状态（认证/限流/IAM）"),
+    r("system.security.api_keys", "ANY", "/api/v1/security/api-keys", "L5", "system", "ready", "API Key 列表/创建（SQLite 持久化）"),
+    r("system.security.api_key_revoke", "DELETE", "/api/v1/security/api-keys/:id", "L5", "system", "ready", "吊销 API Key（DB+内存双删）"),
+    r("system.security.api_key_validate", "POST", "/api/v1/security/validate", "L5", "system", "ready", "校验 API Key 明文"),
+    r("system.security.audit_log", "GET", "/api/v1/security/audit-log", "L5", "system", "ready", "审计日志（SQLite 读取）"),
 ];
 
 /// 判断路径是否属于管理面（管理端点不允许被停用，防止自锁）
@@ -623,7 +646,7 @@ pub async fn observability_middleware(
                 "gateway",
                 format!("API 已停用被拦截: {method} {path} (id={})", route.id),
             );
-            return api_error(403, format!("API `{}` 已被管理端停用，请在 /actuator/api/{} 恢复", route.id, route.id)).into_response();
+            return ApiResponse::<Value>::error(403, format!("API `{}` 已被管理端停用，请在 /actuator/api/{} 恢复", route.id, route.id)).into_response();
         }
     }
 

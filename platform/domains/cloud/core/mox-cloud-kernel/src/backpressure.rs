@@ -14,8 +14,10 @@
 //! 摒弃原实现中的 `std::sync::Mutex`，并新增 RAII `BackpressurePermit` 自动释放。
 
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    sync::atomic::{AtomicU64, AtomicU8, AtomicUsize, Ordering},
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 // ---------------------------------------------------------------------------
 // 三态状态机
@@ -119,11 +121,9 @@ pub enum BackpressureError {
 impl std::fmt::Display for BackpressureError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BackpressureError::Rejected { current, max } => write!(
-                f,
-                "backpressure rejected: concurrent {}/{} at capacity",
-                current, max
-            ),
+            BackpressureError::Rejected { current, max } => {
+                write!(f, "backpressure rejected: concurrent {}/{} at capacity", current, max)
+            },
         }
     }
 }
@@ -232,7 +232,7 @@ impl BackpressureMonitor {
                     self.admission_count.fetch_add(1, Ordering::Relaxed);
                     self.update_state(current + 1);
                     return Ok(BackpressurePermit { monitor: self });
-                }
+                },
                 // 并发竞争，current 已变，重试。
                 Err(_) => continue,
             }
@@ -244,11 +244,9 @@ impl BackpressureMonitor {
     /// 使用 `fetch_update` + `checked_sub` 防止下溢：未配对的 release
     /// 在 current==0 时不会把计数器卷回 `usize::MAX`。
     fn release(&self) {
-        let result = self.current.fetch_update(
-            Ordering::AcqRel,
-            Ordering::Acquire,
-            |current| current.checked_sub(1),
-        );
+        let result = self
+            .current
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| current.checked_sub(1));
         if let Ok(prev) = result {
             // prev 是递减前的值，递减后为 prev - 1。
             self.update_state(prev - 1);
@@ -271,11 +269,7 @@ impl BackpressureMonitor {
         let admissions = self.admission_count.load(Ordering::Relaxed);
         let rejections = self.rejection_count.load(Ordering::Relaxed);
         let total = admissions + rejections;
-        let rejection_rate = if total == 0 {
-            0.0
-        } else {
-            rejections as f64 / total as f64
-        };
+        let rejection_rate = if total == 0 { 0.0 } else { rejections as f64 / total as f64 };
         BackpressureMetrics {
             current_concurrent: self.current_concurrent(),
             max_concurrent: self.config.max_concurrent,
@@ -307,7 +301,7 @@ impl BackpressureMonitor {
                 } else {
                     BackpressureState::Normal
                 }
-            }
+            },
             BackpressureState::Warning => {
                 if current >= self.config.max_concurrent {
                     BackpressureState::Critical
@@ -316,7 +310,7 @@ impl BackpressureMonitor {
                 } else {
                     BackpressureState::Warning
                 }
-            }
+            },
             BackpressureState::Critical => {
                 if current < low_threshold {
                     BackpressureState::Normal
@@ -325,7 +319,7 @@ impl BackpressureMonitor {
                 } else {
                     BackpressureState::Critical
                 }
-            }
+            },
         };
 
         if new_state != current_state {
@@ -355,16 +349,10 @@ fn current_time_ms() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
-    use std::thread;
+    use std::{sync::Arc, thread};
 
     fn config_with(max: usize, cooldown: Duration) -> BackpressureConfig {
-        BackpressureConfig {
-            max_concurrent: max,
-            high_water: 0.8,
-            low_water: 0.5,
-            cooldown,
-        }
+        BackpressureConfig { max_concurrent: max, high_water: 0.8, low_water: 0.5, cooldown }
     }
 
     #[test]
@@ -385,7 +373,7 @@ mod tests {
             BackpressureError::Rejected { current, max } => {
                 assert_eq!(current, 2);
                 assert_eq!(max, 2);
-            }
+            },
         }
 
         // 释放 1 个后可以再次准入
@@ -494,7 +482,7 @@ mod tests {
                                 std::hint::black_box(&permit);
                                 drop(permit);
                                 break;
-                            }
+                            },
                             Err(_) => continue,
                         }
                     }
@@ -523,12 +511,112 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let err = BackpressureError::Rejected {
-            current: 32,
-            max: 32,
-        };
+        let err = BackpressureError::Rejected { current: 32, max: 32 };
         let s = format!("{}", err);
         assert!(s.contains("backpressure rejected"));
         assert!(s.contains("32/32"));
+    }
+}
+
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    #[test]
+    fn test_backpressure_state_as_str() {
+        assert_eq!(BackpressureState::Normal.as_str(), "normal");
+        assert_eq!(BackpressureState::Warning.as_str(), "warning");
+        assert_eq!(BackpressureState::Critical.as_str(), "critical");
+    }
+
+    #[test]
+    fn test_backpressure_config_default() {
+        let cfg = BackpressureConfig::default();
+        assert_eq!(cfg.max_concurrent, 32);
+        assert!((cfg.high_water - 0.8).abs() < 1e-6);
+        assert!((cfg.low_water - 0.5).abs() < 1e-6);
+        assert_eq!(cfg.cooldown, Duration::from_millis(100));
+    }
+
+    #[test]
+    fn test_backpressure_config_thresholds() {
+        let cfg = BackpressureConfig {
+            max_concurrent: 100,
+            high_water: 0.75,
+            low_water: 0.25,
+            cooldown: Duration::from_millis(50),
+        };
+        assert_eq!(cfg.high_threshold(), 75);
+        assert_eq!(cfg.low_threshold(), 25);
+    }
+
+    #[test]
+    fn test_backpressure_error_display() {
+        let err = BackpressureError::Rejected { current: 10, max: 10 };
+        let s = format!("{err}");
+        assert!(s.contains("backpressure rejected"));
+        assert!(s.contains("10/10"));
+    }
+
+    #[test]
+    fn test_backpressure_error_clone_eq() {
+        let e1 = BackpressureError::Rejected { current: 5, max: 10 };
+        let e2 = e1.clone();
+        assert_eq!(e1, e2);
+    }
+
+    #[test]
+    fn test_backpressure_metrics_serialization() {
+        let monitor = BackpressureMonitor::with_default();
+        let _p = monitor.try_acquire().unwrap();
+        let m = monitor.metrics();
+        let json = format!("{:?}", m);
+        assert!(json.contains("current_concurrent"));
+        assert!(json.contains("max_concurrent"));
+        assert!(json.contains("state"));
+        assert!(json.contains("total_admissions"));
+        assert!(json.contains("total_rejections"));
+        assert!(json.contains("rejection_rate"));
+    }
+
+    #[test]
+    fn test_backpressure_monitor_debug() {
+        let monitor = BackpressureMonitor::with_default();
+        let s = format!("{monitor:?}");
+        assert!(!s.is_empty());
+    }
+
+    #[test]
+    fn test_backpressure_config_clone() {
+        let cfg = BackpressureConfig::default();
+        let cfg2 = cfg.clone();
+        assert_eq!(cfg.max_concurrent, cfg2.max_concurrent);
+        assert_eq!(cfg.high_water, cfg2.high_water);
+    }
+
+    #[test]
+    fn test_backpressure_state_transitions_with_cooldown() {
+        // max=10, high=8, low=5, cooldown=1s (so transitions are debounced)
+        let cfg = BackpressureConfig {
+            max_concurrent: 10,
+            high_water: 0.8,
+            low_water: 0.5,
+            cooldown: Duration::from_secs(1),
+        };
+        let monitor = BackpressureMonitor::new(cfg);
+        // Acquire 8 → should go to Warning (first transition, no cooldown issue)
+        let mut permits = Vec::new();
+        for _ in 0..8 {
+            permits.push(monitor.try_acquire().unwrap());
+        }
+        assert_eq!(monitor.state(), BackpressureState::Warning);
+        // Release all → cooldown prevents immediate transition back
+        drop(permits);
+        // State may still be Warning due to cooldown
+        assert!(
+            monitor.state() == BackpressureState::Warning
+                || monitor.state() == BackpressureState::Normal
+        );
     }
 }

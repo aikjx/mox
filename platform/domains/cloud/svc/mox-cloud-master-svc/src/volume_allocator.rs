@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -41,13 +41,7 @@ impl VolumeAllocator {
     }
 
     pub fn register_volume(&self, id: String, addr: String, capacity: u64) {
-        let info = VolumeInfo {
-            id: id.clone(),
-            addr,
-            capacity,
-            used: 0,
-            is_alive: true,
-        };
+        let info = VolumeInfo { id: id.clone(), addr, capacity, used: 0, is_alive: true };
         self.volumes.lock().insert(id.clone(), info);
         let mut order = self.order.lock();
         if !order.contains(&id) {
@@ -167,11 +161,7 @@ impl VolumeAllocator {
     }
 
     pub fn is_alive(&self, id: &str) -> bool {
-        self.volumes
-            .lock()
-            .get(id)
-            .map(|v| v.is_alive)
-            .unwrap_or(false)
+        self.volumes.lock().get(id).map(|v| v.is_alive).unwrap_or(false)
     }
 
     pub fn get_addr(&self, id: &str) -> Option<String> {

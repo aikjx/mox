@@ -15,8 +15,10 @@
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::stream::{FuturesUnordered, StreamExt};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use thiserror::Error;
 
 // ---------------------------------------------------------------------------
@@ -174,12 +176,13 @@ impl MultiWriter {
 
         // 构建并发写入 futures
         let mut futures: FuturesUnordered<_> = FuturesUnordered::new();
-        for i in 0..pair_count {
+        for (i, shard) in shards.iter().enumerate().take(pair_count) {
             let writer = Arc::clone(&self.writers[i]);
-            let (shard_idx, data) = shards[i].clone();
+            let (shard_idx, data) = shard.clone();
             let stall = self.policy.stall_timeout;
             futures.push(async move {
-                let outcome = tokio::time::timeout(stall, writer.write_shard(shard_idx, data)).await;
+                let outcome =
+                    tokio::time::timeout(stall, writer.write_shard(shard_idx, data)).await;
                 (shard_idx, outcome)
             });
         }
@@ -207,14 +210,10 @@ impl MultiWriter {
 
                     // 达到法定数：将剩余 pending 计入 failed 并提前返回
                     if succeeded.len() >= quorum {
-                        failed.extend(pending.drain(..));
-                        return Ok(WriteResult {
-                            succeeded,
-                            failed,
-                            duration: start.elapsed(),
-                        });
+                        failed.append(&mut pending);
+                        return Ok(WriteResult { succeeded, failed, duration: start.elapsed() });
                     }
-                }
+                },
                 // timeout 内返回了 Err
                 Ok(Err(e)) => {
                     tracing::warn!(
@@ -227,12 +226,12 @@ impl MultiWriter {
                         "shard write failed"
                     );
                     failed.push(shard_idx);
-                }
+                },
                 // stall timeout 触发
                 Err(_) => {
                     tracing::warn!(shard_index = shard_idx, "shard write stalled (timeout)");
                     failed.push(shard_idx);
-                }
+                },
             }
         }
 
@@ -240,16 +239,9 @@ impl MultiWriter {
         let duration = start.elapsed();
 
         if succeeded.len() >= quorum {
-            Ok(WriteResult {
-                succeeded,
-                failed,
-                duration,
-            })
+            Ok(WriteResult { succeeded, failed, duration })
         } else {
-            Err(WriteError::QuorumNotMet {
-                succeeded: succeeded.len(),
-                quorum,
-            })
+            Err(WriteError::QuorumNotMet { succeeded: succeeded.len(), quorum })
         }
     }
 }
@@ -271,11 +263,7 @@ mod tests {
 
     impl MockShardWriter {
         fn new(endpoint: &str, delay: Duration, should_fail: bool) -> Self {
-            Self {
-                endpoint: endpoint.to_string(),
-                delay,
-                should_fail,
-            }
+            Self { endpoint: endpoint.to_string(), delay, should_fail }
         }
     }
 
@@ -286,10 +274,7 @@ mod tests {
                 tokio::time::sleep(self.delay).await;
             }
             if self.should_fail {
-                Err(WriteError::ShardWriteFailed(
-                    _shard_index,
-                    "mock writer failure".into(),
-                ))
+                Err(WriteError::ShardWriteFailed(_shard_index, "mock writer failure".into()))
             } else {
                 Ok(())
             }
@@ -303,19 +288,14 @@ mod tests {
     fn make_writers(count: usize, delay: Duration, should_fail: bool) -> Vec<Arc<dyn ShardWriter>> {
         (0..count)
             .map(|i| {
-                Arc::new(MockShardWriter::new(
-                    &format!("node-{i}"),
-                    delay,
-                    should_fail,
-                )) as Arc<dyn ShardWriter>
+                Arc::new(MockShardWriter::new(&format!("node-{i}"), delay, should_fail))
+                    as Arc<dyn ShardWriter>
             })
             .collect()
     }
 
     fn make_shards(count: usize) -> Vec<(usize, Bytes)> {
-        (0..count)
-            .map(|i| (i, Bytes::from(vec![i as u8; 64])))
-            .collect()
+        (0..count).map(|i| (i, Bytes::from(vec![i as u8; 64]))).collect()
     }
 
     // ----- 测试 1：全部成功 -----
@@ -323,10 +303,7 @@ mod tests {
     #[tokio::test]
     async fn test_multi_writer_all_succeed() {
         let writers = make_writers(3, Duration::ZERO, false);
-        let policy = WriteProgressPolicy {
-            write_quorum: 3,
-            ..Default::default()
-        };
+        let policy = WriteProgressPolicy { write_quorum: 3, ..Default::default() };
         let mw = MultiWriter::new(writers, policy);
 
         let result = mw.write_all(make_shards(3)).await.unwrap();
@@ -374,15 +351,13 @@ mod tests {
     #[tokio::test]
     async fn test_multi_writer_quorum_not_met() {
         // 1 个成功 + 2 个失败
-        let mut writers: Vec<Arc<dyn ShardWriter>> = Vec::new();
-        writers.push(Arc::new(MockShardWriter::new("ok-0", Duration::ZERO, false)));
-        writers.push(Arc::new(MockShardWriter::new("fail-1", Duration::ZERO, true)));
-        writers.push(Arc::new(MockShardWriter::new("fail-2", Duration::ZERO, true)));
+        let writers: Vec<Arc<dyn ShardWriter>> = vec![
+            Arc::new(MockShardWriter::new("ok-0", Duration::ZERO, false)),
+            Arc::new(MockShardWriter::new("fail-1", Duration::ZERO, true)),
+            Arc::new(MockShardWriter::new("fail-2", Duration::ZERO, true)),
+        ];
 
-        let policy = WriteProgressPolicy {
-            write_quorum: 3,
-            ..Default::default()
-        };
+        let policy = WriteProgressPolicy { write_quorum: 3, ..Default::default() };
         let mw = MultiWriter::new(writers, policy);
 
         let result = mw.write_all(make_shards(3)).await;
@@ -390,7 +365,7 @@ mod tests {
             Err(WriteError::QuorumNotMet { succeeded, quorum }) => {
                 assert_eq!(succeeded, 1);
                 assert_eq!(quorum, 3);
-            }
+            },
             other => panic!("expected QuorumNotMet, got {other:?}"),
         }
     }
@@ -437,14 +412,206 @@ mod tests {
     #[tokio::test]
     async fn test_multi_writer_empty() {
         let writers = make_writers(3, Duration::ZERO, false);
-        let policy = WriteProgressPolicy {
-            write_quorum: 1,
-            ..Default::default()
-        };
+        let policy = WriteProgressPolicy { write_quorum: 1, ..Default::default() };
         let mw = MultiWriter::new(writers, policy);
 
         let result = mw.write_all(vec![]).await.unwrap();
         assert!(result.succeeded.is_empty());
         assert!(result.failed.is_empty());
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// Additional multi_writer tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    struct MockWriter {
+        endpoint: String,
+        delay: Duration,
+        should_fail: bool,
+    }
+
+    impl MockWriter {
+        fn new(endpoint: &str, delay: Duration, should_fail: bool) -> Self {
+            Self { endpoint: endpoint.to_string(), delay, should_fail }
+        }
+    }
+
+    #[async_trait]
+    impl ShardWriter for MockWriter {
+        async fn write_shard(&self, _shard_index: usize, _data: Bytes) -> Result<(), WriteError> {
+            if self.delay > Duration::ZERO {
+                tokio::time::sleep(self.delay).await;
+            }
+            if self.should_fail {
+                Err(WriteError::ShardWriteFailed(_shard_index, "mock failure".into()))
+            } else {
+                Ok(())
+            }
+        }
+        fn endpoint(&self) -> &str {
+            &self.endpoint
+        }
+    }
+
+    #[test]
+    fn test_write_error_display_variants() {
+        let e1 = WriteError::ShardWriteFailed(3, "io error".into());
+        assert!(format!("{e1}").contains("shard 3 write failed"));
+        assert!(format!("{e1}").contains("io error"));
+
+        let e2 = WriteError::QuorumNotMet { succeeded: 1, quorum: 3 };
+        assert!(format!("{e2}").contains("write quorum not met"));
+        assert!(format!("{e2}").contains("1/3"));
+
+        let e3 = WriteError::Timeout(Duration::from_secs(5));
+        assert!(format!("{e3}").contains("write timed out"));
+    }
+
+    #[test]
+    fn test_write_result_fields() {
+        let result = WriteResult {
+            succeeded: vec![0, 1],
+            failed: vec![2],
+            duration: Duration::from_millis(100),
+        };
+        assert_eq!(result.succeeded, vec![0, 1]);
+        assert_eq!(result.failed, vec![2]);
+        assert_eq!(result.duration, Duration::from_millis(100));
+    }
+
+    #[test]
+    fn test_multi_writer_policy_accessor() {
+        let writers: Vec<Arc<dyn ShardWriter>> =
+            vec![Arc::new(MockWriter::new("n1", Duration::ZERO, false))];
+        let policy = WriteProgressPolicy {
+            stall_timeout: Duration::from_secs(10),
+            absolute_cap: Some(Duration::from_secs(30)),
+            write_quorum: 2,
+        };
+        let mw = MultiWriter::new(writers, policy.clone());
+        assert_eq!(mw.policy().stall_timeout, Duration::from_secs(10));
+        assert_eq!(mw.policy().absolute_cap, Some(Duration::from_secs(30)));
+        assert_eq!(mw.policy().write_quorum, 2);
+    }
+
+    #[test]
+    fn test_multi_writer_writer_count() {
+        let writers: Vec<Arc<dyn ShardWriter>> = vec![
+            Arc::new(MockWriter::new("n1", Duration::ZERO, false)),
+            Arc::new(MockWriter::new("n2", Duration::ZERO, false)),
+            Arc::new(MockWriter::new("n3", Duration::ZERO, false)),
+        ];
+        let mw = MultiWriter::new(writers, WriteProgressPolicy::default());
+        assert_eq!(mw.writer_count(), 3);
+    }
+
+    #[test]
+    fn test_effective_quorum_zero() {
+        let p = WriteProgressPolicy::default();
+        assert_eq!(p.effective_quorum(), 1);
+    }
+
+    #[test]
+    fn test_effective_quorum_nonzero() {
+        let p = WriteProgressPolicy { write_quorum: 5, ..Default::default() };
+        assert_eq!(p.effective_quorum(), 5);
+    }
+
+    #[tokio::test]
+    async fn test_stall_timeout_triggers() {
+        // Writer with delay > stall_timeout should be marked as failed (timeout)
+        let writers: Vec<Arc<dyn ShardWriter>> = vec![
+            Arc::new(MockWriter::new("slow", Duration::from_secs(10), false)),
+            Arc::new(MockWriter::new("fast", Duration::ZERO, false)),
+        ];
+        let policy = WriteProgressPolicy {
+            stall_timeout: Duration::from_millis(50),
+            write_quorum: 1,
+            ..Default::default()
+        };
+        let mw = MultiWriter::new(writers, policy);
+        let shards = vec![(0, Bytes::from(vec![1u8; 64])), (1, Bytes::from(vec![2u8; 64]))];
+        let result = mw.write_all(shards).await.unwrap();
+        // At least the fast writer should succeed
+        assert!(!result.succeeded.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_partial_failure_exactly_quorum() {
+        // 2 succeed, 1 fail, quorum=2 → should succeed
+        let writers: Vec<Arc<dyn ShardWriter>> = vec![
+            Arc::new(MockWriter::new("ok1", Duration::ZERO, false)),
+            Arc::new(MockWriter::new("ok2", Duration::ZERO, false)),
+            Arc::new(MockWriter::new("fail", Duration::ZERO, true)),
+        ];
+        let policy = WriteProgressPolicy { write_quorum: 2, ..Default::default() };
+        let mw = MultiWriter::new(writers, policy);
+        let shards = vec![
+            (0, Bytes::from(vec![1u8; 64])),
+            (1, Bytes::from(vec![2u8; 64])),
+            (2, Bytes::from(vec![3u8; 64])),
+        ];
+        let result = mw.write_all(shards).await.unwrap();
+        assert_eq!(result.succeeded.len(), 2);
+        assert_eq!(result.failed.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_single_node() {
+        let writers: Vec<Arc<dyn ShardWriter>> =
+            vec![Arc::new(MockWriter::new("only", Duration::ZERO, false))];
+        let policy = WriteProgressPolicy { write_quorum: 1, ..Default::default() };
+        let mw = MultiWriter::new(writers, policy);
+        let shards = vec![(0, Bytes::from(vec![42u8; 64]))];
+        let result = mw.write_all(shards).await.unwrap();
+        assert_eq!(result.succeeded, vec![0]);
+        assert!(result.failed.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_all_nodes_fail() {
+        let writers: Vec<Arc<dyn ShardWriter>> = vec![
+            Arc::new(MockWriter::new("f1", Duration::ZERO, true)),
+            Arc::new(MockWriter::new("f2", Duration::ZERO, true)),
+        ];
+        let policy = WriteProgressPolicy { write_quorum: 1, ..Default::default() };
+        let mw = MultiWriter::new(writers, policy);
+        let shards = vec![(0, Bytes::from(vec![1u8; 64])), (1, Bytes::from(vec![2u8; 64]))];
+        let result = mw.write_all(shards).await;
+        assert!(matches!(result, Err(WriteError::QuorumNotMet { .. })));
+    }
+
+    #[tokio::test]
+    async fn test_fewer_shards_than_writers() {
+        // 3 writers but only 2 shards → only first 2 writers used
+        let writers: Vec<Arc<dyn ShardWriter>> = vec![
+            Arc::new(MockWriter::new("n1", Duration::ZERO, false)),
+            Arc::new(MockWriter::new("n2", Duration::ZERO, false)),
+            Arc::new(MockWriter::new("n3", Duration::ZERO, false)),
+        ];
+        let policy = WriteProgressPolicy { write_quorum: 2, ..Default::default() };
+        let mw = MultiWriter::new(writers, policy);
+        let shards = vec![(0, Bytes::from(vec![1u8; 64])), (1, Bytes::from(vec![2u8; 64]))];
+        let result = mw.write_all(shards).await.unwrap();
+        assert_eq!(result.succeeded.len(), 2);
+    }
+
+    #[test]
+    fn test_write_progress_policy_clone() {
+        let p = WriteProgressPolicy {
+            stall_timeout: Duration::from_secs(5),
+            absolute_cap: Some(Duration::from_secs(60)),
+            write_quorum: 3,
+        };
+        let p2 = p.clone();
+        assert_eq!(p2.stall_timeout, p.stall_timeout);
+        assert_eq!(p2.absolute_cap, p.absolute_cap);
+        assert_eq!(p2.write_quorum, p.write_quorum);
     }
 }

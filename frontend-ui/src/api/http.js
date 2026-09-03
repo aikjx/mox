@@ -86,19 +86,33 @@ function exponentialBackoff(attempt, baseDelay = DEFAULT_RETRY_DELAY) {
 
 // ========== 响应拦截器 ==========
 
-// 统一响应处理：剥离 axios 包裹，自动解包 {success, data} 格式
+// 统一响应处理：剥离 axios 包裹，自动解包 {code,message,data}（新格式）和 {success,data}（旧格式兼容）
 const responseOkInterceptor = (resp) => {
     const body = resp.data
-    if (body && typeof body === 'object' && 'success' in body) {
-      // {success:false}: 失败路径统一带 code 前缀，便于诊断
-      if (!body.success) {
-        const code = body.code ? `[${body.code}] ` : ''
-        return Promise.reject(new Error(code + (body.error || body.message || body.detail || '请求失败')))
+    if (body && typeof body === 'object') {
+      // ===== 新格式：统一协议 {code, message, data} =====
+      if ('code' in body) {
+        if (body.code === 0) {
+          // 成功：提取 data 本体；无 data 字段时返回整包（保留 message 等额外字段）
+          if ('data' in body) return body.data
+          return body
+        }
+        // 失败：code != 0，统一带 code 前缀拒绝
+        const code = `[${body.code}] `
+        return Promise.reject(new Error(code + (body.message || body.error || body.detail || '请求失败')))
       }
-      // 标准信封 { success, data }: 返回 data 本体
-      if ('data' in body) return body.data
-      // 兼容 { success: true, ...rest }: 返回整包（保留 latency/provider/message 等额外字段）
-      return body
+      // ===== 旧格式兼容：{success, data}（legacy 后端）=====
+      if ('success' in body) {
+        // {success:false}: 失败路径统一带 code 前缀，便于诊断
+        if (!body.success) {
+          const code = body.code ? `[${body.code}] ` : ''
+          return Promise.reject(new Error(code + (body.error || body.message || body.detail || '请求失败')))
+        }
+        // 标准信封 { success, data }: 返回 data 本体
+        if ('data' in body) return body.data
+        // 兼容 { success: true, ...rest }: 返回整包（保留 latency/provider/message 等额外字段）
+        return body
+      }
     }
     return body
   }

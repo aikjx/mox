@@ -17,23 +17,18 @@
 
 use mox_cloud_master_svc::{
     DataTemperature, DistributedScheduler, MasterConfig, MasterServer, NodeLoad, NodeTopology,
-    PlacementStrategy, RaftConfig, RaftLogType, RaftMaster, RaftRole, RebalancePlan,
-    ReplicaHealth, ReplicaSetManager, SchedulerWeights, SnapshotManager, VolumeAllocation,
-    VolumeInfo, VolumeLoadReport, VolumeStatusState,
+    PlacementStrategy, RaftConfig, RaftLogType, RaftMaster, RaftRole, ReplicaHealth,
+    ReplicaSetManager, SchedulerWeights, SnapshotManager, VolumeAllocation, VolumeInfo,
+    VolumeLoadReport, VolumeStatusState,
 };
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
 // =========================================================================
 // 辅助函数
 // =========================================================================
 
 fn default_config() -> MasterConfig {
-    MasterConfig {
-        heartbeat_timeout_ms: 1500,
-        max_replica: 3,
-    }
+    MasterConfig { heartbeat_timeout_ms: 1500, max_replica: 3 }
 }
 
 fn make_master() -> MasterServer {
@@ -117,12 +112,7 @@ fn im01_05_heartbeat_nonexistent_volume() {
     let master = make_master();
     let result = master.heartbeat(
         "non-existent-vol",
-        VolumeLoadReport {
-            used_bytes: 0,
-            chunk_count: 0,
-            cpu_pct: 0,
-            is_healthy: true,
-        },
+        VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
     );
     assert!(result.is_err());
 }
@@ -255,11 +245,7 @@ fn im02_04_partial_unhealthy_quorum() {
             ReplicaInfo {
                 volume_id: format!("vol-{}", i),
                 addr: format!("127.0.0.1:{}", 8000 + i),
-                health: if i < 2 {
-                    ReplicaHealth::Healthy
-                } else {
-                    ReplicaHealth::Unhealthy
-                },
+                health: if i < 2 { ReplicaHealth::Healthy } else { ReplicaHealth::Unhealthy },
                 last_acked: 1000,
             },
         );
@@ -287,11 +273,7 @@ fn im02_05_insufficient_healthy_for_write() {
             ReplicaInfo {
                 volume_id: format!("vol-{}", i),
                 addr: format!("127.0.0.1:{}", 8000 + i),
-                health: if i == 0 {
-                    ReplicaHealth::Healthy
-                } else {
-                    ReplicaHealth::Dead
-                },
+                health: if i == 0 { ReplicaHealth::Healthy } else { ReplicaHealth::Dead },
                 last_acked: 1000,
             },
         );
@@ -329,22 +311,14 @@ fn im02_07_heartbeat_updates_replica_health() {
     master
         .heartbeat(
             &ids[0],
-            VolumeLoadReport {
-                used_bytes: 1024,
-                chunk_count: 1,
-                cpu_pct: 50,
-                is_healthy: false,
-            },
+            VolumeLoadReport { used_bytes: 1024, chunk_count: 1, cpu_pct: 50, is_healthy: false },
         )
         .unwrap();
 
     let set = master.replica_manager.get_set(&alloc.volume_id).unwrap();
     // 至少有一个副本变成 Unhealthy
-    let unhealthy_count = set
-        .replicas
-        .iter()
-        .filter(|r| r.health == ReplicaHealth::Unhealthy)
-        .count();
+    let unhealthy_count =
+        set.replicas.iter().filter(|r| r.health == ReplicaHealth::Unhealthy).count();
     assert!(unhealthy_count >= 1);
 }
 
@@ -368,12 +342,7 @@ fn im03_01_heartbeat_normal() {
 
     let result = master.heartbeat(
         &vid,
-        VolumeLoadReport {
-            used_bytes: 512,
-            chunk_count: 10,
-            cpu_pct: 25,
-            is_healthy: true,
-        },
+        VolumeLoadReport { used_bytes: 512, chunk_count: 10, cpu_pct: 25, is_healthy: true },
     );
     assert!(result.is_ok());
 
@@ -413,12 +382,7 @@ fn im03_03_heartbeat_used_cap_clamped() {
     master
         .heartbeat(
             &vid,
-            VolumeLoadReport {
-                used_bytes: 99999,
-                chunk_count: 1,
-                cpu_pct: 0,
-                is_healthy: true,
-            },
+            VolumeLoadReport { used_bytes: 99999, chunk_count: 1, cpu_pct: 0, is_healthy: true },
         )
         .unwrap();
 
@@ -436,12 +400,7 @@ fn im03_04_multiple_heartbeats_count() {
         master
             .heartbeat(
                 &vid,
-                VolumeLoadReport {
-                    used_bytes: 0,
-                    chunk_count: 0,
-                    cpu_pct: 0,
-                    is_healthy: true,
-                },
+                VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
             )
             .unwrap();
     }
@@ -459,12 +418,7 @@ fn im03_05_heartbeat_keeps_alive() {
     master
         .heartbeat(
             &vid,
-            VolumeLoadReport {
-                used_bytes: 0,
-                chunk_count: 0,
-                cpu_pct: 0,
-                is_healthy: true,
-            },
+            VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
         )
         .unwrap();
 
@@ -717,9 +671,7 @@ fn im04_08_scheduler_stats() {
 
     let before = scheduler.stats().snapshot();
     for _ in 0..5 {
-        scheduler
-            .select_best_nodes(&candidates, 2, &[])
-            .unwrap();
+        scheduler.select_best_nodes(&candidates, 2, &[]).unwrap();
     }
     let after = scheduler.stats().snapshot();
 
@@ -1069,7 +1021,7 @@ fn im07_01_generate_rebalance_plan() {
         .collect();
 
     let plan = scheduler.generate_rebalance_plan(&volumes, 10);
-    assert!(plan.migrations.len() > 0, "should generate some migrations");
+    assert!(!plan.migrations.is_empty(), "should generate some migrations");
     assert!(plan.total_bytes > 0);
     assert!(plan.estimated_improvement > 0);
     assert!(plan.estimated_improvement <= 100);
@@ -1116,7 +1068,7 @@ fn im07_03_generate_recovery_plan() {
     }
 
     let plan = scheduler.generate_recovery_plan(&volumes);
-    assert!(plan.affected_volumes > 0 || plan.replicas_to_rebuild >= 0);
+    assert!(plan.affected_volumes > 0 || plan.replicas_to_rebuild > 0);
     assert_eq!(plan.failed_nodes.len(), 1);
 }
 
@@ -1247,16 +1199,11 @@ fn im08_02_concurrent_allocations() {
     for i in 0..5 {
         let master = Arc::clone(&master);
         handles.push(std::thread::spawn(move || {
-            master
-                .allocate_volume((i + 1) * 1024 * 1024, 2)
-                .unwrap()
+            master.allocate_volume((i + 1) * 1024 * 1024, 2).unwrap()
         }));
     }
 
-    let results: Vec<VolumeAllocation> = handles
-        .into_iter()
-        .map(|h| h.join().unwrap())
-        .collect();
+    let results: Vec<VolumeAllocation> = handles.into_iter().map(|h| h.join().unwrap()).collect();
 
     assert_eq!(results.len(), 5);
     let metrics = master.metrics.get_all();
@@ -1266,10 +1213,7 @@ fn im08_02_concurrent_allocations() {
 /// 测试：Master 配置自定义
 #[test]
 fn im08_03_custom_master_config() {
-    let config = MasterConfig {
-        heartbeat_timeout_ms: 5000,
-        max_replica: 2,
-    };
+    let config = MasterConfig { heartbeat_timeout_ms: 5000, max_replica: 2 };
 
     let master = MasterServer::new(config);
     assert_eq!(master.config.heartbeat_timeout_ms, 5000);
@@ -1295,12 +1239,7 @@ fn im08_04_error_type_coverage() {
     let err = master
         .heartbeat(
             "no-such-vol",
-            VolumeLoadReport {
-                used_bytes: 0,
-                chunk_count: 0,
-                cpu_pct: 0,
-                is_healthy: true,
-            },
+            VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
         )
         .unwrap_err();
     assert!(err.to_string().contains("not found") || err.to_string().contains("VolumeNotFound"));
@@ -1320,10 +1259,7 @@ fn im08_04_error_type_coverage() {
 /// 测试：Raft + Master 集成配置
 #[test]
 fn im08_05_raft_master_integrated_config() {
-    let master_config = MasterConfig {
-        heartbeat_timeout_ms: 2000,
-        max_replica: 3,
-    };
+    let master_config = MasterConfig { heartbeat_timeout_ms: 2000, max_replica: 3 };
     let raft_config = RaftConfig {
         node_id: "master-1".to_string(),
         listen_addr: "127.0.0.1:9333".to_string(),

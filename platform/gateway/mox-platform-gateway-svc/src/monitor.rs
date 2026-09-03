@@ -4,7 +4,7 @@
 //! # 系统监控域（Monitor）HTTP 路由
 //!
 //! 提供服务质量、业务指标、告警管理、节点状态、时序查询等监控面能力。
-//! 告警规则 CRUD 使用进程内 `Mutex<Vec<AlertRule>>` 存储（带初始种子数据）。
+//! 告警规则 CRUD 使用 JSON 文件持久化（data/alert_rules.json），启动时加载，变更时写回。
 //!
 //! 路径前缀：`/monitor/*` · `/actuator/metrics/detail`
 
@@ -17,7 +17,29 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
+
+// =====================================================================
+// 告警规则 JSON 持久化
+// =====================================================================
+
+const ALERT_RULES_PATH: &str = "data/alert_rules.json";
+
+fn load_alert_rules() -> Vec<AlertRule> {
+    match std::fs::read_to_string(ALERT_RULES_PATH) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => Vec::new(),
+    }
+}
+
+fn save_alert_rules(rules: &[AlertRule]) {
+    if let Some(parent) = std::path::Path::new(ALERT_RULES_PATH).parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(json_str) = serde_json::to_string_pretty(rules) {
+        let _ = std::fs::write(ALERT_RULES_PATH, json_str);
+    }
+}
 
 // =====================================================================
 // 共享状态
@@ -43,43 +65,7 @@ struct MonitorState {
 
 impl MonitorState {
     fn new() -> Self {
-        let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-        let seed = vec![
-            AlertRule {
-                id: "rule-cpu-high".into(),
-                name: "CPU 使用率过高".into(),
-                metric: "cpu_usage".into(),
-                condition: ">".into(),
-                threshold: 85.0,
-                severity: "critical".into(),
-                enabled: true,
-                created_at: now.clone(),
-                updated_at: now.clone(),
-            },
-            AlertRule {
-                id: "rule-mem-high".into(),
-                name: "内存使用率过高".into(),
-                metric: "mem_usage".into(),
-                condition: ">".into(),
-                threshold: 90.0,
-                severity: "warning".into(),
-                enabled: true,
-                created_at: now.clone(),
-                updated_at: now.clone(),
-            },
-            AlertRule {
-                id: "rule-err-rate".into(),
-                name: "错误率异常".into(),
-                metric: "error_rate".into(),
-                condition: ">".into(),
-                threshold: 5.0,
-                severity: "critical".into(),
-                enabled: false,
-                created_at: now.clone(),
-                updated_at: now,
-            },
-        ];
-        Self { alert_rules: Arc::new(Mutex::new(seed)) }
+        Self { alert_rules: Arc::new(Mutex::new(load_alert_rules())) }
     }
 }
 
@@ -92,49 +78,49 @@ fn ok(data: Value) -> ApiResponse<Value> {
 }
 
 // =====================================================================
-// 1. GET /actuator/metrics/detail — 详细指标聚合
+// 1. GET /actuator/metrics/detail & /monitor/metrics/detail — 详细指标聚合
 // =====================================================================
 async fn metrics_detail() -> ApiResponse<Value> {
     ok(json!({
         "cpu": {
-            "usage_percent": 42.7,
-            "cores": 16,
-            "load_avg_1m": 3.2,
-            "load_avg_5m": 2.8,
-            "load_avg_15m": 2.5,
+            "usage_percent": 0.0,
+            "cores": 0,
+            "load_avg_1m": 0.0,
+            "load_avg_5m": 0.0,
+            "load_avg_15m": 0.0,
         },
         "memory": {
-            "total_mb": 32768,
-            "used_mb": 18432,
-            "free_mb": 14336,
-            "usage_percent": 56.25,
+            "total_mb": 0,
+            "used_mb": 0,
+            "free_mb": 0,
+            "usage_percent": 0.0,
         },
         "gc": {
-            "young_gc_count": 1284,
-            "young_gc_time_ms": 5230,
-            "full_gc_count": 12,
-            "full_gc_time_ms": 890,
-            "heap_used_mb": 4096,
-            "heap_max_mb": 8192,
+            "young_gc_count": 0,
+            "young_gc_time_ms": 0,
+            "full_gc_count": 0,
+            "full_gc_time_ms": 0,
+            "heap_used_mb": 0,
+            "heap_max_mb": 0,
         },
         "threads": {
-            "active": 48,
-            "daemon": 12,
-            "peak": 64,
+            "active": 0,
+            "daemon": 0,
+            "peak": 0,
             "deadlocked": 0,
         },
         "requests": {
-            "total": 152340,
-            "per_minute": 320,
-            "success_rate": 99.2,
-            "error_rate": 0.8,
+            "total": 0,
+            "per_minute": 0,
+            "success_rate": 0.0,
+            "error_rate": 0.0,
         },
         "latency": {
-            "p50_ms": 12.5,
-            "p90_ms": 45.2,
-            "p95_ms": 78.3,
-            "p99_ms": 156.8,
-            "avg_ms": 18.4,
+            "p50_ms": 0.0,
+            "p90_ms": 0.0,
+            "p95_ms": 0.0,
+            "p99_ms": 0.0,
+            "avg_ms": 0.0,
         },
         "ts": now_iso(),
     }))
@@ -146,23 +132,23 @@ async fn metrics_detail() -> ApiResponse<Value> {
 async fn quality() -> ApiResponse<Value> {
     ok(json!({
         "sla": {
-            "target": 99.9,
-            "actual": 99.95,
-            "status": "healthy",
+            "target": 0.0,
+            "actual": 0.0,
+            "status": "unknown",
         },
         "availability": {
-            "uptime_percent": 99.97,
-            "downtime_minutes_30d": 12,
-            "last_incident": "2026-08-28T10:23:00Z",
+            "uptime_percent": 0.0,
+            "downtime_minutes_30d": 0,
+            "last_incident": null,
         },
         "error_rate": {
-            "current": 0.35,
-            "threshold": 1.0,
-            "trend": "decreasing",
+            "current": 0.0,
+            "threshold": 0.0,
+            "trend": "unknown",
         },
-        "avg_response_time_ms": 22.4,
-        "p99_response_time_ms": 180.2,
-        "apdex": 0.94,
+        "avg_response_time_ms": 0.0,
+        "p99_response_time_ms": 0.0,
+        "apdex": 0.0,
         "ts": now_iso(),
     }))
 }
@@ -173,33 +159,33 @@ async fn quality() -> ApiResponse<Value> {
 async fn business() -> ApiResponse<Value> {
     ok(json!({
         "tasks": {
-            "total": 1284,
-            "running": 23,
-            "completed": 1198,
-            "failed": 42,
-            "pending": 21,
-            "today_new": 45,
+            "total": 0,
+            "running": 0,
+            "completed": 0,
+            "failed": 0,
+            "pending": 0,
+            "today_new": 0,
         },
         "projects": {
-            "total": 156,
-            "active": 89,
-            "completed": 52,
-            "archived": 15,
-            "today_new": 3,
+            "total": 0,
+            "active": 0,
+            "completed": 0,
+            "archived": 0,
+            "today_new": 0,
         },
         "experts": {
-            "total": 342,
-            "online": 128,
-            "busy": 45,
-            "offline": 169,
-            "avg_rating": 4.7,
+            "total": 0,
+            "online": 0,
+            "busy": 0,
+            "offline": 0,
+            "avg_rating": 0.0,
         },
         "users": {
-            "total": 2847,
-            "active_today": 423,
-            "active_7d": 1856,
-            "new_today": 18,
-            "retention_rate": 68.5,
+            "total": 0,
+            "active_today": 0,
+            "active_7d": 0,
+            "new_today": 0,
+            "retention_rate": 0.0,
         },
         "ts": now_iso(),
     }))
@@ -211,19 +197,19 @@ async fn business() -> ApiResponse<Value> {
 async fn alerts_summary() -> ApiResponse<Value> {
     ok(json!({
         "by_severity": {
-            "critical": 3,
-            "warning": 7,
-            "info": 12,
+            "critical": 0,
+            "warning": 0,
+            "info": 0,
         },
         "by_status": {
-            "active": 8,
-            "acknowledged": 4,
-            "resolved": 10,
-            "suppressed": 2,
+            "active": 0,
+            "acknowledged": 0,
+            "resolved": 0,
+            "suppressed": 0,
         },
-        "total_active": 8,
-        "total_today": 22,
-        "avg_resolution_minutes": 18.5,
+        "total_active": 0,
+        "total_today": 0,
+        "avg_resolution_minutes": 0.0,
         "ts": now_iso(),
     }))
 }
@@ -233,83 +219,23 @@ async fn alerts_summary() -> ApiResponse<Value> {
 // =====================================================================
 async fn nodes() -> ApiResponse<Value> {
     ok(json!({
-        "nodes": [
-            {
-                "name": "gateway-01",
-                "address": "10.0.1.11:8080",
-                "status": "healthy",
-                "latency_ms": 2.1,
-                "version": "1.2.0",
-                "uptime_secs": 86400 * 5,
-                "cpu_percent": 35.2,
-                "mem_percent": 48.1,
-            },
-            {
-                "name": "gateway-02",
-                "address": "10.0.1.12:8080",
-                "status": "healthy",
-                "latency_ms": 2.8,
-                "version": "1.2.0",
-                "uptime_secs": 86400 * 3,
-                "cpu_percent": 41.7,
-                "mem_percent": 52.3,
-            },
-            {
-                "name": "alliance-scheduler-01",
-                "address": "10.0.2.21:9090",
-                "status": "healthy",
-                "latency_ms": 5.4,
-                "version": "0.9.3",
-                "uptime_secs": 86400 * 12,
-                "cpu_percent": 28.9,
-                "mem_percent": 35.6,
-            },
-            {
-                "name": "kg-service-01",
-                "address": "10.0.3.31:7070",
-                "status": "degraded",
-                "latency_ms": 45.2,
-                "version": "2.1.0",
-                "uptime_secs": 86400 * 1,
-                "cpu_percent": 78.4,
-                "mem_percent": 82.1,
-            },
-        ],
-        "total": 4,
-        "healthy": 3,
-        "degraded": 1,
+        "nodes": [],
+        "total": 0,
+        "healthy": 0,
+        "degraded": 0,
         "unhealthy": 0,
         "ts": now_iso(),
     }))
 }
 
 // =====================================================================
-// 6. GET /monitor/nodes/{name}/logs — 节点日志跳转
+// 6. GET /monitor/nodes/{name}/logs — 节点日志
 // =====================================================================
 async fn node_logs(Path(name): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "node": name,
         "log_viewer_url": format!("/actuator/logs?search={name}&limit=200"),
-        "recent_logs": [
-            {
-                "ts": now_iso(),
-                "level": "INFO",
-                "target": name.as_str(),
-                "message": format!("[{name}] health check passed, latency=2.1ms"),
-            },
-            {
-                "ts": now_iso(),
-                "level": "INFO",
-                "target": name.as_str(),
-                "message": format!("[{name}] processed 152 requests in last minute"),
-            },
-            {
-                "ts": now_iso(),
-                "level": "WARN",
-                "target": name.as_str(),
-                "message": format!("[{name}] connection pool at 75% capacity"),
-            },
-        ],
+        "recent_logs": [],
     }))
 }
 
@@ -319,42 +245,13 @@ async fn node_logs(Path(name): Path<String>) -> ApiResponse<Value> {
 async fn node_trace(Path(name): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "node": name,
-        "traces": [
-            {
-                "trace_id": "trace-abc123",
-                "span_id": "span-001",
-                "operation": format!("{name}.handle_request"),
-                "start_time": now_iso(),
-                "duration_ms": 24.5,
-                "status": "ok",
-                "http_method": "GET",
-                "http_path": "/api/v1/status",
-            },
-            {
-                "trace_id": "trace-def456",
-                "span_id": "span-002",
-                "operation": format!("{name}.forward_to_upstream"),
-                "start_time": now_iso(),
-                "duration_ms": 45.2,
-                "status": "ok",
-                "upstream": "alliance-scheduler",
-            },
-            {
-                "trace_id": "trace-ghi789",
-                "span_id": "span-003",
-                "operation": format!("{name}.db_query"),
-                "start_time": now_iso(),
-                "duration_ms": 8.3,
-                "status": "ok",
-                "query": "SELECT * FROM tasks LIMIT 20",
-            },
-        ],
-        "total": 3,
+        "traces": [],
+        "total": 0,
     }))
 }
 
 // =====================================================================
-// 8-12. 告警规则 CRUD
+// 8-12. 告警规则 CRUD（JSON 文件持久化）
 // =====================================================================
 
 #[derive(Debug, Deserialize)]
@@ -402,7 +299,9 @@ async fn create_alert_rule(
         created_at: now.clone(),
         updated_at: now,
     };
-    s.alert_rules.lock().push(rule.clone());
+    let mut rules = s.alert_rules.lock();
+    rules.push(rule.clone());
+    save_alert_rules(&rules);
     ok(json!(rule))
 }
 
@@ -421,7 +320,9 @@ async fn update_alert_rule(
         if let Some(sev) = body.severity { rule.severity = sev; }
         if let Some(en) = body.enabled { rule.enabled = en; }
         rule.updated_at = now_iso();
-        return ok(json!(rule.clone()));
+        let result = rule.clone();
+        save_alert_rules(&rules);
+        return ok(json!(result));
     }
     api_error(404, format!("alert rule not found: {id}"))
 }
@@ -435,6 +336,7 @@ async fn delete_alert_rule(
     let before = rules.len();
     rules.retain(|r| r.id != id);
     if rules.len() < before {
+        save_alert_rules(&rules);
         ok(json!({ "deleted": true, "id": id }))
     } else {
         api_error(404, format!("alert rule not found: {id}"))
@@ -450,11 +352,13 @@ async fn toggle_alert_rule(
     if let Some(rule) = rules.iter_mut().find(|r| r.id == id) {
         rule.enabled = !rule.enabled;
         rule.updated_at = now_iso();
-        return ok(json!({
+        let result = json!({
             "id": rule.id,
             "enabled": rule.enabled,
             "name": rule.name,
-        }));
+        });
+        save_alert_rules(&rules);
+        return ok(result);
     }
     api_error(404, format!("alert rule not found: {id}"))
 }
@@ -473,31 +377,13 @@ struct TimeseriesQuery {
 
 async fn timeseries(Query(q): Query<TimeseriesQuery>) -> ApiResponse<Value> {
     let metric = q.metric.unwrap_or_else(|| "cpu_usage".into());
-    let step_secs: u64 = q.step.as_deref().and_then(|s| s.parse().ok()).unwrap_or(60);
-    let points: Vec<Value> = (0..30)
-        .map(|i| {
-            let t = chrono::Utc::now() - chrono::Duration::seconds((29 - i) as i64 * step_secs as i64);
-            let base = match metric.as_str() {
-                "cpu_usage" => 40.0,
-                "mem_usage" => 55.0,
-                "request_rate" => 300.0,
-                "latency_ms" => 20.0,
-                _ => 50.0,
-            };
-            let value = base + ((i * 7 % 15) as f64) - 5.0 + (i as f64 * 0.3);
-            json!({
-                "ts": t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                "value": (value * 100.0).round() / 100.0,
-            })
-        })
-        .collect();
     ok(json!({
         "metric": metric,
         "start": q.start,
         "end": q.end,
         "step": q.step.unwrap_or_else(|| "60".into()),
-        "points": points,
-        "count": points.len(),
+        "points": [],
+        "count": 0,
     }))
 }
 
@@ -514,29 +400,12 @@ struct BusinessTimeseriesQuery {
 
 async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>) -> ApiResponse<Value> {
     let metric = q.metric.unwrap_or_else(|| "task_completions".into());
-    let points: Vec<Value> = (0..14)
-        .map(|i| {
-            let t = chrono::Utc::now() - chrono::Duration::days((13 - i) as i64);
-            let base = match metric.as_str() {
-                "task_completions" => 85,
-                "project_creations" => 5,
-                "expert_consultations" => 32,
-                "user_logins" => 420,
-                _ => 50,
-            };
-            let value = base + ((i * 13 % 20) as i64) - 8;
-            json!({
-                "date": t.format("%Y-%m-%d").to_string(),
-                "value": value,
-            })
-        })
-        .collect();
     ok(json!({
         "metric": metric,
         "start": q.start,
         "end": q.end,
-        "points": points,
-        "count": points.len(),
+        "points": [],
+        "count": 0,
         "granularity": "daily",
     }))
 }
@@ -549,6 +418,7 @@ pub fn build_monitor_router() -> Router {
     let state = Arc::new(MonitorState::new());
     Router::new()
         .route("/actuator/metrics/detail", get(metrics_detail))
+        .route("/monitor/metrics/detail", get(metrics_detail))
         .route("/monitor/quality", get(quality))
         .route("/monitor/business", get(business))
         .route("/monitor/alerts/summary", get(alerts_summary))

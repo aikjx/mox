@@ -3,15 +3,19 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-use crate::backpressure::{BackpressureConfig, BackpressureMonitor};
-use crate::chunk_rebuild::{InMemoryPeerFetcher, PeerChunkFetcher, RebuildCoordinator};
-use crate::error::{VolumeError, VolumeResult};
+use crate::{
+    backpressure::{BackpressureConfig, BackpressureMonitor},
+    chunk_rebuild::{InMemoryPeerFetcher, PeerChunkFetcher, RebuildCoordinator},
+    error::{VolumeError, VolumeResult},
+};
 use bytes::Bytes;
+use mox_cloud_foundation::ChunkManagerProvider;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
-use mox_cloud_foundation::ChunkManagerProvider;
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 pub type VolumeId = String;
 
@@ -118,7 +122,7 @@ impl VolumeServer {
             Ok(permit) => permit,
             Err(e) => {
                 return Err(VolumeError::BackpressureRejected(format!("{e}")));
-            }
+            },
         };
         // _permit 在作用域结束时自动 drop，释放并发槽
 
@@ -154,10 +158,7 @@ impl VolumeServer {
         drop(chunks);
 
         // 存 checksum
-        self.inner
-            .chunk_checksums
-            .lock()
-            .insert(chunk_id.to_string(), crc);
+        self.inner.chunk_checksums.lock().insert(chunk_id.to_string(), crc);
 
         Ok(ChunkAck {
             chunk_id: chunk_id.to_string(),
@@ -175,13 +176,7 @@ impl VolumeServer {
             .cloned()
             .ok_or_else(|| VolumeError::ChunkNotFound(chunk_id.to_string()))?;
         // CRC 校验
-        let expected_crc = self
-            .inner
-            .chunk_checksums
-            .lock()
-            .get(chunk_id)
-            .copied()
-            .unwrap_or(0);
+        let expected_crc = self.inner.chunk_checksums.lock().get(chunk_id).copied().unwrap_or(0);
         if expected_crc != 0 {
             let actual = crc32c_bytes(&data);
             if actual != expected_crc {
@@ -276,10 +271,7 @@ impl VolumeServer {
     }
 
     pub fn store_snapshot(&self, snapshot_id: &str, manifest: BTreeMap<String, Vec<u8>>) {
-        self.inner
-            .snapshot_store
-            .lock()
-            .insert(snapshot_id.to_string(), manifest);
+        self.inner.snapshot_store.lock().insert(snapshot_id.to_string(), manifest);
     }
 
     pub fn get_snapshot(&self, snapshot_id: &str) -> Option<BTreeMap<String, Vec<u8>>> {
@@ -301,11 +293,7 @@ pub fn crc32c_bytes(data: &[u8]) -> u32 {
         for i in 0u32..256 {
             let mut crc = i;
             for _ in 0..8 {
-                crc = if crc & 1 == 1 {
-                    (crc >> 1) ^ poly
-                } else {
-                    crc >> 1
-                };
+                crc = if crc & 1 == 1 { (crc >> 1) ^ poly } else { crc >> 1 };
             }
             tbl[i as usize] = crc;
         }
@@ -378,10 +366,7 @@ mod tests {
             .with_backpressure_config(custom_config(1));
 
         // 手动持有一个 permit，占满唯一槽位
-        let _held = vs
-            .backpressure()
-            .try_acquire()
-            .expect("should acquire the only slot");
+        let _held = vs.backpressure().try_acquire().expect("should acquire the only slot");
         assert_eq!(vs.backpressure().current_concurrent(), 1);
 
         // 此时写入应被背压拒绝
@@ -389,7 +374,7 @@ mod tests {
         match result {
             Err(VolumeError::BackpressureRejected(msg)) => {
                 assert!(msg.contains("backpressure rejected"), "msg: {msg}");
-            }
+            },
             other => panic!("expected BackpressureRejected, got {other:?}"),
         }
 

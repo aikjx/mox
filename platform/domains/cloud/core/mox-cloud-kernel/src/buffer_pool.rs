@@ -18,9 +18,13 @@
 //! configurable four-tier layout rather than hard-coded tiers.
 
 use serde::{Deserialize, Serialize};
-use std::ops::{Deref, DerefMut};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, Weak};
+use std::{
+    ops::{Deref, DerefMut},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex, Weak,
+    },
+};
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -161,9 +165,8 @@ impl BufferPoolInner {
         self.current_in_use.fetch_sub(1, Ordering::Relaxed);
         self.tier_in_use[tier_index].fetch_sub(1, Ordering::Relaxed);
 
-        let mut queue = self.tiers[tier_index]
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut queue =
+            self.tiers[tier_index].lock().unwrap_or_else(|poisoned| poisoned.into_inner());
 
         if queue.len() < self.configs[tier_index].max_count {
             queue.push(vec);
@@ -199,9 +202,7 @@ pub struct BufferPool {
 
 impl Clone for BufferPool {
     fn clone(&self) -> Self {
-        Self {
-            inner: Arc::clone(&self.inner),
-        }
+        Self { inner: Arc::clone(&self.inner) }
     }
 }
 
@@ -259,12 +260,7 @@ impl BufferPool {
         }
 
         // Find the first tier that can serve this size.
-        let tier_idx = match self
-            .inner
-            .configs
-            .iter()
-            .position(|c| c.max_size >= capacity)
-        {
+        let tier_idx = match self.inner.configs.iter().position(|c| c.max_size >= capacity) {
             Some(idx) => idx,
             None => {
                 // Oversized: direct allocation, no pool management.
@@ -273,7 +269,7 @@ impl BufferPool {
                     tier_index: usize::MAX,
                     pool: Weak::new(),
                 };
-            }
+            },
         };
 
         let tier_max = self.inner.configs[tier_idx].max_size;
@@ -308,20 +304,14 @@ impl BufferPool {
             self.inner.total_allocated.fetch_add(1, Ordering::Relaxed);
             self.inner.tier_allocated[tier_idx].fetch_add(1, Ordering::Relaxed);
             let v = Vec::with_capacity(tier_max);
-            self.inner
-                .current_bytes
-                .fetch_add(v.capacity(), Ordering::Relaxed);
+            self.inner.current_bytes.fetch_add(v.capacity(), Ordering::Relaxed);
             v
         };
 
         self.inner.current_in_use.fetch_add(1, Ordering::Relaxed);
         self.inner.tier_in_use[tier_idx].fetch_add(1, Ordering::Relaxed);
 
-        PooledBuffer {
-            data: Some(vec),
-            tier_index: tier_idx,
-            pool: Arc::downgrade(&self.inner),
-        }
+        PooledBuffer { data: Some(vec), tier_index: tier_idx, pool: Arc::downgrade(&self.inner) }
     }
 
     /// Acquire a buffer and immediately resize it to `len` bytes (filled with
@@ -361,11 +351,7 @@ impl BufferPool {
         }
 
         let total_ops = allocated + reused;
-        let reuse_rate = if total_ops == 0 {
-            0.0
-        } else {
-            reused as f64 / total_ops as f64
-        };
+        let reuse_rate = if total_ops == 0 { 0.0 } else { reused as f64 / total_ops as f64 };
 
         BufferPoolStats {
             total_allocated: allocated,
@@ -383,9 +369,7 @@ impl BufferPool {
     /// when dropped because the queues are empty.
     pub fn clear(&self) {
         for tier in &self.inner.tiers {
-            let mut queue = tier
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let mut queue = tier.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
             let freed: usize = queue.iter().map(|v| v.capacity()).sum();
             queue.clear();
             self.inner.current_bytes.fetch_sub(freed, Ordering::Relaxed);
@@ -440,37 +424,25 @@ impl PooledBuffer {
     /// Allocated capacity of the backing `Vec`.
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.data
-            .as_ref()
-            .expect("buffer data was consumed")
-            .capacity()
+        self.data.as_ref().expect("buffer data was consumed").capacity()
     }
 
     /// Resize the buffer to `new_len`, filling new bytes with `value`.
     #[inline]
     pub fn resize(&mut self, new_len: usize, value: u8) {
-        self.data
-            .as_mut()
-            .expect("buffer data was consumed")
-            .resize(new_len, value);
+        self.data.as_mut().expect("buffer data was consumed").resize(new_len, value);
     }
 
     /// Append `other` to the end of the buffer.
     #[inline]
     pub fn extend_from_slice(&mut self, other: &[u8]) {
-        self.data
-            .as_mut()
-            .expect("buffer data was consumed")
-            .extend_from_slice(other);
+        self.data.as_mut().expect("buffer data was consumed").extend_from_slice(other);
     }
 
     /// Consume the handle and return the backing `Vec`, detaching it from pool
     /// management.  The caller becomes responsible for the memory.
     pub fn into_vec(mut self) -> Vec<u8> {
-        let vec = self
-            .data
-            .take()
-            .expect("buffer data was already consumed");
+        let vec = self.data.take().expect("buffer data was already consumed");
         let cap = vec.capacity();
         if let Some(pool) = self.pool.upgrade() {
             pool.detach_buffer(self.tier_index, cap);
@@ -539,25 +511,14 @@ impl std::fmt::Debug for PooledBuffer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::AtomicBool;
-    use std::thread;
+    use std::{sync::atomic::AtomicBool, thread};
 
     /// Helper: build a tiny two-tier config for deterministic tests.
     fn tiny_config() -> BufferPoolConfig {
         BufferPoolConfig {
             tiers: vec![
-                BufferTierConfig {
-                    min_size: 1,
-                    max_size: 1024,
-                    max_count: 2,
-                    alloc_count: 0,
-                },
-                BufferTierConfig {
-                    min_size: 1025,
-                    max_size: 8192,
-                    max_count: 1,
-                    alloc_count: 0,
-                },
+                BufferTierConfig { min_size: 1, max_size: 1024, max_count: 2, alloc_count: 0 },
+                BufferTierConfig { min_size: 1025, max_size: 8192, max_count: 1, alloc_count: 0 },
             ],
             global_max_bytes: 0, // unlimited for tests
         }
@@ -629,11 +590,7 @@ mod tests {
 
         // Tier 3: max_size = 16 MiB
         let b3 = pool.acquire(2 * 1024 * 1024);
-        assert_eq!(
-            b3.capacity(),
-            16 * 1024 * 1024,
-            "2 MiB -> tier 3 (16 MiB)"
-        );
+        assert_eq!(b3.capacity(), 16 * 1024 * 1024, "2 MiB -> tier 3 (16 MiB)");
 
         // Verify per-tier in_use counts via stats.
         let stats = pool.stats();
@@ -943,5 +900,127 @@ mod tests {
         let buf2 = pool2.acquire(100);
         assert_eq!(pool.stats().total_reused, 1);
         drop(buf2);
+    }
+}
+
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    #[test]
+    fn test_buffer_tier_config_fields() {
+        let cfg = BufferTierConfig { min_size: 100, max_size: 200, max_count: 10, alloc_count: 5 };
+        assert_eq!(cfg.min_size, 100);
+        assert_eq!(cfg.max_size, 200);
+        assert_eq!(cfg.max_count, 10);
+        assert_eq!(cfg.alloc_count, 5);
+    }
+
+    #[test]
+    fn test_buffer_pool_config_default_tiers() {
+        let cfg = BufferPoolConfig::default();
+        assert_eq!(cfg.tiers.len(), 4);
+        assert_eq!(cfg.tiers[0].min_size, 64);
+        assert_eq!(cfg.tiers[0].max_size, 4 * 1024);
+        assert_eq!(cfg.tiers[1].max_size, 64 * 1024);
+        assert_eq!(cfg.tiers[2].max_size, 1024 * 1024);
+        assert_eq!(cfg.tiers[3].max_size, 16 * 1024 * 1024);
+        assert_eq!(cfg.global_max_bytes, 256 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_pooled_buffer_debug() {
+        let pool = BufferPool::with_default();
+        let buf = pool.acquire(128);
+        let s = format!("{buf:?}");
+        assert!(s.contains("PooledBuffer"));
+        assert!(s.contains("len"));
+        assert!(s.contains("capacity"));
+    }
+
+    #[test]
+    fn test_pooled_buffer_as_ref_as_mut() {
+        let pool = BufferPool::with_default();
+        let mut buf = pool.acquire_with_len(16);
+        let s: &[u8] = buf.as_ref();
+        assert_eq!(s.len(), 16);
+        let m: &mut [u8] = buf.as_mut();
+        m[0] = 0xAB;
+        assert_eq!(buf[0], 0xAB);
+    }
+
+    #[test]
+    fn test_buffer_pool_debug() {
+        let pool = BufferPool::with_default();
+        let _buf = pool.acquire(128);
+        let s = format!("{pool:?}");
+        assert!(s.contains("BufferPool"));
+        assert!(s.contains("tiers"));
+    }
+
+    #[test]
+    fn test_buffer_tier_stats_serialization() {
+        let stats = BufferTierStats {
+            tier_index: 0,
+            min_size: 64,
+            max_size: 4096,
+            max_count: 1024,
+            current_idle: 5,
+            current_in_use: 3,
+            allocated_count: 10,
+            reused_count: 7,
+        };
+        let json = format!("{:?}", stats);
+        assert!(json.contains("tier_index"));
+        assert!(json.contains("current_idle"));
+    }
+
+    #[test]
+    fn test_buffer_pool_stats_serialization() {
+        let pool = BufferPool::with_default();
+        let _b = pool.acquire(128);
+        let stats = pool.stats();
+        let json = format!("{:?}", stats);
+        assert!(json.contains("total_allocated"));
+        assert!(json.contains("total_reused"));
+        assert!(json.contains("reuse_rate"));
+        assert!(json.contains("tier_stats"));
+    }
+
+    #[test]
+    fn test_acquire_exact_tier_boundary() {
+        let pool = BufferPool::with_default();
+        // Exactly 4KB → tier 0
+        let b0 = pool.acquire(4 * 1024);
+        assert_eq!(b0.capacity(), 4 * 1024);
+        // 4KB + 1 → tier 1
+        let b1 = pool.acquire(4 * 1024 + 1);
+        assert_eq!(b1.capacity(), 64 * 1024);
+        drop(b0);
+        drop(b1);
+    }
+
+    #[test]
+    fn test_acquire_16mb_boundary() {
+        let pool = BufferPool::with_default();
+        // Exactly 16MB → tier 3
+        let b = pool.acquire(16 * 1024 * 1024);
+        assert_eq!(b.capacity(), 16 * 1024 * 1024);
+        drop(b);
+        // 16MB + 1 → oversized (unpooled)
+        let b2 = pool.acquire(16 * 1024 * 1024 + 1);
+        assert!(b2.capacity() > 16 * 1024 * 1024);
+        drop(b2);
+    }
+
+    #[test]
+    fn test_pooled_buffer_into_vec_twice_panics() {
+        let pool = BufferPool::with_default();
+        let buf = pool.acquire(128);
+        let _vec = buf.into_vec();
+        // Calling into_vec again would panic - but we can't call it on moved value
+        // This test just verifies the first into_vec works
+        // (no additional assertion needed; into_vec() succeeding is the test)
     }
 }

@@ -85,8 +85,8 @@ mod x86_impl {
         let hi = _mm_and_si128(hi_raw, _mm_set1_epi8(0x0F));
 
         let mut result = _mm_setzero_si128();
-        for k in 0..16 {
-            let cand = _mm_shuffle_epi8(subs[k], lo);
+        for (k, sub) in subs.iter().enumerate() {
+            let cand = _mm_shuffle_epi8(*sub, lo);
             let k_vec = _mm_set1_epi8(k as i8);
             let mask = _mm_cmpeq_epi8(hi, k_vec);
             result = _mm_or_si128(result, _mm_and_si128(mask, cand));
@@ -111,8 +111,8 @@ mod x86_impl {
     /// [`super::SIMD_CHUNK`] (32), and a CPU supporting AVX2.
     #[target_feature(enable = "avx2")]
     pub(crate) unsafe fn gf_vec_mul_avx2_inner(coef: u8, src: &[u8], dst: &mut [u8]) {
-        use crate::reed_solomon::gf;
         use super::SIMD_CHUNK;
+        use crate::reed_solomon::gf;
 
         debug_assert_eq!(src.len(), dst.len());
         let len = src.len();
@@ -177,14 +177,15 @@ mod x86_impl {
     /// Requires AVX2 support; `main_len` divisible by `SIMD_CHUNK` (32);
     /// caller ensures pointer ranges are valid for read+write as indicated.
     #[target_feature(enable = "avx2")]
+    #[allow(dead_code)]
     pub(crate) unsafe fn avx2_xor_fused_body(
         coef: u8,
         src_ptr: *const u8,
         dst_ptr: *mut u8,
         main_len: usize,
     ) {
-        use crate::reed_solomon::gf;
         use super::SIMD_CHUNK;
+        use crate::reed_solomon::gf;
         debug_assert_eq!(main_len % SIMD_CHUNK, 0);
         if coef == 0 {
             return;
@@ -202,17 +203,13 @@ mod x86_impl {
             let zero_mask = _mm256_cmpeq_epi8(src_vec, _mm256_setzero_si256());
             let log_sum_wrap = _mm256_add_epi8(log_src, log_coef_vec);
             let log_sum_sat = _mm256_adds_epu8(log_src, log_coef_vec);
-            let adjust_mask =
-                _mm256_cmpeq_epi8(log_sum_sat, _mm256_set1_epi8(255u8 as i8));
+            let adjust_mask = _mm256_cmpeq_epi8(log_sum_sat, _mm256_set1_epi8(255u8 as i8));
             let adjust_one = _mm256_and_si256(adjust_mask, _mm256_set1_epi8(1));
             let exp_idx = _mm256_add_epi8(log_sum_wrap, adjust_one);
             let exp_raw = lut256_256(&exp_subs, exp_idx);
             let prod = _mm256_andnot_si256(zero_mask, exp_raw);
             let d = _mm256_loadu_si256(dst_ptr.add(off).cast::<__m256i>());
-            _mm256_storeu_si256(
-                dst_ptr.add(off).cast::<__m256i>(),
-                _mm256_xor_si256(d, prod),
-            );
+            _mm256_storeu_si256(dst_ptr.add(off).cast::<__m256i>(), _mm256_xor_si256(d, prod));
             off += SIMD_CHUNK;
         }
     }
@@ -293,8 +290,8 @@ mod neon_impl {
     /// Requires `src.len() == dst.len()` and both lengths divisible by 32.
     /// Executes unconditionally on aarch64 (ASIMD is base architecture).
     pub(crate) unsafe fn gf_vec_mul_neon_inner(coef: u8, src: &[u8], dst: &mut [u8]) {
-        use crate::reed_solomon::gf;
         use super::SIMD_CHUNK;
+        use crate::reed_solomon::gf;
 
         debug_assert_eq!(src.len(), dst.len());
         let len = src.len();
@@ -356,12 +353,8 @@ mod neon_impl {
         while off < len {
             let lane0 = vld1q_u8(src_ptr.add(off));
             let lane1 = vld1q_u8(src_ptr.add(off).add(16));
-            let r0 = lane_mul(
-                lane0, &log_subs, &exp_subs, log_coef_vec, zero_vec, one_vec, ff_vec,
-            );
-            let r1 = lane_mul(
-                lane1, &log_subs, &exp_subs, log_coef_vec, zero_vec, one_vec, ff_vec,
-            );
+            let r0 = lane_mul(lane0, &log_subs, &exp_subs, log_coef_vec, zero_vec, one_vec, ff_vec);
+            let r1 = lane_mul(lane1, &log_subs, &exp_subs, log_coef_vec, zero_vec, one_vec, ff_vec);
             vst1q_u8(dst_ptr.add(off), r0);
             vst1q_u8(dst_ptr.add(off).add(16), r1);
             off += SIMD_CHUNK;
@@ -378,6 +371,11 @@ mod neon_impl {
 /// On non-x86_64 this function does not exist (gated by
 /// `#[cfg(target_arch = "x86_64")]`).  Prefer [`gf_vec_mul_auto`] for portable
 /// code.
+///
+/// # Safety
+/// Requires `src.len() == dst.len()` and a CPU supporting AVX2. The caller
+/// must ensure the AVX2 target feature is available at runtime (e.g. via
+/// `is_x86_feature_detected!("avx2")`).
 #[cfg(target_arch = "x86_64")]
 #[inline]
 pub unsafe fn gf_vec_mul_avx2(coef: u8, src: &[u8], dst: &mut [u8]) {
@@ -389,6 +387,11 @@ pub unsafe fn gf_vec_mul_avx2(coef: u8, src: &[u8], dst: &mut [u8]) {
 /// On non-aarch64 this function does not exist (gated by
 /// `#[cfg(target_arch = "aarch64")]`).  Prefer [`gf_vec_mul_auto`] for portable
 /// code.
+///
+/// # Safety
+/// Requires `src.len() == dst.len()` and a CPU supporting NEON. The caller
+/// must ensure the NEON target feature is available at runtime (e.g. via
+/// `std::arch::is_aarch64_feature_detected!("neon")`).
 #[cfg(target_arch = "aarch64")]
 #[inline]
 pub unsafe fn gf_vec_mul_neon(coef: u8, src: &[u8], dst: &mut [u8]) {
@@ -404,11 +407,7 @@ pub unsafe fn gf_vec_mul_neon(coef: u8, src: &[u8], dst: &mut [u8]) {
 ///      + scalar tail for the last 0..=31 bytes.
 ///   3. Otherwise → pure byte-by-byte scalar `gf_mul`.
 pub fn gf_vec_mul_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
-    assert_eq!(
-        src.len(),
-        dst.len(),
-        "gf_vec_mul_auto: src/dst length mismatch"
-    );
+    assert_eq!(src.len(), dst.len(), "gf_vec_mul_auto: src/dst length mismatch");
     let len = src.len();
     if len == 0 {
         return;
@@ -420,12 +419,10 @@ pub fn gf_vec_mul_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
         if is_avx2_supported() {
             let main_len = len & !(SIMD_CHUNK - 1);
             if main_len > 0 {
+                // SAFETY: is_avx2_supported() returned true, so AVX2 is available.
+                // src/dst slices are valid for main_len bytes (main_len <= len).
                 unsafe {
-                    x86_impl::gf_vec_mul_avx2_inner(
-                        coef,
-                        &src[..main_len],
-                        &mut dst[..main_len],
-                    );
+                    x86_impl::gf_vec_mul_avx2_inner(coef, &src[..main_len], &mut dst[..main_len]);
                 }
             }
             for i in main_len..len {
@@ -441,12 +438,10 @@ pub fn gf_vec_mul_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
         if is_neon_supported() {
             let main_len = len & !(SIMD_CHUNK - 1);
             if main_len > 0 {
+                // SAFETY: is_neon_supported() returned true, so NEON is available.
+                // src/dst slices are valid for main_len bytes (main_len <= len).
                 unsafe {
-                    neon_impl::gf_vec_mul_neon_inner(
-                        coef,
-                        &src[..main_len],
-                        &mut dst[..main_len],
-                    );
+                    neon_impl::gf_vec_mul_neon_inner(coef, &src[..main_len], &mut dst[..main_len]);
                 }
             }
             for i in main_len..len {
@@ -469,11 +464,7 @@ pub fn gf_vec_mul_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
 /// user-visible temporary allocation (this is the hot path in RS
 /// encode/decode parity construction).
 pub fn gf_vec_mul_xor_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
-    assert_eq!(
-        src.len(),
-        dst.len(),
-        "gf_vec_mul_xor_auto: src/dst length mismatch"
-    );
+    assert_eq!(src.len(), dst.len(), "gf_vec_mul_xor_auto: src/dst length mismatch");
     let len = src.len();
     if len == 0 {
         return;
@@ -501,12 +492,7 @@ pub fn gf_vec_mul_xor_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
                     // intrinsics are inlined rather than turned into slow
                     // outlined calls.  Without this we observed a 4–8×
                     // regression vs the scalar path on release builds.
-                    x86_impl::avx2_xor_fused_body(
-                        coef,
-                        src.as_ptr(),
-                        dst.as_mut_ptr(),
-                        main_len,
-                    );
+                    x86_impl::avx2_xor_fused_body(coef, src.as_ptr(), dst.as_mut_ptr(), main_len);
                 }
             }
             // Scalar tail: xor fused.
@@ -524,8 +510,8 @@ pub fn gf_vec_mul_xor_auto(coef: u8, src: &[u8], dst: &mut [u8]) {
             let main_len = len & !(SIMD_CHUNK - 1);
             if main_len > 0 {
                 unsafe {
-                    use std::arch::aarch64::*;
                     use crate::reed_solomon::gf;
+                    use std::arch::aarch64::*;
                     let tables = gf();
                     let log_subs = neon_impl::build_subtables(&tables.log);
                     let exp_subs = neon_impl::build_subtables(&tables.exp);
@@ -610,9 +596,11 @@ mod t22_tests {
                 gf_vec_mul_avx2(coef, &block, &mut dst);
             }
             assert_eq!(
-                dst[..], expected[..],
+                dst[..],
+                expected[..],
                 "t22_avx2_rand_1m mismatch @ iter={} coef={:#04x}",
-                iter, coef
+                iter,
+                coef
             );
         }
     }
@@ -640,7 +628,8 @@ mod t22_tests {
             assert_eq!(&dst[..len], &expected[..], "tail mismatch len={}", len);
             for (i, &b) in dst[len..128].iter().enumerate() {
                 assert_eq!(
-                    b, SENTINEL,
+                    b,
+                    SENTINEL,
                     "tail over-write: len={} pos={} got={:#04x}",
                     len,
                     len + i,
@@ -668,11 +657,7 @@ mod t22_tests {
             gf_vec_mul_auto(0, &src, &mut dst0);
             gf_vec_mul_auto(1, &src, &mut dst1);
 
-            assert!(
-                dst0.iter().all(|&b| b == 0),
-                "coef=0 all-zero fail @ size={}",
-                size
-            );
+            assert!(dst0.iter().all(|&b| b == 0), "coef=0 all-zero fail @ size={}", size);
             assert_eq!(dst1, src, "coef=1 identity-mul fail @ size={}", size);
 
             let exp0 = scalar_block_mul(0, &src);
@@ -706,10 +691,7 @@ mod t22_neon_tests {
         #[cfg(target_arch = "aarch64")]
         assert!(is_neon_supported(), "is_neon_supported must be true on aarch64");
         #[cfg(not(target_arch = "aarch64"))]
-        assert!(
-            !is_neon_supported(),
-            "is_neon_supported must be false off aarch64"
-        );
+        assert!(!is_neon_supported(), "is_neon_supported must be false off aarch64");
     }
 
     /// 100,000 random (coef, 32B block) pairs — NEON agrees with scalar.
@@ -732,9 +714,11 @@ mod t22_neon_tests {
                     gf_vec_mul_neon(coef, &block, &mut dst);
                 }
                 assert_eq!(
-                    dst[..], expected[..],
+                    dst[..],
+                    expected[..],
                     "t22_neon_rand_100k mismatch @ iter={} coef={:#04x}",
-                    iter, coef
+                    iter,
+                    coef
                 );
             }
         }
@@ -762,7 +746,8 @@ mod t22_neon_tests {
             assert_eq!(&dst[..len], &expected[..], "tail mismatch len={}", len);
             for (i, &b) in dst[len..128].iter().enumerate() {
                 assert_eq!(
-                    b, SENTINEL,
+                    b,
+                    SENTINEL,
                     "tail over-write: len={} pos={} got={:#04x}",
                     len,
                     len + i,
@@ -789,17 +774,162 @@ mod t22_neon_tests {
             gf_vec_mul_auto(0, &src, &mut dst0);
             gf_vec_mul_auto(1, &src, &mut dst1);
 
-            assert!(
-                dst0.iter().all(|&b| b == 0),
-                "coef=0 all-zero fail @ size={}",
-                size
-            );
+            assert!(dst0.iter().all(|&b| b == 0), "coef=0 all-zero fail @ size={}", size);
             assert_eq!(dst1, src, "coef=1 identity-mul fail @ size={}", size);
 
             let exp0 = scalar_block_mul(0, &src);
             let exp1 = scalar_block_mul(1, &src);
             assert_eq!(dst0, exp0, "coef=0 vs scalar @ size={}", size);
             assert_eq!(dst1, exp1, "coef=1 vs scalar @ size={}", size);
+        }
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// Scalar-path unit tests (always run, no simd feature required)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod scalar_tests {
+    use super::*;
+    use crate::reed_solomon::gf_mul;
+
+    fn scalar_mul(coef: u8, src: &[u8]) -> Vec<u8> {
+        src.iter().map(|&b| gf_mul(coef, b)).collect()
+    }
+
+    #[test]
+    fn test_simd_chunk_constant() {
+        assert_eq!(SIMD_CHUNK, 32);
+    }
+
+    #[test]
+    fn test_is_avx2_supported_runs() {
+        // Just verify the function callable and returns bool
+        let _result: bool = is_avx2_supported();
+    }
+
+    #[test]
+    fn test_is_neon_supported_runs() {
+        let _result: bool = is_neon_supported();
+    }
+
+    #[test]
+    fn test_gf_vec_mul_auto_empty() {
+        let src: Vec<u8> = vec![];
+        let mut dst: Vec<u8> = vec![];
+        gf_vec_mul_auto(5, &src, &mut dst);
+        assert!(dst.is_empty());
+    }
+
+    #[test]
+    fn test_gf_vec_mul_auto_coef_zero() {
+        let src = vec![0xABu8; 64];
+        let mut dst = vec![0xFFu8; 64];
+        gf_vec_mul_auto(0, &src, &mut dst);
+        // coef=0 → all zeros
+        assert!(dst.iter().all(|&b| b == 0));
+    }
+
+    #[test]
+    fn test_gf_vec_mul_auto_coef_one() {
+        let src: Vec<u8> = (0..64u8).collect();
+        let mut dst = vec![0u8; 64];
+        gf_vec_mul_auto(1, &src, &mut dst);
+        assert_eq!(dst, src);
+    }
+
+    #[test]
+    fn test_gf_vec_mul_auto_matches_scalar() {
+        for coef in [2u8, 3, 5, 17, 100, 255] {
+            for len in [1usize, 7, 31, 32, 33, 63, 64, 65, 100, 255] {
+                let src: Vec<u8> = (0..len).map(|i| ((i * 7) as u8).wrapping_add(coef)).collect();
+                let mut dst = vec![0u8; len];
+                gf_vec_mul_auto(coef, &src, &mut dst);
+                let expected = scalar_mul(coef, &src);
+                assert_eq!(dst, expected, "coef={coef} len={len}");
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "src/dst length mismatch")]
+    fn test_gf_vec_mul_auto_length_mismatch() {
+        let src = vec![0u8; 10];
+        let mut dst = vec![0u8; 20];
+        gf_vec_mul_auto(3, &src, &mut dst);
+    }
+
+    #[test]
+    fn test_gf_vec_mul_xor_auto_empty() {
+        let src: Vec<u8> = vec![];
+        let mut dst: Vec<u8> = vec![];
+        gf_vec_mul_xor_auto(5, &src, &mut dst);
+        assert!(dst.is_empty());
+    }
+
+    #[test]
+    fn test_gf_vec_mul_xor_auto_coef_zero() {
+        let src = vec![0xABu8; 64];
+        let mut dst = vec![0xFFu8; 64];
+        gf_vec_mul_xor_auto(0, &src, &mut dst);
+        // coef=0 → xor with zero, dst unchanged
+        assert!(dst.iter().all(|&b| b == 0xFF));
+    }
+
+    #[test]
+    fn test_gf_vec_mul_xor_auto_coef_one() {
+        let src = vec![0xABu8; 64];
+        let mut dst = vec![0x00u8; 64];
+        gf_vec_mul_xor_auto(1, &src, &mut dst);
+        // coef=1 → dst XOR src
+        assert!(dst.iter().all(|&b| b == 0xAB));
+    }
+
+    #[test]
+    fn test_gf_vec_mul_xor_auto_matches_scalar() {
+        for coef in [2u8, 3, 5, 17, 100, 255] {
+            for len in [1usize, 7, 31, 32, 33, 63, 64, 65, 100, 255] {
+                let src: Vec<u8> = (0..len).map(|i| ((i * 7) as u8).wrapping_add(coef)).collect();
+                let mut dst: Vec<u8> = (0..len).map(|i| (i * 3) as u8).collect();
+                let expected: Vec<u8> =
+                    dst.iter().enumerate().map(|(i, &d)| d ^ gf_mul(coef, src[i])).collect();
+                gf_vec_mul_xor_auto(coef, &src, &mut dst);
+                assert_eq!(dst, expected, "coef={coef} len={len}");
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "src/dst length mismatch")]
+    fn test_gf_vec_mul_xor_auto_length_mismatch() {
+        let src = vec![0u8; 10];
+        let mut dst = vec![0u8; 20];
+        gf_vec_mul_xor_auto(3, &src, &mut dst);
+    }
+
+    #[test]
+    fn test_gf_vec_mul_auto_unaligned_lengths() {
+        // Test various non-aligned lengths to exercise scalar tail
+        for len in 1..=64usize {
+            let src: Vec<u8> = (0..len).map(|i| i as u8).collect();
+            let mut dst = vec![0u8; len];
+            gf_vec_mul_auto(7, &src, &mut dst);
+            let expected = scalar_mul(7, &src);
+            assert_eq!(dst, expected, "len={len}");
+        }
+    }
+
+    #[test]
+    fn test_gf_vec_mul_xor_auto_unaligned_lengths() {
+        for len in 1..=64usize {
+            let src: Vec<u8> = (0..len).map(|i| i as u8).collect();
+            let mut dst = vec![0x55u8; len];
+            let expected: Vec<u8> =
+                dst.iter().enumerate().map(|(i, &d)| d ^ gf_mul(7, src[i])).collect();
+            gf_vec_mul_xor_auto(7, &src, &mut dst);
+            assert_eq!(dst, expected, "len={len}");
         }
     }
 }

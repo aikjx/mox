@@ -27,11 +27,12 @@
     <div class="page-content">
 
       <!-- ===== 一、系统资源指标 ===== -->
-      <div class="section-block">
+      <div class="section-block" v-loading="systemLoading">
         <div class="section-header">
           <h3 class="section-title-bar"><span class="bar-icon sys"></span>系统资源</h3>
           <span class="section-hint">实时更新 · 最近采样 {{ lastUpdateTime }}</span>
         </div>
+        <el-alert v-if="systemError" type="error" :closable="false" show-icon title="系统资源指标加载失败，请检查后端服务" style="margin-bottom:10px" />
         <div class="grid grid-4 kpi-row">
           <div class="panel kpi" :class="{ 'kpi-flash': dataFlash }">
             <div class="kpi-top">
@@ -72,6 +73,7 @@
                 </div>
                 <div class="disk-val">{{ d.usage.toFixed(0) }}%</div>
               </div>
+              <el-empty v-if="!systemLoading && systemMetrics.disks.length === 0" description="暂无磁盘数据" :image-size="50" />
             </div>
           </div>
 
@@ -95,11 +97,12 @@
       </div>
 
       <!-- ===== 二、服务质量指标 ===== -->
-      <div class="section-block">
+      <div class="section-block" v-loading="qualityLoading">
         <div class="section-header">
           <h3 class="section-title-bar"><span class="bar-icon qos"></span>服务质量</h3>
           <span class="section-hint">最近 1 小时统计</span>
         </div>
+        <el-alert v-if="qualityError" type="error" :closable="false" show-icon title="服务质量指标加载失败" style="margin-bottom:10px" />
         <div class="grid grid-5 kpi-row">
           <div class="panel kpi small" :class="{ 'kpi-flash': dataFlash }">
             <div class="kpi-label">QPS</div>
@@ -148,11 +151,12 @@
 
       <!-- ===== 三、业务指标 + 告警统计 ===== -->
       <div class="grid grid-2">
-        <div class="section-block">
+        <div class="section-block" v-loading="businessLoading">
           <div class="section-header">
             <h3 class="section-title-bar"><span class="bar-icon biz"></span>业务指标</h3>
             <span class="section-hint">今日累计</span>
           </div>
+          <el-alert v-if="businessError" type="error" :closable="false" show-icon title="业务指标加载失败" style="margin-bottom:10px" />
           <div class="grid grid-4 kpi-row">
             <div class="panel kpi mini" :class="{ 'kpi-flash': dataFlash }">
               <div class="kpi-label">对话数</div>
@@ -173,11 +177,12 @@
           </div>
         </div>
 
-        <div class="section-block">
+        <div class="section-block" v-loading="alertsLoading">
           <div class="section-header">
             <h3 class="section-title-bar"><span class="bar-icon alert"></span>告警统计</h3>
             <span class="section-hint">今日累计</span>
           </div>
+          <el-alert v-if="alertsError" type="error" :closable="false" show-icon title="告警统计加载失败" style="margin-bottom:10px" />
           <div class="grid grid-4 kpi-row">
             <div class="panel kpi mini" :class="{ 'kpi-flash': dataFlash }">
               <div class="kpi-label">告警总数</div>
@@ -200,7 +205,7 @@
       </div>
 
       <!-- ===== 四、历史趋势图 ===== -->
-      <div class="section-block">
+      <div class="section-block" v-loading="timeseriesLoading">
         <div class="section-header">
           <h3 class="section-title-bar"><span class="bar-icon chart"></span>历史趋势</h3>
           <el-radio-group v-model="trendRange" size="small" @change="onTrendRangeChange">
@@ -209,6 +214,7 @@
             <el-radio-button value="24h">最近24小时</el-radio-button>
           </el-radio-group>
         </div>
+        <el-alert v-if="timeseriesError" type="error" :closable="false" show-icon title="时序指标加载失败，图表暂无数据" style="margin-bottom:10px" />
 
         <div class="grid grid-2 chart-row">
           <div class="panel card-pad">
@@ -226,15 +232,16 @@
             <h3 class="chart-title">CPU & 内存使用率</h3>
             <div ref="resChartEl" class="chart tall"></div>
           </div>
-          <div class="panel card-pad">
+          <div class="panel card-pad" v-loading="bizTimeseriesLoading">
             <h3 class="chart-title">业务量统计（最近 7 天）</h3>
+            <el-alert v-if="bizTimeseriesError" type="error" :closable="false" show-icon title="业务量时序加载失败" style="margin-bottom:8px" />
             <div ref="bizChartEl" class="chart tall"></div>
           </div>
         </div>
       </div>
 
       <!-- ===== 五、服务健康状态总览 ===== -->
-      <div class="section-block">
+      <div class="section-block" v-loading="nodesLoading">
         <div class="section-header">
           <h3 class="section-title-bar"><span class="bar-icon health"></span>服务健康状态</h3>
           <span class="section-hint">
@@ -243,8 +250,9 @@
             <span class="health-summary down">{{ healthSummary.down }} 异常</span>
           </span>
         </div>
+        <el-alert v-if="nodesError" type="error" :closable="false" show-icon title="服务节点状态加载失败" style="margin-bottom:10px" />
         <div class="panel card-pad">
-          <el-table :data="serviceNodes" stripe style="width: 100%" height="280">
+          <el-table :data="serviceNodes" stripe style="width: 100%" height="280" empty-text="暂无服务节点数据">
             <el-table-column prop="name" label="服务节点" min-width="180">
               <template #default="{ row }">
                 <div class="svc-name">
@@ -282,15 +290,16 @@
       </div>
 
       <!-- ===== 六、告警规则配置 ===== -->
-      <div class="section-block">
+      <div class="section-block" v-loading="rulesLoading">
         <div class="section-header">
           <h3 class="section-title-bar"><span class="bar-icon rule"></span>告警规则配置</h3>
           <el-button type="primary" size="small" @click="showRuleDialog = true; editingRule = null">
             <el-icon><Plus /></el-icon> 新建规则
           </el-button>
         </div>
+        <el-alert v-if="rulesError" type="error" :closable="false" show-icon title="告警规则加载失败" style="margin-bottom:10px" />
         <div class="panel card-pad">
-          <el-table :data="alertRules" stripe style="width: 100%">
+          <el-table :data="alertRules" stripe style="width: 100%" empty-text="暂无告警规则">
             <el-table-column prop="name" label="规则名称" min-width="160" />
             <el-table-column prop="metric" label="监控指标" width="120" />
             <el-table-column label="阈值条件" width="180">
@@ -380,7 +389,7 @@
       <!-- ===== 原有：执行日志 ===== -->
       <div class="panel card-pad">
         <h3 class="section-title">执行日志</h3>
-        <el-table :data="logRows" stripe height="320" style="width: 100%">
+        <el-table :data="logRows" stripe height="320" style="width: 100%" empty-text="暂无执行日志">
           <el-table-column prop="time" label="时间" width="180" />
           <el-table-column prop="flow" label="算子链" min-width="220" />
           <el-table-column prop="status" label="状态" width="100">
@@ -469,7 +478,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getStatus, getFullStatus, getLogs, getPlugins, moxHealth, moxOptimize } from '@/api'
 import {
   getMetricsDetail, getMonitorQuality, getMonitorBusiness, getAlertsSummary,
-  getMonitorNodes, getAlertRules, createAlertRule, updateAlertRule,
+  getMonitorNodes, getNodeLogs, getNodeTrace,
+  getAlertRules, createAlertRule, updateAlertRule,
   deleteAlertRule, toggleAlertRule, getTimeseries, getBusinessTimeseries
 } from '@/api/monitor.api'
 import { useProject } from '@/composables/projectContext.js'
@@ -483,10 +493,28 @@ const dataFlash = ref(false)
 const lastUpdateTime = ref('--:--:--')
 const trendRange = ref('1h')
 
+// ===== 分区加载 / 错误状态 =====
+const systemLoading = ref(false)
+const systemError = ref(false)
+const qualityLoading = ref(false)
+const qualityError = ref(false)
+const businessLoading = ref(false)
+const businessError = ref(false)
+const alertsLoading = ref(false)
+const alertsError = ref(false)
+const nodesLoading = ref(false)
+const nodesError = ref(false)
+const rulesLoading = ref(false)
+const rulesError = ref(false)
+const timeseriesLoading = ref(false)
+const timeseriesError = ref(false)
+const bizTimeseriesLoading = ref(false)
+const bizTimeseriesError = ref(false)
+
 let refreshTimer = null
 let flashTimer = null
 
-// ===== 系统资源指标（由 /actuator/metrics 加载，初始为空） =====
+// ===== 系统资源指标（由 /monitor/metrics/detail 加载，初始为空） =====
 const systemMetrics = reactive({
   cpu: 0,
   memory: 0,
@@ -583,25 +611,28 @@ function valLevel(val, warnThreshold, badThreshold) {
   return 'ok'
 }
 
-// 后端待提供: 服务节点日志跳转端点 /monitor/nodes/{name}/logs
-function jumpToLogs(row) {
-  ElMessage.info(`跳转到 ${row.name} 的日志页面`)
+// 服务节点日志跳转：调用真实 API 路径，后端未实现时 catch 显示错误
+async function jumpToLogs(row) {
+  try {
+    await getNodeLogs(row.name, { limit: 20 })
+    ElMessage.info(`已获取 ${row.name} 的最新日志（接口已连通）`)
+  } catch (e) {
+    ElMessage.error('节点日志接口未实现或调用失败：' + (e.message || '未知错误'))
+  }
 }
 
-// 后端待提供: 服务节点链路追踪跳转端点 /monitor/nodes/{name}/trace
-function jumpToTrace(row) {
-  ElMessage.info(`跳转到 ${row.name} 的链路追踪页面`)
+// 服务节点链路追踪跳转：调用真实 API 路径
+async function jumpToTrace(row) {
+  try {
+    await getNodeTrace(row.name, '')
+    ElMessage.info(`已请求 ${row.name} 的链路追踪（接口已连通）`)
+  } catch (e) {
+    ElMessage.error('链路追踪接口未实现或调用失败：' + (e.message || '未知错误'))
+  }
 }
 
-// ===== 告警规则（由 /monitor/alert-rules 加载） =====
-const alertRules = ref([
-  { id: 1, name: 'CPU 使用率过高', metric: 'CPU', operator: '>', threshold: 80, unit: '%', duration: '5分钟', level: 'P1', channels: ['站内信', '邮件'], enabled: true },
-  { id: 2, name: '内存使用率告警', metric: '内存', operator: '>', threshold: 85, unit: '%', duration: '5分钟', level: 'P1', channels: ['站内信', '邮件'], enabled: true },
-  { id: 3, name: '错误率过高', metric: '错误率', operator: '>', threshold: 2, unit: '%', duration: '1分钟', level: 'P0', channels: ['站内信', '邮件', '飞书'], enabled: true },
-  { id: 4, name: 'P99 延迟过高', metric: '延迟', operator: '>', threshold: 500, unit: 'ms', duration: '5分钟', level: 'P1', channels: ['站内信'], enabled: true },
-  { id: 5, name: '磁盘空间不足', metric: '磁盘', operator: '>', threshold: 90, unit: '%', duration: '15分钟', level: 'P2', channels: ['站内信', '邮件'], enabled: false },
-  { id: 6, name: 'QPS 突降', metric: 'QPS', operator: '<', threshold: 10, unit: '', duration: '5分钟', level: 'P0', channels: ['站内信', '飞书', 'Webhook'], enabled: true }
-])
+// ===== 告警规则（由 /monitor/alert-rules 加载，初始为空数组） =====
+const alertRules = ref([])
 
 const showRuleDialog = ref(false)
 const editingRule = ref(null)
@@ -623,14 +654,15 @@ function levelTagType(level) {
   return 'info'
 }
 
-// 告警规则启用/禁用：调用 PUT /monitor/alert-rules/{id}/toggle，失败保留本地状态
+// 告警规则启用/禁用：调用 PUT /monitor/alert-rules/{id}/toggle，失败回滚本地状态并报错
 async function toggleRule(row) {
+  const prev = row.enabled
   try {
     await toggleAlertRule(row.id, row.enabled)
     ElMessage.success(`规则「${row.name}」已${row.enabled ? '启用' : '禁用'}`)
   } catch (e) {
-    row.enabled = !row.enabled
-    ElMessage.warning('规则状态同步失败，已回滚本地状态')
+    row.enabled = !prev
+    ElMessage.error('规则状态同步失败：' + (e.message || '未知错误'))
   }
 }
 
@@ -640,7 +672,7 @@ function editRule(row) {
   showRuleDialog.value = true
 }
 
-// 告警规则删除：调用 DELETE /monitor/alert-rules/{id}，失败保留本地列表
+// 告警规则删除：调用 DELETE /monitor/alert-rules/{id}
 async function deleteRule(row) {
   ElMessageBox.confirm(`确定删除规则「${row.name}」吗？`, '确认删除', {
     type: 'warning'
@@ -651,7 +683,7 @@ async function deleteRule(row) {
       if (idx >= 0) alertRules.value.splice(idx, 1)
       ElMessage.success('删除成功')
     } catch (e) {
-      ElMessage.error('删除失败：' + e.message)
+      ElMessage.error('删除失败：' + (e.message || '未知错误'))
     }
   }).catch(() => {})
 }
@@ -671,7 +703,7 @@ function resetRuleForm() {
   })
 }
 
-// 告警规则创建/更新：调用 POST/PUT /monitor/alert-rules，失败保留本地操作
+// 告警规则创建/更新：调用 POST/PUT /monitor/alert-rules
 async function saveRule() {
   if (!ruleForm.name.trim()) {
     ElMessage.warning('请输入规则名称')
@@ -691,7 +723,7 @@ async function saveRule() {
     }
     showRuleDialog.value = false
   } catch (e) {
-    ElMessage.error('保存失败：' + e.message)
+    ElMessage.error('保存失败：' + (e.message || '未知错误'))
   }
 }
 
@@ -714,13 +746,13 @@ let latencyChart = null
 let resChart = null
 let bizChart = null
 let radarChart = null
-let chart = null // 原有 load chart
+let chart = null
 
-// ===== 时序指标（后端待提供 /monitor/timeseries，当前返回空数组） =====
-function generateTimeSeries(points, base, variance, trend = 0) {
-  return [] // 后端端点就绪后替换为真实数据
-}
+// ===== 时序指标数据（由 /monitor/timeseries 和 /monitor/business/timeseries 加载） =====
+const timeseriesData = ref(null)
+const bizTimeseriesData = ref(null)
 
+// ===== 时间标签生成（纯工具函数） =====
 function generateTimeLabels(points, intervalSec = 60) {
   const labels = []
   const now = Date.now()
@@ -741,15 +773,35 @@ function getIntervalForRange() {
   return map[trendRange.value] || 60
 }
 
-// ===== QPS + 错误率双Y轴图 =====
+// ===== 时序数据提取辅助（兼容多种后端响应格式） =====
+function getTsLabels() {
+  const d = timeseriesData.value
+  if (!d) return []
+  return d.labels || d.timestamps || d.time || []
+}
+function getTsSeries(key) {
+  const d = timeseriesData.value
+  if (!d) return []
+  return (d.data && d.data[key]) || (d.series && d.series[key]) || (d[key]) || []
+}
+function getBizTsLabels() {
+  const d = bizTimeseriesData.value
+  if (!d) return []
+  return d.labels || d.dates || d.time || []
+}
+function getBizTsSeries(key) {
+  const d = bizTimeseriesData.value
+  if (!d) return []
+  return (d.data && d.data[key]) || (d.series && d.series[key]) || (d[key]) || []
+}
+
+// ===== QPS + 错误率双Y轴图（使用真实时序数据） =====
 function renderQpsChart() {
   if (!qpsChartEl.value) return
   if (!qpsChart) qpsChart = echarts.init(qpsChartEl.value)
-  const points = getPointsForRange()
-  const interval = getIntervalForRange()
-  const labels = generateTimeLabels(points, interval)
-  const qpsData = generateTimeSeries(points, qualityMetrics.qps, qualityMetrics.qps * 0.3, 10)
-  const errData = generateTimeSeries(points, qualityMetrics.errorRate, 0.3, 0.1)
+  const labels = getTsLabels()
+  const qpsData = getTsSeries('qps')
+  const errData = getTsSeries('error_rate') || getTsSeries('errorRate')
 
   qpsChart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
@@ -781,16 +833,14 @@ function renderQpsChart() {
   })
 }
 
-// ===== 延迟分布图 =====
+// ===== 延迟分布图（使用真实时序数据） =====
 function renderLatencyChart() {
   if (!latencyChartEl.value) return
   if (!latencyChart) latencyChart = echarts.init(latencyChartEl.value)
-  const points = getPointsForRange()
-  const interval = getIntervalForRange()
-  const labels = generateTimeLabels(points, interval)
-  const p50Data = generateTimeSeries(points, qualityMetrics.p50, 8, 3)
-  const p95Data = generateTimeSeries(points, qualityMetrics.p95, 30, 10)
-  const p99Data = generateTimeSeries(points, qualityMetrics.p99, 80, 20)
+  const labels = getTsLabels()
+  const p50Data = getTsSeries('p50')
+  const p95Data = getTsSeries('p95')
+  const p99Data = getTsSeries('p99')
 
   latencyChart.setOption({
     tooltip: { trigger: 'axis' },
@@ -806,15 +856,13 @@ function renderLatencyChart() {
   })
 }
 
-// ===== CPU + 内存趋势图 =====
+// ===== CPU + 内存趋势图（使用真实时序数据） =====
 function renderResChart() {
   if (!resChartEl.value) return
   if (!resChart) resChart = echarts.init(resChartEl.value)
-  const points = getPointsForRange()
-  const interval = getIntervalForRange()
-  const labels = generateTimeLabels(points, interval)
-  const cpuData = generateTimeSeries(points, systemMetrics.cpu, 10, 5)
-  const memData = generateTimeSeries(points, systemMetrics.memory, 5, 3)
+  const labels = getTsLabels()
+  const cpuData = getTsSeries('cpu')
+  const memData = getTsSeries('memory')
 
   resChart.setOption({
     tooltip: { trigger: 'axis', valueFormatter: v => v + '%' },
@@ -849,30 +897,28 @@ function renderResChart() {
   })
 }
 
-// ===== 业务量柱状图 =====
+// ===== 业务量柱状图（使用真实业务时序数据，无硬编码） =====
 function renderBizChart() {
   if (!bizChartEl.value) return
   if (!bizChart) bizChart = echarts.init(bizChartEl.value)
 
-  const days = []
-  const now = new Date()
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 86400000)
-    days.push((d.getMonth() + 1) + '/' + d.getDate())
-  }
+  const labels = getBizTsLabels()
+  const convData = getBizTsSeries('conversations') || getBizTsSeries('conversation')
+  const expData = getBizTsSeries('expert_consultations') || getBizTsSeries('expertConsultations')
+  const wfData = getBizTsSeries('workflow_runs') || getBizTsSeries('workflowRuns')
+  const opData = getBizTsSeries('operator_calls') || getBizTsSeries('operatorCalls')
 
   bizChart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { data: ['对话数', '专家咨询', '工作流执行', '算子调用'], top: 0, textStyle: { color: '#94a3b8', fontSize: 11 } },
     grid: { left: 50, right: 20, top: 40, bottom: 30 },
-    xAxis: { type: 'category', data: days, axisLine: { lineStyle: { color: '#334155' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
+    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: '#334155' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
     yAxis: { type: 'value', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.1)' } } },
-    // 业务量柱状图由 /monitor/business/timeseries 加载，当前为空
     series: [
-      { name: '对话数', type: 'bar', data: [2800, 3100, 2950, 3400, 3200, 3600, 3562], itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
-      { name: '专家咨询', type: 'bar', data: [95, 110, 102, 118, 125, 132, 128], itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
-      { name: '工作流执行', type: 'bar', data: [720, 800, 760, 850, 900, 880, 892], itemStyle: { color: '#f59e0b', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
-      { name: '算子调用', type: 'bar', data: [10000, 11200, 10500, 12000, 11800, 12300, 12450], itemStyle: { color: '#8b5cf6', borderRadius: [4, 4, 0, 0] }, barWidth: 12 }
+      { name: '对话数', type: 'bar', data: convData, itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
+      { name: '专家咨询', type: 'bar', data: expData, itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
+      { name: '工作流执行', type: 'bar', data: wfData, itemStyle: { color: '#f59e0b', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
+      { name: '算子调用', type: 'bar', data: opData, itemStyle: { color: '#8b5cf6', borderRadius: [4, 4, 0, 0] }, barWidth: 12 }
     ]
   })
 }
@@ -934,7 +980,6 @@ function renderRadar(scores) {
 }
 
 // ===== 数据刷新逻辑 =====
-
 function triggerFlash() {
   dataFlash.value = true
   if (flashTimer) clearTimeout(flashTimer)
@@ -943,9 +988,10 @@ function triggerFlash() {
   }, 300)
 }
 
-
-async function loadMonitorData() {
-  // 系统资源指标
+// ===== 分区数据加载（每个加载点：loading → try/catch → finally） =====
+async function loadSystemMetrics() {
+  systemLoading.value = true
+  systemError.value = false
   try {
     const m = await getMetricsDetail()
     if (m) {
@@ -957,41 +1003,130 @@ async function loadMonitorData() {
       if (m.netUpload != null) systemMetrics.netUpload = m.netUpload
       if (m.netDownload != null) systemMetrics.netDownload = m.netDownload
     }
-  } catch (e) { console.error('[monitor] fetch failed:', e) }
+  } catch (e) {
+    systemError.value = true
+    ElMessage.error('系统资源指标加载失败：' + (e.message || '未知错误'))
+  } finally {
+    systemLoading.value = false
+  }
+}
 
-  // 服务质量指标
+async function loadQualityMetrics() {
+  qualityLoading.value = true
+  qualityError.value = false
   try {
     const q = await getMonitorQuality()
     if (q) Object.assign(qualityMetrics, q)
-  } catch (e) { console.error('[monitor] fetch failed:', e) }
+  } catch (e) {
+    qualityError.value = true
+    ElMessage.error('服务质量指标加载失败：' + (e.message || '未知错误'))
+  } finally {
+    qualityLoading.value = false
+  }
+}
 
-  // 业务指标
+async function loadBusinessMetrics() {
+  businessLoading.value = true
+  businessError.value = false
   try {
     const b = await getMonitorBusiness()
     if (b) Object.assign(businessMetrics, b)
-  } catch (e) { console.error('[monitor] fetch failed:', e) }
+  } catch (e) {
+    businessError.value = true
+    ElMessage.error('业务指标加载失败：' + (e.message || '未知错误'))
+  } finally {
+    businessLoading.value = false
+  }
+}
 
-  // 告警统计
+async function loadAlertsSummary() {
+  alertsLoading.value = true
+  alertsError.value = false
   try {
     const a = await getAlertsSummary()
     if (a) Object.assign(alertMetrics, a)
-  } catch (e) { console.error('[monitor] fetch failed:', e) }
+  } catch (e) {
+    alertsError.value = true
+    ElMessage.error('告警统计加载失败：' + (e.message || '未知错误'))
+  } finally {
+    alertsLoading.value = false
+  }
+}
 
-  // 服务节点
+async function loadServiceNodes() {
+  nodesLoading.value = true
+  nodesError.value = false
   try {
     const nodes = await getMonitorNodes()
-    if (Array.isArray(nodes) && nodes.length > 0) {
-      serviceNodes.value = nodes
-    }
-  } catch (e) { console.error('[monitor] fetch failed:', e) }
+    serviceNodes.value = Array.isArray(nodes) ? nodes : (nodes?.items || [])
+  } catch (e) {
+    nodesError.value = true
+    serviceNodes.value = []
+    ElMessage.error('服务节点状态加载失败：' + (e.message || '未知错误'))
+  } finally {
+    nodesLoading.value = false
+  }
+}
 
-  // 告警规则
+async function loadAlertRules() {
+  rulesLoading.value = true
+  rulesError.value = false
   try {
     const rules = await getAlertRules()
-    if (Array.isArray(rules) && rules.length > 0) {
-      alertRules.value = rules
-    }
-  } catch (e) { console.error('[monitor] fetch failed:', e) }
+    alertRules.value = Array.isArray(rules) ? rules : (rules?.items || [])
+  } catch (e) {
+    rulesError.value = true
+    alertRules.value = []
+    ElMessage.error('告警规则加载失败：' + (e.message || '未知错误'))
+  } finally {
+    rulesLoading.value = false
+  }
+}
+
+async function loadTimeseriesData() {
+  timeseriesLoading.value = true
+  timeseriesError.value = false
+  try {
+    const data = await getTimeseries({ range: trendRange.value })
+    timeseriesData.value = data
+  } catch (e) {
+    timeseriesError.value = true
+    timeseriesData.value = null
+    ElMessage.error('时序指标加载失败：' + (e.message || '未知错误'))
+  } finally {
+    timeseriesLoading.value = false
+  }
+}
+
+async function loadBizTimeseriesData() {
+  bizTimeseriesLoading.value = true
+  bizTimeseriesError.value = false
+  try {
+    const data = await getBusinessTimeseries({ days: 7 })
+    bizTimeseriesData.value = data
+  } catch (e) {
+    bizTimeseriesError.value = true
+    bizTimeseriesData.value = null
+    ElMessage.error('业务量时序加载失败：' + (e.message || '未知错误'))
+  } finally {
+    bizTimeseriesLoading.value = false
+  }
+}
+
+// 汇总加载所有监控域真实数据
+async function loadMonitorData() {
+  await Promise.all([
+    loadSystemMetrics(),
+    loadQualityMetrics(),
+    loadBusinessMetrics(),
+    loadAlertsSummary(),
+    loadServiceNodes(),
+    loadAlertRules(),
+    loadTimeseriesData(),
+    loadBizTimeseriesData()
+  ])
+  lastUpdateTime.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+  triggerFlash()
 }
 
 async function loadAll() {
@@ -1010,9 +1145,9 @@ async function loadAll() {
       logs = results[1]
       plg = results[2]
     } catch (e) {
-      console.warn('监控接口加载失败，使用空数据:', e)
+      ElMessage.error('系统状态接口加载失败：' + (e.message || '未知错误'))
     }
-    
+
     if (st && st.success !== undefined && st.data !== undefined) {
       st = st.data
     }
@@ -1025,48 +1160,38 @@ async function loadAll() {
     if (!Array.isArray(logs)) {
       logs = []
     }
-    
+
     const s = st || {}
     const plgArr = Array.isArray(plg) ? plg : (plg?.items || [])
     pluginCount.value = plgArr.length
-    
-    // 原有 KPI（保留兼容，现有已迁移到新的分组中）
+
+    // 原有 KPI（保留兼容，数据全部来自 API）
     kpis.value = [
-      { label: '系统状态', value: s.status === 'running' ? '运行中' : s.status || '运行中', icon: 'CircleCheck', ok: true },
-      { label: '算子数量', value: s.operators_count ?? 8, icon: 'Cpu' },
-      { label: '执行次数', value: s.executions_count ?? logs.length ?? 15, icon: 'VideoPlay' },
+      { label: '系统状态', value: s.status || '未知', icon: 'CircleCheck', ok: s.status === 'running' },
+      { label: '算子数量', value: s.operators_count ?? 0, icon: 'Cpu' },
+      { label: '执行次数', value: s.executions_count ?? logs.length, icon: 'VideoPlay' },
       { label: '插件数量', value: pluginCount.value, icon: 'Connection' }
     ]
-    comps.value = [
-      { name: 'WASM 运行时', status: 'up', val: 'active' },
-      { name: 'AI 智能体', status: 'up', val: 'online' },
-      { name: '知识图谱', status: 'up', val: ((s.graph && s.graph.nodes) ?? 23) + ' 节点' },
-      { name: '插件总线', status: pluginCount.value ? 'up' : 'down', val: pluginCount.value + ' 个' },
-      { name: '数据库', status: 'up', val: 'connected' },
-      { name: '消息队列', status: 'up', val: 'ready' }
-    ]
-    
-        const safeLogs = logs
+    // 组件状态全部置空，由后端实际状态接口提供，无硬编码
+    comps.value = []
+
+    const safeLogs = logs
     logRows.value = safeLogs.slice(0, 50).map((l) => ({
       time: fmt(l.timestamp),
       flow: (l.workflow || []).join(' → ') || '—',
       status: l.success === false ? '失败' : '成功',
-      time_ms: (l.execution_time_ms || 100) + ' ms',
-      dims: `${l.input_dim || 3}→${l.output_dim || 7}`
+      time_ms: (l.execution_time_ms || 0) + ' ms',
+      dims: `${l.input_dim || 0}→${l.output_dim || 0}`
     }))
-    
+
     // 加载监控域真实数据
-    await loadMonitorData().catch(() => {})
-    
-    // 更新 mock 数据 & 服务节点
-    // updateMockMetrics() // 已移除 mock
-    refreshServiceNodes()
-    
+    await loadMonitorData()
+
     // 渲染所有图表
     await nextTick()
     renderAllCharts()
   } catch (e) {
-    console.warn('监控加载失败', e)
+    ElMessage.error('监控页面加载失败：' + (e.message || '未知错误'))
   } finally {
     loading.value = false
   }
@@ -1101,13 +1226,13 @@ function stopAutoRefresh() {
   }
 }
 
-function doRefresh() {
-  // updateMockMetrics() // 已移除 mock
-  refreshServiceNodes()
-  // 轻量刷新：只更新图表数据，不重新 init
+async function doRefresh() {
+  // 轻量刷新：重新加载监控数据并重渲染图表
+  await loadMonitorData()
   if (qpsChart) renderQpsChart()
   if (latencyChart) renderLatencyChart()
   if (resChart) renderResChart()
+  if (bizChart) renderBizChart()
 }
 
 function manualRefresh() {
@@ -1125,13 +1250,14 @@ function onAutoRefreshChange(val) {
   }
 }
 
-function onTrendRangeChange() {
+async function onTrendRangeChange() {
+  await loadTimeseriesData()
   renderQpsChart()
   renderLatencyChart()
   renderResChart()
 }
 
-// ===== 原有：辅助函数 & Mock =====
+// ===== 原有：辅助函数 =====
 const kpis = ref([])
 const comps = ref([])
 const logRows = ref([])
@@ -1156,12 +1282,17 @@ const bizLeague = ref([])
 const devLeague = ref([])
 
 async function loadMoxHealth() {
-  const h = await moxHealth().catch(() => null)
-  if (!h) return
-  dimList.value = h.dimensions || []
-  bizLeague.value = h.business_league || []
-  devLeague.value = h.dev_league || []
-  mox.value = 'algo-verification-supreme'
+  try {
+    const h = await moxHealth()
+    if (h) {
+      dimList.value = h.dimensions || []
+      bizLeague.value = h.business_league || []
+      devLeague.value = h.dev_league || []
+      mox.value = 'algo-verification-supreme'
+    }
+  } catch (e) {
+    ElMessage.error('璇玑健康检查失败：' + (e.message || '未知错误'))
+  }
 }
 
 function onFlowFile(file) {

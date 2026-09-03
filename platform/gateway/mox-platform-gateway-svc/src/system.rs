@@ -19,7 +19,7 @@
 //! 用户相关读接口默认 `admin-user`（种子超级管理员）。
 
 use crate::GatewayState;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 use axum::{
     extract::{Path, Query, State},
     routing::{delete, get, post, put},
@@ -31,7 +31,6 @@ use mox_platform_iam_core::{
 };
 use serde_json::{Map, Value, json};
 use std::collections::HashMap;
-use std::sync::Arc;
 
 /// 种子演示租户（seed_builtins 中名为"企业演示租户"，含部门 D001 与管理员）
 const DEFAULT_TENANT: &str = "T001";

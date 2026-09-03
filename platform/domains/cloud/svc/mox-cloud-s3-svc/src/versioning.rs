@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -9,8 +9,10 @@
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::BTreeMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum VersioningStatus {
@@ -81,11 +83,7 @@ impl VersioningManager {
     }
 
     pub fn get(&self, bucket: &str) -> VersioningStatus {
-        self.statuses
-            .lock()
-            .get(bucket)
-            .copied()
-            .unwrap_or(VersioningStatus::Off)
+        self.statuses.lock().get(bucket).copied().unwrap_or(VersioningStatus::Off)
     }
 
     pub fn set(&self, bucket: &str, status: VersioningStatus) {

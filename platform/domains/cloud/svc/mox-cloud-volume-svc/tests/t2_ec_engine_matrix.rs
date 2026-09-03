@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -11,17 +11,16 @@
 //! All filesystem writes live inside `tempfile::tempdir()` so the host system
 //! disk is never polluted.
 
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{atomic::Ordering, Arc};
 
-use parking_lot::Mutex;
-use rand::RngCore;
 use mox_cloud_volume_svc::{
     crc64_ecma, encode_and_write, encode_us_samples_snapshot, manifest_path,
     metrics::{self, ENCODE_US_COUNT, REBUILD_COUNT, SHARDS_LOST_TOTAL},
-    parse_shard_path, shard_path, EcManifest, EcProfile, RebuildJob, ReedSolomonEngine,
-    RSError, StorageTier, DEFAULT_MIN_OBJ_SIZE,
+    parse_shard_path, shard_path, EcManifest, EcProfile, RSError, RebuildJob, ReedSolomonEngine,
+    StorageTier, DEFAULT_MIN_OBJ_SIZE,
 };
+use parking_lot::Mutex;
+use rand::RngCore;
 
 // Global mutex used to serialise tests that read or mutate the global fake
 // metrics counters (mox_ec_encode_us / rebuild / shards_lost).  Without
@@ -40,7 +39,9 @@ fn reset_metrics() {
     // when called from inside a guard-held scope.  If another test already
     // holds the lock (they are asserting exact metric deltas), we must NOT
     // clear the global counters — doing so would flip their delta negative.
-    let Some(_guard) = METRICS_LOCK.try_lock() else { return; };
+    let Some(_guard) = METRICS_LOCK.try_lock() else {
+        return;
+    };
     metrics::reset_all();
 }
 
@@ -60,7 +61,9 @@ fn tr1_4plus2_basic() {
     reset_metrics();
     let engine = ReedSolomonEngine::new();
     let profile = EcProfile::with_default_min_size(4, 2).unwrap();
-    let payload = b"AIS EC Matrix: 4 data shards + 2 parity. Padding check -- data length need not align.".to_vec();
+    let payload =
+        b"AIS EC Matrix: 4 data shards + 2 parity. Padding check -- data length need not align."
+            .to_vec();
     let shards = engine.encode(&profile, &payload).unwrap();
     assert_eq!(shards.len(), 6);
     assert!(shards.iter().all(|s| s.len() == shards[0].len()));
@@ -69,18 +72,14 @@ fn tr1_4plus2_basic() {
     let mut slots: Vec<Option<Vec<u8>>> = shards.iter().cloned().map(Some).collect();
     slots[1] = None;
     slots[4] = None;
-    let got = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let got = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(got, payload);
 
     // try dropping both parity shards only
     let mut slots2: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
     slots2[4] = None;
     slots2[5] = None;
-    let got2 = engine
-        .decode_reconstruct(&profile, &slots2, payload.len())
-        .unwrap();
+    let got2 = engine.decode_reconstruct(&profile, &slots2, payload.len()).unwrap();
     assert_eq!(got2, payload);
 }
 
@@ -104,9 +103,7 @@ fn tr2_8plus4_recovery() {
     for m in missing.iter() {
         slots[*m] = None;
     }
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(recovered.len(), payload.len());
     assert_eq!(recovered, payload);
 }
@@ -127,9 +124,7 @@ fn tr3_too_many_lost() {
     slots[0] = None;
     slots[2] = None;
     slots[4] = None; // three total drops → parity=2 is exceeded
-    let err = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap_err();
+    let err = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap_err();
     assert!(
         matches!(err, RSError::TooManyShardsMissing(_)),
         "expected TooManyShardsMissing, got {err:?}"
@@ -158,9 +153,7 @@ fn tr4_12plus4_gb() {
     slots[12] = None;
     slots[13] = None;
     slots[15] = None;
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(recovered.len(), payload.len());
     assert_eq!(crc64_ecma(&recovered), crc_before);
     assert_eq!(recovered, payload);
@@ -191,9 +184,7 @@ fn tr5_manifest_serde() {
 
     // Hot default: deserialize manifest *without* tier field → must default
     // to Hot.
-    let json_no_tier = format!(
-        r#"{{"oid":"X","bid":"Y","crc64":0,"shard_count":3,"data_shards":2,"parity_shards":1,"created_at_ms":1}}"#
-    );
+    let json_no_tier = r#"{"oid":"X","bid":"Y","crc64":0,"shard_count":3,"data_shards":2,"parity_shards":1,"created_at_ms":1}"#.to_string();
     let no_tier: EcManifest = serde_json::from_str(&json_no_tier).unwrap();
     assert_eq!(no_tier.tier, StorageTier::Hot);
 }
@@ -216,10 +207,8 @@ fn tr6_fs_layout() {
     for i in 0..12usize {
         let p = shard_path(mount, bucket, oid, i);
         let rel = p.strip_prefix(mount).unwrap();
-        let components: Vec<_> = rel
-            .components()
-            .map(|c| c.as_os_str().to_string_lossy().to_string())
-            .collect();
+        let components: Vec<_> =
+            rel.components().map(|c| c.as_os_str().to_string_lossy().to_string()).collect();
         assert_eq!(components.len(), 5, "unexpected components {components:?}");
         assert_eq!(components[0], bucket);
         assert_eq!(components[1], want_prefix_2);
@@ -235,15 +224,11 @@ fn tr6_fs_layout() {
     let mpath = manifest_path(mount, bucket, oid);
     assert!(mpath
         .components()
-        .last()
+        .next_back()
         .map(|c| c.as_os_str() == "manifest.json")
         .unwrap_or(false));
     let parent = mpath.parent().expect("manifest has ec parent");
-    assert!(parent
-        .components()
-        .last()
-        .map(|c| c.as_os_str() == "ec")
-        .unwrap_or(false));
+    assert!(parent.components().next_back().map(|c| c.as_os_str() == "ec").unwrap_or(false));
 }
 
 // ---------------------------------------------------------------------------
@@ -261,15 +246,8 @@ fn tr7_rebuild_job() {
     let payload = random_bytes(99 * 1024 + 7); // weird size to hit padding
     let oid = "rebuild-target";
     let bucket = "bkt";
-    let man_before = encode_and_write(
-        mount,
-        bucket,
-        oid,
-        &profile,
-        StorageTier::Hot,
-        &payload,
-    )
-    .unwrap();
+    let man_before =
+        encode_and_write(mount, bucket, oid, &profile, StorageTier::Hot, &payload).unwrap();
     assert_eq!(man_before.shard_count, 9);
     // delete 2 data shards + 1 parity
     for drop in [1usize, 4, 7] {
@@ -289,9 +267,7 @@ fn tr7_rebuild_job() {
         .collect();
     // sanity: verify loss-tolerance holds (drop shard 0)
     slots[0] = None;
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(crc64_ecma(&recovered), crc64_ecma(&payload));
 }
 
@@ -328,8 +304,7 @@ fn tr9_min_size_threshold() {
     // `total_shards` identical copies (no XOR/GF ops) and `is_replica` is
     // true.  Any object >= threshold runs the GF codec.
     reset_metrics();
-    let mut profile = EcProfile::default();
-    profile.min_obj_size = 1000;
+    let profile = EcProfile { min_obj_size: 1000, ..Default::default() };
     let engine = ReedSolomonEngine::new();
 
     // Small object → replica branch via encode_and_write
@@ -363,9 +338,7 @@ fn tr9_min_size_threshold() {
     // try engine-based decode (drop one parity)
     let mut slots: Vec<Option<Vec<u8>>> = shards_large.into_iter().map(Some).collect();
     slots[5] = None;
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, large.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, large.len()).unwrap();
     assert_eq!(recovered, large);
 }
 
@@ -398,9 +371,7 @@ fn tr10_crc64_integrity() {
     let slots: Vec<Option<Vec<u8>>> = (0..6)
         .map(|i| Some(std::fs::read(shard_path(mount, bucket, oid, i)).unwrap()))
         .collect();
-    let decoded = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let decoded = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_ne!(crc64_ecma(&decoded), man.crc64);
 }
 
@@ -445,9 +416,7 @@ fn tr11_concurrency_32() {
                 slots[drops[0]] = None;
                 slots[drops[1]] = None;
             }
-            let recovered = engine
-                .decode_reconstruct(&profile, &slots, bytes.len())
-                .unwrap();
+            let recovered = engine.decode_reconstruct(&profile, &slots, bytes.len()).unwrap();
             assert_eq!(
                 crc64_ecma(&recovered),
                 crc_before,
@@ -491,16 +460,20 @@ fn tr12_encode_histogram() {
     // individual encode() records between our guard and the inner metrics Vec
     // mutex.  Use >= lower bound (>= N is guaranteed) instead of exact
     // equality to remain robust under any --test-threads count.
-    assert!(after_count - before_count >= N, "encode count mismatch: expected >= {N}, got {}", after_count - before_count);
-    assert!(after_snap - before_snap >= N, "snapshot len mismatch: expected >= {N}, got {}", after_snap - before_snap);
+    assert!(
+        after_count - before_count >= N,
+        "encode count mismatch: expected >= {N}, got {}",
+        after_count - before_count
+    );
+    assert!(
+        after_snap - before_snap >= N,
+        "snapshot len mismatch: expected >= {N}, got {}",
+        after_snap - before_snap
+    );
     // All newly observed samples are small (< 1 minute of wall μs).
     let snap = encode_us_samples_snapshot();
-    let fresh: Vec<u64> = snap
-        .iter()
-        .skip(before_snap as usize)
-        .copied()
-        .take(N as usize)
-        .collect();
+    let fresh: Vec<u64> =
+        snap.iter().skip(before_snap as usize).copied().take(N as usize).collect();
     assert_eq!(fresh.len() as u64, N);
     for s in &fresh {
         assert!(*s < 60_000_000, "suspect encode latency: {s} μs");
@@ -548,9 +521,7 @@ fn tr14_gf8_interop() {
     let shards3 = engine.encode(&profile3, &data3).unwrap();
     let mut slots: Vec<Option<Vec<u8>>> = shards3.into_iter().map(Some).collect();
     slots[1] = None; // lose data shard 1
-    let recovered = engine
-        .decode_reconstruct(&profile3, &slots, data3.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile3, &slots, data3.len()).unwrap();
     assert_eq!(recovered, data3);
 }
 
@@ -586,9 +557,7 @@ fn tr15_rebuild_counter() {
         rng.fill_bytes(&mut payload);
         encode_and_write(mount, bucket, oid, profile, StorageTier::Hot, &payload).unwrap();
         std::fs::remove_file(shard_path(mount, bucket, oid, drop_shard)).unwrap();
-        let written = RebuildJob::new(mount, bucket, oid, vec![drop_shard])
-            .run()
-            .unwrap();
+        let written = RebuildJob::new(mount, bucket, oid, vec![drop_shard]).run().unwrap();
         assert_eq!(written, 1);
     }
 

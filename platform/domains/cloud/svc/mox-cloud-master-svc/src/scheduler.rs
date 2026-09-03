@@ -11,11 +11,15 @@
 //! 设计参考 SeaweedFS 的 Master 调度架构，结合 Rack/AZ 感知
 //! 和加权评分机制，支持千亿级文件的分布式调度。
 
-use crate::error::{MasterError, MasterResult};
-use crate::volume_allocator::VolumeInfo;
+use crate::{
+    error::{MasterError, MasterResult},
+    volume_allocator::VolumeInfo,
+};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 /// 调度权重配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,18 +34,15 @@ pub struct SchedulerWeights {
 
 impl Default for SchedulerWeights {
     fn default() -> Self {
-        SchedulerWeights {
-            capacity_weight: 50,
-            io_load_weight: 30,
-            network_weight: 20,
-        }
+        SchedulerWeights { capacity_weight: 50, io_load_weight: 30, network_weight: 20 }
     }
 }
 
 /// 副本放置策略
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum PlacementStrategy {
     /// 跨机架：副本分布在不同机架
+    #[default]
     RackAware,
     /// 跨可用区：副本分布在不同可用区
     ZoneAware,
@@ -51,11 +52,6 @@ pub enum PlacementStrategy {
     Random,
 }
 
-impl Default for PlacementStrategy {
-    fn default() -> Self {
-        PlacementStrategy::RackAware
-    }
-}
 
 /// 节点拓扑信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -73,7 +69,7 @@ pub struct NodeTopology {
 }
 
 /// 节点负载信息
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct NodeLoad {
     /// CPU 使用率（0-100）
     pub cpu_pct: u8,
@@ -87,17 +83,6 @@ pub struct NodeLoad {
     pub active_connections: u32,
 }
 
-impl Default for NodeLoad {
-    fn default() -> Self {
-        NodeLoad {
-            cpu_pct: 0,
-            memory_pct: 0,
-            iops: 0,
-            network_bps: 0,
-            active_connections: 0,
-        }
-    }
-}
 
 /// 调度用的节点完整信息
 #[derive(Debug, Clone)]
@@ -208,9 +193,10 @@ pub struct RebuildTask {
 }
 
 /// 数据温度（用于冷热分层调度）
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, Default)]
 pub enum DataTemperature {
     /// 热数据：高频访问
+    #[default]
     Hot,
     /// 温数据：中频访问
     Warm,
@@ -220,11 +206,6 @@ pub enum DataTemperature {
     Archive,
 }
 
-impl Default for DataTemperature {
-    fn default() -> Self {
-        DataTemperature::Hot
-    }
-}
 
 /// 分布式调度器
 ///
@@ -277,30 +258,12 @@ impl SchedulerStats {
 
     pub fn snapshot(&self) -> HashMap<String, u64> {
         let mut m = HashMap::new();
-        m.insert(
-            "scheduler_scheduling_total".into(),
-            *self.scheduling_total.lock(),
-        );
-        m.insert(
-            "scheduler_scheduling_success".into(),
-            *self.scheduling_success.lock(),
-        );
-        m.insert(
-            "scheduler_rebalance_plans".into(),
-            *self.rebalance_plans.lock(),
-        );
-        m.insert(
-            "scheduler_migrations_completed".into(),
-            *self.migrations_completed.lock(),
-        );
-        m.insert(
-            "scheduler_recoveries_total".into(),
-            *self.recoveries_total.lock(),
-        );
-        m.insert(
-            "scheduler_replicas_rebuilt".into(),
-            *self.replicas_rebuilt.lock(),
-        );
+        m.insert("scheduler_scheduling_total".into(), *self.scheduling_total.lock());
+        m.insert("scheduler_scheduling_success".into(), *self.scheduling_success.lock());
+        m.insert("scheduler_rebalance_plans".into(), *self.rebalance_plans.lock());
+        m.insert("scheduler_migrations_completed".into(), *self.migrations_completed.lock());
+        m.insert("scheduler_recoveries_total".into(), *self.recoveries_total.lock());
+        m.insert("scheduler_replicas_rebuilt".into(), *self.replicas_rebuilt.lock());
         m
     }
 }
@@ -342,16 +305,12 @@ impl DistributedScheduler {
 
     /// 注册节点拓扑信息
     pub fn register_topology(&self, topology: NodeTopology) {
-        self.topology
-            .write()
-            .insert(topology.node_id.clone(), topology);
+        self.topology.write().insert(topology.node_id.clone(), topology);
     }
 
     /// 更新节点负载
     pub fn update_node_load(&self, node_id: &str, load: NodeLoad) {
-        self.node_loads
-            .write()
-            .insert(node_id.to_string(), load);
+        self.node_loads.write().insert(node_id.to_string(), load);
     }
 
     /// 获取统计信息
@@ -373,20 +332,12 @@ impl DistributedScheduler {
         let weights = self.weights.read();
 
         // 容量得分：剩余容量比例，越高越好
-        let capacity_ratio = if node.capacity > 0 {
-            1.0 - (node.used as f64 / node.capacity as f64)
-        } else {
-            0.0
-        };
+        let capacity_ratio =
+            if node.capacity > 0 { 1.0 - (node.used as f64 / node.capacity as f64) } else { 0.0 };
         let capacity_score = capacity_ratio * 100.0;
 
         // IO 负载得分：CPU 越低越好
-        let load = self
-            .node_loads
-            .read()
-            .get(&node.id)
-            .cloned()
-            .unwrap_or_default();
+        let load = self.node_loads.read().get(&node.id).cloned().unwrap_or_default();
         let io_score = 100.0 - load.cpu_pct as f64;
 
         // 网络得分：延迟等级越低越好
@@ -408,7 +359,7 @@ impl DistributedScheduler {
             + network_score * weights.network_weight as f64)
             / total_weight;
 
-        weighted.max(0.0).min(100.0)
+        weighted.clamp(0.0, 100.0)
     }
 
     /// 从候选节点中选择最佳的 N 个（考虑放置策略）
@@ -431,10 +382,8 @@ impl DistributedScheduler {
         let strategy = *self.placement_strategy.read();
 
         // 计算所有候选节点的得分
-        let mut scored: Vec<(f64, VolumeInfo)> = candidates
-            .iter()
-            .map(|v| (self.compute_node_score(v), v.clone()))
-            .collect();
+        let mut scored: Vec<(f64, VolumeInfo)> =
+            candidates.iter().map(|v| (self.compute_node_score(v), v.clone())).collect();
 
         // 按得分降序排列
         scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
@@ -443,17 +392,17 @@ impl DistributedScheduler {
         let selected = match strategy {
             PlacementStrategy::RackAware => {
                 self.select_rack_aware(&scored, count, existing_nodes)?
-            }
+            },
             PlacementStrategy::ZoneAware => {
                 self.select_zone_aware(&scored, count, existing_nodes)?
-            }
+            },
             PlacementStrategy::AntiAffinity => {
                 self.select_anti_affinity(&scored, count, existing_nodes)?
-            }
+            },
             PlacementStrategy::Random => {
                 // 随机选 count 个（从高分到低分前 2*count 中随机）
                 self.select_random(&scored, count)?
-            }
+            },
         };
 
         *self.stats.scheduling_success.lock() += 1;
@@ -631,10 +580,7 @@ impl DistributedScheduler {
             if selected_ids.contains(&node.id) || !node.is_alive {
                 continue;
             }
-            let dc = topo
-                .get(&node.id)
-                .map(|t| t.data_center.clone())
-                .unwrap_or_default();
+            let dc = topo.get(&node.id).map(|t| t.data_center.clone()).unwrap_or_default();
             let is_new_dc = !used_keys.iter().any(|k| k.starts_with(&format!("{}:", dc)));
             if is_new_dc {
                 let key = format!(
@@ -660,9 +606,8 @@ impl DistributedScheduler {
                     continue;
                 }
                 if let Some(t) = topo.get(&node.id) {
-                    let is_new_az = !used_keys
-                        .iter()
-                        .any(|k| k.ends_with(&format!(":{}:{}", t.zone, t.rack)));
+                    let is_new_az =
+                        !used_keys.iter().any(|k| k.ends_with(&format!(":{}:{}", t.zone, t.rack)));
                     if is_new_az {
                         let key = format!("{}:{}:{}", t.data_center, t.zone, t.rack);
                         used_keys.insert(key);
@@ -783,8 +728,7 @@ impl DistributedScheduler {
             }
             let src_usage = src.used as f64 / src.capacity as f64;
             let avg_ratio = avg_usage_pct as f64 / 100.0;
-            let bytes_to_move =
-                ((src_usage - avg_ratio) * src.capacity as f64).max(0.0) as u64;
+            let bytes_to_move = ((src_usage - avg_ratio) * src.capacity as f64).max(0.0) as u64;
 
             if bytes_to_move < 1024 * 1024 {
                 continue; // 小于 1MB 不迁移
@@ -800,8 +744,8 @@ impl DistributedScheduler {
                 })
                 .unwrap();
 
-            let actual_bytes = bytes_to_move
-                .min(best_target.capacity.saturating_sub(best_target.used));
+            let actual_bytes =
+                bytes_to_move.min(best_target.capacity.saturating_sub(best_target.used));
 
             if actual_bytes == 0 {
                 continue;
@@ -862,11 +806,8 @@ impl DistributedScheduler {
         }
 
         let mean: f64 = usages.iter().sum::<f64>() / usages.len() as f64;
-        let variance: f64 = usages
-            .iter()
-            .map(|u| (u - mean).powi(2))
-            .sum::<f64>()
-            / usages.len() as f64;
+        let variance: f64 =
+            usages.iter().map(|u| (u - mean).powi(2)).sum::<f64>() / usages.len() as f64;
 
         variance.sqrt()
     }
@@ -920,10 +861,7 @@ impl DistributedScheduler {
         for set_id in &affected_sets {
             let volumes = replica_map.get(set_id).cloned().unwrap_or_default();
             // 找丢失的副本
-            let lost_count = volumes
-                .iter()
-                .filter(|v| failed_nodes.contains(v))
-                .count();
+            let lost_count = volumes.iter().filter(|v| failed_nodes.contains(v)).count();
 
             for lost_node in volumes.iter().filter(|v| failed_nodes.contains(v)) {
                 // 找一个不在该副本集中的健康节点作为重建目标
@@ -966,10 +904,8 @@ impl DistributedScheduler {
     pub fn generate_recovery_plan(&self, nodes: &[VolumeInfo]) -> RecoveryPlan {
         let now = now_ms();
         let replica_map: HashMap<String, Vec<String>> = HashMap::new();
-        let last_heartbeats: HashMap<String, u64> = nodes
-            .iter()
-            .map(|n| (n.id.clone(), if n.is_alive { now } else { 0 }))
-            .collect();
+        let last_heartbeats: HashMap<String, u64> =
+            nodes.iter().map(|n| (n.id.clone(), if n.is_alive { now } else { 0 })).collect();
         self.detect_and_plan_recovery(nodes, &replica_map, &last_heartbeats)
     }
 
@@ -985,10 +921,7 @@ impl DistributedScheduler {
     /// 获取待执行的迁移任务（考虑并发限制）
     pub fn get_pending_migrations(&self, max_count: usize) -> Vec<VolumeMigrationTask> {
         let tasks = self.migration_tasks.lock();
-        let running_count = tasks
-            .iter()
-            .filter(|t| t.status == MigrationStatus::Running)
-            .count();
+        let running_count = tasks.iter().filter(|t| t.status == MigrationStatus::Running).count();
         let max_concurrent = *self.max_concurrent_migrations.lock();
         let available = max_concurrent.saturating_sub(running_count).min(max_count);
 
@@ -1029,10 +962,7 @@ impl DistributedScheduler {
             }
         }
 
-        Err(MasterError::Internal(format!(
-            "migration task {} not found",
-            task_id
-        )))
+        Err(MasterError::Internal(format!("migration task {} not found", task_id)))
     }
 
     /// 获取所有迁移任务
@@ -1115,21 +1045,13 @@ fn now_ms() -> u64 {
 fn generate_migration_id() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    format!(
-        "mig-{:08x}{:08x}",
-        rng.gen::<u32>(),
-        rng.gen::<u32>()
-    )
+    format!("mig-{:08x}{:08x}", rng.gen::<u32>(), rng.gen::<u32>())
 }
 
 fn generate_plan_id() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    format!(
-        "plan-{:08x}{:08x}",
-        rng.gen::<u32>(),
-        rng.gen::<u32>()
-    )
+    format!("plan-{:08x}{:08x}", rng.gen::<u32>(), rng.gen::<u32>())
 }
 
 // ---------------------------------------------------------------------------
@@ -1159,7 +1081,7 @@ mod tests {
         let scheduler = make_scheduler();
         let node = make_volume("v1", 1000, 200, true);
         let score = scheduler.compute_node_score(&node);
-        assert!(score >= 0.0 && score <= 100.0);
+        assert!((0.0..=100.0).contains(&score));
     }
 
     #[test]
@@ -1177,9 +1099,8 @@ mod tests {
         let scheduler = make_scheduler();
         scheduler.set_placement_strategy(PlacementStrategy::Random);
 
-        let nodes: Vec<VolumeInfo> = (0..10)
-            .map(|i| make_volume(&format!("v{}", i), 1000, i * 100, true))
-            .collect();
+        let nodes: Vec<VolumeInfo> =
+            (0..10).map(|i| make_volume(&format!("v{}", i), 1000, i * 100, true)).collect();
 
         let selected = scheduler.select_best_nodes(&nodes, 3, &[]).unwrap();
         assert_eq!(selected.len(), 3);
@@ -1201,19 +1122,16 @@ mod tests {
             });
         }
 
-        let nodes: Vec<VolumeInfo> = (0..6)
-            .map(|i| make_volume(&format!("v{}", i), 1000, i * 100, true))
-            .collect();
+        let nodes: Vec<VolumeInfo> =
+            (0..6).map(|i| make_volume(&format!("v{}", i), 1000, i * 100, true)).collect();
 
         let selected = scheduler.select_best_nodes(&nodes, 3, &[]).unwrap();
         assert_eq!(selected.len(), 3);
 
         // 验证是否来自不同机架
         let topo = scheduler.topology.read();
-        let racks: HashSet<String> = selected
-            .iter()
-            .map(|n| topo.get(&n.id).unwrap().rack.clone())
-            .collect();
+        let racks: HashSet<String> =
+            selected.iter().map(|n| topo.get(&n.id).unwrap().rack.clone()).collect();
         assert_eq!(racks.len(), 3);
     }
 
@@ -1232,27 +1150,23 @@ mod tests {
             });
         }
 
-        let nodes: Vec<VolumeInfo> = (0..6)
-            .map(|i| make_volume(&format!("v{}", i), 1000, i * 100, true))
-            .collect();
+        let nodes: Vec<VolumeInfo> =
+            (0..6).map(|i| make_volume(&format!("v{}", i), 1000, i * 100, true)).collect();
 
         let selected = scheduler.select_best_nodes(&nodes, 2, &[]).unwrap();
         assert_eq!(selected.len(), 2);
 
         let topo = scheduler.topology.read();
-        let zones: HashSet<String> = selected
-            .iter()
-            .map(|n| topo.get(&n.id).unwrap().zone.clone())
-            .collect();
+        let zones: HashSet<String> =
+            selected.iter().map(|n| topo.get(&n.id).unwrap().zone.clone()).collect();
         assert_eq!(zones.len(), 2);
     }
 
     #[test]
     fn test_select_insufficient_nodes() {
         let scheduler = make_scheduler();
-        let nodes: Vec<VolumeInfo> = (0..2)
-            .map(|i| make_volume(&format!("v{}", i), 1000, 0, true))
-            .collect();
+        let nodes: Vec<VolumeInfo> =
+            (0..2).map(|i| make_volume(&format!("v{}", i), 1000, 0, true)).collect();
 
         let result = scheduler.select_best_nodes(&nodes, 5, &[]);
         assert!(result.is_err());
@@ -1288,7 +1202,7 @@ mod tests {
         let scheduler = make_scheduler();
         let mut nodes = Vec::new();
         let capacity = 100 * 1024 * 1024 * 1024; // 100 GB
-        // 一个几乎满的节点 (90% used = 90GB)
+                                                 // 一个几乎满的节点 (90% used = 90GB)
         nodes.push(make_volume("v1", capacity, 90 * 1024 * 1024 * 1024, true));
         // 一个几乎空的节点 (10% used = 10GB)
         nodes.push(make_volume("v2", capacity, 10 * 1024 * 1024 * 1024, true));
@@ -1302,9 +1216,8 @@ mod tests {
     #[test]
     fn test_rebalance_plan_balanced() {
         let scheduler = make_scheduler();
-        let nodes: Vec<VolumeInfo> = (0..5)
-            .map(|i| make_volume(&format!("v{}", i), 1000, 500, true))
-            .collect();
+        let nodes: Vec<VolumeInfo> =
+            (0..5).map(|i| make_volume(&format!("v{}", i), 1000, 500, true)).collect();
 
         let plan = scheduler.generate_rebalance_plan(&nodes, 10);
         // 均衡的集群应该没有迁移
@@ -1345,12 +1258,7 @@ mod tests {
 
         // 完成迁移
         scheduler
-            .update_migration_status(
-                "mig-test-1",
-                MigrationStatus::Completed,
-                1024 * 1024,
-                None,
-            )
+            .update_migration_status("mig-test-1", MigrationStatus::Completed, 1024 * 1024, None)
             .unwrap();
 
         let tasks = scheduler.list_migrations();
@@ -1362,12 +1270,8 @@ mod tests {
     #[test]
     fn test_migration_not_found() {
         let scheduler = make_scheduler();
-        let result = scheduler.update_migration_status(
-            "nonexistent",
-            MigrationStatus::Running,
-            0,
-            None,
-        );
+        let result =
+            scheduler.update_migration_status("nonexistent", MigrationStatus::Running, 0, None);
         assert!(result.is_err());
     }
 
@@ -1408,7 +1312,10 @@ mod tests {
         ];
 
         let mut replica_map = HashMap::new();
-        replica_map.insert("set-1".to_string(), vec!["v1".to_string(), "v2".to_string(), "v3".to_string()]);
+        replica_map.insert(
+            "set-1".to_string(),
+            vec!["v1".to_string(), "v2".to_string(), "v3".to_string()],
+        );
 
         let mut last_hb = HashMap::new();
         last_hb.insert("v1".to_string(), now_ms());
@@ -1416,7 +1323,7 @@ mod tests {
         last_hb.insert("v3".to_string(), 0); // 超时
 
         let plan = scheduler.detect_and_plan_recovery(&nodes, &replica_map, &last_hb);
-        assert!(plan.failed_nodes.len() >= 1);
+        assert!(!plan.failed_nodes.is_empty());
         assert!(plan.affected_volumes >= 1);
     }
 

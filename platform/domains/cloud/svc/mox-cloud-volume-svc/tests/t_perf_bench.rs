@@ -25,12 +25,14 @@
 
 use bytes::Bytes;
 use mox_cloud_volume_svc::{
-    CauchyReedSolomon, EcProfile, ReedSolomonEngine, VolumeServer, crc32c_bytes, crc64_ecma,
-    encode_and_write, StorageTier,
+    crc32c_bytes, crc64_ecma, encode_and_write, CauchyReedSolomon, EcProfile, ReedSolomonEngine,
+    StorageTier, VolumeServer,
 };
 use rand::RngCore;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 // =========================================================================
 // 辅助工具
@@ -79,7 +81,13 @@ impl BenchResult {
 }
 
 /// 运行基准测试并返回结果
-fn bench<F: FnMut()>(name: &str, bytes_per_op: u64, mut f: F, min_ops: u64, min_duration: Duration) -> BenchResult {
+fn bench<F: FnMut()>(
+    name: &str,
+    bytes_per_op: u64,
+    mut f: F,
+    min_ops: u64,
+    min_duration: Duration,
+) -> BenchResult {
     // Warmup
     for _ in 0..(min_ops / 10).max(1) {
         f();
@@ -94,12 +102,7 @@ fn bench<F: FnMut()>(name: &str, bytes_per_op: u64, mut f: F, min_ops: u64, min_
     }
     let elapsed = start.elapsed();
 
-    BenchResult {
-        name: name.to_string(),
-        total_ops: ops,
-        total_bytes: ops * bytes_per_op,
-        elapsed,
-    }
+    BenchResult { name: name.to_string(), total_ops: ops, total_bytes: ops * bytes_per_op, elapsed }
 }
 
 // =========================================================================
@@ -138,8 +141,7 @@ fn perf01_02_4kb_random_read_iops() {
 
     // Pre-populate
     for i in 0..1000 {
-        vs.write_chunk(&format!("chunk-4kr-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("chunk-4kr-{}", i), data.clone()).unwrap();
     }
 
     let mut i = 0u64;
@@ -189,8 +191,7 @@ fn perf01_04_16kb_random_read_iops() {
     let data = Bytes::from(random_bytes(16 * 1024));
 
     for i in 0..500 {
-        vs.write_chunk(&format!("chunk-16kr-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("chunk-16kr-{}", i), data.clone()).unwrap();
     }
 
     let mut i = 0u64;
@@ -240,8 +241,7 @@ fn perf01_06_64kb_random_read_iops() {
     let data = Bytes::from(random_bytes(64 * 1024));
 
     for i in 0..200 {
-        vs.write_chunk(&format!("chunk-64kr-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("chunk-64kr-{}", i), data.clone()).unwrap();
     }
 
     let mut i = 0u64;
@@ -295,8 +295,7 @@ fn perf02_02_1mb_seq_read_throughput() {
     let data = Bytes::from(random_bytes(1024 * 1024));
 
     for i in 0..50 {
-        vs.write_chunk(&format!("chunk-1mr-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("chunk-1mr-{}", i), data.clone()).unwrap();
     }
 
     let mut i = 0u64;
@@ -346,8 +345,7 @@ fn perf02_04_4mb_seq_read_throughput() {
     let data = Bytes::from(random_bytes(4 * 1024 * 1024));
 
     for i in 0..20 {
-        vs.write_chunk(&format!("chunk-4mr-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("chunk-4mr-{}", i), data.clone()).unwrap();
     }
 
     let mut i = 0u64;
@@ -397,8 +395,7 @@ fn perf02_06_16mb_seq_read_throughput() {
     let data = Bytes::from(random_bytes(16 * 1024 * 1024));
 
     for i in 0..5 {
-        vs.write_chunk(&format!("chunk-16mr-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("chunk-16mr-{}", i), data.clone()).unwrap();
     }
 
     let mut i = 0u64;
@@ -463,9 +460,7 @@ fn perf03_02_rs_4plus2_decode_throughput() {
         "RS(4+2) decode 256KB (2 lost)",
         256 * 1024,
         || {
-            let _ = engine
-                .decode_reconstruct(&profile, &slots, data.len())
-                .unwrap();
+            let _ = engine.decode_reconstruct(&profile, &slots, data.len()).unwrap();
             count += 1;
         },
         100,
@@ -673,8 +668,7 @@ fn perf04_02_chunk_read_latency() {
     let data = Bytes::from_static(b"read latency test");
 
     for i in 0..1000 {
-        vs.write_chunk(&format!("rd-lat-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("rd-lat-{}", i), data.clone()).unwrap();
     }
 
     let mut latencies = Vec::with_capacity(1000);
@@ -706,8 +700,7 @@ fn perf04_03_chunk_delete_latency() {
     let data = Bytes::from_static(b"delete latency test");
 
     for i in 0..1000 {
-        vs.write_chunk(&format!("del-lat-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("del-lat-{}", i), data.clone()).unwrap();
     }
 
     let mut latencies = Vec::with_capacity(1000);
@@ -797,8 +790,7 @@ fn perf05_02_batch_delete_throughput() {
     let count = 10_000;
 
     for i in 0..count {
-        vs.write_chunk(&format!("batch-del-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("batch-del-{}", i), data.clone()).unwrap();
     }
 
     let start = Instant::now();
@@ -827,8 +819,7 @@ fn perf05_03_batch_read_throughput() {
     let count = 10_000;
 
     for i in 0..count {
-        vs.write_chunk(&format!("batch-rd-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("batch-rd-{}", i), data.clone()).unwrap();
     }
 
     let start = Instant::now();
@@ -860,10 +851,7 @@ fn perf05_03_batch_read_throughput() {
 /// 测试：并发写入 - 4 线程
 #[test]
 fn perf06_01_concurrent_write_4_threads() {
-    let vs = Arc::new(VolumeServer::new(
-        "vol-conc-w4".to_string(),
-        50 * 1024 * 1024 * 1024,
-    ));
+    let vs = Arc::new(VolumeServer::new("vol-conc-w4".to_string(), 50 * 1024 * 1024 * 1024));
     let data = Arc::new(Bytes::from(random_bytes(4096)));
     let per_thread = 2500;
 
@@ -898,10 +886,7 @@ fn perf06_01_concurrent_write_4_threads() {
 /// 测试：并发写入 - 8 线程
 #[test]
 fn perf06_02_concurrent_write_8_threads() {
-    let vs = Arc::new(VolumeServer::new(
-        "vol-conc-w8".to_string(),
-        50 * 1024 * 1024 * 1024,
-    ));
+    let vs = Arc::new(VolumeServer::new("vol-conc-w8".to_string(), 50 * 1024 * 1024 * 1024));
     let data = Arc::new(Bytes::from(random_bytes(4096)));
     let per_thread = 1250;
 
@@ -936,16 +921,12 @@ fn perf06_02_concurrent_write_8_threads() {
 /// 测试：并发读取 - 4 线程
 #[test]
 fn perf06_03_concurrent_read_4_threads() {
-    let vs = Arc::new(VolumeServer::new(
-        "vol-conc-r4".to_string(),
-        50 * 1024 * 1024 * 1024,
-    ));
+    let vs = Arc::new(VolumeServer::new("vol-conc-r4".to_string(), 50 * 1024 * 1024 * 1024));
     let data = Bytes::from(random_bytes(4096));
 
     // Pre-populate
     for i in 0..1000 {
-        vs.write_chunk(&format!("conc-rd-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("conc-rd-{}", i), data.clone()).unwrap();
     }
 
     let per_thread = 2500;
@@ -967,10 +948,7 @@ fn perf06_03_concurrent_read_4_threads() {
 
     let iops = total_ops as f64 / elapsed.as_secs_f64();
 
-    eprintln!(
-        "  Concurrent read (4 threads, {} ops): {:.0} ops/s",
-        total_ops, iops
-    );
+    eprintln!("  Concurrent read (4 threads, {} ops): {:.0} ops/s", total_ops, iops);
 
     assert!(iops > 0.0);
 }
@@ -978,15 +956,11 @@ fn perf06_03_concurrent_read_4_threads() {
 /// 测试：并发读取 - 16 线程
 #[test]
 fn perf06_04_concurrent_read_16_threads() {
-    let vs = Arc::new(VolumeServer::new(
-        "vol-conc-r16".to_string(),
-        50 * 1024 * 1024 * 1024,
-    ));
+    let vs = Arc::new(VolumeServer::new("vol-conc-r16".to_string(), 50 * 1024 * 1024 * 1024));
     let data = Bytes::from(random_bytes(4096));
 
     for i in 0..1000 {
-        vs.write_chunk(&format!("conc-rd16-{}", i), data.clone())
-            .unwrap();
+        vs.write_chunk(&format!("conc-rd16-{}", i), data.clone()).unwrap();
     }
 
     let per_thread = 1250;
@@ -1008,10 +982,7 @@ fn perf06_04_concurrent_read_16_threads() {
 
     let iops = total_ops as f64 / elapsed.as_secs_f64();
 
-    eprintln!(
-        "  Concurrent read (16 threads, {} ops): {:.0} ops/s",
-        total_ops, iops
-    );
+    eprintln!("  Concurrent read (16 threads, {} ops): {:.0} ops/s", total_ops, iops);
 
     assert!(iops > 0.0);
 }
@@ -1024,15 +995,12 @@ fn perf06_05_concurrency_scaling_comparison() {
     let mut results = Vec::new();
 
     for threads in thread_counts {
-        let vs = Arc::new(VolumeServer::new(
-            format!("vol-scale-{}", threads),
-            20 * 1024 * 1024 * 1024,
-        ));
+        let vs =
+            Arc::new(VolumeServer::new(format!("vol-scale-{}", threads), 20 * 1024 * 1024 * 1024));
 
         // Pre-populate for reads
         for i in 0..500 {
-            vs.write_chunk(&format!("sc-{}-{}", threads, i), data.clone())
-                .unwrap();
+            vs.write_chunk(&format!("sc-{}-{}", threads, i), data.clone()).unwrap();
         }
 
         let per_thread = 2000 / threads.max(1);
@@ -1216,10 +1184,11 @@ fn perf09_01_comprehensive_performance_report() {
     eprintln!("  Volume Service Performance Benchmark Report");
     eprintln!("{:=<90}", "=");
     eprintln!();
-    eprintln!("  {:<40} | {:>10} | {:>12} | {:>12} | {:>12}",
-        "Benchmark", "Ops", "IOPS", "Throughput", "Avg Latency");
-    eprintln!("  {:->40}-+-{:->10}-+-{:->12}-+-{:->12}-+-{:->12}",
-        "", "", "", "", "");
+    eprintln!(
+        "  {:<40} | {:>10} | {:>12} | {:>12} | {:>12}",
+        "Benchmark", "Ops", "IOPS", "Throughput", "Avg Latency"
+    );
+    eprintln!("  {:->40}-+-{:->10}-+-{:->12}-+-{:->12}-+-{:->12}", "", "", "", "", "");
 
     // Small file IOPS
     let vs_rw = VolumeServer::new("vol-summary".to_string(), 20 * 1024 * 1024 * 1024);
@@ -1227,18 +1196,30 @@ fn perf09_01_comprehensive_performance_report() {
 
     // 4KB write
     let mut i = 0u64;
-    let r1 = bench("4KB random write", 4 * 1024, || {
-        vs_rw.write_chunk(&format!("sum-w-{}", i), data_4k.clone()).unwrap();
-        i += 1;
-    }, 200, Duration::from_millis(200));
+    let r1 = bench(
+        "4KB random write",
+        4 * 1024,
+        || {
+            vs_rw.write_chunk(&format!("sum-w-{}", i), data_4k.clone()).unwrap();
+            i += 1;
+        },
+        200,
+        Duration::from_millis(200),
+    );
     print_summary_row(&r1);
 
     // 4KB read
     let mut i = 0u64;
-    let r2 = bench("4KB random read", 4 * 1024, || {
-        let _ = vs_rw.read_chunk(&format!("sum-w-{}", i % 200)).unwrap();
-        i += 1;
-    }, 500, Duration::from_millis(200));
+    let r2 = bench(
+        "4KB random read",
+        4 * 1024,
+        || {
+            let _ = vs_rw.read_chunk(&format!("sum-w-{}", i % 200)).unwrap();
+            i += 1;
+        },
+        500,
+        Duration::from_millis(200),
+    );
     print_summary_row(&r2);
 
     // RS encode
@@ -1246,14 +1227,19 @@ fn perf09_01_comprehensive_performance_report() {
     let profile = EcProfile::with_default_min_size(4, 2).unwrap();
     let data_256k = random_bytes(256 * 1024);
     let mut count = 0u64;
-    let r3 = bench("RS(4+2) encode 256KB", 256 * 1024, || {
-        let _ = engine.encode(&profile, &data_256k).unwrap();
-        count += 1;
-    }, 100, Duration::from_millis(200));
+    let r3 = bench(
+        "RS(4+2) encode 256KB",
+        256 * 1024,
+        || {
+            let _ = engine.encode(&profile, &data_256k).unwrap();
+            count += 1;
+        },
+        100,
+        Duration::from_millis(200),
+    );
     print_summary_row(&r3);
 
-    eprintln!("  {:->40}-+-{:->10}-+-{:->12}-+-{:->12}-+-{:->12}",
-        "", "", "", "", "");
+    eprintln!("  {:->40}-+-{:->10}-+-{:->12}-+-{:->12}-+-{:->12}", "", "", "", "", "");
     eprintln!("  * All benchmarks run in-memory (no disk I/O for VolumeServer)");
     eprintln!("  * RS benchmarks measure pure CPU encoding/decoding time");
     eprintln!("  * Results vary based on CPU, memory, and system load");

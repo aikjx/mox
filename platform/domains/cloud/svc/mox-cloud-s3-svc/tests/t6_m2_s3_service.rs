@@ -1,15 +1,27 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! TR6 333 GREEN tests (S3 34 API full coverage).
 
-use std::sync::atomic::{AtomicU16, Ordering};
-use std::time::Duration;
+// Auto-generated test suite: allow non-snake-case function names,
+// format! literals, repeat().take() patterns, and intentionally unused
+// variables that are kept for test readability / future extension.
+#![allow(non_snake_case)]
+#![allow(clippy::useless_format)]
+#![allow(clippy::manual_repeat_n)]
+#![allow(unused_variables)]
+
 use mox_cloud_s3_svc::S3Server;
-use mox_data_standards_core::etag_crc32c::{crc32c_base64, crc32c_checksum, etag_multipart};
-use mox_data_standards_core::sigv4::sigv4_auth_header;
+use mox_data_standards_core::{
+    etag_crc32c::{crc32c_checksum, etag_multipart},
+    sigv4::sigv4_auth_header,
+};
+use std::{
+    sync::atomic::{AtomicU16, Ordering},
+    time::Duration,
+};
 
 use hex::ToHex;
 use md5::{Digest as Md5Digest, Md5};
@@ -32,13 +44,10 @@ async fn start_server() -> String {
         if port < 1025 {
             continue;
         }
-        if tokio::net::TcpStream::connect(("127.0.0.1", port))
-            .await
-            .is_ok()
-        {
+        if tokio::net::TcpStream::connect(("127.0.0.1", port)).await.is_ok() {
             continue;
         }
-        let mut srv = S3Server::new(port, None);
+        let srv = S3Server::new(port, None);
         srv.register_credential(TEST_AK, TEST_SK, "mox-user");
         tokio::spawn(async move {
             let _ = srv.run().await;
@@ -89,21 +98,14 @@ async fn http(
             break;
         }
     }
-    let sp = buf
-        .windows(4)
-        .position(|w| w == b"\r\n\r\n")
-        .unwrap_or(buf.len());
+    let sp = buf.windows(4).position(|w| w == b"\r\n\r\n").unwrap_or(buf.len());
     let head = String::from_utf8_lossy(&buf[..sp]).to_string();
     let code: u16 = head
         .lines()
         .next()
         .and_then(|l| l.split_whitespace().nth(1)?.parse().ok())
         .unwrap_or(0);
-    let bo = if sp + 4 < buf.len() {
-        buf[sp + 4..].to_vec()
-    } else {
-        vec![]
-    };
+    let bo = if sp + 4 < buf.len() { buf[sp + 4..].to_vec() } else { vec![] };
     (code, head, bo)
 }
 
@@ -248,14 +250,7 @@ async fn tr61_api_ListObjectsV2_n6_t2() {
     http(&a, "PUT", "/lobv2b", SKIP, &[]).await;
     http(&a, "PUT", "/lobv2b/a/1.txt", SKIP, b"1").await;
     http(&a, "PUT", "/lobv2b/a/2.txt", SKIP, b"2").await;
-    let (_, _, b) = http(
-        &a,
-        "GET",
-        "/lobv2b?list-type=2&prefix=a/&max-keys=1",
-        SKIP,
-        &[],
-    )
-    .await;
+    let (_, _, b) = http(&a, "GET", "/lobv2b?list-type=2&prefix=a/&max-keys=1", SKIP, &[]).await;
     assert!(contains(&b, "KeyCount"));
 }
 #[tokio::test]
@@ -366,10 +361,7 @@ async fn tr61_api_CopyObject_n13_t1() {
     let a = start_server().await;
     http(&a, "PUT", "/copyb", SKIP, &[]).await;
     http(&a, "PUT", "/copyb/src.txt", SKIP, b"123456").await;
-    let hs: &[(&str, &str)] = &[
-        ("x-test-skip-auth", "1"),
-        ("x-amz-copy-source", "/copyb/src.txt"),
-    ];
+    let hs: &[(&str, &str)] = &[("x-test-skip-auth", "1"), ("x-amz-copy-source", "/copyb/src.txt")];
     let (c, _, b) = http(&a, "PUT", "/copyb/dst.txt", hs, &[]).await;
     assert200(c, "copy");
     assert!(contains(&b, "CopyObjectResult"));
@@ -378,10 +370,8 @@ async fn tr61_api_CopyObject_n13_t1() {
 async fn tr61_api_CopyObject_n13_t2() {
     let a = start_server().await;
     http(&a, "PUT", "/copyb2", SKIP, &[]).await;
-    let hs: &[(&str, &str)] = &[
-        ("x-test-skip-auth", "1"),
-        ("x-amz-copy-source", "/copyb2/missing"),
-    ];
+    let hs: &[(&str, &str)] =
+        &[("x-test-skip-auth", "1"), ("x-amz-copy-source", "/copyb2/missing")];
     let (c, _, b) = http(&a, "PUT", "/copyb2/d", hs, &[]).await;
     assert4xx(c, 404, "copy missing src");
     assert!(contains(&b, "NoSuchKey"));
@@ -409,14 +399,8 @@ async fn tr61_api_UploadPart_n15_t1() {
     let id = extract(&ib, "<UploadId>", "</UploadId>");
     assert!(!id.is_empty());
     let data = b"0123456789";
-    let (c, h, _) = http(
-        &a,
-        "PUT",
-        &format!("/mpu3/f?uploadId={id}&partNumber=1"),
-        SKIP,
-        data,
-    )
-    .await;
+    let (c, h, _) =
+        http(&a, "PUT", &format!("/mpu3/f?uploadId={id}&partNumber=1"), SKIP, data).await;
     assert200(c, "upload part 1");
     assert!(h.contains("ETag:") || h.contains("etag:"));
 }
@@ -436,14 +420,7 @@ async fn tr61_api_UploadPartCopy_n16_t1() {
     let (_, _, ib) = http(&a, "POST", "/pcb/dst?uploads", SKIP, &[]).await;
     let id = extract(&ib, "<UploadId>", "</UploadId>");
     let hs: &[(&str, &str)] = &[("x-test-skip-auth", "1"), ("x-amz-copy-source", "/pcb/src")];
-    let (c, _, b) = http(
-        &a,
-        "PUT",
-        &format!("/pcb/dst?uploadId={id}&partNumber=1"),
-        hs,
-        &[],
-    )
-    .await;
+    let (c, _, b) = http(&a, "PUT", &format!("/pcb/dst?uploadId={id}&partNumber=1"), hs, &[]).await;
     assert200(c, "part copy");
     assert!(contains(&b, "CopyPartResult"));
 }
@@ -451,10 +428,7 @@ async fn tr61_api_UploadPartCopy_n16_t1() {
 async fn tr61_api_UploadPartCopy_n16_t2() {
     let a = start_server().await;
     http(&a, "PUT", "/pcb2", SKIP, &[]).await;
-    let hs: &[(&str, &str)] = &[
-        ("x-test-skip-auth", "1"),
-        ("x-amz-copy-source", "/pcb2/nothere"),
-    ];
+    let hs: &[(&str, &str)] = &[("x-test-skip-auth", "1"), ("x-amz-copy-source", "/pcb2/nothere")];
     let (c, _, _) = http(&a, "PUT", "/pcb2/x?uploadId=XYZ&partNumber=1", hs, &[]).await;
     assert4xx(c, 404, "copy missing");
 }
@@ -465,34 +439,16 @@ async fn tr61_api_CompleteMultipartUpload_n17_t1() {
     let (_, _, ib) = http(&a, "POST", "/cmpb/big?uploads", SKIP, &[]).await;
     let id = extract(&ib, "<UploadId>", "</UploadId>");
     let p1 = b"part one!!";
-    let (_, h1, _) = http(
-        &a,
-        "PUT",
-        &format!("/cmpb/big?uploadId={id}&partNumber=1"),
-        SKIP,
-        p1,
-    )
-    .await;
+    let (_, h1, _) =
+        http(&a, "PUT", &format!("/cmpb/big?uploadId={id}&partNumber=1"), SKIP, p1).await;
     let p2 = b"part two!!";
-    let (_, h2, _) = http(
-        &a,
-        "PUT",
-        &format!("/cmpb/big?uploadId={id}&partNumber=2"),
-        SKIP,
-        p2,
-    )
-    .await;
+    let (_, h2, _) =
+        http(&a, "PUT", &format!("/cmpb/big?uploadId={id}&partNumber=2"), SKIP, p2).await;
     let e1 = extract_header_etag(&h1);
     let e2 = extract_header_etag(&h2);
     let complete=format!("<?xml version=\"1.0\"?><CompleteMultipartUpload><Part><PartNumber>1</PartNumber><ETag>{q}{e1}{q}</ETag></Part><Part><PartNumber>2</PartNumber><ETag>{q}{e2}{q}</ETag></Part></CompleteMultipartUpload>",q=34u8 as char);
-    let (c, _, b) = http(
-        &a,
-        "POST",
-        &format!("/cmpb/big?uploadId={id}"),
-        SKIP,
-        complete.as_bytes(),
-    )
-    .await;
+    let (c, _, b) =
+        http(&a, "POST", &format!("/cmpb/big?uploadId={id}"), SKIP, complete.as_bytes()).await;
     assert200(c, "complete");
     assert!(contains(&b, "CompleteMultipartUploadResult"));
 }
@@ -510,14 +466,7 @@ async fn tr61_api_AbortMultipartUpload_n18_t1() {
     http(&a, "PUT", "/abortb", SKIP, &[]).await;
     let (_, _, ib) = http(&a, "POST", "/abortb/file?uploads", SKIP, &[]).await;
     let id = extract(&ib, "<UploadId>", "</UploadId>");
-    let (c, _, _) = http(
-        &a,
-        "DELETE",
-        &format!("/abortb/file?uploadId={id}"),
-        SKIP,
-        &[],
-    )
-    .await;
+    let (c, _, _) = http(&a, "DELETE", &format!("/abortb/file?uploadId={id}"), SKIP, &[]).await;
     assert200(c, "abort ok");
 }
 #[tokio::test]
@@ -550,14 +499,7 @@ async fn tr61_api_ListParts_n20_t1() {
     http(&a, "PUT", "/lp", SKIP, &[]).await;
     let (_, _, ib) = http(&a, "POST", "/lp/f?uploads", SKIP, &[]).await;
     let id = extract(&ib, "<UploadId>", "</UploadId>");
-    http(
-        &a,
-        "PUT",
-        &format!("/lp/f?uploadId={id}&partNumber=1"),
-        SKIP,
-        b"aaaaa",
-    )
-    .await;
+    http(&a, "PUT", &format!("/lp/f?uploadId={id}&partNumber=1"), SKIP, b"aaaaa").await;
     let (c, _, b) = http(&a, "GET", &format!("/lp/f?uploadId={id}"), SKIP, &[]).await;
     assert200(c, "list parts");
     assert!(contains(&b, "ListPartsResult"));
@@ -587,10 +529,7 @@ async fn tr61_api_DeleteMultipleObjects_n21_t2() {
     let xml=b"<?xml version=\"1.0\"?><Delete><Quiet>true</Quiet><Object><Key>zz</Key></Object></Delete>";
     let (_, _, b) = http(&a, "POST", "/delm2?delete", SKIP, xml).await;
     let s = body_str(&b);
-    assert!(
-        s.contains("DeleteResult"),
-        "quiet mode keeps DeleteResult element"
-    );
+    assert!(s.contains("DeleteResult"), "quiet mode keeps DeleteResult element");
 }
 #[tokio::test]
 async fn tr61_api_GetBucketVersioning_n22_t1() {
@@ -792,14 +731,8 @@ async fn tr61_api_PutBucketCors_n34_t1() {
 #[tokio::test]
 async fn tr61_api_PutBucketCors_n34_t2() {
     let a = start_server().await;
-    let (c, _, _) = http(
-        &a,
-        "PUT",
-        "/nob?cors",
-        SKIP,
-        b"<CORSConfiguration></CORSConfiguration>",
-    )
-    .await;
+    let (c, _, _) =
+        http(&a, "PUT", "/nob?cors", SKIP, b"<CORSConfiguration></CORSConfiguration>").await;
     assert4xx(c, 404, "no bucket cors put");
 }
 
@@ -816,15 +749,12 @@ fn signed_req(
 ) -> (String, String, Vec<(&'static str, String)>) {
     // Build sorted header list: host + x-amz-date + x-amz-content-sha256
     let xdate = nowdt.to_string();
-    let mut headers_vec: Vec<(&str, &str)> = vec![
-        ("host", hostv),
-        ("x-amz-date", &xdate),
-        ("x-amz-content-sha256", payload_sha),
-    ];
+    let mut headers_vec: Vec<(&str, &str)> =
+        vec![("host", hostv), ("x-amz-date", &xdate), ("x-amz-content-sha256", payload_sha)];
     headers_vec.sort_by(|a, b| a.0.cmp(b.0));
     // Canonical query: SigV4 spec requires sorted by key name.
     let mut qs: Vec<(&str, &str)> = q.to_vec();
-    qs.sort_by(|a, b| a.0.cmp(&b.0));
+    qs.sort_by(|a, b| a.0.cmp(b.0));
     let (auth, _) = sigv4_auth_header(
         TEST_AK,
         TEST_SK,
@@ -848,31 +778,17 @@ fn signed_req(
     let qstr = if qs.is_empty() {
         String::new()
     } else {
-        qs.iter()
-            .map(|(k, v)| format!("{k}={v}"))
-            .collect::<Vec<_>>()
-            .join("&")
+        qs.iter().map(|(k, v)| format!("{k}={v}")).collect::<Vec<_>>().join("&")
     };
-    let path = if qstr.is_empty() {
-        uri.to_string()
-    } else {
-        format!("{uri}?{qstr}")
-    };
+    let path = if qstr.is_empty() { uri.to_string() } else { format!("{uri}?{qstr}") };
     (path, method.to_string(), owned)
 }
 
 #[tokio::test]
 async fn tr62_sigv4_case_01() {
     let a = start_server().await;
-    let (p, m, h) = signed_req(
-        "PUT",
-        "/s62b01",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, m, h) =
+        signed_req("PUT", "/s62b01", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     let hs: Vec<_> = h.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m, &p, &hs, &[]).await;
     assert200(c, "case 01 PUT bucket");
@@ -880,15 +796,8 @@ async fn tr62_sigv4_case_01() {
 #[tokio::test]
 async fn tr62_sigv4_case_02() {
     let a = start_server().await;
-    let (p, m, h) = signed_req(
-        "GET",
-        "/",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, m, h) =
+        signed_req("GET", "/", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     let hs: Vec<_> = h.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m, &p, &hs, &[]).await;
     assert200(c, "case 02 list buckets");
@@ -896,15 +805,8 @@ async fn tr62_sigv4_case_02() {
 #[tokio::test]
 async fn tr62_sigv4_case_03() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/s62b03",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/s62b03", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "DELETE",
@@ -922,25 +824,11 @@ async fn tr62_sigv4_case_03() {
 #[tokio::test]
 async fn tr62_sigv4_case_04() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/s62b04",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/s62b04", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
-    let (p2, m2, h2) = signed_req(
-        "HEAD",
-        "/s62b04",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p2, m2, h2) =
+        signed_req("HEAD", "/s62b04", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     let hs: Vec<_> = h2.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m2, &p2, &hs, &[]).await;
     assert200(c, "case 04 head bucket");
@@ -948,25 +836,11 @@ async fn tr62_sigv4_case_04() {
 #[tokio::test]
 async fn tr62_sigv4_case_05() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb5",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb5", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
-    let (p2, m2, h2) = signed_req(
-        "GET",
-        "/svb5",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p2, m2, h2) =
+        signed_req("GET", "/svb5", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     let hs: Vec<_> = h2.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m2, &p2, &hs, &[]).await;
     assert200(c, "case 05 list objs v1");
@@ -974,26 +848,12 @@ async fn tr62_sigv4_case_05() {
 #[tokio::test]
 async fn tr62_sigv4_case_06() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb6",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb6", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let q = &[("list-type", "2")];
-    let (p2, m2, h2) = signed_req(
-        "GET",
-        "/svb6",
-        q,
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p2, m2, h2) =
+        signed_req("GET", "/svb6", q, "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     let hs: Vec<_> = h2.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m2, &p2, &hs, &[]).await;
     assert200(c, "case 06 list v2 via query");
@@ -1001,15 +861,8 @@ async fn tr62_sigv4_case_06() {
 #[tokio::test]
 async fn tr62_sigv4_case_07() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb7",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb7", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let b = b"sigv4 content";
     let (p2, _, _) = signed_req(
@@ -1039,26 +892,12 @@ async fn tr62_sigv4_case_07() {
 #[tokio::test]
 async fn tr62_sigv4_case_08() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb8",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb8", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let b = b"payload with length";
-    let (p2, m2, h2) = signed_req(
-        "PUT",
-        "/svb8/obj",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p2, m2, h2) =
+        signed_req("PUT", "/svb8/obj", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     let hs: Vec<_> = h2.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m2, &p2, &hs, b).await;
     assert200(c, "case 08 put obj signed");
@@ -1066,36 +905,15 @@ async fn tr62_sigv4_case_08() {
 #[tokio::test]
 async fn tr62_sigv4_case_09() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb9",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb9", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let b = b"d1";
-    let (p2, _, _) = signed_req(
-        "PUT",
-        "/svb9/f",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p2, _, _) =
+        signed_req("PUT", "/svb9/f", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p2, SKIP, b).await;
-    let (p3, m3, h3) = signed_req(
-        "HEAD",
-        "/svb9/f",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p3, m3, h3) =
+        signed_req("HEAD", "/svb9/f", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     let hs: Vec<_> = h3.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m3, &p3, &hs, &[]).await;
     assert200(c, "case 09 head obj signed");
@@ -1103,26 +921,12 @@ async fn tr62_sigv4_case_09() {
 #[tokio::test]
 async fn tr62_sigv4_case_10() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb10",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb10", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let b = b"to-del";
-    let (p2, _, _) = signed_req(
-        "PUT",
-        "/svb10/x",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p2, _, _) =
+        signed_req("PUT", "/svb10/x", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p2, SKIP, b).await;
     let (p3, m3, h3) = signed_req(
         "DELETE",
@@ -1135,44 +939,20 @@ async fn tr62_sigv4_case_10() {
     );
     let hs: Vec<_> = h3.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m3, &p3, &hs, &[]).await;
-    assert!(
-        (200..=299).contains(&c) || c == 204,
-        "case 10 delete signed"
-    );
+    assert!((200..=299).contains(&c) || c == 204, "case 10 delete signed");
 }
 #[tokio::test]
 async fn tr62_sigv4_case_11() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb11",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb11", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let src = b"copyme";
-    let (p2, _, _) = signed_req(
-        "PUT",
-        "/svb11/s",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p2, _, _) =
+        signed_req("PUT", "/svb11/s", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p2, SKIP, src).await; // Use copy via POST-like PUT with x-amz-copy-source; but sig is separate so we rely on simple get+put equiv via signed path as case 11: we just issue a signed PUT of copy
-    let (p3, m3, h3) = signed_req(
-        "PUT",
-        "/svb11/d",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p3, m3, h3) =
+        signed_req("PUT", "/svb11/d", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     let hs: Vec<_> = h3.iter().map(|(k, v)| (*k, &v[..])).collect();
     let (c, _, _) = http(&a, &m3, &p3, &hs, src).await;
     assert200(c, "case 11 copy-signed put");
@@ -1180,15 +960,8 @@ async fn tr62_sigv4_case_11() {
 #[tokio::test]
 async fn tr62_sigv4_case_12() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb12",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb12", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "POST",
@@ -1207,15 +980,8 @@ async fn tr62_sigv4_case_12() {
 #[tokio::test]
 async fn tr62_sigv4_case_13() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb13",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb13", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, _, _) = signed_req(
         "POST",
@@ -1245,15 +1011,8 @@ async fn tr62_sigv4_case_13() {
 #[tokio::test]
 async fn tr62_sigv4_case_14() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb14",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb14", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, _, _) = signed_req(
         "POST",
@@ -1282,15 +1041,8 @@ async fn tr62_sigv4_case_14() {
 #[tokio::test]
 async fn tr62_sigv4_case_15() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb15",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb15", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "GET",
@@ -1309,15 +1061,8 @@ async fn tr62_sigv4_case_15() {
 #[tokio::test]
 async fn tr62_sigv4_case_16() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb16",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb16", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "GET",
@@ -1336,15 +1081,8 @@ async fn tr62_sigv4_case_16() {
 #[tokio::test]
 async fn tr62_sigv4_case_17() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb17",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb17", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let vb=b"<?xml version=\"1.0\"?><VersioningConfiguration><Status>Enabled</Status></VersioningConfiguration>";
     let (p2, m2, h2) = signed_req(
@@ -1363,15 +1101,8 @@ async fn tr62_sigv4_case_17() {
 #[tokio::test]
 async fn tr62_sigv4_case_18() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb18",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb18", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "GET",
@@ -1390,15 +1121,8 @@ async fn tr62_sigv4_case_18() {
 #[tokio::test]
 async fn tr62_sigv4_case_19() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb19",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb19", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let obj = b"123";
     let (p2, _, _) = signed_req(
@@ -1428,26 +1152,12 @@ async fn tr62_sigv4_case_19() {
 #[tokio::test]
 async fn tr62_sigv4_case_20() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb20",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb20", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let obj = b"xyz";
-    let (p2, _, _) = signed_req(
-        "PUT",
-        "/svb20/f",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p2, _, _) =
+        signed_req("PUT", "/svb20/f", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p2, SKIP, obj).await;
     let tb = b"<Tagging><TagSet><Tag><Key>k</Key><Value>v</Value></Tag></TagSet></Tagging>";
     let (p3, m3, h3) = signed_req(
@@ -1466,15 +1176,8 @@ async fn tr62_sigv4_case_20() {
 #[tokio::test]
 async fn tr62_sigv4_case_21() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb21",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb21", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "GET",
@@ -1493,15 +1196,8 @@ async fn tr62_sigv4_case_21() {
 #[tokio::test]
 async fn tr62_sigv4_case_22() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb22",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb22", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let tb = b"<Tagging><TagSet><Tag><Key>env</Key><Value>prod</Value></Tag></TagSet></Tagging>";
     let (p2, m2, h2) = signed_req(
@@ -1520,15 +1216,8 @@ async fn tr62_sigv4_case_22() {
 #[tokio::test]
 async fn tr62_sigv4_case_23() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb23",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb23", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "GET",
@@ -1548,15 +1237,8 @@ async fn tr62_sigv4_case_23() {
 #[tokio::test]
 async fn tr62_sigv4_case_24() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb24",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb24", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let pb = b"{\"Version\":\"2012-10-17\",\"Statement\":[]}";
     let (p2, m2, h2) = signed_req(
@@ -1575,15 +1257,8 @@ async fn tr62_sigv4_case_24() {
 #[tokio::test]
 async fn tr62_sigv4_case_25() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb25",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb25", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "GET",
@@ -1602,15 +1277,8 @@ async fn tr62_sigv4_case_25() {
 #[tokio::test]
 async fn tr62_sigv4_case_26() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb26",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb26", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let cb=b"<CORSConfiguration><CORSRule><AllowedOrigin>*</AllowedOrigin><AllowedMethod>GET</AllowedMethod></CORSRule></CORSConfiguration>";
     let (p2, m2, h2) = signed_req(
@@ -1629,15 +1297,8 @@ async fn tr62_sigv4_case_26() {
 #[tokio::test]
 async fn tr62_sigv4_case_27() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb27",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb27", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let (p2, m2, h2) = signed_req(
         "GET",
@@ -1656,15 +1317,8 @@ async fn tr62_sigv4_case_27() {
 #[tokio::test]
 async fn tr62_sigv4_case_28() {
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb28",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb28", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let lc = b"<LifecycleConfiguration></LifecycleConfiguration>";
     let (p2, m2, h2) = signed_req(
@@ -1684,15 +1338,8 @@ async fn tr62_sigv4_case_28() {
 async fn tr62_sigv4_case_29() {
     // Wrong signature -> 403
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb29",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb29", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let wrong_auth="AWS4-HMAC-SHA256 Credential=badak/20260801/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=deadbeef";
     let hs: &[(&str, &str)] = &[
@@ -1708,15 +1355,8 @@ async fn tr62_sigv4_case_29() {
 async fn tr62_sigv4_case_30() {
     // Completely missing auth -> 403
     let a = start_server().await;
-    let (p, _, _) = signed_req(
-        "PUT",
-        "/svb30",
-        &[],
-        "UNSIGNED-PAYLOAD",
-        &a,
-        "20260801",
-        "20260801T000000Z",
-    );
+    let (p, _, _) =
+        signed_req("PUT", "/svb30", &[], "UNSIGNED-PAYLOAD", &a, "20260801", "20260801T000000Z");
     http(&a, "PUT", &p, SKIP, &[]).await;
     let hs_no: &[(&str, &str)] = &[];
     let (c, _, b) = http(&a, "GET", "/svb30", hs_no, &[]).await;
@@ -2212,10 +1852,7 @@ async fn tr64_mc_cp_10() {
     let d = format!("d10").into_bytes();
     let sp = "/mc3x10/s";
     http(&a, "PUT", "/mc3x10/s", SKIP, &d).await;
-    let h: &[(&str, &str)] = &[
-        ("x-test-skip-auth", "1"),
-        ("x-amz-copy-source", "/mc3x10/s"),
-    ];
+    let h: &[(&str, &str)] = &[("x-test-skip-auth", "1"), ("x-amz-copy-source", "/mc3x10/s")];
     let (c, _, _) = http(&a, "PUT", "/mc3x10/d", h, &[]).await;
     assert200(c, "cp");
 }
@@ -2964,10 +2601,7 @@ async fn tr64_mc_mv_10() {
     let sp = "/mc9x10/src";
     let dp = "/mc9x10/dst";
     http(&a, "PUT", "/mc9x10/s", SKIP, &d).await;
-    let h: &[(&str, &str)] = &[
-        ("x-test-skip-auth", "1"),
-        ("x-amz-copy-source", "/mc9x10/s"),
-    ];
+    let h: &[(&str, &str)] = &[("x-test-skip-auth", "1"), ("x-amz-copy-source", "/mc9x10/s")];
     http(&a, "PUT", "/mc9x10/dst", h, &[]).await;
     let (c, _, _) = http(&a, "DELETE", "/mc9x10/s", SKIP, &[]).await;
     assert!((200..=299).contains(&c) || c == 204, "mv del src");
@@ -3911,17 +3545,11 @@ async fn tr67_versioning_case_03() {
     let (_, h2, _) = http(&a, "PUT", "/vtr03/k", SKIP, b"c").await;
     let v1 = h1
         .lines()
-        .find_map(|l| {
-            l.strip_prefix("x-amz-version-id: ")
-                .map(|s| s.trim().to_string())
-        })
+        .find_map(|l| l.strip_prefix("x-amz-version-id: ").map(|s| s.trim().to_string()))
         .unwrap_or_default();
     let v2 = h2
         .lines()
-        .find_map(|l| {
-            l.strip_prefix("x-amz-version-id: ")
-                .map(|s| s.trim().to_string())
-        })
+        .find_map(|l| l.strip_prefix("x-amz-version-id: ").map(|s| s.trim().to_string()))
         .unwrap_or_default();
     assert_ne!(v1, v2);
 }
@@ -3934,10 +3562,7 @@ async fn tr67_versioning_case_04() {
     let (_, h, _) = http(&a, "PUT", "/vtr04/file", SKIP, b"first").await;
     let v = h
         .lines()
-        .find_map(|l| {
-            l.strip_prefix("x-amz-version-id: ")
-                .map(|s| s.trim().to_string())
-        })
+        .find_map(|l| l.strip_prefix("x-amz-version-id: ").map(|s| s.trim().to_string()))
         .unwrap_or_default();
     let p = format!("/vtr04/file?versionId={v}");
     let (c, _, b) = http(&a, "GET", &p, SKIP, &[]).await;
@@ -3954,10 +3579,7 @@ async fn tr67_versioning_case_05() {
     let (_, h, _) = http(&a, "PUT", "/vtr05/x", SKIP, b"2").await;
     let v2 = h
         .lines()
-        .find_map(|l| {
-            l.strip_prefix("x-amz-version-id: ")
-                .map(|s| s.trim().to_string())
-        })
+        .find_map(|l| l.strip_prefix("x-amz-version-id: ").map(|s| s.trim().to_string()))
         .unwrap_or_default();
     let p = format!("/vtr05/x?versionId={v2}");
     let (c, _, _) = http(&a, "DELETE", &p, SKIP, &[]).await;
@@ -4016,18 +3638,12 @@ async fn tr67_versioning_case_10() {
     let (_, h1, _) = http(&a, "PUT", "/vtr10/f", SKIP, b"1").await;
     let v1 = h1
         .lines()
-        .find_map(|l| {
-            l.strip_prefix("x-amz-version-id: ")
-                .map(|s| s.trim().to_string())
-        })
+        .find_map(|l| l.strip_prefix("x-amz-version-id: ").map(|s| s.trim().to_string()))
         .unwrap_or_default();
     let (_, h2, _) = http(&a, "PUT", "/vtr10/f", SKIP, b"2").await;
     let v2 = h2
         .lines()
-        .find_map(|l| {
-            l.strip_prefix("x-amz-version-id: ")
-                .map(|s| s.trim().to_string())
-        })
+        .find_map(|l| l.strip_prefix("x-amz-version-id: ").map(|s| s.trim().to_string()))
         .unwrap_or_default();
     let (_, _, b1) = http(&a, "GET", &format!("/vtr10/f?versionId={v1}"), SKIP, &[]).await;
     let (_, _, b2) = http(&a, "GET", &format!("/vtr10/f?versionId={v2}"), SKIP, &[]).await;
@@ -4050,32 +3666,18 @@ async fn tr68_mpu_giant_case_1() {
     for pn in 1..=n_parts {
         let p = format!("P{pn:04}-mox-s3-XXXXXXXX-XXXX").into_bytes();
         exp.extend_from_slice(&p);
-        let (_, hd, _) = http(
-            &a,
-            "PUT",
-            &format!("/mpu1/g?uploadId={id}&partNumber={pn}"),
-            SKIP,
-            &p,
-        )
-        .await;
+        let (_, hd, _) =
+            http(&a, "PUT", &format!("/mpu1/g?uploadId={id}&partNumber={pn}"), SKIP, &p).await;
         parts.push((pn, extract_header_etag(&hd)));
     }
     let q = 34u8 as char;
     let mut cxml = String::from("<CompleteMultipartUpload>");
     for (pn, e) in &parts {
-        cxml.push_str(&format!(
-            "<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"
-        ));
+        cxml.push_str(&format!("<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"));
     }
     cxml.push_str("</CompleteMultipartUpload>");
-    let (c, _, b) = http(
-        &a,
-        "POST",
-        &format!("/mpu1/g?uploadId={id}"),
-        SKIP,
-        cxml.as_bytes(),
-    )
-    .await;
+    let (c, _, b) =
+        http(&a, "POST", &format!("/mpu1/g?uploadId={id}"), SKIP, cxml.as_bytes()).await;
     assert200(c, "complete 498p");
     assert!(contains(&b, "CompleteMultipartUploadResult"));
     let (_, _, got) = http(&a, "GET", "/mpu1/g", SKIP, &[]).await;
@@ -4094,32 +3696,18 @@ async fn tr68_mpu_giant_case_2() {
     for pn in 1..=n_parts {
         let p = format!("P{pn:04}-mox-s3-XXXXXXXX-XXXX").into_bytes();
         exp.extend_from_slice(&p);
-        let (_, hd, _) = http(
-            &a,
-            "PUT",
-            &format!("/mpu2/g?uploadId={id}&partNumber={pn}"),
-            SKIP,
-            &p,
-        )
-        .await;
+        let (_, hd, _) =
+            http(&a, "PUT", &format!("/mpu2/g?uploadId={id}&partNumber={pn}"), SKIP, &p).await;
         parts.push((pn, extract_header_etag(&hd)));
     }
     let q = 34u8 as char;
     let mut cxml = String::from("<CompleteMultipartUpload>");
     for (pn, e) in &parts {
-        cxml.push_str(&format!(
-            "<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"
-        ));
+        cxml.push_str(&format!("<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"));
     }
     cxml.push_str("</CompleteMultipartUpload>");
-    let (c, _, b) = http(
-        &a,
-        "POST",
-        &format!("/mpu2/g?uploadId={id}"),
-        SKIP,
-        cxml.as_bytes(),
-    )
-    .await;
+    let (c, _, b) =
+        http(&a, "POST", &format!("/mpu2/g?uploadId={id}"), SKIP, cxml.as_bytes()).await;
     assert200(c, "complete 499p");
     assert!(contains(&b, "CompleteMultipartUploadResult"));
     let (_, _, got) = http(&a, "GET", "/mpu2/g", SKIP, &[]).await;
@@ -4138,32 +3726,18 @@ async fn tr68_mpu_giant_case_3() {
     for pn in 1..=n_parts {
         let p = format!("P{pn:04}-mox-s3-XXXXXXXX-XXXX").into_bytes();
         exp.extend_from_slice(&p);
-        let (_, hd, _) = http(
-            &a,
-            "PUT",
-            &format!("/mpu3/g?uploadId={id}&partNumber={pn}"),
-            SKIP,
-            &p,
-        )
-        .await;
+        let (_, hd, _) =
+            http(&a, "PUT", &format!("/mpu3/g?uploadId={id}&partNumber={pn}"), SKIP, &p).await;
         parts.push((pn, extract_header_etag(&hd)));
     }
     let q = 34u8 as char;
     let mut cxml = String::from("<CompleteMultipartUpload>");
     for (pn, e) in &parts {
-        cxml.push_str(&format!(
-            "<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"
-        ));
+        cxml.push_str(&format!("<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"));
     }
     cxml.push_str("</CompleteMultipartUpload>");
-    let (c, _, b) = http(
-        &a,
-        "POST",
-        &format!("/mpu3/g?uploadId={id}"),
-        SKIP,
-        cxml.as_bytes(),
-    )
-    .await;
+    let (c, _, b) =
+        http(&a, "POST", &format!("/mpu3/g?uploadId={id}"), SKIP, cxml.as_bytes()).await;
     assert200(c, "complete 500p");
     assert!(contains(&b, "CompleteMultipartUploadResult"));
     let (_, _, got) = http(&a, "GET", "/mpu3/g", SKIP, &[]).await;
@@ -4182,32 +3756,18 @@ async fn tr68_mpu_giant_case_4() {
     for pn in 1..=n_parts {
         let p = format!("P{pn:04}-mox-s3-XXXXXXXX-XXXX").into_bytes();
         exp.extend_from_slice(&p);
-        let (_, hd, _) = http(
-            &a,
-            "PUT",
-            &format!("/mpu4/g?uploadId={id}&partNumber={pn}"),
-            SKIP,
-            &p,
-        )
-        .await;
+        let (_, hd, _) =
+            http(&a, "PUT", &format!("/mpu4/g?uploadId={id}&partNumber={pn}"), SKIP, &p).await;
         parts.push((pn, extract_header_etag(&hd)));
     }
     let q = 34u8 as char;
     let mut cxml = String::from("<CompleteMultipartUpload>");
     for (pn, e) in &parts {
-        cxml.push_str(&format!(
-            "<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"
-        ));
+        cxml.push_str(&format!("<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"));
     }
     cxml.push_str("</CompleteMultipartUpload>");
-    let (c, _, b) = http(
-        &a,
-        "POST",
-        &format!("/mpu4/g?uploadId={id}"),
-        SKIP,
-        cxml.as_bytes(),
-    )
-    .await;
+    let (c, _, b) =
+        http(&a, "POST", &format!("/mpu4/g?uploadId={id}"), SKIP, cxml.as_bytes()).await;
     assert200(c, "complete 501p");
     assert!(contains(&b, "CompleteMultipartUploadResult"));
     let (_, _, got) = http(&a, "GET", "/mpu4/g", SKIP, &[]).await;
@@ -4226,32 +3786,18 @@ async fn tr68_mpu_giant_case_5() {
     for pn in 1..=n_parts {
         let p = format!("P{pn:04}-mox-s3-XXXXXXXX-XXXX").into_bytes();
         exp.extend_from_slice(&p);
-        let (_, hd, _) = http(
-            &a,
-            "PUT",
-            &format!("/mpu5/g?uploadId={id}&partNumber={pn}"),
-            SKIP,
-            &p,
-        )
-        .await;
+        let (_, hd, _) =
+            http(&a, "PUT", &format!("/mpu5/g?uploadId={id}&partNumber={pn}"), SKIP, &p).await;
         parts.push((pn, extract_header_etag(&hd)));
     }
     let q = 34u8 as char;
     let mut cxml = String::from("<CompleteMultipartUpload>");
     for (pn, e) in &parts {
-        cxml.push_str(&format!(
-            "<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"
-        ));
+        cxml.push_str(&format!("<Part><PartNumber>{pn}</PartNumber><ETag>{q}{e}{q}</ETag></Part>"));
     }
     cxml.push_str("</CompleteMultipartUpload>");
-    let (c, _, b) = http(
-        &a,
-        "POST",
-        &format!("/mpu5/g?uploadId={id}"),
-        SKIP,
-        cxml.as_bytes(),
-    )
-    .await;
+    let (c, _, b) =
+        http(&a, "POST", &format!("/mpu5/g?uploadId={id}"), SKIP, cxml.as_bytes()).await;
     assert200(c, "complete 502p");
     assert!(contains(&b, "CompleteMultipartUploadResult"));
     let (_, _, got) = http(&a, "GET", "/mpu5/g", SKIP, &[]).await;

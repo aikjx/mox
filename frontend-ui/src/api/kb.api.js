@@ -17,6 +17,11 @@ export const kbCreateVersion = (id, payload) => http.post(`/kb/documents/${encod
 export const kbCompareVersions = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions/compare`, payload)
 export const kbRevertVersion = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions/revert`, payload)
 export const kbGetEntities = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/entities`)
+export const kbSearchEntities = (params) => http.get('/kb/entities/search', { params })
+export const kbLinkEntity = (docId, entityId) =>
+  http.post(`/kb/documents/${encodeURIComponent(docId)}/entities`, { entity_id: entityId })
+export const kbUnlinkEntity = (docId, entityId) =>
+  http.delete(`/kb/documents/${encodeURIComponent(docId)}/entities`, { data: { entity_id: entityId } })
 export const kbGraphLink = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/graph-link`, payload)
 export const kbGraphUnlink = (id, payload) => http.delete(`/kb/documents/${encodeURIComponent(id)}/graph-link`, { data: payload })
 export const kbGetStats = () => http.get('/kb/stats')

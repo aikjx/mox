@@ -34,7 +34,13 @@
         </el-tabs>
 
         <!-- 通知列表 -->
-        <div class="nc-list">
+        <div class="nc-list" v-loading="loading" element-loading-text="加载通知中…">
+          <div v-if="error && !loading" class="nc-empty">
+            <el-icon :size="32" style="color:#ef4444"><Warning /></el-icon>
+            <span>{{ error }}</span>
+            <el-button size="small" type="primary" @click.stop="loadNotifications">重试</el-button>
+          </div>
+          <template v-else>
           <div
             v-for="item in filteredNotifications"
             :key="item.id"
@@ -58,6 +64,7 @@
             <el-icon :size="32" style="color:#cbd5e1"><Check /></el-icon>
             <span>暂无{{ activeTab === 'all' ? '' : typeLabels[activeTab] }}通知</span>
           </div>
+          </template>
         </div>
 
         <!-- 底部 -->
@@ -70,12 +77,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { Bell, Message, List, Warning, Check } from '@element-plus/icons-vue'
+import { getNotifications, markNotificationRead, markAllNotificationsRead } from '@/api'
 
 const router = useRouter()
 const activeTab = ref('all')
+const loading = ref(false)
+const error = ref('')
 
 const typeStyles = {
   message: { icon: 'Message', bg: '#e0f2fe', color: '#0284c7' },
@@ -84,15 +95,8 @@ const typeStyles = {
 }
 const typeLabels = { message: '消息', task: '任务', alert: '告警' }
 
-// 模拟通知数据
-const notifications = ref([
-  { id: 1, type: 'task', title: '任务即将到期', desc: '「需求分析文档」任务还有 2 小时到期', time: '10 分钟前', read: false },
-  { id: 2, type: 'message', title: 'AI 助手新消息', desc: '您的架构分析报告已生成完毕', time: '30 分钟前', read: false },
-  { id: 3, type: 'alert', title: '系统资源告警', desc: '算子引擎 CPU 使用率超过 80%', time: '1 小时前', read: false },
-  { id: 4, type: 'task', title: '新任务分配', desc: '「用户权限模块」已分配给您', time: '2 小时前', read: true },
-  { id: 5, type: 'message', title: '项目阶段更新', desc: '项目已从需求阶段进入架构阶段', time: '3 小时前', read: true },
-  { id: 6, type: 'alert', title: '工作流执行失败', desc: '「数据同步工作流」第 3 个节点执行失败', time: '5 小时前', read: true }
-])
+// 通知列表：调用 GET /api/notifications
+const notifications = ref([])
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 
@@ -105,18 +109,57 @@ const filteredNotifications = computed(() => {
   return notifications.value.filter(n => n.type === activeTab.value)
 })
 
-function onTabChange() { /* placeholder */ }
+async function loadNotifications() {
+  loading.value = true
+  error.value = ''
+  try {
+    const data = await getNotifications({ limit: 20 })
+    const list = Array.isArray(data) ? data : (data?.items || data?.notifications || [])
+    notifications.value = list.map(n => ({
+      id: n.id,
+      type: n.type || 'message',
+      title: n.title || '',
+      desc: n.description || n.desc || '',
+      time: n.time || n.created_at || '',
+      read: n.read ?? false
+    }))
+  } catch (e) {
+    console.error('[NotificationCenter] 加载通知失败:', e)
+    error.value = e?.message || '通知加载失败'
+    notifications.value = []
+    ElMessage.error('通知加载失败：' + (e.message || '未知错误'))
+  } finally {
+    loading.value = false
+  }
+}
 
-function handleClick(item) {
-  if (!item.read) item.read = true
+function onTabChange() { /* tab 切换由 computed 过滤 */ }
+
+async function handleClick(item) {
+  if (!item.read) {
+    try {
+      await markNotificationRead(item.id)
+      item.read = true
+    } catch (e) {
+      console.error('[NotificationCenter] 标记已读失败:', e)
+      ElMessage.error('标记已读失败：' + (e.message || '未知错误'))
+    }
+  }
   // 根据类型跳转
   if (item.type === 'task') router.push('/tasks')
   else if (item.type === 'alert') router.push('/admin?tab=monitor')
   else if (item.type === 'message') router.push('/ai')
 }
 
-function markAllRead() {
-  notifications.value.forEach(n => { n.read = true })
+async function markAllRead() {
+  try {
+    await markAllNotificationsRead()
+    notifications.value.forEach(n => { n.read = true })
+    ElMessage.success('已全部标记为已读')
+  } catch (e) {
+    console.error('[NotificationCenter] 全部已读失败:', e)
+    ElMessage.error('全部已读失败：' + (e.message || '未知错误'))
+  }
 }
 
 function viewAll() {
@@ -124,11 +167,15 @@ function viewAll() {
 }
 
 function onVisibleChange(visible) {
-  // 展开时可以加载最新通知
+  // 展开时加载最新通知
   if (visible) {
-    // 预留：加载最新通知
+    loadNotifications()
   }
 }
+
+onMounted(() => {
+  loadNotifications()
+})
 </script>
 
 <style scoped>

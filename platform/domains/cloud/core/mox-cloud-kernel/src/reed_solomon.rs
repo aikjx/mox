@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -8,13 +8,17 @@
 //! `ReedSolomonEngine` (Vandermonde + Gauss-Jordan in GF(2^8)).
 
 use bytes::Bytes;
-use std::collections::HashMap;
-use std::fmt;
-use std::sync::{Arc, OnceLock, RwLock};
-use std::time::Instant;
+use std::{
+    collections::HashMap,
+    fmt,
+    sync::{Arc, OnceLock, RwLock},
+    time::Instant,
+};
 
-pub use crate::metrics::{observe_encode_us, SHARDS_LOST_TOTAL};
-pub use crate::profile::EcProfile;
+pub use crate::{
+    metrics::{observe_encode_us, SHARDS_LOST_TOTAL},
+    profile::EcProfile,
+};
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -38,7 +42,7 @@ impl fmt::Display for RSError {
             RSError::MatrixSingular(m) => write!(f, "Matrix singular: {}", m),
             RSError::ReconstructionVerificationFailed(m) => {
                 write!(f, "Reconstruction verification failed: {}", m)
-            }
+            },
         }
     }
 }
@@ -62,8 +66,8 @@ pub fn gf() -> &'static GfTables {
         let mut exp = [0u8; 512];
         let mut log = [0u8; 256];
         let mut x: u16 = 1;
-        for i in 0..255 {
-            exp[i] = x as u8;
+        for (i, exp_item) in exp.iter_mut().enumerate().take(255) {
+            *exp_item = x as u8;
             log[x as usize] = i as u8;
             x <<= 1;
             if x & 0x100 != 0 {
@@ -118,12 +122,12 @@ pub enum PathChoice {
 pub(crate) fn xor_gf_mul_vec(coef: u8, src: &[u8], dst: &mut [u8], path: PathChoice) {
     debug_assert_eq!(src.len(), dst.len());
     match coef {
-        0 => {}
+        0 => {},
         1 => {
             for (d, &s) in dst.iter_mut().zip(src.iter()) {
                 *d ^= s;
             }
-        }
+        },
         _ => {
             let use_simd = match path {
                 PathChoice::Scalar => false,
@@ -161,7 +165,7 @@ pub(crate) fn xor_gf_mul_vec(coef: u8, src: &[u8], dst: &mut [u8], path: PathCho
                     dst[i] ^= t.exp[idx];
                 }
             }
-        }
+        },
     }
 }
 
@@ -211,13 +215,17 @@ fn decide_auto_simd(hint: usize) -> bool {
 
     let mut scalar_us = Vec::<u128>::with_capacity(ITERS);
     for _ in 0..ITERS {
-        for d in dst_a.iter_mut() { *d = 0; }
+        for d in dst_a.iter_mut() {
+            *d = 0;
+        }
         let t = Instant::now();
         let tables = gf();
         let log_coef = tables.log[COEF as usize] as usize;
         for i in 0..bench {
             let s = src[i];
-            if s == 0 { continue; }
+            if s == 0 {
+                continue;
+            }
             let idx = log_coef + tables.log[s as usize] as usize;
             dst_a[i] ^= tables.exp[idx];
         }
@@ -226,7 +234,9 @@ fn decide_auto_simd(hint: usize) -> bool {
 
     let mut simd_us = Vec::<u128>::with_capacity(ITERS);
     for _ in 0..ITERS {
-        for d in dst_b.iter_mut() { *d = 0; }
+        for d in dst_b.iter_mut() {
+            *d = 0;
+        }
         let t = Instant::now();
         crate::gf256_simd::gf_vec_mul_xor_auto(COEF, &src, &mut dst_b);
         simd_us.push(t.elapsed().as_micros());
@@ -250,14 +260,14 @@ pub(crate) fn build_encoding_matrix(data: usize, total: usize) -> RSResult<Matri
     }
     let parity = total - data;
     let mut m: Matrix = vec![vec![0u8; data]; total];
-    for i in 0..data {
-        m[i][i] = 1;
+    for (i, row) in m.iter_mut().enumerate().take(data) {
+        row[i] = 1;
     }
     let t = gf();
     for r in 0..parity {
-        for c in 0..data {
+        for (c, cell) in m[data + r].iter_mut().enumerate().take(data) {
             let exp = (r * c) % 255;
-            m[data + r][c] = t.exp[exp];
+            *cell = t.exp[exp];
         }
     }
     Ok(m)
@@ -307,10 +317,11 @@ pub fn invert_square(src: &[Vec<u8>]) -> RSResult<Matrix> {
 /// Design reference: RustFS ecstore matrix cache pattern (Apache 2.0).
 /// Uses `OnceLock<RwLock<HashMap>>` for O(1) lookup with concurrent read access,
 /// and `Arc<Matrix>` to avoid cloning large `Vec<Vec<u8>>` matrices on the hot path.
-static MATRIX_CACHE: OnceLock<RwLock<HashMap<(u16, u16), Arc<Matrix>>>> = OnceLock::new();
+type MatrixCacheMap = RwLock<HashMap<(u16, u16), Arc<Matrix>>>;
+static MATRIX_CACHE: OnceLock<MatrixCacheMap> = OnceLock::new();
 
 #[inline]
-fn matrix_cache() -> &'static RwLock<HashMap<(u16, u16), Arc<Matrix>>> {
+fn matrix_cache() -> &'static MatrixCacheMap {
     MATRIX_CACHE.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
@@ -323,19 +334,15 @@ fn matrix_cache() -> &'static RwLock<HashMap<(u16, u16), Arc<Matrix>>> {
 pub(crate) fn matrix_for(data: u16, parity: u16) -> RSResult<Matrix> {
     let key = (data, parity);
     // Fast path: concurrent read lock + O(1) lookup.
-    if let Some(arc) = matrix_cache()
-        .read()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .get(&key)
+    if let Some(arc) =
+        matrix_cache().read().unwrap_or_else(|poisoned| poisoned.into_inner()).get(&key)
     {
         return Ok((**arc).clone());
     }
     // Slow path: build outside the lock, then insert under write lock.
     let m = build_encoding_matrix(data as usize, (data + parity) as usize)?;
     let arc = Arc::new(m.clone());
-    let mut guard = matrix_cache()
-        .write()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut guard = matrix_cache().write().unwrap_or_else(|poisoned| poisoned.into_inner());
     // Double-check: another thread may have inserted while we were building.
     if let Some(existing) = guard.get(&key) {
         return Ok((**existing).clone());
@@ -357,7 +364,7 @@ pub fn shard_size_for(data_shards: usize, data_len: usize) -> usize {
     if data_shards == 0 {
         return 0;
     }
-    (data_len + data_shards - 1) / data_shards
+    data_len.div_ceil(data_shards)
 }
 
 fn pad_to(input: &[u8], len: usize) -> Vec<u8> {
@@ -400,9 +407,8 @@ impl ReedSolomonEngine {
         let padded = pad_to(data_bytes, shard_size * data);
         let encoder = matrix_for(profile.data_shards, profile.parity_shards)?;
         let mut output: Vec<Vec<u8>> = vec![vec![0u8; shard_size]; total];
-        let data_shard: Vec<&[u8]> = (0..data)
-            .map(|c| &padded[c * shard_size..(c + 1) * shard_size])
-            .collect();
+        let data_shard: Vec<&[u8]> =
+            (0..data).map(|c| &padded[c * shard_size..(c + 1) * shard_size]).collect();
         for row in 0..data {
             output[row].copy_from_slice(data_shard[row]);
         }
@@ -443,18 +449,12 @@ impl ReedSolomonEngine {
                 shards.len()
             )));
         }
-        let missing: Vec<usize> = shards
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| s.is_none())
-            .map(|(i, _)| i)
-            .collect();
+        let missing: Vec<usize> =
+            shards.iter().enumerate().filter(|(_, s)| s.is_none()).map(|(i, _)| i).collect();
         let lost = missing.len();
         if lost > parity {
             SHARDS_LOST_TOTAL.fetch_add(lost as u64, std::sync::atomic::Ordering::Relaxed);
-            return Err(RSError::TooManyShardsMissing(format!(
-                "{lost} missing > parity={parity}"
-            )));
+            return Err(RSError::TooManyShardsMissing(format!("{lost} missing > parity={parity}")));
         }
         if lost > 0 {
             SHARDS_LOST_TOTAL.fetch_add(lost as u64, std::sync::atomic::Ordering::Relaxed);
@@ -464,12 +464,8 @@ impl ReedSolomonEngine {
             .find_map(|s| s.as_ref().map(|v| v.len()))
             .ok_or_else(|| RSError::InvalidInput("no shard present".into()))?;
         let encoder = matrix_for(profile.data_shards, profile.parity_shards)?;
-        let mut present_rows: Vec<usize> = shards
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| s.is_some())
-            .map(|(i, _)| i)
-            .collect();
+        let mut present_rows: Vec<usize> =
+            shards.iter().enumerate().filter(|(_, s)| s.is_some()).map(|(i, _)| i).collect();
         present_rows.truncate(data);
         if present_rows.len() < data {
             return Err(RSError::TooManyShardsMissing(format!(
@@ -565,21 +561,16 @@ impl ReedSolomonEngine {
 
         // Step 3: Pad reconstructed data to full data-region size and split into shards.
         let padded = pad_to(&reconstructed, shard_size * data);
-        let data_shard_slices: Vec<&[u8]> = (0..data)
-            .map(|c| &padded[c * shard_size..(c + 1) * shard_size])
-            .collect();
+        let data_shard_slices: Vec<&[u8]> =
+            (0..data).map(|c| &padded[c * shard_size..(c + 1) * shard_size]).collect();
 
         // Step 4: Get the encoding matrix for parity recomputation.
         let encoder = matrix_for(profile.data_shards, profile.parity_shards)?;
 
         // Step 5: Identify surplus present shards (beyond the first `data` used in
         // reconstruction) and verify each against the re-encoded value.
-        let present_indices: Vec<usize> = shards
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| s.is_some())
-            .map(|(i, _)| i)
-            .collect();
+        let present_indices: Vec<usize> =
+            shards.iter().enumerate().filter(|(_, s)| s.is_some()).map(|(i, _)| i).collect();
 
         for &idx in &present_indices[data..] {
             let expected: Vec<u8> = if idx < data {
@@ -632,18 +623,12 @@ impl ReedSolomonEngine {
                 shards.len()
             )));
         }
-        let missing: Vec<usize> = shards
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| s.is_none())
-            .map(|(i, _)| i)
-            .collect();
+        let missing: Vec<usize> =
+            shards.iter().enumerate().filter(|(_, s)| s.is_none()).map(|(i, _)| i).collect();
         let lost = missing.len();
         if lost > parity {
             SHARDS_LOST_TOTAL.fetch_add(lost as u64, std::sync::atomic::Ordering::Relaxed);
-            return Err(RSError::TooManyShardsMissing(format!(
-                "{lost} missing > parity={parity}"
-            )));
+            return Err(RSError::TooManyShardsMissing(format!("{lost} missing > parity={parity}")));
         }
         if lost > 0 {
             SHARDS_LOST_TOTAL.fetch_add(lost as u64, std::sync::atomic::Ordering::Relaxed);
@@ -731,7 +716,7 @@ impl ReedSolomon2Plus1 {
                 } else {
                     Ok([Bytes::from(owned[0].clone()), Bytes::from(owned[1].clone())])
                 }
-            }
+            },
             _ => unreachable!(),
         }
     }
@@ -759,9 +744,7 @@ mod unit {
         let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
         slots[1] = None;
         slots[4] = None;
-        let got = engine
-            .decode_reconstruct(&profile, &slots, bytes.len())
-            .unwrap();
+        let got = engine.decode_reconstruct(&profile, &slots, bytes.len()).unwrap();
         assert_eq!(got, bytes);
     }
 
@@ -787,9 +770,9 @@ mod unit {
         assert_eq!(m1, m4, "second cache hit must return identical matrix");
 
         // Vandermonde structure: top-left is identity for data rows.
-        for i in 0..4 {
-            for j in 0..4 {
-                assert_eq!(m1[i][j], if i == j { 1 } else { 0 });
+        for (i, row) in m1.iter().enumerate().take(4) {
+            for (j, &cell) in row.iter().enumerate().take(4) {
+                assert_eq!(cell, if i == j { 1 } else { 0 });
             }
         }
     }
@@ -823,15 +806,9 @@ mod unit {
             p[0] ^= 0xFF;
         }
         let result = engine.decode_with_verification(&profile, &slots, bytes.len());
+        assert!(result.is_err(), "corrupted surplus parity must fail-closed, not return data");
         assert!(
-            result.is_err(),
-            "corrupted surplus parity must fail-closed, not return data"
-        );
-        assert!(
-            matches!(
-                result.unwrap_err(),
-                RSError::ReconstructionVerificationFailed(_)
-            ),
+            matches!(result.unwrap_err(), RSError::ReconstructionVerificationFailed(_)),
             "error must be ReconstructionVerificationFailed"
         );
     }
@@ -852,10 +829,578 @@ mod unit {
         assert_eq!(got, bytes);
 
         // Must match decode_reconstruct output exactly.
-        let got2 = engine
-            .decode_reconstruct(&profile, &slots, bytes.len())
-            .unwrap();
+        let got2 = engine.decode_reconstruct(&profile, &slots, bytes.len()).unwrap();
         assert_eq!(got, got2);
+    }
+
+    // ── RSError Display ──
+
+    #[test]
+    fn test_rs_error_display_all_variants() {
+        let e1 = RSError::TooManyShardsMissing("3 > 2".into());
+        assert!(format!("{e1}").contains("Too many shards missing"));
+        let e2 = RSError::ShardSizeMismatch("100 != 200".into());
+        assert!(format!("{e2}").contains("Shard size mismatch"));
+        let e3 = RSError::InvalidInput("bad".into());
+        assert!(format!("{e3}").contains("Invalid input"));
+        let e4 = RSError::MatrixSingular("zero pivot".into());
+        assert!(format!("{e4}").contains("Matrix singular"));
+        let e5 = RSError::ReconstructionVerificationFailed("mismatch".into());
+        assert!(format!("{e5}").contains("Reconstruction verification failed"));
+    }
+
+    // ── gf256 arithmetic edge cases ──
+
+    #[test]
+    fn test_gf_mul_zero() {
+        assert_eq!(gf_mul(0, 255), 0);
+        assert_eq!(gf_mul(255, 0), 0);
+        assert_eq!(gf_mul(0, 0), 0);
+    }
+
+    #[test]
+    fn test_gf_mul_identity() {
+        for x in 0..=255u8 {
+            assert_eq!(gf_mul(x, 1), x);
+            assert_eq!(gf_mul(1, x), x);
+        }
+    }
+
+    #[test]
+    fn test_gf_inv_boundary() {
+        assert_eq!(gf_inv(1), 1);
+        assert_eq!(gf_mul(255, gf_inv(255)), 1);
+        for x in 1..=255u8 {
+            assert_eq!(gf_mul(x, gf_inv(x)), 1, "inv({x}) invalid");
+        }
+    }
+
+    #[test]
+    fn test_gf_tables_exp_log_consistency() {
+        let t = gf();
+        assert_eq!(t.exp[0], 1);
+        assert_eq!(t.log[1], 0);
+        assert_eq!(t.exp[255], 1);
+        assert_eq!(t.exp[511], t.exp[256]);
+    }
+
+    // ── shard_size_for ──
+
+    #[test]
+    fn test_shard_size_for_zero_data_shards() {
+        assert_eq!(shard_size_for(0, 1000), 0);
+    }
+
+    #[test]
+    fn test_shard_size_for_exact_division() {
+        assert_eq!(shard_size_for(4, 1000), 250);
+    }
+
+    #[test]
+    fn test_shard_size_for_ceil_division() {
+        assert_eq!(shard_size_for(4, 1001), 251);
+    }
+
+    #[test]
+    fn test_shard_size_for_zero_data() {
+        assert_eq!(shard_size_for(4, 0), 0);
+    }
+
+    // ── build_encoding_matrix ──
+
+    #[test]
+    fn test_build_encoding_matrix_too_many_shards() {
+        let result = build_encoding_matrix(200, 260);
+        assert!(matches!(result, Err(RSError::InvalidInput(_))));
+    }
+
+    #[test]
+    fn test_build_encoding_matrix_identity_top() {
+        let m = build_encoding_matrix(4, 6).unwrap();
+        assert_eq!(m.len(), 6);
+        assert_eq!(m[0].len(), 4);
+        for (i, row) in m.iter().enumerate().take(4) {
+            for (j, &cell) in row.iter().enumerate().take(4) {
+                assert_eq!(cell, if i == j { 1 } else { 0 });
+            }
+        }
+    }
+
+    #[test]
+    fn test_build_encoding_matrix_max_valid() {
+        let m = build_encoding_matrix(200, 255).unwrap();
+        assert_eq!(m.len(), 255);
+    }
+
+    // ── invert_square ──
+
+    #[test]
+    fn test_invert_square_identity() {
+        let identity = vec![vec![1, 0, 0], vec![0, 1, 0], vec![0, 0, 1]];
+        let inv = invert_square(&identity).unwrap();
+        assert_eq!(inv, identity);
+    }
+
+    #[test]
+    fn test_invert_square_singular() {
+        let singular = vec![vec![1, 2], vec![1, 2]];
+        let result = invert_square(&singular);
+        assert!(matches!(result, Err(RSError::MatrixSingular(_))));
+    }
+
+    #[test]
+    fn test_invert_square_roundtrip() {
+        let m = vec![vec![2, 3, 5], vec![7, 11, 13], vec![17, 19, 23]];
+        let inv = invert_square(&m).unwrap();
+        let inv2 = invert_square(&inv).unwrap();
+        assert_eq!(inv2, m);
+    }
+
+    #[test]
+    fn test_invert_square_1x1() {
+        let m = vec![vec![5]];
+        let inv = invert_square(&m).unwrap();
+        assert_eq!(inv[0][0], gf_inv(5));
+    }
+
+    // ── encode edge cases ──
+
+    #[test]
+    fn test_encode_empty_data() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let shards = engine.encode(&profile, &[]).unwrap();
+        assert_eq!(shards.len(), 6);
+        for s in &shards {
+            assert_eq!(s.len(), 0);
+        }
+    }
+
+    #[test]
+    fn test_encode_single_byte() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = vec![0xAB];
+        let shards = engine.encode(&profile, &data).unwrap();
+        assert_eq!(shards.len(), 6);
+        let slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        let recovered = engine.decode_reconstruct(&profile, &slots, 1).unwrap();
+        assert_eq!(recovered, data);
+    }
+
+    #[test]
+    fn test_encode_2plus1_minimal() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(2, 1).unwrap();
+        let data = (0..100u8).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        assert_eq!(shards.len(), 3);
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[1] = None;
+        let recovered = engine.decode_reconstruct(&profile, &slots, data.len()).unwrap();
+        assert_eq!(recovered, data);
+    }
+
+    #[test]
+    fn test_encode_max_data_shards_32() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(32, 4).unwrap();
+        let data = (0..=255u8).cycle().take(1024).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        assert_eq!(shards.len(), 36);
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        for slot in slots.iter_mut().take(36).skip(32) {
+            *slot = None;
+        }
+        let recovered = engine.decode_reconstruct(&profile, &slots, data.len()).unwrap();
+        assert_eq!(recovered, data);
+    }
+
+    #[test]
+    fn test_encode_with_scalar_path() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..=255u8).cycle().take(500).collect::<Vec<_>>();
+        let shards_scalar = engine.encode_with_path(&profile, &data, PathChoice::Scalar).unwrap();
+        let shards_auto = engine.encode(&profile, &data).unwrap();
+        assert_eq!(shards_scalar, shards_auto);
+    }
+
+    #[test]
+    fn test_encode_with_simd_path() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..=255u8).cycle().take(500).collect::<Vec<_>>();
+        let shards_simd = engine.encode_with_path(&profile, &data, PathChoice::Simd).unwrap();
+        let shards_scalar = engine.encode_with_path(&profile, &data, PathChoice::Scalar).unwrap();
+        assert_eq!(shards_simd, shards_scalar);
+    }
+
+    // ── decode error paths ──
+
+    #[test]
+    fn test_decode_shard_count_mismatch() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let slots = vec![Some(vec![0u8; 10]); 3];
+        let result = engine.decode_reconstruct(&profile, &slots, 100);
+        assert!(matches!(result, Err(RSError::InvalidInput(_))));
+    }
+
+    #[test]
+    fn test_decode_too_many_missing() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..100u8).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[0] = None;
+        slots[1] = None;
+        slots[2] = None;
+        let result = engine.decode_reconstruct(&profile, &slots, data.len());
+        assert!(matches!(result, Err(RSError::TooManyShardsMissing(_))));
+    }
+
+    #[test]
+    fn test_decode_no_shard_present() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let slots = vec![None; 6];
+        let result = engine.decode_reconstruct(&profile, &slots, 100);
+        assert!(matches!(result, Err(RSError::TooManyShardsMissing(_))));
+    }
+
+    #[test]
+    fn test_decode_present_less_than_data() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..100u8).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[0] = None;
+        slots[1] = None;
+        slots[2] = None;
+        let result = engine.decode_reconstruct(&profile, &slots, data.len());
+        assert!(matches!(result, Err(RSError::TooManyShardsMissing(_))));
+    }
+
+    #[test]
+    fn test_decode_shard_size_mismatch() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..100u8).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        if let Some(ref mut s) = slots[1] {
+            s.push(0xFF);
+        }
+        let result = engine.decode_reconstruct(&profile, &slots, data.len());
+        assert!(matches!(result, Err(RSError::ShardSizeMismatch(_))));
+    }
+
+    #[test]
+    fn test_decode_with_path_scalar() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..=255u8).cycle().take(500).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[2] = None;
+        let recovered = engine
+            .decode_with_path(&profile, &slots, data.len(), PathChoice::Scalar)
+            .unwrap();
+        assert_eq!(recovered, data);
+    }
+
+    // ── decode_with_verification error paths ──
+
+    #[test]
+    fn test_verify_shard_count_mismatch() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let slots = vec![Some(vec![0u8; 10]); 3];
+        let result = engine.decode_with_verification(&profile, &slots, 100);
+        assert!(matches!(result, Err(RSError::InvalidInput(_))));
+    }
+
+    #[test]
+    fn test_verify_present_less_than_data() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..100u8).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[0] = None;
+        slots[1] = None;
+        slots[2] = None;
+        let result = engine.decode_with_verification(&profile, &slots, data.len());
+        assert!(matches!(result, Err(RSError::TooManyShardsMissing(_))));
+    }
+
+    #[test]
+    fn test_verify_surplus_parity_mismatch() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..=255u8).cycle().take(1000).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[5] = None;
+        if let Some(ref mut p) = slots[4] {
+            p[0] ^= 0xFF;
+        }
+        let result = engine.decode_with_verification(&profile, &slots, data.len());
+        assert!(matches!(result, Err(RSError::ReconstructionVerificationFailed(_))));
+    }
+
+    // ── reconstruct_shards ──
+
+    #[test]
+    fn test_reconstruct_shards_basic() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..=255u8).cycle().take(500).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[1] = None;
+        slots[4] = None;
+        let reconstructed = engine.reconstruct_shards(&profile, &slots).unwrap();
+        assert_eq!(reconstructed.len(), 6);
+        let original = engine.encode(&profile, &data).unwrap();
+        for i in 0..4 {
+            assert_eq!(reconstructed[i], original[i]);
+        }
+    }
+
+    #[test]
+    fn test_reconstruct_shards_count_mismatch() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let slots = vec![Some(vec![0u8; 10]); 3];
+        let result = engine.reconstruct_shards(&profile, &slots);
+        assert!(matches!(result, Err(RSError::InvalidInput(_))));
+    }
+
+    #[test]
+    fn test_reconstruct_shards_too_many_missing() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..100u8).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[0] = None;
+        slots[1] = None;
+        slots[2] = None;
+        let result = engine.reconstruct_shards(&profile, &slots);
+        assert!(matches!(result, Err(RSError::TooManyShardsMissing(_))));
+    }
+
+    #[test]
+    fn test_reconstruct_shards_with_path() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let data = (0..=255u8).cycle().take(500).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &data).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        slots[1] = None;
+        let r_scalar = engine
+            .reconstruct_shards_with_path(&profile, &slots, PathChoice::Scalar)
+            .unwrap();
+        let r_auto = engine.reconstruct_shards(&profile, &slots).unwrap();
+        assert_eq!(r_scalar, r_auto);
+    }
+
+    // ── ReedSolomon2Plus1 legacy ──
+
+    #[test]
+    fn test_rs2plus1_encode_decode() {
+        let rs = ReedSolomon2Plus1;
+        let d0 = Bytes::from(vec![1u8, 2, 3, 4]);
+        let d1 = Bytes::from(vec![5u8, 6, 7, 8]);
+        let encoded = rs.encode_2_1(&[d0.clone(), d1.clone()]).unwrap();
+        assert_eq!(encoded[0], d0);
+        assert_eq!(encoded[1], d1);
+        assert_eq!(encoded[2], Bytes::from(vec![4u8, 4, 4, 12]));
+        let all: [Option<Bytes>; 3] =
+            [Some(encoded[0].clone()), Some(encoded[1].clone()), Some(encoded[2].clone())];
+        let decoded = rs.decode_2_1(all).unwrap();
+        assert_eq!(decoded[0], d0);
+        assert_eq!(decoded[1], d1);
+    }
+
+    #[test]
+    fn test_rs2plus1_encode_size_mismatch() {
+        let rs = ReedSolomon2Plus1;
+        let d0 = Bytes::from(vec![1u8, 2, 3]);
+        let d1 = Bytes::from(vec![5u8, 6]);
+        let result = rs.encode_2_1(&[d0, d1]);
+        assert!(matches!(result, Err(RSError::ShardSizeMismatch(_))));
+    }
+
+    #[test]
+    fn test_rs2plus1_decode_missing_d0() {
+        let rs = ReedSolomon2Plus1;
+        let d0 = Bytes::from(vec![10u8, 20, 30]);
+        let d1 = Bytes::from(vec![40u8, 50, 60]);
+        let encoded = rs.encode_2_1(&[d0.clone(), d1.clone()]).unwrap();
+        let slots: [Option<Bytes>; 3] = [None, Some(encoded[1].clone()), Some(encoded[2].clone())];
+        let decoded = rs.decode_2_1(slots).unwrap();
+        assert_eq!(decoded[0], d0);
+        assert_eq!(decoded[1], d1);
+    }
+
+    #[test]
+    fn test_rs2plus1_decode_missing_d1() {
+        let rs = ReedSolomon2Plus1;
+        let d0 = Bytes::from(vec![10u8, 20, 30]);
+        let d1 = Bytes::from(vec![40u8, 50, 60]);
+        let encoded = rs.encode_2_1(&[d0.clone(), d1.clone()]).unwrap();
+        let slots: [Option<Bytes>; 3] = [Some(encoded[0].clone()), None, Some(encoded[2].clone())];
+        let decoded = rs.decode_2_1(slots).unwrap();
+        assert_eq!(decoded[0], d0);
+        assert_eq!(decoded[1], d1);
+    }
+
+    #[test]
+    fn test_rs2plus1_decode_missing_parity() {
+        let rs = ReedSolomon2Plus1;
+        let d0 = Bytes::from(vec![10u8, 20, 30]);
+        let d1 = Bytes::from(vec![40u8, 50, 60]);
+        let encoded = rs.encode_2_1(&[d0.clone(), d1.clone()]).unwrap();
+        let slots: [Option<Bytes>; 3] = [Some(encoded[0].clone()), Some(encoded[1].clone()), None];
+        let decoded = rs.decode_2_1(slots).unwrap();
+        assert_eq!(decoded[0], d0);
+        assert_eq!(decoded[1], d1);
+    }
+
+    #[test]
+    fn test_rs2plus1_decode_too_many_missing() {
+        let rs = ReedSolomon2Plus1;
+        let slots: [Option<Bytes>; 3] = [None, None, Some(Bytes::from(vec![1u8, 2]))];
+        let result = rs.decode_2_1(slots);
+        assert!(matches!(result, Err(RSError::TooManyShardsMissing(_))));
+    }
+
+    #[test]
+    fn test_rs2plus1_decode_all_none() {
+        let rs = ReedSolomon2Plus1;
+        let slots: [Option<Bytes>; 3] = [None, None, None];
+        let result = rs.decode_2_1(slots);
+        assert!(matches!(result, Err(RSError::TooManyShardsMissing(_))));
+    }
+
+    #[test]
+    fn test_rs2plus1_xor_bytes() {
+        let rs = ReedSolomon2Plus1;
+        let a = vec![0xFFu8, 0x00, 0xAA];
+        let b = vec![0x00u8, 0xFF, 0x55];
+        let result = rs.xor_bytes(&a, &b);
+        assert_eq!(result, vec![0xFFu8, 0xFF, 0xFF]);
+    }
+
+    // ── PathChoice ──
+
+    #[test]
+    fn test_path_choice_variants() {
+        assert_ne!(PathChoice::Auto, PathChoice::Simd);
+        assert_ne!(PathChoice::Simd, PathChoice::Scalar);
+        assert_ne!(PathChoice::Auto, PathChoice::Scalar);
+    }
+
+    // ── matrix cache concurrent access ──
+
+    #[test]
+    fn test_matrix_cache_concurrent() {
+        use std::thread;
+        let mut handles = Vec::new();
+        for _ in 0..8 {
+            handles.push(thread::spawn(|| {
+                for _ in 0..100 {
+                    let m = matrix_for(6, 3).unwrap();
+                    assert_eq!(m.len(), 9);
+                    assert_eq!(m[0].len(), 6);
+                }
+            }));
+        }
+        for h in handles {
+            h.join().unwrap();
+        }
+    }
+
+    // ── xor_gf_mul_vec direct tests ──
+
+    #[test]
+    fn test_xor_gf_mul_vec_coef_zero() {
+        let src = vec![0xABu8; 64];
+        let mut dst = vec![0xFFu8; 64];
+        xor_gf_mul_vec(0, &src, &mut dst, PathChoice::Scalar);
+        assert!(dst.iter().all(|&b| b == 0xFF));
+    }
+
+    #[test]
+    fn test_xor_gf_mul_vec_coef_one() {
+        let src = vec![0xABu8; 64];
+        let mut dst = vec![0x00u8; 64];
+        xor_gf_mul_vec(1, &src, &mut dst, PathChoice::Scalar);
+        assert!(dst.iter().all(|&b| b == 0xAB));
+    }
+
+    #[test]
+    fn test_xor_gf_mul_vec_general() {
+        let src: Vec<u8> = (0..64u8).collect();
+        let mut dst = vec![0u8; 64];
+        xor_gf_mul_vec(3, &src, &mut dst, PathChoice::Scalar);
+        for i in 0..64 {
+            assert_eq!(dst[i], gf_mul(3, src[i]));
+        }
+    }
+
+    #[test]
+    fn test_xor_gf_mul_vec_empty() {
+        let src: Vec<u8> = vec![];
+        let mut dst: Vec<u8> = vec![];
+        xor_gf_mul_vec(5, &src, &mut dst, PathChoice::Scalar);
+        assert!(dst.is_empty());
+    }
+
+    // ── EcProfile ──
+
+    #[test]
+    fn test_ec_profile_total_shards() {
+        let p = EcProfile::with_default_min_size(4, 2).unwrap();
+        assert_eq!(p.total_shards(), 6);
+    }
+
+    #[test]
+    fn test_ec_profile_is_replica() {
+        let p = EcProfile::with_default_min_size(4, 2).unwrap();
+        assert!(p.is_replica(crate::DEFAULT_MIN_OBJ_SIZE - 1));
+        assert!(!p.is_replica(crate::DEFAULT_MIN_OBJ_SIZE));
+    }
+
+    #[test]
+    fn test_ec_profile_default() {
+        let p = EcProfile::default();
+        assert_eq!(p.data_shards, 4);
+        assert_eq!(p.parity_shards, 2);
+    }
+
+    #[test]
+    fn test_ec_profile_new_valid() {
+        let p = EcProfile::new(2, 1, 1000).unwrap();
+        assert_eq!(p.data_shards, 2);
+        assert_eq!(p.parity_shards, 1);
+        assert_eq!(p.min_obj_size, 1000);
+    }
+
+    #[test]
+    fn test_ec_profile_new_invalid_data() {
+        assert!(EcProfile::new(0, 1, 100).is_err());
+        assert!(EcProfile::new(1, 1, 100).is_err());
+    }
+
+    #[test]
+    fn test_ec_profile_new_invalid_parity() {
+        assert!(EcProfile::new(4, 0, 100).is_err());
     }
 }
 
@@ -874,7 +1419,9 @@ mod t22_rs_simd_tests {
             EcProfile::with_default_min_size(12, 4).unwrap(),
         ]
     }
-    fn payloads() -> [usize; 4] { [64, 4096, 1_048_576, 16_777_216] }
+    fn payloads() -> [usize; 4] {
+        [64, 4096, 1_048_576, 16_777_216]
+    }
 
     /// Compare parity shards produced by Scalar path vs Auto (SIMD on supported
     /// hosts).  All data shards + parity shards must be byte-identical.
@@ -888,11 +1435,7 @@ mod t22_rs_simd_tests {
         let scalar = eng.encode_with_path(&profile, &payload, PathChoice::Scalar).unwrap();
         let auto = eng.encode_with_path(&profile, &payload, PathChoice::Auto).unwrap();
         for i in 0..scalar.len() {
-            assert_eq!(
-                scalar[i], auto[i],
-                "SIMD parity mismatch for shard i={} (16MB 12+4)",
-                i
-            );
+            assert_eq!(scalar[i], auto[i], "SIMD parity mismatch for shard i={} (16MB 12+4)", i);
         }
     }
 
@@ -913,14 +1456,19 @@ mod t22_rs_simd_tests {
                 let shards = eng.encode_with_path(profile, &payload, PathChoice::Auto).unwrap();
                 let parity = profile.parity_shards as usize;
                 for first_k in [true, false] {
-                    let mut slots: Vec<Option<Vec<u8>>> = shards.iter().cloned().map(Some).collect();
+                    let mut slots: Vec<Option<Vec<u8>>> =
+                        shards.iter().cloned().map(Some).collect();
                     if first_k {
-                        for i in 0..parity { slots[i] = None; }
+                        for slot in slots.iter_mut().take(parity) {
+                            *slot = None;
+                        }
                     } else {
                         // random parity indices plus potentially one data shard inside parity_count.
                         let total = slots.len();
                         let seed = (size ^ (profile.data_shards as usize)) % total;
-                        for k in 0..parity { slots[(seed + k) % total] = None; }
+                        for k in 0..parity {
+                            slots[(seed + k) % total] = None;
+                        }
                     }
                     let recovered = eng
                         .decode_with_path(profile, &slots, payload.len(), PathChoice::Scalar)
@@ -955,10 +1503,10 @@ mod t22_rs_simd_tests {
             let mut indices: Vec<usize> = (0..total).collect();
             indices.shuffle(&mut rng);
             let mut slots: Vec<Option<Vec<u8>>> = shards.iter().cloned().map(Some).collect();
-            for &idx in indices.iter().take(loss) { slots[idx] = None; }
-            let got = eng
-                .decode_reconstruct(&profile, &slots, payload.len())
-                .unwrap();
+            for &idx in indices.iter().take(loss) {
+                slots[idx] = None;
+            }
+            let got = eng.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
             assert_eq!(got, payload, "1000-round mismatch at loss={loss}");
         }
     }

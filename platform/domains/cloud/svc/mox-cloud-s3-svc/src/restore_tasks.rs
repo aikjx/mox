@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -27,10 +27,7 @@ pub enum Tier {
 pub enum RestoreState {
     Queued,
     InProgress,
-    Available {
-        available_at_ms: u64,
-        expires_at_ms: u64,
-    },
+    Available { available_at_ms: u64, expires_at_ms: u64 },
     Expired,
     Failed(String),
 }
@@ -78,21 +75,12 @@ impl Default for RestoreQueue {
 
 impl RestoreQueue {
     pub fn new() -> Self {
-        Self {
-            tasks: Vec::new(),
-            counter: AtomicU64::new(1),
-        }
+        Self { tasks: Vec::new(), counter: AtomicU64::new(1) }
     }
 
     /// Enqueue a new restore task.  State starts as Queued.  Returns the new
     /// task id.
-    pub fn enqueue(
-        &mut self,
-        bucket: &str,
-        key: &str,
-        tier: Tier,
-        now_ms: u64,
-    ) -> String {
+    pub fn enqueue(&mut self, bucket: &str, key: &str, tier: Tier, now_ms: u64) -> String {
         let id = new_task_id(&self.counter);
         let task = RestoreTask {
             id: id.clone(),
@@ -118,7 +106,7 @@ impl RestoreQueue {
             match t.state {
                 RestoreState::Queued => {
                     t.state = RestoreState::InProgress;
-                }
+                },
                 RestoreState::InProgress => {
                     if now_ms >= t.eta_ms {
                         t.state = RestoreState::Available {
@@ -126,13 +114,13 @@ impl RestoreQueue {
                             expires_at_ms: now_ms + ONE_DAY_MS,
                         };
                     }
-                }
+                },
                 RestoreState::Available { expires_at_ms, .. } => {
                     if now_ms >= expires_at_ms {
                         t.state = RestoreState::Expired;
                     }
-                }
-                RestoreState::Expired | RestoreState::Failed(_) => {}
+                },
+                RestoreState::Expired | RestoreState::Failed(_) => {},
             }
         }
     }
@@ -153,8 +141,10 @@ impl RestoreQueue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, Mutex};
-    use std::thread;
+    use std::{
+        sync::{Arc, Mutex},
+        thread,
+    };
 
     // --- B1: 3 tiers, tick and ETA transitions ---
     #[test]
@@ -176,7 +166,7 @@ mod tests {
         match q.get(&e_id).unwrap().state {
             RestoreState::Available { expires_at_ms, .. } => {
                 assert_eq!(expires_at_ms, expedited_done + ONE_DAY_MS);
-            }
+            },
             other => panic!("Expedited should be Available, got {:?}", other),
         }
         // Standard & Bulk still InProgress
@@ -195,7 +185,7 @@ mod tests {
         match q.get(&id).unwrap().state {
             RestoreState::Available { expires_at_ms, .. } => {
                 assert_eq!(expires_at_ms, (TIER_EXPEDITED_ETA_MS + 1) + ONE_DAY_MS);
-            }
+            },
             other => panic!("expected Available, got {:?}", other),
         }
         // tick exactly one day + 1 after available

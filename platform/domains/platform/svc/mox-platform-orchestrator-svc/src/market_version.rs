@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -30,6 +30,7 @@ use std::collections::HashMap;
 
 use crate::market::{load_package, reload_index_sync, save_package, MarketState, OperatorPackage};
 use crate::market_migration::{audit, changelogs_dir, now_rfc3339, versions_dir};
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // ========== 语义化版本 ==========
 
@@ -542,10 +543,10 @@ pub fn version_routes() -> Router<MarketState> {
 async fn list_versions_handler(
     State(_state): State<MarketState>,
     Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let versions = list_versions(&id);
     let changelog = read_changelog(&id);
-    Json(serde_json::json!({
+    api_ok(serde_json::json!({
         "success": true,
         "id": id,
         "total": versions.len(),
@@ -560,20 +561,16 @@ async fn compare_versions_handler(
     State(_state): State<MarketState>,
     Path(id): Path<String>,
     Query(params): Query<HashMap<String, String>>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let base_v = params.get("base").cloned().unwrap_or_default();
     let target_v = params.get("target").cloned().unwrap_or_default();
     if base_v.is_empty() || target_v.is_empty() {
-        return Json(
-            serde_json::json!({ "success": false, "error": "需要 base 与 target 两个版本号" }),
-        );
+        return api_error(500, "需要 base 与 target 两个版本号");
     }
     let base = match get_version(&id, &base_v) {
         Some(p) => p,
         None => {
-            return Json(
-                serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", base_v) }),
-            )
+            return api_error(500, format!("版本 {} 不存在", base_v))
         }
     };
     // target 允许指向当前最新版
@@ -581,39 +578,35 @@ async fn compare_versions_handler(
         match load_package(&id) {
             Ok(p) => p,
             Err(_) => {
-                return Json(serde_json::json!({ "success": false, "error": "算子包不存在" }))
+                return api_error(500, "算子包不存在")
             }
         }
     } else {
         match get_version(&id, &target_v) {
             Some(p) => p,
             None => {
-                return Json(
-                    serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", target_v) }),
-                )
+                return api_error(500, format!("版本 {} 不存在", target_v))
             }
         }
     };
     let diff = diff_packages(&base, &target);
-    Json(serde_json::json!({ "success": true, "id": id, "diff": diff }))
+    api_ok(serde_json::json!({ "success": true, "id": id, "diff": diff }))
 }
 
 /// GET /:id/versions/:version —— 读取指定版本快照（不阻塞最新版读取）
 async fn get_version_handler(
     State(_state): State<MarketState>,
     Path((id, version)): Path<(String, String)>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     if version == "latest" {
         return match load_package(&id) {
-            Ok(pkg) => Json(serde_json::json!({ "success": true, "package": pkg })),
-            Err(e) => Json(serde_json::json!({ "success": false, "error": e })),
+            Ok(pkg) => api_ok(serde_json::json!({ "success": true, "package": pkg })),
+            Err(e) => api_error(500, e),
         };
     }
     match get_version(&id, &version) {
-        Some(pkg) => Json(serde_json::json!({ "success": true, "package": pkg })),
-        None => Json(
-            serde_json::json!({ "success": false, "error": format!("版本 {} 不存在", version) }),
-        ),
+        Some(pkg) => api_ok(serde_json::json!({ "success": true, "package": pkg })),
+        None => api_error(500, format!("版本 {} 不存在", version)),
     }
 }
 
@@ -622,22 +615,13 @@ async fn rollback_handler(
     State(state): State<MarketState>,
     Path((id, version)): Path<(String, String)>,
     headers: axum::http::HeaderMap,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let actor = actor_from_headers(&headers);
     match rollback(&id, &version, &actor) {
         Ok(pkg) => {
             reload_index_sync(&state);
-            (
-                StatusCode::OK,
-                Json(
-                    serde_json::json!({ "success": true, "package": pkg, "rolled_back_to": version }),
-                ),
-            )
-        }
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "success": false, "error": e })),
-        ),
+            api_ok(serde_json::json!({ "success": true, "package": pkg, "rolled_back_to": version }),)}
+        Err(e) => api_error(400, e),
     }
 }
 

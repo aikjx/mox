@@ -5,10 +5,10 @@
 //! domain-traits 内部的 [`StorageError`] / [`MetaError`] / [`ReadError`] /
 //! [`WriteError`] 通过 `#[from]` 自动转换。
 
-use crate::meta_storage::MetaError;
-use crate::shard_reader::ReadError;
-use crate::shard_writer::WriteError;
-use crate::storage_backend::StorageError;
+use crate::{
+    meta_storage::MetaError, shard_reader::ReadError, shard_writer::WriteError,
+    storage_backend::StorageError,
+};
 
 /// Mox Cloud 统一顶层错误枚举。
 ///
@@ -135,15 +135,9 @@ mod tests {
 
     #[test]
     fn test_cloud_error_from_write_error() {
-        let we = WriteError::QuorumNotReached {
-            succeeded: 1,
-            required: 2,
-        };
+        let we = WriteError::QuorumNotReached { succeeded: 1, required: 2 };
         let ce: CloudError = we.into();
-        assert!(matches!(
-            ce,
-            CloudError::Write(WriteError::QuorumNotReached { .. })
-        ));
+        assert!(matches!(ce, CloudError::Write(WriteError::QuorumNotReached { .. })));
         assert!(format!("{ce}").contains("Write error: quorum not reached"));
     }
 
@@ -166,9 +160,11 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unnecessary_literal_unwrap)]
     fn test_cloud_result_type_alias() {
-        let ok: CloudResult<i32> = Ok(42);
-        assert_eq!(ok.unwrap(), 42);
+        let val = 42;
+        let ok: CloudResult<i32> = Ok(val);
+        assert_eq!(ok.unwrap(), val);
 
         let err: CloudResult<i32> = Err(CloudError::NotFound("test".into()));
         assert!(err.is_err());

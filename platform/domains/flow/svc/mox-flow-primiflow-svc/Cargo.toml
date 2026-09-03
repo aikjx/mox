@@ -17,6 +17,7 @@ uuid = { workspace = true }
 mox-platform-system-core = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }
+tracing = { workspace = true }
 
 [features]
 # 默认不含 HTTP 服务层；需在构建示例/部署时显式开启 `--features server`。

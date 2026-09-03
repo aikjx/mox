@@ -165,11 +165,7 @@ pub enum StorageError {
 #[async_trait]
 pub trait StorageBackend: Send + Sync {
     /// 写入一个数据块。
-    async fn put_chunk(
-        &self,
-        chunk_id: &ChunkId,
-        data: &[u8],
-    ) -> Result<ChunkInfo, StorageError>;
+    async fn put_chunk(&self, chunk_id: &ChunkId, data: &[u8]) -> Result<ChunkInfo, StorageError>;
 
     /// 读取一个数据块的完整内容。
     async fn get_chunk(&self, chunk_id: &ChunkId) -> Result<Vec<u8>, StorageError>;
@@ -241,11 +237,7 @@ mod tests {
             _marker: Option<&str>,
             _limit: u32,
         ) -> Result<ChunkListPage, StorageError> {
-            Ok(ChunkListPage {
-                items: vec![],
-                next_marker: None,
-                is_truncated: false,
-            })
+            Ok(ChunkListPage { items: vec![], next_marker: None, is_truncated: false })
         }
 
         fn backend_type(&self) -> BackendType {

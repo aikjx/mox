@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -34,6 +34,7 @@ use crate::market_migration::{
     audit, now_rfc3339, packages_dir, sign_doc, verify_doc, zip_read, zip_write,
 };
 use crate::market_version::{actor_from_headers, append_changelog, snapshot_package};
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 /// 冲突处理策略
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -470,16 +471,12 @@ async fn import_packages(
     State(_s): State<MarketState>,
     headers: HeaderMap,
     body: Bytes,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let actor = actor_from_headers(&headers);
     let value = match parse_package_value(&body) {
         Ok(v) => v,
         Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "success": false, "error": e })),
-            )
-        }
+            return api_error(400, e);}
     };
     let req: ImportRequest = match serde_json::from_value(value.clone()) {
         Ok(r) => r,
@@ -492,17 +489,9 @@ async fn import_packages(
                     req_verify(&value),
                     &actor,
                 );
-                return (
-                    StatusCode::OK,
-                    Json(serde_json::json!({ "success": true, "results": [item] })),
-                );
+                return api_ok(serde_json::json!({ "success": true, "results": [item] }));
             }
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(
-                    serde_json::json!({ "success": false, "error": format!("导入请求格式非法: {}", e) }),
-                ),
-            );
+            return api_error(400, format!("导入请求格式非法: {}", e));
         }
     };
     let mut items: Vec<serde_json::Value> = Vec::new();
@@ -515,23 +504,14 @@ async fn import_packages(
         items.push(serde_json::to_value(&item).unwrap_or_default());
     }
     if items.is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(
-                serde_json::json!({ "success": false, "error": "没有可导入的包（需要 package 或 packages 字段）" }),
-            ),
-        );
+        return api_error(400, "没有可导入的包（需要 package 或 packages 字段）");
     }
     let counts = count_statuses(&items);
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({
+    api_ok(serde_json::json!({
             "success": true,
             "results": items,
             "summary": counts,
-        })),
-    )
-}
+        }))}
 
 fn req_conflict(v: &serde_json::Value) -> ConflictStrategy {
     v.get("conflict")
@@ -560,36 +540,22 @@ async fn import_zip(
     State(_s): State<MarketState>,
     headers: HeaderMap,
     body: Bytes,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> ApiResponse<serde_json::Value> {
     let actor = actor_from_headers(&headers);
     let req: ZipImportRequest = match serde_json::from_slice(&body) {
         Ok(r) => r,
         Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(
-                    serde_json::json!({ "success": false, "error": format!("请求体需为 {{ \"data\": \"<base64 zip>\" }}: {}", e) }),
-                ),
-            )
-        }
+            return api_error(400, format!("请求体需为 {{ \"data\": \"<base64 zip>\" }}: {}", e));}
     };
     let raw = match base64_decode(&req.data) {
         Ok(b) => b,
         Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "success": false, "error": e })),
-            )
-        }
+            return api_error(400, e);}
     };
     let entries = match zip_read(&raw) {
         Ok(e) => e,
         Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "success": false, "error": e })),
-            )
-        }
+            return api_error(400, e);}
     };
     // manifest 校验
     let manifest_entry = entries.iter().find(|(n, _)| n == "manifest.json");
@@ -602,31 +568,15 @@ async fn import_zip(
                 let doc: serde_json::Value = match serde_json::from_slice(content) {
                     Ok(d) => d,
                     Err(e) => {
-                        return (
-                            StatusCode::BAD_REQUEST,
-                            Json(
-                                serde_json::json!({ "success": false, "error": format!("manifest 解析失败: {}", e) }),
-                            ),
-                        )
-                    }
+                        return api_error(400, format!("manifest 解析失败: {}", e));}
                 };
                 if !verify_doc(&doc) {
                     audit("import", &actor, "ZIP manifest 签名校验失败（已拒绝）");
-                    return (
-                        StatusCode::BAD_REQUEST,
-                        Json(
-                            serde_json::json!({ "success": false, "error": "ZIP manifest 签名校验失败（导出物被篡改或密钥不匹配）" }),
-                        ),
-                    );
+                    return api_error(400, "ZIP manifest 签名校验失败（导出物被篡改或密钥不匹配）");
                 }
             }
             None => {
-                return (
-                    StatusCode::BAD_REQUEST,
-                    Json(
-                        serde_json::json!({ "success": false, "error": "ZIP 缺少 manifest.json（不是 OUS 导出的全量包）" }),
-                    ),
-                );
+                return api_error(400, "ZIP 缺少 manifest.json（不是 OUS 导出的全量包）");
             }
         }
     }
@@ -656,13 +606,7 @@ async fn import_zip(
         &actor,
         &format!("ZIP 导入完成，处理 {} 个包", results.len()),
     );
-    (
-        StatusCode::OK,
-        Json(
-            serde_json::json!({ "success": true, "results": results, "summary": count_statuses(&results) }),
-        ),
-    )
-}
+    api_ok(serde_json::json!({ "success": true, "results": results, "summary": count_statuses(&results) }),)}
 
 /// zip 导入用：跳过包级签名（manifest 已整体校验）
 fn import_one_allow(
@@ -748,22 +692,18 @@ fn import_one_allow(
 async fn list_by_tenant(
     State(state): State<MarketState>,
     Path(tenant_id): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let meta = list_packages_filtered(&state, None, None, None, Some(&tenant_id), None, None);
-    Json(
-        serde_json::json!({ "success": true, "tenant_id": tenant_id, "total": meta.len(), "packages": meta }),
-    )
+    api_ok(serde_json::json!({ "success": true, "tenant_id": tenant_id, "total": meta.len(), "packages": meta }),)
 }
 
 /// GET /owner/:created_by —— 按创建人过滤
 async fn list_by_owner(
     State(state): State<MarketState>,
     Path(created_by): Path<String>,
-) -> Json<serde_json::Value> {
+) -> ApiResponse<serde_json::Value> {
     let meta = list_packages_filtered(&state, None, None, None, None, Some(&created_by), None);
-    Json(
-        serde_json::json!({ "success": true, "created_by": created_by, "total": meta.len(), "packages": meta }),
-    )
+    api_ok(serde_json::json!({ "success": true, "created_by": created_by, "total": meta.len(), "packages": meta }),)
 }
 
 /// base64 解码（支持标准/URL-safe）

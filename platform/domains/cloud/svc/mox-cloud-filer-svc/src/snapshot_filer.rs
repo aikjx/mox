@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -26,13 +26,20 @@
 //! 快照树通过 inode 映射表维护：每个快照有独立的 inode -> attr 映射，
 //! 但数据块（data chunks）是共享的，通过引用计数管理生命周期。
 
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+#![allow(clippy::too_many_arguments)]
+// restore_inode_tree has 8 params by design (tree restore context); refactor would harm readability
 
-use crate::error::FilerResult;
-use crate::meta_trait::{Attr, DirEntry, S_IFDIR, S_IFREG};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+use crate::{
+    error::FilerResult,
+    meta_trait::{Attr, DirEntry, S_IFDIR, S_IFREG},
+};
 
 // ---------------- 常量 ----------------
 
@@ -240,10 +247,7 @@ impl SnapshotManager {
 
         // 更新源索引
         let mut source_idx = self.source_index.lock();
-        source_idx
-            .entry(source_ino)
-            .or_default()
-            .push(snap_id);
+        source_idx.entry(source_ino).or_default().push(snap_id);
 
         Ok(info)
     }
@@ -305,9 +309,7 @@ impl SnapshotManager {
         entry.attr.ino = snap_ino;
 
         // 保存到快照 inode 表
-        self.snap_inodes
-            .lock()
-            .insert((snap_id, snap_ino), entry);
+        self.snap_inodes.lock().insert((snap_id, snap_ino), entry);
 
         Ok(snap_ino)
     }
@@ -402,9 +404,7 @@ impl SnapshotManager {
             .ok_or(crate::error::FilerError::NotFound)?;
 
         if snap.status != SnapshotStatus::Available {
-            return Err(crate::error::FilerError::Other(
-                "Snapshot is not available".into(),
-            ));
+            return Err(crate::error::FilerError::Other("Snapshot is not available".into()));
         }
 
         // 更新状态
@@ -508,10 +508,7 @@ impl SnapshotManager {
     /// 按名称查找快照
     pub fn find_snapshot_by_name(&self, source_ino: u64, name: &str) -> Option<SnapshotInfo> {
         let snaps = self.snapshots.lock();
-        snaps
-            .values()
-            .find(|s| s.source_ino == source_ino && s.name == name)
-            .cloned()
+        snaps.values().find(|s| s.source_ino == source_ino && s.name == name).cloned()
     }
 
     /// 列出指定源目录的所有快照
@@ -524,10 +521,7 @@ impl SnapshotManager {
         drop(source_idx);
 
         let snaps = self.snapshots.lock();
-        snap_ids
-            .iter()
-            .filter_map(|id| snaps.get(id).cloned())
-            .collect()
+        snap_ids.iter().filter_map(|id| snaps.get(id).cloned()).collect()
     }
 
     /// 列出所有快照
@@ -540,9 +534,7 @@ impl SnapshotManager {
     /// 读取快照中目录的内容
     pub fn read_snapshot_dir(&self, snap_id: u64, ino: u64) -> FilerResult<Vec<DirEntry>> {
         let snap_inodes = self.snap_inodes.lock();
-        let entry = snap_inodes
-            .get(&(snap_id, ino))
-            .ok_or(crate::error::FilerError::NotFound)?;
+        let entry = snap_inodes.get(&(snap_id, ino)).ok_or(crate::error::FilerError::NotFound)?;
 
         let is_dir = (entry.attr.mode & 0o170000) == S_IFDIR;
         if !is_dir {
@@ -559,11 +551,7 @@ impl SnapshotManager {
                 } else {
                     3 // symlink 或其他
                 };
-                entries.push(DirEntry {
-                    name: name.clone(),
-                    ino: *child_ino,
-                    typ,
-                });
+                entries.push(DirEntry { name: name.clone(), ino: *child_ino, typ });
             }
         }
 
@@ -573,9 +561,7 @@ impl SnapshotManager {
     /// 读取快照中文件的属性
     pub fn read_snapshot_attr(&self, snap_id: u64, ino: u64) -> FilerResult<Attr> {
         let snap_inodes = self.snap_inodes.lock();
-        let entry = snap_inodes
-            .get(&(snap_id, ino))
-            .ok_or(crate::error::FilerError::NotFound)?;
+        let entry = snap_inodes.get(&(snap_id, ino)).ok_or(crate::error::FilerError::NotFound)?;
         Ok(entry.attr.clone())
     }
 
@@ -606,10 +592,7 @@ impl SnapshotManager {
         root_ino: u64,
         path: &str,
     ) -> FilerResult<u64> {
-        let components: Vec<&str> = path
-            .split('/')
-            .filter(|s| !s.is_empty())
-            .collect();
+        let components: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
 
         let mut current_ino = root_ino;
 
@@ -624,10 +607,7 @@ impl SnapshotManager {
                 return Err(crate::error::FilerError::NotFound);
             }
 
-            current_ino = *entry
-                .children
-                .get(comp)
-                .ok_or(crate::error::FilerError::NotFound)?;
+            current_ino = *entry.children.get(comp).ok_or(crate::error::FilerError::NotFound)?;
         }
 
         Ok(current_ino)
@@ -651,7 +631,7 @@ impl SnapshotManager {
 
         let chunks = self.chunks.lock();
         let mut exclusive = 0u64;
-        for (chunk_id, _) in &chunk_refs {
+        for chunk_id in chunk_refs.keys() {
             if let Some(chunk) = chunks.get(chunk_id) {
                 if chunk.ref_count == 1 {
                     // 只被本快照引用，是独占空间
@@ -696,11 +676,7 @@ impl SnapshotManager {
         drop(id);
 
         let size = data.len() as u32;
-        let chunk = ChunkRef {
-            ref_count: 1,
-            size,
-            data,
-        };
+        let chunk = ChunkRef { ref_count: 1, size, data };
 
         chunks.insert(chunk_id, chunk);
         chunk_id
@@ -715,10 +691,7 @@ impl SnapshotManager {
 // ---------------- 辅助函数 ----------------
 
 fn now_secs() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
 // ---------------- 共享类型别名 ----------------
@@ -732,8 +705,7 @@ pub type SharedSnapshotManager = Arc<SnapshotManager>;
 mod tests {
     use super::*;
     use crate::meta_trait::{InMemInodeStore, S_IFDIR, S_IFREG};
-    use std::cell::RefCell;
-    use std::rc::Rc;
+    use std::{cell::RefCell, rc::Rc};
 
     fn setup_test_store() -> InMemInodeStore {
         let mut store = InMemInodeStore::new();
@@ -760,9 +732,7 @@ mod tests {
                 symlink: None,
             },
         );
-        store
-            .dir_index
-            .insert((1, "subdir".to_string()), d_ino);
+        store.dir_index.insert((1, "subdir".to_string()), d_ino);
 
         // 创建文件 ino=3
         let f_ino = store.next_ino();
@@ -784,9 +754,7 @@ mod tests {
                 symlink: None,
             },
         );
-        store
-            .dir_index
-            .insert((1, "file.txt".to_string()), f_ino);
+        store.dir_index.insert((1, "file.txt".to_string()), f_ino);
 
         // 在子目录中创建文件 ino=4
         let f2_ino = store.next_ino();
@@ -808,9 +776,7 @@ mod tests {
                 symlink: None,
             },
         );
-        store
-            .dir_index
-            .insert((d_ino, "nested.txt".to_string()), f2_ino);
+        store.dir_index.insert((d_ino, "nested.txt".to_string()), f2_ino);
 
         store
     }
@@ -827,11 +793,7 @@ mod tests {
                 } else {
                     3
                 };
-                entries.push(DirEntry {
-                    name: name.clone(),
-                    ino: *ino,
-                    typ,
-                });
+                entries.push(DirEntry { name: name.clone(), ino: *ino, typ });
             }
         }
         entries.sort_by(|a, b| a.name.cmp(&b.name));
@@ -844,11 +806,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -860,7 +818,14 @@ mod tests {
         };
 
         let snap = mgr
-            .create_snapshot(1, "snap1", Some("test snapshot".into()), get_attr, list_dir, read_data)
+            .create_snapshot(
+                1,
+                "snap1",
+                Some("test snapshot".into()),
+                get_attr,
+                list_dir,
+                read_data,
+            )
             .unwrap();
 
         assert_eq!(snap.name, "snap1");
@@ -877,11 +842,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -892,10 +853,8 @@ mod tests {
                 .ok_or(crate::error::FilerError::NotFound)
         };
 
-        mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data)
-            .unwrap();
-        mgr.create_snapshot(1, "snap2", None, get_attr, list_dir, read_data)
-            .unwrap();
+        mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data).unwrap();
+        mgr.create_snapshot(1, "snap2", None, get_attr, list_dir, read_data).unwrap();
 
         let snaps = mgr.list_snapshots(1);
         assert_eq!(snaps.len(), 2);
@@ -907,11 +866,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -922,9 +877,7 @@ mod tests {
                 .ok_or(crate::error::FilerError::NotFound)
         };
 
-        let snap = mgr
-            .create_snapshot(1, "snap1", None, get_attr, list_dir, read_data)
-            .unwrap();
+        let snap = mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data).unwrap();
         let snap_id = snap.id;
         let root_ino = snap.snapshot_root_ino;
 
@@ -935,16 +888,12 @@ mod tests {
         assert!(entries.iter().any(|e| e.name == "subdir"));
 
         // 读取文件数据
-        let file_ino = mgr
-            .lookup_snapshot_path(snap_id, root_ino, "file.txt")
-            .unwrap();
+        let file_ino = mgr.lookup_snapshot_path(snap_id, root_ino, "file.txt").unwrap();
         let data = mgr.read_snapshot_data(snap_id, file_ino).unwrap();
         assert_eq!(data, b"hello world!");
 
         // 读取嵌套文件
-        let nested_ino = mgr
-            .lookup_snapshot_path(snap_id, root_ino, "subdir/nested.txt")
-            .unwrap();
+        let nested_ino = mgr.lookup_snapshot_path(snap_id, root_ino, "subdir/nested.txt").unwrap();
         let nested_data = mgr.read_snapshot_data(snap_id, nested_ino).unwrap();
         assert_eq!(nested_data, b"nested");
     }
@@ -955,11 +904,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -971,12 +916,8 @@ mod tests {
         };
 
         // 创建两个相同源的快照，数据块应该共享（引用计数 > 1）
-        let snap1 = mgr
-            .create_snapshot(1, "snap1", None, get_attr, list_dir, read_data)
-            .unwrap();
-        let snap2 = mgr
-            .create_snapshot(1, "snap2", None, get_attr, list_dir, read_data)
-            .unwrap();
+        let snap1 = mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data).unwrap();
+        let snap2 = mgr.create_snapshot(1, "snap2", None, get_attr, list_dir, read_data).unwrap();
 
         // 总存储使用量应小于两个快照大小之和（数据共享）
         let total = mgr.total_storage_used();
@@ -1000,11 +941,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -1015,9 +952,7 @@ mod tests {
                 .ok_or(crate::error::FilerError::NotFound)
         };
 
-        let snap = mgr
-            .create_snapshot(1, "backup", None, get_attr, list_dir, read_data)
-            .unwrap();
+        let snap = mgr.create_snapshot(1, "backup", None, get_attr, list_dir, read_data).unwrap();
 
         // 用一个新的内存存储作为恢复目标（Rc<RefCell> 让多个 Fn 闭包共享可变状态）
         let target_store = Rc::new(RefCell::new(InMemInodeStore::new()));
@@ -1046,9 +981,7 @@ mod tests {
                         symlink: None,
                     },
                 );
-                store
-                    .dir_index
-                    .insert((parent, name.to_string()), ino);
+                store.dir_index.insert((parent, name.to_string()), ino);
                 Ok(ino)
             }
         };
@@ -1077,9 +1010,7 @@ mod tests {
                         symlink: None,
                     },
                 );
-                store
-                    .dir_index
-                    .insert((parent, name.to_string()), ino);
+                store.dir_index.insert((parent, name.to_string()), ino);
                 Ok(ino)
             }
         };
@@ -1096,15 +1027,12 @@ mod tests {
             }
         };
 
-        let restored_ino = mgr
-            .restore_snapshot(snap.id, 1, "restored", mkdir, create, write)
-            .unwrap();
+        let restored_ino =
+            mgr.restore_snapshot(snap.id, 1, "restored", mkdir, create, write).unwrap();
 
         // 验证恢复的目录
         let store = target_store.borrow();
-        assert!(store
-            .dir_index
-            .contains_key(&(1, "restored".to_string())));
+        assert!(store.dir_index.contains_key(&(1, "restored".to_string())));
         assert_eq!(restored_ino, store.lookup_name(1, "restored").unwrap());
 
         // 验证恢复的文件
@@ -1120,11 +1048,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -1135,9 +1059,7 @@ mod tests {
                 .ok_or(crate::error::FilerError::NotFound)
         };
 
-        let snap = mgr
-            .create_snapshot(1, "snap1", None, get_attr, list_dir, read_data)
-            .unwrap();
+        let snap = mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data).unwrap();
 
         assert!(mgr.get_snapshot(snap.id).is_some());
 
@@ -1153,11 +1075,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -1185,11 +1103,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -1200,8 +1114,7 @@ mod tests {
                 .ok_or(crate::error::FilerError::NotFound)
         };
 
-        mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data)
-            .unwrap();
+        mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data).unwrap();
 
         let result = mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data);
         assert!(result.is_err());
@@ -1213,11 +1126,7 @@ mod tests {
         let store = setup_test_store();
 
         let get_attr = |ino: u64| -> FilerResult<Attr> {
-            store
-                .inodes
-                .get(&ino)
-                .cloned()
-                .ok_or(crate::error::FilerError::NotFound)
+            store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
         };
         let list_dir = |parent: u64| inode_list_dir(&store, parent);
         let read_data = |ino: u64| -> FilerResult<Vec<u8>> {
@@ -1228,9 +1137,7 @@ mod tests {
                 .ok_or(crate::error::FilerError::NotFound)
         };
 
-        let snap = mgr
-            .create_snapshot(1, "snap1", None, get_attr, list_dir, read_data)
-            .unwrap();
+        let snap = mgr.create_snapshot(1, "snap1", None, get_attr, list_dir, read_data).unwrap();
 
         let root_attr = mgr.read_snapshot_attr(snap.id, snap.snapshot_root_ino).unwrap();
         assert_eq!((root_attr.mode & 0o170000), S_IFDIR);

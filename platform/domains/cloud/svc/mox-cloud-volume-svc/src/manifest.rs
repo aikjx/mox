@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -14,8 +14,10 @@ use serde::{Deserialize, Serialize};
 /// Data / temperature tier for lifecycle hints.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum StorageTier {
     /// Hot – low-latency path (default).
+    #[default]
     Hot,
     /// Warm – medium-latency, high-capacity tier.
     Warm,
@@ -25,11 +27,6 @@ pub enum StorageTier {
     Archive,
 }
 
-impl Default for StorageTier {
-    fn default() -> Self {
-        StorageTier::Hot
-    }
-}
 
 impl std::fmt::Display for StorageTier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -96,11 +93,7 @@ fn crc64_table() -> &'static [u64; 256] {
         for i in 0..256u64 {
             let mut c = i << 56;
             for _ in 0..8 {
-                c = if c & (1u64 << 63) != 0 {
-                    (c << 1) ^ POLY
-                } else {
-                    c << 1
-                };
+                c = if c & (1u64 << 63) != 0 { (c << 1) ^ POLY } else { c << 1 };
             }
             tab[i as usize] = c;
         }

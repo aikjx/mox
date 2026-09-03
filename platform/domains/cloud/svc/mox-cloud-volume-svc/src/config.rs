@@ -181,10 +181,7 @@ impl Default for VolumeServiceConfig {
                 absolute_cap_secs: None,
                 quorum_ratio: 0.5,
             },
-            read_arbitration: ReadArbitrationConfig {
-                hedge_delay_ms: 100,
-                read_timeout_secs: 30,
-            },
+            read_arbitration: ReadArbitrationConfig { hedge_delay_ms: 100, read_timeout_secs: 30 },
             buffer_pool: BufferPoolConfig::default(),
             features: VolumeFeatureFlags {
                 rustfs_ecstore_backend: false,
@@ -367,7 +364,7 @@ mod tests {
         assert_eq!(c.read_arbitration.read_timeout_secs, 30);
         // 缓冲池（使用 buffer_pool 模块的真实结构）
         assert!(!c.buffer_pool.tiers.is_empty());
-        assert!(c.buffer_pool.global_max_bytes >= 0);
+        // global_max_bytes 为 u64，恒 >= 0，无需断言
     }
 
     /// 测试 2：VolumeFeatureFlags 默认值正确（RustFS 后端默认 false）
@@ -432,7 +429,7 @@ mod tests {
     #[test]
     fn test_write_quorum_for() {
         let cfg = WriteArbitrationConfig::default(); // quorum_ratio = 0.5
-        // data_shards=4: 4*0.5=2 → +1 = 3
+                                                     // data_shards=4: 4*0.5=2 → +1 = 3
         assert_eq!(cfg.quorum_for(4), 3);
         // data_shards=2: 2*0.5=1 → +1 = 2
         assert_eq!(cfg.quorum_for(2), 2);
@@ -442,10 +439,7 @@ mod tests {
         assert_eq!(cfg.quorum_for(0), 1);
 
         // 自定义 ratio = 1.0（全写）
-        let cfg_full = WriteArbitrationConfig {
-            quorum_ratio: 1.0,
-            ..Default::default()
-        };
+        let cfg_full = WriteArbitrationConfig { quorum_ratio: 1.0, ..Default::default() };
         assert_eq!(cfg_full.quorum_for(4), 5);
     }
 
@@ -464,10 +458,8 @@ mod tests {
         assert_eq!(cfg.stall_timeout(), Duration::from_secs(30));
         assert_eq!(cfg.absolute_cap(), None);
 
-        let cfg_with_cap = WriteArbitrationConfig {
-            absolute_cap_secs: Some(120),
-            ..Default::default()
-        };
+        let cfg_with_cap =
+            WriteArbitrationConfig { absolute_cap_secs: Some(120), ..Default::default() };
         assert_eq!(cfg_with_cap.absolute_cap(), Some(Duration::from_secs(120)));
     }
 }

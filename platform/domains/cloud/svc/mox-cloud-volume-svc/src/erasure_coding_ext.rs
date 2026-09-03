@@ -16,13 +16,14 @@
 //!
 //! 配套仲裁模块：[crate::multi_writer]（写仲裁）、[crate::hedged_reader]（读仲裁）。
 
-use crate::profile::EcProfile;
-use crate::reed_solomon::{
-    gf, gf_inv, invert_square, shard_size_for, Matrix, RSError, RSResult, PathChoice,
+use crate::{
+    profile::EcProfile,
+    reed_solomon::{
+        gf, gf_inv, invert_square, shard_size_for, Matrix, PathChoice, RSError, RSResult,
+    },
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 // ---------------------------------------------------------------------------
 // Cauchy Reed-Solomon
@@ -79,8 +80,8 @@ impl CauchyReedSolomon {
         let mut matrix: Matrix = vec![vec![0u8; data]; total];
 
         // 单位矩阵部分
-        for i in 0..data {
-            matrix[i][i] = 1;
+        for (i, row) in matrix.iter_mut().enumerate().take(data) {
+            row[i] = 1;
         }
 
         // Cauchy 部分
@@ -97,12 +98,7 @@ impl CauchyReedSolomon {
             }
         }
 
-        Ok(Self {
-            profile,
-            encoding_matrix: matrix,
-            x_values,
-            y_values,
-        })
+        Ok(Self { profile, encoding_matrix: matrix, x_values, y_values })
     }
 
     /// 获取使用的 profile
@@ -116,11 +112,7 @@ impl CauchyReedSolomon {
     }
 
     /// 编码（带 SIMD 路径选择）
-    pub fn encode_with_path(
-        &self,
-        data_bytes: &[u8],
-        path: PathChoice,
-    ) -> RSResult<Vec<Vec<u8>>> {
+    pub fn encode_with_path(&self, data_bytes: &[u8], path: PathChoice) -> RSResult<Vec<Vec<u8>>> {
         let data = self.profile.data_shards as usize;
         let parity = self.profile.parity_shards as usize;
         let total = data + parity;
@@ -138,9 +130,8 @@ impl CauchyReedSolomon {
 
         // 计算校验分片
         let (data_shards, parity_shards) = output.split_at_mut(data);
-        for p in 0..parity {
+        for (p, dst) in parity_shards.iter_mut().enumerate() {
             let row = &self.encoding_matrix[data + p];
-            let dst = &mut parity_shards[p];
             for (c, &coef) in row.iter().enumerate() {
                 let src = &data_shards[c];
                 xor_gf_mul_vec_ext(coef, src, dst, path);
@@ -177,18 +168,12 @@ impl CauchyReedSolomon {
             )));
         }
 
-        let missing: Vec<usize> = shards
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| s.is_none())
-            .map(|(i, _)| i)
-            .collect();
+        let missing: Vec<usize> =
+            shards.iter().enumerate().filter(|(_, s)| s.is_none()).map(|(i, _)| i).collect();
         let lost = missing.len();
 
         if lost > parity {
-            return Err(RSError::TooManyShardsMissing(format!(
-                "{lost} missing > parity={parity}"
-            )));
+            return Err(RSError::TooManyShardsMissing(format!("{lost} missing > parity={parity}")));
         }
 
         let shard_size = shards
@@ -197,12 +182,8 @@ impl CauchyReedSolomon {
             .ok_or_else(|| RSError::InvalidInput("no shard present".into()))?;
 
         // 选择 data 个可用分片来重建
-        let mut present_rows: Vec<usize> = shards
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| s.is_some())
-            .map(|(i, _)| i)
-            .collect();
+        let mut present_rows: Vec<usize> =
+            shards.iter().enumerate().filter(|(_, s)| s.is_some()).map(|(i, _)| i).collect();
         present_rows.truncate(data);
 
         if present_rows.len() < data {
@@ -325,19 +306,13 @@ impl IncrementalEncoder {
         // 使用 Vandermonde 矩阵（与现有 ReedSolomonEngine 一致）
         let matrix = build_vandermonde_matrix(data, total)?;
 
-        Ok(Self {
-            profile,
-            encoding_matrix: matrix,
-        })
+        Ok(Self { profile, encoding_matrix: matrix })
     }
 
     /// 计算增量更新
     ///
     /// 给定数据分片的变更，计算每个校验分片需要的增量 XOR 数据。
-    pub fn compute_update(
-        &self,
-        update: &IncrementalUpdate,
-    ) -> RSResult<IncrementalUpdateResult> {
+    pub fn compute_update(&self, update: &IncrementalUpdate) -> RSResult<IncrementalUpdateResult> {
         let data = self.profile.data_shards as usize;
         let parity = self.profile.parity_shards as usize;
 
@@ -373,10 +348,7 @@ impl IncrementalEncoder {
             parity_updates.push((data + p, parity_delta));
         }
 
-        Ok(IncrementalUpdateResult {
-            offset: update.offset,
-            parity_updates,
-        })
+        Ok(IncrementalUpdateResult { offset: update.offset, parity_updates })
     }
 
     /// 应用增量到校验分片
@@ -418,9 +390,10 @@ impl IncrementalEncoder {
 // ---------------------------------------------------------------------------
 
 /// 分片校验和类型
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ChecksumType {
     /// CRC-32C（快速，适合错误检测）
+    #[default]
     Crc32c,
     /// SHA-256（强校验，防止篡改）
     Sha256,
@@ -428,11 +401,6 @@ pub enum ChecksumType {
     Crc64,
 }
 
-impl Default for ChecksumType {
-    fn default() -> Self {
-        ChecksumType::Crc32c
-    }
-}
 
 /// 分片校验信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -464,17 +432,17 @@ impl IntegrityChecker {
             ChecksumType::Crc32c => {
                 let crc = crc32c_hash(data);
                 crc.to_le_bytes().to_vec()
-            }
+            },
             ChecksumType::Sha256 => {
                 use sha2::{Digest, Sha256};
                 let mut hasher = Sha256::new();
                 hasher.update(data);
                 hasher.finalize().to_vec()
-            }
+            },
             ChecksumType::Crc64 => {
                 let crc = crc64_ecma_hash(data);
                 crc.to_le_bytes().to_vec()
-            }
+            },
         }
     }
 
@@ -518,9 +486,10 @@ impl IntegrityChecker {
 // ---------------------------------------------------------------------------
 
 /// 重建优先级
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub enum RebuildPriority {
     /// 低优先级（后台任务）
+    #[default]
     Low = 0,
     /// 普通优先级
     Normal = 1,
@@ -530,11 +499,6 @@ pub enum RebuildPriority {
     Critical = 3,
 }
 
-impl Default for RebuildPriority {
-    fn default() -> Self {
-        RebuildPriority::Low
-    }
-}
 
 /// 渐进式重建任务
 #[derive(Debug, Clone)]
@@ -562,19 +526,15 @@ pub struct ProgressiveRebuildJob {
 }
 
 /// 重建引擎类型
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum RebuildEngineType {
     /// 标准 Vandermonde RS
     StandardRs,
     /// Cauchy RS（更快）
+    #[default]
     CauchyRs,
 }
 
-impl Default for RebuildEngineType {
-    fn default() -> Self {
-        RebuildEngineType::CauchyRs
-    }
-}
 
 /// 渐进式重建器
 ///
@@ -605,22 +565,10 @@ pub struct RebuildStats {
 impl RebuildStats {
     pub fn snapshot(&self) -> HashMap<String, u64> {
         let mut m = HashMap::new();
-        m.insert(
-            "ec_rebuild_jobs_submitted".into(),
-            *self.jobs_submitted.lock(),
-        );
-        m.insert(
-            "ec_rebuild_jobs_completed".into(),
-            *self.jobs_completed.lock(),
-        );
-        m.insert(
-            "ec_rebuild_bytes_rebuilt".into(),
-            *self.bytes_rebuilt.lock(),
-        );
-        m.insert(
-            "ec_rebuild_jobs_failed".into(),
-            *self.jobs_failed.lock(),
-        );
+        m.insert("ec_rebuild_jobs_submitted".into(), *self.jobs_submitted.lock());
+        m.insert("ec_rebuild_jobs_completed".into(), *self.jobs_completed.lock());
+        m.insert("ec_rebuild_bytes_rebuilt".into(), *self.bytes_rebuilt.lock());
+        m.insert("ec_rebuild_jobs_failed".into(), *self.jobs_failed.lock());
         m
     }
 }
@@ -648,11 +596,7 @@ impl ProgressiveRebuilder {
 
     /// 获取队列中的任务数
     pub fn pending_jobs(&self) -> usize {
-        self.jobs
-            .lock()
-            .iter()
-            .filter(|j| j.result.is_none())
-            .count()
+        self.jobs.lock().iter().filter(|j| j.result.is_none()).count()
     }
 
     /// 处理一个批次的重建工作
@@ -694,11 +638,7 @@ impl ProgressiveRebuilder {
         let total = data + parity;
 
         // 计算分片大小
-        let shard_size = job
-            .shards
-            .iter()
-            .find_map(|s| s.as_ref().map(|v| v.len()))
-            .unwrap_or(0);
+        let shard_size = job.shards.iter().find_map(|s| s.as_ref().map(|v| v.len())).unwrap_or(0);
 
         if shard_size == 0 {
             return Err(RSError::InvalidInput("no shard data available".into()));
@@ -721,7 +661,7 @@ impl ProgressiveRebuilder {
                 Some(data) => {
                     let slice = data[start_byte..end_byte].to_vec();
                     batch_shards.push(Some(slice));
-                }
+                },
                 None => batch_shards.push(None),
             }
         }
@@ -767,9 +707,7 @@ impl ProgressiveRebuilder {
         let mut remaining = Vec::new();
 
         for job in jobs.drain(..) {
-            if job.result.is_some()
-                && job.processed_bytes >= job.total_bytes.max(1)
-            {
+            if job.result.is_some() && job.processed_bytes >= job.total_bytes.max(1) {
                 completed.push(job);
             } else {
                 remaining.push(job);
@@ -800,14 +738,14 @@ fn build_vandermonde_matrix(data: usize, total: usize) -> RSResult<Matrix> {
     }
     let parity = total - data;
     let mut m: Matrix = vec![vec![0u8; data]; total];
-    for i in 0..data {
-        m[i][i] = 1;
+    for (i, row) in m.iter_mut().enumerate().take(data) {
+        row[i] = 1;
     }
     let t = gf();
     for r in 0..parity {
-        for c in 0..data {
+        for (c, cell) in m[data + r].iter_mut().enumerate().take(data) {
             let exp = (r * c) % 255;
-            m[data + r][c] = t.exp[exp];
+            *cell = t.exp[exp];
         }
     }
     Ok(m)
@@ -828,12 +766,12 @@ fn pad_to(input: &[u8], len: usize) -> Vec<u8> {
 fn xor_gf_mul_vec_ext(coef: u8, src: &[u8], dst: &mut [u8], _path: PathChoice) {
     debug_assert_eq!(src.len(), dst.len());
     match coef {
-        0 => {}
+        0 => {},
         1 => {
             for (d, &s) in dst.iter_mut().zip(src.iter()) {
                 *d ^= s;
             }
-        }
+        },
         _ => {
             let t = gf();
             let log_coef = t.log[coef as usize] as usize;
@@ -845,7 +783,7 @@ fn xor_gf_mul_vec_ext(coef: u8, src: &[u8], dst: &mut [u8], _path: PathChoice) {
                 let idx = log_coef + (t.log[s as usize] as usize);
                 dst[i] ^= t.exp[idx];
             }
-        }
+        },
     }
 }
 
@@ -1009,7 +947,7 @@ mod tests {
         let inc = IncrementalEncoder::new(profile).unwrap();
 
         let original_data: Vec<u8> = (0..200).collect();
-        let shard_size = shard_size_for(4, original_data.len());
+        let _shard_size = shard_size_for(4, original_data.len());
 
         // 用标准方式编码
         use crate::reed_solomon::ReedSolomonEngine;
@@ -1046,14 +984,12 @@ mod tests {
 
         // 验证：用增量更新后的分片应该能正确解码
         let slots: Vec<Option<Vec<u8>>> = shards.iter().cloned().map(Some).collect();
-        let recovered = engine
-            .decode_reconstruct(&profile, &slots, original_data.len())
-            .unwrap();
+        let recovered = engine.decode_reconstruct(&profile, &slots, original_data.len()).unwrap();
 
         // 构造期望的完整数据
         let mut expected = original_data.clone();
-        for i in 0..len {
-            expected[i] = expected[i].wrapping_add(1);
+        for byte in expected.iter_mut().take(len) {
+            *byte = byte.wrapping_add(1);
         }
         assert_eq!(recovered, expected);
     }
@@ -1091,22 +1027,18 @@ mod tests {
 
         // 验证
         let slots: Vec<Option<Vec<u8>>> = shards.iter().cloned().map(Some).collect();
-        let recovered = engine
-            .decode_reconstruct(&profile, &slots, original_data.len())
-            .unwrap();
+        let recovered = engine.decode_reconstruct(&profile, &slots, original_data.len()).unwrap();
 
         let mut expected = original_data.clone();
         let shard_size = shard_size_for(4, original_data.len());
         // 分片 0 的更新影响前 20 字节
-        for i in 0..20 {
-            expected[i] = expected[i].wrapping_add(0xAA);
+        for byte in expected.iter_mut().take(20) {
+            *byte = byte.wrapping_add(0xAA);
         }
         // 分片 2 的更新影响第 3 个分片的前 20 字节
         let shard2_start = 2 * shard_size;
-        for i in 0..20 {
-            if shard2_start + i < expected.len() {
-                expected[shard2_start + i] = expected[shard2_start + i].wrapping_add(0xAA);
-            }
+        for byte in expected.iter_mut().skip(shard2_start).take(20) {
+            *byte = byte.wrapping_add(0xAA);
         }
         assert_eq!(recovered, expected);
     }
@@ -1162,11 +1094,8 @@ mod tests {
     #[test]
     fn test_integrity_batch_verify() {
         let checker = IntegrityChecker::new(ChecksumType::Crc32c);
-        let shards: Vec<Vec<u8>> = vec![
-            b"shard 0 data".to_vec(),
-            b"shard 1 data".to_vec(),
-            b"shard 2 data".to_vec(),
-        ];
+        let shards: Vec<Vec<u8>> =
+            vec![b"shard 0 data".to_vec(), b"shard 1 data".to_vec(), b"shard 2 data".to_vec()];
 
         let checksums = checker.generate_checksums(&shards);
         assert_eq!(checksums.len(), 3);
@@ -1216,14 +1145,14 @@ mod tests {
         assert_eq!(rebuilder.pending_jobs(), 1);
 
         // 逐步处理批次直到完成
-        let mut total_processed = 0u64;
+        let mut _total_processed = 0u64;
         let mut iterations = 0;
         loop {
             let processed = rebuilder.process_batch().unwrap();
             if processed == 0 {
                 break;
             }
-            total_processed += processed;
+            _total_processed += processed;
             iterations += 1;
             assert!(iterations < 100, "too many iterations");
         }
@@ -1304,10 +1233,7 @@ mod tests {
         let high_processed = high_job.map(|j| j.processed_bytes).unwrap_or(shards[0].len() as u64);
         let low_processed = low_job.map(|j| j.processed_bytes).unwrap_or(0);
 
-        assert!(
-            high_processed >= low_processed,
-            "high priority should be processed first"
-        );
+        assert!(high_processed >= low_processed, "high priority should be processed first");
     }
 
     #[test]

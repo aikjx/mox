@@ -17,16 +17,14 @@
 
 use bytes::Bytes;
 use mox_cloud_volume_svc::{
-    crc32c_bytes, crc64_ecma, encode_and_write, CauchyReedSolomon, ChecksumType, EcManifest,
-    EcProfile, InMemoryPeerFetcher, IncrementalEncoder, IncrementalUpdate, IntegrityChecker,
-    ProgressiveRebuildJob, ProgressiveRebuilder, RebuildEngineType, RebuildJob, RebuildPriority, RebuildStats,
-    ReedSolomonEngine, RSError, ShardChecksum, StorageLayer, StorageTier, StorageTierEngine,
-    TieringPolicyConfig, TieringPolicyType, VolumeServer, sha256_hex,
+    crc32c_bytes, crc64_ecma, encode_and_write, sha256_hex, CauchyReedSolomon, ChecksumType,
+    EcManifest, EcProfile, InMemoryPeerFetcher, IncrementalEncoder, IncrementalUpdate,
+    IntegrityChecker, ProgressiveRebuildJob, ProgressiveRebuilder, RSError, RebuildEngineType,
+    RebuildJob, RebuildPriority, RebuildStats, ReedSolomonEngine, ShardChecksum, StorageLayer,
+    StorageTier, StorageTierEngine, TieringPolicyConfig, TieringPolicyType, VolumeServer,
 };
 use rand::RngCore;
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{collections::HashMap, sync::Arc};
 
 // =========================================================================
 // 辅助函数
@@ -78,8 +76,7 @@ fn iv01_02_read_chunk() {
 fn iv01_03_delete_chunk() {
     let vs = make_volume_server("vol-test-3", 100 * 1024 * 1024);
 
-    vs.write_chunk("chunk-del", Bytes::from_static(b"to be deleted"))
-        .unwrap();
+    vs.write_chunk("chunk-del", Bytes::from_static(b"to be deleted")).unwrap();
     assert!(vs.has_chunk("chunk-del"));
 
     vs.delete_chunk("chunk-del").unwrap();
@@ -99,8 +96,7 @@ fn iv01_04_read_nonexistent_chunk() {
 fn iv01_05_overwrite_chunk() {
     let vs = make_volume_server("vol-test-5", 100 * 1024 * 1024);
 
-    vs.write_chunk("chunk-over", Bytes::from_static(b"version 1"))
-        .unwrap();
+    vs.write_chunk("chunk-over", Bytes::from_static(b"version 1")).unwrap();
     let used_before = vs.used_bytes();
 
     vs.write_chunk("chunk-over", Bytes::from_static(b"version 2 data longer"))
@@ -119,8 +115,7 @@ fn iv01_05_overwrite_chunk() {
 fn iv01_06_capacity_exceeded() {
     let vs = make_volume_server("vol-small", 100); // 100 bytes capacity
 
-    vs.write_chunk("small", Bytes::from_static(b"0123456789"))
-        .unwrap(); // 10 bytes
+    vs.write_chunk("small", Bytes::from_static(b"0123456789")).unwrap(); // 10 bytes
 
     let result = vs.write_chunk("too-big", Bytes::from(vec![0u8; 95])); // 95 bytes
     assert!(result.is_err());
@@ -132,11 +127,8 @@ fn iv01_07_chunk_count() {
     let vs = make_volume_server("vol-count", 10 * 1024 * 1024);
 
     for i in 0..10 {
-        vs.write_chunk(
-            &format!("chunk-{}", i),
-            Bytes::from(format!("data-{}", i)),
-        )
-        .unwrap();
+        vs.write_chunk(&format!("chunk-{}", i), Bytes::from(format!("data-{}", i)))
+            .unwrap();
     }
 
     assert_eq!(vs.chunk_count(), 10);
@@ -197,9 +189,7 @@ fn iv02_01_rs_4plus2_encode_decode() {
     slots[1] = None;
     slots[4] = None;
 
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(recovered, payload);
 }
 
@@ -219,9 +209,7 @@ fn iv02_02_rs_6plus3_config() {
     slots[3] = None;
     slots[7] = None;
 
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(recovered, payload);
 }
 
@@ -239,9 +227,7 @@ fn iv02_03_rs_2plus1_minimal() {
     let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
     slots[0] = None;
 
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(recovered, payload);
 }
 
@@ -274,9 +260,7 @@ fn iv02_05_unaligned_length() {
         let payload = random_bytes(len);
         let shards = engine.encode(&profile, &payload).unwrap();
         let slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
-        let recovered = engine
-            .decode_reconstruct(&profile, &slots, payload.len())
-            .unwrap();
+        let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
         assert_eq!(recovered.len(), len);
         assert_eq!(recovered, payload, "mismatch for len={}", len);
     }
@@ -297,9 +281,7 @@ fn iv02_06_lose_parity_only() {
     slots[7] = None;
     slots[8] = None;
 
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(recovered, payload);
 }
 
@@ -324,15 +306,9 @@ fn iv02_08_encode_and_write_to_disk() {
     let profile = EcProfile::with_default_min_size(4, 2).unwrap();
     let payload = random_bytes(128 * 1024);
 
-    let manifest = encode_and_write(
-        mount,
-        "test-bucket",
-        "obj-001",
-        &profile,
-        StorageTier::Hot,
-        &payload,
-    )
-    .unwrap();
+    let manifest =
+        encode_and_write(mount, "test-bucket", "obj-001", &profile, StorageTier::Hot, &payload)
+            .unwrap();
 
     assert_eq!(manifest.data_shards, 4);
     assert_eq!(manifest.parity_shards, 2);
@@ -392,14 +368,10 @@ fn iv03_03_cauchy_vs_standard_rs() {
 
     // 两者都应该能正确恢复数据
     let std_slots: Vec<Option<Vec<u8>>> = std_shards.into_iter().map(Some).collect();
-    let std_recovered = std_engine
-        .decode_reconstruct(&profile, &std_slots, payload.len())
-        .unwrap();
+    let std_recovered = std_engine.decode_reconstruct(&profile, &std_slots, payload.len()).unwrap();
 
     let cauchy_slots: Vec<Option<Vec<u8>>> = cauchy_shards.into_iter().map(Some).collect();
-    let cauchy_recovered = cauchy
-        .decode_reconstruct(&cauchy_slots, payload.len())
-        .unwrap();
+    let cauchy_recovered = cauchy.decode_reconstruct(&cauchy_slots, payload.len()).unwrap();
 
     assert_eq!(std_recovered, payload);
     assert_eq!(cauchy_recovered, payload);
@@ -420,15 +392,12 @@ fn iv03_04_cauchy_various_configs() {
 
         // 丢失 parity 个分片
         let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
-        for i in 0..parity as usize {
-            slots[i] = None;
+        for slot in slots.iter_mut().take(parity as usize) {
+            *slot = None;
         }
 
         let recovered = cauchy.decode_reconstruct(&slots, payload.len()).unwrap();
-        assert_eq!(
-            recovered, payload,
-            "Cauchy RS ({data}+{parity}) decode failed"
-        );
+        assert_eq!(recovered, payload, "Cauchy RS ({data}+{parity}) decode failed");
     }
 }
 
@@ -443,17 +412,13 @@ fn iv03_05_incremental_encoder_update() {
     let shards = engine.encode(&profile, &original).unwrap();
 
     // 修改数据分片 0 的前 100 字节
-    let shard_size = shards[0].len();
+    let _shard_size = shards[0].len();
     let old_data = shards[0][..100].to_vec();
     let mut new_data = vec![0u8; 100];
     rand::thread_rng().fill_bytes(&mut new_data);
 
-    let update = IncrementalUpdate {
-        shard_index: 0,
-        offset: 0,
-        old_data,
-        new_data: new_data.clone(),
-    };
+    let update =
+        IncrementalUpdate { shard_index: 0, offset: 0, old_data, new_data: new_data.clone() };
 
     let result = encoder.compute_update(&update).unwrap();
     assert_eq!(result.parity_updates.len(), 2); // 2 个校验分片需要更新
@@ -472,9 +437,7 @@ fn iv03_05_incremental_encoder_update() {
     let mut expected = original.clone();
     expected[..100].copy_from_slice(&new_data);
 
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, expected.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, expected.len()).unwrap();
     assert_eq!(recovered, expected);
 }
 
@@ -542,14 +505,8 @@ fn iv04_02_storage_layer_config() {
         backend_path: "/mnt/ssd".to_string(),
     };
 
-    assert_eq!(
-        config.high_watermark_bytes(),
-        100 * 1024 * 1024 * 1024 * 80 / 100
-    );
-    assert_eq!(
-        config.low_watermark_bytes(),
-        100 * 1024 * 1024 * 1024 * 60 / 100
-    );
+    assert_eq!(config.high_watermark_bytes(), 100 * 1024 * 1024 * 1024 * 80 / 100);
+    assert_eq!(config.low_watermark_bytes(), 100 * 1024 * 1024 * 1024 * 60 / 100);
 }
 
 /// 测试：对象访问统计
@@ -588,12 +545,7 @@ fn iv04_04_tiering_policy_config() {
 #[test]
 fn iv04_05_storage_tier_enum() {
     // 验证 manifest 中使用的 StorageTier
-    let tiers = [
-        StorageTier::Hot,
-        StorageTier::Warm,
-        StorageTier::Cold,
-        StorageTier::Archive,
-    ];
+    let tiers = [StorageTier::Hot, StorageTier::Warm, StorageTier::Cold, StorageTier::Archive];
 
     for tier in &tiers {
         // serde roundtrip
@@ -773,15 +725,8 @@ fn iv06_01_rebuild_job_end_to_end() {
     let payload = random_bytes(128 * 1024);
 
     // 写入编码后的数据
-    encode_and_write(
-        mount,
-        "rebuild-bucket",
-        "rebuild-obj",
-        &profile,
-        StorageTier::Hot,
-        &payload,
-    )
-    .unwrap();
+    encode_and_write(mount, "rebuild-bucket", "rebuild-obj", &profile, StorageTier::Hot, &payload)
+        .unwrap();
 
     // 删除 2 个分片
     use mox_cloud_volume_svc::shard_path;
@@ -806,14 +751,10 @@ fn iv06_01_rebuild_job_end_to_end() {
     // 验证数据完整性
     let engine = ReedSolomonEngine::new();
     let shards: Vec<Vec<u8>> = (0..6)
-        .map(|i| {
-            std::fs::read(shard_path(mount, "rebuild-bucket", "rebuild-obj", i)).unwrap()
-        })
+        .map(|i| std::fs::read(shard_path(mount, "rebuild-bucket", "rebuild-obj", i)).unwrap())
         .collect();
     let slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, payload.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, payload.len()).unwrap();
     assert_eq!(recovered, payload);
 }
 
@@ -888,7 +829,7 @@ fn iv06_04_rebuild_priority() {
     let low = RebuildPriority::Low;
 
     // 高优先级应高于普通优先级（数值比较）
-    assert!((high as u8) > (normal as u8) || (high as u8) < (normal as u8));
+    assert!((high as u8) != (normal as u8));
     let _ = low;
 }
 
@@ -908,7 +849,8 @@ fn iv06_05_rebuild_stats() {
     assert_eq!(*stats.jobs_failed.lock(), 3);
 
     // 进度百分比 = completed / submitted
-    let progress_pct = (*stats.jobs_completed.lock() as f64 / *stats.jobs_submitted.lock() as f64) * 100.0;
+    let progress_pct =
+        (*stats.jobs_completed.lock() as f64 / *stats.jobs_submitted.lock() as f64) * 100.0;
     assert!(progress_pct > 0.0 && progress_pct <= 100.0);
 
     // snapshot 应包含所有指标
@@ -972,8 +914,7 @@ fn iv07_01_full_data_lifecycle() {
     // 3. 模拟数据损坏（删除 2 个分片）
     use mox_cloud_volume_svc::shard_path;
     for drop in [0usize, 5] {
-        std::fs::remove_file(shard_path(mount, "lifecycle-bucket", "lifecycle-obj", drop))
-            .unwrap();
+        std::fs::remove_file(shard_path(mount, "lifecycle-bucket", "lifecycle-obj", drop)).unwrap();
     }
 
     // 4. 执行重建
@@ -984,14 +925,10 @@ fn iv07_01_full_data_lifecycle() {
     // 5. 验证重建后的数据完整性
     let engine = ReedSolomonEngine::new();
     let shards: Vec<Vec<u8>> = (0..6)
-        .map(|i| {
-            std::fs::read(shard_path(mount, "lifecycle-bucket", "lifecycle-obj", i)).unwrap()
-        })
+        .map(|i| std::fs::read(shard_path(mount, "lifecycle-bucket", "lifecycle-obj", i)).unwrap())
         .collect();
     let slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
-    let recovered = engine
-        .decode_reconstruct(&profile, &slots, original.len())
-        .unwrap();
+    let recovered = engine.decode_reconstruct(&profile, &slots, original.len()).unwrap();
 
     assert_eq!(crc64_ecma(&recovered), original_crc);
     assert_eq!(recovered, original);
@@ -1004,11 +941,8 @@ fn iv07_02_snapshot_export_restore() {
 
     // 写入一些 chunk
     for i in 0..5 {
-        vs.write_chunk(
-            &format!("chunk-{}", i),
-            Bytes::from(format!("snapshot-data-{}", i)),
-        )
-        .unwrap();
+        vs.write_chunk(&format!("chunk-{}", i), Bytes::from(format!("snapshot-data-{}", i)))
+            .unwrap();
     }
 
     // 导出快照
@@ -1083,9 +1017,7 @@ fn iv07_05_error_type_coverage() {
     // CapacityExceeded
     vs.write_chunk("big", Bytes::from(vec![0u8; 80])).unwrap();
     let err = vs.write_chunk("too-much", Bytes::from(vec![0u8; 80])).unwrap_err();
-    assert!(
-        err.to_string().contains("capacity") || err.to_string().contains("CapacityExceeded")
-    );
+    assert!(err.to_string().contains("capacity") || err.to_string().contains("CapacityExceeded"));
 }
 
 /// 测试：EcManifest serde roundtrip

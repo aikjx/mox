@@ -16,7 +16,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // =====================================================================
 // 共享状态
@@ -61,68 +61,9 @@ struct MiscState {
 
 impl MiscState {
     fn new() -> Self {
-        let now = chrono::Utc::now();
-        let statuses = ["pending", "in_progress", "completed", "cancelled", "in_review"];
-        let priorities = ["low", "medium", "high", "critical"];
-        let tasks: Vec<TaskItem> = (0..87usize)
-            .map(|i| {
-                let created = now - chrono::Duration::days((i * 2) as i64);
-                let status = statuses[i % statuses.len()];
-                let progress = match status {
-                    "completed" => 100i64,
-                    "in_progress" => (20 + (i * 7) % 60) as i64,
-                    "in_review" => 90,
-                    "cancelled" => 0,
-                    _ => 0,
-                };
-                TaskItem {
-                    id: format!("task-{:04}", i + 1),
-                    title: format!("任务 #{:04} - {} 模块开发", i + 1, ["前端", "后端", "数据", "AI", "运维"][i % 5]),
-                    description: format!("这是任务 #{:04} 的详细描述，涉及{}模块的开发与测试工作。", i + 1, ["前端", "后端", "数据", "AI", "运维"][i % 5]),
-                    status: status.into(),
-                    priority: priorities[i % priorities.len()].into(),
-                    project_id: format!("proj-{:03}", (i % 12) + 1),
-                    assignee: format!("user-{:03}", (i % 8) + 1),
-                    due_date: (now + chrono::Duration::days((i % 30) as i64)).format("%Y-%m-%d").to_string(),
-                    created_at: created.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                    updated_at: (created + chrono::Duration::hours(i as i64 % 100)).to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                    progress,
-                }
-            })
-            .collect();
-
-        let proj_statuses = ["active", "completed", "archived", "paused", "planning"];
-        let projects: Vec<ProjectItem> = (0..43usize)
-            .map(|i| {
-                let created = now - chrono::Duration::days((i * 5) as i64);
-                let status = proj_statuses[i % proj_statuses.len()];
-                let progress = match status {
-                    "completed" => 100i64,
-                    "active" => (10 + (i * 11) % 80) as i64,
-                    "planning" => 5,
-                    "paused" => (30 + (i * 3) % 40) as i64,
-                    _ => 100,
-                };
-                ProjectItem {
-                    id: format!("proj-{:04}", i + 1),
-                    name: format!("项目 #{:04} - {} 平台", i + 1, ["知识图谱", "AI 编排", "数据治理", "联盟调度", "低代码"][i % 5]),
-                    description: format!("项目 #{:04} 的详细描述，致力于构建{}相关能力。", i + 1, ["知识图谱", "AI 编排", "数据治理", "联盟调度", "低代码"][i % 5]),
-                    status: status.into(),
-                    owner: format!("user-{:03}", (i % 6) + 1),
-                    progress,
-                    member_count: ((i % 10) + 3) as i64,
-                    task_count: ((i % 20) + 5) as i64,
-                    created_at: created.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                    updated_at: (created + chrono::Duration::hours((i * 3) as i64 % 200)).to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                    start_date: created.format("%Y-%m-%d").to_string(),
-                    end_date: (created + chrono::Duration::days(60 + (i % 30) as i64)).format("%Y-%m-%d").to_string(),
-                }
-            })
-            .collect();
-
         Self {
-            tasks: Arc::new(Mutex::new(tasks)),
-            projects: Arc::new(Mutex::new(projects)),
+            tasks: Arc::new(Mutex::new(Vec::new())),
+            projects: Arc::new(Mutex::new(Vec::new())),
         }
     }
 }

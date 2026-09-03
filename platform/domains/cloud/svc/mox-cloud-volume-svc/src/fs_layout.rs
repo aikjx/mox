@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -23,11 +23,7 @@ use crate::error::{VolumeError, VolumeResult};
 /// Builds the directory that contains the EC shards/manifest for an object.
 pub fn ec_object_dir(mountpath: &Path, bucket_prefix: &str, oid: &str) -> PathBuf {
     let safe_prefix = oid.get(..2).unwrap_or("00");
-    mountpath
-        .join(bucket_prefix)
-        .join(safe_prefix)
-        .join(oid)
-        .join("ec")
+    mountpath.join(bucket_prefix).join(safe_prefix).join(oid).join("ec")
 }
 
 /// Builds a shard file path: `ec/shard_{i}.slice`.
@@ -45,7 +41,10 @@ pub fn manifest_path(mountpath: &Path, bucket_prefix: &str, oid: &str) -> PathBu
 ///
 /// Returns `VolumeError::Internal` on any mismatch so callers can use it for
 /// glob + parse flows.
-pub fn parse_shard_path(mountpath: &Path, shard_path: &Path) -> VolumeResult<(String, String, usize)> {
+pub fn parse_shard_path(
+    mountpath: &Path,
+    shard_path: &Path,
+) -> VolumeResult<(String, String, usize)> {
     let rel = shard_path.strip_prefix(mountpath).map_err(|_| {
         VolumeError::Internal(format!(
             "shard path {:?} is not under mountpath {:?}",
@@ -56,19 +55,13 @@ pub fn parse_shard_path(mountpath: &Path, shard_path: &Path) -> VolumeResult<(St
     // Expect: bucket/prefix[:any]/<2-char>/<oid>/ec/shard_N.slice
     let components: Vec<_> = rel.components().collect();
     if components.len() < 5 {
-        return Err(VolumeError::Internal(format!(
-            "too few components in shard path: {:?}",
-            rel
-        )));
+        return Err(VolumeError::Internal(format!("too few components in shard path: {:?}", rel)));
     }
 
     let n = components.len();
     let ec_dir = components[n - 2].as_os_str().to_string_lossy();
     if ec_dir != "ec" {
-        return Err(VolumeError::Internal(format!(
-            "expected ec parent dir, got {}",
-            ec_dir
-        )));
+        return Err(VolumeError::Internal(format!("expected ec parent dir, got {}", ec_dir)));
     }
     let file_name = components[n - 1].as_os_str().to_string_lossy();
     let shard_id = parse_shard_file_name(&file_name).ok_or_else(|| {
@@ -116,10 +109,8 @@ mod tests {
         // component of ec_object_dir is always "ec" and the parent is named
         // after the oid, regardless of length or platform separator.
         let p = ec_object_dir(Path::new("/x"), "b", "z");
-        let components: Vec<_> = p
-            .components()
-            .map(|c| c.as_os_str().to_string_lossy().into_owned())
-            .collect();
+        let components: Vec<_> =
+            p.components().map(|c| c.as_os_str().to_string_lossy().into_owned()).collect();
         assert!(components.len() >= 3);
         assert_eq!(*components.last().unwrap(), "ec");
         assert_eq!(components[components.len() - 2], "z"); // oid dir

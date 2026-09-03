@@ -19,3 +19,7 @@ tracing = { workspace = true }
 
 [features]
 simd = []
+
+[dev-dependencies]
+serde_json = { workspace = true }
+criterion = { workspace = true, features = ["html_reports", "cargo_bench_support", "rayon"] }

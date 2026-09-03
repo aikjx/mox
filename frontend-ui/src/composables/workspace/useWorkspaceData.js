@@ -78,6 +78,7 @@ export function useWorkspaceData(currentProject) {
       console.warn('[workspace] 加载通知未读数失败:', e?.message)
       notifCount.value = 0
       hasNotifications.value = false
+      ElMessage.error('通知未读数加载失败：' + (e?.message || '未知错误'))
     }
   }
 
@@ -104,6 +105,7 @@ export function useWorkspaceData(currentProject) {
       console.warn('[workspace] 加载 KPI 失败:', e?.message)
       kpiError.value = e?.message || 'KPI 数据加载失败'
       kpiCards.value = []
+      ElMessage.error('KPI 数据加载失败：' + (e?.message || '未知错误'))
     } finally {
       kpiLoading.value = false
     }
@@ -133,6 +135,7 @@ export function useWorkspaceData(currentProject) {
       console.warn('[workspace] 加载项目成员失败:', e?.message)
       membersError.value = e?.message || '项目成员加载失败'
       collabMembers.value = []
+      ElMessage.error('项目成员加载失败：' + (e?.message || '未知错误'))
     } finally {
       membersLoading.value = false
     }
@@ -165,6 +168,7 @@ export function useWorkspaceData(currentProject) {
       console.warn('[workspace] 加载项目阶段失败:', e?.message)
       phasesError.value = e?.message || '项目阶段加载失败'
       projectPhases.value = []
+      ElMessage.error('项目阶段加载失败：' + (e?.message || '未知错误'))
     } finally {
       phasesLoading.value = false
     }
@@ -201,6 +205,7 @@ export function useWorkspaceData(currentProject) {
       console.warn('[workspace] 加载项目文件失败:', e?.message)
       filesError.value = e?.message || '项目文件加载失败'
       sharedFiles.value = []
+      ElMessage.error('项目文件加载失败：' + (e?.message || '未知错误'))
     } finally {
       filesLoading.value = false
     }
@@ -240,7 +245,7 @@ export function useWorkspaceData(currentProject) {
       ElMessage.info(`正在打开文档：${file.name}`)
     } catch (e) {
       console.warn('[workspace] 文件预览失败:', e?.message)
-      ElMessage.info(`正在打开文档：${file.name}`)
+      ElMessage.error(`文件预览失败：${e?.message || '未知错误'}`)
     }
   }
 
@@ -256,7 +261,7 @@ export function useWorkspaceData(currentProject) {
       ElMessage.success(`开始下载：${file.name}`)
     } catch (e) {
       console.warn('[workspace] 文件下载失败:', e?.message)
-      ElMessage.success(`开始下载：${file.name}`)
+      ElMessage.error(`文件下载失败：${e?.message || '未知错误'}`)
     }
   }
 
@@ -282,6 +287,7 @@ export function useWorkspaceData(currentProject) {
       console.warn('[workspace] 加载历史记录失败:', e?.message)
       historyError.value = e?.message || '历史记录加载失败'
       historyEvents.value = []
+      ElMessage.error('历史记录加载失败：' + (e?.message || '未知错误'))
     } finally {
       historyLoading.value = false
     }

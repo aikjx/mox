@@ -22,12 +22,16 @@
 //! 支持按日/周/月维度的趋势分析。
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use crate::error::{S3Error, S3Result};
-use crate::lifecycle::StorageClass;
+use crate::{
+    error::{S3Error, S3Result},
+    lifecycle::StorageClass,
+};
 
 // ---------------- 类型定义 ----------------
 
@@ -109,6 +113,7 @@ pub enum AggregationPeriod {
 }
 
 impl AggregationPeriod {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "daily" | "day" => Some(AggregationPeriod::Daily),
@@ -264,10 +269,18 @@ impl AnalyticsManager {
 
             // 旧存储类统计
             let old_class_key = old_class.as_str().to_string();
-            *m.bytes_by_class.entry(old_class_key.clone()).or_insert(0) =
-                m.bytes_by_class.get(&old_class_key).copied().unwrap_or(0).saturating_sub(old_size);
-            *m.objects_by_class.entry(old_class_key).or_insert(0) =
-                m.objects_by_class.get(&old_class.as_str().to_string()).copied().unwrap_or(0).saturating_sub(1);
+            *m.bytes_by_class.entry(old_class_key.clone()).or_insert(0) = m
+                .bytes_by_class
+                .get(&old_class_key)
+                .copied()
+                .unwrap_or(0)
+                .saturating_sub(old_size);
+            *m.objects_by_class.entry(old_class_key).or_insert(0) = m
+                .objects_by_class
+                .get(old_class.as_str())
+                .copied()
+                .unwrap_or(0)
+                .saturating_sub(1);
         } else {
             // 新增
             m.object_count += 1;
@@ -289,11 +302,15 @@ impl AnalyticsManager {
         *m.bytes_by_class.entry(class_key).or_insert(0) += size;
 
         // 更新热度统计（简化：新增对象默认冷点）
-        let tier_key = AccessTier::Cold.as_str().to_string();
-        if !bucket_records.contains_key(key) || matches!(
-            bucket_records.get(key).map(|r| AccessTier::from_access_count(r.access_count_7d)),
-            Some(AccessTier::Cold)
-        ) {
+        let _tier_key = AccessTier::Cold.as_str().to_string();
+        if !bucket_records.contains_key(key)
+            || matches!(
+                bucket_records
+                    .get(key)
+                    .map(|r| AccessTier::from_access_count(r.access_count_7d)),
+                Some(AccessTier::Cold)
+            )
+        {
             // 新对象或本来就是冷点，更新
             // 这里简化处理：实际应根据之前状态调整
         }
@@ -353,8 +370,12 @@ impl AnalyticsManager {
             let class_key = record.storage_class.as_str().to_string();
             *m.objects_by_class.entry(class_key.clone()).or_insert(0) =
                 m.objects_by_class.get(&class_key).copied().unwrap_or(0).saturating_sub(1);
-            *m.bytes_by_class.entry(class_key).or_insert(0) =
-                m.bytes_by_class.get(&record.storage_class.as_str().to_string()).copied().unwrap_or(0).saturating_sub(record.size);
+            *m.bytes_by_class.entry(class_key).or_insert(0) = m
+                .bytes_by_class
+                .get(record.storage_class.as_str())
+                .copied()
+                .unwrap_or(0)
+                .saturating_sub(record.size);
         }
         drop(metrics_map);
 
@@ -382,15 +403,15 @@ impl AnalyticsManager {
                 AccessTier::Hot => {
                     hot_objects += 1;
                     hot_bytes += record.size;
-                }
+                },
                 AccessTier::Warm => {
                     warm_objects += 1;
                     warm_bytes += record.size;
-                }
+                },
                 AccessTier::Cold => {
                     cold_objects += 1;
                     cold_bytes += record.size;
-                }
+                },
             }
         }
         drop(records_map);
@@ -411,19 +432,13 @@ impl AnalyticsManager {
     /// 获取存储桶实时指标
     pub fn get_metrics(&self, bucket: &str) -> S3Result<BucketMetrics> {
         let metrics_map = self.metrics.lock();
-        metrics_map
-            .get(bucket)
-            .cloned()
-            .ok_or(S3Error::NoSuchBucket)
+        metrics_map.get(bucket).cloned().ok_or(S3Error::NoSuchBucket)
     }
 
     /// 创建当前指标快照
     pub fn take_snapshot(&self, bucket: &str) -> S3Result<MetricsSnapshot> {
         let metrics = self.get_metrics(bucket)?;
-        let snapshot = MetricsSnapshot {
-            timestamp_sec: now_secs(),
-            metrics,
-        };
+        let snapshot = MetricsSnapshot { timestamp_sec: now_secs(), metrics };
 
         let mut snapshots_map = self.snapshots.lock();
         let bucket_snapshots = snapshots_map.entry(bucket.to_string()).or_default();
@@ -446,9 +461,7 @@ impl AnalyticsManager {
         end_sec: u64,
     ) -> S3Result<Vec<MetricsSnapshot>> {
         let snapshots_map = self.snapshots.lock();
-        let bucket_snapshots = snapshots_map
-            .get(bucket)
-            .ok_or(S3Error::NoSuchBucket)?;
+        let bucket_snapshots = snapshots_map.get(bucket).ok_or(S3Error::NoSuchBucket)?;
 
         let result: Vec<MetricsSnapshot> = bucket_snapshots
             .iter()
@@ -466,9 +479,7 @@ impl AnalyticsManager {
         period: AggregationPeriod,
     ) -> S3Result<Vec<MetricsSnapshot>> {
         let snapshots_map = self.snapshots.lock();
-        let bucket_snapshots = snapshots_map
-            .get(bucket)
-            .ok_or(S3Error::NoSuchBucket)?;
+        let bucket_snapshots = snapshots_map.get(bucket).ok_or(S3Error::NoSuchBucket)?;
 
         if bucket_snapshots.is_empty() {
             return Ok(Vec::new());
@@ -497,38 +508,22 @@ impl AnalyticsManager {
         // 存储成本
         let gb = |bytes: u64| bytes as f64 / (1024.0 * 1024.0 * 1024.0);
 
-        let standard_bytes = metrics
-            .bytes_by_class
-            .get("HOT")
-            .copied()
-            .unwrap_or(0);
+        let standard_bytes = metrics.bytes_by_class.get("HOT").copied().unwrap_or(0);
         let standard_cost = gb(standard_bytes) * config.standard_cents_per_gb;
         storage_detail.insert("standard".into(), standard_cost);
         estimate.storage_cost_cents += standard_cost;
 
-        let infrequent_bytes = metrics
-            .bytes_by_class
-            .get("WARM")
-            .copied()
-            .unwrap_or(0);
+        let infrequent_bytes = metrics.bytes_by_class.get("WARM").copied().unwrap_or(0);
         let infrequent_cost = gb(infrequent_bytes) * config.infrequent_cents_per_gb;
         storage_detail.insert("infrequent".into(), infrequent_cost);
         estimate.storage_cost_cents += infrequent_cost;
 
-        let archive_bytes = metrics
-            .bytes_by_class
-            .get("COLD")
-            .copied()
-            .unwrap_or(0);
+        let archive_bytes = metrics.bytes_by_class.get("COLD").copied().unwrap_or(0);
         let archive_cost = gb(archive_bytes) * config.archive_cents_per_gb;
         storage_detail.insert("archive".into(), archive_cost);
         estimate.storage_cost_cents += archive_cost;
 
-        let glacier_bytes = metrics
-            .bytes_by_class
-            .get("GLACIER")
-            .copied()
-            .unwrap_or(0);
+        let glacier_bytes = metrics.bytes_by_class.get("GLACIER").copied().unwrap_or(0);
         let glacier_cost = gb(glacier_bytes) * config.glacier_cents_per_gb;
         storage_detail.insert("glacier".into(), glacier_cost);
         estimate.storage_cost_cents += glacier_cost;
@@ -542,8 +537,9 @@ impl AnalyticsManager {
         estimate.transfer_cost_cents = gb(metrics.download_bytes) * config.download_cents_per_gb;
 
         estimate.storage_detail = storage_detail;
-        estimate.total_cost_cents =
-            estimate.storage_cost_cents + estimate.request_cost_cents + estimate.transfer_cost_cents;
+        estimate.total_cost_cents = estimate.storage_cost_cents
+            + estimate.request_cost_cents
+            + estimate.transfer_cost_cents;
 
         Ok(estimate)
     }
@@ -564,10 +560,7 @@ impl AnalyticsManager {
 // ---------------- 辅助函数 ----------------
 
 fn now_secs() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
 // ---------------- 共享类型别名 ----------------
@@ -593,18 +586,9 @@ mod tests {
 
     #[test]
     fn test_aggregation_period_from_str() {
-        assert_eq!(
-            AggregationPeriod::from_str("daily"),
-            Some(AggregationPeriod::Daily)
-        );
-        assert_eq!(
-            AggregationPeriod::from_str("weekly"),
-            Some(AggregationPeriod::Weekly)
-        );
-        assert_eq!(
-            AggregationPeriod::from_str("monthly"),
-            Some(AggregationPeriod::Monthly)
-        );
+        assert_eq!(AggregationPeriod::from_str("daily"), Some(AggregationPeriod::Daily));
+        assert_eq!(AggregationPeriod::from_str("weekly"), Some(AggregationPeriod::Weekly));
+        assert_eq!(AggregationPeriod::from_str("monthly"), Some(AggregationPeriod::Monthly));
         assert_eq!(AggregationPeriod::from_str("invalid"), None);
     }
 
@@ -624,14 +608,8 @@ mod tests {
         assert_eq!(metrics.total_bytes, 1024);
         assert_eq!(metrics.put_requests, 1);
         assert_eq!(metrics.upload_bytes, 1024);
-        assert_eq!(
-            metrics.objects_by_class.get("HOT").copied().unwrap_or(0),
-            1
-        );
-        assert_eq!(
-            metrics.bytes_by_class.get("HOT").copied().unwrap_or(0),
-            1024
-        );
+        assert_eq!(metrics.objects_by_class.get("HOT").copied().unwrap_or(0), 1);
+        assert_eq!(metrics.bytes_by_class.get("HOT").copied().unwrap_or(0), 1024);
     }
 
     #[test]
@@ -667,22 +645,10 @@ mod tests {
         let metrics = mgr.get_metrics("bucket").unwrap();
         assert_eq!(metrics.object_count, 4);
         assert_eq!(metrics.total_bytes, 1000);
-        assert_eq!(
-            metrics.objects_by_class.get("HOT").copied().unwrap_or(0),
-            1
-        );
-        assert_eq!(
-            metrics.objects_by_class.get("WARM").copied().unwrap_or(0),
-            1
-        );
-        assert_eq!(
-            metrics.objects_by_class.get("COLD").copied().unwrap_or(0),
-            1
-        );
-        assert_eq!(
-            metrics.objects_by_class.get("GLACIER").copied().unwrap_or(0),
-            1
-        );
+        assert_eq!(metrics.objects_by_class.get("HOT").copied().unwrap_or(0), 1);
+        assert_eq!(metrics.objects_by_class.get("WARM").copied().unwrap_or(0), 1);
+        assert_eq!(metrics.objects_by_class.get("COLD").copied().unwrap_or(0), 1);
+        assert_eq!(metrics.objects_by_class.get("GLACIER").copied().unwrap_or(0), 1);
     }
 
     #[test]
@@ -781,8 +747,7 @@ mod tests {
     #[test]
     fn test_cost_config_custom() {
         let mgr = AnalyticsManager::new();
-        let mut config = CostConfig::default();
-        config.standard_cents_per_gb = 5.0; // 自定义价格
+        let config = CostConfig { standard_cents_per_gb: 5.0, ..Default::default() }; // 自定义价格
         mgr.set_cost_config(config.clone());
 
         let got = mgr.get_cost_config();

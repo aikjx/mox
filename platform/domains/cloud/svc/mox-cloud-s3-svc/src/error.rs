@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -89,14 +89,14 @@ impl S3Error {
             S3Error::SignatureDoesNotMatch => {
                 "The request signature we calculated does not match the signature you provided."
                     .into()
-            }
+            },
             S3Error::NotImplemented(s) => format!(
                 "A header you provided implies functionality that is not implemented: {}",
                 s
             ),
             S3Error::MethodNotAllowed => {
                 "The specified method is not allowed against this resource.".into()
-            }
+            },
             S3Error::InternalError(s) => format!("Internal Error: {}", s),
             S3Error::BadRequest(s) => format!("Bad Request: {}", s),
         }
@@ -123,16 +123,16 @@ impl From<S3Error> for mox_cloud_domain_traits::CloudError {
         match e {
             S3Error::NoSuchKey | S3Error::NoSuchBucket | S3Error::NoSuchUpload => {
                 mox_cloud_domain_traits::CloudError::NotFound(e.to_string())
-            }
+            },
             S3Error::BucketAlreadyExists => {
                 mox_cloud_domain_traits::CloudError::AlreadyExists(e.to_string())
-            }
+            },
             S3Error::InvalidArgument | S3Error::KeyTooLongError | S3Error::BadRequest(_) => {
                 mox_cloud_domain_traits::CloudError::InvalidInput(e.to_string())
-            }
+            },
             S3Error::NotImplemented(_) => {
                 mox_cloud_domain_traits::CloudError::Unsupported(e.to_string())
-            }
+            },
             other => mox_cloud_domain_traits::CloudError::S3(other.to_string()),
         }
     }

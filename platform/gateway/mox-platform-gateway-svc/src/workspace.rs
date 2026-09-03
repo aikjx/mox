@@ -13,7 +13,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // =====================================================================
 // 共享状态
@@ -38,32 +38,7 @@ struct WorkspaceState {
 
 impl WorkspaceState {
     fn new() -> Self {
-        let now = chrono::Utc::now();
-        let seed: Vec<HistoryItem> = (0..25usize)
-            .map(|i| {
-                let t = now - chrono::Duration::minutes((i * 17) as i64);
-                let actions = [
-                    ("view_project", "project", "查看了项目"),
-                    ("edit_task", "task", "编辑了任务"),
-                    ("create_document", "document", "创建了文档"),
-                    ("comment", "task", "发表了评论"),
-                    ("upload_file", "file", "上传了文件"),
-                    ("complete_task", "task", "完成了任务"),
-                ];
-                let (action, target_type, detail_prefix) = actions[i % actions.len()];
-                HistoryItem {
-                    id: format!("hist-{:04}", i + 1),
-                    user_id: "admin-user".into(),
-                    action: action.into(),
-                    target_type: target_type.into(),
-                    target_id: format!("{}-{:03}", target_type, (i % 10) + 1),
-                    target_name: format!("{} #{:03}", target_type, (i % 10) + 1),
-                    detail: format!("{}「{} #{}」", detail_prefix, target_type, (i % 10) + 1),
-                    created_at: t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                }
-            })
-            .collect();
-        Self { history: Arc::new(parking_lot::Mutex::new(seed)) }
+        Self { history: Arc::new(parking_lot::Mutex::new(Vec::new())) }
     }
 }
 
@@ -80,22 +55,15 @@ fn ok(data: Value) -> ApiResponse<Value> {
 // =====================================================================
 async fn unread_count() -> ApiResponse<Value> {
     ok(json!({
-        "total": 12,
+        "total": 0,
         "by_type": {
-            "task_assigned": 4,
-            "mention": 2,
-            "comment": 3,
-            "system": 2,
-            "alert": 1,
+            "task_assigned": 0,
+            "mention": 0,
+            "comment": 0,
+            "system": 0,
+            "alert": 0,
         },
-        "latest_notification": {
-            "id": "notif-001",
-            "type": "task_assigned",
-            "title": "新任务分配",
-            "content": "您被分配了新任务「需求图谱构建」",
-            "created_at": now_iso(),
-            "read": false,
-        },
+        "latest_notification": null,
     }))
 }
 
@@ -105,24 +73,24 @@ async fn unread_count() -> ApiResponse<Value> {
 async fn workspace_kpi() -> ApiResponse<Value> {
     ok(json!({
         "tasks": {
-            "todo": 8,
-            "in_progress": 5,
-            "completed": 42,
-            "overdue": 2,
-            "completion_rate": 73.7,
+            "todo": 0,
+            "in_progress": 0,
+            "completed": 0,
+            "overdue": 0,
+            "completion_rate": 0.0,
         },
         "projects": {
-            "active": 6,
-            "completed": 12,
-            "at_risk": 1,
+            "active": 0,
+            "completed": 0,
+            "at_risk": 0,
         },
         "reviews": {
-            "pending": 3,
-            "approved_this_week": 7,
+            "pending": 0,
+            "approved_this_week": 0,
         },
         "team": {
-            "members": 15,
-            "active_today": 11,
+            "members": 0,
+            "active_today": 0,
         },
         "period": "this_week",
         "ts": now_iso(),
@@ -133,29 +101,16 @@ async fn workspace_kpi() -> ApiResponse<Value> {
 // 3. GET /files/{id}/preview — 文件预览
 // =====================================================================
 async fn file_preview(Path(id): Path<String>) -> ApiResponse<Value> {
-    let ext = if id.contains("pdf") { "pdf" }
-        else if id.contains("img") || id.contains("png") || id.contains("jpg") { "image" }
-        else if id.contains("doc") || id.contains("md") { "markdown" }
-        else { "text" };
     ok(json!({
         "file_id": id,
-        "name": format!("document-{}.{}", id, ext),
-        "size_bytes": 245760,
-        "mime_type": match ext {
-            "pdf" => "application/pdf",
-            "image" => "image/png",
-            "markdown" => "text/markdown",
-            _ => "text/plain",
-        },
-        "preview_type": ext,
-        "preview_url": format!("/api/files/{}/preview-content", id),
-        "thumbnail_url": format!("/api/files/{}/thumbnail", id),
-        "content": if ext == "markdown" {
-            "# 文档标题\n\n这是文档预览内容。\n\n## 第一节\n\n正文内容示例。".to_string()
-        } else {
-            String::new()
-        },
-        "uploaded_at": now_iso(),
+        "name": null,
+        "size_bytes": 0,
+        "mime_type": null,
+        "preview_type": "unknown",
+        "preview_url": null,
+        "thumbnail_url": null,
+        "content": "",
+        "uploaded_at": null,
     }))
 }
 
@@ -165,12 +120,12 @@ async fn file_preview(Path(id): Path<String>) -> ApiResponse<Value> {
 async fn file_download(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "file_id": id,
-        "name": format!("download-{}.bin", id),
-        "size_bytes": 524288,
+        "name": null,
+        "size_bytes": 0,
         "mime_type": "application/octet-stream",
-        "download_url": format!("/api/files/{}/raw", id),
-        "expires_in": 3600,
-        "sha256": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+        "download_url": null,
+        "expires_in": 0,
+        "sha256": null,
         "ts": now_iso(),
     }))
 }
@@ -294,16 +249,12 @@ async fn task_execute(
         "subtask_id": body.subtask_id.unwrap_or_else(|| format!("{}-sub-001", id)),
         "execution_id": execution_id,
         "executor": body.executor.unwrap_or_else(|| "system".into()),
-        "status": "running",
+        "status": "pending",
         "progress": 0.0,
-        "started_at": now_iso(),
-        "estimated_completion": (chrono::Utc::now() + chrono::Duration::minutes(5))
-            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        "started_at": null,
+        "estimated_completion": null,
         "parameters": body.parameters.unwrap_or(json!({})),
-        "log": [
-            { "ts": now_iso(), "level": "INFO", "message": "任务执行已启动" },
-            { "ts": now_iso(), "level": "INFO", "message": "初始化执行环境..." },
-        ],
+        "log": [],
     }))
 }
 

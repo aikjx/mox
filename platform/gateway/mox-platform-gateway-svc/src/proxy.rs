@@ -19,7 +19,7 @@
 use axum::{
     body::Body,
     extract::{OriginalUri, State},
-    http::{HeaderMap, HeaderName, HeaderValue, Method, Request, StatusCode},
+    http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode},
     response::Response,
     Router,
 };

@@ -16,7 +16,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // =====================================================================
 // 共享状态
@@ -43,48 +43,8 @@ struct ExpertsState {
 
 impl ExpertsState {
     fn new() -> Self {
-        let now = chrono::Utc::now();
-        let seed = vec![
-            Booking {
-                id: "booking-001".into(),
-                expert_id: "expert-arch-001".into(),
-                expert_name: "架构优化专家".into(),
-                user_id: "admin-user".into(),
-                topic: "微服务架构拆分咨询".into(),
-                scheduled_at: (now + chrono::Duration::hours(48))
-                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                duration_minutes: 60,
-                status: "confirmed".into(),
-                created_at: now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-            },
-            Booking {
-                id: "booking-002".into(),
-                expert_id: "expert-data-001".into(),
-                expert_name: "数据工程专家".into(),
-                user_id: "admin-user".into(),
-                topic: "数据管道性能优化".into(),
-                scheduled_at: (now - chrono::Duration::hours(24))
-                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                duration_minutes: 90,
-                status: "completed".into(),
-                created_at: (now - chrono::Duration::hours(72))
-                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-            },
-            Booking {
-                id: "booking-003".into(),
-                expert_id: "expert-ai-001".into(),
-                expert_name: "AI 算法专家".into(),
-                user_id: "admin-user".into(),
-                topic: "推荐系统方案评审".into(),
-                scheduled_at: (now + chrono::Duration::hours(24))
-                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                duration_minutes: 45,
-                status: "pending".into(),
-                created_at: now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-            },
-        ];
         Self {
-            bookings: Arc::new(Mutex::new(seed)),
+            bookings: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
         }
     }
@@ -103,25 +63,25 @@ fn ok(data: Value) -> ApiResponse<Value> {
 // =====================================================================
 async fn experts_stats() -> ApiResponse<Value> {
     ok(json!({
-        "total_experts": 342,
-        "online_experts": 128,
-        "busy_experts": 45,
-        "offline_experts": 169,
-        "total_consultations": 12847,
-        "today_consultations": 86,
-        "avg_rating": 4.7,
-        "avg_response_minutes": 8.5,
+        "total_experts": 0,
+        "online_experts": 0,
+        "busy_experts": 0,
+        "offline_experts": 0,
+        "total_consultations": 0,
+        "today_consultations": 0,
+        "avg_rating": 0.0,
+        "avg_response_minutes": 0.0,
         "domains": {
-            "architecture": 58,
-            "data": 72,
-            "ai": 45,
-            "cloud": 38,
-            "security": 32,
-            "devops": 28,
-            "product": 41,
-            "other": 28,
+            "architecture": 0,
+            "data": 0,
+            "ai": 0,
+            "cloud": 0,
+            "security": 0,
+            "devops": 0,
+            "product": 0,
+            "other": 0,
         },
-        "satisfaction_rate": 96.8,
+        "satisfaction_rate": 0.0,
         "ts": now_iso(),
     }))
 }
@@ -228,26 +188,17 @@ async fn cancel_booking(
 // 6. GET /experts/bookings/{id}/consult-room — 咨询室进入
 // =====================================================================
 async fn consult_room(Path(id): Path<String>) -> ApiResponse<Value> {
-    let room_token = uuid::Uuid::new_v4().simple().to_string();
     ok(json!({
         "booking_id": id,
         "room_id": format!("room-{}", id),
-        "room_token": room_token,
-        "join_url": format!("/consult/rooms/{}?token={}", id, room_token),
+        "room_token": null,
+        "join_url": null,
         "webrtc_config": {
-            "ice_servers": [
-                { "urls": "stun:stun.l.google.com:19302" },
-                { "urls": "turn:turn.mox.example:3478", "username": "mox", "credential": "***" },
-            ],
+            "ice_servers": [],
         },
-        "expert_info": {
-            "expert_id": "expert-arch-001",
-            "name": "架构优化专家",
-            "avatar": "/avatars/expert-arch-001.png",
-            "online": true,
-        },
-        "status": "ready",
-        "expires_in": 3600,
+        "expert_info": null,
+        "status": "unavailable",
+        "expires_in": 0,
         "created_at": now_iso(),
     }))
 }
@@ -274,7 +225,7 @@ async fn join_team(Json(body): Json<JoinTeamBody>) -> ApiResponse<Value> {
         "application_id": format!("app-{}", uuid::Uuid::new_v4().simple()),
         "message": body.message.unwrap_or_else(|| "申请加入团队".into()),
         "applied_at": now_iso(),
-        "estimated_review_hours": 24,
+        "estimated_review_hours": 0,
     }))
 }
 
@@ -293,17 +244,16 @@ async fn consult_now(
     Path(id): Path<String>,
     Json(body): Json<ConsultNowBody>,
 ) -> ApiResponse<Value> {
-    let session_id = format!("session-{}", uuid::Uuid::new_v4().simple());
     ok(json!({
         "expert_id": id,
-        "session_id": session_id,
-        "status": "connecting",
+        "session_id": null,
+        "status": "unavailable",
         "channel": body.channel.unwrap_or_else(|| "text".into()),
         "topic": body.topic.unwrap_or_else(|| "即时咨询".into()),
         "question": body.question,
-        "estimated_wait_seconds": 45,
-        "chat_url": format!("/consult/chat/{}", session_id),
-        "expert_online": true,
+        "estimated_wait_seconds": 0,
+        "chat_url": null,
+        "expert_online": false,
         "created_at": now_iso(),
     }))
 }

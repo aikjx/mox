@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -13,13 +13,13 @@
 use async_trait::async_trait;
 use parking_lot::Mutex;
 
-use crate::error::FilerResult;
-use crate::meta_pg_citus::{
-    meta_create, meta_delete, meta_link, meta_list_dir, meta_mkdir, meta_rename, meta_symlink,
-    meta_unlink, meta_write_attr,
-};
-use crate::meta_trait::{
-    Attr, AttrPatch, DirEntry, InMemInodeStore, MetaBackend, MetaStorageProvider,
+use crate::{
+    error::FilerResult,
+    meta_pg_citus::{
+        meta_create, meta_delete, meta_link, meta_list_dir, meta_mkdir, meta_rename, meta_symlink,
+        meta_unlink, meta_write_attr,
+    },
+    meta_trait::{Attr, AttrPatch, DirEntry, InMemInodeStore, MetaBackend, MetaStorageProvider},
 };
 
 #[derive(Debug, Default)]
@@ -74,11 +74,7 @@ impl MetaStorageProvider for SqliteMeta {
     }
     async fn inode_read_attr(&self, ino: u64) -> FilerResult<Attr> {
         let s = self.inner.lock();
-        s.store
-            .inodes
-            .get(&ino)
-            .cloned()
-            .ok_or(crate::error::FilerError::NotFound)
+        s.store.inodes.get(&ino).cloned().ok_or(crate::error::FilerError::NotFound)
     }
     async fn inode_list_dir(&self, parent: u64) -> FilerResult<Vec<DirEntry>> {
         self.with_store_mut(|s| meta_list_dir(s, parent))

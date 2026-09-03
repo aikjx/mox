@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -28,9 +28,11 @@
 //! 直到超过硬配额。宽限期结束后，即使未超过硬配额也只能删除不能写入。
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::error::FilerResult;
 
@@ -57,20 +59,12 @@ pub struct QuotaLimit {
 impl QuotaLimit {
     /// 无限制配额
     pub fn unlimited() -> Self {
-        Self {
-            hard_bytes: 0,
-            soft_bytes: 0,
-            hard_files: 0,
-            soft_files: 0,
-        }
+        Self { hard_bytes: 0, soft_bytes: 0, hard_files: 0, soft_files: 0 }
     }
 
     /// 是否为无限制
     pub fn is_unlimited(&self) -> bool {
-        self.hard_bytes == 0
-            && self.soft_bytes == 0
-            && self.hard_files == 0
-            && self.soft_files == 0
+        self.hard_bytes == 0 && self.soft_bytes == 0 && self.hard_files == 0 && self.soft_files == 0
     }
 }
 
@@ -220,7 +214,14 @@ impl QuotaManager {
             None => return QuotaCheckResult::Ok, // 无配置 = 无限制
         };
 
-        self.check_quota_internal(limit, usage, add_bytes, add_files, QuotaType::User, &uid.to_string())
+        self.check_quota_internal(
+            limit,
+            usage,
+            add_bytes,
+            add_files,
+            QuotaType::User,
+            &uid.to_string(),
+        )
     }
 
     /// 更新用户配额使用量
@@ -252,7 +253,14 @@ impl QuotaManager {
             None => return QuotaCheckResult::Ok,
         };
 
-        self.check_quota_internal(limit, usage, add_bytes, add_files, QuotaType::Directory, &ino.to_string())
+        self.check_quota_internal(
+            limit,
+            usage,
+            add_bytes,
+            add_files,
+            QuotaType::Directory,
+            &ino.to_string(),
+        )
     }
 
     /// 更新目录配额使用量
@@ -277,7 +285,12 @@ impl QuotaManager {
     }
 
     /// 检查桶配额
-    pub fn check_bucket_quota(&self, bucket: &str, add_bytes: u64, add_files: u64) -> QuotaCheckResult {
+    pub fn check_bucket_quota(
+        &self,
+        bucket: &str,
+        add_bytes: u64,
+        add_files: u64,
+    ) -> QuotaCheckResult {
         let quotas = self.bucket_quotas.lock();
         let (limit, usage) = match quotas.get(bucket) {
             Some(v) => v,
@@ -330,15 +343,14 @@ impl QuotaManager {
     fn merge_results(a: QuotaCheckResult, b: QuotaCheckResult) -> QuotaCheckResult {
         // 严格程度：GracePeriodExpired > HardExceeded > SoftExceeded > Ok
         match (a, b) {
-            (QuotaCheckResult::GracePeriodExpired, _) | (_, QuotaCheckResult::GracePeriodExpired) => {
-                QuotaCheckResult::GracePeriodExpired
-            }
+            (QuotaCheckResult::GracePeriodExpired, _)
+            | (_, QuotaCheckResult::GracePeriodExpired) => QuotaCheckResult::GracePeriodExpired,
             (QuotaCheckResult::HardExceeded, _) | (_, QuotaCheckResult::HardExceeded) => {
                 QuotaCheckResult::HardExceeded
-            }
+            },
             (QuotaCheckResult::SoftExceeded, _) | (_, QuotaCheckResult::SoftExceeded) => {
                 QuotaCheckResult::SoftExceeded
-            }
+            },
             _ => QuotaCheckResult::Ok,
         }
     }
@@ -457,11 +469,8 @@ impl QuotaManager {
         limit_bytes: u64,
         message: &str,
     ) {
-        let usage_percent = if limit_bytes > 0 {
-            (used_bytes as f64 / limit_bytes as f64) * 100.0
-        } else {
-            0.0
-        };
+        let usage_percent =
+            if limit_bytes > 0 { (used_bytes as f64 / limit_bytes as f64) * 100.0 } else { 0.0 };
 
         let alert = QuotaAlert {
             quota_type,
@@ -574,7 +583,7 @@ impl QuotaManager {
                     usage.used_files = 0;
                     usage.soft_exceeded_at_sec = 0;
                 }
-            }
+            },
             QuotaType::Directory => {
                 let ino: u64 = id.parse().map_err(|_| crate::error::FilerError::AttrInvalid)?;
                 let mut quotas = self.dir_quotas.lock();
@@ -583,7 +592,7 @@ impl QuotaManager {
                     usage.used_files = 0;
                     usage.soft_exceeded_at_sec = 0;
                 }
-            }
+            },
             QuotaType::Bucket => {
                 let mut quotas = self.bucket_quotas.lock();
                 if let Some((_, usage)) = quotas.get_mut(id) {
@@ -591,7 +600,7 @@ impl QuotaManager {
                     usage.used_files = 0;
                     usage.soft_exceeded_at_sec = 0;
                 }
-            }
+            },
         }
         Ok(())
     }
@@ -599,29 +608,20 @@ impl QuotaManager {
     /// 列出所有用户配额
     pub fn list_user_quotas(&self) -> Vec<(u32, QuotaLimit, QuotaUsage)> {
         let quotas = self.user_quotas.lock();
-        quotas
-            .iter()
-            .map(|(uid, (limit, usage))| (*uid, *limit, *usage))
-            .collect()
+        quotas.iter().map(|(uid, (limit, usage))| (*uid, *limit, *usage)).collect()
     }
 
     /// 列出所有目录配额
     pub fn list_dir_quotas(&self) -> Vec<(u64, QuotaLimit, QuotaUsage)> {
         let quotas = self.dir_quotas.lock();
-        quotas
-            .iter()
-            .map(|(ino, (limit, usage))| (*ino, *limit, *usage))
-            .collect()
+        quotas.iter().map(|(ino, (limit, usage))| (*ino, *limit, *usage)).collect()
     }
 }
 
 // ---------------- 辅助函数 ----------------
 
 fn now_secs() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
 // ---------------- 共享类型别名 ----------------
@@ -654,10 +654,7 @@ mod tests {
         let limit = QuotaLimit::unlimited();
         assert!(limit.is_unlimited());
 
-        let limit2 = QuotaLimit {
-            hard_bytes: 1024,
-            ..Default::default()
-        };
+        let limit2 = QuotaLimit { hard_bytes: 1024, ..Default::default() };
         assert!(!limit2.is_unlimited());
     }
 
@@ -701,12 +698,8 @@ mod tests {
     fn test_user_quota_hard_exceeded() {
         let mgr = QuotaManager::new();
 
-        let limit = QuotaLimit {
-            hard_bytes: 1000,
-            soft_bytes: 500,
-            hard_files: 100,
-            soft_files: 50,
-        };
+        let limit =
+            QuotaLimit { hard_bytes: 1000, soft_bytes: 500, hard_files: 100, soft_files: 50 };
         mgr.set_user_quota(1000, limit);
         mgr.update_user_usage(1000, 800, 1);
 
@@ -719,12 +712,7 @@ mod tests {
     fn test_file_count_quota() {
         let mgr = QuotaManager::new();
 
-        let limit = QuotaLimit {
-            hard_bytes: 0,
-            soft_bytes: 0,
-            hard_files: 10,
-            soft_files: 0,
-        };
+        let limit = QuotaLimit { hard_bytes: 0, soft_bytes: 0, hard_files: 10, soft_files: 0 };
         mgr.set_user_quota(1000, limit);
         mgr.update_user_usage(1000, 0, 8);
 
@@ -739,20 +727,12 @@ mod tests {
     fn test_dir_quota() {
         let mgr = QuotaManager::new();
 
-        let limit = QuotaLimit {
-            hard_bytes: 1024,
-            soft_bytes: 0,
-            hard_files: 0,
-            soft_files: 0,
-        };
+        let limit = QuotaLimit { hard_bytes: 1024, soft_bytes: 0, hard_files: 0, soft_files: 0 };
         mgr.set_dir_quota(100, limit);
         mgr.update_dir_usage(100, 512, 1);
 
         assert_eq!(mgr.check_dir_quota(100, 100, 0), QuotaCheckResult::Ok);
-        assert_eq!(
-            mgr.check_dir_quota(100, 600, 0),
-            QuotaCheckResult::HardExceeded
-        );
+        assert_eq!(mgr.check_dir_quota(100, 600, 0), QuotaCheckResult::HardExceeded);
     }
 
     #[test]
@@ -768,10 +748,7 @@ mod tests {
         mgr.set_bucket_quota("my-bucket", limit);
         mgr.update_bucket_usage("my-bucket", 1024 * 1024, 100); // 1MB, 100 files
 
-        assert_eq!(
-            mgr.check_bucket_quota("my-bucket", 1024, 1),
-            QuotaCheckResult::Ok
-        );
+        assert_eq!(mgr.check_bucket_quota("my-bucket", 1024, 1), QuotaCheckResult::Ok);
     }
 
     #[test]
@@ -779,22 +756,14 @@ mod tests {
         let mgr = QuotaManager::new();
 
         // 用户有 1000 bytes 硬配额
-        let user_limit = QuotaLimit {
-            hard_bytes: 1000,
-            soft_bytes: 0,
-            hard_files: 0,
-            soft_files: 0,
-        };
+        let user_limit =
+            QuotaLimit { hard_bytes: 1000, soft_bytes: 0, hard_files: 0, soft_files: 0 };
         mgr.set_user_quota(1000, user_limit);
         mgr.update_user_usage(1000, 500, 1);
 
         // 目录有 2000 bytes 硬配额
-        let dir_limit = QuotaLimit {
-            hard_bytes: 2000,
-            soft_bytes: 0,
-            hard_files: 0,
-            soft_files: 0,
-        };
+        let dir_limit =
+            QuotaLimit { hard_bytes: 2000, soft_bytes: 0, hard_files: 0, soft_files: 0 };
         mgr.set_dir_quota(100, dir_limit);
         mgr.update_dir_usage(100, 100, 1);
 
@@ -811,12 +780,7 @@ mod tests {
     fn test_quota_usage_update() {
         let mgr = QuotaManager::new();
 
-        let limit = QuotaLimit {
-            hard_bytes: 1000,
-            soft_bytes: 500,
-            hard_files: 10,
-            soft_files: 5,
-        };
+        let limit = QuotaLimit { hard_bytes: 1000, soft_bytes: 500, hard_files: 10, soft_files: 5 };
         mgr.set_user_quota(1000, limit);
 
         // 增加
@@ -851,12 +815,7 @@ mod tests {
     fn test_alerts_generated() {
         let mgr = QuotaManager::new();
 
-        let limit = QuotaLimit {
-            hard_bytes: 1000,
-            soft_bytes: 0,
-            hard_files: 0,
-            soft_files: 0,
-        };
+        let limit = QuotaLimit { hard_bytes: 1000, soft_bytes: 0, hard_files: 0, soft_files: 0 };
         mgr.set_user_quota(1000, limit);
         mgr.update_user_usage(1000, 500, 1);
 

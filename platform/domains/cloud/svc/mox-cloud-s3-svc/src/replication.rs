@@ -23,12 +23,13 @@
 //! 支持通过 Replication Status API 查询单个对象的复制状态。
 
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, VecDeque};
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use crate::error::{S3Error, S3Result};
-use crate::lifecycle::StorageClass;
+use crate::{error::S3Result, lifecycle::StorageClass};
 
 // ---------------- 常量 ----------------
 
@@ -285,9 +286,7 @@ impl ReplicationManager {
 
     /// 设置存储桶的复制配置
     pub fn set_configuration(&self, bucket: &str, config: ReplicationConfiguration) {
-        self.configurations
-            .write()
-            .insert(bucket.to_string(), config);
+        self.configurations.write().insert(bucket.to_string(), config);
     }
 
     /// 获取存储桶的复制配置
@@ -385,17 +384,14 @@ impl ReplicationManager {
         };
 
         // 检查是否有规则启用了删除标记复制
-        let has_delete_rule = config
-            .rules
-            .iter()
-            .any(|r| r.enabled && r.delete_marker_replication && r.filter.matches(key, &BTreeMap::new()));
+        let has_delete_rule = config.rules.iter().any(|r| {
+            r.enabled && r.delete_marker_replication && r.filter.matches(key, &BTreeMap::new())
+        });
 
         if has_delete_rule {
             // 简化实现：删除时也触发复制（实际应复制删除标记）
             // 这里只移除状态记录
-            self.object_statuses
-                .lock()
-                .remove(&(bucket.to_string(), key.to_string()));
+            self.object_statuses.lock().remove(&(bucket.to_string(), key.to_string()));
         }
     }
 
@@ -459,7 +455,7 @@ impl ReplicationManager {
                     let total = metrics.succeeded as f64;
                     metrics.avg_latency_ms =
                         (metrics.avg_latency_ms * (total - 1.0) + latency as f64) / total;
-                }
+                },
                 Err(e) => {
                     let retry_count = task.retry_count + 1;
 
@@ -490,7 +486,8 @@ impl ReplicationManager {
                         metrics.last_failure_ms = now;
                     } else {
                         // 重新入队，指数退避
-                        let delay = self.initial_retry_delay_ms * (1u64 << (retry_count - 1).min(10));
+                        let delay =
+                            self.initial_retry_delay_ms * (1u64 << (retry_count - 1).min(10));
                         let retry_task = ReplicationTask {
                             source_bucket: task.source_bucket.clone(),
                             source_key: task.source_key.clone(),
@@ -519,7 +516,7 @@ impl ReplicationManager {
                             status.last_error = Some(e.message());
                         }
                     }
-                }
+                },
             }
 
             processed += 1;
@@ -536,10 +533,7 @@ impl ReplicationManager {
         bucket: &str,
         key: &str,
     ) -> Option<ObjectReplicationStatus> {
-        self.object_statuses
-            .lock()
-            .get(&(bucket.to_string(), key.to_string()))
-            .cloned()
+        self.object_statuses.lock().get(&(bucket.to_string(), key.to_string())).cloned()
     }
 
     /// 获取存储桶的复制指标
@@ -583,10 +577,7 @@ impl ReplicationManager {
                 self.task_queue.lock().push_back(task);
 
                 // 更新状态
-                let key = (
-                    entry.status.source_bucket.clone(),
-                    entry.status.source_key.clone(),
-                );
+                let key = (entry.status.source_bucket.clone(), entry.status.source_key.clone());
                 let mut statuses = self.object_statuses.lock();
                 if let Some(s) = statuses.get_mut(&key) {
                     s.status = ReplicationStatus::Pending;
@@ -636,13 +627,11 @@ pub type SharedReplication = Arc<ReplicationManager>;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::S3Error;
 
     #[test]
     fn test_replication_filter_prefix() {
-        let filter = ReplicationFilter {
-            prefix: Some("logs/".into()),
-            tags: BTreeMap::new(),
-        };
+        let filter = ReplicationFilter { prefix: Some("logs/".into()), tags: BTreeMap::new() };
 
         assert!(filter.matches("logs/2024/01.log", &BTreeMap::new()));
         assert!(!filter.matches("data/file.txt", &BTreeMap::new()));
@@ -655,10 +644,7 @@ mod tests {
         filter_tags.insert("env".to_string(), "prod".to_string());
         filter_tags.insert("type".to_string(), "backup".to_string());
 
-        let filter = ReplicationFilter {
-            prefix: None,
-            tags: filter_tags,
-        };
+        let filter = ReplicationFilter { prefix: None, tags: filter_tags };
 
         let mut obj_tags = BTreeMap::new();
         obj_tags.insert("env".to_string(), "prod".to_string());
@@ -680,10 +666,7 @@ mod tests {
         let mut filter_tags = BTreeMap::new();
         filter_tags.insert("replicate".to_string(), "true".to_string());
 
-        let filter = ReplicationFilter {
-            prefix: Some("data/".into()),
-            tags: filter_tags,
-        };
+        let filter = ReplicationFilter { prefix: Some("data/".into()), tags: filter_tags };
 
         let mut tags = BTreeMap::new();
         tags.insert("replicate".to_string(), "true".to_string());
@@ -722,10 +705,7 @@ mod tests {
 
         mgr.set_configuration("source-bucket", config);
         assert!(mgr.get_configuration("source-bucket").is_some());
-        assert_eq!(
-            mgr.get_configuration("source-bucket").unwrap().rules.len(),
-            1
-        );
+        assert_eq!(mgr.get_configuration("source-bucket").unwrap().rules.len(), 1);
 
         mgr.delete_configuration("source-bucket");
         assert!(mgr.get_configuration("source-bucket").is_none());
@@ -740,10 +720,7 @@ mod tests {
             id: "rule1".into(),
             priority: 1,
             enabled: true,
-            filter: ReplicationFilter {
-                prefix: Some("docs/".into()),
-                tags: BTreeMap::new(),
-            },
+            filter: ReplicationFilter { prefix: Some("docs/".into()), tags: BTreeMap::new() },
             destination: ReplicationDestination {
                 bucket: "dest-bucket".into(),
                 storage_class: Some(StorageClass::Warm),
@@ -754,10 +731,7 @@ mod tests {
             replication_type: ReplicationType::SRR,
         };
 
-        let config = ReplicationConfiguration {
-            rules: vec![rule],
-            role: None,
-        };
+        let config = ReplicationConfiguration { rules: vec![rule], role: None };
 
         mgr.set_configuration("source-bucket", config);
 
@@ -766,9 +740,7 @@ mod tests {
         mgr.on_object_put("source-bucket", "docs/report.pdf", "v1", 1024, &tags);
 
         // 验证状态记录
-        let status = mgr
-            .get_object_replication_status("source-bucket", "docs/report.pdf")
-            .unwrap();
+        let status = mgr.get_object_replication_status("source-bucket", "docs/report.pdf").unwrap();
         assert_eq!(status.status, ReplicationStatus::Pending);
         assert_eq!(status.destination_bucket, "dest-bucket");
         assert_eq!(status.rule_id, "rule1");
@@ -780,9 +752,7 @@ mod tests {
         mgr.on_object_put("source-bucket", "images/photo.jpg", "v1", 2048, &tags);
 
         // 不匹配前缀，不应有复制任务
-        assert!(mgr
-            .get_object_replication_status("source-bucket", "images/photo.jpg")
-            .is_none());
+        assert!(mgr.get_object_replication_status("source-bucket", "images/photo.jpg").is_none());
         assert_eq!(mgr.queue_length(), 1); // 队列长度不变
     }
 
@@ -806,10 +776,7 @@ mod tests {
             replication_type: ReplicationType::SRR,
         };
 
-        let config = ReplicationConfiguration {
-            rules: vec![rule],
-            role: None,
-        };
+        let config = ReplicationConfiguration { rules: vec![rule], role: None };
 
         mgr.set_configuration("src-bucket", config);
 
@@ -824,13 +791,12 @@ mod tests {
         let storage = Arc::new(parking_lot::Mutex::new(BTreeMap::new()));
         let storage_clone = storage.clone();
 
-        let copy_fn = move |
-            src_bucket: &str,
-            src_key: &str,
-            dst_bucket: &str,
-            dst_key: &str,
-            _class: Option<StorageClass>,
-        | -> S3Result<()> {
+        let copy_fn = move |src_bucket: &str,
+                            src_key: &str,
+                            dst_bucket: &str,
+                            dst_key: &str,
+                            _class: Option<StorageClass>|
+              -> S3Result<()> {
             let data = format!("data:{}/{}", src_bucket, src_key);
             storage_clone
                 .lock()
@@ -843,9 +809,7 @@ mod tests {
         assert_eq!(mgr.queue_length(), 0);
 
         // 验证状态
-        let status = mgr
-            .get_object_replication_status("src-bucket", "file.txt")
-            .unwrap();
+        let status = mgr.get_object_replication_status("src-bucket", "file.txt").unwrap();
         assert_eq!(status.status, ReplicationStatus::Completed);
 
         // 验证目标存储
@@ -883,10 +847,7 @@ mod tests {
             replication_type: ReplicationType::CRR,
         };
 
-        let config = ReplicationConfiguration {
-            rules: vec![rule],
-            role: None,
-        };
+        let config = ReplicationConfiguration { rules: vec![rule], role: None };
 
         mgr.set_configuration("src-bucket", config);
 
@@ -895,18 +856,21 @@ mod tests {
         mgr.on_object_put("src-bucket", "fail.txt", "v1", 100, &tags);
 
         // 复制函数总是失败
-        let copy_fn = |_sb: &str, _sk: &str, _db: &str, _dk: &str, _c: Option<StorageClass>| -> S3Result<()> {
+        let copy_fn = |_sb: &str,
+                       _sk: &str,
+                       _db: &str,
+                       _dk: &str,
+                       _c: Option<StorageClass>|
+         -> S3Result<()> {
             Err(S3Error::InternalError("simulated failure".into()))
         };
 
         // 第一次处理：失败并重试
-        let processed = mgr.process_tasks(&copy_fn);
+        let processed = mgr.process_tasks(copy_fn);
         assert_eq!(processed, 1);
         assert_eq!(mgr.queue_length(), 1); // 重新入队（待重试）
 
-        let status = mgr
-            .get_object_replication_status("src-bucket", "fail.txt")
-            .unwrap();
+        let status = mgr.get_object_replication_status("src-bucket", "fail.txt").unwrap();
         assert_eq!(status.retry_count, 1);
         assert!(status.last_error.is_some());
     }
@@ -930,10 +894,7 @@ mod tests {
             replication_type: ReplicationType::SRR,
         };
 
-        let config = ReplicationConfiguration {
-            rules: vec![rule],
-            role: None,
-        };
+        let config = ReplicationConfiguration { rules: vec![rule], role: None };
 
         mgr.set_configuration("source-bucket", config);
 
@@ -941,9 +902,7 @@ mod tests {
         mgr.on_object_put("source-bucket", "file.txt", "v1", 100, &tags);
 
         assert_eq!(mgr.queue_length(), 0);
-        assert!(mgr
-            .get_object_replication_status("source-bucket", "file.txt")
-            .is_none());
+        assert!(mgr.get_object_replication_status("source-bucket", "file.txt").is_none());
     }
 
     #[test]
@@ -966,10 +925,7 @@ mod tests {
             replication_type: ReplicationType::SRR,
         };
 
-        let config = ReplicationConfiguration {
-            rules: vec![rule],
-            role: None,
-        };
+        let config = ReplicationConfiguration { rules: vec![rule], role: None };
 
         mgr.set_configuration("src-bucket", config);
 
@@ -993,11 +949,7 @@ mod tests {
             created_at_ms: now_ms(),
         };
 
-        let entry = DeadLetterEntry {
-            status,
-            enqueued_at_ms: now_ms(),
-            reason: "test".into(),
-        };
+        let entry = DeadLetterEntry { status, enqueued_at_ms: now_ms(), reason: "test".into() };
 
         mgr.dead_letter_queue.lock().push_back(entry);
         assert_eq!(mgr.get_dead_letter_queue(10).len(), 1);

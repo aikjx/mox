@@ -17,15 +17,16 @@
 //! 方法：通过模拟大规模数据，测量关键操作的延迟和吞吐量，
 //!       验证系统在高负载下的正确性和性能可扩展性。
 
+use bytes::Bytes;
 use mox_cloud_master_svc::{
     DistributedScheduler, MasterConfig, MasterServer, NodeLoad, NodeTopology, PlacementStrategy,
-    RaftConfig, RaftLogType, RaftMaster, RaftRole, RebalancePlan, SchedulerWeights,
-    VolumeAllocation, VolumeInfo, VolumeLoadReport, VolumeStatusState,
+    RaftConfig, RaftMaster, VolumeInfo, VolumeLoadReport, VolumeStatusState,
 };
-use bytes::Bytes;
 use rand::Rng;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 // =========================================================================
 // 辅助工具
@@ -157,7 +158,8 @@ fn ds01_03_100k_volume_list_performance() {
     let volumes = master.list_volumes();
     let elapsed = start.elapsed();
 
-    let result = ScaleResult::new("Volume list (all)", "100K volumes", volumes.len() as u64, elapsed);
+    let result =
+        ScaleResult::new("Volume list (all)", "100K volumes", volumes.len() as u64, elapsed);
     result.print();
 
     assert_eq!(volumes.len(), 100_000);
@@ -182,7 +184,7 @@ fn ds01_04_allocation_throughput_10k() {
                     // 前 100 次应该都能成功
                     panic!("Allocation {} failed unexpectedly", i);
                 }
-            }
+            },
         }
     }
     let elapsed = start.elapsed();
@@ -212,12 +214,8 @@ fn ds01_05_volume_metadata_memory_scaling() {
         let vols = master.list_volumes();
         assert_eq!(vols.len() as u64, count);
 
-        let result = ScaleResult::new(
-            "Volume registration",
-            &format!("{} nodes", count),
-            count,
-            elapsed,
-        );
+        let result =
+            ScaleResult::new("Volume registration", &format!("{} nodes", count), count, elapsed);
         result.print();
     }
 }
@@ -264,9 +262,7 @@ fn ds02_01_scheduler_10_nodes() {
     let count = 1000u64;
     let start = Instant::now();
     for _ in 0..count {
-        scheduler
-            .select_best_nodes(&candidates, 3, &[])
-            .unwrap();
+        scheduler.select_best_nodes(&candidates, 3, &[]).unwrap();
     }
     let elapsed = start.elapsed();
 
@@ -313,9 +309,7 @@ fn ds02_02_scheduler_50_nodes() {
     let count = 1000u64;
     let start = Instant::now();
     for _ in 0..count {
-        scheduler
-            .select_best_nodes(&candidates, 3, &[])
-            .unwrap();
+        scheduler.select_best_nodes(&candidates, 3, &[]).unwrap();
     }
     let elapsed = start.elapsed();
 
@@ -362,9 +356,7 @@ fn ds02_03_scheduler_100_nodes() {
     let count = 500u64;
     let start = Instant::now();
     for _ in 0..count {
-        scheduler
-            .select_best_nodes(&candidates, 3, &[])
-            .unwrap();
+        scheduler.select_best_nodes(&candidates, 3, &[]).unwrap();
     }
     let elapsed = start.elapsed();
 
@@ -411,18 +403,11 @@ fn ds02_04_placement_strategy_performance() {
         let count = 500u64;
         let start = Instant::now();
         for _ in 0..count {
-            scheduler
-                .select_best_nodes(&candidates, 3, &[])
-                .unwrap();
+            scheduler.select_best_nodes(&candidates, 3, &[]).unwrap();
         }
         let elapsed = start.elapsed();
 
-        let result = ScaleResult::new(
-            &format!("Scheduler ({})", name),
-            "50 nodes",
-            count,
-            elapsed,
-        );
+        let result = ScaleResult::new(&format!("Scheduler ({})", name), "50 nodes", count, elapsed);
         result.print();
     }
 }
@@ -444,10 +429,7 @@ fn ds02_05_node_score_computation_perf() {
             });
             scheduler.update_node_load(
                 &node_id,
-                NodeLoad {
-                    cpu_pct: (i % 100) as u8,
-                    ..Default::default()
-                },
+                NodeLoad { cpu_pct: (i % 100) as u8, ..Default::default() },
             );
             VolumeInfo {
                 id: node_id,
@@ -560,21 +542,13 @@ fn ds03_03_heartbeat_state_accuracy() {
         master
             .heartbeat(
                 vid,
-                VolumeLoadReport {
-                    used_bytes: 0,
-                    chunk_count: 0,
-                    cpu_pct: 0,
-                    is_healthy: true,
-                },
+                VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
             )
             .unwrap();
     }
 
     let statuses = master.list_volumes();
-    let alive_count = statuses
-        .iter()
-        .filter(|v| v.state == VolumeStatusState::Alive)
-        .count();
+    let alive_count = statuses.iter().filter(|v| v.state == VolumeStatusState::Alive).count();
     assert_eq!(alive_count, 100);
 }
 
@@ -616,12 +590,7 @@ fn ds03_04_concurrent_heartbeats() {
     let total: u64 = handles.into_iter().map(|h| h.join().unwrap()).sum();
     let elapsed = start.elapsed();
 
-    let result = ScaleResult::new(
-        "Concurrent heartbeat (8 threads)",
-        "500 nodes",
-        total,
-        elapsed,
-    );
+    let result = ScaleResult::new("Concurrent heartbeat (8 threads)", "500 nodes", total, elapsed);
     result.print();
 
     assert!(total >= 400);
@@ -634,8 +603,7 @@ fn ds03_04_concurrent_heartbeats() {
 /// 测试：Raft 日志追加性能 (Leader 模式)
 #[test]
 fn ds04_01_raft_log_append_throughput() {
-    let mut config = RaftConfig::default();
-    config.node_id = "node-1".to_string();
+    let config = RaftConfig { node_id: "node-1".to_string(), ..Default::default() };
     let raft = RaftMaster::new(config);
 
     // 手动设为 Leader 以便追加日志
@@ -693,10 +661,7 @@ fn ds04_02_raft_election_performance() {
 /// 测试：Raft 投票请求处理性能
 #[test]
 fn ds04_03_raft_vote_processing_performance() {
-    let config = RaftConfig {
-        node_id: "follower-1".to_string(),
-        ..RaftConfig::default()
-    };
+    let config = RaftConfig { node_id: "follower-1".to_string(), ..RaftConfig::default() };
     let raft = RaftMaster::new(config);
 
     let count = 10_000u64;
@@ -723,10 +688,7 @@ fn ds04_03_raft_vote_processing_performance() {
 /// 测试：Raft AppendEntries 处理性能
 #[test]
 fn ds04_04_raft_append_entries_performance() {
-    let config = RaftConfig {
-        node_id: "follower-2".to_string(),
-        ..RaftConfig::default()
-    };
+    let config = RaftConfig { node_id: "follower-2".to_string(), ..RaftConfig::default() };
     let raft = RaftMaster::new(config);
 
     let count = 10_000u64;
@@ -747,7 +709,8 @@ fn ds04_04_raft_append_entries_performance() {
 
     let elapsed = start.elapsed();
 
-    let result = ScaleResult::new("Raft AppendEntries (heartbeat)", "10K heartbeats", count, elapsed);
+    let result =
+        ScaleResult::new("Raft AppendEntries (heartbeat)", "10K heartbeats", count, elapsed);
     result.print();
 
     assert!(result.ops_per_sec > 0.0);
@@ -799,12 +762,7 @@ fn ds05_01_single_node_failure_detection() {
         master
             .heartbeat(
                 vid,
-                VolumeLoadReport {
-                    used_bytes: 0,
-                    chunk_count: 0,
-                    cpu_pct: 0,
-                    is_healthy: true,
-                },
+                VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
             )
             .unwrap();
     }
@@ -814,10 +772,7 @@ fn ds05_01_single_node_failure_detection() {
 
     // 检测故障节点
     let volumes = master.list_volumes();
-    let dead_count = volumes
-        .iter()
-        .filter(|v| v.state == VolumeStatusState::Dead)
-        .count();
+    let dead_count = volumes.iter().filter(|v| v.state == VolumeStatusState::Dead).count();
 
     // 所有节点都应该超时（因为心跳后等待了 150ms，超时时间是 100ms）
     eprintln!(
@@ -831,10 +786,7 @@ fn ds05_01_single_node_failure_detection() {
 /// 测试：故障节点恢复
 #[test]
 fn ds05_02_node_recovery_after_failure() {
-    let config = MasterConfig {
-        heartbeat_timeout_ms: 50,
-        max_replica: 3,
-    };
+    let config = MasterConfig { heartbeat_timeout_ms: 50, max_replica: 3 };
     let master = MasterServer::new(config);
 
     let vid = master.register_volume("10.0.0.1:8080".to_string(), 100 * 1024 * 1024 * 1024);
@@ -843,12 +795,7 @@ fn ds05_02_node_recovery_after_failure() {
     master
         .heartbeat(
             &vid,
-            VolumeLoadReport {
-                used_bytes: 0,
-                chunk_count: 0,
-                cpu_pct: 0,
-                is_healthy: true,
-            },
+            VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
         )
         .unwrap();
 
@@ -864,18 +811,13 @@ fn ds05_02_node_recovery_after_failure() {
     master
         .heartbeat(
             &vid,
-            VolumeLoadReport {
-                used_bytes: 0,
-                chunk_count: 0,
-                cpu_pct: 0,
-                is_healthy: true,
-            },
+            VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
         )
         .unwrap();
     let recovery_time = start.elapsed();
 
     // 验证恢复后状态
-    let volumes_after = master.list_volumes();
+    let _volumes_after = master.list_volumes();
     // 心跳后应该恢复 Alive 状态（取决于具体实现的状态判定逻辑）
     eprintln!(
         "  Node recovery time: {} (heartbeat re-registration)",
@@ -888,10 +830,7 @@ fn ds05_02_node_recovery_after_failure() {
 /// 测试：多节点并发故障检测
 #[test]
 fn ds05_03_multi_node_failure_detection() {
-    let config = MasterConfig {
-        heartbeat_timeout_ms: 50,
-        max_replica: 3,
-    };
+    let config = MasterConfig { heartbeat_timeout_ms: 50, max_replica: 3 };
     let master = MasterServer::new(config);
 
     // 注册 100 个节点
@@ -906,12 +845,7 @@ fn ds05_03_multi_node_failure_detection() {
         master
             .heartbeat(
                 vid,
-                VolumeLoadReport {
-                    used_bytes: 0,
-                    chunk_count: 0,
-                    cpu_pct: 0,
-                    is_healthy: true,
-                },
+                VolumeLoadReport { used_bytes: 0, chunk_count: 0, cpu_pct: 0, is_healthy: true },
             )
             .unwrap();
     }
@@ -924,14 +858,8 @@ fn ds05_03_multi_node_failure_detection() {
     let volumes = master.list_volumes();
     let detection_time = start.elapsed();
 
-    let dead_count = volumes
-        .iter()
-        .filter(|v| v.state == VolumeStatusState::Dead)
-        .count();
-    let alive_count = volumes
-        .iter()
-        .filter(|v| v.state == VolumeStatusState::Alive)
-        .count();
+    let dead_count = volumes.iter().filter(|v| v.state == VolumeStatusState::Dead).count();
+    let alive_count = volumes.iter().filter(|v| v.state == VolumeStatusState::Alive).count();
 
     eprintln!(
         "  Multi-node failure detection: {} dead, {} alive (scan time: {})",
@@ -990,11 +918,7 @@ fn ds06_02_rebalance_medium_imbalance() {
             id: format!("medium-{}", i),
             addr: format!("10.0.1.{}:8080", i),
             capacity: 100 * 1024 * 1024 * 1024,
-            used: if i < 10 {
-                80 * 1024 * 1024 * 1024
-            } else {
-                20 * 1024 * 1024 * 1024
-            },
+            used: if i < 10 { 80 * 1024 * 1024 * 1024 } else { 20 * 1024 * 1024 * 1024 },
             is_alive: true,
         })
         .collect();
@@ -1011,7 +935,7 @@ fn ds06_02_rebalance_medium_imbalance() {
         format_duration(elapsed)
     );
 
-    assert!(plan.migrations.len() > 0);
+    assert!(!plan.migrations.is_empty());
     assert!(plan.estimated_improvement > 0);
 }
 
@@ -1026,11 +950,7 @@ fn ds06_03_rebalance_heavy_imbalance() {
             id: format!("heavy-{}", i),
             addr: format!("10.0.2.{}:8080", i),
             capacity: 100 * 1024 * 1024 * 1024,
-            used: if i < 10 {
-                95 * 1024 * 1024 * 1024
-            } else {
-                5 * 1024 * 1024 * 1024
-            },
+            used: if i < 10 { 95 * 1024 * 1024 * 1024 } else { 5 * 1024 * 1024 * 1024 },
             is_alive: true,
         })
         .collect();
@@ -1047,7 +967,7 @@ fn ds06_03_rebalance_heavy_imbalance() {
         format_duration(elapsed)
     );
 
-    assert!(plan.migrations.len() > 0);
+    assert!(!plan.migrations.is_empty());
     assert!(plan.estimated_improvement > 0);
 }
 
@@ -1139,11 +1059,8 @@ fn ds07_01_million_object_metadata_feasibility() {
 
     let start = Instant::now();
     for i in 0..count {
-        vs.write_chunk(
-            &format!("obj-{:08}", i),
-            bytes::Bytes::copy_from_slice(&data),
-        )
-        .unwrap();
+        vs.write_chunk(&format!("obj-{:08}", i), bytes::Bytes::copy_from_slice(&data))
+            .unwrap();
     }
     let write_elapsed = start.elapsed();
 
@@ -1172,13 +1089,21 @@ fn ds07_01_million_object_metadata_feasibility() {
     read_result.print();
 
     // 推算到十亿级的预期
-    let billion_write_seconds = (1_000_000_000.0 / write_result.ops_per_sec);
-    let billion_read_seconds = (1_000_000_000.0 / read_result.ops_per_sec);
+    let billion_write_seconds = 1_000_000_000.0 / write_result.ops_per_sec;
+    let billion_read_seconds = 1_000_000_000.0 / read_result.ops_per_sec;
 
     eprintln!();
     eprintln!("  Estimated for 1 billion objects:");
-    eprintln!("    Write time: {:.2} hours ({:.2} days)", billion_write_seconds / 3600.0, billion_write_seconds / 86400.0);
-    eprintln!("    Read time:  {:.2} hours ({:.2} days)", billion_read_seconds / 3600.0, billion_read_seconds / 86400.0);
+    eprintln!(
+        "    Write time: {:.2} hours ({:.2} days)",
+        billion_write_seconds / 3600.0,
+        billion_write_seconds / 86400.0
+    );
+    eprintln!(
+        "    Read time:  {:.2} hours ({:.2} days)",
+        billion_read_seconds / 3600.0,
+        billion_read_seconds / 86400.0
+    );
     eprintln!();
 
     assert_eq!(vs.chunk_count(), count);
@@ -1212,18 +1137,11 @@ fn ds07_02_scheduler_scalability_validation() {
     let count = 1000u64;
     let start = Instant::now();
     for _ in 0..count {
-        let _ = scheduler
-            .select_best_nodes(&candidates, 3, &[])
-            .unwrap();
+        let _ = scheduler.select_best_nodes(&candidates, 3, &[]).unwrap();
     }
     let elapsed = start.elapsed();
 
-    let result = ScaleResult::new(
-        "Scheduler scalability",
-        "500 nodes, 3 replicas",
-        count,
-        elapsed,
-    );
+    let result = ScaleResult::new("Scheduler scalability", "500 nodes, 3 replicas", count, elapsed);
     result.print();
 
     // 推算千节点集群
@@ -1259,12 +1177,8 @@ fn ds07_03_raft_high_log_volume_performance() {
 
     let elapsed = start.elapsed();
 
-    let result = ScaleResult::new(
-        "Raft state queries",
-        "50K ops (index+term+role)",
-        count * 3,
-        elapsed,
-    );
+    let result =
+        ScaleResult::new("Raft state queries", "50K ops (index+term+role)", count * 3, elapsed);
     result.print();
 
     assert!(result.ops_per_sec > 0.0);
@@ -1291,7 +1205,10 @@ fn ds08_01_scale_verification_report() {
         let master = MasterServer::new(config);
         let start = Instant::now();
         for i in 0..count {
-            master.register_volume(format!("10.0.{}.{}:8080", i / 256, i % 256), 100 * 1024 * 1024 * 1024);
+            master.register_volume(
+                format!("10.0.{}.{}:8080", i / 256, i % 256),
+                100 * 1024 * 1024 * 1024,
+            );
         }
         let elapsed = start.elapsed();
         let ops = count as f64 / elapsed.as_secs_f64();
@@ -1355,12 +1272,17 @@ fn ds08_01_scale_verification_report() {
         let start = Instant::now();
         for _ in 0..iterations {
             for vid in &vids {
-                master.heartbeat(vid, VolumeLoadReport {
-                    used_bytes: 50 * 1024 * 1024 * 1024,
-                    chunk_count: 1000,
-                    cpu_pct: 30,
-                    is_healthy: true,
-                }).unwrap();
+                master
+                    .heartbeat(
+                        vid,
+                        VolumeLoadReport {
+                            used_bytes: 50 * 1024 * 1024 * 1024,
+                            chunk_count: 1000,
+                            cpu_pct: 30,
+                            is_healthy: true,
+                        },
+                    )
+                    .unwrap();
             }
         }
         let elapsed = start.elapsed();

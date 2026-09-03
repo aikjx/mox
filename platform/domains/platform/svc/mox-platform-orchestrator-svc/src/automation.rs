@@ -37,6 +37,7 @@ use serde_json::Value;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::process::Command;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // ============================================================================
 // 请求/响应结构
@@ -554,7 +555,7 @@ pub async fn chat_handler(
     State(state): State<Arc<AppState>>,
     Extension(principal): Extension<Principal>,
     Json(req): Json<AutomationChatRequest>,
-) -> Result<Json<AutomationChatResponse>, (StatusCode, String)> {
+) -> ApiResponse<AutomationChatResponse> {
     // ── RBAC 闸门：Editor+ 方可提交需求编译 ──
     if !check_permission(&principal.roles, &Permission::EditFlow) {
         tracing::warn!(
@@ -563,19 +564,17 @@ pub async fn chat_handler(
             roles = ?principal.roles,
             "RBAC denied: EditFlow required for compile"
         );
-        return Err((
-            StatusCode::FORBIDDEN,
-            "权限不足：需 Editor 角色以上才可提交需求编译".into(),
-        ));
+        return api_error(403, "权限不足：需 Editor 角色以上才可提交需求编译");
     }
 
     let name = req
         .name
         .clone()
         .unwrap_or_else(|| req.requirement.chars().take(20).collect());
-    let asset = build_asset(&state, &req.requirement, &name, req.tags.clone())
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    let asset = match build_asset(&state, &req.requirement, &name, req.tags.clone()).await {
+        Ok(v) => v,
+        Err(e) => return api_error(500, e.to_string()),
+    };
     if let Some(sid) = &req.session_id {
         tracing::info!(target: "automation", session_id = %sid, asset_id = %asset.id, "需求对话会话续接");
     }
@@ -605,10 +604,11 @@ pub async fn chat_handler(
         code: asset.code.clone(),
     };
 
-    crate::automation_asset::save_automation(asset)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    if let Err(e) = crate::automation_asset::save_automation(asset) {
+        return api_error(500, e);
+    }
 
-    Ok(Json(resp))
+    api_ok(resp)
 }
 
 /// 继续对话迭代：在已有资产上增量补功能
@@ -620,7 +620,7 @@ pub async fn refine_handler(
     Extension(principal): Extension<Principal>,
     Path(id): Path<String>,
     Json(req): Json<AutomationChatRequest>,
-) -> Result<Json<AutomationChatResponse>, (StatusCode, String)> {
+) -> ApiResponse<AutomationChatResponse> {
     // ── RBAC 闸门：Editor+ 方可追加功能 ──
     if !check_permission(&principal.roles, &Permission::EditFlow) {
         tracing::warn!(
@@ -629,21 +629,26 @@ pub async fn refine_handler(
             roles = ?principal.roles,
             "RBAC denied: EditFlow required for refine"
         );
-        return Err((
-            StatusCode::FORBIDDEN,
-            "权限不足：需 Editor 角色以上才可追加功能".into(),
-        ));
+        return api_error(403, "权限不足：需 Editor 角色以上才可追加功能");
     }
 
-    let mut asset = crate::automation_asset::get_automation(&id)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
-        .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
+    let asset_opt = match crate::automation_asset::get_automation(&id) {
+        Ok(v) => v,
+        Err(e) => return api_error(500, e),
+    };
+    let mut asset = match asset_opt {
+        Some(v) => v,
+        None => return api_error(404, "自动化资产不存在"),
+    };
 
-    let bp = state
+    let bp = match state
         .ai_agent
         .refine_blueprint(&asset.blueprint.id, &req.requirement)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    {
+        Ok(v) => v,
+        Err(e) => return api_error(500, e.to_string()),
+    };
 
     let code = generate_code_from_blueprint(&bp);
     let tests = vec![AutoTestGen::generate(&code.python, "flow_app", "main")];
@@ -661,8 +666,9 @@ pub async fn refine_handler(
         }
     }
     asset.updated_at = chrono::Utc::now().to_rfc3339();
-    crate::automation_asset::save_automation(asset.clone())
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    if let Err(e) = crate::automation_asset::save_automation(asset.clone()) {
+        return api_error(500, e);
+    }
 
     let mermaid = flow_definition_to_mermaid(&asset.blueprint.flow);
     let summary = BlueprintSummary {
@@ -677,7 +683,7 @@ pub async fn refine_handler(
             .map(|f| format!("{}（{}）", f.name, f.action))
             .collect(),
     };
-    Ok(Json(AutomationChatResponse {
+    api_ok(AutomationChatResponse {
         asset_id: asset.id.clone(),
         name: asset.name.clone(),
         blueprint_summary: summary,
@@ -686,7 +692,7 @@ pub async fn refine_handler(
         rbac_count: asset.rbac.len(),
         mermaid,
         code: asset.code.clone(),
-    }))
+    })
 }
 
 /// 沙箱实跑 + 异常自动修复回写
@@ -694,10 +700,15 @@ pub async fn run_handler(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
     Json(req): Json<RunRequest>,
-) -> Result<Json<RunResponse>, (StatusCode, String)> {
-    let mut asset = crate::automation_asset::get_automation(&id)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
-        .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
+) -> ApiResponse<RunResponse> {
+    let asset_opt = match crate::automation_asset::get_automation(&id) {
+        Ok(v) => v,
+        Err(e) => return api_error(500, e),
+    };
+    let mut asset = match asset_opt {
+        Some(v) => v,
+        None => return api_error(404, "自动化资产不存在"),
+    };
 
     // 安全上限：客户端可传 timeout_sec，夹在 [1,30]s，防止无界等待/资源占用
     let timeout = Duration::from_secs(req.timeout_sec.unwrap_or(15).clamp(1, 30));
@@ -726,14 +737,15 @@ pub async fn run_handler(
             };
             asset.run_history.push(record.clone());
             asset.updated_at = chrono::Utc::now().to_rfc3339();
-            crate::automation_asset::save_automation(asset)
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
-            return Ok(Json(RunResponse {
+            if let Err(e) = crate::automation_asset::save_automation(asset) {
+                return api_error(500, e);
+            }
+            return api_ok(RunResponse {
                 asset_id: id,
                 run: record,
                 fix: None,
                 updated_code_python: None,
-            }));
+            });
         }
         if let Some((prop, fixed_code, applied, source)) =
             try_fix(&state, &run_result, &asset.code.python).await
@@ -791,15 +803,16 @@ pub async fn run_handler(
     };
     asset.run_history.push(record.clone());
     asset.updated_at = chrono::Utc::now().to_rfc3339();
-    crate::automation_asset::save_automation(asset)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    if let Err(e) = crate::automation_asset::save_automation(asset) {
+        return api_error(500, e);
+    }
 
-    Ok(Json(RunResponse {
+    api_ok(RunResponse {
         asset_id: id,
         run: record,
         fix: fix_summary,
         updated_code_python: updated_code,
-    }))
+    })
 }
 
 /// 保存前端编辑结果（代码 + 可选流程图），实现「可继续编辑流程」
@@ -807,10 +820,15 @@ pub async fn update_handler(
     State(_state): State<Arc<AppState>>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateAutomationRequest>,
-) -> Result<Json<Value>, (StatusCode, String)> {
-    let mut asset = crate::automation_asset::get_automation(&id)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
-        .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
+) -> ApiResponse<Value> {
+    let asset_opt = match crate::automation_asset::get_automation(&id) {
+        Ok(v) => v,
+        Err(e) => return api_error(500, e),
+    };
+    let mut asset = match asset_opt {
+        Some(v) => v,
+        None => return api_error(404, "自动化资产不存在"),
+    };
 
     if let Some(py) = payload.python {
         asset.code.python = py;
@@ -828,16 +846,17 @@ pub async fn update_handler(
         }
     }
     asset.updated_at = chrono::Utc::now().to_rfc3339();
-    crate::automation_asset::save_automation(asset.clone())
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
-    Ok(Json(serde_json::json!({
+    if let Err(e) = crate::automation_asset::save_automation(asset.clone()) {
+        return api_error(500, e);
+    }
+    api_ok(serde_json::json!({
         "ok": true,
         "id": asset.id,
         "name": asset.name,
         "updated_at": asset.updated_at,
         "feature_count": asset.blueprint.features.len(),
         "run_count": asset.run_history.len(),
-    })))
+    }))
 }
 
 /// 前端编辑保存请求
@@ -854,25 +873,32 @@ pub struct UpdateAutomationRequest {
 pub async fn permissions_handler(
     State(_state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Result<Json<PermissionsResponse>, (StatusCode, String)> {
-    let asset = crate::automation_asset::get_automation(&id)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
-        .ok_or((StatusCode::NOT_FOUND, "自动化资产不存在".into()))?;
+) -> ApiResponse<PermissionsResponse> {
+    let asset_opt = match crate::automation_asset::get_automation(&id) {
+        Ok(v) => v,
+        Err(e) => return api_error(500, e),
+    };
+    let asset = match asset_opt {
+        Some(v) => v,
+        None => return api_error(404, "自动化资产不存在"),
+    };
 
     let lite = blueprint_to_lite(&asset.blueprint);
     let (roles, perms) = RbacDeriver::derive(&lite);
-    Ok(Json(PermissionsResponse {
+    api_ok(PermissionsResponse {
         roles,
         permissions: perms,
-    }))
+    })
 }
 
 /// 列出所有自动化资产（轻量摘要）
 pub async fn list_handler(
     State(_state): State<Arc<AppState>>,
-) -> Result<Json<Vec<Value>>, (StatusCode, String)> {
-    let assets = crate::automation_asset::list_automations()
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+) -> ApiResponse<Vec<Value>> {
+    let assets = match crate::automation_asset::list_automations() {
+        Ok(v) => v,
+        Err(e) => return api_error(500, e),
+    };
     let summaries: Vec<Value> = assets
         .iter()
         .map(|a| {
@@ -887,14 +913,9 @@ pub async fn list_handler(
             })
         })
         .collect();
-    Ok(Json(summaries))
+    api_ok(summaries)
 }
 
-// ============================================================================
-// 路由挂载
-// ============================================================================
-
-/// 返回 `/api/automation` 路由树
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(list_handler))

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -14,6 +14,7 @@ use mox_ai_agent_svc::AIAgent;
 use axum::{extract::State, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 #[derive(Debug, Deserialize)]
 pub struct AgentRunRequest {
@@ -31,26 +32,16 @@ pub struct AgentRunResponse {
 pub async fn run_engine_task_handler(
     State(agent): State<Arc<AIAgent>>,
     Json(req): Json<AgentRunRequest>,
-) -> (StatusCode, Json<AgentRunResponse>) {
+) -> ApiResponse<AgentRunResponse> {
     match agent.run_engine_task(req.task).await {
         Ok(result) => {
             let success = result.success;
-            (
-                StatusCode::OK,
-                Json(AgentRunResponse {
-                    success,
-                    result: Some(result),
-                    error: None,
-                }),
-            )
+            api_ok(AgentRunResponse {
+                success,
+                result: Some(result),
+                error: None,
+            })
         }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(AgentRunResponse {
-                success: false,
-                result: None,
-                error: Some(e.to_string()),
-            }),
-        ),
+        Err(e) => api_error(500, e.to_string()),
     }
 }

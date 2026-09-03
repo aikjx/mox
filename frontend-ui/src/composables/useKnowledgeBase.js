@@ -30,44 +30,8 @@ export function useKnowledgeBase() {
 
   // ========== State ==========
   const documents = ref([])
-  const categories = ref([
-    {
-      id: 'tech', name: '技术文档', count: 24,
-      children: [
-        { id: 'tech-frontend', name: '前端开发', count: 12 },
-        { id: 'tech-backend', name: '后端开发', count: 8 },
-        { id: 'tech-architecture', name: '架构设计', count: 4 }
-      ]
-    },
-    {
-      id: 'business', name: '业务文档', count: 18,
-      children: [
-        { id: 'business-requirement', name: '需求文档', count: 10 },
-        { id: 'business-design', name: '设计文档', count: 8 }
-      ]
-    },
-    {
-      id: 'product', name: '产品文档', count: 12,
-      children: [
-        { id: 'product-manual', name: '用户手册', count: 6 },
-        { id: 'product-api', name: 'API 文档', count: 6 }
-      ]
-    },
-    { id: 'ops', name: '运营文档', count: 9 }
-  ])
-
-  const tags = ref([
-    { id: 't1', name: 'Vue', count: 15 },
-    { id: 't2', name: 'Python', count: 12 },
-    { id: 't3', name: '架构', count: 10 },
-    { id: 't4', name: 'API', count: 8 },
-    { id: 't5', name: '设计模式', count: 7 },
-    { id: 't6', name: '性能', count: 6 },
-    { id: 't7', name: '安全', count: 5 },
-    { id: 't8', name: '测试', count: 4 },
-    { id: 't9', name: '部署', count: 3 },
-    { id: 't10', name: '数据库', count: 3 }
-  ])
+  const categories = ref([])
+  const tags = ref([])
 
   const selectedDoc = ref(null)
   const docVersions = ref([])
@@ -75,9 +39,10 @@ export function useKnowledgeBase() {
   const aiAnalysis = ref(null)
   const entities = ref([])
   const linkedEntities = ref([])
-  const stats = ref({ total: 63, categories: 5, versions: 187, analyzed: 41 })
+  const stats = ref({})
 
   const loading = ref(false)
+  const error = ref('')
   const saving = ref(false)
   const searchQuery = ref('')
   const filterCategory = ref('')
@@ -176,6 +141,7 @@ export function useKnowledgeBase() {
 
   async function fetchDocuments() {
     loading.value = true
+    error.value = ''
     try {
       const params = {}
       if (searchQuery.value) params.q = searchQuery.value
@@ -192,7 +158,9 @@ export function useKnowledgeBase() {
       documents.value = list.map(mapDoc)
     } catch (e) {
       documents.value = []
+      error.value = e?.message || '文档列表加载失败'
       console.error('[kb] fetchDocuments failed:', e)
+      ElMessage.error('文档列表加载失败：' + (e.message || '未知错误'))
     } finally {
       loading.value = false
     }
@@ -201,19 +169,31 @@ export function useKnowledgeBase() {
   async function fetchCategories() {
     try {
       const data = await api.kbGetCategories()
-      if (Array.isArray(data) && data.length) {
+      if (Array.isArray(data)) {
         categories.value = data
+      } else {
+        categories.value = []
       }
-    } catch (e) { categories.value = []; console.error('[kb] fetchCategories failed:', e) }
+    } catch (e) {
+      categories.value = []
+      console.error('[kb] fetchCategories failed:', e)
+      ElMessage.error('分类加载失败：' + (e.message || '未知错误'))
+    }
   }
 
   async function fetchTags() {
     try {
       const data = await api.kbGetTags()
-      if (Array.isArray(data) && data.length) {
+      if (Array.isArray(data)) {
         tags.value = data
+      } else {
+        tags.value = []
       }
-    } catch (e) { categories.value = []; console.error('[kb] fetchCategories failed:', e) }
+    } catch (e) {
+      tags.value = []
+      console.error('[kb] fetchTags failed:', e)
+      ElMessage.error('标签加载失败：' + (e.message || '未知错误'))
+    }
   }
 
   async function fetchStats() {
@@ -221,10 +201,13 @@ export function useKnowledgeBase() {
       const data = await api.kbGetStats()
       if (data) {
         stats.value = data
+      } else {
+        stats.value = {}
       }
     } catch (e) {
       stats.value = {}
       console.error('[kb] fetchStats failed:', e)
+      ElMessage.error('统计数据加载失败：' + (e.message || '未知错误'))
     }
   }
 
@@ -232,43 +215,46 @@ export function useKnowledgeBase() {
     try {
       const data = await api.kbGetVersions(docId)
       docVersions.value = Array.isArray(data) ? data : (data?.items || [])
-    } catch {
-      docVersions.value = [
-        { id: 'v1', version: 1, note: '初始版本', created_at: selectedDoc.value?.updated_at }
-      ]
+    } catch (e) {
+      docVersions.value = []
+      console.error('[kb] fetchVersions failed:', e)
+      ElMessage.error('版本记录加载失败：' + (e.message || '未知错误'))
     }
   }
 
   async function fetchHistory(docId) {
     try {
-      const data = await api.kbGetHistory(docId)
+      const data = await api.kbGetHistory({ doc_id: docId })
       docHistory.value = Array.isArray(data) ? data : (data?.items || [])
-    } catch {
-      docHistory.value = [
-        { action: 'create', user: '张三', detail: '创建文档', created_at: selectedDoc.value?.updated_at }
-      ]
+    } catch (e) {
+      docHistory.value = []
+      console.error('[kb] fetchHistory failed:', e)
+      ElMessage.error('历史记录加载失败：' + (e.message || '未知错误'))
     }
   }
 
   async function loadAiAnalysis(docId) {
     try {
-      const data = await api.kbAnalyze(docId)
+      const data = await api.kbAnalyzeDocument(docId)
       aiAnalysis.value = data
       entities.value = data?.entities || []
-    } catch {
+    } catch (e) {
       aiAnalysis.value = null
+      entities.value = []
+      console.error('[kb] loadAiAnalysis failed:', e)
+      ElMessage.error('AI 分析加载失败：' + (e.message || '未知错误'))
     }
   }
 
   async function analyzeDocument(docId) {
     if (!docId) return
     try {
-      const data = await api.kbAnalyze(docId)
+      const data = await api.kbAnalyzeDocument(docId)
       aiAnalysis.value = data
       entities.value = data?.entities || []
       ElMessage.success('AI 分析完成')
-    } catch {
-      ElMessage.error('AI 分析失败')
+    } catch (e) {
+      ElMessage.error('AI 分析失败：' + (e.message || '未知错误'))
     }
   }
 
@@ -283,7 +269,10 @@ export function useKnowledgeBase() {
       if (fullDoc) {
         selectedDoc.value = mapDoc(fullDoc)
       }
-    } catch { /* use existing data */ }
+    } catch (e) {
+      console.error('[kb] viewDocument fetch failed:', e)
+      ElMessage.error('文档详情加载失败：' + (e.message || '未知错误'))
+    }
     fetchVersions(doc.id)
     fetchHistory(doc.id)
     if (doc.ai_analyzed) {
@@ -474,8 +463,10 @@ export function useKnowledgeBase() {
     try {
       const data = await api.kbSearchEntities({ q: linkSearchQuery.value })
       searchResults.value = Array.isArray(data) ? data : (data?.items || [])
-    } catch {
+    } catch (e) {
       searchResults.value = []
+      console.error('[kb] searchEntities failed:', e)
+      ElMessage.error('实体搜索失败：' + (e.message || '未知错误'))
     }
   }
 
@@ -524,6 +515,7 @@ export function useKnowledgeBase() {
     stats,
     loading,
     saving,
+    error,
     searchQuery,
     filterCategory,
     filterType,

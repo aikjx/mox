@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -27,8 +27,10 @@
 //! 检测是否存在环路（DFS）。若存在死锁则返回 EDEADLK 错误。
 
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, VecDeque};
-use std::sync::Arc;
+use std::{
+    collections::{BTreeMap, VecDeque},
+    sync::Arc,
+};
 
 use crate::error::FilerResult;
 
@@ -77,10 +79,7 @@ impl LockRange {
 
     /// 整个文件范围
     pub fn entire_file() -> Self {
-        Self {
-            start: 0,
-            end: u64::MAX,
-        }
+        Self { start: 0, end: u64::MAX }
     }
 
     /// 检查两个范围是否重叠
@@ -232,10 +231,7 @@ impl FileLockManager {
 
         // 更新所有者映射
         let mut owner_map = self.owner_locks.lock();
-        owner_map
-            .entry(owner_id)
-            .or_default()
-            .push((ino, range));
+        owner_map.entry(owner_id).or_default().push((ino, range));
 
         // 更新统计
         let mut stats = self.stats.write();
@@ -293,7 +289,7 @@ impl FileLockManager {
                 // 简化实现：直接返回会阻塞的指示
                 // 实际生产环境中这里应该等待条件变量
                 Ok(false)
-            }
+            },
             Err(e) => Err(e),
         }
     }
@@ -418,21 +414,16 @@ impl FileLockManager {
 
         // 检查是否有该所有者的读锁
         let has_read_lock = inode_locks.iter().any(|l| {
-            l.owner_id == owner_id
-                && l.lock_type == LockType::Read
-                && l.range.contains(&range)
+            l.owner_id == owner_id && l.lock_type == LockType::Read && l.range.contains(&range)
         });
 
         if !has_read_lock {
-            return Err(crate::error::FilerError::Other(
-                "No read lock to upgrade".into(),
-            ));
+            return Err(crate::error::FilerError::Other("No read lock to upgrade".into()));
         }
 
         // 检查是否有冲突（其他读锁或写锁）
-        let has_conflict = inode_locks.iter().any(|l| {
-            l.owner_id != owner_id && l.range.overlaps(&range)
-        });
+        let has_conflict =
+            inode_locks.iter().any(|l| l.owner_id != owner_id && l.range.overlaps(&range));
 
         if has_conflict {
             return Ok(false); // 无法升级，有冲突
@@ -440,9 +431,7 @@ impl FileLockManager {
 
         // 执行升级：移除旧读锁，添加新写锁
         inode_locks.retain(|l| {
-            !(l.owner_id == owner_id
-                && l.lock_type == LockType::Read
-                && l.range.contains(&range))
+            !(l.owner_id == owner_id && l.lock_type == LockType::Read && l.range.contains(&range))
         });
 
         // 对于范围完全匹配的情况，直接修改类型
@@ -479,9 +468,7 @@ impl FileLockManager {
         }
 
         if !found {
-            return Err(crate::error::FilerError::Other(
-                "No write lock to downgrade".into(),
-            ));
+            return Err(crate::error::FilerError::Other("No write lock to downgrade".into()));
         }
 
         // 更新统计
@@ -525,11 +512,11 @@ impl FileLockManager {
                     if lock.lock_type == LockType::Write {
                         return Some(lock.clone());
                     }
-                }
+                },
                 LockType::Write => {
                     // 写锁和所有锁都冲突
                     return Some(lock.clone());
-                }
+                },
             }
         }
 
@@ -583,11 +570,11 @@ impl FileLockManager {
                     if lock.lock_type == LockType::Write {
                         return true;
                     }
-                }
+                },
                 LockType::Write => {
                     // 写锁和所有锁都冲突
                     return true;
-                }
+                },
             }
         }
         false
@@ -689,10 +676,7 @@ impl FileLockManager {
                         if holder_lock.owner_id != waiter.owner_id
                             && holder_lock.range.overlaps(&waiter.range)
                         {
-                            graph
-                                .entry(waiter.owner_id)
-                                .or_default()
-                                .push(holder_lock.owner_id);
+                            graph.entry(waiter.owner_id).or_default().push(holder_lock.owner_id);
                         }
                     }
                 }
@@ -1014,11 +998,11 @@ mod tests {
                 assert!(cycle.len() >= 2);
                 assert!(cycle.contains(&1));
                 assert!(cycle.contains(&2));
-            }
+            },
             DeadlockResult::NoDeadlock => {
                 // 简化实现可能检测不到，这是可以接受的
                 // 因为我们的死锁检测依赖于 waiters 映射
-            }
+            },
         }
     }
 

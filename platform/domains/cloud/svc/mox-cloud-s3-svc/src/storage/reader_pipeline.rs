@@ -17,10 +17,10 @@
 use async_trait::async_trait;
 use bytes::Bytes;
 use mox_cloud_domain_traits::{BackendType, ChunkId, StorageBackend};
-use mox_cloud_kernel::reader_capability::{
-    ReadCapabilityError, ReaderCapability, ReaderPipeline,
+use mox_cloud_kernel::{
+    reader_capability::{ReadCapabilityError, ReaderCapability, ReaderPipeline},
+    ShardReadCost,
 };
-use mox_cloud_kernel::ShardReadCost;
 use std::sync::Arc;
 
 // ---------------------------------------------------------------------------
@@ -41,11 +41,7 @@ impl StorageBackendReader {
     /// 创建新的 StorageBackendReader，绑定指定 chunk_id。
     pub fn new(backend: Arc<dyn StorageBackend>, chunk_id: &str) -> Self {
         let endpoint_label = format!("{}-{}", backend.backend_type(), chunk_id);
-        Self {
-            backend,
-            chunk_id: chunk_id.to_string(),
-            endpoint_label,
-        }
+        Self { backend, chunk_id: chunk_id.to_string(), endpoint_label }
     }
 
     /// 获取底层 StorageBackend 引用。
@@ -145,7 +141,10 @@ impl S3ReaderPipeline {
         let readers: Vec<Arc<dyn ReaderCapability>> = self
             .backends
             .iter()
-            .map(|b| Arc::new(StorageBackendReader::new(b.clone(), chunk_id)) as Arc<dyn ReaderCapability>)
+            .map(|b| {
+                Arc::new(StorageBackendReader::new(b.clone(), chunk_id))
+                    as Arc<dyn ReaderCapability>
+            })
             .collect();
 
         // 构建 ReaderPipeline 并并发取最快
@@ -170,7 +169,10 @@ impl S3ReaderPipeline {
         let readers: Vec<Arc<dyn ReaderCapability>> = self
             .backends
             .iter()
-            .map(|b| Arc::new(StorageBackendReader::new(b.clone(), chunk_id)) as Arc<dyn ReaderCapability>)
+            .map(|b| {
+                Arc::new(StorageBackendReader::new(b.clone(), chunk_id))
+                    as Arc<dyn ReaderCapability>
+            })
             .collect();
 
         let mut pipeline = ReaderPipeline::new();
@@ -189,11 +191,7 @@ impl std::fmt::Debug for S3ReaderPipeline {
             .field("backend_count", &self.backends.len())
             .field(
                 "backend_types",
-                &self
-                    .backends
-                    .iter()
-                    .map(|b| b.backend_type().to_string())
-                    .collect::<Vec<_>>(),
+                &self.backends.iter().map(|b| b.backend_type().to_string()).collect::<Vec<_>>(),
             )
             .finish()
     }
@@ -207,11 +205,11 @@ impl std::fmt::Debug for S3ReaderPipeline {
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use mox_cloud_domain_traits::{
-        BackendCapabilities, ChunkInfo, ChunkListPage, StorageError,
+    use mox_cloud_domain_traits::{BackendCapabilities, ChunkInfo, ChunkListPage, StorageError};
+    use std::{
+        sync::atomic::{AtomicUsize, Ordering},
+        time::Duration,
     };
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::time::Duration;
 
     /// Mock StorageBackend：可配置延迟、成功率和返回数据。
     struct MockBackend {
@@ -224,7 +222,13 @@ mod tests {
     }
 
     impl MockBackend {
-        fn new(name: &str, btype: BackendType, delay: Duration, should_fail: bool, payload: Vec<u8>) -> Self {
+        fn new(
+            name: &str,
+            btype: BackendType,
+            delay: Duration,
+            should_fail: bool,
+            payload: Vec<u8>,
+        ) -> Self {
             Self {
                 name: name.to_string(),
                 btype,
@@ -234,6 +238,7 @@ mod tests {
                 call_count: AtomicUsize::new(0),
             }
         }
+        #[allow(dead_code)]
         fn call_count(&self) -> usize {
             self.call_count.load(Ordering::Relaxed)
         }
@@ -276,11 +281,7 @@ mod tests {
             _marker: Option<&str>,
             _limit: u32,
         ) -> Result<ChunkListPage, StorageError> {
-            Ok(ChunkListPage {
-                items: vec![],
-                next_marker: None,
-                is_truncated: false,
-            })
+            Ok(ChunkListPage { items: vec![], next_marker: None, is_truncated: false })
         }
         fn backend_type(&self) -> BackendType {
             self.btype
@@ -354,7 +355,7 @@ mod tests {
             Err(ReadCapabilityError::ReadFailed(idx, msg)) => {
                 assert_eq!(idx, 3);
                 assert!(msg.contains("mock fail-backend failure"));
-            }
+            },
             other => panic!("expected ReadFailed, got {other:?}"),
         }
     }
@@ -421,10 +422,18 @@ mod tests {
     #[tokio::test]
     async fn test_s3_reader_pipeline_all_fail() {
         let b1 = Arc::new(MockBackend::new(
-            "fail-1", BackendType::LocalFs, Duration::ZERO, true, vec![],
+            "fail-1",
+            BackendType::LocalFs,
+            Duration::ZERO,
+            true,
+            vec![],
         ));
         let b2 = Arc::new(MockBackend::new(
-            "fail-2", BackendType::S3Compatible, Duration::ZERO, true, vec![],
+            "fail-2",
+            BackendType::S3Compatible,
+            Duration::ZERO,
+            true,
+            vec![],
         ));
         let pipeline = S3ReaderPipeline::new(vec![b1, b2]);
 
@@ -433,8 +442,8 @@ mod tests {
         match result {
             Err(ReadCapabilityError::ReadFailed(_, msg)) => {
                 assert!(msg.contains("mock fail-"));
-            }
-            Err(ReadCapabilityError::AllFailed(_)) => {}
+            },
+            Err(ReadCapabilityError::AllFailed(_)) => {},
             other => panic!("unexpected error: {other:?}"),
         }
     }
@@ -442,10 +451,18 @@ mod tests {
     #[tokio::test]
     async fn test_s3_reader_pipeline_sequential() {
         let b1 = Arc::new(MockBackend::new(
-            "first-fail", BackendType::LocalFs, Duration::ZERO, true, vec![],
+            "first-fail",
+            BackendType::LocalFs,
+            Duration::ZERO,
+            true,
+            vec![],
         ));
         let b2 = Arc::new(MockBackend::new(
-            "second-ok", BackendType::S3Compatible, Duration::ZERO, false, b"ok".to_vec(),
+            "second-ok",
+            BackendType::S3Compatible,
+            Duration::ZERO,
+            false,
+            b"ok".to_vec(),
         ));
         let pipeline = S3ReaderPipeline::new(vec![b1, b2]);
 
@@ -456,9 +473,8 @@ mod tests {
 
     #[test]
     fn test_s3_reader_pipeline_debug() {
-        let b = Arc::new(MockBackend::new(
-            "dbg", BackendType::InMemory, Duration::ZERO, false, vec![],
-        ));
+        let b =
+            Arc::new(MockBackend::new("dbg", BackendType::InMemory, Duration::ZERO, false, vec![]));
         let pipeline = S3ReaderPipeline::new(vec![b]);
         let dbg = format!("{pipeline:?}");
         assert!(dbg.contains("backend_count"));

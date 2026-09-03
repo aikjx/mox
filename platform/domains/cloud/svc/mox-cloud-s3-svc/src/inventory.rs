@@ -23,12 +23,16 @@
 //! 写入目标存储桶，并附带 manifest.json 描述清单内容和校验信息。
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use crate::error::{S3Error, S3Result};
-use crate::lifecycle::StorageClass;
+use crate::{
+    error::{S3Error, S3Result},
+    lifecycle::StorageClass,
+};
 
 // ---------------- 常量 ----------------
 
@@ -58,6 +62,7 @@ pub enum InventoryFrequency {
 }
 
 impl InventoryFrequency {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "daily" | "day" => Some(InventoryFrequency::Daily),
@@ -95,6 +100,7 @@ pub enum InventoryFormat {
 }
 
 impl InventoryFormat {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_uppercase().as_str() {
             "CSV" => Some(InventoryFormat::CSV),
@@ -314,11 +320,7 @@ impl InventoryManager {
     // ---- 配置管理 ----
 
     /// 添加清单配置
-    pub fn add_configuration(
-        &self,
-        bucket: &str,
-        config: InventoryConfiguration,
-    ) -> S3Result<()> {
+    pub fn add_configuration(&self, bucket: &str, config: InventoryConfiguration) -> S3Result<()> {
         let key = (bucket.to_string(), config.id.clone());
         self.configurations.lock().insert(key, config);
         Ok(())
@@ -328,13 +330,19 @@ impl InventoryManager {
     pub fn list_configurations(&self, bucket: &str) -> Vec<InventoryConfiguration> {
         let configs = self.configurations.lock();
         configs
-            .range((bucket.to_string(), String::new())..=(bucket.to_string(), String::from(char::MAX)))
+            .range(
+                (bucket.to_string(), String::new())..=(bucket.to_string(), String::from(char::MAX)),
+            )
             .map(|(_, v)| v.clone())
             .collect()
     }
 
     /// 获取指定清单配置
-    pub fn get_configuration(&self, bucket: &str, config_id: &str) -> Option<InventoryConfiguration> {
+    pub fn get_configuration(
+        &self,
+        bucket: &str,
+        config_id: &str,
+    ) -> Option<InventoryConfiguration> {
         self.configurations
             .lock()
             .get(&(bucket.to_string(), config_id.to_string()))
@@ -378,12 +386,20 @@ impl InventoryManager {
         &self,
         bucket: &str,
         config_id: &str,
-        object_iter_fn: impl Fn() -> Vec<(String, u64, String, StorageClass, String, u64, bool, bool, BTreeMap<String, String>)>,
+        object_iter_fn: impl Fn() -> Vec<(
+            String,
+            u64,
+            String,
+            StorageClass,
+            String,
+            u64,
+            bool,
+            bool,
+            BTreeMap<String, String>,
+        )>,
         write_fn: impl Fn(&str, &str, &[u8]) -> S3Result<()>,
     ) -> S3Result<String> {
-        let config = self
-            .get_configuration(bucket, config_id)
-            .ok_or(S3Error::NoSuchBucket)?;
+        let config = self.get_configuration(bucket, config_id).ok_or(S3Error::NoSuchBucket)?;
 
         if !config.enabled {
             return Err(S3Error::InvalidArgument);
@@ -416,32 +432,42 @@ impl InventoryManager {
             .into_iter()
             .filter(|(key, _, _, _, _, _, _, _, _)| config.filter.matches(key))
             // 若不包含所有版本，只取最新版本
-            .filter(|(_, _, _, _, _, _, is_latest, _, _)| {
-                config.include_all_versions || *is_latest
-            })
+            .filter(|(_, _, _, _, _, _, is_latest, _, _)| config.include_all_versions || *is_latest)
             .collect();
 
         // 生成清单记录
         let records: Vec<InventoryRecord> = filtered
             .iter()
-            .map(|(key, size, version_id, class, etag, last_modified_ms, is_latest, is_delete_marker, tags)| {
-                InventoryRecord {
-                    bucket: bucket.to_string(),
-                    key: key.clone(),
-                    version_id: Some(version_id.clone()),
-                    is_latest: *is_latest,
-                    is_delete_marker: *is_delete_marker,
-                    size: *size,
-                    last_modified_date: format_iso8601(*last_modified_ms),
-                    etag: etag.clone(),
-                    storage_class: class.as_str().to_string(),
-                    tags: if config.include_object_tags {
-                        Some(serialize_tags(tags))
-                    } else {
-                        None
-                    },
-                }
-            })
+            .map(
+                |(
+                    key,
+                    size,
+                    version_id,
+                    class,
+                    etag,
+                    last_modified_ms,
+                    is_latest,
+                    is_delete_marker,
+                    tags,
+                )| {
+                    InventoryRecord {
+                        bucket: bucket.to_string(),
+                        key: key.clone(),
+                        version_id: Some(version_id.clone()),
+                        is_latest: *is_latest,
+                        is_delete_marker: *is_delete_marker,
+                        size: *size,
+                        last_modified_date: format_iso8601(*last_modified_ms),
+                        etag: etag.clone(),
+                        storage_class: class.as_str().to_string(),
+                        tags: if config.include_object_tags {
+                            Some(serialize_tags(tags))
+                        } else {
+                            None
+                        },
+                    }
+                },
+            )
             .collect();
 
         let total_objects = records.len();
@@ -457,12 +483,7 @@ impl InventoryManager {
         let date_str = format_date(now);
         let output_key = format!(
             "{}{}/{}/{}/{}.{}",
-            config.destination.prefix,
-            bucket,
-            config.id,
-            date_str,
-            "inventory",
-            file_ext
+            config.destination.prefix, bucket, config.id, date_str, "inventory", file_ext
         );
 
         // 写入清单文件
@@ -490,7 +511,11 @@ impl InventoryManager {
                     config.destination.prefix, bucket, config.id, date_str
                 );
 
-                let _ = write_fn(&config.destination.bucket, &manifest_key, manifest_content.as_bytes());
+                let _ = write_fn(
+                    &config.destination.bucket,
+                    &manifest_key,
+                    manifest_content.as_bytes(),
+                );
 
                 // 更新任务状态
                 {
@@ -507,7 +532,7 @@ impl InventoryManager {
                 self.cleanup_old_jobs();
 
                 Ok(job_id)
-            }
+            },
             Err(e) => {
                 // 更新任务状态为失败
                 let mut jobs = self.jobs.lock();
@@ -517,7 +542,7 @@ impl InventoryManager {
                     job.error_message = Some(e.message());
                 }
                 Err(e)
-            }
+            },
         }
     }
 
@@ -586,7 +611,7 @@ impl InventoryManager {
                 let now = now_ms();
                 let elapsed = now.saturating_sub(job.created_at_ms) / 1000;
                 elapsed >= config.frequency.seconds()
-            }
+            },
         }
     }
 }
@@ -608,13 +633,7 @@ fn format_iso8601(ms: u64) -> String {
     let minutes = (secs_in_day % 3600) / 60;
     let seconds = secs_in_day % 60;
     // 简化的 ISO8601（不处理闰年/月份）
-    format!(
-        "1970-01-{}T{:02}:{:02}:{:02}Z",
-        days + 1,
-        hours,
-        minutes,
-        seconds
-    )
+    format!("1970-01-{}T{:02}:{:02}:{:02}Z", days + 1, hours, minutes, seconds)
 }
 
 fn format_date(ms: u64) -> String {
@@ -634,10 +653,7 @@ fn md5_hex(data: &[u8]) -> String {
 }
 
 fn serialize_tags(tags: &BTreeMap<String, String>) -> String {
-    let parts: Vec<String> = tags
-        .iter()
-        .map(|(k, v)| format!("{}={}", k, v))
-        .collect();
+    let parts: Vec<String> = tags.iter().map(|(k, v)| format!("{}={}", k, v)).collect();
     parts.join("&")
 }
 
@@ -713,33 +729,22 @@ mod tests {
 
     #[test]
     fn test_inventory_frequency_from_str() {
-        assert_eq!(
-            InventoryFrequency::from_str("Daily"),
-            Some(InventoryFrequency::Daily)
-        );
-        assert_eq!(
-            InventoryFrequency::from_str("weekly"),
-            Some(InventoryFrequency::Weekly)
-        );
+        assert_eq!(InventoryFrequency::from_str("Daily"), Some(InventoryFrequency::Daily));
+        assert_eq!(InventoryFrequency::from_str("weekly"), Some(InventoryFrequency::Weekly));
         assert_eq!(InventoryFrequency::from_str("invalid"), None);
     }
 
     #[test]
     fn test_inventory_format_from_str() {
         assert_eq!(InventoryFormat::from_str("CSV"), Some(InventoryFormat::CSV));
-        assert_eq!(
-            InventoryFormat::from_str("parquet"),
-            Some(InventoryFormat::Parquet)
-        );
+        assert_eq!(InventoryFormat::from_str("parquet"), Some(InventoryFormat::Parquet));
         assert_eq!(InventoryFormat::from_str("ORC"), Some(InventoryFormat::ORC));
         assert_eq!(InventoryFormat::from_str("json"), None);
     }
 
     #[test]
     fn test_inventory_filter_prefix() {
-        let filter = InventoryFilter {
-            prefix: Some("logs/".into()),
-        };
+        let filter = InventoryFilter { prefix: Some("logs/".into()) };
 
         assert!(filter.matches("logs/2024/01.log"));
         assert!(!filter.matches("data/file.txt"));
@@ -838,9 +843,7 @@ mod tests {
         let written_clone = written.clone();
 
         let write_fn = move |bucket: &str, key: &str, data: &[u8]| -> S3Result<()> {
-            written_clone
-                .lock()
-                .insert(format!("{}/{}", bucket, key), data.to_vec());
+            written_clone.lock().insert(format!("{}/{}", bucket, key), data.to_vec());
             Ok(())
         };
 
@@ -887,9 +890,7 @@ mod tests {
                 encryption: None,
             },
             frequency: InventoryFrequency::Daily,
-            filter: InventoryFilter {
-                prefix: Some("docs/".into()),
-            },
+            filter: InventoryFilter { prefix: Some("docs/".into()) },
             included_fields: vec!["Key".into(), "Size".into()],
             include_all_versions: false,
             include_object_tags: false,
@@ -925,9 +926,7 @@ mod tests {
         let written = Arc::new(parking_lot::Mutex::new(BTreeMap::new()));
         let written_clone = written.clone();
         let write_fn = move |bucket: &str, key: &str, data: &[u8]| -> S3Result<()> {
-            written_clone
-                .lock()
-                .insert(format!("{}/{}", bucket, key), data.to_vec());
+            written_clone.lock().insert(format!("{}/{}", bucket, key), data.to_vec());
             Ok(())
         };
 
@@ -964,12 +963,8 @@ mod tests {
 
         mgr.add_configuration("bucket", config).unwrap();
 
-        let result = mgr.generate_inventory(
-            "bucket",
-            "disabled-inv",
-            || vec![],
-            |_, _, _| Ok(()),
-        );
+        let result =
+            mgr.generate_inventory("bucket", "disabled-inv", std::vec::Vec::new, |_, _, _| Ok(()));
 
         assert!(result.is_err());
     }
@@ -1000,12 +995,7 @@ mod tests {
         assert!(mgr.should_generate("bucket", "daily"));
 
         // 生成一次
-        let _ = mgr.generate_inventory(
-            "bucket",
-            "daily",
-            || vec![],
-            |_, _, _| Ok(()),
-        );
+        let _ = mgr.generate_inventory("bucket", "daily", std::vec::Vec::new, |_, _, _| Ok(()));
 
         // 刚生成过，不应该立即再生成
         assert!(!mgr.should_generate("bucket", "daily"));
@@ -1034,9 +1024,9 @@ mod tests {
         mgr.add_configuration("bucket-a", config.clone()).unwrap();
         mgr.add_configuration("bucket-b", config).unwrap();
 
-        let _ = mgr.generate_inventory("bucket-a", "inv", || vec![], |_, _, _| Ok(()));
-        let _ = mgr.generate_inventory("bucket-a", "inv", || vec![], |_, _, _| Ok(()));
-        let _ = mgr.generate_inventory("bucket-b", "inv", || vec![], |_, _, _| Ok(()));
+        let _ = mgr.generate_inventory("bucket-a", "inv", std::vec::Vec::new, |_, _, _| Ok(()));
+        let _ = mgr.generate_inventory("bucket-a", "inv", std::vec::Vec::new, |_, _, _| Ok(()));
+        let _ = mgr.generate_inventory("bucket-b", "inv", std::vec::Vec::new, |_, _, _| Ok(()));
 
         let jobs_a = mgr.list_jobs("bucket-a", 10);
         assert_eq!(jobs_a.len(), 2);

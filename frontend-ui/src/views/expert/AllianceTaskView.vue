@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="alliance-task">
     <!-- ===== 左栏：任务列表 ===== -->
-    <div class="task-list-col">
+    <div class="task-list-col" v-loading="tasksLoading">
       <div class="list-header">
         <div>
           <h2 class="list-title">联盟任务</h2>
@@ -24,6 +24,8 @@
           {{ f.label }} ({{ getStatusCount(f.key) }})
         </span>
       </div>
+
+      <el-alert v-if="tasksError" type="error" :closable="false" show-icon title="任务列表加载失败" style="margin-bottom:8px" />
 
       <!-- 任务列表 -->
       <div class="task-list" v-if="filteredTasks.length > 0">
@@ -79,8 +81,7 @@
       </div>
 
       <div v-else class="empty-list">
-        <div class="empty-icon">📋</div>
-        <p>暂无{{ currentFilter === 'all' ? '' : statusFilters.find(f => f.key === currentFilter)?.label }}任务</p>
+        <el-empty :description="currentFilter === 'all' ? '暂无任务' : '暂无' + (statusFilters.find(f => f.key === currentFilter)?.label || '') + '任务'" :image-size="60" />
       </div>
     </div>
 
@@ -122,7 +123,7 @@
       </div>
 
       <!-- DAG 画布 -->
-      <div class="dag-section">
+      <div class="dag-section" v-loading="dagLoading">
         <div class="section-header">
           <h4 class="section-title"><el-icon><Share /></el-icon> 任务 DAG</h4>
           <div class="dag-legend">
@@ -132,7 +133,8 @@
             <span class="legend-item"><span class="legend-dot failed"></span>失败</span>
           </div>
         </div>
-        <div class="dag-canvas">
+        <el-alert v-if="dagError" type="error" :closable="false" show-icon title="DAG 数据加载失败" style="margin-bottom:8px" />
+        <div class="dag-canvas" v-if="dagNodes.length > 0 || dagEdges.length > 0">
           <svg class="dag-svg" :viewBox="`0 0 ${dagWidth} ${dagHeight}`">
             <!-- 连线 -->
             <line
@@ -162,14 +164,16 @@
             </g>
           </svg>
         </div>
+        <el-empty v-else-if="!dagLoading && !dagError" description="暂无 DAG 数据" :image-size="50" />
       </div>
 
       <!-- 日志 -->
-      <div class="logs-section">
+      <div class="logs-section" v-loading="logsLoading">
         <div class="section-header">
           <h4 class="section-title"><el-icon><Document /></el-icon> 执行日志</h4>
           <el-button size="small" text @click="clearLogs">清空</el-button>
         </div>
+        <el-alert v-if="logsError" type="error" :closable="false" show-icon title="执行日志加载失败" style="margin-bottom:8px" />
         <div class="logs-container" ref="logsContainer">
           <div
             v-for="(log, i) in logs"
@@ -181,12 +185,12 @@
             <span class="log-level" :class="log.level">{{ log.level.toUpperCase() }}</span>
             <span class="log-msg">{{ log.message }}</span>
           </div>
-          <div v-if="logs.length === 0" class="logs-empty">暂无日志</div>
+          <div v-if="logs.length === 0 && !logsLoading" class="logs-empty">暂无日志</div>
         </div>
       </div>
 
       <!-- 融合结果 -->
-      <div class="fusion-section" v-if="fusionResult">
+      <div class="fusion-section" v-if="fusionResult" v-loading="fusionLoading">
         <div class="section-header">
           <h4 class="section-title"><el-icon><MagicStick /></el-icon> 全维融合结果</h4>
           <el-tag size="small" :type="fusionResult.confidence > 0.8 ? 'success' : 'warning'" effect="dark">
@@ -203,6 +207,7 @@
           </div>
         </div>
       </div>
+      <el-alert v-else-if="fusionError" type="error" :closable="false" show-icon title="融合结果加载失败" style="margin-bottom:12px" />
 
       <!-- AI 助手 -->
       <div class="ai-assistant">
@@ -256,10 +261,11 @@
             <el-option label="级联融合" value="cascade" />
           </el-select>
         </el-form-item>
-        <el-form-item label="参与专家">
+        <el-form-item label="参与专家" v-loading="expertsLoading">
           <el-select v-model="newTask.expert_ids" multiple style="width: 100%" placeholder="选择参与专家">
             <el-option v-for="e in availableExperts" :key="e.id" :label="e.name" :value="e.id" />
           </el-select>
+          <el-alert v-if="expertsError" type="error" :closable="false" show-icon title="专家列表加载失败" style="margin-top:8px" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -299,6 +305,18 @@ const availableExperts = ref([])
 const dagNodesData = ref(null)
 const dagEdgesData = ref(null)
 
+// ===== 分区加载 / 错误状态 =====
+const tasksLoading = ref(false)
+const tasksError = ref(false)
+const expertsLoading = ref(false)
+const expertsError = ref(false)
+const logsLoading = ref(false)
+const logsError = ref(false)
+const fusionLoading = ref(false)
+const fusionError = ref(false)
+const dagLoading = ref(false)
+const dagError = ref(false)
+
 // AI 助手
 const aiMessages = ref([
   { role: 'assistant', content: '你好！我是联盟任务 AI 助手，可以帮你分析任务状态、优化执行策略。' }
@@ -323,32 +341,22 @@ const statusFilters = [
   { key: 'failed', label: '失败' }
 ]
 
-
-
-
 // ===== 计算属性 =====
 const filteredTasks = computed(() => {
   if (currentFilter.value === 'all') return tasks.value
   return tasks.value.filter(t => t.status === currentFilter.value)
 })
 
-// DAG 节点：由 API 加载，无数据时为空
+// DAG 节点：由 API 加载，无数据时为空数组（无硬编码占位）
 const dagNodes = computed(() => {
   if (dagNodesData.value && dagNodesData.value.length > 0) return dagNodesData.value
   return []
 })
 
-// DAG 边：由 API 加载，无数据时为空
+// DAG 边：由 API 加载，无数据时为空数组（无硬编码占位）
 const dagEdges = computed(() => {
   if (dagEdgesData.value && dagEdgesData.value.length > 0) return dagEdgesData.value
-  if (!selectedTask.value) return []
-  return [
-    { x1: 160, y1: 60, x2: 220, y2: 30, status: 'completed' },
-    { x1: 160, y1: 60, x2: 220, y2: 90, status: 'completed' },
-    { x1: 340, y1: 30, x2: 400, y2: 60, status: 'completed' },
-    { x1: 340, y1: 90, x2: 400, y2: 60, status: 'running' },
-    { x1: 520, y1: 60, x2: 580, y2: 60, status: 'pending' }
-  ]
+  return []
 })
 
 const dagWidth = 740
@@ -396,45 +404,70 @@ async function toggleTaskDone(task) {
   try {
     await toggleAllianceTaskDone(task.id)
     if (task.status === 'completed') {
-      ElMessage.success('任务已标记为完成 🎉')
+      ElMessage.success('任务已标记为完成')
     } else {
       ElMessage.info('任务已恢复为待处理')
     }
   } catch (e) {
     task.status = prevStatus
     task.progress = prevProgress
-    ElMessage.error('状态切换失败：' + e.message)
+    ElMessage.error('状态切换失败：' + (e.message || '未知错误'))
   }
 }
 
 async function selectTask(task) {
   selectedTask.value = task
-  // 加载任务日志：失败则降级到 mock
+  // 加载任务日志
+  logsLoading.value = true
+  logsError.value = false
   try {
     const logData = await getAllianceTaskLogs(task.id)
     logs.value = Array.isArray(logData) ? logData : (logData?.items || [])
   } catch (e) {
+    logsError.value = true
     logs.value = []
+    ElMessage.error('执行日志加载失败：' + (e.message || '未知错误'))
+  } finally {
+    logsLoading.value = false
   }
-  // 加载融合结果：仅已完成任务，失败则降级
+  // 加载融合结果：仅已完成任务
   if (task.status === 'completed') {
+    fusionLoading.value = true
+    fusionError.value = false
     try {
       const fusion = await getAllianceFusionResult(task.id)
       fusionResult.value = fusion || null
     } catch (e) {
+      fusionError.value = true
       fusionResult.value = null
+      ElMessage.error('融合结果加载失败：' + (e.message || '未知错误'))
+    } finally {
+      fusionLoading.value = false
     }
   } else {
     fusionResult.value = null
+    fusionError.value = false
   }
-  // 加载 DAG：失败则为空
+  // 加载 DAG
+  dagLoading.value = true
+  dagError.value = false
   try {
     const dag = await getAllianceTaskDag(task.id)
     if (dag && dag.nodes) {
       dagNodesData.value = dag.nodes
       dagEdgesData.value = dag.edges || []
+    } else {
+      dagNodesData.value = null
+      dagEdgesData.value = null
     }
-  } catch (e) { console.error('[alliance] load DAG failed:', e) }
+  } catch (e) {
+    dagError.value = true
+    dagNodesData.value = null
+    dagEdgesData.value = null
+    ElMessage.error('DAG 数据加载失败：' + (e.message || '未知错误'))
+  } finally {
+    dagLoading.value = false
+  }
   nextTick(() => {
     if (logsContainer.value) {
       logsContainer.value.scrollTop = logsContainer.value.scrollHeight
@@ -443,12 +476,17 @@ async function selectTask(task) {
 }
 
 async function loadTasks() {
+  tasksLoading.value = true
+  tasksError.value = false
   try {
     const data = await getAllianceTasks()
-    tasks.value = data
+    tasks.value = Array.isArray(data) ? data : (data?.items || [])
   } catch (e) {
-    console.error('[AllianceTask] API 加载失败:', e)
+    tasksError.value = true
     tasks.value = []
+    ElMessage.error('任务列表加载失败：' + (e.message || '未知错误'))
+  } finally {
+    tasksLoading.value = false
   }
   if (tasks.value.length > 0 && !selectedTask.value) {
     selectTask(tasks.value[0])
@@ -456,14 +494,17 @@ async function loadTasks() {
 }
 
 async function loadExpertsList() {
+  expertsLoading.value = true
+  expertsError.value = false
   try {
-    availableExperts.value = await getExperts()
+    const data = await getExperts()
+    availableExperts.value = Array.isArray(data) ? data : (data?.items || [])
   } catch (e) {
-    availableExperts.value = [
-      { id: 'exp_001', name: '林墨白' },
-      { id: 'exp_002', name: '苏清瑶' },
-      { id: 'exp_003', name: '周知行' }
-    ]
+    expertsError.value = true
+    availableExperts.value = []
+    ElMessage.error('专家列表加载失败：' + (e.message || '未知错误'))
+  } finally {
+    expertsLoading.value = false
   }
 }
 
@@ -488,7 +529,7 @@ async function createTask() {
     newTask.expert_ids = []
     await loadTasks()
   } catch (e) {
-    ElMessage.error('创建失败：' + e.message)
+    ElMessage.error('创建失败：' + (e.message || '未知错误'))
   } finally {
     creating.value = false
   }
@@ -497,13 +538,12 @@ async function createTask() {
 async function runTask() {
   if (!selectedTask.value) return
   running.value = true
-  selectedTask.value.status = 'running'
-  logs.value.push({ time: new Date().toLocaleTimeString(), level: 'info', message: '任务重新启动' })
   try {
     await resumeAllianceTask(selectedTask.value.id)
+    selectedTask.value.status = 'running'
     ElMessage.success('任务已启动')
   } catch (e) {
-    ElMessage.error('启动失败：' + e.message)
+    ElMessage.error('启动失败：' + (e.message || '未知错误'))
   } finally {
     running.value = false
   }
@@ -516,7 +556,7 @@ async function pauseTask() {
     selectedTask.value.status = 'pending'
     ElMessage.info('任务已暂停')
   } catch (e) {
-    ElMessage.error('暂停失败：' + e.message)
+    ElMessage.error('暂停失败：' + (e.message || '未知错误'))
   }
 }
 
@@ -527,7 +567,7 @@ async function cancelTask() {
     selectedTask.value.status = 'cancelled'
     ElMessage.info('任务已取消')
   } catch (e) {
-    ElMessage.error('取消失败：' + e.message)
+    ElMessage.error('取消失败：' + (e.message || '未知错误'))
   }
 }
 
@@ -556,7 +596,7 @@ async function sendAiMessage() {
   }
 }
 
-// 任务状态轮询：优先调用 GET /api/alliance/tasks/:id/status，失败则前端模拟进度
+// 任务状态轮询：调用 GET /api/alliance/tasks/:id/status 获取真实状态，失败时仅记录错误不做模拟
 let progressTimer = null
 onMounted(async () => {
   await Promise.all([loadTasks(), loadExpertsList()])
@@ -571,12 +611,8 @@ onMounted(async () => {
             if (t.progress >= 100 && t.status === 'running') t.status = 'completed'
           }
         } catch (e) {
-          // API 不可用时降级为本地模拟
-          t.progress = Math.min(100, t.progress + Math.random() * 2)
-          if (t.progress >= 100) {
-            t.status = 'completed'
-            t.progress = 100
-          }
+          // API 不可用时仅记录错误，不伪造前端进度
+          console.warn('[alliance] task status poll failed:', e.message)
         }
       }
     }

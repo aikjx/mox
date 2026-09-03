@@ -7,12 +7,10 @@ use mox_cloud_s3_svc::lifecycle::{
     CloudLifecycleStats, HotWarmColdLifecycle, LifecycleObjectMeta, LifecycleThresholds,
     ObjectReplicationStatus, StorageClass,
 };
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fn system_time_to_ms(t: SystemTime) -> u64 {
-    t.duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
+    t.duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
 }
 
 fn main() {

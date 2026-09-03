@@ -4213,10 +4213,12 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
  "bytes",
+ "criterion",
  "futures",
  "parking_lot",
  "rand 0.8.7",
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -4793,6 +4795,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -5440,6 +5443,7 @@ dependencies = [
  "mox-ai-agent-svc",
  "mox-ai-expert-svc",
  "mox-ai-flow-svc",
+ "mox-api-protocol",
  "mox-data-catalog-svc",
  "mox-flow-bridge-svc",
  "mox-flow-fusion-svc",

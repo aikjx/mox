@@ -18,6 +18,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import http from '@/api/http'
 import { NAV_MODULES, NAV_GROUPS } from '@/constants/nav.config'
 
@@ -385,6 +386,7 @@ export const usePermissionStore = defineStore('permission', () => {
       generateMenus()
       generateRoutes()
       loaded.value = true
+      ElMessage.error('权限加载失败：' + (e?.message || '未知错误'))
       throw e
     } finally {
       loading.value = false

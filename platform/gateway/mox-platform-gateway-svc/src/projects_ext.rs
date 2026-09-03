@@ -17,7 +17,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // =====================================================================
 // 共享状态
@@ -63,42 +63,11 @@ fn ok(data: Value) -> ApiResponse<Value> {
 async fn project_members(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
-        "members": [
-            {
-                "user_id": "admin-user",
-                "username": "admin",
-                "real_name": "系统管理员",
-                "avatar": "/avatars/admin.png",
-                "role": "owner",
-                "joined_at": "2026-06-01T08:00:00Z",
-                "last_active": now_iso(),
-                "status": "active",
-            },
-            {
-                "user_id": "user-002",
-                "username": "zhangsan",
-                "real_name": "张三",
-                "avatar": "/avatars/zhangsan.png",
-                "role": "editor",
-                "joined_at": "2026-06-15T10:30:00Z",
-                "last_active": now_iso(),
-                "status": "active",
-            },
-            {
-                "user_id": "user-003",
-                "username": "lisi",
-                "real_name": "李四",
-                "avatar": "/avatars/lisi.png",
-                "role": "viewer",
-                "joined_at": "2026-07-01T14:00:00Z",
-                "last_active": "2026-08-28T09:15:00Z",
-                "status": "inactive",
-            },
-        ],
-        "total": 3,
-        "owner_count": 1,
-        "editor_count": 1,
-        "viewer_count": 1,
+        "members": [],
+        "total": 0,
+        "owner_count": 0,
+        "editor_count": 0,
+        "viewer_count": 0,
     }))
 }
 
@@ -170,60 +139,9 @@ async fn remove_project_member(
 async fn project_phases(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
-        "phases": [
-            {
-                "phase_id": "phase-1",
-                "name": "需求分析",
-                "order": 1,
-                "status": "completed",
-                "start_date": "2026-06-01",
-                "end_date": "2026-06-20",
-                "progress": 100,
-                "description": "收集和分析项目需求，输出需求文档",
-            },
-            {
-                "phase_id": "phase-2",
-                "name": "方案设计",
-                "order": 2,
-                "status": "completed",
-                "start_date": "2026-06-21",
-                "end_date": "2026-07-10",
-                "progress": 100,
-                "description": "技术方案设计与架构评审",
-            },
-            {
-                "phase_id": "phase-3",
-                "name": "开发实现",
-                "order": 3,
-                "status": "in_progress",
-                "start_date": "2026-07-11",
-                "end_date": "2026-09-30",
-                "progress": 65,
-                "description": "核心功能开发与单元测试",
-            },
-            {
-                "phase_id": "phase-4",
-                "name": "测试验证",
-                "order": 4,
-                "status": "pending",
-                "start_date": "2026-10-01",
-                "end_date": "2026-10-20",
-                "progress": 0,
-                "description": "集成测试、性能测试与验收",
-            },
-            {
-                "phase_id": "phase-5",
-                "name": "部署上线",
-                "order": 5,
-                "status": "pending",
-                "start_date": "2026-10-21",
-                "end_date": "2026-10-31",
-                "progress": 0,
-                "description": "生产环境部署与运维交接",
-            },
-        ],
-        "current_phase": "phase-3",
-        "total_phases": 5,
+        "phases": [],
+        "current_phase": null,
+        "total_phases": 0,
     }))
 }
 
@@ -235,34 +153,10 @@ async fn project_files(
     State(s): State<Arc<ProjectsState>>,
 ) -> ApiResponse<Value> {
     let files = s.files.lock().clone();
-    let seed = if files.is_empty() {
-        vec![
-            json!({
-                "id": "file-001",
-                "name": "需求规格说明书-v1.2.pdf",
-                "size_bytes": 2457600,
-                "mime_type": "application/pdf",
-                "uploaded_by": "admin-user",
-                "uploaded_at": "2026-06-15T10:30:00Z",
-                "storage_path": "data/uploads/proj-001/req-spec-v1.2.pdf",
-            }),
-            json!({
-                "id": "file-002",
-                "name": "架构设计图.png",
-                "size_bytes": 1048576,
-                "mime_type": "image/png",
-                "uploaded_by": "user-002",
-                "uploaded_at": "2026-07-01T14:20:00Z",
-                "storage_path": "data/uploads/proj-001/arch-diagram.png",
-            }),
-        ]
-    } else {
-        files.iter().map(|f| json!(f)).collect()
-    };
     ok(json!({
         "project_id": id,
-        "files": seed,
-        "total": seed.len(),
+        "files": files,
+        "total": files.len(),
     }))
 }
 
@@ -328,42 +222,10 @@ async fn project_activities(
 ) -> ApiResponse<Value> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(20).clamp(1, 100);
-    let now = chrono::Utc::now();
-    let activities: Vec<Value> = (0..50usize)
-        .map(|i| {
-            let t = now - chrono::Duration::minutes((i * 23) as i64);
-            let types = [
-                ("task_created", "创建了任务", "task"),
-                ("task_completed", "完成了任务", "task"),
-                ("document_uploaded", "上传了文档", "document"),
-                ("member_joined", "加入了项目", "member"),
-                ("comment_added", "发表了评论", "comment"),
-                ("phase_advanced", "推进了阶段", "phase"),
-                ("file_uploaded", "上传了文件", "file"),
-            ];
-            let (action_type, action_text, target_type) = types[i % types.len()];
-            json!({
-                "activity_id": format!("act-{:04}", i + 1),
-                "project_id": id,
-                "user_id": format!("user-{:03}", (i % 5) + 1),
-                "username": format!("user{}", (i % 5) + 1),
-                "action_type": action_type,
-                "action_text": action_text,
-                "target_type": target_type,
-                "target_id": format!("{}-{:03}", target_type, (i % 10) + 1),
-                "target_name": format!("{} #{}", target_type, (i % 10) + 1),
-                "detail": format!("{}「{} #{}」", action_text, target_type, (i % 10) + 1),
-                "created_at": t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-            })
-        })
-        .collect();
-    let total = activities.len();
-    let start = (page - 1) * page_size;
-    let items: Vec<&Value> = activities.iter().skip(start).take(page_size).collect();
     ok(json!({
         "project_id": id,
-        "items": items,
-        "total": total,
+        "items": [],
+        "total": 0,
         "page": page,
         "page_size": page_size,
     }))
@@ -375,45 +237,8 @@ async fn project_activities(
 async fn project_documents(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
-        "documents": [
-            {
-                "doc_id": "doc-001",
-                "title": "需求规格说明书",
-                "version": "v1.2",
-                "author": "admin-user",
-                "status": "approved",
-                "created_at": "2026-06-10T08:00:00Z",
-                "updated_at": "2026-06-20T15:30:00Z",
-                "size_bytes": 2457600,
-                "mime_type": "application/pdf",
-                "tags": ["需求", "规格"],
-            },
-            {
-                "doc_id": "doc-002",
-                "title": "系统架构设计文档",
-                "version": "v2.0",
-                "author": "user-002",
-                "status": "review",
-                "created_at": "2026-06-25T10:00:00Z",
-                "updated_at": "2026-07-15T14:00:00Z",
-                "size_bytes": 5242880,
-                "mime_type": "application/pdf",
-                "tags": ["架构", "设计"],
-            },
-            {
-                "doc_id": "doc-003",
-                "title": "API 接口规范",
-                "version": "v1.0",
-                "author": "user-003",
-                "status": "draft",
-                "created_at": "2026-08-01T09:00:00Z",
-                "updated_at": "2026-08-10T11:00:00Z",
-                "size_bytes": 1048576,
-                "mime_type": "text/markdown",
-                "tags": ["API", "规范"],
-            },
-        ],
-        "total": 3,
+        "documents": [],
+        "total": 0,
     }))
 }
 
@@ -423,12 +248,12 @@ async fn project_documents(Path(id): Path<String>) -> ApiResponse<Value> {
 async fn advance_phase(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
-        "previous_phase": "phase-2",
-        "current_phase": "phase-3",
-        "phase_name": "开发实现",
-        "advanced": true,
+        "previous_phase": null,
+        "current_phase": null,
+        "phase_name": null,
+        "advanced": false,
         "advanced_at": now_iso(),
-        "message": format!("项目 {} 已推进到「开发实现」阶段", id),
+        "message": format!("项目 {} 无可用阶段定义", id),
     }))
 }
 
@@ -438,28 +263,10 @@ async fn advance_phase(Path(id): Path<String>) -> ApiResponse<Value> {
 async fn phase_progress(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
-        "overall_progress": 58.5,
-        "current_phase": {
-            "phase_id": "phase-3",
-            "name": "开发实现",
-            "progress": 65,
-            "start_date": "2026-07-11",
-            "end_date": "2026-09-30",
-            "days_remaining": 27,
-        },
-        "phase_progress": [
-            { "phase_id": "phase-1", "name": "需求分析", "progress": 100, "status": "completed" },
-            { "phase_id": "phase-2", "name": "方案设计", "progress": 100, "status": "completed" },
-            { "phase_id": "phase-3", "name": "开发实现", "progress": 65, "status": "in_progress" },
-            { "phase_id": "phase-4", "name": "测试验证", "progress": 0, "status": "pending" },
-            { "phase_id": "phase-5", "name": "部署上线", "progress": 0, "status": "pending" },
-        ],
-        "milestones": [
-            { "name": "需求评审通过", "date": "2026-06-20", "achieved": true },
-            { "name": "架构评审通过", "date": "2026-07-10", "achieved": true },
-            { "name": "核心功能完成", "date": "2026-09-15", "achieved": false },
-            { "name": "测试验收通过", "date": "2026-10-20", "achieved": false },
-        ],
+        "overall_progress": 0.0,
+        "current_phase": null,
+        "phase_progress": [],
+        "milestones": [],
         "ts": now_iso(),
     }))
 }
@@ -527,12 +334,12 @@ async fn download_document(
     ok(json!({
         "project_id": id,
         "doc_id": doc_id,
-        "name": format!("document-{}.pdf", doc_id),
-        "size_bytes": 2457600,
+        "name": null,
+        "size_bytes": 0,
         "mime_type": "application/pdf",
-        "download_url": format!("/api/projects/{}/documents/{}/raw", id, doc_id),
-        "expires_in": 3600,
-        "version": "v1.2",
+        "download_url": null,
+        "expires_in": 0,
+        "version": null,
         "ts": now_iso(),
     }))
 }
@@ -544,69 +351,17 @@ async fn requirements_graph(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "graph": {
-            "nodes": [
-                {
-                    "id": "req-001",
-                    "label": "用户登录",
-                    "type": "functional",
-                    "priority": "high",
-                    "status": "completed",
-                    "x": 100.0,
-                    "y": 100.0,
-                },
-                {
-                    "id": "req-002",
-                    "label": "权限管理",
-                    "type": "functional",
-                    "priority": "high",
-                    "status": "in_progress",
-                    "x": 300.0,
-                    "y": 80.0,
-                },
-                {
-                    "id": "req-003",
-                    "label": "数据导入",
-                    "type": "functional",
-                    "priority": "medium",
-                    "status": "pending",
-                    "x": 500.0,
-                    "y": 120.0,
-                },
-                {
-                    "id": "req-004",
-                    "label": "响应时间<200ms",
-                    "type": "non_functional",
-                    "priority": "high",
-                    "status": "in_progress",
-                    "x": 200.0,
-                    "y": 300.0,
-                },
-                {
-                    "id": "req-005",
-                    "label": "数据加密存储",
-                    "type": "non_functional",
-                    "priority": "critical",
-                    "status": "completed",
-                    "x": 400.0,
-                    "y": 280.0,
-                },
-            ],
-            "edges": [
-                { "source": "req-001", "target": "req-002", "relation": "depends_on", "label": "依赖" },
-                { "source": "req-002", "target": "req-003", "relation": "depends_on", "label": "依赖" },
-                { "source": "req-001", "target": "req-004", "relation": "constrains", "label": "约束" },
-                { "source": "req-002", "target": "req-005", "relation": "constrains", "label": "约束" },
-                { "source": "req-003", "target": "req-005", "relation": "related_to", "label": "关联" },
-            ],
+            "nodes": [],
+            "edges": [],
         },
         "stats": {
-            "total_nodes": 5,
-            "total_edges": 5,
-            "functional": 3,
-            "non_functional": 2,
-            "completed": 2,
-            "in_progress": 2,
-            "pending": 1,
+            "total_nodes": 0,
+            "total_edges": 0,
+            "functional": 0,
+            "non_functional": 0,
+            "completed": 0,
+            "in_progress": 0,
+            "pending": 0,
         },
         "ts": now_iso(),
     }))

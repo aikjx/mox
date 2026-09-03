@@ -12,8 +12,10 @@
 //!
 //! 逻辑路径映射：`{bucket}/{key}`（与 store-core 的 key 同构，FS/S3 可互换）。
 
-use crate::error::{FilerError, FilerResult};
-use crate::ObjectStorage;
+use crate::{
+    error::{FilerError, FilerResult},
+    ObjectStorage,
+};
 use bytes::Bytes;
 use mox_cloud_store_core::{list_object_refs, StoreBackend};
 use std::sync::Arc;
@@ -34,10 +36,7 @@ impl StoreCoreObjectStorage {
             .enable_all()
             .build()
             .map_err(|e| FilerError::Other(format!("创建桥接 runtime 失败: {e}")))?;
-        Ok(Self {
-            backend: Arc::new(backend),
-            rt,
-        })
+        Ok(Self { backend: Arc::new(backend), rt })
     }
 
     /// 后端引用（供上层直连 / 管理面）
@@ -47,11 +46,7 @@ impl StoreCoreObjectStorage {
 
     /// 构造逻辑路径：`{bucket}/{key}`（bucket 去斜杠，key 去前导斜杠）
     fn logical_path(bucket: &str, key: &str) -> String {
-        format!(
-            "{}/{}",
-            bucket.trim_matches('/'),
-            key.trim_start_matches('/')
-        )
+        format!("{}/{}", bucket.trim_matches('/'), key.trim_start_matches('/'))
     }
 }
 
@@ -72,13 +67,10 @@ impl ObjectStorage for StoreCoreObjectStorage {
     fn get(&self, bucket: &str, key: &str) -> FilerResult<Vec<u8>> {
         let path = Self::logical_path(bucket, key);
         let backend = self.backend.clone();
-        let data = self
-            .rt
-            .block_on(backend.object.get(&path))
-            .map_err(|e| match e {
-                mox_base_store_core::StoreError::NotFound { .. } => FilerError::NotFound,
-                other => FilerError::Other(format!("get {path} 失败: {other}")),
-            })?;
+        let data = self.rt.block_on(backend.object.get(&path)).map_err(|e| match e {
+            mox_base_store_core::StoreError::NotFound { .. } => FilerError::NotFound,
+            other => FilerError::Other(format!("get {path} 失败: {other}")),
+        })?;
         Ok(data.to_vec())
     }
 
@@ -109,13 +101,10 @@ impl ObjectStorage for StoreCoreObjectStorage {
     fn head(&self, bucket: &str, key: &str) -> FilerResult<u64> {
         let path = Self::logical_path(bucket, key);
         let backend = self.backend.clone();
-        let obj = self
-            .rt
-            .block_on(backend.object.head(&path))
-            .map_err(|e| match e {
-                mox_base_store_core::StoreError::NotFound { .. } => FilerError::NotFound,
-                other => FilerError::Other(format!("head {path} 失败: {other}")),
-            })?;
+        let obj = self.rt.block_on(backend.object.head(&path)).map_err(|e| match e {
+            mox_base_store_core::StoreError::NotFound { .. } => FilerError::NotFound,
+            other => FilerError::Other(format!("head {path} 失败: {other}")),
+        })?;
         Ok(obj.size_bytes)
     }
 }
@@ -156,9 +145,6 @@ mod tests {
     fn get_missing_returns_not_found() {
         let dir = tempfile::tempdir().unwrap();
         let obj = bridge(dir.path());
-        assert!(matches!(
-            obj.get("nope", "missing"),
-            Err(FilerError::NotFound)
-        ));
+        assert!(matches!(obj.get("nope", "missing"), Err(FilerError::NotFound)));
     }
 }

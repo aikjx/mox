@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -65,38 +65,38 @@ impl CorsConfiguration {
                     if name.local_name == "CORSRule" {
                         current = Some(CorsRule::default());
                     }
-                }
+                },
                 XmlEvent::Characters(s) => {
                     current_text.push_str(&s);
-                }
+                },
                 XmlEvent::EndElement { name, .. } => {
                     let tag = name.local_name.as_str();
                     if let Some(rule) = current.as_mut() {
                         match tag {
                             "AllowedOrigin" => {
                                 rule.allowed_origins.push(current_text.trim().to_string())
-                            }
+                            },
                             "AllowedMethod" => {
                                 rule.allowed_methods.push(current_text.trim().to_string())
-                            }
+                            },
                             "AllowedHeader" => {
                                 rule.allowed_headers.push(current_text.trim().to_string())
-                            }
+                            },
                             "ExposeHeader" => {
                                 rule.expose_headers.push(current_text.trim().to_string())
-                            }
+                            },
                             "MaxAgeSeconds" => {
                                 rule.max_age_seconds = current_text.trim().parse().unwrap_or(0)
-                            }
+                            },
                             "CORSRule" => {
                                 rules.push(current.take().unwrap());
-                            }
-                            _ => {}
+                            },
+                            _ => {},
                         }
                     }
                     current_text.clear();
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
         Ok(CorsConfiguration { rules })
@@ -106,10 +106,8 @@ impl CorsConfiguration {
     pub fn match_preflight(&self, origin: &str, method: &str) -> Option<&CorsRule> {
         self.rules.iter().find(|r| {
             let origin_ok = r.allowed_origins.iter().any(|o| o == "*" || o == origin);
-            let method_ok = r
-                .allowed_methods
-                .iter()
-                .any(|m| m == "*" || m.eq_ignore_ascii_case(method));
+            let method_ok =
+                r.allowed_methods.iter().any(|m| m == "*" || m.eq_ignore_ascii_case(method));
             origin_ok && method_ok
         })
     }

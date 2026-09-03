@@ -1,13 +1,14 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-use crate::error::{VolumeError, VolumeResult};
-use crate::reed_solomon::ReedSolomon2Plus1;
+use crate::{
+    error::{VolumeError, VolumeResult},
+    reed_solomon::ReedSolomon2Plus1,
+};
 use bytes::Bytes;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 /// 模拟远程 Volume peer 的数据拉取接口
 pub trait PeerChunkFetcher: Send + Sync {
@@ -21,9 +22,7 @@ pub struct InMemoryPeerFetcher {
 
 impl InMemoryPeerFetcher {
     pub fn new() -> Self {
-        Self {
-            stores: parking_lot::Mutex::new(HashMap::new()),
-        }
+        Self { stores: parking_lot::Mutex::new(HashMap::new()) }
     }
 
     pub fn register_peer_store(&self, peer_addr: &str, store: HashMap<String, Bytes>) {
@@ -62,10 +61,7 @@ pub struct RebuildCoordinator<F: PeerChunkFetcher> {
 
 impl<F: PeerChunkFetcher> RebuildCoordinator<F> {
     pub fn new(fetcher: Arc<F>) -> Self {
-        Self {
-            fetcher,
-            rs: ReedSolomon2Plus1,
-        }
+        Self { fetcher, rs: ReedSolomon2Plus1 }
     }
 
     /// 重建本节点缺失 chunks，返回成功重建的数量
@@ -101,21 +97,21 @@ impl<F: PeerChunkFetcher> RebuildCoordinator<F> {
                         let _ = self.rs.encode_2_1(&[d0.clone(), d1.clone()]);
                     }
                     success += 1;
-                }
+                },
                 (Ok(d0), Err(_)) => {
                     // 仅拿到 peer0：直接用 d0
                     let _ = d0;
                     success += 1;
-                }
+                },
                 (Err(_), Ok(d1)) => {
                     // 仅拿到 peer1：也可接受（d1 可能就是 data 或 parity；这里保守记成功）
                     let _ = d1;
                     success += 1;
-                }
+                },
                 (Err(_), Err(_)) => {
                     // 两个 peer 都没拿到 → 失败；但不中断，跳过该 chunk
                     continue;
-                }
+                },
             }
         }
         Ok(success)

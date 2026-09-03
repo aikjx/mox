@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -48,13 +48,11 @@ impl From<FilerError> for mox_cloud_domain_traits::CloudError {
         match e {
             FilerError::NotFound => {
                 mox_cloud_domain_traits::CloudError::NotFound("filer entry".into())
-            }
+            },
             FilerError::AttrInvalid => {
                 mox_cloud_domain_traits::CloudError::InvalidInput(e.to_string())
-            }
-            FilerError::Unsupported(msg) => {
-                mox_cloud_domain_traits::CloudError::Unsupported(msg)
-            }
+            },
+            FilerError::Unsupported(msg) => mox_cloud_domain_traits::CloudError::Unsupported(msg),
             other => mox_cloud_domain_traits::CloudError::Filer(other.to_string()),
         }
     }

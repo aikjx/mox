@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -57,10 +57,10 @@ const MSG_RESTORE_IN_PROGRESS: &str = "Restore in progress, please retry later";
 const MSG_RESTORE_REQUIRED: &str = "Restore required: call POST /object/:key/restore";
 
 /// Retry-After constants (seconds).
-const RETRY_EXPEDITED_SECS: u64 = 15 * 60;       // 15 minutes
-const RETRY_STANDARD_SECS: u64 = 3 * 3_600;       // 3 hours (mid of 1-5h)
-const RETRY_BULK_SECS: u64 = 8 * 3_600;           // 8 hours (mid of 5-12h)
-const RETRY_DEFAULT_SECS: u64 = 3_600;            // 1 hour fallback (unknown tier)
+const RETRY_EXPEDITED_SECS: u64 = 15 * 60; // 15 minutes
+const RETRY_STANDARD_SECS: u64 = 3 * 3_600; // 3 hours (mid of 1-5h)
+const RETRY_BULK_SECS: u64 = 8 * 3_600; // 8 hours (mid of 5-12h)
+const RETRY_DEFAULT_SECS: u64 = 3_600; // 1 hour fallback (unknown tier)
 
 /// HTTP 445 status code (non-standard but widely used for this scenario).
 const HTTP_445: u16 = 445;
@@ -93,18 +93,16 @@ pub fn handle_glacier_get(
     restore_status: Option<&RestoreStatus>,
 ) -> (u16, Option<Duration>, &'static str) {
     match storage_class {
-        StorageClass::Hot | StorageClass::Warm | StorageClass::Cold => {
-            (200, None, MSG_OK)
-        }
+        StorageClass::Hot | StorageClass::Warm | StorageClass::Cold => (200, None, MSG_OK),
         StorageClass::Glacier => match restore_status {
             Some(RestoreStatus::Available) => (200, None, MSG_OK),
             Some(RestoreStatus::Queued(p)) | Some(RestoreStatus::InProgress(p)) => {
                 let dur = retry_duration_for(p.tier);
                 (HTTP_445, Some(dur), MSG_RESTORE_IN_PROGRESS)
-            }
+            },
             None | Some(RestoreStatus::Expired) => {
                 (HTTP_445, Some(Duration::ZERO), MSG_RESTORE_REQUIRED)
-            }
+            },
         },
     }
 }
@@ -139,10 +137,8 @@ mod tests {
     #[test]
     fn t25_glacier_in_progress_445_with_retry() {
         let prog = RestoreProgress { tier: RestoreTier::Standard };
-        let (code, retry, msg) = handle_glacier_get(
-            &StorageClass::Glacier,
-            Some(&RestoreStatus::InProgress(prog)),
-        );
+        let (code, retry, msg) =
+            handle_glacier_get(&StorageClass::Glacier, Some(&RestoreStatus::InProgress(prog)));
         assert_eq!(code, 445, "InProgress must be 445, got {code}");
         let retry = retry.expect("retry-after must be present for InProgress");
         assert!(retry > Duration::ZERO, "retry-after must be > 0, got {retry:?}");
@@ -150,10 +146,8 @@ mod tests {
         assert_eq!(msg, "Restore in progress, please retry later");
 
         // Queued same semantics as InProgress
-        let (code2, retry2, msg2) = handle_glacier_get(
-            &StorageClass::Glacier,
-            Some(&RestoreStatus::Queued(prog)),
-        );
+        let (code2, retry2, msg2) =
+            handle_glacier_get(&StorageClass::Glacier, Some(&RestoreStatus::Queued(prog)));
         assert_eq!(code2, 445);
         assert!(retry2.is_some());
         assert_eq!(msg2, msg);
@@ -165,25 +159,28 @@ mod tests {
         let (code, retry, msg) = handle_glacier_get(&StorageClass::Glacier, None);
         assert_eq!(code, 445);
         // Retry-After = 0 hint
-        assert_eq!(retry, Some(Duration::ZERO), "NeedsRestore must signal 0-duration retry hint, got {retry:?}");
+        assert_eq!(
+            retry,
+            Some(Duration::ZERO),
+            "NeedsRestore must signal 0-duration retry hint, got {retry:?}"
+        );
         assert_eq!(msg, "Restore required: call POST /object/:key/restore");
 
         // Expired must produce identical output to None
-        let (code_e, retry_e, msg_e) = handle_glacier_get(
-            &StorageClass::Glacier,
-            Some(&RestoreStatus::Expired),
+        let (code_e, retry_e, msg_e) =
+            handle_glacier_get(&StorageClass::Glacier, Some(&RestoreStatus::Expired));
+        assert_eq!(
+            (code_e, retry_e, msg_e),
+            (code, retry, msg),
+            "Expired must behave exactly like None restore status"
         );
-        assert_eq!((code_e, retry_e, msg_e), (code, retry, msg),
-            "Expired must behave exactly like None restore status");
     }
 
     // --- F4: GLACIER + Available → 200 OK ---
     #[test]
     fn t25_glacier_restore_available_200() {
-        let (code, retry, msg) = handle_glacier_get(
-            &StorageClass::Glacier,
-            Some(&RestoreStatus::Available),
-        );
+        let (code, retry, msg) =
+            handle_glacier_get(&StorageClass::Glacier, Some(&RestoreStatus::Available));
         assert_eq!(code, 200, "Available must be 200 OK");
         assert!(retry.is_none(), "Available must NOT carry Retry-After");
         assert_eq!(msg, "ok");
@@ -196,10 +193,8 @@ mod tests {
         let mut durs: Vec<Duration> = Vec::with_capacity(3);
         for tier in tiers {
             let prog = RestoreProgress { tier };
-            let (code, retry, _msg) = handle_glacier_get(
-                &StorageClass::Glacier,
-                Some(&RestoreStatus::InProgress(prog)),
-            );
+            let (code, retry, _msg) =
+                handle_glacier_get(&StorageClass::Glacier, Some(&RestoreStatus::InProgress(prog)));
             assert_eq!(code, 445, "tier {tier:?} must still be 445");
             let d = retry.expect("retry present");
             assert!(d > Duration::ZERO, "tier {tier:?} must have nonzero retry, got {d:?}");

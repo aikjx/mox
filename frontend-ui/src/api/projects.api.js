@@ -79,3 +79,6 @@ export const getRequirementsGraph = (projectId) =>
 // 项目服务端分页
 export const getProjectsPaginated = (params) =>
   http.get('/projects/paginated', { params })
+
+// AI 智能推荐项目配置
+export const aiRecommendProject = (payload) => http.post('/projects/ai-recommend', payload)

@@ -65,16 +65,9 @@ impl std::fmt::Display for ReplicationStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LifecycleAction {
     None,
-    Transition {
-        from: StorageClass,
-        to: StorageClass,
-    },
-    RestoreToHot {
-        from: StorageClass,
-    },
-    DeleteVersion {
-        version_id: String,
-    },
+    Transition { from: StorageClass, to: StorageClass },
+    RestoreToHot { from: StorageClass },
+    DeleteVersion { version_id: String },
     DeleteAllVersions,
 }
 
@@ -84,11 +77,11 @@ impl std::fmt::Display for LifecycleAction {
             LifecycleAction::None => write!(f, "none"),
             LifecycleAction::Transition { from, to } => {
                 write!(f, "transition({}->{})", from, to)
-            }
+            },
             LifecycleAction::RestoreToHot { from } => write!(f, "restore-to-hot({})", from),
             LifecycleAction::DeleteVersion { version_id } => {
                 write!(f, "delete-version({})", version_id)
-            }
+            },
             LifecycleAction::DeleteAllVersions => write!(f, "delete-all-versions"),
         }
     }
@@ -108,11 +101,7 @@ pub struct LifecycleThresholds {
 
 impl Default for LifecycleThresholds {
     fn default() -> Self {
-        Self {
-            hot_to_warm_days: 30,
-            warm_to_cold_days: 90,
-            cold_to_glacier_days: 180,
-        }
+        Self { hot_to_warm_days: 30, warm_to_cold_days: 90, cold_to_glacier_days: 180 }
     }
 }
 
@@ -182,7 +171,7 @@ mod tests {
                         to: StorageClass::Warm,
                         reason: format!("not accessed for {} days", age_days),
                     })
-                }
+                },
                 _ => None,
             }
         }
@@ -195,11 +184,7 @@ mod tests {
             last_scan_ms + scan_interval_sec * 1000
         }
 
-        fn replication_blocks(
-            &self,
-            status: &ReplicationStatus,
-            action: &LifecycleAction,
-        ) -> bool {
+        fn replication_blocks(&self, status: &ReplicationStatus, action: &LifecycleAction) -> bool {
             matches!(status, ReplicationStatus::Pending)
                 && matches!(action, LifecycleAction::DeleteAllVersions)
         }
@@ -234,17 +219,12 @@ mod tests {
         };
         assert_eq!(transition.from, StorageClass::Hot);
 
-        let action = LifecycleAction::Transition {
-            from: StorageClass::Warm,
-            to: StorageClass::Cold,
-        };
+        let action =
+            LifecycleAction::Transition { from: StorageClass::Warm, to: StorageClass::Cold };
         assert_eq!(action.to_string(), "transition(warm->cold)");
         assert_eq!(LifecycleAction::None.to_string(), "none");
         assert_eq!(
-            LifecycleAction::DeleteVersion {
-                version_id: "v2".into()
-            }
-            .to_string(),
+            LifecycleAction::DeleteVersion { version_id: "v2".into() }.to_string(),
             "delete-version(v2)"
         );
 
@@ -280,10 +260,8 @@ mod tests {
 
         assert_eq!(evaluator.next_scan_time(1000, 60), 1000 + 60_000);
 
-        assert!(evaluator.replication_blocks(
-            &ReplicationStatus::Pending,
-            &LifecycleAction::DeleteAllVersions
-        ));
+        assert!(evaluator
+            .replication_blocks(&ReplicationStatus::Pending, &LifecycleAction::DeleteAllVersions));
         assert!(!evaluator.replication_blocks(
             &ReplicationStatus::Completed,
             &LifecycleAction::DeleteAllVersions
