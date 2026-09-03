@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "mox-kg-service-svc"
 version.workspace = true
 edition.workspace = true
@@ -25,12 +25,13 @@ hex = { workspace = true }
 chrono = { workspace = true, optional = true }
 axum = { workspace = true, optional = true }
 mox-framework = { workspace = true, optional = true }
+mox-api-protocol = { workspace = true, optional = true }
 serde_qs = { version = "0.12", optional = true }
 
 [features]
 default = []
 # 启用 KG/AI HTTP 适配层：桥接 mox-kg-algo-core ↔ axum，暴露 6+4 接口
-http-adapter = ["dep:chrono", "dep:axum", "dep:mox-framework", "dep:serde_qs"]
+http-adapter = ["dep:chrono", "dep:axum", "dep:mox-framework", "dep:serde_qs", "dep:mox-api-protocol"]
 
 [dev-dependencies]
 tempfile = "3"

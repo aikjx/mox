@@ -467,8 +467,14 @@ pub async fn serve(state: Arc<AppState>, addr: &str) -> anyhow::Result<()> {
     state.replay_from_store().await;
     let app = build_router(state);
     let listener = tokio::net::TcpListener::bind(addr).await?;
+    tracing::info!(service = "flow-primiflow", addr = %addr, "TCP listener bound");
     eprintln!("PrimiFlow API listening on {addr}");
-    serve(listener, app).await?;
+    serve(listener, app)
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+            tracing::info!("flow-primiflow shutdown signal received");
+        })
+        .await?;
     Ok(())
 }
 

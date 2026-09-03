@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -46,6 +46,7 @@ use axum::{
 };
 use mox_platform_iam_core::IamRepository;
 use serde_json::json;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
@@ -215,7 +216,7 @@ async fn health_handler() -> Json<serde_json::Value> {
 }
 
 /// 状态端点
-async fn status_handler(State(state): State<GatewayState>) -> Json<serde_json::Value> {
+async fn status_handler(State(state): State<GatewayState>) -> ApiResponse<serde_json::Value> {
     let domain_stats = routes::DOMAINS.iter().fold(
         json!({"ready": 0, "stub": 0, "beta": 0}),
         |mut acc, d| {
@@ -231,8 +232,7 @@ async fn status_handler(State(state): State<GatewayState>) -> Json<serde_json::V
         }
     );
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "gateway": "rust-axum-enterprise",
         "version": env!("CARGO_PKG_VERSION"),
         "domains_total": routes::DOMAINS.len(),
@@ -249,9 +249,8 @@ async fn status_handler(State(state): State<GatewayState>) -> Json<serde_json::V
 }
 
 /// 域描述符列表端点
-async fn domains_handler() -> Json<serde_json::Value> {
-    Json(json!({
-        "ok": true,
+async fn domains_handler() -> ApiResponse<serde_json::Value> {
+    api_ok(json!({
         "total": routes::DOMAINS.len(),
         "domains": routes::DOMAINS,
     }))
@@ -326,6 +325,7 @@ pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std
     state.logs.push("INFO", "gateway", format!("gateway listening on {addr}"));
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
+    tracing::info!(service = "gateway", addr = %addr, "TCP listener bound");
     axum::serve(listener, app)
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;

@@ -19,8 +19,12 @@ use mox_platform_gateway_svc::serve_forever;
 use std::process::ExitCode;
 
 fn parse_args() -> (String, u16) {
-    let mut bind = "0.0.0.0".to_string();
-    let mut port: u16 = 8080;
+    // 环境变量兜底（MOX_GATEWAY_HOST / MOX_GATEWAY_PORT），CLI 参数优先覆盖
+    let mut bind = std::env::var("MOX_GATEWAY_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let mut port: u16 = std::env::var("MOX_GATEWAY_PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(8080);
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {

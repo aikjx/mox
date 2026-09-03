@@ -17,7 +17,8 @@ async fn main() -> anyhow::Result<()> {
         .with_max_level(tracing::Level::INFO)
         .init();
 
-    // 读取端口
+    // 读取绑定地址（环境变量驱动，默认 0.0.0.0:8765）
+    let host = std::env::var("MOX_AI_INTENT_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let port: u16 = std::env::var("MOX_AI_INTENT_PORT")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -26,8 +27,9 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState::new();
     let app = router(state).layer(CorsLayer::permissive());
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let addr = SocketAddr::from((host.parse::<std::net::IpAddr>().unwrap_or([0,0,0,0].into()), port));
     let listener = TcpListener::bind(addr).await?;
+    tracing::info!(service = "ai-intent", addr = %addr, "TCP listener bound");
 
     tracing::info!("🤖 mox-ai-intent-svc 启动成功: http://{}", addr);
     tracing::info!("  POST /api/v1/intent/understand       端到端意图理解");
@@ -38,6 +40,12 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("  POST /api/v1/sessions/:id/chat       对话");
     tracing::info!("  GET  /health                          健康检查");
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+            tracing::info!("ai-intent shutdown signal received");
+        })
+        .await?;
+    tracing::info!("ai-intent stopped gracefully");
     Ok(())
 }

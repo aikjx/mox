@@ -61,6 +61,7 @@ use std::{
 use tokio::sync::broadcast;
 
 use crate::GatewayState;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // =====================================================================
 // 工具函数
@@ -622,17 +623,7 @@ pub async fn observability_middleware(
                 "gateway",
                 format!("API 已停用被拦截: {method} {path} (id={})", route.id),
             );
-            return (
-                StatusCode::FORBIDDEN,
-                Json(json!({
-                    "ok": false,
-                    "code": "API_DISABLED",
-                    "id": route.id,
-                    "path": path,
-                    "message": format!("API `{}` 已被管理端停用，请在 /actuator/api/{} 恢复", route.id, route.id),
-                })),
-            )
-                .into_response();
+            return api_error(403, format!("API `{}` 已被管理端停用，请在 /actuator/api/{} 恢复", route.id, route.id)).into_response();
         }
     }
 
@@ -678,7 +669,7 @@ pub fn build_actuator_router() -> Router<GatewayState> {
 }
 
 /// GET /actuator —— 管理端点索引
-async fn actuator_index() -> Json<Value> {
+async fn actuator_index() -> ApiResponse<Value> {
     let endpoints = vec![
         json!({"id":"health","href":"/actuator/health","method":"GET","desc":"健康检查"}),
         json!({"id":"info","href":"/actuator/info","method":"GET","desc":"构建信息"}),
@@ -690,7 +681,7 @@ async fn actuator_index() -> Json<Value> {
         json!({"id":"logs-tail","href":"/actuator/logs/tail","method":"GET(SSE)","desc":"SSE 实时日志流"}),
         json!({"id":"api","href":"/actuator/api/{id}","method":"GET/POST","desc":"按 API 启停管理"}),
     ];
-    Json(json!({
+    api_ok(json!({
         "_links": endpoints,
         "total_endpoints": endpoints.len(),
         "framework": "MOX Gateway Actuator (Spring Boot style)",
@@ -699,8 +690,8 @@ async fn actuator_index() -> Json<Value> {
 }
 
 /// GET /actuator/health
-async fn actuator_health(State(state): State<GatewayState>) -> Json<Value> {
-    Json(json!({
+async fn actuator_health(State(state): State<GatewayState>) -> ApiResponse<Value> {
+    api_ok(json!({
         "status": "UP",
         "components": {
             "gateway": {"status": "UP", "version": env!("CARGO_PKG_VERSION")},
@@ -715,8 +706,8 @@ async fn actuator_health(State(state): State<GatewayState>) -> Json<Value> {
 }
 
 /// GET /actuator/info
-async fn actuator_info() -> Json<Value> {
-    Json(json!({
+async fn actuator_info() -> ApiResponse<Value> {
+    api_ok(json!({
         "app": {
             "name": "mox-gateway",
             "description": "MOX 全维低代码平台 · 企业级网关",
@@ -740,7 +731,7 @@ pub struct MappingsQuery {
 
 async fn actuator_mappings(
     Query(q): Query<MappingsQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let only_enabled = q
         .only_enabled
         .as_deref()
@@ -792,8 +783,7 @@ async fn actuator_mappings(
         .iter()
         .filter(|r| !r.enabled.load(Ordering::Relaxed))
         .count();
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "total": ROUTES.len(),
         "filtered": list.len(),
         "disabled_total": disabled,
@@ -807,9 +797,9 @@ async fn actuator_mappings(
 }
 
 /// GET /actuator/metrics
-async fn actuator_metrics(State(state): State<GatewayState>) -> Json<Value> {
+async fn actuator_metrics(State(state): State<GatewayState>) -> ApiResponse<Value> {
     let m = state.runtime.snapshot();
-    Json(json!({
+    api_ok(json!({
         "names": ["requests_total", "requests_2xx", "requests_4xx", "requests_5xx", "active_requests", "latency_avg_ms", "uptime_secs"],
         "measurements": m,
         "ts": now_ms(),
@@ -817,7 +807,7 @@ async fn actuator_metrics(State(state): State<GatewayState>) -> Json<Value> {
 }
 
 /// GET /actuator/env —— 网关配置（密钥脱敏）
-async fn actuator_env(State(state): State<GatewayState>) -> Json<Value> {
+async fn actuator_env(State(state): State<GatewayState>) -> ApiResponse<Value> {
     let cfg = &state.config;
     let jwt_secret = if cfg.auth.jwt_secret.is_empty() {
         "<empty>"
@@ -826,7 +816,7 @@ async fn actuator_env(State(state): State<GatewayState>) -> Json<Value> {
     } else {
         &cfg.auth.jwt_secret[..8.min(cfg.auth.jwt_secret.len())]
     };
-    Json(json!({
+    api_ok(json!({
         "config": {
             "host": cfg.host,
             "port": cfg.port,
@@ -852,8 +842,8 @@ async fn actuator_env(State(state): State<GatewayState>) -> Json<Value> {
 }
 
 /// GET /actuator/loggers —— 当前日志级别
-async fn actuator_loggers(State(state): State<GatewayState>) -> Json<Value> {
-    Json(json!({
+async fn actuator_loggers(State(state): State<GatewayState>) -> ApiResponse<Value> {
+    api_ok(json!({
         "levels": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"],
         "configured_level": state.logs.min_level(),
         "effective_level": state.logs.min_level(),
@@ -870,28 +860,18 @@ pub struct LoggerSetBody {
 async fn actuator_loggers_set(
     State(state): State<GatewayState>,
     Json(body): Json<LoggerSetBody>,
-) -> Response {
+) -> ApiResponse<Value> {
     let level = body.level.to_ascii_uppercase();
     if !matches!(level.as_str(), "TRACE" | "DEBUG" | "INFO" | "WARN" | "ERROR") {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({
-                "ok": false,
-                "error": "level 必须为 TRACE/DEBUG/INFO/WARN/ERROR",
-                "got": level,
-            })),
-        )
-            .into_response();
+        return api_error(400, format!("level 必须为 TRACE/DEBUG/INFO/WARN/ERROR，got: {level}"));
     }
     state.logs.set_min_level(&level);
     state
         .logs
         .push("INFO", "actuator", format!("日志级别调整为 {level}"));
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "configured_level": state.logs.min_level(),
     }))
-    .into_response()
 }
 
 #[derive(Debug, Deserialize)]
@@ -906,14 +886,13 @@ pub struct LogsQuery {
 async fn actuator_logs(
     State(state): State<GatewayState>,
     Query(q): Query<LogsQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let limit = q.limit.unwrap_or(200).clamp(1, 2000);
     let offset = q.offset.unwrap_or(0);
     let (total, entries) = state
         .logs
         .query(q.level.as_deref(), q.search.as_deref(), limit, offset);
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "total": total,
         "returned": entries.len(),
         "level": q.level,
@@ -925,9 +904,9 @@ async fn actuator_logs(
 }
 
 /// DELETE /actuator/logs —— 清空日志缓冲
-async fn actuator_logs_clear(State(state): State<GatewayState>) -> Json<Value> {
+async fn actuator_logs_clear(State(state): State<GatewayState>) -> ApiResponse<Value> {
     let cleared = state.logs.clear();
-    Json(json!({ "ok": true, "cleared": cleared }))
+    api_ok(json!({ "cleared": cleared }))
 }
 
 /// GET /actuator/logs/tail —— SSE 实时日志流（tail -f）
@@ -966,10 +945,9 @@ async fn actuator_logs_tail(
 }
 
 /// GET /actuator/api/:id —— 查询单个 API 状态
-async fn actuator_api_get(Path(id): Path<String>) -> Json<Value> {
+async fn actuator_api_get(Path(id): Path<String>) -> ApiResponse<Value> {
     match get_route(&id) {
-        Some(route) => Json(json!({
-            "ok": true,
+        Some(route) => api_ok(json!({
             "id": route.id,
             "method": route.method,
             "path": route.path,
@@ -979,23 +957,16 @@ async fn actuator_api_get(Path(id): Path<String>) -> Json<Value> {
             "description": route.description,
             "enabled": route.enabled.load(Ordering::Relaxed),
         })),
-        None => Json(json!({
-            "ok": false,
-            "error": format!("未找到 API: {id}"),
-            "hint": "可枚举 /actuator/mappings 获取 id",
-        })),
+        None => api_error(404, format!("未找到 API: {id}，可枚举 /actuator/mappings 获取 id")),
     }
 }
 
 /// 启停状态变更（共用逻辑）
-fn set_api_enabled(id: &str, enabled: bool, store: &LogStore) -> Json<Value> {
+fn set_api_enabled(id: &str, enabled: bool, store: &LogStore) -> ApiResponse<Value> {
     match get_route(id) {
         Some(route) => {
             if is_management(route.path) {
-                return Json(json!({
-                    "ok": false,
-                    "error": format!("管理面端点 `{id}` 不允许停用（防自锁）"),
-                }));
+                return api_error(403, format!("管理面端点 `{id}` 不允许停用（防自锁"));
             }
             route.enabled.store(enabled, Ordering::Relaxed);
             store.push(
@@ -1003,8 +974,7 @@ fn set_api_enabled(id: &str, enabled: bool, store: &LogStore) -> Json<Value> {
                 "actuator",
                 format!("API `{id}` ({}) 已{}", route.path, if enabled { "启用" } else { "停用" }),
             );
-            Json(json!({
-                "ok": true,
+            api_ok(json!({
                 "id": route.id,
                 "path": route.path,
                 "method": route.method,
@@ -1012,20 +982,17 @@ fn set_api_enabled(id: &str, enabled: bool, store: &LogStore) -> Json<Value> {
                 "message": format!("API `{id}` 已{}，停用后请求将返回 403", if enabled { "启用" } else { "停用" }),
             }))
         }
-        None => Json(json!({
-            "ok": false,
-            "error": format!("未找到 API: {id}"),
-        })),
+        None => api_error(404, format!("未找到 API: {id}")),
     }
 }
 
 /// POST /actuator/api/:id/enable
-async fn actuator_api_enable(State(state): State<GatewayState>, Path(id): Path<String>) -> Json<Value> {
+async fn actuator_api_enable(State(state): State<GatewayState>, Path(id): Path<String>) -> ApiResponse<Value> {
     set_api_enabled(&id, true, &state.logs)
 }
 
 /// POST /actuator/api/:id/disable
-async fn actuator_api_disable(State(state): State<GatewayState>, Path(id): Path<String>) -> Json<Value> {
+async fn actuator_api_disable(State(state): State<GatewayState>, Path(id): Path<String>) -> ApiResponse<Value> {
     set_api_enabled(&id, false, &state.logs)
 }
 

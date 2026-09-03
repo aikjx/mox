@@ -654,7 +654,12 @@ async fn main() -> anyhow::Result<()> {
         .layer(build_cors()?);
 
     // 解析命令行参数：支持 `--port <NUM>`（默认 3001，Node 边缘入口占 3000）
-    let mut port: u16 = 3001;
+    // 环境变量兜底（MOX_ORCHESTRATOR_HOST / MOX_ORCHESTRATOR_PORT），CLI --port 优先覆盖
+    let host = std::env::var("MOX_ORCHESTRATOR_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let mut port: u16 = std::env::var("MOX_ORCHESTRATOR_PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(3001);
     let args: Vec<String> = std::env::args().collect();
     for i in 0..args.len() {
         if args[i] == "--port" && i + 1 < args.len() {
@@ -663,7 +668,7 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
-    let addr = format!("0.0.0.0:{}", port);
+    let addr = format!("{host}:{port}");
     tracing::info!("📡 服务器监听在 http://{}", addr);
     tracing::info!("══════════════════════════════════════════════════════════");
     tracing::info!("  🚀 算子统一系统 v3.0 - AI驱动全维突破平台");
@@ -673,6 +678,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("══════════════════════════════════════════════════════════");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
+    tracing::info!(service = "platform-orchestrator", addr = %addr, "TCP listener bound");
     // 生产级优雅关闭：收到 SIGINT/SIGTERM 时停止接收新连接，等待在途请求完成
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())

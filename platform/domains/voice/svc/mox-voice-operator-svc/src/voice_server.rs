@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -52,8 +52,14 @@ pub struct VoiceServiceConfig {
 
 impl Default for VoiceServiceConfig {
     fn default() -> Self {
+        // 从环境变量读取绑定地址，默认 127.0.0.1:30010（本地语音代理）
+        let vo_host = std::env::var("MOX_VOICE_OPERATOR_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let vo_port = std::env::var("MOX_VOICE_OPERATOR_PORT")
+            .ok()
+            .and_then(|p| p.parse::<u16>().ok())
+            .unwrap_or(30010);
         Self {
-            bind: "127.0.0.1:30010".parse().unwrap(),
+            bind: format!("{vo_host}:{vo_port}").parse().unwrap(),
             default_identity: OperatorIdentity::new("voice_user", RoleTag::Member, false),
             default_mode: DispatchMode::LocalFirst,
             avatar_dir: None,
@@ -511,12 +517,18 @@ pub async fn serve(config: VoiceServiceConfig) -> XiaobaiResult<()> {
     let listener = tokio::net::TcpListener::bind(config.bind).await.map_err(|e| XiaobaiError::ExecutionError {
         category: "server".into(), action: "serve_voice".into(), detail: format!("bind 失败：{e}"),
     })?;
+    info!(target: "xiaobai_server", service = "voice-operator", addr = %config.bind, "TCP listener bound");
     info!(target: "xiaobai_server", "xiaobai-voice-rs listening on {}", config.bind);
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+            info!(target: "xiaobai_server", "voice-operator shutdown signal received");
+        })
         .await
         .map_err(|e| XiaobaiError::ExecutionError {
             category: "server".into(), action: "serve_voice".into(), detail: format!("serve error：{e}"),
         })?;
+    info!(target: "xiaobai_server", "voice-operator stopped gracefully");
     Ok(())
 }
 

@@ -428,8 +428,14 @@ pub async fn serve(state: Arc<AppState>, addr: &str) -> anyhow::Result<()> {
     use axum::serve;
     let app = build_router(state);
     let listener = tokio::net::TcpListener::bind(addr).await?;
+    tracing::info!(service = "flow-fusion", addr = %addr, "TCP listener bound");
     eprintln!("PrimiFlow-Fusion API listening on {addr}");
-    serve(listener, app).await?;
+    serve(listener, app)
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+            tracing::info!("flow-fusion shutdown signal received");
+        })
+        .await?;
     Ok(())
 }
 

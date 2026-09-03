@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "mox-kb-svc"
 version.workspace = true
 edition.workspace = true
@@ -16,6 +16,7 @@ mox-kg-storage-svc = { workspace = true }
 # 专家联盟：文档分析咨询（有 LLM 走真实 LLM，否则本地引擎）
 mox-ai-expert-svc = { workspace = true }
 mox-ai-expert-proto = { workspace = true }
+mox-api-protocol = { workspace = true }
 
 # HTTP 适配层（对齐 legacy /kb/* API 面，前端零改动）
 axum = { workspace = true, features = ["json", "query", "http1", "tokio"] }

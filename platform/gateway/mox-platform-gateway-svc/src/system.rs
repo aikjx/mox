@@ -19,6 +19,7 @@
 //! 用户相关读接口默认 `admin-user`（种子超级管理员）。
 
 use crate::GatewayState;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 use axum::{
     extract::{Path, Query, State},
     routing::{delete, get, post, put},
@@ -41,12 +42,12 @@ const DEFAULT_USER: &str = "admin-user";
 // 响应信封辅助
 // =====================================================================
 
-fn ok(data: Value) -> Json<Value> {
-    Json(json!({ "success": true, "data": data }))
+fn ok(data: Value) -> ApiResponse<Value> {
+    api_ok(data)
 }
 
-fn err(msg: &str) -> Json<Value> {
-    Json(json!({ "success": false, "code": "IAM_REPO_ERR", "error": msg }))
+fn err(msg: &str) -> ApiResponse<Value> {
+    api_error(500, msg)
 }
 
 fn q_str(q: &HashMap<String, String>, key: &str, default: &str) -> String {
@@ -314,7 +315,7 @@ pub fn build_security_router() -> Router<GatewayState> {
 async fn get_permissions(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -337,7 +338,7 @@ async fn get_permissions(
 async fn list_dept(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -364,7 +365,7 @@ async fn list_dept(
 async fn dept_tree(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -394,7 +395,7 @@ async fn dept_tree(
 async fn list_roles(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -423,7 +424,7 @@ async fn get_role(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -452,7 +453,7 @@ async fn get_user_roles(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -475,7 +476,7 @@ async fn get_user_roles(
 async fn menu_tree(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -703,7 +704,7 @@ async fn create_dept_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -723,7 +724,7 @@ async fn create_dept_handler(
 async fn get_dept_detail_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.get_dept(&id) {
         Ok(Some(d)) => ok(dept_json(&d)),
         Ok(None) => err("dept not found"),
@@ -735,7 +736,7 @@ async fn update_dept_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let name = opt_str(&body, "name");
     let parent_id = opt_str(&body, "parentId");
     let sort = opt_i64(&body, "sort");
@@ -750,7 +751,7 @@ async fn update_dept_handler(
 async fn delete_dept_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_dept(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("dept delete: {e}")),
@@ -761,7 +762,7 @@ async fn list_dept_users_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -777,7 +778,7 @@ async fn list_dept_users_handler(
 async fn list_posts_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -792,7 +793,7 @@ async fn create_post_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -813,7 +814,7 @@ async fn list_posts_by_dept_handler(
     State(s): State<GatewayState>,
     Path(dept_id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -827,7 +828,7 @@ async fn list_posts_by_dept_handler(
 async fn get_post_detail_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.get_post(&id) {
         Ok(Some(p)) => ok(post_json(&p)),
         Ok(None) => err("post not found"),
@@ -839,7 +840,7 @@ async fn update_post_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let code = opt_str(&body, "postCode");
     let name = opt_str(&body, "postName");
     let dept_id = opt_str(&body, "deptId");
@@ -855,7 +856,7 @@ async fn update_post_handler(
 async fn delete_post_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_post(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("post delete: {e}")),
@@ -867,7 +868,7 @@ async fn delete_post_handler(
 async fn list_users_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -882,7 +883,7 @@ async fn create_user_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -911,7 +912,7 @@ async fn create_user_handler(
 async fn get_user_detail_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.get_user(&id) {
         Ok(Some(u)) => ok(user_json(&u)),
         Ok(None) => err("user not found"),
@@ -923,7 +924,7 @@ async fn update_user_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let username = opt_str(&body, "username");
     let real_name = opt_str(&body, "realName");
     let email = opt_str(&body, "email");
@@ -949,7 +950,7 @@ async fn update_user_handler(
 async fn delete_user_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_user(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("user delete: {e}")),
@@ -960,7 +961,7 @@ async fn reset_user_pwd_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let password = opt_str(&body, "password").unwrap_or("");
     match s.iam.reset_password(&id, password) {
         Ok(_) => ok(json!(null)),
@@ -972,7 +973,7 @@ async fn change_user_status_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let status = opt_status(&body).unwrap_or("active");
     match s.iam.change_user_status(&id, status) {
         Ok(_) => ok(json!(null)),
@@ -985,7 +986,7 @@ async fn assign_user_roles_handler(
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1012,7 +1013,7 @@ async fn create_role_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1043,7 +1044,7 @@ async fn update_role_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let name = opt_str(&body, "name");
     let code = opt_str(&body, "code");
     let data_scope = opt_str(&body, "dataScope");
@@ -1059,7 +1060,7 @@ async fn update_role_handler(
 async fn delete_role_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_role(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("role delete: {e}")),
@@ -1070,7 +1071,7 @@ async fn get_role_menu_perms_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1086,7 +1087,7 @@ async fn set_role_menu_perms_handler(
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1111,7 +1112,7 @@ async fn get_role_data_perms_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1137,7 +1138,7 @@ async fn set_role_data_perms_handler(
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1162,7 +1163,7 @@ async fn list_role_users_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1178,7 +1179,7 @@ async fn copy_role_handler(
     Path(id): Path<String>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1196,7 +1197,7 @@ async fn copy_role_handler(
 async fn list_menus_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1211,7 +1212,7 @@ async fn create_menu_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1249,7 +1250,7 @@ async fn create_menu_handler(
 async fn get_menu_detail_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.get_menu(&id) {
         Ok(Some(m)) => ok(menu_json(&m)),
         Ok(None) => err("menu not found"),
@@ -1261,7 +1262,7 @@ async fn update_menu_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let name = opt_str(&body, "name");
     let parent_id = opt_str(&body, "parentId");
     let route_path = opt_str(&body, "path");
@@ -1291,7 +1292,7 @@ async fn update_menu_handler(
 async fn delete_menu_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_menu(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("menu delete: {e}")),
@@ -1303,7 +1304,7 @@ async fn delete_menu_handler(
 async fn list_dict_types_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1321,7 +1322,7 @@ async fn create_dict_type_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1339,7 +1340,7 @@ async fn create_dict_type_handler(
 async fn list_all_dict_types_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1356,7 +1357,7 @@ async fn list_all_dict_types_handler(
 async fn get_dict_type_detail_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.get_dict_type(&id) {
         Ok(Some(d)) => ok(dict_type_json(&d)),
         Ok(None) => err("dict type not found"),
@@ -1368,7 +1369,7 @@ async fn update_dict_type_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let dict_name = opt_str(&body, "dictName");
     let dict_type = opt_str(&body, "dictType");
     let status = opt_status(&body);
@@ -1382,7 +1383,7 @@ async fn update_dict_type_handler(
 async fn delete_dict_type_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_dict_type(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("dict type delete: {e}")),
@@ -1394,7 +1395,7 @@ async fn delete_dict_type_handler(
 async fn list_dict_data_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1412,7 +1413,7 @@ async fn create_dict_data_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1447,7 +1448,7 @@ async fn list_dict_data_by_type_handler(
     State(s): State<GatewayState>,
     Path(dict_type): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1464,7 +1465,7 @@ async fn list_dict_data_by_type_handler(
 async fn get_dict_data_detail_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.get_dict_data(&id) {
         Ok(Some(d)) => ok(dict_data_json(&d)),
         Ok(None) => err("dict data not found"),
@@ -1476,7 +1477,7 @@ async fn update_dict_data_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let dict_sort = opt_i64(&body, "dictSort");
     let dict_label = opt_str(&body, "dictLabel");
     let dict_value = opt_str(&body, "dictValue");
@@ -1506,7 +1507,7 @@ async fn update_dict_data_handler(
 async fn delete_dict_data_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_dict_data(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("dict data delete: {e}")),
@@ -1518,7 +1519,7 @@ async fn delete_dict_data_handler(
 async fn list_configs_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1533,7 +1534,7 @@ async fn create_config_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1561,7 +1562,7 @@ async fn create_config_handler(
 async fn get_config_detail_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.get_config(&id) {
         Ok(Some(c)) => ok(config_json(&c)),
         Ok(None) => err("config not found"),
@@ -1573,7 +1574,7 @@ async fn get_config_by_key_handler(
     State(s): State<GatewayState>,
     Path(key): Path<String>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1589,7 +1590,7 @@ async fn update_config_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let config_name = opt_str(&body, "configName");
     let config_key = opt_str(&body, "configKey");
     let config_value = opt_str(&body, "configValue");
@@ -1613,14 +1614,14 @@ async fn update_config_handler(
 async fn delete_config_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_config(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("config delete: {e}")),
     }
 }
 
-async fn refresh_config_cache_handler() -> Json<Value> {
+async fn refresh_config_cache_handler() -> ApiResponse<Value> {
     ok(json!({
         "refreshed": true,
         "note": "SQLite direct-read, no cache layer",
@@ -1632,7 +1633,7 @@ async fn refresh_config_cache_handler() -> Json<Value> {
 async fn list_oper_logs_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1649,7 +1650,7 @@ async fn list_oper_logs_handler(
 async fn get_oper_log_detail_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.get_oper_log(&id) {
         Ok(Some(l)) => ok(oper_log_json(&l)),
         Ok(None) => err("oper log not found"),
@@ -1660,7 +1661,7 @@ async fn get_oper_log_detail_handler(
 async fn delete_oper_log_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_oper_log(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("oper log delete: {e}")),
@@ -1670,7 +1671,7 @@ async fn delete_oper_log_handler(
 async fn clean_oper_logs_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1681,7 +1682,7 @@ async fn clean_oper_logs_handler(
     }
 }
 
-async fn export_oper_logs_handler() -> Json<Value> {
+async fn export_oper_logs_handler() -> ApiResponse<Value> {
     ok(json!({
         "exported": false,
         "note": "CSV export not yet implemented; use list endpoint",
@@ -1693,7 +1694,7 @@ async fn export_oper_logs_handler() -> Json<Value> {
 async fn list_login_logs_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1710,7 +1711,7 @@ async fn list_login_logs_handler(
 async fn delete_login_log_handler(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     match s.iam.delete_login_log(&id) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("login log delete: {e}")),
@@ -1720,7 +1721,7 @@ async fn delete_login_log_handler(
 async fn clean_login_logs_handler(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
@@ -1731,7 +1732,7 @@ async fn clean_login_logs_handler(
     }
 }
 
-async fn export_login_logs_handler() -> Json<Value> {
+async fn export_login_logs_handler() -> ApiResponse<Value> {
     ok(json!({
         "exported": false,
         "note": "CSV export not yet implemented; use list endpoint",
@@ -1743,7 +1744,7 @@ async fn export_login_logs_handler() -> Json<Value> {
 // =====================================================================
 
 /// GET /api/security/status —— 安全状态
-async fn security_status(State(s): State<GatewayState>) -> Json<Value> {
+async fn security_status(State(s): State<GatewayState>) -> ApiResponse<Value> {
     ok(json!({
         "auth_enabled": s.config.auth.enabled,
         "rate_limit_enabled": s.config.rate_limit.enabled,
@@ -1755,7 +1756,7 @@ async fn security_status(State(s): State<GatewayState>) -> Json<Value> {
 }
 
 /// GET /api/security/api-keys —— 凭证列表（SQLite 持久化，api_key 脱敏）
-async fn list_api_keys(State(s): State<GatewayState>) -> Json<Value> {
+async fn list_api_keys(State(s): State<GatewayState>) -> ApiResponse<Value> {
     match s.iam.list_api_keys(DEFAULT_TENANT) {
         Ok(list) => ok(json!(list
             .iter()
@@ -1769,7 +1770,7 @@ async fn list_api_keys(State(s): State<GatewayState>) -> Json<Value> {
 async fn create_api_key(
     State(s): State<GatewayState>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let name = body
         .get("name")
         .and_then(|v| v.as_str())
@@ -1793,7 +1794,7 @@ async fn create_api_key(
 async fn revoke_api_key(
     State(s): State<GatewayState>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     // 先从 DB 取出原始 key，用于从 auth 中间件内存表中移除
     if let Ok(Some(k)) = s.iam.get_api_key(&id) {
         s.auth.revoke_api_key(&k.api_key);
@@ -1808,7 +1809,7 @@ async fn revoke_api_key(
 async fn validate_api_key(
     State(s): State<GatewayState>,
     Json(body): Json<Value>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let key = body.get("api_key").and_then(|v| v.as_str()).unwrap_or("");
     match s.auth.validate_api_key(key) {
         Some(uid) => ok(json!({
@@ -1825,7 +1826,7 @@ async fn validate_api_key(
 async fn audit_log(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),

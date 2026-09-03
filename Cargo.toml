@@ -35,6 +35,7 @@ members = [
     "platform/foundation/mox-platform-paths",
     "platform/foundation/mox-error",
     "platform/foundation/mox-audit",
+    "platform/foundation/mox-api-protocol",
     "platform/domains/foundation/mox-rbac-engine",
     "platform/domains/foundation/mox-pipeline-framework",
     "platform/domains/data/api",
@@ -265,6 +266,7 @@ mox-platform-observability = { path = "platform/foundation/mox-platform-observab
 mox-platform-paths = { path = "platform/foundation/mox-platform-paths" }
 mox-error = { path = "platform/foundation/mox-error" }
 mox-audit = { path = "platform/foundation/mox-audit" }
+mox-api-protocol = { path = "platform/foundation/mox-api-protocol" }
 mox-rbac-engine = { path = "platform/domains/foundation/mox-rbac-engine" }
 mox-pipeline-framework = { path = "platform/domains/foundation/mox-pipeline-framework" }
 # Alliance proto

@@ -28,7 +28,13 @@ fn env_or(key: &str, default: &str) -> String {
 async fn main() -> anyhow::Result<()> {
     mox_platform_enterprise_svc::auth::init_logging();
 
-    let listen_addr = env_or("LISTEN_ADDR", "0.0.0.0:3002");
+    // 标准环境变量（MOX_ENTERPRISE_HOST / MOX_ENTERPRISE_PORT），兼容旧 LISTEN_ADDR
+    let ent_host = std::env::var("MOX_ENTERPRISE_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let ent_port = std::env::var("MOX_ENTERPRISE_PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(3002);
+    let listen_addr = env_or("LISTEN_ADDR", &format!("{ent_host}:{ent_port}"));
     let db_path = env_or("DB_PATH", ":memory:");
     let install_industries_raw = env_or("INSTALL_INDUSTRIES", "common,finance");
     let install_industries: Vec<&str> = install_industries_raw
@@ -82,7 +88,13 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let listener = tokio::net::TcpListener::bind(&listen_addr).await?;
+    tracing::info!(service = "platform-enterprise", addr = %listen_addr, "TCP listener bound");
     tracing::info!("enterprise-svc listening on http://{}", listen_addr);
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+            tracing::info!("platform-enterprise shutdown signal received");
+        })
+        .await?;
     Ok(())
 }

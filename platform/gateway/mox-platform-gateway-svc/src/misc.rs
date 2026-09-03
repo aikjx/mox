@@ -16,6 +16,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // =====================================================================
 // 共享状态
@@ -130,14 +131,14 @@ fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-fn ok(data: Value) -> Json<Value> {
-    Json(json!({ "success": true, "data": data }))
+fn ok(data: Value) -> ApiResponse<Value> {
+    api_ok(data)
 }
 
 // =====================================================================
 // 1. POST /users/{id}/avatar — 用户头像上传（multipart）
 // =====================================================================
-async fn upload_avatar(Path(id): Path<String>, mut multipart: Multipart) -> Json<Value> {
+async fn upload_avatar(Path(id): Path<String>, mut multipart: Multipart) -> ApiResponse<Value> {
     let upload_dir = std::path::Path::new("data/uploads/avatars");
     let _ = std::fs::create_dir_all(&upload_dir);
 
@@ -191,7 +192,7 @@ struct MarketReviewBody {
 async fn market_review(
     Path(id): Path<String>,
     Json(body): Json<MarketReviewBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let action = body.action.to_lowercase();
     let approved = action == "approve";
     ok(json!({
@@ -228,7 +229,7 @@ struct FlowUpdateBody {
 async fn update_flow(
     Path(id): Path<String>,
     Json(body): Json<FlowUpdateBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let node_count = body.nodes.as_ref().map(|n| n.len()).unwrap_or(0);
     let edge_count = body.edges.as_ref().map(|e| e.len()).unwrap_or(0);
     ok(json!({
@@ -265,7 +266,7 @@ struct PaginationQuery {
 async fn list_tasks_paginated(
     State(s): State<Arc<MiscState>>,
     Query(q): Query<PaginationQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(20).clamp(1, 100);
     let keyword = q.keyword.as_deref().unwrap_or("").to_lowercase();
@@ -323,7 +324,7 @@ async fn list_tasks_paginated(
 async fn list_projects_paginated(
     State(s): State<Arc<MiscState>>,
     Query(q): Query<PaginationQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(20).clamp(1, 100);
     let keyword = q.keyword.as_deref().unwrap_or("").to_lowercase();

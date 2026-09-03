@@ -16,6 +16,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // =====================================================================
 // 共享状态
@@ -93,14 +94,14 @@ fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-fn ok(data: Value) -> Json<Value> {
-    Json(json!({ "success": true, "data": data }))
+fn ok(data: Value) -> ApiResponse<Value> {
+    api_ok(data)
 }
 
 // =====================================================================
 // 1. GET /experts/stats — 平台统计
 // =====================================================================
-async fn experts_stats() -> Json<Value> {
+async fn experts_stats() -> ApiResponse<Value> {
     ok(json!({
         "total_experts": 342,
         "online_experts": 128,
@@ -128,7 +129,7 @@ async fn experts_stats() -> Json<Value> {
 // =====================================================================
 // 2. GET /experts/bookings/mine — 我的预约列表
 // =====================================================================
-async fn my_bookings(State(s): State<Arc<ExpertsState>>) -> Json<Value> {
+async fn my_bookings(State(s): State<Arc<ExpertsState>>) -> ApiResponse<Value> {
     let bookings = s.bookings.lock().clone();
     ok(json!({
         "bookings": bookings,
@@ -146,7 +147,7 @@ async fn my_bookings(State(s): State<Arc<ExpertsState>>) -> Json<Value> {
 async fn toggle_expert_favorite(
     Path(id): Path<String>,
     State(s): State<Arc<ExpertsState>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let mut favs = s.favorites.lock();
     let is_fav = favs.contains(&id);
     if is_fav {
@@ -178,7 +179,7 @@ struct CreateBookingBody {
 async fn create_booking(
     State(s): State<Arc<ExpertsState>>,
     Json(body): Json<CreateBookingBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let booking_id = format!("booking-{}", uuid::Uuid::new_v4().simple());
     let scheduled = body.scheduled_at.unwrap_or_else(|| {
         (chrono::Utc::now() + chrono::Duration::hours(24))
@@ -206,14 +207,11 @@ async fn create_booking(
 async fn cancel_booking(
     Path(id): Path<String>,
     State(s): State<Arc<ExpertsState>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let mut bookings = s.bookings.lock();
     if let Some(b) = bookings.iter_mut().find(|b| b.id == id) {
         if b.status == "cancelled" || b.status == "completed" {
-            return Json(json!({
-                "success": false,
-                "error": format!("预约 {} 当前状态为 {}，无法取消", id, b.status),
-            }));
+            return api_error(400, format!("预约 {} 当前状态为 {}，无法取消", id, b.status));
         }
         b.status = "cancelled".into();
         return ok(json!({
@@ -223,13 +221,13 @@ async fn cancel_booking(
             "message": "预约已取消",
         }));
     }
-    Json(json!({ "success": false, "error": format!("booking not found: {id}") }))
+    api_error(404, format!("booking not found: {id}"))
 }
 
 // =====================================================================
 // 6. GET /experts/bookings/{id}/consult-room — 咨询室进入
 // =====================================================================
-async fn consult_room(Path(id): Path<String>) -> Json<Value> {
+async fn consult_room(Path(id): Path<String>) -> ApiResponse<Value> {
     let room_token = uuid::Uuid::new_v4().simple().to_string();
     ok(json!({
         "booking_id": id,
@@ -266,7 +264,7 @@ struct JoinTeamBody {
     message: Option<String>,
 }
 
-async fn join_team(Json(body): Json<JoinTeamBody>) -> Json<Value> {
+async fn join_team(Json(body): Json<JoinTeamBody>) -> ApiResponse<Value> {
     let role = body.role.unwrap_or_else(|| "member".into());
     ok(json!({
         "team_id": body.team_id,
@@ -294,7 +292,7 @@ struct ConsultNowBody {
 async fn consult_now(
     Path(id): Path<String>,
     Json(body): Json<ConsultNowBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let session_id = format!("session-{}", uuid::Uuid::new_v4().simple());
     ok(json!({
         "expert_id": id,

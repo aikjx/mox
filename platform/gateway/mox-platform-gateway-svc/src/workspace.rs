@@ -13,6 +13,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // =====================================================================
 // 共享状态
@@ -70,14 +71,14 @@ fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-fn ok(data: Value) -> Json<Value> {
-    Json(json!({ "success": true, "data": data }))
+fn ok(data: Value) -> ApiResponse<Value> {
+    api_ok(data)
 }
 
 // =====================================================================
 // 1. GET /notifications/unread-count — 未读通知数
 // =====================================================================
-async fn unread_count() -> Json<Value> {
+async fn unread_count() -> ApiResponse<Value> {
     ok(json!({
         "total": 12,
         "by_type": {
@@ -101,7 +102,7 @@ async fn unread_count() -> Json<Value> {
 // =====================================================================
 // 2. GET /workspace/kpi — KPI 聚合统计
 // =====================================================================
-async fn workspace_kpi() -> Json<Value> {
+async fn workspace_kpi() -> ApiResponse<Value> {
     ok(json!({
         "tasks": {
             "todo": 8,
@@ -131,7 +132,7 @@ async fn workspace_kpi() -> Json<Value> {
 // =====================================================================
 // 3. GET /files/{id}/preview — 文件预览
 // =====================================================================
-async fn file_preview(Path(id): Path<String>) -> Json<Value> {
+async fn file_preview(Path(id): Path<String>) -> ApiResponse<Value> {
     let ext = if id.contains("pdf") { "pdf" }
         else if id.contains("img") || id.contains("png") || id.contains("jpg") { "image" }
         else if id.contains("doc") || id.contains("md") { "markdown" }
@@ -161,7 +162,7 @@ async fn file_preview(Path(id): Path<String>) -> Json<Value> {
 // =====================================================================
 // 4. GET /files/{id}/download — 文件下载
 // =====================================================================
-async fn file_download(Path(id): Path<String>) -> Json<Value> {
+async fn file_download(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "file_id": id,
         "name": format!("download-{}.bin", id),
@@ -189,7 +190,7 @@ struct WhiteboardSaveBody {
 async fn whiteboard_save(
     Path(session_id): Path<String>,
     Json(body): Json<WhiteboardSaveBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let element_count = body.elements.as_ref().map(|e| e.len()).unwrap_or(0);
     let connection_count = body.connections.as_ref().map(|c| c.len()).unwrap_or(0);
     ok(json!({
@@ -216,7 +217,7 @@ struct HistoryQuery {
 async fn workspace_history(
     State(s): State<Arc<WorkspaceState>>,
     Query(q): Query<HistoryQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(20).clamp(1, 100);
     let history = s.history.lock();
@@ -243,7 +244,7 @@ struct TaskDecomposeBody {
     subtask_count: Option<usize>,
 }
 
-async fn task_decompose(Json(body): Json<TaskDecomposeBody>) -> Json<Value> {
+async fn task_decompose(Json(body): Json<TaskDecomposeBody>) -> ApiResponse<Value> {
     let count = body.subtask_count.unwrap_or(5).clamp(2, 10);
     let task_type = body.task_type.unwrap_or_else(|| "general".into());
     let subtasks: Vec<Value> = (0..count)
@@ -286,7 +287,7 @@ struct TaskExecuteBody {
 async fn task_execute(
     Path(id): Path<String>,
     Json(body): Json<TaskExecuteBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let execution_id = format!("exec-{}", uuid::Uuid::new_v4().simple());
     ok(json!({
         "task_id": id,

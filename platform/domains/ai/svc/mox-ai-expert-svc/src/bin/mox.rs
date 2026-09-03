@@ -246,7 +246,12 @@ fn cmd_verify(args: &[String]) -> anyhow::Result<()> {
 }
 
 fn cmd_serve(args: &[String]) -> anyhow::Result<()> {
-    let mut port = 8080u16;
+    // 环境变量兜底（MOX_AI_EXPERT_HOST / MOX_AI_EXPERT_PORT），CLI --port 优先覆盖
+    let host = std::env::var("MOX_AI_EXPERT_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let mut port = std::env::var("MOX_AI_EXPERT_PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(8080u16);
     let mut i = 0;
     while i < args.len() {
         if args[i] == "--port" {
@@ -276,12 +281,18 @@ fn cmd_serve(args: &[String]) -> anyhow::Result<()> {
         };
         let app =
             mox_ai_expert_svc::server::router(state).layer(tower_http::cors::CorsLayer::permissive());
-        let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+        let addr = std::net::SocketAddr::from((host.parse::<std::net::IpAddr>().unwrap_or([0,0,0,0].into()), port));
         let listener = tokio::net::TcpListener::bind(addr).await?;
+        tracing::info!(service = "ai-expert", addr = %addr, "TCP listener bound");
         println!("🌀 璇玑 智能中心已就绪: http://{addr}");
         println!("  前端:        http://{addr}/");
         println!("  API:         POST http://{addr}/api/optimize");
-        axum::serve(listener, app).await?;
+        axum::serve(listener, app)
+            .with_graceful_shutdown(async {
+                let _ = tokio::signal::ctrl_c().await;
+                tracing::info!("ai-expert shutdown signal received");
+            })
+            .await?;
         Ok::<(), anyhow::Error>(())
     })?;
     Ok(())

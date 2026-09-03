@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -26,10 +26,18 @@ async fn main() -> anyhow::Result<()> {
 
     info!("MOX Enterprise API Gateway v2.0.0 启动中...");
 
+    // [DEPRECATED] legacy backend — 从环境变量读取绑定地址，默认 0.0.0.0:8080
+    let legacy_host = std::env::var("MOX_LEGACY_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let legacy_port = std::env::var("MOX_LEGACY_PORT")
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(8080);
+    let legacy_addr = format!("{legacy_host}:{legacy_port}");
+
     // 创建网关
     let gateway = ApiGateway::builder()
         .service_name("mox-api-gateway")
-        .listen_addr("0.0.0.0:8080")
+        .listen_addr(&legacy_addr)
         .default_timeout_ms(30000)
         .retry_attempts(3)
         .rate_limit_per_second(1000)
@@ -50,6 +58,7 @@ async fn main() -> anyhow::Result<()> {
     // 启动服务
     let addr: SocketAddr = gateway.listen_addr().parse()?;
     let listener = tokio::net::TcpListener::bind(addr).await?;
+    info!(service = "legacy-backend", addr = %addr, "TCP listener bound");
     info!("网关监听于 {}", addr);
 
     axum::serve(listener, app)

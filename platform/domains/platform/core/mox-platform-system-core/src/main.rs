@@ -189,6 +189,7 @@ async fn run_server() {
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
         .expect("bind failed");
+    tracing::info!(service = "platform-system-core", addr = %addr, "TCP listener bound");
     println!("璇玑系统已启动: http://{}", addr);
     println!(
         "  持久化模式: {}",
@@ -208,7 +209,13 @@ async fn run_server() {
     );
     println!("  指标端点: http://{}/api/metrics", addr);
     println!("WebSocket 实时通知: ws://{}/api/ws?token=<token>", addr);
-    axum::serve(listener, app).await.expect("serve");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+            tracing::info!("platform-system-core shutdown signal received");
+        })
+        .await
+        .expect("serve");
 }
 
 fn tracing_subscriber_wrap() {

@@ -17,6 +17,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // =====================================================================
 // 共享状态
@@ -86,14 +87,14 @@ fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-fn ok(data: Value) -> Json<Value> {
-    Json(json!({ "success": true, "data": data }))
+fn ok(data: Value) -> ApiResponse<Value> {
+    api_ok(data)
 }
 
 // =====================================================================
 // 1. GET /actuator/metrics/detail — 详细指标聚合
 // =====================================================================
-async fn metrics_detail() -> Json<Value> {
+async fn metrics_detail() -> ApiResponse<Value> {
     ok(json!({
         "cpu": {
             "usage_percent": 42.7,
@@ -142,7 +143,7 @@ async fn metrics_detail() -> Json<Value> {
 // =====================================================================
 // 2. GET /monitor/quality — 服务质量指标
 // =====================================================================
-async fn quality() -> Json<Value> {
+async fn quality() -> ApiResponse<Value> {
     ok(json!({
         "sla": {
             "target": 99.9,
@@ -169,7 +170,7 @@ async fn quality() -> Json<Value> {
 // =====================================================================
 // 3. GET /monitor/business — 业务指标聚合
 // =====================================================================
-async fn business() -> Json<Value> {
+async fn business() -> ApiResponse<Value> {
     ok(json!({
         "tasks": {
             "total": 1284,
@@ -207,7 +208,7 @@ async fn business() -> Json<Value> {
 // =====================================================================
 // 4. GET /monitor/alerts/summary — 告警统计
 // =====================================================================
-async fn alerts_summary() -> Json<Value> {
+async fn alerts_summary() -> ApiResponse<Value> {
     ok(json!({
         "by_severity": {
             "critical": 3,
@@ -230,7 +231,7 @@ async fn alerts_summary() -> Json<Value> {
 // =====================================================================
 // 5. GET /monitor/nodes — 服务节点状态列表
 // =====================================================================
-async fn nodes() -> Json<Value> {
+async fn nodes() -> ApiResponse<Value> {
     ok(json!({
         "nodes": [
             {
@@ -285,7 +286,7 @@ async fn nodes() -> Json<Value> {
 // =====================================================================
 // 6. GET /monitor/nodes/{name}/logs — 节点日志跳转
 // =====================================================================
-async fn node_logs(Path(name): Path<String>) -> Json<Value> {
+async fn node_logs(Path(name): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "node": name,
         "log_viewer_url": format!("/actuator/logs?search={name}&limit=200"),
@@ -315,7 +316,7 @@ async fn node_logs(Path(name): Path<String>) -> Json<Value> {
 // =====================================================================
 // 7. GET /monitor/nodes/{name}/trace — 节点链路追踪
 // =====================================================================
-async fn node_trace(Path(name): Path<String>) -> Json<Value> {
+async fn node_trace(Path(name): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "node": name,
         "traces": [
@@ -376,7 +377,7 @@ struct AlertRuleUpdate {
 }
 
 /// GET /monitor/alert-rules — 告警规则列表
-async fn list_alert_rules(State(s): State<Arc<MonitorState>>) -> Json<Value> {
+async fn list_alert_rules(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
     let rules = s.alert_rules.lock().clone();
     ok(json!({
         "rules": rules,
@@ -388,7 +389,7 @@ async fn list_alert_rules(State(s): State<Arc<MonitorState>>) -> Json<Value> {
 async fn create_alert_rule(
     State(s): State<Arc<MonitorState>>,
     Json(body): Json<AlertRuleCreate>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let now = now_iso();
     let rule = AlertRule {
         id: format!("rule-{}", uuid::Uuid::new_v4().simple()),
@@ -410,7 +411,7 @@ async fn update_alert_rule(
     State(s): State<Arc<MonitorState>>,
     Path(id): Path<String>,
     Json(body): Json<AlertRuleUpdate>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let mut rules = s.alert_rules.lock();
     if let Some(rule) = rules.iter_mut().find(|r| r.id == id) {
         if let Some(name) = body.name { rule.name = name; }
@@ -422,21 +423,21 @@ async fn update_alert_rule(
         rule.updated_at = now_iso();
         return ok(json!(rule.clone()));
     }
-    Json(json!({ "success": false, "error": format!("alert rule not found: {id}") }))
+    api_error(404, format!("alert rule not found: {id}"))
 }
 
 /// DELETE /monitor/alert-rules/{id} — 删除告警规则
 async fn delete_alert_rule(
     State(s): State<Arc<MonitorState>>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let mut rules = s.alert_rules.lock();
     let before = rules.len();
     rules.retain(|r| r.id != id);
     if rules.len() < before {
         ok(json!({ "deleted": true, "id": id }))
     } else {
-        Json(json!({ "success": false, "error": format!("alert rule not found: {id}") }))
+        api_error(404, format!("alert rule not found: {id}"))
     }
 }
 
@@ -444,7 +445,7 @@ async fn delete_alert_rule(
 async fn toggle_alert_rule(
     State(s): State<Arc<MonitorState>>,
     Path(id): Path<String>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let mut rules = s.alert_rules.lock();
     if let Some(rule) = rules.iter_mut().find(|r| r.id == id) {
         rule.enabled = !rule.enabled;
@@ -455,7 +456,7 @@ async fn toggle_alert_rule(
             "name": rule.name,
         }));
     }
-    Json(json!({ "success": false, "error": format!("alert rule not found: {id}") }))
+    api_error(404, format!("alert rule not found: {id}"))
 }
 
 // =====================================================================
@@ -470,7 +471,7 @@ struct TimeseriesQuery {
     step: Option<String>,
 }
 
-async fn timeseries(Query(q): Query<TimeseriesQuery>) -> Json<Value> {
+async fn timeseries(Query(q): Query<TimeseriesQuery>) -> ApiResponse<Value> {
     let metric = q.metric.unwrap_or_else(|| "cpu_usage".into());
     let step_secs: u64 = q.step.as_deref().and_then(|s| s.parse().ok()).unwrap_or(60);
     let points: Vec<Value> = (0..30)
@@ -511,7 +512,7 @@ struct BusinessTimeseriesQuery {
     end: Option<String>,
 }
 
-async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>) -> Json<Value> {
+async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>) -> ApiResponse<Value> {
     let metric = q.metric.unwrap_or_else(|| "task_completions".into());
     let points: Vec<Value> = (0..14)
         .map(|i| {

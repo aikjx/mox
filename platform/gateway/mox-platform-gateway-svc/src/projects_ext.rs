@@ -17,6 +17,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 
 // =====================================================================
 // 共享状态
@@ -52,14 +53,14 @@ fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-fn ok(data: Value) -> Json<Value> {
-    Json(json!({ "success": true, "data": data }))
+fn ok(data: Value) -> ApiResponse<Value> {
+    api_ok(data)
 }
 
 // =====================================================================
 // 1. GET /projects/{id}/members — 协作成员列表
 // =====================================================================
-async fn project_members(Path(id): Path<String>) -> Json<Value> {
+async fn project_members(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "members": [
@@ -114,7 +115,7 @@ struct AddMemberBody {
 async fn add_project_member(
     Path(id): Path<String>,
     Json(body): Json<AddMemberBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let role = body.role.unwrap_or_else(|| "viewer".into());
     ok(json!({
         "project_id": id,
@@ -138,7 +139,7 @@ struct UpdateMemberBody {
 async fn update_project_member(
     Path((id, member_id)): Path<(String, String)>,
     Json(body): Json<UpdateMemberBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "user_id": member_id,
@@ -153,7 +154,7 @@ async fn update_project_member(
 // =====================================================================
 async fn remove_project_member(
     Path((id, member_id)): Path<(String, String)>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "user_id": member_id,
@@ -166,7 +167,7 @@ async fn remove_project_member(
 // =====================================================================
 // 5. GET /projects/{id}/phases — 项目阶段定义
 // =====================================================================
-async fn project_phases(Path(id): Path<String>) -> Json<Value> {
+async fn project_phases(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "phases": [
@@ -232,7 +233,7 @@ async fn project_phases(Path(id): Path<String>) -> Json<Value> {
 async fn project_files(
     Path(id): Path<String>,
     State(s): State<Arc<ProjectsState>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let files = s.files.lock().clone();
     let seed = if files.is_empty() {
         vec![
@@ -272,7 +273,7 @@ async fn upload_project_file(
     Path(id): Path<String>,
     State(s): State<Arc<ProjectsState>>,
     mut multipart: Multipart,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let upload_dir = std::path::Path::new("data/uploads").join(&id);
     let _ = std::fs::create_dir_all(&upload_dir);
 
@@ -324,7 +325,7 @@ struct ActivitiesQuery {
 async fn project_activities(
     Path(id): Path<String>,
     Query(q): Query<ActivitiesQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(20).clamp(1, 100);
     let now = chrono::Utc::now();
@@ -371,7 +372,7 @@ async fn project_activities(
 // =====================================================================
 // 9. GET /projects/{id}/documents — 项目文档列表
 // =====================================================================
-async fn project_documents(Path(id): Path<String>) -> Json<Value> {
+async fn project_documents(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "documents": [
@@ -419,7 +420,7 @@ async fn project_documents(Path(id): Path<String>) -> Json<Value> {
 // =====================================================================
 // 10. PUT /projects/{id}/advance-phase — 阶段推进
 // =====================================================================
-async fn advance_phase(Path(id): Path<String>) -> Json<Value> {
+async fn advance_phase(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "previous_phase": "phase-2",
@@ -434,7 +435,7 @@ async fn advance_phase(Path(id): Path<String>) -> Json<Value> {
 // =====================================================================
 // 11. GET /projects/{id}/phase-progress — 阶段进度
 // =====================================================================
-async fn phase_progress(Path(id): Path<String>) -> Json<Value> {
+async fn phase_progress(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "overall_progress": 58.5,
@@ -469,7 +470,7 @@ async fn phase_progress(Path(id): Path<String>) -> Json<Value> {
 async fn toggle_favorite(
     Path(id): Path<String>,
     State(s): State<Arc<ProjectsState>>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let mut favs = s.favorites.lock();
     let is_fav = favs.contains(&id);
     if is_fav {
@@ -499,7 +500,7 @@ struct ShareBody {
 async fn share_project(
     Path(id): Path<String>,
     Json(body): Json<ShareBody>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let permission = body.permission.unwrap_or_else(|| "view".into());
     let expires_in = body.expires_in_hours.unwrap_or(72);
     let share_token = uuid::Uuid::new_v4().simple().to_string();
@@ -522,7 +523,7 @@ async fn share_project(
 // =====================================================================
 async fn download_document(
     Path((id, doc_id)): Path<(String, String)>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "doc_id": doc_id,
@@ -539,7 +540,7 @@ async fn download_document(
 // =====================================================================
 // 15. GET /projects/{id}/requirements-graph — 需求图谱
 // =====================================================================
-async fn requirements_graph(Path(id): Path<String>) -> Json<Value> {
+async fn requirements_graph(Path(id): Path<String>) -> ApiResponse<Value> {
     ok(json!({
         "project_id": id,
         "graph": {

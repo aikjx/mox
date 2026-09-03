@@ -4020,6 +4020,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-api-protocol"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "axum",
+ "chrono",
+ "mox-error",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "mox-arch-test"
 version = "1.0.0"
 dependencies = [
@@ -4940,6 +4951,7 @@ dependencies = [
  "hex",
  "mox-ai-expert-proto",
  "mox-ai-expert-svc",
+ "mox-api-protocol",
  "mox-base-store-core",
  "mox-cloud-store-core",
  "mox-kg-storage-svc",
@@ -5073,6 +5085,7 @@ dependencies = [
  "chrono",
  "criterion",
  "hex",
+ "mox-api-protocol",
  "mox-cloud-foundation",
  "mox-framework",
  "mox-kg-algo-core",
@@ -5271,6 +5284,7 @@ dependencies = [
  "mox-alliance-common-proto",
  "mox-alliance-scheduler-core",
  "mox-alliance-scheduler-proto",
+ "mox-api-protocol",
  "mox-framework",
  "mox-kb-svc",
  "mox-kg-service-svc",

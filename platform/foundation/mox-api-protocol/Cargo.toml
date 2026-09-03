@@ -1,0 +1,23 @@
+[package]
+name = "mox-api-protocol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 平台统一 API 协议层：ApiResponse 响应封装 / 分页 / 错误码归一化 / 序列化配置"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+mox-error = { workspace = true }
+
+# 可选：Axum 集成（IntoResponse）
+axum = { workspace = true, optional = true }
+
+[features]
+default = ["axum-integration"]
+axum-integration = ["dep:axum", "mox-error/axum-integration"]
+
+[lints]
+workspace = true

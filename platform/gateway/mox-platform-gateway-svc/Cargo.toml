@@ -38,6 +38,7 @@ futures = { workspace = true }
 
 # 企业级基础层 & 业务域
 mox-framework = { workspace = true }
+mox-api-protocol = { workspace = true }
 mox-kg-service-svc = { workspace = true, features = ["http-adapter"] }
 mox-kb-svc = { workspace = true }
 mox-platform-foundation = { workspace = true }

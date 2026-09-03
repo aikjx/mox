@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 use crate::kg_graph::KgGraph;
 
@@ -167,7 +168,7 @@ fn default_min_modularity() -> f64 {
 async fn kg_neighborhood(
     State(s): State<Arc<KgAiState>>,
     Query(q): Query<NeighborhoodQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
@@ -225,8 +226,7 @@ async fn kg_neighborhood(
             .insert("warning".into(), json!("center not found"));
     }
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "query": {"center": q.center, "depth": q.depth, "limit": q.limit},
         "cytoscape": {"nodes": cy_nodes, "edges": cy_edges},
@@ -238,7 +238,7 @@ async fn kg_neighborhood(
 async fn kg_find_paths(
     State(s): State<Arc<KgAiState>>,
     Query(q): Query<PathQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
@@ -263,7 +263,6 @@ async fn kg_find_paths(
     };
 
     let mut resp = json!({
-        "ok": true,
         "elapsed_ms": now_ms() - t0,
         "query": {"source": q.source, "target": q.target, "k": q.k},
         "paths": paths,
@@ -277,14 +276,14 @@ async fn kg_find_paths(
             .insert("note".into(), json!("no path found"));
     }
 
-    Json(resp)
+    api_ok(resp)
 }
 
 /// 单源最短路径：Dijkstra 算法
 async fn kg_shortest_path(
     State(s): State<Arc<KgAiState>>,
     Query(q): Query<PathQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
@@ -300,7 +299,6 @@ async fn kg_shortest_path(
     };
 
     let mut resp = json!({
-        "ok": true,
         "elapsed_ms": now_ms() - t0,
         "query": {"source": q.source, "target": q.target},
         "algo": "Dijkstra O((V+E)log V) CSR+BinaryHeap",
@@ -315,19 +313,18 @@ async fn kg_shortest_path(
             .insert("note".into(), json!("no path found"));
     }
 
-    Json(resp)
+    api_ok(resp)
 }
 
 /// 中心性分析：Brandes 介数 + Harmonic 接近 + PageRank + 度中心性
-async fn kg_centrality(State(s): State<Arc<KgAiState>>) -> Json<Value> {
+async fn kg_centrality(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
     // 调用真实中心性算法（一次计算全部 4 项）
     let metrics = kg.graph.centrality_metrics();
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "summary": {
             "degree_top":      top_n_entries(&metrics.degree_centrality, 5),
@@ -352,7 +349,7 @@ async fn kg_centrality(State(s): State<Arc<KgAiState>>) -> Json<Value> {
 async fn kg_communities(
     State(s): State<Arc<KgAiState>>,
     Query(q): Query<CommunitiesQuery>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
@@ -433,8 +430,7 @@ async fn kg_communities(
         })
         .collect();
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "query": {"min_modularity": q.min_modularity},
         "communities": communities,
@@ -449,7 +445,7 @@ async fn kg_communities(
 }
 
 /// 图统计：节点数 / 边数 / 密度 / 平均度 / 聚类系数 / 强连通分量
-async fn kg_stats(State(s): State<Arc<KgAiState>>) -> Json<Value> {
+async fn kg_stats(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
@@ -457,8 +453,7 @@ async fn kg_stats(State(s): State<Arc<KgAiState>>) -> Json<Value> {
     let stats = kg.graph.stats();
     let density = round6(stats.density);
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "started_unix_ms": s.started_unix_ms,
         "graph": {
@@ -512,7 +507,7 @@ pub struct AiAnalyzeReq {
 async fn ai_process(
     State(s): State<Arc<KgAiState>>,
     Json(req): Json<AiProcessReq>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
@@ -603,8 +598,7 @@ async fn ai_process(
         "→ /kg 默认路由"
     };
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "request": {"text": req.text, "project_id": req.project_id},
         "pipeline": [
@@ -621,18 +615,13 @@ async fn ai_process(
 async fn ai_analyze(
     State(s): State<Arc<KgAiState>>,
     Json(req): Json<AiAnalyzeReq>,
-) -> Json<Value> {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
     // 检查实体是否存在
     if !kg.node_meta.contains_key(&req.entity_id) {
-        return Json(json!({
-            "ok": false,
-            "elapsed_ms": now_ms() - t0,
-            "error": "entity not found",
-            "query": {"entity_id": req.entity_id, "depth": req.depth},
-        }));
+        return api_error(404, "entity not found");
     }
 
     // 1. 邻域 BFS
@@ -667,8 +656,7 @@ async fn ai_analyze(
         "low"
     };
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "query": {"entity_id": req.entity_id, "depth": req.depth},
         "scoring": {
@@ -698,12 +686,11 @@ async fn ai_analyze(
 }
 
 /// AI 能力声明：静态架构声明 + 当前图谱规模
-async fn ai_capabilities(State(s): State<Arc<KgAiState>>) -> Json<Value> {
+async fn ai_capabilities(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "baseline_tasks": [
             {"id": "REQ",    "name": "需求分析",             "owner": "mox-ai-intent-core"},
@@ -724,7 +711,7 @@ async fn ai_capabilities(State(s): State<Arc<KgAiState>>) -> Json<Value> {
 }
 
 /// AI 健康度指标：基于真实图谱计算 CEM 综合分
-async fn ai_metrics(State(s): State<Arc<KgAiState>>) -> Json<Value> {
+async fn ai_metrics(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
     let t0 = now_ms();
     let kg = &s.kg;
 
@@ -750,8 +737,7 @@ async fn ai_metrics(State(s): State<Arc<KgAiState>>) -> Json<Value> {
     let comm_norm = (comm_count as f64 / 10.0).min(1.0);
     let governance_score = (density_norm * 0.5 + comm_norm * 0.5) * 100.0;
 
-    Json(json!({
-        "ok": true,
+    api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "window": "30d",
         "cem_score": round4(cem_score),
@@ -820,9 +806,9 @@ mod tests {
             depth: 2,
             limit: 50,
         };
-        let Json(resp) = kg_neighborhood(State(state.clone()), Query(q)).await;
+        let ApiResponse { data, .. } = kg_neighborhood(State(state.clone()), Query(q)).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         assert!(resp["cytoscape"]["nodes"].is_array());
         assert!(resp["cytoscape"]["nodes"].as_array().unwrap().len() > 0);
         assert_eq!(resp["meta"]["center"], json!(center));
@@ -837,9 +823,9 @@ mod tests {
             depth: 2,
             limit: 50,
         };
-        let Json(resp) = kg_neighborhood(State(state.clone()), Query(q)).await;
+        let ApiResponse { data, .. } = kg_neighborhood(State(state.clone()), Query(q)).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         assert_eq!(resp["cytoscape"]["nodes"].as_array().unwrap().len(), 0);
         assert_eq!(resp["meta"]["warning"], json!("center not found"));
     }
@@ -847,9 +833,9 @@ mod tests {
     #[tokio::test]
     async fn test_kg_stats_real_data() {
         let state = test_state();
-        let Json(resp) = kg_stats(State(state.clone())).await;
+        let ApiResponse { data, .. } = kg_stats(State(state.clone())).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         let nodes = resp["graph"]["nodes"].as_u64().unwrap();
         let edges = resp["graph"]["edges"].as_u64().unwrap();
         let density = resp["graph"]["density"].as_f64().unwrap();
@@ -870,9 +856,9 @@ mod tests {
     #[tokio::test]
     async fn test_kg_centrality_real() {
         let state = test_state();
-        let Json(resp) = kg_centrality(State(state.clone())).await;
+        let ApiResponse { data, .. } = kg_centrality(State(state.clone())).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         let degree_top = resp["summary"]["degree_top"].as_array().unwrap();
         assert!(!degree_top.is_empty());
         // 验证分数在 0-1 之间
@@ -889,9 +875,9 @@ mod tests {
     async fn test_kg_communities_real() {
         let state = test_state();
         let q = CommunitiesQuery { min_modularity: 0.0 };
-        let Json(resp) = kg_communities(State(state.clone()), Query(q)).await;
+        let ApiResponse { data, .. } = kg_communities(State(state.clone()), Query(q)).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         let comms = resp["communities"].as_array().unwrap();
         assert!(!comms.is_empty());
         assert!(resp["overall_modularity"].is_number());
@@ -912,10 +898,10 @@ mod tests {
                 target: tgt.clone(),
                 k: 1,
             };
-            let Json(resp) = kg_shortest_path(State(state.clone()), Query(q)).await;
+            let ApiResponse { data, .. } = kg_shortest_path(State(state.clone()), Query(q)).await;
+        let resp = data.unwrap();
 
-            assert_eq!(resp["ok"], json!(true));
-            let path = resp["path"].as_array().unwrap();
+                let path = resp["path"].as_array().unwrap();
             assert!(!path.is_empty(), "path should not be empty for connected nodes");
             assert_eq!(path[0], json!(src));
             assert_eq!(path.last().unwrap(), &json!(tgt));
@@ -934,10 +920,10 @@ mod tests {
                 target: tgt.clone(),
                 k: 3,
             };
-            let Json(resp) = kg_find_paths(State(state.clone()), Query(q)).await;
+            let ApiResponse { data, .. } = kg_find_paths(State(state.clone()), Query(q)).await;
+        let resp = data.unwrap();
 
-            assert_eq!(resp["ok"], json!(true));
-            let paths = resp["paths"].as_array().unwrap();
+                let paths = resp["paths"].as_array().unwrap();
             assert!(!paths.is_empty(), "paths should not be empty for connected nodes");
             assert!(paths.len() <= 3);
             for p in paths {
@@ -957,9 +943,9 @@ mod tests {
             text: format!("查询关于 {} 的信息", keyword),
             project_id: "test-proj".into(),
         };
-        let Json(resp) = ai_process(State(state.clone()), Json(req)).await;
+        let ApiResponse { data, .. } = ai_process(State(state.clone()), Json(req)).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         assert!(resp["pipeline"].is_array());
         assert_eq!(resp["pipeline"].as_array().unwrap().len(), 4);
         let top = resp["top_entities"].as_array().unwrap();
@@ -976,9 +962,9 @@ mod tests {
             text: "".into(),
             project_id: "".into(),
         };
-        let Json(resp) = ai_process(State(state.clone()), Json(req)).await;
+        let ApiResponse { data, .. } = ai_process(State(state.clone()), Json(req)).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         // 空输入应退化为全图 PageRank，top_entities 非空
         assert!(resp["top_entities"].as_array().unwrap().len() > 0);
     }
@@ -992,9 +978,9 @@ mod tests {
             entity_id: entity_id.clone(),
             depth: 2,
         };
-        let Json(resp) = ai_analyze(State(state.clone()), Json(req)).await;
+        let ApiResponse { data, .. } = ai_analyze(State(state.clone()), Json(req)).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         // 验证 scoring 字段完整
         let scoring = &resp["scoring"];
         assert!(scoring["coverage"].is_number());
@@ -1020,18 +1006,17 @@ mod tests {
             entity_id: "NONEXISTENT_ENTITY_999".into(),
             depth: 2,
         };
-        let Json(resp) = ai_analyze(State(state.clone()), Json(req)).await;
-
-        assert_eq!(resp["ok"], json!(false));
-        assert_eq!(resp["error"], json!("entity not found"));
+        let resp = ai_analyze(State(state.clone()), Json(req)).await;
+        assert_ne!(resp.code, 0);
+        assert_eq!(resp.message, "entity not found");
     }
 
     #[tokio::test]
     async fn test_ai_capabilities_real() {
         let state = test_state();
-        let Json(resp) = ai_capabilities(State(state.clone())).await;
+        let ApiResponse { data, .. } = ai_capabilities(State(state.clone())).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         assert_eq!(resp["baseline_tasks"].as_array().unwrap().len(), 7);
         assert!(resp["routing_table"].is_object());
         assert!(resp["graph_stats"]["nodes"].as_u64().unwrap() > 0);
@@ -1041,9 +1026,9 @@ mod tests {
     #[tokio::test]
     async fn test_ai_metrics_real() {
         let state = test_state();
-        let Json(resp) = ai_metrics(State(state.clone())).await;
+        let ApiResponse { data, .. } = ai_metrics(State(state.clone())).await;
+        let resp = data.unwrap();
 
-        assert_eq!(resp["ok"], json!(true));
         assert_eq!(resp["window"], json!("30d"));
         let cem = resp["cem_score"].as_f64().unwrap();
         assert!(cem >= 0.0 && cem <= 100.0, "cem_score out of range: {}", cem);

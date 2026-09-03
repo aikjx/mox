@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -511,11 +511,16 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                     let app = build_router(svc);
                     let listener = tokio::net::TcpListener::bind(cfg.bind).await
                         .expect("30010 bind 失败");
+                    tracing::info!(target: "xiaobai_cli", service = "voice-desktop", addr = %cfg.bind, "TCP listener bound");
                     tracing::info!(target: "xiaobai_cli", "voice_proxy :30010 后台启动 → {addr_cb}");
                     if let Err(e) = axum::serve(
                         listener,
                         app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
                     )
+                    .with_graceful_shutdown(async {
+                        let _ = tokio::signal::ctrl_c().await;
+                        tracing::info!(target: "xiaobai_cli", "voice-desktop shutdown signal received");
+                    })
                     .await
                     {
                         eprintln!("voice 30010 服务异常退出: {e:#}");

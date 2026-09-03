@@ -16,6 +16,7 @@ async fn main() -> anyhow::Result<()> {
         .with_max_level(tracing::Level::INFO)
         .init();
 
+    let host = std::env::var("MOX_PROJECT_GRAPH_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let port: u16 = std::env::var("MOX_PROJECT_GRAPH_PORT")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -24,8 +25,9 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState::new();
     let app = router(state).layer(CorsLayer::permissive());
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let addr = SocketAddr::from((host.parse::<std::net::IpAddr>().unwrap_or([0,0,0,0].into()), port));
     let listener = TcpListener::bind(addr).await?;
+    tracing::info!(service = "project-graph", addr = %addr, "TCP listener bound");
 
     tracing::info!("📊 mox-project-graph-svc 启动成功: http://{}", addr);
     tracing::info!("  项目: POST/GET/PUT /api/v1/projects");
@@ -40,6 +42,12 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("  关键路径: GET /api/v1/projects/:id/critical-path");
     tracing::info!("  健康检查: GET /health");
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+            tracing::info!("project-graph shutdown signal received");
+        })
+        .await?;
+    tracing::info!("project-graph stopped gracefully");
     Ok(())
 }

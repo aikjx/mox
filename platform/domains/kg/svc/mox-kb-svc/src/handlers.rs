@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -18,28 +18,26 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
     routing::{get, post},
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
-/// 成功响应（legacy 同款信封）
-fn ok<T: serde::Serialize>(data: T) -> Response {
-    Json(json!({ "success": true, "data": data })).into_response()
+/// 成功响应（统一 ApiResponse 信封）
+fn ok<T: serde::Serialize>(data: T) -> ApiResponse<Value> {
+    api_ok(serde_json::to_value(data).unwrap_or(Value::Null))
 }
 
-/// 错误响应
-fn err(status: StatusCode, code: &str, message: &str) -> Response {
-    let mut resp = Json(json!({ "success": false, "code": code, "error": message })).into_response();
-    *resp.status_mut() = status;
-    resp
+/// 错误响应（统一 ApiResponse 信封，code 取 HTTP 状态码）
+fn err(status: StatusCode, _code: &str, message: &str) -> ApiResponse<Value> {
+    api_error(status.as_u16() as i32, message)
 }
 
 /// 文档不存在统一错误
-fn not_found(id: &str) -> Response {
+fn not_found(id: &str) -> ApiResponse<Value> {
     err(StatusCode::NOT_FOUND, "not_found", &format!("文档不存在: {id}"))
 }
 
@@ -87,14 +85,14 @@ struct RevertReq {
 // 文档 CRUD
 // ====================================================================
 
-async fn kb_documents_list(State(state): State<Arc<KbState>>) -> Response {
+async fn kb_documents_list(State(state): State<Arc<KbState>>) -> ApiResponse<Value> {
     match state.docs.list().await {
         Ok(items) => ok(json!({ "items": items, "total": items.len() })),
         Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, "kb_list_failed", &e.to_string()),
     }
 }
 
-async fn kb_document_create(State(state): State<Arc<KbState>>, Json(payload): Json<CreateDocReq>) -> Response {
+async fn kb_document_create(State(state): State<Arc<KbState>>, Json(payload): Json<CreateDocReq>) -> ApiResponse<Value> {
     let doc = match state
         .docs
         .create(&payload.title, &payload.content, payload.category.as_deref())
@@ -116,21 +114,21 @@ async fn kb_document_create(State(state): State<Arc<KbState>>, Json(payload): Js
     ok(json!({ "id": doc.id, "status": "created", "document": doc }))
 }
 
-async fn kb_document_get(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> Response {
+async fn kb_document_get(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
     match state.docs.get(&id).await {
         Ok(doc) => ok(doc),
         Err(_) => not_found(&id),
     }
 }
 
-async fn kb_document_update(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<Value>) -> Response {
+async fn kb_document_update(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<Value>) -> ApiResponse<Value> {
     match state.docs.update(&id, &payload).await {
         Ok(doc) => ok(json!({ "id": id, "status": "updated", "document": doc })),
         Err(_) => not_found(&id),
     }
 }
 
-async fn kb_document_delete(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> Response {
+async fn kb_document_delete(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
     let existed = match state.docs.delete(&id).await {
         Ok(v) => v,
         Err(e) => return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_delete_failed", &e.to_string()),
@@ -147,7 +145,7 @@ async fn kb_document_delete(State(state): State<Arc<KbState>>, Path(id): Path<St
 // 分析（专家联盟）
 // ====================================================================
 
-async fn kb_document_analyze(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> Response {
+async fn kb_document_analyze(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
     let mut doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -162,7 +160,7 @@ async fn kb_document_analyze(State(state): State<Arc<KbState>>, Path(id): Path<S
     ok(result)
 }
 
-async fn kb_batch_analyze(State(state): State<Arc<KbState>>, Json(payload): Json<BatchAnalyzeReq>) -> Response {
+async fn kb_batch_analyze(State(state): State<Arc<KbState>>, Json(payload): Json<BatchAnalyzeReq>) -> ApiResponse<Value> {
     let mut analyzed = 0usize;
     let mut failed = Vec::new();
     // 目标：显式 ids 或全量
@@ -197,14 +195,14 @@ async fn kb_batch_analyze(State(state): State<Arc<KbState>>, Json(payload): Json
 // 分类 / 标签
 // ====================================================================
 
-async fn kb_categories(State(state): State<Arc<KbState>>) -> Response {
+async fn kb_categories(State(state): State<Arc<KbState>>) -> ApiResponse<Value> {
     match state.docs.categories().await {
         Ok(items) => ok(items),
         Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, "kb_categories_failed", &e.to_string()),
     }
 }
 
-async fn kb_tags(State(state): State<Arc<KbState>>) -> Response {
+async fn kb_tags(State(state): State<Arc<KbState>>) -> ApiResponse<Value> {
     match state.docs.tags().await {
         Ok(items) => ok(items),
         Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, "kb_tags_failed", &e.to_string()),
@@ -215,7 +213,7 @@ async fn kb_tags(State(state): State<Arc<KbState>>) -> Response {
 // 检索
 // ====================================================================
 
-async fn kb_search(State(state): State<Arc<KbState>>, Json(payload): Json<SearchRequest>) -> Response {
+async fn kb_search(State(state): State<Arc<KbState>>, Json(payload): Json<SearchRequest>) -> ApiResponse<Value> {
     let docs = match KbSearcher.search_docs(&state, &payload).await {
         Ok(h) => h,
         Err(e) => return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_search_failed", &e.to_string()),
@@ -232,7 +230,7 @@ async fn kb_search(State(state): State<Arc<KbState>>, Json(payload): Json<Search
 // 版本
 // ====================================================================
 
-async fn kb_doc_versions(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> Response {
+async fn kb_doc_versions(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -240,7 +238,7 @@ async fn kb_doc_versions(State(state): State<Arc<KbState>>, Path(id): Path<Strin
     ok(json!({ "doc_id": id, "versions": KbVersionService::list(&doc) }))
 }
 
-async fn kb_doc_version(State(state): State<Arc<KbState>>, Path((id, ver)): Path<(String, String)>) -> Response {
+async fn kb_doc_version(State(state): State<Arc<KbState>>, Path((id, ver)): Path<(String, String)>) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -251,7 +249,7 @@ async fn kb_doc_version(State(state): State<Arc<KbState>>, Path((id, ver)): Path
     }
 }
 
-async fn kb_doc_create_version(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<VersionNoteReq>) -> Response {
+async fn kb_doc_create_version(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<VersionNoteReq>) -> ApiResponse<Value> {
     let mut doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -263,7 +261,7 @@ async fn kb_doc_create_version(State(state): State<Arc<KbState>>, Path(id): Path
     ok(json!({ "doc_id": id, "version": created.version, "status": "created", "note": created.note }))
 }
 
-async fn kb_doc_compare_versions(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<CompareReq>) -> Response {
+async fn kb_doc_compare_versions(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<CompareReq>) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -284,7 +282,7 @@ async fn kb_doc_compare_versions(State(state): State<Arc<KbState>>, Path(id): Pa
     }
 }
 
-async fn kb_doc_revert_version(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<RevertReq>) -> Response {
+async fn kb_doc_revert_version(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<RevertReq>) -> ApiResponse<Value> {
     let mut doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -314,7 +312,7 @@ async fn kb_doc_revert_version(State(state): State<Arc<KbState>>, Path(id): Path
 // 实体 / 挂图 / 历史 / 统计
 // ====================================================================
 
-async fn kb_doc_entities(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> Response {
+async fn kb_doc_entities(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -322,7 +320,7 @@ async fn kb_doc_entities(State(state): State<Arc<KbState>>, Path(id): Path<Strin
     ok(json!({ "doc_id": id, "entities": doc.entities, "relations": doc.relations }))
 }
 
-async fn kb_doc_graph_link(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> Response {
+async fn kb_doc_graph_link(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
     let mut doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -362,12 +360,12 @@ async fn kb_doc_graph_link(State(state): State<Arc<KbState>>, Path(id): Path<Str
     }))
 }
 
-async fn kb_doc_graph_unlink(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> Response {
+async fn kb_doc_graph_unlink(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
     let removed = GraphLinker.unlink(&state.graph, &id);
     ok(json!({ "doc_id": id, "status": "unlinked", "nodes_removed": removed }))
 }
 
-async fn kb_doc_history(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> Response {
+async fn kb_doc_history(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
         Err(_) => return not_found(&id),
@@ -384,7 +382,7 @@ async fn kb_doc_history(State(state): State<Arc<KbState>>, Path(id): Path<String
     ok(json!({ "doc_id": id, "history": history }))
 }
 
-async fn kb_stats(State(state): State<Arc<KbState>>) -> Response {
+async fn kb_stats(State(state): State<Arc<KbState>>) -> ApiResponse<Value> {
     match state.docs.stats().await {
         Ok(stats) => {
             let mut s = stats.as_object().cloned().unwrap_or_default();
@@ -396,7 +394,7 @@ async fn kb_stats(State(state): State<Arc<KbState>>) -> Response {
     }
 }
 
-async fn kb_history(State(state): State<Arc<KbState>>, Query(_params): Query<HashMap<String, String>>) -> Response {
+async fn kb_history(State(state): State<Arc<KbState>>, Query(_params): Query<HashMap<String, String>>) -> ApiResponse<Value> {
     // 全局操作历史：汇总各文档版本记录
     let mut history = Vec::new();
     if let Ok(items) = state.docs.list().await {

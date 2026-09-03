@@ -109,6 +109,7 @@ impl FrameworkServer {
         );
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
+        tracing::info!(service = %self.config.service_name, addr = %addr, "TCP listener bound");
         axum::serve(listener, router)
             .with_graceful_shutdown(shutdown_signal())
             .await?;

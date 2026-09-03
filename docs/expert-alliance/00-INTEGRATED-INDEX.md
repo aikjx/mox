@@ -3,7 +3,7 @@
 
 
 > **标题**：开发专家联盟·权威集成索引
-> **版本**：V2.3
+> **版本**：V2.4
 > **权威等级**：🟢权威
 > **编号**：EA-DOC-001
 > **文档层级**：L1权威规范层
@@ -41,8 +41,8 @@
 
 | 统计项 | 数量 | 说明 |
 |--------|:----:|------|
-| **专家联盟主题文档总计** | **56** | 含归档3份、执行报告5份 |
-| 活跃文档（非归档） | 53 | 含执行报告5份 |
+| **专家联盟主题文档总计** | **58** | 含归档3份、执行报告5份 |
+| 活跃文档（非归档） | 55 | 含执行报告5份 |
 | 归档文档 | 3 | 2份旧版 + 1份归档README |
 | 本次归一化新建 | 4 | EA-NORM-001规范、02双平台、03术语表、归档README |
 | 本次归一化修改 | 45 | A组21 + B组22 + 引用修复2 |
@@ -54,7 +54,7 @@
 |------|:------:|:----:|------|
 | `docs/expert-alliance/` | 23 | 45.1% | 根目录7 + v2/ 9 + v3/ 4 + architecture/ 3HTML |
 | `docs/modules/` | 11 | 21.6% | mox-expert系列4 + 专家联盟系列5 + business-process系列2 |
-| `docs/working-reports/` | 12 | 22.2% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构5 |
+| `docs/working-reports/` | 14 | 25.9% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构5 + moxfs阶段四2 |
 | `docs/enterprise/` | 4 | 7.8% | 22号总控卡 + 26号×2 + 28号报告 |
 | `docs/standards/` | 2 | 3.9% | EA-NORM-001 + EAF-STD-001 |
 | `docs/cosmic-architecture/` | 2 | 3.9% | 02号 + 04号 |
@@ -182,6 +182,8 @@
 | `docs/working-reports/20260902_hybrid_architecture_route_a_design.md` | 混合架构（路线A）整合方案架构设计 | ADR-CLOUD-HYBRID-A-20260902，RustFS×自研云盘三分类决策矩阵+四阶段路线图 |
 | `docs/working-reports/20260902_hybrid_architecture_phase1_verification_report.md` | 混合架构第一阶段验证报告 | VR-CLOUD-HYBRID-A-P1-20260902，5 crate 1042 测试全绿基线验证 |
 | `docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md` | 混合架构第二阶段验证报告：核心算法吸收 | VR-CLOUD-HYBRID-A-P2-20260903，6 项 RustFS 算法吸收，1080 测试全绿 |
+| `docs/working-reports/20260903_moxfs_phase4_architecture_decoupling.md` | moxfs 阶段四架构解耦设计文档 | ADR-MOXFS-P4-20260903，L1-L6 六层架构/kernel 抽离/domain-traits/s3解耦/RustFS后端骨架/CloudError，11章节 |
+| `docs/working-reports/20260903_moxfs_phase4_verification_report.md` | moxfs 阶段四验证报告：架构解耦 | VR-MOXFS-P4-20260903，7项改造验证，1139测试全绿（467 lib+672集成），0失败 |
 
 ---
 
@@ -210,6 +212,8 @@
 | 7 | `docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md` | VR-CLOUD-HYBRID-A-P2-20260903 | 🟡验证报告 | v1.0 | 第二阶段验证：6项RustFS核心算法吸收（矩阵缓存/reconstruction verification/MultiWriter/HedgedReader/lifecycle门控/CAS背压），1080测试全绿，4个新源码模块 | cargo check + cargo test 全量实测 |
 | 8 | `docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md` | ADR-CLOUD-HYBRID-A-P3-20260903 | 🟢ADR | v1.0 | 第三阶段架构分析与融合设计：6大问题识别、L1-L6六层目标架构、4个核心接口契约、24项算法解耦分析、10个端到端业务流程图（写入/读取/删除/编码/重建/生命周期/rebalance/快照/配额/文件锁）、10个Feature Flags、阶段四13项建议 | 源码级模块梳理 + 依赖图分析 + 耦合点识别 + RustFS架构对标 |
 | 9 | `docs/working-reports/20260903_hybrid_architecture_phase3_verification_report.md` | VR-CLOUD-HYBRID-A-P3-20260903 | 🟡验证报告 | v1.0 | 第三阶段验证：4项架构改造（PooledBuffer四层分档缓冲池/CAS背压接入写入主路径/ReaderCapability组合式reader管线/三维扫描预算+全局配置），新增52测试全绿，全量回归无回归，6个新增源码模块，10个Feature Flags | cargo check + cargo test 全量实测 + 新增模块代码审查 |
+| 10 | `docs/working-reports/20260903_moxfs_phase4_architecture_decoupling.md` | ADR-MOXFS-P4-20260903 | 🟢ADR | v1.0 | moxfs阶段四架构解耦设计：L1-L6六层架构总览、mox-cloud-kernel crate（10个L5算法模块零业务依赖）、mox-cloud-domain-traits crate（5大trait+36关联类型）、s3→volume解耦+StorageBackend依赖注入、RustFsEcstoreBackend骨架+feature flag、CloudError统一错误类型（15变体+From转换链）、PooledBuffer推广s3/filer、ReaderPipeline接入S3读路径、依赖关系与循环依赖保证、API兼容性验证、阶段五路线图 | 源码级模块梳理 + Cargo.toml审查 + 代码实测 + re-export模式验证 |
+| 11 | `docs/working-reports/20260903_moxfs_phase4_verification_report.md` | VR-MOXFS-P4-20260903 | 🟡验证报告 | v1.0 | moxfs阶段四验证：7项改造（4 P0+3 P1）全部通过验证，全量回归1139测试全绿（467 lib+672集成）0失败，kernel零业务依赖/domain-traits零svc依赖/无循环依赖，s3死依赖已移除，feature flag双路径编译验证，API兼容零变更，RustFS仅为对标参考对象不引入依赖 | cargo check --workspace + cargo test全量实测 + feature flag编译验证 + cargo tree依赖分析 + 代码审查 |
 
 ---
 
@@ -316,18 +320,18 @@
 ## 12. 最后验证
 
 - **索引最后验证日期**：2026-09-03
-- **验证人**：开发联盟 R（混合架构第三阶段）
-- **验证范围**：全部56份专家联盟主题文档（含归档3份）
+- **验证人**：开发联盟 R（moxfs 阶段四架构解耦）
+- **验证范围**：全部58份专家联盟主题文档（含归档3份）
 - **验证结果**：
-  - ✅ 索引登记文档数 = 物理文件数（56份）
+  - ✅ 索引登记文档数 = 物理文件数（58份）
   - ✅ 索引中每个登记路径物理存在
   - ✅ 物理目录中每个专家联盟文档已在索引登记
   - ✅ 索引权威等级与文档头部元信息一致
   - ✅ 引用格式0违规（0处`../`、0处`./`、0处`file:///`）
   - ✅ 归档文档无新增引用
   - ✅ 代码-文档对齐声明与实际代码一致（11crate/2svc/:3100/:3200/10专家/6融合策略）
-  - ✅ 新增混合架构第三阶段架构分析文档已登记（ADR-CLOUD-HYBRID-A-P3-20260903，6层架构/10业务流程/24算法解耦/阶段四13项建议）
-  - ✅ 新增混合架构第三阶段验证报告已登记（VR-CLOUD-HYBRID-A-P3-20260903，4项架构改造，新增52测试全绿，6个新源码模块，10个Feature Flags）
+  - ✅ 新增moxfs阶段四架构解耦设计文档已登记（ADR-MOXFS-P4-20260903，L1-L6六层架构/kernel抽离/domain-traits/s3解耦/RustFS后端骨架/CloudError，11章节）
+  - ✅ 新增moxfs阶段四验证报告已登记（VR-MOXFS-P4-20260903，7项改造验证，1139测试全绿，0失败）
 
 ---
 
@@ -342,8 +346,9 @@
 | V2.1 | 2026-09-02 | 新增登记：混合架构（路线A）架构设计文档（ADR-CLOUD-HYBRID-A-20260902）+ 第一阶段验证报告（VR-CLOUD-HYBRID-A-P1-20260902）；云盘域5 crate 达成1042测试全绿基线 | 开发联盟 R |
 | V2.2 | 2026-09-03 | 新增登记：混合架构第二阶段验证报告（VR-CLOUD-HYBRID-A-P2-20260903）；6项RustFS核心算法吸收完成（矩阵缓存/reconstruction verification/MultiWriter/HedgedReader/lifecycle门控/CAS背压），4个新源码模块，1080测试全绿 | 开发联盟 R |
 | V2.3 | 2026-09-03 | 新增登记：混合架构第三阶段架构分析文档（ADR-CLOUD-HYBRID-A-P3-20260903）+ 第三阶段验证报告（VR-CLOUD-HYBRID-A-P3-20260903）；4项架构改造完成（PooledBuffer四层分档缓冲池/CAS背压接入写入主路径/ReaderCapability组合式reader管线/三维扫描预算+全局配置），新增52测试全绿，6个新源码模块，10个Feature Flags，L1-L6六层目标架构，10个端到端业务流程图 | 开发联盟 R |
+| V2.4 | 2026-09-03 | 新增登记：moxfs阶段四架构解耦设计文档（ADR-MOXFS-P4-20260903）+ 阶段四验证报告（VR-MOXFS-P4-20260903）；项目主体统一为moxfs全自研云盘知识库，RustFS仅为对标参考对象；7项架构解耦改造完成（mox-cloud-kernel crate抽离10个L5算法模块/mox-cloud-domain-traits crate定义5大trait+36关联类型/s3→volume解耦+StorageBackend依赖注入/RustFsEcstoreBackend骨架+feature flag/CloudError统一错误类型15变体/PooledBuffer推广s3-filer/ReaderPipeline接入S3读路径），全量回归1139测试全绿（467 lib+672集成）0失败 | 开发联盟 R |
 
 ---
 
 **版权所有**：© 2026 璇玑 RelGraph · 算子统一系统（OUS）· 三联盟
-**文档版本**：V2.3 ｜ **发布日期**：2026-09-03
+**文档版本**：V2.4 ｜ **发布日期**：2026-09-03

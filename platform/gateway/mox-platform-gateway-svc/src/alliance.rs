@@ -25,6 +25,7 @@ use axum::{
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -473,7 +474,7 @@ fn build_fusion_result(nodes: &[ExecNode], strategy: &str) -> FusionResultData {
 async fn create_task(
     State(s): State<Arc<AllianceGatewayState>>,
     Json(req): Json<CreateTaskRequest>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let task_id = Uuid::new_v4();
     let now = Utc::now();
@@ -519,10 +520,7 @@ async fn create_task(
             exec.nodes = dag;
             s.execution.write().insert(task_id, exec);
 
-            (
-                StatusCode::OK,
-                Json(json!({
-                    "ok": true,
+            api_ok(json!({
                     "elapsed_ms": now_ms() - t0,
                     "data": {
                         "task_id": task_id,
@@ -537,8 +535,7 @@ async fn create_task(
                         "mode": Some(mode_str(mode)),
                         "fusion_strategy": Some(fusion_strategy_str(fusion_strategy)),
                     },
-                })),
-            )
+                }))
         }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -551,7 +548,7 @@ async fn create_task(
 }
 
 /// GET /alliance/v1/tasks — 任务列表（真实从 InMemoryTaskRepository 读取）
-async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> impl IntoResponse {
+async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> ApiResponse<Value> {
     let t0 = now_ms();
     match s.tasks.all() {
         Ok(all) => {
@@ -575,10 +572,7 @@ async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> impl IntoResp
                 })
                 .collect();
 
-            (
-                StatusCode::OK,
-                Json(json!({
-                    "ok": true,
+            api_ok(json!({
                     "elapsed_ms": now_ms() - t0,
                     "data": {
                         "tasks": tasks,
@@ -586,8 +580,7 @@ async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> impl IntoResp
                         "page": 1,
                         "page_size": 20,
                     },
-                })),
-            )
+                }))
         }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -603,16 +596,13 @@ async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> impl IntoResp
 async fn get_task(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     match s.tasks.get(task_id) {
         Ok(Some(t)) => {
             let exec = s.execution.read().get(&task_id).cloned();
             let progress = exec.as_ref().map(|e| e.progress()).unwrap_or(t.progress);
-            (
-                StatusCode::OK,
-                Json(json!({
-                    "ok": true,
+            api_ok(json!({
                     "elapsed_ms": now_ms() - t0,
                     "data": {
                         "task_id": t.task_id,
@@ -627,8 +617,7 @@ async fn get_task(
                         "completed_at": t.completed_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
                         "duration_ms": t.duration_ms,
                     },
-                })),
-            )
+                }))
         }
         Ok(None) => (
             StatusCode::NOT_FOUND,
@@ -652,7 +641,7 @@ async fn handle_task_action(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
     Json(req): Json<TaskActionRequest>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let action_str = format!("{:?}", req.action);
 
@@ -747,7 +736,7 @@ async fn handle_task_action(
 async fn search_experts(
     State(s): State<Arc<AllianceGatewayState>>,
     Json(req): Json<ExpertSearchRequest>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     let query = ExpertMatchQuery {
@@ -781,10 +770,7 @@ async fn search_experts(
                 })
                 .collect();
 
-            (
-                StatusCode::OK,
-                Json(json!({
-                    "ok": true,
+            api_ok(json!({
                     "elapsed_ms": now_ms() - t0,
                     "data": {
                         "experts": experts,
@@ -795,8 +781,7 @@ async fn search_experts(
                         "domains": req.domains,
                         "limit": req.limit,
                     },
-                })),
-            )
+                }))
         }
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -816,7 +801,7 @@ async fn search_experts(
 async fn get_execution_status(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     // 确保任务存在
@@ -845,10 +830,7 @@ async fn get_execution_status(
     let exec = s.ensure_execution(task_id);
     let (total, completed, running, failed, pending, other) = exec.node_stats();
 
-    (
-        StatusCode::OK,
-        Json(json!({
-            "ok": true,
+    api_ok(json!({
             "elapsed_ms": now_ms() - t0,
             "data": {
                 "task_id": task_id,
@@ -862,15 +844,14 @@ async fn get_execution_status(
                 "skipped_nodes": 0,
                 "cancelled_nodes": other,
             },
-        })),
-    )
+        }))
 }
 
 /// GET /alliance/v1/tasks/:task_id/nodes — 节点列表（真实存储的节点）
 async fn list_nodes(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     match s.tasks.get(task_id) {
@@ -912,10 +893,7 @@ async fn list_nodes(
         })
         .collect();
 
-    (
-        StatusCode::OK,
-        Json(json!({
-            "ok": true,
+    api_ok(json!({
             "elapsed_ms": now_ms() - t0,
             "data": {
                 "nodes": nodes,
@@ -924,15 +902,14 @@ async fn list_nodes(
             "params": {
                 "task_id": task_id,
             },
-        })),
-    )
+        }))
 }
 
 /// GET /alliance/v1/tasks/:task_id/nodes/:node_id — 节点详情（真实读取）
 async fn get_node(
     State(s): State<Arc<AllianceGatewayState>>,
     Path((task_id, node_id)): Path<(Uuid, String)>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     let exec = s.ensure_execution(task_id);
@@ -980,7 +957,7 @@ async fn get_node(
 async fn skip_node(
     State(s): State<Arc<AllianceGatewayState>>,
     Path((task_id, node_id)): Path<(Uuid, String)>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     let mut exec_map = s.execution.write();
@@ -996,10 +973,7 @@ async fn skip_node(
                 }
                 exec.append_log("WARN", &node_id, &format!("节点 {} 已人工跳过", node_id));
             }
-            (
-                StatusCode::OK,
-                Json(json!({
-                    "ok": true,
+            api_ok(json!({
                     "elapsed_ms": now_ms() - t0,
                     "data": {
                         "success": true,
@@ -1009,8 +983,7 @@ async fn skip_node(
                         "task_id": task_id,
                         "node_id": node_id,
                     },
-                })),
-            )
+                }))
         }
         None => (
             StatusCode::NOT_FOUND,
@@ -1030,7 +1003,7 @@ async fn skip_node(
 async fn get_task_logs(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     let exec = s.ensure_execution(task_id);
@@ -1048,25 +1021,21 @@ async fn get_task_logs(
         })
         .collect();
 
-    (
-        StatusCode::OK,
-        Json(json!({
-            "ok": true,
+    api_ok(json!({
             "elapsed_ms": now_ms() - t0,
             "data": {
                 "task_id": task_id,
                 "logs": logs,
                 "total": exec.logs.len(),
             },
-        })),
-    )
+        }))
 }
 
 /// GET /alliance/tasks/:id/fusion-result — 融合结果（真实从节点输出融合）
 async fn get_fusion_result(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     let task = match s.tasks.get(task_id) {
@@ -1097,10 +1066,7 @@ async fn get_fusion_result(
     // 真实融合：基于已完成节点的输出构建融合结果
     let fusion = build_fusion_result(&exec.nodes, strategy);
 
-    (
-        StatusCode::OK,
-        Json(json!({
-            "ok": true,
+    api_ok(json!({
             "elapsed_ms": now_ms() - t0,
             "data": {
                 "task_id": task_id,
@@ -1116,15 +1082,14 @@ async fn get_fusion_result(
                 "node_contributions": fusion.node_contributions,
                 "fused_at": fusion.fused_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
             },
-        })),
-    )
+        }))
 }
 
 /// GET /alliance/tasks/:id/dag — DAG 节点（真实存储的 DAG）
 async fn get_task_dag(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     let exec = s.ensure_execution(task_id);
@@ -1180,10 +1145,7 @@ async fn get_task_dag(
 
     let (total, completed, running, failed, pending, other) = exec.node_stats();
 
-    (
-        StatusCode::OK,
-        Json(json!({
-            "ok": true,
+    api_ok(json!({
             "elapsed_ms": now_ms() - t0,
             "data": {
                 "task_id": task_id,
@@ -1198,15 +1160,14 @@ async fn get_task_dag(
                     "skipped": other,
                 },
             },
-        })),
-    )
+        }))
 }
 
 /// PUT /alliance/tasks/:id/toggle-done — 完成状态切换（真实状态流转）
 async fn toggle_task_done(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     match s.tasks.get(task_id) {
@@ -1290,7 +1251,7 @@ async fn toggle_task_done(
 async fn get_task_status_poll(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> ApiResponse<Value> {
     let t0 = now_ms();
 
     match s.tasks.get(task_id) {
@@ -1299,10 +1260,7 @@ async fn get_task_status_poll(
             let (total, completed, running, failed, pending, _other) = exec.node_stats();
             let current = exec.current_node();
 
-            (
-                StatusCode::OK,
-                Json(json!({
-                    "ok": true,
+            api_ok(json!({
                     "elapsed_ms": now_ms() - t0,
                     "data": {
                         "task_id": task_id,
@@ -1318,8 +1276,7 @@ async fn get_task_status_poll(
                         "estimated_remaining_minutes": if completed == total { 0 } else { (total - completed) * 3 },
                         "updated_at": Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                     },
-                })),
-            )
+                }))
         }
         Ok(None) => (
             StatusCode::NOT_FOUND,

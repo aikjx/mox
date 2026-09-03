@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -348,7 +348,13 @@ impl S3Server {
     }
 
     pub async fn run(self) -> Result<(), S3Error> {
-        let addr = SocketAddr::from(([127, 0, 0, 1], self.port));
+        // 从环境变量读取绑定主机，默认 127.0.0.1（S3 服务默认本地绑定）
+        let s3_host = std::env::var("MOX_CLOUD_S3_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let s3_port = std::env::var("MOX_CLOUD_S3_PORT")
+            .ok()
+            .and_then(|p| p.parse::<u16>().ok())
+            .unwrap_or(self.port);
+        let addr = SocketAddr::from((s3_host.parse::<std::net::IpAddr>().unwrap_or([127,0,0,1].into()), s3_port));
         let state = Arc::new(AppState {
             storage: self.storage.clone(),
             storage_backend: self.storage_backend.clone(),
@@ -367,7 +373,12 @@ impl S3Server {
         let listener = TcpListener::bind(addr)
             .await
             .map_err(|e| S3Error::InternalError(format!("bind {addr}: {e}")))?;
+        tracing::info!(service = "cloud-s3", addr = %addr, "TCP listener bound");
         axum::serve(listener, app)
+            .with_graceful_shutdown(async {
+                let _ = tokio::signal::ctrl_c().await;
+                tracing::info!("cloud-s3 shutdown signal received");
+            })
             .await
             .map_err(|e| S3Error::InternalError(e.to_string()))
     }

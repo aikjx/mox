@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 
 //! 调度器服务器
@@ -345,8 +345,15 @@ impl SchedulerServer {
 
         // 启动服务
         let listener = tokio::net::TcpListener::bind(self.listen_addr).await?;
-        axum::serve(listener, app).await?;
+        info!(service = "alliance-scheduler", addr = %self.listen_addr, "TCP listener bound");
+        axum::serve(listener, app)
+            .with_graceful_shutdown(async {
+                let _ = tokio::signal::ctrl_c().await;
+                info!("alliance-scheduler shutdown signal received");
+            })
+            .await?;
 
+        info!("alliance-scheduler stopped gracefully");
         Ok(())
     }
 }
