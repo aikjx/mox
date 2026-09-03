@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "mox-plugin-core"
 version.workspace = true
 edition.workspace = true
@@ -22,6 +22,10 @@ wasmer = { workspace = true }
 wasmer-compiler-cranelift = { workspace = true }
 # 文件系统
 walkdir = "2.5"
+# VSIX解压（ZIP格式）
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
+# deno_core JS 运行时（阶段2：VSCode 扩展执行环境）
+deno_core = "0.290"
 # 事件总线
 flume = "0.11"
 # 插件市场（远程发现/安装/版本管理）

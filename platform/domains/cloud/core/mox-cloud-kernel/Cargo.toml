@@ -22,4 +22,24 @@ simd = []
 
 [dev-dependencies]
 serde_json = { workspace = true }
-criterion = { workspace = true, features = ["html_reports", "cargo_bench_support", "rayon"] }
+criterion = { workspace = true, features = ["html_reports", "rayon"] }
+
+[[bench]]
+name = "reed_solomon_bench"
+harness = false
+
+[[bench]]
+name = "buffer_pool_bench"
+harness = false
+
+[[bench]]
+name = "backpressure_bench"
+harness = false
+
+[[bench]]
+name = "multi_writer_bench"
+harness = false
+
+[[bench]]
+name = "hedged_reader_bench"
+harness = false
