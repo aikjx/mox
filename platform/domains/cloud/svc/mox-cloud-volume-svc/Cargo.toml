@@ -8,6 +8,7 @@ description = "Mox Cloud Drive L4 Volume (Data Plane) - self-implemented Reed-So
 
 [dependencies]
 mox-cloud-foundation = { workspace = true }
+mox-cloud-kernel = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 parking_lot = { workspace = true }

@@ -5,6 +5,7 @@ use mox_unified_algo_core::similarity::*;
 use mox_unified_algo_core::ranking::*;
 use mox_unified_algo_core::graph::*;
 use mox_unified_algo_core::utils::*;
+use mox_unified_algo_core::traits::*;
 use petgraph::Graph;
 use std::collections::HashMap;
 
@@ -281,20 +282,20 @@ fn test_algorithm_registry() {
     register_builtin_algorithms();
 
     // 验证各分类算法数量
-    let graph_algos = GLOBAL_ALGO_REGISTRY.list_by_category(&AlgoCategory::Graph);
+    let graph_algos = global_algo_registry().list_by_category(&AlgoCategory::Graph);
     assert!(graph_algos.len() >= 4, "图算法至少应有 4 种");
 
-    let sim_algos = GLOBAL_ALGO_REGISTRY.list_by_category(&AlgoCategory::Similarity);
+    let sim_algos = global_algo_registry().list_by_category(&AlgoCategory::Similarity);
     assert!(sim_algos.len() >= 2, "相似度算法至少应有 2 种");
 
-    let rank_algos = GLOBAL_ALGO_REGISTRY.list_by_category(&AlgoCategory::Ranking);
+    let rank_algos = global_algo_registry().list_by_category(&AlgoCategory::Ranking);
     assert!(rank_algos.len() >= 2, "排序算法至少应有 2 种");
 
-    let fusion_algos = GLOBAL_ALGO_REGISTRY.list_by_category(&AlgoCategory::Fusion);
+    let fusion_algos = global_algo_registry().list_by_category(&AlgoCategory::Fusion);
     assert!(fusion_algos.len() >= 2, "融合算法至少应有 2 种");
 
     // 验证算法查询
-    let pagerank = GLOBAL_ALGO_REGISTRY.get("graph.pagerank");
+    let pagerank = global_algo_registry().get("graph.pagerank");
     assert!(pagerank.is_some());
     assert_eq!(pagerank.unwrap().name, "PageRank");
 }

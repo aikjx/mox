@@ -1,0 +1,21 @@
+[package]
+name = "mox-cloud-kernel"
+version.workspace = true
+edition.workspace = true
+license = "MIT OR Apache-2.0"
+authors.workspace = true
+description = "Mox Cloud L5 Pure Algorithm Kernel — zero business dependency (Reed-Solomon EC, GF(2^8) SIMD, hedged read/multi-write arbitration, backpressure, buffer pool, reader capability, scan budget)"
+
+[dependencies]
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+bytes = { workspace = true }
+rand = { workspace = true }
+tracing = { workspace = true }
+
+[features]
+simd = []

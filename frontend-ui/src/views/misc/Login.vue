@@ -3,17 +3,6 @@
     <div class="card">
       <div class="brand">🧠 智算企业门户 · 统一登录</div>
 
-      <!-- 演示模式红色警告 -->
-      <el-alert
-        v-if="authMode === 'demo'"
-        type="error"
-        :closable="false"
-        show-icon
-        title="演示模式"
-        description="当前为演示模式，仅用于功能展示。企业部署请对接 JWT/OAuth2 认证网关。"
-        style="margin-bottom:16px"
-      />
-
       <!-- 认证模式切换 -->
       <div class="mode-tabs">
         <div
@@ -26,7 +15,7 @@
         </div>
       </div>
 
-      <!-- 账号密码登录表单（demo / jwt 模式） -->
+      <!-- 账号密码登录表单（jwt 模式） -->
       <template v-if="authMode !== 'oauth2'">
         <el-form
           ref="loginFormRef"
@@ -49,7 +38,7 @@
               v-model="form.password"
               type="password"
               show-password
-              :placeholder="authMode === 'demo' ? '演示模式：至少6位' : '请输入密码'"
+              placeholder="请输入密码"
               :disabled="isLocked || loggingIn"
               @keyup.enter="handleLogin"
             />
@@ -113,7 +102,7 @@
           >
             <span v-if="isLocked">账号锁定中 ({{ lockCountdown }}s)</span>
             <span v-else-if="loggingIn">登录中...</span>
-            <span v-else>{{ authMode === 'demo' ? '演示登录' : '登录并进入工作台' }}</span>
+            <span v-else>登录并进入工作台</span>
           </el-button>
 
           <!-- 失败次数提示 -->
@@ -179,13 +168,12 @@ const authStore = useAuthStore()
 
 // ===== 认证模式配置 =====
 const authModes = [
-  { value: LOGIN_MODES.DEMO, label: '演示模式' },
   { value: LOGIN_MODES.JWT, label: '账号密码' },
   { value: LOGIN_MODES.OAUTH2, label: 'SSO 登录' },
 ]
 
 // 从 auth store 读取当前模式（已自动从 localStorage / 环境变量初始化）
-const authMode = ref(authStore.loginMode || LOGIN_MODES.DEMO)
+const authMode = ref(authStore.loginMode || LOGIN_MODES.JWT)
 
 // 验证码开关（可通过环境变量或 localStorage 配置）
 const captchaEnabled = ref(_getCaptchaConfig())

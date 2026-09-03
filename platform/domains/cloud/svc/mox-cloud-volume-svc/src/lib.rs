@@ -11,24 +11,49 @@
 //! 额外提供 AIS 风格的 Reed-Solomon(n+k) over GF(2^8) 完整 EC 引擎
 //! (`reed_solomon::ReedSolomonEngine`)，配合 profile / manifest /
 //! fs_layout / rebuild / metrics 模块使用。
+//!
+//! L5 纯算法模块（backpressure / buffer_pool / gf256_simd / hedged_reader /
+//! metrics / multi_writer / profile / reader_capability / reed_solomon）
+//! 已抽离至 [`mox_cloud_kernel`]，此处通过内联模块 re-export 保持 API 兼容。
 
-pub mod backpressure;
-pub mod buffer_pool;
+// ── L5 纯算法模块：从 mox-cloud-kernel re-export，保持模块路径兼容 ──
+pub mod backpressure {
+    pub use mox_cloud_kernel::backpressure::*;
+}
+pub mod buffer_pool {
+    pub use mox_cloud_kernel::buffer_pool::*;
+}
+pub mod gf256_simd {
+    pub use mox_cloud_kernel::gf256_simd::*;
+}
+pub mod hedged_reader {
+    pub use mox_cloud_kernel::hedged_reader::*;
+}
+pub mod metrics {
+    pub use mox_cloud_kernel::metrics::*;
+}
+pub mod multi_writer {
+    pub use mox_cloud_kernel::multi_writer::*;
+}
+pub mod profile {
+    pub use mox_cloud_kernel::profile::*;
+}
+pub mod reader_capability {
+    pub use mox_cloud_kernel::reader_capability::*;
+}
+pub mod reed_solomon {
+    pub use mox_cloud_kernel::reed_solomon::*;
+}
+
+// ── L4 业务模块 ──
 pub mod chunk_rebuild;
 pub mod config;
 pub mod erasure_coding_ext;
 pub mod error;
 pub mod fs_layout;
-pub mod hedged_reader;
 pub mod manifest;
-pub mod metrics;
-pub mod multi_writer;
-pub mod profile;
-pub mod reader_capability;
 pub mod rebuild;
-pub mod reed_solomon;
 pub mod storage_tier;
-pub mod gf256_simd;
 pub mod volume_server;
 
 pub use backpressure::{

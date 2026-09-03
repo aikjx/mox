@@ -226,7 +226,7 @@ mod tests {
         let registry = PluginRegistry::new();
         let instance = registry.register(test_manifest("test.plugin")).unwrap();
         assert_eq!(registry.len(), 1);
-        assert!(registry.contains_key("test.plugin"));
+        assert!(registry.get("test.plugin").is_ok());
         let got = registry.get("test.plugin").unwrap();
         assert_eq!(got.id(), "test.plugin");
     }

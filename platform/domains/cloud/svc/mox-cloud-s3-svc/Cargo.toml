@@ -12,6 +12,7 @@ mox-data-standards-core = { workspace = true }
 mox-cloud-master-svc = { workspace = true }
 mox-cloud-volume-svc = { workspace = true }
 mox-cloud-store-core = { workspace = true }
+mox-cloud-kernel = { workspace = true }
 tokio = { workspace = true }
 axum = { workspace = true }
 http = { workspace = true }

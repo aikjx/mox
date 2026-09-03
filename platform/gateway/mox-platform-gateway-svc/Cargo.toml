@@ -48,8 +48,11 @@ mox-platform-iam-core = { workspace = true }
 rusqlite = { workspace = true }
 base64 = { workspace = true }
 
-# 联盟域 API（DTO 类型契约，Api 模式·进程内路由桩）
+# 联盟域 API（DTO 类型契约 + 真实调度/执行核心）
 mox-alliance-api = { workspace = true }
+mox-alliance-scheduler-core = { workspace = true }
+mox-alliance-common-proto = { workspace = true }
+mox-alliance-scheduler-proto = { workspace = true }
 
 # 业务域反向代理（网关→编排器适配层，L6 归一化收敛）
 reqwest = { workspace = true }

@@ -6,7 +6,7 @@
  * - actions: login, logout, refreshToken, checkAuth, setToken
  * - getters: isLoggedIn, userRoles
  *
- * 支持三种登录模式：demo / jwt / oauth2
+ * 支持两种登录模式：jwt / oauth2
  * 所有 token 操作通过 secureStorage 安全存储
  */
 
@@ -31,7 +31,6 @@ const LOGIN_MODE_KEY = 'mox-login-mode'
 
 // 支持的登录模式
 export const LOGIN_MODES = {
-  DEMO: 'demo',
   JWT: 'jwt',
   OAUTH2: 'oauth2',
 }
@@ -39,7 +38,7 @@ export const LOGIN_MODES = {
 // ===== 辅助函数 =====
 
 function _getStoredLoginMode() {
-  // 优先级：localStorage > 环境变量 > 默认 demo
+  // 优先级：localStorage > 环境变量 > 默认 jwt
   const stored = secureGetItem(LOGIN_MODE_KEY, { tryLegacy: true })
   if (stored && Object.values(LOGIN_MODES).includes(stored)) {
     return stored
@@ -51,7 +50,7 @@ function _getStoredLoginMode() {
   if (envMode && Object.values(LOGIN_MODES).includes(envMode)) {
     return envMode
   }
-  return LOGIN_MODES.DEMO
+  return LOGIN_MODES.JWT
 }
 
 function _getStoredUserInfo() {
@@ -104,7 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
   // 权限列表
   const permissions = ref(_getStoredPermissions())
 
-  // 登录模式：demo / jwt / oauth2
+  // 登录模式：jwt / oauth2
   const loginMode = ref(_getStoredLoginMode())
 
   // 加载状态
@@ -242,9 +241,6 @@ export const useAuthStore = defineStore('auth', () => {
       let result
 
       switch (useMode) {
-        case LOGIN_MODES.DEMO:
-          result = await _demoLogin(credentials)
-          break
         case LOGIN_MODES.JWT:
           result = await _jwtLogin(credentials)
           break
@@ -271,41 +267,6 @@ export const useAuthStore = defineStore('auth', () => {
       return result
     } finally {
       loading.value = false
-    }
-  }
-
-  /**
-   * Demo 模式登录（向后兼容原有逻辑）
-   */
-  async function _demoLogin(credentials) {
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 300))
-
-    const username = credentials.username || 'admin'
-    const token = 'demo-' + Date.now()
-
-    return {
-      token,
-      expiresIn: 86400, // 24 小时
-      userInfo: {
-        id: 'u_demo_' + username,
-        username,
-        nickname: username === 'admin' ? '演示管理员' : username,
-        email: `${username}@demo.local`,
-        avatar: '',
-        roles: username === 'admin' ? ['admin', 'developer'] : ['user'],
-      },
-      permissions: username === 'admin'
-        ? [
-            'project:read', 'project:write', 'project:delete',
-            'expert:read', 'expert:write',
-            'workflow:read', 'workflow:write', 'workflow:execute',
-            'graph:read', 'graph:write',
-            'market:read', 'market:install',
-            'admin:read', 'admin:write',
-            'ai:chat', 'ai:algorithm',
-          ]
-        : ['project:read', 'workflow:read', 'graph:read', 'ai:chat'],
     }
   }
 

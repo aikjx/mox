@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -704,8 +704,21 @@ async fn ingest_handler(
     let flow_val = body.get("flow").cloned().unwrap_or(body.clone());
     match serde_json::from_value::<mox_ai_flow_svc::model::FlowGraph>(flow_val) {
         Ok(g) => {
+            let node_count = g.nodes.len();
+            let edge_count = g.edges.len();
+            let flow_id = g.id.clone();
             *state.live.lock().await = Some(g);
-            (StatusCode::OK, Json(serde_json::json!({ "ok": true }))).into_response()
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "ok": true,
+                    "flow_id": flow_id,
+                    "nodes": node_count,
+                    "edges": edge_count,
+                    "ingested_at": chrono::Utc::now().to_rfc3339(),
+                })),
+            )
+                .into_response()
         }
         Err(e) => (
             StatusCode::BAD_REQUEST,

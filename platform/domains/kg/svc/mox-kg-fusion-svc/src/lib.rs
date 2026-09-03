@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -16,6 +16,13 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
+
+// 业务模块
+pub mod audit_sync;
+pub mod cdc_stage;
+pub mod graph_projection_bridge;
+pub mod graph_writer;
+pub mod tag_parser;
 
 #[derive(Debug, Error)]
 pub enum FusionError {

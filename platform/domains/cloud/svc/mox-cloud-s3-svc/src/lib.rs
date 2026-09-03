@@ -36,7 +36,9 @@ pub mod replication;
 pub mod restore_tasks;
 pub mod s3_sigv4;
 pub mod s3_server;
-pub mod scanner;
+pub mod scanner {
+    pub use mox_cloud_kernel::scanner::*;
+}
 pub mod sigv4_middleware;
 pub mod tagging;
 pub mod versioning;

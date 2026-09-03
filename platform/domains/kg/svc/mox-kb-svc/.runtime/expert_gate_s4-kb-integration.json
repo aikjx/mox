@@ -1,8 +1,8 @@
 {
   "stage": "s4-kb-integration",
-  "ts": "2026-09-03T00:56:56.447323800+00:00",
+  "ts": "2026-09-03T01:20:40.956895300+00:00",
   "verdict": "FAIL",
-  "overall_score": 0.43,
+  "overall_score": 0.6,
   "dimensions": [
     {
       "name": "design",
@@ -100,10 +100,7 @@
     "data_consistent": true
   },
   "expert_steps": [
-    "[ReAct] 真实 LLM(deepseek-chat) 专家推理",
-    "[1/1] # 专家评审意见：s4-kb-integration（知识库业务整合）",
-    "[结论] # 专家评审意见：s4-kb-integration（知识库业务整合）",
-    "治理否决：# 专家评审意见：s4-kb-integration（知识库业务整合）\n\n## 一、评审对象概况\n\n| 项目 | 状态 |\n|------|------|\n| 测试通过 | 5 / 16（31.25%） |\n| 编译 | ❌ false |\n| Clippy | ❌ false |\n| E2E | ❌ false |\n…"
+    "[ExpertServiceImpl] 未传入 FlowGraph，跳过璇玑 14 维分析（空报告）"
   ],
   "written_to": ".runtime\\expert_gate_s4-kb-integration.json"
 }

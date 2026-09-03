@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -828,9 +828,16 @@ pub async fn update_handler(
         }
     }
     asset.updated_at = chrono::Utc::now().to_rfc3339();
-    crate::automation_asset::save_automation(asset)
+    crate::automation_asset::save_automation(asset.clone())
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
-    Ok(Json(serde_json::json!({ "ok": true, "id": id })))
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "id": asset.id,
+        "name": asset.name,
+        "updated_at": asset.updated_at,
+        "feature_count": asset.blueprint.features.len(),
+        "run_count": asset.run_history.len(),
+    })))
 }
 
 /// 前端编辑保存请求

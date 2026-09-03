@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -171,10 +171,16 @@ impl HostApi for EventPublishHostApi {
 
         let payload = args.get("payload").cloned().unwrap_or(serde_json::Value::Null);
 
-        self.event_bus.send_async((event_type, payload)).await
+        self.event_bus.send_async((event_type.clone(), payload.clone())).await
             .map_err(|e| HostApiError::Internal(format!("event bus send failed: {}", e)))?;
 
-        Ok(serde_json::json!({ "ok": true }))
+        let event_id = uuid::Uuid::new_v4().to_string();
+        Ok(serde_json::json!({
+            "ok": true,
+            "event_id": event_id,
+            "event_type": event_type,
+            "published_at": chrono::Utc::now().to_rfc3339(),
+        }))
     }
 }
 

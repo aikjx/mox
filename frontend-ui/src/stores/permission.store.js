@@ -348,16 +348,8 @@ export const usePermissionStore = defineStore('permission', () => {
     loading.value = true
 
     try {
-      let data
-      try {
-        // silent：该接口为可选权限契约（当前网关可能未实现），失败时按设计走 mock 兜底，
-        // 不触发全局 [not_found] / 服务端异常 toast
-        data = await http.get('/system/permissions', { silent: true })
-      } catch (e) {
-        // API 调用失败，使用 mock 数据兜底
-        console.warn('[permissionStore] 加载权限失败，使用 mock 数据:', e?.message)
-        data = _getMockPermissions()
-      }
+      // 调用后端权限接口，失败时正确处理错误并设置空权限状态
+      const data = await http.get('/system/permissions')
 
       // 设置角色
       if (data.roles && Array.isArray(data.roles)) {
@@ -386,8 +378,12 @@ export const usePermissionStore = defineStore('permission', () => {
       loaded.value = true
       return data
     } catch (e) {
-      console.error('[permissionStore] loadPermissions 异常:', e)
-      // 即使失败也标记为已加载，避免死循环
+      console.error('[permissionStore] 加载权限失败:', e?.message)
+      // API 失败：设置空权限状态，用户看到无权限提示而非假权限
+      setRoles([])
+      setPermissions([])
+      generateMenus()
+      generateRoutes()
       loaded.value = true
       throw e
     } finally {
@@ -414,39 +410,6 @@ export const usePermissionStore = defineStore('permission', () => {
     _safeRemove(DATA_SCOPE_KEY)
     _safeRemove(DEPT_ID_KEY)
     _safeRemove(CUSTOM_DEPT_IDS_KEY)
-  }
-
-  // ===== Mock 数据（后端未就绪时兜底）=====
-
-  function _getMockPermissions() {
-    return {
-      roles: ['admin', 'developer'],
-      permissions: [
-        // 项目域
-        'project:read', 'project:write', 'project:delete',
-        // 专家域
-        'expert:read', 'expert:write',
-        // 工作流域
-        'workflow:read', 'workflow:write', 'workflow:execute',
-        // 图谱域
-        'graph:read', 'graph:write',
-        // 市场域
-        'market:read', 'market:install',
-        // 管理域
-        'admin:read', 'admin:write',
-        // AI 域
-        'ai:chat', 'ai:algorithm',
-        // 系统管理
-        'system:user:view', 'system:user:add', 'system:user:edit', 'system:user:delete',
-        'system:role:view', 'system:role:add', 'system:role:edit', 'system:role:delete',
-        'system:menu:view', 'system:menu:add', 'system:menu:edit', 'system:menu:delete',
-        'system:dept:view', 'system:dept:add', 'system:dept:edit', 'system:dept:delete',
-      ],
-      deptId: 'dept_001',
-      dataScope: DATA_SCOPE.ALL,
-      customDeptIds: [],
-      menus: [],
-    }
   }
 
   // ===== 返回 =====

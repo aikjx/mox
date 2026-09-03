@@ -44,7 +44,7 @@ pub use file_lock::{
     DeadlockResult, FileLockManager, LockRange, LockRecord, LockStats, LockType,
     SharedFileLockManager, DEFAULT_LOCK_TIMEOUT_MS,
 };
-pub use filer_server::{FilerServer, InMemoryObjectStorage, ObjectStorage};
+pub use filer_server::{FilerServer, InMemoryObjectStorage, ObjectStorage, S3ObjectStorage};
 pub use fuse_client::FuseClient;
 pub use meta_pg_citus::PgCitusMeta;
 pub use meta_redis::RedisMeta;

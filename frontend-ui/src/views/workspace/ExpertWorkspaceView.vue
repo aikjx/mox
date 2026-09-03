@@ -160,7 +160,7 @@
           @update:activeCollabTab="activeCollabTab = $event"
           @preview-file="previewFile"
           @download-file="downloadFile"
-          @file-uploaded="(f) => sharedFiles.unshift(f)"
+          @file-uploaded="(f) => handleFileUpload(f)"
           @insert-node-ref="insertNodeRef"
           @send-to-whiteboard="sendToWhiteboard"
           @collab-mode-change="onCollabModeChange"
@@ -179,7 +179,7 @@
           @start-drag-text="startDragText"
           @delete-wb-text="deleteWbText"
           @update-text-content="updateTextContent"
-          @save-whiteboard="saveWhiteboard(activeSession)"
+          @save-whiteboard="handleSaveWhiteboard(activeSession)"
         />
       </main>
 
@@ -303,27 +303,16 @@ import { useWhiteboard } from '@/composables/workspace/useWhiteboard.js'
 import { useGraphCanvas } from '@/composables/workspace/useGraphCanvas.js'
 import { useTaskOrchestration } from '@/composables/workspace/useTaskOrchestration.js'
 import { useAlliance } from '@/composables/workspace/useAlliance.js'
-import {
-  getMockExperts, getMockSessions, getMockDocs,
-  getMockCategories, getMockTags, getMockVersions
-} from './mockData.js'
+import { useWorkspaceData } from '@/composables/workspace/useWorkspaceData.js'
 
 // ========== 布局状态 ==========
 const leftCollapsed = ref(false)
 const rightCollapsed = ref(false)
 const collabExpanded = ref(true)
 const aiAssistantOpen = ref(false)
-const hasNotifications = ref(true)
-const notifCount = ref(3)
 const historyPanelOpen = ref(false)
 
-// ========== KPI 指标卡 ==========
-const kpiCards = ref([
-  { key: 'experts', icon: '👥', value: 12, label: '在线专家', trend: 8, gradient: 'linear-gradient(135deg, #7c3aed, #06b6d4)' },
-  { key: 'sessions', icon: '💬', value: 28, label: '协作会话', trend: 15, gradient: 'linear-gradient(135deg, #ec4899, #8b5cf6)' },
-  { key: 'docs', icon: '📄', value: 156, label: '知识文档', trend: 5, gradient: 'linear-gradient(135deg, #10b981, #14b8a6)' },
-  { key: 'tasks', icon: '🎯', value: 7, label: '进行中任务', trend: -2, gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' }
-])
+// ========== KPI 指标卡（数据由 useWorkspaceData 加载） ==========
 
 function onKpiClick(key) {
   if (key === 'experts') leftCollapsed.value = false
@@ -376,7 +365,10 @@ async function loadProjects() {
   } catch (e) { console.warn('[ExpertWorkspace] 加载项目列表失败:', e?.message) }
 }
 
-function onProjectChange() { loadExperts(); loadSessions(); loadGraphData(); loadDocuments() }
+function onProjectChange() {
+  loadExperts(); loadSessions(); loadGraphData(); loadDocuments()
+  reloadOnProjectChange()
+}
 function doGlobalSearch() {
   if (!globalSearch.value.trim()) return
   expertSearch.value = globalSearch.value
@@ -415,8 +407,8 @@ async function loadExperts() {
     const res = await getExperts({ project_id: currentProject.value, status: 'active' })
     if (res && Array.isArray(res.data)) experts.value = res.data
     else if (res && Array.isArray(res)) experts.value = res
-    else experts.value = getMockExperts()
-  } catch (e) { console.warn('[workspace] 加载专家列表失败:', e); experts.value = getMockExperts() }
+    else experts.value = []
+  } catch (e) { console.warn('[workspace] 加载专家列表失败:', e); experts.value = [] }
   finally { expertsLoading.value = false }
 }
 
@@ -431,8 +423,8 @@ async function loadSessions() {
     const res = await getExpertSessions({ project_id: currentProject.value, limit: 20 })
     if (res && Array.isArray(res.data)) sessions.value = res.data
     else if (res && Array.isArray(res)) sessions.value = res
-    else sessions.value = getMockSessions()
-  } catch (e) { console.warn('[workspace] 加载会话失败:', e); sessions.value = getMockSessions() }
+    else sessions.value = []
+  } catch (e) { console.warn('[workspace] 加载会话失败:', e); sessions.value = [] }
   finally { sessionsLoading.value = false }
 }
 
@@ -458,66 +450,14 @@ const collabTabs = computed(() => [
   { key: 'files', label: '文件', icon: 'FolderOpened', badge: sharedFiles.value.length || null }
 ])
 
-// ========== 协作成员 / 阶段 / 文件 ==========
-const collabMembers = ref([
-  { id: 'user-1', name: '我', avatar: 'U', color: 'linear-gradient(135deg, #7c3aed, #06b6d4)', status: 'active', role: 'host' },
-  { id: 'exp-002', name: '陈架构', avatar: '🏗️', color: 'linear-gradient(135deg, #6366f1, #06b6d4)', status: 'active', role: 'expert' },
-  { id: 'exp-004', name: '张AI', avatar: '🤖', color: 'linear-gradient(135deg, #ec4899, #8b5cf6)', status: 'active', role: 'expert' },
-  { id: 'exp-006', name: '赵图谱', avatar: '🕸️', color: 'linear-gradient(135deg, #06b6d4, #3b82f6)', status: 'busy', role: 'expert' },
-  { id: 'exp-001', name: '林算法', avatar: '🧮', color: 'linear-gradient(135deg, #6366f1, #8b5cf6)', status: 'active', role: 'expert' }
-])
-const typingExperts = ref([])
-const projectPhases = ref([
-  { key: 'requirement', label: '需求分析' }, { key: 'architecture', label: '架构设计' },
-  { key: 'development', label: '开发实现' }, { key: 'testing', label: '测试验证' },
-  { key: 'release', label: '发布上线' }
-])
-const currentProjectPhase = ref(1)
+// ========== 协作成员 / 阶段 / 文件 / 历史（由 useWorkspaceData 提供） ==========
+// 状态：collabMembers, projectPhases, currentProjectPhase, sharedFiles, historyEvents
+// 方法：jumpToPhase, previewFile, downloadFile, handleFileUpload, appendHistory, jumpToHistory
+// 初始化见下方 useWorkspaceData() 调用
 
-function jumpToPhase(idx) {
-  currentProjectPhase.value = idx
-  const phase = projectPhases.value[idx]
-  addHistoryEvent('phase', `进入「${phase.label}」阶段`, '项目阶段已切换')
-  ElMessage.info(`已切换到「${phase.label}」阶段`)
-}
-
-const sharedFiles = ref([
-  { id: 'f-001', name: '架构设计文档.pdf', type: 'pdf', size: '2.4 MB', uploader: '陈架构', time: '10:30' },
-  { id: 'f-002', name: '需求规格说明书.docx', type: 'doc', size: '1.8 MB', uploader: '我', time: '09:15' },
-  { id: 'f-003', name: '系统架构图.png', type: 'image', size: '856 KB', uploader: '张AI', time: '昨天' },
-  { id: 'f-004', name: '接口定义.xlsx', type: 'excel', size: '342 KB', uploader: '赵图谱', time: '昨天' }
-])
-
-function previewFile(file) {
-  if (file.type === 'image') ElMessage.info(`正在预览图片：${file.name}`)
-  else ElMessage.info(`正在打开文档：${file.name}`)
-}
-function downloadFile(file) { ElMessage.success(`开始下载：${file.name}`) }
 function sendToWhiteboard() {
   if (collabInput.value.trim()) { addWbNote(collabInput.value.substring(0, 20), collabInput.value); ElMessage.success('已添加到白板') }
   else ElMessage.warning('请先输入内容')
-}
-
-// ========== 历史记录 ==========
-const historyEvents = ref([
-  { id: 'h-001', type: 'message', title: '陈架构 发送了消息', description: '关于微服务架构的建议...', time: '10:45' },
-  { id: 'h-002', type: 'file', title: '上传文件', description: '架构设计文档.pdf', time: '10:30' },
-  { id: 'h-003', type: 'phase', title: '进入架构设计阶段', description: '项目阶段已切换', time: '10:00' },
-  { id: 'h-004', type: 'whiteboard', title: '添加便签', description: '核心架构思路', time: '09:45' },
-  { id: 'h-005', type: 'mode', title: '切换到专家协作模式', description: '工作模式已切换', time: '09:30' }
-])
-
-function addHistoryEvent(type, title, description) {
-  const now = new Date()
-  const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0')
-  historyEvents.value.unshift({ id: 'h-' + Date.now(), type, title, description, time })
-  if (historyEvents.value.length > 50) historyEvents.value = historyEvents.value.slice(0, 50)
-}
-
-function jumpToHistory(item) {
-  if (item.type === 'file') activeCollabTab.value = 'files'
-  else if (item.type === 'whiteboard') activeCollabTab.value = 'whiteboard'
-  ElMessage.info(`跳转到：${item.title}`)
 }
 
 // ========== 快捷键 ==========
@@ -590,24 +530,8 @@ async function startDebate() {
     debateStatus.value = 'summarized'
     appendDebateToCollab()
     ElMessage.success(`辩论完成，共 ${debateConfig.rounds} 轮`)
-  } catch (e) { console.warn('[debate] 辩论 API 调用失败:', e); await simulateDebate() }
+  } catch (e) { console.warn('[debate] 辩论 API 调用失败:', e); debateStatus.value = 'preparing'; ElMessage.error(`辩论服务调用失败：${e?.message || '未知错误'}`) }
   finally { debateSubmitting.value = false }
-}
-
-async function simulateDebate() {
-  const selectedExperts = experts.value.filter(e => debateConfig.selectedExpertIds.includes(e.id))
-  if (selectedExperts.length < 2) { ElMessage.error('请至少选择 2 位专家'); debateStatus.value = 'preparing'; return }
-  debateMessages.value = []
-  for (let round = 1; round <= debateConfig.rounds; round++) {
-    for (const exp of selectedExperts) {
-      await new Promise(r => setTimeout(r, 300 + Math.random() * 400))
-      debateMessages.value.push({ id: Date.now() + Math.random(), expert: { id: exp.id, name: exp.name, type: exp.type }, response: `【第${round}轮 · ${exp.name}】从${EXPERT_TYPES[exp.type] || '专业'}角度来看，「${debateConfig.topic.slice(0, 20)}」这个问题的核心在于${round === 1 ? '明确定义和边界' : round === 2 ? '深入分析技术方案的优劣' : '综合评估可行性和风险'}。我认为应该采用${['渐进式迭代', '模块化设计', '数据驱动决策'][round % 3]}的方法来解决。`, round, confidence: 0.85 + Math.random() * 0.12 })
-    }
-  }
-  debateSummary.value = `## 辩论总结\n\n经过 ${debateConfig.rounds} 轮激烈讨论，${selectedExperts.map(e => e.name).join('、')} 等专家从不同角度对「${debateConfig.topic}」进行了深入分析。\n\n### 核心共识\n- 问题具有多维度复杂性，需要跨领域协作\n- 建议采用分阶段实施策略，降低风险\n- 数据驱动决策是关键成功因素\n\n### 建议方案\n综合各方观点，建议采用「${debateConfig.mode === 'adversarial' ? '混合架构' : '协同推进'}」策略，充分发挥各领域专家优势，分阶段落地实施。`
-  debateStatus.value = 'summarized'
-  appendDebateToCollab()
-  ElMessage.warning('辩论服务暂不可用，已生成模拟辩论结果')
 }
 
 function appendDebateToCollab() {
@@ -653,7 +577,7 @@ async function startMultiConsult() {
     const results = result?.results || result?.data?.results || []
     multiConsultResults.value = results.filter(r => r.success).map(r => ({ expert: r.expert, response: r.response, confidence: r.confidence, duration_ms: r.duration_ms }))
     ElMessage.success(`咨询完成，共 ${multiConsultResults.value.length} 位专家参与`)
-  } catch (e) { console.warn('[multiConsult] 多专家咨询 API 失败:', e); await simulateMultiConsult() }
+  } catch (e) { console.warn('[multiConsult] 多专家咨询 API 失败:', e); ElMessage.error(`多专家咨询服务调用失败：${e?.message || '未知错误'}`) }
   finally { multiConsultSubmitting.value = false }
 }
 
@@ -787,6 +711,35 @@ const {
   sendCollabMsg, stopAlliance, scrollMessagesToBottom, appendMessage
 } = useAlliance(expertColor, expertEmoji, selectedExpertIds, currentProject, collabMode, activeSession, newCollaboration)
 
+// ========== 工作台域数据（useWorkspaceData composable）==========
+const {
+  notifCount, hasNotifications,
+  kpiCards, kpiLoading,
+  collabMembers, membersLoading,
+  projectPhases, currentProjectPhase, phasesLoading,
+  sharedFiles, filesLoading,
+  historyEvents, historyLoading,
+  loadUnreadCount, loadKpi, loadMembers, loadPhases, loadFiles, loadHistory,
+  loadAllWorkspaceData, reloadOnProjectChange,
+  jumpToPhase, handleFileUpload, previewFile, downloadFile,
+  appendHistory, jumpToHistory, persistWhiteboard
+} = useWorkspaceData(currentProject)
+
+// addHistoryEvent 包装器：供 useWhiteboard / useTaskOrchestration / switchWorkMode 调用
+function addHistoryEvent(type, title, description) {
+  appendHistory(type, title, description)
+}
+
+// 白板保存：本地 localStorage + 后端持久化（双写）
+async function handleSaveWhiteboard(activeSession) {
+  saveWhiteboard(activeSession)
+  const sessionId = activeSession?.value?.id
+  if (sessionId) {
+    const data = { notes: wbNotes.value, texts: wbTexts.value, lines: wbLines.value, drawPaths: wbDrawPaths.value }
+    await persistWhiteboard(sessionId, data)
+  }
+}
+
 function insertNodeRef() {
   if (selectedNode.value) collabInput.value += `【节点：${selectedNode.value.fullName || selectedNode.value.label}】`
 }
@@ -816,8 +769,8 @@ async function loadDocuments() {
     const res = await kbListDocuments({ project_id: currentProject.value, limit: 50 })
     if (res && Array.isArray(res.data)) documents.value = res.data
     else if (res && Array.isArray(res)) documents.value = res
-    else documents.value = getMockDocs()
-  } catch (e) { console.warn('[workspace] 加载文档失败:', e); documents.value = getMockDocs() }
+    else documents.value = []
+  } catch (e) { console.warn('[workspace] 加载文档失败:', e); documents.value = [] }
   finally { docsLoading.value = false }
 }
 
@@ -826,17 +779,17 @@ async function loadCategories() {
     const res = await kbGetCategories()
     if (res && Array.isArray(res.data)) categories.value = res.data
     else if (res && Array.isArray(res)) categories.value = res
-    else categories.value = getMockCategories()
+    else categories.value = []
     expandedCategories.value = categories.value.map(c => c.id)
-  } catch (e) { categories.value = getMockCategories(); expandedCategories.value = categories.value.map(c => c.id) }
+  } catch (e) { console.warn('[workspace] 加载分类失败:', e); categories.value = []; expandedCategories.value = [] }
 }
 
 async function loadTags() {
   try {
     const res = await kbGetTags()
     if (res && Array.isArray(res.data)) popularTags.value = res.data.map(t => ({ name: t.name || t.tag, count: t.count || 0, fontSize: 12 + Math.min(t.count || 0, 20) * 0.5 }))
-    else popularTags.value = getMockTags()
-  } catch (e) { popularTags.value = getMockTags() }
+    else popularTags.value = []
+  } catch (e) { console.warn('[workspace] 加载标签失败:', e); popularTags.value = [] }
 }
 
 async function loadVersions(docId) {
@@ -844,8 +797,8 @@ async function loadVersions(docId) {
     const res = await kbGetVersions(docId)
     if (res && Array.isArray(res.data)) docVersions.value = res.data
     else if (res && Array.isArray(res)) docVersions.value = res
-    else docVersions.value = getMockVersions()
-  } catch (e) { docVersions.value = getMockVersions() }
+    else docVersions.value = []
+  } catch (e) { console.warn('[workspace] 加载版本失败:', e); docVersions.value = [] }
 }
 
 function selectCategory(cat) { activeCategory.value = activeCategory.value === cat.id ? null : cat.id }
@@ -938,6 +891,7 @@ const {
 onMounted(() => {
   loadProjects(); loadExperts(); loadSessions(); loadGraphData()
   loadCategories(); loadDocuments(); loadTags(); loadAllianceCapabilities()
+  loadAllWorkspaceData()
   window.addEventListener('mox:open-register-expert', handleOpenRegisterExpert)
   window.addEventListener('mox:open-expert-debate', handleOpenExpertDebate)
   window.addEventListener('mox:open-multi-consult', handleOpenMultiConsult)

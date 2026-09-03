@@ -50,14 +50,14 @@ pub type RSResult<T> = Result<T, RSError>;
 // GF(2^8) – poly 0x11d, primitive element α = 2.
 // ---------------------------------------------------------------------------
 
-pub(crate) struct GfTables {
-    pub(crate) exp: [u8; 512],
-    pub(crate) log: [u8; 256],
+pub struct GfTables {
+    pub exp: [u8; 512],
+    pub log: [u8; 256],
 }
 
 static GF_TABLES: std::sync::OnceLock<GfTables> = std::sync::OnceLock::new();
 
-pub(crate) fn gf() -> &'static GfTables {
+pub fn gf() -> &'static GfTables {
     GF_TABLES.get_or_init(|| {
         let mut exp = [0u8; 512];
         let mut log = [0u8; 256];
@@ -89,7 +89,7 @@ pub(crate) fn gf_mul(a: u8, b: u8) -> u8 {
 }
 
 #[inline]
-pub(crate) fn gf_inv(a: u8) -> u8 {
+pub fn gf_inv(a: u8) -> u8 {
     debug_assert_ne!(a, 0);
     let t = gf();
     let la = t.log[a as usize] as usize;
@@ -240,7 +240,7 @@ fn decide_auto_simd(hint: usize) -> bool {
     a_med < s_med && a_med > 0
 }
 
-pub(crate) type Matrix = Vec<Vec<u8>>;
+pub type Matrix = Vec<Vec<u8>>;
 
 pub(crate) fn build_encoding_matrix(data: usize, total: usize) -> RSResult<Matrix> {
     if total > 255 {
@@ -263,7 +263,7 @@ pub(crate) fn build_encoding_matrix(data: usize, total: usize) -> RSResult<Matri
     Ok(m)
 }
 
-pub(crate) fn invert_square(src: &[Vec<u8>]) -> RSResult<Matrix> {
+pub fn invert_square(src: &[Vec<u8>]) -> RSResult<Matrix> {
     let n = src.len();
     let mut aug = vec![vec![0u8; 2 * n]; n];
     for r in 0..n {

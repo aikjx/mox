@@ -1,4 +1,4 @@
-[workspace]
+﻿[workspace]
 # default-members锛歚cargo check / cargo build / cargo test` 榛樿鍙Е鍙戣繖浜?crate
 #   - 4 涓?MOX 璁＄畻鏍稿績
 #   - 3 涓?FFI 缁戝畾锛坣api/PyO3锛変笉鏀鹃粯璁わ紝閬垮厤锛?
@@ -98,6 +98,8 @@ members = [
     "platform/domains/cloud/svc/mox-cloud-s3-svc",
     "platform/domains/cloud/svc/mox-cloud-filer-svc",
     "platform/domains/cloud/core/mox-cloud-store-core",
+    "platform/domains/cloud/core/mox-cloud-domain-traits",
+    "platform/domains/cloud/core/mox-cloud-kernel",
     "platform/domains/cloud/svc/mox-cloud-rebalance-svc",
     "platform/domains/voice/svc/mox-voice-core-svc",
     "platform/domains/voice/svc/mox-voice-asr-svc",
@@ -222,6 +224,9 @@ tower = "0.4"
 # HTTP client for AI APIs and browser automation
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
 base64 = "0.22"
+
+# Redis client (cloud-filer-svc real Redis backend)
+redis = { version = "0.26", features = ["tokio-comp"] }
 rusqlite = { version = "0.31", features = ["bundled"] }
 
 # Cryptography (audit SigV4, HMAC signatures, hex)
@@ -359,6 +364,8 @@ mox-cloud-rebalance-svc = { path = "platform/domains/cloud/svc/mox-cloud-rebalan
 mox-cloud-s3-svc = { path = "platform/domains/cloud/svc/mox-cloud-s3-svc" }
 mox-cloud-filer-svc = { path = "platform/domains/cloud/svc/mox-cloud-filer-svc" }
 mox-cloud-store-core = { path = "platform/domains/cloud/core/mox-cloud-store-core" }
+mox-cloud-kernel = { path = "platform/domains/cloud/core/mox-cloud-kernel" }
+mox-cloud-domain-traits = { path = "platform/domains/cloud/core/mox-cloud-domain-traits" }
 # Service 灞?(voice)
 mox-voice-core-svc = { path = "platform/domains/voice/svc/mox-voice-core-svc" }
 mox-voice-asr-svc = { path = "platform/domains/voice/svc/mox-voice-asr-svc" }

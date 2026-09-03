@@ -3,7 +3,7 @@
 
 
 > **标题**：开发专家联盟·权威集成索引
-> **版本**：V2.2
+> **版本**：V2.3
 > **权威等级**：🟢权威
 > **编号**：EA-DOC-001
 > **文档层级**：L1权威规范层
@@ -41,8 +41,8 @@
 
 | 统计项 | 数量 | 说明 |
 |--------|:----:|------|
-| **专家联盟主题文档总计** | **54** | 含归档3份、执行报告5份 |
-| 活跃文档（非归档） | 51 | 含执行报告5份 |
+| **专家联盟主题文档总计** | **56** | 含归档3份、执行报告5份 |
+| 活跃文档（非归档） | 53 | 含执行报告5份 |
 | 归档文档 | 3 | 2份旧版 + 1份归档README |
 | 本次归一化新建 | 4 | EA-NORM-001规范、02双平台、03术语表、归档README |
 | 本次归一化修改 | 45 | A组21 + B组22 + 引用修复2 |
@@ -54,7 +54,7 @@
 |------|:------:|:----:|------|
 | `docs/expert-alliance/` | 23 | 45.1% | 根目录7 + v2/ 9 + v3/ 4 + architecture/ 3HTML |
 | `docs/modules/` | 11 | 21.6% | mox-expert系列4 + 专家联盟系列5 + business-process系列2 |
-| `docs/working-reports/` | 10 | 18.5% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构3 |
+| `docs/working-reports/` | 12 | 22.2% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构5 |
 | `docs/enterprise/` | 4 | 7.8% | 22号总控卡 + 26号×2 + 28号报告 |
 | `docs/standards/` | 2 | 3.9% | EA-NORM-001 + EAF-STD-001 |
 | `docs/cosmic-architecture/` | 2 | 3.9% | 02号 + 04号 |
@@ -208,6 +208,8 @@
 | 5 | `docs/working-reports/20260902_hybrid_architecture_route_a_design.md` | ADR-CLOUD-HYBRID-A-20260902 | 🟡参考 | v1.0 | 混合架构（路线A）：自研云盘控制面×RustFS数据面参考，12自研保留/18借鉴吸收/5对接集成三分类决策，四阶段路线图 | RustFS 9 crate源码级分析 + 自研5 svc代码实测 |
 | 6 | `docs/working-reports/20260902_hybrid_architecture_phase1_verification_report.md` | VR-CLOUD-HYBRID-A-P1-20260902 | 🟡验证报告 | v1.0 | 第一阶段验证：5 crate 编译修复+1042测试全绿基线，修复详情按crate分类，全量回归实测 | cargo check + cargo test 全量实测 |
 | 7 | `docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md` | VR-CLOUD-HYBRID-A-P2-20260903 | 🟡验证报告 | v1.0 | 第二阶段验证：6项RustFS核心算法吸收（矩阵缓存/reconstruction verification/MultiWriter/HedgedReader/lifecycle门控/CAS背压），1080测试全绿，4个新源码模块 | cargo check + cargo test 全量实测 |
+| 8 | `docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md` | ADR-CLOUD-HYBRID-A-P3-20260903 | 🟢ADR | v1.0 | 第三阶段架构分析与融合设计：6大问题识别、L1-L6六层目标架构、4个核心接口契约、24项算法解耦分析、10个端到端业务流程图（写入/读取/删除/编码/重建/生命周期/rebalance/快照/配额/文件锁）、10个Feature Flags、阶段四13项建议 | 源码级模块梳理 + 依赖图分析 + 耦合点识别 + RustFS架构对标 |
+| 9 | `docs/working-reports/20260903_hybrid_architecture_phase3_verification_report.md` | VR-CLOUD-HYBRID-A-P3-20260903 | 🟡验证报告 | v1.0 | 第三阶段验证：4项架构改造（PooledBuffer四层分档缓冲池/CAS背压接入写入主路径/ReaderCapability组合式reader管线/三维扫描预算+全局配置），新增52测试全绿，全量回归无回归，6个新增源码模块，10个Feature Flags | cargo check + cargo test 全量实测 + 新增模块代码审查 |
 
 ---
 
@@ -314,17 +316,18 @@
 ## 12. 最后验证
 
 - **索引最后验证日期**：2026-09-03
-- **验证人**：开发联盟 R（混合架构第二阶段）
-- **验证范围**：全部54份专家联盟主题文档（含归档3份）
+- **验证人**：开发联盟 R（混合架构第三阶段）
+- **验证范围**：全部56份专家联盟主题文档（含归档3份）
 - **验证结果**：
-  - ✅ 索引登记文档数 = 物理文件数（54份）
+  - ✅ 索引登记文档数 = 物理文件数（56份）
   - ✅ 索引中每个登记路径物理存在
   - ✅ 物理目录中每个专家联盟文档已在索引登记
   - ✅ 索引权威等级与文档头部元信息一致
   - ✅ 引用格式0违规（0处`../`、0处`./`、0处`file:///`）
   - ✅ 归档文档无新增引用
   - ✅ 代码-文档对齐声明与实际代码一致（11crate/2svc/:3100/:3200/10专家/6融合策略）
-  - ✅ 新增混合架构第二阶段验证报告已登记（VR-CLOUD-HYBRID-A-P2-20260903，6项算法吸收，1080测试全绿）
+  - ✅ 新增混合架构第三阶段架构分析文档已登记（ADR-CLOUD-HYBRID-A-P3-20260903，6层架构/10业务流程/24算法解耦/阶段四13项建议）
+  - ✅ 新增混合架构第三阶段验证报告已登记（VR-CLOUD-HYBRID-A-P3-20260903，4项架构改造，新增52测试全绿，6个新源码模块，10个Feature Flags）
 
 ---
 
@@ -338,8 +341,9 @@
 | V2.0 | 2026-08-31 | 全面重写：元信息块补齐、文档全景统计（51份）、权威/参考/归档三清单、新增文档登记、子系统映射表（C1/C3）、API路径映射表（C4）、代码-文档对齐声明（11crate/2svc/10专家）、引用规则声明与审计结果、版本冲突裁决汇总、索引声明=物理事实验证 | 开发联盟 R |
 | V2.1 | 2026-09-02 | 新增登记：混合架构（路线A）架构设计文档（ADR-CLOUD-HYBRID-A-20260902）+ 第一阶段验证报告（VR-CLOUD-HYBRID-A-P1-20260902）；云盘域5 crate 达成1042测试全绿基线 | 开发联盟 R |
 | V2.2 | 2026-09-03 | 新增登记：混合架构第二阶段验证报告（VR-CLOUD-HYBRID-A-P2-20260903）；6项RustFS核心算法吸收完成（矩阵缓存/reconstruction verification/MultiWriter/HedgedReader/lifecycle门控/CAS背压），4个新源码模块，1080测试全绿 | 开发联盟 R |
+| V2.3 | 2026-09-03 | 新增登记：混合架构第三阶段架构分析文档（ADR-CLOUD-HYBRID-A-P3-20260903）+ 第三阶段验证报告（VR-CLOUD-HYBRID-A-P3-20260903）；4项架构改造完成（PooledBuffer四层分档缓冲池/CAS背压接入写入主路径/ReaderCapability组合式reader管线/三维扫描预算+全局配置），新增52测试全绿，6个新源码模块，10个Feature Flags，L1-L6六层目标架构，10个端到端业务流程图 | 开发联盟 R |
 
 ---
 
 **版权所有**：© 2026 璇玑 RelGraph · 算子统一系统（OUS）· 三联盟
-**文档版本**：V2.2 ｜ **发布日期**：2026-09-03
+**文档版本**：V2.3 ｜ **发布日期**：2026-09-03

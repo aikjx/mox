@@ -97,6 +97,27 @@ impl ObjectStorage for StoreCoreObjectStorage {
         out.sort();
         Ok(out)
     }
+
+    fn delete(&self, bucket: &str, key: &str) -> FilerResult<()> {
+        let path = Self::logical_path(bucket, key);
+        let backend = self.backend.clone();
+        self.rt
+            .block_on(backend.object.delete(&path))
+            .map_err(|e| FilerError::Other(format!("delete {path} 失败: {e}")))
+    }
+
+    fn head(&self, bucket: &str, key: &str) -> FilerResult<u64> {
+        let path = Self::logical_path(bucket, key);
+        let backend = self.backend.clone();
+        let obj = self
+            .rt
+            .block_on(backend.object.head(&path))
+            .map_err(|e| match e {
+                mox_base_store_core::StoreError::NotFound { .. } => FilerError::NotFound,
+                other => FilerError::Other(format!("head {path} 失败: {other}")),
+            })?;
+        Ok(obj.size_bytes)
+    }
 }
 
 #[cfg(test)]

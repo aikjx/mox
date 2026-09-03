@@ -227,7 +227,7 @@ mod tests {
         let registry = Arc::new(PluginRegistry::new());
         let temp_dir = std::env::temp_dir().join("mox_plugin_test_empty");
         std::fs::create_dir_all(&temp_dir).unwrap();
-        let loader = PluginLoader::new(registry, temp_dir);
+        let loader = PluginLoader::new(registry, temp_dir.clone());
         let count = loader.load_all().await.unwrap();
         assert_eq!(count, 0);
         std::fs::remove_dir_all(&temp_dir).ok();

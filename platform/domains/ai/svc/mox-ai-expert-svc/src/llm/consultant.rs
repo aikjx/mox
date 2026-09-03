@@ -19,6 +19,7 @@ use crate::services::ExpertServiceImpl;
 use crate::types::{ConsultQuery, ConsultReport, Result};
 use async_trait::async_trait;
 use std::sync::Arc;
+use std::time::Duration;
 
 /// 真实 LLM 专家咨询器
 pub struct LlmExpertConsultant {
@@ -31,6 +32,8 @@ pub struct LlmExpertConsultant {
     local: ExpertServiceImpl,
     /// 专家信息查询回调（供 expert_lookup 工具）
     expert_lookup: Option<Arc<dyn Fn(&str) -> Option<(String, String, String, Vec<String>)> + Send + Sync>>,
+    /// 整次咨询硬性截止时间（毫秒）：LLM 网络异常时超时即回退本地，杜绝卡顿
+    consult_deadline_ms: u64,
 }
 
 impl LlmExpertConsultant {
@@ -43,11 +46,18 @@ impl LlmExpertConsultant {
             model: model.into(),
             local: ExpertServiceImpl::new(),
             expert_lookup: None,
+            consult_deadline_ms: consult_deadline_ms_from_env(),
         }
     }
 
     pub fn with_react_config(mut self, config: ReactConfig) -> Self {
         self.react = config;
+        self
+    }
+
+    /// 覆写整次咨询截止时间（测试注入用，避免进程级环境变量竞态）
+    pub fn with_consult_deadline(mut self, ms: u64) -> Self {
+        self.consult_deadline_ms = ms;
         self
     }
 
@@ -236,12 +246,28 @@ impl ExpertConsultant for LlmExpertConsultant {
         let react = self.react.clone();
         let model = self.model.clone();
 
-        let result = tokio::task::spawn_blocking(move || {
+        // 硬性整体截止时间：真实 LLM 咨询（ReAct 多轮 + 多 Provider 路由/重试）不得超过上限。
+        // LLM 网络异常时，超时按 Err 处理 → 下方回退本地引擎，保证调用方永不阻塞（“禁止卡顿”）。
+        let deadline_ms = self.consult_deadline_ms;
+        let join = tokio::task::spawn_blocking(move || {
             run_react(client.as_ref(), &system, &user, &tools, &react)
                 .map(|r| react_to_report(&id, &r, &model))
-        })
+        });
+
+        // 超时/阻塞线程错误统一归并为 Err，与 LLM 自身失败走同一回退分支。
+        let result: anyhow::Result<ConsultReport> = match tokio::time::timeout(
+            Duration::from_millis(deadline_ms),
+            join,
+        )
         .await
-        .map_err(|e| anyhow::anyhow!("spawn_blocking join error: {}", e))?;
+        {
+            Ok(join_res) => {
+                join_res.map_err(|e| anyhow::anyhow!("spawn_blocking join error: {}", e))?
+            }
+            Err(_elapsed) => Err(anyhow::anyhow!(
+                "真实 LLM 咨询超过 {deadline_ms}ms 截止时间，回退本地引擎"
+            )),
+        };
 
         match result {
             Ok(report) => Ok(report),
@@ -281,6 +307,18 @@ fn log_warn(msg: String) {
 fn is_all_providers_broken(e: &anyhow::Error) -> bool {
     let msg = e.to_string().to_lowercase();
     msg.contains("all llm providers") || msg.contains("circuit-broken")
+}
+
+/// 整次 LLM 咨询截止时间（毫秒）的环境变量读取。缺省 20000。
+///
+/// 该截止时间约束「整次咨询」总时长（ReAct 多轮 + 多 Provider 路由/重试），
+/// 比单次 HTTP 超时（`MOX_LLM_TIMEOUT_MS`）更靠外一层，是“禁止卡顿”的兜底闸门。
+pub fn consult_deadline_ms_from_env() -> u64 {
+    std::env::var("MOX_LLM_CONSULT_DEADLINE_MS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .filter(|v| *v > 0)
+        .unwrap_or(20_000)
 }
 
 /// 从环境变量构造真实 LLM 咨询器；未配置 Key 时返回 None
@@ -467,5 +505,45 @@ mod tests {
         assert!(!is_all_providers_broken(&anyhow::anyhow!(
             "LLM API error (500): internal error"
         )));
+    }
+
+    #[test]
+    fn consult_deadline_env_defaults() {
+        // 未设置环境变量时缺省 20000；非法值回退缺省；合法值生效
+        std::env::remove_var("MOX_LLM_CONSULT_DEADLINE_MS");
+        assert_eq!(consult_deadline_ms_from_env(), 20_000);
+        std::env::set_var("MOX_LLM_CONSULT_DEADLINE_MS", "0");
+        assert_eq!(consult_deadline_ms_from_env(), 20_000);
+        std::env::set_var("MOX_LLM_CONSULT_DEADLINE_MS", "8000");
+        assert_eq!(consult_deadline_ms_from_env(), 8_000);
+        std::env::remove_var("MOX_LLM_CONSULT_DEADLINE_MS");
+    }
+
+    #[tokio::test]
+    async fn consult_capped_by_hard_deadline() {
+        // 挂起客户端：complete() 永不返回。若无硬性截止时间，consult 将永久阻塞。
+        // 通过 with_consult_deadline(60ms) 注入，验证超时后自动回退本地引擎且立即返回。
+        struct HangingClient;
+        impl ChatClient for HangingClient {
+            fn complete(&self, _messages: &[ChatMessage]) -> anyhow::Result<String> {
+                std::thread::sleep(std::time::Duration::from_secs(30));
+                Ok("结论评分：0.9\n是否否决：否".into())
+            }
+        }
+        let c = LlmExpertConsultant::new(Arc::new(HangingClient), "mock-hang")
+            .with_consult_deadline(60);
+        let t0 = std::time::Instant::now();
+        let rep = c.consult(&query("q-hang", "", "")).await.unwrap();
+        let elapsed_ms = t0.elapsed().as_millis();
+        assert!(
+            elapsed_ms < 5_000,
+            "硬性截止时间未生效，耗时 {}ms",
+            elapsed_ms
+        );
+        assert_eq!(rep.report_id, "q-hang");
+        assert!(
+            !rep.steps.is_empty(),
+            "超时应回退本地引擎并产生 steps"
+        );
     }
 }
