@@ -525,7 +525,7 @@ function layoutSeed(nodes) {
   })
 }
 
-function simulateOnce(nodes, edges, w, h) {
+function layoutOnce(nodes, edges, w, h) {
   // 简易物理
   const cx = w / 2
   const cy = h / 2
@@ -604,7 +604,7 @@ function drawGraph() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
   function tick() {
-    simulateOnce(graphData.nodes, graphData.edges, W, H)
+    layoutOnce(graphData.nodes, graphData.edges, W, H)
     ctx.clearRect(0, 0, W, H)
     // 边
     graphData.edges.forEach((e) => {
@@ -643,7 +643,7 @@ function drawGraph() {
   cancelAnimationFrame(rafId)
   layoutSeed(graphData.nodes)
   // 快速跑几步以形成较好初始布局
-  for (let i = 0; i < 40; i++) simulateOnce(graphData.nodes, graphData.edges, W, H)
+  for (let i = 0; i < 40; i++) layoutOnce(graphData.nodes, graphData.edges, W, H)
   tick()
 }
 

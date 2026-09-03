@@ -11,8 +11,8 @@
 //   gateway/mox-platform-gateway   ← 网关聚合（统一入口）
 //
 // 响应格式（所有 HTTP 端点统一）：
-//   成功：{ "code": 0, "message": "ok", "data": <T> }
-//   失败：{ "code": <非0>, "message": "<错误描述>", "data": null }
+//   成功：{ "code": 0, "msg": "ok", "data": <T> }
+//   失败：{ "code": <非0>, "msg": "<错误描述>", "data": null }
 //
 // 错误码：复用 mox-error 的域编码体系（KG01001 / AI02099 / PL00999 ...）
 // =============================================================================
@@ -40,15 +40,15 @@ pub use mox_error::{
 ///
 /// let resp: ApiResponse<String> = ApiResponse::ok("hello".into());
 /// assert_eq!(resp.code, 0);
-/// assert_eq!(resp.message, "ok");
+/// assert_eq!(resp.msg, "ok");
 /// assert_eq!(resp.data.as_deref(), Some("hello"));
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiResponse<T> {
     /// 业务状态码：0 = 成功，非 0 = 失败（对应 mox-error 域编码或 HTTP 状态）
     pub code: i32,
-    /// 人类可读消息
-    pub message: String,
+    /// 人类可读消息（精简字段名 msg）
+    pub msg: String,
     /// 业务数据（失败时为 null）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<T>,
@@ -59,7 +59,7 @@ impl<T> ApiResponse<T> {
     pub fn ok(data: T) -> Self {
         Self {
             code: 0,
-            message: "ok".into(),
+            msg: "ok".into(),
             data: Some(data),
         }
     }
@@ -68,7 +68,7 @@ impl<T> ApiResponse<T> {
     pub fn ok_empty() -> Self {
         Self {
             code: 0,
-            message: "ok".into(),
+            msg: "ok".into(),
             data: None,
         }
     }
@@ -77,7 +77,7 @@ impl<T> ApiResponse<T> {
     pub fn error(code: i32, message: impl Into<String>) -> Self {
         Self {
             code,
-            message: message.into(),
+            msg: message.into(),
             data: None,
         }
     }
@@ -86,7 +86,7 @@ impl<T> ApiResponse<T> {
     pub fn from_mox_error(err: &MoxError) -> Self {
         Self {
             code: err.http_status as i32,
-            message: err.message.clone(),
+            msg: err.message.clone(),
             data: None,
         }
     }
@@ -95,7 +95,7 @@ impl<T> ApiResponse<T> {
     pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> ApiResponse<U> {
         ApiResponse {
             code: self.code,
-            message: self.message,
+            msg: self.msg,
             data: self.data.map(f),
         }
     }
@@ -286,7 +286,7 @@ mod tests {
     fn test_api_response_ok() {
         let resp = ApiResponse::ok(42);
         assert_eq!(resp.code, 0);
-        assert_eq!(resp.message, "ok");
+        assert_eq!(resp.msg, "ok");
         assert_eq!(resp.data, Some(42));
     }
 
@@ -294,7 +294,7 @@ mod tests {
     fn test_api_response_error() {
         let resp: ApiResponse<()> = ApiResponse::error(404, "not found");
         assert_eq!(resp.code, 404);
-        assert_eq!(resp.message, "not found");
+        assert_eq!(resp.msg, "not found");
         assert!(resp.data.is_none());
     }
 
@@ -303,7 +303,7 @@ mod tests {
         let resp = ApiResponse::ok(vec![1, 2, 3]);
         let json = serde_json::to_string(&resp).unwrap();
         assert!(json.contains("\"code\":0"));
-        assert!(json.contains("\"message\":\"ok\""));
+        assert!(json.contains("\"msg\":\"ok\""));
         assert!(json.contains("\"data\":[1,2,3]"));
     }
 
@@ -366,6 +366,6 @@ mod tests {
         let err = MoxError::not_found(ErrorDomain::Kg, 01, 001, "节点不存在");
         let resp: ApiResponse<()> = ApiResponse::from_mox_error(&err);
         assert_eq!(resp.code, 404);
-        assert_eq!(resp.message, "节点不存在");
+        assert_eq!(resp.msg, "节点不存在");
     }
 }

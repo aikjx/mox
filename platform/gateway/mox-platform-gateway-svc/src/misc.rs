@@ -22,7 +22,7 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 // 共享状态
 // =====================================================================
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct TaskItem {
     id: String,
     title: String,
@@ -37,7 +37,7 @@ struct TaskItem {
     progress: i64,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct ProjectItem {
     id: String,
     name: String,
@@ -53,6 +53,38 @@ struct ProjectItem {
     end_date: String,
 }
 
+// =====================================================================
+// JSON 持久化（data/misc_data.json）
+// =====================================================================
+
+const MISC_DATA_PATH: &str = "data/misc_data.json";
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct MiscPersistent {
+    tasks: Vec<TaskItem>,
+    projects: Vec<ProjectItem>,
+}
+
+fn load_misc_data() -> MiscPersistent {
+    match std::fs::read_to_string(MISC_DATA_PATH) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => MiscPersistent::default(),
+    }
+}
+
+fn save_misc_data(tasks: &[TaskItem], projects: &[ProjectItem]) {
+    if let Some(parent) = std::path::Path::new(MISC_DATA_PATH).parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let data = MiscPersistent {
+        tasks: tasks.to_vec(),
+        projects: projects.to_vec(),
+    };
+    if let Ok(json_str) = serde_json::to_string_pretty(&data) {
+        let _ = std::fs::write(MISC_DATA_PATH, json_str);
+    }
+}
+
 #[derive(Clone)]
 struct MiscState {
     tasks: Arc<Mutex<Vec<TaskItem>>>,
@@ -61,9 +93,10 @@ struct MiscState {
 
 impl MiscState {
     fn new() -> Self {
+        let persisted = load_misc_data();
         Self {
-            tasks: Arc::new(Mutex::new(Vec::new())),
-            projects: Arc::new(Mutex::new(Vec::new())),
+            tasks: Arc::new(Mutex::new(persisted.tasks)),
+            projects: Arc::new(Mutex::new(persisted.projects)),
         }
     }
 }

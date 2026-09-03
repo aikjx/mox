@@ -1015,21 +1015,37 @@ async fn get_fusion_result(
     // 真实融合：基于已完成节点的输出构建融合结果
     let fusion = build_fusion_result(&exec.nodes, strategy);
 
+    let status_str = if fusion.fusion_status == "completed" { "completed" } else { "pending" };
+    let fused_at_str = fusion.fused_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+    let summary = fusion.summary;
+    let confidence = fusion.confidence;
+    let key_findings = fusion.key_findings;
+    let recommendations = fusion.recommendations;
+    let contributions = fusion.node_contributions;
+
     api_ok(json!({
             "elapsed_ms": now_ms() - t0,
             "data": {
                 "task_id": task_id,
+                "status": status_str,
                 "fusion_status": fusion.fusion_status,
                 "fusion_strategy": fusion.fusion_strategy,
                 "participating_nodes": fusion.participating_nodes,
-                "result": {
-                    "summary": fusion.summary,
-                    "confidence": fusion.confidence,
-                    "key_findings": fusion.key_findings,
-                    "recommendations": fusion.recommendations,
+                "fusion_result": {
+                    "summary": summary,
+                    "confidence": confidence,
+                    "key_findings": key_findings,
+                    "recommendations": recommendations,
                 },
-                "node_contributions": fusion.node_contributions,
-                "fused_at": fusion.fused_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
+                "result": {
+                    "summary": summary,
+                    "confidence": confidence,
+                    "key_findings": key_findings.clone(),
+                    "recommendations": recommendations.clone(),
+                },
+                "expert_contributions": contributions.clone(),
+                "node_contributions": contributions,
+                "fused_at": fused_at_str,
             },
         }))
 }
@@ -1054,7 +1070,9 @@ async fn get_task_dag(
             };
             json!({
                 "id": n.node_id,
+                "label": n.name,
                 "name": n.name,
+                "type": "expert",
                 "expert_id": n.expert_id,
                 "status": match n.status {
                     NodeExecStatus::Pending => "pending",
@@ -1194,8 +1212,11 @@ async fn get_task_status_poll(
                         "task_id": task_id,
                         "status": task_status_str(task.status),
                         "progress": exec.progress(),
+                        "current_phase": current.map(|n| n.name.clone()).unwrap_or_else(|| if completed == total && total > 0 { "completed".to_string() } else { "pending".to_string() }),
                         "current_node": current.map(|n| n.node_id.clone()),
                         "current_node_name": current.map(|n| n.name.clone()),
+                        "started_at": task.started_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
+                        "completed_at": task.completed_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
                         "total_nodes": total,
                         "completed_nodes": completed,
                         "running_nodes": running,

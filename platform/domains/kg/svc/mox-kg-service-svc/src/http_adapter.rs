@@ -1008,7 +1008,7 @@ mod tests {
         };
         let resp = ai_analyze(State(state.clone()), Json(req)).await;
         assert_ne!(resp.code, 0);
-        assert_eq!(resp.message, "entity not found");
+        assert_eq!(resp.msg, "entity not found");
     }
 
     #[tokio::test]

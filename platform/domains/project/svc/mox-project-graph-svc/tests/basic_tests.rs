@@ -11,7 +11,7 @@ use serde_json::json;
 fn api_response_ok_constructor() {
     let resp = ApiResponse::ok(42);
     assert_eq!(resp.code, 0);
-    assert_eq!(resp.message, "ok");
+    assert_eq!(resp.msg, "ok");
     assert_eq!(resp.data, Some(42));
 }
 
@@ -19,7 +19,7 @@ fn api_response_ok_constructor() {
 fn api_response_error_constructor() {
     let resp: ApiResponse<()> = ApiResponse::error(500, "内部错误");
     assert_eq!(resp.code, 500);
-    assert_eq!(resp.message, "内部错误");
+    assert_eq!(resp.msg, "内部错误");
     assert!(resp.data.is_none());
 }
 
@@ -28,7 +28,7 @@ fn api_response_serialization() {
     let resp = ApiResponse::ok(json!({"key": "value"}));
     let json_val = serde_json::to_value(&resp).unwrap();
     assert_eq!(json_val["code"], 0);
-    assert_eq!(json_val["message"], "ok");
+    assert_eq!(json_val["msg"], "ok");
     assert_eq!(json_val["data"]["key"], "value");
 
     // error 响应不包含 data 字段

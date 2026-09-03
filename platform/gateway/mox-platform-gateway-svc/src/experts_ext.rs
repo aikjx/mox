@@ -22,7 +22,7 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 // 共享状态
 // =====================================================================
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct Booking {
     id: String,
     expert_id: String,
@@ -35,6 +35,28 @@ struct Booking {
     created_at: String,
 }
 
+// =====================================================================
+// JSON 持久化（data/experts_bookings.json）
+// =====================================================================
+
+const EXPERTS_BOOKINGS_PATH: &str = "data/experts_bookings.json";
+
+fn load_experts_bookings() -> Vec<Booking> {
+    match std::fs::read_to_string(EXPERTS_BOOKINGS_PATH) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => Vec::new(),
+    }
+}
+
+fn save_experts_bookings(bookings: &[Booking]) {
+    if let Some(parent) = std::path::Path::new(EXPERTS_BOOKINGS_PATH).parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(json_str) = serde_json::to_string_pretty(bookings) {
+        let _ = std::fs::write(EXPERTS_BOOKINGS_PATH, json_str);
+    }
+}
+
 #[derive(Clone)]
 struct ExpertsState {
     bookings: Arc<Mutex<Vec<Booking>>>,
@@ -44,7 +66,7 @@ struct ExpertsState {
 impl ExpertsState {
     fn new() -> Self {
         Self {
-            bookings: Arc::new(Mutex::new(Vec::new())),
+            bookings: Arc::new(Mutex::new(load_experts_bookings())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
         }
     }
@@ -158,6 +180,10 @@ async fn create_booking(
         created_at: now_iso(),
     };
     s.bookings.lock().push(booking.clone());
+    {
+        let bookings = s.bookings.lock();
+        save_experts_bookings(&bookings);
+    }
     ok(json!(booking))
 }
 
@@ -174,6 +200,9 @@ async fn cancel_booking(
             return api_error(400, format!("预约 {} 当前状态为 {}，无法取消", id, b.status));
         }
         b.status = "cancelled".into();
+        {
+            save_experts_bookings(&bookings);
+        }
         return ok(json!({
             "booking_id": id,
             "status": "cancelled",

@@ -36,7 +36,7 @@
     </div>
 
     <!-- ===== 任务列表 ===== -->
-    <div class="task-list" v-if="filteredTasks.length > 0">
+    <div class="task-list" v-if="filteredTasks.length > 0" v-loading="loading">
       <div
         v-for="task in filteredTasks"
         :key="task.id"
@@ -266,6 +266,7 @@ const showDetail = ref(false)
 const editingTask = ref(null)
 const currentTask = ref(null)
 const saving = ref(false)
+const loading = ref(false)
 
 // ===== 服务端分页状态 =====
 const page = ref(1)
@@ -364,7 +365,6 @@ async function toggleTaskStatus(task) {
     // 回滚本地状态
     task.status = newStatus === 'done' ? 'todo' : 'done'
     task.progress = newStatus === 'done' ? 0 : 100
-    console.warn('[TaskView] 更新任务状态失败:', e)
     ElMessage.error('更新任务状态失败，请重试')
   }
 }
@@ -454,6 +454,7 @@ async function deleteTask(task) {
 }
 
 async function loadTasks() {
+  loading.value = true
   if (useServerPagination.value) {
     try {
       const params = {
@@ -471,15 +472,16 @@ async function loadTasks() {
         total.value = result.total || 0
         page.value = result.page || page.value
         pageSize.value = result.page_size || pageSize.value
+        loading.value = false
         return
       }
       // 响应非分页格式，降级为客户端模式
       useServerPagination.value = false
       total.value = 0
     } catch (e) {
-      console.warn('[TaskView] 服务端分页加载失败，降级为客户端模式:', e.message)
       useServerPagination.value = false
       total.value = 0
+      ElMessage.error(e?.message || '服务端分页加载失败，已降级为客户端模式')
     }
   }
   // 客户端模式
@@ -488,12 +490,13 @@ async function loadTasks() {
     if (Array.isArray(data) && data.length > 0) {
       tasks.value = data
     } else {
-      console.warn('[TaskView] API 返回空数据，使用 Mock 数据')
       tasks.value = []
     }
   } catch (e) {
-    console.warn('[TaskView] API 加载失败，使用 Mock 数据:', e.message)
     tasks.value = []
+    ElMessage.error(e?.message || '任务加载失败')
+  } finally {
+    loading.value = false
   }
 }
 

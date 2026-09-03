@@ -27,7 +27,7 @@
 ```json
 {
   "code": 0,
-  "message": "ok",
+  "msg": "ok",
   "data": { ... }
 }
 ```
@@ -35,7 +35,7 @@
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `code` | `i32` | 业务状态码：`0` = 成功，非 `0` = 失败（对应 HTTP 状态码或 mox-error 域编码） |
-| `message` | `string` | 人类可读消息，成功为 `"ok"` |
+| `msg` | `string` | 人类可读消息，成功为 `"ok"` |
 | `data` | `T \| null` | 业务数据，失败时省略（`skip_serializing_if`） |
 
 ### 2.2 成功响应
@@ -43,27 +43,27 @@
 ```json
 {
   "code": 0,
-  "message": "ok",
+  "msg": "ok",
   "data": { "id": "123", "name": "example" }
 }
 ```
 
 - HTTP 状态码：`200 OK`
 - `code` 固定为 `0`
-- `message` 固定为 `"ok"`
+- `msg` 固定为 `"ok"`
 
 ### 2.3 失败响应
 
 ```json
 {
   "code": 404,
-  "message": "节点不存在"
+  "msg": "节点不存在"
 }
 ```
 
 - HTTP 状态码：与 `code` 字段一致（如 `404`、`500`）
 - `data` 字段省略
-- `message` 为面向用户的可读错误描述
+- `msg` 为面向用户的可读错误描述
 
 ### 2.4 Rust 构造方式
 
@@ -211,7 +211,7 @@ async fn from_err(err: MoxError) -> ApiResponse<()> {
 ```json
 {
   "code": 0,
-  "message": "ok",
+  "msg": "ok",
   "data": {
     "items": [ ... ],
     "total": 156,
@@ -285,7 +285,7 @@ async fn list_items(Query(q): Query<PageQuery>) -> ApiResponse<PaginatedResponse
 ```json
 {
   "code": 401,
-  "message": "缺少认证 Token"
+  "msg": "缺少认证 Token"
 }
 ```
 
@@ -294,7 +294,7 @@ async fn list_items(Query(q): Query<PageQuery>) -> ApiResponse<PaginatedResponse
 ```json
 {
   "code": 403,
-  "message": "无权限执行此操作"
+  "msg": "无权限执行此操作"
 }
 ```
 
@@ -316,7 +316,7 @@ async fn list_items(Query(q): Query<PageQuery>) -> ApiResponse<PaginatedResponse
 ```json
 {
   "code": 0,
-  "message": "ok",
+  "msg": "ok",
   "data": {
     "status": "up",
     "version": "3.0.0",
@@ -376,13 +376,13 @@ async fn list_items(Query(q): Query<PageQuery>) -> ApiResponse<PaginatedResponse
 ## 12. 附录：响应格式速查表
 
 ```
-成功（单对象）:     { "code": 0, "message": "ok", "data": { ... } }
-成功（列表分页）:   { "code": 0, "message": "ok", "data": { "items": [...], "total": N, "page": N, "page_size": N, "total_pages": N } }
-成功（无数据）:     { "code": 0, "message": "ok" }
-失败（参数错误）:   { "code": 400, "message": "参数验证失败" }
-失败（未认证）:     { "code": 401, "message": "缺少认证 Token" }
-失败（无权限）:     { "code": 403, "message": "无权限执行此操作" }
-失败（不存在）:     { "code": 404, "message": "资源不存在" }
-失败（限流）:       { "code": 429, "message": "请求过于频繁，请稍后再试" }
-失败（内部错误）:   { "code": 500, "message": "系统内部错误，请稍后重试" }
+成功（单对象）:     { "code": 0, "msg": "ok", "data": { ... } }
+成功（列表分页）:   { "code": 0, "msg": "ok", "data": { "items": [...], "total": N, "page": N, "page_size": N, "total_pages": N } }
+成功（无数据）:     { "code": 0, "msg": "ok" }
+失败（参数错误）:   { "code": 400, "msg": "参数验证失败" }
+失败（未认证）:     { "code": 401, "msg": "缺少认证 Token" }
+失败（无权限）:     { "code": 403, "msg": "无权限执行此操作" }
+失败（不存在）:     { "code": 404, "msg": "资源不存在" }
+失败（限流）:       { "code": 429, "msg": "请求过于频繁，请稍后再试" }
+失败（内部错误）:   { "code": 500, "msg": "系统内部错误，请稍后重试" }
 ```

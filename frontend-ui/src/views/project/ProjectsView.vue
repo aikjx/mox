@@ -191,14 +191,15 @@
                     <span>最近动态</span>
                     <span class="more">查看全部 →</span>
                   </div>
-                  <div class="activity-list">
-                    <div v-for="(a, i) in mockActivities.slice(0, 5)" :key="i" class="activity-item">
+                  <div class="activity-list" v-loading="detailLoading">
+                    <div v-for="(a, i) in (projectActivities || []).slice(0, 5)" :key="i" class="activity-item">
                       <div class="activity-icon">{{ a.icon }}</div>
                       <div class="activity-content">
                         <div class="activity-text">{{ a.text }}</div>
                         <div class="activity-time">{{ a.time }}</div>
                       </div>
                     </div>
+                    <el-empty v-if="!detailLoading && (!projectActivities || projectActivities.length === 0)" description="暂无动态" :image-size="50" />
                   </div>
                 </div>
                 <div>
@@ -299,8 +300,8 @@
 
             <!-- ===== 文档 Tab ===== -->
             <div v-if="detailTab === 'docs'">
-              <div class="task-list">
-                <div v-for="(d, i) in mockDocs" :key="i" class="task-item">
+              <div class="task-list" v-loading="detailLoading">
+                <div v-for="(d, i) in (projectDocs || [])" :key="i" class="task-item">
                   <div class="doc-icon">{{ d.icon }}</div>
                   <div class="task-info">
                     <div class="task-title">{{ d.name }}</div>
@@ -311,19 +312,21 @@
                   </div>
                   <button class="top-btn" style="flex-shrink:0" @click="downloadDoc(d)">下载</button>
                 </div>
+                <el-empty v-if="!detailLoading && (!projectDocs || projectDocs.length === 0)" description="暂无文档" :image-size="60" />
               </div>
             </div>
 
             <!-- ===== 动态 Tab ===== -->
             <div v-if="detailTab === 'activity'">
-              <div class="activity-list">
-                <div v-for="(a, i) in mockActivities" :key="i" class="activity-item">
+              <div class="activity-list" v-loading="detailLoading">
+                <div v-for="(a, i) in (projectActivities || [])" :key="i" class="activity-item">
                   <div class="activity-icon">{{ a.icon }}</div>
                   <div class="activity-content">
                     <div class="activity-text">{{ a.text }}</div>
                     <div class="activity-time">{{ a.time }}</div>
                   </div>
                 </div>
+                <el-empty v-if="!detailLoading && (!projectActivities || projectActivities.length === 0)" description="暂无动态" :image-size="60" />
               </div>
             </div>
           </div>
@@ -512,6 +515,7 @@ const generatingGraph = ref(false)
 const listLoading = ref(false)
 const listError = ref('')
 const tasksLoading = ref(false)
+const detailLoading = ref(false)
 
 // ===== 任务数据（API 驱动） =====
 const tasks = ref([])
@@ -532,8 +536,8 @@ async function loadTasks() {
       tasks.value = []
     }
   } catch (e) {
-    console.warn('[ProjectsView] 任务列表加载失败:', e?.message)
     tasks.value = []
+    ElMessage.error(e?.message || '任务列表加载失败')
   } finally {
     tasksLoading.value = false
   }
@@ -655,7 +659,6 @@ async function toggleTask(id) {
   } catch (e) {
     // 回滚本地状态
     t.status = newStatus === 'done' ? 'active' : 'done'
-    console.warn('[ProjectsView] 更新任务状态失败:', e)
     ElMessage.error('更新任务状态失败，请重试')
   }
 }
@@ -711,14 +714,23 @@ const projectActivities = ref(null)
 const projectDocs = ref(null)
 async function loadProjectDetailData() {
   if (!current.value?.id) return
+  detailLoading.value = true
   try {
     const acts = await getProjectActivities(current.value.id)
-    if (Array.isArray(acts) && acts.length > 0) projectActivities.value = acts
-  } catch (e) { console.error('[projects] load failed:', e) }
+    projectActivities.value = Array.isArray(acts) ? acts : (acts?.items || acts?.activities || [])
+  } catch (e) {
+    projectActivities.value = []
+    ElMessage.error(e?.message || '项目动态加载失败')
+  }
   try {
     const docs = await getProjectDocuments(current.value.id)
-    if (Array.isArray(docs) && docs.length > 0) projectDocs.value = docs
-  } catch (e) { console.error('[projects] load failed:', e) }
+    projectDocs.value = Array.isArray(docs) ? docs : (docs?.items || docs?.documents || [])
+  } catch (e) {
+    projectDocs.value = []
+    ElMessage.error(e?.message || '项目文档加载失败')
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 // ===== 加载 =====

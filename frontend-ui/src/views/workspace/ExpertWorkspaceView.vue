@@ -271,7 +271,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { EXPERT_TYPES } from '@/constants/expert.constants'
 import { runAllianceFullSSE, getAllianceCapabilities } from '@/api/alliance'
 import {
   getExperts, getExpertSessions, expertDebate,
@@ -362,7 +361,7 @@ async function loadProjects() {
       projectOptions.value = list.map((p) => ({ id: p.id, name: p.name || p.title || '未命名项目' }))
       if (!projectOptions.value.find((p) => p.id === currentProject.value)) currentProject.value = projectOptions.value[0].id
     }
-  } catch (e) { console.warn('[ExpertWorkspace] 加载项目列表失败:', e?.message) }
+  } catch (e) { ElMessage.error(e?.message || '加载项目列表失败') }
 }
 
 function onProjectChange() {
@@ -408,7 +407,7 @@ async function loadExperts() {
     if (res && Array.isArray(res.data)) experts.value = res.data
     else if (res && Array.isArray(res)) experts.value = res
     else experts.value = []
-  } catch (e) { console.warn('[workspace] 加载专家列表失败:', e); experts.value = [] }
+  } catch (e) { experts.value = []; ElMessage.error(e?.message || '加载专家列表失败') }
   finally { expertsLoading.value = false }
 }
 
@@ -424,7 +423,7 @@ async function loadSessions() {
     if (res && Array.isArray(res.data)) sessions.value = res.data
     else if (res && Array.isArray(res)) sessions.value = res
     else sessions.value = []
-  } catch (e) { console.warn('[workspace] 加载会话失败:', e); sessions.value = [] }
+  } catch (e) { sessions.value = []; ElMessage.error(e?.message || '加载会话失败') }
   finally { sessionsLoading.value = false }
 }
 
@@ -530,7 +529,7 @@ async function startDebate() {
     debateStatus.value = 'summarized'
     appendDebateToCollab()
     ElMessage.success(`辩论完成，共 ${debateConfig.rounds} 轮`)
-  } catch (e) { console.warn('[debate] 辩论 API 调用失败:', e); debateStatus.value = 'preparing'; ElMessage.error(`辩论服务调用失败：${e?.message || '未知错误'}`) }
+  } catch (e) { debateStatus.value = 'preparing'; ElMessage.error(`辩论服务调用失败：${e?.message || '未知错误'}`) }
   finally { debateSubmitting.value = false }
 }
 
@@ -577,25 +576,8 @@ async function startMultiConsult() {
     const results = result?.results || result?.data?.results || []
     multiConsultResults.value = results.filter(r => r.success).map(r => ({ expert: r.expert, response: r.response, confidence: r.confidence, duration_ms: r.duration_ms }))
     ElMessage.success(`咨询完成，共 ${multiConsultResults.value.length} 位专家参与`)
-  } catch (e) { console.warn('[multiConsult] 多专家咨询 API 失败:', e); ElMessage.error(`多专家咨询服务调用失败：${e?.message || '未知错误'}`) }
+  } catch (e) { ElMessage.error(`多专家咨询服务调用失败：${e?.message || '未知错误'}`) }
   finally { multiConsultSubmitting.value = false }
-}
-
-async function simulateMultiConsult() {
-  const selectedExperts = experts.value.filter(e => multiConsultConfig.selectedExpertIds.includes(e.id))
-  multiConsultResults.value = []
-  if (multiConsultConfig.mode === 'parallel') {
-    await new Promise(r => setTimeout(r, 1000))
-    selectedExperts.forEach((exp, idx) => {
-      multiConsultResults.value.push({ expert: { id: exp.id, name: exp.name, type: exp.type }, response: `【${exp.name}的回答】关于「${multiConsultConfig.question.slice(0, 20)}」的问题，从${EXPERT_TYPES[exp.type] || '专业'}角度分析：\n\n1. 核心要点：问题涉及多个层面，需要系统思考\n2. 建议方案：采用${['分治法', '迭代法', '模块化'][idx % 3]}策略逐步解决\n3. 注意事项：需要关注边界条件和异常处理\n\n以上是我的初步分析，供参考。`, confidence: 0.8 + Math.random() * 0.18, duration_ms: 800 + Math.random() * 1200 })
-    })
-  } else {
-    for (const exp of selectedExperts) {
-      await new Promise(r => setTimeout(r, 600 + Math.random() * 600))
-      multiConsultResults.value.push({ expert: { id: exp.id, name: exp.name, type: exp.type }, response: `【${exp.name}的回答】针对「${multiConsultConfig.question.slice(0, 20)}」这个问题，我的分析如下：\n\n首先，明确问题的核心目标和约束条件。其次，基于${EXPERT_TYPES[exp.type] || '专业领域'}的知识，推荐以下方案：\n- 方案A：保守稳妥，风险低\n- 方案B：激进高效，收益高\n- 方案C：折中平衡，适用性广\n\n建议根据实际情况选择合适的方案。`, confidence: 0.78 + Math.random() * 0.2, duration_ms: 600 + Math.random() * 800 })
-    }
-  }
-  ElMessage.warning('咨询服务暂不可用，已生成模拟回答')
 }
 
 // ========== 智能路由匹配 ==========
@@ -618,20 +600,9 @@ async function doSmartRoute() {
     const result = await routeExperts({ question: smartRouteQuestion.value, maxExperts: smartRouteMaxExperts.value })
     smartRouteResult.value = result?.data || result
     ElMessage.success('智能匹配完成')
-  } catch (e) { console.warn('[routeExperts] 智能路由 API 失败:', e); simulateSmartRoute() }
-  finally { smartRoutingLoading.value = false }
-}
-
-function simulateSmartRoute() {
-  const question = smartRouteQuestion.value.toLowerCase()
-  const scoredExperts = experts.value.filter(e => e.status === 'active').map(e => {
-    let baseScore = 0.5 + Math.random() * 0.3
-    const typeMatch = question.includes(e.type) ? 0.15 : 0
-    const capMatch = e.capabilities?.some(c => question.includes(c.toLowerCase())) ? 0.1 : 0
-    return { ...e, score: Math.min(0.98, baseScore + typeMatch + capMatch), reason: `基于「${EXPERT_TYPES[e.type]}」领域专长和${e.capabilities?.[0] || '相关'}技能匹配` }
-  }).sort((a, b) => b.score - a.score).slice(0, smartRouteMaxExperts.value)
-  smartRouteResult.value = { selected: scoredExperts, question: smartRouteQuestion.value, mode: 'auto', reasoning: `根据问题描述中的关键词和领域特征，从 ${experts.value.length} 位专家中筛选出最佳匹配` }
-  ElMessage.warning('智能路由服务暂不可用，已生成模拟匹配结果')
+  } catch (e) {
+    ElMessage.error(e?.message || '智能路由服务调用失败')
+  } finally { smartRoutingLoading.value = false }
 }
 
 function selectRoutedExpert(item) {
@@ -770,7 +741,7 @@ async function loadDocuments() {
     if (res && Array.isArray(res.data)) documents.value = res.data
     else if (res && Array.isArray(res)) documents.value = res
     else documents.value = []
-  } catch (e) { console.warn('[workspace] 加载文档失败:', e); documents.value = [] }
+  } catch (e) { documents.value = []; ElMessage.error(e?.message || '加载文档失败') }
   finally { docsLoading.value = false }
 }
 
@@ -781,7 +752,7 @@ async function loadCategories() {
     else if (res && Array.isArray(res)) categories.value = res
     else categories.value = []
     expandedCategories.value = categories.value.map(c => c.id)
-  } catch (e) { console.warn('[workspace] 加载分类失败:', e); categories.value = []; expandedCategories.value = [] }
+  } catch (e) { categories.value = []; expandedCategories.value = []; ElMessage.error(e?.message || '加载分类失败') }
 }
 
 async function loadTags() {
@@ -789,7 +760,7 @@ async function loadTags() {
     const res = await kbGetTags()
     if (res && Array.isArray(res.data)) popularTags.value = res.data.map(t => ({ name: t.name || t.tag, count: t.count || 0, fontSize: 12 + Math.min(t.count || 0, 20) * 0.5 }))
     else popularTags.value = []
-  } catch (e) { console.warn('[workspace] 加载标签失败:', e); popularTags.value = [] }
+  } catch (e) { popularTags.value = []; ElMessage.error(e?.message || '加载标签失败') }
 }
 
 async function loadVersions(docId) {
@@ -798,7 +769,7 @@ async function loadVersions(docId) {
     if (res && Array.isArray(res.data)) docVersions.value = res.data
     else if (res && Array.isArray(res)) docVersions.value = res
     else docVersions.value = []
-  } catch (e) { console.warn('[workspace] 加载版本失败:', e); docVersions.value = [] }
+  } catch (e) { docVersions.value = []; ElMessage.error(e?.message || '加载版本失败') }
 }
 
 function selectCategory(cat) { activeCategory.value = activeCategory.value === cat.id ? null : cat.id }

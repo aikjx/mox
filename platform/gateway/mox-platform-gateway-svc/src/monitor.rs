@@ -229,25 +229,41 @@ async fn nodes() -> ApiResponse<Value> {
 }
 
 // =====================================================================
-// 6. GET /monitor/nodes/{name}/logs — 节点日志
+// 6. GET /monitor/nodes/{name}/logs — 节点日志查询
 // =====================================================================
-async fn node_logs(Path(name): Path<String>) -> ApiResponse<Value> {
-    ok(json!({
-        "node": name,
-        "log_viewer_url": format!("/actuator/logs?search={name}&limit=200"),
-        "recent_logs": [],
-    }))
+
+#[derive(Debug, Deserialize)]
+struct NodeLogsQuery {
+    limit: Option<usize>,
+    level: Option<String>,
+}
+
+async fn node_logs(Path(name): Path<String>, Query(q): Query<NodeLogsQuery>) -> ApiResponse<Value> {
+    let _limit = q.limit.unwrap_or(100);
+    let _level = q.level;
+    // 待接入真实日志源（如 log 文件 / tracing 订阅 / actuator LogStore）；
+    // 无真实数据源时返回空数组，禁止硬编码示例日志。
+    let _ = name;
+    ok(json!([]))
 }
 
 // =====================================================================
 // 7. GET /monitor/nodes/{name}/trace — 节点链路追踪
 // =====================================================================
-async fn node_trace(Path(name): Path<String>) -> ApiResponse<Value> {
-    ok(json!({
-        "node": name,
-        "traces": [],
-        "total": 0,
-    }))
+
+#[derive(Debug, Deserialize)]
+struct NodeTraceQuery {
+    trace_id: Option<String>,
+    limit: Option<usize>,
+}
+
+async fn node_trace(Path(name): Path<String>, Query(q): Query<NodeTraceQuery>) -> ApiResponse<Value> {
+    let _limit = q.limit.unwrap_or(50);
+    let _trace_id = q.trace_id;
+    // 待接入真实链路追踪源（如 OpenTelemetry / Jaeger）；
+    // 无真实数据源时返回空数组，禁止硬编码示例 trace。
+    let _ = name;
+    ok(json!([]))
 }
 
 // =====================================================================
@@ -377,18 +393,17 @@ struct TimeseriesQuery {
 
 async fn timeseries(Query(q): Query<TimeseriesQuery>) -> ApiResponse<Value> {
     let metric = q.metric.unwrap_or_else(|| "cpu_usage".into());
+    // 待接入真实指标源（如 Prometheus / metrics crate 历史存储）；
+    // 无真实数据源时返回空 points 数组，禁止生成模拟数据点。
+    let _ = (q.start, q.end, q.step);
     ok(json!({
         "metric": metric,
-        "start": q.start,
-        "end": q.end,
-        "step": q.step.unwrap_or_else(|| "60".into()),
         "points": [],
-        "count": 0,
     }))
 }
 
 // =====================================================================
-// 14. GET /monitor/business/timeseries — 业务量时序
+// 14. GET /monitor/business/timeseries — 业务指标时序查询
 // =====================================================================
 
 #[derive(Debug, Deserialize)]
@@ -396,17 +411,16 @@ struct BusinessTimeseriesQuery {
     metric: Option<String>,
     start: Option<String>,
     end: Option<String>,
+    step: Option<String>,
 }
 
 async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>) -> ApiResponse<Value> {
     let metric = q.metric.unwrap_or_else(|| "task_completions".into());
+    // 待接入真实业务指标源；无数据时返回空 points 数组。
+    let _ = (q.start, q.end, q.step);
     ok(json!({
         "metric": metric,
-        "start": q.start,
-        "end": q.end,
         "points": [],
-        "count": 0,
-        "granularity": "daily",
     }))
 }
 

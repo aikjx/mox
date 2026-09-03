@@ -33,6 +33,8 @@ pub mod workspace;
 pub mod projects_ext;
 pub mod experts_ext;
 pub mod misc;
+pub mod kb_ext;
+pub mod notification;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
@@ -152,6 +154,8 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     let projects_ext_router = projects_ext::build_projects_ext_router();
     let experts_ext_router = experts_ext::build_experts_ext_router();
     let misc_router = misc::build_misc_router();
+    let kb_ext_router = kb_ext::build_kb_ext_router();
+    let notification_router = notification::build_notification_router();
 
     // 受保护的路由：认证 + 限流
     // 注：/api/system、/api/security 迁移期在 public_paths（见 config.rs），
@@ -167,6 +171,8 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     let projects_ext_router: Router<GatewayState> = projects_ext_router.with_state(());
     let experts_ext_router: Router<GatewayState> = experts_ext_router.with_state(());
     let misc_router: Router<GatewayState> = misc_router.with_state(());
+    let kb_ext_router: Router<GatewayState> = kb_ext_router.with_state(());
+    let notification_router: Router<GatewayState> = notification_router.with_state(());
     let auth_state = state.auth.clone();
     let protected: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(kg_ai)
@@ -180,6 +186,8 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
         .merge(projects_ext_router)
         .merge(experts_ext_router)
         .merge(misc_router)
+        .merge(kb_ext_router)
+        .merge(notification_router)
         .route_layer(from_fn(move |request: Request, next: Next| {
             let auth = auth_state.clone();
             async move { auth_middleware(auth, request, next).await }

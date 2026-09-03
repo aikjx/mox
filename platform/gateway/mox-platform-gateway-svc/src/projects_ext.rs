@@ -23,7 +23,7 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 // 共享状态
 // =====================================================================
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct ProjectFile {
     id: String,
     name: String,
@@ -34,6 +34,38 @@ struct ProjectFile {
     storage_path: String,
 }
 
+// =====================================================================
+// JSON 持久化（data/projects_files.json）
+// =====================================================================
+
+const PROJECTS_FILES_PATH: &str = "data/projects_files.json";
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct ProjectsPersistent {
+    files: Vec<ProjectFile>,
+    favorites: Vec<String>,
+}
+
+fn load_projects_persistent() -> ProjectsPersistent {
+    match std::fs::read_to_string(PROJECTS_FILES_PATH) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => ProjectsPersistent::default(),
+    }
+}
+
+fn save_projects_persistent(files: &[ProjectFile], favorites: &std::collections::HashSet<String>) {
+    if let Some(parent) = std::path::Path::new(PROJECTS_FILES_PATH).parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let data = ProjectsPersistent {
+        files: files.to_vec(),
+        favorites: favorites.iter().cloned().collect(),
+    };
+    if let Ok(json_str) = serde_json::to_string_pretty(&data) {
+        let _ = std::fs::write(PROJECTS_FILES_PATH, json_str);
+    }
+}
+
 #[derive(Clone)]
 struct ProjectsState {
     files: Arc<Mutex<Vec<ProjectFile>>>,
@@ -42,9 +74,11 @@ struct ProjectsState {
 
 impl ProjectsState {
     fn new() -> Self {
+        let persisted = load_projects_persistent();
+        let favorites: std::collections::HashSet<String> = persisted.favorites.into_iter().collect();
         Self {
-            files: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            files: Arc::new(Mutex::new(persisted.files)),
+            favorites: Arc::new(Mutex::new(favorites)),
         }
     }
 }
@@ -195,6 +229,11 @@ async fn upload_project_file(
             storage_path: storage_path.to_string_lossy().to_string(),
         };
         s.files.lock().push(file_info.clone());
+        {
+            let files = s.files.lock();
+            let favs = s.favorites.lock();
+            save_projects_persistent(&files, &favs);
+        }
         uploaded.push(json!(file_info));
     }
 
@@ -285,6 +324,10 @@ async fn toggle_favorite(
     } else {
         favs.insert(id.clone());
     }
+    {
+        let files = s.files.lock();
+        save_projects_persistent(&files, &favs);
+    }
     ok(json!({
         "project_id": id,
         "favorite": !is_fav,
@@ -368,12 +411,99 @@ async fn requirements_graph(Path(id): Path<String>) -> ApiResponse<Value> {
 }
 
 // =====================================================================
+// 16. POST /projects/ai-recommend — AI 项目推荐（基于现有项目关键词匹配）
+// =====================================================================
+
+#[derive(Debug, Deserialize)]
+struct AiRecommendBody {
+    query: String,
+    context: Option<Value>,
+}
+
+#[derive(Debug, Serialize)]
+struct AiRecommendItem {
+    project_id: String,
+    name: String,
+    description: String,
+    match_score: f32,
+    reason: String,
+}
+
+async fn ai_recommend_projects(
+    Json(body): Json<AiRecommendBody>,
+) -> ApiResponse<Value> {
+    // 从 misc 域持久化文件读取现有项目列表（无项目数据则返回空数组）
+    let projects: Vec<Value> = match std::fs::read_to_string("data/misc_data.json") {
+        Ok(content) => {
+            let parsed: Value = serde_json::from_str(&content).unwrap_or(json!({}));
+            parsed.get("projects")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default()
+        }
+        Err(_) => Vec::new(),
+    };
+
+    if projects.is_empty() {
+        return ok(json!([] as [Value; 0]));
+    }
+
+    let query_lower = body.query.to_lowercase();
+    let keywords: Vec<&str> = query_lower
+        .split_whitespace()
+        .filter(|k| k.len() >= 2)
+        .collect();
+
+    let mut matches: Vec<AiRecommendItem> = Vec::new();
+    for p in &projects {
+        let name = p.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let desc = p.get("description").and_then(|v| v.as_str()).unwrap_or("");
+        let pid = p.get("id").and_then(|v| v.as_str()).unwrap_or("");
+        let haystack = format!("{} {}", name, desc).to_lowercase();
+
+        if keywords.is_empty() {
+            if !haystack.is_empty() {
+                matches.push(AiRecommendItem {
+                    project_id: pid.to_string(),
+                    name: name.to_string(),
+                    description: desc.to_string(),
+                    match_score: 0.1,
+                    reason: "项目列表非空，默认低优先级匹配".into(),
+                });
+            }
+            continue;
+        }
+
+        let hit_count = keywords.iter().filter(|k| haystack.contains(*k)).count();
+        if hit_count > 0 {
+            let score = hit_count as f32 / keywords.len() as f32;
+            let hit_keywords: Vec<&str> = keywords
+            .iter()
+            .filter(|k| haystack.contains(*k))
+            .copied()
+            .collect();
+            matches.push(AiRecommendItem {
+                project_id: pid.to_string(),
+                name: name.to_string(),
+                description: desc.to_string(),
+                match_score: score,
+                reason: format!("匹配关键词：{}", hit_keywords.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", ")),
+            });
+        }
+    }
+
+    matches.sort_by(|a, b| b.match_score.partial_cmp(&a.match_score).unwrap_or(std::cmp::Ordering::Equal));
+    ok(json!(matches))
+}
+
+// =====================================================================
 // 路由装配
 // =====================================================================
 
 pub fn build_projects_ext_router() -> Router {
     let state = Arc::new(ProjectsState::new());
     Router::new()
+        .route("/projects/ai-recommend", post(ai_recommend_projects))
         .route("/projects/:id/members", get(project_members).post(add_project_member))
         .route("/projects/:id/members/:memberId", put(update_project_member).delete(remove_project_member))
         .route("/projects/:id/phases", get(project_phases))

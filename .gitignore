@@ -4,12 +4,19 @@
 # ============================================================
 
 # ---- 运行时数据目录（架构-数据分离，绝不入库）----
-/data/              # 运行时数据：storage/cache/uploads/exports
-/plugins/           # 第三方插件：wasm/scripts/extensions
-/.runtime/          # 运行时状态：pid/sock/lock
-/artifacts/         # 运行时制品：构建/测试/语音生成产物
-/exports/           # 数据导出产物
-/third_party/       # 第三方源码暂存
+# 注意：gitignore 不支持行内注释，注释须独立成行，否则整条规则会失效
+# 运行时数据：storage/cache/uploads/exports
+/data/
+# 第三方插件：wasm/scripts/extensions
+/plugins/
+# 运行时状态：pid/sock/lock
+/.runtime/
+# 运行时制品：构建/测试/语音生成产物
+/artifacts/
+# 数据导出产物
+/exports/
+# 第三方源码暂存
+/third_party/
 
 # ---- 日志与临时文件 ----
 *.log

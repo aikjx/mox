@@ -19,7 +19,7 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 // 共享状态
 // =====================================================================
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct HistoryItem {
     id: String,
     user_id: String,
@@ -31,6 +31,28 @@ struct HistoryItem {
     created_at: String,
 }
 
+// =====================================================================
+// JSON 持久化（data/workspace_history.json）
+// =====================================================================
+
+const WORKSPACE_HISTORY_PATH: &str = "data/workspace_history.json";
+
+fn load_workspace_history() -> Vec<HistoryItem> {
+    match std::fs::read_to_string(WORKSPACE_HISTORY_PATH) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => Vec::new(),
+    }
+}
+
+fn save_workspace_history(history: &[HistoryItem]) {
+    if let Some(parent) = std::path::Path::new(WORKSPACE_HISTORY_PATH).parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(json_str) = serde_json::to_string_pretty(history) {
+        let _ = std::fs::write(WORKSPACE_HISTORY_PATH, json_str);
+    }
+}
+
 #[derive(Clone)]
 struct WorkspaceState {
     history: Arc<parking_lot::Mutex<Vec<HistoryItem>>>,
@@ -38,7 +60,7 @@ struct WorkspaceState {
 
 impl WorkspaceState {
     fn new() -> Self {
-        Self { history: Arc::new(parking_lot::Mutex::new(Vec::new())) }
+        Self { history: Arc::new(parking_lot::Mutex::new(load_workspace_history())) }
     }
 }
 

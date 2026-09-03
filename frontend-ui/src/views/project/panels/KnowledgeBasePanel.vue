@@ -160,6 +160,14 @@
           <span>加载文档中...</span>
         </div>
 
+        <div v-else-if="error && !documents.length" class="empty-state">
+          <el-empty :description="error" :image-size="80">
+            <el-button type="primary" @click="fetchDocuments">
+              <el-icon><Refresh /></el-icon> 重试
+            </el-button>
+          </el-empty>
+        </div>
+
         <div v-else-if="filteredDocuments.length === 0" class="empty-state">
           <el-empty description="暂无文档，点击右上角新建" :image-size="80">
             <el-button type="primary" @click="openCreateDialog">
@@ -798,6 +806,7 @@ const linkedEntities = ref([])
 const stats = ref({})
 
 const loading = ref(false)
+const error = ref('')
 const saving = ref(false)
 const searchQuery = ref('')
 const filterCategory = ref('')
@@ -823,7 +832,6 @@ const searchResults = ref([])
 const categoryTreeRef = ref(null)
 const editFormRef = ref(null)
 
-// ========== Mock Data (fallback) ==========
 const docTypes = [
   { value: 'article', label: '文章' },
   { value: 'tutorial', label: '教程' },
@@ -1033,6 +1041,7 @@ function toggleSelectDoc(doc) {
 
 async function fetchDocuments() {
   loading.value = true
+  error.value = ''
   try {
     const params = {}
     if (searchQuery.value) params.q = searchQuery.value
@@ -1049,7 +1058,8 @@ async function fetchDocuments() {
     documents.value = list.map(mapDoc)
   } catch (e) {
     documents.value = []
-    ElMessage.warning('使用本地缓存数据')
+    error.value = e?.message || '文档加载失败'
+    ElMessage.error(error.value)
   } finally {
     loading.value = false
   }
@@ -1062,7 +1072,10 @@ async function fetchCategories() {
     if (Array.isArray(data) && data.length) {
       categories.value = data
     }
-  } catch { /* keep mock data */ }
+  } catch (e) {
+    categories.value = []
+    ElMessage.error(e?.message || '分类加载失败')
+  }
 }
 
 async function fetchTags() {
@@ -1071,7 +1084,10 @@ async function fetchTags() {
     if (Array.isArray(data) && data.length) {
       tags.value = data
     }
-  } catch { /* keep mock data */ }
+  } catch (e) {
+    tags.value = []
+    ElMessage.error(e?.message || '标签加载失败')
+  }
 }
 
 async function fetchStats() {
@@ -1080,7 +1096,8 @@ async function fetchStats() {
     if (data) {
       stats.value = data
     }
-  } catch {
+  } catch (e) {
+    ElMessage.error(e?.message || '统计加载失败')
     stats.value = {
       total: documents.value.length,
       categories: categories.value.length,
@@ -1106,7 +1123,9 @@ async function viewDocument(doc) {
     if (fullDoc) {
       selectedDoc.value = mapDoc(fullDoc)
     }
-  } catch { /* use existing data */ }
+  } catch (e) {
+    ElMessage.error(e?.message || '文档详情加载失败')
+  }
   fetchVersions(doc.id)
   fetchHistory(doc.id)
   if (doc.ai_analyzed) {
@@ -1320,10 +1339,11 @@ async function loadAiAnalysis(docId) {
       entities.value = data.entities || []
     }
     linkedEntities.value = data?.linked_entities || linkedEntities.value
-  } catch {
+  } catch (e) {
     aiAnalysis.value = null
     entities.value = []
     linkedEntities.value = []
+    ElMessage.error(e?.message || 'AI 分析加载失败')
   }
 }
 
@@ -1331,8 +1351,9 @@ async function fetchVersions(docId) {
   try {
     const data = await api.kbGetVersions(docId)
     docVersions.value = Array.isArray(data) ? data : (data?.versions || [])
-  } catch {
+  } catch (e) {
     docVersions.value = []
+    ElMessage.error(e?.message || '版本记录加载失败')
   }
 }
 
@@ -1362,10 +1383,11 @@ async function compareVersions(docId, v1, v2) {
       compareTo.value.content = data.to?.content || compareTo.value?.content
     }
     compareVisible.value = true
-  } catch {
+  } catch (e) {
     compareFrom.value = v1
     compareTo.value = v2
     compareVisible.value = true
+    ElMessage.error(e?.message || '版本对比加载失败')
   }
 }
 
@@ -1392,8 +1414,9 @@ async function fetchHistory(docId) {
   try {
     const data = await api.kbGetDocHistory(docId)
     docHistory.value = Array.isArray(data) ? data : (data?.history || [])
-  } catch {
+  } catch (e) {
     docHistory.value = []
+    ElMessage.error(e?.message || '变更历史加载失败')
   }
 }
 
@@ -1405,14 +1428,9 @@ async function searchEntities() {
   try {
     const data = await api.kbSearch({ q: linkSearchQuery.value, type: 'entity' })
     searchResults.value = Array.isArray(data) ? data : (data?.results || data?.items || [])
-  } catch {
-        searchResults.value = [
-      { id: 'ent-1', name: '核心算法', type: '概念' },
-      { id: 'ent-2', name: '数据模型', type: '结构' },
-      { id: 'ent-3', name: '接口规范', type: '规范' },
-      { id: 'ent-4', name: '性能指标', type: '指标' },
-      { id: 'ent-5', name: '安全策略', type: '策略' }
-    ].filter(e => e.name.includes(linkSearchQuery.value))
+  } catch (e) {
+    searchResults.value = []
+    ElMessage.error(e?.message || '实体搜索失败')
   }
 }
 
