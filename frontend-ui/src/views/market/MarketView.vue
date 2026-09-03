@@ -396,7 +396,8 @@ import {
   Search, Upload, MagicStick, CopyDocument, Connection, List, Clock, Star,
   VideoPlay, Shop, Refresh, Check, Close, WarningFilled
 } from '@element-plus/icons-vue'
-import { marketList, marketRandom, marketUpload, marketClone } from '@/api'
+import { marketList, marketRandom, marketUpload, marketClone, marketApprove, marketReject } from '@/api'
+import { reviewMarketTemplate } from '@/api/market.api'
 import { pushSearchHistory, getSearchHistory } from '@/globalShortcuts'
 import { useAppStore } from '@/stores/app.store'
 
@@ -718,7 +719,12 @@ function approvePkg(pkg) {
     }
   ).then(async () => {
     try {
-      // 前端模拟更新（实际项目中应调用审核 API）
+      // 优先调用统一审核端点，失败降级到 marketApprove
+      try {
+        await reviewMarketTemplate(pkg.id, { review_status: 'approved' })
+      } catch (e) {
+        await marketApprove(pkg.id)
+      }
       const idx = packages.value.findIndex((p) => p.id === pkg.id)
       if (idx !== -1) {
         packages.value[idx] = {
@@ -741,7 +747,7 @@ function rejectPkg(pkg) {
   showRejectDialog.value = true
 }
 
-function confirmReject() {
+async function confirmReject() {
   if (!rejectReason.value.trim()) {
     ElMessage.warning('请填写驳回理由')
     return
@@ -749,17 +755,26 @@ function confirmReject() {
   const pkg = rejectingPkg.value
   if (!pkg) return
 
-  // 前端模拟更新（实际项目中应调用审核 API）
-  const idx = packages.value.findIndex((p) => p.id === pkg.id)
-  if (idx !== -1) {
-    packages.value[idx] = {
-      ...packages.value[idx],
-      review_status: 'rejected',
-      reviewed_at: new Date().toISOString(),
-      reject_reason: rejectReason.value.trim()
+  try {
+    // 优先调用统一审核端点，失败降级到 marketReject
+    try {
+      await reviewMarketTemplate(pkg.id, { review_status: 'rejected', reject_reason: rejectReason.value.trim() })
+    } catch (e) {
+      await marketReject(pkg.id, rejectReason.value.trim())
     }
+    const idx = packages.value.findIndex((p) => p.id === pkg.id)
+    if (idx !== -1) {
+      packages.value[idx] = {
+        ...packages.value[idx],
+        review_status: 'rejected',
+        reviewed_at: new Date().toISOString(),
+        reject_reason: rejectReason.value.trim()
+      }
+    }
+    ElMessage.success('已驳回，作者将收到通知')
+  } catch (e) {
+    ElMessage.error('驳回失败：' + (e.message || '未知错误'))
   }
-  ElMessage.success('已驳回，作者将收到通知')
   showRejectDialog.value = false
   rejectingPkg.value = null
   rejectReason.value = ''

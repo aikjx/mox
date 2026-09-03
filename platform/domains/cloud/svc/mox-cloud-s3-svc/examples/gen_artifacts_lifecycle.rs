@@ -5,7 +5,7 @@
 
 use mox_cloud_s3_svc::lifecycle::{
     CloudLifecycleStats, HotWarmColdLifecycle, LifecycleObjectMeta, LifecycleThresholds,
-    StorageClass,
+    ObjectReplicationStatus, StorageClass,
 };
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -32,6 +32,9 @@ fn main() {
             created_at_ms: now,
             last_accessed_at_ms: now,
             last_transition_ms: 0,
+            version_id: "null".to_string(),
+            replication_status: ObjectReplicationStatus::None,
+            object_locked: false,
         });
     }
     for i in 0..200 {
@@ -43,6 +46,9 @@ fn main() {
             created_at_ms: warm_created,
             last_accessed_at_ms: warm_created,
             last_transition_ms: warm_created,
+            version_id: "null".to_string(),
+            replication_status: ObjectReplicationStatus::None,
+            object_locked: false,
         });
     }
     for i in 0..100 {
@@ -54,6 +60,9 @@ fn main() {
             created_at_ms: cold_created,
             last_accessed_at_ms: cold_created,
             last_transition_ms: cold_created,
+            version_id: "null".to_string(),
+            replication_status: ObjectReplicationStatus::None,
+            object_locked: false,
         });
     }
     let _plans = lc.transition_scan(now, true);

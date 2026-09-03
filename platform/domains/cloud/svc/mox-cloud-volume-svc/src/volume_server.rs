@@ -1,8 +1,9 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
+use crate::backpressure::{BackpressureConfig, BackpressureMonitor};
 use crate::chunk_rebuild::{InMemoryPeerFetcher, PeerChunkFetcher, RebuildCoordinator};
 use crate::error::{VolumeError, VolumeResult};
 use bytes::Bytes;
@@ -37,6 +38,8 @@ pub struct VolumeServer {
     chunk_provider: Option<Arc<dyn ChunkManagerProvider>>,
     rebuild_coordinator: Option<RebuildCoordinator<InMemoryPeerFetcher>>,
     peer_fetcher: Option<Arc<InMemoryPeerFetcher>>,
+    /// CAS 背压信号量：控制写入路径的最大并发数
+    backpressure: Arc<BackpressureMonitor>,
 }
 
 impl VolumeServer {
@@ -54,6 +57,7 @@ impl VolumeServer {
             chunk_provider: None,
             rebuild_coordinator: None,
             peer_fetcher: None,
+            backpressure: Arc::new(BackpressureMonitor::with_default()),
         }
     }
 
@@ -66,6 +70,17 @@ impl VolumeServer {
         self.rebuild_coordinator = Some(RebuildCoordinator::new(fetcher.clone()));
         self.peer_fetcher = Some(fetcher);
         self
+    }
+
+    /// 使用自定义背压配置构建 VolumeServer（Builder 模式）
+    pub fn with_backpressure_config(mut self, config: BackpressureConfig) -> Self {
+        self.backpressure = Arc::new(BackpressureMonitor::new(config));
+        self
+    }
+
+    /// 获取背压监视器引用（用于指标观测和测试）
+    pub fn backpressure(&self) -> &Arc<BackpressureMonitor> {
+        &self.backpressure
     }
 
     pub fn serve(&self) -> VolumeResult<()> {
@@ -89,7 +104,24 @@ impl VolumeServer {
         self.inner.chunks.lock().len() as u64
     }
 
+    /// 写入主入口：CAS 背压准入控制
+    ///
+    /// 在方法入口调用 `backpressure.try_acquire()` 获取并发槽；
+    /// 达到 `max_concurrent` 时返回 `VolumeError::BackpressureRejected`。
+    /// permit 在方法返回时自动 drop，释放并发槽。
+    ///
+    /// 注意：`rebuild_from_peers` 和 `restore_from_manifest` 内部调用
+    /// `write_chunk`，因此自动继承背压控制，无需重复添加。
     pub fn write_chunk(&self, chunk_id: &str, data: Bytes) -> VolumeResult<ChunkAck> {
+        // ---- CAS 背压准入 ----
+        let _permit = match self.backpressure.try_acquire() {
+            Ok(permit) => permit,
+            Err(e) => {
+                return Err(VolumeError::BackpressureRejected(format!("{e}")));
+            }
+        };
+        // _permit 在作用域结束时自动 drop，释放并发槽
+
         let size = data.len() as u64;
         // 容量检查
         {
@@ -294,4 +326,157 @@ pub fn sha256_hex(data: &[u8]) -> String {
     let mut h = Sha256::new();
     h.update(data);
     hex::encode(h.finalize())
+}
+
+// ---------------------------------------------------------------------------
+// 单元测试：背压接入验证
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::backpressure::BackpressureConfig;
+    use std::time::Duration;
+
+    fn custom_config(max: usize) -> BackpressureConfig {
+        BackpressureConfig {
+            max_concurrent: max,
+            high_water: 0.8,
+            low_water: 0.5,
+            cooldown: Duration::ZERO,
+        }
+    }
+
+    /// 测试 1：写入时背压 permit 被正确获取和释放
+    #[test]
+    fn test_backpressure_acquired_on_write() {
+        let vs = VolumeServer::new("vol-bp-1".into(), 1024 * 1024)
+            .with_backpressure_config(custom_config(4));
+
+        // 写入前并发数为 0
+        assert_eq!(vs.backpressure().current_concurrent(), 0);
+
+        // 执行写入
+        let ack = vs
+            .write_chunk("chunk-1", Bytes::from_static(b"hello"))
+            .expect("write should succeed");
+        assert_eq!(ack.chunk_id, "chunk-1");
+
+        // 写入完成后 permit 已释放，并发数归零
+        assert_eq!(vs.backpressure().current_concurrent(), 0);
+
+        // 指标显示有一次准入
+        let metrics = vs.backpressure().metrics();
+        assert_eq!(metrics.total_admissions, 1);
+        assert_eq!(metrics.total_rejections, 0);
+    }
+
+    /// 测试 2：背压满时写入被拒绝
+    #[test]
+    fn test_backpressure_rejects_when_full() {
+        let vs = VolumeServer::new("vol-bp-2".into(), 1024 * 1024)
+            .with_backpressure_config(custom_config(1));
+
+        // 手动持有一个 permit，占满唯一槽位
+        let _held = vs
+            .backpressure()
+            .try_acquire()
+            .expect("should acquire the only slot");
+        assert_eq!(vs.backpressure().current_concurrent(), 1);
+
+        // 此时写入应被背压拒绝
+        let result = vs.write_chunk("chunk-rejected", Bytes::from_static(b"data"));
+        match result {
+            Err(VolumeError::BackpressureRejected(msg)) => {
+                assert!(msg.contains("backpressure rejected"), "msg: {msg}");
+            }
+            other => panic!("expected BackpressureRejected, got {other:?}"),
+        }
+
+        // 释放 permit 后写入应成功
+        drop(_held);
+        assert_eq!(vs.backpressure().current_concurrent(), 0);
+
+        let ack = vs
+            .write_chunk("chunk-ok", Bytes::from_static(b"ok"))
+            .expect("write should succeed after release");
+        assert_eq!(ack.chunk_id, "chunk-ok");
+        assert_eq!(vs.backpressure().current_concurrent(), 0);
+    }
+
+    /// 测试 3：自定义背压配置被正确应用
+    #[test]
+    fn test_backpressure_config_custom() {
+        let config = BackpressureConfig {
+            max_concurrent: 7,
+            high_water: 0.75,
+            low_water: 0.25,
+            cooldown: Duration::from_millis(50),
+        };
+        let vs = VolumeServer::new("vol-bp-3".into(), 1024 * 1024)
+            .with_backpressure_config(config.clone());
+
+        let applied = vs.backpressure().config();
+        assert_eq!(applied.max_concurrent, 7);
+        assert!((applied.high_water - 0.75).abs() < 1e-6);
+        assert!((applied.low_water - 0.25).abs() < 1e-6);
+        assert_eq!(applied.cooldown, Duration::from_millis(50));
+
+        // 高水位阈值 = 7 * 0.75 = 5
+        assert_eq!(applied.high_threshold(), 5);
+        // 低水位阈值 = 7 * 0.25 = 1
+        assert_eq!(applied.low_threshold(), 1);
+
+        // 验证 max_concurrent=7 实际生效：持有 7 个 permit 后第 8 个被拒绝
+        let mut permits = Vec::new();
+        for i in 0..7 {
+            permits.push(
+                vs.backpressure()
+                    .try_acquire()
+                    .unwrap_or_else(|_| panic!("permit {i} should succeed")),
+            );
+        }
+        assert_eq!(vs.backpressure().current_concurrent(), 7);
+        assert!(vs.backpressure().try_acquire().is_err());
+
+        // 释放所有
+        drop(permits);
+        assert_eq!(vs.backpressure().current_concurrent(), 0);
+    }
+
+    /// 测试 4：默认构造的 VolumeServer 也有背压（默认配置，不影响现有行为）
+    #[test]
+    fn test_backpressure_default_constructor() {
+        let vs = VolumeServer::new("vol-default".into(), 1024 * 1024);
+
+        // 默认 max_concurrent=32，写入应正常
+        let ack = vs
+            .write_chunk("c1", Bytes::from_static(b"test"))
+            .expect("default write should succeed");
+        assert_eq!(ack.size, 4);
+        assert_eq!(vs.backpressure().current_concurrent(), 0);
+
+        // 默认配置值
+        let cfg = vs.backpressure().config();
+        assert_eq!(cfg.max_concurrent, 32);
+    }
+
+    /// 测试 5：连续多次写入，背压计数正确（permit 不泄漏）
+    #[test]
+    fn test_backpressure_consecutive_writes() {
+        let vs = VolumeServer::new("vol-consec".into(), 1024 * 1024)
+            .with_backpressure_config(custom_config(2));
+
+        for i in 0..10 {
+            let data = Bytes::from(format!("data-{i}"));
+            vs.write_chunk(&format!("chunk-{i}"), data)
+                .unwrap_or_else(|e| panic!("write {i} failed: {e:?}"));
+            // 每次写入后并发数必须归零
+            assert_eq!(vs.backpressure().current_concurrent(), 0, "after write {i}");
+        }
+
+        let metrics = vs.backpressure().metrics();
+        assert_eq!(metrics.total_admissions, 10);
+        assert_eq!(metrics.total_rejections, 0);
+    }
 }

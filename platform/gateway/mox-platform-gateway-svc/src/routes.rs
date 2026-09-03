@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -59,6 +59,7 @@ mod axum_impl {
         // L2 KG
         DomainDescriptor { prefix: "/kg/v1",         name: "KG",          layer: "L2", description: "知识图谱·核心 6 接口", status: "ready" },
         DomainDescriptor { prefix: "/graph/v1",      name: "Graph",       layer: "L2", description: "图谱·投影/社区/可视化", status: "stub" },
+        DomainDescriptor { prefix: "/kb",            name: "KB",          layer: "L2", description: "云盘知识库·文档/分析/挂图/检索（mox-kb-svc 100% 自研）", status: "ready" },
         DomainDescriptor { prefix: "/cypher/v1",     name: "Cypher",      layer: "L2", description: "Cypher 查询解析", status: "stub" },
         DomainDescriptor { prefix: "/ngql/v1",       name: "nGQL",        layer: "L2", description: "nGQL 查询解析", status: "stub" },
         // L3 AI
@@ -268,7 +269,11 @@ mod axum_impl {
         let real_kg_ai: Router = mox_kg_service_svc::http_adapter::build_kg_ai_router();
 
         // 最终：先合网关层路由(带 state)，再合真实域路由(各自内附 state)
-        router.merge(real_kg_ai)
+        // 知识库域：mox-kb-svc 提供真实 /kb/* 全套接口（对齐 legacy API 面，前端零改动）
+        let kb_router: Router = mox_kb_svc::handlers::build_kb_router();
+
+        // 最终：先合网关层路由(带 state)，再合真实域路由(各自内附 state)
+        router.merge(real_kg_ai).merge(kb_router)
     }
 
     // ====================================================================
@@ -309,3 +314,5 @@ mod axum_impl {
 }
 
 pub use axum_impl::{DomainDescriptor, DOMAINS, GatewayState, build_gateway_router, serve_axum_gateway};
+
+

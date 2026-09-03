@@ -272,6 +272,24 @@ impl NgqlParser {
             return Ok(PlanNode::UseSpace(name));
         }
 
+        // 索引管理：TAG/EDGE INDEX 需在 CREATE/DROP TAG/EDGE 之前匹配（避免被前缀拦截）
+        if up.starts_with("CREATE TAG INDEX") {
+            let name = extract_ident_after(s, 3);
+            return Ok(PlanNode::CreateTagIndex(name));
+        }
+        if up.starts_with("CREATE EDGE INDEX") {
+            let name = extract_ident_after(s, 3);
+            return Ok(PlanNode::CreateEdgeIndex(name));
+        }
+        if up.starts_with("DROP TAG INDEX") {
+            let name = extract_ident_after(s, 3);
+            return Ok(PlanNode::DropTagIndex(name));
+        }
+        if up.starts_with("DROP EDGE INDEX") {
+            let name = extract_ident_after(s, 3);
+            return Ok(PlanNode::DropEdgeIndex(name));
+        }
+
         if up.starts_with("CREATE TAG") {
             let t = extract_ident_after(s, 2);
             return Ok(PlanNode::CreateTag(t));
@@ -291,11 +309,17 @@ impl NgqlParser {
 
         // ========== DML ==========
         if up.starts_with("INSERT VERTEX") {
-            let v = first_vid_in_parens(s).unwrap_or_else(|| "v1".into());
+            // VID 位于 VALUES "vid": 中，用引号提取；回退到括号提取
+            let v = extract_vid_after_values(s)
+                .or_else(|| first_vid_in_parens(s))
+                .unwrap_or_else(|| "v1".into());
             return Ok(PlanNode::InsertVertex(v));
         }
         if up.starts_with("UPDATE VERTEX") {
-            let v = extract_ident_after(s, 2);
+            // UPDATE VERTEX ON <tag> "vid" SET ...，vid 为第一个引号内容
+            let v = extract_quoted_token(s)
+                .or_else(|| Some(extract_ident_after(s, 2)))
+                .unwrap_or_default();
             return Ok(PlanNode::UpdateVertex(v));
         }
         if up.starts_with("UPSERT VERTEX") {
@@ -354,6 +378,16 @@ impl NgqlParser {
         }
 
         if up.starts_with("GO ") {
+            // 集合操作：UNION ALL / INTERSECT / MINUS 需在 GO 子句解析前识别
+            if up.contains("UNION ALL") {
+                return Ok(PlanNode::UnionAll);
+            }
+            if up.contains("INTERSECT") {
+                return Ok(PlanNode::Intersect);
+            }
+            if up.contains(" MINUS ") || up.contains("MINUS ") {
+                return Ok(PlanNode::Minus);
+            }
             // GO ... REVERSELY
             if up.contains("REVERSELY") {
                 return Ok(PlanNode::GoReversely);
@@ -615,7 +649,8 @@ impl NgqlParser {
         }
 
         if up.starts_with("SEARCH FULLTEXT") {
-            let rest = &s[14..].trim();
+            // "SEARCH FULLTEXT" 长度为 15，从其后开始取剩余内容
+            let rest = &s[15..].trim();
             return Ok(PlanNode::SearchFulltext(rest.to_string()));
         }
 
@@ -802,7 +837,14 @@ impl NgqlParser {
             return Ok(PlanNode::WithClause);
         }
         if up.starts_with("CALL ") {
-            let proc = extract_ident_after(s, 1);
+            // CALL 过程名保留完整（含括号），截断到 YIELD 子句
+            let rest = &s[5..];
+            let proc = rest
+                .split(" YIELD ")
+                .next()
+                .unwrap_or(rest)
+                .trim()
+                .to_string();
             return Ok(PlanNode::CallProcedure(proc));
         }
         if up.starts_with("YIELD DISTINCT") {
@@ -828,7 +870,9 @@ impl NgqlParser {
 // ---------- helpers ----------
 fn extract_first_token(s: &str, skip_words: usize) -> Option<String> {
     s.split_whitespace().nth(skip_words).map(|t| {
-        t.trim_matches(|c: char| !c.is_alphanumeric() && c != '_')
+        // 标识符到 '(' 截断（如 CREATE TAG person(...) 只取 person）
+        t.split('(').next().unwrap_or(t)
+            .trim_matches(|c: char| !c.is_alphanumeric() && c != '_')
             .to_string()
     })
 }
@@ -837,7 +881,9 @@ fn extract_ident_after(s: &str, skip_words: usize) -> String {
     s.split_whitespace()
         .nth(skip_words)
         .map(|t| {
-            t.trim_matches(|c: char| !c.is_alphanumeric() && c != '_')
+            // 标识符到 '(' 截断（如 CREATE EDGE follow(...) 只取 follow）
+            t.split('(').next().unwrap_or(t)
+                .trim_matches(|c: char| !c.is_alphanumeric() && c != '_')
                 .to_string()
         })
         .unwrap_or_default()
@@ -853,6 +899,24 @@ fn first_vid_in_parens(s: &str) -> Option<String> {
         vid.trim_matches(|c: char| !c.is_alphanumeric() && c != '_')
             .to_string(),
     )
+}
+
+/// 提取 INSERT VERTEX 的 VID（VALUES "vid": 中的引号内容）
+fn extract_vid_after_values(s: &str) -> Option<String> {
+    let idx = s.find("VALUES")?;
+    let after = &s[idx + 6..];
+    let open = after.find('"')?;
+    let rest = &after[open + 1..];
+    let close = rest.find('"')?;
+    Some(rest[..close].to_string())
+}
+
+/// 提取第一个引号字符串内容（如 UPDATE VERTEX ON person "100"）
+fn extract_quoted_token(s: &str) -> Option<String> {
+    let open = s.find('"')?;
+    let rest = &s[open + 1..];
+    let close = rest.find('"')?;
+    Some(rest[..close].to_string())
 }
 
 fn first_digits(s: &str) -> Option<i64> {
@@ -917,7 +981,7 @@ fn parse_config_kv(s: &str) -> (String, String) {
 
 /// 解析 GRANT ROLE / REVOKE ROLE 语句
 fn parse_grant_role(s: &str) -> (String, String) {
-    // 格式：GRANT ROLE role ON space TO user
+    // 格式：GRANT ROLE role ON space TO user / REVOKE ROLE role ON space FROM user
     let mut role = String::new();
     let mut user = String::new();
 
@@ -928,7 +992,7 @@ fn parse_grant_role(s: &str) -> (String, String) {
         if t == "ROLE" && i + 1 < tokens.len() {
             role = tokens[i + 1].trim_matches(|c: char| !c.is_alphanumeric() && c != '_').to_string();
         }
-        if t == "TO" && i + 1 < tokens.len() {
+        if (t == "TO" || t == "FROM") && i + 1 < tokens.len() {
             user = tokens[i + 1].trim_matches(|c: char| !c.is_alphanumeric() && c != '_').to_string();
         }
         i += 1;

@@ -55,7 +55,8 @@ import {
 import {
   getExperts, registerExpert, consultExpert, multiExpertConsult, expertDebate,
   routeExperts, intelligentConsult, algorithmAnalysis,
-  getExpertMetrics, getExpertOverview
+  getExpertMetrics, getExpertOverview,
+  getRequirementsGraph, getProjectPhaseProgress, advanceProjectPhase
 } from '@/api'
 import { useProject } from '@/composables/projectContext.js'
 import ExpertOverviewPanel from './panels/ExpertOverviewPanel.vue'
@@ -474,7 +475,37 @@ const graphStats = computed(() => {
 })
 let rafId = 0
 
-// 公司官网需求图谱 · 预设数据（用于无项目场景的展示）
+// 需求图谱：优先调用 GET /api/projects/:id/requirements-graph，失败降级为演示占位
+async function loadRequirementsGraph() {
+  const pid = currentProject.value?.id
+  if (!pid) return false
+  try {
+    const data = await getRequirementsGraph(pid)
+    if (data && Array.isArray(data.nodes) && data.nodes.length > 0) {
+      graphData.nodes = data.nodes.map((n, i) => ({ ...n, x: 0, y: 0, vx: 0, vy: 0, index: i }))
+      graphData.edges = Array.isArray(data.edges) ? data.edges : []
+      return true
+    }
+  } catch (e) { /* 降级到 mock */ }
+  return false
+}
+
+// 阶段进度：优先调用 GET /api/projects/:id/phase-progress，失败保留演示占位
+async function loadCenterPhaseProgress() {
+  const pid = currentProject.value?.id
+  if (!pid) return
+  try {
+    const data = await getProjectPhaseProgress(pid)
+    if (data) {
+      if (data.requirement != null) phaseProgress.requirement = data.requirement
+      if (data.architecture != null) phaseProgress.architecture = data.architecture
+      if (data.develop != null) phaseProgress.develop = data.develop
+      if (data.release != null) phaseProgress.release = data.release
+    }
+  } catch (e) { /* 保留演示占位 */ }
+}
+
+// 演示占位：公司官网需求图谱预设数据（API 不可用时降级）
 function buildMockGraph() {
   const pj = currentProject.value ? currentProject.value.name : '公司官网'
   const NODES = [
@@ -700,6 +731,7 @@ const FLOW_STAGES = [
 const localPhase = ref('requirement')
 const currentStage = ref(0)
 const requirementFlowMode = ref(false)
+// 演示占位：阶段进度初始值（后端待提供: GET /api/projects/:id/phase-progress）
 const phaseProgress = reactive({ requirement: 8, architecture: 0, develop: 0, release: 0 })
 const phaseDone = computed(() => ({
   requirement: phaseProgress.requirement >= 100,
@@ -724,12 +756,20 @@ function selectPhase(key) {
   } catch (_) {}
 }
 
-function advanceFlowStage() {
+// 项目阶段推进：调用 PUT /api/projects/:id/advance-phase，失败降级为前端模拟
+async function advanceFlowStage() {
   if (currentStage.value < 3) currentStage.value++
   const key = ['requirement','architecture','develop','release'][Math.min(3, currentStage.value)]
   if (key) localPhase.value = key
   // 模拟推进
   phaseProgress[key] = Math.min(100, (phaseProgress[key] || 0) + 14)
+  // 同步到后端
+  const pid = currentProject.value?.id
+  if (pid) {
+    try {
+      await advanceProjectPhase(pid, { phase: key, progress: phaseProgress[key] })
+    } catch (e) { /* 保留本地模拟状态 */ }
+  }
 }
 
 function runFullFlow() {
@@ -901,7 +941,7 @@ function exportConversation() {
   }
 }
 
-// 页面阶段变化：更新 PhasePipeline 的进度（演示）
+// 演示占位：页面阶段变化时模拟进度更新（后端待提供: 阶段进度实时同步）
 watch(localPhase, (k) => {
   phaseProgress[k] = Math.max(phaseProgress[k] || 0, 10 + Math.round(Math.random() * 8))
 })
@@ -910,10 +950,15 @@ watch(localPhase, (k) => {
 let resizeObs = null
 onMounted(async () => {
   await loadAll()
-  // 初始化 Mock 图谱
-  const mock = buildMockGraph()
-  graphData.nodes.push(...mock.nodes)
-  graphData.edges.push(...mock.edges)
+  // 优先加载后端需求图谱，失败降级为 Mock 图谱
+  const loaded = await loadRequirementsGraph()
+  if (!loaded) {
+    const mock = buildMockGraph()
+    graphData.nodes.push(...mock.nodes)
+    graphData.edges.push(...mock.edges)
+  }
+  // 加载阶段进度
+  loadCenterPhaseProgress()
   await nextTick()
   try {
     if (window.ResizeObserver && graphStageRef.value) {

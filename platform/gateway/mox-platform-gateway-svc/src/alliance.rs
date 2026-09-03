@@ -17,7 +17,7 @@
 use axum::{
     Json, Router,
     extract::{Path, State},
-    routing::{get, post},
+    routing::{get, post, put},
 };
 use chrono::Utc;
 use serde_json::{json, Value};
@@ -331,6 +331,243 @@ async fn skip_node(
 }
 
 // ====================================================================
+// 联盟任务扩展子域 · 日志/融合/DAG/完成切换/状态轮询
+// ====================================================================
+
+/// GET /alliance/tasks/:id/logs — 任务执行日志
+async fn get_task_logs(
+    State(s): State<Arc<AllianceGatewayState>>,
+    Path(task_id): Path<Uuid>,
+) -> Json<Value> {
+    let t0 = now_ms();
+    let now = Utc::now();
+    let logs: Vec<Value> = (0..15usize)
+        .map(|i| {
+            let t = now - chrono::Duration::seconds(((14 - i) * 30) as i64);
+            let levels = ["INFO", "INFO", "INFO", "DEBUG", "WARN", "INFO"];
+            let messages = [
+                "任务初始化完成",
+                "加载专家配置",
+                "匹配专家节点",
+                "启动节点 node-1: 需求分析",
+                "节点 node-1 执行中...",
+                "节点 node-1 完成，耗时 5.2s",
+                "启动节点 node-2: 架构设计",
+                "节点 node-2 执行中...",
+                "检测到依赖满足",
+                "融合中间结果",
+                "进度更新: 35%",
+                "节点 node-2 完成，耗时 12.8s",
+                "启动节点 node-3: 方案评审",
+                "等待人工确认",
+                "任务继续执行",
+            ];
+            json!({
+                "seq": i + 1,
+                "ts": t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                "level": levels[i % levels.len()],
+                "node_id": format!("node-{}", (i / 4) + 1),
+                "message": messages[i % messages.len()],
+            })
+        })
+        .collect();
+    Json(json!({
+        "ok": true,
+        "elapsed_ms": now_ms() - t0,
+        "stub": true,
+        "note": s.stub_note,
+        "data": {
+            "task_id": task_id,
+            "logs": logs,
+            "total": logs.len(),
+        },
+    }))
+}
+
+/// GET /alliance/tasks/:id/fusion-result — 融合结果
+async fn get_fusion_result(
+    State(s): State<Arc<AllianceGatewayState>>,
+    Path(task_id): Path<Uuid>,
+) -> Json<Value> {
+    let t0 = now_ms();
+    Json(json!({
+        "ok": true,
+        "elapsed_ms": now_ms() - t0,
+        "stub": true,
+        "note": s.stub_note,
+        "data": {
+            "task_id": task_id,
+            "fusion_status": "completed",
+            "fusion_strategy": "weighted_voting",
+            "participating_nodes": 3,
+            "result": {
+                "summary": "综合三位专家的分析结果，建议采用微服务架构拆分方案，优先拆分订单和用户服务。",
+                "confidence": 0.87,
+                "key_findings": [
+                    "订单服务耦合度最高，应优先拆分",
+                    "用户服务可独立部署，建议使用独立数据库",
+                    "网关层需要增加限流和熔断能力",
+                ],
+                "recommendations": [
+                    "第一阶段：拆分订单服务（预计2周）",
+                    "第二阶段：拆分用户服务（预计1周）",
+                    "第三阶段：优化网关和监控（预计1周）",
+                ],
+            },
+            "node_contributions": [
+                { "node_id": "node-1", "expert": "需求分析专家", "weight": 0.3, "contribution": "需求梳理和优先级排序" },
+                { "node_id": "node-2", "expert": "架构设计专家", "weight": 0.4, "contribution": "架构方案设计和技术选型" },
+                { "node_id": "node-3", "expert": "运维专家", "weight": 0.3, "contribution": "部署方案和运维成本评估" },
+            ],
+            "fused_at": Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        },
+    }))
+}
+
+/// GET /alliance/tasks/:id/dag — DAG 节点
+async fn get_task_dag(
+    State(s): State<Arc<AllianceGatewayState>>,
+    Path(task_id): Path<Uuid>,
+) -> Json<Value> {
+    let t0 = now_ms();
+    Json(json!({
+        "ok": true,
+        "elapsed_ms": now_ms() - t0,
+        "stub": true,
+        "note": s.stub_note,
+        "data": {
+            "task_id": task_id,
+            "nodes": [
+                {
+                    "id": "node-1",
+                    "name": "需求分析",
+                    "expert_id": "expert-requirement-001",
+                    "status": "completed",
+                    "progress": 100,
+                    "dependencies": [],
+                    "started_at": Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    "completed_at": Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    "duration_ms": 5200,
+                    "position": { "x": 100, "y": 200 },
+                },
+                {
+                    "id": "node-2",
+                    "name": "架构设计",
+                    "expert_id": "expert-arch-001",
+                    "status": "running",
+                    "progress": 65,
+                    "dependencies": ["node-1"],
+                    "started_at": Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    "completed_at": null,
+                    "duration_ms": null,
+                    "position": { "x": 350, "y": 150 },
+                },
+                {
+                    "id": "node-3",
+                    "name": "数据建模",
+                    "expert_id": "expert-data-001",
+                    "status": "running",
+                    "progress": 40,
+                    "dependencies": ["node-1"],
+                    "started_at": Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    "completed_at": null,
+                    "duration_ms": null,
+                    "position": { "x": 350, "y": 280 },
+                },
+                {
+                    "id": "node-4",
+                    "name": "方案评审",
+                    "expert_id": "expert-review-001",
+                    "status": "pending",
+                    "progress": 0,
+                    "dependencies": ["node-2", "node-3"],
+                    "started_at": null,
+                    "completed_at": null,
+                    "duration_ms": null,
+                    "position": { "x": 600, "y": 200 },
+                },
+                {
+                    "id": "node-5",
+                    "name": "融合输出",
+                    "expert_id": "expert-fusion-001",
+                    "status": "pending",
+                    "progress": 0,
+                    "dependencies": ["node-4"],
+                    "started_at": null,
+                    "completed_at": null,
+                    "duration_ms": null,
+                    "position": { "x": 850, "y": 200 },
+                },
+            ],
+            "edges": [
+                { "source": "node-1", "target": "node-2", "label": "依赖" },
+                { "source": "node-1", "target": "node-3", "label": "依赖" },
+                { "source": "node-2", "target": "node-4", "label": "依赖" },
+                { "source": "node-3", "target": "node-4", "label": "依赖" },
+                { "source": "node-4", "target": "node-5", "label": "依赖" },
+            ],
+            "stats": {
+                "total": 5,
+                "completed": 1,
+                "running": 2,
+                "pending": 2,
+                "failed": 0,
+            },
+        },
+    }))
+}
+
+/// PUT /alliance/tasks/:id/toggle-done — 完成状态切换
+async fn toggle_task_done(
+    State(s): State<Arc<AllianceGatewayState>>,
+    Path(task_id): Path<Uuid>,
+) -> Json<Value> {
+    let t0 = now_ms();
+    Json(json!({
+        "ok": true,
+        "elapsed_ms": now_ms() - t0,
+        "stub": true,
+        "note": s.stub_note,
+        "data": {
+            "task_id": task_id,
+            "previous_status": "in_progress",
+            "current_status": "completed",
+            "toggled": true,
+            "completed_at": Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            "message": format!("任务 {} 已标记为完成", task_id),
+        },
+    }))
+}
+
+/// GET /alliance/tasks/:id/status — 任务状态（供轮询）
+async fn get_task_status_poll(
+    State(s): State<Arc<AllianceGatewayState>>,
+    Path(task_id): Path<Uuid>,
+) -> Json<Value> {
+    let t0 = now_ms();
+    Json(json!({
+        "ok": true,
+        "elapsed_ms": now_ms() - t0,
+        "stub": true,
+        "note": s.stub_note,
+        "data": {
+            "task_id": task_id,
+            "status": "running",
+            "progress": 0.45,
+            "current_node": "node-2",
+            "current_node_name": "架构设计",
+            "total_nodes": 5,
+            "completed_nodes": 1,
+            "running_nodes": 2,
+            "pending_nodes": 2,
+            "failed_nodes": 0,
+            "estimated_remaining_minutes": 18,
+            "updated_at": Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        },
+    }))
+}
+
+// ====================================================================
 // 路由装配入口：联盟域 8 端点
 // ====================================================================
 /// 构建联盟域 HTTP 路由（Api 模式·进程内调用）
@@ -350,5 +587,11 @@ pub fn build_alliance_router() -> Router {
         .route("/alliance/v1/tasks/:task_id/status", get(get_execution_status))
         .route("/alliance/v1/tasks/:task_id/nodes", get(list_nodes))
         .route("/alliance/v1/tasks/:task_id/nodes/:node_id", get(get_node).post(skip_node))
+        // —— 联盟任务扩展 · 日志/融合/DAG/完成切换/状态轮询 ——
+        .route("/alliance/tasks/:id/logs", get(get_task_logs))
+        .route("/alliance/tasks/:id/fusion-result", get(get_fusion_result))
+        .route("/alliance/tasks/:id/dag", get(get_task_dag))
+        .route("/alliance/tasks/:id/toggle-done", put(toggle_task_done))
+        .route("/alliance/tasks/:id/status", get(get_task_status_poll))
         .with_state(state)
 }

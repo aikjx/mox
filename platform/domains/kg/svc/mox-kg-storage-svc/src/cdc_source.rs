@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -26,6 +26,36 @@ pub enum CdcEventType {
     EdgeCreated,
     EdgeUpdated,
     EdgeDeleted,
+}
+
+impl CdcEventType {
+    /// 返回事件类型的字符串表示
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            CdcEventType::VertexCreated => "VertexCreated",
+            CdcEventType::VertexUpdated => "VertexUpdated",
+            CdcEventType::VertexDeleted => "VertexDeleted",
+            CdcEventType::EdgeCreated => "EdgeCreated",
+            CdcEventType::EdgeUpdated => "EdgeUpdated",
+            CdcEventType::EdgeDeleted => "EdgeDeleted",
+        }
+    }
+
+    /// 判断是否为顶点事件
+    pub fn is_vertex_event(&self) -> bool {
+        matches!(
+            self,
+            CdcEventType::VertexCreated | CdcEventType::VertexUpdated | CdcEventType::VertexDeleted
+        )
+    }
+
+    /// 判断是否为边事件
+    pub fn is_edge_event(&self) -> bool {
+        matches!(
+            self,
+            CdcEventType::EdgeCreated | CdcEventType::EdgeUpdated | CdcEventType::EdgeDeleted
+        )
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

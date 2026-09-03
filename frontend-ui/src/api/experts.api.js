@@ -66,3 +66,32 @@ export const getOrchestrationPlugins = () => http.get('/experts/orchestration/pl
 /** @deprecated 请使用 getOrchestrationPlugins */
 export const listOrchestrationPlugins = getOrchestrationPlugins
 export const getOrchestrationHistory = (params) => http.get('/experts/orchestration/history', { params })
+
+// ===== 专家广场扩展端点（Task 2） =====
+// 平台统计
+export const getExpertsStats = () => http.get('/experts/stats')
+
+// 我的预约
+export const getMyBookings = (params) => http.get('/experts/bookings/mine', { params })
+
+// 专家收藏切换
+export const toggleExpertFavorite = (expertId) =>
+  http.post(`/experts/${encodeURIComponent(expertId)}/favorite`)
+
+// 创建预约
+export const createBooking = (data) => http.post('/experts/bookings', data)
+
+// 取消预约
+export const cancelBooking = (bookingId) =>
+  http.put(`/experts/bookings/${encodeURIComponent(bookingId)}/cancel`)
+
+// 进入咨询室
+export const enterConsultRoom = (bookingId) =>
+  http.get(`/experts/bookings/${encodeURIComponent(bookingId)}/consult-room`)
+
+// 加入专家团队
+export const joinExpertTeam = (data) => http.post('/experts/team', data)
+
+// 即时咨询
+export const consultNow = (expertId, data) =>
+  http.post(`/experts/${encodeURIComponent(expertId)}/consult-now`, data)

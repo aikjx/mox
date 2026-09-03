@@ -280,7 +280,9 @@ import {
 import {
   getAllianceTasks, createAllianceTask,
   pauseAllianceTask, cancelAllianceTask, resumeAllianceTask,
-  getExperts
+  getExperts, aiChat,
+  getAllianceTaskLogs, getAllianceFusionResult, getAllianceTaskDag,
+  toggleAllianceTaskDone, getAllianceTaskStatus
 } from '@/api'
 
 // ===== 状态 =====
@@ -294,6 +296,8 @@ const logs = ref([])
 const fusionResult = ref(null)
 const logsContainer = ref(null)
 const availableExperts = ref([])
+const dagNodesData = ref(null)
+const dagEdgesData = ref(null)
 
 // AI 助手
 const aiMessages = ref([
@@ -319,7 +323,7 @@ const statusFilters = [
   { key: 'failed', label: '失败' }
 ]
 
-// ===== Mock 数据 =====
+// 演示占位：联盟任务列表（getAllianceTasks API 失败时的降级展示）
 const mockTasks = [
   {
     id: 'task_001', name: '需求知识图谱构建', description: '从项目文档中提取实体与关系，构建全维需求知识图谱',
@@ -359,6 +363,7 @@ const mockTasks = [
   }
 ]
 
+// 演示占位：任务执行日志（后端待提供: GET /api/alliance/tasks/:id/logs）
 const mockLogs = [
   { time: '10:30:15', level: 'info', message: '任务启动：需求知识图谱构建' },
   { time: '10:30:18', level: 'info', message: '加载专家：林墨白(算法)、郑星图(图谱)、周知行(AI)' },
@@ -372,6 +377,7 @@ const mockLogs = [
   { time: '10:35:20', level: 'info', message: '正在进行第二轮交叉验证...' }
 ]
 
+// 演示占位：融合结果（后端待提供: GET /api/alliance/tasks/:id/fusion-result）
 const mockFusion = {
   summary: '经过 4 位专家的多轮分析与加权融合，共提取实体 156 个、关系 312 条，构建了包含 6 个核心域的需求知识图谱。融合置信度 87.3%，建议在"用户行为域"进行人工复核。',
   confidence: 0.873,
@@ -390,7 +396,9 @@ const filteredTasks = computed(() => {
   return tasks.value.filter(t => t.status === currentFilter.value)
 })
 
+// DAG 节点：优先使用 API 数据，失败则使用演示占位
 const dagNodes = computed(() => {
+  if (dagNodesData.value && dagNodesData.value.length > 0) return dagNodesData.value
   if (!selectedTask.value) return []
   const base = [
     { id: 'n1', name: '需求解析', type: '算法专家', status: 'completed', x: 100, y: 60 },
@@ -402,7 +410,9 @@ const dagNodes = computed(() => {
   return base
 })
 
+// DAG 边：优先使用 API 数据，失败则使用演示占位
 const dagEdges = computed(() => {
+  if (dagEdgesData.value && dagEdgesData.value.length > 0) return dagEdgesData.value
   if (!selectedTask.value) return []
   return [
     { x1: 160, y1: 60, x2: 220, y2: 30, status: 'completed' },
@@ -444,26 +454,59 @@ function getDueDate(task) {
   return task.due_date || '--'
 }
 
-function toggleTaskDone(task) {
+// 任务完成状态切换：调用 PUT /api/alliance/tasks/:id/toggle-done，失败回滚本地状态
+async function toggleTaskDone(task) {
+  const prevStatus = task.status
+  const prevProgress = task.progress
   if (task.status === 'completed') {
     task.status = 'pending'
     task.progress = 0
-    ElMessage.info('任务已恢复为待处理')
   } else {
     task.status = 'completed'
     task.progress = 100
-    ElMessage.success('任务已标记为完成 🎉')
+  }
+  try {
+    await toggleAllianceTaskDone(task.id)
+    if (task.status === 'completed') {
+      ElMessage.success('任务已标记为完成 🎉')
+    } else {
+      ElMessage.info('任务已恢复为待处理')
+    }
+  } catch (e) {
+    task.status = prevStatus
+    task.progress = prevProgress
+    ElMessage.error('状态切换失败：' + e.message)
   }
 }
 
-function selectTask(task) {
+async function selectTask(task) {
   selectedTask.value = task
-  logs.value = [...mockLogs]
+  // 加载任务日志：失败则降级到 mock
+  try {
+    const logData = await getAllianceTaskLogs(task.id)
+    logs.value = Array.isArray(logData) ? logData : (logData?.items || [...mockLogs])
+  } catch (e) {
+    logs.value = [...mockLogs]
+  }
+  // 加载融合结果：仅已完成任务，失败则降级
   if (task.status === 'completed') {
-    fusionResult.value = { ...mockFusion }
+    try {
+      const fusion = await getAllianceFusionResult(task.id)
+      fusionResult.value = fusion || { ...mockFusion }
+    } catch (e) {
+      fusionResult.value = { ...mockFusion }
+    }
   } else {
     fusionResult.value = null
   }
+  // 加载 DAG：失败则使用计算属性 mock
+  try {
+    const dag = await getAllianceTaskDag(task.id)
+    if (dag && dag.nodes) {
+      dagNodesData.value = dag.nodes
+      dagEdgesData.value = dag.edges || []
+    }
+  } catch (e) { /* 保留 computed mock DAG */ }
   nextTick(() => {
     if (logsContainer.value) {
       logsContainer.value.scrollTop = logsContainer.value.scrollHeight
@@ -576,38 +619,44 @@ async function sendAiMessage() {
   aiInput.value = ''
   aiLoading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    const responses = [
-      `当前任务「${selectedTask.value?.name || '未选择'}」进度为 ${selectedTask.value?.progress || 0}%，预计还需 ${selectedTask.value?.eta || '未知'}。`,
-      '根据日志分析，建议在"关系抽取"节点增加重试机制，当前失败率约 12%。',
-      '融合策略方面，当前使用加权融合，对于存在专家分歧的场景，建议切换为辩论融合以获得更全面的结论。',
-      '检测到 3 位专家响应时间偏长，建议检查专家服务状态或调整超时配置。'
-    ]
-    aiMessages.value.push({
-      role: 'assistant',
-      content: responses[Math.floor(Math.random() * responses.length)]
-    })
+    const taskCtx = selectedTask.value
+      ? `当前任务：${selectedTask.value.name}，状态：${statusLabel(selectedTask.value.status)}，进度：${selectedTask.value.progress || 0}%，预计剩余：${selectedTask.value.eta || '未知'}。`
+      : '当前未选择任务。'
+    const prompt = `你是联盟任务 AI 助手。${taskCtx}\n用户问题：${msg}\n请基于任务状态和日志给出分析与建议。`
+    const res = await aiChat({ message: prompt })
+    const reply = res?.data?.content || res?.content || res?.data?.message || res?.message || (typeof res === 'string' ? res : '分析完成。')
+    aiMessages.value.push({ role: 'assistant', content: reply })
   } catch (e) {
-    aiMessages.value.push({ role: 'assistant', content: '抱歉，分析失败，请稍后重试。' })
+    aiMessages.value.push({ role: 'assistant', content: '抱歉，AI 分析失败：' + (e.message || '未知错误') + '。请稍后重试。' })
   } finally {
     aiLoading.value = false
   }
 }
 
-// 模拟进度更新
+// 任务状态轮询：优先调用 GET /api/alliance/tasks/:id/status，失败则前端模拟进度
 let progressTimer = null
 onMounted(async () => {
   await Promise.all([loadTasks(), loadExpertsList()])
-  progressTimer = setInterval(() => {
-    tasks.value.forEach(t => {
+  progressTimer = setInterval(async () => {
+    for (const t of tasks.value) {
       if (t.status === 'running' && t.progress < 100) {
-        t.progress = Math.min(100, t.progress + Math.random() * 2)
-        if (t.progress >= 100) {
-          t.status = 'completed'
-          t.progress = 100
+        try {
+          const st = await getAllianceTaskStatus(t.id)
+          if (st) {
+            if (st.status) t.status = st.status
+            if (st.progress != null) t.progress = Math.min(100, st.progress)
+            if (t.progress >= 100 && t.status === 'running') t.status = 'completed'
+          }
+        } catch (e) {
+          // API 不可用时降级为本地模拟
+          t.progress = Math.min(100, t.progress + Math.random() * 2)
+          if (t.progress >= 100) {
+            t.status = 'completed'
+            t.progress = 100
+          }
         }
       }
-    })
+    }
   }, 2000)
 })
 

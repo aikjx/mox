@@ -91,7 +91,7 @@ impl GarbageCollector {
             let size = tokio::fs::metadata(&cp).await.map(|m| m.len()).unwrap_or(0);
             let age = tokio::fs::metadata(&cp)
                 .await
-                .and_then(|m| m.modified().map_err(|e| std::io::Error::other(e)))
+                .and_then(|m| m.modified().map_err(std::io::Error::other))
                 .map(|t| {
                     t.duration_since(UNIX_EPOCH)
                         .map(|d| now.saturating_sub(d.as_secs()))

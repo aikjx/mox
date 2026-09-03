@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -445,6 +445,18 @@ pub use storage_engine::{
 pub use cdc_publisher::{
     CdcPublisher, CdcEvent, CdcEventType, FlowControlPolicy,
 };
+
+/// CDC 源重导出
+pub use cdc_source::CdcSource;
+
+/// 图谱编解码重导出
+pub use graph_codec::PropValue;
+
+/// 存储服务端重导出
+pub use storage_server::StorageServer;
+
+/// 存储 API 重导出（LRU 缓存 + 热邻接缓存）
+pub use storage_api::{HotNeighborCache, LruCache};
 
 #[cfg(test)]
 mod tests {

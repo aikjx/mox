@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page-container">
     <div class="page-header">
       <div class="page-header-left">
@@ -182,6 +182,7 @@ function buildRows(r) {
   walk(r, '')
   resourceRows.value = rows.length ? rows.slice(0, 12) : mockRows()
 }
+// 演示占位：API 返回空时的兜底资源行数据
 function mockRows() {
   return [
     { name: 'CPU 核心', type: 'compute', status: 'healthy', usage: 0.42, detail: '8 vCPU' },
@@ -198,6 +199,7 @@ function renderCharts() {
     gaugeChart = echarts.init(gaugeEl.value)
     healthChart = echarts.init(healthEl.value)
   }
+  // 演示占位：CPU/内存无数据时的兜底默认值
   const cpu = toPct(pick(rawResources.value, ['cpu', 'cpu_usage']) ?? 0.4)
   const mem = toPct(pick(rawResources.value, ['memory', 'mem']) ?? 0.6)
   gaugeChart.setOption({
@@ -222,6 +224,7 @@ function renderCharts() {
     series: [
       {
         type: 'bar',
+        // 演示占位：插件/算子/图谱/总线健康度为硬编码值，后端待提供 /ai/resources/health 详细指标
         data: [cpu, mem, 20, 35, 28, 15],
         itemStyle: {
           borderRadius: [6, 6, 0, 0],

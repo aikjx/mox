@@ -16,10 +16,23 @@
 //!
 //! 每日 UTC 02:00 由 `transition_scan()` 触发全量扫描并生成迁移计划；
 //! 任何对 WARM/COLD/GLACIER 对象的读都通过 `touch_and_restore_to_hot()` 回到 HOT。
+//!
+//! # P1 优化（v2.2）
+//!
+//! - **复制等待门控（Replication Wait Gate）**：当对象复制状态为 Pending/Failed 时，
+//!   阻塞 Delete/Transition 类生命周期动作，降级为不执行，直到复制完成。
+//! - **DeleteAllVersions 短路路径**：当对象命中全版本删除规则且满足
+//!   （无 Object Lock + 无版本锁定 + 无 Pending 复制）时，直接生成全版本删除计划
+//!   并跳过逐版本评估。
+//!
+//! 算法参考：RustFS lifecycle evaluator (Apache 2.0) — `crates/lifecycle/src/evaluator.rs`
+//! 本实现为自研重写，未直接复制代码。
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::sync::Arc;
+
+use crate::scanner::{ScanBudget, ScanBudgetTracker, ScanStats};
 
 /// 存储类枚举
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -49,6 +62,41 @@ impl Default for StorageClass {
     }
 }
 
+// ---------------------------------------------------------------------------
+// P1: 复制等待门控 — 对象复制状态（生命周期视图，简化枚举）
+// ---------------------------------------------------------------------------
+
+/// 对象复制状态（生命周期门控用简化枚举）
+///
+/// 与 `crate::replication::ReplicationStatus` 对应，但额外提供 `None`
+/// 表示未配置复制规则（不门控）。
+///
+/// 注意：本类型与 `crate::replication::ObjectReplicationStatus`（完整记录结构体）
+/// 同名但位于不同模块；lib.rs 中以别名 `LifecycleReplicationStatus` 导出以避免冲突。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub enum ObjectReplicationStatus {
+    /// 未配置复制规则（不门控）
+    None,
+    /// 复制待处理（门控 Delete/Transition）
+    Pending,
+    /// 复制完成（不门控）
+    Completed,
+    /// 复制失败（门控 Delete/Transition）
+    Failed,
+}
+
+impl Default for ObjectReplicationStatus {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+/// 未启用版本化时的默认版本 ID（S3 约定）
+fn default_version_id() -> String {
+    "null".to_string()
+}
+
 /// 对象元数据（生命周期视图）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LifecycleObjectMeta {
@@ -62,6 +110,15 @@ pub struct LifecycleObjectMeta {
     pub last_accessed_at_ms: u64,
     /// 上次类变更时间 ms
     pub last_transition_ms: u64,
+    /// v2.2: 版本 ID（未启用版本化时为 "null"）
+    #[serde(default = "default_version_id")]
+    pub version_id: String,
+    /// v2.2: 对象复制状态（用于生命周期门控）
+    #[serde(default)]
+    pub replication_status: ObjectReplicationStatus,
+    /// v2.2: 对象是否被 Object Lock 锁定（保留期内不可删除）
+    #[serde(default)]
+    pub object_locked: bool,
 }
 
 /// 迁移动作
@@ -77,6 +134,10 @@ pub enum TransitionAction {
     ColdRestoreToHot,
     /// v2.1: Glacier restore（最慢，通常 3~12h）+ 回温
     GlacierRestoreToHot,
+    /// v2.2: 删除指定版本
+    DeleteVersion,
+    /// v2.2: 删除对象的所有版本（短路路径）
+    DeleteAllVersions,
 }
 
 /// 迁移计划项
@@ -89,6 +150,56 @@ pub struct TransitionPlan {
     pub action: TransitionAction,
     pub scheduled_at_ms: u64,
     pub reason: String,
+}
+
+// ---------------------------------------------------------------------------
+// P1: DeleteAllVersions 短路路径
+// ---------------------------------------------------------------------------
+
+/// 全版本删除计划（DeleteAllVersions 短路路径产物）
+///
+/// 当对象命中全版本删除规则且满足安全条件（无 Object Lock、无版本锁定、
+/// 无 Pending 复制）时生成，调用方应据此删除该对象的所有版本并跳过
+/// 剩余逐版本生命周期评估。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteAllVersionsPlan {
+    pub bucket: String,
+    pub key: String,
+    /// 要删除的所有版本 ID
+    pub version_ids: Vec<String>,
+    pub reason: String,
+    pub scheduled_at_ms: u64,
+}
+
+// ---------------------------------------------------------------------------
+// P1: 复制等待门控判断函数
+// ---------------------------------------------------------------------------
+
+/// 判断给定的生命周期动作是否被复制状态阻塞。
+///
+/// Pending/Failed 状态阻塞 Delete/Transition 类动作（HotToWarm、WarmToCold、
+/// ColdToGlacier、DeleteVersion、DeleteAllVersions）；Restore 类动作（读触发回温）
+/// 不被门控，因为它们由用户读操作触发而非生命周期扫描。
+///
+/// 算法参考：RustFS `replication_status_blocks_lifecycle` + `lifecycle_action_waits_for_replication`
+/// (Apache 2.0, `crates/lifecycle/src/evaluator.rs`)，本实现为自研重写。
+pub fn replication_status_blocks_lifecycle(
+    status: ObjectReplicationStatus,
+    action: &TransitionAction,
+) -> bool {
+    match status {
+        ObjectReplicationStatus::Pending | ObjectReplicationStatus::Failed => {
+            matches!(
+                action,
+                TransitionAction::HotToWarm
+                    | TransitionAction::WarmToCold
+                    | TransitionAction::ColdToGlacier
+                    | TransitionAction::DeleteVersion
+                    | TransitionAction::DeleteAllVersions
+            )
+        }
+        _ => false,
+    }
 }
 
 /// 生命周期全局统计（可 JSON 序列化，供 /cloud/lifecycle/stats 返回）
@@ -107,6 +218,12 @@ pub struct CloudLifecycleStats {
     pub transitions_last_24h: u64,
     pub restores_last_24h: u64,
     pub scanned_at_ms: u64,
+    /// v2.2: 被复制等待门控阻塞的生命周期动作计数
+    #[serde(default)]
+    pub replication_blocked_count: u64,
+    /// v2.2: DeleteAllVersions 短路触发计数
+    #[serde(default)]
+    pub delete_all_short_circuit_count: u64,
 }
 
 /// 时间阈值（可配置，默认与 spec 对齐）
@@ -138,6 +255,18 @@ pub struct HotWarmColdLifecycle {
     objects: parking_lot::Mutex<BTreeMap<(String, String), LifecycleObjectMeta>>,
     transition_counter: parking_lot::Mutex<u64>,
     restore_counter: parking_lot::Mutex<u64>,
+    /// v2.2: 被复制门控阻塞的动作计数
+    replication_blocked_counter: parking_lot::Mutex<u64>,
+    /// v2.2: DeleteAllVersions 短路触发计数
+    delete_all_short_circuit_counter: parking_lot::Mutex<u64>,
+    /// v2.2: 标记为 DeleteAllVersions 候选的 (bucket, key) 集合
+    delete_all_candidates: parking_lot::Mutex<HashSet<(String, String)>>,
+    /// v2.2: 启用了 Object Lock 的桶集合
+    object_lock_buckets: parking_lot::Mutex<HashSet<String>>,
+    /// v2.3: 三维扫描预算（None = 不限制，保持向后兼容）
+    scan_budget: Option<ScanBudget>,
+    /// v2.3: 最近一次 transition_scan 的统计快照
+    last_scan_stats: parking_lot::Mutex<Option<ScanStats>>,
 }
 
 impl Default for HotWarmColdLifecycle {
@@ -153,7 +282,36 @@ impl HotWarmColdLifecycle {
             objects: parking_lot::Mutex::new(BTreeMap::new()),
             transition_counter: parking_lot::Mutex::new(0),
             restore_counter: parking_lot::Mutex::new(0),
+            replication_blocked_counter: parking_lot::Mutex::new(0),
+            delete_all_short_circuit_counter: parking_lot::Mutex::new(0),
+            delete_all_candidates: parking_lot::Mutex::new(HashSet::new()),
+            object_lock_buckets: parking_lot::Mutex::new(HashSet::new()),
+            scan_budget: None,
+            last_scan_stats: parking_lot::Mutex::new(None),
         }
+    }
+
+    /// v2.3: 构建器方法 — 设置三维扫描预算
+    ///
+    /// ```
+    /// use mox_cloud_s3_svc::lifecycle::{HotWarmColdLifecycle, LifecycleThresholds};
+    /// use mox_cloud_s3_svc::scanner::ScanBudget;
+    /// let lc = HotWarmColdLifecycle::new(LifecycleThresholds::default())
+    ///     .with_scan_budget(ScanBudget::default());
+    /// ```
+    pub fn with_scan_budget(mut self, budget: ScanBudget) -> Self {
+        self.scan_budget = Some(budget);
+        self
+    }
+
+    /// v2.3: 获取当前扫描预算配置（None = 未启用预算限制）
+    pub fn scan_budget(&self) -> Option<&ScanBudget> {
+        self.scan_budget.as_ref()
+    }
+
+    /// v2.3: 获取最近一次 transition_scan 的统计快照
+    pub fn last_scan_stats(&self) -> Option<ScanStats> {
+        self.last_scan_stats.lock().clone()
     }
 
     pub fn thresholds(&self) -> LifecycleThresholds {
@@ -173,6 +331,140 @@ impl HotWarmColdLifecycle {
     /// 删除对象
     pub fn remove_object(&self, bucket: &str, key: &str) {
         self.objects.lock().remove(&(bucket.to_string(), key.to_string()));
+    }
+
+    // -----------------------------------------------------------------------
+    // P1: DeleteAllVersions 候选管理 + Object Lock 桶管理
+    // -----------------------------------------------------------------------
+
+    /// 标记 (bucket, key) 为 DeleteAllVersions 候选（命中桶级全版本删除规则时调用）
+    pub fn mark_delete_all_candidate(&self, bucket: &str, key: &str) {
+        self.delete_all_candidates
+            .lock()
+            .insert((bucket.to_string(), key.to_string()));
+    }
+
+    /// 取消 DeleteAllVersions 候选标记
+    pub fn unmark_delete_all_candidate(&self, bucket: &str, key: &str) {
+        self.delete_all_candidates
+            .lock()
+            .remove(&(bucket.to_string(), key.to_string()));
+    }
+
+    /// 设置桶是否启用 Object Lock
+    pub fn set_bucket_object_lock(&self, bucket: &str, enabled: bool) {
+        let mut buckets = self.object_lock_buckets.lock();
+        if enabled {
+            buckets.insert(bucket.to_string());
+        } else {
+            buckets.remove(bucket);
+        }
+    }
+
+    /// 查询桶是否启用 Object Lock
+    pub fn is_bucket_object_locked(&self, bucket: &str) -> bool {
+        self.object_lock_buckets.lock().contains(bucket)
+    }
+
+    // -----------------------------------------------------------------------
+    // P1: DeleteAllVersions 短路评估
+    // -----------------------------------------------------------------------
+
+    /// 评估对象是否满足 DeleteAllVersions 短路条件。
+    ///
+    /// 返回 `Some(plan)` 表示满足条件，应执行全版本删除并短路（跳过逐版本评估）；
+    /// 返回 `None` 表示不满足，应继续逐版本评估。
+    ///
+    /// 短路条件（全部满足）：
+    /// 1. 桶未启用 Object Lock
+    /// 2. 无版本被锁定（`object_locked == false`）
+    /// 3. 无版本处于复制 Pending 状态
+    ///
+    /// 算法参考：RustFS Evaluator::eval_inner 中 DeleteAllVersionsAction 分支
+    /// (Apache 2.0, `crates/lifecycle/src/evaluator.rs`)，本实现为自研重写。
+    ///
+    /// # 当前模型说明
+    /// 当前 `HotWarmColdLifecycle` 为单版本模型（`(bucket, key) -> meta`），
+    /// `versions` 切片通常含一个元素；多版本短路待 `versioning` 模块深度集成后生效。
+    pub fn evaluate_delete_all_versions(
+        &self,
+        bucket: &str,
+        key: &str,
+        versions: &[LifecycleObjectMeta],
+        now_ms: u64,
+        object_lock_enabled: bool,
+    ) -> Option<DeleteAllVersionsPlan> {
+        // 条件1：桶未启用 Object Lock
+        if object_lock_enabled {
+            return None;
+        }
+        // 条件2 & 3：无版本被锁定，无版本处于复制 Pending 状态
+        for v in versions {
+            if v.object_locked {
+                return None;
+            }
+            if v.replication_status == ObjectReplicationStatus::Pending {
+                return None;
+            }
+        }
+        // 满足全部条件，生成全版本删除计划
+        Some(DeleteAllVersionsPlan {
+            bucket: bucket.to_string(),
+            key: key.to_string(),
+            version_ids: versions.iter().map(|v| v.version_id.clone()).collect(),
+            reason: "DeleteAllVersions short-circuit".to_string(),
+            scheduled_at_ms: now_ms,
+        })
+    }
+
+    /// 扫描所有 DeleteAllVersions 候选，生成全版本删除计划。
+    ///
+    /// `apply = true` 时实际从对象存储中移除已短路的对象并取消候选标记。
+    /// 返回满足短路条件的删除计划列表。
+    pub fn delete_all_scan(&self, now_ms: u64, apply: bool) -> Vec<DeleteAllVersionsPlan> {
+        // 快照候选集合与 Object Lock 桶集合（避免在持有 objects 锁时嵌套加锁）
+        let candidates: Vec<(String, String)> =
+            self.delete_all_candidates.lock().iter().cloned().collect();
+        let object_lock_buckets: HashSet<String> = self.object_lock_buckets.lock().clone();
+
+        let mut plans: Vec<DeleteAllVersionsPlan> = Vec::new();
+        let mut removed_keys: Vec<(String, String)> = Vec::new();
+
+        {
+            let mut objs = self.objects.lock();
+            for (bucket, key) in &candidates {
+                let k = (bucket.clone(), key.clone());
+                let Some(meta) = objs.get(&k) else {
+                    continue;
+                };
+                let object_lock_enabled = object_lock_buckets.contains(bucket);
+                let versions = [meta.clone()];
+                if let Some(plan) = self.evaluate_delete_all_versions(
+                    bucket,
+                    key,
+                    &versions,
+                    now_ms,
+                    object_lock_enabled,
+                ) {
+                    if apply {
+                        objs.remove(&k);
+                        removed_keys.push(k);
+                    }
+                    plans.push(plan);
+                }
+            }
+        }
+
+        // objects 锁已释放，安全地更新候选标记与统计
+        if apply && !removed_keys.is_empty() {
+            let mut candidates_lock = self.delete_all_candidates.lock();
+            for k in &removed_keys {
+                candidates_lock.remove(k);
+            }
+            *self.delete_all_short_circuit_counter.lock() += removed_keys.len() as u64;
+        }
+
+        plans
     }
 
     /// 读取：如果是 WARM/COLD/GLACIER → 自动回温到 HOT，返回 (新class, 是否发生restore)
@@ -219,10 +511,58 @@ impl HotWarmColdLifecycle {
     }
 
     /// 定时扫描：基于 `now_ms` 生成迁移计划；`apply = true` 时实际应用
+    ///
+    /// v2.2 新增：
+    /// - **复制等待门控**：对象复制状态为 Pending/Failed 时，跳过 Delete/Transition 类动作
+    /// - **DeleteAllVersions 短路**：对象为 DeleteAllVersions 候选且满足安全条件时，
+    ///   跳过迁移评估（对象将由 `delete_all_scan` 统一删除）
+    ///
+    /// v2.3 新增：
+    /// - **三维扫描预算**：如果通过 [`with_scan_budget`](Self::with_scan_budget) 设置了预算，
+    ///   扫描过程中会检查时间 / IO / 容量预算，超限则提前终止；
+    ///   每个对象记录触发令牌桶限速，迁移操作记录迁移字节数。
+    ///   扫描结束后统计快照可通过 [`last_scan_stats`](Self::last_scan_stats) 获取。
     pub fn transition_scan(&self, now_ms: u64, apply: bool) -> Vec<TransitionPlan> {
         let mut plans: Vec<TransitionPlan> = Vec::new();
+
+        // v2.3: 如果配置了扫描预算，创建追踪器
+        let budget_tracker: Option<ScanBudgetTracker> = self
+            .scan_budget
+            .as_ref()
+            .map(|b| ScanBudgetTracker::new(b.clone()));
+
+        // 快照 DeleteAllVersions 候选集合与 Object Lock 桶集合
+        // （避免在持有 objects 锁时嵌套加锁）
+        let delete_all_keys: HashSet<(String, String)> =
+            self.delete_all_candidates.lock().clone();
+        let object_lock_buckets: HashSet<String> = self.object_lock_buckets.lock().clone();
+
         let mut objs = self.objects.lock();
         for (k, meta) in objs.iter_mut() {
+            // v2.3: 预算检查 — 时间 / 容量超限则提前终止
+            if let Some(ref tracker) = budget_tracker {
+                if !tracker.can_continue() {
+                    break;
+                }
+                // 记录扫描对象（含字节数），触发 IO 限速
+                tracker.record_object(meta.size_bytes);
+            }
+
+            // ---- P1: DeleteAllVersions 短路检查 ----
+            // 如果该对象是 DeleteAllVersions 候选且满足短路条件，
+            // 跳过迁移评估（对象将由 delete_all_scan 统一删除）
+            if delete_all_keys.contains(k) {
+                let object_lock_enabled = object_lock_buckets.contains(&k.0);
+                let versions = [meta.clone()];
+                if self
+                    .evaluate_delete_all_versions(&k.0, &k.1, &versions, now_ms, object_lock_enabled)
+                    .is_some()
+                {
+                    // 短路：跳过该对象的逐版本迁移评估
+                    continue;
+                }
+            }
+
             // 使用 max(created, last_accessed, last_transition) 作为"活跃度锚"
             let anchor = meta
                 .created_at_ms
@@ -243,10 +583,20 @@ impl HotWarmColdLifecycle {
                             age, self.thresholds.hot_to_warm_ms
                         ),
                     };
+                    // ---- P1: 复制等待门控 ----
+                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action)
+                    {
+                        *self.replication_blocked_counter.lock() += 1;
+                        continue;
+                    }
                     if apply {
                         meta.class = StorageClass::Warm;
                         meta.last_transition_ms = now_ms;
                         *self.transition_counter.lock() += 1;
+                        // v2.3: 记录迁移字节数
+                        if let Some(ref tracker) = budget_tracker {
+                            tracker.record_migration(meta.size_bytes);
+                        }
                     }
                     plans.push(plan);
                 }
@@ -263,10 +613,19 @@ impl HotWarmColdLifecycle {
                             age, self.thresholds.warm_to_cold_ms
                         ),
                     };
+                    // ---- P1: 复制等待门控 ----
+                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action)
+                    {
+                        *self.replication_blocked_counter.lock() += 1;
+                        continue;
+                    }
                     if apply {
                         meta.class = StorageClass::Cold;
                         meta.last_transition_ms = now_ms;
                         *self.transition_counter.lock() += 1;
+                        if let Some(ref tracker) = budget_tracker {
+                            tracker.record_migration(meta.size_bytes);
+                        }
                     }
                     plans.push(plan);
                 }
@@ -283,16 +642,31 @@ impl HotWarmColdLifecycle {
                             age, self.thresholds.cold_to_glacier_ms
                         ),
                     };
+                    // ---- P1: 复制等待门控 ----
+                    if replication_status_blocks_lifecycle(meta.replication_status, &plan.action)
+                    {
+                        *self.replication_blocked_counter.lock() += 1;
+                        continue;
+                    }
                     if apply {
                         meta.class = StorageClass::Glacier;
                         meta.last_transition_ms = now_ms;
                         *self.transition_counter.lock() += 1;
+                        if let Some(ref tracker) = budget_tracker {
+                            tracker.record_migration(meta.size_bytes);
+                        }
                     }
                     plans.push(plan);
                 }
                 _ => {}
             }
         }
+
+        // v2.3: 保存扫描统计快照
+        if let Some(ref tracker) = budget_tracker {
+            *self.last_scan_stats.lock() = Some(tracker.stats());
+        }
+
         plans
     }
 
@@ -302,6 +676,8 @@ impl HotWarmColdLifecycle {
             scanned_at_ms: now_ms,
             transitions_last_24h: *self.transition_counter.lock(),
             restores_last_24h: *self.restore_counter.lock(),
+            replication_blocked_count: *self.replication_blocked_counter.lock(),
+            delete_all_short_circuit_count: *self.delete_all_short_circuit_counter.lock(),
             ..Default::default()
         };
         let objs = self.objects.lock();
@@ -370,6 +746,9 @@ mod tests {
             created_at_ms: created_ms,
             last_accessed_at_ms: created_ms,
             last_transition_ms: created_ms,
+            version_id: "null".to_string(),
+            replication_status: ObjectReplicationStatus::None,
+            object_locked: false,
         }
     }
 
@@ -587,5 +966,298 @@ mod tests {
         assert_eq!(t.warm_to_cold_ms, 90 * DAY_MS);
         // 新字段 cold_to_glacier_ms 默认 365 天
         assert_eq!(t.cold_to_glacier_ms, 365 * DAY_MS);
+    }
+
+    // =======================================================================
+    // P1 优化新增测试（v2.2）
+    // =======================================================================
+
+    /// 测试复制等待门控判断函数的各种组合
+    #[test]
+    fn test_replication_status_blocks_lifecycle() {
+        // Pending + HotToWarm → 门控
+        assert!(replication_status_blocks_lifecycle(
+            ObjectReplicationStatus::Pending,
+            &TransitionAction::HotToWarm
+        ));
+        // Completed + HotToWarm → 不门控
+        assert!(!replication_status_blocks_lifecycle(
+            ObjectReplicationStatus::Completed,
+            &TransitionAction::HotToWarm
+        ));
+        // None + DeleteAllVersions → 不门控
+        assert!(!replication_status_blocks_lifecycle(
+            ObjectReplicationStatus::None,
+            &TransitionAction::DeleteAllVersions
+        ));
+        // Failed + WarmToCold → 门控
+        assert!(replication_status_blocks_lifecycle(
+            ObjectReplicationStatus::Failed,
+            &TransitionAction::WarmToCold
+        ));
+        // Pending + ColdToGlacier → 门控
+        assert!(replication_status_blocks_lifecycle(
+            ObjectReplicationStatus::Pending,
+            &TransitionAction::ColdToGlacier
+        ));
+        // Pending + DeleteVersion → 门控
+        assert!(replication_status_blocks_lifecycle(
+            ObjectReplicationStatus::Pending,
+            &TransitionAction::DeleteVersion
+        ));
+        // Pending + WarmRestoreToHot → 不门控（Restore 类不由生命周期扫描触发）
+        assert!(!replication_status_blocks_lifecycle(
+            ObjectReplicationStatus::Pending,
+            &TransitionAction::WarmRestoreToHot
+        ));
+        // Completed + DeleteAllVersions → 不门控
+        assert!(!replication_status_blocks_lifecycle(
+            ObjectReplicationStatus::Completed,
+            &TransitionAction::DeleteAllVersions
+        ));
+    }
+
+    /// 测试 transition_scan 尊重复制等待门控：
+    /// Pending 状态不生成迁移计划；改为 Completed 后生成迁移计划
+    #[test]
+    fn test_transition_scan_respects_replication_gate() {
+        let lc = HotWarmColdLifecycle::default();
+        let t0 = 1_700_000_000_000u64;
+        let t31 = t0 + 31 * DAY_MS;
+
+        // 创建一个 replication_status = Pending 的对象（年龄 ≥ 30d，应迁移但被门控）
+        let mut pending_meta = make_meta("b1", "pending-obj", t0, 1024);
+        pending_meta.replication_status = ObjectReplicationStatus::Pending;
+        lc.upsert_object(pending_meta);
+
+        // 调用 transition_scan，验证不生成迁移计划（被门控）
+        let plans_pending = lc.transition_scan(t31, true);
+        assert!(
+            plans_pending.is_empty(),
+            "Pending replication object should be gated, got {} plans",
+            plans_pending.len()
+        );
+        // 对象应仍为 HOT（未被迁移）
+        assert_eq!(lc.class_of("b1", "pending-obj"), Some(StorageClass::Hot));
+
+        // 验证门控统计
+        let stats = lc.stats(t31);
+        assert_eq!(stats.replication_blocked_count, 1);
+
+        // 将 replication_status 改为 Completed，再次调用，验证生成迁移计划
+        {
+            let mut objs = lc.objects.lock();
+            let m = objs
+                .get_mut(&("b1".to_string(), "pending-obj".to_string()))
+                .unwrap();
+            m.replication_status = ObjectReplicationStatus::Completed;
+        }
+        let plans_completed = lc.transition_scan(t31, true);
+        assert_eq!(plans_completed.len(), 1, "Completed replication should allow transition");
+        assert_eq!(plans_completed[0].action, TransitionAction::HotToWarm);
+        assert_eq!(lc.class_of("b1", "pending-obj"), Some(StorageClass::Warm));
+    }
+
+    /// 测试 DeleteAllVersions 短路评估：
+    /// 无 Object Lock + 无 Pending → Some；启用 Object Lock → None；Pending → None
+    #[test]
+    fn test_delete_all_versions_short_circuit() {
+        let lc = HotWarmColdLifecycle::default();
+        let now = 1_700_000_000_000u64;
+
+        // 创建对象版本列表（无 Object Lock、无 Pending 复制）
+        let v1 = LifecycleObjectMeta {
+            key: "data/file.bin".into(),
+            bucket: "b1".into(),
+            size_bytes: 100,
+            class: StorageClass::Hot,
+            created_at_ms: now - 1000,
+            last_accessed_at_ms: now - 1000,
+            last_transition_ms: now - 1000,
+            version_id: "v1".into(),
+            replication_status: ObjectReplicationStatus::Completed,
+            object_locked: false,
+        };
+        let v2 = LifecycleObjectMeta {
+            version_id: "v2".into(),
+            replication_status: ObjectReplicationStatus::None,
+            ..v1.clone()
+        };
+        let versions = vec![v1.clone(), v2.clone()];
+
+        // 无 Object Lock + 无 Pending → 返回 Some(plan)
+        let plan = lc.evaluate_delete_all_versions("b1", "data/file.bin", &versions, now, false);
+        assert!(plan.is_some(), "should short-circuit when no lock and no pending");
+        let plan = plan.unwrap();
+        assert_eq!(plan.bucket, "b1");
+        assert_eq!(plan.key, "data/file.bin");
+        assert_eq!(plan.version_ids, vec!["v1".to_string(), "v2".to_string()]);
+        assert_eq!(plan.reason, "DeleteAllVersions short-circuit");
+
+        // 启用 Object Lock → 返回 None
+        let plan_locked =
+            lc.evaluate_delete_all_versions("b1", "data/file.bin", &versions, now, true);
+        assert!(plan_locked.is_none(), "should NOT short-circuit when object lock enabled");
+
+        // 有一个版本 Pending → 返回 None
+        let mut versions_pending = versions.clone();
+        versions_pending[1].replication_status = ObjectReplicationStatus::Pending;
+        let plan_pending = lc.evaluate_delete_all_versions(
+            "b1",
+            "data/file.bin",
+            &versions_pending,
+            now,
+            false,
+        );
+        assert!(plan_pending.is_none(), "should NOT short-circuit when any version is Pending");
+
+        // 有一个版本被锁定 → 返回 None
+        let mut versions_obj_locked = versions.clone();
+        versions_obj_locked[0].object_locked = true;
+        let plan_obj_locked = lc.evaluate_delete_all_versions(
+            "b1",
+            "data/file.bin",
+            &versions_obj_locked,
+            now,
+            false,
+        );
+        assert!(plan_obj_locked.is_none(), "should NOT short-circuit when any version is locked");
+    }
+
+    /// 测试新创建的 LifecycleObjectMeta 的 replication_status 默认为 None
+    #[test]
+    fn test_lifecycle_object_meta_default_replication_status() {
+        // 通过反序列化验证 serde(default) 生效
+        let json = r#"{
+            "key": "test.txt",
+            "bucket": "b1",
+            "size_bytes": 42,
+            "class": "HOT",
+            "created_at_ms": 1000,
+            "last_accessed_at_ms": 1000,
+            "last_transition_ms": 1000
+        }"#;
+        let meta: LifecycleObjectMeta = serde_json::from_str(json).unwrap();
+        assert_eq!(meta.replication_status, ObjectReplicationStatus::None);
+        assert_eq!(meta.version_id, "null");
+        assert!(!meta.object_locked);
+
+        // 直接构造验证默认值
+        let meta2 = make_meta("b2", "k2", 0, 1);
+        assert_eq!(meta2.replication_status, ObjectReplicationStatus::None);
+        assert_eq!(meta2.version_id, "null");
+        assert!(!meta2.object_locked);
+    }
+
+    /// 测试 delete_all_scan 与 transition_scan 的短路联动：
+    /// DeleteAllVersions 候选对象在 transition_scan 中被跳过
+    #[test]
+    fn test_delete_all_scan_and_transition_short_circuit() {
+        let lc = HotWarmColdLifecycle::default();
+        let t0 = 1_700_000_000_000u64;
+        let t31 = t0 + 31 * DAY_MS;
+
+        // 对象 A：DeleteAllVersions 候选（无锁、无 Pending），年龄 ≥ 30d
+        lc.upsert_object(make_meta("b1", "obj-a", t0, 100));
+        lc.mark_delete_all_candidate("b1", "obj-a");
+
+        // 对象 B：非候选，年龄 ≥ 30d，应正常迁移
+        lc.upsert_object(make_meta("b1", "obj-b", t0, 200));
+
+        // transition_scan：obj-a 应被短路跳过，obj-b 应生成迁移计划
+        let plans = lc.transition_scan(t31, false);
+        assert_eq!(plans.len(), 1, "only non-candidate should generate transition plan");
+        assert_eq!(plans[0].key, "obj-b");
+
+        // delete_all_scan：obj-a 应生成全版本删除计划
+        let delete_plans = lc.delete_all_scan(t31, false);
+        assert_eq!(delete_plans.len(), 1);
+        assert_eq!(delete_plans[0].key, "obj-a");
+        assert_eq!(delete_plans[0].version_ids, vec!["null".to_string()]);
+
+        // apply=true 时对象被移除
+        let delete_plans_apply = lc.delete_all_scan(t31, true);
+        assert_eq!(delete_plans_apply.len(), 1);
+        assert_eq!(lc.object_count(), 1, "obj-a should be removed");
+        assert!(lc.meta_of("b1", "obj-a").is_none());
+        assert!(lc.meta_of("b1", "obj-b").is_some());
+
+        // 验证短路统计
+        let stats = lc.stats(t31);
+        assert_eq!(stats.delete_all_short_circuit_count, 1);
+    }
+
+    // =======================================================================
+    // v2.3: 三维扫描预算集成测试
+    // =======================================================================
+
+    /// 测试 transition_scan 集成预算后，容量超限时提前终止
+    #[test]
+    fn test_scan_budget_integration_max_objects() {
+        use crate::scanner::{CapacityBudget, ScanBudget};
+
+        // 设置 max_objects_per_scan = 2
+        let budget = ScanBudget {
+            capacity: CapacityBudget {
+                max_objects_per_scan: 2,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let lc = HotWarmColdLifecycle::default().with_scan_budget(budget);
+        let t0 = 1_700_000_000_000u64;
+        let t31 = t0 + 31 * DAY_MS;
+
+        // 插入 5 个年龄 ≥ 30d 的对象（都应迁移）
+        for i in 0..5 {
+            lc.upsert_object(make_meta("b1", &format!("obj-{i}"), t0, 100));
+        }
+
+        // 扫描：预算限制最多扫描 2 个对象，应只处理前 2 个
+        let plans = lc.transition_scan(t31, true);
+        assert_eq!(plans.len(), 2, "budget should limit scan to 2 objects, got {}", plans.len());
+
+        // 验证统计快照
+        let stats = lc.last_scan_stats().expect("scan stats should be set");
+        assert_eq!(stats.objects_scanned, 2);
+        assert!(stats.budget_exceeded, "should mark budget_exceeded");
+
+        // 验证只有 2 个对象被迁移
+        let mut warm_count = 0;
+        for i in 0..5 {
+            if lc.class_of("b1", &format!("obj-{i}")) == Some(StorageClass::Warm) {
+                warm_count += 1;
+            }
+        }
+        assert_eq!(warm_count, 2, "only 2 objects should be migrated");
+    }
+
+    /// 测试无预算时 transition_scan 行为不变（向后兼容）
+    #[test]
+    fn test_scan_budget_none_backward_compatible() {
+        let lc = HotWarmColdLifecycle::default();
+        let t0 = 1_700_000_000_000u64;
+        let t31 = t0 + 31 * DAY_MS;
+
+        for i in 0..5 {
+            lc.upsert_object(make_meta("b1", &format!("obj-{i}"), t0, 100));
+        }
+
+        let plans = lc.transition_scan(t31, true);
+        assert_eq!(plans.len(), 5, "no budget should scan all objects");
+        assert!(lc.last_scan_stats().is_none(), "no budget → no stats snapshot");
+    }
+
+    /// 测试 with_scan_budget 构建器和 scan_budget() 访问器
+    #[test]
+    fn test_with_scan_budget_accessor() {
+        use crate::scanner::ScanBudget;
+
+        let lc = HotWarmColdLifecycle::default();
+        assert!(lc.scan_budget().is_none());
+
+        let budget = ScanBudget::default();
+        let lc = lc.with_scan_budget(budget);
+        assert!(lc.scan_budget().is_some());
     }
 }

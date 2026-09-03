@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page-container kb-view">
     <!-- Header Section -->
     <div class="page-header kb-header">
@@ -784,6 +784,7 @@ import { useProject } from '@/composables/projectContext.js'
 
 // ========== State ==========
 const documents = ref([])
+// 演示占位：分类树初始数据，实际由 kbGetCategories() 加载覆盖
 const categories = ref([
   {
     id: 'tech',
@@ -819,6 +820,7 @@ const categories = ref([
     count: 9
   }
 ])
+// 演示占位：标签初始数据，实际由 kbGetTags() 加载覆盖
 const tags = ref([
   { id: 't1', name: 'Vue', count: 15 },
   { id: 't2', name: 'Python', count: 12 },
@@ -837,6 +839,7 @@ const docHistory = ref([])
 const aiAnalysis = ref(null)
 const entities = ref([])
 const linkedEntities = ref([])
+// 演示占位：统计初始数据，实际由 kbGetStats() 加载覆盖
 const stats = ref({
   total: 63,
   categories: 5,
@@ -1102,6 +1105,7 @@ async function fetchDocuments() {
   }
 }
 
+// 演示占位：API 返回空时的兜底文档数据
 function getMockDocuments() {
   return [
     {
@@ -1189,6 +1193,7 @@ async function fetchStats() {
   }
 }
 
+// 后端待提供: 文档选中后的详情预加载/阅读记录端点（当前为空实现）
 async function selectDocument(doc) {
   // In grid/list view, single click selects
 }
@@ -1504,6 +1509,7 @@ async function searchEntities() {
     const data = await api.kbSearch({ q: linkSearchQuery.value, type: 'entity' })
     searchResults.value = Array.isArray(data) ? data : (data?.results || data?.items || [])
   } catch {
+    // 演示占位：实体搜索失败时的兜底数据
     searchResults.value = [
       { id: 'ent-1', name: '核心算法', type: '概念' },
       { id: 'ent-2', name: '数据模型', type: '结构' },
@@ -1543,9 +1549,23 @@ async function linkEntity(ent) {
   }
 }
 
-function unlinkEntity(ent) {
+async function unlinkEntity(ent) {
+  // 先更新本地状态以获得即时反馈
+  const prev = [...linkedEntities.value]
   linkedEntities.value = linkedEntities.value.filter(e => e.id !== ent.id)
-  ElMessage.success(`已解除关联：${ent.name}`)
+  if (selectedDoc.value) {
+    try {
+      await api.kbGraphUnlink(selectedDoc.value.id, { entity_ids: [ent.id] })
+      ElMessage.success(`已解除关联：${ent.name}`)
+    } catch (e) {
+      // 回滚本地状态
+      linkedEntities.value = prev
+      console.warn('[KB] 解除实体关联失败:', e)
+      ElMessage.error('解除关联失败，请重试')
+    }
+  } else {
+    ElMessage.success(`已解除关联：${ent.name}`)
+  }
 }
 
 // Keyboard shortcuts

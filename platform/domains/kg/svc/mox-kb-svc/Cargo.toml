@@ -1,0 +1,39 @@
+[package]
+name = "mox-kb-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 云盘知识库服务：文档 CRUD+版本 / 专家联盟分析 / 图谱挂图 / 检索（100% 自研）"
+
+[dependencies]
+# 存储基座：内容寻址去重 FS 后端（阶段1）+ 可插拔 S3（阶段2）
+mox-cloud-store-core = { workspace = true }
+# 物理口契约（ObjectStore / KvStore / StoreError）
+mox-base-store-core = { workspace = true }
+# 图谱挂图目标：Document/Chunk/Entity/Relation 节点边落库
+mox-kg-storage-svc = { workspace = true }
+# 专家联盟：文档分析咨询（有 LLM 走真实 LLM，否则本地引擎）
+mox-ai-expert-svc = { workspace = true }
+mox-ai-expert-proto = { workspace = true }
+
+# HTTP 适配层（对齐 legacy /kb/* API 面，前端零改动）
+axum = { workspace = true, features = ["json", "query", "http1", "tokio"] }
+tokio = { workspace = true, features = ["full"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+tower = { workspace = true, features = ["util"] }
+
+[features]
+default = []
+
+

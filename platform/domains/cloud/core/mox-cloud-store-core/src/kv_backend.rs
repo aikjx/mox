@@ -29,6 +29,11 @@ impl FsKvStore {
         Ok(Self { root })
     }
 
+    /// 数据根目录（供上层创建附属目录）
+    pub fn data_dir(&self) -> &PathBuf {
+        &self.root
+    }
+
     fn value_path(&self, key: &str) -> PathBuf {
         let h = sha256_hex(key.as_bytes());
         self.root.join(h)

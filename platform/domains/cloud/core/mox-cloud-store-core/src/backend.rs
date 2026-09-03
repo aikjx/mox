@@ -68,11 +68,14 @@ pub struct StoreConfig {
 }
 
 /// 统一后端门面：三路物理口
+#[derive(Clone)]
 pub struct StoreBackend {
     pub kind: BackendKind,
     pub object: Arc<dyn ObjectStore>,
     pub kv: Arc<dyn KvStore>,
     pub stream: Arc<dyn ObjectStreamWriter>,
+    /// 本地数据目录（FS 后端为数据根；S3 后端为缓存/KV/索引根）
+    pub data_dir: PathBuf,
 }
 
 fn default_true() -> bool {
@@ -100,6 +103,7 @@ pub fn create_backend(cfg: &StoreConfig) -> StoreResult<StoreBackend> {
                 object: store.clone(),
                 kv: store.clone(),
                 stream: store,
+                data_dir: cfg.data_dir.clone(),
             })
         }
         #[cfg(feature = "s3")]

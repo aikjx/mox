@@ -656,14 +656,51 @@ function goAIAnalysis() {
   router.push({ path: '/ai', query: { source: 'graph', action: 'analyze' } })
 }
 
-// 快捷分析入口
-function runQuickAnalysis(type) {
-  const actions = {
-    centrality: '请对当前知识图谱进行中心性分析，包括度中心性、介数中心性、紧密中心性，并识别Top 10关键节点。',
-    community: '请对当前知识图谱进行社区发现分析，识别主要社群、各社区的核心节点和特征，并给出可视化建议。',
-    path: '请帮我分析图谱中两个节点之间的最短路径和关联关系。（请先选择起始节点和目标节点）'
+// 快捷分析入口：直接调用后端图谱算法 API，结果展示在底部分析抽屉
+async function runQuickAnalysis(type) {
+  try {
+    switch (type) {
+      case 'centrality': {
+        const metrics = await getCentrality()
+        analysisResult.value = { title: '中心性分析（度 / 介数 / 紧密）', data: metrics }
+        break
+      }
+      case 'community': {
+        const map = await getCommunities()
+        analysisResult.value = { title: '社区发现', data: map }
+        break
+      }
+      case 'pagerank': {
+        const map = await getPagerank()
+        analysisResult.value = { title: 'PageRank 节点重要性排名', data: map }
+        break
+      }
+      case 'activation': {
+        const seeds = nodeIds.value.slice(0, 3)
+        if (!seeds.length) {
+          ElMessage.warning('图谱暂无节点，无法进行激活传播')
+          return
+        }
+        const map = await propagateActivation(seeds, 10)
+        analysisResult.value = { title: `激活传播（种子：${seeds.join(', ')}）`, data: map }
+        break
+      }
+      case 'path': {
+        const ids = nodeIds.value
+        if (ids.length < 2) {
+          ElMessage.warning('图谱节点不足，无法计算最短路径')
+          return
+        }
+        const path = await getShortestPath(ids[0], ids[1])
+        analysisResult.value = { title: `最短路径（${ids[0]} → ${ids[1]}）`, data: path }
+        break
+      }
+      default:
+        ElMessage.info('未知分析类型')
+    }
+  } catch (e) {
+    ElMessage.error('分析失败：' + (e.message || '未知错误'))
   }
-  router.push({ path: '/ai', query: { source: 'graph', action: type, prompt: encodeURIComponent(actions[type]) } })
 }
 
 let fg = null

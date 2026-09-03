@@ -35,6 +35,7 @@ pub mod dedup;
 pub mod fs_backend;
 pub mod gc;
 pub mod kv_backend;
+pub mod stats;
 pub mod stream_writer;
 pub mod versioning;
 
@@ -56,13 +57,27 @@ pub mod heal;
 #[cfg(feature = "erasure")]
 pub mod snapshot;
 
+// 统一错误/结果类型（re-export 自 base-store-core，协议层免直接依赖）
+pub use mox_base_store_core::{StoreError, StoreResult};
+
 pub use backend::{create_backend, BackendKind, StoreBackend, StoreConfig};
-pub use dedup::{ChunkRefManager, RebuildReport};
+pub use dedup::{
+    list_chunks, list_object_refs, ChunkRefManager, RebuildReport,
+};
 pub use fs_backend::{FsObjectStore, KeyPathCodec, ObjectMeta};
 pub use gc::{GCReport, GarbageCollector};
 pub use kv_backend::FsKvStore;
+pub use stats::{collect_store_stats, StoreStats};
 pub use stream_writer::{ContentDefinedChunker, FsStreamWriter, StreamResult};
 pub use versioning::{VersionInfo, VersionManager};
+
+// 阶段2：S3 协议层导出（feature `s3`）
+#[cfg(feature = "s3")]
+pub use backend::S3ClientConfig;
+#[cfg(feature = "s3")]
+pub use fallback::FallbackObjectStore;
+#[cfg(feature = "s3")]
+pub use s3_backend::{build_s3_backend, S3Client, S3HeadInfo, S3ObjectStore};
 
 // =============== 共享工具 ===============
 

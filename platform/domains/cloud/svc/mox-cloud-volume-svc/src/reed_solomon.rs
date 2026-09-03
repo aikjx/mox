@@ -8,8 +8,9 @@
 //! `ReedSolomonEngine` (Vandermonde + Gauss-Jordan in GF(2^8)).
 
 use bytes::Bytes;
-use parking_lot::Mutex;
+use std::collections::HashMap;
 use std::fmt;
+use std::sync::{Arc, OnceLock, RwLock};
 use std::time::Instant;
 
 pub use crate::metrics::{observe_encode_us, SHARDS_LOST_TOTAL};
@@ -25,6 +26,7 @@ pub enum RSError {
     ShardSizeMismatch(String),
     InvalidInput(String),
     MatrixSingular(String),
+    ReconstructionVerificationFailed(String),
 }
 
 impl fmt::Display for RSError {
@@ -34,6 +36,9 @@ impl fmt::Display for RSError {
             RSError::ShardSizeMismatch(m) => write!(f, "Shard size mismatch: {}", m),
             RSError::InvalidInput(m) => write!(f, "Invalid input: {}", m),
             RSError::MatrixSingular(m) => write!(f, "Matrix singular: {}", m),
+            RSError::ReconstructionVerificationFailed(m) => {
+                write!(f, "Reconstruction verification failed: {}", m)
+            }
         }
     }
 }
@@ -297,29 +302,45 @@ pub(crate) fn invert_square(src: &[Vec<u8>]) -> RSResult<Matrix> {
 // Engine cache
 // ---------------------------------------------------------------------------
 
-struct CachedMatrix {
-    data: u16,
-    parity: u16,
-    matrix: Matrix,
-}
-static MATRIX_CACHE: Mutex<Vec<CachedMatrix>> = Mutex::new(Vec::new());
+/// Global cache for Vandermonde encoding matrices, keyed by `(data_shards, parity_shards)`.
+///
+/// Design reference: RustFS ecstore matrix cache pattern (Apache 2.0).
+/// Uses `OnceLock<RwLock<HashMap>>` for O(1) lookup with concurrent read access,
+/// and `Arc<Matrix>` to avoid cloning large `Vec<Vec<u8>>` matrices on the hot path.
+static MATRIX_CACHE: OnceLock<RwLock<HashMap<(u16, u16), Arc<Matrix>>>> = OnceLock::new();
 
+#[inline]
+fn matrix_cache() -> &'static RwLock<HashMap<(u16, u16), Arc<Matrix>>> {
+    MATRIX_CACHE.get_or_init(|| RwLock::new(HashMap::new()))
+}
+
+/// Return the encoding matrix for `(data, parity)`, building and caching it on first use.
+///
+/// Read path takes an `RwLock` read guard and does an O(1) `HashMap` lookup;
+/// only the first miss for a given key pays the build cost and the write guard.
+/// Double-checked locking under the write guard prevents duplicate builds from
+/// concurrent first-time callers.
 pub(crate) fn matrix_for(data: u16, parity: u16) -> RSResult<Matrix> {
+    let key = (data, parity);
+    // Fast path: concurrent read lock + O(1) lookup.
+    if let Some(arc) = matrix_cache()
+        .read()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .get(&key)
     {
-        let c = MATRIX_CACHE.lock();
-        for e in c.iter() {
-            if e.data == data && e.parity == parity {
-                return Ok(e.matrix.clone());
-            }
-        }
+        return Ok((**arc).clone());
     }
+    // Slow path: build outside the lock, then insert under write lock.
     let m = build_encoding_matrix(data as usize, (data + parity) as usize)?;
-    let mut c = MATRIX_CACHE.lock();
-    c.push(CachedMatrix {
-        data,
-        parity,
-        matrix: m.clone(),
-    });
+    let arc = Arc::new(m.clone());
+    let mut guard = matrix_cache()
+        .write()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    // Double-check: another thread may have inserted while we were building.
+    if let Some(existing) = guard.get(&key) {
+        return Ok((**existing).clone());
+    }
+    guard.insert(key, arc);
     Ok(m)
 }
 
@@ -487,6 +508,104 @@ impl ReedSolomonEngine {
         Ok(flat)
     }
 
+    /// Reconstruct missing data shards and verify integrity against surplus parity.
+    ///
+    /// When more than `data_shards` shards are available, the surplus parity shards
+    /// provide an independent integrity check: after reconstructing the data from the
+    /// first `data_shards` present shards, the parity is recomputed from the recovered
+    /// data and compared byte-by-byte with the actual surplus parity shards. Any
+    /// mismatch triggers a **fail-closed** error — potentially corrupted data is never
+    /// returned.
+    ///
+    /// When exactly `data_shards` shards are present there is no redundancy, so
+    /// verification is skipped and behavior is identical to [`Self::decode_reconstruct`].
+    ///
+    /// Algorithm reference: RustFS ecstore `decode_data_with_reconstruction_verification`
+    /// (Apache 2.0); reimplemented for the self-hosted GF(2^8) engine.
+    pub fn decode_with_verification(
+        &self,
+        profile: &EcProfile,
+        shards: &[Option<Vec<u8>>],
+        original_len: usize,
+    ) -> RSResult<Vec<u8>> {
+        let data = profile.data_shards as usize;
+        let parity = profile.parity_shards as usize;
+        let total = data + parity;
+
+        if shards.len() != total {
+            return Err(RSError::InvalidInput(format!(
+                "expected {total} slots, got {}",
+                shards.len()
+            )));
+        }
+
+        let present_count = shards.iter().filter(|s| s.is_some()).count();
+
+        if present_count < data {
+            return Err(RSError::TooManyShardsMissing(format!(
+                "{present_count} present < data_shards={data}"
+            )));
+        }
+
+        // No redundancy available: cannot verify, fall back to plain reconstruct.
+        if present_count == data {
+            return self.decode_reconstruct(profile, shards, original_len);
+        }
+
+        // --- Redundancy available: reconstruct then verify ---
+
+        // Step 1: Reconstruct the original data (uses first `data` present shards).
+        let reconstructed = self.decode_reconstruct(profile, shards, original_len)?;
+
+        // Step 2: Determine shard size from the first present shard.
+        let shard_size = shards
+            .iter()
+            .find_map(|s| s.as_ref().map(|v| v.len()))
+            .ok_or_else(|| RSError::InvalidInput("no shard present".into()))?;
+
+        // Step 3: Pad reconstructed data to full data-region size and split into shards.
+        let padded = pad_to(&reconstructed, shard_size * data);
+        let data_shard_slices: Vec<&[u8]> = (0..data)
+            .map(|c| &padded[c * shard_size..(c + 1) * shard_size])
+            .collect();
+
+        // Step 4: Get the encoding matrix for parity recomputation.
+        let encoder = matrix_for(profile.data_shards, profile.parity_shards)?;
+
+        // Step 5: Identify surplus present shards (beyond the first `data` used in
+        // reconstruction) and verify each against the re-encoded value.
+        let present_indices: Vec<usize> = shards
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s.is_some())
+            .map(|(i, _)| i)
+            .collect();
+
+        for &idx in &present_indices[data..] {
+            let expected: Vec<u8> = if idx < data {
+                // Surplus data shard: compare directly with recovered data slice.
+                padded[idx * shard_size..(idx + 1) * shard_size].to_vec()
+            } else {
+                // Surplus parity shard: recompute from recovered data via encoding matrix.
+                let row = &encoder[idx];
+                let mut parity_shard = vec![0u8; shard_size];
+                for (c, &coef) in row.iter().enumerate() {
+                    xor_gf_mul_vec(coef, data_shard_slices[c], &mut parity_shard, PathChoice::Auto);
+                }
+                parity_shard
+            };
+
+            let actual = shards[idx].as_ref().unwrap();
+            if actual.len() != expected.len() || actual != &expected {
+                return Err(RSError::ReconstructionVerificationFailed(format!(
+                    "shard {idx} mismatch: reconstructed data inconsistent with available parity"
+                )));
+            }
+        }
+
+        Ok(reconstructed)
+    }
+
     pub fn reconstruct_shards(
         &self,
         profile: &EcProfile,
@@ -644,6 +763,99 @@ mod unit {
             .decode_reconstruct(&profile, &slots, bytes.len())
             .unwrap();
         assert_eq!(got, bytes);
+    }
+
+    #[test]
+    fn test_matrix_cache_optimization() {
+        // Same (data, parity) returns identical matrix content.
+        let m1 = matrix_for(4, 2).unwrap();
+        let m2 = matrix_for(4, 2).unwrap();
+        assert_eq!(m1, m2, "cached matrix for (4,2) must be identical");
+
+        // Matrix dimensions match (data+parity) rows x data cols.
+        assert_eq!(m1.len(), 6);
+        assert_eq!(m1[0].len(), 4);
+
+        // Different (data, parity) returns a differently-shaped matrix.
+        let m3 = matrix_for(6, 3).unwrap();
+        assert_eq!(m3.len(), 9);
+        assert_eq!(m3[0].len(), 6);
+        assert_ne!(m1.len(), m3.len());
+
+        // Repeated call returns same content (cache hit, no rebuild divergence).
+        let m4 = matrix_for(4, 2).unwrap();
+        assert_eq!(m1, m4, "second cache hit must return identical matrix");
+
+        // Vandermonde structure: top-left is identity for data rows.
+        for i in 0..4 {
+            for j in 0..4 {
+                assert_eq!(m1[i][j], if i == j { 1 } else { 0 });
+            }
+        }
+    }
+
+    #[test]
+    fn test_decode_verification_consistent() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let bytes = (0..=255u8).cycle().take(1000).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &bytes).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        // Drop 1 data shard — 5 present > 4 data, so verification runs.
+        slots[1] = None;
+        let got = engine
+            .decode_with_verification(&profile, &slots, bytes.len())
+            .expect("consistent shards must pass verification");
+        assert_eq!(got, bytes);
+    }
+
+    #[test]
+    fn test_decode_verification_fail_closed() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let bytes = (0..=255u8).cycle().take(1000).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &bytes).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        // Drop data shard 0 so present = [1,2,3,4,5]; first 4 used = [1,2,3,4],
+        // surplus = [5]. Tamper with surplus parity shard 5 to trigger mismatch.
+        slots[0] = None;
+        if let Some(ref mut p) = slots[5] {
+            p[0] ^= 0xFF;
+        }
+        let result = engine.decode_with_verification(&profile, &slots, bytes.len());
+        assert!(
+            result.is_err(),
+            "corrupted surplus parity must fail-closed, not return data"
+        );
+        assert!(
+            matches!(
+                result.unwrap_err(),
+                RSError::ReconstructionVerificationFailed(_)
+            ),
+            "error must be ReconstructionVerificationFailed"
+        );
+    }
+
+    #[test]
+    fn test_decode_verification_no_redundancy() {
+        let engine = ReedSolomonEngine::new();
+        let profile = EcProfile::with_default_min_size(4, 2).unwrap();
+        let bytes = (0..=255u8).cycle().take(1000).collect::<Vec<_>>();
+        let shards = engine.encode(&profile, &bytes).unwrap();
+        let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
+        // Drop exactly parity=2 shards — 4 present == 4 data, no redundancy.
+        slots[1] = None;
+        slots[4] = None;
+        let got = engine
+            .decode_with_verification(&profile, &slots, bytes.len())
+            .expect("no-redundancy path must still reconstruct");
+        assert_eq!(got, bytes);
+
+        // Must match decode_reconstruct output exactly.
+        let got2 = engine
+            .decode_reconstruct(&profile, &slots, bytes.len())
+            .unwrap();
+        assert_eq!(got, got2);
     }
 }
 

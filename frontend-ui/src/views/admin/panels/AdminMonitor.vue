@@ -467,6 +467,11 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } 
 import * as echarts from '@/echarts'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getStatus, getFullStatus, getLogs, getPlugins, moxHealth, moxOptimize } from '@/api'
+import {
+  getMetricsDetail, getMonitorQuality, getMonitorBusiness, getAlertsSummary,
+  getMonitorNodes, getAlertRules, createAlertRule, updateAlertRule,
+  deleteAlertRule, toggleAlertRule, getTimeseries, getBusinessTimeseries
+} from '@/api/monitor.api'
 import { useProject } from '@/composables/projectContext.js'
 
 // ===== 基础状态 =====
@@ -481,7 +486,7 @@ const trendRange = ref('1h')
 let refreshTimer = null
 let flashTimer = null
 
-// ===== 系统资源指标 =====
+// ===== 系统资源指标（演示占位：后端待提供 /actuator/metrics 详细指标聚合端点） =====
 const systemMetrics = reactive({
   cpu: 35.2,
   memory: 58.4,
@@ -527,7 +532,7 @@ function formatSpeed(mbps) {
   return mbps.toFixed(1) + ' MB/s'
 }
 
-// ===== 服务质量指标 =====
+// ===== 服务质量指标（演示占位：后端待提供 /monitor/quality 端点） =====
 const qualityMetrics = reactive({
   qps: 128.5,
   qpsTrend: 5.2,
@@ -548,7 +553,7 @@ const errLevel = computed(() => {
   return 'ok'
 })
 
-// ===== 业务指标 =====
+// ===== 业务指标（演示占位：后端待提供 /monitor/business 聚合端点） =====
 const businessMetrics = reactive({
   conversations: 3562,
   expertConsultations: 128,
@@ -556,7 +561,7 @@ const businessMetrics = reactive({
   operatorCalls: 12450
 })
 
-// ===== 告警统计 =====
+// ===== 告警统计（演示占位：后端待提供 /monitor/alerts/summary 端点） =====
 const alertMetrics = reactive({
   total: 23,
   p0: 2,
@@ -564,7 +569,7 @@ const alertMetrics = reactive({
   p2: 13
 })
 
-// ===== 服务节点状态 =====
+// ===== 服务节点状态（演示占位：后端待提供 /monitor/nodes 服务发现端点） =====
 const serviceNodes = ref([])
 const healthSummary = computed(() => {
   let up = 0, warning = 0, down = 0
@@ -582,15 +587,17 @@ function valLevel(val, warnThreshold, badThreshold) {
   return 'ok'
 }
 
+// 后端待提供: 服务节点日志跳转端点 /monitor/nodes/{name}/logs
 function jumpToLogs(row) {
   ElMessage.info(`跳转到 ${row.name} 的日志页面`)
 }
 
+// 后端待提供: 服务节点链路追踪跳转端点 /monitor/nodes/{name}/trace
 function jumpToTrace(row) {
   ElMessage.info(`跳转到 ${row.name} 的链路追踪页面`)
 }
 
-// ===== 告警规则 =====
+// ===== 告警规则（演示占位：后端待提供 /monitor/alert-rules CRUD 端点，当前为本地内存操作） =====
 const alertRules = ref([
   { id: 1, name: 'CPU 使用率过高', metric: 'CPU', operator: '>', threshold: 80, unit: '%', duration: '5分钟', level: 'P1', channels: ['站内信', '邮件'], enabled: true },
   { id: 2, name: '内存使用率告警', metric: '内存', operator: '>', threshold: 85, unit: '%', duration: '5分钟', level: 'P1', channels: ['站内信', '邮件'], enabled: true },
@@ -620,8 +627,15 @@ function levelTagType(level) {
   return 'info'
 }
 
-function toggleRule(row) {
-  ElMessage.success(`规则「${row.name}」已${row.enabled ? '启用' : '禁用'}`)
+// 告警规则启用/禁用：调用 PUT /monitor/alert-rules/{id}/toggle，失败保留本地状态
+async function toggleRule(row) {
+  try {
+    await toggleAlertRule(row.id, row.enabled)
+    ElMessage.success(`规则「${row.name}」已${row.enabled ? '启用' : '禁用'}`)
+  } catch (e) {
+    row.enabled = !row.enabled
+    ElMessage.warning('规则状态同步失败，已回滚本地状态')
+  }
 }
 
 function editRule(row) {
@@ -630,13 +644,19 @@ function editRule(row) {
   showRuleDialog.value = true
 }
 
-function deleteRule(row) {
+// 告警规则删除：调用 DELETE /monitor/alert-rules/{id}，失败保留本地列表
+async function deleteRule(row) {
   ElMessageBox.confirm(`确定删除规则「${row.name}」吗？`, '确认删除', {
     type: 'warning'
-  }).then(() => {
-    const idx = alertRules.value.findIndex(r => r.id === row.id)
-    if (idx >= 0) alertRules.value.splice(idx, 1)
-    ElMessage.success('删除成功')
+  }).then(async () => {
+    try {
+      await deleteAlertRule(row.id)
+      const idx = alertRules.value.findIndex(r => r.id === row.id)
+      if (idx >= 0) alertRules.value.splice(idx, 1)
+      ElMessage.success('删除成功')
+    } catch (e) {
+      ElMessage.error('删除失败：' + e.message)
+    }
   }).catch(() => {})
 }
 
@@ -655,23 +675,28 @@ function resetRuleForm() {
   })
 }
 
-function saveRule() {
+// 告警规则创建/更新：调用 POST/PUT /monitor/alert-rules，失败保留本地操作
+async function saveRule() {
   if (!ruleForm.name.trim()) {
     ElMessage.warning('请输入规则名称')
     return
   }
-  if (editingRule.value) {
-    const idx = alertRules.value.findIndex(r => r.id === editingRule.value.id)
-    if (idx >= 0) {
-      Object.assign(alertRules.value[idx], { ...ruleForm })
+  try {
+    if (editingRule.value) {
+      await updateAlertRule(editingRule.value.id, { ...ruleForm })
+      const idx = alertRules.value.findIndex(r => r.id === editingRule.value.id)
+      if (idx >= 0) Object.assign(alertRules.value[idx], { ...ruleForm })
+      ElMessage.success('规则已更新')
+    } else {
+      const created = await createAlertRule({ ...ruleForm })
+      const newRule = created && created.id ? created : { id: Date.now(), ...ruleForm }
+      alertRules.value.push(newRule)
+      ElMessage.success('规则已创建')
     }
-    ElMessage.success('规则已更新')
-  } else {
-    const newId = Math.max(...alertRules.value.map(r => r.id)) + 1
-    alertRules.value.push({ id: newId, ...ruleForm })
-    ElMessage.success('规则已创建')
+    showRuleDialog.value = false
+  } catch (e) {
+    ElMessage.error('保存失败：' + e.message)
   }
-  showRuleDialog.value = false
 }
 
 // 监听指标变化，自动更新单位
@@ -695,7 +720,7 @@ let bizChart = null
 let radarChart = null
 let chart = null // 原有 load chart
 
-// ===== Mock 数据生成 =====
+// ===== 演示占位：Mock 数据生成（后端待提供时序指标查询端点 /monitor/timeseries） =====
 function generateTimeSeries(points, base, variance, trend = 0) {
   const data = []
   let val = base
@@ -853,6 +878,7 @@ function renderBizChart() {
     grid: { left: 50, right: 20, top: 40, bottom: 30 },
     xAxis: { type: 'category', data: days, axisLine: { lineStyle: { color: '#334155' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
     yAxis: { type: 'value', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.1)' } } },
+    // 演示占位：业务量柱状图硬编码数据，后端待提供 /monitor/business/timeseries 端点
     series: [
       { name: '对话数', type: 'bar', data: [2800, 3100, 2950, 3400, 3200, 3600, 3562], itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
       { name: '专家咨询', type: 'bar', data: [95, 110, 102, 118, 125, 132, 128], itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
@@ -919,6 +945,7 @@ function renderRadar(scores) {
 }
 
 // ===== 数据刷新逻辑 =====
+// 演示占位：模拟指标波动（后端待提供实时指标推送）
 function updateMockMetrics() {
   // 系统资源小幅波动
   systemMetrics.cpu = Math.max(10, Math.min(95, systemMetrics.cpu + (Math.random() - 0.5) * 8))
@@ -964,6 +991,7 @@ function triggerFlash() {
   }, 300)
 }
 
+// 演示占位：模拟服务节点状态（后端待提供 /monitor/nodes 服务发现端点）
 function refreshServiceNodes() {
   serviceNodes.value = [
     { name: 'API 网关', status: 'up', version: 'v2.1.0', cpu: 45, memory: 62, qps: 128, latency: 42, uptime: '15天 6小时' },
@@ -983,6 +1011,56 @@ function refreshServiceNodes() {
       n.qps = Math.max(0, n.qps + Math.floor((Math.random() - 0.5) * 10))
     }
   })
+}
+
+async function loadMonitorData() {
+  // 系统资源指标
+  try {
+    const m = await getMetricsDetail()
+    if (m) {
+      if (m.cpu != null) systemMetrics.cpu = m.cpu
+      if (m.memory != null) systemMetrics.memory = m.memory
+      if (m.memTotal != null) systemMetrics.memTotal = m.memTotal
+      if (m.memUsed != null) systemMetrics.memUsed = m.memUsed
+      if (Array.isArray(m.disks)) systemMetrics.disks = m.disks
+      if (m.netUpload != null) systemMetrics.netUpload = m.netUpload
+      if (m.netDownload != null) systemMetrics.netDownload = m.netDownload
+    }
+  } catch (e) { /* 保留演示占位数据 */ }
+
+  // 服务质量指标
+  try {
+    const q = await getMonitorQuality()
+    if (q) Object.assign(qualityMetrics, q)
+  } catch (e) { /* 保留演示占位数据 */ }
+
+  // 业务指标
+  try {
+    const b = await getMonitorBusiness()
+    if (b) Object.assign(businessMetrics, b)
+  } catch (e) { /* 保留演示占位数据 */ }
+
+  // 告警统计
+  try {
+    const a = await getAlertsSummary()
+    if (a) Object.assign(alertMetrics, a)
+  } catch (e) { /* 保留演示占位数据 */ }
+
+  // 服务节点
+  try {
+    const nodes = await getMonitorNodes()
+    if (Array.isArray(nodes) && nodes.length > 0) {
+      serviceNodes.value = nodes
+    }
+  } catch (e) { /* 保留演示占位数据 */ }
+
+  // 告警规则
+  try {
+    const rules = await getAlertRules()
+    if (Array.isArray(rules) && rules.length > 0) {
+      alertRules.value = rules
+    }
+  } catch (e) { /* 保留演示占位数据 */ }
 }
 
 async function loadAll() {
@@ -1037,6 +1115,7 @@ async function loadAll() {
       { name: '消息队列', status: 'up', val: 'ready' }
     ]
     
+    // 演示占位：日志为空时使用模拟日志兜底（后端 /api/logs 正常返回时不触发）
     const safeLogs = logs.length > 0 ? logs : generateMockMonitorLogs()
     logRows.value = safeLogs.slice(0, 50).map((l) => ({
       time: fmt(l.timestamp),
@@ -1045,6 +1124,9 @@ async function loadAll() {
       time_ms: (l.execution_time_ms || 100) + ' ms',
       dims: `${l.input_dim || 3}→${l.output_dim || 7}`
     }))
+    
+    // 加载监控域真实数据（失败则保留演示占位）
+    await loadMonitorData().catch(() => {})
     
     // 更新 mock 数据 & 服务节点
     updateMockMetrics()
@@ -1131,6 +1213,7 @@ function fmt(ts) {
   return isNaN(d) ? String(ts) : d.toLocaleString('zh-CN', { hour12: false })
 }
 
+// 演示占位：生成模拟执行日志（后端 /api/logs 正常返回时不使用）
 function generateMockMonitorLogs() {
   const now = Date.now()
   const workflows = [

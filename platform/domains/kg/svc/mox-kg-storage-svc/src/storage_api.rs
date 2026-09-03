@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -152,12 +152,7 @@ pub struct EdgeAck {
     pub applied_index: u64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Direction {
-    Out,
-    In,
-    Both,
-}
+pub use crate::storage_engine::Direction;
 
 pub fn weight_to_i64(w: Option<f64>) -> Option<i64> {
     w.map(|x| (x * 1_000_000_000.0) as i64)

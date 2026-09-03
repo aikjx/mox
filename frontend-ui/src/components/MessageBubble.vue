@@ -466,7 +466,8 @@ import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
 import taskLists from "markdown-it-task-lists";
 import mermaid from "mermaid";
-import { ALLIANCE_BASE, getVoiceHealth } from "../api/alliance";
+import { getVoiceHealth } from "../api/alliance";
+import { getToken } from "@/utils/secureStorage";
 
 const props = defineProps({
   msg: { type: Object, required: true },
@@ -1132,9 +1133,11 @@ async function handleSpeakThreeLayer(text) {
     qs.append('voice', 'xiaobai')
     qs.append('emotion', 'neutral')
     qs.append('speed', '1.03') // 略快于 1.0，更接近豆包日常聊天语速
-    const base = ALLIANCE_BASE || ''
-    const url = `${base.replace(/\/$/, '')}${streamPath}?${qs.toString()}`
-    const resp = await fetch(url, { method: 'GET', headers: authHeaders({ Accept: 'audio/wav' }) })
+    const ttsToken = getToken()
+    const ttsHeaders = { Accept: 'audio/wav' }
+    if (ttsToken) ttsHeaders['Authorization'] = `Bearer ${ttsToken}`
+    const url = `/api${streamPath}?${qs.toString()}`
+    const resp = await fetch(url, { method: 'GET', headers: ttsHeaders })
     if (resp.ok && resp.body) {
       const fallback = String(_header(resp, 'X-TTS-Fallback') || '').toLowerCase()
       if (fallback !== 'browser') {

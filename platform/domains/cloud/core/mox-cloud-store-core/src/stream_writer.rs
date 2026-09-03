@@ -249,7 +249,7 @@ mod tests {
         assert_eq!(re, data);
         // 分块大小受边界约束
         for c in &chunks {
-            assert!(c.len() >= 1);
+            assert!(!c.is_empty());
             assert!(c.len() <= 8192);
         }
     }

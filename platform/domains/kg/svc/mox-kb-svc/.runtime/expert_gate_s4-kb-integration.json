@@ -1,0 +1,109 @@
+{
+  "stage": "s4-kb-integration",
+  "ts": "2026-09-03T00:56:56.447323800+00:00",
+  "verdict": "FAIL",
+  "overall_score": 0.43,
+  "dimensions": [
+    {
+      "name": "design",
+      "score": 0.3,
+      "status": "fail",
+      "checks": [
+        {
+          "name": "architecture",
+          "ok": false,
+          "detail": "crate 边界/依赖方向/抽象收敛编译通过（mox-kb-svc, mox-cloud-store-core）"
+        },
+        {
+          "name": "algorithm",
+          "ok": false,
+          "detail": "EC 编解码往返/去重/GC 正确性由测试矩阵覆盖"
+        }
+      ]
+    },
+    {
+      "name": "code",
+      "score": 0.5,
+      "status": "fail",
+      "checks": [
+        {
+          "name": "code_quality",
+          "ok": false,
+          "detail": "clippy 门禁：本阶段代码零新增告警"
+        },
+        {
+          "name": "security_code",
+          "ok": true,
+          "detail": "路径穿越防护（FS key 防 `../`）与 SigV4 凭据注入防护"
+        },
+        {
+          "name": "maintainability",
+          "ok": false,
+          "detail": "模块化边界清晰，可增量扩展"
+        }
+      ]
+    },
+    {
+      "name": "validation",
+      "score": 0.51875,
+      "status": "fail",
+      "checks": [
+        {
+          "name": "testing",
+          "ok": false,
+          "detail": "测试矩阵：5 / 16 通过"
+        },
+        {
+          "name": "observability",
+          "ok": true,
+          "detail": "stats/status/actuator 指标已注册可观测"
+        }
+      ]
+    },
+    {
+      "name": "business",
+      "score": 0.7,
+      "status": "warn",
+      "checks": [
+        {
+          "name": "business",
+          "ok": false,
+          "detail": "KB 语义：文档/分析/挂图/检索/版本 E2E 全链路通过"
+        },
+        {
+          "name": "permission",
+          "ok": true,
+          "detail": "迁移期 /kb 公开（对齐 legacy 前端零改动），生产待 auth 回收"
+        },
+        {
+          "name": "data",
+          "ok": true,
+          "detail": "跨后端一致性：S3 回源/迁移期读一致验证通过"
+        }
+      ]
+    }
+  ],
+  "evidence": {
+    "stage": "s4-kb-integration",
+    "description": "知识库业务整合（文档/分析/挂图/检索 + 网关注册）",
+    "crates": [
+      "mox-kb-svc",
+      "mox-cloud-store-core"
+    ],
+    "build_ok": false,
+    "clippy_clean": false,
+    "tests_passed": 5,
+    "tests_total": 16,
+    "e2e_ok": false,
+    "observability_ok": true,
+    "security_ok": true,
+    "data_consistent": true
+  },
+  "expert_steps": [
+    "[ReAct] 真实 LLM(deepseek-chat) 专家推理",
+    "[1/1] # 专家评审意见：s4-kb-integration（知识库业务整合）",
+    "[结论] # 专家评审意见：s4-kb-integration（知识库业务整合）",
+    "治理否决：# 专家评审意见：s4-kb-integration（知识库业务整合）\n\n## 一、评审对象概况\n\n| 项目 | 状态 |\n|------|------|\n| 测试通过 | 5 / 16（31.25%） |\n| 编译 | ❌ false |\n| Clippy | ❌ false |\n| E2E | ❌ false |\n…"
+  ],
+  "written_to": ".runtime\\expert_gate_s4-kb-integration.json"
+}

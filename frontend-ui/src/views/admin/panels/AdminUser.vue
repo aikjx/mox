@@ -334,7 +334,7 @@ import {
 import {
   getUserList, getUserDetail, createUser, updateUser, deleteUser,
   resetUserPwd, changeUserStatus, getUserRoles, assignUserRoles,
-  getDeptTree, getPostList, getRoleList
+  getDeptTree, getPostList, getRoleList, uploadUserAvatar
 } from '@/api'
 
 // ===== 搜索与列表 =====
@@ -527,13 +527,25 @@ function beforeAvatarUpload(file) {
   return true
 }
 
-function handleAvatarUpload({ file }) {
-  // Mock: 使用本地预览
+// 头像上传：调用 POST /api/users/{id}/avatar，失败降级为本地预览
+async function handleAvatarUpload({ file }) {
   const reader = new FileReader()
   reader.onload = (e) => {
     userForm.avatar = e.target.result
   }
   reader.readAsDataURL(file)
+  // 若已有用户 ID，同步上传到后端
+  if (userForm.id) {
+    try {
+      const result = await uploadUserAvatar(userForm.id, file)
+      if (result && result.url) {
+        userForm.avatar = result.url
+      }
+      ElMessage.success('头像上传成功')
+    } catch (e) {
+      // 保留本地预览，不阻断用户操作
+    }
+  }
 }
 
 // ===== 详情 =====

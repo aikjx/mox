@@ -856,7 +856,7 @@ async fn is05_02_get_lifecycle_configuration() {
 /// 测试：生命周期 - 冷热迁移
 #[tokio::test]
 async fn is05_03_lifecycle_tier_transition() {
-    use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, StorageClass, TransitionAction};
+    use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, LifecycleReplicationStatus, StorageClass, TransitionAction};
 
     let lifecycle = HotWarmColdLifecycle::default();
     let t0 = 1_700_000_000_000u64;
@@ -869,6 +869,9 @@ async fn is05_03_lifecycle_tier_transition() {
         created_at_ms: t0,
         last_accessed_at_ms: t0,
         last_transition_ms: t0,
+        version_id: "null".to_string(),
+        replication_status: LifecycleReplicationStatus::None,
+        object_locked: false,
     };
 
     lifecycle.upsert_object(meta);
@@ -884,7 +887,7 @@ async fn is05_03_lifecycle_tier_transition() {
 /// 测试：生命周期 - 过期删除
 #[tokio::test]
 async fn is05_04_lifecycle_expiration() {
-    use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, StorageClass};
+    use mox_cloud_s3_svc::{HotWarmColdLifecycle, LifecycleObjectMeta, LifecycleReplicationStatus, StorageClass};
 
     let lifecycle = HotWarmColdLifecycle::default();
     let t0 = 1_700_000_000_000u64;
@@ -897,6 +900,9 @@ async fn is05_04_lifecycle_expiration() {
         created_at_ms: t0,
         last_accessed_at_ms: t0,
         last_transition_ms: t0,
+        version_id: "null".to_string(),
+        replication_status: LifecycleReplicationStatus::None,
+        object_locked: false,
     };
 
     lifecycle.upsert_object(meta);

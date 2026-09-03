@@ -1,10 +1,10 @@
 # 璇玑系统 · 全局端口注册表（PORT-REGISTRY-001）
 
 > **标题**：璇玑系统 · 全局端口注册表
-> **版本**：V1.0
+> **版本**：V1.1
 > **权威等级**：🟢权威
 > **编号**：PORT-REGISTRY-001
-> **最后更新日期**：2026-09-01
+> **最后更新日期**：2026-09-03
 > **适用范围**：**整个 infotopograph 仓库**（全部运行服务、附属服务、遗留服务、测试服务、历史/已退役端口、第三方基础设施引用）
 > **单源声明**：本文档是**全仓库端口分配的唯一权威来源**。凡涉及端口规划、分配、迁移、避让的决策与文档，均以本文档为准；与本文档冲突时，以本文档为准并修复冲突来源。专家联盟核心服务段（3000–3999）同时受 `docs/standards/expert-alliance-port-norm.md`（PORT-NORM-001）约束，两者一致，PORT-NORM-001 为本表 3000–3999 段的细粒度权威。
 
@@ -28,7 +28,7 @@
 
 | 服务 | 端口 | 协议 | 绑定 | 入口/访问 | 配置权威来源 |
 |---|---|---|---|---|---|
-| **api**（Rust 网关 mox-gateway / mox-server） | **8080** | HTTP | 0.0.0.0 | `http://localhost:8080/health` | `platform_config.json`、`deploy/config/gateway.yaml`、`mox-workspace/.env.example` |
+| **api**（Rust 网关 mox-server，crate `mox-platform-gateway-svc`） | **8080** | HTTP | 0.0.0.0 | `http://localhost:8080/health` | `platform_config.json`、`deploy/config/gateway.yaml`、`mox-workspace/.env.example`、`platform/gateway/mox-platform-gateway-svc/` |
 | **frontend**（Vite Vue3 dev server） | **3020** | HTTP | 0.0.0.0 | `http://localhost:3020/` | `frontend-ui/vite.config.js`、`platform_config.json` |
 | **xiaobai_voice**（ASR+TTS） | **30010** | HTTP/WS | 127.0.0.1 | `http://localhost:30010/voice/health` | `projects/xiaobai_voice/xiaobai_voice/config/default_config.yaml`、`cli.py`、`platform_config.json` |
 | **melody2score**（旋律转谱 WebUI） | **8012** | HTTP | 0.0.0.0 | `http://localhost:8012/` | `projects/melody2score/app/webui.py`、`platform_config.json` |
@@ -78,7 +78,7 @@
 | 3998 | operator API（mox-ai-agent-svc `OPERATOR_API_BASE` 默认；`runtime --port` 测试） | 127.0.0.1 | `platform/domains/ai/svc/mox-ai-agent-svc/src/workflow_engine.rs`、`scripts/tests/verify_tests.*` |
 | 7000 | mox-dr raft（helm `containerPort`；历史文档亦见 8200） | — | `deploy/helm/mox-dr/templates/NOTES.txt` |
 | 3000 | OUS 算子统一系统边缘（`mox-platform-system-core` 默认绑定；曾为 Node 边缘入口；注意 Grafana 默认同为 3000，部署需避让） | 0.0.0.0 | `platform/domains/platform/core/mox-platform-system-core/src/config.rs` |
-| 3001 | orchestrator-svc（operator-unified-system）HTTP 默认绑定（`--port` 默认 3001） | 0.0.0.0 | `platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs` |
+| 3001 | orchestrator-svc（operator-server，bin `operator-server`）HTTP 默认绑定；网关 `/api/*` 通配转发目标；承载 `/api/graph/*` 知识图谱、`/ai/engine/*` AI 引擎、`/alliance/v1/*` 专家联盟等端点 | 0.0.0.0 | `platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs`、`Cargo.toml [[bin]] name=operator-server` |
 | 3002 | enterprise-svc 默认绑定（休眠/备用服务） | 0.0.0.0 | `platform/domains/platform/svc/mox-platform-enterprise-svc/src/main.rs` |
 
 ### 3.4 LEGACY —— 遗留模块（自洽，不纳入统一运维）
@@ -210,6 +210,13 @@ python scripts/verify-ports.py --json     # 输出机器可读 JSON 报告
 | `platform_config.json` / `scripts/server-manage.py` | xiaobai_voice `port: 3717` | `port: 30010` |
 | orchestrator 侧车（main.rs / ai_engine.rs / sidecar/*） | 默认 `http://127.0.0.1:3010`（指向已删除 backend-node） | 默认 `http://127.0.0.1:8080`（接管其职责的 Rust 网关，注释标注） |
 
+| `docs/ARCHITECTURE_SAAS_PRIVATE.md` | 前端 `:3021`（2处）、voice `:3717`（3处）、Vite `/voice` 代理→`:3001` | `:3020`、`:30010`、→`:8080`（网关→编排器 voice_proxy→:30010） |
+| `deploy/docs/FS-S3-full-lifecycle-ops-guide.md` | `localhost:3010`（6处 curl 示例） | `localhost:8080`（Rust 网关） |
+| `docs/architecture/14-REPOSITORY-FULL-MAP.md` | 语音服务 `:3717` | `:30010` |
+| `docs/mox-relgraph-product-handbook-v3.md` | `127.0.0.1:3010`（intent API 示例） | `127.0.0.1:8080` |
+| `docs/modules/ai-flow-graph-design.md` | `localhost:3010`（preview 地址） | `localhost:8080` |
+| `docs/expert-alliance/00-INTEGRATED-INDEX.md`、`02-DUAL-PLATFORM-RELATIONSHIP.md` | Node.js 层 `:3010` 未标注退役 | 顶部加状态标注：backend-node 已删除，能力由 Rust 网关 :8080 接管；正文保留 :3010 作为历史记录 |
+
 ### 6.3 遗留待办（不影响一致性，属演进建议）
 
 - **alliance 3100/3200/3300 纳入 `server-manage.py`**：当前由 `config/alliance-*.yml` 独立管理，尚未登记进 `platform_config.json`；如需统一面板启停，按第5章流程补充登记。
@@ -218,4 +225,4 @@ python scripts/verify-ports.py --json     # 输出机器可读 JSON 报告
 
 ---
 
-*PORT-REGISTRY-001 V1.0 · 全局端口唯一权威 · 2026-09-01*
+*PORT-REGISTRY-001 V1.1 · 全局端口唯一权威 · 2026-09-03*

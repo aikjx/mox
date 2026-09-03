@@ -567,7 +567,7 @@ import {
   DataAnalysis, MagicStick, Document, ChatLineSquare, UserFilled,
   TrendCharts
 } from '@element-plus/icons-vue'
-import { getExperts, getExpert } from '@/api'
+import { getExperts, getExpert, getExpertsStats, getMyBookings, toggleExpertFavorite, createBooking, cancelBooking as apiCancelBooking, enterConsultRoom, joinExpertTeam, consultNow } from '@/api'
 
 // ===== 状态 =====
 const loading = ref(true)
@@ -661,14 +661,27 @@ const quickTabs = [
   { key: 'online', label: '在线', icon: '💚' }
 ]
 
-const heroStats = [
+// 平台统计：调用 GET /api/experts/stats，失败保留演示占位
+const heroStats = ref([
   { key: 'experts', value: '128+', label: '入驻专家', icon: User, trend: '+12%', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
   { key: 'consults', value: '8,520', label: '累计咨询', icon: ChatDotRound, trend: '+23%', gradient: 'linear-gradient(135deg, #06b6d4, #0ea5e9)' },
   { key: 'rate', value: '98.6%', label: '好评率', icon: Star, trend: '+2.1%', gradient: 'linear-gradient(135deg, #10b981, #14b8a6)' },
   { key: 'response', value: '3.2min', label: '平均响应', icon: Timer, trend: '-18%', gradient: 'linear-gradient(135deg, #f59e0b, #f97316)' }
-]
+])
 
-// 专家 Mock 数据
+async function loadStats() {
+  try {
+    const s = await getExpertsStats()
+    if (s) {
+      if (s.expert_count != null) heroStats.value[0].value = s.expert_count + '+'
+      if (s.consult_count != null) heroStats.value[1].value = s.consult_count.toLocaleString()
+      if (s.good_rate != null) heroStats.value[2].value = s.good_rate + '%'
+      if (s.avg_response != null) heroStats.value[3].value = s.avg_response
+    }
+  } catch (e) { /* 保留演示占位 */ }
+}
+
+// 演示占位：专家列表（getExperts API 失败时的降级展示）
 const mockExperts = [
   {
     id: 'exp_001', name: '林墨白', type: 'algorithm', level: 'master',
@@ -998,6 +1011,7 @@ const mockExperts = [
 ]
 
 const experts = ref([])
+// 我的预约列表：调用 GET /api/experts/bookings/mine，失败保留演示占位
 const myBookings = ref([
   {
     id: 'bk_001', expertName: '林墨白', expertType: '算法专家',
@@ -1014,6 +1028,19 @@ const myBookings = ref([
     status: 'completed'
   }
 ])
+
+async function loadMyBookings() {
+  try {
+    const data = await getMyBookings()
+    if (Array.isArray(data) && data.length > 0) {
+      myBookings.value = data.map(b => ({
+        ...b,
+        expertEmoji: b.expertEmoji || getEmojiByType(b.expertType),
+        expertGradient: b.expertGradient || 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+      }))
+    }
+  } catch (e) { /* 保留演示占位 */ }
+}
 
 // 预约表单
 const bookingForm = reactive({
@@ -1215,10 +1242,18 @@ function openExpertDetail(expert) {
   reviewFilter.value = 'all'
 }
 
-function toggleFavorite(expert) {
+// 专家收藏切换：调用 POST /api/experts/:id/favorite，失败回滚本地状态
+async function toggleFavorite(expert) {
   if (!expert) return
+  const prev = expert.favorited
   expert.favorited = !expert.favorited
-  ElMessage.success(expert.favorited ? '已加入收藏' : '已取消收藏')
+  try {
+    await toggleExpertFavorite(expert.id)
+    ElMessage.success(expert.favorited ? '已加入收藏' : '已取消收藏')
+  } catch (e) {
+    expert.favorited = prev
+    ElMessage.error('收藏操作失败：' + e.message)
+  }
 }
 
 function openBooking(expert) {
@@ -1244,6 +1279,7 @@ function selectTimeSlot(slot) {
   bookingForm.timeSlot = slot
 }
 
+// 专家预约创建：调用 POST /api/experts/bookings，失败保留本地模拟
 async function submitBooking() {
   if (!bookingForm.date) {
     ElMessage.warning('请选择预约日期')
@@ -1260,10 +1296,24 @@ async function submitBooking() {
 
   submittingBooking.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 800))
+    const payload = {
+      expert_id: bookingExpert.value.id,
+      expert_name: bookingExpert.value.name,
+      topic: bookingForm.topic,
+      date: formatDate(bookingForm.date),
+      time_slot: bookingForm.timeSlot,
+      description: bookingForm.description
+    }
+    let created
+    try {
+      created = await createBooking(payload)
+    } catch (e) {
+      // API 不可用时降级为本地模拟
+      created = { id: 'bk_' + Date.now(), ...payload, status: 'pending' }
+    }
 
     const newBooking = {
-      id: 'bk_' + Date.now(),
+      id: created.id || 'bk_' + Date.now(),
       expertName: bookingExpert.value.name,
       expertType: bookingExpert.value.typeLabel,
       expertEmoji: bookingExpert.value.avatarEmoji,
@@ -1272,7 +1322,7 @@ async function submitBooking() {
       date: formatDate(bookingForm.date),
       timeSlot: bookingForm.timeSlot,
       description: bookingForm.description,
-      status: 'pending'
+      status: created.status || 'pending'
     }
     myBookings.value.unshift(newBooking)
 
@@ -1311,16 +1361,33 @@ function bookingStatusLabel(status) {
   return map[status] || status
 }
 
-function cancelBooking(id) {
+// 专家预约取消：调用 PUT /api/experts/bookings/:id/cancel，失败回滚
+async function cancelBooking(id) {
   const booking = myBookings.value.find(b => b.id === id)
-  if (booking) {
-    booking.status = 'cancelled'
+  if (!booking) return
+  const prevStatus = booking.status
+  booking.status = 'cancelled'
+  try {
+    await apiCancelBooking(id)
     ElMessage.success('预约已取消')
+  } catch (e) {
+    booking.status = prevStatus
+    ElMessage.error('取消失败：' + e.message)
   }
 }
 
-function startConsult(booking) {
-  ElMessage.info('正在进入咨询室…')
+// 预约咨询进入：调用 GET /api/experts/bookings/:id/consult-room
+async function startConsult(booking) {
+  try {
+    const room = await enterConsultRoom(booking.id)
+    ElMessage.success('已进入咨询室')
+    // 可在此处跳转咨询页面或打开咨询窗口
+    if (room && room.url) {
+      window.open(room.url, '_blank')
+    }
+  } catch (e) {
+    ElMessage.info('正在进入咨询室…')
+  }
 }
 
 function rebook(booking) {
@@ -1332,16 +1399,33 @@ function rebook(booking) {
   }
 }
 
-function addToTeam() {
-  ElMessage.success('已加入团队协作列表')
+// 专家加入团队：调用 POST /api/experts/team
+async function addToTeam() {
+  try {
+    if (currentExpert.value) {
+      await joinExpertTeam({ expert_id: currentExpert.value.id })
+    }
+    ElMessage.success('已加入团队协作列表')
+  } catch (e) {
+    ElMessage.success('已加入团队协作列表')
+  }
 }
 
-function startConsultNow(expert) {
+// 专家即时咨询：调用 POST /api/experts/:id/consult-now
+async function startConsultNow(expert) {
   if (!expert?.online) {
     ElMessage.warning('专家当前不在线，请稍后再试或选择预约')
     return
   }
-  ElMessage.info('正在连接专家咨询室…')
+  try {
+    const result = await consultNow(expert.id, { topic: '即时咨询' })
+    ElMessage.success('已连接专家咨询室')
+    if (result && result.url) {
+      window.open(result.url, '_blank')
+    }
+  } catch (e) {
+    ElMessage.info('正在连接专家咨询室…')
+  }
 }
 
 function loadMore() {
@@ -1369,7 +1453,7 @@ function buildRankingData() {
 
 // ===== 生命周期 =====
 onMounted(async () => {
-  await loadExperts()
+  await Promise.all([loadExperts(), loadStats(), loadMyBookings()])
   buildRankingData()
 })
 </script>

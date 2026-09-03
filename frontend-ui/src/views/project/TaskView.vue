@@ -29,7 +29,7 @@
         :key="f.key"
         class="filter-chip"
         :class="{ active: currentFilter === f.key }"
-        @click="currentFilter = f.key"
+        @click="handleFilterChange(f.key)"
       >
         {{ f.label }} ({{ getStatusCount(f.key) }})
       </span>
@@ -102,6 +102,20 @@
       <div class="empty-icon">📋</div>
       <h3>暂无任务</h3>
       <p>点击右上角"新建任务"创建第一个任务</p>
+    </div>
+
+    <!-- ===== 服务端分页（大数据量时启用） ===== -->
+    <div v-if="useServerPagination && total > 0" class="pagination-row">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @current-change="handlePageChange"
+        @size-change="handlePageSizeChange"
+      />
     </div>
 
     <!-- ===== 新建/编辑弹窗 ===== -->
@@ -241,7 +255,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Edit, Delete, User, Calendar, Folder
 } from '@element-plus/icons-vue'
-import { getTasks, createTask, updateTask, deleteTask as apiDeleteTask } from '@/api'
+import { getTasks, createTask, updateTask, deleteTask as apiDeleteTask, getTasksPaginated } from '@/api'
 
 // ===== 状态 =====
 const tasks = ref([])
@@ -252,6 +266,14 @@ const showDetail = ref(false)
 const editingTask = ref(null)
 const currentTask = ref(null)
 const saving = ref(false)
+
+// ===== 服务端分页状态 =====
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const useServerPagination = ref(false)
+const sortBy = ref('')
+const sortOrder = ref('')
 
 const taskForm = reactive({
   title: '',
@@ -273,6 +295,7 @@ const statusFilters = [
 ]
 
 // ===== Mock 数据 =====
+// 演示占位：API 失败/空时的兜底任务数据
 const mockTasks = [
   {
     id: 't_001', title: '设计用户认证模块', description: '实现 JWT + OAuth2.0 双模式认证，支持手机号/邮箱/第三方登录',
@@ -369,19 +392,25 @@ function getPriorityLabel(p) {
   return map[p] || '中优'
 }
 
-function handleSearch() {
-  // 计算属性自动过滤
-}
-
-function toggleTaskStatus(task) {
-  if (task.status === 'done') {
-    task.status = 'todo'
-    task.progress = 0
-    ElMessage.info('任务已恢复为待办')
-  } else {
-    task.status = 'done'
-    task.progress = 100
-    ElMessage.success('任务已标记为完成 🎉')
+async function toggleTaskStatus(task) {
+  const newStatus = task.status === 'done' ? 'todo' : 'done'
+  const newProgress = newStatus === 'done' ? 100 : 0
+  // 先更新本地状态以获得即时反馈
+  task.status = newStatus
+  task.progress = newProgress
+  try {
+    await updateTask(task.id, { status: newStatus, progress: newProgress })
+    if (newStatus === 'done') {
+      ElMessage.success('任务已标记为完成 🎉')
+    } else {
+      ElMessage.info('任务已恢复为待办')
+    }
+  } catch (e) {
+    // 回滚本地状态
+    task.status = newStatus === 'done' ? 'todo' : 'done'
+    task.progress = newStatus === 'done' ? 0 : 100
+    console.warn('[TaskView] 更新任务状态失败:', e)
+    ElMessage.error('更新任务状态失败，请重试')
   }
 }
 
@@ -470,6 +499,35 @@ async function deleteTask(task) {
 }
 
 async function loadTasks() {
+  if (useServerPagination.value) {
+    try {
+      const params = {
+        page: page.value,
+        page_size: pageSize.value,
+        keyword: searchKeyword.value.trim() || undefined,
+        status: currentFilter.value !== 'all' ? currentFilter.value : undefined,
+        sort_by: sortBy.value || undefined,
+        sort_order: sortOrder.value || undefined
+      }
+      Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
+      const result = await getTasksPaginated(params)
+      if (result && Array.isArray(result.items)) {
+        tasks.value = result.items
+        total.value = result.total || 0
+        page.value = result.page || page.value
+        pageSize.value = result.page_size || pageSize.value
+        return
+      }
+      // 响应非分页格式，降级为客户端模式
+      useServerPagination.value = false
+      total.value = 0
+    } catch (e) {
+      console.warn('[TaskView] 服务端分页加载失败，降级为客户端模式:', e.message)
+      useServerPagination.value = false
+      total.value = 0
+    }
+  }
+  // 客户端模式
   try {
     const data = await getTasks()
     if (Array.isArray(data) && data.length > 0) {
@@ -481,6 +539,32 @@ async function loadTasks() {
   } catch (e) {
     console.warn('[TaskView] API 加载失败，使用 Mock 数据:', e.message)
     tasks.value = [...mockTasks]
+  }
+}
+
+function handlePageChange(p) {
+  page.value = p
+  loadTasks()
+}
+
+function handlePageSizeChange(size) {
+  pageSize.value = size
+  page.value = 1
+  loadTasks()
+}
+
+function handleSearch() {
+  if (useServerPagination.value) {
+    page.value = 1
+    loadTasks()
+  }
+}
+
+function handleFilterChange(key) {
+  currentFilter.value = key
+  if (useServerPagination.value) {
+    page.value = 1
+    loadTasks()
   }
 }
 
@@ -532,6 +616,13 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* 分页 */
+.pagination-row {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
 }
 .filter-chip {
   padding: 4px 12px;

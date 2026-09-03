@@ -1,9 +1,11 @@
-﻿// Copyright (c) 2026 璇玑 mox · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 mox · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
 //! MOX Cloud Domain API — trait contracts for storage resource management.
+
+pub mod admin;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};

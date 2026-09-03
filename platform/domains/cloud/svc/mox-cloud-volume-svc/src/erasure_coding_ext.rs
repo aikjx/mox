@@ -13,6 +13,8 @@
 //!
 //! 设计参考 Jerasure 库的 Cauchy Reed-Solomon 实现，
 //! 结合 AIS 风格的渐进式重建策略。
+//!
+//! 配套仲裁模块：[crate::multi_writer]（写仲裁）、[crate::hedged_reader]（读仲裁）。
 
 use crate::profile::EcProfile;
 use crate::reed_solomon::{

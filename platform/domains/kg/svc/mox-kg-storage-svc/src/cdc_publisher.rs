@@ -58,48 +58,9 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 // 事件类型定义
 // ============================================================================
 
-/// CDC 事件类型
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum CdcEventType {
-    /// 顶点创建
-    VertexCreated,
-    /// 顶点更新
-    VertexUpdated,
-    /// 顶点删除
-    VertexDeleted,
-    /// 边创建
-    EdgeCreated,
-    /// 边删除
-    EdgeDeleted,
-}
+/// CDC 事件类型（统一从 cdc_source 导出，含 EdgeUpdated）
+pub use crate::cdc_source::CdcEventType;
 
-impl CdcEventType {
-    /// 返回事件类型的字符串表示
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            CdcEventType::VertexCreated => "VertexCreated",
-            CdcEventType::VertexUpdated => "VertexUpdated",
-            CdcEventType::VertexDeleted => "VertexDeleted",
-            CdcEventType::EdgeCreated => "EdgeCreated",
-            CdcEventType::EdgeDeleted => "EdgeDeleted",
-        }
-    }
-
-    /// 判断是否为顶点事件
-    pub fn is_vertex_event(&self) -> bool {
-        matches!(
-            self,
-            CdcEventType::VertexCreated
-                | CdcEventType::VertexUpdated
-                | CdcEventType::VertexDeleted
-        )
-    }
-
-    /// 判断是否为边事件
-    pub fn is_edge_event(&self) -> bool {
-        matches!(self, CdcEventType::EdgeCreated | CdcEventType::EdgeDeleted)
-    }
-}
 
 /// CDC 事件
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

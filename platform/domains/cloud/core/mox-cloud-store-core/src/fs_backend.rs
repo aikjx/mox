@@ -437,7 +437,7 @@ mod tests {
             store.write(&h, Bytes::copy_from_slice(part)).await.unwrap();
         }
         let obj = store.close(h).await.unwrap();
-        assert_eq!(obj.size_bytes, 16);
+        assert_eq!(obj.size_bytes, 17);
         let got = ObjectStore::get(&store, "big.bin").await.unwrap();
         assert_eq!(&got[..], b"part1-part2-part3");
     }

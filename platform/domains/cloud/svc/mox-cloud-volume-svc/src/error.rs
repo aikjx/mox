@@ -14,6 +14,8 @@ pub enum VolumeError {
     RebuildFailed(String),
     CrcMismatch(String),
     Internal(String),
+    /// 写入被背压机制拒绝（达到最大并发写入数）
+    BackpressureRejected(String),
 }
 
 impl fmt::Display for VolumeError {
@@ -25,6 +27,7 @@ impl fmt::Display for VolumeError {
             VolumeError::RebuildFailed(msg) => write!(f, "Rebuild failed: {}", msg),
             VolumeError::CrcMismatch(msg) => write!(f, "CRC mismatch: {}", msg),
             VolumeError::Internal(msg) => write!(f, "Internal error: {}", msg),
+            VolumeError::BackpressureRejected(msg) => write!(f, "Backpressure rejected: {}", msg),
         }
     }
 }

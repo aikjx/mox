@@ -42,7 +42,7 @@ async fn t1_full_lifecycle_roundtrip() {
     assert_eq!(got, data);
 
     let range = ObjectStore::get_range(&store, key, 2, 8).await.unwrap();
-    assert_eq!(&range[..], "Mox 云盘".as_bytes());
+    assert_eq!(&range[..], &content.as_bytes()[2..10]);
 
     assert!(ObjectStore::exists(&store, key).await.unwrap());
     ObjectStore::delete(&store, key).await.unwrap();
@@ -130,33 +130,59 @@ async fn t1_gc_dry_run_and_real_collect() {
     // dry-run：识别候选但不删除
     let report = gc.collect(true).await.unwrap();
     assert_eq!(report.hard_deleted, 1, "dry-run 应识别 1 个候选");
+    assert_eq!(report.soft_purged, 0);
+    assert!(report.chunks_scanned >= 2, "应扫描全部 chunk，实际 {}", report.chunks_scanned);
+    assert!(report.bytes_freed >= 9, "dry-run 也应报告可释放字节");
     let gone_sha = sha256_hex(b"delete me");
     assert!(tokio::fs::try_exists(store.chunk_path(&gone_sha)).await.unwrap());
 
     // 实跑：物理删除，保留对象不受影响
     let report = gc.collect(false).await.unwrap();
     assert_eq!(report.hard_deleted, 1);
+    assert_eq!(report.soft_purged, 0);
     assert!(!tokio::fs::try_exists(store.chunk_path(&gone_sha)).await.unwrap());
+    assert!(tokio::fs::try_exists(store.chunk_path(&sha256_hex(b"keep me"))).await.unwrap(), "保留对象 chunk 不应被删除");
     assert_eq!(&ObjectStore::get(&store, "keep.txt").await.unwrap()[..], b"keep me");
+
+    // 幂等：二次 GC 无可回收
+    let report = gc.collect(false).await.unwrap();
+    assert_eq!(report.hard_deleted, 0);
 }
 
 #[tokio::test]
 async fn t1_versioning_zero_copy_restore() {
     let (_d, store) = tmp_store();
     let vm = VersionManager::new(_d.path());
-    vm.save_version(&store, "doc/x", "text/plain", Bytes::from_static(b"v1 content"), serde_json::json!({}))
+    let v1 = vm
+        .save_version(&store, "doc/x", "text/plain", Bytes::from_static(b"v1 content"), serde_json::json!({"note": "初始"}))
         .await
         .unwrap();
-    vm.save_version(&store, "doc/x", "text/plain", Bytes::from_static(b"v2 content"), serde_json::json!({}))
+    let v2 = vm
+        .save_version(&store, "doc/x", "text/plain", Bytes::from_static(b"v2 content"), serde_json::json!({"note": "更新"}))
         .await
         .unwrap();
 
     let versions = vm.list_versions("doc/x").await.unwrap();
     assert_eq!(versions.len(), 2);
+    assert_eq!(versions[0].version, 1);
+    assert_eq!(versions[1].version, 2);
 
+    // 版本元数据校验
+    assert_eq!(versions[0].size_bytes, b"v1 content".len() as u64);
+    assert_eq!(versions[0].content_type, "text/plain");
+    assert!(versions[0].created_ms > 0, "应记录创建时间");
+    assert_eq!(versions[0].meta["note"], "初始");
+    assert_ne!(v1.sha256, v2.sha256, "不同内容 → 不同内容寻址哈希");
+
+    // 零拷贝恢复：仅新增引用，不复制数据
     let restored = vm.restore(&store, "doc/x", 1, "kb/restored.txt").await.unwrap();
     assert_eq!(&ObjectStore::get(&store, "kb/restored.txt").await.unwrap()[..], b"v1 content");
-    assert!(restored.sha256.is_some());
+    assert_eq!(restored.sha256.as_deref(), Some(v1.sha256.as_str()));
+    assert_eq!(store.refcount(&v1.sha256).await.unwrap(), 2, "内部版本引用 + 恢复对象引用 = 2");
+    assert_eq!(store.refcount(&v2.sha256).await.unwrap(), 1, "v2 仅内部引用");
+
+    // 恢复内容与源版本数据字节级一致
+    assert_eq!(&ObjectStore::get(&store, "kb/restored.txt").await.unwrap()[..], b"v1 content");
 }
 
 #[tokio::test]

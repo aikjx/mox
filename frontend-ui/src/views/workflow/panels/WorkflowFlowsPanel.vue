@@ -106,7 +106,7 @@ import {
   Plus, Search, Refresh, Edit, Delete, VideoPlay,
   Connection, Timer, Cpu, DataAnalysis, MagicStick, Setting, Tools
 } from '@element-plus/icons-vue'
-import { getFlows, createFlow, deleteFlow, executeFlow as apiExecuteFlow } from '@/api/workflow.api.js'
+import { getFlows, createFlow, updateFlow, deleteFlow, executeFlow as apiExecuteFlow } from '@/api/workflow.api.js'
 
 const loading = ref(false)
 const error = ref('')
@@ -181,7 +181,8 @@ async function saveFlow() {
   dialog.value.saving = true
   try {
     if (dialog.value.isEdit) {
-      ElMessage.info('编辑功能开发中')
+      await updateFlow(f.id, { name: f.name, type: f.type, description: f.description })
+      ElMessage.success('流程更新成功')
     } else {
       await createFlow({ name: f.name, type: f.type, description: f.description })
       ElMessage.success('流程创建成功')

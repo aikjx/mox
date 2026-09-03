@@ -36,6 +36,7 @@ pub mod meta_trait;
 pub mod posix_api;
 pub mod quota_manager;
 pub mod snapshot_filer;
+pub mod store_core_bridge;
 
 pub use dir_entry_cache::{CacheStats, DirEntryCache, SharedDirEntryCache};
 pub use error::{FilerError, FilerResult};
@@ -61,3 +62,4 @@ pub use quota_manager::{
 pub use snapshot_filer::{
     SharedSnapshotManager, SnapshotInfo, SnapshotManager, SnapshotStatus,
 };
+pub use store_core_bridge::StoreCoreObjectStorage;

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>完成页面功能分析与代码生成归一化方案 · 关图/璇玑</title>
+<style>
+  :root{
+    --bg:#F4F3EE; --card:#FFFFFF; --border:#E4E3DD; --text:#1A1B1C; --sub:#6B7280;
+    --accent:#3B5BDB; --accent-soft:rgba(59,91,219,.10); --ok:#2E8B57; --warn:#B8860B; --err:#C0392B;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Roboto','PingFang SC','Microsoft YaHei','Segoe UI',Arial,sans-serif;line-height:1.6;}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 64px;}
+  header.hero{background:linear-gradient(135deg,#1B2A6B 0%,#3B5BDB 60%,#7B8FEA 100%);color:#fff;border-radius:16px;padding:34px 34px 28px;}
+  header.hero h1{margin:0 0 8px;font-size:26px;font-weight:700;line-height:1.35;}
+  header.hero .sub{font-size:14px;opacity:.92;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  .meta .tag{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:3px 12px;font-size:12px;}
+  h2{font-size:20px;margin:36px 0 14px;padding-left:12px;border-left:4px solid var(--accent);}
+  h3{font-size:16px;margin:22px 0 10px;color:#2B3A7A;}
+  p{font-size:14px;margin:8px 0;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin:14px 0;}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;background:#fff;border-radius:10px;overflow:hidden;}
+  th,td{border:1px solid var(--border);padding:9px 11px;text-align:left;vertical-align:top;}
+  th{background:#EEF1FA;font-weight:600;color:#2B3A7A;}
+  tr:nth-child(even) td{background:#FAFBFF;}
+  .kpi{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0;}
+  .kpi .box{flex:1 1 140px;min-width:0;background:linear-gradient(135deg,rgba(59,91,219,.08),rgba(59,91,219,.18));border-radius:12px;padding:14px 16px;}
+  .kpi .box .v{font-size:22px;font-weight:700;color:#2B3A7A;}
+  .kpi .box .l{font-size:12px;color:var(--sub);}
+  .badge{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;}
+  .b-ok{background:rgba(46,139,87,.12);color:var(--ok);}
+  .b-warn{background:rgba(184,134,11,.14);color:var(--warn);}
+  .b-err{background:rgba(192,57,43,.12);color:var(--err);}
+  .b-info{background:rgba(59,91,219,.10);color:var(--accent);}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px;font-size:14px;}
+  li{margin:4px 0;}
+  code{background:#EFF1F8;border:1px solid #DDE3F2;border-radius:5px;padding:1px 6px;font-size:12.5px;font-family:'JetBrains Mono','Consolas',monospace;color:#33415C;}
+  pre{background:#F5F6FB;border:1px solid var(--border);border-radius:10px;padding:14px 16px;overflow:auto;font-size:12.5px;font-family:'JetBrains Mono','Consolas',monospace;line-height:1.55;}
+  .note{background:rgba(255,247,224,.7);border:1px solid #F0E3C0;border-radius:10px;padding:12px 16px;font-size:13px;color:#6B5B2E;margin:12px 0;}
+  .note b{color:#8a6d1a;}
+  .callout{background:rgba(59,91,219,.06);border:1px solid rgba(59,91,219,.25);border-radius:10px;padding:12px 16px;font-size:13px;margin:12px 0;}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0;}
+  .flow .step{background:#fff;border:1.5px solid var(--accent);color:#2B3A7A;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;min-width:0;}
+  .flow .arrow{color:var(--sub);font-size:16px;}
+  .flow .step.alt{background:var(--accent);color:#fff;}
+  .two{display:flex;gap:14px;flex-wrap:wrap;}
+  .two>div{flex:1 1 320px;min-width:0;}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--sub);}
+  @media (max-width:600px){ header.hero h1{font-size:20px;} h2{font-size:18px;} .kpi .box{flex-basis:120px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>完成页面功能分析 与 代码生成归一化一键生成方案</h1>
+  <div class="sub">关图/璇玑（算子统一全维治理系统）· 以 ymkj（育美科技平台）为参考基准的归一化规范与模板标准化设计</div>
+  <div class="meta">
+    <span class="tag">范围：完成页面测试分析 · 代码生成模板 · 一键生成归一化</span>
+    <span class="tag">日期：2026-09-03</span>
+    <span class="tag">参考：D:\code\ymkj（tool/gen + 归一化文档）</span>
+    <span class="tag">对象：D:\a10\aikjx\gitcode\infotopograph</span>
+  </div>
+</header>
+
+<h2>一、任务背景与结论速览</h2>
+<div class="card">
+  <p>本轮指令包含三项工作内容（按原意逐条执行）：</p>
+  <ol>
+    <li><b>继续测试分析"完成页面"所有功能</b> —— 对系统内与"完成/出码完成/任务完成"相关的页面与链路做功能盘点与测试分析；</li>
+    <li><b>是否有生成代码的模板？可以参考 ymkj</b> —— 排查系统内代码生成模板，并以用户机器上的 <code>ymkj</code>（育美科技平台）代码生成器为参考基准；</li>
+    <li><b>一键生成 · 所有系统功能模块归一化规范标准化</b> —— 设计一套标准，使全部系统功能模块可一键生成、规范统一。</li>
+  </ol>
+  <div class="kpi">
+    <div class="box"><div class="v">✅ 有模板</div><div class="l">关图 primiflow C1~C8 骨架模板</div></div>
+    <div class="box"><div class="v">8 类</div><div class="l">代码生成骨架（C1~C8 + DDL/Schema/图谱）</div></div>
+    <div class="box"><div class="v">38 页 / 191 API</div><div class="l">关图前端全维功能图谱（v3.0.0）</div></div>
+    <div class="box"><div class="v">3 类模板</div><div class="l">ymkj 参考：单表 / 树表 / 主子表</div></div>
+  </div>
+  <div class="note"><b>口径说明：</b>经全盘勘察，两套系统中均<b>不存在以"完成页面"为文件名的页面</b>。本报告按最贴合上下文的口径，将"完成页面"界定为 <b>AI 一键完成/出码完成的"结果呈现 + 完成态"页面链路</b>（详见第二章），并以静态代码分析 + 接口链路盘点方式进行测试分析。若你指的是其它具体页面（如某原型/路由），请指认，我按实际对象重测。</div>
+</div>
+
+<h2>二、"完成页面"功能盘点与测试分析</h2>
+
+<h3>2.1 "完成页面"在关图/璇玑中的落点（工作口径）</h3>
+<div class="card">
+  <p>关图/璇玑的完整出码链路为：<b>需求 → 归一化 IR → 双璇玑十四维诊断 → 裁决 → flow-ai 求解 → ⛨验证网关 → 治理 8 闸门 → 出码/出图</b>。"完成页面"承担该链路末端"结果呈现 + 完成态"职责。相关落点：</p>
+  <table>
+    <tr><th>层级</th><th>落点</th><th>角色</th></tr>
+    <tr><td>前端 · 核心页</td><td><code>views/ai/ChatView.vue</code>（已重构拆分，核心逻辑下沉 <code>components/ai/AIChatPanel.vue</code> 等）</td><td>"一键完成"入口与结果展示主载体</td></tr>
+    <tr><td>前端 · API</td><td><code>src/api/ai.api.js</code> → <code>aiFullComplete</code>（POST <code>/ai/full-complete</code>）、<code>aiDevTestFix</code>（<code>/ai/dev-test-fix</code>）、<code>aiGenerateDoc</code>（<code>/ai/generate-doc</code>）</td><td>完成链路的远程调用入口</td></tr>
+    <tr><td>前端 · 组件</td><td><code>components/AgentTaskRunner.vue</code>、<code>FlowDetailDialog.vue</code>、<code>AgentFlowPanel.vue</code></td><td>任务/流程"已完成"态展示（进度、步骤、完成标签）</td></tr>
+    <tr><td>前端 · 任务态</td><td><code>views/expert/AllianceTaskView.vue</code>、<code>views/project/TaskView.vue</code>、<code>ProjectPicker.vue</code>、<code>ProjectChip.vue</code></td><td>任务/项目"已完成"状态的列表、筛选、标签映射</td></tr>
+    <tr><td>后端 · 生成</td><td><code>mox-flow-primiflow-svc</code>（解析→生成→持久化→执行，Server 于 <code>:8787</code>）</td><td>出码产物（C1~C8 + DDL/Schema/图谱）生成引擎</td></tr>
+    <tr><td>后端 · 网关</td><td><code>mox-expert::verify</code>（⛨5 项验证）+ <code>primiflow-fusion::full_gate</code>（治理 8 闸门 G1~G8）</td><td>出码前的合规/安全/权限门禁</td></tr>
+  </table>
+</div>
+
+<h3>2.2 功能清单与测试分析结论（静态盘点）</h3>
+<div class="card">
+  <table>
+    <tr><th>#</th><th>功能点</th><th>落点</th><th>状态</th><th>分析结论</th></tr>
+    <tr><td>F1</td><td>一键完成（全维链路触发）</td><td><code>aiFullComplete → /ai/full-complete</code></td><td><span class="badge b-ok">已接线</span></td><td>API 已定义；前端入口位于 ChatView/AIChatPanel，需运行态验证回调</td></tr>
+    <tr><td>F2</td><td>完成态任务列表/筛选/标签</td><td>AllianceTaskView / TaskView / ProjectPicker / ProjectChip</td><td><span class="badge b-ok">已实现</span></td><td>completed/done 态映射完整（含 legend、状态映射表）</td></tr>
+    <tr><td>F3</td><td>Agent 执行进度与完成展示</td><td>AgentTaskRunner / AgentFlowPanel / FlowDetailDialog</td><td><span class="badge b-ok">已实现</span></td><td>步骤进度 + "已完成 N 步" + 完成后切代码视图</td></tr>
+    <tr><td>F4</td><td>出码结果呈现（代码/DDL/图谱）</td><td>primiflow <code>examples/out/*</code>（mod.rs/schema.rs/ddl.sql/graph.mmd/topo）</td><td><span class="badge b-warn">后端有·前端待串</span></td><td>后端产物齐全；前端缺少统一"出码完成页"承接展示</td></tr>
+    <tr><td>F5</td><td>验证网关 + 治理闸门完成回执</td><td>verify 5 项 / full_gate G1~G8</td><td><span class="badge b-ok">已实现</span></td><td>出码必经门禁，返回体含闸门明细（需前端展示）</td></tr>
+    <tr><td>F6</td><td>完成态持久化与回查</td><td>persistence（SQLite/JSON 双后端）</td><td><span class="badge b-warn">后端有</span></td><td>生成产物可落库；前端"历史完成记录"视图缺失</td></tr>
+    <tr><td>F7</td><td>结果下载/发布到知识库</td><td><code>aiPublishArtifactsToKb</code> / <code>aiGenerateProjectGraph</code></td><td><span class="badge b-ok">已接线</span></td><td>制品发布链路存在，可作为完成页"沉淀"动作</td></tr>
+  </table>
+  <div class="note"><b>运行态测试未执行的原因：</b>当前系统未运行（前端 3020 / 网关 8080 / 边缘 3000-3001 均连接超时；仅有 <code>mox-server</code> 残留进程无监听）。本报告基于源码 + API 契约 + 功能图谱静态分析。如需真实浏览器测试，可启动后端（Rust 构建）+ 前端后执行。</div>
+</div>
+
+<h3>2.3 缺口与问题清单</h3>
+<div class="card">
+  <ol>
+    <li><b>缺少统一"出码完成页"</b>：生成产物（C1~C8/DDL/图谱）缺少一个标准化的结果呈现页面（对应 ymkj 生成后预览/下载体验），目前仅散落在后端产物目录。</li>
+    <li><b>完成态与验证回执未前端化</b>：verify 5 项 + full_gate G1~G8 的结果回执未在完成页系统化展示。</li>
+    <li><b>历史完成记录缺失</b>：完成产物可持久化，但缺少"完成历史/回查/重放"视图。</li>
+    <li><b>一键完成链路无模板化承接</b>：目前是全维分析链路调用，未与代码生成模板（primiflow C1~C8）形成"点选即生成"的产品化闭环。</li>
+  </ol>
+</div>
+
+<h2>三、代码生成模板现状与参考基准</h2>
+
+<h3>3.1 关图/璇玑已有模板：primiflow（答案：有）</h3>
+<div class="card">
+  <p><code>mox-flow-primiflow-svc</code>（AIS L4Services，旧名 primiflow-core）是系统自带的代码生成模板引擎：DDL 式领域语言解析 → 代码生成 → 持久化 → 执行，含 15+ 企业级种子示例与 15 项指标验证。</p>
+  <table>
+    <tr><th>模板</th><th>职责</th><th>产物类型</th></tr>
+    <tr><td>C1</td><td>业务规则</td><td>规则代码骨架</td></tr>
+    <tr><td>C2</td><td>CRUD</td><td>增删改查骨架（对齐 ymkj 单表模板方向）</td></tr>
+    <tr><td>C3</td><td>工作流</td><td>流程定义/编排骨架</td></tr>
+    <tr><td>C4</td><td>数据流</td><td>数据管线骨架</td></tr>
+    <tr><td>C5</td><td>集成契约</td><td>接口/契约骨架</td></tr>
+    <tr><td>C6</td><td>审计/鉴权</td><td>安全骨架</td></tr>
+    <tr><td>C7</td><td>指标/监控</td><td>可观测性骨架</td></tr>
+    <tr><td>C8</td><td>关图实体</td><td>图谱实体绑定</td></tr>
+    <tr><td>+</td><td>DDL / Schema / Graph</td><td>建表 SQL + 数据模型 + 可视化</td></tr>
+  </table>
+  <p>扩展机制：新增 C9 只需新建 <code>gen/c9.rs</code> + <code>generate.rs</code> 分派 match 追加 1 个 arm；TDD：先 RED 后 GREEN，产物字节级对比。治理规范：出码必经 <code>verify</code> + <code>full_gate</code>。</p>
+</div>
+
+<h3>3.2 参考基准：ymkj（育美科技）tool/gen 代码生成器</h3>
+<div class="card">
+  <p>用户机器 <code>D:\code\ymkj</code> 为育美科技企业级 RPA/AI-Bot 平台（前端 <code>ymkj-aibot-ui</code> 运行于 4000/4001）。其代码生成模块是"若依式"CRUD 生成器，可直接作为关图模板标准化的产品化参照：</p>
+  <table>
+    <tr><th>维度</th><th>ymkj 实现</th><th>可借鉴点</th></tr>
+    <tr><td>模板类型</td><td>单表 / 树表 / 主子表（tplCategory）</td><td>按业务形态分类模板</td></tr>
+    <tr><td>生成配置</td><td>packageName / moduleName / businessName / uiPath / functionName / genType(0=zip,1=自定义路径) / genPath</td><td>包名·模块·业务·UI 路径·功能名统一输入</td></tr>
+    <tr><td>操作流</td><td>导入表 → 配置 → 预览 → 生成 / 同步</td><td>"点选即生成"产品闭环</td></tr>
+    <tr><td>权限</td><td>v-hasPermi="tool:gen:code / preview / synchDb"</td><td>生成动作按 RBAC 管控</td></tr>
+    <tr><td>归一化文档</td><td>BP/API/ARC/VAL 四类规范（SSoT 索引、@doc-link 反向引用、命名规范）</td><td>文档归一化标准范式</td></tr>
+  </table>
+  <div class="callout"><b>关键结论：</b>关图已具备"底层模板引擎"（primiflow C1~C8），但缺少 ymkj 式的"产品化生成闭环"（导入/配置/预览/一键生成/完成页展示 + 归一化标准）。两者可互补：primiflow 提供领域化骨架能力，ymkj 提供交互与规范范式。</div>
+</div>
+
+<h3>3.3 能力对比矩阵</h3>
+<div class="card">
+  <table>
+    <tr><th>能力项</th><th>关图 primiflow</th><th>ymkj tool/gen（参考）</th><th>归一化目标态</th></tr>
+    <tr><td>模板类型</td><td><span class="badge b-ok">8 类骨架</span></td><td><span class="badge b-ok">3 类 CRUD</span></td><td>领域骨架 + 业务形态双维</td></tr>
+    <tr><td>DDL 反向生成</td><td><span class="badge b-warn">DDL 正向解析</span></td><td><span class="badge b-ok">导入表反向生成</span></td><td>双向（正向 DDL / 反向表）</td></tr>
+    <tr><td>前端页面生成</td><td><span class="badge b-err">缺</span></td><td><span class="badge b-ok">Vue 页面生成</span></td><td>后端骨架 + 前端页面 + 路由菜单</td></tr>
+    <tr><td>配置界面</td><td><span class="badge b-err">CLI/示例</span></td><td><span class="badge b-ok">表单化配置</span></td><td>统一配置向导</td></tr>
+    <tr><td>预览/完成页</td><td><span class="badge b-warn">产物落盘</span></td><td><span class="badge b-ok">预览/生成</span></td><td>标准"完成页面"承接展示</td></tr>
+    <tr><td>合规门禁</td><td><span class="badge b-ok">verify+8闸门</span></td><td><span class="badge b-warn">弱</span></td><td>生成即合规（关图优势保留）</td></tr>
+    <tr><td>文档归一化</td><td><span class="badge b-warn">有但分散</span></td><td><span class="badge b-ok">BP/API/ARC/VAL</span></td><td>统一归一化文档标准</td></tr>
+  </table>
+</div>
+
+<h2>四、一键生成 + 归一化规范标准化方案</h2>
+
+<h3>4.1 目标架构</h3>
+<div class="card">
+  <div class="flow">
+    <div class="step alt">模块清单 Manifest</div><span class="arrow">→</span>
+    <div class="step">模板引擎 primiflow C1~C8</div><span class="arrow">→</span>
+    <div class="step">配置向导（ymkj 式）</div><span class="arrow">→</span>
+    <div class="step">一键生成</div><span class="arrow">→</span>
+    <div class="step alt">⛨验证 + 8 闸门</div><span class="arrow">→</span>
+    <div class="step">标准完成页面</div><span class="arrow">→</span>
+    <div class="step">发布/沉淀</div>
+  </div>
+  <p>所有系统功能模块（38 页面 / 33 模块 / 191 API）以统一 <code>module-manifest</code> 登记，经统一模板引擎与门禁后一键生成，结果在标准"完成页面"呈现。</p>
+</div>
+
+<h3>4.2 归一化规范标准（借鉴 ymkj BP/API/ARC/VAL）</h3>
+<div class="card">
+  <table>
+    <tr><th>规范类</th><th>编号</th><th>内容</th><th>落地位置（建议）</th></tr>
+    <tr><td>业务流程</td><td><code>BP-xx</code></td><td>模块业务流程一张图、状态机</td><td><code>docs/normalization/business/</code></td></tr>
+    <tr><td>接口契约</td><td><code>API-xx</code></td><td>REST/事件/内部 SPI 契约</td><td><code>docs/normalization/api/</code></td></tr>
+    <tr><td>架构规范</td><td><code>ARC-xx</code></td><td>模块划分/依赖规则/编码标准（对齐 ADR-09）</td><td><code>docs/normalization/arch/</code></td></tr>
+    <tr><td>验证报告</td><td><code>VAL-xx</code></td><td>验证矩阵与判定标准</td><td><code>docs/normalization/verify/</code></td></tr>
+    <tr><td>模板清单</td><td><code>TPL-xx</code></td><td>代码生成模板清单（C1~C8 + 前端模板）</td><td><code>docs/normalization/template/</code></td></tr>
+  </table>
+  <p>规则：SSoT 单一权威索引；<code>@doc-link</code> 代码反向引用；命名统一 <code>{前缀}-{两位序号}-{中文短名}.md</code>。</p>
+</div>
+
+<h3>4.3 模块清单（module-manifest）与一键生成管线</h3>
+<div class="card">
+  <pre># module-manifest.json（示意，键值为约定示例）
+{
+  "version": "1.0",
+  "modules": [
+    {
+      "id": "mox-project-center",
+      "name": "项目中心",
+      "group": "S1-工作台",
+      "page": "views/project/ProjectsView.vue",
+      "template": ["c2-crud", "vue-page", "route", "menu"],
+      "apis": ["getProjects", "createProject", "..."],
+      "gate": ["verify", "full_gate"],
+      "doc": ["BP-05", "API-04", "ARC-01"]
+    }
+  ]
+}</pre>
+  <p>管线阶段门：<b>① 登记 Manifest → ② 模板匹配（primiflow C1~C8 + 前端/路由/菜单模板）→ ③ 配置向导 → ④ 一键生成 → ⑤ ⛨verify + full_gate 门禁 → ⑥ 完成页面呈现（代码/DDL/图谱/闸门回执）→ ⑦ 发布/入知识库</b>。</p>
+</div>
+
+<h3>4.4 标准"完成页面"规格（补齐 2.3 缺口）</h3>
+<div class="card">
+  <table>
+    <tr><th>区块</th><th>内容</th><th>数据来源</th></tr>
+    <tr><td>完成总览</td><td>生成模块数 / 文件数 / 通过闸门数 / 耗时</td><td>full_gate + 生成报告</td></tr>
+    <tr><td>产物清单</td><td>C1~C8 代码 / DDL / Schema / 图谱 分文件预览与下载</td><td>primiflow <code>CodeBundle</code></td></tr>
+    <tr><td>门禁回执</td><td>verify 5 项 + full_gate G1~G8 逐项状态</td><td>verify + full_gate 返回体</td></tr>
+    <tr><td>完成历史</td><td>历史生成记录 / 回查 / 重放</td><td>persistence（SQLite/JSON）</td></tr>
+    <tr><td>动作区</td><td>发布到知识库 / 入项目图谱 / 下载 ZIP / 重新生成</td><td>aiPublishArtifactsToKb 等</td></tr>
+  </table>
+</div>
+
+<h2>五、落地路径建议</h2>
+<div class="card">
+  <table>
+    <tr><th>优先级</th><th>事项</th><th>产出</th></tr>
+    <tr><td>P0</td><td>把 primiflow 出码产物接到前端：新增标准"出码完成页面"（4.4 规格），串通 full-complete 链路</td><td>完成页面 V1</td></tr>
+    <tr><td>P0</td><td>建立 <code>module-manifest.json</code> 登记全部 38 页面/33 模块</td><td>模块清单 V1</td></tr>
+    <tr><td>P1</td><td>补 C2/前端模板：参考 ymkj 单表/树表/主子表，产出 Vue 页面 + 路由 + 菜单</td><td>前后端一体生成</td></tr>
+    <tr><td>P1</td><td>归一化文档标准落地（BP/API/ARC/VAL/TPL 目录 + 索引）</td><td>归一化文档 V1</td></tr>
+    <tr><td>P2</td><td>配置向导 UI（ymkj 式导入表/配置/预览/生成）</td><td>一键生成工作台</td></tr>
+  </table>
+  <div class="note"><b>风险提示：</b>修改生成/门禁链路影响全维出码与合规，须按 CLAUDE.md 约束在 <code>verify</code> + <code>full_gate</code> 统一登记，不绕过；schema/迁移改动须先确认。</div>
+</div>
+
+<h2>六、待确认事项（影响下一步）</h2>
+<div class="card">
+  <ol>
+    <li><b>"完成页面"具体指认</b>：本报告按"一键完成/出码完成结果页"口径分析；若你指的是某个具体路由/原型，请指认以便按对象重测。</li>
+    <li><b>是否启动系统做真实运行态测试</b>：可启动后端（Rust 构建）+ 前端（Vite:3020）后，用浏览器对完成页面逐功能实测。</li>
+    <li><b>是否进入实现阶段</b>：若确认，优先落地 P0（标准完成页面 + module-manifest）。</li>
+  </ol>
+</div>
+
+<footer>
+  关图/璇玑 · 完成页面功能分析与代码生成归一化方案 · 2026-09-03 · 静态代码分析与接口契约盘点（系统未运行，未做浏览器实测）
+</footer>
+
+</div>
+</body>
+</html>

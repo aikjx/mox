@@ -28,6 +28,11 @@ pub mod alliance;
 pub mod system;
 pub mod proxy;
 pub mod actuator;
+pub mod monitor;
+pub mod workspace;
+pub mod projects_ext;
+pub mod experts_ext;
+pub mod misc;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
@@ -124,6 +129,9 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     // 真实 KG+AI 业务路由（来自 mox-kg-service-svc/src/http_adapter.rs，自包含 Router<()>）
     let kg_ai = http_adapter::build_kg_ai_router();
 
+    // 知识库域路由（mox-kb-svc 100% 自研：文档/分析/挂图/检索，对齐 legacy /kb/* API 面，自包含 Router<()>）
+    let kb = mox_kb_svc::handlers::build_kb_router();
+
     // 联盟域业务路由（Api 模式·进程内路由桩，自包含 Router<()>）
     let alliance = alliance::build_alliance_router();
 
@@ -137,21 +145,40 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     // 其余 /api/{*path} 落入本代理 wildcard 路由，实现「归一化入口 + 模块化后端」。
     let business_proxy = proxy::build_proxy_router();
 
+    // 新增业务域路由（自包含 Router<()>，进程内 stub）
+    let monitor_router = monitor::build_monitor_router();
+    let workspace_router = workspace::build_workspace_router();
+    let projects_ext_router = projects_ext::build_projects_ext_router();
+    let experts_ext_router = experts_ext::build_experts_ext_router();
+    let misc_router = misc::build_misc_router();
+
     // 受保护的路由：认证 + 限流
     // 注：/api/system、/api/security 迁移期在 public_paths（见 config.rs），
     // auth_middleware 按路径前缀放行；生产回收后自动纳入认证。
     // axum 0.7 无 From<Router<()>> for Router<S>：自包含 Router<()> 用 with_state(()) 升级为
     // Router<GatewayState> 后再与 system/security 统一并入（Router<()> 无 State 提取器，运行期安全）。
     let kg_ai: Router<GatewayState> = kg_ai.with_state(());
+    let kb: Router<GatewayState> = kb.with_state(());
     let alliance: Router<GatewayState> = alliance.with_state(());
     let business_proxy: Router<GatewayState> = business_proxy.with_state(());
+    let monitor_router: Router<GatewayState> = monitor_router.with_state(());
+    let workspace_router: Router<GatewayState> = workspace_router.with_state(());
+    let projects_ext_router: Router<GatewayState> = projects_ext_router.with_state(());
+    let experts_ext_router: Router<GatewayState> = experts_ext_router.with_state(());
+    let misc_router: Router<GatewayState> = misc_router.with_state(());
     let auth_state = state.auth.clone();
     let protected: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(kg_ai)
+        .merge(kb)
         .merge(alliance)
         .merge(system)
         .merge(security)
         .merge(business_proxy)
+        .merge(monitor_router)
+        .merge(workspace_router)
+        .merge(projects_ext_router)
+        .merge(experts_ext_router)
+        .merge(misc_router)
         .route_layer(from_fn(move |request: Request, next: Next| {
             let auth = auth_state.clone();
             async move { auth_middleware(auth, request, next).await }

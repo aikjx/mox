@@ -14,7 +14,7 @@ export const addGraphNode = (payload) => http.post('/graph/node', payload)
 export const addGraphEdge = (payload) => http.post('/graph/edge', payload)
 // 激活传播：从种子节点沿边扩散激活能量，返回各节点激活值
 export const propagateActivation = (seedNodes, iterations = 10) =>
-  http.post('/graph/activate', { seed: seedNodes, iterations })
+  http.post('/graph/activate', { start_nodes: seedNodes, iterations })
 
 // ===== 对话自动→知识图谱 自动整理 =====
 // 统一搜索：对话内容 + 知识图谱节点

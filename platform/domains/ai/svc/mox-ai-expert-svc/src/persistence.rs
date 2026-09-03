@@ -31,7 +31,7 @@ impl PersistenceDb {
     pub fn open(path: &str) -> anyhow::Result<Self> {
         if let Some(dir) = std::path::Path::new(path).parent() {
             if !dir.as_os_str().is_empty() {
-                std::fs::create_dir_all(dir).ok();
+                let _ = std::fs::create_dir_all(dir);
             }
         }
         let conn = Connection::open(path)?;
@@ -250,3 +250,4 @@ mod tests {
         let _ = std::fs::remove_file(format!("{}-shm", path));
     }
 }
+

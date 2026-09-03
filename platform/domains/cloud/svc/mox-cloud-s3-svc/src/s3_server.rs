@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -19,6 +19,7 @@ use crate::inventory::InventoryManager;
 use crate::lifecycle::StorageClass;
 use crate::mpu::MultipartManager;
 use crate::object_batch_ops::BatchOperationManager;
+use crate::persist::PersistSink;
 use crate::policy::BucketPolicy;
 use crate::replication::ReplicationManager;
 use crate::sigv4_middleware::{verify_request, CredentialStore};
@@ -82,12 +83,45 @@ struct BucketMeta {
     lifecycle_xml: Option<String>,
 }
 
-/// 内置内存对象存储（生产版可替换为对 master+volumes 的调用）。
-#[derive(Debug, Default)]
+/// 内置内存对象存储（测试双）；生产版可叠加 [`PersistSink`] 镜像到 store-core 真实后端。
+#[derive(Default)]
 struct InMemoryStorage {
     buckets: Mutex<BTreeMap<String, BucketMeta>>,
     // bucket -> key -> 多版本（最新版本放 last_versioned 字段，历史版本在 versions 中）
     objects: Mutex<BTreeMap<String, BTreeMap<String, Vec<ObjectMeta>>>>,
+    /// 写 chokepoint 持久化钩子（`None` = 纯内存测试模式）。
+    persist: Option<Arc<dyn PersistSink>>,
+}
+
+impl InMemoryStorage {
+    /// 附加持久化钩子（镜像写 chokepoint 到 store-core）。
+    fn with_persist(mut self, sink: Arc<dyn PersistSink>) -> Self {
+        self.persist = Some(sink);
+        self
+    }
+
+    /// 写 chokepoint 镜像（尽力而为，失败仅记日志）。
+    fn mirror_put(&self, bucket: &str, key: &str, data: &[u8]) {
+        if let Some(p) = &self.persist {
+            p.mirror_put(bucket, key, data);
+        }
+    }
+
+    /// 删除 chokepoint 镜像。
+    fn mirror_delete(&self, bucket: &str, key: &str) {
+        if let Some(p) = &self.persist {
+            p.mirror_delete(bucket, key);
+        }
+    }
+}
+
+impl std::fmt::Debug for InMemoryStorage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InMemoryStorage")
+            .field("buckets", &self.buckets.lock().len())
+            .field("persist", &self.persist.is_some())
+            .finish()
+    }
 }
 
 fn now_ms() -> u64 {
@@ -148,6 +182,20 @@ impl S3Server {
             replication: Arc::new(ReplicationManager::new()),
             inventory: Arc::new(InventoryManager::new()),
         }
+    }
+
+    /// 用带持久化钩子的内存存储构造服务器（生产部署：写 chokepoint 镜像到 store-core）。
+    pub fn with_persist(
+        port: u16,
+        master: Option<Arc<MasterServer>>,
+        sink: Arc<dyn PersistSink>,
+    ) -> Self {
+        let mut s = Self::new(port, master);
+        let storage = Arc::try_unwrap(s.storage)
+            .unwrap_or_else(|_| InMemoryStorage::default())
+            .with_persist(sink);
+        s.storage = Arc::new(storage);
+        s
     }
 
     /// 便捷：注册一对 AK/SK 以便测试通过鉴权。
@@ -925,6 +973,12 @@ fn op_put_object(
     let size = data.len() as u64;
     let etag = crate::etag::etag_small(&data);
     let crc32c = crate::etag::checksum_crc32c(&data);
+    // 持久化镜像：仅当挂载钩子时保留数据副本（无钩子零开销）
+    let mirror_data = if storage.persist.is_some() {
+        Some(data.clone())
+    } else {
+        None
+    };
     let content_type = headers
         .get("content-type")
         .cloned()
@@ -973,6 +1027,11 @@ fn op_put_object(
         versions.push(meta);
     }
     drop(objs);
+
+    // 写 chokepoint → store-core 持久化镜像
+    if let Some(d) = mirror_data {
+        storage.mirror_put(bucket, key, &d);
+    }
 
     let mut hs: Vec<(&str, String)> = Vec::new();
     hs.push(("ETag", etag.clone()));
@@ -1114,6 +1173,8 @@ fn op_delete_object(
             is_delete_marker: true,
             crc32c: 0,
         });
+        // 删除 chokepoint → store-core 持久化镜像
+        storage.mirror_delete(bucket, key);
         let vid = versions.last().unwrap().version_id.clone();
         let mut resp = Response::builder()
             .status(StatusCode::NO_CONTENT)
@@ -1128,11 +1189,13 @@ fn op_delete_object(
 
     if !want_vid.is_empty() {
         versions.retain(|v| v.version_id != want_vid);
+        storage.mirror_delete(bucket, key);
         return S3Server::ok_empty_headers(vec![("x-amz-version-id", want_vid)]);
     }
 
     // Off：直接清空
     versions.clear();
+    storage.mirror_delete(bucket, key);
     S3Server::ok_empty_headers(vec![])
 }
 
@@ -1253,6 +1316,9 @@ fn op_copy_object(
         dest_versions.push(new_meta);
     }
     drop(objs);
+
+    // 写 chokepoint（CopyObject）→ store-core 持久化镜像
+    storage.mirror_put(bucket, key, &src_meta.data);
 
     let body = format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -1441,6 +1507,12 @@ fn op_complete_or_abort_mpu(
             // 写入对象存储
             let size = data.len() as u64;
             let crc32c = crate::etag::checksum_crc32c(&data);
+            // 持久化镜像：仅当挂载钩子时保留数据副本
+            let mirror_data = if storage.persist.is_some() {
+                Some(data.clone())
+            } else {
+                None
+            };
             let v_status = versioning.get(bucket);
             let version_id = if v_status.should_generate_version() {
                 let mut c = vcounter.lock();
@@ -1477,6 +1549,10 @@ fn op_complete_or_abort_mpu(
                 dest_vers.push(meta);
             }
             drop(objs);
+            // 写 chokepoint（CompleteMultipartUpload）→ store-core 持久化镜像
+            if let Some(d) = mirror_data {
+                storage.mirror_put(bucket, key, &d);
+            }
             let body_xml = format!(
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
                  <CompleteMultipartUploadResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n\
@@ -1660,6 +1736,8 @@ fn op_delete_multiple_objects(
                                 }
                             }
                             drop(objs);
+                            // 删除 chokepoint（DeleteMultipleObjects）→ store-core 持久化镜像
+                            storage.mirror_delete(bucket, &cur_key);
                             to_delete.push(cur_key.clone());
                         }
                         cur_key.clear();

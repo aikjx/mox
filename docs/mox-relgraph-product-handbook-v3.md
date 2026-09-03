@@ -381,7 +381,7 @@ node test/test-enterprise-ha-fault-injection.js  # 企业故障注入 HA
 
 ```bash
 cd platform/backend-node && node src/api-server.js
-curl -X POST http://127.0.0.1:3010/internal/intent \
+curl -X POST http://127.0.0.1:8080/internal/intent \
      -H "content-type: application/json" \
      -d '{"query":"找 P-087 的 RBAC 文档","context":{"project":"P-087"}}'
 ```

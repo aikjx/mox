@@ -16,3 +16,6 @@ export const marketDelete = (id) => http.delete(`/market/${encodeURIComponent(id
 export const marketClone = (id) => http.post(`/market/${encodeURIComponent(id)}/clone`)
 // 市场导出：将算子包导出为可移植 DSL 工程
 export const marketExport = (id) => http.get(`/market/${encodeURIComponent(id)}/export`)
+// 审核：通过 / 驳回算子包（管理员操作）
+export const marketApprove = (id) => http.post(`/market/${encodeURIComponent(id)}/review`, { review_status: 'approved' })
+export const marketReject = (id, reason) => http.post(`/market/${encodeURIComponent(id)}/review`, { review_status: 'rejected', reject_reason: reason })

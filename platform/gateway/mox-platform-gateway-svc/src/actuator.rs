@@ -420,7 +420,7 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 77] = [
+pub static ROUTES: [ApiRoute; 93] = [
     // ---- L0 接入通用 ----
     r("l0-health", "GET", "/health", "L0", "System", "ready", "存活检查"),
     r("l0-metrics", "GET", "/metrics", "L0", "System", "ready", "Prometheus 指标"),
@@ -449,6 +449,23 @@ pub static ROUTES: [ApiRoute; 77] = [
     r("ai-analyze", "POST", "/ai/engine/analyze", "L3", "AI", "ready", "显式能力执行"),
     r("ai-capabilities", "GET", "/ai/engine/capabilities", "L3", "AI", "ready", "能力矩阵"),
     r("ai-metrics", "GET", "/ai/engine/metrics", "L3", "AI", "ready", "AI 引擎指标"),
+    // ---- L2 KB（mox-kb-svc 100% 自研）----
+    r("kb-documents", "ANY", "/kb/documents", "L2", "KB", "ready", "文档列表/创建"),
+    r("kb-document", "ANY", "/kb/documents/:id", "L2", "KB", "ready", "文档详情/改/删"),
+    r("kb-document-analyze", "POST", "/kb/documents/:id/analyze", "L2", "KB", "ready", "专家联盟分析"),
+    r("kb-batch-analyze", "POST", "/kb/batch-analyze", "L2", "KB", "ready", "批量分析"),
+    r("kb-categories", "GET", "/kb/categories", "L2", "KB", "ready", "分类列表"),
+    r("kb-tags", "GET", "/kb/tags", "L2", "KB", "ready", "标签列表"),
+    r("kb-search", "POST", "/kb/search", "L2", "KB", "ready", "文档+图谱检索"),
+    r("kb-versions", "ANY", "/kb/documents/:id/versions", "L2", "KB", "ready", "版本列表/创建"),
+    r("kb-version", "GET", "/kb/documents/:id/versions/:ver", "L2", "KB", "ready", "版本详情"),
+    r("kb-version-compare", "POST", "/kb/documents/:id/versions/compare", "L2", "KB", "ready", "版本对比"),
+    r("kb-version-revert", "POST", "/kb/documents/:id/versions/revert", "L2", "KB", "ready", "版本回滚"),
+    r("kb-entities", "GET", "/kb/documents/:id/entities", "L2", "KB", "ready", "实体/关系"),
+    r("kb-graph-link", "ANY", "/kb/documents/:id/graph-link", "L2", "KB", "ready", "图谱挂图/反挂图"),
+    r("kb-doc-history", "GET", "/kb/documents/:id/history", "L2", "KB", "ready", "文档历史"),
+    r("kb-stats", "GET", "/kb/stats", "L2", "KB", "ready", "知识库统计"),
+    r("kb-history", "GET", "/kb/history", "L2", "KB", "ready", "全局操作历史"),
     // ---- L4 Alliance ----
     r("alliance-tasks", "ANY", "/alliance/v1/tasks", "L4", "Alliance", "ready", "任务创建/列表"),
     r("alliance-task-detail", "ANY", "/alliance/v1/tasks/:task_id", "L4", "Alliance", "ready", "任务详情/动作"),

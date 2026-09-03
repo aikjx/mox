@@ -14,7 +14,7 @@
 
 | 模块 | 职责 | 关键代码锚点 |
 |---|---|---|
-| 前端 SPA (Vue3 + Vite `:3021`) | 主 UI、对话、图谱可视化、TTS 三层回退、业务面板 | [MessageBubble.vue](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/components/MessageBubble.vue#L836-L937)（TTS 三层回退 + 豆包级拟人音参数） · [ChatView.vue](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/ChatView.vue) · [vite.config.js](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/vite.config.js)（Vite `/voice` 代理 → `:3001`） |
+| 前端 SPA (Vue3 + Vite `:3020`) | 主 UI、对话、图谱可视化、TTS 三层回退、业务面板 | [MessageBubble.vue](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/components/MessageBubble.vue#L836-L937)（TTS 三层回退 + 豆包级拟人音参数） · [ChatView.vue](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/ChatView.vue) · [vite.config.js](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/vite.config.js)（Vite `/voice` 代理 → `:8080`（网关 /voice/** → 编排器 voice_proxy → :30010）） |
 | 桌面壳 (xiaobai-desktop) | 桌面端打包、离线文件关联、单实例启动 | [xiaobai-desktop/lib.rs](file:///d:/a10/aikjx/gitcode/infotopograph/platform/crates/xiaobai-desktop/src/lib.rs) |
 | App / H5 / 小程序容器 | 移动端入口、弱网下缓存队列、扫码登录 | `platform/sdk/{nodejs,python,rust}/`（`mox-sdk-cloud`、`mox-sdk-graph`） |
 
@@ -68,7 +68,7 @@
 
 ```
 用户文字输入
-  ↓ (前端 :3021)
+  ↓ (前端 :3020)
 ChatView → submit
   ↓ POST /api/chat
 Rust 网关 :3001 → AI Router
@@ -78,14 +78,14 @@ mox-expert / flow-ai / mox-ai-core
 前端 MessageBubble 渲染消息 + 触发「朗读」按钮
   ↓ 用户点击或自动播放
 handleSpeakThreeLayer()
-  ├─► L1: GET /voice/tts/stream?(Vite proxy → :3001 voice_proxy → :3717)
+  ├─► L1: GET /voice/tts/stream?(Vite proxy → :3001 voice_proxy → :30010)
   │      响应 audio/wav; 22050Hz; headers: X-TTS-Engine=cosyvoice2, X-TTS-DSP-Impl=Rust
   │      → decodeAudioData → Audio.play()
   ├─► L2 (L1 失败): Web Speech Synthesis PREMIUM_ZH 白名单精选女声
   └─► L3 (L2 失败): 剪贴板复制兜底
 ```
 
-### 2.2 TTS 子系统内部链路（xiaobai_voice :3717）
+### 2.2 TTS 子系统内部链路（xiaobai_voice :30010）
 
 | 阶段 | 代码锚点 | 关键优化 |
 |---|---|---|
@@ -130,7 +130,7 @@ handleSpeakThreeLayer()
 | 云端对象存储（S3/OSS） | 推荐 | 本地磁盘 (`~/.mox/`，[FS-S3 切换 SOP](file:///d:/a10/aikjx/gitcode/infotopograph/deploy/docs/storage-cloud-switch-sop.md)) |
 | 单点登录 / 扫码登录 | OIDC / 钉钉 / 企业微信 | 本地账号 + 离线 license 签名 |
 | 服务进程模型 | 多副本 + K8s HPA（[Helm chart](file:///d:/a10/aikjx/gitcode/infotopograph/deploy/helm/mox/values.yaml)） | 单机单实例 · systemd / Windows Service |
-| 语音服务 | xiaobai_voice 独立 Deployment（auto_start=true，port=3717） | 同上，单机监听 `127.0.0.1:3717` |
+| 语音服务 | xiaobai_voice 独立 Deployment（auto_start=true，port=30010） | 同上，单机监听 `127.0.0.1:30010` |
 | Rust 计算核心 | 4 crate + 3 绑定 全量启用 | 同上 |
 | 桌面离线同步 | 客户端本地缓存队列 + 增量同步 | 全量离线模式，服务在本机 |
 

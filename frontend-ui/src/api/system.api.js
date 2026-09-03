@@ -126,3 +126,12 @@ export const getLoginLogList = (params) => http.get('/system/logininfor', { para
 export const deleteLoginLog = (id) => http.delete(`/system/logininfor/${id}`)
 export const cleanLoginLog = () => http.delete('/system/logininfor/clean')
 export const exportLoginLog = (params) => http.get('/system/logininfor/export', { params, responseType: 'blob' })
+
+// ===== 用户头像上传 =====
+export const uploadUserAvatar = (userId, file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return http.post(`/users/${encodeURIComponent(userId)}/avatar`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}

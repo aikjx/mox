@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page-container dashboard">
     <!-- 欢迎横幅 -->
     <div class="welcome panel">
@@ -184,7 +184,7 @@ import { useRouter } from 'vue-router'
 import { Select, CaretTop, CaretBottom, MagicStick, Cpu, Share, ChatDotRound, Operation, List, VideoPlay, TrendCharts, CloseBold, Promotion } from '@element-plus/icons-vue'
 import * as echarts from '@/echarts'
 import { APP_VERSION, NAV_MODULES } from '@/types'
-import { getStatus, getLogs, getHealth } from '@/api'
+import { getStatus, getLogs, getProjectPhaseProgress } from '@/api'
 import { useProject } from '@/composables/projectContext.js'
 
 const { currentProject } = useProject()
@@ -202,7 +202,18 @@ const projectDesc = computed(() => {
   return '以项目为根，AI 驱动的知识图谱与全维业务处理平台 — 需求 → 架构 → 开发 → 发布 全流程贯通'
 })
 
-// 项目阶段进度
+// 项目阶段进度：优先使用后端数据，失败降级为演示占位
+const phaseProgressData = ref(null)
+
+async function loadPhaseProgress() {
+  const pid = currentProject.value?.id
+  if (!pid) return
+  try {
+    const data = await getProjectPhaseProgress(pid)
+    if (data) phaseProgressData.value = data
+  } catch (e) { /* 保留演示占位 */ }
+}
+
 const projectPhases = computed(() => {
   const phase = currentProject.value?.phase || 'requirement'
   const phases = [
@@ -215,10 +226,18 @@ const projectPhases = computed(() => {
   const phaseOrder = ['requirement', 'architecture', 'develop', 'release']
   const curIdx = phaseOrder.indexOf(phase)
   return phases.map((p, i) => {
+    // 优先使用后端返回的阶段进度
+    if (phaseProgressData.value && phaseProgressData.value.phases) {
+      const backendPhase = phaseProgressData.value.phases.find(ph => ph.key === p.key || ph.name === p.key)
+      if (backendPhase) {
+        return { ...p, progress: backendPhase.progress ?? 0, status: backendPhase.status || 'pending' }
+      }
+    }
     if (i < curIdx) {
       return { ...p, progress: 100, status: 'done' }
     } else if (i === curIdx) {
-      return { ...p, progress: 65, status: 'active' }
+      const realProgress = phaseProgressData.value?.current_progress ?? 65
+      return { ...p, progress: realProgress, status: 'active' }
     }
     return p
   })
@@ -309,6 +328,7 @@ async function load() {
     }
     
     window.__dash_status__ = st || {}
+    // 演示占位：API 无数据时的兜底默认值
     stats.value[0].value = (st && st.operators_count) ?? 8
     stats.value[1].value = (st && st.graph && st.graph.nodes) ?? 23
     stats.value[2].value = (st && st.executions_count) ?? 15
@@ -328,6 +348,7 @@ async function load() {
   }
 }
 
+// 演示占位：API 返回空时的兜底执行日志
 function generateMockLogs() {
   const now = Date.now()
   const workflows = [
@@ -434,6 +455,7 @@ window.addEventListener('resize', resize)
 onMounted(async () => {
   await nextTick()
   load()
+  loadPhaseProgress()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resize)

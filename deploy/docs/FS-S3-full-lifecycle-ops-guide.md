@@ -248,7 +248,7 @@ FILE_BACKEND 环境变量
 
 ```bash
 # [1] 当前状态快照
-curl -s http://localhost:3010/storage/status | jq .
+curl -s http://localhost:8080/storage/status | jq .
 # 期望：provider=sqlite, features.dualWrite=false, types.graph_nodes=N / graph_edges=M
 
 # [Helm] 核对当前生效 env
@@ -293,7 +293,7 @@ DB_READ_PREF=primary
 # Helm：helm upgrade ... --set ...（灰度 4 阶段推进，见 §7）
 
 # 确认双写生效
-curl -s http://localhost:3010/storage/status | jq .features
+curl -s http://localhost:8080/storage/status | jq .features
 # 期望：{ "dualWrite": true, "readPref": "primary", "provider": "postgresql" }
 ```
 
@@ -387,7 +387,7 @@ sha256sum mox-data-archive-*.tar.gz >> $AUDIT_DIR/hash-chain.log
 
 ```bash
 # [1] 体量快照
-curl -s http://localhost:3010/storage/files/stats | jq .
+curl -s http://localhost:8080/storage/files/stats | jq .
 # 关注 totalFiles, totalVersions, totalSize, filesByExtension, graphCoverage
 
 # [2] 桶准备（三件套：私有 + 版本 + SSE）
@@ -436,7 +436,7 @@ POST /storage/files/backend/switch
 
 **烟测验证（上传 12MB → 分 12 chunk → 检查桶内 12 对象）**：
 ```bash
-curl -s -X POST -F "file=@./test-12m.bin" http://localhost:3010/storage/files/upload \
+curl -s -X POST -F "file=@./test-12m.bin" http://localhost:8080/storage/files/upload \
   | jq '{id,size,chunkCount}'
 mc ls --recursive myminio/mox-chunks
 # 期望看到：<xx>/<64 字符 hash>  共 12 条 · 前缀名 = hash 前 2 位 · 与 FS 完全同构
@@ -612,7 +612,7 @@ helm upgrade --install mox deploy/helm/mox -n mox-system --create-namespace \
 在 Pod 内执行 API（安全）：
 ```bash
 POD=$(kubectl get pods -n mox-system -l app=mox-core-local -o jsonpath='{.items[0].metadata.name}')
-kubectl exec -n mox-system $POD -- curl -sS -X POST http://localhost:3010/storage/migrate \
+kubectl exec -n mox-system $POD -- curl -sS -X POST http://localhost:8080/storage/migrate \
   -H 'Content-Type: application/json' \
   -d '{"source":"sqlite","target":"postgresql","type":"all"}' | jq .
 ```
@@ -677,7 +677,7 @@ mc ls --recursive "$ALIAS" | wc -l              # 对象数（应与 §8.1 DB re
 # MinIO Erasure Set 健康（4+2 → 最多掉线 2 节点仍可读）
 mc admin health myminio || true
 # 深度内容对账（抽样 1%）
-curl -sS -X POST http://localhost:3010/storage/files/backend/verify \
+curl -sS -X POST http://localhost:8080/storage/files/backend/verify \
      -H 'Content-Type: application/json' \
      -d '{"sampleRate":0.01,"deep":true}' | jq .
 ```

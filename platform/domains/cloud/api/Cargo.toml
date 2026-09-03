@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "MOX Cloud Domain API: trait contracts for Volume, Bucket, FileShare, Quota management"
+description = "MOX Cloud Domain API: trait contracts for Volume, Bucket, FileShare, Quota, StorageAdmin management"
 
 [dependencies]
 serde = { workspace = true }
@@ -13,3 +13,24 @@ async-trait = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
+# 阶段2：StorageAdmin 具体实现（feature `admin`，装配 store-core 后端）
+mox-cloud-store-core = { workspace = true, features = ["s3"], optional = true }
+mox-base-store-core = { workspace = true, optional = true }
+bytes = { version = "1", optional = true }
+parking_lot = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+
+[features]
+default = []
+# 管理面具体实现：StoreAdmin + assemble_backend（依赖 mox-cloud-store-core）
+admin = [
+    "dep:mox-cloud-store-core",
+    "dep:mox-base-store-core",
+    "dep:bytes",
+    "dep:parking_lot",
+    "dep:tokio",
+]
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

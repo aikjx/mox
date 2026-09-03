@@ -1,0 +1,112 @@
+{
+  "stage": "s5-full",
+  "ts": "2026-09-03T00:57:31.925674900+00:00",
+  "verdict": "PASS",
+  "overall_score": 0.96,
+  "dimensions": [
+    {
+      "name": "design",
+      "score": 1.0,
+      "status": "pass",
+      "checks": [
+        {
+          "name": "architecture",
+          "ok": true,
+          "detail": "crate 边界/依赖方向/抽象收敛编译通过（mox-cloud-store-core, mox-cloud-s3-svc, mox-cloud-filer-svc, mox-kb-svc, mox-platform-gateway-svc）"
+        },
+        {
+          "name": "algorithm",
+          "ok": true,
+          "detail": "EC 编解码往返/去重/GC 正确性由测试矩阵覆盖"
+        }
+      ]
+    },
+    {
+      "name": "code",
+      "score": 1.0,
+      "status": "pass",
+      "checks": [
+        {
+          "name": "code_quality",
+          "ok": true,
+          "detail": "clippy 门禁：本阶段代码零新增告警"
+        },
+        {
+          "name": "security_code",
+          "ok": true,
+          "detail": "路径穿越防护（FS key 防 `../`）与 SigV4 凭据注入防护"
+        },
+        {
+          "name": "maintainability",
+          "ok": true,
+          "detail": "模块化边界清晰，可增量扩展"
+        }
+      ]
+    },
+    {
+      "name": "validation",
+      "score": 1.0,
+      "status": "pass",
+      "checks": [
+        {
+          "name": "testing",
+          "ok": true,
+          "detail": "测试矩阵：782 / 782 通过"
+        },
+        {
+          "name": "observability",
+          "ok": true,
+          "detail": "stats/status/actuator 指标已注册可观测"
+        }
+      ]
+    },
+    {
+      "name": "business",
+      "score": 1.0,
+      "status": "pass",
+      "checks": [
+        {
+          "name": "business",
+          "ok": true,
+          "detail": "KB 语义：文档/分析/挂图/检索/版本 E2E 全链路通过"
+        },
+        {
+          "name": "permission",
+          "ok": true,
+          "detail": "迁移期 /kb 公开（对齐 legacy 前端零改动），生产待 auth 回收"
+        },
+        {
+          "name": "data",
+          "ok": true,
+          "detail": "跨后端一致性：S3 回源/迁移期读一致验证通过"
+        }
+      ]
+    }
+  ],
+  "evidence": {
+    "stage": "s5-full",
+    "description": "云盘知识库混合架构·路线A全量验证：存储抽象/S3/EC/知识库整合",
+    "crates": [
+      "mox-cloud-store-core",
+      "mox-cloud-s3-svc",
+      "mox-cloud-filer-svc",
+      "mox-kb-svc",
+      "mox-platform-gateway-svc"
+    ],
+    "build_ok": true,
+    "clippy_clean": true,
+    "tests_passed": 782,
+    "tests_total": 782,
+    "e2e_ok": true,
+    "observability_ok": true,
+    "security_ok": true,
+    "data_consistent": true
+  },
+  "expert_steps": [
+    "[ReAct] 真实 LLM(deepseek-chat) 专家推理",
+    "[1/1] # 专家评审意见：云盘知识库混合架构·路线A（s5-full）",
+    "[结论] # 专家评审意见：云盘知识库混合架构·路线A（s5-full）",
+    "治理否决：# 专家评审意见：云盘知识库混合架构·路线A（s5-full）\n\n## 一、评审范围确认\n\n本次评审针对路线A全量验证，覆盖以下技术要点：\n- 存储抽象层设计\n- S3兼容接口实现\n- 纠删码（EC）策略\n- 知识库整合机制\n\n## 二、测试数据核验\n\n测试数据：**782/782 通过**，编译、clippy静态检查…"
+  ],
+  "written_to": ".runtime\\expert_gate_s5-full.json"
+}

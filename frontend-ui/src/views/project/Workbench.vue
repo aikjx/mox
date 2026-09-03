@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout">
     <SessionSidebar
       :sessions="sessions"
@@ -41,7 +41,7 @@ import { ElMessage } from 'element-plus'
 import SessionSidebar from '@/components/SessionSidebar.vue'
 import ChatView from '@/views/ai/ChatView.vue'
 import FlowGraph from '@/views/graph/FlowGraph.vue'
-import { getStatus, executeFlow, getGraph, getFlows } from '@/api'
+import { getStatus, executeFlow, getGraph, getFlows, createExpertSession, getExpertSessions } from '@/api'
 
 const chatRef = ref(null)
 const graphRef = ref(null)
@@ -58,11 +58,42 @@ function genId() {
   return 'sess-' + Date.now().toString(36) + '-' + (++seq).toString(36)
 }
 
-function newSession() {
-  const id = genId()
+async function loadSessions() {
+  try {
+    const data = await getExpertSessions({ limit: 20 })
+    const list = Array.isArray(data) ? data : (data?.list || data?.items || data?.sessions || [])
+    if (list.length) {
+      sessions.value = list.map((s) => ({
+        id: s.id,
+        title: s.title || '未命名会话',
+        time: s.created_at ? new Date(s.created_at).toLocaleDateString('zh-CN') : '',
+      }))
+      activeSession.value = sessions.value[0].id
+      return
+    }
+  } catch (e) {
+    // 后端未就绪时不报错，由 newSession 创建本地会话
+    console.warn('[Workbench] 加载会话列表失败:', e?.message)
+  }
+  // 无历史会话时创建一个新的本地会话
+  await newSession()
+}
+
+async function newSession() {
+  const title = '新会话 ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  let id = genId()
+  try {
+    const created = await createExpertSession({ title, type: 'workbench' })
+    if (created && created.id) {
+      id = created.id
+    }
+  } catch (e) {
+    // 后端未就绪时使用本地 ID，不阻塞用户操作
+    console.warn('[Workbench] 创建会话失败，使用本地 ID:', e?.message)
+  }
   sessions.value.unshift({
     id,
-    title: '新会话 ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    title,
     time: new Date().toLocaleDateString('zh-CN'),
   })
   activeSession.value = id
@@ -100,6 +131,7 @@ async function onAction(a) {
   }
 }
 
+// 后端待提供: 根据算子列表自动匹配/创建工作流（当前仅取第一个可用 flow）
 async function ensureFlow(operators) {
   try {
     const list = await getFlows()
@@ -109,6 +141,7 @@ async function ensureFlow(operators) {
   return null
 }
 
+// 后端待提供: AI 思考状态流式推送回调（当前为空实现，SSE 接入后启用）
 function onThinking(v) {}
 
 async function checkStatus() {
@@ -125,7 +158,7 @@ function tick() {
 }
 
 onMounted(async () => {
-  newSession()
+  loadSessions()
   tick()
   timer = setInterval(tick, 1000)
   await checkStatus()

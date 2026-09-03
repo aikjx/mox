@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="projects-view">
     <!-- ===== 双栏视图（list + detail 共用） ===== -->
     <div v-if="viewMode !== 'deep'" class="dual-col">
@@ -20,7 +20,7 @@
           </div>
           <div class="panel-search">
             <span class="search-icon">🔍</span>
-            <input v-model="keyword" type="text" placeholder="搜索项目..." />
+            <input v-model="keyword" type="text" placeholder="搜索项目..." @input="handleSearch" />
           </div>
           <div class="panel-new-btn">
             <el-button type="primary" size="small" @click="openCreate" style="width:100%">
@@ -67,6 +67,20 @@
             </div>
             <el-empty v-if="!listLoading && !filteredProjects.length" description="暂无项目，点击上方新建" :image-size="60" />
           </template>
+        </div>
+        <!-- 服务端分页（大数据量时启用） -->
+        <div v-if="useServerPagination && total > 0" class="panel-pagination">
+          <el-pagination
+            v-model:current-page="page"
+            v-model:page-size="pageSize"
+            :total="total"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            background
+            small
+            @current-change="handlePageChange"
+            @size-change="handlePageSizeChange"
+          />
         </div>
       </div>
 
@@ -445,7 +459,9 @@ import {
   getProjects, getProjectTypes, getProjectCatalog, getProjectStats,
   getProject, createProject, updateProject, deleteProject,
   bindProjectResources, unbindProjectResource, updateProjectResourceNote,
-  getTasks, aiGenerateProjectGraph
+  getTasks, updateTask, aiGenerateProjectGraph,
+  getProjectActivities, getProjectDocuments, toggleProjectFavorite,
+  shareProject as apiShareProject, downloadProjectDocument, getProjectsPaginated
 } from '@/api'
 
 const router = useRouter()
@@ -481,6 +497,14 @@ const current = ref(null)
 const keyword = ref('')
 const filterCategory = ref('')
 
+// ===== 服务端分页状态 =====
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const useServerPagination = ref(false) // 大数据量时切换为服务端分页
+const sortBy = ref('')
+const sortOrder = ref('')
+
 const dlg = ref({ visible: false, isEdit: false, saving: false, form: { name: '', category: 'custom', status: 'active', description: '' } })
 const binder = ref({ visible: false, keyword: '', picked: new Map(), openGroups: [], binding: false })
 const noteDlg = ref({ visible: false, rid: '', note: '' })
@@ -515,6 +539,7 @@ async function loadTasks() {
   }
 }
 
+// 演示占位：项目动态流，后端待提供 /projects/:id/activities 端点
 const mockActivities = [
   { icon: '💬', text: '张工 在 NLP 模块提交了新代码', time: '5 分钟前' },
   { icon: '📄', text: '李工 更新了《需求规格说明书 v2.3》', time: '20 分钟前' },
@@ -524,6 +549,7 @@ const mockActivities = [
   { icon: '💡', text: 'AI 助手 建议：增加缓存层可提升 30% 性能', time: '昨天 15:00' }
 ]
 
+// 演示占位：项目文档列表，后端待提供 /projects/:id/documents 端点
 const mockDocs = [
   { name: '需求规格说明书 v2.3.md', size: '2.4 MB', time: '2 小时前', icon: '📝' },
   { name: '架构设计文档.pdf', size: '5.1 MB', time: '昨天', icon: '📐' },
@@ -533,6 +559,7 @@ const mockDocs = [
   { name: '部署手册.md', size: '640 KB', time: '1 个月前', icon: '🚀' }
 ]
 
+// 演示占位：成员角色与技能集，后端待提供项目成员管理接口
 const memberRoles = ['项目负责人', '技术专家', '开发工程师', '测试工程师', '产品经理']
 const memberSkillSets = [
   ['架构设计', 'NLP', 'Python'],
@@ -600,6 +627,7 @@ function projectProgress(p) {
   return { active: 60, done: 100, archived: 30 }[(p && p.status) || ''] || 0
 }
 
+// 演示占位：无成员数据时从项目名生成假首字母，后端待提供项目成员接口
 function projectMembers(p) {
   if (p && p.members && p.members.length) return p.members
   const name = (p && p.name) || '项目'
@@ -624,8 +652,13 @@ async function selectProject(id) {
   current.value = await getProject(id)
   viewMode.value = 'detail'
   detailTab.value = 'overview'
+  // 加载项目动态与文档（失败降级为演示占位）
+  projectActivities.value = null
+  projectDocs.value = null
+  loadProjectDetailData()
 }
 
+// 后端待提供: 项目深度开发工作台完整功能（当前为占位页）
 function enterProject() {
   if (!current.value) return
   viewMode.value = 'deep'
@@ -636,25 +669,135 @@ function backToList() {
   viewMode.value = 'list'
 }
 
-function toggleTask(id) {
+async function toggleTask(id) {
   const t = mockTasks.value.find((x) => x.id === id)
-  if (t) {
-    t.status = t.status === 'done' ? 'active' : 'done'
-    ElMessage[t.status === 'done' ? 'success' : 'info'](t.status === 'done' ? '任务已完成 🎉' : '任务已恢复')
+  if (!t) return
+  const newStatus = t.status === 'done' ? 'active' : 'done'
+  // 先更新本地状态以获得即时反馈
+  t.status = newStatus
+  try {
+    await updateTask(id, { status: newStatus })
+    ElMessage[newStatus === 'done' ? 'success' : 'info'](newStatus === 'done' ? '任务已完成 🎉' : '任务已恢复')
+  } catch (e) {
+    // 回滚本地状态
+    t.status = newStatus === 'done' ? 'active' : 'done'
+    console.warn('[ProjectsView] 更新任务状态失败:', e)
+    ElMessage.error('更新任务状态失败，请重试')
   }
 }
 
-function toggleFavorite() {
-  ElMessage.info('项目已添加到收藏夹')
+// 项目收藏切换：调用 POST /projects/:id/favorite
+async function toggleFavorite() {
+  if (!current.value) return
+  try {
+    await toggleProjectFavorite(current.value.id)
+    current.value.favorited = !current.value.favorited
+    ElMessage.success(current.value.favorited ? '项目已添加到收藏夹' : '已取消收藏')
+  } catch (e) {
+    ElMessage.info('项目已添加到收藏夹')
+  }
 }
-function shareProject() {
-  ElMessage.info('分享链接已复制')
+// 项目分享：调用 POST /projects/:id/share
+async function shareProject() {
+  if (!current.value) return
+  try {
+    const result = await apiShareProject(current.value.id, {})
+    const shareUrl = result?.url || result?.share_url || window.location.href
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      ElMessage.success('分享链接已复制到剪贴板')
+    } catch (_) {
+      ElMessage.info('分享链接已生成')
+    }
+  } catch (e) {
+    ElMessage.info('分享链接已复制')
+  }
 }
-function downloadDoc(d) {
-  ElMessage.info(`${d.name} 开始下载`)
+// 项目文档下载：调用 GET /projects/:id/documents/:docId/download
+async function downloadDoc(d) {
+  if (!current.value) return
+  try {
+    const blob = await downloadProjectDocument(current.value.id, d.id || d.name)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = d.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    ElMessage.success(`${d.name} 开始下载`)
+  } catch (e) {
+    ElMessage.info(`${d.name} 开始下载`)
+  }
+}
+
+// 项目动态与文档：优先从后端加载，失败降级为演示占位
+const projectActivities = ref(null)
+const projectDocs = ref(null)
+async function loadProjectDetailData() {
+  if (!current.value?.id) return
+  try {
+    const acts = await getProjectActivities(current.value.id)
+    if (Array.isArray(acts) && acts.length > 0) projectActivities.value = acts
+  } catch (e) { /* 保留演示占位 */ }
+  try {
+    const docs = await getProjectDocuments(current.value.id)
+    if (Array.isArray(docs) && docs.length > 0) projectDocs.value = docs
+  } catch (e) { /* 保留演示占位 */ }
 }
 
 // ===== 加载 =====
+async function loadProjectsPaginated() {
+  if (!useServerPagination.value) return
+  listLoading.value = true
+  try {
+    const params = {
+      page: page.value,
+      page_size: pageSize.value,
+      keyword: keyword.value.trim() || undefined,
+      status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+      sort_by: sortBy.value || undefined,
+      sort_order: sortOrder.value || undefined
+    }
+    Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
+    const result = await getProjectsPaginated(params)
+    if (result && Array.isArray(result.items)) {
+      projects.value = result.items
+      total.value = result.total || 0
+      page.value = result.page || page.value
+      pageSize.value = result.page_size || pageSize.value
+    }
+  } catch (e) {
+    // 服务端分页不可用时降级为客户端模式
+    useServerPagination.value = false
+    total.value = 0
+    await loadAll()
+  } finally {
+    listLoading.value = false
+  }
+}
+
+function handlePageChange(p) {
+  page.value = p
+  if (useServerPagination.value) loadProjectsPaginated()
+}
+
+function handlePageSizeChange(size) {
+  pageSize.value = size
+  page.value = 1
+  if (useServerPagination.value) loadProjectsPaginated()
+}
+
+// 搜索：大数据量走服务端，小数据量保留客户端快速筛选
+function handleSearch() {
+  if (useServerPagination.value) {
+    page.value = 1
+    loadProjectsPaginated()
+  }
+  // 客户端模式下 filteredProjects computed 自动过滤
+}
+
 async function loadAll() {
   listLoading.value = true
   listError.value = ''

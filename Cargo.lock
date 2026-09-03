@@ -4133,10 +4133,16 @@ name = "mox-cloud-api"
 version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
+ "bytes",
  "chrono",
+ "mox-base-store-core",
+ "mox-cloud-store-core",
+ "parking_lot",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 1.0.69",
+ "tokio",
  "uuid",
 ]
 
@@ -4145,10 +4151,14 @@ name = "mox-cloud-filer-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
+ "bytes",
+ "mox-base-store-core",
+ "mox-cloud-store-core",
  "parking_lot",
  "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -4225,6 +4235,7 @@ dependencies = [
  "md-5",
  "mox-cloud-foundation",
  "mox-cloud-master-svc",
+ "mox-cloud-store-core",
  "mox-cloud-volume-svc",
  "mox-data-standards-core",
  "parking_lot",
@@ -4284,6 +4295,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "crc32c",
+ "futures",
  "hex",
  "hmac",
  "mox-cloud-foundation",
@@ -4293,6 +4305,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "tempfile",
+ "thiserror 1.0.69",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4874,6 +4887,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-kb-svc"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "axum",
+ "bytes",
+ "chrono",
+ "hex",
+ "mox-ai-expert-proto",
+ "mox-ai-expert-svc",
+ "mox-base-store-core",
+ "mox-cloud-store-core",
+ "mox-kg-storage-svc",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "tokio",
+ "tower 0.4.13",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "mox-kg-algo-core"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -5189,6 +5225,7 @@ dependencies = [
  "hex",
  "mox-alliance-api",
  "mox-framework",
+ "mox-kb-svc",
  "mox-kg-service-svc",
  "mox-platform-api",
  "mox-platform-foundation",

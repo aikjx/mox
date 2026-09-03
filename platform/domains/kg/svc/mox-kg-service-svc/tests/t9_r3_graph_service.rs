@@ -175,7 +175,7 @@ fn tr9_1_cargo_check_subprocess_zero_exit() {
     let status = std::process::Command::new(env!("CARGO"))
         .arg("check")
         .arg("-p")
-        .arg("mox-graph-service")
+        .arg("mox-kg-service-svc")
         .arg("--lib")
         .status()
         .expect("cargo must run");

@@ -134,7 +134,7 @@
 | `melody2score/` | Rust+Python 桌面应用 | **哼唱旋律转歌谱**端到端应用：录音/音频→提取旋律→生成简谱/musicxml。PC 原型 + 开发板移植（`board/`）+ 信息图谱融合（`graph/`，领域子图 D13，可被 tools/info-graph 加载）。目录：app/audio/board/build/core/dist/docs/graph/lib/results/tests/video |
 | `mox-dualrpc/` | Rust 框架 | **企业级双协议 RPC 框架**：gRPC + JSON-RPC 零配置自动转码。含 mox-dualrpc-macro（过程宏）、examples、ARCHITECTURE_AUDIT.md、EXPERT_ALLIANCE_INTEGRATION.md |
 | `primiflow/` | Python+Web MVP | **客户语音/文字→自动拓扑→拖拽编辑流程图→出 8 份说明书**主链路闭环。backend（uvicorn :8000）+ web。规则化拓扑生成器代替 LLM（离线可跑），生产按 SPEC.md 拆 Go+Python |
-| `xiaobai_voice/` | Python 语音应用 | **璇玑离线语音 & 桌面小白 AI 助手**。ASR=Paraformer-zh+sherpa-onnx（离线 CPU）；TTS=Fish-Speech-S2-Pro（默认）→CosyVoice2（信创回退）→浏览器 SpeechSynthesis（兜底）。语音服务 :3717。含 xiaobai_core / xiaobai_voice / models / reports / build |
+| `xiaobai_voice/` | Python 语音应用 | **璇玑离线语音 & 桌面小白 AI 助手**。ASR=Paraformer-zh+sherpa-onnx（离线 CPU）；TTS=Fish-Speech-S2-Pro（默认）→CosyVoice2（信创回退）→浏览器 SpeechSynthesis（兜底）。语音服务 :30010。含 xiaobai_core / xiaobai_voice / models / reports / build |
 | `market-games/` | Python 小游戏 | 贪吃蛇等（src/snake.py）+ t5 游戏产物 |
 | `mox-official-site/` | 官网 | `docs/需求.md`（官网需求文档） |
 | `t10-cloud-artifacts/` | 验收产物 | T10 云盘 M4：冷热分层迁移 / IAM 10×10 判定矩阵 / STS TTL=900 校验 |

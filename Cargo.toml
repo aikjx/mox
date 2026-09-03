@@ -77,6 +77,7 @@ members = [
     "platform/domains/kg/svc/mox-kg-spark-svc",
     "platform/domains/kg/svc/mox-kg-hub-svc",
     "platform/domains/kg/svc/mox-kg-fusion-svc",
+    "platform/domains/kg/svc/mox-kb-svc",
     "platform/domains/ai/svc/mox-ai-flow-svc",
     "platform/domains/ai/svc/mox-ai-expert-svc",
     "platform/domains/ai/svc/mox-ai-agent-svc",
@@ -331,6 +332,7 @@ mox-kg-streams-svc = { path = "platform/domains/kg/svc/mox-kg-streams-svc" }
 mox-kg-spark-svc = { path = "platform/domains/kg/svc/mox-kg-spark-svc" }
 mox-kg-hub-svc = { path = "platform/domains/kg/svc/mox-kg-hub-svc" }
 mox-kg-fusion-svc = { path = "platform/domains/kg/svc/mox-kg-fusion-svc" }
+mox-kb-svc = { path = "platform/domains/kg/svc/mox-kb-svc" }
 # Service 灞?(ai)
 mox-ai-flow-svc = { path = "platform/domains/ai/svc/mox-ai-flow-svc" }
 mox-ai-expert-svc = { path = "platform/domains/ai/svc/mox-ai-expert-svc" }

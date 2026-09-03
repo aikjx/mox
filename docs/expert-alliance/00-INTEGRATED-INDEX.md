@@ -1,11 +1,13 @@
 # 开发专家联盟 · 权威集成索引（EA-DOC-001）
+> **⚠️ 状态标注（2026-09-03 端口归一化）**：本文档中提及的 **Node.js 平台层（:3010，platform/backend-node/）已退役删除**，其 API 网关、专家联盟、AI 引擎、知识图谱等能力已由 **Rust 网关 mox-server（:8080）** 统一接管。当前有效端口以 [PORT-REGISTRY.md](../ports/PORT-REGISTRY.md) 为准。本文保留 :3010 作为历史架构记录。
+
 
 > **标题**：开发专家联盟·权威集成索引
-> **版本**：V2.1
+> **版本**：V2.2
 > **权威等级**：🟢权威
 > **编号**：EA-DOC-001
 > **文档层级**：L1权威规范层
-> **最后更新日期**：2026-09-02
+> **最后更新日期**：2026-09-03
 > **主责联盟**：开发联盟 R（架构·代码·文档治理）
 > **单源声明**：本文档是"开发专家联盟"主题文档的唯一权威入口与登记枢纽。所有专家联盟主题文档的目录、版本、权威等级、状态、代码对齐均以本索引为准。本索引冲突时以 `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`（TOP-MASTER）为准。
 > **索引声明 = 物理事实**：本索引中登记的每一份文档均已验证物理存在；物理目录中每一份专家联盟主题文档均已在本索引登记。
@@ -39,8 +41,8 @@
 
 | 统计项 | 数量 | 说明 |
 |--------|:----:|------|
-| **专家联盟主题文档总计** | **53** | 含归档3份、执行报告5份 |
-| 活跃文档（非归档） | 50 | 含执行报告5份 |
+| **专家联盟主题文档总计** | **54** | 含归档3份、执行报告5份 |
+| 活跃文档（非归档） | 51 | 含执行报告5份 |
 | 归档文档 | 3 | 2份旧版 + 1份归档README |
 | 本次归一化新建 | 4 | EA-NORM-001规范、02双平台、03术语表、归档README |
 | 本次归一化修改 | 45 | A组21 + B组22 + 引用修复2 |
@@ -52,7 +54,7 @@
 |------|:------:|:----:|------|
 | `docs/expert-alliance/` | 23 | 45.1% | 根目录7 + v2/ 9 + v3/ 4 + architecture/ 3HTML |
 | `docs/modules/` | 11 | 21.6% | mox-expert系列4 + 专家联盟系列5 + business-process系列2 |
-| `docs/working-reports/` | 9 | 17.0% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构2 |
+| `docs/working-reports/` | 10 | 18.5% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构3 |
 | `docs/enterprise/` | 4 | 7.8% | 22号总控卡 + 26号×2 + 28号报告 |
 | `docs/standards/` | 2 | 3.9% | EA-NORM-001 + EAF-STD-001 |
 | `docs/cosmic-architecture/` | 2 | 3.9% | 02号 + 04号 |
@@ -179,6 +181,7 @@
 | `docs/working-reports/expert-alliance-code-alignment-20260831.md` | 代码-文档对齐分析报告 | 归一化分析阶段产出 |
 | `docs/working-reports/20260902_hybrid_architecture_route_a_design.md` | 混合架构（路线A）整合方案架构设计 | ADR-CLOUD-HYBRID-A-20260902，RustFS×自研云盘三分类决策矩阵+四阶段路线图 |
 | `docs/working-reports/20260902_hybrid_architecture_phase1_verification_report.md` | 混合架构第一阶段验证报告 | VR-CLOUD-HYBRID-A-P1-20260902，5 crate 1042 测试全绿基线验证 |
+| `docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md` | 混合架构第二阶段验证报告：核心算法吸收 | VR-CLOUD-HYBRID-A-P2-20260903，6 项 RustFS 算法吸收，1080 测试全绿 |
 
 ---
 
@@ -204,6 +207,7 @@
 | 4 | `docs/_archive/expert-alliance/README.md` | — | ⚪归档 | V1.0 | 归档区说明、归档规则、归档清单表 | EA-NORM-001§2.4 |
 | 5 | `docs/working-reports/20260902_hybrid_architecture_route_a_design.md` | ADR-CLOUD-HYBRID-A-20260902 | 🟡参考 | v1.0 | 混合架构（路线A）：自研云盘控制面×RustFS数据面参考，12自研保留/18借鉴吸收/5对接集成三分类决策，四阶段路线图 | RustFS 9 crate源码级分析 + 自研5 svc代码实测 |
 | 6 | `docs/working-reports/20260902_hybrid_architecture_phase1_verification_report.md` | VR-CLOUD-HYBRID-A-P1-20260902 | 🟡验证报告 | v1.0 | 第一阶段验证：5 crate 编译修复+1042测试全绿基线，修复详情按crate分类，全量回归实测 | cargo check + cargo test 全量实测 |
+| 7 | `docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md` | VR-CLOUD-HYBRID-A-P2-20260903 | 🟡验证报告 | v1.0 | 第二阶段验证：6项RustFS核心算法吸收（矩阵缓存/reconstruction verification/MultiWriter/HedgedReader/lifecycle门控/CAS背压），1080测试全绿，4个新源码模块 | cargo check + cargo test 全量实测 |
 
 ---
 
@@ -309,18 +313,18 @@
 
 ## 12. 最后验证
 
-- **索引最后验证日期**：2026-09-02
-- **验证人**：开发联盟 R（混合架构第一阶段）
-- **验证范围**：全部53份专家联盟主题文档（含归档3份）
+- **索引最后验证日期**：2026-09-03
+- **验证人**：开发联盟 R（混合架构第二阶段）
+- **验证范围**：全部54份专家联盟主题文档（含归档3份）
 - **验证结果**：
-  - ✅ 索引登记文档数 = 物理文件数（53份）
+  - ✅ 索引登记文档数 = 物理文件数（54份）
   - ✅ 索引中每个登记路径物理存在
   - ✅ 物理目录中每个专家联盟文档已在索引登记
   - ✅ 索引权威等级与文档头部元信息一致
   - ✅ 引用格式0违规（0处`../`、0处`./`、0处`file:///`）
   - ✅ 归档文档无新增引用
   - ✅ 代码-文档对齐声明与实际代码一致（11crate/2svc/:3100/:3200/10专家/6融合策略）
-  - ✅ 新增混合架构2份文档已登记（架构设计ADR + 第一阶段验证报告VR）
+  - ✅ 新增混合架构第二阶段验证报告已登记（VR-CLOUD-HYBRID-A-P2-20260903，6项算法吸收，1080测试全绿）
 
 ---
 
@@ -333,8 +337,9 @@
 | V1.0 | 2026-08-29 | 首发：整合v1/v2/v3/26号文档全景 | 开发联盟 R |
 | V2.0 | 2026-08-31 | 全面重写：元信息块补齐、文档全景统计（51份）、权威/参考/归档三清单、新增文档登记、子系统映射表（C1/C3）、API路径映射表（C4）、代码-文档对齐声明（11crate/2svc/10专家）、引用规则声明与审计结果、版本冲突裁决汇总、索引声明=物理事实验证 | 开发联盟 R |
 | V2.1 | 2026-09-02 | 新增登记：混合架构（路线A）架构设计文档（ADR-CLOUD-HYBRID-A-20260902）+ 第一阶段验证报告（VR-CLOUD-HYBRID-A-P1-20260902）；云盘域5 crate 达成1042测试全绿基线 | 开发联盟 R |
+| V2.2 | 2026-09-03 | 新增登记：混合架构第二阶段验证报告（VR-CLOUD-HYBRID-A-P2-20260903）；6项RustFS核心算法吸收完成（矩阵缓存/reconstruction verification/MultiWriter/HedgedReader/lifecycle门控/CAS背压），4个新源码模块，1080测试全绿 | 开发联盟 R |
 
 ---
 
 **版权所有**：© 2026 璇玑 RelGraph · 算子统一系统（OUS）· 三联盟
-**文档版本**：V2.1 ｜ **发布日期**：2026-09-02
+**文档版本**：V2.2 ｜ **发布日期**：2026-09-03
