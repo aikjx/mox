@@ -111,20 +111,8 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { moxOptimize, moxPublish } from '@/api'
 
-// 演示占位：默认填入示例 FlowGraph JSON，用户可替换为真实业务蓝图
-const blueprintText = ref(JSON.stringify({
-  nodes: [
-    { id: 'n1', name: '采集需求', type: 'operator', params: {} },
-    { id: 'n2', name: 'AI 合规审查', type: 'ai_task', params: { prompt: '审查合规风险' } },
-    { id: 'n3', name: '条件分流', type: 'condition', params: { expr: '${compliant}==true' } },
-    { id: 'n4', name: '归档', type: 'operator', params: {} }
-  ],
-  edges: [
-    { from: 'n1', to: 'n2' },
-    { from: 'n2', to: 'n3' },
-    { from: 'n3', to: 'n4' }
-  ]
-}, null, 2))
+// 蓝图文本由用户输入或从后端加载，初始为空
+const blueprintText = ref('')
 
 const report = ref(null)
 const tenant = ref('default')

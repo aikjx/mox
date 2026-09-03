@@ -23,6 +23,7 @@ use crate::persist::PersistSink;
 use crate::policy::BucketPolicy;
 use crate::replication::ReplicationManager;
 use crate::sigv4_middleware::{verify_request, CredentialStore};
+use crate::storage::InMemoryStorageBackend;
 use crate::tagging::Tagging;
 use crate::versioning::{generate_version_id, VersioningManager, VersioningStatus};
 use axum::{
@@ -33,18 +34,25 @@ use axum::{
     Router,
 };
 use bytes::Bytes;
+use mox_cloud_domain_traits::{ChunkId, StorageBackend, StorageError};
+use mox_cloud_kernel::buffer_pool::BufferPool;
+use mox_cloud_master_svc::MasterServer;
+use mox_cloud_foundation::PartETag;
 use parking_lot::Mutex;
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use mox_cloud_master_svc::MasterServer;
-use mox_cloud_foundation::PartETag;
 
 // ---------------- AppState (axum shared state) ----------------
 #[derive(Clone)]
 struct AppState {
     storage: Arc<InMemoryStorage>,
+    storage_backend: Arc<dyn StorageBackend>,
+    /// 四层分档缓冲池（PooledBuffer 推广，热点路径复用分配）
+    buffer_pool: Arc<BufferPool>,
+    /// 可选 ReaderPipeline（多后端并发取最快，默认 None）
+    reader_pipeline: Option<Arc<crate::storage::reader_pipeline::S3ReaderPipeline>>,
     creds: Arc<Mutex<CredentialStore>>,
     versioning: Arc<VersioningManager>,
     mpu: Arc<MultipartManager>,
@@ -59,7 +67,9 @@ struct AppState {
 
 #[derive(Debug, Clone)]
 struct ObjectMeta {
-    data: Vec<u8>,
+    /// 数据块 ID，指向 `storage_backend` 中存储的实际数据。
+    /// 删除标记（delete marker）为空字符串，不关联后端数据。
+    chunk_id: String,
     etag: String,
     size: u64,
     last_modified_ms: u64,
@@ -151,12 +161,90 @@ fn rand_byte() -> u8 {
     n.wrapping_add(tid_byte)
 }
 
+// ---------------- StorageBackend 辅助函数 ----------------
+
+/// 为对象版本计算唯一 chunk_id。
+///
+/// 格式：`obj:{bucket}:{key}:{version_id}`。非版本化对象 version_id 为空字符串，
+/// 覆盖写入时 chunk_id 不变，put_chunk 自然覆盖。删除标记不创建 chunk。
+fn object_chunk_id(bucket: &str, key: &str, version_id: &str) -> String {
+    format!("obj:{}:{}:{}", bucket, key, version_id)
+}
+
+/// 将 StorageError 映射为 S3Error（用于数据面操作失败时返回正确的 S3 错误码）。
+fn storage_err_to_s3(e: StorageError) -> S3Error {
+    match e {
+        StorageError::NotFound => S3Error::NoSuchKey,
+        StorageError::AlreadyExists => S3Error::InternalError("chunk already exists".into()),
+        StorageError::BackendUnavailable => {
+            S3Error::InternalError("storage backend unavailable".into())
+        }
+        StorageError::InvalidInput => S3Error::InvalidArgument,
+        StorageError::Unsupported => {
+            S3Error::InternalError("storage backend operation unsupported".into())
+        }
+        StorageError::IoError(msg) => S3Error::InternalError(format!("storage io error: {}", msg)),
+    }
+}
+
+/// 从后端读取对象数据。chunk_id 为空（删除标记）时返回空 Vec。
+async fn read_object_data(
+    backend: &dyn StorageBackend,
+    chunk_id: &str,
+) -> Result<Vec<u8>, S3Error> {
+    if chunk_id.is_empty() {
+        return Ok(vec![]);
+    }
+    backend
+        .get_chunk(&ChunkId::new(chunk_id))
+        .await
+        .map_err(storage_err_to_s3)
+}
+
+/// 将对象数据写入后端，返回 chunk_id。
+async fn write_object_data(
+    backend: &dyn StorageBackend,
+    bucket: &str,
+    key: &str,
+    version_id: &str,
+    data: &[u8],
+) -> Result<String, S3Error> {
+    let chunk_id = object_chunk_id(bucket, key, version_id);
+    backend
+        .put_chunk(&ChunkId::new(&chunk_id), data)
+        .await
+        .map_err(storage_err_to_s3)?;
+    Ok(chunk_id)
+}
+
+/// 从后端删除对象数据。chunk_id 为空时跳过（删除标记无数据）。
+async fn delete_object_data(
+    backend: &dyn StorageBackend,
+    chunk_id: &str,
+) -> Result<(), S3Error> {
+    if chunk_id.is_empty() {
+        return Ok(());
+    }
+    backend
+        .delete_chunk(&ChunkId::new(chunk_id))
+        .await
+        .map_err(storage_err_to_s3)?;
+    Ok(())
+}
+
 // ---------------- S3Server ----------------
 
 pub struct S3Server {
     port: u16,
     _master: Option<Arc<MasterServer>>,
     storage: Arc<InMemoryStorage>,
+    /// 数据面存储后端（通过 StorageBackend trait 解耦）。
+    /// 默认 InMemoryStorageBackend，可通过 with_storage_backend 注入。
+    storage_backend: Arc<dyn StorageBackend>,
+    /// 四层分档缓冲池（默认配置，S3Server::new() 内部创建）
+    buffer_pool: Arc<BufferPool>,
+    /// 可选 ReaderPipeline（多后端并发取最快，默认 None 保持单后端读取）
+    reader_pipeline: Option<Arc<crate::storage::reader_pipeline::S3ReaderPipeline>>,
     pub creds: Arc<Mutex<CredentialStore>>,
     pub versioning: Arc<VersioningManager>,
     pub mpu: Arc<MultipartManager>,
@@ -169,10 +257,25 @@ pub struct S3Server {
 
 impl S3Server {
     pub fn new(port: u16, master: Option<Arc<MasterServer>>) -> Self {
+        Self::with_storage_backend(port, master, Arc::new(InMemoryStorageBackend::new()))
+    }
+
+    /// 以指定 StorageBackend 构造服务器（依赖注入入口）。
+    ///
+    /// 可注入任意实现 `StorageBackend` trait 的后端，如 InMemoryStorageBackend
+    /// 或 RustFsEcstoreBackend（feature flag 控制）。
+    pub fn with_storage_backend(
+        port: u16,
+        master: Option<Arc<MasterServer>>,
+        storage_backend: Arc<dyn StorageBackend>,
+    ) -> Self {
         Self {
             port,
             _master: master,
             storage: Arc::new(InMemoryStorage::default()),
+            storage_backend,
+            buffer_pool: Arc::new(BufferPool::with_default()),
+            reader_pipeline: None,
             creds: Arc::new(Mutex::new(CredentialStore::new())),
             versioning: Arc::new(VersioningManager::new()),
             mpu: Arc::new(MultipartManager::new()),
@@ -196,6 +299,15 @@ impl S3Server {
             .with_persist(sink);
         s.storage = Arc::new(storage);
         s
+    }
+
+    /// Builder：注入 ReaderPipeline（多后端并发取最快 / hedged read）。
+    ///
+    /// 默认 None，op_get_object 走单后端 storage_backend.get_chunk()。
+    /// 设置后，GetObject 优先通过 pipeline 读取（支持多后端并发取最快）。
+    pub fn with_reader_pipeline(mut self, pipeline: Arc<crate::storage::reader_pipeline::S3ReaderPipeline>) -> Self {
+        self.reader_pipeline = Some(pipeline);
+        self
     }
 
     /// 便捷：注册一对 AK/SK 以便测试通过鉴权。
@@ -239,6 +351,9 @@ impl S3Server {
         let addr = SocketAddr::from(([127, 0, 0, 1], self.port));
         let state = Arc::new(AppState {
             storage: self.storage.clone(),
+            storage_backend: self.storage_backend.clone(),
+            buffer_pool: self.buffer_pool.clone(),
+            reader_pipeline: self.reader_pipeline.clone(),
             creds: self.creds.clone(),
             versioning: self.versioning.clone(),
             mpu: self.mpu.clone(),
@@ -262,6 +377,9 @@ async fn axum_handler(State(state): State<Arc<AppState>>, req: Request<Body>) ->
     dispatch(
         req,
         state.storage.clone(),
+        state.storage_backend.clone(),
+        state.buffer_pool.clone(),
+        state.reader_pipeline.clone(),
         state.creds.clone(),
         state.versioning.clone(),
         state.mpu.clone(),
@@ -279,6 +397,9 @@ async fn axum_handler(State(state): State<Arc<AppState>>, req: Request<Body>) ->
 async fn dispatch(
     req: Request<Body>,
     storage: Arc<InMemoryStorage>,
+    storage_backend: Arc<dyn StorageBackend>,
+    buffer_pool: Arc<BufferPool>,
+    reader_pipeline: Option<Arc<crate::storage::reader_pipeline::S3ReaderPipeline>>,
     creds: Arc<Mutex<CredentialStore>>,
     versioning: Arc<VersioningManager>,
     mpu: Arc<MultipartManager>,
@@ -334,7 +455,7 @@ async fn dispatch(
     let query = uri.query().unwrap_or("").to_string();
 
     handle_s3_operation(
-        &method, bucket, key, &query, &headers, body, storage, versioning, mpu, vcounter,
+        &method, bucket, key, &query, &headers, body, storage, storage_backend, buffer_pool, reader_pipeline, versioning, mpu, vcounter,
         analytics, batch_ops, replication, inventory,
     )
     .await
@@ -404,6 +525,9 @@ async fn handle_s3_operation(
     headers: &BTreeMap<String, String>,
     body: Bytes,
     storage: Arc<InMemoryStorage>,
+    storage_backend: Arc<dyn StorageBackend>,
+    buffer_pool: Arc<BufferPool>,
+    reader_pipeline: Option<Arc<crate::storage::reader_pipeline::S3ReaderPipeline>>,
     versioning: Arc<VersioningManager>,
     mpu: Arc<MultipartManager>,
     vcounter: Arc<Mutex<BTreeMap<(String, String), u64>>>,
@@ -479,7 +603,7 @@ async fn handle_s3_operation(
                 return op_create_bucket(&storage, &bucket, headers);
             }
             (m, q) if m == Method::POST && query_has(q, "delete") => {
-                return op_delete_multiple_objects(&storage, &bucket, body);
+                return op_delete_multiple_objects(&storage, storage_backend.as_ref(), &bucket, body).await;
             }
             _ => {}
         }
@@ -492,16 +616,19 @@ async fn handle_s3_operation(
             // x-amz-copy-source 指示 CopyObject 或 UploadPartCopy，优先级最高
             if let Some(src) = headers.get("x-amz-copy-source").cloned() {
                 if query_has(q, "uploadId") && query_has(q, "partNumber") {
-                    return op_upload_part_copy(&mpu, &storage, &bucket, &key, q, src);
+                    return op_upload_part_copy(&mpu, &storage, storage_backend.as_ref(), &bucket, &key, q, src).await;
                 } else {
                     return op_copy_object(
                         &storage,
+                        storage_backend.as_ref(),
+                        buffer_pool.as_ref(),
                         &bucket,
                         &key,
                         headers,
                         &versioning,
                         &vcounter,
-                    );
+                    )
+                    .await;
                 }
             }
             if query_has(q, "uploadId") && query_has(q, "partNumber") {
@@ -511,6 +638,7 @@ async fn handle_s3_operation(
                 return op_complete_or_abort_mpu(
                     &mpu,
                     &storage,
+                    storage_backend.as_ref(),
                     &bucket,
                     &key,
                     q,
@@ -518,7 +646,8 @@ async fn handle_s3_operation(
                     headers,
                     &versioning,
                     &vcounter,
-                );
+                )
+                .await;
             }
             if query_has(q, "uploads") {
                 return op_create_multipart_upload(&mpu, &bucket, &key, headers);
@@ -531,6 +660,8 @@ async fn handle_s3_operation(
             }
             op_put_object(
                 &storage,
+                storage_backend.as_ref(),
+                buffer_pool.as_ref(),
                 &bucket,
                 &key,
                 headers,
@@ -538,6 +669,7 @@ async fn handle_s3_operation(
                 &versioning,
                 &vcounter,
             )
+            .await
         }
         (m, q) if m == "GET" => {
             if query_has(q, "uploadId") {
@@ -549,7 +681,7 @@ async fn handle_s3_operation(
             if query_has(q, "acl") {
                 return op_get_object_acl(&storage, &bucket, &key);
             }
-            op_get_object(&storage, &bucket, &key, q, headers)
+            op_get_object(&storage, storage_backend.as_ref(), buffer_pool.as_ref(), reader_pipeline.as_deref(), &bucket, &key, q, headers).await
         }
         (m, q) if m == "DELETE" => {
             if query_has(q, "uploadId") {
@@ -558,13 +690,13 @@ async fn handle_s3_operation(
                     Err(e) => S3Server::error_response(e),
                 }
             } else {
-                op_delete_object(&storage, &bucket, &key, q, &versioning)
+                op_delete_object(&storage, storage_backend.as_ref(), &bucket, &key, q, &versioning).await
             }
         }
-        (m, _) if m == "HEAD" => op_head_object(&storage, &bucket, &key, headers),
+        (m, _) if m == "HEAD" => op_head_object(&storage, storage_backend.as_ref(), &bucket, &key, headers).await,
         (m, q) if m == "POST" => {
             if query_has(q, "delete") {
-                return op_delete_multiple_objects(&storage, &bucket, body);
+                return op_delete_multiple_objects(&storage, storage_backend.as_ref(), &bucket, body).await;
             }
             if query_has(q, "uploads") {
                 return op_create_multipart_upload(&mpu, &bucket, &key, headers);
@@ -573,6 +705,7 @@ async fn handle_s3_operation(
                 return op_complete_or_abort_mpu(
                     &mpu,
                     &storage,
+                    storage_backend.as_ref(),
                     &bucket,
                     &key,
                     q,
@@ -580,13 +713,14 @@ async fn handle_s3_operation(
                     headers,
                     &versioning,
                     &vcounter,
-                );
+                )
+                .await;
             }
             S3Server::error_response(S3Error::MethodNotAllowed)
         }
         (m, q) if m == "COPY" || headers.contains_key("x-amz-copy-source") => {
             let _ = q;
-            op_copy_object(&storage, &bucket, &key, headers, &versioning, &vcounter)
+            op_copy_object(&storage, storage_backend.as_ref(), buffer_pool.as_ref(), &bucket, &key, headers, &versioning, &vcounter).await
         }
         _ => S3Server::error_response(S3Error::NotImplemented(format!(
             "{:?} /{}/{}?{}",
@@ -934,8 +1068,10 @@ fn op_put_bucket_acl(
 }
 
 // --- 9. PutObject ---
-fn op_put_object(
+async fn op_put_object(
     storage: &InMemoryStorage,
+    storage_backend: &dyn StorageBackend,
+    buffer_pool: &BufferPool,
     bucket: &str,
     key: &str,
     headers: &BTreeMap<String, String>,
@@ -969,13 +1105,16 @@ fn op_put_object(
         .get("x-amz-acl")
         .and_then(|s| CannedAcl::from_header(s))
         .unwrap_or_default();
-    let data = body.to_vec();
+    // PooledBuffer 推广：从缓冲池获取缓冲区，避免重复 Vec 分配
+    let mut pooled = buffer_pool.acquire(body.len());
+    pooled.extend_from_slice(&body);
+    let data = pooled.as_slice();
     let size = data.len() as u64;
-    let etag = crate::etag::etag_small(&data);
-    let crc32c = crate::etag::checksum_crc32c(&data);
+    let etag = crate::etag::etag_small(data);
+    let crc32c = crate::etag::checksum_crc32c(data);
     // 持久化镜像：仅当挂载钩子时保留数据副本（无钩子零开销）
     let mirror_data = if storage.persist.is_some() {
-        Some(data.clone())
+        Some(data.to_vec())
     } else {
         None
     };
@@ -1000,7 +1139,10 @@ fn op_put_object(
     };
 
     let meta = ObjectMeta {
-        data,
+        chunk_id: match write_object_data(storage_backend, bucket, key, &version_id, data).await {
+            Ok(cid) => cid,
+            Err(e) => return S3Server::error_response(e),
+        },
         etag: etag.clone(),
         size,
         last_modified_ms: now_ms(),
@@ -1044,8 +1186,11 @@ fn op_put_object(
 }
 
 // --- 10. GetObject (with Range) ---
-fn op_get_object(
+async fn op_get_object(
     storage: &InMemoryStorage,
+    storage_backend: &dyn StorageBackend,
+    buffer_pool: &BufferPool,
+    reader_pipeline: Option<&crate::storage::reader_pipeline::S3ReaderPipeline>,
     bucket: &str,
     key: &str,
     query: &str,
@@ -1054,30 +1199,45 @@ fn op_get_object(
     if !storage.buckets.lock().contains_key(bucket) {
         return S3Server::error_response(S3Error::NoSuchBucket);
     }
-    let objs = storage.objects.lock();
-    let m = match objs.get(bucket) {
-        Some(m) => m,
-        None => return S3Server::error_response(S3Error::NoSuchKey),
-    };
-    let versions = match m.get(key) {
-        Some(v) => v,
-        None => return S3Server::error_response(S3Error::NoSuchKey),
+    let meta = {
+        let objs = storage.objects.lock();
+        let m = match objs.get(bucket) {
+            Some(m) => m,
+            None => return S3Server::error_response(S3Error::NoSuchKey),
+        };
+        let versions = match m.get(key) {
+            Some(v) => v,
+            None => return S3Server::error_response(S3Error::NoSuchKey),
+        };
+
+        // 支持 versionId query
+        let want_vid = query_val(query, "versionId").unwrap_or_default();
+        let meta = if !want_vid.is_empty() {
+            versions.iter().find(|v| v.version_id == want_vid)
+        } else {
+            versions.last()
+        };
+        match meta {
+            Some(m) if !m.is_delete_marker => m.clone(),
+            Some(_) => return S3Server::error_response(S3Error::NoSuchKey),
+            None => return S3Server::error_response(S3Error::NoSuchKey),
+        }
     };
 
-    // 支持 versionId query
-    let want_vid = query_val(query, "versionId").unwrap_or_default();
-    let meta = if !want_vid.is_empty() {
-        versions.iter().find(|v| v.version_id == want_vid)
+    // 从存储后端读取对象数据（ReaderPipeline 可选启用：多后端并发取最快）
+    let obj_data: Vec<u8> = if let Some(pipeline) = reader_pipeline {
+        match pipeline.read_object(&meta.chunk_id).await {
+            Ok(d) => d,
+            Err(e) => return S3Server::error_response(S3Error::InternalError(format!(
+                "reader pipeline read failed: {e}"
+            ))),
+        }
     } else {
-        versions.last()
+        match read_object_data(storage_backend, &meta.chunk_id).await {
+            Ok(d) => d,
+            Err(e) => return S3Server::error_response(e),
+        }
     };
-    let meta = match meta {
-        Some(m) => m,
-        None => return S3Server::error_response(S3Error::NoSuchKey),
-    };
-    if meta.is_delete_marker {
-        return S3Server::error_response(S3Error::NoSuchKey);
-    }
 
     // Range 支持
     let (data, status, range_resp) = if let Some(r) = headers.get("range") {
@@ -1107,11 +1267,14 @@ fn op_get_object(
                 .body(Body::empty())
                 .unwrap();
         }
-        let slice = &meta.data[start as usize..=end as usize];
+        let slice = &obj_data[start as usize..=end as usize];
+        // PooledBuffer 推广：Range 响应使用池化缓冲区
+        let mut range_buf = buffer_pool.acquire(slice.len());
+        range_buf.extend_from_slice(slice);
         let cr = format!("bytes {}-{}/{}", start, end, total);
-        (slice.to_vec(), StatusCode::PARTIAL_CONTENT, Some(cr))
+        (range_buf.into_vec(), StatusCode::PARTIAL_CONTENT, Some(cr))
     } else {
-        (meta.data.clone(), StatusCode::OK, None)
+        (obj_data, StatusCode::OK, None)
     };
 
     let mut resp = Response::builder()
@@ -1137,8 +1300,9 @@ fn op_get_object(
 }
 
 // --- 11. DeleteObject ---
-fn op_delete_object(
+async fn op_delete_object(
     storage: &InMemoryStorage,
+    storage_backend: &dyn StorageBackend,
     bucket: &str,
     key: &str,
     query: &str,
@@ -1149,20 +1313,21 @@ fn op_delete_object(
     }
     let v_status = versioning.get(bucket);
     let want_vid = query_val(query, "versionId").unwrap_or_default();
-    let mut objs = storage.objects.lock();
-    let m = match objs.get_mut(bucket) {
-        Some(m) => m,
-        None => return S3Server::ok_empty_headers(vec![]),
-    };
-    let versions = match m.get_mut(key) {
-        Some(v) => v,
-        None => return S3Server::ok_empty_headers(vec![]),
-    };
 
+    // 删除标记场景（versioning on + 无 versionId）：无需后端数据删除
     if v_status.should_generate_version() && want_vid.is_empty() {
+        let mut objs = storage.objects.lock();
+        let m = match objs.get_mut(bucket) {
+            Some(m) => m,
+            None => return S3Server::ok_empty_headers(vec![]),
+        };
+        let versions = match m.get_mut(key) {
+            Some(v) => v,
+            None => return S3Server::ok_empty_headers(vec![]),
+        };
         // Add delete marker
         versions.push(ObjectMeta {
-            data: vec![],
+            chunk_id: String::new(),
             etag: "\"d41d8cd98f00b204e9800998ecf8427e\"".into(),
             size: 0,
             last_modified_ms: now_ms(),
@@ -1173,7 +1338,6 @@ fn op_delete_object(
             is_delete_marker: true,
             crc32c: 0,
         });
-        // 删除 chokepoint → store-core 持久化镜像
         storage.mirror_delete(bucket, key);
         let vid = versions.last().unwrap().version_id.clone();
         let mut resp = Response::builder()
@@ -1187,21 +1351,48 @@ fn op_delete_object(
         return resp.body(Body::empty()).unwrap();
     }
 
+    // 需要后端数据删除的场景：在锁内收集 chunk_id 并修改元数据，锁释放后再异步删除
+    let chunk_ids_to_delete: Vec<String> = {
+        let mut objs = storage.objects.lock();
+        let m = match objs.get_mut(bucket) {
+            Some(m) => m,
+            None => return S3Server::ok_empty_headers(vec![]),
+        };
+        let versions = match m.get_mut(key) {
+            Some(v) => v,
+            None => return S3Server::ok_empty_headers(vec![]),
+        };
+        if !want_vid.is_empty() {
+            let ids = versions
+                .iter()
+                .filter(|v| v.version_id == want_vid)
+                .map(|v| v.chunk_id.clone())
+                .collect();
+            versions.retain(|v| v.version_id != want_vid);
+            ids
+        } else {
+            let ids = versions.iter().map(|v| v.chunk_id.clone()).collect();
+            versions.clear();
+            ids
+        }
+    }; // 锁在此处释放
+
+    for cid in chunk_ids_to_delete {
+        if let Err(e) = delete_object_data(storage_backend, &cid).await {
+            return S3Server::error_response(e);
+        }
+    }
+    storage.mirror_delete(bucket, key);
     if !want_vid.is_empty() {
-        versions.retain(|v| v.version_id != want_vid);
-        storage.mirror_delete(bucket, key);
         return S3Server::ok_empty_headers(vec![("x-amz-version-id", want_vid)]);
     }
-
-    // Off：直接清空
-    versions.clear();
-    storage.mirror_delete(bucket, key);
     S3Server::ok_empty_headers(vec![])
 }
 
 // --- 12. HeadObject ---
-fn op_head_object(
+async fn op_head_object(
     storage: &InMemoryStorage,
+    storage_backend: &dyn StorageBackend,
     bucket: &str,
     key: &str,
     _h: &BTreeMap<String, String>,
@@ -1209,22 +1400,27 @@ fn op_head_object(
     if !storage.buckets.lock().contains_key(bucket) {
         return S3Server::error_response(S3Error::NoSuchBucket);
     }
-    let objs = storage.objects.lock();
-    let m = match objs.get(bucket) {
-        Some(m) => m,
-        None => return S3Server::error_response(S3Error::NoSuchKey),
+    let meta = {
+        let objs = storage.objects.lock();
+        let m = match objs.get(bucket) {
+            Some(m) => m,
+            None => return S3Server::error_response(S3Error::NoSuchKey),
+        };
+        let versions = match m.get(key) {
+            Some(v) => v,
+            None => return S3Server::error_response(S3Error::NoSuchKey),
+        };
+        match versions.last() {
+            Some(v) if !v.is_delete_marker => v.clone(),
+            _ => return S3Server::error_response(S3Error::NoSuchKey),
+        }
     };
-    let versions = match m.get(key) {
-        Some(v) => v,
-        None => return S3Server::error_response(S3Error::NoSuchKey),
+    // 从后端读取数据以获取正确的 Body size_hint（Axum HEAD 自动丢弃发送体）
+    let obj_data = match read_object_data(storage_backend, &meta.chunk_id).await {
+        Ok(d) => d,
+        Err(e) => return S3Server::error_response(e),
     };
-    let meta = match versions.last() {
-        Some(v) if !v.is_delete_marker => v,
-        _ => return S3Server::error_response(S3Error::NoSuchKey),
-    };
-    // 注：此处返回实际字节数的 Body（通过 clone），
-    // Axum 会根据 HEAD method 自动丢弃发送体，但会使用 Body 的 size_hint 设置正确的 Content-Length。
-    let body = Body::from(meta.data.clone());
+    let body = Body::from(obj_data);
     let mut resp = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", meta.content_type.as_str())
@@ -1240,8 +1436,10 @@ fn op_head_object(
 }
 
 // --- 13. CopyObject ---
-fn op_copy_object(
+async fn op_copy_object(
     storage: &InMemoryStorage,
+    storage_backend: &dyn StorageBackend,
+    buffer_pool: &BufferPool,
     bucket: &str,
     key: &str,
     headers: &BTreeMap<String, String>,
@@ -1259,9 +1457,10 @@ fn op_copy_object(
         None => return S3Server::error_response(S3Error::InvalidArgument),
     };
 
-    let objs = storage.objects.lock();
-    let src_vers = objs.get(&src_bucket).and_then(|m| m.get(&src_key).cloned());
-    drop(objs);
+    let src_vers = {
+        let objs = storage.objects.lock();
+        objs.get(&src_bucket).and_then(|m| m.get(&src_key).cloned())
+    };
     let versions = match src_vers {
         Some(v) => v,
         None => return S3Server::error_response(S3Error::NoSuchKey),
@@ -1269,6 +1468,12 @@ fn op_copy_object(
     let src_meta = match versions.last() {
         Some(v) if !v.is_delete_marker => v.clone(),
         _ => return S3Server::error_response(S3Error::NoSuchKey),
+    };
+
+    // 从后端读取源对象数据
+    let src_data = match read_object_data(storage_backend, &src_meta.chunk_id).await {
+        Ok(d) => d,
+        Err(e) => return S3Server::error_response(e),
     };
 
     let acl = headers
@@ -1291,7 +1496,10 @@ fn op_copy_object(
     };
 
     let new_meta = ObjectMeta {
-        data: src_meta.data.clone(),
+        chunk_id: match write_object_data(storage_backend, bucket, key, &version_id, &src_data).await {
+            Ok(cid) => cid,
+            Err(e) => return S3Server::error_response(e),
+        },
         etag: src_meta.etag.clone(),
         size: src_meta.size,
         last_modified_ms: now_ms(),
@@ -1318,7 +1526,7 @@ fn op_copy_object(
     drop(objs);
 
     // 写 chokepoint（CopyObject）→ store-core 持久化镜像
-    storage.mirror_put(bucket, key, &src_meta.data);
+    storage.mirror_put(bucket, key, &src_data);
 
     let body = format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -1391,9 +1599,10 @@ fn op_upload_part(
 }
 
 // --- 16. UploadPartCopy ---
-fn op_upload_part_copy(
+async fn op_upload_part_copy(
     mpu: &MultipartManager,
     storage: &InMemoryStorage,
+    storage_backend: &dyn StorageBackend,
     _bucket: &str,
     _key: &str,
     query: &str,
@@ -1412,37 +1621,43 @@ fn op_upload_part_copy(
         Some(i) => (src_path[..i].to_string(), src_path[i + 1..].to_string()),
         None => return S3Server::error_response(S3Error::InvalidArgument),
     };
-    let objs = storage.objects.lock();
-    let data = objs
-        .get(&src_b)
-        .and_then(|m| m.get(&src_k))
-        .and_then(|v| v.last())
-        .map(|m| m.data.clone());
-    drop(objs);
-    match data {
-        Some(d) => match mpu.upload_part_copy(&uid, pn, d) {
-            Ok(p) => {
-                let body_xml = format!(
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-                     <CopyPartResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n\
-                       <LastModified>{}</LastModified>\n\
-                       <ETag>\"{}\"</ETag>\n\
-                     </CopyPartResult>",
-                    iso8601(now_ms()),
-                    p.etag
-                );
-                S3Server::xml_response(StatusCode::OK, body_xml)
-            }
-            Err(e) => S3Server::error_response(e),
+    let src_chunk_id = {
+        let objs = storage.objects.lock();
+        objs
+            .get(&src_b)
+            .and_then(|m| m.get(&src_k))
+            .and_then(|v| v.last())
+            .map(|m| m.chunk_id.clone())
+    };
+    let data = match src_chunk_id {
+        Some(cid) => match read_object_data(storage_backend, &cid).await {
+            Ok(d) => d,
+            Err(e) => return S3Server::error_response(e),
         },
-        None => S3Server::error_response(S3Error::NoSuchKey),
+        None => return S3Server::error_response(S3Error::NoSuchKey),
+    };
+    match mpu.upload_part_copy(&uid, pn, data) {
+        Ok(p) => {
+            let body_xml = format!(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+                 <CopyPartResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n\
+                   <LastModified>{}</LastModified>\n\
+                   <ETag>\"{}\"</ETag>\n\
+                 </CopyPartResult>",
+                iso8601(now_ms()),
+                p.etag
+            );
+            S3Server::xml_response(StatusCode::OK, body_xml)
+        }
+        Err(e) => S3Server::error_response(e),
     }
 }
 
 // --- 17. CompleteMultipartUpload + Abort(辅助分发) + 16(UploadPartCopy 在 body 中处理) ---
-fn op_complete_or_abort_mpu(
+async fn op_complete_or_abort_mpu(
     mpu: &MultipartManager,
     storage: &InMemoryStorage,
+    storage_backend: &dyn StorageBackend,
     bucket: &str,
     key: &str,
     query: &str,
@@ -1468,15 +1683,22 @@ fn op_complete_or_abort_mpu(
                 Some(i) => (src_path[..i].to_string(), src_path[i + 1..].to_string()),
                 None => return S3Server::error_response(S3Error::InvalidArgument),
             };
-            let objs = storage.objects.lock();
-            let data = objs
-                .get(&src_b)
-                .and_then(|m| m.get(&src_k))
-                .and_then(|v| v.last())
-                .map(|m| m.data.clone());
-            drop(objs);
-            match data {
-                Some(d) => match mpu.upload_part_copy(&uid, pn, d) {
+            let src_chunk_id = {
+                let objs = storage.objects.lock();
+                objs
+                    .get(&src_b)
+                    .and_then(|m| m.get(&src_k))
+                    .and_then(|v| v.last())
+                    .map(|m| m.chunk_id.clone())
+            };
+            let data = match src_chunk_id {
+                Some(cid) => match read_object_data(storage_backend, &cid).await {
+                    Ok(d) => d,
+                    Err(e) => return S3Server::error_response(e),
+                },
+                None => return S3Server::error_response(S3Error::NoSuchKey),
+            };
+            match mpu.upload_part_copy(&uid, pn, data) {
                     Ok(p) => {
                         let body_xml = format!(
                             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -1490,14 +1712,11 @@ fn op_complete_or_abort_mpu(
                         return S3Server::xml_response(StatusCode::OK, body_xml);
                     }
                     Err(e) => return S3Server::error_response(e),
-                },
-                None => return S3Server::error_response(S3Error::NoSuchKey),
+                }
             }
         }
-    }
 
     // 如果 method 不是 PUT（如 DELETE query uploadId → abort），上层已处理 DELETE。
-    // 此处 PUT + uploadId 一定是 Complete。
     let parts = match parse_complete_body(&body) {
         Ok(v) => v,
         Err(e) => return S3Server::error_response(e),
@@ -1525,7 +1744,10 @@ fn op_complete_or_abort_mpu(
                 String::new()
             };
             let meta = ObjectMeta {
-                data,
+                chunk_id: match write_object_data(storage_backend, bucket, key, &version_id, &data).await {
+                    Ok(cid) => cid,
+                    Err(e) => return S3Server::error_response(e),
+                },
                 etag: etag.clone(),
                 size,
                 last_modified_ms: now_ms(),
@@ -1700,8 +1922,9 @@ fn op_list_parts(mpu: &MultipartManager, _bucket: &str, _key: &str, query: &str)
 }
 
 // --- 21. DeleteMultipleObjects ---
-fn op_delete_multiple_objects(
+async fn op_delete_multiple_objects(
     storage: &InMemoryStorage,
+    storage_backend: &dyn StorageBackend,
     bucket: &str,
     body: Bytes,
 ) -> Response<Body> {
@@ -1724,18 +1947,35 @@ fn op_delete_multiple_objects(
                     "VersionId" => cur_vid = Some(text.trim().to_string()),
                     "Object" => {
                         if !cur_key.is_empty() {
-                            // Apply deletion
-                            let mut objs = storage.objects.lock();
-                            if let Some(m) = objs.get_mut(bucket) {
-                                if let Some(vers) = m.get_mut(&cur_key) {
-                                    if let Some(vid) = cur_vid.take() {
-                                        vers.retain(|v| v.version_id != vid);
+                            // 收集待删除的 chunk_id 并执行元数据删除（锁内，锁随块结束自动释放）
+                            let chunk_ids: Vec<String> = {
+                                let mut objs = storage.objects.lock();
+                                if let Some(m) = objs.get_mut(bucket) {
+                                    if let Some(vers) = m.get_mut(&cur_key) {
+                                        let ids = if let Some(vid) = cur_vid.as_ref() {
+                                            vers.iter().filter(|v| &v.version_id == vid).map(|v| v.chunk_id.clone()).collect()
+                                        } else {
+                                            vers.iter().map(|v| v.chunk_id.clone()).collect()
+                                        };
+                                        if let Some(vid) = cur_vid.take() {
+                                            vers.retain(|v| v.version_id != vid);
+                                        } else {
+                                            vers.clear();
+                                        }
+                                        ids
                                     } else {
-                                        vers.clear();
+                                        Vec::new()
                                     }
+                                } else {
+                                    Vec::new()
+                                }
+                            };
+                            // 异步删除后端数据（锁已释放，可安全跨 await）
+                            for cid in chunk_ids {
+                                if let Err(e) = delete_object_data(storage_backend, &cid).await {
+                                    return S3Server::error_response(e);
                                 }
                             }
-                            drop(objs);
                             // 删除 chokepoint（DeleteMultipleObjects）→ store-core 持久化镜像
                             storage.mirror_delete(bucket, &cur_key);
                             to_delete.push(cur_key.clone());
@@ -2065,4 +2305,315 @@ fn http_date(ms: u64) -> String {
     let m = (secs / 60) % 60;
     let h = (secs / 3600) % 24;
     format!("Thu, 01 Jan 1970 {:02}:{:02}:{:02} GMT", h, m, s)
+}
+
+#[cfg(test)]
+mod di_tests {
+    use super::*;
+    use crate::storage::InMemoryStorageBackend;
+    use async_trait::async_trait;
+    use mox_cloud_domain_traits::{
+        BackendCapabilities, BackendType, ChunkId, ChunkInfo, ChunkListPage, ConsistencyModel,
+        StorageBackend, StorageError,
+    };
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    /// 记录调用次数的 mock StorageBackend，包装 InMemoryStorageBackend
+    struct CountingBackend {
+        inner: InMemoryStorageBackend,
+        put_count: AtomicUsize,
+        get_count: AtomicUsize,
+        delete_count: AtomicUsize,
+    }
+
+    impl CountingBackend {
+        fn new() -> Self {
+            Self {
+                inner: InMemoryStorageBackend::new(),
+                put_count: AtomicUsize::new(0),
+                get_count: AtomicUsize::new(0),
+                delete_count: AtomicUsize::new(0),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl StorageBackend for CountingBackend {
+        async fn put_chunk(
+            &self,
+            chunk_id: &ChunkId,
+            data: &[u8],
+        ) -> Result<ChunkInfo, StorageError> {
+            self.put_count.fetch_add(1, Ordering::SeqCst);
+            self.inner.put_chunk(chunk_id, data).await
+        }
+
+        async fn get_chunk(&self, chunk_id: &ChunkId) -> Result<Vec<u8>, StorageError> {
+            self.get_count.fetch_add(1, Ordering::SeqCst);
+            self.inner.get_chunk(chunk_id).await
+        }
+
+        async fn delete_chunk(&self, chunk_id: &ChunkId) -> Result<bool, StorageError> {
+            self.delete_count.fetch_add(1, Ordering::SeqCst);
+            self.inner.delete_chunk(chunk_id).await
+        }
+
+        async fn chunk_exists(&self, chunk_id: &ChunkId) -> Result<bool, StorageError> {
+            self.inner.chunk_exists(chunk_id).await
+        }
+
+        async fn list_chunks(
+            &self,
+            prefix: &str,
+            marker: Option<&str>,
+            limit: u32,
+        ) -> Result<ChunkListPage, StorageError> {
+            self.inner.list_chunks(prefix, marker, limit).await
+        }
+
+        fn backend_type(&self) -> BackendType {
+            BackendType::InMemory
+        }
+
+        fn capabilities(&self) -> BackendCapabilities {
+            BackendCapabilities {
+                supports_range_read: true,
+                supports_atomic_write: true,
+                supports_conditional_put: false,
+                consistency_model: ConsistencyModel::Strong,
+                max_chunk_size: 64 * 1024 * 1024,
+                preferred_chunk_size: 4 * 1024 * 1024,
+            }
+        }
+
+        fn name(&self) -> &'static str {
+            "counting-mock-backend"
+        }
+    }
+
+    #[test]
+    fn test_s3server_with_storage_backend_injects_custom_backend() {
+        // 验证 with_storage_backend 构造函数接受自定义后端
+        let backend = Arc::new(CountingBackend::new());
+        let server = S3Server::with_storage_backend(9000, None, backend.clone());
+        // 验证后端名称被正确注入
+        assert_eq!(server.storage_backend.name(), "counting-mock-backend");
+        assert_eq!(server.storage_backend.backend_type(), BackendType::InMemory);
+    }
+
+    #[tokio::test]
+    async fn test_put_object_routes_through_injected_backend() {
+        // 验证 PutObject 通过注入的 StorageBackend trait 写入数据
+        let backend = Arc::new(CountingBackend::new());
+        let storage = InMemoryStorage::default();
+        let versioning = VersioningManager::new();
+        let vcounter = Mutex::new(BTreeMap::new());
+        let headers = BTreeMap::new();
+
+        // 创建 bucket
+        op_create_bucket(&storage, "di-bucket", &headers);
+
+        // 调用 op_put_object
+        let buffer_pool = BufferPool::with_default();
+        let resp = op_put_object(
+            &storage,
+            backend.as_ref(),
+            &buffer_pool,
+            "di-bucket",
+            "hello.txt",
+            &headers,
+            Bytes::from_static(b"hello-di-backend"),
+            &versioning,
+            &vcounter,
+        )
+        .await;
+        assert_eq!(resp.status(), 200);
+
+        // 验证 mock 后端的 put_chunk 被调用
+        assert!(
+            backend.put_count.load(Ordering::SeqCst) >= 1,
+            "put_chunk should have been called at least once"
+        );
+
+        // 调用 op_get_object 验证数据通过后端读取
+        let resp = op_get_object(
+            &storage,
+            backend.as_ref(),
+            &buffer_pool,
+            None,
+            "di-bucket",
+            "hello.txt",
+            "",
+            &headers,
+        )
+        .await;
+        assert_eq!(resp.status(), 200);
+
+        // 验证 mock 后端的 get_chunk 被调用
+        assert!(
+            backend.get_count.load(Ordering::SeqCst) >= 1,
+            "get_chunk should have been called at least once"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_delete_object_routes_through_injected_backend() {
+        // 验证 DeleteObject 通过注入的 StorageBackend trait 删除数据
+        let backend = Arc::new(CountingBackend::new());
+        let storage = InMemoryStorage::default();
+        let versioning = VersioningManager::new();
+        let vcounter = Mutex::new(BTreeMap::new());
+        let headers = BTreeMap::new();
+
+        op_create_bucket(&storage, "del-bucket", &headers);
+
+        // 先 Put 一个对象
+        let buffer_pool = BufferPool::with_default();
+        op_put_object(
+            &storage,
+            backend.as_ref(),
+            &buffer_pool,
+            "del-bucket",
+            "todelete.txt",
+            &headers,
+            Bytes::from_static(b"delete-me"),
+            &versioning,
+            &vcounter,
+        )
+        .await;
+        let put_count = backend.put_count.load(Ordering::SeqCst);
+        assert!(put_count >= 1);
+
+        // DeleteObject（非版本化模式返回 200）
+        let resp = op_delete_object(
+            &storage,
+            backend.as_ref(),
+            "del-bucket",
+            "todelete.txt",
+            "",
+            &versioning,
+        )
+        .await;
+        assert_eq!(resp.status(), 200);
+
+        // 验证 mock 后端的 delete_chunk 被调用
+        assert!(
+            backend.delete_count.load(Ordering::SeqCst) >= 1,
+            "delete_chunk should have been called at least once"
+        );
+
+        // 验证对象已不存在
+        let resp = op_get_object(
+            &storage,
+            backend.as_ref(),
+            &buffer_pool,
+            None,
+            "del-bucket",
+            "todelete.txt",
+            "",
+            &headers,
+        )
+        .await;
+        assert_eq!(resp.status(), 404);
+    }
+
+    // ----- PooledBuffer 推广集成测试 -----
+
+    #[tokio::test]
+    async fn test_pooled_buffer_put_object_uses_pool() {
+        // 验证 op_put_object 热点路径使用 PooledBuffer 缓冲池
+        let backend = Arc::new(CountingBackend::new());
+        let storage = InMemoryStorage::default();
+        let versioning = VersioningManager::new();
+        let vcounter = Mutex::new(BTreeMap::new());
+        let headers = BTreeMap::new();
+        let buffer_pool = Arc::new(BufferPool::with_default());
+
+        op_create_bucket(&storage, "pool-bucket", &headers);
+
+        // 大对象写入（应触发缓冲池分配）
+        let large_data = vec![0xABu8; 100_000]; // 100KB -> tier 2
+        let resp = op_put_object(
+            &storage,
+            backend.as_ref(),
+            buffer_pool.as_ref(),
+            "pool-bucket",
+            "large.bin",
+            &headers,
+            Bytes::from(large_data.clone()),
+            &versioning,
+            &vcounter,
+        )
+        .await;
+        assert_eq!(resp.status(), 200);
+
+        // 缓冲池应记录分配
+        let stats = buffer_pool.stats();
+        assert!(stats.total_allocated > 0, "put_object should allocate from pool");
+        assert!(stats.current_bytes > 0, "pool should hold bytes after allocation");
+
+        // 读取验证数据完整
+        let resp = op_get_object(
+            &storage,
+            backend.as_ref(),
+            buffer_pool.as_ref(),
+            None,
+            "pool-bucket",
+            "large.bin",
+            "",
+            &headers,
+        )
+        .await;
+        assert_eq!(resp.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn test_pooled_buffer_get_object_range_uses_pool() {
+        // 验证 op_get_object Range 请求使用 PooledBuffer 进行范围拷贝
+        let backend = Arc::new(CountingBackend::new());
+        let storage = InMemoryStorage::default();
+        let versioning = VersioningManager::new();
+        let vcounter = Mutex::new(BTreeMap::new());
+        let headers = BTreeMap::new();
+        let buffer_pool = Arc::new(BufferPool::with_default());
+
+        op_create_bucket(&storage, "range-bucket", &headers);
+
+        // 写入 1MB 对象
+        let data: Vec<u8> = (0..1_000_000).map(|i| (i % 256) as u8).collect();
+        op_put_object(
+            &storage,
+            backend.as_ref(),
+            buffer_pool.as_ref(),
+            "range-bucket",
+            "big.dat",
+            &headers,
+            Bytes::from(data.clone()),
+            &versioning,
+            &vcounter,
+        )
+        .await;
+
+        // Range 请求（应使用 PooledBuffer 进行范围拷贝）
+        let mut range_headers = BTreeMap::new();
+        range_headers.insert("range".to_string(), "bytes=100-199".to_string());
+
+        let resp = op_get_object(
+            &storage,
+            backend.as_ref(),
+            buffer_pool.as_ref(),
+            None,
+            "range-bucket",
+            "big.dat",
+            "",
+            &range_headers,
+        )
+        .await;
+        assert_eq!(resp.status(), 206, "Range request should return 206");
+
+        // 缓冲池应记录更多分配（put + range copy）
+        let stats = buffer_pool.stats();
+        assert!(stats.total_allocated >= 2, "pool should have at least 2 allocations (put + range)");
+    }
 }

@@ -784,68 +784,18 @@ import { useProject } from '@/composables/projectContext.js'
 
 // ========== State ==========
 const documents = ref([])
-// 演示占位：分类树初始数据，实际由 kbGetCategories() 加载覆盖
-const categories = ref([
-  {
-    id: 'tech',
-    name: '技术文档',
-    count: 24,
-    children: [
-      { id: 'tech-frontend', name: '前端开发', count: 12 },
-      { id: 'tech-backend', name: '后端开发', count: 8 },
-      { id: 'tech-architecture', name: '架构设计', count: 4 }
-    ]
-  },
-  {
-    id: 'business',
-    name: '业务文档',
-    count: 18,
-    children: [
-      { id: 'business-requirement', name: '需求文档', count: 10 },
-      { id: 'business-design', name: '设计文档', count: 8 }
-    ]
-  },
-  {
-    id: 'product',
-    name: '产品文档',
-    count: 12,
-    children: [
-      { id: 'product-manual', name: '用户手册', count: 6 },
-      { id: 'product-api', name: 'API 文档', count: 6 }
-    ]
-  },
-  {
-    id: 'ops',
-    name: '运营文档',
-    count: 9
-  }
-])
-// 演示占位：标签初始数据，实际由 kbGetTags() 加载覆盖
-const tags = ref([
-  { id: 't1', name: 'Vue', count: 15 },
-  { id: 't2', name: 'Python', count: 12 },
-  { id: 't3', name: '架构', count: 10 },
-  { id: 't4', name: 'API', count: 8 },
-  { id: 't5', name: '设计模式', count: 7 },
-  { id: 't6', name: '性能', count: 6 },
-  { id: 't7', name: '安全', count: 5 },
-  { id: 't8', name: '测试', count: 4 },
-  { id: 't9', name: '部署', count: 3 },
-  { id: 't10', name: '数据库', count: 3 }
-])
+// 分类树：由 kbGetCategories() 加载，初始为空
+const categories = ref([])
+// 标签：由 kbGetTags() 加载，初始为空
+const tags = ref([])
 const selectedDoc = ref(null)
 const docVersions = ref([])
 const docHistory = ref([])
 const aiAnalysis = ref(null)
 const entities = ref([])
 const linkedEntities = ref([])
-// 演示占位：统计初始数据，实际由 kbGetStats() 加载覆盖
-const stats = ref({
-  total: 63,
-  categories: 5,
-  versions: 187,
-  analyzed: 41
-})
+// 统计：由 kbGetStats() 加载，初始为空
+const stats = ref({})
 
 const loading = ref(false)
 const saving = ref(false)
@@ -1098,66 +1048,13 @@ async function fetchDocuments() {
     const list = Array.isArray(data) ? data : (data?.items || data?.documents || [])
     documents.value = list.map(mapDoc)
   } catch (e) {
-    documents.value = getMockDocuments()
+    documents.value = []
     ElMessage.warning('使用本地缓存数据')
   } finally {
     loading.value = false
   }
 }
 
-// 演示占位：API 返回空时的兜底文档数据
-function getMockDocuments() {
-  return [
-    {
-      id: 'doc-1', title: 'Vue3 组合式 API 最佳实践', type: 'tutorial',
-      category: '技术文档/前端开发', tags: ['Vue', '前端'],
-      status: 'published', version_count: 3, ai_analyzed: true,
-      description: '深入探讨 Vue3 组合式 API 的设计理念和实际应用场景，包含响应式原理、生命周期钩子等核心概念。',
-      content: '# Vue3 组合式 API\n\n## 核心概念\n\nVue3 的组合式 API 提供了一种更灵活的代码组织方式...',
-      updated_at: new Date(Date.now() - 86400000 * 2).toISOString()
-    },
-    {
-      id: 'doc-2', title: '微服务架构设计模式', type: 'design',
-      category: '技术文档/架构设计', tags: ['架构', '微服务'],
-      status: 'published', version_count: 5, ai_analyzed: true,
-      description: '详细介绍微服务架构中常用的设计模式，包括服务发现、配置管理、熔断限流等核心模式。',
-      content: '# 微服务架构设计模式\n\n## 服务发现模式\n\n服务发现是微服务架构的核心基础设施...',
-      updated_at: new Date(Date.now() - 86400000 * 5).toISOString()
-    },
-    {
-      id: 'doc-3', title: 'RESTful API 设计规范', type: 'api',
-      category: '产品文档/API 文档', tags: ['API', '规范'],
-      status: 'published', version_count: 2, ai_analyzed: false,
-      description: '定义了一套完整的 RESTful API 设计规范，涵盖资源命名、HTTP 方法使用、状态码约定等。',
-      content: '# RESTful API 设计规范\n\n## 资源命名\n\n资源应使用复数名词...',
-      updated_at: new Date(Date.now() - 86400000).toISOString()
-    },
-    {
-      id: 'doc-4', title: '数据库性能优化指南', type: 'article',
-      category: '技术文档/后端开发', tags: ['数据库', '性能'],
-      status: 'published', version_count: 4, ai_analyzed: true,
-      description: '从 SQL 优化、索引设计、缓存策略等多个维度介绍数据库性能优化方法。',
-      content: '# 数据库性能优化指南\n\n## SQL 优化\n\n避免 SELECT *...',
-      updated_at: new Date(Date.now() - 86400000 * 7).toISOString()
-    },
-    {
-      id: 'doc-5', title: 'CI/CD 流水线搭建实战', type: 'tutorial',
-      category: '技术文档/后端开发', tags: ['部署', 'DevOps'],
-      status: 'draft', version_count: 1, ai_analyzed: false,
-      description: '手把手教你使用 GitLab CI/CD 搭建企业级持续集成与持续部署流水线。',
-      content: '# CI/CD 流水线搭建\n\n## 基础概念\n\nCI/CD 是持续集成和持续部署的缩写...',
-      updated_at: new Date(Date.now() - 3600000 * 12).toISOString()
-    },
-    {
-      id: 'doc-6', title: '安全编码实践手册', type: 'spec',
-      category: '技术文档/后端开发', tags: ['安全', '规范'],
-      status: 'archived', version_count: 8, ai_analyzed: true,
-      description: '涵盖 OWASP Top 10 安全风险，提供各编程语言的安全编码规范和实践示例。',
-      content: '# 安全编码实践手册\n\n## OWASP Top 10\n\n1. 注入 2. 认证失败...',
-      updated_at: new Date(Date.now() - 86400000 * 30).toISOString()
-    }
-  ]
-}
 
 async function fetchCategories() {
   try {
@@ -1509,8 +1406,7 @@ async function searchEntities() {
     const data = await api.kbSearch({ q: linkSearchQuery.value, type: 'entity' })
     searchResults.value = Array.isArray(data) ? data : (data?.results || data?.items || [])
   } catch {
-    // 演示占位：实体搜索失败时的兜底数据
-    searchResults.value = [
+        searchResults.value = [
       { id: 'ent-1', name: '核心算法', type: '概念' },
       { id: 'ent-2', name: '数据模型', type: '结构' },
       { id: 'ent-3', name: '接口规范', type: '规范' },

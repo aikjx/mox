@@ -171,60 +171,6 @@ export function useKnowledgeBase() {
     return simpleMarkdownRender(compareTo.value.content || '')
   })
 
-  // ========== Mock Data ==========
-
-  function getMockDocuments() {
-    return [
-      {
-        id: 'doc-1', title: 'Vue3 组合式 API 最佳实践', type: 'tutorial',
-        category: '技术文档/前端开发', tags: ['Vue', '前端'],
-        status: 'published', version_count: 3, ai_analyzed: true,
-        description: '深入探讨 Vue3 组合式 API 的设计理念和实际应用场景，包含响应式原理、生命周期钩子等核心概念。',
-        content: '# Vue3 组合式 API\n\n## 核心概念\n\nVue3 的组合式 API 提供了一种更灵活的代码组织方式...',
-        updated_at: new Date(Date.now() - 86400000 * 2).toISOString()
-      },
-      {
-        id: 'doc-2', title: '微服务架构设计模式', type: 'design',
-        category: '技术文档/架构设计', tags: ['架构', '微服务'],
-        status: 'published', version_count: 5, ai_analyzed: true,
-        description: '详细介绍微服务架构中常用的设计模式，包括服务发现、配置管理、熔断限流等核心模式。',
-        content: '# 微服务架构设计模式\n\n## 服务发现模式\n\n服务发现是微服务架构的核心基础设施...',
-        updated_at: new Date(Date.now() - 86400000 * 5).toISOString()
-      },
-      {
-        id: 'doc-3', title: 'RESTful API 设计规范', type: 'api',
-        category: '产品文档/API 文档', tags: ['API', '规范'],
-        status: 'published', version_count: 2, ai_analyzed: false,
-        description: '定义了一套完整的 RESTful API 设计规范，涵盖资源命名、HTTP 方法使用、状态码约定等。',
-        content: '# RESTful API 设计规范\n\n## 资源命名\n\n资源应使用复数名词...',
-        updated_at: new Date(Date.now() - 86400000).toISOString()
-      },
-      {
-        id: 'doc-4', title: '数据库性能优化指南', type: 'article',
-        category: '技术文档/后端开发', tags: ['数据库', '性能'],
-        status: 'published', version_count: 4, ai_analyzed: true,
-        description: '从 SQL 优化、索引设计、缓存策略等多个维度介绍数据库性能优化方法。',
-        content: '# 数据库性能优化指南\n\n## SQL 优化\n\n避免 SELECT *...',
-        updated_at: new Date(Date.now() - 86400000 * 7).toISOString()
-      },
-      {
-        id: 'doc-5', title: 'CI/CD 流水线搭建实战', type: 'tutorial',
-        category: '技术文档/后端开发', tags: ['部署', 'DevOps'],
-        status: 'draft', version_count: 1, ai_analyzed: false,
-        description: '手把手教你使用 GitLab CI/CD 搭建企业级持续集成与持续部署流水线。',
-        content: '# CI/CD 流水线搭建\n\n## 基础概念\n\nCI/CD 是持续集成和持续部署的缩写...',
-        updated_at: new Date(Date.now() - 3600000 * 12).toISOString()
-      },
-      {
-        id: 'doc-6', title: '安全编码实践手册', type: 'spec',
-        category: '技术文档/后端开发', tags: ['安全', '规范'],
-        status: 'archived', version_count: 8, ai_analyzed: true,
-        description: '涵盖 OWASP Top 10 安全风险，提供各编程语言的安全编码规范和实践示例。',
-        content: '# 安全编码实践手册\n\n## OWASP Top 10\n\n1. 注入 2. 认证失败...',
-        updated_at: new Date(Date.now() - 86400000 * 30).toISOString()
-      }
-    ]
-  }
 
   // ========== API Methods ==========
 
@@ -245,8 +191,8 @@ export function useKnowledgeBase() {
       const list = Array.isArray(data) ? data : (data?.items || data?.documents || [])
       documents.value = list.map(mapDoc)
     } catch (e) {
-      documents.value = getMockDocuments()
-      ElMessage.warning('使用本地缓存数据')
+      documents.value = []
+      console.error('[kb] fetchDocuments failed:', e)
     } finally {
       loading.value = false
     }
@@ -258,7 +204,7 @@ export function useKnowledgeBase() {
       if (Array.isArray(data) && data.length) {
         categories.value = data
       }
-    } catch { /* keep mock data */ }
+    } catch (e) { categories.value = []; console.error('[kb] fetchCategories failed:', e) }
   }
 
   async function fetchTags() {
@@ -267,7 +213,7 @@ export function useKnowledgeBase() {
       if (Array.isArray(data) && data.length) {
         tags.value = data
       }
-    } catch { /* keep mock data */ }
+    } catch (e) { categories.value = []; console.error('[kb] fetchCategories failed:', e) }
   }
 
   async function fetchStats() {
@@ -276,13 +222,9 @@ export function useKnowledgeBase() {
       if (data) {
         stats.value = data
       }
-    } catch {
-      stats.value = {
-        total: documents.value.length,
-        categories: categories.value.length,
-        versions: documents.value.reduce((sum, d) => sum + (d.version_count || 1), 0),
-        analyzed: documents.value.filter(d => d.ai_analyzed).length
-      }
+    } catch (e) {
+      stats.value = {}
+      console.error('[kb] fetchStats failed:', e)
     }
   }
 

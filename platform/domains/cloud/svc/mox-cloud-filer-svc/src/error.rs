@@ -42,3 +42,20 @@ impl FilerError {
 }
 
 pub type FilerResult<T> = Result<T, FilerError>;
+
+impl From<FilerError> for mox_cloud_domain_traits::CloudError {
+    fn from(e: FilerError) -> Self {
+        match e {
+            FilerError::NotFound => {
+                mox_cloud_domain_traits::CloudError::NotFound("filer entry".into())
+            }
+            FilerError::AttrInvalid => {
+                mox_cloud_domain_traits::CloudError::InvalidInput(e.to_string())
+            }
+            FilerError::Unsupported(msg) => {
+                mox_cloud_domain_traits::CloudError::Unsupported(msg)
+            }
+            other => mox_cloud_domain_traits::CloudError::Filer(other.to_string()),
+        }
+    }
+}

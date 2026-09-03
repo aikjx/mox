@@ -475,7 +475,7 @@ const graphStats = computed(() => {
 })
 let rafId = 0
 
-// 需求图谱：优先调用 GET /api/projects/:id/requirements-graph，失败降级为演示占位
+// 需求图谱：调用 GET /api/projects/:id/requirements-graph，失败显示空状态
 async function loadRequirementsGraph() {
   const pid = currentProject.value?.id
   if (!pid) return false
@@ -486,11 +486,11 @@ async function loadRequirementsGraph() {
       graphData.edges = Array.isArray(data.edges) ? data.edges : []
       return true
     }
-  } catch (e) { /* 降级到 mock */ }
+  } catch (e) { console.error('[expert-center] load graph failed:', e); graphData.nodes = []; graphData.edges = [] }
   return false
 }
 
-// 阶段进度：优先调用 GET /api/projects/:id/phase-progress，失败保留演示占位
+// 阶段进度：调用 GET /api/projects/:id/phase-progress，失败保留当前值
 async function loadCenterPhaseProgress() {
   const pid = currentProject.value?.id
   if (!pid) return
@@ -502,64 +502,9 @@ async function loadCenterPhaseProgress() {
       if (data.develop != null) phaseProgress.develop = data.develop
       if (data.release != null) phaseProgress.release = data.release
     }
-  } catch (e) { /* 保留演示占位 */ }
+  } catch (e) { console.error('[expert-center] load phase failed:', e) }
 }
 
-// 演示占位：公司官网需求图谱预设数据（API 不可用时降级）
-function buildMockGraph() {
-  const pj = currentProject.value ? currentProject.value.name : '公司官网'
-  const NODES = [
-    { id: 'P1', type: 'project', label: pj, fixed: true },
-    { id: 'G1', type: 'goal', label: '品牌展示' },
-    { id: 'G2', type: 'goal', label: '线索转化' },
-    { id: 'G3', type: 'goal', label: 'SEO 排名' },
-    { id: 'A1', type: 'actor', label: '访客' },
-    { id: 'A2', type: 'actor', label: '运营' },
-    { id: 'A3', type: 'actor', label: '管理员' },
-    { id: 'U1', type: 'usecase', label: '首页浏览' },
-    { id: 'U2', type: 'usecase', label: '产品介绍' },
-    { id: 'U3', type: 'usecase', label: '表单留资' },
-    { id: 'U4', type: 'usecase', label: '新闻/博客' },
-    { id: 'U5', type: 'usecase', label: '后台管理' },
-    { id: 'D1', type: 'data', label: '用户线索' },
-    { id: 'D2', type: 'data', label: '内容数据' },
-    { id: 'D3', type: 'data', label: '产品数据' },
-    { id: 'T1', type: 'tech', label: 'Vue 3 + Vite' },
-    { id: 'T2', type: 'tech', label: 'Element Plus' },
-    { id: 'T3', type: 'tech', label: 'NestJS + Postgres' },
-    { id: 'T4', type: 'tech', label: 'SEO SSR' },
-    { id: 'E1', type: 'end', label: '性能验收' },
-    { id: 'E2', type: 'end', label: '上线 Checklist' }
-  ]
-  const EDGES = [
-    ['P1', 'G1', 'contains', '包含'],
-    ['P1', 'G2', 'contains', '包含'],
-    ['P1', 'G3', 'contains', '包含'],
-    ['P1', 'A1', 'serves', '服务于'],
-    ['P1', 'A2', 'serves', '服务于'],
-    ['P1', 'A3', 'serves', '服务于'],
-    ['G1', 'U1', 'realizedBy', '通过'],
-    ['G1', 'U2', 'realizedBy', '通过'],
-    ['G2', 'U3', 'realizedBy', '通过'],
-    ['G3', 'U4', 'realizedBy', '通过'],
-    ['A3', 'U5', 'perform', '执行'],
-    ['U1', 'T1', 'implement', '实现'],
-    ['U1', 'T2', 'implement', '实现'],
-    ['U3', 'D1', 'produce', '产生'],
-    ['U4', 'D2', 'produce', '产生'],
-    ['U2', 'D3', 'read', '读取'],
-    ['D1', 'T3', 'persist', '持久化'],
-    ['D2', 'T3', 'persist', '持久化'],
-    ['D3', 'T3', 'persist', '持久化'],
-    ['U4', 'T4', 'optimize', 'SEO优化'],
-    ['E1', 'G1', 'verify', '验证'],
-    ['E2', 'P1', 'gate', '门禁']
-  ]
-  return {
-    nodes: NODES.map((n, i) => ({ ...n, x: 0, y: 0, vx: 0, vy: 0, index: i })),
-    edges: EDGES.map((e) => ({ source: e[0], target: e[1], type: e[2], label: e[3] }))
-  }
-}
 
 function layoutSeed(nodes) {
   const w = 360
@@ -703,9 +648,9 @@ function drawGraph() {
 }
 
 function randomizeGraph() {
-  const mock = buildMockGraph()
-  graphData.nodes.splice(0, graphData.nodes.length, ...mock.nodes)
-  graphData.edges.splice(0, graphData.edges.length, ...mock.edges)
+  // 后端需求图谱 API 就绪后重新加载，当前清空
+  graphData.nodes.splice(0, graphData.nodes.length)
+  graphData.edges.splice(0, graphData.edges.length)
   nextTick(() => drawGraph())
 }
 
@@ -731,8 +676,8 @@ const FLOW_STAGES = [
 const localPhase = ref('requirement')
 const currentStage = ref(0)
 const requirementFlowMode = ref(false)
-// 演示占位：阶段进度初始值（后端待提供: GET /api/projects/:id/phase-progress）
-const phaseProgress = reactive({ requirement: 8, architecture: 0, develop: 0, release: 0 })
+// 阶段进度由 GET /api/projects/:id/phase-progress 加载，初始为 0
+const phaseProgress = reactive({ requirement: 0, architecture: 0, develop: 0, release: 0 })
 const phaseDone = computed(() => ({
   requirement: phaseProgress.requirement >= 100,
   architecture: phaseProgress.architecture >= 100,
@@ -773,7 +718,7 @@ async function advanceFlowStage() {
 }
 
 function runFullFlow() {
-  // 前端演示版：逐步推进进度（后端完整流水线由 /ai 页的 alliance SSE 负责）
+  // 阶段进度由后端 alliance SSE 实时同步
   doSmartRoute()
 }
 
@@ -941,21 +886,16 @@ function exportConversation() {
   }
 }
 
-// 演示占位：页面阶段变化时模拟进度更新（后端待提供: 阶段进度实时同步）
-watch(localPhase, (k) => {
-  phaseProgress[k] = Math.max(phaseProgress[k] || 0, 10 + Math.round(Math.random() * 8))
-})
+// 阶段进度由后端实时同步，当前不做前端模拟
 
 // Canvas 大小变化时重绘
 let resizeObs = null
 onMounted(async () => {
   await loadAll()
-  // 优先加载后端需求图谱，失败降级为 Mock 图谱
+  // 加载后端需求图谱，失败显示空状态
   const loaded = await loadRequirementsGraph()
   if (!loaded) {
-    const mock = buildMockGraph()
-    graphData.nodes.push(...mock.nodes)
-    graphData.edges.push(...mock.edges)
+    console.warn('[expert-center] requirements graph not loaded, showing empty canvas')
   }
   // 加载阶段进度
   loadCenterPhaseProgress()

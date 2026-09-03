@@ -140,7 +140,7 @@
                   <div class="stat-trend up">↑ 5% 本周</div>
                 </div>
                 <div class="stat-card">
-                  <div class="stat-value">{{ mockTasks.filter(t => t.status === 'active').length }}</div>
+                  <div class="stat-value">{{ tasks.filter(t => t.status === 'active').length }}</div>
                   <div class="stat-label">进行中任务</div>
                   <div class="stat-trend up">↑ 2 新增</div>
                 </div>
@@ -209,7 +209,7 @@
                     </div>
                     <div class="task-list">
                       <div
-                        v-for="t in mockTasks.filter(x => x.status !== 'done').slice(0, 4)"
+                        v-for="t in tasks.filter(x => x.status !== 'done').slice(0, 4)"
                         :key="t.id"
                         class="task-item"
                       >
@@ -258,10 +258,10 @@
             <!-- ===== 任务 Tab ===== -->
             <div v-if="detailTab === 'tasks'">
               <div class="task-filters">
-                <div class="filter-chip" :class="{ active: taskFilter === 'all' }" @click="taskFilter = 'all'">全部 ({{ mockTasks.length }})</div>
-                <div class="filter-chip" :class="{ active: taskFilter === 'active' }" @click="taskFilter = 'active'">进行中 ({{ mockTasks.filter(t => t.status === 'active').length }})</div>
-                <div class="filter-chip" :class="{ active: taskFilter === 'done' }" @click="taskFilter = 'done'">已完成 ({{ mockTasks.filter(t => t.status === 'done').length }})</div>
-                <div class="filter-chip" :class="{ active: taskFilter === 'pending' }" @click="taskFilter = 'pending'">待开始 ({{ mockTasks.filter(t => t.status === 'pending').length }})</div>
+                <div class="filter-chip" :class="{ active: taskFilter === 'all' }" @click="taskFilter = 'all'">全部 ({{ tasks.length }})</div>
+                <div class="filter-chip" :class="{ active: taskFilter === 'active' }" @click="taskFilter = 'active'">进行中 ({{ tasks.filter(t => t.status === 'active').length }})</div>
+                <div class="filter-chip" :class="{ active: taskFilter === 'done' }" @click="taskFilter = 'done'">已完成 ({{ tasks.filter(t => t.status === 'done').length }})</div>
+                <div class="filter-chip" :class="{ active: taskFilter === 'pending' }" @click="taskFilter = 'pending'">待开始 ({{ tasks.filter(t => t.status === 'pending').length }})</div>
               </div>
               <div class="task-list">
                 <div
@@ -514,60 +514,35 @@ const listError = ref('')
 const tasksLoading = ref(false)
 
 // ===== 任务数据（API 驱动） =====
-const mockTasks = ref([])
+const tasks = ref([])
 
 async function loadTasks() {
   tasksLoading.value = true
   try {
     const data = await getTasks()
     if (Array.isArray(data)) {
-      mockTasks.value = data
+      tasks.value = data
     } else if (Array.isArray(data?.list)) {
-      mockTasks.value = data.list
+      tasks.value = data.list
     } else if (Array.isArray(data?.data)) {
-      mockTasks.value = data.data
+      tasks.value = data.data
     } else if (Array.isArray(data?.tasks)) {
-      mockTasks.value = data.tasks
+      tasks.value = data.tasks
     } else {
-      mockTasks.value = []
+      tasks.value = []
     }
   } catch (e) {
     console.warn('[ProjectsView] 任务列表加载失败:', e?.message)
-    mockTasks.value = []
+    tasks.value = []
   } finally {
     tasksLoading.value = false
   }
 }
 
-// 演示占位：项目动态流，后端待提供 /projects/:id/activities 端点
-const mockActivities = [
-  { icon: '💬', text: '张工 在 NLP 模块提交了新代码', time: '5 分钟前' },
-  { icon: '📄', text: '李工 更新了《需求规格说明书 v2.3》', time: '20 分钟前' },
-  { icon: '✅', text: '王工 完成了任务「代码 Review」', time: '1 小时前' },
-  { icon: '👥', text: '赵工 加入了项目团队', time: '2 小时前' },
-  { icon: '🚀', text: '项目 v1.2.0 版本成功发布', time: '昨天 18:30' },
-  { icon: '💡', text: 'AI 助手 建议：增加缓存层可提升 30% 性能', time: '昨天 15:00' }
-]
+// 项目动态流由 /projects/:id/activities 加载，初始为空
 
-// 演示占位：项目文档列表，后端待提供 /projects/:id/documents 端点
-const mockDocs = [
-  { name: '需求规格说明书 v2.3.md', size: '2.4 MB', time: '2 小时前', icon: '📝' },
-  { name: '架构设计文档.pdf', size: '5.1 MB', time: '昨天', icon: '📐' },
-  { name: 'API 接口文档', size: '856 KB', time: '3 天前', icon: '📡' },
-  { name: '数据库设计.sql', size: '128 KB', time: '上周', icon: '🗄️' },
-  { name: '测试用例.xlsx', size: '2.1 MB', time: '2 周前', icon: '✅' },
-  { name: '部署手册.md', size: '640 KB', time: '1 个月前', icon: '🚀' }
-]
+// 项目文档列表由 /projects/:id/documents 加载，初始为空
 
-// 演示占位：成员角色与技能集，后端待提供项目成员管理接口
-const memberRoles = ['项目负责人', '技术专家', '开发工程师', '测试工程师', '产品经理']
-const memberSkillSets = [
-  ['架构设计', 'NLP', 'Python'],
-  ['前端', 'React', 'TypeScript'],
-  ['后端', 'Node.js', '数据库'],
-  ['测试', '自动化', '性能'],
-  ['产品设计', '用户研究', 'AI产品']
-]
 
 // ===== 计算属性 =====
 const catalogTotal = computed(() => catalogGroups.value.reduce((n, g) => n + g.count, 0))
@@ -585,8 +560,8 @@ const filteredProjects = computed(() => {
 })
 
 const filteredTasks = computed(() => {
-  if (taskFilter.value === 'all') return mockTasks.value
-  return mockTasks.value.filter((t) => t.status === taskFilter.value)
+  if (taskFilter.value === 'all') return tasks.value
+  return tasks.value.filter((t) => t.status === taskFilter.value)
 })
 
 const groupedResources = computed(() => {
@@ -627,7 +602,6 @@ function projectProgress(p) {
   return { active: 60, done: 100, archived: 30 }[(p && p.status) || ''] || 0
 }
 
-// 演示占位：无成员数据时从项目名生成假首字母，后端待提供项目成员接口
 function projectMembers(p) {
   if (p && p.members && p.members.length) return p.members
   const name = (p && p.name) || '项目'
@@ -652,7 +626,7 @@ async function selectProject(id) {
   current.value = await getProject(id)
   viewMode.value = 'detail'
   detailTab.value = 'overview'
-  // 加载项目动态与文档（失败降级为演示占位）
+  // 加载项目动态与文档
   projectActivities.value = null
   projectDocs.value = null
   loadProjectDetailData()
@@ -670,7 +644,7 @@ function backToList() {
 }
 
 async function toggleTask(id) {
-  const t = mockTasks.value.find((x) => x.id === id)
+  const t = tasks.value.find((x) => x.id === id)
   if (!t) return
   const newStatus = t.status === 'done' ? 'active' : 'done'
   // 先更新本地状态以获得即时反馈
@@ -732,7 +706,7 @@ async function downloadDoc(d) {
   }
 }
 
-// 项目动态与文档：优先从后端加载，失败降级为演示占位
+// 项目动态与文档：从后端加载
 const projectActivities = ref(null)
 const projectDocs = ref(null)
 async function loadProjectDetailData() {
@@ -740,11 +714,11 @@ async function loadProjectDetailData() {
   try {
     const acts = await getProjectActivities(current.value.id)
     if (Array.isArray(acts) && acts.length > 0) projectActivities.value = acts
-  } catch (e) { /* 保留演示占位 */ }
+  } catch (e) { console.error('[projects] load failed:', e) }
   try {
     const docs = await getProjectDocuments(current.value.id)
     if (Array.isArray(docs) && docs.length > 0) projectDocs.value = docs
-  } catch (e) { /* 保留演示占位 */ }
+  } catch (e) { console.error('[projects] load failed:', e) }
 }
 
 // ===== 加载 =====

@@ -35,7 +35,7 @@ export function useTaskOrchestration(experts, expertColor, expertEmoji, addHisto
     try {
       await new Promise(resolve => setTimeout(resolve, 1500))
       const taskDesc = taskOrchestration.originalTask
-      const subtasks = generateMockSubtasks(taskDesc)
+      const subtasks = [] // 后端待提供子任务生成 API，当前为空
       taskOrchestration.subtasks = subtasks
       updateGanttLayout()
       ElMessage.success(`已智能拆解为 ${subtasks.length} 个子任务`)
@@ -44,25 +44,6 @@ export function useTaskOrchestration(experts, expertColor, expertEmoji, addHisto
     finally { decomposing.value = false }
   }
 
-  function generateMockSubtasks(taskDesc) {
-    const templates = [
-      { title: '需求分析与定义', desc: '深入分析任务需求，明确目标、边界和验收标准', type: 'requirement', time: 15, priority: 'high' },
-      { title: '方案设计与架构规划', desc: '设计整体解决方案，规划技术架构和实现路径', type: 'architecture', time: 20, priority: 'high' },
-      { title: '核心算法/模型研发', desc: '研发核心算法或AI模型，实现关键功能', type: 'algorithm', time: 30, priority: 'high' },
-      { title: '数据处理与准备', desc: '数据采集、清洗、标注和预处理工作', type: 'data', time: 25, priority: 'medium' },
-      { title: '系统集成与联调', desc: '各模块集成开发，接口联调测试', type: 'architecture', time: 20, priority: 'medium' },
-      { title: '质量保障与测试', desc: '功能测试、性能测试、安全审计', type: 'security', time: 15, priority: 'medium' },
-      { title: '文档编写与交付', desc: '编写技术文档、用户手册，准备交付物', type: 'requirement', time: 10, priority: 'low' }
-    ]
-    const numTasks = Math.min(Math.max(Math.floor(taskDesc.length / 30) + 3, 4), 7)
-    const selected = templates.slice(0, numTasks)
-    return selected.map((tpl, idx) => ({
-      id: generateTaskId(), title: tpl.title, description: tpl.desc, priority: tpl.priority,
-      status: idx === 0 ? 'pending' : 'waiting', suggestedExpertType: tpl.type, expertIds: [],
-      dependencies: idx === 0 ? [] : [selected[0].id || ''], estimatedTime: tpl.time,
-      startTime: null, endTime: null, result: '', messages: [], expanded: false, ganttOffset: 0, ganttWidth: 0
-    })).map((task, idx, arr) => { if (idx > 0) task.dependencies = [arr[idx - 1].id]; return task })
-  }
 
   function updateGanttLayout() {
     const subtasks = taskOrchestration.subtasks

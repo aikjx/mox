@@ -40,6 +40,7 @@ pub mod scanner {
     pub use mox_cloud_kernel::scanner::*;
 }
 pub mod sigv4_middleware;
+pub mod storage;
 pub mod tagging;
 pub mod versioning;
 
@@ -79,6 +80,9 @@ pub use s3_server::S3Server;
 pub use scanner::{
     CapacityBudget, IoBudget, ScanBudget, ScanBudgetTracker, ScanStats, TimeBudget,
 };
+pub use storage::InMemoryStorageBackend;
+#[cfg(feature = "rustfs_ecstore_backend")]
+pub use storage::RustFsEcstoreBackend;
 pub use config::{
     FeatureFlags, InventoryConfig, LifecycleConfig, ReplicationConfig, S3ServiceConfig,
 };

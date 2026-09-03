@@ -435,21 +435,8 @@ async function doSubmit() {
   } catch (e) {
     console.error('[registerExpert] 注册失败:', e)
     submitError.value = e.message || '注册失败，请稍后重试'
-    // 优雅降级：模拟成功（演示用）
-    ElMessage.warning('注册服务暂不可用，已生成本地模拟数据')
-    const mockExpert = {
-      id: 'exp_' + Date.now().toString(36),
-      name: formData.name.trim(),
-      type: formData.type,
-      avatar: formData.avatar,
-      description: formData.description,
-      capabilities: [...formData.domains, ...formData.skills],
-      experienceLevel: formData.experienceLevel,
-      status: 'active',
-      metrics: { total_consults: 0, success_rate: 0.95 }
-    }
-    emit('registered', mockExpert)
-    handleClose()
+    // 注册失败：只显示错误，不生成假数据
+    ElMessage.error(submitError.value)
   } finally {
     submitting.value = false
   }

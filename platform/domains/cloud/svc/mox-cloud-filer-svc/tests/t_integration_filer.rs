@@ -838,7 +838,7 @@ async fn if07_01_three_backends_mkdir_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
         ("sqlite", Arc::new(SqliteMeta::new())),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
-        ("redis", Arc::new(RedisMeta::new())),
+        ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
 
     for (name, backend) in &backends {
@@ -859,7 +859,7 @@ async fn if07_02_three_backends_write_read_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
         ("sqlite", Arc::new(SqliteMeta::new())),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
-        ("redis", Arc::new(RedisMeta::new())),
+        ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
 
     for (name, backend) in &backends {
@@ -881,7 +881,7 @@ async fn if07_03_three_backends_delete_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
         ("sqlite", Arc::new(SqliteMeta::new())),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
-        ("redis", Arc::new(RedisMeta::new())),
+        ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
 
     for (name, backend) in &backends {
@@ -900,7 +900,7 @@ async fn if07_04_three_backends_listdir_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
         ("sqlite", Arc::new(SqliteMeta::new())),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
-        ("redis", Arc::new(RedisMeta::new())),
+        ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
 
     for (name, backend) in &backends {
@@ -921,7 +921,7 @@ async fn if07_05_three_backends_rename_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
         ("sqlite", Arc::new(SqliteMeta::new())),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
-        ("redis", Arc::new(RedisMeta::new())),
+        ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
 
     for (name, backend) in &backends {

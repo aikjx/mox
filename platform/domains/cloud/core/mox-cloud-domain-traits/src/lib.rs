@@ -18,6 +18,7 @@
 //! - **Object-safe**：所有 trait 均可通过 `dyn Trait` 进行动态分发。
 //! - **serde 派生**：所有数据结构体均派生 `Serialize/Deserialize`，用于配置与持久化。
 
+pub mod error;
 pub mod lifecycle;
 pub mod meta_storage;
 pub mod shard_reader;
@@ -27,6 +28,9 @@ pub mod storage_backend;
 // ---------------------------------------------------------------------------
 // 统一 re-export
 // ---------------------------------------------------------------------------
+
+// 统一顶层错误
+pub use error::{CloudError, CloudResult};
 
 // L6 存储后端
 pub use storage_backend::{

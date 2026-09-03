@@ -34,4 +34,18 @@ impl fmt::Display for VolumeError {
 
 impl Error for VolumeError {}
 
+impl From<VolumeError> for mox_cloud_domain_traits::CloudError {
+    fn from(e: VolumeError) -> Self {
+        match e {
+            VolumeError::BackpressureRejected(msg) => {
+                mox_cloud_domain_traits::CloudError::BackpressureRejected(msg)
+            }
+            VolumeError::ChunkNotFound(id) => {
+                mox_cloud_domain_traits::CloudError::NotFound(format!("chunk: {id}"))
+            }
+            other => mox_cloud_domain_traits::CloudError::Volume(other.to_string()),
+        }
+    }
+}
+
 pub type VolumeResult<T> = Result<T, VolumeError>;

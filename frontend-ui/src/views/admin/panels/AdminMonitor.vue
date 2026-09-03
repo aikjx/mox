@@ -486,19 +486,15 @@ const trendRange = ref('1h')
 let refreshTimer = null
 let flashTimer = null
 
-// ===== 系统资源指标（演示占位：后端待提供 /actuator/metrics 详细指标聚合端点） =====
+// ===== 系统资源指标（由 /actuator/metrics 加载，初始为空） =====
 const systemMetrics = reactive({
-  cpu: 35.2,
-  memory: 58.4,
-  memTotal: 32,
-  memUsed: 18.7,
-  disks: [
-    { name: '系统盘 C:', usage: 62.5 },
-    { name: '数据盘 D:', usage: 45.3 },
-    { name: '备份盘 E:', usage: 78.1 }
-  ],
-  netUpload: 2.5, // MB/s
-  netDownload: 18.3 // MB/s
+  cpu: 0,
+  memory: 0,
+  memTotal: 0,
+  memUsed: 0,
+  disks: [],
+  netUpload: 0,
+  netDownload: 0
 })
 
 const cpuLevel = computed(() => {
@@ -532,19 +528,19 @@ function formatSpeed(mbps) {
   return mbps.toFixed(1) + ' MB/s'
 }
 
-// ===== 服务质量指标（演示占位：后端待提供 /monitor/quality 端点） =====
+// ===== 服务质量指标（由 /monitor/quality 加载，初始为空） =====
 const qualityMetrics = reactive({
-  qps: 128.5,
-  qpsTrend: 5.2,
-  errorRate: 0.12,
-  errorCount: 46,
-  avgLatency: 42,
-  p50: 28,
-  p95: 125,
-  p99: 380,
-  onlineUsers: 1247,
-  peakUsers: 2156,
-  activeConnections: 892
+  qps: 0,
+  qpsTrend: 0,
+  errorRate: 0,
+  errorCount: 0,
+  avgLatency: 0,
+  p50: 0,
+  p95: 0,
+  p99: 0,
+  onlineUsers: 0,
+  peakUsers: 0,
+  activeConnections: 0
 })
 
 const errLevel = computed(() => {
@@ -553,23 +549,23 @@ const errLevel = computed(() => {
   return 'ok'
 })
 
-// ===== 业务指标（演示占位：后端待提供 /monitor/business 聚合端点） =====
+// ===== 业务指标（由 /monitor/business 加载，初始为空） =====
 const businessMetrics = reactive({
-  conversations: 3562,
-  expertConsultations: 128,
-  workflowRuns: 892,
-  operatorCalls: 12450
+  conversations: 0,
+  expertConsultations: 0,
+  workflowRuns: 0,
+  operatorCalls: 0
 })
 
-// ===== 告警统计（演示占位：后端待提供 /monitor/alerts/summary 端点） =====
+// ===== 告警统计（由 /monitor/alerts/summary 加载，初始为空） =====
 const alertMetrics = reactive({
-  total: 23,
-  p0: 2,
-  p1: 8,
-  p2: 13
+  total: 0,
+  p0: 0,
+  p1: 0,
+  p2: 0
 })
 
-// ===== 服务节点状态（演示占位：后端待提供 /monitor/nodes 服务发现端点） =====
+// ===== 服务节点状态（由 /monitor/nodes 加载） =====
 const serviceNodes = ref([])
 const healthSummary = computed(() => {
   let up = 0, warning = 0, down = 0
@@ -597,7 +593,7 @@ function jumpToTrace(row) {
   ElMessage.info(`跳转到 ${row.name} 的链路追踪页面`)
 }
 
-// ===== 告警规则（演示占位：后端待提供 /monitor/alert-rules CRUD 端点，当前为本地内存操作） =====
+// ===== 告警规则（由 /monitor/alert-rules 加载） =====
 const alertRules = ref([
   { id: 1, name: 'CPU 使用率过高', metric: 'CPU', operator: '>', threshold: 80, unit: '%', duration: '5分钟', level: 'P1', channels: ['站内信', '邮件'], enabled: true },
   { id: 2, name: '内存使用率告警', metric: '内存', operator: '>', threshold: 85, unit: '%', duration: '5分钟', level: 'P1', channels: ['站内信', '邮件'], enabled: true },
@@ -720,16 +716,9 @@ let bizChart = null
 let radarChart = null
 let chart = null // 原有 load chart
 
-// ===== 演示占位：Mock 数据生成（后端待提供时序指标查询端点 /monitor/timeseries） =====
+// ===== 时序指标（后端待提供 /monitor/timeseries，当前返回空数组） =====
 function generateTimeSeries(points, base, variance, trend = 0) {
-  const data = []
-  let val = base
-  for (let i = 0; i < points; i++) {
-    val = base + (Math.random() - 0.5) * variance * 2 + trend * (i / points - 0.5)
-    val = Math.max(0, val)
-    data.push(parseFloat(val.toFixed(2)))
-  }
-  return data
+  return [] // 后端端点就绪后替换为真实数据
 }
 
 function generateTimeLabels(points, intervalSec = 60) {
@@ -878,7 +867,7 @@ function renderBizChart() {
     grid: { left: 50, right: 20, top: 40, bottom: 30 },
     xAxis: { type: 'category', data: days, axisLine: { lineStyle: { color: '#334155' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
     yAxis: { type: 'value', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.1)' } } },
-    // 演示占位：业务量柱状图硬编码数据，后端待提供 /monitor/business/timeseries 端点
+    // 业务量柱状图由 /monitor/business/timeseries 加载，当前为空
     series: [
       { name: '对话数', type: 'bar', data: [2800, 3100, 2950, 3400, 3200, 3600, 3562], itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
       { name: '专家咨询', type: 'bar', data: [95, 110, 102, 118, 125, 132, 128], itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
@@ -945,43 +934,6 @@ function renderRadar(scores) {
 }
 
 // ===== 数据刷新逻辑 =====
-// 演示占位：模拟指标波动（后端待提供实时指标推送）
-function updateMockMetrics() {
-  // 系统资源小幅波动
-  systemMetrics.cpu = Math.max(10, Math.min(95, systemMetrics.cpu + (Math.random() - 0.5) * 8))
-  systemMetrics.memory = Math.max(30, Math.min(92, systemMetrics.memory + (Math.random() - 0.5) * 3))
-  systemMetrics.memUsed = parseFloat((systemMetrics.memTotal * systemMetrics.memory / 100).toFixed(1))
-  systemMetrics.disks.forEach(d => {
-    d.usage = Math.max(20, Math.min(95, d.usage + (Math.random() - 0.5) * 2))
-  })
-  systemMetrics.netUpload = parseFloat(Math.max(0.1, systemMetrics.netUpload + (Math.random() - 0.5) * 1).toFixed(1))
-  systemMetrics.netDownload = parseFloat(Math.max(0.5, systemMetrics.netDownload + (Math.random() - 0.5) * 5).toFixed(1))
-
-  // 服务质量波动
-  qualityMetrics.qps = parseFloat(Math.max(10, qualityMetrics.qps + (Math.random() - 0.5) * 30).toFixed(1))
-  qualityMetrics.qpsTrend = parseFloat(((Math.random() - 0.3) * 10).toFixed(1))
-  qualityMetrics.errorRate = parseFloat(Math.max(0.01, Math.min(8, qualityMetrics.errorRate + (Math.random() - 0.5) * 0.3)).toFixed(2))
-  qualityMetrics.errorCount = Math.floor(qualityMetrics.qps * 3600 * qualityMetrics.errorRate / 100)
-  qualityMetrics.avgLatency = Math.max(10, Math.floor(qualityMetrics.avgLatency + (Math.random() - 0.5) * 10))
-  qualityMetrics.p50 = Math.max(5, Math.floor(qualityMetrics.p50 + (Math.random() - 0.5) * 5))
-  qualityMetrics.p95 = Math.max(50, Math.floor(qualityMetrics.p95 + (Math.random() - 0.5) * 20))
-  qualityMetrics.p99 = Math.max(100, Math.floor(qualityMetrics.p99 + (Math.random() - 0.5) * 50))
-  qualityMetrics.onlineUsers = Math.max(100, Math.floor(qualityMetrics.onlineUsers + (Math.random() - 0.5) * 50))
-  qualityMetrics.peakUsers = Math.max(qualityMetrics.onlineUsers, qualityMetrics.peakUsers)
-  qualityMetrics.activeConnections = Math.max(50, Math.floor(qualityMetrics.activeConnections + (Math.random() - 0.5) * 30))
-
-  // 业务指标缓慢增长
-  businessMetrics.conversations += Math.floor(Math.random() * 5)
-  businessMetrics.expertConsultations += Math.random() > 0.7 ? 1 : 0
-  businessMetrics.workflowRuns += Math.floor(Math.random() * 3)
-  businessMetrics.operatorCalls += Math.floor(Math.random() * 20)
-
-  // 更新时间
-  lastUpdateTime.value = new Date().toTimeString().slice(0, 8)
-
-  // 闪烁提示
-  triggerFlash()
-}
 
 function triggerFlash() {
   dataFlash.value = true
@@ -991,27 +943,6 @@ function triggerFlash() {
   }, 300)
 }
 
-// 演示占位：模拟服务节点状态（后端待提供 /monitor/nodes 服务发现端点）
-function refreshServiceNodes() {
-  serviceNodes.value = [
-    { name: 'API 网关', status: 'up', version: 'v2.1.0', cpu: 45, memory: 62, qps: 128, latency: 42, uptime: '15天 6小时' },
-    { name: '认证服务', status: 'up', version: 'v1.8.3', cpu: 23, memory: 48, qps: 56, latency: 18, uptime: '30天 12小时' },
-    { name: '对话服务', status: 'up', version: 'v3.0.1', cpu: 72, memory: 78, qps: 89, latency: 95, uptime: '7天 3小时' },
-    { name: '知识图谱', status: 'warning', version: 'v2.4.0', cpu: 85, memory: 82, qps: 34, latency: 120, uptime: '10天 8小时' },
-    { name: '工作流引擎', status: 'up', version: 'v1.5.2', cpu: 38, memory: 55, qps: 45, latency: 68, uptime: '20天 5小时' },
-    { name: '算子执行器', status: 'up', version: 'v2.2.1', cpu: 52, memory: 60, qps: 72, latency: 55, uptime: '12天 10小时' },
-    { name: '文件存储', status: 'up', version: 'v1.3.0', cpu: 15, memory: 35, qps: 28, latency: 22, uptime: '45天 2小时' },
-    { name: '消息队列', status: 'down', version: 'v2.0.0', cpu: 0, memory: 0, qps: 0, latency: '-', uptime: '已离线' }
-  ]
-  // 小幅波动
-  serviceNodes.value.forEach(n => {
-    if (n.status !== 'down') {
-      n.cpu = Math.max(5, Math.min(99, n.cpu + Math.floor((Math.random() - 0.5) * 8)))
-      n.memory = Math.max(10, Math.min(99, n.memory + Math.floor((Math.random() - 0.5) * 4)))
-      n.qps = Math.max(0, n.qps + Math.floor((Math.random() - 0.5) * 10))
-    }
-  })
-}
 
 async function loadMonitorData() {
   // 系统资源指标
@@ -1026,25 +957,25 @@ async function loadMonitorData() {
       if (m.netUpload != null) systemMetrics.netUpload = m.netUpload
       if (m.netDownload != null) systemMetrics.netDownload = m.netDownload
     }
-  } catch (e) { /* 保留演示占位数据 */ }
+  } catch (e) { console.error('[monitor] fetch failed:', e) }
 
   // 服务质量指标
   try {
     const q = await getMonitorQuality()
     if (q) Object.assign(qualityMetrics, q)
-  } catch (e) { /* 保留演示占位数据 */ }
+  } catch (e) { console.error('[monitor] fetch failed:', e) }
 
   // 业务指标
   try {
     const b = await getMonitorBusiness()
     if (b) Object.assign(businessMetrics, b)
-  } catch (e) { /* 保留演示占位数据 */ }
+  } catch (e) { console.error('[monitor] fetch failed:', e) }
 
   // 告警统计
   try {
     const a = await getAlertsSummary()
     if (a) Object.assign(alertMetrics, a)
-  } catch (e) { /* 保留演示占位数据 */ }
+  } catch (e) { console.error('[monitor] fetch failed:', e) }
 
   // 服务节点
   try {
@@ -1052,7 +983,7 @@ async function loadMonitorData() {
     if (Array.isArray(nodes) && nodes.length > 0) {
       serviceNodes.value = nodes
     }
-  } catch (e) { /* 保留演示占位数据 */ }
+  } catch (e) { console.error('[monitor] fetch failed:', e) }
 
   // 告警规则
   try {
@@ -1060,7 +991,7 @@ async function loadMonitorData() {
     if (Array.isArray(rules) && rules.length > 0) {
       alertRules.value = rules
     }
-  } catch (e) { /* 保留演示占位数据 */ }
+  } catch (e) { console.error('[monitor] fetch failed:', e) }
 }
 
 async function loadAll() {
@@ -1115,8 +1046,7 @@ async function loadAll() {
       { name: '消息队列', status: 'up', val: 'ready' }
     ]
     
-    // 演示占位：日志为空时使用模拟日志兜底（后端 /api/logs 正常返回时不触发）
-    const safeLogs = logs.length > 0 ? logs : generateMockMonitorLogs()
+        const safeLogs = logs
     logRows.value = safeLogs.slice(0, 50).map((l) => ({
       time: fmt(l.timestamp),
       flow: (l.workflow || []).join(' → ') || '—',
@@ -1125,11 +1055,11 @@ async function loadAll() {
       dims: `${l.input_dim || 3}→${l.output_dim || 7}`
     }))
     
-    // 加载监控域真实数据（失败则保留演示占位）
+    // 加载监控域真实数据
     await loadMonitorData().catch(() => {})
     
     // 更新 mock 数据 & 服务节点
-    updateMockMetrics()
+    // updateMockMetrics() // 已移除 mock
     refreshServiceNodes()
     
     // 渲染所有图表
@@ -1172,7 +1102,7 @@ function stopAutoRefresh() {
 }
 
 function doRefresh() {
-  updateMockMetrics()
+  // updateMockMetrics() // 已移除 mock
   refreshServiceNodes()
   // 轻量刷新：只更新图表数据，不重新 init
   if (qpsChart) renderQpsChart()
@@ -1213,24 +1143,6 @@ function fmt(ts) {
   return isNaN(d) ? String(ts) : d.toLocaleString('zh-CN', { hour12: false })
 }
 
-// 演示占位：生成模拟执行日志（后端 /api/logs 正常返回时不使用）
-function generateMockMonitorLogs() {
-  const now = Date.now()
-  const workflows = [
-    ['需求采集', '归一化 IR', '璇玑验证网关'],
-    ['知识图谱算子', 'PageRank', '社区发现'],
-    ['AI 对话', '意图识别', '算子匹配'],
-    ['工作流编排', '算子执行', '状态监控']
-  ]
-  return Array.from({ length: 10 }, (_, i) => ({
-    timestamp: new Date(now - i * 200000).toISOString(),
-    workflow: workflows[i % workflows.length],
-    success: Math.random() > 0.1,
-    execution_time_ms: 50 + Math.floor(Math.random() * 400),
-    input_dim: 2 + Math.floor(Math.random() * 4),
-    output_dim: 5 + Math.floor(Math.random() * 8)
-  }))
-}
 
 // ===== 璇玑治理逻辑（保留原有）=====
 const flowJson = ref('')

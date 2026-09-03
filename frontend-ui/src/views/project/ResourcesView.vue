@@ -180,18 +180,7 @@ function buildRows(r) {
     for (const k of Object.keys(obj)) walk(obj[k], k)
   }
   walk(r, '')
-  resourceRows.value = rows.length ? rows.slice(0, 12) : mockRows()
-}
-// 演示占位：API 返回空时的兜底资源行数据
-function mockRows() {
-  return [
-    { name: 'CPU 核心', type: 'compute', status: 'healthy', usage: 0.42, detail: '8 vCPU' },
-    { name: '内存', type: 'memory', status: 'healthy', usage: 0.61, detail: '16 GB' },
-    { name: 'WASM 运行时', type: 'runtime', status: 'healthy', usage: 0.2, detail: 'active' },
-    { name: 'AI 智能体', type: 'ai', status: 'healthy', usage: 0.35, detail: 'online' },
-    { name: '知识图谱', type: 'graph', status: 'healthy', usage: 0.28, detail: 'loaded' },
-    { name: '插件总线', type: 'bus', status: 'healthy', usage: 0.15, detail: 'pub/sub' }
-  ]
+  resourceRows.value = rows.length ? rows.slice(0, 12) : []
 }
 
 function renderCharts() {
@@ -199,9 +188,8 @@ function renderCharts() {
     gaugeChart = echarts.init(gaugeEl.value)
     healthChart = echarts.init(healthEl.value)
   }
-  // 演示占位：CPU/内存无数据时的兜底默认值
-  const cpu = toPct(pick(rawResources.value, ['cpu', 'cpu_usage']) ?? 0.4)
-  const mem = toPct(pick(rawResources.value, ['memory', 'mem']) ?? 0.6)
+    const cpu = toPct(pick(rawResources.value, ['cpu', 'cpu_usage']) ?? 0)
+  const mem = toPct(pick(rawResources.value, ['memory', 'mem']) ?? 0)
   gaugeChart.setOption({
     tooltip: { formatter: '{a}: {c}%' },
     series: [
@@ -224,8 +212,7 @@ function renderCharts() {
     series: [
       {
         type: 'bar',
-        // 演示占位：插件/算子/图谱/总线健康度为硬编码值，后端待提供 /ai/resources/health 详细指标
-        data: [cpu, mem, 20, 35, 28, 15],
+        // 健康度由 /ai/resources/health 加载，初始为 0
         itemStyle: {
           borderRadius: [6, 6, 0, 0],
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [

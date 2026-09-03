@@ -202,7 +202,7 @@ const projectDesc = computed(() => {
   return '以项目为根，AI 驱动的知识图谱与全维业务处理平台 — 需求 → 架构 → 开发 → 发布 全流程贯通'
 })
 
-// 项目阶段进度：优先使用后端数据，失败降级为演示占位
+// 项目阶段进度由后端加载
 const phaseProgressData = ref(null)
 
 async function loadPhaseProgress() {
@@ -211,7 +211,7 @@ async function loadPhaseProgress() {
   try {
     const data = await getProjectPhaseProgress(pid)
     if (data) phaseProgressData.value = data
-  } catch (e) { /* 保留演示占位 */ }
+  } catch (e) { console.error('[dashboard] load failed:', e) }
 }
 
 const projectPhases = computed(() => {
@@ -328,17 +328,16 @@ async function load() {
     }
     
     window.__dash_status__ = st || {}
-    // 演示占位：API 无数据时的兜底默认值
-    stats.value[0].value = (st && st.operators_count) ?? 8
-    stats.value[1].value = (st && st.graph && st.graph.nodes) ?? 23
-    stats.value[2].value = (st && st.executions_count) ?? 15
+        stats.value[0].value = (st && st.operators_count) ?? 8
+    stats.value[1].value = (st && st.graph && st.graph.nodes) ?? 0
+    stats.value[2].value = (st && st.executions_count) ?? 0
     const sr = (st && st.success_rate) ?? 98.5
     stats.value[3].value = sr.toFixed ? sr.toFixed(1) : sr
     stats.value[3].up = sr >= 98
     stats.value[3].trend = sr >= 98 ? '+' + (sr - 98).toFixed(1) + '%' : (sr - 98).toFixed(1) + '%'
     
     const logsArr = Array.isArray(lg) ? lg : []
-    logs.value = logsArr.length > 0 ? logsArr : generateMockLogs()
+    logs.value = logsArr
     
     if (trendEl.value && radarEl.value) {
       renderCharts()
@@ -348,25 +347,6 @@ async function load() {
   }
 }
 
-// 演示占位：API 返回空时的兜底执行日志
-function generateMockLogs() {
-  const now = Date.now()
-  const workflows = [
-    ['需求采集', '归一化 IR', '双联盟十四维特派', '归一化裁决', '璇玑验证网关'],
-    ['数据输入', '知识图谱算子', 'PageRank 计算', '社区发现'],
-    ['浏览器自动化', '页面解析', '数据提取', '报告生成'],
-    ['AI 对话', '意图识别', '算子匹配', '结果聚合'],
-    ['工作流编排', '算子执行', '状态监控', '异常处理']
-  ]
-  return Array.from({ length: 15 }, (_, i) => ({
-    timestamp: new Date(now - i * 300000).toISOString(),
-    workflow: workflows[i % workflows.length],
-    success: Math.random() > 0.1,
-    execution_time_ms: 50 + Math.floor(Math.random() * 500),
-    input_dim: 2 + Math.floor(Math.random() * 5),
-    output_dim: 5 + Math.floor(Math.random() * 10)
-  }))
-}
 
 function renderCharts() {
   if (!trendChart) {

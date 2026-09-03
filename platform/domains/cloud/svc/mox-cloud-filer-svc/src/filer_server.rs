@@ -8,6 +8,7 @@
 //! 对象层：默认桥接真实 S3（通过 `mox-cloud-store-core` 的自研 SigV4 客户端），
 //! 仅在 `STORAGE_BACKEND=memory` 时使用内存实现。
 
+use mox_cloud_kernel::buffer_pool::BufferPool;
 use parking_lot::Mutex;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -35,6 +36,8 @@ pub struct FilerServer {
     pub quota: Arc<QuotaManager>,
     /// 快照管理器
     pub snapshots: Arc<SnapshotManager>,
+    /// 四层分档缓冲池（PooledBuffer 推广，热点路径复用分配）
+    pub buffer_pool: Arc<BufferPool>,
 }
 
 /// 对象存储接口（S3 兼容）。
@@ -84,6 +87,7 @@ impl FilerServer {
             file_locks: Arc::new(FileLockManager::new()),
             quota: Arc::new(QuotaManager::new()),
             snapshots: Arc::new(SnapshotManager::new()),
+            buffer_pool: Arc::new(BufferPool::with_default()),
         })
     }
 
@@ -144,6 +148,8 @@ pub struct S3ObjectStorage {
     client: Arc<mox_cloud_store_core::S3Client>,
     rt: tokio::runtime::Runtime,
     default_bucket: String,
+    /// 四层分档缓冲池（PooledBuffer 推广）
+    buffer_pool: Arc<BufferPool>,
 }
 
 impl S3ObjectStorage {
@@ -183,6 +189,7 @@ impl S3ObjectStorage {
             client: Arc::new(client),
             rt,
             default_bucket: bucket,
+            buffer_pool: Arc::new(BufferPool::with_default()),
         })
     }
 
@@ -194,12 +201,16 @@ impl S3ObjectStorage {
 impl ObjectStorage for S3ObjectStorage {
     fn put(&self, bucket: &str, key: &str, data: &[u8]) -> FilerResult<()> {
         let logical = Self::logical_key(bucket, key);
+        let logical_mv = logical.clone();
         let client = self.client.clone();
-        let data_vec = data.to_vec();
+        // PooledBuffer 推广：从缓冲池获取缓冲区，避免重复 Vec 分配
+        let mut pooled = self.buffer_pool.acquire(data.len());
+        pooled.extend_from_slice(data);
+        let data_vec = pooled.into_vec();
         self.rt
             .block_on(async move {
                 client
-                    .put_object(&logical, "application/octet-stream", &data_vec)
+                    .put_object(&logical_mv, "application/octet-stream", &data_vec)
                     .await
             })
             .map_err(|e| FilerError::Other(format!("S3 PUT {logical} 失败: {e}")))
@@ -207,9 +218,10 @@ impl ObjectStorage for S3ObjectStorage {
 
     fn get(&self, bucket: &str, key: &str) -> FilerResult<Vec<u8>> {
         let logical = Self::logical_key(bucket, key);
+        let logical_mv = logical.clone();
         let client = self.client.clone();
         self.rt
-            .block_on(async move { client.get_object(&logical).await })
+            .block_on(async move { client.get_object(&logical_mv).await })
             .map_err(|e| match e {
                 mox_base_store_core::StoreError::NotFound { .. } => FilerError::NotFound,
                 other => FilerError::Other(format!("S3 GET {logical} 失败: {other}")),
@@ -218,10 +230,11 @@ impl ObjectStorage for S3ObjectStorage {
 
     fn list(&self, bucket: &str) -> FilerResult<Vec<String>> {
         let prefix = format!("{}/", bucket.trim_matches('/'));
+        let prefix_mv = prefix.clone();
         let client = self.client.clone();
         let keys = self
             .rt
-            .block_on(async move { client.list_objects(&prefix).await })
+            .block_on(async move { client.list_objects(&prefix_mv).await })
             .map_err(|e| FilerError::Other(format!("S3 LIST {prefix} 失败: {e}")))?;
         let out: Vec<String> = keys
             .into_iter()
@@ -232,18 +245,20 @@ impl ObjectStorage for S3ObjectStorage {
 
     fn delete(&self, bucket: &str, key: &str) -> FilerResult<()> {
         let logical = Self::logical_key(bucket, key);
+        let logical_mv = logical.clone();
         let client = self.client.clone();
         self.rt
-            .block_on(async move { client.delete_object(&logical).await })
+            .block_on(async move { client.delete_object(&logical_mv).await })
             .map_err(|e| FilerError::Other(format!("S3 DELETE {logical} 失败: {e}")))
     }
 
     fn head(&self, bucket: &str, key: &str) -> FilerResult<u64> {
         let logical = Self::logical_key(bucket, key);
+        let logical_mv = logical.clone();
         let client = self.client.clone();
         let info = self
             .rt
-            .block_on(async move { client.head_object(&logical).await })
+            .block_on(async move { client.head_object(&logical_mv).await })
             .map_err(|e| FilerError::Other(format!("S3 HEAD {logical} 失败: {e}")))?;
         match info {
             Some(i) => Ok(i.size_bytes),
@@ -257,22 +272,44 @@ impl ObjectStorage for S3ObjectStorage {
 // ============================================================================
 
 /// In-memory object storage（仅在 `STORAGE_BACKEND=memory` 时作为回退）。
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct InMemoryObjectStorage {
     inner: Mutex<BTreeMap<(String, String), Vec<u8>>>,
+    /// 四层分档缓冲池（PooledBuffer 推广）
+    buffer_pool: Arc<BufferPool>,
 }
 
 impl InMemoryObjectStorage {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            inner: Mutex::new(BTreeMap::new()),
+            buffer_pool: Arc::new(BufferPool::with_default()),
+        }
+    }
+
+    /// 创建带指定缓冲池的实例
+    pub fn with_buffer_pool(buffer_pool: Arc<BufferPool>) -> Self {
+        Self {
+            inner: Mutex::new(BTreeMap::new()),
+            buffer_pool,
+        }
+    }
+}
+
+impl Default for InMemoryObjectStorage {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 impl ObjectStorage for InMemoryObjectStorage {
     fn put(&self, bucket: &str, key: &str, data: &[u8]) -> FilerResult<()> {
+        // PooledBuffer 推广：从缓冲池获取缓冲区
+        let mut pooled = self.buffer_pool.acquire(data.len());
+        pooled.extend_from_slice(data);
         self.inner
             .lock()
-            .insert((bucket.into(), key.into()), data.to_vec());
+            .insert((bucket.into(), key.into()), pooled.into_vec());
         Ok(())
     }
     fn get(&self, bucket: &str, key: &str) -> FilerResult<Vec<u8>> {
@@ -362,5 +399,50 @@ mod tests {
         std::env::set_var("STORAGE_BACKEND", "s3");
         let result = S3ObjectStorage::from_env();
         assert!(result.is_err(), "缺少 S3 配置应返回错误");
+    }
+
+    // ----- PooledBuffer 推广集成测试 -----
+
+    #[test]
+    fn pooled_buffer_in_memory_storage_put_get() {
+        // 验证 InMemoryObjectStorage 使用 PooledBuffer 进行 put/get 往返
+        let pool = Arc::new(BufferPool::with_default());
+        let s = InMemoryObjectStorage::with_buffer_pool(pool.clone());
+
+        // 写入数据（内部使用 PooledBuffer acquire + into_vec）
+        let payload = b"pooled-buffer-test-data-0123456789";
+        s.put("bkt", "file.bin", payload).unwrap();
+
+        // 读取验证
+        let data = s.get("bkt", "file.bin").unwrap();
+        assert_eq!(data, payload);
+
+        // 缓冲池应记录分配（put 路径 acquire 了一个 buffer）
+        let stats = pool.stats();
+        assert!(stats.total_allocated > 0, "pool should have allocations from put");
+        assert!(stats.current_in_use == 0, "buffers should be returned after into_vec");
+    }
+
+    #[test]
+    fn pooled_buffer_filer_server_has_pool() {
+        // 验证 FilerServer 包含 buffer_pool 字段且默认可用
+        std::env::set_var("STORAGE_BACKEND", "memory");
+        let srv = FilerServer::new(Arc::new(SqliteMeta::new())).unwrap();
+
+        // buffer_pool 字段存在且可访问
+        let stats = srv.buffer_pool.stats();
+        assert_eq!(stats.current_in_use, 0, "fresh pool should have no in-use buffers");
+
+        // 可以从 pool 获取缓冲区
+        let mut buf = srv.buffer_pool.acquire(1024);
+        assert!(buf.capacity() >= 1024);
+        buf.extend_from_slice(b"filer-pool-test");
+        assert_eq!(&buf[..], b"filer-pool-test");
+        drop(buf);
+
+        // 释放后缓冲区回到池中
+        let stats_after = srv.buffer_pool.stats();
+        assert_eq!(stats_after.current_in_use, 0);
+        assert!(stats_after.total_reused >= 0);
     }
 }

@@ -10,7 +10,7 @@ description = "Mox Cloud Drive S3 Compatible Service - 100% self-implemented (no
 mox-cloud-foundation = { workspace = true }
 mox-data-standards-core = { workspace = true }
 mox-cloud-master-svc = { workspace = true }
-mox-cloud-volume-svc = { workspace = true }
+mox-cloud-domain-traits = { workspace = true }
 mox-cloud-store-core = { workspace = true }
 mox-cloud-kernel = { workspace = true }
 tokio = { workspace = true }
@@ -41,3 +41,6 @@ default = []
 # Enables Glacier cold-layer adapters, 445 RESTORE status codes and the
 # lifecycle HTTP handler extensions.
 glacier = []
+# Enables the RustFS ecstore storage backend skeleton (trait 接入点已定义，
+# 实际 RustFS 进程/FFI 对接待后续阶段).
+rustfs_ecstore_backend = []

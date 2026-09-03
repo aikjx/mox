@@ -259,25 +259,25 @@ async fn tr8_3_backend_pg_delete() {
 
 #[tokio::test]
 async fn tr8_3_backend_redis_mkdir() {
-    backend_round(|| Filer::new(Arc::new(RedisMeta::new()))).await;
+    backend_round(|| Filer::new(Arc::new(RedisMeta::new_in_memory()))).await;
 }
 #[tokio::test]
 async fn tr8_3_backend_redis_write() {
-    let f = Filer::new(Arc::new(RedisMeta::new()));
+    let f = Filer::new(Arc::new(RedisMeta::new_in_memory()));
     f.mkdir("/r", 0o755).await.unwrap();
     f.write("/r/w.bin", 0, b"redisdata").await.unwrap();
     assert_eq!(f.read_all("/r/w.bin").await.unwrap(), b"redisdata");
 }
 #[tokio::test]
 async fn tr8_3_backend_redis_stat() {
-    let f = Filer::new(Arc::new(RedisMeta::new()));
+    let f = Filer::new(Arc::new(RedisMeta::new_in_memory()));
     f.write("/rs.bin", 0, b"RRR").await.unwrap();
     let a = f.stat("/rs.bin").await.unwrap();
     assert_eq!(a.size, 3);
 }
 #[tokio::test]
 async fn tr8_3_backend_redis_delete() {
-    let f = Filer::new(Arc::new(RedisMeta::new()));
+    let f = Filer::new(Arc::new(RedisMeta::new_in_memory()));
     f.write("/rd.bin", 0, b"Q").await.unwrap();
     f.unlink("/rd.bin").await.unwrap();
     assert!(f.stat("/rd.bin").await.is_err());

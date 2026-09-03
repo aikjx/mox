@@ -323,72 +323,8 @@ const statusFilters = [
   { key: 'failed', label: '失败' }
 ]
 
-// 演示占位：联盟任务列表（getAllianceTasks API 失败时的降级展示）
-const mockTasks = [
-  {
-    id: 'task_001', name: '需求知识图谱构建', description: '从项目文档中提取实体与关系，构建全维需求知识图谱',
-    status: 'running', progress: 65, fusion_strategy: 'weighted', expert_count: 4,
-    created_at: '2024-08-28 10:30', duration: '12m 30s', eta: '6m 45s',
-    priority: 'high', assignee: '林墨白', due_date: '2024-09-02'
-  },
-  {
-    id: 'task_002', name: '架构方案专家辩论', description: '多位架构专家就微服务拆分方案进行多轮辩论与融合',
-    status: 'pending', progress: 0, fusion_strategy: 'debate', expert_count: 6,
-    created_at: '2024-08-28 14:00', duration: '--', eta: '30m',
-    priority: 'mid', assignee: '苏清瑶', due_date: '2024-09-03'
-  },
-  {
-    id: 'task_003', name: '算法复杂度全维分析', description: '对核心算法进行复杂度分析与优化建议生成',
-    status: 'completed', progress: 100, fusion_strategy: 'voting', expert_count: 3,
-    created_at: '2024-08-27 09:00', duration: '8m 15s', eta: '--',
-    priority: 'high', assignee: '尤雨溪', due_date: '2024-08-30'
-  },
-  {
-    id: 'task_004', name: '数据中台方案协同', description: '数据专家协同设计数据中台分层架构与治理策略',
-    status: 'running', progress: 40, fusion_strategy: 'cascade', expert_count: 5,
-    created_at: '2024-08-28 11:00', duration: '20m 10s', eta: '30m',
-    priority: 'mid', assignee: '卢明月', due_date: '2024-09-05'
-  },
-  {
-    id: 'task_005', name: '安全合规评审', description: '安全专家对系统架构进行安全评审与合规检查',
-    status: 'failed', progress: 30, fusion_strategy: 'weighted', expert_count: 2,
-    created_at: '2024-08-26 16:00', duration: '5m 20s', eta: '--',
-    priority: 'low', assignee: '冯铁山', due_date: '2024-08-29'
-  },
-  {
-    id: 'task_006', name: '性能优化方案生成', description: '性能专家分析系统瓶颈并生成优化方案',
-    status: 'completed', progress: 100, fusion_strategy: 'voting', expert_count: 3,
-    created_at: '2024-08-25 13:00', duration: '15m 00s', eta: '--',
-    priority: 'mid', assignee: '陈御风', due_date: '2024-08-28'
-  }
-]
 
-// 演示占位：任务执行日志（后端待提供: GET /api/alliance/tasks/:id/logs）
-const mockLogs = [
-  { time: '10:30:15', level: 'info', message: '任务启动：需求知识图谱构建' },
-  { time: '10:30:18', level: 'info', message: '加载专家：林墨白(算法)、郑星图(图谱)、周知行(AI)' },
-  { time: '10:30:22', level: 'info', message: '专家1 开始分析文档结构...' },
-  { time: '10:30:45', level: 'info', message: '专家1 提取实体 128 个，关系 256 条' },
-  { time: '10:31:00', level: 'info', message: '专家2 开始图谱 schema 设计...' },
-  { time: '10:31:30', level: 'warning', message: '专家2 检测到 3 个实体类型冲突，正在融合' },
-  { time: '10:32:00', level: 'info', message: '专家3 开始语义消歧...' },
-  { time: '10:33:15', level: 'info', message: '融合引擎启动：加权融合策略' },
-  { time: '10:34:00', level: 'success', message: '第一轮融合完成，置信度 0.87' },
-  { time: '10:35:20', level: 'info', message: '正在进行第二轮交叉验证...' }
-]
 
-// 演示占位：融合结果（后端待提供: GET /api/alliance/tasks/:id/fusion-result）
-const mockFusion = {
-  summary: '经过 4 位专家的多轮分析与加权融合，共提取实体 156 个、关系 312 条，构建了包含 6 个核心域的需求知识图谱。融合置信度 87.3%，建议在"用户行为域"进行人工复核。',
-  confidence: 0.873,
-  details: [
-    { key: '实体总数', value: '156 个' },
-    { key: '关系总数', value: '312 条' },
-    { key: '核心域', value: '6 个' },
-    { key: '冲突解决', value: '3 处已融合' },
-    { key: '待复核', value: '1 个域（用户行为）' }
-  ]
-}
 
 // ===== 计算属性 =====
 const filteredTasks = computed(() => {
@@ -396,21 +332,13 @@ const filteredTasks = computed(() => {
   return tasks.value.filter(t => t.status === currentFilter.value)
 })
 
-// DAG 节点：优先使用 API 数据，失败则使用演示占位
+// DAG 节点：由 API 加载，无数据时为空
 const dagNodes = computed(() => {
   if (dagNodesData.value && dagNodesData.value.length > 0) return dagNodesData.value
-  if (!selectedTask.value) return []
-  const base = [
-    { id: 'n1', name: '需求解析', type: '算法专家', status: 'completed', x: 100, y: 60 },
-    { id: 'n2', name: '实体抽取', type: 'AI专家', status: 'completed', x: 280, y: 30 },
-    { id: 'n3', name: '关系抽取', type: '图谱专家', status: 'running', x: 280, y: 90 },
-    { id: 'n4', name: 'Schema设计', type: '架构专家', status: 'pending', x: 460, y: 60 },
-    { id: 'n5', name: '融合输出', type: '融合专家', status: 'pending', x: 640, y: 60 }
-  ]
-  return base
+  return []
 })
 
-// DAG 边：优先使用 API 数据，失败则使用演示占位
+// DAG 边：由 API 加载，无数据时为空
 const dagEdges = computed(() => {
   if (dagEdgesData.value && dagEdgesData.value.length > 0) return dagEdgesData.value
   if (!selectedTask.value) return []
@@ -484,29 +412,29 @@ async function selectTask(task) {
   // 加载任务日志：失败则降级到 mock
   try {
     const logData = await getAllianceTaskLogs(task.id)
-    logs.value = Array.isArray(logData) ? logData : (logData?.items || [...mockLogs])
+    logs.value = Array.isArray(logData) ? logData : (logData?.items || [])
   } catch (e) {
-    logs.value = [...mockLogs]
+    logs.value = []
   }
   // 加载融合结果：仅已完成任务，失败则降级
   if (task.status === 'completed') {
     try {
       const fusion = await getAllianceFusionResult(task.id)
-      fusionResult.value = fusion || { ...mockFusion }
+      fusionResult.value = fusion || null
     } catch (e) {
-      fusionResult.value = { ...mockFusion }
+      fusionResult.value = null
     }
   } else {
     fusionResult.value = null
   }
-  // 加载 DAG：失败则使用计算属性 mock
+  // 加载 DAG：失败则为空
   try {
     const dag = await getAllianceTaskDag(task.id)
     if (dag && dag.nodes) {
       dagNodesData.value = dag.nodes
       dagEdgesData.value = dag.edges || []
     }
-  } catch (e) { /* 保留 computed mock DAG */ }
+  } catch (e) { console.error('[alliance] load DAG failed:', e) }
   nextTick(() => {
     if (logsContainer.value) {
       logsContainer.value.scrollTop = logsContainer.value.scrollHeight
@@ -517,15 +445,10 @@ async function selectTask(task) {
 async function loadTasks() {
   try {
     const data = await getAllianceTasks()
-    tasks.value = data.map(t => ({
-      ...t,
-      priority: t.priority || ['high', 'mid', 'low'][Math.floor(Math.random() * 3)],
-      assignee: t.assignee || '专家联盟',
-      due_date: t.due_date || '2024-09-05'
-    }))
+    tasks.value = data
   } catch (e) {
-    console.warn('[AllianceTask] API 加载失败，使用 Mock 数据:', e.message)
-    tasks.value = [...mockTasks]
+    console.error('[AllianceTask] API 加载失败:', e)
+    tasks.value = []
   }
   if (tasks.value.length > 0 && !selectedTask.value) {
     selectTask(tasks.value[0])

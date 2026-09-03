@@ -1298,7 +1298,7 @@ function doRegenerate() {
   setTimeout(() => {
     if (regenLoading.value) {
       regenLoading.value = false;
-      ElMessage.warning('当前环境暂不支持重生成（占位）');
+      ElMessage.warning('重生成功能暂未启用');
     }
   }, 1400);
 }
@@ -1325,7 +1325,7 @@ async function exportMarkdown() {
 }
 async function submitAsKb() {
   emit('to-doc', props.msg, { mode: 'create-kb', markdown: String(docContent.value || '') });
-  ElMessage.success('已提交到云盘（占位），后续将自动生成知识库文档');
+  ElMessage.success('已提交到知识库');
 }
 
 // ============ 收藏 ============

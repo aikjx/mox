@@ -661,7 +661,7 @@ const quickTabs = [
   { key: 'online', label: '在线', icon: '💚' }
 ]
 
-// 平台统计：调用 GET /api/experts/stats，失败保留演示占位
+// 平台统计：调用 GET /api/experts/stats
 const heroStats = ref([
   { key: 'experts', value: '128+', label: '入驻专家', icon: User, trend: '+12%', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
   { key: 'consults', value: '8,520', label: '累计咨询', icon: ChatDotRound, trend: '+23%', gradient: 'linear-gradient(135deg, #06b6d4, #0ea5e9)' },
@@ -678,340 +678,12 @@ async function loadStats() {
       if (s.good_rate != null) heroStats.value[2].value = s.good_rate + '%'
       if (s.avg_response != null) heroStats.value[3].value = s.avg_response
     }
-  } catch (e) { /* 保留演示占位 */ }
+  } catch (e) { console.error('[ExpertPlaza] load stats failed:', e) }
 }
 
-// 演示占位：专家列表（getExperts API 失败时的降级展示）
-const mockExperts = [
-  {
-    id: 'exp_001', name: '林墨白', type: 'algorithm', level: 'master',
-    avatarEmoji: '🧠', avatarGradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    description: '十年算法研究经验，专注于复杂系统优化与智能决策算法设计。',
-    skills: ['算法设计', '复杂度分析', '动态规划', '图算法', '机器学习', '深度学习'],
-    consultCount: 1286, goodRate: 99.2, responseTime: '2.1min', avgRating: 4.95,
-    price: 399, online: true, recommended: true, favorited: false, hot: true, isNew: false,
-    department: '算法研究院', phone: '138****8888', email: 'linmobai@expert.com',
-    joinDate: '2023-03-15', monthGrowth: 35,
-    bioParagraphs: [
-      '林墨白，资深算法专家，清华大学计算机科学博士，曾任某知名互联网公司首席算法工程师。',
-      '在算法设计与分析领域拥有十余年深耕经验，主导过多个大型分布式系统的算法架构设计，在顶级会议发表论文 20 余篇。',
-      '擅长将复杂业务问题抽象为算法模型，提供从理论分析到工程实现的全链路解决方案。'
-    ],
-    reviews: [
-      { id: 'r1', userName: '张工', avatar: '张', rating: 5, date: '2024-08-15', content: '林老师的算法分析非常专业，一针见血地指出了我们系统的性能瓶颈，给出的优化方案效果显著！', tags: ['专业', '高效', '耐心'] },
-      { id: 'r2', userName: '李产品', avatar: '李', rating: 5, date: '2024-08-10', content: '咨询了一个路径优化的问题，林老师给出了多种方案对比，还附带了复杂度分析，超值！', tags: ['专业', '思路清晰'] },
-      { id: 'r3', userName: '王架构师', avatar: '王', rating: 4, date: '2024-08-05', content: '整体不错，就是响应稍微慢了点，可能是咨询的人太多了。', tags: ['专业'] }
-    ]
-  },
-  {
-    id: 'exp_002', name: '苏清瑶', type: 'architecture', level: 'diamond',
-    avatarEmoji: '🏛️', avatarGradient: 'linear-gradient(135deg, #0891b2, #06b6d4)',
-    description: '资深架构师，精通微服务、云原生架构设计，擅长高并发系统设计。',
-    skills: ['微服务', '云原生', 'K8s', '高并发', 'DDD', '分布式事务'],
-    consultCount: 956, goodRate: 98.5, responseTime: '3.5min', avgRating: 4.9,
-    price: 299, online: true, recommended: true, favorited: false, hot: true, isNew: false,
-    department: '架构设计部', phone: '139****6666', email: 'suqingyao@expert.com',
-    joinDate: '2023-05-20', monthGrowth: 28,
-    bioParagraphs: [
-      '苏清瑶，资深架构师，拥有 12 年软件架构设计经验。',
-      '曾主导多个千万级用户系统的架构设计与重构，在微服务、云原生、领域驱动设计方面有深厚积累。',
-      '善于从业务视角出发设计技术架构，确保系统的可扩展性、可维护性和可演进性。'
-    ],
-    reviews: [
-      { id: 'r4', userName: '陈技术总监', avatar: '陈', rating: 5, date: '2024-08-12', content: '苏老师的架构评审非常到位，帮我们规避了好几个潜在的技术坑，强烈推荐！', tags: ['专业', '经验丰富'] }
-    ]
-  },
-  {
-    id: 'exp_003', name: '周知行', type: 'ai', level: 'gold',
-    avatarEmoji: '🤖', avatarGradient: 'linear-gradient(135deg, #ec4899, #f472b6)',
-    description: 'AI 应用专家，专注大模型应用开发与 Agent 设计，落地经验丰富。',
-    skills: ['LLM', 'Agent', 'RAG', 'Prompt工程', 'Fine-tuning', '多模态'],
-    consultCount: 2150, goodRate: 97.8, responseTime: '1.8min', avgRating: 4.85,
-    price: 199, online: true, recommended: true, favorited: true, hot: true, isNew: false,
-    department: 'AI 应用实验室', phone: '137****5555', email: 'zhouzhixing@expert.com',
-    joinDate: '2023-08-10', monthGrowth: 45,
-    bioParagraphs: [
-      '周知行，AI 应用专家，专注于大语言模型的工程化落地。',
-      '曾在多家头部 AI 公司负责 LLM 应用开发，主导过多个智能助手、知识库问答系统的从 0 到 1 建设。',
-      '在 RAG 优化、Agent 设计、Prompt Engineering 方面有丰富的实战经验。'
-    ],
-    reviews: [
-      { id: 'r5', userName: '赵产品经理', avatar: '赵', rating: 5, date: '2024-08-18', content: '周老师帮我们设计的 RAG 方案效果提升明显，检索准确率提高了 30%！', tags: ['实用', '高效', '专业'] }
-    ]
-  },
-  {
-    id: 'exp_004', name: '钱若水', type: 'data', level: 'gold',
-    avatarEmoji: '📊', avatarGradient: 'linear-gradient(135deg, #10b981, #14b8a6)',
-    description: '数据科学家，精通数据分析、数据建模与数据可视化。',
-    skills: ['数据分析', 'SQL', 'Python', '数据可视化', '统计建模', 'BI'],
-    consultCount: 678, goodRate: 96.5, responseTime: '4.2min', avgRating: 4.7,
-    price: 159, online: false, recommended: false, favorited: false, hot: false, isNew: false,
-    department: '数据智能部', phone: '136****4444', email: 'qianruoshui@expert.com',
-    joinDate: '2023-11-01', monthGrowth: 22,
-    bioParagraphs: [
-      '钱若水，数据科学家，统计学硕士。',
-      '擅长从海量数据中挖掘商业洞察，为业务决策提供数据支撑。精通各类数据分析工具与可视化技术。'
-    ],
-    reviews: [
-      { id: 'r6', userName: '孙运营', avatar: '孙', rating: 5, date: '2024-07-28', content: '数据分析思路清晰，帮我们理清了很多数据指标的定义问题。', tags: ['专业', '细心'] }
-    ]
-  },
-  {
-    id: 'exp_005', name: '吴云帆', type: 'workflow', level: 'silver',
-    avatarEmoji: '⚙️', avatarGradient: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
-    description: '工作流编排专家，擅长复杂业务流程自动化设计与优化。',
-    skills: ['工作流', 'BPM', '自动化', '流程优化', 'BPMN', '低代码'],
-    consultCount: 345, goodRate: 95.2, responseTime: '5.1min', avgRating: 4.6,
-    price: 99, online: true, recommended: false, favorited: false, hot: false, isNew: true,
-    department: '流程自动化部', phone: '135****3333', email: 'wuyunfan@expert.com',
-    joinDate: '2024-05-15', monthGrowth: 68,
-    bioParagraphs: [
-      '吴云帆，工作流编排专家，专注于企业级业务流程自动化。',
-      '在 BPM、低代码平台、流程引擎方面有深入研究，帮助多家企业实现了业务流程的数字化转型。'
-    ],
-    reviews: [
-      { id: 'r7', userName: '周经理', avatar: '周', rating: 4, date: '2024-08-02', content: '流程设计方案很实用，就是细节还需要打磨。', tags: ['实用'] }
-    ]
-  },
-  {
-    id: 'exp_006', name: '郑星图', type: 'graph', level: 'diamond',
-    avatarEmoji: '🕸️', avatarGradient: 'linear-gradient(135deg, #06b6d4, #22d3ee)',
-    description: '知识图谱专家，精通图谱构建、推理与可视化技术。',
-    skills: ['知识图谱', '图数据库', 'Neo4j', '图推理', '实体抽取', '关系抽取'],
-    consultCount: 823, goodRate: 98.1, responseTime: '3.8min', avgRating: 4.88,
-    price: 259, online: true, recommended: true, favorited: false, hot: true, isNew: false,
-    department: '知识图谱中心', phone: '134****2222', email: 'zhengxingtu@expert.com',
-    joinDate: '2023-04-18', monthGrowth: 31,
-    bioParagraphs: [
-      '郑星图，知识图谱专家，北京大学计算机博士。',
-      '在知识图谱构建、图神经网络、图推理算法方面有深入研究，发表顶级会议论文十余篇。',
-      '主导过多个大型企业知识图谱项目，覆盖金融、医疗、教育等多个领域。'
-    ],
-    reviews: [
-      { id: 'r8', userName: '吴技术', avatar: '吴', rating: 5, date: '2024-08-08', content: '图谱设计方案非常专业，从建模到查询优化都讲得很清楚。', tags: ['专业', '深入'] }
-    ]
-  },
-  {
-    id: 'exp_007', name: '冯铁山', type: 'security', level: 'gold',
-    avatarEmoji: '🔐', avatarGradient: 'linear-gradient(135deg, #ef4444, #f87171)',
-    description: '网络安全专家，专注应用安全、数据安全与攻防对抗。',
-    skills: ['渗透测试', '代码审计', '安全架构', '数据安全', '等保合规', '应急响应'],
-    consultCount: 567, goodRate: 97.3, responseTime: '4.5min', avgRating: 4.75,
-    price: 299, online: false, recommended: false, favorited: false, hot: false, isNew: false,
-    department: '安全攻防实验室', phone: '133****1111', email: 'fengtieshan@expert.com',
-    joinDate: '2023-06-22', monthGrowth: 18,
-    bioParagraphs: [
-      '冯铁山，网络安全专家，拥有 15 年安全从业经验。',
-      '曾任职于知名安全公司，主导过多个大型系统的安全评估与加固工作。',
-      '在渗透测试、漏洞挖掘、安全架构设计方面有深厚功底。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_008', name: '陈御风', type: 'performance', level: 'silver',
-    avatarEmoji: '⚡', avatarGradient: 'linear-gradient(135deg, #14b8a6, #2dd4bf)',
-    description: '性能优化专家，擅长系统性能调优与瓶颈分析。',
-    skills: ['性能调优', 'JVM', '数据库优化', '压测', '缓存设计', '链路追踪'],
-    consultCount: 423, goodRate: 96.8, responseTime: '3.2min', avgRating: 4.72,
-    price: 179, online: true, recommended: false, favorited: false, hot: false, isNew: false,
-    department: '性能优化组', phone: '132****9999', email: 'chenyufeng@expert.com',
-    joinDate: '2023-09-30', monthGrowth: 25,
-    bioParagraphs: [
-      '陈御风，性能优化专家，专注于后端系统性能调优。',
-      '精通 JVM 调优、数据库优化、缓存架构设计，曾将多个系统的性能提升数倍。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_009', name: '卫观澜', type: 'monitor', level: 'bronze',
-    avatarEmoji: '📈', avatarGradient: 'linear-gradient(135deg, #f97316, #fb923c)',
-    description: '可观测性专家，专注监控告警、链路追踪与日志分析。',
-    skills: ['Prometheus', 'Grafana', 'ELK', '链路追踪', 'APM', '告警设计'],
-    consultCount: 198, goodRate: 94.5, responseTime: '6.5min', avgRating: 4.5,
-    price: 89, online: true, recommended: false, favorited: false, hot: false, isNew: true,
-    department: '可观测性团队', phone: '131****8888', email: 'weiguanlan@expert.com',
-    joinDate: '2024-06-10', monthGrowth: 72,
-    bioParagraphs: [
-      '卫观澜，可观测性专家，专注于监控系统建设与运维效率提升。',
-      '在 Prometheus、Grafana、ELK 等监控技术栈方面有丰富的实践经验。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_010', name: '蒋明珠', type: 'market', level: 'gold',
-    avatarEmoji: '💼', avatarGradient: 'linear-gradient(135deg, #f43f5e, #fb7185)',
-    description: '商业智能专家，擅长数据分析驱动的业务增长策略。',
-    skills: ['商业分析', '增长策略', '用户研究', '数据驱动', 'A/B测试', 'BI报表'],
-    consultCount: 534, goodRate: 96.2, responseTime: '4.8min', avgRating: 4.68,
-    price: 199, online: true, recommended: false, favorited: false, hot: false, isNew: false,
-    department: '商业分析部', phone: '130****7777', email: 'jiangmingzhu@expert.com',
-    joinDate: '2023-07-12', monthGrowth: 20,
-    bioParagraphs: [
-      '蒋明珠，商业智能专家，MBA 学位。',
-      '擅长将数据分析与商业策略结合，帮助企业实现数据驱动的业务增长。曾服务于多家 500 强企业。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_011', name: '韩子夜', type: 'mcp', level: 'silver',
-    avatarEmoji: '🔗', avatarGradient: 'linear-gradient(135deg, #a855f7, #c084fc)',
-    description: 'MCP 协议专家，精通模型上下文协议设计与集成。',
-    skills: ['MCP', '协议设计', 'SDK开发', 'API设计', '模型集成', '工具调用'],
-    consultCount: 267, goodRate: 95.8, responseTime: '4.0min', avgRating: 4.65,
-    price: 149, online: true, recommended: false, favorited: false, hot: false, isNew: true,
-    department: '协议标准组', phone: '158****6666', email: 'hanziye@expert.com',
-    joinDate: '2024-04-20', monthGrowth: 58,
-    bioParagraphs: [
-      '韩子夜，MCP 协议专家，专注于模型上下文协议的研究与落地。',
-      '深入参与 MCP 协议的设计与推广，在大模型工具调用、外部系统集成方面有丰富经验。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_012', name: '杨帆', type: 'automation', level: 'gold',
-    avatarEmoji: '🤖', avatarGradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
-    description: '自动化测试专家，擅长自动化测试框架设计与 CI/CD 流水线建设。',
-    skills: ['自动化测试', 'CI/CD', 'Jenkins', 'Selenium', '接口测试', '性能测试'],
-    consultCount: 612, goodRate: 97.0, responseTime: '3.6min', avgRating: 4.78,
-    price: 189, online: true, recommended: true, favorited: false, hot: false, isNew: false,
-    department: '质量保障部', phone: '157****5555', email: 'yangfan@expert.com',
-    joinDate: '2023-02-28', monthGrowth: 24,
-    bioParagraphs: [
-      '杨帆，自动化测试专家，拥有 10 年测试开发经验。',
-      '主导过多个大型项目的自动化测试体系建设，在 CI/CD 流水线设计方面有独到见解。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_013', name: '许文渊', type: 'requirement', level: 'diamond',
-    avatarEmoji: '📋', avatarGradient: 'linear-gradient(135deg, #16a34a, #22c55e)',
-    description: '需求工程专家，精通需求分析、产品设计与项目管理。',
-    skills: ['需求分析', '产品设计', 'PRD撰写', '用户故事', '原型设计', '项目管理'],
-    consultCount: 890, goodRate: 98.3, responseTime: '2.9min', avgRating: 4.86,
-    price: 249, online: true, recommended: true, favorited: true, hot: true, isNew: false,
-    department: '产品研究院', phone: '156****4444', email: 'xuwenyuan@expert.com',
-    joinDate: '2023-01-15', monthGrowth: 30,
-    bioParagraphs: [
-      '许文渊，需求工程专家，资深产品经理。',
-      '拥有 15 年产品与需求分析经验，擅长从复杂业务场景中提炼核心需求，输出高质量的产品方案。',
-      '曾主导多个从 0 到 1 的产品设计，累计服务客户超过 200 家。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_014', name: '何星野', type: 'fusion', level: 'master',
-    avatarEmoji: '🎯', avatarGradient: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-    description: '全维融合专家，擅长跨领域知识融合与复杂系统协同设计。',
-    skills: ['系统融合', '跨域协同', '架构设计', '战略规划', '技术选型', '团队管理'],
-    consultCount: 456, goodRate: 99.0, responseTime: '5.5min', avgRating: 4.92,
-    price: 499, online: false, recommended: true, favorited: false, hot: false, isNew: false,
-    department: '融合战略部', phone: '155****3333', email: 'hexingye@expert.com',
-    joinDate: '2022-12-01', monthGrowth: 15,
-    bioParagraphs: [
-      '何星野，全维融合专家，技术战略顾问。',
-      '拥有 20 年 IT 行业经验，横跨算法、架构、数据、AI 等多个领域，擅长从全局视角进行系统融合设计。',
-      '曾为多家大型企业提供数字化转型战略咨询服务。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_015', name: '邓子墨', type: 'operator', level: 'silver',
-    avatarEmoji: '🧩', avatarGradient: 'linear-gradient(135deg, #8b5cf6, #a78bfa)',
-    description: '算子系统专家，专注算子开发、优化与算子库建设。',
-    skills: ['算子开发', 'CUDA', '性能优化', '深度学习', '编译器', '异构计算'],
-    consultCount: 312, goodRate: 96.0, responseTime: '4.3min', avgRating: 4.68,
-    price: 179, online: true, recommended: false, favorited: false, hot: false, isNew: false,
-    department: '算子研发部', phone: '154****2222', email: 'dengzimo@expert.com',
-    joinDate: '2023-10-08', monthGrowth: 27,
-    bioParagraphs: [
-      '邓子墨，算子系统专家，专注于深度学习算子的开发与优化。',
-      '精通 CUDA 编程、算子融合技术，在 GPU/CPU 异构计算方面有深入研究。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_016', name: '沈书瑶', type: 'ai', level: 'bronze',
-    avatarEmoji: '✨', avatarGradient: 'linear-gradient(135deg, #f472b6, #f9a8d4)',
-    description: 'AI 产品经理，专注 AI 产品设计与用户体验优化。',
-    skills: ['AI产品', '用户体验', '交互设计', 'A/B测试', '增长黑客', '用户研究'],
-    consultCount: 145, goodRate: 93.8, responseTime: '7.2min', avgRating: 4.45,
-    price: 69, online: true, recommended: false, favorited: false, hot: false, isNew: true,
-    department: 'AI 产品组', phone: '153****1111', email: 'shenshuyao@expert.com',
-    joinDate: '2024-07-01', monthGrowth: 85,
-    bioParagraphs: [
-      '沈书瑶，AI 产品经理，专注于 AI 产品的设计与用户体验优化。',
-      '擅长将 AI 技术与用户需求结合，打造有温度的智能产品。新入驻专家，欢迎咨询体验！'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_017', name: '秦风', type: 'architecture', level: 'master',
-    avatarEmoji: '🏯', avatarGradient: 'linear-gradient(135deg, #0e7490, #0891b2)',
-    description: '首席架构师，企业级分布式系统架构设计权威。',
-    skills: ['企业架构', '分布式', '微服务', '云原生', '中台设计', '技术战略'],
-    consultCount: 1567, goodRate: 99.5, responseTime: '4.8min', avgRating: 4.98,
-    price: 599, online: true, recommended: true, favorited: true, hot: true, isNew: false,
-    department: '架构委员会', phone: '152****0000', email: 'qinfeng@expert.com',
-    joinDate: '2022-10-01', monthGrowth: 12,
-    bioParagraphs: [
-      '秦风，首席架构师，架构委员会主席。',
-      '20 年软件开发与架构设计经验，曾主导多个亿级用户系统的架构设计。',
-      '在企业级架构、分布式系统、云原生技术方面有深厚造诣，是业内公认的架构权威。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_018', name: '尤雨溪', type: 'algorithm', level: 'gold',
-    avatarEmoji: '📐', avatarGradient: 'linear-gradient(135deg, #6366f1, #818cf8)',
-    description: '算法竞赛金牌教练，擅长算法面试辅导与竞赛训练。',
-    skills: ['算法竞赛', '数据结构', '动态规划', '图论', '数论', '计算几何'],
-    consultCount: 789, goodRate: 97.5, responseTime: '2.5min', avgRating: 4.8,
-    price: 199, online: false, recommended: false, favorited: false, hot: false, isNew: false,
-    department: '算法教学部', phone: '151****9999', email: 'youyuxi@expert.com',
-    joinDate: '2023-08-20', monthGrowth: 21,
-    bioParagraphs: [
-      '尤雨溪，算法竞赛金牌教练。',
-      '曾多次获得 ACM-ICPC 区域赛金牌，指导学生获得各类算法竞赛奖项百余项。',
-      '擅长将复杂算法问题化繁为简，帮助学员快速提升算法能力。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_019', name: '卢明月', type: 'data', level: 'diamond',
-    avatarEmoji: '🌙', avatarGradient: 'linear-gradient(135deg, #059669, #10b981)',
-    description: '数据中台专家，专注数据治理与数据资产化建设。',
-    skills: ['数据中台', '数据治理', '数据建模', '数仓设计', '数据资产', '数据质量'],
-    consultCount: 645, goodRate: 98.0, responseTime: '4.1min', avgRating: 4.82,
-    price: 279, online: true, recommended: true, favorited: false, hot: false, isNew: false,
-    department: '数据中台部', phone: '150****8888', email: 'lumingyue@expert.com',
-    joinDate: '2023-05-10', monthGrowth: 29,
-    bioParagraphs: [
-      '卢明月，数据中台专家，资深数据架构师。',
-      '在数据治理、数据中台建设、数据资产化方面有丰富的实战经验。',
-      '曾帮助多家大型企业完成数据中台从 0 到 1 的建设。'
-    ],
-    reviews: []
-  },
-  {
-    id: 'exp_020', name: '高凌云', type: 'security', level: 'diamond',
-    avatarEmoji: '🛡️', avatarGradient: 'linear-gradient(135deg, #dc2626, #ef4444)',
-    description: '首席安全官，企业级安全体系建设与合规专家。',
-    skills: ['安全体系', '等保2.0', 'ISO27001', '风险评估', '安全运营', '数据安全'],
-    consultCount: 523, goodRate: 98.8, responseTime: '5.0min', avgRating: 4.9,
-    price: 399, online: true, recommended: true, favorited: false, hot: false, isNew: false,
-    department: '安全委员会', phone: '149****7777', email: 'gaolingyun@expert.com',
-    joinDate: '2023-03-01', monthGrowth: 16,
-    bioParagraphs: [
-      '高凌云，首席安全官，CISSP、CISP 双认证。',
-      '20 年信息安全从业经验，在企业级安全体系建设、等保合规、数据安全方面有深厚造诣。',
-      '曾主导多家金融机构的安全体系建设与等保测评工作。'
-    ],
-    reviews: []
-  }
-]
 
 const experts = ref([])
-// 我的预约列表：调用 GET /api/experts/bookings/mine，失败保留演示占位
+// 我的预约列表：调用 GET /api/experts/bookings/mine
 const myBookings = ref([
   {
     id: 'bk_001', expertName: '林墨白', expertType: '算法专家',
@@ -1039,7 +711,7 @@ async function loadMyBookings() {
         expertGradient: b.expertGradient || 'linear-gradient(135deg, #6366f1, #8b5cf6)'
       }))
     }
-  } catch (e) { /* 保留演示占位 */ }
+  } catch (e) { console.error('[ExpertPlaza] load stats failed:', e) }
 }
 
 // 预约表单
@@ -1156,8 +828,8 @@ async function loadExperts() {
     const data = await getExperts()
     experts.value = processExperts(data)
   } catch (e) {
-    console.warn('[ExpertPlaza] API 加载失败，使用 Mock 数据:', e.message)
-    experts.value = processExperts(mockExperts)
+    console.error('[ExpertPlaza] API 加载失败:', e)
+    experts.value = []
   } finally {
     loading.value = false
   }

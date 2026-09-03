@@ -224,7 +224,6 @@ function domainTagType(d) {
 }
 function statusBadge(s) {
   if (s === 'ready') return 'success'
-  if (s === 'stub') return 'warning'
   return 'info'
 }
 function rowClassName({ row }) { return row.enabled ? '' : 'row-disabled' }

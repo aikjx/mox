@@ -294,51 +294,6 @@ const statusFilters = [
   { key: 'cancelled', label: '已取消' }
 ]
 
-// ===== Mock 数据 =====
-// 演示占位：API 失败/空时的兜底任务数据
-const mockTasks = [
-  {
-    id: 't_001', title: '设计用户认证模块', description: '实现 JWT + OAuth2.0 双模式认证，支持手机号/邮箱/第三方登录',
-    status: 'in_progress', priority: 'high', assignee: '张工', due_date: '2024-09-05',
-    project: '用户中心', progress: 60, created_at: '2024-08-20 10:00'
-  },
-  {
-    id: 't_002', title: '数据库性能优化', description: '对核心查询进行索引优化和 SQL 重构，目标 P99 延迟 < 200ms',
-    status: 'todo', priority: 'high', assignee: '李工', due_date: '2024-09-08',
-    project: '数据平台', progress: 0, created_at: '2024-08-25 14:30'
-  },
-  {
-    id: 't_003', title: '编写 API 文档', description: '使用 Swagger/OpenAPI 规范编写所有对外接口文档',
-    status: 'done', priority: 'low', assignee: '王工', due_date: '2024-08-30',
-    project: '用户中心', progress: 100, created_at: '2024-08-15 09:00'
-  },
-  {
-    id: 't_004', title: '前端组件库搭建', description: '基于 Vue 3 + Element Plus 搭建企业级组件库，包含 20+ 通用组件',
-    status: 'in_progress', priority: 'medium', assignee: '赵工', due_date: '2024-09-15',
-    project: '前端基建', progress: 35, created_at: '2024-08-22 11:00'
-  },
-  {
-    id: 't_005', title: 'CI/CD 流水线配置', description: '配置 GitHub Actions 自动化构建、测试、部署流水线',
-    status: 'done', priority: 'medium', assignee: '陈工', due_date: '2024-08-28',
-    project: 'DevOps', progress: 100, created_at: '2024-08-10 16:00'
-  },
-  {
-    id: 't_006', title: '安全漏洞修复', description: '修复安全扫描发现的 5 个高危漏洞和 12 个中危漏洞',
-    status: 'cancelled', priority: 'high', assignee: '刘工', due_date: '2024-09-01',
-    project: '安全合规', progress: 20, created_at: '2024-08-18 13:00'
-  },
-  {
-    id: 't_007', title: '日志系统迁移', description: '将日志系统从 ELK 迁移到 Loki + Grafana，降低存储成本',
-    status: 'todo', priority: 'low', assignee: '周工', due_date: '2024-09-20',
-    project: '运维基建', progress: 0, created_at: '2024-08-28 10:00'
-  },
-  {
-    id: 't_008', title: '单元测试覆盖率提升', description: '将核心模块单元测试覆盖率从 45% 提升到 80% 以上',
-    status: 'in_progress', priority: 'medium', assignee: '吴工', due_date: '2024-09-10',
-    project: '质量保障', progress: 50, created_at: '2024-08-26 15:00'
-  }
-]
-
 // ===== 计算属性 =====
 const filteredTasks = computed(() => {
   let result = [...tasks.value]
@@ -534,11 +489,11 @@ async function loadTasks() {
       tasks.value = data
     } else {
       console.warn('[TaskView] API 返回空数据，使用 Mock 数据')
-      tasks.value = [...mockTasks]
+      tasks.value = []
     }
   } catch (e) {
     console.warn('[TaskView] API 加载失败，使用 Mock 数据:', e.message)
-    tasks.value = [...mockTasks]
+    tasks.value = []
   }
 }
 

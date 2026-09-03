@@ -39,6 +39,12 @@ pub struct RealRedisStore {
     con: redis::aio::MultiplexedConnection,
 }
 
+impl std::fmt::Debug for RealRedisStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RealRedisStore").finish()
+    }
+}
+
 impl RealRedisStore {
     /// 依据 `REDIS_URL` 环境变量连接 Redis；连接失败返回真实错误。
     pub async fn connect_from_env() -> FilerResult<Self> {
@@ -74,9 +80,8 @@ impl RealRedisStore {
     // ---- 基础操作 ----
 
     async fn get_inode(&self, ino: u64) -> FilerResult<Attr> {
-        let raw: Option<String> = self
-            .con
-            .get(Self::inode_key(ino))
+        let mut con = self.con.clone();
+        let raw: Option<String> = con.get(Self::inode_key(ino))
             .await
             .map_err(|e| FilerError::Other(format!("Redis GET inode {ino} 失败: {e}")))?;
         let raw = raw.ok_or(FilerError::NotFound)?;
@@ -85,65 +90,58 @@ impl RealRedisStore {
     }
 
     async fn put_inode(&self, attr: &Attr) -> FilerResult<()> {
+        let mut con = self.con.clone();
         let raw = serde_json::to_string(attr)
             .map_err(|e| FilerError::Other(format!("inode JSON 序列化失败: {e}")))?;
-        let _: () = self
-            .con
-            .set(Self::inode_key(attr.ino), raw)
+        let _: () = con.set(Self::inode_key(attr.ino), raw)
             .await
             .map_err(|e| FilerError::Other(format!("Redis SET inode {} 失败: {e}", attr.ino)))?;
         Ok(())
     }
 
     async fn delete_inode(&self, ino: u64) -> FilerResult<()> {
-        let _: () = self
-            .con
-            .del(Self::inode_key(ino))
+        let mut con = self.con.clone();
+        let _: () = con.del(Self::inode_key(ino))
             .await
             .map_err(|e| FilerError::Other(format!("Redis DEL inode {ino} 失败: {e}")))?;
         Ok(())
     }
 
     async fn next_ino(&self) -> FilerResult<u64> {
-        let v: u64 = self
-            .con
-            .incr("filer:next_ino", 1)
+        let mut con = self.con.clone();
+        let v: u64 = con.incr("filer:next_ino", 1)
             .await
             .map_err(|e| FilerError::Other(format!("Redis INCR next_ino 失败: {e}")))?;
         Ok(v)
     }
 
     async fn dir_get(&self, parent: u64, name: &str) -> FilerResult<Option<u64>> {
-        let v: Option<String> = self
-            .con
-            .hget(Self::dir_key(parent), name)
+        let mut con = self.con.clone();
+        let v: Option<String> = con.hget(Self::dir_key(parent), name)
             .await
             .map_err(|e| FilerError::Other(format!("Redis HGET dir {parent}/{name} 失败: {e}")))?;
         Ok(v.and_then(|s| s.parse::<u64>().ok()))
     }
 
     async fn dir_set(&self, parent: u64, name: &str, ino: u64) -> FilerResult<()> {
-        let _: () = self
-            .con
-            .hset(Self::dir_key(parent), name, ino.to_string())
+        let mut con = self.con.clone();
+        let _: () = con.hset(Self::dir_key(parent), name, ino.to_string())
             .await
             .map_err(|e| FilerError::Other(format!("Redis HSET dir {parent}/{name} 失败: {e}")))?;
         Ok(())
     }
 
     async fn dir_remove(&self, parent: u64, name: &str) -> FilerResult<()> {
-        let _: () = self
-            .con
-            .hdel(Self::dir_key(parent), name)
+        let mut con = self.con.clone();
+        let _: () = con.hdel(Self::dir_key(parent), name)
             .await
             .map_err(|e| FilerError::Other(format!("Redis HDEL dir {parent}/{name} 失败: {e}")))?;
         Ok(())
     }
 
     async fn dir_all(&self, parent: u64) -> FilerResult<BTreeMap<String, u64>> {
-        let raw: BTreeMap<String, String> = self
-            .con
-            .hgetall(Self::dir_key(parent))
+        let mut con = self.con.clone();
+        let raw: BTreeMap<String, String> = con.hgetall(Self::dir_key(parent))
             .await
             .map_err(|e| FilerError::Other(format!("Redis HGETALL dir {parent} 失败: {e}")))?;
         let mut out = BTreeMap::new();
@@ -157,6 +155,7 @@ impl RealRedisStore {
 
     /// 初始化根 inode（ino=1）和 next_ino 计数器（幂等 SET NX）。
     async fn ensure_root(&self) -> FilerResult<()> {
+        let mut con = self.con.clone();
         let t = now_secs();
         let root = Attr {
             ino: 1,
@@ -176,15 +175,11 @@ impl RealRedisStore {
         let raw = serde_json::to_string(&root)
             .map_err(|e| FilerError::Other(format!("root inode JSON 序列化失败: {e}")))?;
         // SET NX：仅当不存在时设置（幂等）
-        let _: () = self
-            .con
-            .set_nx(Self::inode_key(1), raw)
+        let _: () = con.set_nx(Self::inode_key(1), raw)
             .await
             .map_err(|e| FilerError::Other(format!("Redis SET root inode 失败: {e}")))?;
         // next_ino 初始化为 2（root=1）
-        let _: () = self
-            .con
-            .set_nx("filer:next_ino", "2")
+        let _: () = con.set_nx("filer:next_ino", "2")
             .await
             .map_err(|e| FilerError::Other(format!("Redis SET next_ino 失败: {e}")))?;
         Ok(())
@@ -194,9 +189,8 @@ impl RealRedisStore {
 
     /// 对 inode 键设置真实 Redis EXPIRE（秒）。
     pub async fn expire(&self, ino: u64, ttl_seconds: u64) -> FilerResult<()> {
-        let _: () = self
-            .con
-            .expire(Self::inode_key(ino), ttl_seconds as i64)
+        let mut con = self.con.clone();
+        let _: () = con.expire(Self::inode_key(ino), ttl_seconds as i64)
             .await
             .map_err(|e| FilerError::Other(format!("Redis EXPIRE inode {ino} 失败: {e}")))?;
         Ok(())
@@ -204,9 +198,8 @@ impl RealRedisStore {
 
     /// 真实 GET（返回 inode JSON 字符串）。
     pub async fn get(&self, ino: u64) -> FilerResult<Option<String>> {
-        let v: Option<String> = self
-            .con
-            .get(Self::inode_key(ino))
+        let mut con = self.con.clone();
+        let v: Option<String> = con.get(Self::inode_key(ino))
             .await
             .map_err(|e| FilerError::Other(format!("Redis GET inode {ino} 失败: {e}")))?;
         Ok(v)

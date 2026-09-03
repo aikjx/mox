@@ -117,3 +117,23 @@ impl S3Error {
         )
     }
 }
+
+impl From<S3Error> for mox_cloud_domain_traits::CloudError {
+    fn from(e: S3Error) -> Self {
+        match e {
+            S3Error::NoSuchKey | S3Error::NoSuchBucket | S3Error::NoSuchUpload => {
+                mox_cloud_domain_traits::CloudError::NotFound(e.to_string())
+            }
+            S3Error::BucketAlreadyExists => {
+                mox_cloud_domain_traits::CloudError::AlreadyExists(e.to_string())
+            }
+            S3Error::InvalidArgument | S3Error::KeyTooLongError | S3Error::BadRequest(_) => {
+                mox_cloud_domain_traits::CloudError::InvalidInput(e.to_string())
+            }
+            S3Error::NotImplemented(_) => {
+                mox_cloud_domain_traits::CloudError::Unsupported(e.to_string())
+            }
+            other => mox_cloud_domain_traits::CloudError::S3(other.to_string()),
+        }
+    }
+}
