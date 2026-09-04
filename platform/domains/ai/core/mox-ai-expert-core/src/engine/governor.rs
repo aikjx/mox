@@ -14,7 +14,7 @@ use crate::context::{GovernContext, Principal, Tenant};
 use crate::pipeline::mox_optimize;
 use async_trait::async_trait;
 use mox_ai_expert_proto::{GovernExpert, GovernLevel, GovernVerdict};
-use mox_ai_flow_svc::model::FlowGraph;
+use mox_ai_flow_core::model::FlowGraph;
 
 /// 治理专家（实现 proto::GovernExpert trait）
 ///

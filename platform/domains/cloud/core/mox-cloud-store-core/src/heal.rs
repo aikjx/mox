@@ -10,7 +10,7 @@
 //!
 //! 1. 读取对象 EC manifest（data/parity/crc 清单）。
 //! 2. 底层逐分片读取，crc32c 比对 → 缺失/腐坏分片置 `None`。
-//! 3. 调用 `mox-cloud-volume-svc` 的 [`ReedSolomonEngine::reconstruct_shards`]
+//! 3. 调用 `mox-cloud-kernel` 的 [`ReedSolomonEngine::reconstruct_shards`]
 //!    重建全部分片（确定性：重建分片与原分片逐字节一致）。
 //! 4. 将重建分片写回底层，重校 crc32c 与 manifest 一致（无需改 manifest）。
 //!
@@ -23,7 +23,7 @@ use crate::bitrot::{Corruption, ScanReport};
 use crate::erasure::{crc32c, ErasureStore};
 use crate::{StoreError, StoreResult};
 use bytes::Bytes;
-use mox_cloud_volume_svc::{EcProfile, ReedSolomonEngine};
+use mox_cloud_kernel::{EcProfile, ReedSolomonEngine};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -317,7 +317,7 @@ mod tests {
     use crate::fs_backend::FsObjectStore;
     use bytes::Bytes;
     use mox_base_store_core::ObjectStore;
-    use mox_cloud_volume_svc::EcProfile;
+    use mox_cloud_kernel::EcProfile;
     use std::path::Path;
 
     fn ec_store(dir: &Path) -> Arc<ErasureStore> {

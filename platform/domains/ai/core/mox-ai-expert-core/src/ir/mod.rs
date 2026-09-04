@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! 归一化 IR 扩展：在 `mox_ai_flow_svc` 的 FlowGraph 之上叠加「维度」着色。
+//! 归一化 IR 扩展：在 `mox_ai_flow_core` 的 FlowGraph 之上叠加「维度」着色。
 //!
 //! 设计铁律：四种流程图（业务/算法/权限/资源）在内存里是**同一个 FlowGraph**，
 //! 维度只是节点/边上的标签。物理节点唯一，因此「改一处，mox 模块化系统架构同步」天然成立。
@@ -13,7 +13,7 @@
 //!   直接导入（SSOT 单一真相源）。
 //! - `DimensionedFlow` / `CodeIR` / `auto_dimension()` 等 IR 扩展层在 core 中实现。
 
-use mox_ai_flow_svc::model::{FlowGraph, NodeKind, ToolKind};
+use mox_ai_flow_core::model::{FlowGraph, NodeKind, ToolKind};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -95,7 +95,7 @@ impl CodeIR {
     }
 }
 
-/// 扩展后的流程图：持有原始 mox_ai_flow_svc 图 + 维度标注
+/// 扩展后的流程图：持有原始 mox_ai_flow_core 图 + 维度标注
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DimensionedFlow {
     pub base: FlowGraph,
@@ -209,7 +209,7 @@ pub fn auto_dimension(base: &FlowGraph) -> DimensionedFlow {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::model::{FlowEdge, FlowNode, NodeKind, ToolKind};
+    use mox_ai_flow_core::model::{FlowEdge, FlowNode, NodeKind, ToolKind};
 
     #[test]
     fn priority_ordering() {

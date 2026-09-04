@@ -8,7 +8,7 @@
 //! 实现自然语言理解、意图识别、算子推荐和多轮对话管理
 
 use super::types::*;
-use mox_flow_operator_core::{OperatorError, Result};
+use mox_platform_operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing;

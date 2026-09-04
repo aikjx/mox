@@ -65,7 +65,7 @@ pub use workflow_engine::*;
 
 use crate::engine::{AgentRole, Engine, EngineConfig, EngineContext, MultiAgentOrchestrator};
 use mox_kg_algo_core::KnowledgeGraph;
-use mox_flow_operator_core::{OperatorError, Result};
+use mox_platform_operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;

@@ -8,7 +8,7 @@ description = "AI Intelligent Agent with Conversation, Algorithm Normalization, 
 
 [dependencies]
 mox-platform-foundation = { workspace = true }
-mox-flow-operator-core = { workspace = true }
+mox-platform-operator-core = { workspace = true }
 mox-kg-algo-core = { workspace = true }
 mox-kg-hub-svc = { workspace = true }
 serde = { workspace = true }

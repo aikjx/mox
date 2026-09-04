@@ -39,20 +39,20 @@ pub fn dispatch(ctx: &ExpertContext, experts: &[Box<dyn Expert>]) -> Vec<ExpertO
 // 因此需要一组零开销/低开销的转换函数。两者枚举变体一一对应，转换是无损的。
 
 /// proto::Severity → flow_svc::model::Severity
-pub fn to_flow_severity(s: mox_ai_expert_proto::Severity) -> mox_ai_flow_svc::model::Severity {
+pub fn to_flow_severity(s: mox_ai_expert_proto::Severity) -> mox_ai_flow_core::model::Severity {
     match s {
-        mox_ai_expert_proto::Severity::Info => mox_ai_flow_svc::model::Severity::Info,
-        mox_ai_expert_proto::Severity::Warning => mox_ai_flow_svc::model::Severity::Warning,
-        mox_ai_expert_proto::Severity::Blocking => mox_ai_flow_svc::model::Severity::Blocking,
+        mox_ai_expert_proto::Severity::Info => mox_ai_flow_core::model::Severity::Info,
+        mox_ai_expert_proto::Severity::Warning => mox_ai_flow_core::model::Severity::Warning,
+        mox_ai_expert_proto::Severity::Blocking => mox_ai_flow_core::model::Severity::Blocking,
     }
 }
 
 /// proto::ModelTier → flow_svc::schedule::ModelTier
-pub fn to_flow_model_tier(t: mox_ai_expert_proto::ModelTier) -> mox_ai_flow_svc::schedule::ModelTier {
+pub fn to_flow_model_tier(t: mox_ai_expert_proto::ModelTier) -> mox_ai_flow_core::schedule::ModelTier {
     match t {
-        mox_ai_expert_proto::ModelTier::Light => mox_ai_flow_svc::schedule::ModelTier::Light,
-        mox_ai_expert_proto::ModelTier::Standard => mox_ai_flow_svc::schedule::ModelTier::Standard,
-        mox_ai_expert_proto::ModelTier::Heavy => mox_ai_flow_svc::schedule::ModelTier::Heavy,
+        mox_ai_expert_proto::ModelTier::Light => mox_ai_flow_core::schedule::ModelTier::Light,
+        mox_ai_expert_proto::ModelTier::Standard => mox_ai_flow_core::schedule::ModelTier::Standard,
+        mox_ai_expert_proto::ModelTier::Heavy => mox_ai_flow_core::schedule::ModelTier::Heavy,
     }
 }
 
@@ -60,7 +60,7 @@ pub fn to_flow_model_tier(t: mox_ai_expert_proto::ModelTier) -> mox_ai_flow_svc:
 mod tests {
     use super::*;
     use crate::context::{GovernContext, Tenant, Principal};
-    use mox_ai_flow_svc::model::FlowGraph;
+    use mox_ai_flow_core::model::FlowGraph;
     use mox_ai_expert_proto::{Severity, ModelTier, Suggestion};
 
     struct Dummy;
@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn severity_conversion_roundtrip() {
         use mox_ai_expert_proto::Severity as PS;
-        use mox_ai_flow_svc::model::Severity as FS;
+        use mox_ai_flow_core::model::Severity as FS;
         assert!(matches!(to_flow_severity(PS::Info), FS::Info));
         assert!(matches!(to_flow_severity(PS::Warning), FS::Warning));
         assert!(matches!(to_flow_severity(PS::Blocking), FS::Blocking));
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn model_tier_conversion_roundtrip() {
         use mox_ai_expert_proto::ModelTier as PM;
-        use mox_ai_flow_svc::schedule::ModelTier as FM;
+        use mox_ai_flow_core::schedule::ModelTier as FM;
         assert!(matches!(to_flow_model_tier(PM::Light), FM::Light));
         assert!(matches!(to_flow_model_tier(PM::Standard), FM::Standard));
         assert!(matches!(to_flow_model_tier(PM::Heavy), FM::Heavy));

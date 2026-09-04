@@ -12,8 +12,8 @@
 //! 当前为骨架实现，仅提供最小可编译结构。完整的 5 项守恒不变量（拓扑/数据依赖/
 //! 冲突消解/收益可信/代码往返一致）将在后续迭代中迁移。
 
-use mox_ai_flow_svc::model::FlowGraph;
-use mox_ai_flow_svc::pipeline::OptimizationReport;
+use mox_ai_flow_core::model::FlowGraph;
+use mox_ai_flow_core::pipeline::OptimizationReport;
 use serde::{Deserialize, Serialize};
 
 /// 单条验证结论
@@ -108,12 +108,12 @@ pub fn verify(before: &FlowGraph, opt: &OptimizationReport) -> AlgoVerification 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::pipeline::optimize;
+    use mox_ai_flow_core::pipeline::optimize;
 
     #[test]
     fn verify_empty_graph_passes() {
         let g = FlowGraph::new("x", "t");
-        let opt = optimize(&g, &mox_ai_flow_svc::pipeline::OptimizeConfig::default());
+        let opt = optimize(&g, &mox_ai_flow_core::pipeline::OptimizeConfig::default());
         let v = verify(&g, &opt);
         assert!(!v.checks.is_empty());
         assert!(!v.summary.is_empty());

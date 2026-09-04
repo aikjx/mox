@@ -22,7 +22,7 @@ use mox_cloud_store_core::erasure::{ErasureConfig, ErasureStore};
 use mox_cloud_store_core::fs_backend::FsObjectStore;
 use mox_cloud_store_core::heal::{HealAction, HealCoordinator};
 use mox_cloud_store_core::snapshot::SnapshotManager;
-use mox_cloud_volume_svc::EcProfile;
+use mox_cloud_kernel::EcProfile;
 use std::path::Path;
 use std::sync::Arc;
 

@@ -8,7 +8,7 @@
 //! [`ErasureStore`] 是一个**后端不可知**的 [`ObjectStore`] 装饰器：包装任意底层
 //! 存储（FS/S3），对达到阈值的大对象做 RS(n+k) 分片编码，小对象直接透传。
 //!
-//! 复用 `mox-cloud-volume-svc` 的 [`ReedSolomonEngine`]（GF(2^8) + SIMD）与
+//! 复用 `mox-cloud-kernel` 的 [`ReedSolomonEngine`]（GF(2^8) + SIMD）与
 //! [`EcProfile`]，不重写引擎；本模块只负责"分片布局 + manifest + 容错重建"。
 //!
 //! ## 磁盘布局（逻辑 key，底层存储寻址）
@@ -27,7 +27,7 @@ use crate::{sha256_hex, StoreError, StoreResult};
 use async_trait::async_trait;
 use bytes::Bytes;
 use mox_base_store_core::{BlobObject, ObjectStore};
-use mox_cloud_volume_svc::{EcProfile, ReedSolomonEngine};
+use mox_cloud_kernel::{EcProfile, ReedSolomonEngine};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 

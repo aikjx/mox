@@ -12,7 +12,7 @@
 
 use crate::ir::CodeIR;
 use mox_ai_expert_proto::{Dimension, PolicyId};
-use mox_ai_flow_svc::model::{FlowGraph, ResourcePool};
+use mox_ai_flow_core::model::{FlowGraph, ResourcePool};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -268,7 +268,7 @@ impl mox_ai_expert_proto::domain::GovernContext for GovernContext {
 
 /// 专家只读上下文（并行派发用）
 pub struct ExpertContext<'a> {
-    pub flow: &'a mox_ai_flow_svc::model::FlowGraph,
+    pub flow: &'a mox_ai_flow_core::model::FlowGraph,
     pub tenant: &'a Tenant,
     pub principal: &'a Principal,
     pub policies: &'a [Policy],
@@ -281,7 +281,7 @@ pub struct ExpertContext<'a> {
 }
 
 impl<'a> ExpertContext<'a> {
-    pub fn new(flow: &'a mox_ai_flow_svc::model::FlowGraph, gctx: &'a GovernContext) -> Self {
+    pub fn new(flow: &'a mox_ai_flow_core::model::FlowGraph, gctx: &'a GovernContext) -> Self {
         Self {
             flow,
             tenant: &gctx.tenant,

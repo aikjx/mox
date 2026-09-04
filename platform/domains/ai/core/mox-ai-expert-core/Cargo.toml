@@ -10,7 +10,7 @@ description = "璇玑 · 十四维专家引擎核心（P2 架构解耦阶段 4�
 # L5 领域协议层（DIP：core 依赖 proto，proto 不依赖 core）
 mox-ai-expert-proto = { workspace = true }
 # 流程引擎（FlowGraph 模型 + 优化求解器）
-mox-ai-flow-svc = { workspace = true }
+mox-ai-flow-core = { workspace = true }
 # 平台基础（CrateMeta / AisLayer 等）
 mox-platform-foundation = { workspace = true }
 # 统一错误

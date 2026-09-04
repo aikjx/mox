@@ -80,6 +80,7 @@ members = [
     "platform/domains/kg/svc/mox-kg-fusion-svc",
     "platform/domains/kg/svc/mox-kb-svc",
     "platform/domains/ai/svc/mox-ai-flow-svc",
+    "platform/domains/ai/core/mox-ai-flow-core",
     "platform/domains/ai/svc/mox-ai-expert-svc",
     "platform/domains/ai/svc/mox-ai-agent-svc",
     "platform/domains/ai/svc/mox-ai-intent-svc",
@@ -348,6 +349,7 @@ mox-kg-fusion-svc = { path = "platform/domains/kg/svc/mox-kg-fusion-svc" }
 mox-kb-svc = { path = "platform/domains/kg/svc/mox-kb-svc" }
 # Service 灞?(ai)
 mox-ai-flow-svc = { path = "platform/domains/ai/svc/mox-ai-flow-svc" }
+mox-ai-flow-core = { path = "platform/domains/ai/core/mox-ai-flow-core" }
 mox-ai-expert-svc = { path = "platform/domains/ai/svc/mox-ai-expert-svc" }
 mox-ai-agent-svc = { path = "platform/domains/ai/svc/mox-ai-agent-svc" }
 mox-ai-intent-svc = { path = "platform/domains/ai/svc/mox-ai-intent-svc" }

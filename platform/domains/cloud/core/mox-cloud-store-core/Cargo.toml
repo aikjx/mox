@@ -9,8 +9,8 @@ description = "Mox Cloud Drive L2 Store Engine - real FS/S3 backends, dedup, ref
 [dependencies]
 mox-base-store-core = { workspace = true }
 mox-cloud-foundation = { workspace = true }
-# 阶段3：RS 纠删码引擎（复用 volume-svc，不重写）
-mox-cloud-volume-svc = { workspace = true, optional = true }
+# 阶段3：RS 纠删码引擎（复用 cloud-kernel，不重写）
+mox-cloud-kernel = { workspace = true, optional = true }
 async-trait = { workspace = true }
 bytes = "1"
 tokio = { workspace = true }
@@ -39,9 +39,9 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 default = []
 # 阶段2：S3 协议层（S3/MinIO/COS/OSS 客户端 + 目标空读回源）
 s3 = ["dep:reqwest", "dep:base64", "dep:hmac"]
-# 阶段3：完整 RS 纠删码（复用 mox-cloud-volume-svc 引擎）。
+# 阶段3：完整 RS 纠删码（复用 mox-cloud-kernel 引擎）。
 # 默认持久化 = 内容寻址 + 引用计数 GC；EC 作为 ObjectStore 装饰器按配置开启。
-erasure = ["dep:mox-cloud-volume-svc", "dep:crc32c"]
+erasure = ["dep:mox-cloud-kernel", "dep:crc32c"]
 
 [lints]
 workspace = true

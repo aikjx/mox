@@ -10,7 +10,7 @@
 
 use super::types::*;
 use chrono::Utc;
-use mox_flow_operator_core::{OperatorError, Result};
+use mox_platform_operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use tracing;
 use uuid::Uuid;

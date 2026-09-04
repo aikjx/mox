@@ -89,7 +89,7 @@ pub fn skipped_opinions(opinions: &[ExpertOpinion]) -> Vec<&ExpertOpinion> {
 mod tests {
     use super::*;
     use crate::context::{GovernContext, Principal, Tenant};
-    use mox_ai_flow_svc::model::FlowGraph;
+    use mox_ai_flow_core::model::FlowGraph;
 
     struct DummyExpert {
         id: &'static str,

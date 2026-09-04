@@ -145,7 +145,7 @@ impl TenantPolicy {
 /// TODO(P2 阶段 4 后续迭代)：迁移完整的 8 闸门评估逻辑
 pub fn evaluate_gates(
     ctx: &crate::context::GovernContext,
-    opt: &mox_ai_flow_svc::pipeline::OptimizationReport,
+    opt: &mox_ai_flow_core::pipeline::OptimizationReport,
     status: crate::govern::FlowStatus,
     _algo_veto: bool,
     sla_ok: bool,
@@ -272,9 +272,9 @@ mod tests {
     fn all_eight_gates_present() {
         let g = Tenant::new("t", "ns");
         let ctx = GovernContext::new(g, Principal::new("u"));
-        let opt = mox_ai_flow_svc::pipeline::optimize(
-            &mox_ai_flow_svc::model::FlowGraph::new("x", "t"),
-            &mox_ai_flow_svc::pipeline::OptimizeConfig::default(),
+        let opt = mox_ai_flow_core::pipeline::optimize(
+            &mox_ai_flow_core::model::FlowGraph::new("x", "t"),
+            &mox_ai_flow_core::pipeline::OptimizeConfig::default(),
         );
         let gates = evaluate_gates(
             &ctx,

@@ -23,11 +23,9 @@ pub const CRATE_META: mox_platform_foundation::CrateMeta = mox_platform_foundati
     owner: "mox-core",
 };
 
-use std::any::TypeId;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 /// L6 纯内核层：零外部依赖，仅 std。定义算子纯数据结构、trait、标量运算。
 pub mod kernel;
@@ -55,36 +53,8 @@ pub use types::*;
 // kernel 核心守恒与校验类型对外暴露（供下游与内部 #[cfg(test)] 一致性复用）
 pub use kernel::{ConservationChecker, L2Conservation};
 
-/// 系统核心错误类型
-#[derive(Debug, Error)]
-pub enum OperatorError {
-    #[error("类型不匹配: 期望 {expected:?}, 得到 {actual:?}")]
-    TypeMismatch { expected: TypeId, actual: TypeId },
-
-    #[error("守恒律违反: {law} - 残差 {residual} 超过阈值 {threshold}")]
-    ConservationViolation {
-        law: String,
-        residual: f64,
-        threshold: f64,
-    },
-
-    #[error("资源不足: 需要 {required}, 可用 {available}")]
-    ResourceExhausted { required: String, available: String },
-
-    #[error("算子组合错误: {0}")]
-    CompositionError(String),
-
-    #[error("WASM插件错误: {0}")]
-    WasmError(String),
-
-    #[error("执行错误: {0}")]
-    ExecutionError(String),
-
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
-}
-
-pub type Result<T> = std::result::Result<T, OperatorError>;
+/// 共享平台错误；保留原有公开路径和类型身份。
+pub use mox_platform_operator_core::{OperatorError, Result};
 
 /// 系统全局配置
 #[derive(Debug, Clone, Serialize, Deserialize)]

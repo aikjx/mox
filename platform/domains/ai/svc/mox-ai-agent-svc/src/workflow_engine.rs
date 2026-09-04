@@ -18,7 +18,7 @@
 use super::llm_client::LLMClient;
 use super::types::*;
 use chrono::Utc;
-use mox_flow_operator_core::{OperatorError, Result};
+use mox_platform_operator_core::{OperatorError, Result};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::sync::RwLock;

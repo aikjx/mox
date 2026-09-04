@@ -186,7 +186,7 @@ mod tests {
     use crate::fs_backend::FsObjectStore;
     use bytes::Bytes;
     use mox_base_store_core::ObjectStore;
-    use mox_cloud_volume_svc::EcProfile;
+    use mox_cloud_kernel::EcProfile;
     use std::path::Path;
 
     fn ec_store(dir: &Path) -> Arc<ErasureStore> {

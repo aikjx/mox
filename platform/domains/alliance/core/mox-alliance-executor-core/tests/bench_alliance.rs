@@ -8,7 +8,7 @@
 //! 维度 3：DAG 执行（串行拓扑 vs 并行就绪检测）
 //! 维度 4：端到端（MockExecutor + DagEngineImpl）
 //!
-//! 运行：cargo test -p mox-alliance-scheduler-core --test bench_alliance -- --nocapture
+//! 运行：cargo test -p mox-alliance-executor-core --test bench_alliance -- --nocapture
 
 use std::time::{Duration, Instant};
 

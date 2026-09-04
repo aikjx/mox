@@ -12,7 +12,7 @@
 //! - **S3 后端**（阶段2）：自研 SigV4 客户端，与 MinIO/COS/OSS 互通；目标空读自动回源。
 //! - **版本/快照**：`versions/<fileId>/vN.json` 零拷贝恢复。
 //! - **企业级算法**（阶段3，feature `erasure`）：RS 纠删码装饰器、bitrot 检测、
-//!   自愈协调、对象数据缓存——复用 `mox-cloud-volume-svc` 的 RS 引擎，不重写。
+//!   自愈协调、对象数据缓存——复用 `mox-cloud-kernel` 的 RS 引擎，不重写。
 //!
 //! ## 磁盘布局（DATA_DIR）
 //! ```text
@@ -45,7 +45,7 @@ pub mod fallback;
 #[cfg(feature = "s3")]
 pub mod s3_backend;
 
-// 阶段3：企业级算法（feature `erasure`，复用 volume-svc RS 引擎）
+// 阶段3：企业级算法（feature `erasure`，复用 cloud-kernel RS 引擎）
 #[cfg(feature = "erasure")]
 pub mod bitrot;
 #[cfg(feature = "erasure")]

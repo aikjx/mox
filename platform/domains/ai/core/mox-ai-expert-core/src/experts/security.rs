@@ -16,7 +16,7 @@ use crate::context::Capability;
 use crate::expert::Expert;
 use crate::sensitivity::is_sensitive_leak;
 use mox_ai_expert_proto::{Dimension, ExpertId, ExpertOpinion, Severity};
-use mox_ai_flow_svc::model::{NodeKind, ToolKind};
+use mox_ai_flow_core::model::{NodeKind, ToolKind};
 
 pub struct SecurityExpert;
 
@@ -94,7 +94,7 @@ impl Expert for SecurityExpert {
 mod tests {
     use super::*;
     use crate::context::{ExpertContext, GovernContext, Principal, Tenant};
-    use mox_ai_flow_svc::model::{Access, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
+    use mox_ai_flow_core::model::{Access, FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 
     fn make_gctx(tenant: Tenant) -> GovernContext {
         let principal = Principal::new("admin").with_roles(vec!["admin".into(), "editor".into()]);

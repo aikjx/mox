@@ -14,7 +14,7 @@
 
 use crate::expert::{to_flow_model_tier, to_flow_severity};
 use mox_ai_expert_proto::{Constraint, Dimension, ExpertOpinion, Suggestion};
-use mox_ai_flow_svc::model::{
+use mox_ai_flow_core::model::{
     EdgeKind, ExpertRule, FlowEdge, FlowGraph, FlowNode, NodeKind, ResourcePool,
 };
 use serde::{Deserialize, Serialize};
@@ -31,7 +31,7 @@ pub struct ReconciledPlan {
     /// 裁决冲突日志（同优先级无法仲裁时升级为 Blocking）
     pub conflicts: Vec<ReconcileConflict>,
     /// 采纳的算力路由
-    pub model_routes: Vec<(String, mox_ai_flow_svc::schedule::ModelTier)>,
+    pub model_routes: Vec<(String, mox_ai_flow_core::schedule::ModelTier)>,
     /// 各专家健康分
     pub scores: Vec<(String, f64)>,
     /// 采纳的优化建议（经裁决器确认、未与硬约束冲突的 Suggestion）。
@@ -112,7 +112,7 @@ pub fn reconcile(
     let mut graph = base.clone();
     let mut rules: Vec<ExpertRule> = Vec::new();
     let mut conflicts: Vec<ReconcileConflict> = Vec::new();
-    let mut model_routes: Vec<(String, mox_ai_flow_svc::schedule::ModelTier)> = Vec::new();
+    let mut model_routes: Vec<(String, mox_ai_flow_core::schedule::ModelTier)> = Vec::new();
     let mut scores: Vec<(String, f64)> = Vec::new();
 
     // 记录各专家健康分
@@ -325,7 +325,7 @@ pub fn reconcile(
 mod tests {
     use super::*;
     use mox_ai_expert_proto::{Constraint, Dimension, ExpertOpinion, Suggestion, NodeEdge};
-    use mox_ai_flow_svc::model::{Access, ToolKind, NodeKind, FlowEdge, FlowNode};
+    use mox_ai_flow_core::model::{Access, ToolKind, NodeKind, FlowEdge, FlowNode};
 
     fn base() -> FlowGraph {
         let mut g = FlowGraph::new("t", "t");
@@ -550,7 +550,7 @@ mod tests {
         assert_eq!(plan.model_routes[0].0, "a");
         assert!(matches!(
             plan.model_routes[0].1,
-            mox_ai_flow_svc::schedule::ModelTier::Heavy
+            mox_ai_flow_core::schedule::ModelTier::Heavy
         ));
     }
 }

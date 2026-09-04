@@ -21,7 +21,7 @@
 //! - **通用模块**：通过 `tags` 把生成的模板归类（商城/小说/论文…），可被 template-market 复用。
 
 use crate::flow_engine::{FlowDefinition, FlowEdge, FlowNode, NodeType, Position};
-use mox_flow_operator_core::OperatorError;
+use mox_platform_operator_core::OperatorError;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::future::Future;

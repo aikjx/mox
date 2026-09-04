@@ -9,7 +9,7 @@
 //! 将任意算法转化为标准算子工作流
 
 use super::types::*;
-use mox_flow_operator_core::Result;
+use mox_platform_operator_core::Result;
 use std::collections::HashMap;
 use tracing;
 use uuid::Uuid;

@@ -3819,11 +3819,11 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "mox-ai-flow-svc",
- "mox-flow-operator-core",
  "mox-kg-algo-core",
  "mox-kg-hub-svc",
  "mox-market-template-svc",
  "mox-platform-foundation",
+ "mox-platform-operator-core",
  "mox-platform-system-core",
  "petgraph",
  "reqwest",
@@ -3896,7 +3896,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "mox-ai-expert-proto",
- "mox-ai-flow-svc",
+ "mox-ai-flow-core",
  "mox-audit",
  "mox-error",
  "mox-platform-foundation",
@@ -3956,12 +3956,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "mox-ai-flow-svc"
+name = "mox-ai-flow-core"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
  "mox-platform-foundation",
  "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "mox-ai-flow-svc"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "mox-ai-flow-core",
+ "mox-platform-foundation",
  "serde_json",
 ]
 
@@ -4152,11 +4162,8 @@ dependencies = [
  "mox-alliance-api",
  "mox-alliance-boot-config",
  "mox-alliance-common-proto",
- "mox-alliance-core",
  "mox-alliance-executor-core",
  "mox-alliance-executor-proto",
- "mox-error",
- "mox-platform-foundation",
  "parking_lot",
  "serde",
  "serde_json",
@@ -4179,7 +4186,6 @@ dependencies = [
  "mox-alliance-common-proto",
  "mox-alliance-config-core",
  "mox-alliance-core",
- "mox-alliance-executor-core",
  "mox-alliance-executor-proto",
  "mox-alliance-scheduler-proto",
  "mox-error",
@@ -4225,12 +4231,9 @@ dependencies = [
  "mox-alliance-boot-config",
  "mox-alliance-common-proto",
  "mox-alliance-config-core",
- "mox-alliance-core",
  "mox-alliance-executor-proto",
  "mox-alliance-scheduler-core",
  "mox-alliance-scheduler-proto",
- "mox-error",
- "mox-platform-foundation",
  "parking_lot",
  "reqwest",
  "serde",
@@ -4639,7 +4642,7 @@ dependencies = [
  "hmac",
  "mox-base-store-core",
  "mox-cloud-foundation",
- "mox-cloud-volume-svc",
+ "mox-cloud-kernel",
  "parking_lot",
  "reqwest",
  "serde",

@@ -19,8 +19,8 @@ use crate::ir::auto_dimension;
 use crate::reconcile::reconcile;
 use crate::verify::verify;
 use crate::context::ExpertContext;
-use mox_ai_flow_svc::model::FlowGraph;
-use mox_ai_flow_svc::pipeline::optimize;
+use mox_ai_flow_core::model::FlowGraph;
+use mox_ai_flow_core::pipeline::optimize;
 use serde::{Deserialize, Serialize};
 
 /// mox 模块化系统架构治理报告：专家评分 + 裁决冲突 + 优化报告 + 治理闸门
@@ -31,7 +31,7 @@ pub struct GovernanceReport {
     /// 各专家健康分 (专家, 分)
     pub expert_scores: Vec<(String, f64)>,
     /// 优化报告（含并行/关键路径/调度/冲突/代码）
-    pub optimization: mox_ai_flow_svc::pipeline::OptimizationReport,
+    pub optimization: mox_ai_flow_core::pipeline::OptimizationReport,
     /// ⛨ 璇玑验证报告（最高权限，不可被治理覆盖）
     pub algo: crate::verify::AlgoVerification,
     /// 治理闸门结果
@@ -65,14 +65,14 @@ pub fn mox_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceReport {
     // 4. 交给 flow-ai 引擎做最优求解
     let mut graph = plan.graph.clone();
     apply_rules(&mut graph, &plan);
-    let mut opt = optimize(&graph, &mox_ai_flow_svc::pipeline::OptimizeConfig::default());
+    let mut opt = optimize(&graph, &mox_ai_flow_core::pipeline::OptimizeConfig::default());
 
     // 把专家采纳的算力路由并入优化报告
     if !plan.model_routes.is_empty() {
         opt.model_routing = plan
             .model_routes
             .iter()
-            .map(|(node, tier)| mox_ai_flow_svc::schedule::ModelRouting {
+            .map(|(node, tier)| mox_ai_flow_core::schedule::ModelRouting {
                 node_id: node.clone(),
                 model_tier: *tier,
                 reason: "mox-expert 算法/资源专家路由".into(),

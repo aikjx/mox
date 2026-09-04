@@ -20,7 +20,7 @@
 //! - [ ] Operator trait 迁移
 //! - [ ] ExecutionContext / ExecutionResult / OperatorMetadata 迁移
 //! - [ ] flow-operator-core 重新导出本 crate（向后兼容）
-//! - [ ] ai-agent-svc 改为依赖本 crate
+//! - [x] ai-agent-svc 通过本 crate 共享错误类型
 
 pub mod kernel;
 pub mod kernel_ext;
@@ -36,11 +36,27 @@ pub use kernel::builtin;
 pub const CRATE_ID: &str = "mox-platform-operator-core";
 pub const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// 算子核心错误类型（迁移占位，完整定义待从 flow-operator-core 迁移）
+/// 系统核心错误类型
 #[derive(Debug, thiserror::Error)]
 pub enum OperatorError {
     #[error("类型不匹配: 期望 {expected:?}, 得到 {actual:?}")]
-    TypeMismatch { expected: String, actual: String },
+    TypeMismatch { expected: std::any::TypeId, actual: std::any::TypeId },
+
+    #[error("守恒律违反: {law} - 残差 {residual} 超过阈值 {threshold}")]
+    ConservationViolation {
+        law: String,
+        residual: f64,
+        threshold: f64,
+    },
+
+    #[error("资源不足: 需要 {required}, 可用 {available}")]
+    ResourceExhausted { required: String, available: String },
+
+    #[error("算子组合错误: {0}")]
+    CompositionError(String),
+
+    #[error("WASM插件错误: {0}")]
+    WasmError(String),
 
     #[error("执行错误: {0}")]
     ExecutionError(String),

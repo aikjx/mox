@@ -4,9 +4,8 @@ infotopograph 架构约束 CI 测试
 每次提交自动运行，检测：
 - 循环依赖 (P0)
 - 层违规 (P1)
-- God Module (扇出>10) (P1)
+- God Module (扇出>=10) (P1)
 - 跨域直连 (>5个) (P2)
-- core层IO依赖 (P2)
 
 退出码: 0=通过, 1=失败
 """
@@ -14,9 +13,9 @@ infotopograph 架构约束 CI 测试
 import json
 import subprocess
 import sys
-from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import Dict, List, Set
+from pathlib import Path
+from dataclasses import dataclass
+from typing import Dict, List
 
 # 层级定义
 LAYER_ORDER = {
@@ -25,58 +24,9 @@ LAYER_ORDER = {
     "sdk": 3,  # SDK视为service层同级
 }
 
-# crate → 层映射（从归一化架构规范）
-CRATE_LAYERS = {
-    # foundation
-    "mox-common-meta": "foundation", "mox-domain-abstractions": "foundation",
-    # core
-    "mox-formulas-core": "core", "mox-norm-core": "core", "mox-intent-core": "core",
-    "operator-core": "core", "graph-algorithms": "core", "mox-standards": "core",
-    "mox-system": "core", "mox-ai-core": "core", "mox-graph-meta": "core",
-    "xiaobai-dsp": "core", "optimizer": "core",
-    # engine
-    "operator-wasm": "engine", "mox-graph-storage": "engine",
-    "mox-formulas-native": "sdk", "mox-norm-intent-native": "sdk",
-    # service
-    "kg-hub": "service", "ai-agent": "service", "mox-expert": "service",
-    "flow-ai": "service", "primiflow-core": "service", "primiflow-fusion": "service",
-    "mox-graph-service": "service", "mox-graph-streams": "service",
-    "mox-graph-spark": "service", "mox-cloud-drive-master": "service",
-    "mox-cloud-drive-volume": "service", "mox-cloud-drive-s3": "service",
-    "mox-cloud-drive-filer": "service", "mox-data-plane": "service",
-    "mox-etl-wasm": "service", "mox-compliance": "service", "mox-fusion": "service",
-    "mox-sdk-cloud": "sdk", "mox-sdk-graph": "sdk",
-    "template-market": "service", "business-catalog": "service",
-    "hermes-flow-bridge": "service",
-    # application
-    "runtime": "application", "mox-server": "application", "mox-t21-harness": "application",
-    "xiaobai-core": "application", "xiaobai-asr": "application",
-    "xiaobai-intent": "application", "xiaobai-operators": "application",
-    "xiaobai-desktop": "application", "xiaobai-dsp-py": "sdk",
-}
-
-# crate → 域映射
-CRATE_DOMAINS = {
-    "mox-common-meta": "platform", "mox-system": "platform",
-    "mox-server": "platform", "runtime": "platform", "mox-t21-harness": "platform",
-    "mox-graph-meta": "kg", "mox-graph-storage": "kg", "mox-graph-service": "kg",
-    "mox-graph-streams": "kg", "mox-graph-spark": "kg", "graph-algorithms": "kg",
-    "kg-hub": "kg", "mox-fusion": "kg", "mox-sdk-graph": "kg",
-    "mox-ai-core": "ai", "mox-intent-core": "ai", "flow-ai": "ai",
-    "mox-expert": "ai", "ai-agent": "ai",
-    "operator-core": "flow", "operator-wasm": "flow", "optimizer": "flow",
-    "primiflow-core": "flow", "primiflow-fusion": "flow", "hermes-flow-bridge": "flow",
-    "mox-formulas-core": "data", "mox-norm-core": "data", "mox-standards": "data",
-    "mox-data-plane": "data", "mox-etl-wasm": "data", "mox-compliance": "data",
-    "business-catalog": "data", "mox-formulas-native": "data", "mox-norm-intent-native": "data",
-    "mox-domain-abstractions": "cloud", "mox-cloud-drive-master": "cloud",
-    "mox-cloud-drive-volume": "cloud", "mox-cloud-drive-s3": "cloud",
-    "mox-cloud-drive-filer": "cloud", "mox-sdk-cloud": "cloud",
-    "xiaobai-dsp": "voice", "xiaobai-core": "voice", "xiaobai-asr": "voice",
-    "xiaobai-intent": "voice", "xiaobai-operators": "voice",
-    "xiaobai-desktop": "voice", "xiaobai-dsp-py": "voice",
-    "template-market": "market",
-}
+# Populated from Cargo metadata manifest paths, never legacy crate names.
+CRATE_LAYERS = {}
+CRATE_DOMAINS = {}
 
 # 阈值
 GOD_MODULE_THRESHOLD = 10
@@ -92,20 +42,45 @@ class Violation:
 
 
 def load_workspace() -> Dict[str, List[str]]:
-    """加载 workspace 内部依赖图"""
+    """加载含 normal/dev/build 与可选依赖的保守声明图，不代表单个部署产物的依赖图。"""
     result = subprocess.run(
         ["cargo", "metadata", "--no-deps", "--format-version", "1"],
-        capture_output=True, text=True,
-        cwd=r"D:\a10\aikjx\gitcode\infotopograph"
+        capture_output=True, text=True, encoding="utf-8", check=True,
+        cwd=Path(__file__).resolve().parents[1]
     )
     data = json.loads(result.stdout)
+    CRATE_LAYERS.clear()
+    CRATE_DOMAINS.clear()
     internal = {p["name"] for p in data["packages"]}
     deps = {}
     for pkg in data["packages"]:
         name = pkg["name"]
+        # Use actual workspace paths: the legacy name table predates mox-* renames.
+        layer, domain = classify_manifest(pkg["manifest_path"])
+        CRATE_LAYERS[name] = layer
+        CRATE_DOMAINS[name] = domain
         all_deps = [d["name"] for d in pkg["dependencies"]]
-        deps[name] = [d for d in all_deps if d in internal]
+        deps[name] = sorted({d for d in all_deps if d in internal})
     return deps
+
+
+def classify_manifest(manifest_path):
+    parts = Path(manifest_path.replace("\\", "/")).parts
+    if "foundation" in parts or "shared" in parts or "framework" in parts:
+        return "foundation", "platform"
+    if "gateway" in parts:
+        return "application", "platform"
+    if "domains" in parts:
+        index = parts.index("domains")
+        domain = parts[index + 1]
+        layer = parts[index + 2]
+        if domain == "base":
+            return "foundation", "platform"
+        # API/proto contain contracts, not service implementations.
+        if layer in ("api", "proto"):
+            return "foundation", domain
+        return {"svc": "service", "core": "core", "sdk": "sdk"}.get(layer, "unknown"), domain
+    return "unknown", "unknown"
 
 
 def detect_cycles(deps: Dict[str, List[str]]) -> List[List[str]]:
@@ -138,11 +113,15 @@ def detect_layer_violations(deps: Dict[str, List[str]]) -> List[Violation]:
     """检测层违规（底层依赖顶层）"""
     violations = []
     for crate, crate_deps in deps.items():
+        if CRATE_LAYERS.get(crate, "unknown") == "unknown":
+            continue
         src_layer = LAYER_ORDER.get(CRATE_LAYERS.get(crate, "unknown"), 5)
         for dep in crate_deps:
+            if CRATE_LAYERS.get(dep, "unknown") == "unknown":
+                continue
             dst_layer = LAYER_ORDER.get(CRATE_LAYERS.get(dep, "unknown"), 5)
             if src_layer < dst_layer:
-                severity = "P1" if (dst_layer - src_layer) >= 2 else "P2"
+                severity = "P1" if CRATE_LAYERS[crate] in ("foundation", "core") or (dst_layer - src_layer) >= 2 else "P2"
                 violations.append(Violation(
                     level=severity,
                     type="layer_violation",
@@ -171,9 +150,13 @@ def detect_cross_domain(deps: Dict[str, List[str]]) -> List[Violation]:
     count = 0
     for crate, crate_deps in deps.items():
         src_domain = CRATE_DOMAINS.get(crate, "unknown")
+        if CRATE_LAYERS.get(crate) == "sdk":
+            continue
         if src_domain in ("platform", "unknown", "sdk"):
             continue
         for dep in crate_deps:
+            if CRATE_LAYERS.get(dep) in ("sdk", "foundation"):
+                continue
             dst_domain = CRATE_DOMAINS.get(dep, "unknown")
             if dst_domain not in (src_domain, "platform", "unknown", "sdk"):
                 count += 1
@@ -194,6 +177,9 @@ def main():
     total_crates = len(deps)
     total_edges = sum(len(v) for v in deps.values())
     print(f"\n📊 概览: {total_crates} crates, {total_edges} 内部依赖边")
+    unknown = sorted(name for name in deps if CRATE_LAYERS.get(name) == "unknown")
+    if unknown:
+        print(f"  未分类（不参与层级检查）: {', '.join(unknown)}")
 
     all_violations = []
     failed = False
@@ -218,7 +204,7 @@ def main():
         for v in layer_violations:
             print(f"     [{v.level}] {v.description}")
         all_violations.extend(layer_violations)
-        # 层违规不导致失败（渐进式迁移），但警告
+        failed = failed or any(v.level == "P1" for v in layer_violations)
     else:
         print("  ✅ 无层违规")
 
@@ -267,4 +253,5 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")
     main()

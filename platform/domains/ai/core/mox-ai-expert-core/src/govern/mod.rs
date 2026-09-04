@@ -12,8 +12,8 @@
 
 use crate::context::ResourceQuota;
 use crate::reconcile::ReconciledPlan;
-use mox_ai_flow_svc::model::FlowGraph;
-use mox_ai_flow_svc::pipeline::OptimizationReport;
+use mox_ai_flow_core::model::FlowGraph;
+use mox_ai_flow_core::pipeline::OptimizationReport;
 use serde::{Deserialize, Serialize};
 
 /// 流程版本状态机
@@ -119,12 +119,12 @@ pub fn apply_rules(graph: &mut FlowGraph, plan: &ReconciledPlan) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::conflict::ConflictReport;
-    use mox_ai_flow_svc::critpath::CriticalPathReport;
-    use mox_ai_flow_svc::dataflow::ParallelPlan;
-    use mox_ai_flow_svc::model::FlowGraph;
-    use mox_ai_flow_svc::pipeline::{Gains, OptimizationReport};
-    use mox_ai_flow_svc::schedule::Schedule;
+    use mox_ai_flow_core::conflict::ConflictReport;
+    use mox_ai_flow_core::critpath::CriticalPathReport;
+    use mox_ai_flow_core::dataflow::ParallelPlan;
+    use mox_ai_flow_core::model::FlowGraph;
+    use mox_ai_flow_core::pipeline::{Gains, OptimizationReport};
+    use mox_ai_flow_core::schedule::Schedule;
 
     fn make_plan() -> ReconciledPlan {
         ReconciledPlan {

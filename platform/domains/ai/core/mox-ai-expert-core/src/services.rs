@@ -22,7 +22,7 @@ use async_trait::async_trait;
 use mox_ai_expert_proto::{
     ConsultQuery, ConsultReport, ExpertMeta, ExpertRegistry, GovernVerdict, GovernExpert, GovernLevel,
 };
-use mox_ai_flow_svc::model::FlowGraph;
+use mox_ai_flow_core::model::FlowGraph;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
@@ -372,7 +372,7 @@ mod tests {
     use super::*;
     use mox_ai_expert_proto::ExpertConsultant;
     use mox_ai_expert_proto::domain::{GovernContext as _, MinimalGovernContext, MockGovernExpert};
-    use mox_ai_flow_svc::model::FlowGraph;
+    use mox_ai_flow_core::model::FlowGraph;
 
     // ---- RegistryImpl 测试 ----
 

@@ -14,7 +14,7 @@
 use crate::context::Capability;
 use crate::expert::Expert;
 use mox_ai_expert_proto::{Dimension, ExpertId, ExpertOpinion, Severity, Suggestion};
-use mox_ai_flow_svc::model::NodeKind;
+use mox_ai_flow_core::model::NodeKind;
 
 pub struct BusinessExpert;
 
@@ -36,7 +36,7 @@ impl Expert for BusinessExpert {
         // 1) 决策节点必须有 else / 默认分支
         for n in &g.nodes {
             if n.kind == NodeKind::Decision {
-                let outs: Vec<&mox_ai_flow_svc::model::FlowEdge> =
+                let outs: Vec<&mox_ai_flow_core::model::FlowEdge> =
                     g.edges.iter().filter(|e| e.from == n.id).collect();
                 if outs.len() < 2 {
                     o.push_risk(
@@ -107,7 +107,7 @@ impl Expert for BusinessExpert {
 mod tests {
     use super::*;
     use crate::context::{ExpertContext, GovernContext, Principal, Tenant};
-    use mox_ai_flow_svc::model::{FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
+    use mox_ai_flow_core::model::{FlowEdge, FlowGraph, FlowNode, NodeKind, ToolKind};
 
     fn make_gctx(tenant: Tenant) -> GovernContext {
         let principal = Principal::new("admin").with_roles(vec!["admin".into(), "editor".into()]);
