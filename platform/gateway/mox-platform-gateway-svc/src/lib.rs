@@ -162,17 +162,20 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     // 其余 /api/{*path} 落入本代理 wildcard 路由，实现「归一化入口 + 模块化后端」。
     let business_proxy = proxy::build_proxy_router();
 
+    // 专家联盟全域共享状态（注册表/会话/调度/图谱/编排 归一化共享）
+    // 必须在 experts_ext_router 之前创建：专家广场扩展域（预约/收藏）复用同一份共享状态，
+    // 否则收藏集合会在 ExpertsSharedState 与 experts_ext 内部各存一份，形成数据分裂。
+    let experts_shared = Arc::new(experts_common::ExpertsSharedState::new());
+
     // 新增业务域路由（自包含 Router<()>，进程内 stub）
     let monitor_router = monitor::build_monitor_router(state.runtime.clone(), state.logs.clone());
     let workspace_router = workspace::build_workspace_router();
     let projects_ext_router = projects_ext::build_projects_ext_router();
-    let experts_ext_router = experts_ext::build_experts_ext_router();
+    let experts_ext_router = experts_ext::build_experts_ext_router(experts_shared.clone());
     let misc_router = misc::build_misc_router();
     let kb_ext_router = kb_ext::build_kb_ext_router();
     let notification_router = notification::build_notification_router();
 
-    // 专家联盟全域共享状态（注册表/会话/调度/图谱/编排 归一化共享）
-    let experts_shared = Arc::new(experts_common::ExpertsSharedState::new());
     let experts_registry_router = experts_registry::build_experts_registry_router(experts_shared.clone());
     let experts_collaboration_router = experts_collaboration::build_experts_collaboration_router(experts_shared.clone());
     let experts_session_router = experts_session::build_experts_session_router(experts_shared.clone());

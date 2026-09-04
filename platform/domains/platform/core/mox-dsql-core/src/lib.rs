@@ -8,12 +8,14 @@ pub mod cache;
 pub mod engine;
 pub mod error;
 pub mod model;
+pub mod process;
 pub mod storage;
 
 pub use cache::DsqlCache;
 pub use engine::SqlEngine;
 pub use error::{DsqlError, DsqlResult};
 pub use model::*;
+pub use process::ProcessEngine;
 pub use storage::DsqlStorage;
 
 use std::path::Path;
@@ -98,6 +100,21 @@ impl DsqlManager {
         self.storage.list_sql(query)
     }
 
+    /// 创建动态流程定义。
+    pub fn create_process(&self, req: &CreateProcessRequest) -> DsqlResult<ProcessDefinition> {
+        self.storage.create_process(req)
+    }
+
+    /// 获取动态流程定义。
+    pub fn get_process(&self, process_code: &str) -> DsqlResult<Option<ProcessDefinition>> {
+        self.storage.get_process(process_code)
+    }
+
+    /// 发布动态流程定义。
+    pub fn activate_process(&self, process_code: &str) -> DsqlResult<ProcessDefinition> {
+        self.storage.activate_process(process_code)
+    }
+
     /// 激活SQL（从DRAFT变为ACTIVE）
     pub fn activate_sql(&self, sql_code: &str) -> DsqlResult<SqlDefinition> {
         self.update_sql(sql_code, &UpdateSqlRequest {
@@ -166,6 +183,14 @@ impl DsqlManager {
             return Err(DsqlError::ExecutionError(result.error.unwrap_or_default()));
         }
         Ok(result.data.unwrap_or(serde_json::Value::Null))
+    }
+
+    /// 执行已发布的动态业务流程。
+    pub fn execute_process(
+        &self,
+        req: &ExecuteProcessRequest,
+    ) -> DsqlResult<ExecuteProcessResult> {
+        ProcessEngine::new(self).execute(req)
     }
 
     // ==================== 执行连接管理 ====================
@@ -443,5 +468,78 @@ mod tests {
         }).unwrap();
 
         assert_eq!(page2.items.len(), 2);
+    }
+
+    #[test]
+    fn test_dynamic_sql_security_and_row_count() {
+        let manager = DsqlManager::open_memory().unwrap();
+        manager.execute_ddl("CREATE TABLE guarded (id INTEGER PRIMARY KEY, code TEXT)").unwrap();
+
+        manager.create_sql(&CreateSqlRequest {
+            sql_code: "guarded.insert".to_string(),
+            sql_name: "安全写入".to_string(),
+            description: None,
+            datasource_code: "default".to_string(),
+            sql_template: "INSERT INTO guarded (code) VALUES ({{code}})".to_string(),
+            param_defs: vec![ParamDef {
+                name: "code".to_string(),
+                data_type: "STRING".to_string(),
+                required: true,
+                default_value: None,
+                description: None,
+                validation: Some(ParamValidation {
+                    rule_type: "regex".to_string(),
+                    pattern: Some("^[A-Z]+$".to_string()),
+                    min: None,
+                    max: None,
+                    enum_values: None,
+                }),
+            }],
+            result_type: ResultType::Update,
+            operation_type: OperationType::Write,
+            cache_enabled: Some(false),
+            cache_ttl: None,
+            permission_code: None,
+            entity_code: Some("guarded".to_string()),
+            created_by: Some("test".to_string()),
+        }).unwrap();
+        manager.activate_sql("guarded.insert").unwrap();
+
+        let result = manager.execute(&ExecuteRequest {
+            sql_code: "guarded.insert".to_string(),
+            params: serde_json::json!({ "code": "OK" }),
+            trace_id: None,
+        }).unwrap();
+        assert_eq!(result.row_count, Some(1));
+
+        let invalid = manager.execute(&ExecuteRequest {
+            sql_code: "guarded.insert".to_string(),
+            params: serde_json::json!({ "code": "bad" }),
+            trace_id: None,
+        });
+        assert!(matches!(invalid, Err(DsqlError::InvalidParam(_))));
+
+        manager.create_sql(&CreateSqlRequest {
+            sql_code: "guarded.multiple".to_string(),
+            sql_name: "拒绝多语句".to_string(),
+            description: None,
+            datasource_code: "default".to_string(),
+            sql_template: "SELECT 1; SELECT 2".to_string(),
+            param_defs: vec![],
+            result_type: ResultType::Single,
+            operation_type: OperationType::Read,
+            cache_enabled: Some(false),
+            cache_ttl: None,
+            permission_code: None,
+            entity_code: None,
+            created_by: None,
+        }).unwrap();
+        manager.activate_sql("guarded.multiple").unwrap();
+        let invalid_sql = manager.execute(&ExecuteRequest {
+            sql_code: "guarded.multiple".to_string(),
+            params: serde_json::json!({}),
+            trace_id: None,
+        });
+        assert!(matches!(invalid_sql, Err(DsqlError::TemplateError(_))));
     }
 }

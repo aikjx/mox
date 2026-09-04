@@ -1,5 +1,6 @@
 // mox-dsql-core 核心数据结构定义
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// SQL操作类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -223,4 +224,116 @@ pub struct PageResult<T> {
     pub total: i64,
     pub page: i64,
     pub page_size: i64,
+}
+
+// ==================== 动态业务流程模型 ====================
+
+/// 动态流程状态。
+///
+/// 流程和 SQL 使用同一套 Draft → Active → Deprecated 发布语义，
+/// 使业务配置可以先校验、再发布，避免半成品配置直接进入生产执行路径。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ProcessStatus {
+    Draft,
+    Active,
+    Deprecated,
+}
+
+impl Default for ProcessStatus {
+    fn default() -> Self {
+        Self::Draft
+    }
+}
+
+impl ProcessStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Draft => "DRAFT",
+            Self::Active => "ACTIVE",
+            Self::Deprecated => "DEPRECATED",
+        }
+    }
+}
+
+/// 动态流程步骤。
+///
+/// `input_mapping` 的 key 是 SQL 参数名，value 是流程上下文路径，
+/// 例如 `{ "tenant_id": "$.tenant_id", "keyword": "$.payload.keyword" }`。
+/// 只允许引用上下文，不允许把上下文拼接进 SQL 文本，保持参数化执行。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessStep {
+    pub step_code: String,
+    pub name: String,
+    pub sql_code: String,
+    #[serde(default)]
+    pub input_mapping: HashMap<String, String>,
+    pub output_key: Option<String>,
+    /// 简单条件：`$.path == value`、`$.path != value`、`exists($.path)`。
+    /// 复杂规则应下沉为一个只读 SQL 定义，避免在数据库中执行任意代码。
+    pub when: Option<String>,
+    #[serde(default)]
+    pub continue_on_error: bool,
+}
+
+/// 动态流程定义。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessDefinition {
+    pub id: i64,
+    pub process_code: String,
+    pub process_name: String,
+    pub description: Option<String>,
+    pub version: i32,
+    pub status: ProcessStatus,
+    pub steps: Vec<ProcessStep>,
+    pub permission_code: Option<String>,
+    pub entity_code: Option<String>,
+    pub created_by: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// 创建动态流程请求。
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct CreateProcessRequest {
+    pub process_code: String,
+    pub process_name: String,
+    pub description: Option<String>,
+    pub steps: Vec<ProcessStep>,
+    pub permission_code: Option<String>,
+    pub entity_code: Option<String>,
+    pub created_by: Option<String>,
+}
+
+/// 动态流程执行请求。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExecuteProcessRequest {
+    pub process_code: String,
+    #[serde(default)]
+    pub context: serde_json::Value,
+    pub trace_id: Option<String>,
+}
+
+/// 单步骤执行结果。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessStepResult {
+    pub step_code: String,
+    pub executed: bool,
+    pub skipped: bool,
+    pub success: bool,
+    pub output_key: Option<String>,
+    pub data: Option<serde_json::Value>,
+    pub error: Option<String>,
+}
+
+/// 动态流程执行结果。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExecuteProcessResult {
+    pub process_code: String,
+    pub success: bool,
+    pub context: serde_json::Value,
+    pub steps: Vec<ProcessStepResult>,
+    pub duration_ms: u64,
+    pub trace_id: Option<String>,
+    pub error: Option<String>,
 }

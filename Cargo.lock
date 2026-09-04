@@ -4900,6 +4900,7 @@ dependencies = [
  "chrono",
  "hex",
  "parking_lot",
+ "regex",
  "rusqlite",
  "sea-query",
  "serde",

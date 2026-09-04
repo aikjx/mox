@@ -37,6 +37,9 @@ impl DsqlStorage {
         let schema = include_str!("../migrations/001_init.sql");
         conn.execute_batch(schema)
             .map_err(|e| DsqlError::StorageError(format!("init schema: {e}")))?;
+        let process_schema = include_str!("../migrations/002_process.sql");
+        conn.execute_batch(process_schema)
+            .map_err(|e| DsqlError::StorageError(format!("init process schema: {e}")))?;
         Ok(())
     }
 
@@ -302,6 +305,108 @@ impl DsqlStorage {
         ).map_err(|e| DsqlError::StorageError(format!("audit log: {e}")))?;
         Ok(())
     }
+
+    /// 记录动态流程执行审计。
+    pub fn write_process_audit(
+        &self,
+        trace_id: Option<&str>,
+        process_code: &str,
+        success: bool,
+        duration_ms: u64,
+        step_results: &str,
+        error_msg: Option<&str>,
+    ) -> DsqlResult<()> {
+        let conn = self.conn.lock();
+        conn.execute(
+            "INSERT INTO dsql_process_audit
+             (trace_id, process_code, status, duration_ms, step_results, error_msg)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                trace_id,
+                process_code,
+                if success { "SUCCEEDED" } else { "FAILED" },
+                duration_ms as i64,
+                step_results,
+                error_msg,
+            ],
+        )
+        .map_err(|e| DsqlError::StorageError(format!("process audit: {e}")))?;
+        Ok(())
+    }
+
+    // ==================== 动态流程管理 ====================
+
+    /// 创建动态流程定义。流程步骤以 JSON 保存，便于跨数据库迁移和版本化。
+    pub fn create_process(&self, req: &CreateProcessRequest) -> DsqlResult<ProcessDefinition> {
+        validate_process_request(req)?;
+        let steps = serde_json::to_string(&req.steps)
+            .map_err(|e| DsqlError::Internal(format!("serialize process steps: {e}")))?;
+        let conn = self.conn.lock();
+        conn.execute(
+            "INSERT INTO dsql_process_definition (
+                process_code, process_name, description, version, status, steps,
+                permission_code, entity_code, created_by
+            ) VALUES (?1,?2,?3,1,'DRAFT',?4,?5,?6,?7)",
+            params![
+                req.process_code,
+                req.process_name,
+                req.description,
+                steps,
+                req.permission_code,
+                req.entity_code,
+                req.created_by,
+            ],
+        )
+        .map_err(|e| DsqlError::StorageError(format!("insert process: {e}")))?;
+        drop(conn);
+        self.get_process(&req.process_code)?
+            .ok_or_else(|| DsqlError::Internal("created process not found".to_string()))
+    }
+
+    /// 获取流程定义。
+    pub fn get_process(&self, process_code: &str) -> DsqlResult<Option<ProcessDefinition>> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT * FROM dsql_process_definition WHERE process_code = ?1",
+            params![process_code],
+            row_to_process_definition,
+        )
+        .optional()
+        .map_err(|e| DsqlError::StorageError(format!("get process: {e}")))
+    }
+
+    /// 获取可执行的流程定义。
+    pub fn get_active_process(&self, process_code: &str) -> DsqlResult<ProcessDefinition> {
+        let process = self
+            .get_process(process_code)?
+            .ok_or_else(|| DsqlError::Internal(format!("Process not found: {process_code}")))?;
+        if process.status != ProcessStatus::Active {
+            return Err(DsqlError::SqlNotActive(
+                process_code.to_string(),
+                process.status.as_str().to_string(),
+            ));
+        }
+        Ok(process)
+    }
+
+    /// 发布流程。
+    pub fn activate_process(&self, process_code: &str) -> DsqlResult<ProcessDefinition> {
+        let process = self
+            .get_process(process_code)?
+            .ok_or_else(|| DsqlError::Internal(format!("Process not found: {process_code}")))?;
+        validate_process_steps(&process.steps)?;
+        let conn = self.conn.lock();
+        conn.execute(
+            "UPDATE dsql_process_definition
+             SET status = 'ACTIVE', version = version + 1, updated_at = CURRENT_TIMESTAMP
+             WHERE process_code = ?1",
+            params![process_code],
+        )
+        .map_err(|e| DsqlError::StorageError(format!("activate process: {e}")))?;
+        drop(conn);
+        self.get_process(process_code)?
+            .ok_or_else(|| DsqlError::Internal("activated process not found".to_string()))
+    }
 }
 
 /// 行映射：数据库行 → SqlDefinition
@@ -353,4 +458,63 @@ fn compute_version_hash(template: &str, params_json: &str) -> String {
     hasher.update(template.as_bytes());
     hasher.update(params_json.as_bytes());
     hex::encode(hasher.finalize())
+}
+
+fn row_to_process_definition(r: &rusqlite::Row) -> rusqlite::Result<ProcessDefinition> {
+    let steps_json: String = r.get(6)?;
+    let steps = serde_json::from_str(&steps_json).map_err(|e| {
+        rusqlite::Error::FromSqlConversionFailure(
+            6,
+            rusqlite::types::Type::Text,
+            Box::new(e),
+        )
+    })?;
+    Ok(ProcessDefinition {
+        id: r.get(0)?,
+        process_code: r.get(1)?,
+        process_name: r.get(2)?,
+        description: r.get(3)?,
+        version: r.get(4)?,
+        status: match r.get::<_, String>(5)?.as_str() {
+            "ACTIVE" => ProcessStatus::Active,
+            "DEPRECATED" => ProcessStatus::Deprecated,
+            _ => ProcessStatus::Draft,
+        },
+        steps,
+        permission_code: r.get(7)?,
+        entity_code: r.get(8)?,
+        created_by: r.get(9)?,
+        created_at: r.get(10)?,
+        updated_at: r.get(11)?,
+    })
+}
+
+fn validate_process_request(req: &CreateProcessRequest) -> DsqlResult<()> {
+    if req.process_code.trim().is_empty() || req.process_name.trim().is_empty() {
+        return Err(DsqlError::InvalidParam(
+            "process_code and process_name are required".to_string(),
+        ));
+    }
+    validate_process_steps(&req.steps)
+}
+
+fn validate_process_steps(steps: &[ProcessStep]) -> DsqlResult<()> {
+    if steps.is_empty() {
+        return Err(DsqlError::InvalidParam("process must contain a step".to_string()));
+    }
+    let mut seen = std::collections::HashSet::new();
+    for step in steps {
+        if step.step_code.trim().is_empty() || step.sql_code.trim().is_empty() {
+            return Err(DsqlError::InvalidParam(
+                "step_code and sql_code are required".to_string(),
+            ));
+        }
+        if !seen.insert(&step.step_code) {
+            return Err(DsqlError::InvalidParam(format!(
+                "duplicate process step: {}",
+                step.step_code
+            )));
+        }
+    }
+    Ok(())
 }

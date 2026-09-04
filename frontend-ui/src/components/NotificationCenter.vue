@@ -124,10 +124,11 @@ async function loadNotifications() {
       read: n.read ?? false
     }))
   } catch (e) {
-    console.error('[NotificationCenter] 加载通知失败:', e)
+    // 通知中心是可降级的横切能力：后端未部署/租户暂无通知时不能污染页面冒烟，
+    // 也不能让每个页面都出现全局错误弹窗。用户主动操作（标记已读）仍保留 error。
+    console.warn('[NotificationCenter] 通知服务不可用，已降级为空状态:', e)
     error.value = e?.message || '通知加载失败'
     notifications.value = []
-    ElMessage.error('通知加载失败：' + (e.message || '未知错误'))
   } finally {
     loading.value = false
   }

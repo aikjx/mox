@@ -23,11 +23,12 @@ impl SqlEngine {
 
         // 2. 模板渲染
         let (rendered_sql, ordered_params) = Self::render_template(&sql_def.sql_template, &validated_params)?;
+        Self::validate_sql_shape(&rendered_sql, sql_def.operation_type)?;
 
         tracing::debug!(sql_code = %sql_def.sql_code, rendered_sql = %rendered_sql, "dsql execute");
 
         // 3. 执行SQL
-        let data = match sql_def.operation_type {
+        let (data, row_count) = match sql_def.operation_type {
             OperationType::Read => Self::execute_query(conn, &rendered_sql, &ordered_params, sql_def.result_type)?,
             OperationType::Write => Self::execute_write(conn, &rendered_sql, &ordered_params)?,
         };
@@ -38,12 +39,47 @@ impl SqlEngine {
             sql_code: sql_def.sql_code.clone(),
             success: true,
             data: Some(data),
-            row_count: None,
+            row_count: Some(row_count),
             duration_ms: duration,
             cache_hit: false,
             error: None,
             trace_id,
         })
+    }
+
+    /// 校验动态 SQL 的执行形状。
+    ///
+    /// 动态 SQL 允许业务变化，但不允许借配置绕过执行边界：禁止多语句，
+    /// 读写类型必须与 SQL 首关键字一致，DDL 必须通过显式迁移流程执行。
+    fn validate_sql_shape(sql: &str, operation: OperationType) -> DsqlResult<()> {
+        let normalized = sql
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        if normalized.is_empty() {
+            return Err(DsqlError::TemplateError("SQL template is empty".to_string()));
+        }
+        if normalized.contains(';') || normalized.contains('\0') {
+            return Err(DsqlError::TemplateError(
+                "multiple statements and NUL bytes are not allowed".to_string(),
+            ));
+        }
+        let keyword = normalized
+            .split_ascii_whitespace()
+            .next()
+            .unwrap_or_default()
+            .to_ascii_uppercase();
+        let allowed = match operation {
+            OperationType::Read => ["SELECT", "WITH", "EXPLAIN"].contains(&keyword.as_str()),
+            OperationType::Write => ["INSERT", "UPDATE", "DELETE", "REPLACE"].contains(&keyword.as_str()),
+        };
+        if !allowed {
+            return Err(DsqlError::TemplateError(format!(
+                "SQL operation {:?} does not allow statement starting with {}",
+                operation, keyword
+            )));
+        }
+        Ok(())
     }
 
     /// 参数校验
@@ -134,9 +170,14 @@ impl SqlEngine {
             }
             "regex" => {
                 if let (Some(pattern), Some(s)) = (&validation.pattern, value.as_str()) {
-                    // 简单正则校验（不引入regex crate，用基础匹配）
-                    if !s.contains(pattern.as_str()) {
-                        // 这里简化处理，实际应使用regex crate
+                    let regex = regex::Regex::new(pattern).map_err(|e| {
+                        DsqlError::InvalidParam(format!("{} has invalid regex: {e}", def.name))
+                    })?;
+                    if !regex.is_match(s) {
+                        return Err(DsqlError::InvalidParam(format!(
+                            "{} does not match validation pattern",
+                            def.name
+                        )));
                     }
                 }
             }
@@ -284,7 +325,7 @@ impl SqlEngine {
         sql: &str,
         params: &[serde_json::Value],
         result_type: ResultType,
-    ) -> DsqlResult<serde_json::Value> {
+    ) -> DsqlResult<(serde_json::Value, i64)> {
         let param_values: Vec<rusqlite::types::Value> = params.iter()
             .map(json_to_sqlite_value)
             .collect();
@@ -307,8 +348,11 @@ impl SqlEngine {
                     Ok(serde_json::Value::Object(map))
                 }).map_err(|e| DsqlError::ExecutionError(format!("query: {e}")))?;
 
-                let items: Vec<serde_json::Value> = rows.filter_map(|r| r.ok()).collect();
-                Ok(serde_json::Value::Array(items))
+                let items: Vec<serde_json::Value> = rows
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|e| DsqlError::ExecutionError(format!("row mapping: {e}")))?;
+                let count = items.len() as i64;
+                Ok((serde_json::Value::Array(items), count))
             }
             ResultType::Map => {
                 let mut stmt = conn.prepare(sql)
@@ -328,7 +372,8 @@ impl SqlEngine {
                 }).optional()
                 .map_err(|e| DsqlError::ExecutionError(format!("query: {e}")))?;
 
-                Ok(result.unwrap_or(serde_json::Value::Null))
+                let count = i64::from(result.is_some());
+                Ok((result.unwrap_or(serde_json::Value::Null), count))
             }
             ResultType::Single => {
                 let value: Option<rusqlite::types::Value> = conn.query_row(
@@ -338,18 +383,20 @@ impl SqlEngine {
                 ).optional()
                 .map_err(|e| DsqlError::ExecutionError(format!("query: {e}")))?;
 
-                Ok(match value {
+                let result = match value {
                     Some(v) => owned_sqlite_value_to_json(v),
                     None => serde_json::Value::Null,
-                })
+                };
+                let count = i64::from(!result.is_null());
+                Ok((result, count))
             }
             ResultType::Count => {
                 let count: i64 = conn.query_row(
                     sql,
                     params_from_iter(param_values.iter()),
                     |row| row.get(0),
-                ).unwrap_or(0);
-                Ok(serde_json::json!({ "count": count }))
+                ).map_err(|e| DsqlError::ExecutionError(format!("count: {e}")))?;
+                Ok((serde_json::json!({ "count": count }), count))
             }
             _ => Err(DsqlError::ExecutionError("invalid result type for read".to_string())),
         }
@@ -360,7 +407,7 @@ impl SqlEngine {
         conn: &Connection,
         sql: &str,
         params: &[serde_json::Value],
-    ) -> DsqlResult<serde_json::Value> {
+    ) -> DsqlResult<(serde_json::Value, i64)> {
         let param_values: Vec<rusqlite::types::Value> = params.iter()
             .map(json_to_sqlite_value)
             .collect();
@@ -368,7 +415,7 @@ impl SqlEngine {
         let affected = conn.execute(sql, params_from_iter(param_values.iter()))
             .map_err(|e| DsqlError::ExecutionError(format!("execute: {e}")))?;
 
-        Ok(serde_json::json!({ "affected_rows": affected }))
+        Ok((serde_json::json!({ "affected_rows": affected }), affected as i64))
     }
 }
 

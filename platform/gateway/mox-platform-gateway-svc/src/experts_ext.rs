@@ -3,9 +3,19 @@
 
 //! # 专家广场扩展域（Experts Ext）HTTP 路由
 //!
-//! 提供专家平台统计、预约管理、收藏、咨询室、团队加入、即时咨询等专家广场能力。
+//! 提供专家预约管理与专家收藏能力，路由前缀 `/api/experts/*`。
 //!
-//! 路径前缀：`/experts/*`
+//! ## 归一化收口（2026-09-05）
+//! 本模块与注册中心域（`experts_registry`）、智能协作域（`experts_collaboration`）等
+//! 共用同一份 `ExpertsSharedState`：
+//! - **收藏集合**统一落在 `ExpertsSharedState.favorites`，不再在本模块内另存一份，
+//!   消除「广场端收藏 → 注册中心端读不到」的数据分裂；
+//! - 平台统计 `/api/experts/stats`、咨询室 `/api/experts/bookings/:id/consult-room`、
+//!   加入团队 `/api/experts/team`、即时咨询 `/api/experts/:id/consult-now` 四个端点
+//!   已由 `experts_registry` 提供真实实现，本模块的同义占位实现已移除（原为死代码）。
+//!
+//! 预约（`Booking`）经 `experts_db` 落 SQLite（`data/experts.db`，WAL + 事务），
+//! 历史 `data/experts_bookings.json` 在启动时自动导入并归档。
 
 use axum::{
     Json, Router,
@@ -18,8 +28,10 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
+use crate::experts_common::ExpertsSharedState;
+
 // =====================================================================
-// 共享状态
+// 领域模型 + 持久化
 // =====================================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,11 +47,7 @@ struct Booking {
     created_at: String,
 }
 
-// =====================================================================
-// SQLite 持久化（经 experts_db：data/experts.db；历史
-// data/experts_bookings.json 在启动时自动导入并归档）
-// =====================================================================
-
+/// 预约读取：经 experts_db 从 SQLite 载入
 fn load_experts_bookings() -> Vec<Booking> {
     crate::experts_db::load_bookings()
         .into_iter()
@@ -47,6 +55,7 @@ fn load_experts_bookings() -> Vec<Booking> {
         .collect()
 }
 
+/// 预约写入：经 experts_db 事务化全量同步落 SQLite
 fn save_experts_bookings(bookings: &[Booking]) {
     let rows: Vec<Value> = bookings
         .iter()
@@ -55,17 +64,24 @@ fn save_experts_bookings(bookings: &[Booking]) {
     crate::experts_db::save_bookings(&rows);
 }
 
+// =====================================================================
+// 共享状态
+// =====================================================================
+
+/// 专家广场扩展域状态
+///
+/// 仅持有本域独有的预约集合；收藏集合复用全域共享状态，避免双份存储。
 #[derive(Clone)]
 struct ExpertsState {
     bookings: Arc<Mutex<Vec<Booking>>>,
-    favorites: Arc<Mutex<std::collections::HashSet<String>>>,
+    shared: Arc<ExpertsSharedState>,
 }
 
 impl ExpertsState {
-    fn new() -> Self {
+    fn new(shared: Arc<ExpertsSharedState>) -> Self {
         Self {
             bookings: Arc::new(Mutex::new(load_experts_bookings())),
-            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            shared,
         }
     }
 }
@@ -79,35 +95,7 @@ fn ok(data: Value) -> ApiResponse<Value> {
 }
 
 // =====================================================================
-// 1. GET /experts/stats — 平台统计
-// =====================================================================
-async fn experts_stats() -> ApiResponse<Value> {
-    ok(json!({
-        "total_experts": 0,
-        "online_experts": 0,
-        "busy_experts": 0,
-        "offline_experts": 0,
-        "total_consultations": 0,
-        "today_consultations": 0,
-        "avg_rating": 0.0,
-        "avg_response_minutes": 0.0,
-        "domains": {
-            "architecture": 0,
-            "data": 0,
-            "ai": 0,
-            "cloud": 0,
-            "security": 0,
-            "devops": 0,
-            "product": 0,
-            "other": 0,
-        },
-        "satisfaction_rate": 0.0,
-        "ts": now_iso(),
-    }))
-}
-
-// =====================================================================
-// 2. GET /experts/bookings/mine — 我的预约列表
+// 1. GET /experts/bookings/mine — 我的预约列表
 // =====================================================================
 async fn my_bookings(State(s): State<Arc<ExpertsState>>) -> ApiResponse<Value> {
     let bookings = s.bookings.lock().clone();
@@ -122,19 +110,21 @@ async fn my_bookings(State(s): State<Arc<ExpertsState>>) -> ApiResponse<Value> {
 }
 
 // =====================================================================
-// 3. POST /experts/{id}/favorite — 专家收藏切换
+// 2. POST /experts/{id}/favorite — 专家收藏切换
 // =====================================================================
 async fn toggle_expert_favorite(
     Path(id): Path<String>,
     State(s): State<Arc<ExpertsState>>,
 ) -> ApiResponse<Value> {
-    let mut favs = s.favorites.lock();
+    // 收藏集合归一化：全域唯一真源为 ExpertsSharedState.favorites
+    let mut favs = s.shared.favorites.lock();
     let is_fav = favs.contains(&id);
     if is_fav {
         favs.remove(&id);
     } else {
         favs.insert(id.clone());
     }
+    drop(favs);
     ok(json!({
         "expert_id": id,
         "favorite": !is_fav,
@@ -144,7 +134,7 @@ async fn toggle_expert_favorite(
 }
 
 // =====================================================================
-// 4. POST /experts/bookings — 预约创建
+// 3. POST /experts/bookings — 预约创建
 // =====================================================================
 
 #[derive(Debug, Deserialize)]
@@ -153,6 +143,7 @@ struct CreateBookingBody {
     topic: String,
     scheduled_at: Option<String>,
     duration_minutes: Option<i64>,
+    #[allow(dead_code)]
     description: Option<String>,
 }
 
@@ -160,33 +151,46 @@ async fn create_booking(
     State(s): State<Arc<ExpertsState>>,
     Json(body): Json<CreateBookingBody>,
 ) -> ApiResponse<Value> {
+    // 专家名取注册中心真实数据；未注册专家直接拒绝，避免产生指向空专家的脏预约
+    let expert_name = {
+        let reg = s.shared.registry.lock();
+        match reg.get(&body.expert_id) {
+            Some(e) => e.name.clone(),
+            None => {
+                return api_error(404, format!("expert not found: {}", body.expert_id));
+            }
+        }
+    };
+
     let booking_id = format!("booking-{}", uuid::Uuid::new_v4().simple());
     let scheduled = body.scheduled_at.unwrap_or_else(|| {
         (chrono::Utc::now() + chrono::Duration::hours(24))
             .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
     });
     let duration = body.duration_minutes.unwrap_or(60);
+
     let booking = Booking {
         id: booking_id.clone(),
         expert_id: body.expert_id.clone(),
-        expert_name: format!("专家-{}", &body.expert_id),
+        expert_name,
         user_id: "admin-user".into(),
         topic: body.topic.clone(),
-        scheduled_at: scheduled.clone(),
+        scheduled_at: scheduled,
         duration_minutes: duration,
         status: "pending".into(),
         created_at: now_iso(),
     };
-    s.bookings.lock().push(booking.clone());
-    {
-        let bookings = s.bookings.lock();
-        save_experts_bookings(&bookings);
-    }
+
+    // 单次加锁完成「内存态更新 + 持久化」，避免同一临界区被拆成两次加锁
+    let mut bookings = s.bookings.lock();
+    bookings.push(booking.clone());
+    save_experts_bookings(&bookings);
+
     ok(json!(booking))
 }
 
 // =====================================================================
-// 5. PUT /experts/bookings/{id}/cancel — 预约取消
+// 4. PUT /experts/bookings/{id}/cancel — 预约取消
 // =====================================================================
 async fn cancel_booking(
     Path(id): Path<String>,
@@ -198,9 +202,7 @@ async fn cancel_booking(
             return api_error(400, format!("预约 {} 当前状态为 {}，无法取消", id, b.status));
         }
         b.status = "cancelled".into();
-        {
-            save_experts_bookings(&bookings);
-        }
+        save_experts_bookings(&bookings);
         return ok(json!({
             "booking_id": id,
             "status": "cancelled",
@@ -212,90 +214,16 @@ async fn cancel_booking(
 }
 
 // =====================================================================
-// 6. GET /experts/bookings/{id}/consult-room — 咨询室进入
-// =====================================================================
-async fn consult_room(Path(id): Path<String>) -> ApiResponse<Value> {
-    ok(json!({
-        "booking_id": id,
-        "room_id": format!("room-{}", id),
-        "room_token": null,
-        "join_url": null,
-        "webrtc_config": {
-            "ice_servers": [],
-        },
-        "expert_info": null,
-        "status": "unavailable",
-        "expires_in": 0,
-        "created_at": now_iso(),
-    }))
-}
-
-// =====================================================================
-// 7. POST /experts/team — 加入团队
-// =====================================================================
-
-#[derive(Debug, Deserialize)]
-struct JoinTeamBody {
-    team_id: String,
-    expert_id: Option<String>,
-    role: Option<String>,
-    message: Option<String>,
-}
-
-async fn join_team(Json(body): Json<JoinTeamBody>) -> ApiResponse<Value> {
-    let role = body.role.unwrap_or_else(|| "member".into());
-    ok(json!({
-        "team_id": body.team_id,
-        "expert_id": body.expert_id.unwrap_or_else(|| "expert-current".into()),
-        "role": role,
-        "status": "pending_approval",
-        "application_id": format!("app-{}", uuid::Uuid::new_v4().simple()),
-        "message": body.message.unwrap_or_else(|| "申请加入团队".into()),
-        "applied_at": now_iso(),
-        "estimated_review_hours": 0,
-    }))
-}
-
-// =====================================================================
-// 8. POST /experts/{id}/consult-now — 即时咨询
-// =====================================================================
-
-#[derive(Debug, Deserialize)]
-struct ConsultNowBody {
-    topic: Option<String>,
-    question: Option<String>,
-    channel: Option<String>,
-}
-
-async fn consult_now(
-    Path(id): Path<String>,
-    Json(body): Json<ConsultNowBody>,
-) -> ApiResponse<Value> {
-    ok(json!({
-        "expert_id": id,
-        "session_id": null,
-        "status": "unavailable",
-        "channel": body.channel.unwrap_or_else(|| "text".into()),
-        "topic": body.topic.unwrap_or_else(|| "即时咨询".into()),
-        "question": body.question,
-        "estimated_wait_seconds": 0,
-        "chat_url": null,
-        "expert_online": false,
-        "created_at": now_iso(),
-    }))
-}
-
-// =====================================================================
 // 路由装配
 // =====================================================================
 
-pub fn build_experts_ext_router() -> Router {
-    let state = Arc::new(ExpertsState::new());
+/// 构建专家广场扩展域路由
+///
+/// `shared` 为专家联盟全域共享状态；收藏集合复用其中的 `favorites`，
+/// 专家名校验复用其中的 `registry`。
+pub fn build_experts_ext_router(shared: Arc<ExpertsSharedState>) -> Router {
+    let state = Arc::new(ExpertsState::new(shared));
     Router::new()
-        // 注意：以下4个端点已由 experts_registry.rs 提供真实实现（归一化升级）：
-        //   GET /api/experts/stats、GET /api/experts/bookings/:id/consult-room、
-        //   POST /api/experts/team、POST /api/experts/:id/consult-now
-        // 此处保留 booking/favorite 等广场管理端点。
         .route("/api/experts/bookings/mine", get(my_bookings))
         .route("/api/experts/:id/favorite", post(toggle_expert_favorite))
         .route("/api/experts/bookings", post(create_booking))

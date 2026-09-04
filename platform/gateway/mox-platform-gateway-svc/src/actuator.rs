@@ -601,15 +601,41 @@ fn method_ok(route: &ApiRoute, method: &str) -> bool {
     route.method == "ANY" || route.method == method
 }
 
+/// 兼容迁移期历史入口，但始终把它们归一化到唯一的 canonical route。
+///
+/// `/api/*` 是旧编排入口，`/kg/v1/*` 和 `/ai/v1/*` 是当前 L2/L3 入口。
+/// 管理面需要同时识别两者，否则通配代理会在精确业务路由之前抢占匹配。
+fn canonical_path(path: &str) -> &str {
+    match path {
+        "/api/kg/stats" => "/kg/v1/stats",
+        "/api/ai/engine/process" => "/ai/v1/process",
+        "/api/ai/engine/analyze" => "/ai/v1/analyze",
+        "/api/ai/engine/capabilities" => "/ai/v1/capabilities",
+        "/api/ai/engine/metrics" => "/ai/v1/metrics",
+        _ => path,
+    }
+}
+
 /// 在注册表中查找“最具体”匹配的路由（用于启停拦截）。
 pub fn match_best(method: &str, path: &str) -> Option<&'static ApiRoute> {
+    let canonical = canonical_path(path);
+
+    // 一个已知业务路径如果方法不允许，必须明确返回 None，不能降级到 ANY catch-all。
+    // 这样可以让上层返回 405/路由错误，而不是把请求误交给另一个业务服务。
+    if ROUTES
+        .iter()
+        .any(|route| path_matches(route.path, canonical) && !method_ok(route, method))
+    {
+        return None;
+    }
+
     let mut best: Option<&'static ApiRoute> = None;
     let mut best_spec = 0usize;
     for route in ROUTES.iter() {
         if !method_ok(route, method) {
             continue;
         }
-        if path_matches(route.path, path) {
+        if path_matches(route.path, canonical) {
             let s = specificity(route.path);
             if best.is_none() || s > best_spec {
                 best = Some(route);

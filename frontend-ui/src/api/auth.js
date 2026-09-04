@@ -3,7 +3,9 @@
  * 统一封装登录、注册、刷新令牌、登出等认证相关接口
  */
 
-import request from '../utils/request'
+// 认证请求必须复用统一 HTTP 实例：鉴权头、租户/项目上下文、响应信封和错误归一化
+// 都由这里集中处理，避免维护第二套已经不存在的 request 工具。
+import request from './http'
 
 /**
  * 登录
