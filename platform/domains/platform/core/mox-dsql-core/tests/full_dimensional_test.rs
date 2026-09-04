@@ -585,15 +585,15 @@ fn test_error_unknown_template_param() {
         entity_code: None,
         created_by: None,
     }).unwrap();
-    manager.activate_sql("unknown_param").unwrap();
+    let activation = manager.activate_sql("unknown_param");
+    assert!(matches!(activation, Err(DsqlError::TemplateError(_))));
 
     let result = manager.execute(&ExecuteRequest {
         sql_code: "unknown_param".to_string(),
         params: serde_json::json!({}),
         trace_id: None,
     });
-    assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), DsqlError::TemplateError(_)));
+    assert!(matches!(result, Err(DsqlError::SqlNotActive(_, _))));
 }
 
 // ================================================================

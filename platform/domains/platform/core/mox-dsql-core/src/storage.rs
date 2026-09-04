@@ -1,4 +1,5 @@
 // mox-dsql-core 存储层：SQL定义的CRUD操作
+use crate::engine::SqlEngine;
 use crate::error::{DsqlError, DsqlResult};
 use crate::model::*;
 use rusqlite::{params, params_from_iter, Connection, OptionalExtension};
@@ -137,6 +138,11 @@ impl DsqlStorage {
         let new_version = existing.version + 1;
         let sql_template = req.sql_template.clone().unwrap_or(existing.sql_template);
         let param_defs = req.param_defs.clone().unwrap_or(existing.param_defs);
+        let operation_type = req.operation_type.unwrap_or(existing.operation_type);
+        let final_status = req.status.unwrap_or(existing.status);
+        if final_status == SqlStatus::Active {
+            SqlEngine::validate_template(&sql_template, &param_defs, operation_type)?;
+        }
         let param_defs_json = serde_json::to_string(&param_defs).unwrap_or_default();
         let version_hash = compute_version_hash(&sql_template, &param_defs_json);
 
@@ -396,6 +402,23 @@ impl DsqlStorage {
             .ok_or_else(|| DsqlError::Internal(format!("Process not found: {process_code}")))?;
         validate_process_steps(&process.steps)?;
         let conn = self.conn.lock();
+        for step in &process.steps {
+            let active = conn
+                .query_row(
+                    "SELECT status FROM dsql_definition WHERE sql_code = ?1",
+                    params![step.sql_code],
+                    |row| row.get::<_, String>(0),
+                )
+                .optional()
+                .map_err(|e| DsqlError::StorageError(format!("validate process SQL: {e}")))?;
+            match active.as_deref() {
+                Some("ACTIVE") => {}
+                Some(status) => {
+                    return Err(DsqlError::SqlNotActive(step.sql_code.clone(), status.to_string()));
+                }
+                None => return Err(DsqlError::SqlNotFound(step.sql_code.clone())),
+            }
+        }
         conn.execute(
             "UPDATE dsql_process_definition
              SET status = 'ACTIVE', version = version + 1, updated_at = CURRENT_TIMESTAMP

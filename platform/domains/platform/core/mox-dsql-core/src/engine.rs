@@ -9,6 +9,23 @@ use std::time::Instant;
 pub struct SqlEngine;
 
 impl SqlEngine {
+    /// 在发布前校验模板的结构边界。
+    ///
+    /// 这里不要求业务参数有真实值，只用 NULL 渲染静态主路径；运行时仍会
+    /// 对最终 SQL 再校验一次，防止条件片段或版本变更绕过执行边界。
+    pub(crate) fn validate_template(
+        template: &str,
+        param_defs: &[ParamDef],
+        operation: OperationType,
+    ) -> DsqlResult<()> {
+        let params = param_defs
+            .iter()
+            .map(|def| (def.name.clone(), serde_json::Value::Null))
+            .collect::<HashMap<_, _>>();
+        let (rendered_sql, _) = Self::render_template(template, &params)?;
+        Self::validate_sql_shape(&rendered_sql, operation)
+    }
+
     /// 执行SQL定义
     pub fn execute(
         conn: &Connection,
@@ -51,7 +68,7 @@ impl SqlEngine {
     ///
     /// 动态 SQL 允许业务变化，但不允许借配置绕过执行边界：禁止多语句，
     /// 读写类型必须与 SQL 首关键字一致，DDL 必须通过显式迁移流程执行。
-    fn validate_sql_shape(sql: &str, operation: OperationType) -> DsqlResult<()> {
+    pub(crate) fn validate_sql_shape(sql: &str, operation: OperationType) -> DsqlResult<()> {
         let normalized = sql
             .split_whitespace()
             .collect::<Vec<_>>()

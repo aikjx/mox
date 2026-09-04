@@ -117,6 +117,15 @@ impl DsqlManager {
 
     /// 激活SQL（从DRAFT变为ACTIVE）
     pub fn activate_sql(&self, sql_code: &str) -> DsqlResult<SqlDefinition> {
+        let current = self
+            .storage
+            .get_sql(sql_code)?
+            .ok_or_else(|| DsqlError::SqlNotFound(sql_code.to_string()))?;
+        SqlEngine::validate_template(
+            &current.sql_template,
+            &current.param_defs,
+            current.operation_type,
+        )?;
         self.update_sql(sql_code, &UpdateSqlRequest {
             sql_name: None,
             description: None,
@@ -534,12 +543,13 @@ mod tests {
             entity_code: None,
             created_by: None,
         }).unwrap();
-        manager.activate_sql("guarded.multiple").unwrap();
+        let activation = manager.activate_sql("guarded.multiple");
+        assert!(matches!(activation, Err(DsqlError::TemplateError(_))));
         let invalid_sql = manager.execute(&ExecuteRequest {
             sql_code: "guarded.multiple".to_string(),
             params: serde_json::json!({}),
             trace_id: None,
         });
-        assert!(matches!(invalid_sql, Err(DsqlError::TemplateError(_))));
+        assert!(matches!(invalid_sql, Err(DsqlError::SqlNotActive(_, _))));
     }
 }

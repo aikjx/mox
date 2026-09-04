@@ -170,10 +170,11 @@ fn parse_literal(raw: &str) -> Value {
 }
 
 fn resolve_path<'a>(context: &'a Value, raw_path: &str) -> Option<&'a Value> {
-    let path = raw_path.trim().strip_prefix("$. ")
-        .or_else(|| raw_path.trim().strip_prefix("$."))
-        .or_else(|| raw_path.trim().strip_prefix('$'))
-        .unwrap_or(raw_path.trim())
+    let trimmed = raw_path.trim();
+    let path = trimmed
+        .strip_prefix("$.")
+        .or_else(|| trimmed.strip_prefix('$'))
+        .unwrap_or(trimmed)
         .trim_start_matches('.');
     if path.is_empty() {
         return Some(context);
@@ -182,10 +183,11 @@ fn resolve_path<'a>(context: &'a Value, raw_path: &str) -> Option<&'a Value> {
 }
 
 fn set_path(context: &mut Value, raw_path: &str, value: Value) -> DsqlResult<()> {
-    let path = raw_path.trim().strip_prefix("$. ")
-        .or_else(|| raw_path.trim().strip_prefix("$."))
-        .or_else(|| raw_path.trim().strip_prefix('$'))
-        .unwrap_or(raw_path.trim())
+    let trimmed = raw_path.trim();
+    let path = trimmed
+        .strip_prefix("$.")
+        .or_else(|| trimmed.strip_prefix('$'))
+        .unwrap_or(trimmed)
         .trim_start_matches('.');
     let Some(object) = context.as_object_mut() else {
         return Err(DsqlError::InvalidParam("process context must be an object".to_string()));

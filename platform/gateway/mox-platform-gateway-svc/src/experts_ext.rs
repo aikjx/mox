@@ -94,6 +94,19 @@ fn ok(data: Value) -> ApiResponse<Value> {
     api_ok(data)
 }
 
+/// 从注册中心解析专家展示名
+///
+/// 预约必须指向真实存在的专家：未注册（或已软删除）的专家一律拒绝，
+/// 防止产生 `expert_name` 为占位串、专家 ID 悬空的脏数据。
+fn resolve_expert_name(shared: &ExpertsSharedState, expert_id: &str) -> Result<String, String> {
+    let reg = shared.registry.lock();
+    match reg.get(expert_id) {
+        Some(e) if e.enabled => Ok(e.name.clone()),
+        Some(_) => Err(format!("expert disabled: {expert_id}")),
+        None => Err(format!("expert not found: {expert_id}")),
+    }
+}
+
 // =====================================================================
 // 1. GET /experts/bookings/mine — 我的预约列表
 // =====================================================================
@@ -152,14 +165,9 @@ async fn create_booking(
     Json(body): Json<CreateBookingBody>,
 ) -> ApiResponse<Value> {
     // 专家名取注册中心真实数据；未注册专家直接拒绝，避免产生指向空专家的脏预约
-    let expert_name = {
-        let reg = s.shared.registry.lock();
-        match reg.get(&body.expert_id) {
-            Some(e) => e.name.clone(),
-            None => {
-                return api_error(404, format!("expert not found: {}", body.expert_id));
-            }
-        }
+    let expert_name = match resolve_expert_name(&s.shared, &body.expert_id) {
+        Ok(name) => name,
+        Err(msg) => return api_error(404, msg),
     };
 
     let booking_id = format!("booking-{}", uuid::Uuid::new_v4().simple());
@@ -229,4 +237,75 @@ pub fn build_experts_ext_router(shared: Arc<ExpertsSharedState>) -> Router {
         .route("/api/experts/bookings", post(create_booking))
         .route("/api/experts/bookings/:id/cancel", put(cancel_booking))
         .with_state(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::experts_common::*;
+    use mox_audit::{AuditContext, MultiSink, NoopSink};
+    use std::collections::{HashMap, HashSet};
+
+    /// 构造无 IO 的全域共享状态（审计走 NoopSink，不落盘）
+    fn test_shared(experts: Vec<ExpertDescriptor>) -> Arc<ExpertsSharedState> {
+        let mut registry = HashMap::new();
+        for e in experts {
+            registry.insert(e.id.clone(), e);
+        }
+        Arc::new(ExpertsSharedState {
+            registry: Arc::new(Mutex::new(registry)),
+            sessions: Arc::new(Mutex::new(HashMap::new())),
+            dispatcher_config: Arc::new(Mutex::new(DispatcherConfig::default())),
+            dispatch_records: Arc::new(Mutex::new(Vec::new())),
+            graph: Arc::new(Mutex::new(ExpertGraph::default())),
+            plans: Arc::new(Mutex::new(HashMap::new())),
+            orchestration_history: Arc::new(Mutex::new(Vec::new())),
+            favorites: Arc::new(Mutex::new(HashSet::new())),
+            audit: Arc::new(
+                AuditContext::new(Arc::new(MultiSink::new().with_sink(Box::new(NoopSink)))),
+            ),
+        })
+    }
+
+    #[test]
+    fn test_resolve_expert_name() {
+        let shared = test_shared(vec![ExpertDescriptor::minimal(
+            "exp-1".into(),
+            "架构师·玄枢".into(),
+        )]);
+        assert_eq!(resolve_expert_name(&shared, "exp-1").unwrap(), "架构师·玄枢");
+        assert!(resolve_expert_name(&shared, "exp-not-exist")
+            .unwrap_err()
+            .contains("not found"));
+    }
+
+    #[test]
+    fn test_resolve_expert_name_rejects_disabled() {
+        let mut disabled = ExpertDescriptor::minimal("exp-2".into(), "已禁用专家".into());
+        disabled.enabled = false;
+        let shared = test_shared(vec![disabled]);
+        assert!(resolve_expert_name(&shared, "exp-2")
+            .unwrap_err()
+            .contains("disabled"));
+    }
+
+    /// 回归：收藏必须落在全域共享态，而不是本模块私有集合
+    ///
+    /// 直接构造 `ExpertsState`（不经 `new()`），避免单元测试触碰真实 SQLite。
+    #[tokio::test]
+    async fn test_toggle_favorite_writes_shared_state() {
+        let shared = test_shared(vec![ExpertDescriptor::minimal("exp-1".into(), "甲".into())]);
+        let s = Arc::new(ExpertsState {
+            bookings: Arc::new(Mutex::new(Vec::new())),
+            shared: shared.clone(),
+        });
+        assert!(s.shared.favorites.lock().is_empty());
+
+        toggle_expert_favorite(Path("exp-1".to_string()), State(s.clone())).await;
+        assert!(s.shared.favorites.lock().contains("exp-1"));
+
+        // 再次调用为取消
+        toggle_expert_favorite(Path("exp-1".to_string()), State(s.clone())).await;
+        assert!(s.shared.favorites.lock().is_empty());
+    }
 }
