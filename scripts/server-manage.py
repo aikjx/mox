@@ -2331,10 +2331,20 @@ def cmd_scripts(manager: ServiceManager):
         path = info.get("path", "")
         desc = info.get("description", "")
         files = info.get("files", [])
+        groups = info.get("groups", {})
         print(f"  📂 {key:12s} {path}")
         print(f"      {desc}")
         if files:
             print(f"      文件: {', '.join(files)}")
+        if groups:
+            for gkey, ginfo in groups.items():
+                gpath = ginfo.get("path", "")
+                gdesc = ginfo.get("description", "")
+                gfiles = ginfo.get("files", [])
+                print(f"      ├─ {gkey:12s} {gpath}")
+                print(f"      │   {gdesc}")
+                if gfiles:
+                    print(f"      │   文件: {', '.join(gfiles)}")
         print()
 
 

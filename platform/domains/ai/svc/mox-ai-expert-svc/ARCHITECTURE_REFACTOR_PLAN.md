@@ -329,7 +329,7 @@ mox-ai-expert-core
 
 #### 4.2.3 mox-ai-alliance-engine（联盟编排层）
 
-**定位**: 专家联盟全维分析 6 阶段管线。
+**定位**: 专家联盟mox 模块化系统架构分析 6 阶段管线。
 
 **职责边界**:
 - 意图识别（Intent）
@@ -1052,7 +1052,7 @@ impl ExpertDomainEvent {
 **验证**:
 - 联盟管线测试通过
 - 6 阶段事件流正确
-- 全维分析功能正常
+- mox 模块化系统架构分析功能正常
 
 **风险**: 中（alliance 与 core 耦合较深，需通过 trait 解耦）
 

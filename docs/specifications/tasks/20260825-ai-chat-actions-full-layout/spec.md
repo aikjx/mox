@@ -1,4 +1,4 @@
-# AI 消息动作工具栏与全维分析布局规格
+# AI 消息动作工具栏与mox 模块化系统架构分析布局规格
 
 ## 一、问题（Problem）
 
@@ -14,7 +14,7 @@
 8. **追问**（Follow-up）：把消息摘要（或默认 "关于以上内容，我想追问："）填入输入框，并自动聚焦输入框。
 9. **反馈**（Report / Flag）：对话框收集反馈类型（事实错误/格式问题/幻觉/其他）、严重程度、描述文本，提交给父级占位（不阻塞）。
 
-同时用户提出"架构开发专家联盟，全维分析，怎么布局好。最伟大的产品，最好用"——因此需要对 ChatView 工具栏、空态、输入面板、结果面板四者进行**黄金比例（φ≈1.618）× 深空极简**再布局，达到比上一版本更统一、克制、易用的视觉与操作体验。
+同时用户提出"架构开发专家联盟，mox 模块化系统架构分析，怎么布局好。最伟大的产品，最好用"——因此需要对 ChatView 工具栏、空态、输入面板、结果面板四者进行**黄金比例（φ≈1.618）× 深空极简**再布局，达到比上一版本更统一、克制、易用的视觉与操作体验。
 
 ## 二、目标用户（Users）
 
@@ -37,7 +37,7 @@
 - *不*改变已有数据契约（`msg.role / msg.content / msg.confidence / msg.referenced_operators / msg.web_search / msg.artifacts`），只新增前端内聚的交互状态（喜欢、收藏、朗读进度、反馈对话框）。
 - *不*引入新的第三方依赖；朗读走浏览器原生 SpeechSynthesis；分享走原生 Web Share + Clipboard；收藏/喜欢状态仅用组件内 ref + 可选 `localStorage` 持久化（key 命名统一前缀）。
 - *不*改动 SessionSidebar、ToolDrawer、其他业务组件；改动范围限定为 `MessageBubble.vue`（主）与 `ChatView.vue`（emit 占位处理+小布局优化），`global.css` 只在必要时补 1-2 条全局变量。
-- *不*重新实现分享/朗读/反馈的企业级后端。"架构开发专家联盟·全维分析"在本规格内聚焦**前端最佳布局与动作闭环的产品设计落地**，而非后端功能实现。
+- *不*重新实现分享/朗读/反馈的企业级后端。"架构开发专家联盟·mox 模块化系统架构分析"在本规格内聚焦**前端最佳布局与动作闭环的产品设计落地**，而非后端功能实现。
 
 ## 五、功能需求（Functional Requirements，FR）
 
@@ -128,18 +128,18 @@
 - 提交：emit `@feedback(msg, payload)` → toast "反馈已提交，感谢助力专家联盟质量升级"。
 - 取消：不触发 emit，关闭对话框清空表单。
 
-### FR11 ChatView 页面整体再布局（全维分析最佳布局）
-围绕"AI 对话 = 全维分析工作台"，把 ChatView 分成严格 4 段比例：
+### FR11 ChatView 页面整体再布局（mox 模块化系统架构分析最佳布局）
+围绕"AI 对话 = mox 模块化系统架构分析工作台"，把 ChatView 分成严格 4 段比例：
 
 | 区块 | 高度比例（相对 chat 容器） | 高度 px（1080p 典型 940 可用） | 说明 |
 |---|---|---|---|
-| 顶栏（logo/会话切换/新建/清空/导出/导入/转任务/创建项目/全维分析 CTA） | 固定 86px | 86px | 顶部固定；"全维分析"按钮为 φ 强调渐变主按钮；"📝需求文档/🔄流程图/💻开发测试"在右侧次级 |
+| 顶栏（logo/会话切换/新建/清空/导出/导入/转任务/创建项目/mox 模块化系统架构分析 CTA） | 固定 86px | 86px | 顶部固定；"mox 模块化系统架构分析"按钮为 φ 强调渐变主按钮；"📝需求文档/🔄流程图/💻开发测试"在右侧次级 |
 | 空态（无会话/无消息）与快捷问法区 | 按 φ 上/下 61.8% 对齐 | ≈580 | Orb 居中 110×110 光球；快捷问法 `quickQuestions` 3×2 grid 84×136 chip φ 尺寸卡片（非 tag）悬停抬升 |
 | 聊天体（消息）+ 思考动画 | φ·500 ≈ 809（随内容滚动） | 809 | chat-body 径向渐变背景（延续上一轮）；φ 边距 |
 | 输入面板（模式切换/联网/制品/附件/草稿/发送） | 固定 164px | 164px | 输入框高 100；16 号 φ 间距序列；发送按钮 42×42 φ 大号圆角 |
 
-- 在"全维分析 CTA 下方"新增一行**分析阶段 Chip 指示器**：需求→架构→实现→测试→验收 5 阶段（φ 颜色递进）；点击跳转到 ChatView 已有 requirementFlowMode（若存在）。
-- 工具栏"清空/导出/导入"对齐顶栏右侧，顺序从左到右：新建对话 / 清空 / 导出 / 导入 / 转任务 / 创建项目 / 全维分析（主）。
+- 在"mox 模块化系统架构分析 CTA 下方"新增一行**分析阶段 Chip 指示器**：需求→架构→实现→测试→验收 5 阶段（φ 颜色递进）；点击跳转到 ChatView 已有 requirementFlowMode（若存在）。
+- 工具栏"清空/导出/导入"对齐顶栏右侧，顺序从左到右：新建对话 / 清空 / 导出 / 导入 / 转任务 / 创建项目 / mox 模块化系统架构分析（主）。
 
 ## 六、非功能需求（Non-Functional Requirements，NFR）
 
@@ -174,7 +174,7 @@
 ## 七、约束（Constraints）
 - 改动文件范围仅限：
   - `frontend-ui/src/components/MessageBubble.vue`（主要：模板动作条 + 脚本 9 动作 + 样式）
-  - `frontend-ui/src/views/ChatView.vue`（次要：@emit 占位 + 全维分析 4 段再布局）
+  - `frontend-ui/src/views/ChatView.vue`（次要：@emit 占位 + mox 模块化系统架构分析 4 段再布局）
   - `frontend-ui/src/styles/global.css`（如确有必要，仅补设计令牌，不覆盖旧值）
 - **不新增 npm 依赖**。
 - 保持端口 http://localhost:3021 服务不变；HMR 后需回归探针。
@@ -208,7 +208,7 @@
 | AC9 | rule | 追问按钮点击：ChatView 输入框 `draft` 值变为前缀文字（如 "关于以上内容，我想追问："）且输入框 DOM focus === true。 | evaluate document.activeElement === textarea + 内容匹配 |
 | AC10 | rule | 反馈对话框表单字段齐全；提交后 ChatView emit `feedback` 计数 ≥1，页面显示 toast"反馈已提交…"。 | evaluate 计数 + toast DOM |
 | AC11 | rule | 既有回归：`preCount ≥ 3`、`mermaidCards ≥ 1`、`targetSvgCount ≥ 1`、`fenceCards ≥ 1`、`secure && cb && ci === true`（复制三格式）。 | 浏览器 DOM 探针（上一版本交付已通过的 4 条） |
-| AC12 | rule | ChatView 顶栏按 FR11 顺序存在"新建对话/清空/导出/导入/转任务/创建项目/全维分析"7 个按钮/链接；"全维分析"为 primary。空态存在 3×2（或 2×3）≥6 个快捷问法 φ 卡片。 | evaluate top-bar DOM query |
+| AC12 | rule | ChatView 顶栏按 FR11 顺序存在"新建对话/清空/导出/导入/转任务/创建项目/mox 模块化系统架构分析"7 个按钮/链接；"mox 模块化系统架构分析"为 primary。空态存在 3×2（或 2×3）≥6 个快捷问法 φ 卡片。 | evaluate top-bar DOM query |
 
 ### 质量验收（rubric）
 

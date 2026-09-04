@@ -75,7 +75,7 @@ pub async fn system_plugins(State(state): State<AppState>) -> Response {
 pub async fn system_config() -> Response {
     ok(serde_json::json!({
         "version": "3.0.0",
-        "project_name": "璇玑系统 · 全维数字孪生中台",
+        "project_name": "璇玑系统 · mox 模块化系统架构数字孪生中台",
         "features": {
             "ai_chat": true, "expert_alliance": true, "knowledge_graph": true,
             "llm_gateway": true, "browser_automation": true, "marketplace": true
@@ -469,7 +469,7 @@ fn generate_ai_reply(message: &str, assistant: &str) -> String {
 
     // 需求分析
     if msg.contains("需求") || msg.contains("prd") || msg.contains("产品需求") {
-        return r#"## 📋 需求全维分析报告
+        return r#"## 📋 需求mox 模块化系统架构分析报告
 
 我已为你完成需求分析，以下是梳理结果：
 
@@ -809,14 +809,14 @@ pub async fn ai_resources_health() -> Response {
 }
 
 // ============================================================================
-// 全维智能分析
+// mox 模块化系统架构智能分析
 // ============================================================================
 
 pub async fn ai_full_analysis(Json(payload): Json<Value>) -> Response {
     ok(serde_json::json!({
         "analysis_id": new_id("analysis"),
         "status": "completed",
-        "summary": "全维分析完成",
+        "summary": "mox 模块化系统架构分析完成",
         "dimensions": {
             "architecture": { "score": 85, "issues": [] },
             "performance": { "score": 78, "issues": [] },
@@ -1211,7 +1211,7 @@ pub async fn automation_update(State(state): State<AppState>, Path(id): Path<Str
 pub async fn automation_ai_execute(Json(_p): Json<Value>) -> Response { ok(serde_json::json!({ "status": "completed", "result": {} })) }
 
 // ============================================================================
-// 璇玑全维治理
+// 璇玑mox 模块化系统架构治理
 // ============================================================================
 
 pub async fn mox_health() -> Response { ok(serde_json::json!({ "status": "healthy", "dimensions": 14, "score": 95.0 })) }

@@ -1,4 +1,4 @@
-# AI 对话 9 动作工具栏 + 全维分析最佳布局 实施计划
+# AI 对话 9 动作工具栏 + mox 模块化系统架构分析最佳布局 实施计划
 
 ## 仓库调研结论
 
@@ -8,7 +8,7 @@
    - 脚本：已有 `copyMarkdown/copyPlainText/copyRichHtml` + `mdToPlainText` + `_fallbackCopy` + `speechSynthesis` **未接入** + `defineEmits(['goto-task'])`（缺少 `rate/share/regenerate/to-doc/favorite/followup/feedback` 7 个新 emit）。
    - 样式：深空主题已到位（`global.css` 令牌），φ 尺寸变量体系完整；**缺少工具栏按钮 26×26 φ 尺寸、朗读进度心跳、收藏心跳、折叠 More 三类新样式**。
 2. **ChatView.vue（1773+ 行）**：
-   - 顶栏（L12-81）：已有专家选择器、两个开关、恢复历史/导入/导出/转任务/创建项目/清空共 10+ 元素，但**未按 FR11 严格顺序"新建/清空/导出/导入/转任务/创建项目/全维分析"7 按钮排列、缺少"全维分析 φ 强调主按钮"和"分析阶段 5 chip 指示器"**。
+   - 顶栏（L12-81）：已有专家选择器、两个开关、恢复历史/导入/导出/转任务/创建项目/清空共 10+ 元素，但**未按 FR11 严格顺序"新建/清空/导出/导入/转任务/创建项目/mox 模块化系统架构分析"7 按钮排列、缺少"mox 模块化系统架构分析 φ 强调主按钮"和"分析阶段 5 chip 指示器"**。
    - 空态快捷问法（L268-270）：当前为 `el-tag` 水平排列，**未按 3×2 φ 卡片 grid 布局**。
    - MessageBubble 绑定（L280-285）：只有 `@goto-task`，**缺少 7 个新 emit 占位处理**。
    - 输入面板、空态 Orb 尺寸：需按 FR11 四段黄金比例微调。
@@ -85,7 +85,7 @@
   - `onRegenerate(m)` → 查找消息 index → 复用 `send()` 重跑（如有流式）或 toast 占位
   - `onToDoc(m,p)` → p.mode==='export-md' 写剪贴板；p.mode==='create-kb' toast "已提交到云盘（占位）"
   - `onRate/onFavorite/onShare/onFeedback` → 埋点计数 + toast 确认
-- **顶栏 7 按钮重排**（FR11）：chat-tools 左侧加"新建对话"按钮；重排顺序为 新建/清空/导出/导入/转任务/创建项目/**全维分析（主渐变 φ 按钮）**；在顶栏下方新增分析阶段 5 chip 行（需求→架构→实现→测试→验收），颜色 φ 递进（冷蓝→靛→紫→粉→金），点击切换 `requirementFlowMode` + 跳对应 stage。
+- **顶栏 7 按钮重排**（FR11）：chat-tools 左侧加"新建对话"按钮；重排顺序为 新建/清空/导出/导入/转任务/创建项目/**mox 模块化系统架构分析（主渐变 φ 按钮）**；在顶栏下方新增分析阶段 5 chip 行（需求→架构→实现→测试→验收），颜色 φ 递进（冷蓝→靛→紫→粉→金），点击切换 `requirementFlowMode` + 跳对应 stage。
 - **空态快捷问法改 3×2 grid**（FR11）：`.suggestions` 改 `display:grid; grid-template-columns:repeat(3,1fr); gap:16px; max-width:680px(φ·420); margin:auto`；每个 `.q` 改 φ 卡片（84×136，有图标+描述+标题，悬停抬升 2px）。
 - **四段比例微调**：顶栏固定 86px、输入面板固定 164px；chat-body 自适应 (calc 100vh - 86 - 164 - 可能的分析阶段条 42)；空态 Orb 110×110 φ。
 

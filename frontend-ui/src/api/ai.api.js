@@ -1,4 +1,4 @@
-// AI 对话与全维分析 API
+// AI 对话与mox 模块化系统架构分析 API
 import http from './http'
 
 // ===== AI 对话 =====
@@ -31,7 +31,7 @@ export const getArtifacts = () => http.get('/ai/artifact/list')
 export const listArtifacts = getArtifacts
 export const createArtifact = (payload) => http.post('/ai/artifact/create', payload)
 
-// ===== 全维智能分析引擎（真实 AI 驱动） =====
+// ===== mox 模块化系统架构智能分析引擎（真实 AI 驱动） =====
 export const aiFullAnalysis = (payload) => http.post('/ai/full-analysis', payload)
 export const aiGenerateDoc = (payload) => http.post('/ai/generate-doc', payload)
 export const aiGenerateFlowDiagram = (payload) => http.post('/ai/generate-flow-diagram', payload)
@@ -40,7 +40,7 @@ export const aiFullComplete = (payload) => http.post('/ai/full-complete', payloa
 export const aiOptimizeDoc = (payload) => http.post('/ai/optimize-doc', payload)
 
 // ===== 项目需求一体化 =====
-// 对话 → 项目：基于当前会话上下文创建项目 + 需求全维建模
+// 对话 → 项目：基于当前会话上下文创建项目 + 需求mox 模块化系统架构建模
 export const aiProjectFromChat = (payload) => http.post('/ai/project-from-chat', payload)
 // 项目→需求流程图知识图谱
 export const aiGenerateProjectGraph = (payload) => http.post('/ai/project-graph', payload)

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>架构专家联盟 · 企业级全维规范 V5.0</title>
+<title>架构专家联盟 · 企业级mox 模块化系统架构规范 V5.0</title>
 <style>
   :root{
     --bg:#0b1020; --bg2:rgba(255,255,255,0.05); --bg3:rgba(255,255,255,0.03);
@@ -62,7 +62,7 @@
 <body>
 <nav><div class="inner">
   <a href="#overview">总纲</a>
-  <a href="#analysis">全维分析</a>
+  <a href="#analysis">mox 模块化系统架构分析</a>
   <a href="#modular">全链路模块化</a>
   <a href="#standards">企业级规范</a>
   <a href="#quality">质量门禁</a>
@@ -73,8 +73,8 @@
 
 <header>
   <div class="badge">ENTERPRISE STANDARD · V5.0</div>
-  <h1>架构专家联盟 · 企业级全维规范</h1>
-  <p class="subtitle">全维分析 × 全链路系统模块化 × 企业级规范标准 —— 将专家联盟从"功能完整"推向"企业级可交付"，作为后续一切开发、评审、验收的权威基线。</p>
+  <h1>架构专家联盟 · 企业级mox 模块化系统架构规范</h1>
+  <p class="subtitle">mox 模块化系统架构分析 × 全链路系统模块化 × 企业级规范标准 —— 将专家联盟从"功能完整"推向"企业级可交付"，作为后续一切开发、评审、验收的权威基线。</p>
   <div class="meta">
     <span>系统：<b>璇玑 RelGraph · MOX Platform</b></span>
     <span>版本：<b>V5.0-enterprise</b></span>
@@ -90,14 +90,14 @@
   <p>专家联盟（Expert Alliance, EA）是 MOX 平台以"专业模型做专业事"为核心的分布式智能协作体系：多个 AI 专家（架构/算法/安全/性能/测试/数据…）通过统一协议注册、由调度器按 DAG 编排、经辩论与融合产出高质量结果。本规范将这一体系定义为可评审、可测试、可部署的企业级产品基线。</p>
   <h3>0.2 三大约束</h3>
   <ul>
-    <li><b>全维分析</b>：对 EA 系统进行 8 维现状诊断（§1），任何决策必须基于证据，禁止"应该/大概"。</li>
+    <li><b>mox 模块化系统架构分析</b>：对 EA 系统进行 8 维现状诊断（§1），任何决策必须基于证据，禁止"应该/大概"。</li>
     <li><b>全链路模块化</b>：从接入到执行的每一层必须有唯一归属 crate 与清晰边界（§2），杜绝 God Module。</li>
     <li><b>企业级规范标准</b>：命名、接口、错误码、配置、安全、可观测、测试、部署八大规范强制遵循（§3），作为评审/验收唯一标准。</li>
   </ul>
   <h3>0.3 适用范围与读者</h3>
   <table>
     <tr><th>读者</th><th>关注章节</th></tr>
-    <tr><td>架构师 / 技术负责人</td><td>§1 全维分析、§2 全链路模块化、§3.1-3.4</td></tr>
+    <tr><td>架构师 / 技术负责人</td><td>§1 mox 模块化系统架构分析、§2 全链路模块化、§3.1-3.4</td></tr>
     <tr><td>EA 域开发工程师</td><td>§2 crate 归属、§3 全部规范、§4 质量门禁</td></tr>
     <tr><td>QA / 测试工程师</td><td>§3.8 测试规范、§4 质量门禁与验收清单</td></tr>
     <tr><td>运维 / SRE</td><td>§3.7 可观测、§3.9 部署规范、§5 路线图</td></tr>
@@ -106,7 +106,7 @@
 </section>
 
 <section id="analysis">
-  <h2><span class="no">1</span>全维分析</h2>
+  <h2><span class="no">1</span>mox 模块化系统架构分析</h2>
   <p class="lead">8 个维度对专家联盟现状进行证据化诊断，输出问题清单与归一化方向。</p>
 
   <div class="grid4">
@@ -163,7 +163,7 @@
   <h3>1.8 演进与治理维度</h3>
   <p>演进方向：更多专家类型、自动 Prompt 优化、AutoML 调参。治理要求：新增专家 = 实现 Trait + 注册 Factory + 加配置，<b>核心代码零改动</b>；统一基座层（<code>mox-base-*</code>）承接 KG/KB/EA 三域的数据与算法收敛。</p>
 
-  <h3>1.9 全维结论矩阵</h3>
+  <h3>1.9 mox 模块化系统架构结论矩阵</h3>
   <table>
     <tr><th>维度</th><th>成熟度</th><th>关键结论</th></tr>
     <tr><td>业务价值</td><td><span class="tag t-ok">已确立</span></td><td>EA 是平台 AI 中枢，三域必须一体化</td></tr>
@@ -186,7 +186,7 @@
     <li><b>模块独立配置</b>：每个 AI 模块独立 LLM 配置、Graph 配置、参数集，互不干扰。</li>
     <li><b>即插即用</b>：专家模块统一协议注册，支持热插拔，新增专家零改动核心代码。</li>
     <li><b>动态编排</b>：基于 DAG 的任务编排，按任务特征动态组队。</li>
-    <li><b>全维可观测</b>：每阶段可追踪、可度量、可审计。</li>
+    <li><b>mox 模块化系统架构可观测</b>：每阶段可追踪、可度量、可审计。</li>
     <li><b>隔离与安全</b>：模块间数据隔离，租户级策略，RBAC 贯穿。</li>
     <li><b>弹性扩展</b>：无状态服务水平扩展，CPU/IO 密集模块独立扩容。</li>
   </ul>
@@ -407,17 +407,17 @@ type_complexity = "allow"</pre>
     <tr><td>专家联盟 EA</td><td>多专业 AI 专家协作完成复杂任务的分布式智能体系</td></tr>
     <tr><td>God Module</td><td>承担过多职责、边界模糊的巨型模块（反模式）</td></tr>
     <tr><td>统一基座层</td><td>mox-base-*：统一模型/存储/索引/查询/图/权限/生命周期的平台基座</td></tr>
-    <tr><td>全维分析</td><td>对系统进行业务/架构/数据/算法/安全/性能/可观测/演进 8 维证据化诊断</td></tr>
+    <tr><td>mox 模块化系统架构分析</td><td>对系统进行业务/架构/数据/算法/安全/性能/可观测/演进 8 维证据化诊断</td></tr>
   </table>
   <h3>6.2 参考文档</h3>
   <ul>
-    <li>专家联盟全维模块化架构设计 v4.0（expert-alliance-modular-architecture）</li>
+    <li>专家联盟mox 模块化系统架构模块化架构设计 v4.0（expert-alliance-modular-architecture）</li>
     <li>专家联盟最优架构分析报告（expert-alliance-optimal-architecture）</li>
     <li>专家联盟技术白皮书（expert-alliance-tech-whitepaper）</li>
     <li>mox-ai-expert-svc 编译与测试验证报告（EXPERT_SVC_VERIFICATION_REPORT.md）</li>
     <li>统一基座层落地改造图（docs/统一基座层落地改造.html）</li>
   </ul>
-  <div class="foot">架构专家联盟 · 企业级全维规范 V5.0 · 璇玑 RelGraph · MOX Platform · 2026-09-01 定稿<br>本文档为架构基线，一切开发/评审/验收以此为准；变更须同步更新。</div>
+  <div class="foot">架构专家联盟 · 企业级mox 模块化系统架构规范 V5.0 · 璇玑 RelGraph · MOX Platform · 2026-09-01 定稿<br>本文档为架构基线，一切开发/评审/验收以此为准；变更须同步更新。</div>
 </section>
 
 </div>

@@ -14,7 +14,7 @@ use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::AppState;
-use mox_platform_meta_core::{EnumOption, FieldDef, FieldType};
+use mox_platform_meta_core::{codegen, EntityWithFields, EnumOption, FieldDef, FieldType, MetaRepository};
 
 pub fn health_routes() -> Router<Arc<AppState>> {
     Router::new()
@@ -358,10 +358,84 @@ async fn list_data_handler(
     })))
 }
 
+// ─── Codegen（meta.codegen 能力接线：元数据 → 确定性出码）───
+
+/// codegen 请求：实体元数据 + 模板编号（TPL-01~06，缺省 TPL-01；TPL-03 需 detail_entity_code）。
+#[derive(Debug, Deserialize)]
+pub struct CodegenRequest {
+    pub tenant_id: Option<String>,
+    pub entity_code: String,
+    #[serde(default)]
+    pub detail_entity_code: Option<String>,
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+/// codegen 响应：产物集合（相对路径 → 文件内容）。
+#[derive(Debug, Serialize)]
+pub struct CodegenResponse {
+    pub entity_code: String,
+    pub template: String,
+    pub artifacts: BTreeMap<String, String>,
+}
+
+/// 解析模板编号（委托 meta-core `codegen::parse_template`，单一来源）。
+fn parse_template(raw: &str) -> Result<codegen::CodegenTemplate, String> {
+    codegen::parse_template(raw)
+}
+
+/// svc 层 codegen 编排：取实体元数据 → 调 meta-core codegen → 产物（纯同步，handler 侧包 spawn_blocking）。
+///
+/// # Errors
+/// 模板不支持 / 实体不存在 / 元数据非法 / TPL-03 缺明细实体编码，均以 Err(说明) 返回。
+pub fn run_codegen(meta: &MetaRepository, req: &CodegenRequest) -> Result<CodegenResponse, String> {
+    let tenant = req
+        .tenant_id
+        .clone()
+        .unwrap_or_else(|| "default".to_string());
+    let load = |code: &str| -> Result<EntityWithFields, String> {
+        meta.get_entity(&tenant, code)
+            .map_err(|e| format!("meta get_entity `{code}` failed: {e}"))?
+            .ok_or_else(|| format!("entity `{code}` not found under tenant `{tenant}`"))
+    };
+    let raw = req.template.as_deref().unwrap_or("TPL-01");
+    let out = if raw.trim().eq_ignore_ascii_case("TPL-03") {
+        let master = load(&req.entity_code)?;
+        let detail_code = req
+            .detail_entity_code
+            .as_deref()
+            .ok_or_else(|| "TPL-03 requires `detail_entity_code`".to_string())?;
+        let detail = load(detail_code)?;
+        codegen::generate_master_detail(&master, &detail).map_err(|e| e.to_string())?
+    } else {
+        let tpl = parse_template(raw)?;
+        let entity = load(&req.entity_code)?;
+        codegen::generate(&entity, tpl).map_err(|e| e.to_string())?
+    };
+    Ok(CodegenResponse {
+        entity_code: out.entity_code,
+        template: out.template,
+        artifacts: out.artifacts,
+    })
+}
+
+async fn codegen_handler(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CodegenRequest>,
+) -> Result<Json<CodegenResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let meta = state.meta.clone();
+    let result =
+        tokio::task::spawn_blocking(move || run_codegen(&meta, &req))
+            .await
+            .map_err(|e| internal_err(format!("join error: {}", e)))?;
+    result.map(Json).map_err(|msg| bad_request(&msg))
+}
+
 pub fn api_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/auth/login", post(login_handler))
         .route("/entities/define", post(define_entity_handler))
+        .route("/entities/codegen", post(codegen_handler))
         .route("/data/:entity_code/create", post(create_data_handler))
         .route(
             "/data/:entity_code/update/:biz_id",
@@ -386,6 +460,13 @@ fn not_found(msg: &str) -> (StatusCode, Json<serde_json::Value>) {
     (
         StatusCode::NOT_FOUND,
         Json(serde_json::json!({"error":"not_found","message":msg})),
+    )
+}
+
+fn bad_request(msg: &str) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::BAD_REQUEST,
+        Json(serde_json::json!({"error":"bad_request","message":msg})),
     )
 }
 

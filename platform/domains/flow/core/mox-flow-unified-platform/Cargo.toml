@@ -2,7 +2,7 @@
 name = "mox-flow-unified-platform"
 version = "0.1.0"
 edition = "2021"
-description = "璇玑 RelGraph · 全维归一化统一平台 (Unified Platform) - 架构/权限/低代码/流程算法/前端/AI 六大归一化体系总入口"
+description = "璇玑 RelGraph · mox 模块化系统架构归一化统一平台 (Unified Platform) - 架构/权限/低代码/流程算法/前端/AI 六大归一化体系总入口"
 license = "MIT"
 
 [dependencies]

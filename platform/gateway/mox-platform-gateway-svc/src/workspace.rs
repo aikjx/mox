@@ -46,10 +46,14 @@ fn load_workspace_history() -> Vec<HistoryItem> {
 
 fn save_workspace_history(history: &[HistoryItem]) {
     if let Some(parent) = std::path::Path::new(WORKSPACE_HISTORY_PATH).parent() {
-        let _ = std::fs::create_dir_all(parent);
+        if let Err(e) = std::fs::create_dir_all(parent) {
+            eprintln!("[workspace] 创建目录失败 {}: {}", parent.display(), e);
+        }
     }
     if let Ok(json_str) = serde_json::to_string_pretty(history) {
-        let _ = std::fs::write(WORKSPACE_HISTORY_PATH, json_str);
+        if let Err(e) = std::fs::write(WORKSPACE_HISTORY_PATH, json_str) {
+            eprintln!("[workspace] 历史记录持久化失败 {}: {}", WORKSPACE_HISTORY_PATH, e);
+        }
     }
 }
 
@@ -70,23 +74,6 @@ fn now_iso() -> String {
 
 fn ok(data: Value) -> ApiResponse<Value> {
     api_ok(data)
-}
-
-// =====================================================================
-// 1. GET /notifications/unread-count — 未读通知数
-// =====================================================================
-async fn unread_count() -> ApiResponse<Value> {
-    ok(json!({
-        "total": 0,
-        "by_type": {
-            "task_assigned": 0,
-            "mention": 0,
-            "comment": 0,
-            "system": 0,
-            "alert": 0,
-        },
-        "latest_notification": null,
-    }))
 }
 
 // =====================================================================
@@ -287,13 +274,12 @@ async fn task_execute(
 pub fn build_workspace_router() -> Router {
     let state = Arc::new(WorkspaceState::new());
     Router::new()
-        .route("/notifications/unread-count", get(unread_count))
-        .route("/workspace/kpi", get(workspace_kpi))
-        .route("/files/:id/preview", get(file_preview))
-        .route("/files/:id/download", get(file_download))
-        .route("/whiteboard/:sessionId/save", post(whiteboard_save))
-        .route("/workspace/history", get(workspace_history))
-        .route("/tasks/decompose", post(task_decompose))
-        .route("/tasks/:id/execute", post(task_execute))
+        .route("/api/workspace/kpi", get(workspace_kpi))
+        .route("/api/files/:id/preview", get(file_preview))
+        .route("/api/files/:id/download", get(file_download))
+        .route("/api/whiteboard/:sessionId/save", post(whiteboard_save))
+        .route("/api/workspace/history", get(workspace_history))
+        .route("/api/tasks/decompose", post(task_decompose))
+        .route("/api/tasks/:id/execute", post(task_execute))
         .with_state(state)
 }

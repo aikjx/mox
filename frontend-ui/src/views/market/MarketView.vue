@@ -88,8 +88,7 @@
           </div>
         </div>
 
-        <div class="page-content">
-        <!-- 审核模式开启提示 -->
+        <div class="page-content" v-loading="loading" element-loading-text="商城数据加载中...">`r`n        <!-- 审核模式开启提示 -->
         <el-alert
           v-if="appStore.marketReviewEnabled"
           type="info"
@@ -410,6 +409,7 @@ const cat = ref('all')
 const sort = ref('newest')       // 排序：newest / hot / rating
 const viewMode = ref('card')     // 视图：card / list
 const randoming = ref(false)
+const loading = ref(false)
 const uploading = ref(false)
 const showUpload = ref(false)
 const uploadStep = ref(0)        // 上传步骤 0/1/2
@@ -616,6 +616,7 @@ function formatDate(val) {
 }
 
 async function load() {
+  loading.value = true
   try {
     const r = await marketList()
     let list = Array.isArray(r) ? r : (r?.packages || [])
@@ -627,6 +628,8 @@ async function load() {
     packages.value = list
   } catch (e) {
     ElMessage.error('加载商城失败：' + e.message)
+  } finally {
+    loading.value = false
   }
 }
 

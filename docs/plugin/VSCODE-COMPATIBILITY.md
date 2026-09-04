@@ -1,182 +1,242 @@
 # VSCode 插件兼容性文档
 
-> 方案 C（双运行时混合架构）— 阶段 1 完成内容与阶段 2/3 规划
+> MOX 平台支持运行 VSCode 扩展（VSIX 包），采用双运行时混合架构：
+> - **WASM 运行时**：高性能、安全沙箱，用于原生 MOX 插件
+> - **VSCode 兼容运行时**：基于 deno_core 的 JS 运行时，实现 VSCode Extension API 核心子集
 
-## 概述
+## 架构概览
 
-MOX 插件系统通过**元数据兼容层**和**多运行时抽象**，实现对 VSCode 扩展（VSIX）的兼容支持。阶段 1 完成元数据解析、VSIX 加载和运行时骨架；阶段 2 将集成 deno_core 实现 JS 执行；阶段 3 完善 vscode API 兼容层和激活事件调度。
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     MOX Plugin System                        │
+├─────────────────────────────────────────────────────────────┤
+│  PluginRegistry（插件注册表）                                 │
+│  ├── WASM 插件（.wasm + manifest.json）                      │
+│  └── VSCode 扩展（.vsix + package.json）                     │
+├─────────────────────────────────────────────────────────────┤
+│  Runtime Abstraction（运行时抽象）                            │
+│  ├── WasmRuntime（wasmer + cranelift）                      │
+│  └── VsCodeRuntime（deno_core + v8）                        │
+│      ├── DenoRuntime（JsRuntime 封装）                       │
+│      ├── Host Ops（21 个 Rust 宿主函数）                     │
+│      └── VSCode API Shim（~870 行 JS）                      │
+└─────────────────────────────────────────────────────────────┘
+```
 
-## 阶段 1 完成内容
+## 阶段 1：元数据兼容（已完成）
 
-### 1. VSCode package.json 元数据解析
+### 功能
+- ✅ VSCode `package.json` 解析（`VsCodeManifest`）
+- ✅ 贡献点映射（commands/keybindings/languages/themes/snippets/views/menus → MOX capabilities）
+- ✅ 激活事件解析（`ActivationEvent` 枚举，10 种）
+- ✅ VSIX 包解压加载（`VsixLoader`，基于 ZIP）
+- ✅ 多运行时抽象（`Runtime` trait + `RuntimeType` + `RuntimeHandle` + `RuntimeRegistry`）
+- ✅ 统一插件市场（`VsixMarketplace`，支持本地安装/卸载）
 
-**模块**: `mox-plugin-core/src/manifest.rs`
+### 关键类型
+```rust
+// VSCode 扩展清单
+pub struct VsCodeManifest {
+    pub name: String,
+    pub version: String,
+    pub display_name: Option<String>,
+    pub description: Option<String>,
+    pub publisher: Option<String>,
+    pub engines: Option<Value>,
+    pub categories: Option<Vec<String>>,
+    pub contributes: Option<VsCodeContributes>,
+    pub activation_events: Option<Vec<String>>,
+    pub main: Option<String>,
+    pub enabled_api_proposals: Option<Vec<String>>,
+}
 
-新增 `VsCodeManifest` 结构体，完整解析 VSCode 扩展的 `package.json`：
+// 转换为 MOX 插件清单
+impl VsCodeManifest {
+    pub fn to_mox_manifest(&self) -> PluginManifest;
+}
+```
 
-| 字段类别 | 字段 | 说明 |
-|---------|------|------|
-| 基础 | `name`, `version`, `displayName`, `description`, `publisher` | 扩展标识与描述 |
-| 引擎 | `engines` | VSCode 版本要求（如 `{"vscode": "^1.74.0"}`） |
-| 分类 | `categories`, `keywords` | 市场分类与搜索关键词 |
-| 入口 | `main` | JS 入口文件路径 |
-| 激活 | `activationEvents` | 激活事件列表 |
-| 权限 | `enabledApiProposals` | 启用的 API 提案（映射到权限） |
-| 贡献点 | `contributes` | 所有贡献点集合 |
+## 阶段 2：运行时兼容（已完成）
 
-**贡献点支持**:
+### 功能
+- ✅ deno_core JS 运行时集成（`DenoRuntime`）
+- ✅ VSCode Extension API 核心子集（~870 行 JS shim）
+  - `vscode.commands`（4 API）
+  - `vscode.window`（8 API）
+  - `vscode.workspace`（6 API）
+  - `vscode.extensions`（3 API）
+  - 基础类（Disposable/EventEmitter/Uri/Position/Range/Selection/TextDocument 等 12 类）
+- ✅ 21 个 Rust 宿主 ops（UI/输出通道/命令/工作区/扩展）
+- ✅ VsCodeRuntime 完整生命周期（load/init/start/stop/call）
+- ✅ 激活事件触发（onCommand/onStartupFinished/*）
+- ✅ 简单 VSCode 插件可运行（命令类、UI 类）
 
-| 贡献点 | 类型 | 说明 |
-|--------|------|------|
-| `commands` | `Vec<VsCodeCommand>` | 命令注册（command/title/category/icon） |
-| `menus` | `HashMap<String, Vec<VsCodeMenu>>` | 菜单注册（位置→菜单项） |
-| `keybindings` | `Vec<VsCodeKeybinding>` | 快捷键绑定 |
-| `languages` | `Vec<VsCodeLanguage>` | 语言支持（id/aliases/extensions/configuration） |
-| `themes` | `Vec<VsCodeTheme>` | 主题（label/uiTheme/path） |
-| `snippets` | `Vec<VsCodeSnippet>` | 代码片段（language/path） |
-| `views` | `HashMap<String, Vec<VsCodeView>>` | 视图（容器ID→视图列表） |
-| `viewContainers` | `Vec<VsCodeViewContainer>` | 视图容器 |
+### VSCode API 实现状态
+详见 [VSCODE-API-STATUS.md](./VSCODE-API-STATUS.md)
 
-### 2. VSCode → MOX 元数据转换
+### 已实现的核心 API
 
-**方法**: `VsCodeManifest::to_mox_manifest() -> PluginManifest`
+#### commands
+```javascript
+const vscode = require('vscode');
 
-转换规则：
+// 注册命令
+const disposable = vscode.commands.registerCommand('myext.hello', () => {
+    vscode.window.showInformationMessage('Hello from MOX!');
+});
 
-| VSCode 字段 | MOX 字段 | 转换逻辑 |
-|-------------|----------|----------|
-| `publisher` + `name` | `id` | `vscode.{publisher}.{name}` |
-| `displayName` / `name` | `name` | 优先 displayName，回退 name |
-| `version` | `version` | 直接映射 |
-| `publisher` | `author` | 直接映射 |
-| `description` | `description` | 直接映射 |
-| `main` | `entry` | JS 入口文件，默认 `extension.js` |
-| `contributes.commands` | `capabilities` | 能力 ID: `command.{command}` |
-| `contributes.keybindings` | `capabilities` | 能力 ID: `keybinding.{command}` |
-| `contributes.languages` | `capabilities` | 能力 ID: `language.{id}` |
-| `contributes.themes` | `capabilities` | 能力 ID: `theme.{label_snake}` |
-| `contributes.snippets` | `capabilities` | 能力 ID: `snippet.{language}` |
-| `contributes.views` | `capabilities` | 能力 ID: `view.{id}` |
-| `enabledApiProposals` | `permissions` | 见权限映射表 |
-| `activationEvents` | `tags` | `activate:{event}` |
-| `categories` | `tags` | `category:{lowercase}` |
-| `keywords` | `tags` | 直接映射 |
-| — | `tags` | 固定添加 `runtime:vscode` |
+// 执行命令
+await vscode.commands.executeCommand('myext.hello');
 
-**便捷构造函数**: `PluginManifest::from_vscode(package_json: &str) -> Result<Self>`
+// 获取所有命令
+const commands = await vscode.commands.getCommands();
+```
 
-### 3. 权限映射表
+#### window
+```javascript
+// 消息框
+const result = await vscode.window.showInformationMessage('确认操作？', '是', '否');
 
-| VSCode API Proposal | MOX PluginPermission |
-|---------------------|---------------------|
-| `fileSearchProvider`, `textSearchProvider` | `FileRead` |
-| `externalUriOpener`, `contributesViewsWelcome` | `NetworkApi` |
-| `terminalDataWriteEvent`, `terminalDimensions`, `terminalSelection` | `SystemCommand` |
-| `envVariableCollection` | `EnvRead` |
-| `chatAgents`, `chatParticipant`, `languageModelAccess` | `AiChat` |
-| 其他未识别提案 | （忽略） |
+// 输入框
+const name = await vscode.window.showInputBox({ prompt: '请输入名称' });
 
-### 4. VSIX 包加载
+// 快速选择
+const choice = await vscode.window.showQuickPick(['选项A', '选项B', '选项C']);
 
-**模块**: `mox-plugin-core/src/loader.rs`
+// 输出通道
+const channel = vscode.window.createOutputChannel('MyExt');
+channel.appendLine('日志信息');
+channel.show();
+```
 
-新增 `VsixLoader`：
+#### workspace
+```javascript
+// 工作区文件夹
+const folders = vscode.workspace.workspaceFolders;
 
-| 方法 | 说明 |
-|------|------|
-| `load_vsix(path: &Path) -> Result<PluginManifest>` | 解压 VSIX（ZIP），读取 `extension/package.json`，转换为 MOX manifest |
-| `load_vsix_from_reader<R: Read + Seek>(reader: R) -> Result<PluginManifest>` | 泛型版本，支持内存 `Cursor` 测试 |
-| `extract_vsix(vsix_path: &Path, dest_dir: &Path) -> Result<()>` | 解压 VSIX 到目标目录 |
-| `is_vsix(path: &Path) -> bool` | 检查 `.vsix` 扩展名（大小写不敏感） |
+// 打开文档
+const doc = await vscode.workspace.openTextDocument(vscode.Uri.file('/path/to/file.js'));
 
-**PluginLoader::load_all() 扩展**: 同时扫描目录插件（`manifest.json` + `.wasm`）和 `.vsix` 包文件。
+// 获取配置
+const config = vscode.workspace.getConfiguration('myext');
+const value = config.get('key');
+```
 
-### 5. VSIX 市场支持
+### 简单 VSCode 插件示例
 
-**模块**: `mox-plugin-core/src/market/vsix.rs`
+#### package.json
+```json
+{
+    "name": "hello-mox",
+    "version": "1.0.0",
+    "displayName": "Hello MOX",
+    "description": "一个简单的 VSCode 扩展示例",
+    "publisher": "mox",
+    "engines": { "vscode": "^1.80.0" },
+    "categories": ["Other"],
+    "activationEvents": ["onCommand:hello-mox.sayHello"],
+    "main": "./extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "hello-mox.sayHello",
+                "title": "Hello MOX: Say Hello"
+            }
+        ]
+    }
+}
+```
 
-新增 `VsixPackageInfo` 和 `VsixMarketplace`：
+#### extension.js
+```javascript
+const vscode = require('vscode');
 
-| 方法 | 阶段 1 状态 | 说明 |
-|------|------------|------|
-| `search_vsix(query: &str)` | 骨架（返回空列表） | 阶段 2 对接 Open VSX Registry API |
-| `install_vsix(package_id, version, dest_dir)` | 骨架（返回未实现错误） | 阶段 2 实现下载+解压+注册 |
-| `list_installed(plugin_dir: &Path)` | 已实现 | 扫描 WASM 目录插件 + VSCode 扩展目录，合并返回 |
+function activate(context) {
+    console.log('Extension "hello-mox" is now active!');
 
-## 阶段 2 规划
+    let disposable = vscode.commands.registerCommand('hello-mox.sayHello', () => {
+        vscode.window.showInformationMessage('Hello from MOX Plugin System!');
+    });
 
-### 2.1 VsCodeRuntime deno_core 集成
+    context.subscriptions.push(disposable);
+}
 
-- 集成 `deno_core` 创建 JS 运行时环境
-- 加载 VSCode 扩展的 `main` 入口 JS 文件
-- 实现模块解析（支持 `require` / `import`）
-- 提供 Node.js 兼容 API 子集（`fs`, `path`, `os` 等）
+function deactivate() {
+    console.log('Extension "hello-mox" is now deactivated!');
+}
 
-### 2.2 VSCode API 兼容层
+module.exports = { activate, deactivate };
+```
 
-实现 `vscode` namespace 的核心 API：
+#### 打包为 VSIX
+```bash
+# 使用 vsce 工具打包
+npm install -g @vscode/vsce
+vsce package
+# 生成 hello-mox-1.0.0.vsix
+```
 
-| API 类别 | 计划实现 |
-|---------|---------|
-| 命令 | `commands.registerCommand`, `commands.executeCommand` |
-| 窗口 | `window.showInformationMessage`, `window.createOutputChannel` |
-| 工作区 | `workspace.getConfiguration`, `workspace.findFiles` |
-| 文档 | `workspace.openTextDocument`, `window.showTextDocument` |
-| 语言 | `languages.registerCompletionItemProvider` |
-| 事件 | `workspace.onDidChangeConfiguration`, `window.onDidChangeActiveTextEditor` |
-| 扩展上下文 | `ExtensionContext`（subscriptions, globalState, workspaceState） |
+#### 在 MOX 中安装
+```rust
+use mox_plugin_core::prelude::*;
 
-### 2.3 激活事件调度
+let marketplace = VsixMarketplace::new("./plugins");
+let manifest = marketplace.install_vsix_from_file("hello-mox-1.0.0.vsix").await?;
 
-实现 VSCode 激活事件的自动调度：
+let runtime = VsCodeRuntime::new();
+let handle = runtime.load(&manifest, Path::new("./plugins/hello-mox")).await?;
+runtime.init(&handle).await?;
+runtime.start(&handle).await?;
 
-| 激活事件 | 调度时机 |
-|---------|---------|
-| `onCommand:{id}` | 命令首次执行时 |
-| `onLanguage:{id}` | 打开对应语言文件时 |
-| `onWorkspaceContains:{glob}` | 工作区包含匹配文件时 |
-| `onStartupFinished` | 平台启动完成后 |
-| `onView:{id}` | 视图首次展开时 |
-| `onUri` | URI 处理时 |
+// 执行命令
+runtime.call(&handle, "executeCommand", &json!(["hello-mox.sayHello"])).await?;
+```
 
-### 2.4 真实市场 API 对接
+## 阶段 3：深度兼容（规划中）
 
-- 对接 [Open VSX Registry](https://open-vsx.org/) API
-- 实现搜索、详情、下载、版本管理
-- 支持 VSIX 包的 SHA256 校验
+### 计划功能
+- ⏳ 语言服务 API（补全/悬停/定义/引用/代码操作/格式化）
+- ⏳ 调试器 API（DAP 协议支持）
+- ⏳ 源代码管理 API（Git 集成）
+- ⏳ 任务系统 API（TaskProvider）
+- ⏳ WebView API（HTML 界面嵌入）
+- ⏳ 评论 API（CommentController）
+- ⏳ 环境 API（clipboard/openExternal/machineId）
+- ⏳ 认证 API（AuthenticationProvider）
+- ⏳ 对接真实 VSCode Marketplace API（在线搜索/安装/更新）
+- ⏳ 性能优化（Worker 支持、模块加载器）
+- ⏳ 调试器支持（DAP 协议）
 
-## 阶段 3 规划
+### 优先级
+1. **语言服务 API**（最常用，影响大量扩展）
+2. **WebView API**（复杂扩展的界面需求）
+3. **调试器 API**（开发类扩展）
+4. **真实 Marketplace 对接**（生态扩展）
+5. **其他 API**（按需实现）
 
-### 3.1 完整 vscode API 覆盖
+## 限制与注意事项
 
-- 覆盖 VSCode API 的 80%+ 常用接口
-- 支持 Webview、TreeView、Custom Editor 等复杂 UI 组件
-- 实现 Debug Adapter Protocol 集成
+### 安全沙箱
+- deno_core 默认禁用文件系统和网络访问
+- 插件只能通过显式注册的宿主 ops 间接访问系统资源
+- 所有宿主调用经过权限检查（基于 `PluginPermission`）
 
-### 3.2 性能优化
+### 兼容性
+- 仅支持 VSCode Extension API 的**核心子集**（阶段 2）
+- 使用未实现 API 的扩展会收到 `not implemented in MOX runtime` 错误
+- 建议扩展开发者检查 `VSCODE-API-STATUS.md` 确认 API 可用性
+- MOX 运行时不支持 Node.js 原生模块（如 `fs`、`path`、`http`），需通过 vscode API 间接访问
 
-- JS 运行时快照（snapshot）加速启动
-- 扩展隔离（每个扩展独立 JsRuntime）
-- 惰性激活（按需加载，减少启动时间）
+### 性能
+- 每个扩展独立的 v8 Isolate，内存开销约 10-30MB
+- deno_core 冷启动时间约 50-100ms
+- 建议同时运行的扩展数量不超过 20 个
 
-### 3.3 开发者工具
+## 相关文档
 
-- VSCode 扩展开发文档
-- MOX 平台 API 差异说明
-- 扩展迁移工具（自动检测不兼容 API）
+- [PLUGIN-ARCHITECTURE.md](./PLUGIN-ARCHITECTURE.md) - 统一插件架构文档
+- [VSCODE-API-STATUS.md](./VSCODE-API-STATUS.md) - VSCode API 实现状态表
 
-## 已知限制（阶段 1）
+---
 
-1. **无 JS 执行**: VsCodeRuntime 仅为骨架，`call()` 返回未实现错误
-2. **无激活调度**: 激活事件仅存储在 tags 中，不自动调度
-3. **市场骨架**: `search_vsix` 返回空列表，`install_vsix` 未实现
-4. **贡献点部分支持**: `menus` 解析但不转换为 capabilities（菜单需要 UI 集成）
-5. **权限映射有限**: 仅映射常见 API 提案，其他提案忽略
-
-## 参考资料
-
-- [VSCode Extension Manifest](https://code.visualstudio.com/api/references/extension-manifest)
-- [VSCode Contribution Points](https://code.visualstudio.com/api/references/contribution-points)
-- [VSCode Activation Events](https://code.visualstudio.com/api/references/activation-events)
-- [Open VSX Registry API](https://open-vsx.org/swagger-ui)
-- [deno_core](https://docs.rs/deno-core/)
+*最后更新：2026-09-03 | 阶段 2 完成*

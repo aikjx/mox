@@ -52,6 +52,7 @@ function _xorEncrypt(plain) {
     const utf8Bytes = unescape(encodeURIComponent(result))
     return btoa(utf8Bytes)
   } catch (e) {
+    // dev only: 加密失败属内部工具错误，不打扰用户
     console.warn('[secureStorage] 加密失败:', e)
     return ''
   }
@@ -76,6 +77,7 @@ function _xorDecrypt(encoded) {
     }
     return plain
   } catch (e) {
+    // dev only: 解密失败属内部工具错误，数据损坏时静默返回空
     console.warn('[secureStorage] 解密失败，数据可能已损坏:', e)
     return ''
   }
@@ -152,6 +154,7 @@ export function secureSetItem(key, value, options = {}) {
 
     return true
   } catch (e) {
+    // dev only: localStorage 写入失败属内部工具错误
     console.error('[secureStorage] setItem 失败:', e)
     return false
   }
@@ -275,6 +278,7 @@ export function secureRemoveItem(key, options = {}) {
 
     return true
   } catch (e) {
+    // dev only: localStorage 删除失败属内部工具错误
     console.error('[secureStorage] removeItem 失败:', e)
     return false
   }
@@ -360,6 +364,7 @@ export function secureClear() {
     keysToRemove.forEach(k => localStorage.removeItem(k))
     memoryCache.clear()
   } catch (e) {
+    // dev only: 清空存储失败属内部工具错误
     console.error('[secureStorage] clear 失败:', e)
   }
 }
@@ -395,6 +400,7 @@ function _setCookie(name, value, days = 0) {
 
     document.cookie = cookieStr
   } catch (e) {
+    // dev only: Cookie 写入失败属备选方案内部错误
     console.warn('[secureStorage] setCookie 失败:', e)
   }
 }
@@ -415,6 +421,7 @@ function _getCookie(name) {
       }
     }
   } catch (e) {
+    // dev only: Cookie 读取失败属备选方案内部错误
     console.warn('[secureStorage] getCookie 失败:', e)
   }
   return ''
@@ -428,6 +435,7 @@ function _removeCookie(name) {
   try {
     document.cookie = `${encodeURIComponent(name)}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`
   } catch (e) {
+    // dev only: Cookie 删除失败属备选方案内部错误
     console.warn('[secureStorage] removeCookie 失败:', e)
   }
 }

@@ -1,9 +1,9 @@
 分析怎么融合，企业级，最好的架构，模块化：
-用户要求"全维分析，迁移到各个模块的rust!!企业级模块！！！整理好！！最好的架构！！全维度，全链路"。
+用户要求"mox 模块化系统架构分析，迁移到各个模块的rust!!企业级模块！！！整理好！！最好的架构！！mox 模块化系统架构维度，全链路"。
 
 这是个超大架构迁移任务（Node.js 企业级架构 → Rust）。我需要：
 1. 先盘点现状：Rust 侧已存什么模块 / Crate
-2. 再全维分析当前 Node.js 的 10+ 领域模块，哪些该搬去 Rust、哪些保留 JS BFF
+2. 再mox 模块化系统架构分析当前 Node.js 的 10+ 领域模块，哪些该搬去 Rust、哪些保留 JS BFF
 3. 设计最终的企业级架构图和分阶段迁移计划
 4. 真的把核心模块写出来（IAM/tenant/auth/biz-pipeline/data-store/rule-engine/workflow-engine/audit/kb-graph...）
 
@@ -187,12 +187,12 @@ IAM 表（用户要求的精简版）：
 - iam_role：role_id tenant_id role_code role_name role_type parent_id inherit_path is_builtin data_scope description sort_order status created_at updated_at version
 - iam_permission：perm_id tenant_id perm_code perm_name resource_id resource_type perm_action perm_category description sort_order status created_at updated_at version
 - iam_user_role：ur_id tenant_id user_id role_id assigned_by assigned_at created_at
-- iam_role_permission：rp_id tenant_id role_id perm_id created_at created_by
+- iam_role_permission：rp_id tenant_id role_id perm_id created_at created_at
 - iam_role_inherit：ri_id tenant_id parent_role_id child_role_id inherit_level created_at
 - iam_menu：menu_id tenant_id parent_id menu_code menu_name menu_type menu_category route_path route_name component_path icon color sort_order is_visible is_cached is_external link_target permission_code api_scope menu_config children_json status created_at updated_at version
 - iam_user_menu：um_id tenant_id user_id menu_id is_favorite sort_order created_at updated_at
-- iam_role_menu：rm_id tenant_id role_id menu_id created_by created_at
-- iam_data_permission：dp_id tenant_id dp_code dp_name subject_type subject_id subject_uuids_json resource_code scope_type custom_rule_expression_sql custom_rule_expression_json status created_at created_by updated_at
+- iam_role_menu：rm_id tenant_id role_id menu_id created_at created_at
+- iam_data_permission：dp_id tenant_id dp_code dp_name subject_type subject_id subject_uuids_json resource_code scope_type custom_rule_expression_sql custom_rule_expression_json status created_at created_at updated_at
 - iam_resource：resource_id tenant_id resource_code resource_name resource_type parent_id resource_category api_methods_sql api_paths_sql description sort_order status created_at updated_at version
 - iam_tenant_setting：setting_id tenant_id setting_key setting_value setting_value_type description updated_by updated_at
 - audit_log：log_id tenant_id trace_id request_id user_id user_ip action action_detail resource_type resource_id resource_code biz_id biz_code status_code http_method http_path latency_ms snapshot_before snapshot_after changed_fields prev_hash curr_hash created_at
@@ -298,12 +298,12 @@ mox-framework 存在。现在开始创建所有需要的 crate。首先创建两
 4. iam_role：role_id tenant_id role_code role_name role_type parent_id inherit_path is_builtin data_scope description sort_order status created_at updated_at version
 5. iam_permission：perm_id tenant_id perm_code perm_name resource_id resource_type perm_action perm_category description sort_order status created_at updated_at version
 6. iam_user_role：ur_id tenant_id user_id role_id assigned_by assigned_at created_at
-7. iam_role_permission：rp_id tenant_id role_id perm_id created_at created_by
+7. iam_role_permission：rp_id tenant_id role_id perm_id created_at created_at
 8. iam_role_inherit：ri_id tenant_id parent_role_id child_role_id inherit_level created_at
 9. iam_menu：menu_id tenant_id parent_id menu_code menu_name menu_type menu_category route_path route_name component_path icon color sort_order is_visible is_cached is_external link_target permission_code api_scope menu_config children_json status created_at updated_at version
 10. iam_user_menu：um_id tenant_id user_id menu_id is_favorite sort_order created_at updated_at
-11. iam_role_menu：rm_id tenant_id role_id menu_id created_by created_at
-12. iam_data_permission：dp_id tenant_id dp_code dp_name subject_type subject_id subject_uuids_json resource_code scope_type custom_rule_expression_sql custom_rule_expression_json status created_at created_by updated_at
+11. iam_role_menu：rm_id tenant_id role_id menu_id created_at created_at
+12. iam_data_permission：dp_id tenant_id dp_code dp_name subject_type subject_id subject_uuids_json resource_code scope_type custom_rule_expression_sql custom_rule_expression_json status created_at created_at updated_at
 13. iam_resource：resource_id tenant_id resource_code resource_name resource_type parent_id resource_category api_methods_sql api_paths_sql description sort_order status created_at updated_at version
 14. iam_tenant_setting：setting_id tenant_id setting_key setting_value setting_value_type description updated_by updated_at
 15. audit_log：log_id tenant_id trace_id request_id user_id user_ip action action_detail resource_type resource_id resource_code biz_id biz_code status_code http_method http_path latency_ms snapshot_before snapshot_after changed_fields prev_hash curr_hash created_at
@@ -3023,7 +3023,7 @@ HTTP DELETE 要求 JSON body，传空 JSON `{}`：
 
 加载动态UI技能，展示架构全景图：
 
-## 🏗️ 企业级 Rust 迁移 · 全维度交付报告
+## 🏗️ 企业级 Rust 迁移 · mox 模块化系统架构维度交付报告
 
 ### 一、架构总览（5 Crates 分层模型）
 见上方的**架构分层图**，L1→L3→L5→L7 四层：
@@ -3069,4 +3069,4 @@ cargo run -p mox-platform-enterprise-svc
 # POST /api/enterprise/v1/auth/login  body: {"tenant_code":"T001","username":"admin","password":"admin123"}
 ```
 
-企业级 Rust 模块架构至此整理完成：**全维度（IAM/Meta/DataStore/Orchestrator/HTTP）+ 全链路（login→define→create→update→get+audit→delete→list）20 条单元+集成测试+HTTP E2E 100% 全绿通过。**维度Java DubboRust Dubbo服务契约Java interfaceproto IDL → 生成 trait实现implements 接口的类impl 生成 trait 的 struct暴露方式@DubboService 注解自动扫描代码里显式 register_service / provider::register配置注解参数 + properties/yamldubbo.yaml 列服务列表协议dubbo /triple/hessian 等主要 triple（gRPC 兼容）
+企业级 Rust 模块架构至此整理完成：**mox 模块化系统架构维度（IAM/Meta/DataStore/Orchestrator/HTTP）+ 全链路（login→define→create→update→get+audit→delete→list）20 条单元+集成测试+HTTP E2E 100% 全绿通过。**维度Java DubboRust Dubbo服务契约Java interfaceproto IDL → 生成 trait实现implements 接口的类impl 生成 trait 的 struct暴露方式@DubboService 注解自动扫描代码里显式 register_service / provider::register配置注解参数 + properties/yamldubbo.yaml 列服务列表协议dubbo /triple/hessian 等主要 triple（gRPC 兼容）

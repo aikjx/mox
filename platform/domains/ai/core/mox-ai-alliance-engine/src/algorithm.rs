@@ -12,7 +12,7 @@
 //!   - 数据流分析（变量生命周期/依赖关系）
 //!
 //! 设计：纯本地规则引擎，不依赖外部 LLM，保证可复现、可审计、低延迟。
-//! 支持按维度单独分析或全维度综合分析。
+//! 支持按维度单独分析或mox 模块化系统架构维度综合分析。
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -34,7 +34,7 @@ pub enum AnalysisDimension {
     Security,
     /// 数据流分析：变量生命周期、依赖关系
     DataFlow,
-    /// 全维度综合分析
+    /// mox 模块化系统架构维度综合分析
     All,
 }
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""企业级旋律/音频播放引擎（零卡顿 + 零死锁会话化架构 · V2 全维优化版）。
+"""企业级旋律/音频播放引擎（零卡顿 + 零死锁会话化架构 · V2 mox 模块化系统架构优化版）。
 
 V2 关键修复（针对「播放卡顿」P0/P1 根因）：
   [P0-A] 缓存路径一致性：_score_samples_gen 直接复用 _synth_score_cached 的整段
@@ -858,7 +858,7 @@ def last_underruns() -> Tuple[int, int]:
 # 诊断接口（供 --selftest-full / verify 脚本查询内部配置与缓存健康）
 # ---------------------------------------------------------------------------
 def diagnostics() -> Dict:
-    """返回播放引擎运行期指标（全维验证脚本用）。V2+ 三播放器指标增强。"""
+    """返回播放引擎运行期指标（mox 模块化系统架构验证脚本用）。V2+ 三播放器指标增强。"""
     u_count, u_bytes = _player.underruns()
     with _cache_lock:
         sc_n = len(_SYNTH_CACHE)

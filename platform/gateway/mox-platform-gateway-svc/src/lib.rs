@@ -25,6 +25,7 @@ pub mod rate_limit;
 pub mod o11y;
 pub mod routes;
 pub mod alliance;
+pub mod alliance_remote;
 pub mod system;
 pub mod proxy;
 pub mod actuator;
@@ -32,6 +33,14 @@ pub mod monitor;
 pub mod workspace;
 pub mod projects_ext;
 pub mod experts_ext;
+pub mod experts_common;
+pub mod experts_db;
+pub mod experts_registry;
+pub mod experts_collaboration;
+pub mod experts_session;
+pub mod experts_dispatcher;
+pub mod experts_graph;
+pub mod experts_orchestration;
 pub mod misc;
 pub mod kb_ext;
 pub mod notification;
@@ -51,7 +60,7 @@ use serde_json::json;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use auth::{AuthMiddleware, auth_middleware};
 use rate_limit::{RateLimiter, rate_limit_middleware};
 use o11y::MetricsCollector;
@@ -74,7 +83,12 @@ pub struct GatewayState {
 
 impl GatewayState {
     /// 从配置创建网关状态
-    pub fn from_config(config: GatewayConfig) -> Self {
+    pub fn from_config(mut config: GatewayConfig) -> Self {
+        // P0 安全：启动时从环境变量解析 JWT secret（release 未设置则 panic）
+        config.auth.resolve_jwt_secret();
+        // P0 安全：从环境变量解析 CORS 允许源（禁止通配符）
+        config.resolve_cors_origins();
+
         let auth = Arc::new(AuthMiddleware::new(config.auth.clone()));
         let rate_limiter = Arc::new(RateLimiter::new(config.rate_limit.clone()));
         let metrics = Arc::new(MetricsCollector::new(o11y::ObservabilityConfig {
@@ -149,7 +163,7 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     let business_proxy = proxy::build_proxy_router();
 
     // 新增业务域路由（自包含 Router<()>，进程内 stub）
-    let monitor_router = monitor::build_monitor_router();
+    let monitor_router = monitor::build_monitor_router(state.runtime.clone(), state.logs.clone());
     let workspace_router = workspace::build_workspace_router();
     let projects_ext_router = projects_ext::build_projects_ext_router();
     let experts_ext_router = experts_ext::build_experts_ext_router();
@@ -157,13 +171,26 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     let kb_ext_router = kb_ext::build_kb_ext_router();
     let notification_router = notification::build_notification_router();
 
+    // 专家联盟全域共享状态（注册表/会话/调度/图谱/编排 归一化共享）
+    let experts_shared = Arc::new(experts_common::ExpertsSharedState::new());
+    let experts_registry_router = experts_registry::build_experts_registry_router(experts_shared.clone());
+    let experts_collaboration_router = experts_collaboration::build_experts_collaboration_router(experts_shared.clone());
+    let experts_session_router = experts_session::build_experts_session_router(experts_shared.clone());
+    let experts_dispatcher_router = experts_dispatcher::build_experts_dispatcher_router(experts_shared.clone());
+    let experts_graph_router = experts_graph::build_experts_graph_router(experts_shared.clone());
+    let experts_orchestration_router = experts_orchestration::build_experts_orchestration_router(experts_shared.clone());
+
     // 受保护的路由：认证 + 限流
-    // 注：/api/system、/api/security 迁移期在 public_paths（见 config.rs），
-    // auth_middleware 按路径前缀放行；生产回收后自动纳入认证。
+    // P0 安全收紧：/api/system、/api/security 已从 public_paths 回收为受保护路由，
+    // 须携带有效 JWT 访问。公开路径仅保留 /health、/api/auth/login、/api/auth/register。
     // axum 0.7 无 From<Router<()>> for Router<S>：自包含 Router<()> 用 with_state(()) 升级为
     // Router<GatewayState> 后再与 system/security 统一并入（Router<()> 无 State 提取器，运行期安全）。
     let kg_ai: Router<GatewayState> = kg_ai.with_state(());
-    let kb: Router<GatewayState> = kb.with_state(());
+    // 前缀归一化（RC-1）：mox-kb-svc 内部路由注册为 `/kb/*`，而前端 baseURL='/api'
+    // 实际请求 `/api/kb/*`，merge 直接挂接会导致 KB 全域 21 个接口 404。
+    // 采用 nest("/api", kb) 包装：对外暴露 `/api/kb/*`，对内保持 `/kb/*` 不变，
+    // 从而不破坏 mox-kb-svc 自身集成测试（tests/t4_kb_http.rs 直接驱动 /kb/*）。
+    let kb: Router<GatewayState> = Router::new().nest("/api", kb).with_state(());
     let alliance: Router<GatewayState> = alliance.with_state(());
     let business_proxy: Router<GatewayState> = business_proxy.with_state(());
     let monitor_router: Router<GatewayState> = monitor_router.with_state(());
@@ -173,6 +200,12 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     let misc_router: Router<GatewayState> = misc_router.with_state(());
     let kb_ext_router: Router<GatewayState> = kb_ext_router.with_state(());
     let notification_router: Router<GatewayState> = notification_router.with_state(());
+    let experts_registry_router: Router<GatewayState> = experts_registry_router.with_state(());
+    let experts_collaboration_router: Router<GatewayState> = experts_collaboration_router.with_state(());
+    let experts_session_router: Router<GatewayState> = experts_session_router.with_state(());
+    let experts_dispatcher_router: Router<GatewayState> = experts_dispatcher_router.with_state(());
+    let experts_graph_router: Router<GatewayState> = experts_graph_router.with_state(());
+    let experts_orchestration_router: Router<GatewayState> = experts_orchestration_router.with_state(());
     let auth_state = state.auth.clone();
     let protected: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(kg_ai)
@@ -185,6 +218,12 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
         .merge(workspace_router)
         .merge(projects_ext_router)
         .merge(experts_ext_router)
+        .merge(experts_registry_router)
+        .merge(experts_collaboration_router)
+        .merge(experts_session_router)
+        .merge(experts_dispatcher_router)
+        .merge(experts_graph_router)
+        .merge(experts_orchestration_router)
         .merge(misc_router)
         .merge(kb_ext_router)
         .merge(notification_router)
@@ -197,6 +236,33 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     // 中间件分层（由内到外）：CORS → 限流 → 请求可观测（日志+指标+API 启停拦截）。
     let limiter_state = state.rate_limiter.clone();
     let observability_state = state.clone();
+
+    // P0 安全：CORS 收紧 — 禁止 Any 通配，使用配置中的具体 origin 列表，
+    // 允许 credentials，限定 methods 和 headers。
+    let cors_origins: Vec<axum::http::HeaderValue> = state
+        .config
+        .cors_allowed_origins
+        .iter()
+        .filter_map(|o| axum::http::HeaderValue::from_str(o).ok())
+        .collect();
+    let cors_layer = CorsLayer::new()
+        .allow_origin(AllowOrigin::list(cors_origins))
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+            axum::http::Method::OPTIONS,
+            axum::http::Method::PATCH,
+        ])
+        .allow_headers([
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::AUTHORIZATION,
+            axum::http::HeaderName::from_static("x-api-key"),
+            axum::http::HeaderName::from_static("x-requested-with"),
+        ])
+        .allow_credentials(true);
+
     let app: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(actuator)
         .merge(l0)
@@ -205,7 +271,7 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
             let limiter = limiter_state.clone();
             async move { rate_limit_middleware(limiter, request, next).await }
         }))
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
+        .layer(cors_layer)
         .layer(from_fn_with_state(
             observability_state,
             actuator::observability_middleware,
@@ -324,7 +390,7 @@ pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std
     eprintln!("             /alliance/v1/experts/search · /alliance/v1/tasks/:id/status");
     eprintln!("             /alliance/v1/tasks/:id/nodes · /alliance/v1/tasks/:id/nodes/:node_id");
     eprintln!("  L5 系统安全：/api/system/* · /api/security/*（IAM SQLite 真实数据链路）");
-    eprintln!("             部门/角色/菜单/用户/权限读接口真实现 · 写接口 stub · 迁移期公开");
+    eprintln!("             部门/角色/菜单/用户/权限读接口真实现 · 写接口 stub · 已收紧为受保护路由");
     eprintln!("  认证：      JWT Bearer + X-API-Key（可配置开关）");
     eprintln!("  限流：      令牌桶 100 req/min + 20 burst（可配置）");
     eprintln!("  停止：      Ctrl-C");

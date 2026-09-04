@@ -198,99 +198,48 @@
     </div>
 
     <!-- 部门表单对话框 -->
-    <el-dialog v-model="deptFormVisible" :title="deptForm.id ? '编辑部门' : '新增部门'" width="560px" destroy-on-close>
-      <el-form ref="deptFormRef" :model="deptForm" :rules="deptFormRules" label-width="90px">
-        <el-form-item label="部门名称" prop="name">
-          <el-input v-model="deptForm.name" placeholder="请输入部门名称" maxlength="64" show-word-limit />
-        </el-form-item>
-        <el-form-item label="部门编码" prop="code">
-          <el-input v-model="deptForm.code" placeholder="请输入部门编码" maxlength="32" show-word-limit />
-        </el-form-item>
-        <el-form-item label="上级部门" prop="parentId">
-          <el-tree-select
-            v-model="deptForm.parentId"
-            :data="deptTreeForSelect"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            node-key="id"
-            check-strictly
-            :render-after-expand="false"
-            placeholder="请选择上级部门（不选为顶级）"
-            clearable
-            filterable
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="负责人" prop="leaderId">
-          <el-select
-            v-model="deptForm.leaderId"
-            placeholder="请选择负责人"
-            filterable
-            clearable
-            remote
-            :remote-method="searchUsers"
-            :loading="userSearchLoading"
-            style="width: 100%"
-          >
-            <el-option v-for="u in userOptions" :key="u.id" :label="`${u.nickname || u.username} (${u.username})`" :value="u.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="联系电话" prop="phone">
-          <el-input v-model="deptForm.phone" placeholder="请输入联系电话" maxlength="20" />
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="deptForm.email" placeholder="请输入邮箱" maxlength="128" />
-        </el-form-item>
-        <el-form-item label="排序号" prop="sort">
-          <el-input-number v-model="deptForm.sort" :min="0" :max="999" style="width: 120px" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="deptForm.status">
-            <el-radio :value="1">启用</el-radio>
-            <el-radio :value="0">停用</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="deptForm.remark" type="textarea" :rows="3" maxlength="255" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="deptFormVisible = false">取消</el-button>
-        <el-button type="primary" :loading="deptFormSubmitting" @click="submitDeptForm">确定</el-button>
+    <FormDialog
+      v-model:visible="deptFormVisible"
+      :title="deptForm.id ? '编辑部门' : '新增部门'"
+      :form-schema="deptFormSchema"
+      :edit-data="deptFormEditData"
+      :submitting="deptFormSubmitting"
+      width="560px"
+      label-width="90px"
+      @submit="submitDeptForm"
+    >
+      <template #field-leaderId="{ formData: fd }">
+        <el-select
+          v-model="fd.leaderId"
+          placeholder="请选择负责人"
+          filterable
+          clearable
+          remote
+          :remote-method="searchUsers"
+          :loading="userSearchLoading"
+          style="width: 100%"
+        >
+          <el-option v-for="u in userOptions" :key="u.id" :label="`${u.nickname || u.username} (${u.username})`" :value="u.id" />
+        </el-select>
       </template>
-    </el-dialog>
+    </FormDialog>
 
     <!-- 岗位表单对话框 -->
-    <el-dialog v-model="postFormVisible" :title="postForm.id ? '编辑岗位' : '新增岗位'" width="480px" destroy-on-close>
-      <el-form ref="postFormRef" :model="postForm" :rules="postFormRules" label-width="90px">
-        <el-form-item label="岗位名称" prop="name">
-          <el-input v-model="postForm.name" placeholder="请输入岗位名称" maxlength="64" show-word-limit />
-        </el-form-item>
-        <el-form-item label="岗位编码" prop="code">
-          <el-input v-model="postForm.code" placeholder="请输入岗位编码" maxlength="32" show-word-limit />
-        </el-form-item>
-        <el-form-item label="排序号" prop="sort">
-          <el-input-number v-model="postForm.sort" :min="0" :max="999" style="width: 120px" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="postForm.status">
-            <el-radio :value="1">启用</el-radio>
-            <el-radio :value="0">停用</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="postForm.remark" type="textarea" :rows="3" maxlength="255" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="postFormVisible = false">取消</el-button>
-        <el-button type="primary" :loading="postFormSubmitting" @click="submitPostForm">确定</el-button>
-      </template>
-    </el-dialog>
+    <FormDialog
+      v-model:visible="postFormVisible"
+      :title="postForm.id ? '编辑岗位' : '新增岗位'"
+      :form-schema="postFormSchema"
+      :edit-data="postFormEditData"
+      :submitting="postFormSubmitting"
+      width="480px"
+      label-width="90px"
+      @submit="submitPostForm"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search, Plus, Edit, Delete, Refresh, User, OfficeBuilding,
@@ -301,6 +250,7 @@ import {
   getPostByDept, createPost, updatePost, deletePost,
   getDeptUserList, getUserList
 } from '@/api'
+import FormDialog from '@/components/common/FormDialog.vue'
 
 // ===== 部门树 =====
 const deptTreeRef = ref(null)
@@ -323,7 +273,7 @@ async function loadDeptTree() {
     const data = await getDeptTree()
     deptTree.value = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
   } catch (e) {
-    console.warn('[AdminDepartment] 加载部门树失败:', e.message)
+    ElMessage.error('加载部门树失败: ' + (e?.message || e))
   } finally {
     treeLoading.value = false
   }
@@ -439,7 +389,6 @@ const deptTreeForSelect = computed(() => {
 
 // ===== 部门表单 =====
 const deptFormVisible = ref(false)
-const deptFormRef = ref(null)
 const deptFormSubmitting = ref(false)
 const deptForm = reactive({
   id: null,
@@ -454,40 +403,51 @@ const deptForm = reactive({
   remark: ''
 })
 
-const deptFormRules = {
-  name: [{ required: true, message: '请输入部门名称', trigger: 'blur' }],
-  code: [{ required: true, message: '请输入部门编码', trigger: 'blur' }]
-}
+const deptFormEditData = ref(null)
+
+const deptFormSchema = computed(() => [
+  { prop: 'name', label: '部门名称', type: 'input', maxlength: 64, showWordLimit: true,
+    rules: [{ required: true, message: '请输入部门名称', trigger: 'blur' }] },
+  { prop: 'code', label: '部门编码', type: 'input', maxlength: 32, showWordLimit: true,
+    rules: [{ required: true, message: '请输入部门编码', trigger: 'blur' }] },
+  { prop: 'parentId', label: '上级部门', type: 'treeSelect',
+    placeholder: '请选择上级部门（不选为顶级）',
+    treeData: deptTreeForSelect,
+    treeProps: { label: 'name', value: 'id', children: 'children' },
+    nodeKey: 'id' },
+  { prop: 'leaderId', label: '负责人', type: 'slot' },
+  { prop: 'phone', label: '联系电话', type: 'input', maxlength: 20 },
+  { prop: 'email', label: '邮箱', type: 'input', maxlength: 128 },
+  { prop: 'sort', label: '排序号', type: 'number', min: 0, max: 999, defaultValue: 0 },
+  { prop: 'status', label: '状态', type: 'radio', defaultValue: 1,
+    options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }] },
+  { prop: 'remark', label: '备注', type: 'textarea', rows: 3, maxlength: 255, showWordLimit: true }
+])
 
 function openDeptForm(row = null, parentId = null) {
   if (row) {
     Object.assign(deptForm, row)
+    deptFormEditData.value = { ...deptForm }
   } else {
     Object.assign(deptForm, {
       id: null, name: '', code: '', parentId: parentId || null,
       leaderId: null, phone: '', email: '', sort: 0, status: 1, remark: ''
     })
+    deptFormEditData.value = null
   }
   deptFormVisible.value = true
-  nextTick(() => {
-    deptFormRef.value?.clearValidate()
-  })
 }
 
 function handleEdit(row) {
   openDeptForm(row)
 }
 
-async function submitDeptForm() {
-  try {
-    await deptFormRef.value.validate()
-  } catch { return }
-
+async function submitDeptForm(formData) {
   deptFormSubmitting.value = true
   try {
-    const payload = { ...deptForm }
-    if (deptForm.id) {
-      await updateDept(deptForm.id, payload)
+    const payload = { ...formData }
+    if (formData.id) {
+      await updateDept(formData.id, payload)
       ElMessage.success('部门更新成功')
     } else {
       await createDept(payload)
@@ -499,7 +459,7 @@ async function submitDeptForm() {
       loadDeptDetail(currentDeptId.value)
     }
   } catch (e) {
-    ElMessage.error((deptForm.id ? '更新' : '创建') + '失败：' + e.message)
+    ElMessage.error((formData.id ? '更新' : '创建') + '失败：' + e.message)
   } finally {
     deptFormSubmitting.value = false
   }
@@ -528,16 +488,23 @@ async function handleDelete(row) {
 const postLoading = ref(false)
 const postList = ref([])
 const postFormVisible = ref(false)
-const postFormRef = ref(null)
 const postFormSubmitting = ref(false)
 const postForm = reactive({
   id: null, name: '', code: '', sort: 0, status: 1, remark: '', deptId: null
 })
 
-const postFormRules = {
-  name: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
-  code: [{ required: true, message: '请输入岗位编码', trigger: 'blur' }]
-}
+const postFormEditData = ref(null)
+
+const postFormSchema = [
+  { prop: 'name', label: '岗位名称', type: 'input', maxlength: 64, showWordLimit: true,
+    rules: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }] },
+  { prop: 'code', label: '岗位编码', type: 'input', maxlength: 32, showWordLimit: true,
+    rules: [{ required: true, message: '请输入岗位编码', trigger: 'blur' }] },
+  { prop: 'sort', label: '排序号', type: 'number', min: 0, max: 999, defaultValue: 0 },
+  { prop: 'status', label: '状态', type: 'radio', defaultValue: 1,
+    options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }] },
+  { prop: 'remark', label: '备注', type: 'textarea', rows: 3, maxlength: 255, showWordLimit: true }
+]
 
 async function loadPosts() {
   if (!currentDeptId.value) return
@@ -546,7 +513,7 @@ async function loadPosts() {
     const data = await getPostByDept(currentDeptId.value)
     postList.value = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
   } catch (e) {
-    console.warn('[AdminDepartment] 加载岗位列表失败:', e.message)
+    ElMessage.error('加载岗位列表失败: ' + (e?.message || e))
   } finally {
     postLoading.value = false
   }
@@ -555,27 +522,22 @@ async function loadPosts() {
 function openPostForm(row = null) {
   if (row) {
     Object.assign(postForm, row)
+    postFormEditData.value = { ...postForm }
   } else {
     Object.assign(postForm, {
       id: null, name: '', code: '', sort: 0, status: 1, remark: '', deptId: currentDeptId.value
     })
+    postFormEditData.value = null
   }
   postFormVisible.value = true
-  nextTick(() => {
-    postFormRef.value?.clearValidate()
-  })
 }
 
-async function submitPostForm() {
-  try {
-    await postFormRef.value.validate()
-  } catch { return }
-
+async function submitPostForm(formData) {
   postFormSubmitting.value = true
   try {
-    const payload = { ...postForm, deptId: currentDeptId.value }
-    if (postForm.id) {
-      await updatePost(postForm.id, payload)
+    const payload = { ...formData, deptId: currentDeptId.value }
+    if (formData.id) {
+      await updatePost(formData.id, payload)
       ElMessage.success('岗位更新成功')
     } else {
       await createPost(payload)
@@ -584,7 +546,7 @@ async function submitPostForm() {
     postFormVisible.value = false
     await loadPosts()
   } catch (e) {
-    ElMessage.error((postForm.id ? '更新' : '创建') + '失败：' + e.message)
+    ElMessage.error((formData.id ? '更新' : '创建') + '失败：' + e.message)
   } finally {
     postFormSubmitting.value = false
   }
@@ -623,7 +585,7 @@ async function loadUsers() {
     userList.value = data?.list || data?.records || Array.isArray(data) ? data : []
     userTotal.value = data?.total || userList.value.length
   } catch (e) {
-    console.warn('[AdminDepartment] 加载用户列表失败:', e.message)
+    ElMessage.error('加载用户列表失败: ' + (e?.message || e))
   } finally {
     userLoading.value = false
   }
@@ -649,7 +611,7 @@ async function searchUsers(keyword) {
     const data = await getUserList({ keyword, pageSize: 20 })
     userOptions.value = data?.list || data?.records || Array.isArray(data) ? data : []
   } catch (e) {
-    console.warn('[AdminDepartment] 用户搜索失败:', e.message)
+    ElMessage.error('用户搜索失败: ' + (e?.message || e))
   } finally {
     userSearchLoading.value = false
   }

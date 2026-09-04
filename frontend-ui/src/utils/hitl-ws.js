@@ -43,6 +43,7 @@ class HitlWebSocketClient {
     try {
       this.ws = new WebSocket(this._buildUrl())
     } catch (err) {
+      // dev only: WebSocket 连接创建失败属内部连接错误
       console.error('[HITL WS] Failed to create connection:', err)
       this._scheduleReconnect()
       return null
@@ -59,6 +60,7 @@ class HitlWebSocketClient {
     this.ws.onmessage = (event) => this._handleMessage(event.data)
 
     this.ws.onerror = (err) => {
+      // dev only: WebSocket 运行时错误
       console.error('[HITL WS] Error:', err)
       this._emit('connection', { status: 'error', error: err })
     }
@@ -88,6 +90,7 @@ class HitlWebSocketClient {
   _scheduleReconnect() {
     if (this.reconnectTimer || this.manualClose) return
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      // dev only: 达到最大重连次数，内部状态记录
       console.warn('[HITL WS] Max reconnect attempts reached')
       return
     }
@@ -101,6 +104,7 @@ class HitlWebSocketClient {
 
   sendRequest(req) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      // dev only: 套接字未连接时发送失败，内部静默
       console.warn('[HITL WS] Cannot send, socket not connected')
       return false
     }
@@ -112,6 +116,7 @@ class HitlWebSocketClient {
   // 服务端以「经鉴权的主体」作为实际 actor 落痕，不再信任客户端自报的 actor，故此处不再硬编码 'admin'。
   sendAction(eventId, action, { comment = null, modifiedPayload = null, actor = '' } = {}) {
     if (!Object.values(HITL_ACTIONS).includes(action)) {
+      // dev only: 无效 action 属内部协议错误
       console.warn('[HITL WS] Invalid action:', action)
       return false
     }
@@ -130,6 +135,7 @@ class HitlWebSocketClient {
     try {
       payload = typeof raw === 'string' ? JSON.parse(raw) : raw
     } catch (err) {
+      // dev only: 无效消息格式属内部协议错误
       console.warn('[HITL WS] Invalid message format:', raw)
       return
     }
@@ -144,6 +150,7 @@ class HitlWebSocketClient {
       try {
         fn(payload)
       } catch (err) {
+        // dev only: 监听器回调异常属内部错误
         console.error('[HITL WS] Listener error:', err)
       }
     })

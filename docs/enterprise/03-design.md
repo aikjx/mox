@@ -62,13 +62,13 @@ enum Tier        { Junior, Senior, Principal }              // 成员等级
 ### 2.2 核心结构（节选）
 
 ```rust
-struct Mox { id, name, created_by, created_at }
+struct Mox { id, name, created_at, created_at }
 struct Member   { id, mox_id, name, email, status: MemberStatus,
                   tier: Tier, expertise: Vec<String>, invited_by }
 struct Task     { id, mox_id, title, desc, status: TaskStatus,
                   assignees: Vec<String>, deps: Vec<String>,
                   subtasks: Vec<SubTask>, comments: Vec<Comment>,
-                  created_by, created_at, updated_at }
+                  created_at, created_at, updated_at }
 struct RoleBinding { member_id, role: Role, scope: Scope }
 struct Channel  { id, mox_id, kind: ChannelKind, name, members: Vec<String> }
 struct Message  { id, channel_id, sender_id, body, kind, created_at }

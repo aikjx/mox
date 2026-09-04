@@ -122,7 +122,7 @@ graph TD
 
 ## 二、核心业务实体关系图（ER）
 
-### 2.1 全维实体 ER 图
+### 2.1 mox 模块化系统架构实体 ER 图
 
 ```mermaid
 erDiagram

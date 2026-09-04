@@ -27,11 +27,11 @@
 |----------|--------|----------|
 | 架构设计 | 12 | v2/01-architecture.md, v3/01-architecture-optimization.md, 02-EXPERT-ALLIANCE-ARCHITECTURE.md, system-architecture-design.html |
 | 需求规格 | 7 | v2/00-requirements.md, 专家联盟AI对话需求文档-V1.0/V2.0, mox-expert-business-requirements.md, alliance-fr13-fr5-integration.md |
-| 业务流程 | 8 | v2/03-business-flow.md, v3/03-business-flow-diagrams.md, 专家联盟-全维业务流程归一化手册, business-process-flows.md, mox-expert-alliance-fusion-flows.md |
+| 业务流程 | 8 | v2/03-business-flow.md, v3/03-business-flow-diagrams.md, 专家联盟-mox 模块化系统架构业务流程归一化手册, business-process-flows.md, mox-expert-alliance-fusion-flows.md |
 | API/接口设计 | 3 | v2/04-api-design.md, expert-registry-and-protocol.md |
 | 数据架构 | 2 | v2/05-data-architecture.md, knowledge-graph-schema.md |
 | 安全/运维 | 3 | v2/06-security-observability.md, deployment-guide.html, ops-manual.html |
-| 融合/归一化治理 | 6 | 22-全文档归一化总控卡, 28-全维架构分析, mox-expert-normalization.md, 架构开发联盟知识库融合设计方案, expert-alliance-flow-standard.md |
+| 融合/归一化治理 | 6 | 22-全文档归一化总控卡, 28-mox 模块化系统架构分析, mox-expert-normalization.md, 架构开发联盟知识库融合设计方案, expert-alliance-flow-standard.md |
 | 索引/路线图 | 4 | 00-INTEGRATED-INDEX.md, v2/07-roadmap.md, v3/02-requirements-matrix.md, README×3 |
 | 评审/修复报告 | 2 | alliance-architecture-review-20260831.html, alliance-architecture-fix-report-20260831.html |
 
@@ -93,7 +93,7 @@
 | 23 | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md` | 开发专家联盟架构诊断与SaaS化最优方案（补充修订版） | V1.1 | 🟢声明为"V1.0的权威修订" | 架构/诊断 | V1.0的补充修订，修正部分诊断结论，补充实施细节 | 修正V1.0中"31个微服务"的说法为"目标架构"；补充成本估算 |
 | 24 | `docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md` | 前端开发专家主控提示词与流程透明化最佳实践清单 | V1.0 | 🟡参考 | 流程/最佳实践 | 前端开发专家的主控提示词模板与流程透明化最佳实践 | 定义提示词模板；提及"7步透明化流程" |
 | 25 | `docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md` | 全文档归一化总控卡与权威链单源映射表 | V1.0 | 🟢声明为"全域归一化治理枢纽" | 归一化治理 | 全域文档归一化的总控卡，定义权威链L0-L4、单源映射表、文档生命周期管理 | 定义L0顶层设计→L1治理枢纽→L2领域标准→L3实施文档的四级权威链；声称覆盖全仓库文档 |
-| 26 | `docs/enterprise/28-全维架构分析与文档归一化报告-V1.0.md` | 全维架构分析与文档归一化报告 | V1.0 | 🟡参考 | 归一化治理/架构 | 对全域架构进行全维分析，提出文档归一化方案 | 分析"文档碎片化"、"版本冲突"、"权威缺失"等问题；提出归一化5步法 |
+| 26 | `docs/enterprise/28-mox 模块化系统架构分析与文档归一化报告-V1.0.md` | mox 模块化系统架构分析与文档归一化报告 | V1.0 | 🟡参考 | 归一化治理/架构 | 对全域架构进行mox 模块化系统架构分析，提出文档归一化方案 | 分析"文档碎片化"、"版本冲突"、"权威缺失"等问题；提出归一化5步法 |
 
 ### C组：docs/cosmic-architecture/（2份）
 
@@ -108,15 +108,15 @@
 |---|----------|----------|------|----------|----------|--------------|-----------------|
 | 29 | `docs/modules/专家联盟AI对话需求文档-V1.0.md` | 专家联盟AI对话系统需求文档 | V1.0 企业级 | 未声明 | 需求 | AI对话系统的完整需求规格，包含功能架构、业务流程、数据模型、API设计、非功能需求 | 声称"15+专家类型"；定义6层功能架构；API路径`/ai/chat`、`/experts/*`；性能P95≤3s |
 | 30 | `docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md` | 专家联盟AI对话系统架构优化设计文档 | V2.0 架构优化版 | 未声明 | 架构/需求 | V1.0的架构优化版，引入L0-L5六层架构、插件化编排、PageRank路由、学习闭环、事件驱动 | 声称"15+专家类型"；L3编排层为"系统心脏"；PageRank匹配精准度+40%；架构解耦度+100% |
-| 31 | `docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md` | 专家联盟全维业务流程归一化手册 | v1.0 (ENT) | 🟢声明为"归一化唯一真相源" | 流程/归一化治理 | 将分散在18+份文档中的业务流程统一收敛为标准化流程集，定义4套流程族（EAF6阶段/XOPT8步/BP10/CHAT7）、12条关联边、代码锚点矩阵 | 声称"31条归一化流程卡"、"20条强关联边"、"48个代码锚点"；引用`mox-expert/src/alliance/`路径；EAF标准6阶段；SSE 7帧事件 |
-| 32 | `docs/modules/专家联盟-业务流程关联关系总览-V1.0.html` | 专家联盟全维业务流程关联关系总览 | V1.0 | 🟡参考 | 流程 | 归一化手册的HTML可视化版本，展示4套流程族、I/O映射矩阵、12条关联边 | 与归一化手册内容高度重叠；可视化呈现 |
-| 33 | `docs/modules/专家联盟AI对话业务处理流程图.html` | 专家联盟AI对话系统全维度业务处理流程图 | V1.0 企业级 | 未声明 | 流程 | AI对话系统业务处理流程的HTML可视化，包含主流程、专家类型体系、算法联盟流程、会话状态机 | 声称"15+专家类型"；列出16种专家（算法/架构/数据/AI/工作流/算子/图谱/安全/性能/可观测/商业智能/MCP/自动化/需求工程/融合）；会话5态状态机 |
+| 31 | `docs/modules/专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md` | 专家联盟mox 模块化系统架构业务流程归一化手册 | v1.0 (ENT) | 🟢声明为"归一化唯一真相源" | 流程/归一化治理 | 将分散在18+份文档中的业务流程统一收敛为标准化流程集，定义4套流程族（EAF6阶段/XOPT8步/BP10/CHAT7）、12条关联边、代码锚点矩阵 | 声称"31条归一化流程卡"、"20条强关联边"、"48个代码锚点"；引用`mox-expert/src/alliance/`路径；EAF标准6阶段；SSE 7帧事件 |
+| 32 | `docs/modules/专家联盟-业务流程关联关系总览-V1.0.html` | 专家联盟mox 模块化系统架构业务流程关联关系总览 | V1.0 | 🟡参考 | 流程 | 归一化手册的HTML可视化版本，展示4套流程族、I/O映射矩阵、12条关联边 | 与归一化手册内容高度重叠；可视化呈现 |
+| 33 | `docs/modules/专家联盟AI对话业务处理流程图.html` | 专家联盟AI对话系统mox 模块化系统架构维度业务处理流程图 | V1.0 企业级 | 未声明 | 流程 | AI对话系统业务处理流程的HTML可视化，包含主流程、专家类型体系、算法联盟流程、会话状态机 | 声称"15+专家类型"；列出16种专家（算法/架构/数据/AI/工作流/算子/图谱/安全/性能/可观测/商业智能/MCP/自动化/需求工程/融合）；会话5态状态机 |
 | 34 | `docs/modules/专家联盟V2.0-集成对齐分析报告.md` | 专家联盟V2.0架构集成对齐分析报告 | V1.0 | 🟡参考 | 架构/分析 | 对齐V2.0架构设计与现有Node.js代码实现，分析差距、映射关系、实施优先级 | 引用`platform/backend-node/src/expert-alliance.js`等Node文件；分析6个核心模块完成度55%-80%；追加A16-A24架构实测修复记录 |
-| 35 | `docs/modules/mox-expert-normalization.md` | 璇玑全维整理归一化优化规范标准书 | v1.0 | 🟡参考（姊妹篇） | 归一化治理 | mox-expert crate的功能归一化、冲突诊断、I/O规范、知识库规范、落地方案 | 诊断5项真实缺陷P1-P5（PII判据三处分叉/conflicts永久空/语义冲突被吞/硬编码散落/鉴权双轨）；声称全部已落地修复 |
+| 35 | `docs/modules/mox-expert-normalization.md` | 璇玑mox 模块化系统架构整理归一化优化规范标准书 | v1.0 | 🟡参考（姊妹篇） | 归一化治理 | mox-expert crate的功能归一化、冲突诊断、I/O规范、知识库规范、落地方案 | 诊断5项真实缺陷P1-P5（PII判据三处分叉/conflicts永久空/语义冲突被吞/硬编码散落/鉴权双轨）；声称全部已落地修复 |
 | 36 | `docs/modules/mox-expert-alliance-fusion-flows.md` | 璇玑与璇玑融合业务流程图 | 未标注 | 🟡参考 | 流程 | mox-expert融合流水线、MoxFusionView端到端流程、mox-system协作闭环的Mermaid流程图 | 引用`crates/mox-expert/src/pipeline.rs:41`；`POST /api/mox/optimize`；双璇玑十四维（业务7维+开发7维） |
 | 37 | `docs/modules/mox-expert-business-requirements.md` | 璇玑璇玑融合企业级业务处理流程需求规格 | 未标注 | 🟡参考 | 需求 | mox-system+mox-expert的业务需求规格，包含角色权限矩阵、8大BP流程、21条业务规则、6项GAP | 引用`crates/mox-system/src/rbac.rs`；5角色（Admin/Coordinator/Expert/Member/Auditor）；BR-07分派三重校验P0；声称6项GAP全部已修复 |
 | 38 | `docs/modules/mox-expert-product.md` | 璇玑产品需求架构业务流程设计书 | v1.0 | 🟡参考 | 需求/架构 | mox-expert的产品需求规格（SRS）、架构设计、业务流程、安全治理、部署运维 | 引用`crates/mox-expert`；7位专家（算法/资源/数据/权限/安全/可观测/业务）；12项FR；HarnessCtx插件运行时 |
-| 39 | `docs/modules/business-process-flowcharts.md` | 企业级业务处理流程图 | 未标注 | 🟡参考 | 流程 | 企业级业务处理流程的Mermaid可视化，包含统一状态机、6个企业模板、SUPER_EXPERT全维工作流、Node平台层总览 | 引用`crates/ai-agent/src/workflow_engine.rs`；11个内置模板（技术5+企业6）；Node平台端口3010；23个业务域路由 |
+| 39 | `docs/modules/business-process-flowcharts.md` | 企业级业务处理流程图 | 未标注 | 🟡参考 | 流程 | 企业级业务处理流程的Mermaid可视化，包含统一状态机、6个企业模板、SUPER_EXPERTmox 模块化系统架构工作流、Node平台层总览 | 引用`crates/ai-agent/src/workflow_engine.rs`；11个内置模板（技术5+企业6）；Node平台端口3010；23个业务域路由 |
 | 40 | `docs/modules/business-process-flows.md` | 企业级业务处理流程 | 未标注 | 🟡参考 | 流程 | 企业级业务处理流程引擎的详细说明，包含WorkflowEngine/FlowEngine双引擎、节点类型、API清单、11个模板 | 引用`crates/ai-agent/src/workflow_engine.rs`；`POST /api/ai/workflows/execute`；11个模板；AiTask真实LLM执行；Condition fail-closed |
 
 ### E组：其他位置（7份）
@@ -146,9 +146,9 @@
 - **重叠度**：约60%。V2.0在V1.0基础上重写架构层（6层→L0-L5六层），但功能需求、数据模型、API设计大量复用V1.0内容。
 - **问题**：V1.0未标注为"已归档/被替代"，两份文档同时存在于同一目录，读者无法判断应以哪份为准。
 
-#### 重复组R2：全维业务流程归一化手册 vs 业务流程关联关系总览HTML
+#### 重复组R2：mox 模块化系统架构业务流程归一化手册 vs 业务流程关联关系总览HTML
 - **涉及文件**：
-  - `docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md`（#31）
+  - `docs/modules/专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md`（#31）
   - `docs/modules/专家联盟-业务流程关联关系总览-V1.0.html`（#32）
 - **重叠度**：约90%。HTML版几乎是Markdown版的完整可视化复刻，4套流程族、12条关联边、I/O映射矩阵内容完全一致。
 - **问题**：HTML版未声明为"可视化配套版"，两份文档的"31条流程卡/20条关联边"等关键数据完全相同，维护时需双份同步，极易漂移。
@@ -224,7 +224,7 @@
 ### 3.3 死链/断引用
 
 #### 死链D1：归一化手册中的相对引用
-- **涉及文件**：`docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md`（#31）
+- **涉及文件**：`docs/modules/专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md`（#31）
 - **问题位置**：文档头部权威链声明（第8-10行）
 - **断引用清单**：
   - `../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`——需验证是否存在
@@ -279,7 +279,7 @@
 - **错位性质**：需求文档描述的API在Rust实现中不存在
 
 #### 错位M6：归一化手册引用mox-expert路径，实际alliance域路径不同
-- **涉及文档**：`专家联盟-全维业务流程归一化手册-V1.0.md`（#31）
+- **涉及文档**：`专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md`（#31）
 - **文档声称**：EAF 6阶段参考实现`platform/domains/mox-expert/src/alliance/{mod.rs,gate.rs,intent.rs,team.rs,debate.rs}`
 - **代码事实**：alliance域代码路径为`platform/domains/alliance/{proto,core,svc,sdk,api}`，不存在`mox-expert/src/alliance/`路径
 - **错位性质**：将mox-expert的融合管线与alliance域的专家联盟混为一谈，路径引用错误
@@ -360,7 +360,7 @@
 | 融合策略 | 多专家结果的6种合并算法 | 代码事实、修复报告（#45） |
 | FusionEngine | 融合引擎组件 | 评审报告（#46） |
 | 璇玑融合 | mox-expert的8步优化管线（XOPT-1~8） | mox-expert系列（#35-#38）、归一化手册（#31） |
-| 全维融合 | 知识库融合架构 | 架构开发联盟知识库融合设计方案（#47） |
+| mox 模块化系统架构融合 | 知识库融合架构 | 架构开发联盟知识库融合设计方案（#47） |
 | 业务融合 | 业务流程的归一化合并 | 28号报告（#26） |
 
 **问题**："融合"一词在5种不同语境下使用，含义从"多专家结果合并"到"知识库架构"跨度极大，无术语消歧。
@@ -390,7 +390,7 @@
 - **实际问题**：本次盘点的47份专家联盟文档中，大量文档（尤其是modules/、cosmic-architecture/、working-reports/下的文档）未在22号总控卡中登记或登记信息过时。
 
 #### 不符I4：归一化手册声称"18+份文档"，实际盘点47份
-- **涉及文件**：`专家联盟-全维业务流程归一化手册-V1.0.md`（#31）
+- **涉及文件**：`专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md`（#31）
 - **文档声称**："将分散在18+份文档中的专家联盟业务流程统一收敛"
 - **实际事实**：本次盘点发现专家联盟主题文档共47份，远超18+份
 - **问题**：归一化手册的覆盖范围声明严重不足，大量文档未被纳入归一化范围
@@ -402,12 +402,12 @@
 | 组ID | 重复文档 | 重叠度 | 关系 | 建议处理 |
 |------|----------|--------|------|----------|
 | R1 | 专家联盟AI对话需求V1.0（#29）↔ V2.0架构优化版（#30） | 60% | 版本迭代 | V1.0标注"已被V2.0替代"，归档；V2.0标注🟡参考（未落地） |
-| R2 | 全维业务流程归一化手册（#31）↔ 业务流程关联关系总览HTML（#32） | 90% | 文字版↔可视化版 | 明确主从：Markdown为权威源，HTML为配套可视化；HTML头部声明"可视化配套版，以Markdown为准" |
+| R2 | mox 模块化系统架构业务流程归一化手册（#31）↔ 业务流程关联关系总览HTML（#32） | 90% | 文字版↔可视化版 | 明确主从：Markdown为权威源，HTML为配套可视化；HTML头部声明"可视化配套版，以Markdown为准" |
 | R3 | 架构诊断V1.0（#22）↔ V1.1补充修订版（#23） | 75% | 版本迭代 | V1.0标注"已被V1.1替代"，归档；V1.1为权威 |
 | R4 | v2全套（#6-#13）↔ v3全套（#15-#17） | 50% | 版本迭代 | v2全套标注"目标设计（未落地）"；v3标注"架构优化方向"；以2026-08-31修复报告为当前实现权威 |
 | R5 | business-process-flows（#40）↔ business-process-flowcharts（#41） | 55% | 文字规范↔可视化 | 明确主从：flows.md为规范权威，flowcharts.md为可视化配套 |
 | R6 | cosmic-architecture 02（#27）↔ 04（#28）↔ expert-alliance v2/v3架构（#7/#15） | 70% | 哲学视角↔技术视角 | cosmic版声明为"宇宙架构视角解读，技术事实以expert-alliance/下文档为准" |
-| R7 | mox-expert-product（#38）↔ mox-expert-normalization（#35）↔ mox-expert-business-requirements（#37） | 40% | 产品/归一化/需求三视图 | 三份文档描述同一系统（mox-expert）的不同侧面，建议合并为一份"mox-expert全维设计书"或明确互为补充 |
+| R7 | mox-expert-product（#38）↔ mox-expert-normalization（#35）↔ mox-expert-business-requirements（#37） | 40% | 产品/归一化/需求三视图 | 三份文档描述同一系统（mox-expert）的不同侧面，建议合并为一份"mox-expertmox 模块化系统架构设计书"或明确互为补充 |
 | R8 | alliance-architecture-review（#46）↔ alliance-architecture-fix-report（#45） | 60% | 评审→修复 | 评审报告（修复前状态）标注"2026-08-31修复前快照"；修复报告为修复后权威 |
 
 ---
@@ -505,7 +505,7 @@
 | P1-4 | 重复文档组R5（business-process-flows↔flowcharts 55%重叠）主从不明 | #39、#40 | 明确flows.md为规范权威，flowcharts.md为可视化配套 | 0.1人日 |
 | P1-5 | Node层与Rust层双平台并存但无关系说明文档 | #34、#39、#45、#46 | 新增"双平台架构关系说明"文档，明确两层边界、通信方式、功能映射、迁移策略 | 1人日 |
 | P1-6 | 5套API路径并存无统一映射表 | #10、#29、#36、#43、#45 | 在00-INDEX中增加"API路径→子系统→实现状态→代码位置"映射表 | 0.3人日 |
-| P1-7 | mox-expert系列3份文档（product/normalization/business-requirements）描述同一系统不同侧面，内容分散 | #35、#37、#38 | 评估是否合并为一份"mox-expert全维设计书"，或在每份文档头部明确互为补充关系 | 0.5人日 |
+| P1-7 | mox-expert系列3份文档（product/normalization/business-requirements）描述同一系统不同侧面，内容分散 | #35、#37、#38 | 评估是否合并为一份"mox-expertmox 模块化系统架构设计书"，或在每份文档头部明确互为补充关系 | 0.5人日 |
 | P1-8 | 归一化手册声称覆盖"18+份文档"，实际47份，大量文档未纳入归一化范围 | #31 | 更新覆盖范围声明；评估将modules/、cosmic-architecture/、working-reports/下文档纳入归一化的可行性 | 0.5人日 |
 
 ### P2：可延后修复（改善性问题）

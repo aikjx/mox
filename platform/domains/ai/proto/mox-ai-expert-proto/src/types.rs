@@ -47,7 +47,7 @@ pub enum Dimension {
 }
 
 impl Dimension {
-    /// 全维裁决时的优先级权重：值越大越优先被采纳（权限/安全不可被性能绕过）。
+    /// mox 模块化系统架构裁决时的优先级权重：值越大越优先被采纳（权限/安全不可被性能绕过）。
     ///
     /// 单一数据源：`crate::constants::DIM_PRIORITY`（集中常量，避免散落魔法数字）。
     pub fn priority(&self) -> i32 {
@@ -119,7 +119,7 @@ pub type PolicyId = String;
 /// 节点/边上的维度着色标签
 ///
 /// 设计铁律：四种流程图（业务/算法/权限/资源）在内存里是**同一个 FlowGraph**，
-/// 维度只是节点/边上的标签。物理节点唯一，因此「改一处，全维同步」天然成立。
+/// 维度只是节点/边上的标签。物理节点唯一，因此「改一处，mox 模块化系统架构同步」天然成立。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DimensionTag {
     pub dimension: Dimension,

@@ -825,7 +825,7 @@ storage-api 将对象存储操作拆分为**六个正交 trait**：
 | 路径 | 说明 |
 |---|---|
 | `docs/working-reports/20260823_cloud_drive_and_relgraph_selfdev_plan.md` | AIS 7 层架构定义、M0~M5 里程碑规划、云盘×关系图自研计划 |
-| `docs/working-reports/mox-vs-opensource-comparison-report.md` | 璇玑自研 vs 开源竞品全维对比分析报告 |
+| `docs/working-reports/mox-vs-opensource-comparison-report.md` | 璇玑自研 vs 开源竞品mox 模块化系统架构对比分析报告 |
 
 ---
 

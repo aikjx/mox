@@ -32,7 +32,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
-/// 专家联盟全维分析引擎（对外入口结构体）
+/// 专家联盟mox 模块化系统架构分析引擎（对外入口结构体）
 ///
 /// 生产环境由上游服务（mox_platform_orchestrator_svc / mox-ai-expert-svc）
 /// 持 `Arc<AllianceEngine>` 单例。
@@ -83,7 +83,7 @@ impl AllianceEngine {
         self.started_at
     }
 
-    /// 运行完整的 6 阶段全维分析，返回事件列表（SSE 友好）。
+    /// 运行完整的 6 阶段mox 模块化系统架构分析，返回事件列表（SSE 友好）。
     pub async fn run_full_analysis(
         &self,
         req: AllianceRequest,
@@ -456,7 +456,7 @@ mod tests {
     #[tokio::test]
     async fn skeleton_emits_seven_phases_in_order_and_same_trace() {
         let eng = AllianceEngine::new();
-        let req = fake_req("帮我做 Rust 企业级服务全维分析");
+        let req = fake_req("帮我做 Rust 企业级服务mox 模块化系统架构分析");
         let events = eng.run_full_analysis(req).await.expect("ok");
         assert_eq!(events.len(), 7, "6 stages + done = 7 events");
         for (i, ev) in events.iter().enumerate() {
@@ -474,7 +474,7 @@ mod tests {
     #[tokio::test]
     async fn seven_audit_events_complete() {
         let eng = AllianceEngine::new();
-        let req = fake_req("全维分析：Rust 网关路由性能与安全");
+        let req = fake_req("mox 模块化系统架构分析：Rust 网关路由性能与安全");
         let (events, audits) = eng.run_full_pipeline(req).await.expect("pipeline ok");
         use crate::constants::AUDIT_EVENTS_7;
         assert_eq!(audits.len(), 7, "审计事件必须 = 7 个");

@@ -10,7 +10,7 @@
 //! - `AsyncPipeline`：异步执行器（SSE 友好）
 //!
 //! 两套现有管线都可以基于此核心实现：
-//! - 全维管线 → `SyncPipeline`（同步、一次性返回）
+//! - mox 模块化系统架构管线 → `SyncPipeline`（同步、一次性返回）
 //! - 联盟管线 → `AsyncPipeline`（异步、逐阶段推送）
 
 use std::time::Instant;
@@ -23,7 +23,7 @@ use crate::pipeline_core::phase::{Phase, PhaseExecution, PhaseHandler, PhaseStat
 
 /// 管线 trait：统一的管线抽象
 ///
-/// 所有管线（全维优化、联盟分析等）都实现此 trait，
+/// 所有管线（mox 模块化系统架构优化、联盟分析等）都实现此 trait，
 /// 对外提供一致的执行接口。
 pub trait Pipeline {
     /// 管线名称（用于日志、监控、审计）
@@ -176,7 +176,7 @@ impl PipelineBuilder {
 /// 同步管线执行器
 ///
 /// 顺序执行所有阶段，一次性返回最终上下文。
-/// 适用于全维优化管线等批处理场景。
+/// 适用于mox 模块化系统架构优化管线等批处理场景。
 pub struct SyncPipeline {
     name: String,
     phases: Vec<(Phase, Box<dyn PhaseHandler>)>,
@@ -546,9 +546,9 @@ fn is_phase_passed(ctx: &PipelineContext, phase: Phase) -> bool {
     }
 }
 
-// ================== 示例：迁移后的全维管线结构 ==================
+// ================== 示例：迁移后的mox 模块化系统架构管线结构 ==================
 
-// 以下是概念性代码，展示如何基于统一核心重写全维管线：
+// 以下是概念性代码，展示如何基于统一核心重写mox 模块化系统架构管线：
 //
 // ```ignore
 // pub struct MoxOptimizePipeline;

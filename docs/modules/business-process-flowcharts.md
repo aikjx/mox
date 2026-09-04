@@ -59,7 +59,7 @@ flowchart TD
     C -->|单算子| D[POST /api/execute\noperator-wasm 沙箱执行]
     C -->|可视化流| E[POST /api/ai/flows/execute\nFlowEngine DAG 驱动]
     C -->|业务工作流| F[POST /api/ai/workflows/execute\nWorkflowEngine 节点编排]
-    C -->|全维求解| G[SUPER_EXPERT 调度中枢 §19]
+    C -->|mox 模块化系统架构求解| G[SUPER_EXPERT 调度中枢 §19]
     D --> H[[守恒校验 conservation::check_all]]
     E --> H
     F --> H
@@ -177,7 +177,7 @@ sequenceDiagram
 
 ---
 
-## 4. SUPER_EXPERT 全维处理工作流（璇玑 + 璇玑）
+## 4. SUPER_EXPERT mox 模块化系统架构处理工作流（璇玑 + 璇玑）
 
 对应 `docs/architecture.md` §19：最高权限、受控、不失控。
 
@@ -189,7 +189,7 @@ flowchart TD
     T --> X{冲突消解\nflow-ai::conflict::detect + auto_repair}
     D --> P[璇玑产出 DAG 调度计划\noptimizer::schedule]
     X --> P
-    P --> B[[全维执行总线 All-Domain Bus\n算子内核·图谱·优化·编排·数据·外系统]]
+    P --> B[[mox 模块化系统架构执行总线 All-Domain Bus\n算子内核·图谱·优化·编排·数据·外系统]]
     B --> V[[收敛校验 conservation::check_all]]
     V -->|通过| GV{{治理复核 govern\n+ 合规专家签字(可拒)}}
     GV -->|通过| C[沉淀: session/event + 图谱加权边\n(知识复利)]
@@ -277,7 +277,7 @@ flowchart TB
     GW -.P-05 画布流.-> FLOW
     GW -.P-06 浏览器.-> AGENT
     GW -.P-07 图谱.-> OG
-    GW -.P-13 全维.-> EXP
+    GW -.P-13 mox 模块化系统架构.-> EXP
 ```
 
 > 全流程卡 P-01…P-13 与端点映射见 `docs/architecture.md` §9.1；企业模板与执行引擎见 `docs/modules/business-process-flows.md`。
@@ -295,20 +295,20 @@ flowchart TB
 | `POST /api/ai/browser/natural` | P-06 浏览器 | browser_automation | — |
 | `POST /api/graph/node` `/edge` | P-07 图谱 | operator-graph | — |
 | `POST /api/ai/llm/config` / `test` | 模型路由 | llm/* Seam | — |
-| `POST /api/mox/optimize` | P-13 全维 | mox-expert | — |
-| `POST /api/mox/publish` | 全维融合发布 | mox-expert → market | 归一化→优化图→上传算子市场 |
+| `POST /api/mox/optimize` | P-13 mox 模块化系统架构 | mox-expert | — |
+| `POST /api/mox/publish` | mox 模块化系统架构融合发布 | mox-expert → market | 归一化→优化图→上传算子市场 |
 
 ---
 
-## 8. 全维融合总线（归一化 · 融合 · 打通 · 上传平台）
+## 8. mox 模块化系统架构融合总线（归一化 · 融合 · 打通 · 上传平台）
 
 > 本系统是"璇玑 + 业务流程图"为主轴的融合总线落地实现。所有功能（算子 / 工作流 / 对话 / 浏览器 / 图谱 / 插件 / 应用）经归一化后，可一键上传到系统平台（算子市场 = 插件平台 / 应用平台）。
 
 ```mermaid
 flowchart LR
-    A[前端全维融合视图\nMoxFusionView] -->|POST /api/mox/publish\n{flow,name,requirement}| B[运行时融合端点]
+    A[前端mox 模块化系统架构融合视图\nMoxFusionView] -->|POST /api/mox/publish\n{flow,name,requirement}| B[运行时融合端点]
     B --> C[归一化: normalize_flow_to_graph\n前端 {type,params} → FlowGraph]
-    C --> D[璇玑双璇玑十四维\n+ 璇玑 全维治理]
+    C --> D[璇玑双璇玑十四维\n+ 璇玑 mox 模块化系统架构治理]
     D --> E[优化流程图 FlowGraph\noptimized_graph]
     E --> F[market::publish_unified\nflow_ai 模型 → 商城模型]
     F --> G[(算子市场 $OUS_HOME/market\n插件/应用平台资产)]
@@ -321,7 +321,7 @@ flowchart LR
 - 响应：`{ published, package:{id,name,category,nodes,edges}, governance:{score,gate}, optimization:{critical_path_ms,conflicts_found} }`
 - 落盘：`$OUS_HOME/market/packages/<id>.json`（算子包，可在算子商城（插件平台/应用平台）检索、克隆、复用）
 
-**前端入口**：导航栏「全维融合」→ `/mox-fusion`，提供：① 编辑业务蓝图 → ② 全维归一化（治理评分/闸门/优化指标）→ ③ 一键上传算子市场。
+**前端入口**：导航栏「mox 模块化系统架构融合」→ `/mox-fusion`，提供：① 编辑业务蓝图 → ② mox 模块化系统架构归一化（治理评分/闸门/优化指标）→ ③ 一键上传算子市场。
 
 ---
 

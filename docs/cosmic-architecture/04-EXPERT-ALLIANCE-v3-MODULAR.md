@@ -1,12 +1,12 @@
 ﻿---
-title: 专家联盟架构 v3.0 — 全维模块化与归一化
+title: 专家联盟架构 v3.0 — mox 模块化系统架构模块化与归一化
 version: V3.0
 authority: 🟡参考
 doc_id: EA-DOC-041
 last_updated: 2026-08-31
 source_of_truth: 参考（宇宙架构视角）
 ---
-# 专家联盟架构 v3.0 — 全维模块化与归一化
+# 专家联盟架构 v3.0 — mox 模块化系统架构模块化与归一化
 
 > 从两个 God Module（mox-ai-expert-svc 60+文件/500KB+、mox-ai-agent-svc 23+文件/700KB+）
 > 拆解为 7 个独立微服务 + 3 个共享库 + 1 个推理 Sidecar。
@@ -18,7 +18,7 @@ source_of_truth: 参考（宇宙架构视角）
 
 ---
 
-## 一、现状全维诊断
+## 一、现状mox 模块化系统架构诊断
 
 ### 1.1 现有代码结构
 
@@ -556,4 +556,4 @@ platform/domains/ea/                          # 专家联盟域(独立域)
 
 ---
 
-*专家联盟架构 v3.0 — 从2个God Module到7个独立微服务，全维模块化归一化，每个服务独立部署/扩展/升级，服务间gRPC+JSON-RPC零配置联调*
+*专家联盟架构 v3.0 — 从2个God Module到7个独立微服务，mox 模块化系统架构模块化归一化，每个服务独立部署/扩展/升级，服务间gRPC+JSON-RPC零配置联调*

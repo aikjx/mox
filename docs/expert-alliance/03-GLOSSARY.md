@@ -33,7 +33,7 @@
 | **标准别名** | 无（以下均为历史称谓，已统一为"专家匹配器"） |
 | **历史称谓清单（8种）** | ①专家匹配器 ②ExpertMatcher ③调度器（语境：专家调度） ④ExpertDispatcher（Node层） ⑤RuleBasedExpertMatcher（Rust规则匹配器） ⑥ModularWeightMatcher（Rust加权匹配器，默认实现） ⑦专家路由器（V2.0设计文档） ⑧Domain-Expert Router（FR-13对接文档） |
 | **代码对应** | **Rust alliance域**：`ExpertMatcher` trait（`mox-alliance-scheduler-proto/src/matcher.rs`），默认实现 `ModularWeightMatcher`（`mox-alliance-scheduler-core/src/modular_matcher.rs`），备选实现 `RuleBasedExpertMatcher`（`mox-alliance-scheduler-core/src/matcher.rs`）<br/>**Node.js层**：`expert-dispatcher.js`（5种调度策略 + 熔断器）、`expert-alliance-engine.js` `composeTeam()` |
-| **首次出现文档** | `docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md` |
+| **首次出现文档** | `docs/modules/专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md` |
 | **消歧说明** | "调度器"在不同语境下可能指"任务调度器"（TaskScheduler）而非"专家匹配器"，需根据上下文判断。"专家路由器"为V2.0目标设计中的称谓，当前代码实现为"专家匹配器"。 |
 
 ### 2.2 六阶段流程（EAF Six-Phase Pipeline）
@@ -71,8 +71,8 @@
 | **多专家结果合成** | 融合策略 | Fusion Strategy | 将多个专家的输出结果合成为单一最终结果的算法机制。alliance域支持6种策略：加权投票、置信度加权、辩论、Stacking、MapReduce、迭代精炼。 | `mox-alliance-core/src/fusion/strategies/`（6个策略文件）、`FusionEngine`（`fusion/engine.rs`） | 修复报告、归一化手册、EAF标准 |
 | **融合引擎组件** | 融合引擎 | FusionEngine | 实现融合策略注册与执行的组件，是scheduler-core的库模块（非独立服务）。 | `mox-alliance-scheduler-core/src/fusion.rs`（调度器侧包装）、`mox-alliance-core/src/fusion/engine.rs`（核心实现） | 评审报告、代码对齐报告 |
 | **璇玑融合优化管线** | 璇玑融合（XOPT） | Mox Fusion / XOPT | mox-expert crate的8步优化管线（XOPT-1~8），将业务流程做归一化、七维专家会诊、冲突消解、治理裁决，产出可复用的优化算子。与"多专家结果融合"是完全不同的概念。 | mox-expert crate `pipeline.rs::mox_optimize`（路径待验证）、`POST /api/mox/optimize` | mox-expert系列文档、归一化手册 |
-| **知识库融合架构** | 全维融合（CKB） | Converged Knowledge Base | 架构开发联盟的知识库融合架构，以本体为语义骨架、知识图谱为关联网络、向量索引为语义入口、Agent为消费终端的四层融合体系。 | 无直接代码对应（架构设计） | 架构开发联盟知识库融合设计方案 |
-| **业务流程归一化合并** | 业务融合 | Business Fusion | 将分散的业务流程文档统一收敛为标准化流程集的归一化动作，是文档治理层面的"融合"，非技术实现。 | 无直接代码对应（文档治理动作） | 28号全维架构分析报告、归一化手册 |
+| **知识库融合架构** | mox 模块化系统架构融合（CKB） | Converged Knowledge Base | 架构开发联盟的知识库融合架构，以本体为语义骨架、知识图谱为关联网络、向量索引为语义入口、Agent为消费终端的四层融合体系。 | 无直接代码对应（架构设计） | 架构开发联盟知识库融合设计方案 |
+| **业务流程归一化合并** | 业务融合 | Business Fusion | 将分散的业务流程文档统一收敛为标准化流程集的归一化动作，是文档治理层面的"融合"，非技术实现。 | 无直接代码对应（文档治理动作） | 28号mox 模块化系统架构分析报告、归一化手册 |
 
 > ⚠️ **强制规则**：文档中使用"融合"一词时，必须根据语境明确是上述哪一种含义。若可能产生歧义，必须使用完整标准术语（如"融合策略"而非"融合"）。
 

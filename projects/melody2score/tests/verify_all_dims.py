@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Melody2Score 企业级 · 全维度稳定性/性能验证套件
+Melody2Score 企业级 · mox 模块化系统架构维度稳定性/性能验证套件
 ================================================
 
 覆盖本次优化的全部维度（不依赖声卡 / 不加载 torch 重模型，可在 CI 或
@@ -227,7 +227,7 @@ def test_progress_cb():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print(" Melody2Score 企业级 · 全维度验证")
+    print(" Melody2Score 企业级 · mox 模块化系统架构维度验证")
     print("=" * 60)
     test_ringbuffer_bulk()
     test_synth_perf_and_determinism()

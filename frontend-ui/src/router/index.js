@@ -8,7 +8,7 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/misc/Login.vue'),
+    component: () => import('@/views/auth/Login.vue'),
     meta: { title: '登录' }
   },
   {
@@ -154,7 +154,7 @@ const routes = [
     name: 'MoxFusion',
     component: () => import('@/views/graph/MoxFusionView.vue'),
     meta: {
-      title: '全维融合',
+      title: 'mox 模块化系统架构融合',
       requiresAuth: true,
       backTo: { path: '/expert-workspace', label: '返回工作台' }
     }
@@ -285,7 +285,7 @@ const routes = [
       }
     ]
   },
-  // 专家配置引擎（全维可配置）
+  // 专家配置引擎（mox 模块化系统架构可配置）
   {
     path: '/expert-config',
     name: 'ExpertConfig',

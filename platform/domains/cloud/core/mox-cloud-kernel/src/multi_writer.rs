@@ -175,9 +175,12 @@ impl MultiWriter {
         let mut pending: Vec<usize> = all_indices.clone();
 
         // 构建并发写入 futures
+        // P2 优化：直接借用 `&self.writers[i]` 而非 `Arc::clone`，
+        // 减少高 QPS 下的原子引用计数操作。futures 在函数作用域内被 await，
+        // `&self` 的生命周期覆盖所有 future 的存活期。
         let mut futures: FuturesUnordered<_> = FuturesUnordered::new();
         for (i, shard) in shards.iter().enumerate().take(pair_count) {
-            let writer = Arc::clone(&self.writers[i]);
+            let writer: &dyn ShardWriter = &*self.writers[i];
             let (shard_idx, data) = shard.clone();
             let stall = self.policy.stall_timeout;
             futures.push(async move {

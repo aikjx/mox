@@ -258,7 +258,7 @@ async function loadDictTypes() {
       loadDictData()
     }
   } catch (e) {
-    console.warn('[AdminDict] 字典类型加载失败:', e.message)
+    ElMessage.error('字典类型加载失败: ' + (e?.message || e))
   } finally {
     typeLoading.value = false
   }
@@ -365,7 +365,7 @@ async function loadDictData() {
     const list = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
     dictDataList.value = list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
   } catch (e) {
-    console.warn('[AdminDict] 字典数据加载失败:', e.message)
+    ElMessage.error('字典数据加载失败: ' + (e?.message || e))
   } finally {
     dataLoading.value = false
   }

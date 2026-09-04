@@ -1,37 +1,260 @@
-version: '3.8'
+# 璇玑 RelGraph · 算子统一系统（OUS）Docker Compose 部署
+# 一键启动：后端平台 + LLM 推理服务 + 前端 + 数据库 + 缓存
+#
+# 使用方式：
+#   1. 复制 .env.example 为 .env 并修改配置
+#   2. docker-compose up -d
+#   3. 访问 http://localhost:8080
+#
+# 服务架构：
+#   nginx (8080) → 前端静态资源 + 反向代理
+#     ├─ /api → api-gateway (8080)
+#     └─ /llm → llm-inference-svc (8001)
+#   api-gateway → 各业务域服务
+#   llm-inference-svc → Ollama / OpenAI / 通义千问 / 豆包
+#   postgres (5432) → 业务数据
+#   redis (6379) → 缓存 + 会话
+
 services:
-  mox-server:
-    build:
-      context: .
-      dockerfile: deploy/Dockerfile
-    ports:
-      - "8600:8600"
-    volumes:
-      - mox-data:/app/data
-      - ./frontend-ui:/app/frontend:ro
-    environment:
-      - MOX_HOST=0.0.0.0
-      - MOX_PORT=8600
-      - MOX_REDIS=redis://redis:6379/0
+  # ============================================================
+  # 反向代理 + 前端静态资源
+  # ============================================================
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: mox-nginx
     restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - frontend-dist:/usr/share/nginx/html:ro
     depends_on:
-      redis:
-        condition: service_started
+      - api-gateway
+      - llm-inference-svc
+    networks:
+      - mox-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8600/api/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
 
+  # ============================================================
+  # MOX API 网关（Rust / axum）
+  # ============================================================
+  api-gateway:
+    build:
+      context: .
+      dockerfile: platform/gateway/mox-api-gateway/Dockerfile
+    container_name: mox-api-gateway
+    restart: unless-stopped
+    environment:
+      - RUST_LOG=${RUST_LOG:-info,mox_api_gateway=info}
+      - MOX_ENV=production
+      - MOX_GATEWAY_HOST=0.0.0.0
+      - MOX_GATEWAY_PORT=8080
+      - MOX_JWT_SECRET=${JWT_SECRET:-mox-default-jwt-secret-change-in-production-12345}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-mox}:${POSTGRES_PASSWORD:-mox}@postgres:5432/${POSTGRES_DB:-mox}
+      - REDIS_URL=redis://redis:6379
+      - LLM_API_BASE=http://llm-inference-svc:8001/v1
+      - LLM_API_KEY=${LLM_SERVICE_API_KEY:-}
+    ports:
+      - "${API_GATEWAY_PORT:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      llm-inference-svc:
+        condition: service_started
+    networks:
+      - mox-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ============================================================
+  # LLM 推理服务（Python / FastAPI）
+  # ============================================================
+  llm-inference-svc:
+    build:
+      context: ./platform/services/llm-inference-svc
+      dockerfile: Dockerfile
+    container_name: mox-llm-inference-svc
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=mox-llm-inference-svc
+      - HOST=0.0.0.0
+      - PORT=8001
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
+      - LLM_MODEL=${LLM_MODEL:-qwen2.5}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-https://api.openai.com/v1}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - DOUBAO_API_KEY=${DOUBAO_API_KEY:-}
+      - SERVICE_API_KEY=${LLM_SERVICE_API_KEY:-}
+      - MAX_RPM=${MAX_RPM:-60}
+      - MAX_CONCURRENT=${MAX_CONCURRENT:-10}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-60}
+    ports:
+      - "${LLM_PORT:-8001}:8001"
+    networks:
+      - mox-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ============================================================
+  # Ollama 本地 LLM 运行时（可选，使用本地模型时启用）
+  # ============================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mox-ollama
+    restart: unless-stopped
+    profiles:
+      - ollama  # 默认不启动，使用 --profile ollama up 启动
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=4
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    networks:
+      - mox-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "ps"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # PostgreSQL 数据库
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: mox-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-mox}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mox}
+      - POSTGRES_DB=${POSTGRES_DB:-mox}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - mox-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mox} -d ${POSTGRES_DB:-mox}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # Redis 缓存
+  # ============================================================
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    container_name: mox-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
     volumes:
       - redis-data:/data
-    restart: unless-stopped
-    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - mox-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ============================================================
+  # Prometheus 指标采集（可选）
+  # ============================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mox-prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - mox-network
+
+  # ============================================================
+  # Grafana 可视化（可选）
+  # ============================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mox-grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana:/etc/grafana/provisioning:ro
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    networks:
+      - mox-network
+    depends_on:
+      - prometheus
+
+# ============================================================
+# 数据卷
+# ============================================================
 volumes:
-  mox-data:
+  frontend-dist:
+    driver: local
+  postgres-data:
+    driver: local
   redis-data:
+    driver: local
+  ollama-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# ============================================================
+# 网络
+# ============================================================
+networks:
+  mox-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

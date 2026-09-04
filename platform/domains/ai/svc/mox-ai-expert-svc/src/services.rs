@@ -507,7 +507,7 @@ pub struct AllianceService {
     consultation_count: std::sync::atomic::AtomicU64,
     /// 累计辩论次数
     debate_count: std::sync::atomic::AtomicU64,
-    /// 累计全维分析次数
+    /// 累计mox 模块化系统架构分析次数
     full_analysis_count: std::sync::atomic::AtomicU64,
     /// 各意图分布计数
     intent_counts: std::sync::Mutex<std::collections::HashMap<String, u64>>,
@@ -1065,7 +1065,7 @@ impl AllianceService {
         })
     }
 
-    // ---------- 全维分析 ----------
+    // ---------- mox 模块化系统架构分析 ----------
 
     pub async fn full_analysis(
         &self,
@@ -1090,7 +1090,7 @@ impl AllianceService {
         let events = crate::alliance::AllianceEngine::new()
             .run_full_analysis(alliance_req)
             .await
-            .map_err(|e| anyhow::anyhow!("全维分析错误: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("mox 模块化系统架构分析错误: {}", e))?;
 
         let trace_id = events.first().map(|e| e.trace_id.to_string()).unwrap_or_default();
 

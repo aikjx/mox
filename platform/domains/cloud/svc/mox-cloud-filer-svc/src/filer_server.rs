@@ -361,8 +361,15 @@ fn default_object_storage() -> FilerResult<Arc<dyn ObjectStorage>> {
 mod tests {
     use super::*;
 
+    /// Serializes all tests that mutate process-global environment variables.
+    /// Without this lock, parallel test runs race on `STORAGE_BACKEND` / `S3_*`
+    /// vars, causing intermittent failures (one test's set_var is overwritten by
+    /// another test before it reads the value).
+    static ENV_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     #[test]
     fn switch_backend_three_rounds() {
+        let _guard = ENV_TEST_LOCK.lock().unwrap();
         // 测试使用 memory 后端，避免依赖 S3 配置
         std::env::set_var("STORAGE_BACKEND", "memory");
         let srv = FilerServer::new(Arc::new(SqliteMeta::new())).unwrap();
@@ -386,6 +393,7 @@ mod tests {
 
     #[test]
     fn s3_missing_config_returns_error() {
+        let _guard = ENV_TEST_LOCK.lock().unwrap();
         // 确保 S3_* 环境变量未设置
         std::env::remove_var("S3_ENDPOINT");
         std::env::remove_var("S3_ACCESS_KEY");
@@ -419,6 +427,7 @@ mod tests {
 
     #[test]
     fn pooled_buffer_filer_server_has_pool() {
+        let _guard = ENV_TEST_LOCK.lock().unwrap();
         // 验证 FilerServer 包含 buffer_pool 字段且默认可用
         std::env::set_var("STORAGE_BACKEND", "memory");
         let srv = FilerServer::new(Arc::new(SqliteMeta::new())).unwrap();

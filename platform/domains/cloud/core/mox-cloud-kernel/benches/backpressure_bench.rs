@@ -7,9 +7,7 @@
 //! permit acquire+release latency, and concurrent stress across 10/100/1000
 //! concurrent threads with max_concurrent 10/100.
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use mox_cloud_kernel::{BackpressureConfig, BackpressureMonitor};
 use std::{
     sync::{Arc, Barrier},
@@ -27,11 +25,7 @@ fn bench_try_acquire_no_contention(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.sample_size(50);
 
-    let configs = vec![
-        (10usize, "max10"),
-        (100, "max100"),
-        (1000, "max1000"),
-    ];
+    let configs = vec![(10usize, "max10"), (100, "max100"), (1000, "max1000")];
 
     for (max, mname) in &configs {
         let cfg = BackpressureConfig {

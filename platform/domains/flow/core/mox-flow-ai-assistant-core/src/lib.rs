@@ -1,7 +1,7 @@
-// Copyright (c) 2026 璇玑 RelGraph · AI对话全维自动化核心 (AI Assistant Core)
+// Copyright (c) 2026 璇玑 RelGraph · AI对话mox 模块化系统架构自动化核心 (AI Assistant Core)
 // Licensed under the MIT License.
 
-//! AI 对话全维自动化核心
+//! AI 对话mox 模块化系统架构自动化核心
 //!
 //! 六大核心能力：
 //! 1. 意图识别 (Intent Recognition) - 理解用户自然语言意图

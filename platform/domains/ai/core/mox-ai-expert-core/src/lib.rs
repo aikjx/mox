@@ -71,7 +71,7 @@
 //! - [`context`] — 治理上下文（Tenant / Principal / GovernContext）
 //! - [`error`] — 核心错误类型（CoreError）
 //! - [`sensitivity`] — 敏感度判定 SSOT
-//! - [`pipeline`] — 全维处理管线（mox_optimize）
+//! - [`pipeline`] — mox 模块化系统架构处理管线（mox_optimize）
 
 // ─── 引擎核心（对外主入口） ─────────────────────────────────────────────────
 

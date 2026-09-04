@@ -382,7 +382,7 @@ mod tests {
     // TDD 1: 7 审计事件齐全（FR-CORE-07）
     #[tokio::test]
     async fn tdd1_seven_audit_events_complete() {
-        let req = fake_req("全维分析：Rust 网关路由性能与安全");
+        let req = fake_req("mox 模块化系统架构分析：Rust 网关路由性能与安全");
         let intent = classify_intent(&req.query, None::<fn(&[String], f64, u32) -> Result<BTreeMap<String, f64>, String>>);
         let reg = build_expert_registry();
         let team = optimize_team(&intent, &reg, req.options.team_size, false);

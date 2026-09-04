@@ -313,7 +313,7 @@ pub struct OrchestrationResponse {
     pub final_report: Option<String>,
 }
 
-/// 全维分析请求
+/// mox 模块化系统架构分析请求
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FullAnalysisRequest {
     pub query: String,
@@ -327,7 +327,7 @@ pub struct FullAnalysisRequest {
     pub options: FullAnalysisOptions,
 }
 
-/// 全维分析选项
+/// mox 模块化系统架构分析选项
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FullAnalysisOptions {
     #[serde(default)]
@@ -351,7 +351,7 @@ impl Default for FullAnalysisOptions {
     }
 }
 
-/// 全维分析响应（非流式，完整结果）
+/// mox 模块化系统架构分析响应（非流式，完整结果）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FullAnalysisResponse {
     pub trace_id: String,

@@ -3,7 +3,7 @@
 
 //! # 小白 · 形象模型注册表（Avatar Registry）
 //!
-//! 全维形象模型规范 **AIS-FR14/V1.0**：把伙伴的**视觉(visual) + 语音(voice) + 性格(persona)**
+//! mox 模块化系统架构形象模型规范 **AIS-FR14/V1.0**：把伙伴的**视觉(visual) + 语音(voice) + 性格(persona)**
 //! 三维参数化为一个 JSON 模型文件，支持无限个模型注册与运行时一键切换。
 //!
 //! ## 模型文件
@@ -144,7 +144,7 @@ impl Default for VisualConf {
     }
 }
 
-/// 形象模型（全维：视觉 + 语音 + 性格）。
+/// 形象模型（mox 模块化系统架构：视觉 + 语音 + 性格）。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Avatar {

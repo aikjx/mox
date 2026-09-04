@@ -1,0 +1,47 @@
+[package]
+name = "mox-auth-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 统一认证授权核心：Token签发验证、RBAC权限模型、认证中间件。企业级安全基础设施。"
+
+[dependencies]
+# 序列化
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# 异步
+async-trait = { workspace = true }
+tokio = { workspace = true }
+
+# 时间
+chrono = { workspace = true, features = ["serde"] }
+
+# UUID
+uuid = { workspace = true, features = ["serde", "v4"] }
+
+# 错误处理
+thiserror = { workspace = true }
+
+# 日志
+tracing = { workspace = true }
+
+# 统一归一化契约
+mox-unified-contract = { workspace = true }
+
+# 并发原语
+parking_lot = { workspace = true }
+
+# 密码哈希（HMAC-SHA256 + Salt）
+sha2 = "0.10"
+hmac = "0.12"
+
+# Base64 编码（用于 Token）
+base64 = "0.22"
+
+# 随机数
+rand = "0.8"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

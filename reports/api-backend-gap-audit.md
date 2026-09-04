@@ -185,7 +185,7 @@
 | `cleanLoginLog` | DELETE | `/system/logininfor/clean` | 无 |
 | `exportLoginLog` | GET | `/system/logininfor/export` | [参] blob |
 
-### 1.3 `ai.api.js` — AI 对话与全维分析域（43 个函数）
+### 1.3 `ai.api.js` — AI 对话与mox 模块化系统架构分析域（43 个函数）
 
 #### AI 对话（5）
 | 函数 | 方法 | 路径 | 参数 |
@@ -224,7 +224,7 @@
 | `listArtifacts` [deprecated] | GET | `/ai/artifact/list` | 别名 |
 | `createArtifact` | POST | `/ai/artifact/create` | [参] |
 
-#### 全维智能分析引擎（6）
+#### mox 模块化系统架构智能分析引擎（6）
 | 函数 | 方法 | 路径 | 参数 |
 |---|---|---|---|
 | `aiFullAnalysis` | POST | `/ai/full-analysis` | [参] |
@@ -585,7 +585,7 @@
 | `melodyExportSheet` | POST | `/melody2score/export-sheet` | 60s |
 | `melodySaveReport` | POST | `/melody2score/save-report` | 30s |
 
-### 1.13 `mox.api.js` — 璇玑全维治理（3 个函数）
+### 1.13 `mox.api.js` — 璇玑mox 模块化系统架构治理（3 个函数）
 
 | 函数 | 方法 | 路径 |
 |---|---|---|
@@ -839,7 +839,7 @@
 
 **system 域小结**：✅ 已对接 86 个（IAM 真实），⚠️ 路径不匹配 9 个（health/status/logs/plugins/config/storage/modules），❌ 缺失 0 个。
 
-### 3.2 ai.api.js — AI 对话与全维分析域（43 函数）
+### 3.2 ai.api.js — AI 对话与mox 模块化系统架构分析域（43 函数）
 
 | 前端函数 | 期望端点 | 网关(:8080) | 编排器 | legacy Rust | 状态 |
 |---|---|---|---|---|---|
@@ -985,7 +985,7 @@
 
 > 注：`projects/melody2score` 有独立 FastAPI 服务运行在 :8012，但前端请求 `/api/melody2score/*` 经代理到 :8080，不会转发到 :8012。
 
-### 3.12 mox.api.js — 璇玑全维治理（3 函数）
+### 3.12 mox.api.js — 璇玑mox 模块化系统架构治理（3 函数）
 
 | 期望端点 | 网关(:8080) | 编排器 | legacy Rust | 状态 |
 |---|---|---|---|---|
@@ -1049,7 +1049,7 @@
 | **P0-9** | `/api/market` + `/api/market/:id` | 4+ | 算子商城 | 同上 |
 | **P0-10** | `/api/automation` | 2+ | 自动化中枢 | 同上 |
 | **P0-11** | `/api/web-search` + `/api/web-search/config` | 4 | AI 对话-联网搜索 | Vite rewrite 到 legacy |
-| **P0-12** | `/api/ai/full-analysis` + `/api/ai/generate-doc` 等全维分析 | 6 | AI 全维分析面板 | Vite rewrite 到 legacy |
+| **P0-12** | `/api/ai/full-analysis` + `/api/ai/generate-doc` 等mox 模块化系统架构分析 | 6 | AI mox 模块化系统架构分析面板 | Vite rewrite 到 legacy |
 | **P0-13** | `/api/ai/infinite-optimize/*` | 8 | 无穷维度优化器 | Vite rewrite 到 legacy |
 | **P0-14** | alliance.js `/experts/*` + `/alliance/tasks/*` 代理配置 | 21 | 联盟任务视图 | Vite 增加 `/experts`、`/alliance` 代理规则 |
 | **P0-15** | `/api/status` + `/api/status/full` + `/api/logs` + `/api/plugins` | 4 | 管理面板-系统监控 | 网关增加路由或 Vite rewrite |

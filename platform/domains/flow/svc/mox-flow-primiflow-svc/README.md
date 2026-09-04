@@ -1,7 +1,7 @@
 # primiflow-core · PrimiFlow 骨架 & 执行核心
 
 ## §1 · 概述
-璇玑 L4Services 级 PrimiFlow 蓝图引擎核心：把 DDL 式 PrimiFlow 领域语言解析 → 代码生成（8 类骨架模板 C1~C8）→ 持久化 → 执行（Runner/Server），承担企业级全维分析流程的编译时+运行时双生命周期。
+璇玑 L4Services 级 PrimiFlow 蓝图引擎核心：把 DDL 式 PrimiFlow 领域语言解析 → 代码生成（8 类骨架模板 C1~C8）→ 持久化 → 执行（Runner/Server），承担企业级mox 模块化系统架构分析流程的编译时+运行时双生命周期。
 
 ## §2 · CRATE_ID / ENGINE_NAME / AIS 层级
 归属 **AIS Layer = L4Services**。

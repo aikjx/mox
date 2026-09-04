@@ -66,7 +66,7 @@
     </div>
 
     <!-- ===== 日志控制台（终端风格）===== -->
-    <div class="panel log-console-wrap">
+    <div class="panel log-console-wrap" v-loading="loading">
       <div ref="consoleEl" class="log-console" @scroll.passive="onConsoleScroll">
         <div v-for="e in displayLogs" :key="e.seq" class="log-line">
           <span class="l-seq">#{{ e.seq }}</span>
@@ -145,7 +145,7 @@ async function loadLoggers() {
     selectedLevel.value = effectiveLevel.value
     buffered.value = res?.buffered ?? 0
   } catch (e) {
-    console.warn('[在线日志] 级别加载失败:', e?.message)
+    ElMessage.error('日志级别加载失败: ' + (e?.message || e))
   }
 }
 
@@ -245,6 +245,7 @@ async function startStream() {
       }
     }
     pump().catch((e) => {
+      // dev only: SSE 流中断属预期行为（用户停止/页面切换），仅开发环境记录
       console.warn('[在线日志] SSE 中断:', e?.message)
       streaming.value = false
     })

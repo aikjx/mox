@@ -7,9 +7,7 @@
 //! and concurrent allocation throughput across four size tiers (64B/4KB/64KB/1MB)
 //! and 1/10/100 concurrent threads.
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use mox_cloud_kernel::{BufferPool, BufferPoolConfig, BufferTierConfig};
 use std::{
     sync::{Arc, Barrier},
@@ -31,8 +29,18 @@ fn generous_pool() -> BufferPool {
         tiers: vec![
             BufferTierConfig { min_size: 64, max_size: 4096, max_count: 10000, alloc_count: 0 },
             BufferTierConfig { min_size: 4096, max_size: 65536, max_count: 10000, alloc_count: 0 },
-            BufferTierConfig { min_size: 65536, max_size: 1048576, max_count: 10000, alloc_count: 0 },
-            BufferTierConfig { min_size: 1048576, max_size: 16777216, max_count: 10000, alloc_count: 0 },
+            BufferTierConfig {
+                min_size: 65536,
+                max_size: 1048576,
+                max_count: 10000,
+                alloc_count: 0,
+            },
+            BufferTierConfig {
+                min_size: 1048576,
+                max_size: 16777216,
+                max_count: 10000,
+                alloc_count: 0,
+            },
         ],
         global_max_bytes: 0, // unlimited
     };
@@ -40,12 +48,7 @@ fn generous_pool() -> BufferPool {
 }
 
 fn tier_sizes() -> Vec<(usize, &'static str)> {
-    vec![
-        (64, "64B"),
-        (4096, "4KB"),
-        (65536, "64KB"),
-        (1048576, "1MB"),
-    ]
+    vec![(64, "64B"), (4096, "4KB"), (65536, "64KB"), (1048576, "1MB")]
 }
 
 // ---------------------------------------------------------------------------
@@ -256,7 +259,7 @@ fn bench_acquire_with_len(c: &mut Criterion) {
 
     for &(size, sname) in &tier_sizes() {
         group.throughput(Throughput::Bytes(size as u64));
-        group.bench_function(format!("{sname}"), |b| {
+        group.bench_function(sname.to_string(), |b| {
             b.iter(|| {
                 let buf = black_box(pool.acquire_with_len(black_box(size)));
                 assert_eq!(buf.len(), size);

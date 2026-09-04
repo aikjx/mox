@@ -44,7 +44,7 @@
         style="margin-bottom: 12px"
       />
 
-      <el-table :data="pagedEvents" stripe style="width: 100%">
+      <el-table :data="pagedEvents" v-loading="loading" stripe style="width: 100%">
         <el-table-column prop="id" label="事件ID" width="200" show-overflow-tooltip>
           <template #default="{ row }"><span class="mono">{{ row.id }}</span></template>
         </el-table-column>
@@ -128,6 +128,7 @@ const pageSize = ref(10)
 const events = ref([])
 const wsConnected = ref(false)
 const reconnecting = ref(false)
+const loading = ref(true)
 
 const modifyVisible = ref(false)
 const currentEvent = ref(null)
@@ -215,12 +216,6 @@ function handleHitlEvent(payload) {
   }
 }
 
-function handlePendingList(payload) {
-  if (Array.isArray(payload?.items)) {
-    payload.items.forEach(upsertEvent)
-  }
-}
-
 // 网关动作结果：{type:'action_result', success, record:{event_id, action, ...}, error}
 function handleActionResult(payload) {
   const rec = payload?.record
@@ -243,6 +238,14 @@ function handleActionResult(payload) {
 
 function handleConnection(payload) {
   wsConnected.value = payload?.status === 'connected'
+  if (wsConnected.value) loading.value = false
+}
+
+function handlePendingList(payload) {
+  if (Array.isArray(payload?.items)) {
+    payload.items.forEach(upsertEvent)
+  }
+  loading.value = false
 }
 
 async function performAction(row, action, modifiedPayload = null) {
@@ -315,6 +318,8 @@ onMounted(() => {
   offPending = onHitlPendingList(handlePendingList)
   offConn = onHitlConnection(handleConnection)
   hitlClient.connect()
+  // 兜底：3 秒后无论是否连接成功都关闭 loading
+  setTimeout(() => { loading.value = false }, 3000)
 })
 
 onBeforeUnmount(() => {

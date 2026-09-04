@@ -466,7 +466,8 @@
       // 2. 尝试跨运行时执行（阶段 2 返回 null）
       try {
         const argsJson = args.length > 0 ? args : [];
-        return await ops.op_execute_command(commandId, argsJson);
+        const result = await ops.op_execute_command(commandId, JSON.stringify(argsJson));
+        try { return JSON.parse(result); } catch { return result; }
       } catch (e) {
         throw new Error(`Command '${commandId}' not found`);
       }
@@ -477,7 +478,8 @@
      */
     async getCommands(filterInternal) {
       try {
-        const rustCommands = await ops.op_get_commands();
+        const rustCommandsRaw = await ops.op_get_commands();
+        const rustCommands = typeof rustCommandsRaw === 'string' ? JSON.parse(rustCommandsRaw) : (rustCommandsRaw || []);
         const jsCommands = Object.keys(globalThis.__mox_commands);
         const all = new Set([...rustCommands, ...jsCommands]);
         return Array.from(all);
@@ -495,22 +497,26 @@
     // 消息框
     async showInformationMessage(message, ...items) {
       const itemStrs = items.map(String);
-      return await ops.op_show_information_message(String(message), itemStrs);
+      const result = await ops.op_show_information_message(String(message), JSON.stringify(itemStrs));
+      return result ? result : undefined;
     },
 
     async showWarningMessage(message, ...items) {
       const itemStrs = items.map(String);
-      return await ops.op_show_warning_message(String(message), itemStrs);
+      const result = await ops.op_show_warning_message(String(message), JSON.stringify(itemStrs));
+      return result ? result : undefined;
     },
 
     async showErrorMessage(message, ...items) {
       const itemStrs = items.map(String);
-      return await ops.op_show_error_message(String(message), itemStrs);
+      const result = await ops.op_show_error_message(String(message), JSON.stringify(itemStrs));
+      return result ? result : undefined;
     },
 
     // 输入框
     async showInputBox(options) {
-      return await ops.op_show_input_box(options || {});
+      const result = await ops.op_show_input_box(JSON.stringify(options || {}));
+      return result ? result : undefined;
     },
 
     // 快速选择
@@ -518,7 +524,8 @@
       const itemStrs = Array.isArray(items)
         ? items.map((item) => (typeof item === 'string' ? item : item.label || String(item)))
         : [];
-      return await ops.op_show_quick_pick(itemStrs, options || {});
+      const result = await ops.op_show_quick_pick(JSON.stringify(itemStrs), JSON.stringify(options || {}));
+      return result ? result : undefined;
     },
 
     // 输出通道
@@ -581,7 +588,8 @@
     // 工作区文件夹
     get workspaceFolders() {
       try {
-        const folders = ops.op_get_workspace_folders();
+        const foldersRaw = ops.op_get_workspace_folders();
+        const folders = typeof foldersRaw === 'string' ? JSON.parse(foldersRaw) : (foldersRaw || []);
         return folders.map((f, i) => ({
           uri: Uri.parse(f.uri),
           name: f.name,
@@ -616,14 +624,16 @@
       } else {
         uri = 'untitled:Untitled-1';
       }
-      const docInfo = await ops.op_open_text_document(uri);
-      return new TextDocument(Uri.parse(uri), docInfo.languageId || 'plaintext', docInfo.getText || '');
+      const docInfoRaw = await ops.op_open_text_document(uri);
+      const docInfo = typeof docInfoRaw === 'string' ? JSON.parse(docInfoRaw) : (docInfoRaw || {});
+      return new TextDocument(Uri.parse(uri), docInfo.language_id || 'plaintext', docInfo.text || '');
     },
 
     // 配置
     getConfiguration(section, resource) {
       try {
-        const config = ops.op_get_configuration(section || '');
+        const configRaw = ops.op_get_configuration(section || '');
+        const config = typeof configRaw === 'string' ? JSON.parse(configRaw) : (configRaw || {});
         return {
           get: (key, defaultValue) => {
             const fullKey = section ? section + '.' + key : key;
@@ -711,7 +721,8 @@
      */
     getExtension(extensionId) {
       try {
-        const ext = ops.op_get_extension(extensionId);
+        const extRaw = ops.op_get_extension(extensionId);
+        const ext = extRaw ? (typeof extRaw === 'string' ? JSON.parse(extRaw) : extRaw) : null;
         if (ext) {
           return {
             id: ext.id,
@@ -735,7 +746,8 @@
      */
     get all() {
       try {
-        const exts = ops.op_get_all_extensions();
+        const extsRaw = ops.op_get_all_extensions();
+        const exts = typeof extsRaw === 'string' ? JSON.parse(extsRaw) : (extsRaw || []);
         return exts.map((ext) => ({
           id: ext.id,
           extensionPath: ext.extension_path,

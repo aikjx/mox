@@ -18,16 +18,20 @@
 use axum::{
     Json, Router,
     extract::{Path, State},
-    http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
+    response::sse::{Event, KeepAlive, Sse},
     routing::{get, post, put},
 };
 use chrono::Utc;
+use futures::stream::{self, Stream};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
+use std::convert::Infallible;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::broadcast;
 use uuid::Uuid;
 
 use mox_alliance_api::dto::*;
@@ -37,6 +41,8 @@ use mox_alliance_common_proto::{
 use mox_alliance_scheduler_core::{InMemoryTaskRepository, RuleBasedExpertMatcher, TaskRepository};
 use mox_alliance_scheduler_proto::{ExpertMatchQuery, ExpertMatcher};
 use parking_lot::RwLock;
+
+use crate::alliance_remote;
 
 // ====================================================================
 // 执行状态：进程内真实节点 / DAG / 日志 / 融合结果
@@ -177,6 +183,11 @@ pub struct AllianceGatewayState {
     pub matcher: Arc<RuleBasedExpertMatcher>,
     /// 进程内执行状态（按 task_id 索引）
     pub execution: Arc<RwLock<HashMap<Uuid, ExecutionState>>>,
+    /// 日志实时广播通道（供 SSE /api/alliance/tasks/:id/logs/stream 订阅）
+    pub log_tx: broadcast::Sender<(Uuid, LogEntry)>,
+    /// 联盟领域服务远程接入（scheduler-svc/executor-svc；None = 全本地，
+    /// 由 MOX_ALLIANCE_* 环境变量启用，见 alliance_remote 模块文档）
+    pub remote: Option<alliance_remote::RemoteAllianceClient>,
 }
 
 impl AllianceGatewayState {
@@ -284,7 +295,15 @@ impl AllianceGatewayState {
             tasks: Arc::new(InMemoryTaskRepository::new()),
             matcher,
             execution: Arc::new(RwLock::new(HashMap::new())),
+            log_tx: broadcast::channel(1024).0,
+            remote: None,
         }
+    }
+
+    /// 配置联盟领域服务远程接入（链式构建，测试/编程式配置用）
+    pub fn with_remote(mut self, remote: Option<alliance_remote::RemoteAllianceClient>) -> Self {
+        self.remote = remote;
+        self
     }
 
     /// 获取或创建执行状态
@@ -300,7 +319,7 @@ impl Default for AllianceGatewayState {
     }
 }
 
-fn now_ms() -> i64 {
+pub(crate) fn now_ms() -> i64 {
     Utc::now().timestamp_millis()
 }
 
@@ -316,7 +335,7 @@ fn task_status_str(s: TaskStatus) -> &'static str {
     }
 }
 
-fn priority_str(p: TaskPriority) -> &'static str {
+pub(crate) fn priority_str(p: TaskPriority) -> &'static str {
     match p {
         TaskPriority::Low => "low",
         TaskPriority::Normal => "normal",
@@ -325,7 +344,7 @@ fn priority_str(p: TaskPriority) -> &'static str {
     }
 }
 
-fn mode_str(m: AllianceMode) -> &'static str {
+pub(crate) fn mode_str(m: AllianceMode) -> &'static str {
     match m {
         AllianceMode::Sequential => "single_expert",
         AllianceMode::Parallel => "expert_alliance",
@@ -336,7 +355,7 @@ fn mode_str(m: AllianceMode) -> &'static str {
     }
 }
 
-fn fusion_strategy_str(f: FusionStrategy) -> &'static str {
+pub(crate) fn fusion_strategy_str(f: FusionStrategy) -> &'static str {
     match f {
         FusionStrategy::BestOf => "first_wins",
         FusionStrategy::Weighted => "weighted_voting",
@@ -475,6 +494,10 @@ async fn create_task(
     State(s): State<Arc<AllianceGatewayState>>,
     Json(req): Json<CreateTaskRequest>,
 ) -> ApiResponse<Value> {
+    // 远程优先：scheduler-svc 已配置且可达 → 归一化返回；不可达/未配置 → 本地降级
+    if let Some(r) = alliance_remote::remote_create_task(&s, &req).await {
+        return r;
+    }
     let t0 = now_ms();
     let task_id = Uuid::new_v4();
     let now = Utc::now();
@@ -543,6 +566,9 @@ async fn create_task(
 
 /// GET /alliance/v1/tasks — 任务列表（真实从 InMemoryTaskRepository 读取）
 async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> ApiResponse<Value> {
+    if let Some(r) = alliance_remote::remote_list_tasks(&s).await {
+        return r;
+    }
     let t0 = now_ms();
     match s.tasks.all() {
         Ok(all) => {
@@ -585,6 +611,9 @@ async fn get_task(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    if let Some(r) = alliance_remote::remote_get_task(&s, task_id).await {
+        return r;
+    }
     let t0 = now_ms();
     match s.tasks.get(task_id) {
         Ok(Some(t)) => {
@@ -612,14 +641,43 @@ async fn get_task(
     }
 }
 
-/// POST /alliance/v1/tasks/:task_id — 任务操作（暂停/恢复/取消，真实状态流转）
+/// POST /api/alliance/tasks/:id — 任务操作（暂停/恢复/取消，真实状态流转）
 async fn handle_task_action(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
     Json(req): Json<TaskActionRequest>,
 ) -> ApiResponse<Value> {
+    do_task_action(s, task_id, req).await
+}
+
+/// 路径驱动的任务操作包装器（前端调用 /pause /resume /cancel /retry 时无 body）
+async fn pause_task(State(s): State<Arc<AllianceGatewayState>>, Path(task_id): Path<Uuid>) -> ApiResponse<Value> {
+    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Pause, reason: None }).await
+}
+async fn resume_task(State(s): State<Arc<AllianceGatewayState>>, Path(task_id): Path<Uuid>) -> ApiResponse<Value> {
+    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Resume, reason: None }).await
+}
+async fn cancel_task(State(s): State<Arc<AllianceGatewayState>>, Path(task_id): Path<Uuid>) -> ApiResponse<Value> {
+    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Cancel, reason: None }).await
+}
+/// retry 映射为 resume（重新进入运行态）
+async fn retry_task(State(s): State<Arc<AllianceGatewayState>>, Path(task_id): Path<Uuid>) -> ApiResponse<Value> {
+    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Resume, reason: None }).await
+}
+
+/// 任务操作核心逻辑（真实状态流转 + 持久化）
+async fn do_task_action(
+    s: Arc<AllianceGatewayState>,
+    task_id: Uuid,
+    req: TaskActionRequest,
+) -> ApiResponse<Value> {
     let t0 = now_ms();
     let action_str = format!("{:?}", req.action);
+
+    // 远程优先：scheduler-svc 已配置且可达 → 归一化返回；不可达/未配置 → 本地降级
+    if let Some(r) = alliance_remote::remote_task_action(&s, task_id, &req).await {
+        return r;
+    }
 
     match s.tasks.get(task_id) {
         Ok(Some(mut task)) => {
@@ -646,11 +704,14 @@ async fn handle_task_action(
                 _ => {}
             }
 
-            // 记录真实日志
+            // 记录真实日志并广播到 SSE
             {
                 let mut exec_map = s.execution.write();
                 if let Some(exec) = exec_map.get_mut(&task_id) {
                     exec.append_log("INFO", "system", &message);
+                    if let Some(entry) = exec.logs.last() {
+                        let _ = s.log_tx.send((task_id, entry.clone()));
+                    }
                     if new_status == TaskStatus::Cancelled {
                         for n in exec.nodes.iter_mut() {
                             if n.status == NodeExecStatus::Pending || n.status == NodeExecStatus::Running {
@@ -693,6 +754,11 @@ async fn search_experts(
     Json(req): Json<ExpertSearchRequest>,
 ) -> ApiResponse<Value> {
     let t0 = now_ms();
+
+    // 远程优先：scheduler-svc 已配置且可达 → 归一化返回；不可达/未配置 → 本地降级
+    if let Some(r) = alliance_remote::remote_search_experts(&s, &req).await {
+        return r;
+    }
 
     let query = ExpertMatchQuery {
         tenant_id: "system".to_string(),
@@ -751,6 +817,10 @@ async fn get_execution_status(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    // 远程优先：executor-svc 已配置且可达 → 归一化返回；不可达/未配置 → 本地降级
+    if let Some(r) = alliance_remote::remote_execution_status(&s, task_id).await {
+        return r;
+    }
     let t0 = now_ms();
 
     // 确保任务存在
@@ -789,6 +859,9 @@ async fn list_nodes(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    if let Some(r) = alliance_remote::remote_list_nodes(&s, task_id).await {
+        return r;
+    }
     let t0 = now_ms();
 
     match s.tasks.get(task_id) {
@@ -841,6 +914,9 @@ async fn get_node(
     State(s): State<Arc<AllianceGatewayState>>,
     Path((task_id, node_id)): Path<(Uuid, String)>,
 ) -> ApiResponse<Value> {
+    if let Some(r) = alliance_remote::remote_get_node(&s, task_id, &node_id).await {
+        return r;
+    }
     let t0 = now_ms();
 
     let exec = s.ensure_execution(task_id);
@@ -880,6 +956,9 @@ async fn skip_node(
     State(s): State<Arc<AllianceGatewayState>>,
     Path((task_id, node_id)): Path<(Uuid, String)>,
 ) -> ApiResponse<Value> {
+    if let Some(r) = alliance_remote::remote_skip_node(&s, task_id, &node_id).await {
+        return r;
+    }
     let t0 = now_ms();
 
     let mut exec_map = s.execution.write();
@@ -894,6 +973,9 @@ async fn skip_node(
                     n.duration_ms = Some((Utc::now() - started).num_milliseconds());
                 }
                 exec.append_log("WARN", &node_id, &format!("节点 {} 已人工跳过", node_id));
+                if let Some(entry) = exec.logs.last() {
+                    let _ = s.log_tx.send((task_id, entry.clone()));
+                }
             }
             api_ok(json!({
                     "elapsed_ms": now_ms() - t0,
@@ -997,6 +1079,10 @@ async fn get_fusion_result(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    // 远程优先：executor-svc 真实融合结果；不可达/未配置 → 本地降级
+    if let Some(r) = alliance_remote::remote_fusion_result(&s, task_id).await {
+        return r;
+    }
     let t0 = now_ms();
 
     let task = match s.tasks.get(task_id) {
@@ -1055,6 +1141,10 @@ async fn get_task_dag(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    // 远程优先：executor-svc 真实 DAG 节点（位置按序生成）；不可达/未配置 → 本地降级
+    if let Some(r) = alliance_remote::remote_dag(&s, task_id).await {
+        return r;
+    }
     let t0 = now_ms();
 
     let exec = s.ensure_execution(task_id);
@@ -1165,6 +1255,9 @@ async fn toggle_task_done(
                         }
                     }
                     exec.append_log("INFO", "system", &format!("任务 {} 已标记为完成", task_id));
+                    if let Some(entry) = exec.logs.last() {
+                        let _ = s.log_tx.send((task_id, entry.clone()));
+                    }
                 }
             }
 
@@ -1198,6 +1291,10 @@ async fn get_task_status_poll(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    // 远程优先：调度器详情 + 执行器状态合并；不可达/未配置 → 本地降级
+    if let Some(r) = alliance_remote::remote_status_poll(&s, task_id).await {
+        return r;
+    }
     let t0 = now_ms();
 
     match s.tasks.get(task_id) {
@@ -1233,6 +1330,75 @@ async fn get_task_status_poll(
 }
 
 // ====================================================================
+// SSE: 任务执行日志实时流
+// ====================================================================
+
+/// GET /api/alliance/tasks/:id/logs/stream — SSE 实时日志流
+///
+/// 连接时重放已有日志，随后通过 broadcast 通道实时推送新日志。
+/// 前端 alliance.js 的 getExecutionLogsSSE 使用 fetch 流式读取。
+async fn task_logs_stream(
+    State(s): State<Arc<AllianceGatewayState>>,
+    Path(task_id): Path<Uuid>,
+) -> Response {
+    // 确认任务存在
+    match s.tasks.get(task_id) {
+        Ok(None) => {
+            return api_error::<Value>(404, format!("任务 {} 不存在", task_id)).into_response();
+        }
+        Err(e) => {
+            return api_error::<Value>(500, format!("任务读取失败: {}", e)).into_response();
+        }
+        _ => {}
+    }
+
+    // 重放已有日志（时间正序）
+    let exec = s.ensure_execution(task_id);
+    let replay: VecDeque<LogEntry> = exec.logs.clone().into_iter().collect();
+
+    // 订阅实时广播
+    let rx = s.log_tx.subscribe();
+
+    let stream: std::pin::Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> = Box::pin(
+        stream::unfold((replay, rx, task_id), |(mut pending, mut rx, tid)| async move {
+            // 先重放已有日志
+            if let Some(e) = pending.pop_front() {
+                return Some((
+                    Ok(Event::default().data(json!(e).to_string())),
+                    (pending, rx, tid),
+                ));
+            }
+            // 再等待实时日志，过滤当前任务
+            loop {
+                match rx.recv().await {
+                    Ok((log_tid, e)) => {
+                        if log_tid == tid {
+                            return Some((
+                                Ok(Event::default().data(json!(e).to_string())),
+                                (pending, rx, tid),
+                            ));
+                        }
+                        // 非当前任务的日志，继续等待
+                        continue;
+                    }
+                    Err(broadcast::error::RecvError::Lagged(_)) => {
+                        return Some((
+                            Ok(Event::default().comment("consumer lagged, dropped older entries")),
+                            (pending, rx, tid),
+                        ));
+                    }
+                    Err(broadcast::error::RecvError::Closed) => return None,
+                }
+            }
+        }),
+    );
+
+    Sse::new(stream)
+        .keep_alive(KeepAlive::new().interval(Duration::from_secs(15)))
+        .into_response()
+}
+
+// ====================================================================
 // 路由装配入口：联盟域 13 端点（真实实现）
 // ====================================================================
 /// 构建联盟域 HTTP 路由（进程内真实调用 scheduler-core）
@@ -1242,25 +1408,38 @@ async fn get_task_status_poll(
 /// - 执行器 4 接口：执行状态/节点列表/节点详情+跳过
 /// - 扩展 4 接口：日志/融合/DAG/完成切换/状态轮询
 pub fn build_alliance_router() -> Router {
-    let state = Arc::new(AllianceGatewayState::new());
+    let remote = alliance_remote::RemoteAllianceClient::from_env();
+    build_alliance_router_with(remote)
+}
+
+/// 构建联盟域路由（显式注入远程接入配置；测试/编程式配置用）
+pub fn build_alliance_router_with(
+    remote: Option<alliance_remote::RemoteAllianceClient>,
+) -> Router {
+    let state = Arc::new(AllianceGatewayState::new().with_remote(remote));
     Router::new()
-        // —— 调度器子域 · 任务管理 ——
-        .route("/alliance/v1/tasks", post(create_task).get(list_tasks))
-        .route("/alliance/v1/tasks/:task_id", get(get_task).post(handle_task_action))
+        // —— 调度器子域 · 任务管理（前端调用路径：/api/alliance/tasks）——
+        .route("/api/alliance/tasks", post(create_task).get(list_tasks))
+        .route("/api/alliance/tasks/:id", get(get_task).post(handle_task_action))
+        .route("/api/alliance/tasks/:id/pause", post(pause_task))
+        .route("/api/alliance/tasks/:id/resume", post(resume_task))
+        .route("/api/alliance/tasks/:id/cancel", post(cancel_task))
+        .route("/api/alliance/tasks/:id/retry", post(retry_task))
         // —— 调度器子域 · 专家匹配 ——
-        .route("/alliance/v1/experts/search", post(search_experts))
+        .route("/api/alliance/experts/search", post(search_experts))
         // —— 执行器子域 · 执行状态 ——
-        .route("/alliance/v1/tasks/:task_id/status", get(get_execution_status))
-        .route("/alliance/v1/tasks/:task_id/nodes", get(list_nodes))
-        .route("/alliance/v1/tasks/:task_id/nodes/:node_id", get(get_node).post(skip_node))
+        .route("/api/alliance/tasks/:id/execution-status", get(get_execution_status))
+        .route("/api/alliance/tasks/:id/nodes", get(list_nodes))
+        .route("/api/alliance/tasks/:id/nodes/:node_id", get(get_node).post(skip_node))
         // —— 联盟任务扩展 · 日志/融合/DAG/完成切换/状态轮询 ——
-        .route("/alliance/tasks/:id/logs", get(get_task_logs))
-        .route("/alliance/tasks/:id/fusion-result", get(get_fusion_result))
-        .route("/alliance/tasks/:id/fusion", get(get_fusion_result))
-        .route("/alliance/tasks/:id/dag", get(get_task_dag))
-        .route("/alliance/tasks/:id/toggle-done", put(toggle_task_done))
-        .route("/alliance/tasks/:id/status", get(get_task_status_poll))
-        .route("/alliance/tasks/:id/plan", get(get_collaboration_plan))
-        .route("/alliance/stats", get(get_alliance_stats))
+        .route("/api/alliance/tasks/:id/logs", get(get_task_logs))
+        .route("/api/alliance/tasks/:id/logs/stream", get(task_logs_stream))
+        .route("/api/alliance/tasks/:id/fusion-result", get(get_fusion_result))
+        .route("/api/alliance/tasks/:id/fusion", get(get_fusion_result))
+        .route("/api/alliance/tasks/:id/dag", get(get_task_dag))
+        .route("/api/alliance/tasks/:id/toggle-done", put(toggle_task_done))
+        .route("/api/alliance/tasks/:id/status", get(get_task_status_poll))
+        .route("/api/alliance/tasks/:id/plan", get(get_collaboration_plan))
+        .route("/api/alliance/stats", get(get_alliance_stats))
         .with_state(state)
 }

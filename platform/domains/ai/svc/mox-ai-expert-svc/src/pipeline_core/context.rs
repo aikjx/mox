@@ -29,14 +29,14 @@ use crate::pipeline_core::result::PhaseResult;
 
 /// 管线输入：统一两套管线的请求模型
 ///
-/// 全维管线的输入是 FlowGraph + GovernContext
+/// mox 模块化系统架构管线的输入是 FlowGraph + GovernContext
 /// 联盟管线的输入是 AllianceRequest (自然语言 query)
 ///
 /// 这里用 enum 统一，各管线实现从中提取自己需要的部分。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum PipelineInput {
-    /// 流程图输入（全维管线）
+    /// 流程图输入（mox 模块化系统架构管线）
     FlowGraph {
         flow_id: String,
         flow_name: String,

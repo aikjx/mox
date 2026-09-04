@@ -24,7 +24,7 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// 六维覆盖率下限（企业级验收铁律 07 §1.1）：完成链路占比须 ≥ 90%。
-/// 低于此值视为全维分析需求未开发完成，阻断发布。
+/// 低于此值视为mox 模块化系统架构分析需求未开发完成，阻断发布。
 pub const COVERAGE_FLOOR: f64 = 90.0;
 
 /// 一条六维绑定记录（一次需求驱动实体的完整六维链路登记）
@@ -139,7 +139,7 @@ impl SixDimRegistry {
     }
 
     /// 六维覆盖率（完成链路 / 总链路 × 100），对齐企业级验收铁律 07 §1.1 下限要求。
-    /// 全维分析需求"开发完成"的量化判据：覆盖率须 ≥ [`COVERAGE_FLOOR`]。
+    /// mox 模块化系统架构分析需求"开发完成"的量化判据：覆盖率须 ≥ [`COVERAGE_FLOOR`]。
     pub fn coverage(&self) -> f64 {
         let total = self.bindings.len();
         if total == 0 {
@@ -462,7 +462,7 @@ mod tests {
         assert_eq!(reg.coverage(), 0.0);
         assert!(
             !reg.coverage_passed(),
-            "空注册表覆盖率 0，全维分析需求未开发完成"
+            "空注册表覆盖率 0，mox 模块化系统架构分析需求未开发完成"
         );
     }
 }

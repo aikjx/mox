@@ -74,7 +74,7 @@ src/
 ├── tenant_policy.rs 租户策略分层 + 治理 8 闸门（G1~G8）
 ├── sensitivity.rs   敏感度判定 SSOT
 ├── domain/          DIP trait：ExpertRegistry / ExpertConsultant / AllianceOrchestrator
-├── pipeline.rs      全维分析管线
+├── pipeline.rs      mox 模块化系统架构分析管线
 ├── harness.rs       插件化运行时（"Everything is a Plugin"）
 ├── server.rs        HTTP 服务（Three.js 力导向图联动 DTO）
 └── bin/mox.rs       可执行入口
@@ -82,7 +82,7 @@ src/
 
 ### 2.2 前端（3 视图 + SSE）
 
-- `ExpertCenterView.vue`：璇玑·专家联盟 X（项目为根 · 全维 φ 流程：需求/架构/开发/发布四阶段）
+- `ExpertCenterView.vue`：璇玑·专家联盟 X（项目为根 · mox 模块化系统架构 φ 流程：需求/架构/开发/发布四阶段）
 - `ExpertEnterpriseView.vue`：企业级视图
 - `ExpertOrchestratorView.vue`：V2 编排引擎控制台（插件化编排 · Plan/Act 双模式 · 学习闭环 · 事件驱动）
 - `api/alliance.ts`：7 类基准确认 + 联盟 SSE 流（intent→team→debate→synthesize→gate→learn→done）+ 语音三层回退

@@ -207,7 +207,7 @@ def serve_and_health(port):
                   % (len(scores), gate.get("approved")))
             if len(scores) < 14:
                 print("WARN: expert_scores < 14, 双璇玑十四维未完全生效")
-            print("端到端全维度治理验证通过")
+            print("端到端mox 模块化系统架构维度治理验证通过")
         except Exception as e:
             print("mox optimize call failed: %s" % e)
             return False

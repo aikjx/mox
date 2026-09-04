@@ -5,13 +5,20 @@
 ```
 scripts/
 ├── server-manage.py       # 【主入口】统一运维脚本（服务生命周期 + Web 面板 + 公理验证）
-manage.py              # 【兼容别名】转发到 server-manage.py（防历史命令断链）
+├── manage.py              # 【兼容别名】转发到 server-manage.py（防历史命令断链）
+├── verify-ports.py        # 全局端口漂移校验（PORT-REGISTRY-001 执行门禁）
+├── check-all.ps1          # 一键构建 + 测试 + clippy（全量健康检查）
+├── ci-gate.ps1            # CI 门禁（本地复现流水线关键检查）
+├── setup-dev.ps1          # 本地开发环境初始化（依赖、配置、目录）
+├── start-all.ps1          # 一键启动（复用 server-manage.py bootstrap）
+├── stop-all.ps1           # 一键停止（复用 server-manage.py stop）
 ├── README.md              # 本文件
 ├── ci/                    # CI/CD 脚本
 │   ├── ci.py
-│   └── git_create_tag_auto.py
+│   ├── git_create_tag_auto.py
+│   └── secret-scan.py
 ├── deploy/                # 部署/启动脚本
-│   ├── start.ps1          # Windows 一键启动
+│   ├── start.ps1          # Windows 一键启动（复用 bootstrap）
 │   ├── smoke_test.sh      # 冒烟测试
 │   ├── deploy-kg-storage.ps1  # KG 存储服务部署
 │   └── Gray-Warmup.ps1    # 灰度预热
@@ -33,14 +40,19 @@ manage.py              # 【兼容别名】转发到 server-manage.py（防历�
 │   ├── verify_tts_rust_fullstack.py
 │   ├── tts_rust_vs_py_dsp_regression.py
 │   └── fix_pass2.py
-└── temp/                  # 临时/探测脚本（可随时清理）
-    ├── _auto_dl_cosy2_weights.py
-    ├── _check_cosy_env.py
-    ├── _probe_voice.py
-    ├── _run_e2b.py
-    ├── _run_e4.py
-    └── _tmp_t10_doc_check.js
+└── maintenance/           # 一次性/历史重构脚本（按领域分组，均已落地，仅供追溯）
+    ├── gateway/           # 网关层：alliance / actuator / proxy 路由修复
+    ├── cloud/             # 云存储：redis 连接修复、s3 上传、依赖注入
+    ├── kg/                # 知识图谱：storage / fusion / kb-svc 重构
+    ├── protocol/          # API 协议：ApiResponse.message→msg 改名 + 文档同步
+    ├── enterprise/        # 企业级 smoke 测试修复（括号/返回值类型）
+    ├── frontend/          # 前端：清理 mock 占位、专家中心/监控面板接真实数据
+    ├── workspace/         # 架构分析 + 工作区成员清单
+    └── probes/            # 临时探测/示例脚本（CosyVoice/TTS/Sherpa 等，可随时清理）
 ```
+
+> 约定：所有带 `_` 前缀的脚本均为**一次性历史重构脚本**，内含硬编码绝对路径，
+> 仅用于追溯改动来源；请勿重复执行。新功能请走正式入口或对应子目录。
 
 ## 快速使用
 

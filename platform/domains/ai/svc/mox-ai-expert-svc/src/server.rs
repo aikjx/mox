@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! HTTP 服务：把全维治理报告转为前端可视化 DTO，供 Three.js 力导向图实时联动高亮
+//! HTTP 服务：把mox 模块化系统架构治理报告转为前端可视化 DTO，供 Three.js 力导向图实时联动高亮
 //!
 //! 设计：本服务完全独立，仅依赖 `mox-expert` + `flow-ai`，不触碰已失败的 mox_platform_orchestrator_svc/ai-agent。
 //! 可视化契约（DTO）在本模块内定义，核心层类型保持纯净。
@@ -645,7 +645,7 @@ pub fn router(state: AppState) -> Router {
         // 专家辩论
         .route("/api/alliance/debate", post(alliance_expert_debate))
         .route("/api/alliance/debate/stream", get(alliance_debate_stream))
-        // 全维分析
+        // mox 模块化系统架构分析
         .route("/api/alliance/full", post(alliance_full_analysis))
         .route("/api/alliance/full/stream", get(alliance_full_stream))
         // 任务编排
@@ -1020,7 +1020,7 @@ async fn alliance_debate_stream(
     Sse::new(stream).keep_alive(KeepAlive::new().text("keep-alive"))
 }
 
-// ---------- 全维分析（完整响应） ----------
+// ---------- mox 模块化系统架构分析（完整响应） ----------
 
 async fn alliance_full_analysis(
     State(state): State<Arc<AppState>>,
@@ -1036,7 +1036,7 @@ async fn alliance_full_analysis(
     }
 }
 
-// ---------- 全维分析（SSE 流式） ----------
+// ---------- mox 模块化系统架构分析（SSE 流式） ----------
 
 async fn alliance_full_stream(
     State(state): State<Arc<AppState>>,
@@ -1342,11 +1342,11 @@ async fn optimize_handler(
 /// 已移除的单文件 HTML，改为引导到主前端，避免重复维护两份前端产物。
 const INDEX_HTML: &str = r#"<!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><title>璇玑全维治理</title></head>
+<head><meta charset="utf-8"><title>璇玑mox 模块化系统架构治理</title></head>
 <body style="font-family:system-ui,sans-serif;padding:2rem">
-  <h1>璇玑 · 全维处理工具流程图</h1>
+  <h1>璇玑 · mox 模块化系统架构处理工具流程图</h1>
   <p>治理内核已就绪。完整可视化前端由 Vue SPA 提供（由主后端 mox_platform_orchestrator_svc 托管）。</p>
-  <p>返回 <a href="/">主控制台</a> 查看全维治理台。</p>
+  <p>返回 <a href="/">主控制台</a> 查看mox 模块化系统架构治理台。</p>
 </body>
 </html>"#;
 

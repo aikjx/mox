@@ -4,8 +4,8 @@
 //! 集成 UniversalBizDAO + TxManager + InMemoryMetaRepo + InMemoryIamRepo
 
 use mox_platform_datastore_core::{
-    AuditLog, FieldSpec, Filter, InMemoryIamRepo, InMemoryMetaRepo, SortSpec, TxManager,
-    UniversalBizDAO,
+    hash::compute_hash, AuditLog, FieldSpec, Filter, InMemoryIamRepo, InMemoryMetaRepo, SortSpec,
+    TxManager, UniversalBizDAO,
 };
 use mox_platform_iam_core::IamRepository;
 use mox_platform_meta_core::MetaRepository;
@@ -658,12 +658,20 @@ impl Orchestrator {
         let biz_code = format!("{}-{}", entity_code, &biz_id[..8.min(biz_id.len())]);
         let version: i64 = 1;
         let now = chrono::Utc::now().to_rfc3339();
-        let data_json = data.map(|d| serde_json::to_string(&d).unwrap_or_default()).unwrap_or_default();
+        let data_value = data.unwrap_or(Value::Object(Map::new()));
+        let data_json = serde_json::to_string(&data_value).unwrap_or_default();
+        let curr_hash = compute_hash(None, &biz_id, version, &data_value, actor, &now);
 
+        // 规范 schema：id 主键 + data_json + 哈希链（与 UniversalBizDAO::create 同构）
         conn.execute(
-            "INSERT INTO biz_data (biz_id, tenant_id, biz_type, biz_code, version, status, data, created_by, created_at, updated_by, updated_at, is_deleted)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0)",
-            rusqlite::params![biz_id, tenant, entity_code, biz_code, version, "active", data_json, actor, now, actor, now],
+            "INSERT INTO biz_data (id, tenant_id, biz_type, biz_code, version, prev_hash, curr_hash, data_json, created_by, updated_by, created_at, updated_at, is_deleted)
+             VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6, ?7, ?8, ?9, ?10, ?11, 0)",
+            rusqlite::params![biz_id, tenant, entity_code, biz_code, version, curr_hash, data_json, actor, actor, now, now],
+        )?;
+        conn.execute(
+            "INSERT INTO biz_data_version (version_id, biz_id, tenant_id, entity_id, version_num, snapshot_before, snapshot_after, changed_fields, change_note, operation_type, operator_user_id, prev_hash, curr_hash, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6, NULL, 'create', 'create', ?7, NULL, ?8, ?9)",
+            rusqlite::params![uuid::Uuid::new_v4().to_string(), biz_id, tenant, entity_code, version, data_json, actor, curr_hash, now],
         )?;
 
         self.metrics.record(true, 0);
@@ -671,7 +679,7 @@ impl Orchestrator {
             biz_id,
             biz_code: Some(biz_code),
             version: Some(version),
-            data: Some(Value::String(data_json)),
+            data: Some(data_value),
             entity_code: Some(entity_code.to_string()),
             tenant_id: Some(tenant),
             status: Some("active".to_string()),
@@ -689,48 +697,60 @@ impl Orchestrator {
         let conn = dao.conn().lock();
         let now = chrono::Utc::now().to_rfc3339();
 
-        // 获取当前版本
-        let current_version: i64 = conn.query_row(
-            "SELECT version FROM biz_data WHERE biz_id = ?1 AND is_deleted = 0",
+        // 读取当前版本 + 哈希 + 数据（规范 schema）
+        let (current_version, prev_curr, current_data): (i64, String, String) = conn.query_row(
+            "SELECT version, curr_hash, data_json FROM biz_data WHERE id = ?1 AND is_deleted = 0",
             [biz_id],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )?;
+        let (entity_code, tenant_id): (String, String) = conn.query_row(
+            "SELECT biz_type, tenant_id FROM biz_data WHERE id = ?1 AND is_deleted = 0",
+            [biz_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )?;
         let new_version = current_version + 1;
+        let has_patch = patch.is_some();
 
         // 合并数据
+        let mut current: Map<String, Value> =
+            serde_json::from_str(&current_data).unwrap_or_default();
         if let Some(patch_value) = patch {
-            let current_data: String = conn.query_row(
-                "SELECT data FROM biz_data WHERE biz_id = ?1",
-                [biz_id],
-                |row| row.get(0),
-            ).unwrap_or_default();
-            let mut current: Map<String, Value> = serde_json::from_str(&current_data).unwrap_or_default();
             if let Value::Object(patch_map) = patch_value {
                 for (k, v) in patch_map {
                     current.insert(k, v);
                 }
             }
-            let new_data = serde_json::to_string(&current).unwrap_or_default();
+        }
+        let new_value = Value::Object(current.clone());
+        let new_data = serde_json::to_string(&new_value).unwrap_or_default();
+        let new_hash = compute_hash(Some(&prev_curr), biz_id, new_version, &new_value, actor, &now);
+
+        if has_patch {
             conn.execute(
-                "UPDATE biz_data SET data = ?1, version = ?2, updated_by = ?3, updated_at = ?4 WHERE biz_id = ?5",
-                rusqlite::params![new_data, new_version, actor, now, biz_id],
+                "UPDATE biz_data SET data_json = ?1, version = ?2, prev_hash = ?3, curr_hash = ?4, updated_by = ?5, updated_at = ?6 WHERE id = ?7 AND is_deleted = 0",
+                rusqlite::params![new_data, new_version, prev_curr, new_hash, actor, now, biz_id],
             )?;
         } else {
             conn.execute(
-                "UPDATE biz_data SET version = ?1, updated_by = ?2, updated_at = ?3 WHERE biz_id = ?4",
-                rusqlite::params![new_version, actor, now, biz_id],
+                "UPDATE biz_data SET version = ?1, prev_hash = ?2, curr_hash = ?3, updated_by = ?4, updated_at = ?5 WHERE id = ?6 AND is_deleted = 0",
+                rusqlite::params![new_version, prev_curr, new_hash, actor, now, biz_id],
             )?;
         }
+        conn.execute(
+            "INSERT INTO biz_data_version (version_id, biz_id, tenant_id, entity_id, version_num, snapshot_before, snapshot_after, changed_fields, change_note, operation_type, operator_user_id, prev_hash, curr_hash, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, NULL, 'update', 'update', ?8, ?9, ?10, ?11)",
+            rusqlite::params![uuid::Uuid::new_v4().to_string(), biz_id, tenant_id, entity_code, new_version, current_data, new_data, actor, prev_curr, new_hash, now],
+        )?;
 
         self.metrics.record(true, 0);
         Ok(BizRecord {
             biz_id: biz_id.to_string(),
             biz_code: None,
             version: Some(new_version),
-            data: None,
-            entity_code: None,
-            tenant_id: None,
-            status: None,
+            data: Some(new_value),
+            entity_code: Some(entity_code),
+            tenant_id: Some(tenant_id),
+            status: Some("active".to_string()),
         })
     }
 
@@ -740,7 +760,7 @@ impl Orchestrator {
         let conn = dao.conn().lock();
         let now = chrono::Utc::now().to_rfc3339();
         conn.execute(
-            "UPDATE biz_data SET is_deleted = 1, status = 'deleted', updated_by = ?1, updated_at = ?2 WHERE biz_id = ?3",
+            "UPDATE biz_data SET is_deleted = 1, deleted_by = ?1, deleted_at = ?2, updated_by = ?1, updated_at = ?2 WHERE id = ?3 AND is_deleted = 0",
             rusqlite::params![actor, now, biz_id],
         )?;
         self.metrics.record(true, 0);
@@ -752,7 +772,7 @@ impl Orchestrator {
         let dao = self.require_dao()?;
         let conn = dao.conn().lock();
         let result = conn.query_row(
-            "SELECT biz_id, biz_code, version, data, biz_type, tenant_id, status FROM biz_data WHERE biz_id = ?1 AND is_deleted = 0",
+            "SELECT id, biz_code, version, data_json, biz_type, tenant_id FROM biz_data WHERE id = ?1 AND is_deleted = 0",
             [biz_id],
             |row| {
                 let data_str: String = row.get(3)?;
@@ -764,7 +784,7 @@ impl Orchestrator {
                     data: Some(data_val),
                     entity_code: row.get(4)?,
                     tenant_id: row.get(5)?,
-                    status: row.get(6)?,
+                    status: Some("active".to_string()),
                 })
             },
         );
@@ -779,7 +799,7 @@ impl Orchestrator {
     pub fn list_sync(&self, entity_code: &str, tenant_id: Option<&str>) -> anyhow::Result<Vec<BizRecord>> {
         let dao = self.require_dao()?;
         let conn = dao.conn().lock();
-        let mut sql = "SELECT biz_id, biz_code, version, data, biz_type, tenant_id, status FROM biz_data WHERE is_deleted = 0 AND biz_type = ?1".to_string();
+        let mut sql = "SELECT id, biz_code, version, data_json, biz_type, tenant_id FROM biz_data WHERE is_deleted = 0 AND biz_type = ?1".to_string();
         let mut params: Vec<String> = vec![entity_code.to_string()];
         if let Some(tid) = tenant_id {
             sql.push_str(" AND tenant_id = ?2");
@@ -799,7 +819,7 @@ impl Orchestrator {
                 data: Some(data_val),
                 entity_code: row.get(4)?,
                 tenant_id: row.get(5)?,
-                status: row.get(6)?,
+                status: Some("active".to_string()),
             })
         })?;
         let mut results = Vec::new();
@@ -814,17 +834,36 @@ impl Orchestrator {
         let dao = match self.require_dao() { Ok(d) => d, Err(_) => return 0 };
         let conn = dao.conn().lock();
         conn.query_row(
-            "SELECT version FROM biz_data WHERE biz_id = ?1",
+            "SELECT COUNT(*) FROM biz_data_version WHERE biz_id = ?1",
             [biz_id],
             |row| row.get::<_, i64>(0),
         ).unwrap_or(0) as usize
     }
 
-    /// 获取审计链（同步）
+    /// 获取审计链（同步）：按版本号升序返回哈希链节点
     pub fn audit_chain_sync(&self, biz_id: &str) -> Vec<Value> {
-        // 简化实现：返回空数组，实际应从审计日志表查询
-        let _ = biz_id;
-        Vec::new()
+        let dao = match self.require_dao() { Ok(d) => d, Err(_) => return Vec::new() };
+        let conn = dao.conn().lock();
+        let mut stmt = match conn.prepare(
+            "SELECT version_num, prev_hash, curr_hash, operation_type, operator_user_id, created_at FROM biz_data_version WHERE biz_id = ?1 ORDER BY version_num ASC",
+        ) {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+        let rows = match stmt.query_map([biz_id], |row| {
+            Ok(serde_json::json!({
+                "version": row.get::<_, Option<i64>>(0)?,
+                "prev_hash": row.get::<_, Option<String>>(1)?,
+                "curr_hash": row.get::<_, Option<String>>(2)?,
+                "operation": row.get::<_, Option<String>>(3)?,
+                "operator": row.get::<_, Option<String>>(4)?,
+                "created_at": row.get::<_, Option<String>>(5)?,
+            }))
+        }) {
+            Ok(r) => r,
+            Err(_) => return Vec::new(),
+        };
+        rows.filter_map(|r| r.ok()).collect()
     }
 }
 

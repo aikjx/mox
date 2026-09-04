@@ -13,7 +13,7 @@
 //! - Learn     : 指标学习（可选阶段）
 //! - Done      : 完成阶段（收尾 + 审计）
 //!
-//! 全维管线特有：
+//! mox 模块化系统架构管线特有：
 //! - Optimize  : flow-ai 优化求解
 //! - Verify    : 璇玑算法验证（最高权限否决）
 //!
@@ -39,34 +39,34 @@ use crate::pipeline_core::result::PhaseResult;
 pub enum Phase {
     // ---- 通用基础阶段 ----
     /// 归一化/预处理
-    /// - 全维管线：维度着色 (auto_dimension)
+    /// - mox 模块化系统架构管线：维度着色 (auto_dimension)
     /// - 联盟管线：意图分类 (classify_intent)
     Normalize,
 
     /// 分析阶段
-    /// - 全维管线：14 位专家并行分析 (run_experts)
+    /// - mox 模块化系统架构管线：14 位专家并行分析 (run_experts)
     /// - 联盟管线：并行咨询 + 辩论 (consult_and_debate)
     Analyze,
 
     /// 裁决/合成阶段
-    /// - 全维管线：多专家观点裁决 (reconcile)
+    /// - mox 模块化系统架构管线：多专家观点裁决 (reconcile)
     /// - 联盟管线：辩论结果合成
     Reconcile,
 
     /// 质量门禁阶段
-    /// - 全维管线：govern() 布尔型闸门 + 算法否决
+    /// - mox 模块化系统架构管线：govern() 布尔型闸门 + 算法否决
     /// - 联盟管线：HC-8 四级评分闸门 (evaluate_gate)
     Gate,
 
     /// 指标学习阶段（可选）
     /// - 联盟管线：learn_metrics() 维度增益学习
-    /// - 全维管线：预留，未来可接入 CEM
+    /// - mox 模块化系统架构管线：预留，未来可接入 CEM
     Learn,
 
     /// 完成阶段（收尾 + 审计汇总）
     Done,
 
-    // ---- 全维管线特有阶段 ----
+    // ---- mox 模块化系统架构管线特有阶段 ----
     /// flow-ai 优化求解
     Optimize,
 

@@ -3,9 +3,9 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! 璇玑 · 全维处理工具流程图
+//! 璇玑 · mox 模块化系统架构处理工具流程图
 //!
-//! 七位领域专家在归一化 IR 上并行诊断 → 裁决器按「权限/安全优先」全维归一 →
+//! 七位领域专家在归一化 IR 上并行诊断 → 裁决器按「权限/安全优先」mox 模块化系统架构归一 →
 //! flow-ai 引擎做已验证的最优求解 → 治理层把关后出码。
 //! 兼容 MCP / Skills / Loops / 大模型。
 
@@ -21,7 +21,7 @@ pub const CRATE_META: mox_platform_foundation::CrateMeta = mox_platform_foundati
 
 /// 外部审计 Sink：Syslog / S3(WORM) / Kafka，满足 SOC2/GDPR 合规要求
 pub mod audit;
-/// 专家联盟 6 阶段全维分析管线（新增，enterprise/18 BP-05 Rust 单一真相化）
+/// 专家联盟 6 阶段mox 模块化系统架构分析管线（新增，enterprise/18 BP-05 Rust 单一真相化）
 pub mod alliance;
 /// 多场景 Benchmark：用真实引擎量化核心收益（产品页可复用证据）
 pub mod bench;
@@ -93,7 +93,7 @@ pub use rbac::{
 pub use reconcile::{reconcile, ReconcileConflict, ReconciledPlan};
 pub use verify::{verify, AlgoVerification, Check};
 
-// ===================== 全维归一化常量（SSOT） =====================
+// ===================== mox 模块化系统架构归一化常量（SSOT） =====================
 //
 // P2 架构解耦 · 阶段 1.5：维度优先级、冲突升级门槛、归一化阈值等 SSOT 常量
 // 已迁移至 `mox-ai-expert-proto`，此处通过 re-export 保持对外 100% 兼容。

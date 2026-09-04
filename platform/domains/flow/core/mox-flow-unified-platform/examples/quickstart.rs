@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 全维归一化统一平台 (Unified Platform)
+// Copyright (c) 2026 璇玑 RelGraph · mox 模块化系统架构归一化统一平台 (Unified Platform)
 // Licensed under the MIT License.
 
 //! 快速启动示例
@@ -13,7 +13,7 @@
 use mox_flow_unified_platform::*;
 
 fn main() {
-    println!("=== 璇玑 RelGraph · 全维归一化统一平台 快速启动 ===\n");
+    println!("=== 璇玑 RelGraph · mox 模块化系统架构归一化统一平台 快速启动 ===\n");
 
     // ========== 1. 启动平台 ==========
     println!("【1】启动统一平台...");

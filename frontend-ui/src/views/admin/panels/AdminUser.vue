@@ -129,88 +129,31 @@
     </div>
 
     <!-- 用户表单对话框 -->
-    <el-dialog v-model="userFormVisible" :title="userForm.id ? '编辑用户' : '新增用户'" width="640px" destroy-on-close>
-      <el-form ref="userFormRef" :model="userForm" :rules="userFormRules" label-width="90px">
-        <el-tabs v-model="userFormTab">
-          <el-tab-pane label="基本信息" name="basic">
-            <el-form-item label="用户名" prop="username">
-              <el-input v-model="userForm.username" placeholder="请输入用户名" maxlength="32" :disabled="!!userForm.id" />
-            </el-form-item>
-            <el-form-item label="昵称" prop="nickname">
-              <el-input v-model="userForm.nickname" placeholder="请输入昵称" maxlength="32" />
-            </el-form-item>
-            <el-form-item v-if="!userForm.id" label="密码" prop="password">
-              <el-input v-model="userForm.password" type="password" placeholder="请输入密码" maxlength="32" show-password />
-            </el-form-item>
-            <el-form-item v-if="!userForm.id" label="确认密码" prop="confirmPassword">
-              <el-input v-model="userForm.confirmPassword" type="password" placeholder="请再次输入密码" maxlength="32" show-password />
-            </el-form-item>
-            <el-form-item label="头像">
-              <el-upload
-                class="avatar-uploader"
-                :show-file-list="false"
-                :before-upload="beforeAvatarUpload"
-                :http-request="handleAvatarUpload"
-                accept="image/*"
-              >
-                <el-avatar v-if="userForm.avatar" :size="80" :src="userForm.avatar" />
-                <el-icon v-else :size="28" color="var(--text-quaternary)"><Plus /></el-icon>
-              </el-upload>
-              <div class="upload-tip">支持 JPG/PNG，建议尺寸 200x200</div>
-            </el-form-item>
-          </el-tab-pane>
-
-          <el-tab-pane label="组织信息" name="org">
-            <el-form-item label="所属部门" prop="deptId">
-              <el-tree-select
-                v-model="userForm.deptId"
-                :data="deptTree"
-                :props="{ label: 'name', value: 'id', children: 'children' }"
-                node-key="id"
-                check-strictly
-                :render-after-expand="false"
-                placeholder="请选择部门"
-                filterable
-                style="width: 100%"
-              />
-            </el-form-item>
-            <el-form-item label="岗位" prop="postId">
-              <el-select v-model="userForm.postId" placeholder="请选择岗位" clearable filterable style="width: 100%">
-                <el-option v-for="p in postOptions" :key="p.id" :label="p.name" :value="p.id" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="手机号" prop="phone">
-              <el-input v-model="userForm.phone" placeholder="请输入手机号" maxlength="20" />
-            </el-form-item>
-            <el-form-item label="邮箱" prop="email">
-              <el-input v-model="userForm.email" placeholder="请输入邮箱" maxlength="128" />
-            </el-form-item>
-          </el-tab-pane>
-
-          <el-tab-pane label="账号设置" name="account">
-            <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="userForm.status">
-                <el-radio :value="1">启用</el-radio>
-                <el-radio :value="0">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="用户类型" prop="userType">
-              <el-radio-group v-model="userForm.userType">
-                <el-radio value="normal">普通用户</el-radio>
-                <el-radio value="admin">管理员</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="userForm.remark" type="textarea" :rows="4" maxlength="255" show-word-limit />
-            </el-form-item>
-          </el-tab-pane>
-        </el-tabs>
-      </el-form>
-      <template #footer>
-        <el-button @click="userFormVisible = false">取消</el-button>
-        <el-button type="primary" :loading="userFormSubmitting" @click="submitUserForm">确定</el-button>
+    <FormDialog
+      ref="formDialogRef"
+      v-model:visible="userFormVisible"
+      :title="userForm.id ? '编辑用户' : '新增用户'"
+      :form-schema="userFormSchema"
+      :edit-data="userFormEditData"
+      :submitting="userFormSubmitting"
+      width="640px"
+      label-width="90px"
+      @submit="submitUserForm"
+    >
+      <template #field-avatar="{ formData: fd }">
+        <el-upload
+          class="avatar-uploader"
+          :show-file-list="false"
+          :before-upload="beforeAvatarUpload"
+          :http-request="handleAvatarUpload"
+          accept="image/*"
+        >
+          <el-avatar v-if="fd.avatar" :size="80" :src="fd.avatar" />
+          <el-icon v-else :size="28" color="var(--text-quaternary)"><Plus /></el-icon>
+        </el-upload>
+        <div class="upload-tip">支持 JPG/PNG，建议尺寸 200x200</div>
       </template>
-    </el-dialog>
+    </FormDialog>
 
     <!-- 用户详情对话框 -->
     <el-dialog v-model="detailVisible" title="用户详情" width="560px">
@@ -336,6 +279,7 @@ import {
   resetUserPwd, changeUserStatus, getUserRoles, assignUserRoles,
   getDeptTree, getPostList, getRoleList, uploadUserAvatar
 } from '@/api'
+import FormDialog from '@/components/common/FormDialog.vue'
 
 // ===== 搜索与列表 =====
 const loading = ref(false)
@@ -371,7 +315,7 @@ async function loadList() {
     tableData.value = data?.list || data?.records || (Array.isArray(data) ? data : [])
     total.value = data?.total ?? tableData.value.length
   } catch (e) {
-    console.warn('[AdminUser] 加载用户列表失败:', e.message)
+    ElMessage.error('加载用户列表失败: ' + (e?.message || e))
   } finally {
     loading.value = false
   }
@@ -405,7 +349,7 @@ async function loadDeptTree() {
     const data = await getDeptTree()
     deptTree.value = Array.isArray(data) ? data : []
   } catch (e) {
-    console.warn('[AdminUser] 部门树加载失败:', e.message)
+    ElMessage.error('部门树加载失败: ' + (e?.message || e))
   }
 }
 
@@ -417,15 +361,15 @@ async function loadPosts() {
     const data = await getPostList({ pageSize: 100 })
     postOptions.value = data?.list || data?.records || (Array.isArray(data) ? data : [])
   } catch (e) {
-    console.warn('[AdminUser] 岗位加载失败:', e.message)
+    ElMessage.error('岗位加载失败: ' + (e?.message || e))
   }
 }
 
 // ===== 用户表单 =====
 const userFormVisible = ref(false)
-const userFormRef = ref(null)
 const userFormSubmitting = ref(false)
-const userFormTab = ref('basic')
+const formDialogRef = ref(null)
+const userFormEditData = ref(null)
 const userForm = reactive({
   id: null,
   username: '',
@@ -442,24 +386,45 @@ const userForm = reactive({
   remark: ''
 })
 
-const validateConfirmPwd = (rule, value, callback) => {
-  if (value !== userForm.password) {
+const validateConfirmPwd = (rule, value, callback, formData) => {
+  if (value !== formData.password) {
     callback(new Error('两次输入的密码不一致'))
   } else {
     callback()
   }
 }
 
-const userFormRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '密码至少6位', trigger: 'blur' }],
-  confirmPassword: [{ required: true, message: '请确认密码', trigger: 'blur' }, { validator: validateConfirmPwd, trigger: 'blur' }],
-  deptId: [{ required: true, message: '请选择部门', trigger: 'change' }]
-}
+const userFormSchema = computed(() => [
+  { prop: 'username', label: '用户名', type: 'input', tab: '基本信息', maxlength: 32,
+    disabled: (fd) => !!fd.id,
+    rules: [{ required: true, message: '请输入用户名', trigger: 'blur' }] },
+  { prop: 'nickname', label: '昵称', type: 'input', tab: '基本信息', maxlength: 32,
+    rules: [{ required: true, message: '请输入昵称', trigger: 'blur' }] },
+  { prop: 'password', label: '密码', type: 'input', tab: '基本信息', inputType: 'password', maxlength: 32, showPassword: true,
+    visible: (fd) => !fd.id,
+    rules: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '密码至少6位', trigger: 'blur' }] },
+  { prop: 'confirmPassword', label: '确认密码', type: 'input', tab: '基本信息', inputType: 'password', maxlength: 32, showPassword: true,
+    visible: (fd) => !fd.id,
+    rules: [{ required: true, message: '请确认密码', trigger: 'blur' }, { validator: validateConfirmPwd, trigger: 'blur' }] },
+  { prop: 'avatar', label: '头像', type: 'slot', tab: '基本信息' },
+  { prop: 'deptId', label: '所属部门', type: 'treeSelect', tab: '组织信息',
+    treeData: deptTree.value,
+    treeProps: { label: 'name', value: 'id', children: 'children' },
+    nodeKey: 'id',
+    rules: [{ required: true, message: '请选择部门', trigger: 'change' }] },
+  { prop: 'postId', label: '岗位', type: 'select', tab: '组织信息',
+    options: postOptions.value.map(p => ({ label: p.name, value: p.id })),
+    placeholder: '请选择岗位' },
+  { prop: 'phone', label: '手机号', type: 'input', tab: '组织信息', maxlength: 20 },
+  { prop: 'email', label: '邮箱', type: 'input', tab: '组织信息', maxlength: 128 },
+  { prop: 'status', label: '状态', type: 'radio', tab: '账号设置', defaultValue: 1,
+    options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }] },
+  { prop: 'userType', label: '用户类型', type: 'radio', tab: '账号设置', defaultValue: 'normal',
+    options: [{ label: '普通用户', value: 'normal' }, { label: '管理员', value: 'admin' }] },
+  { prop: 'remark', label: '备注', type: 'textarea', tab: '账号设置', rows: 4, maxlength: 255, showWordLimit: true }
+])
 
 function openUserForm(row = null) {
-  userFormTab.value = 'basic'
   if (row) {
     Object.assign(userForm, {
       id: row.id,
@@ -476,28 +441,26 @@ function openUserForm(row = null) {
       userType: row.userType || 'normal',
       remark: row.remark || ''
     })
+    userFormEditData.value = { ...userForm }
   } else {
     Object.assign(userForm, {
       id: null, username: '', nickname: '', password: '', confirmPassword: '',
       avatar: '', deptId: null, postId: null, phone: '', email: '',
       status: 1, userType: 'normal', remark: ''
     })
+    userFormEditData.value = null
   }
   userFormVisible.value = true
 }
 
-async function submitUserForm() {
-  try {
-    await userFormRef.value.validate()
-  } catch { return }
-
+async function submitUserForm(formData) {
   userFormSubmitting.value = true
   try {
-    const payload = { ...userForm }
+    const payload = { ...formData }
     delete payload.confirmPassword
-    if (userForm.id) {
+    if (formData.id) {
       delete payload.password
-      await updateUser(userForm.id, payload)
+      await updateUser(formData.id, payload)
       ElMessage.success('用户更新成功')
     } else {
       await createUser(payload)
@@ -506,7 +469,7 @@ async function submitUserForm() {
     userFormVisible.value = false
     await loadList()
   } catch (e) {
-    ElMessage.error((userForm.id ? '更新' : '创建') + '失败：' + e.message)
+    ElMessage.error((formData.id ? '更新' : '创建') + '失败：' + e.message)
   } finally {
     userFormSubmitting.value = false
   }
@@ -531,6 +494,9 @@ function beforeAvatarUpload(file) {
 async function handleAvatarUpload({ file }) {
   const reader = new FileReader()
   reader.onload = (e) => {
+    if (formDialogRef.value) {
+      formDialogRef.value.formData.avatar = e.target.result
+    }
     userForm.avatar = e.target.result
   }
   reader.readAsDataURL(file)
@@ -539,6 +505,9 @@ async function handleAvatarUpload({ file }) {
     try {
       const result = await uploadUserAvatar(userForm.id, file)
       if (result && result.url) {
+        if (formDialogRef.value) {
+          formDialogRef.value.formData.avatar = result.url
+        }
         userForm.avatar = result.url
       }
       ElMessage.success('头像上传成功')
@@ -690,7 +659,7 @@ async function openRoleDialog(row) {
     dataScope.value = userRoles?.dataScope || 'dept'
     customDeptIds.value = userRoles?.deptIds || []
   } catch (e) {
-    console.warn('[AdminUser] 加载角色失败:', e.message)
+    ElMessage.error('加载角色失败: ' + (e?.message || e))
   } finally {
     roleLoading.value = false
   }

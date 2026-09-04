@@ -9,9 +9,7 @@
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use mox_cloud_kernel::{MultiWriter, ShardWriter, WriteError, WriteProgressPolicy};
 use std::{sync::Arc, time::Duration};
 
@@ -78,29 +76,35 @@ fn make_partial_fail_writers(count: usize) -> Vec<Arc<dyn ShardWriter>> {
     let ok_count = count - fail_count;
     let mut writers: Vec<Arc<dyn ShardWriter>> = Vec::with_capacity(count);
     for i in 0..ok_count {
-        writers.push(Arc::new(InstantWriter { endpoint: format!("ok-{i}") }) as Arc<dyn ShardWriter>);
+        writers
+            .push(Arc::new(InstantWriter { endpoint: format!("ok-{i}") }) as Arc<dyn ShardWriter>);
     }
     for i in 0..fail_count {
-        writers.push(Arc::new(FailWriter { endpoint: format!("fail-{i}") }) as Arc<dyn ShardWriter>);
+        writers
+            .push(Arc::new(FailWriter { endpoint: format!("fail-{i}") }) as Arc<dyn ShardWriter>);
     }
     writers
 }
 
-fn make_slow_writers(count: usize, slow_count: usize, delay: Duration) -> Vec<Arc<dyn ShardWriter>> {
+fn make_slow_writers(
+    count: usize,
+    slow_count: usize,
+    delay: Duration,
+) -> Vec<Arc<dyn ShardWriter>> {
     let mut writers: Vec<Arc<dyn ShardWriter>> = Vec::with_capacity(count);
     for i in 0..(count - slow_count) {
         writers.push(Arc::new(InstantWriter { endpoint: format!("fast-{i}") }) as Arc<dyn ShardWriter>);
     }
     for i in 0..slow_count {
-        writers.push(Arc::new(SlowWriter { endpoint: format!("slow-{i}"), delay }) as Arc<dyn ShardWriter>);
+        writers
+            .push(Arc::new(SlowWriter { endpoint: format!("slow-{i}"), delay })
+                as Arc<dyn ShardWriter>);
     }
     writers
 }
 
 fn make_shards(count: usize, size: usize) -> Vec<(usize, Bytes)> {
-    (0..count)
-        .map(|i| (i, Bytes::from(vec![i as u8; size])))
-        .collect()
+    (0..count).map(|i| (i, Bytes::from(vec![i as u8; size]))).collect()
 }
 
 // ---------------------------------------------------------------------------

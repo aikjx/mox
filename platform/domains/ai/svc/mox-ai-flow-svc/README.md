@@ -1,7 +1,7 @@
 # flow-ai · 流程 & 调度 AI 引擎
 
 ## §1 · 概述
-璇玑 L4Services 级流程 AI 引擎：面向 PrimiFlow/FlowGraph 的 DAG 自动化调度，包含 CPM 关键路径、冲突检测（资源/数据冒险）、拓扑传播、代码生成、流水线、原语库、调度器 9 大模块，是 PrimiFlow/全维分析的自动排程真源。
+璇玑 L4Services 级流程 AI 引擎：面向 PrimiFlow/FlowGraph 的 DAG 自动化调度，包含 CPM 关键路径、冲突检测（资源/数据冒险）、拓扑传播、代码生成、流水线、原语库、调度器 9 大模块，是 PrimiFlow/mox 模块化系统架构分析的自动排程真源。
 
 ## §2 · CRATE_ID / ENGINE_NAME / AIS 层级
 归属 **AIS Layer = L4Services**。

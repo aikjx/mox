@@ -37,7 +37,7 @@ tick="${C_GRN}✔${C_RST}";  cross="${C_RED}✗${C_RST}";  warn="${C_YLW}⚠${C_
 banner() {
   echo
   echo "============================================================"
-  echo "  ${C_CYN}璇玑 Mox · 全维数字孪生中台 一键启动（POSIX）${C_RST}"
+  echo "  ${C_CYN}璇玑 Mox · mox 模块化系统架构数字孪生中台 一键启动（POSIX）${C_RST}"
   echo "  仓库根：${C_BLU}${HERE}${C_RST}"
   echo "============================================================"
 }

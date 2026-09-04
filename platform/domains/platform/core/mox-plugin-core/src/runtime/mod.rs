@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -60,12 +60,12 @@ impl fmt::Display for RuntimeType {
 /// 运行时内部数据（按类型区分）
 ///
 /// - `Wasm(Option<wasmer::Instance>)`：WASM 运行时持有的 wasmer 实例，停止后为 None
-/// - `VsCode`：VSCode 运行时占位，阶段 2 将持有 deno_core JsRuntime
+/// - `VsCode(String)`：VSCode 运行时的 instance_id，实际 DenoRuntime 存储在 VsCodeRuntime 的 Mutex<HashMap> 中
 pub enum RuntimeInternal {
     /// WASM 运行时内部：wasmer 实例（停止后释放为 None）
     Wasm(Option<wasmer::Instance>),
-    /// VSCode 运行时内部：阶段 1 空占位，阶段 2 将持有 deno_core JsRuntime
-    VsCode,
+    /// VSCode 运行时内部：instance_id（DenoRuntime 存储在 VsCodeRuntime 中，通过此 ID 查找）
+    VsCode(String),
 }
 
 // ─── 运行时句柄 ──────────────────────────────────────────────────────────────
@@ -89,14 +89,24 @@ pub struct RuntimeHandle {
 
 impl RuntimeHandle {
     /// 创建新的运行时句柄（初始状态 = Loaded）
+    ///
+    /// 注意：如果 `internal` 是 `RuntimeInternal::VsCode(instance_id)`，
+    /// 则使用该 instance_id 作为 handle.id()，确保与 VsCodeRuntime.runtimes
+    /// 表中存储的 key 一致。否则自动生成新的 UUID。
     pub fn new(
         runtime_type: RuntimeType,
         manifest_id: impl Into<String>,
         internal: Option<RuntimeInternal>,
     ) -> Self {
+        // 从 RuntimeInternal 中提取 instance_id（如果是 VsCode 类型）
+        let instance_id = match &internal {
+            Some(RuntimeInternal::VsCode(id)) => id.clone(),
+            _ => uuid::Uuid::new_v4().to_string(),
+        };
+
         Self {
             runtime_type,
-            instance_id: uuid::Uuid::new_v4().to_string(),
+            instance_id,
             state: RwLock::new(PluginState::Loaded),
             internal: RwLock::new(internal),
             manifest_id: manifest_id.into(),
@@ -368,20 +378,20 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_vscode_runtime_call_not_implemented() {
+    async fn test_vscode_runtime_call_unknown_method() {
         let runtime = VsCodeRuntime::new();
         let manifest = test_manifest("test.vscode.call", vec!["runtime:vscode".into()]);
         let entry = PathBuf::from("./test-extension");
         let handle = runtime.load(&manifest, &entry).await.unwrap();
 
         let result = runtime
-            .call(&handle, "someMethod", &serde_json::json!({}))
+            .call(&handle, "someUnknownMethod", &serde_json::json!({}))
             .await;
         assert!(result.is_err());
         let err_msg = format!("{}", result.unwrap_err());
         assert!(
-            err_msg.contains("not implemented"),
-            "error message should contain 'not implemented', got: {}",
+            err_msg.contains("not found") || err_msg.contains("not implemented"),
+            "error message should indicate method not found, got: {}",
             err_msg
         );
     }

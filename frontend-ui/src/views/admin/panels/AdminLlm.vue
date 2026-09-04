@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <div class="page-content">
+    <div class="page-content" v-loading="loading">
 
     <div class="grid grid-4 kpi-row">
       <div class="panel kpi" v-for="k in kpis" :key="k.label">

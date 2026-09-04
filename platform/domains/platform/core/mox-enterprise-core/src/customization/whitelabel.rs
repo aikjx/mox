@@ -65,7 +65,7 @@ impl Default for WhitelabelConfig {
             icp_number: None,
             copyright: Some("© 2026 MOX. All rights reserved.".into()),
             login_welcome: Some("欢迎使用".into()),
-            login_subtitle: Some("AI驱动的全维度突破平台".into()),
+            login_subtitle: Some("AI驱动的mox 模块化系统架构维度突破平台".into()),
             show_powered_by: true,
             custom_footer_html: None,
             metadata: HashMap::new(),

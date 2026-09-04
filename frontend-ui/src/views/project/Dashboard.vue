@@ -1,5 +1,19 @@
 ﻿<template>
-  <div class="page-container dashboard">
+  <div class="page-container dashboard" v-loading="loading" element-loading-text="仪表盘数据加载中...">
+    <!-- 加载错误提示 -->
+    <el-alert
+      v-if="loadError"
+      :title="loadError"
+      type="error"
+      :closable="false"
+      show-icon
+      class="load-error-alert"
+    >
+      <template #default>
+        <el-button size="small" type="primary" @click="reload">重新加载</el-button>
+      </template>
+    </el-alert>
+
     <!-- 欢迎横幅 -->
     <div class="welcome panel">
       <div class="welcome-left">
@@ -132,7 +146,7 @@
     <!-- 主图表区 -->
     <div class="grid grid-3 chart-row">
       <div class="panel card-pad span2">
-        <h3 class="section-title">全维度实时态势</h3>
+        <h3 class="section-title">mox 模块化系统架构维度实时态势</h3>
         <div ref="trendEl" class="chart trend"></div>
       </div>
       <div class="panel card-pad">
@@ -144,7 +158,7 @@
     <!-- 模块入口 + 动态 -->
     <div class="grid grid-2 bottom-row">
       <div class="panel card-pad">
-        <h3 class="section-title">全维度模块</h3>
+        <h3 class="section-title">mox 模块化系统架构维度模块</h3>
         <div class="modules">
           <div class="mod" v-for="m in NAV_MODULES" :key="m.key" @click="go(m.path)">
             <div class="mod-icon" :style="{ background: m.bg, color: m.color }">
@@ -199,7 +213,7 @@ const projectEyebrow = computed(() => {
 })
 const projectDesc = computed(() => {
   if (currentProject.value?.description) return currentProject.value.description
-  return '以项目为根，AI 驱动的知识图谱与全维业务处理平台 — 需求 → 架构 → 开发 → 发布 全流程贯通'
+  return '以项目为根，AI 驱动的知识图谱与mox 模块化系统架构业务处理平台 — 需求 → 架构 → 开发 → 发布 全流程贯通'
 })
 
 // 项目阶段进度由后端加载
@@ -291,6 +305,8 @@ const stats = ref([
   { label: '成功率', value: '—', unit: '%', icon: 'TrendCharts', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', up: true, trend: '0.6%' }
 ])
 const logs = ref([])
+const loading = ref(false)
+const loadError = ref('')
 const sparkEls = ref([])
 const trendEl = ref(null)
 const radarEl = ref(null)
@@ -307,6 +323,8 @@ function fmt(ts) {
 }
 
 async function load() {
+  loading.value = true
+  loadError.value = ''
   try {
     let st = null
     let lg = null
@@ -316,6 +334,7 @@ async function load() {
       lg = results[1]
     } catch (apiErr) {
       console.warn('API请求失败，使用默认数据', apiErr)
+      loadError.value = '部分数据加载失败，显示默认值'
       st = null
       lg = null
     }
@@ -328,13 +347,13 @@ async function load() {
     }
     
     window.__dash_status__ = st || {}
-        stats.value[0].value = (st && st.operators_count) ?? 8
+        stats.value[0].value = (st && st.operators_count) ?? 0
     stats.value[1].value = (st && st.graph && st.graph.nodes) ?? 0
     stats.value[2].value = (st && st.executions_count) ?? 0
-    const sr = (st && st.success_rate) ?? 98.5
-    stats.value[3].value = sr.toFixed ? sr.toFixed(1) : sr
+    const sr = (st && st.success_rate) ?? 0
+    stats.value[3].value = sr ? sr.toFixed ? sr.toFixed(1) : sr : '—'
     stats.value[3].up = sr >= 98
-    stats.value[3].trend = sr >= 98 ? '+' + (sr - 98).toFixed(1) + '%' : (sr - 98).toFixed(1) + '%'
+    stats.value[3].trend = sr ? (sr >= 98 ? '+' + (sr - 98).toFixed(1) + '%' : (sr - 98).toFixed(1) + '%') : '—'
     
     const logsArr = Array.isArray(lg) ? lg : []
     logs.value = logsArr
@@ -344,7 +363,15 @@ async function load() {
     }
   } catch (e) {
     console.warn('仪表盘加载失败', e)
+    loadError.value = '仪表盘加载失败：' + (e?.message || '未知错误')
+  } finally {
+    loading.value = false
   }
+}
+
+function reload() {
+  load()
+  loadPhaseProgress()
 }
 
 
@@ -449,6 +476,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+.load-error-alert {
+  margin-bottom: 0;
 }
 .welcome {
   display: flex;

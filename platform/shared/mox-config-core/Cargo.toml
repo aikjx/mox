@@ -1,0 +1,35 @@
+[package]
+name = "mox-config-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 统一配置中心：跨端配置契约、热更新、环境隔离、配置验证。企业级配置管理基础设施。"
+
+[dependencies]
+# 序列化
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# 异步
+async-trait = { workspace = true }
+tokio = { workspace = true }
+
+# 时间
+chrono = { workspace = true, features = ["serde"] }
+
+# 错误处理
+thiserror = { workspace = true }
+
+# 日志
+tracing = { workspace = true }
+
+# 统一归一化契约
+mox-unified-contract = { workspace = true }
+
+# 并发原语
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+tempfile = "3"

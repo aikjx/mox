@@ -591,7 +591,7 @@ Read "D:\a10\aikjx\gitcode\infotopograph\platform\backend-node\src\llm-gateway.j
    589	      mcp: '你是一位MCP协议专家，精通Model Context Protocol设计、工具集成和跨平台兼容。请提供标准的MCP方案。',
    590	      automation: '你是一位自动化专家，精通RPA、流程自动化、智能体工作流和低代码平台。请提供端到端自动化方案。',
    591	      requirement: '你是一位需求工程专家，精通需求分析、需求建模、需求追踪和需求编译。请提供结构化的需求方案。',
-   592	      fusion: '你是一位融合专家，精通璇玑体系、双十四维治理、全维融合和跨系统集成。请提供全维融合方案。',
+   592	      fusion: '你是一位融合专家，精通璇玑体系、双十四维治理、mox 模块化系统架构融合和跨系统集成。请提供mox 模块化系统架构融合方案。',
    593	      default: '你是一位智能助手，可以帮助进行系统分析、代码实现、架构设计和问题解决。请以专业、精准的方式回答。'
    594	    };
    595	    return prompts[expertType] || prompts.default;
@@ -1051,7 +1051,7 @@ Read "D:\a10\aikjx\gitcode\infotopograph\platform\backend-node\src\llm-gateway.j
   1049	      monitor: /监控|日志|指标|报警|monitor|metric/.test(lower),
   1050	      security: /安全|权限|审计|security|permission/.test(lower),
   1051	      performance: /性能|优化|加速|快|performance|optimize/.test(lower),
-  1052	      fusion: /融合|璇玑|全维|治理|fusion|mox/.test(lower),
+  1052	      fusion: /融合|璇玑|mox 模块化系统架构|治理|fusion|mox/.test(lower),
   1053	      ai_chat: /你好|hello|hi|介绍|说明/.test(lower)
   1054	    };
   1055	
@@ -1199,7 +1199,7 @@ Read "D:\a10\aikjx\gitcode\infotopograph\platform\backend-node\src\llm-gateway.j
   1197	      monitor: '系统监控',
   1198	      security: '安全审计',
   1199	      performance: '性能优化',
-  1200	      fusion: '全维融合',
+  1200	      fusion: 'mox 模块化系统架构融合',
   1201	      ai_chat: 'AI对话',
   1202	      general: '通用咨询'
   1203	    };
@@ -1251,7 +1251,7 @@ Read "D:\a10\aikjx\gitcode\infotopograph\platform\backend-node\src\llm-gateway.j
   1249	        '2. 为每个节点选择合适的算子',
   1250	        '3. 配置节点参数和条件分支',
   1251	        '4. 验证流程并执行测试',
-  1252	        '5. 在璇玑治理中进行全维优化'
+  1252	        '5. 在璇玑治理中进行mox 模块化系统架构优化'
   1253	      ],
   1254	      graph: [
   1255	        '1. 定义节点类型和关系类型',

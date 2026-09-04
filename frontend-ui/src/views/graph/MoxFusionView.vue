@@ -11,7 +11,7 @@
             placeholder='粘贴 FlowGraph JSON：{ "nodes":[{ "id":"n1","name":"采集","type":"operator","params":{} }], "edges":[{ "from":"n1","to":"n2" }] }'
           />
           <el-button type="primary" class="mt" @click="normalize" :loading="loadingNorm">
-            全维归一化（双璇玑十四维 + 璇玑）
+            mox 模块化系统架构归一化（双璇玑十四维 + 璇玑）
           </el-button>
         </el-card>
       </el-col>
@@ -51,7 +51,7 @@
           <template #header><b>③ 融合上传（算子市场/插件·应用平台）</b></template>
           <el-form label-width="80px" size="small">
             <el-form-item label="包名称">
-              <el-input v-model="pkgName" placeholder="全维融合算子" />
+              <el-input v-model="pkgName" placeholder="mox 模块化系统架构融合算子" />
             </el-form-item>
             <el-form-item label="自然语言需求">
               <el-input v-model="pkgReq" type="textarea" :rows="3" placeholder="该流程解决的业务问题" />
@@ -158,7 +158,7 @@ async function normalize() {
   try {
     const r = await moxOptimize(flow, tenant.value)
     report.value = r
-    pkgName.value = pkgName.value || '全维融合算子'
+    pkgName.value = pkgName.value || 'mox 模块化系统架构融合算子'
     ElMessage.success('归一化完成，治理闸门：' + (r.governance?.gate || '—'))
   } catch (e) {
     ElMessage.error('归一化失败：' + e.message)

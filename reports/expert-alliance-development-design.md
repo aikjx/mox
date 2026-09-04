@@ -227,7 +227,7 @@ ExpertPlazaView.vue ──POST /api/experts/multi-consult──▶ legacy 网关
 
 ## 6. 核心管线与算法（复用，不重写）
 
-### 6.1 6 阶段全维分析管线（`src/alliance/mod.rs`，SSE）
+### 6.1 6 阶段mox 模块化系统架构分析管线（`src/alliance/mod.rs`，SSE）
 
 ```text
 Intent(意图识别) → Team(专家组队) → Debate(并行咨询+辩论)

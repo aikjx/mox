@@ -293,7 +293,7 @@ async function loadMenuTree() {
     const data = await getMenuTree()
     menuTree.value = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
   } catch (e) {
-    console.warn('[AdminMenu] 菜单树加载失败:', e.message)
+    ElMessage.error('菜单树加载失败: ' + (e?.message || e))
   } finally {
     loading.value = false
   }

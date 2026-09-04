@@ -1,6 +1,6 @@
 # 企业级验收总报告 · 璇玑 mox Infotopograph v3.0.0-enterprise
 > 生成时间：2026-08-23 UTC+8 | 报告类型：企业级 T9 汇总证据包（All-04 联盟交付 = 联盟验收）
-> 权威文档：`docs/enterprise/18 TOP-MASTER / 09-企业级全维度完成归档.md`（L0 最高权威）
+> 权威文档：`docs/enterprise/18 TOP-MASTER / 09-企业级mox 模块化系统架构维度完成归档.md`（L0 最高权威）
 
 ---
 
@@ -26,7 +26,7 @@
 | **AC-3** | 7×8 算法对账 | 56/56 PASS，\|Rust-Node\| ≤ 1e-6 | 56 PASS, 0 FAIL | `PASS: 56, FAIL: 0` ← `reconcile_7x8.js` |
 | **AC-4** | 路由语义三铁律 | 4 router_semantics 全绿 | 4/4 ok | `ac10_six_routes_and_four_requests_match_expectations` 等 |
 | **AC-5** | Clippy 零告警 | `--workspace --all-targets -- -D warnings` exit=0 | exit=0 | ⭕ 本轮实跑 0 error（最后一次 `STATUS=0`） |
-| **AC-6** | 六维绑定覆盖率 | REQ/FUN/BIZ/ALG/TSK/COD ≥ 90% rubric | 企业自归档：649+ passed / 0 failed（L0 §3 声明） | `docs/enterprise/09-企业级全维度完成归档.md §3` |
+| **AC-6** | 六维绑定覆盖率 | REQ/FUN/BIZ/ALG/TSK/COD ≥ 90% rubric | 企业自归档：649+ passed / 0 failed（L0 §3 声明） | `docs/enterprise/09-企业级mox 模块化系统架构维度完成归档.md §3` |
 | **AC-7** | Node Mocha ≥ 70 | Mocha ≥ 70 GREEN | **126** passing (9s)，0 failing | `mocha_{atlas,graph,alliance}.js 三套件 126/126 GREEN` |
 | **AC-8** | 前端构建 0 error | `pnpm build` exit=0 + dist/ 生成 | exit=0 + 41 chunks | `✓ built in 1m 28s BUILD_EXIT=0` |
 | **AC-9** | 三流程端点 E2E | 2 tests GREEN | 2/2 ok | `e2e_regulated_tenant_blocks_raw_sensitive_write + governance_eight_gates_pipeline_publish_provenance ok` |
@@ -93,7 +93,7 @@
 ## 五、待续 / 升级建议（非阻塞）
 
 1. **melody2score T5 深度回归**：本轮仅做 `require` 注册基线；下次建议补 `python -m ... soundfile` 端到端音频转换验证（已在 Summary `Pending & Failing Checklist` 标记）。
-2. **AC-6 六维绑定**：企业文档 `09-企业级全维度完成归档.md` 声明 649+ passed / 0 failed，为了本仓库内可回归测试，建议在 `scripts/` 下新增 `binding_coverage_reconcile.js`，通过解析 `REQ-FUN-BIZ-ALG-TSK-COD` 六维 ID 映射，输出 `≥ 90%` 断言脚本（建议下一期 spec）。
+2. **AC-6 六维绑定**：企业文档 `09-企业级mox 模块化系统架构维度完成归档.md` 声明 649+ passed / 0 failed，为了本仓库内可回归测试，建议在 `scripts/` 下新增 `binding_coverage_reconcile.js`，通过解析 `REQ-FUN-BIZ-ALG-TSK-COD` 六维 ID 映射，输出 `≥ 90%` 断言脚本（建议下一期 spec）。
 3. **Cargo future-incompat**：本次 mox_e2e 运行提示 `sqlx-postgres v0.8.0` 未来 Rust 版本将被拒绝，可升级依赖避免后续升级失败。
 
 ---

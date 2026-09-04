@@ -1,8 +1,8 @@
-# 规格：璇玑 mox v4 · 需求-架构-业务处理 全维度企业级闭环架构与全功能开发
+# 规格：璇玑 mox v4 · 需求-架构-业务处理 mox 模块化系统架构维度企业级闭环架构与全功能开发
 
 > 规格语言：中文
 > 治理中枢：璇玑归一化知识图谱（需求 → 架构 → 业务流程 → 模块 → 文档 → 代码 六层归一化双向绑定）
-> 技术底座约束：后端 Rust 全维自研（Rust Gateway + 16 crate Services + Node EAF 编排），图谱唯一真相源，AIS DIP 依赖反转分层
+> 技术底座约束：后端 Rust mox 模块化系统架构自研（Rust Gateway + 16 crate Services + Node EAF 编排），图谱唯一真相源，AIS DIP 依赖反转分层
 > 前置交付基线（已通过独立 Review A+）：SPEC-1 Storage 双写回源 + SPEC-2 FileStore EC/MPU + SPEC-3 Nebula L1/CDC + SPEC-4 CNM/RAW/精度/LPA禁用 + SPEC-5 PR转置/激活扩散 + SPEC-6 Rust Gateway ai_engine + SPEC-7 internal+rerank+CEM + SPEC-8 协议兼容 + SPEC-10 三流程 Trace E2E + SPEC-13 SLO/容量/TCO + SPEC-14 故障注入 HA + SPEC-15 129 GREEN 全回归 + 产品手册 v3
 
 ---
@@ -66,7 +66,7 @@
 
 ---
 
-## 2. 需求-架构-业务处理流程 全维设计（§二 核心交付）
+## 2. 需求-架构-业务处理流程 mox 模块化系统架构设计（§二 核心交付）
 
 ### 2.1 架构分层（Rust AIS L6 分层对齐 DIP）
 
@@ -262,7 +262,7 @@ Response 关键：
 ## 4. 约束与假设
 
 **技术底座约束（红线）**：
-1. 后端 Rust 全维自研（Gateway + 16 crate）；Node 仅做编排层（EAF）
+1. 后端 Rust mox 模块化系统架构自研（Gateway + 16 crate）；Node 仅做编排层（EAF）
 2. 图谱唯一真相源：6 层归一化绑定
 3. 算法护栏：CNM / PPR d=0.85-30 / Brandes / harmonic / RAW 双向 / 无 toFixed / LPA 禁用出口
 4. 路由护栏：AC-10 静态优先 / 参数少优先 / 同参数长路径优先

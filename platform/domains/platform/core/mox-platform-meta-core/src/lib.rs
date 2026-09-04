@@ -6,9 +6,11 @@
 pub mod ddl {
     pub const SQL: &str = include_str!("ddl.sql");
 }
+pub mod codegen;
 pub mod model;
 pub mod repo;
 
+pub use codegen::{CodegenError, CodegenOutput, CodegenTemplate};
 pub use model::{
     EntityWithFields, EnumOption, FieldDef, FieldSpec, FieldType, MetaComponent, MetaEntity,
     MetaField, MetaFieldOptionDict, MetaFieldOptionDictItem, MetaIndustryPackage, MetaPage,

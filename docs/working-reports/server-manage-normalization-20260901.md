@@ -1,8 +1,8 @@
-# server-manage.py 全维整理·修复·规范标准化报告
+# server-manage.py mox 模块化系统架构整理·修复·规范标准化报告
 
 - 日期：2026-09-01
 - 对象：`scripts/server-manage.py`（璇玑系统统一运维脚本，单文件整合版）
-- 类型：全维整理 / 修复 / 规范标准化
+- 类型：mox 模块化系统架构整理 / 修复 / 规范标准化
 - 前置：脚本 docstring 已归一化为 `server-manage.py`（版本 3.0），内部 `manage.py` 引用已归一化（白名单双签名保留兼容）
 
 ---
@@ -81,6 +81,6 @@
 
 ## 五、边界说明（诚实声明）
 
-- **未动**：历史工作报告类文档（`service_startup_script_optimization_plan.md`、`manage_consolidation_20260823.md`、`31-全维代码审计与验证报告`、`01-ENTERPRISE-OPTIMIZATION.md`）——保留历史快照，兼容别名保证其命令仍可执行。
+- **未动**：历史工作报告类文档（`service_startup_script_optimization_plan.md`、`manage_consolidation_20260823.md`、`31-mox 模块化系统架构代码审计与验证报告`、`01-ENTERPRISE-OPTIMIZATION.md`）——保留历史快照，兼容别名保证其命令仍可执行。
 - **未动**：`verify-ports.py` 的 EXPECTED 端口（与本脚本 DEFAULT_CONFIG 一致：5 服务 + dashboard 3999，无端口变更需求）。
 - **未实际启停服务**：本报告全程仅 dry-run / list / status / 单元级进程测试，未改动用户当前运行中的服务进程状态。

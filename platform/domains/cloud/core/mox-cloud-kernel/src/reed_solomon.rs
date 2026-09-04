@@ -11,7 +11,10 @@ use bytes::Bytes;
 use std::{
     collections::HashMap,
     fmt,
-    sync::{Arc, OnceLock, RwLock},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc, OnceLock, RwLock,
+    },
     time::Instant,
 };
 
@@ -309,35 +312,130 @@ pub fn invert_square(src: &[Vec<u8>]) -> RSResult<Matrix> {
 }
 
 // ---------------------------------------------------------------------------
-// Engine cache
+// Engine cache — LRU-bounded (P3 optimization)
 // ---------------------------------------------------------------------------
 
-/// Global cache for Vandermonde encoding matrices, keyed by `(data_shards, parity_shards)`.
+/// Default maximum number of distinct (data, parity) matrix profiles retained
+/// in the global cache.  Common production profiles (4+2, 8+4, 12+4, 16+4)
+/// fit comfortably; the cap prevents unbounded growth from pathological or
+/// adversarial profile churn.
+const MATRIX_CACHE_CAPACITY: usize = 1024;
+
+/// Monotonically increasing access tick used for LRU ordering.
 ///
-/// Design reference: RustFS ecstore matrix cache pattern (Apache 2.0).
-/// Uses `OnceLock<RwLock<HashMap>>` for O(1) lookup with concurrent read access,
-/// and `Arc<Matrix>` to avoid cloning large `Vec<Vec<u8>>` matrices on the hot path.
-type MatrixCacheMap = RwLock<HashMap<(u16, u16), Arc<Matrix>>>;
+/// Each cache hit / insert bumps this counter and stamps the entry with the
+/// new tick.  Eviction scans for the smallest tick (least recently used).
+/// Using an atomic counter avoids `SystemTime::now()` syscalls on the hot
+/// path and is immune to clock adjustments.
+static MATRIX_ACCESS_TICK: AtomicU64 = AtomicU64::new(0);
+
+/// A single cached encoding matrix with its last-access tick.
+struct MatrixCacheEntry {
+    matrix: Arc<Matrix>,
+    last_access: AtomicU64,
+}
+
+/// LRU-bounded cache for Vandermonde encoding matrices.
+///
+/// # Design
+/// - `HashMap` gives O(1) lookup by `(data_shards, parity_shards)`.
+/// - Per-entry `AtomicU64` timestamp lets the **read path** bump recency
+///   with a lock-free atomic store — no write guard needed for hits.
+/// - Eviction runs only on the slow path (insert under write guard) and does
+///   a single O(n) scan over at most `MATRIX_CACHE_CAPACITY` entries.
+///
+/// This keeps the common case (cache hit) on a read lock + one atomic RMW,
+/// while bounding memory growth for the uncommon case (profile churn).
+struct LruMatrixCache {
+    map: HashMap<(u16, u16), MatrixCacheEntry>,
+    capacity: usize,
+}
+
+impl LruMatrixCache {
+    fn new(capacity: usize) -> Self {
+        Self { map: HashMap::new(), capacity }
+    }
+
+    /// Look up a matrix by key and bump its last-access tick.
+    ///
+    /// Takes `&self` (caller holds an `RwLock` read guard).  The timestamp
+    /// update uses `AtomicU64::store` which is lock-free.
+    #[inline]
+    fn get(&self, key: &(u16, u16)) -> Option<Arc<Matrix>> {
+        self.map.get(key).map(|entry| {
+            let tick = MATRIX_ACCESS_TICK.fetch_add(1, Ordering::Relaxed);
+            entry.last_access.store(tick, Ordering::Relaxed);
+            Arc::clone(&entry.matrix)
+        })
+    }
+
+    /// Insert a matrix, evicting the least-recently-used entry if at capacity.
+    ///
+    /// Caller must hold an `RwLock` write guard (`&mut self`).
+    fn insert(&mut self, key: (u16, u16), matrix: Arc<Matrix>) {
+        let tick = MATRIX_ACCESS_TICK.fetch_add(1, Ordering::Relaxed);
+
+        if let Some(entry) = self.map.get_mut(&key) {
+            entry.matrix = matrix;
+            entry.last_access.store(tick, Ordering::Relaxed);
+            return;
+        }
+
+        // New key: evict LRU if at capacity.
+        if self.map.len() >= self.capacity {
+            let mut lru_key: Option<(u16, u16)> = None;
+            let mut lru_tick: u64 = u64::MAX;
+            for (k, entry) in &self.map {
+                let t = entry.last_access.load(Ordering::Relaxed);
+                if t < lru_tick {
+                    lru_tick = t;
+                    lru_key = Some(*k);
+                }
+            }
+            if let Some(k) = lru_key {
+                self.map.remove(&k);
+            }
+        }
+
+        self.map
+            .insert(key, MatrixCacheEntry { matrix, last_access: AtomicU64::new(tick) });
+    }
+
+    /// Number of entries currently in the cache.
+    #[cfg(test)]
+    #[inline]
+    fn len(&self) -> usize {
+        self.map.len()
+    }
+}
+
+/// Global LRU-bounded cache for Vandermonde encoding matrices.
+///
+/// `OnceLock` guarantees lazy, one-time initialization; `RwLock` allows
+/// concurrent readers on the hot path.  The inner `LruMatrixCache` bounds
+/// memory to `MATRIX_CACHE_CAPACITY` entries.
+type MatrixCacheMap = RwLock<LruMatrixCache>;
 static MATRIX_CACHE: OnceLock<MatrixCacheMap> = OnceLock::new();
 
 #[inline]
 fn matrix_cache() -> &'static MatrixCacheMap {
-    MATRIX_CACHE.get_or_init(|| RwLock::new(HashMap::new()))
+    MATRIX_CACHE.get_or_init(|| RwLock::new(LruMatrixCache::new(MATRIX_CACHE_CAPACITY)))
 }
 
 /// Return the encoding matrix for `(data, parity)`, building and caching it on first use.
 ///
 /// Read path takes an `RwLock` read guard and does an O(1) `HashMap` lookup;
-/// only the first miss for a given key pays the build cost and the write guard.
-/// Double-checked locking under the write guard prevents duplicate builds from
-/// concurrent first-time callers.
+/// the LRU timestamp is bumped via a lock-free atomic store.  Only the first
+/// miss for a given key pays the build cost and the write guard (with LRU
+/// eviction if the cache is at capacity).  Double-checked locking under the
+/// write guard prevents duplicate builds from concurrent first-time callers.
 pub(crate) fn matrix_for(data: u16, parity: u16) -> RSResult<Matrix> {
     let key = (data, parity);
-    // Fast path: concurrent read lock + O(1) lookup.
+    // Fast path: concurrent read lock + O(1) lookup + atomic timestamp bump.
     if let Some(arc) =
         matrix_cache().read().unwrap_or_else(|poisoned| poisoned.into_inner()).get(&key)
     {
-        return Ok((**arc).clone());
+        return Ok((*arc).clone());
     }
     // Slow path: build outside the lock, then insert under write lock.
     let m = build_encoding_matrix(data as usize, (data + parity) as usize)?;
@@ -345,10 +443,22 @@ pub(crate) fn matrix_for(data: u16, parity: u16) -> RSResult<Matrix> {
     let mut guard = matrix_cache().write().unwrap_or_else(|poisoned| poisoned.into_inner());
     // Double-check: another thread may have inserted while we were building.
     if let Some(existing) = guard.get(&key) {
-        return Ok((**existing).clone());
+        return Ok((*existing).clone());
     }
     guard.insert(key, arc);
     Ok(m)
+}
+
+/// Test-only: return the current number of entries in the global matrix cache.
+#[cfg(test)]
+pub(crate) fn matrix_cache_len() -> usize {
+    matrix_cache().read().unwrap_or_else(|poisoned| poisoned.into_inner()).len()
+}
+
+/// Test-only: return the configured cache capacity.
+#[cfg(test)]
+pub(crate) fn matrix_cache_capacity() -> usize {
+    MATRIX_CACHE_CAPACITY
 }
 
 // ---------------------------------------------------------------------------
@@ -775,6 +885,53 @@ mod unit {
                 assert_eq!(cell, if i == j { 1 } else { 0 });
             }
         }
+    }
+
+    #[test]
+    fn test_matrix_cache_lru_capacity() {
+        // P3 optimization: the global matrix cache must be bounded by
+        // MATRIX_CACHE_CAPACITY entries.  We generate many distinct
+        // (data, parity) profiles and verify the cache never exceeds the cap.
+        let cap = matrix_cache_capacity();
+        assert!(cap > 0, "capacity must be positive");
+
+        // Record the cache size before the churn (other tests may have
+        // populated it).  We only assert that it does not grow beyond cap.
+        let before = matrix_cache_len();
+        assert!(before <= cap, "cache already over capacity before test: {before} > {cap}");
+
+        // Generate far more distinct profiles than the capacity to force
+        // eviction.  data ranges 1..=50, parity ranges 1..=20 → 1000 combos,
+        // plus a second sweep to ensure churn.
+        for data in 1u16..=50 {
+            for parity in 1u16..=20 {
+                // total = data + parity must be <= 255 for GF(2^8).
+                if data + parity <= 255 {
+                    let _ = matrix_for(data, parity).expect("matrix build should succeed");
+                }
+            }
+        }
+
+        let after = matrix_cache_len();
+        assert!(after <= cap, "LRU cache exceeded capacity: {after} > {cap} after profile churn");
+
+        // A second sweep with different profiles should also stay bounded.
+        for data in 51u16..=100 {
+            for parity in 1u16..=10 {
+                if data + parity <= 255 {
+                    let _ = matrix_for(data, parity).expect("matrix build should succeed");
+                }
+            }
+        }
+
+        let after2 = matrix_cache_len();
+        assert!(after2 <= cap, "LRU cache exceeded capacity after second sweep: {after2} > {cap}");
+
+        // After eviction, a previously-evicted key should be rebuildable
+        // (cache miss → fresh build → reinsert).
+        let m = matrix_for(1, 1).expect("rebuilding evicted (1,1) should succeed");
+        assert_eq!(m.len(), 2);
+        assert_eq!(m[0].len(), 1);
     }
 
     #[test]

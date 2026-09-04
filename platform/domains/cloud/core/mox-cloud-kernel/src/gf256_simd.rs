@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -620,7 +620,7 @@ mod t22_tests {
             let coef: u8 = rng.gen();
             let mut src = vec![0u8; len];
             rng.fill(src.as_mut_slice());
-            let mut dst = vec![SENTINEL; 128];
+            let mut dst = [SENTINEL; 128];
             let expected = scalar_block_mul(coef, &src);
 
             gf_vec_mul_auto(coef, &src, &mut dst[..len]);
@@ -674,6 +674,7 @@ mod t22_tests {
 
 #[cfg(test)]
 #[cfg(feature = "simd")]
+#[allow(clippy::needless_return)]
 mod t22_neon_tests {
     use super::*;
     use crate::reed_solomon::gf_mul;
@@ -700,26 +701,26 @@ mod t22_neon_tests {
     fn t22_neon_rand_100k() {
         if !is_neon_supported() {
             eprintln!("SKIP t22_neon_rand_100k: not aarch64 host");
-            return;
-        }
-        #[cfg(target_arch = "aarch64")]
-        {
-            let mut rng = rand::thread_rng();
-            let mut dst = [0u8; 32];
-            for iter in 0..100_000 {
-                let coef: u8 = rng.gen();
-                let block: [u8; 32] = rng.gen();
-                let expected = scalar_block_mul(coef, &block);
-                unsafe {
-                    gf_vec_mul_neon(coef, &block, &mut dst);
+        } else {
+            #[cfg(target_arch = "aarch64")]
+            {
+                let mut rng = rand::thread_rng();
+                let mut dst = [0u8; 32];
+                for iter in 0..100_000 {
+                    let coef: u8 = rng.gen();
+                    let block: [u8; 32] = rng.gen();
+                    let expected = scalar_block_mul(coef, &block);
+                    unsafe {
+                        gf_vec_mul_neon(coef, &block, &mut dst);
+                    }
+                    assert_eq!(
+                        dst[..],
+                        expected[..],
+                        "t22_neon_rand_100k mismatch @ iter={} coef={:#04x}",
+                        iter,
+                        coef
+                    );
                 }
-                assert_eq!(
-                    dst[..],
-                    expected[..],
-                    "t22_neon_rand_100k mismatch @ iter={} coef={:#04x}",
-                    iter,
-                    coef
-                );
             }
         }
     }
@@ -730,29 +731,29 @@ mod t22_neon_tests {
     fn t22_neon_tail_1_63() {
         if !is_neon_supported() {
             eprintln!("SKIP t22_neon_tail_1_63: not aarch64 host");
-            return;
-        }
-        let mut rng = rand::thread_rng();
-        const SENTINEL: u8 = 0xA5;
-        for len in 1..=63usize {
-            let coef: u8 = rng.gen();
-            let mut src = vec![0u8; len];
-            rng.fill(src.as_mut_slice());
-            let mut dst = vec![SENTINEL; 128];
-            let expected = scalar_block_mul(coef, &src);
+        } else {
+            let mut rng = rand::thread_rng();
+            const SENTINEL: u8 = 0xA5;
+            for len in 1..=63usize {
+                let coef: u8 = rng.gen();
+                let mut src = vec![0u8; len];
+                rng.fill(src.as_mut_slice());
+                let mut dst = [SENTINEL; 128];
+                let expected = scalar_block_mul(coef, &src);
 
-            gf_vec_mul_auto(coef, &src, &mut dst[..len]);
+                gf_vec_mul_auto(coef, &src, &mut dst[..len]);
 
-            assert_eq!(&dst[..len], &expected[..], "tail mismatch len={}", len);
-            for (i, &b) in dst[len..128].iter().enumerate() {
-                assert_eq!(
-                    b,
-                    SENTINEL,
-                    "tail over-write: len={} pos={} got={:#04x}",
-                    len,
-                    len + i,
-                    b
-                );
+                assert_eq!(&dst[..len], &expected[..], "tail mismatch len={}", len);
+                for (i, &b) in dst[len..128].iter().enumerate() {
+                    assert_eq!(
+                        b,
+                        SENTINEL,
+                        "tail over-write: len={} pos={} got={:#04x}",
+                        len,
+                        len + i,
+                        b
+                    );
+                }
             }
         }
     }

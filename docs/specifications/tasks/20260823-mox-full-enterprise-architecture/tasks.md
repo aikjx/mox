@@ -1,4 +1,4 @@
-# 任务队列：璇玑 mox v4 · 全维度企业级架构全功能开发
+# 任务队列：璇玑 mox v4 · mox 模块化系统架构维度企业级架构全功能开发
 
 > 语言：中文 · Spec: [spec.md](file:///d:/a10/aikjx/gitcode/infotopograph/.trae/specs/20260823-mox-full-enterprise-architecture/spec.md) · 治理：TDD RED→GREEN + 每任务完成后图谱反向同步（6 层节点+边）
 

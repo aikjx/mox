@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 全维归一化统一平台 (Unified Platform)
+// Copyright (c) 2026 璇玑 RelGraph · mox 模块化系统架构归一化统一平台 (Unified Platform)
 // Licensed under the MIT License.
 
 //! 平台核心类型
@@ -21,7 +21,7 @@ pub enum NormalizationSystem {
     ProcessAlgo,
     /// 前端功能归一化
     Frontend,
-    /// AI对话全维自动化
+    /// AI对话mox 模块化系统架构自动化
     AiAssistant,
 }
 
@@ -33,7 +33,7 @@ impl NormalizationSystem {
             NormalizationSystem::Lowcode => "低代码平台",
             NormalizationSystem::ProcessAlgo => "流程算法归一化",
             NormalizationSystem::Frontend => "前端功能归一化",
-            NormalizationSystem::AiAssistant => "AI对话全维自动化",
+            NormalizationSystem::AiAssistant => "AI对话mox 模块化系统架构自动化",
         }
     }
 
@@ -184,7 +184,7 @@ mod tests {
         assert_eq!(NormalizationSystem::Lowcode.name(), "低代码平台");
         assert_eq!(NormalizationSystem::ProcessAlgo.name(), "流程算法归一化");
         assert_eq!(NormalizationSystem::Frontend.name(), "前端功能归一化");
-        assert_eq!(NormalizationSystem::AiAssistant.name(), "AI对话全维自动化");
+        assert_eq!(NormalizationSystem::AiAssistant.name(), "AI对话mox 模块化系统架构自动化");
     }
 
     #[test]

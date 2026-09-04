@@ -56,7 +56,7 @@
 | D01 | 算子内核与执行 | operator-core / operator-wasm | done |
 | D02 | 知识图谱 | operator-graph / ai-agent | done |
 | D03 | 流程图优化 AI | flow-ai | done |
-| D04 | 全维治理/璇玑 | mox-expert | partial |
+| D04 | mox 模块化系统架构治理/璇玑 | mox-expert | partial |
 | D05 | 业务全景目录 | business-catalog | done |
 | D06 | AI 智能体 | ai-agent | done |
 | D07 | 算子商城 | runtime(market) | partial |
@@ -97,7 +97,7 @@
 
 首版绑定锚点示例：`Requirement:D01 --Bind--> CodeFile:crates/operator-core/src/lib.rs`
 
-> D04 实例与六维绑定 TraceMatrix 见 AA-STD §3（`璇玑-全维需求业务处理流程图-归一化企业级.md`）与 PT-STD（`crates/primiflow-core/trace_matrix.md`）；文档归一化索引见 `docs/full-dimensional/mox-requirement-baseline.md`。
+> D04 实例与六维绑定 TraceMatrix 见 AA-STD §3（`璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md`）与 PT-STD（`crates/primiflow-core/trace_matrix.md`）；文档归一化索引见 `docs/full-dimensional/mox-requirement-baseline.md`。
 
 ---
 
@@ -169,7 +169,7 @@ tools/info-graph/target/release/info-graph export  --graph graph.enterprise.json
 |------|------|
 | **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`mox-expert` crate） |
 | **关图 / GR-STD** | 信息关联关系图开发规范 V1.0，「一切皆是信息」 |
-| **AA-STD** | 璇玑-全维需求业务处理流程图-归一化企业级，融合域需求事实基准 |
+| **AA-STD** | 璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级，融合域需求事实基准 |
 | **PT-Primi / PrimiFlow** | 全域拓扑原语架构（κ-τ 调度，守恒律 `C² = κ² + τ²`） |
 | **OUS** | operator-unified-system，算子统一系统 |
 | **双璇玑十四维** | 业务 7 维 + 开发 7 维并行诊断 |

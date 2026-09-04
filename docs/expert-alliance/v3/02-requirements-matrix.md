@@ -173,4 +173,4 @@ source_of_truth: V3.0架构优化需求矩阵
 
 ---
 
-*下一篇：[03-全维业务流程图](docs/expert-alliance/v3/03-business-flow-diagrams.md)*
+*下一篇：[03-mox 模块化系统架构业务流程图](docs/expert-alliance/v3/03-business-flow-diagrams.md)*

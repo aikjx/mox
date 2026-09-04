@@ -173,5 +173,6 @@ def _synth_ok():
 check("钢琴合成（试听）", _synth_ok)
 
 print("=" * 60)
-print(" 结论:", "PASS（可安全精简打包）" if ok else "FAIL（存在误排依赖，需调整 excludes）")
+print(" 结论:", "PASS（可安全精简打包）" if ok
+      else "FAIL（完整链路未通过，请根据上方 [FAIL] 项定位）")
 sys.exit(0 if ok else 1)

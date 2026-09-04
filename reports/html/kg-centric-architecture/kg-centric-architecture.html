@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>知识图谱中心化 · 全维发散 Tree 布局架构白皮书</title>
+<title>知识图谱中心化 · mox 模块化系统架构发散 Tree 布局架构白皮书</title>
 <style>
   @font-face {
     font-family: 'ArsenalSC';
@@ -504,14 +504,14 @@
 <header class="hero">
   <div class="container">
     <div class="tag">ARCHITECTURE WHITEPAPER · V2.0</div>
-    <h1>知识图谱中心化 · 全维发散 Tree 布局</h1>
-    <p class="subtitle">以自研知识图谱为核心枢纽，八大业务域全维向外发散的 Tree 型架构。摒弃重力布局，拥抱层次化、模块化、全维自研的新一代企业级系统架构。</p>
+    <h1>知识图谱中心化 · mox 模块化系统架构发散 Tree 布局</h1>
+    <p class="subtitle">以自研知识图谱为核心枢纽，八大业务域mox 模块化系统架构向外发散的 Tree 型架构。摒弃重力布局，拥抱层次化、模块化、mox 模块化系统架构自研的新一代企业级系统架构。</p>
     <div class="meta">
       <span><strong>8</strong> 大业务域</span>
       <span><strong>80+</strong> Crate 模块</span>
       <span><strong>6</strong> 层架构</span>
       <span><strong>12</strong> 核心业务流程</span>
-      <span><strong>100%</strong> 全维自研</span>
+      <span><strong>100%</strong> mox 模块化系统架构自研</span>
     </div>
   </div>
 </header>
@@ -535,7 +535,7 @@
 <section id="overview">
   <h2><span class="num">01</span>架构总览</h2>
 
-  <p>传统的重力布局（Gravity Layout）将所有模块围绕一个中心节点做径向分布，导致依赖关系混乱、边界模糊、扩展困难。本架构采用<strong class="key">全维发散 Tree 布局</strong>，以<strong class="key">知识图谱（KG Hub）</strong>为根节点，八大业务域作为一级分支向外发散，每个域内再按 api/core/svc/sdk 形成二级分支，形成清晰的层次化树状结构。</p>
+  <p>传统的重力布局（Gravity Layout）将所有模块围绕一个中心节点做径向分布，导致依赖关系混乱、边界模糊、扩展困难。本架构采用<strong class="key">mox 模块化系统架构发散 Tree 布局</strong>，以<strong class="key">知识图谱（KG Hub）</strong>为根节点，八大业务域作为一级分支向外发散，每个域内再按 api/core/svc/sdk 形成二级分支，形成清晰的层次化树状结构。</p>
 
   <div class="callout">
     <strong>核心设计原则：</strong>知识图谱是系统的"大脑"和"中枢神经系统"，所有业务数据、实体关系、流程状态都以图谱形式存储和流转。各业务域通过 KG SDK 与中枢交互，而非直接互相调用，实现<strong class="key">高内聚、低耦合</strong>的域间解耦。
@@ -567,7 +567,7 @@
 
 <!-- ==================== Section 2: Tree Layout ==================== -->
 <section id="tree-layout">
-  <h2><span class="num">02</span>全维发散 Tree 布局</h2>
+  <h2><span class="num">02</span>mox 模块化系统架构发散 Tree 布局</h2>
 
   <p>Tree 布局以知识图谱为根节点，自顶向下、由内向外逐层发散。每个节点有明确的父节点和子节点，依赖关系严格遵循<strong class="key">从上到下、从中心到边缘</strong>的方向，杜绝反向依赖和循环依赖。</p>
 
@@ -1586,9 +1586,9 @@ flowchart TD
 
 <!-- ==================== Section 7: Self-Built ==================== -->
 <section id="selfbuilt">
-  <h2><span class="num">07</span>全维自研清单</h2>
+  <h2><span class="num">07</span>mox 模块化系统架构自研清单</h2>
 
-  <p>本架构坚持<strong class="key">全维自研</strong>原则，核心技术 100% 自主可控。以下为自研模块的完整清单。</p>
+  <p>本架构坚持<strong class="key">mox 模块化系统架构自研</strong>原则，核心技术 100% 自主可控。以下为自研模块的完整清单。</p>
 
   <figure class="chart-figure">
     <figcaption>自研模块按领域分布</figcaption>
@@ -1832,8 +1832,8 @@ flowchart TD
 
 <footer>
   <div class="container">
-    <p>知识图谱中心化 · 全维发散 Tree 布局架构白皮书 · V2.0</p>
-    <p style="margin-top:0.5rem;">MOX 璇玑 · 全维自研 · 80+ Crate · 8 大业务域</p>
+    <p>知识图谱中心化 · mox 模块化系统架构发散 Tree 布局架构白皮书 · V2.0</p>
+    <p style="margin-top:0.5rem;">MOX 璇玑 · mox 模块化系统架构自研 · 80+ Crate · 8 大业务域</p>
   </div>
 </footer>
 

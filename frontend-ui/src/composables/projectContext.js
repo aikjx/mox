@@ -1,16 +1,21 @@
 // 全局项目上下文（璇玑专家联盟 · 以项目为根）
 // - provide/inject + reactive + localStorage 持久化
 // - 视图刷新 / 路由跳转 / 浏览器重开 都保持「当前项目」不变
+//
+// 状态统一说明：本文件是项目状态的唯一真实源。
+// Pinia store (stores/project.store.js) 委托到本文件导出的单例 refs，
+// 避免双份状态。所有组件应优先使用 useProject()，Pinia 接口仅作兼容。
 import { ref, computed, watch, onMounted, onBeforeUnmount, provide, inject } from 'vue'
 import { getProjects, getProject, createProject, registerProjectIdGetter } from '@/api'
 
 const STORAGE_KEY = 'mox.currentProject.v1'
 
 // —— 共享单例状态（供任意视图或组件 import 直接用） ——
-const currentProject = ref(null)
-const projectList = ref([])
-const listLoading = ref(false)
-const projectReady = ref(false)
+// 已导出：供 Pinia store 委托，确保状态唯一
+export const currentProject = ref(null)
+export const projectList = ref([])
+export const listLoading = ref(false)
+export const projectReady = ref(false)
 
 // —— 把当前项目 id 暴露给请求层（所有 HTTP 自动带 project_id）——
 registerProjectIdGetter(() => currentProject.value?.id || null)
@@ -22,7 +27,7 @@ function notifyChange(changed) {
   }
 }
 
-async function loadProjectList() {
+export async function loadProjectList() {
   listLoading.value = true
   try {
     const list = await getProjects()
@@ -32,7 +37,7 @@ async function loadProjectList() {
   }
 }
 
-async function loadCurrentById(id, { force = false } = {}) {
+export async function loadCurrentById(id, { force = false } = {}) {
   if (!id) { currentProject.value = null; projectReady.value = true; return }
   if (currentProject.value?.id === id && !force) { projectReady.value = true; return }
   try {
@@ -51,7 +56,7 @@ async function loadCurrentById(id, { force = false } = {}) {
   projectReady.value = true
 }
 
-async function setCurrentProject(id) {
+export async function setCurrentProject(id) {
   if (!id) {
     currentProject.value = null
     try { localStorage.removeItem(STORAGE_KEY) } catch {}
@@ -63,7 +68,7 @@ async function setCurrentProject(id) {
   notifyChange({ id })
 }
 
-async function ensureProjectContext() {
+export async function ensureProjectContext() {
   if (projectReady.value && projectList.value.length) return
   await loadProjectList()
   let saved = null
@@ -77,7 +82,7 @@ async function ensureProjectContext() {
   await loadCurrentById(id)
 }
 
-function createAndSelect(form) {
+export function createAndSelect(form) {
   return createProject(form).then(async (p) => {
     await loadProjectList()
     await setCurrentProject(p.id)
@@ -85,7 +90,7 @@ function createAndSelect(form) {
   })
 }
 
-function onChange(fn) {
+export function onChange(fn) {
   listeners.add(fn)
   return () => listeners.delete(fn)
 }

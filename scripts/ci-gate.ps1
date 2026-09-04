@@ -1,6 +1,6 @@
 ﻿# ================================================================
 # MOX 企业级 CI 质量门禁脚本 (G1-G6)
-# 架构专家联盟 · 企业级全维规范 V5.0 · 璇玑 RelGraph
+# 架构专家联盟 · 企业级mox 模块化系统架构规范 V5.0 · 璇玑 RelGraph
 #
 # 用法:
 #   powershell -ExecutionPolicy Bypass -File scripts/ci-gate.ps1          # 全部门禁

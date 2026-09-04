@@ -236,7 +236,7 @@ async function loadHealth() {
     health.uptime_secs = res?.uptime_secs || 0
   } catch (e) {
     health.status = 'DOWN'
-    console.warn('[接口管理] 健康检查加载失败:', e?.message)
+    ElMessage.error('健康检查加载失败: ' + (e?.message || e))
   }
 }
 
@@ -247,7 +247,7 @@ async function loadMetrics() {
     metrics.latency_avg_ms = m.latency_avg_ms ?? null
     metrics.requests_total = m.requests_total ?? 0
   } catch (e) {
-    console.warn('[接口管理] 指标加载失败:', e?.message)
+    ElMessage.error('指标加载失败: ' + (e?.message || e))
   }
 }
 

@@ -109,47 +109,25 @@
     </div>
 
     <!-- 角色表单对话框 -->
-    <el-dialog v-model="roleFormVisible" :title="roleForm.id ? '编辑角色' : '新增角色'" width="520px" destroy-on-close>
-      <el-form ref="roleFormRef" :model="roleForm" :rules="roleFormRules" label-width="100px">
-        <el-form-item label="角色名称" prop="name">
-          <el-input v-model="roleForm.name" placeholder="请输入角色名称" maxlength="64" show-word-limit />
-        </el-form-item>
-        <el-form-item label="角色编码" prop="code">
-          <el-input v-model="roleForm.code" placeholder="请输入角色编码" maxlength="32" show-word-limit :disabled="roleForm.builtin" />
-        </el-form-item>
-        <el-form-item label="角色类型">
+    <FormDialog
+      v-model:visible="roleFormVisible"
+      :title="roleForm.id ? '编辑角色' : '新增角色'"
+      :form-schema="roleFormSchema"
+      :edit-data="roleFormEditData"
+      :submitting="roleFormSubmitting"
+      width="520px"
+      label-width="100px"
+      @submit="submitRoleForm"
+    >
+      <template #field-builtinInfo>
+        <div class="builtin-info-row">
           <el-tag :type="roleForm.builtin ? '' : 'success'" size="small">
             {{ roleForm.builtin ? '内置角色' : '自定义角色' }}
           </el-tag>
           <span class="form-tip">内置角色不可删除，编码不可修改</span>
-        </el-form-item>
-        <el-form-item label="数据权限" prop="dataScope">
-          <el-select v-model="roleForm.dataScope" placeholder="请选择数据权限" style="width: 100%">
-            <el-option label="全部数据" value="all" />
-            <el-option label="本部门数据" value="dept" />
-            <el-option label="本部门及以下" value="deptAndChild" />
-            <el-option label="仅本人数据" value="self" />
-            <el-option label="自定义数据权限" value="custom" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="排序号" prop="sort">
-          <el-input-number v-model="roleForm.sort" :min="0" :max="999" style="width: 120px" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="roleForm.status">
-            <el-radio :value="1">启用</el-radio>
-            <el-radio :value="0">停用</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="roleForm.remark" type="textarea" :rows="3" maxlength="255" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="roleFormVisible = false">取消</el-button>
-        <el-button type="primary" :loading="roleFormSubmitting" @click="submitRoleForm">确定</el-button>
+        </div>
       </template>
-    </el-dialog>
+    </FormDialog>
 
     <!-- 分配菜单权限弹窗 -->
     <el-dialog v-model="menuPermVisible" title="分配菜单权限" width="900px" destroy-on-close class="menu-perm-dialog">
@@ -379,7 +357,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search, Plus, Refresh, Delete, Edit, ArrowDown, ArrowUp,
@@ -392,6 +370,7 @@ import {
   getRoleUsers, copyRole,
   getMenuTree, getDeptTree
 } from '@/api'
+import FormDialog from '@/components/common/FormDialog.vue'
 
 // ===== 数据权限标签 =====
 const DATA_SCOPE_MAP = {
@@ -435,7 +414,7 @@ async function loadList() {
     tableData.value = data?.list || data?.records || (Array.isArray(data) ? data : [])
     total.value = data?.total ?? tableData.value.length
   } catch (e) {
-    console.warn('[AdminRole] 加载角色列表失败:', e.message)
+    ElMessage.error('加载角色列表失败: ' + (e?.message || e))
   } finally {
     loading.value = false
   }
@@ -455,7 +434,6 @@ function handleReset() {
 
 // ===== 角色表单 =====
 const roleFormVisible = ref(false)
-const roleFormRef = ref(null)
 const roleFormSubmitting = ref(false)
 const roleForm = reactive({
   id: null,
@@ -468,11 +446,29 @@ const roleForm = reactive({
   remark: ''
 })
 
-const roleFormRules = {
-  name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
-  code: [{ required: true, message: '请输入角色编码', trigger: 'blur' }],
-  dataScope: [{ required: true, message: '请选择数据权限', trigger: 'change' }]
-}
+const roleFormEditData = ref(null)
+
+const roleFormSchema = [
+  { prop: 'name', label: '角色名称', type: 'input', maxlength: 64, showWordLimit: true,
+    rules: [{ required: true, message: '请输入角色名称', trigger: 'blur' }] },
+  { prop: 'code', label: '角色编码', type: 'input', maxlength: 32, showWordLimit: true,
+    disabled: (fd) => fd.builtin,
+    rules: [{ required: true, message: '请输入角色编码', trigger: 'blur' }] },
+  { prop: 'builtinInfo', label: '角色类型', type: 'slot' },
+  { prop: 'dataScope', label: '数据权限', type: 'select',
+    options: [
+      { label: '全部数据', value: 'all' },
+      { label: '本部门数据', value: 'dept' },
+      { label: '本部门及以下', value: 'deptAndChild' },
+      { label: '仅本人数据', value: 'self' },
+      { label: '自定义数据权限', value: 'custom' }
+    ],
+    rules: [{ required: true, message: '请选择数据权限', trigger: 'change' }] },
+  { prop: 'sort', label: '排序号', type: 'number', min: 0, max: 999, defaultValue: 0 },
+  { prop: 'status', label: '状态', type: 'radio', defaultValue: 1,
+    options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }] },
+  { prop: 'remark', label: '备注', type: 'textarea', rows: 3, maxlength: 255, showWordLimit: true }
+]
 
 function openRoleForm(row = null) {
   if (row) {
@@ -486,28 +482,24 @@ function openRoleForm(row = null) {
       status: row.status ?? 1,
       remark: row.remark || ''
     })
+    roleFormEditData.value = { ...roleForm }
   } else {
     Object.assign(roleForm, {
       id: null, name: '', code: '', builtin: false,
       dataScope: 'dept', sort: 0, status: 1, remark: ''
     })
+    roleFormEditData.value = null
   }
   roleFormVisible.value = true
-  nextTick(() => {
-    roleFormRef.value?.clearValidate()
-  })
 }
 
-async function submitRoleForm() {
-  try {
-    await roleFormRef.value.validate()
-  } catch { return }
-
+async function submitRoleForm(formData) {
   roleFormSubmitting.value = true
   try {
-    const payload = { ...roleForm }
-    if (roleForm.id) {
-      await updateRole(roleForm.id, payload)
+    const payload = { ...formData }
+    delete payload.builtinInfo
+    if (formData.id) {
+      await updateRole(formData.id, payload)
       ElMessage.success('角色更新成功')
     } else {
       await createRole(payload)
@@ -516,7 +508,7 @@ async function submitRoleForm() {
     roleFormVisible.value = false
     await loadList()
   } catch (e) {
-    ElMessage.error((roleForm.id ? '更新' : '创建') + '失败：' + e.message)
+    ElMessage.error((formData.id ? '更新' : '创建') + '失败：' + e.message)
   } finally {
     roleFormSubmitting.value = false
   }
@@ -579,7 +571,7 @@ async function loadRoleUsers() {
     roleUserList.value = data?.list || data?.records || (Array.isArray(data) ? data : [])
     roleUserTotal.value = data?.total ?? roleUserList.value.length
   } catch (e) {
-    console.warn('[AdminRole] 加载角色用户失败:', e.message)
+    ElMessage.error('加载角色用户失败: ' + (e?.message || e))
   } finally {
     roleUserLoading.value = false
   }
@@ -649,7 +641,7 @@ async function openMenuPermDialog(row) {
     const data = await getMenuTree()
     menuTree.value = Array.isArray(data) ? data : (Array.isArray(data?.list) ? data.list : [])
   } catch (e) {
-    console.warn('[AdminRole] 菜单树加载失败:', e.message)
+    ElMessage.error('菜单树加载失败: ' + (e?.message || e))
   }
 
   // 默认展开第一级
@@ -660,7 +652,7 @@ async function openMenuPermDialog(row) {
     const perms = await getRoleMenuPerms(row.id)
     defaultMenuKeys.value = perms?.menuIds || perms?.checkedKeys || []
   } catch (e) {
-    console.warn('[AdminRole] 菜单权限加载失败:', e.message)
+    ElMessage.error('菜单权限加载失败: ' + (e?.message || e))
   }
 }
 
@@ -786,7 +778,7 @@ async function loadDeptTree() {
     const data = await getDeptTree()
     deptTree.value = Array.isArray(data) ? data : []
   } catch (e) {
-    console.warn('[AdminRole] 部门树加载失败:', e.message)
+    ElMessage.error('部门树加载失败: ' + (e?.message || e))
   }
   deptDefaultExpanded.value = deptTree.value.map(d => d.id)
 }
@@ -801,7 +793,7 @@ async function openDataPermDialog(row) {
     dataScopeForm.value = perms?.dataScope || row.dataScope || 'dept'
     customDeptCheckedKeys.value = perms?.deptIds || []
   } catch (e) {
-    console.warn('[AdminRole] 数据权限加载失败:', e.message)
+    ElMessage.error('数据权限加载失败: ' + (e?.message || e))
   }
 
   dataPermVisible.value = true
@@ -892,6 +884,12 @@ onMounted(() => {
   font-size: 12px;
   color: var(--text-quaternary);
   margin-left: 8px;
+}
+
+.builtin-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* 菜单权限弹窗 */

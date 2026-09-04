@@ -61,7 +61,7 @@ export const SUB_MODULES = {
   ],
   graph: [
     { key: 'explorer', label: '图谱探索', path: '/graph' },
-    { key: 'fusion', label: '全维融合', path: '/mox-fusion' },
+    { key: 'fusion', label: 'mox 模块化系统架构融合', path: '/mox-fusion' },
     { key: 'flow-graph', label: '流程图谱', path: '/flow-graph' }
   ],
   operators: [
@@ -124,7 +124,7 @@ export const HIDDEN_MODULES = [
 // ===== 5 阶段流程（与 PhasePipeline 对齐 · 按项目开发流程）=====
 export const PROJECT_PHASES = [
   { key: 'requirement', label: '需求阶段', desc: 'AI 对话 · 需求编译 · 知识库', color: '#6366f1', group: 's1-require' },
-  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟 · 全维融合', color: '#06b6d4', group: 's2-arch' },
+  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟 · mox 模块化系统架构融合', color: '#06b6d4', group: 's2-arch' },
   { key: 'develop', label: '开发阶段', desc: '算子 · 工作流 · 插件 · 自动化', color: '#10b981', group: 's3-dev' },
   { key: 'release', label: '发布阶段', desc: '监控 · 文档 · 系统管理', color: '#f59e0b', group: 's4-release' }
 ]

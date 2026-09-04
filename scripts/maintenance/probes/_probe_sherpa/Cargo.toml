@@ -1,0 +1,10 @@
+﻿[package]
+name = "probe_sherpa"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sherpa-onnx = "1.12"
+
+[workspace]
+

@@ -1,4 +1,4 @@
-# KG驱动的动态SQL配置平台 · 全维架构设计
+# KG驱动的动态SQL配置平台 · mox 模块化系统架构设计
 
 > **版本**: v1.0  
 > **日期**: 2026-08-27  
@@ -19,7 +19,7 @@
 7. [核心数据结构设计](#7-核心数据结构设计)
 8. [与MOX现有架构集成](#8-与mox现有架构集成)
 9. [关键技术选型](#9-关键技术选型)
-10. [可行性全维评估](#10-可行性全维评估)
+10. [可行性mox 模块化系统架构评估](#10-可行性mox 模块化系统架构评估)
 11. [实施路线图](#11-实施路线图)
 
 ---
@@ -654,7 +654,7 @@ CREATE TABLE dsql_definition (
     status          VARCHAR(16) DEFAULT 'DRAFT',
     version         INT DEFAULT 1,
     version_hash    CHAR(64),
-    created_by      VARCHAR(64),
+    created_at      VARCHAR(64),
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_entity (entity_code),
@@ -701,7 +701,7 @@ CREATE TABLE dsql_field_policy (
     priority        INT DEFAULT 5,
     status          VARCHAR(16) DEFAULT 'ACTIVE',
     version         INT DEFAULT 1,
-    created_by      VARCHAR(64),
+    created_at      VARCHAR(64),
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_entity (entity_code),
@@ -734,7 +734,7 @@ CREATE TABLE dsql_version_history (
     sql_template TEXT NOT NULL,
     param_defs  JSON NOT NULL,
     change_note TEXT,
-    created_by  VARCHAR(64),
+    created_at  VARCHAR(64),
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_sql_version (sql_code, version)
 );
@@ -845,7 +845,7 @@ CREATE TABLE dsql_permission_approval (
 
 ---
 
-## 10. 可行性全维评估
+## 10. 可行性mox 模块化系统架构评估
 
 ### 10.1 技术可行性：★★★★★
 

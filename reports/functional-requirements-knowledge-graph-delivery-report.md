@@ -111,7 +111,7 @@
 | 域         | feature 数 | 主要状态                                |
 | --------- | --------- | ----------------------------------- |
 | system    | 11        | 网关原生 IAM 全覆盖                        |
-| ai        | 9         | 对话 / 算法已实现，全维分析 / 无穷优化前端\_only      |
+| ai        | 9         | 对话 / 算法已实现，mox 模块化系统架构分析 / 无穷优化前端\_only      |
 | expert    | 7         | **全域前端\_only**，50+ 函数无后端            |
 | platform  | 6         | 网关 / 子服务 / KGv1/AIEngine 已实现        |
 | workflow  | 6         | 流程图 / 插件 / MCP / 浏览器已实现，自动化 partial |
@@ -168,7 +168,7 @@
 | `gap_tasks_api`              | 后端缺失 /api/tasks/\*，9 个函数无后端                       | project  |
 | `gap_kb_api`                 | 后端缺失 /api/kb/\*，21 个函数无后端                         | kb       |
 | `gap_llm_api`                | 后端缺失 /api/llm/\*，17 个函数无后端，仅有旧 /api/ai/llm/config | llm      |
-| `gap_full_analysis_api`      | 全维分析 6 个函数无后端                                     | ai       |
+| `gap_full_analysis_api`      | mox 模块化系统架构分析 6 个函数无后端                                     | ai       |
 | `gap_alliance_experts_proxy` | alliance.js 直接 fetch /experts/\*，Vite 未配置代理       | alliance |
 | `gap_frontend_mock_data`     | Dashboard/ExpertWorkspaceView 仍有硬编码假数据            | frontend |
 

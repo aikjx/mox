@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 from typing import List, Optional, Tuple
 
 from .score_sheet import ScoreSheet, RenderNote
@@ -421,6 +422,16 @@ def _rest_fill_tokens(beats: float) -> List[str]:
 # 多线程并发渲染（GUI SheetWorker 与 API 导出同时触发）必须串行化。
 _JIANPU_LOCK = threading.Lock()
 
+# LilyPond 是外部原生程序。Windows 上偶发会在启动/字体初始化阶段直接
+# 返回 NTSTATUS，而不留下任何 stderr（例如 0xC0000005 = access violation）。
+# 这类失败与 .ly 语法错误不同，重启一次进程通常即可恢复；只对已知原生
+# 崩溃码做有限重试，避免掩盖真正的输入/命令错误。
+_LILYPOND_NATIVE_CRASH_CODES = {
+    0xC0000005,  # STATUS_ACCESS_VIOLATION
+    0xC000001D,  # STATUS_ILLEGAL_INSTRUCTION
+    0xC0000409,  # STATUS_STACK_BUFFER_OVERRUN
+}
+
 
 def _inject_lilypond_tweaks(ly_path: str, sheet: ScoreSheet) -> None:
     """向 jianpu-ly 生成的 .ly 文件注入排版调优 + 标题元数据。
@@ -570,6 +581,68 @@ def _run_jianpu_ly(txt_path: str, ly_path: str) -> str:
     return captured.getvalue()
 
 
+def _run_lilypond(cmd: List[str], tmp: str, out_base: str,
+                   output_ext: str, env: dict):
+    """执行 LilyPond，并对 Windows 原生崩溃做一次有限重试。
+
+    LilyPond 的语法错误会有正常的非零退出码和诊断文本，不应盲目重试；
+    但某些 Windows 安装在首次字体/原生 DLL 初始化时会返回 unsigned
+    NTSTATUS（Python 显示为 3221225477 等）且 stdout/stderr 均为空。对
+    这种明确的原生崩溃重启进程最多两次，避免一次瞬时崩溃阻断整次打包。
+
+    返回 ``(returncode, produced_path, diagnostics)``。
+    """
+    attempts = 3
+    diagnostics = []
+    for attempt in range(1, attempts + 1):
+        # 失败后的重试不能复用上一次可能留下的半成品，否则会把旧 PNG
+        # 误认为本次成功产物。
+        for name in os.listdir(tmp):
+            if name.startswith("out."):
+                try:
+                    os.remove(os.path.join(tmp, name))
+                except OSError:
+                    pass
+
+        try:
+            proc = subprocess.run(
+                cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, encoding="utf-8", errors="replace",
+                env=env,
+            )
+        except FileNotFoundError:
+            raise
+
+        produced = os.path.join(tmp, "out." + output_ext)
+        if not os.path.exists(produced):
+            for name in os.listdir(tmp):
+                if name.startswith("out.") and name.endswith(output_ext):
+                    produced = os.path.join(tmp, name)
+                    break
+
+        if proc.returncode == 0 and os.path.exists(produced):
+            return proc.returncode, produced, diagnostics
+
+        stdout = (proc.stdout or "").strip()
+        stderr = (proc.stderr or "").strip()
+        native_crash = (
+            os.name == "nt"
+            and proc.returncode in _LILYPOND_NATIVE_CRASH_CODES
+            and not stdout and not stderr
+        )
+        diagnostics.append(
+            "attempt %d rc=%s stderr=%s stdout=%s"
+            % (attempt, proc.returncode, stderr[:1000], stdout[:500])
+        )
+        if not native_crash or attempt >= attempts:
+            return proc.returncode, None, diagnostics
+        # 给 Windows 回收上一个原生进程及其临时 DLL/字体句柄一个短暂窗口。
+        time.sleep(0.25)
+
+    # 理论上循环总会 return；保留防御性返回，避免静态分析误报。
+    return -1, None, diagnostics
+
+
 def render_score_sheet(
     sheet: ScoreSheet,
     output_path: str,
@@ -683,32 +756,27 @@ def _render_score_sheet_inner(
                    if p and os.path.normcase(os.path.abspath(p)) not in dist_dirs]
         sub_env["PATH"] = os.pathsep.join(cleaned)
         try:
-            rc = subprocess.run(cmd, stdin=subprocess.DEVNULL,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                encoding="utf-8", errors="replace",
-                                env=sub_env)
+            rc, produced, lilypond_diagnostics = _run_lilypond(
+                cmd, tmp, out_base, ext, sub_env)
         except FileNotFoundError:
             raise RuntimeError(f"LilyPond 可执行文件不存在：{lilypond}")
-        produced = f"{out_base}.{ext}"
-        if not os.path.exists(produced):
-            # eps 后端产出的文件名回退查找（兼容不同后缀）
-            for f in os.listdir(tmp):
-                if f.startswith("out.") and f.endswith(ext):
-                    produced = os.path.join(tmp, f)
-                    break
-        if rc.returncode != 0 or not os.path.exists(produced):
+        if rc != 0 or not produced:
             # 全量诊断信息（企业级可观测性：rc/stdout/stderr/产物清单/预处理警告）
             # stderr 截取 1000 字符，足够定位 LilyPond 语法错误位置
+            detail = "\n".join(lilypond_diagnostics) or "(无)"
+            native_crash = (
+                os.name == "nt" and rc in _LILYPOND_NATIVE_CRASH_CODES
+                and all("stderr=" in d and "stderr= stdout=" in d
+                        for d in lilypond_diagnostics)
+            )
             raise RuntimeError(
-                "LilyPond 渲染失败 rc=%s：\n"
-                "--- stderr ---\n%s\n"
-                "--- stdout ---\n%s\n"
+                "LilyPond %s rc=%s：\n"
+                "--- 运行诊断 ---\n%s\n"
                 "--- 临时文件 ---\n%s\n"
                 "--- jianpu-ly 警告 ---\n%s"
-                % (rc.returncode,
-                   (rc.stderr or "").strip()[:1000],
-                   (rc.stdout or "").strip()[:500],
+                % ("原生进程崩溃（非 Python excludes 问题）"
+                   if native_crash else "渲染失败",
+                   rc, detail,
                    os.listdir(tmp),
                    jianpu_warnings[:300] if jianpu_warnings else "(无)"))
 

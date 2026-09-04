@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
+use crate::actuator::{LogStore, RuntimeMetrics};
 
 // =====================================================================
 // 告警规则 JSON 持久化
@@ -34,10 +35,14 @@ fn load_alert_rules() -> Vec<AlertRule> {
 
 fn save_alert_rules(rules: &[AlertRule]) {
     if let Some(parent) = std::path::Path::new(ALERT_RULES_PATH).parent() {
-        let _ = std::fs::create_dir_all(parent);
+        if let Err(e) = std::fs::create_dir_all(parent) {
+            eprintln!("[monitor] 创建目录失败 {}: {}", parent.display(), e);
+        }
     }
     if let Ok(json_str) = serde_json::to_string_pretty(rules) {
-        let _ = std::fs::write(ALERT_RULES_PATH, json_str);
+        if let Err(e) = std::fs::write(ALERT_RULES_PATH, json_str) {
+            eprintln!("[monitor] 告警规则持久化失败 {}: {}", ALERT_RULES_PATH, e);
+        }
     }
 }
 
@@ -61,11 +66,19 @@ struct AlertRule {
 #[derive(Clone)]
 struct MonitorState {
     alert_rules: Arc<Mutex<Vec<AlertRule>>>,
+    /// 运行时指标（来自 GatewayState.actuator.RuntimeMetrics，真实 HTTP 请求统计）
+    runtime: Arc<RuntimeMetrics>,
+    /// 在线日志缓冲（来自 GatewayState.actuator.LogStore，真实进程内日志）
+    logs: Arc<LogStore>,
 }
 
 impl MonitorState {
-    fn new() -> Self {
-        Self { alert_rules: Arc::new(Mutex::new(load_alert_rules())) }
+    fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>) -> Self {
+        Self {
+            alert_rules: Arc::new(Mutex::new(load_alert_rules())),
+            runtime,
+            logs,
+        }
     }
 }
 
@@ -80,9 +93,25 @@ fn ok(data: Value) -> ApiResponse<Value> {
 // =====================================================================
 // 1. GET /actuator/metrics/detail & /monitor/metrics/detail — 详细指标聚合
 // =====================================================================
-async fn metrics_detail() -> ApiResponse<Value> {
+async fn metrics_detail(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
+    // 真实数据：从 actuator RuntimeMetrics 获取 HTTP 请求统计
+    let m = s.runtime.snapshot();
+    let total = m["requests_total"].as_u64().unwrap_or(0);
+    let ok_count = m["requests_2xx"].as_u64().unwrap_or(0);
+    let client_err = m["requests_4xx"].as_u64().unwrap_or(0);
+    let server_err = m["requests_5xx"].as_u64().unwrap_or(0);
+    let active = m["active_requests"].as_i64().unwrap_or(0);
+    let avg_latency = m["latency_avg_ms"].as_f64().unwrap_or(0.0);
+    let error_count = client_err + server_err;
+    let error_rate = if total > 0 { error_count as f64 / total as f64 } else { 0.0 };
+    let success_rate = if total > 0 { ok_count as f64 / total as f64 } else { 0.0 };
+    // 估算 QPS（基于存活时长）
+    let uptime = m["uptime_secs"].as_u64().unwrap_or(1).max(1);
+    let per_minute = (total as f64 / uptime as f64 * 60.0).round() as u64;
+
     ok(json!({
         "cpu": {
+            // 待接入: OS 级 CPU 采集（sysinfo / procfs）；RuntimeMetrics 仅覆盖 HTTP 层
             "usage_percent": 0.0,
             "cores": 0,
             "load_avg_1m": 0.0,
@@ -90,12 +119,14 @@ async fn metrics_detail() -> ApiResponse<Value> {
             "load_avg_15m": 0.0,
         },
         "memory": {
+            // 待接入: OS 级内存采集；当前无进程内存统计源
             "total_mb": 0,
             "used_mb": 0,
             "free_mb": 0,
             "usage_percent": 0.0,
         },
         "gc": {
+            // 待接入: Rust 无 GC，此字段为 JVM 对标保留；可后续接入 jemalloc 统计
             "young_gc_count": 0,
             "young_gc_time_ms": 0,
             "full_gc_count": 0,
@@ -104,23 +135,26 @@ async fn metrics_detail() -> ApiResponse<Value> {
             "heap_max_mb": 0,
         },
         "threads": {
-            "active": 0,
+            // 待接入: tokio runtime 线程统计（tokio::runtime::RuntimeMetrics）
+            "active": active,
             "daemon": 0,
             "peak": 0,
             "deadlocked": 0,
         },
         "requests": {
-            "total": 0,
-            "per_minute": 0,
-            "success_rate": 0.0,
-            "error_rate": 0.0,
+            // 真实数据：来自 RuntimeMetrics
+            "total": total,
+            "per_minute": per_minute,
+            "success_rate": (success_rate * 1000.0).round() / 1000.0,
+            "error_rate": (error_rate * 1000.0).round() / 1000.0,
         },
         "latency": {
+            // 真实数据：avg 来自 RuntimeMetrics；p50/p90/p95/p99 待接入直方图统计
             "p50_ms": 0.0,
             "p90_ms": 0.0,
             "p95_ms": 0.0,
             "p99_ms": 0.0,
-            "avg_ms": 0.0,
+            "avg_ms": avg_latency,
         },
         "ts": now_iso(),
     }))
@@ -129,24 +163,40 @@ async fn metrics_detail() -> ApiResponse<Value> {
 // =====================================================================
 // 2. GET /monitor/quality — 服务质量指标
 // =====================================================================
-async fn quality() -> ApiResponse<Value> {
+async fn quality(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
+    // 真实数据：从 actuator RuntimeMetrics 计算服务质量
+    let m = s.runtime.snapshot();
+    let total = m["requests_total"].as_u64().unwrap_or(0);
+    let ok_count = m["requests_2xx"].as_u64().unwrap_or(0);
+    let client_err = m["requests_4xx"].as_u64().unwrap_or(0);
+    let server_err = m["requests_5xx"].as_u64().unwrap_or(0);
+    let avg_latency = m["latency_avg_ms"].as_f64().unwrap_or(0.0);
+    let error_count = client_err + server_err;
+    let error_rate = if total > 0 { error_count as f64 / total as f64 } else { 0.0 };
+    let availability = if total > 0 { ok_count as f64 / total as f64 } else { 1.0 };
+    let sla_status = if error_rate <= 0.01 { "healthy" } else if error_rate <= 0.05 { "warning" } else { "critical" };
+
     ok(json!({
         "sla": {
-            "target": 0.0,
-            "actual": 0.0,
-            "status": "unknown",
+            // 真实数据：基于错误率评估 SLA 状态
+            "target": 0.999,
+            "actual": availability,
+            "status": sla_status,
         },
         "availability": {
-            "uptime_percent": 0.0,
+            // 真实数据：2xx 请求占比
+            "uptime_percent": availability,
             "downtime_minutes_30d": 0,
             "last_incident": null,
         },
         "error_rate": {
-            "current": 0.0,
-            "threshold": 0.0,
-            "trend": "unknown",
+            // 真实数据：(4xx+5xx)/total
+            "current": (error_rate * 1000.0).round() / 1000.0,
+            "threshold": 0.01,
+            "trend": if error_rate <= 0.01 { "stable" } else { "elevated" },
         },
-        "avg_response_time_ms": 0.0,
+        // 真实数据：avg 来自 RuntimeMetrics；p99 待接入直方图
+        "avg_response_time_ms": avg_latency,
         "p99_response_time_ms": 0.0,
         "apdex": 0.0,
         "ts": now_iso(),
@@ -217,12 +267,34 @@ async fn alerts_summary() -> ApiResponse<Value> {
 // =====================================================================
 // 5. GET /monitor/nodes — 服务节点状态列表
 // =====================================================================
-async fn nodes() -> ApiResponse<Value> {
+async fn nodes(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
+    // 真实数据：网关自身节点（来自 RuntimeMetrics + LogStore）
+    // 待接入: 服务发现 / 注册中心（Consul / Nacos / etcd）以获取下游服务节点列表
+    let m = s.runtime.snapshot();
+    let total = m["requests_total"].as_u64().unwrap_or(0);
+    let server_err = m["requests_5xx"].as_u64().unwrap_or(0);
+    let avg_latency = m["latency_avg_ms"].as_f64().unwrap_or(0.0);
+    let health = if total == 0 { "healthy" } else if server_err as f64 / total as f64 <= 0.01 { "healthy" } else { "degraded" };
+
+    let gateway_node = json!({
+        "name": "mox-gateway",
+        "type": "gateway",
+        "status": "up",
+        "health": health,
+        "version": env!("CARGO_PKG_VERSION"),
+        "address": "local",
+        "requests_total": total,
+        "avg_latency_ms": avg_latency,
+        "5xx_errors": server_err,
+        "logs_buffered": s.logs.len(),
+        "uptime_secs": m["uptime_secs"],
+    });
+
     ok(json!({
-        "nodes": [],
-        "total": 0,
-        "healthy": 0,
-        "degraded": 0,
+        "nodes": [gateway_node],
+        "total": 1,
+        "healthy": if health == "healthy" { 1 } else { 0 },
+        "degraded": if health == "degraded" { 1 } else { 0 },
         "unhealthy": 0,
         "ts": now_iso(),
     }))
@@ -238,13 +310,20 @@ struct NodeLogsQuery {
     level: Option<String>,
 }
 
-async fn node_logs(Path(name): Path<String>, Query(q): Query<NodeLogsQuery>) -> ApiResponse<Value> {
-    let _limit = q.limit.unwrap_or(100);
-    let _level = q.level;
-    // 待接入真实日志源（如 log 文件 / tracing 订阅 / actuator LogStore）；
-    // 无真实数据源时返回空数组，禁止硬编码示例日志。
-    let _ = name;
-    ok(json!([]))
+async fn node_logs(
+    Path(name): Path<String>,
+    Query(q): Query<NodeLogsQuery>,
+    State(s): State<Arc<MonitorState>>,
+) -> ApiResponse<Value> {
+    let limit = q.limit.unwrap_or(100).clamp(1, 500);
+    // 真实数据：从 actuator LogStore 查询包含节点名的日志（target/message 匹配）
+    let (total, entries) = s.logs.query(q.level.as_deref(), Some(&name), limit, 0);
+    ok(json!({
+        "node": name,
+        "total": total,
+        "returned": entries.len(),
+        "logs": entries,
+    }))
 }
 
 // =====================================================================
@@ -257,11 +336,15 @@ struct NodeTraceQuery {
     limit: Option<usize>,
 }
 
-async fn node_trace(Path(name): Path<String>, Query(q): Query<NodeTraceQuery>) -> ApiResponse<Value> {
+async fn node_trace(
+    Path(name): Path<String>,
+    Query(q): Query<NodeTraceQuery>,
+    State(_s): State<Arc<MonitorState>>,
+) -> ApiResponse<Value> {
     let _limit = q.limit.unwrap_or(50);
     let _trace_id = q.trace_id;
-    // 待接入真实链路追踪源（如 OpenTelemetry / Jaeger）；
-    // 无真实数据源时返回空数组，禁止硬编码示例 trace。
+    // 待接入: 真实链路追踪源（OpenTelemetry / Jaeger / tracing-distributed）；
+    // 当前 LogStore 仅存储结构化日志，无 span/trace 上下文。无真实数据源时返回空数组。
     let _ = name;
     ok(json!([]))
 }
@@ -391,10 +474,10 @@ struct TimeseriesQuery {
     step: Option<String>,
 }
 
-async fn timeseries(Query(q): Query<TimeseriesQuery>) -> ApiResponse<Value> {
+async fn timeseries(Query(q): Query<TimeseriesQuery>, State(_s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
     let metric = q.metric.unwrap_or_else(|| "cpu_usage".into());
-    // 待接入真实指标源（如 Prometheus / metrics crate 历史存储）；
-    // 无真实数据源时返回空 points 数组，禁止生成模拟数据点。
+    // 待接入: 真实指标时序存储（Prometheus / metrics crate 历史环形缓冲 / InfluxDB）；
+    // RuntimeMetrics 仅维护当前快照计数，无历史时间序列。无真实数据源时返回空 points 数组。
     let _ = (q.start, q.end, q.step);
     ok(json!({
         "metric": metric,
@@ -414,9 +497,10 @@ struct BusinessTimeseriesQuery {
     step: Option<String>,
 }
 
-async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>) -> ApiResponse<Value> {
+async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>, State(_s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
     let metric = q.metric.unwrap_or_else(|| "task_completions".into());
-    // 待接入真实业务指标源；无数据时返回空 points 数组。
+    // 待接入: 真实业务指标时序源（任务/项目/专家统计的历史聚合存储）；
+    // 当前无业务指标历史存储。无真实数据源时返回空 points 数组。
     let _ = (q.start, q.end, q.step);
     ok(json!({
         "metric": metric,
@@ -428,21 +512,20 @@ async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>) -> ApiRes
 // 路由装配
 // =====================================================================
 
-pub fn build_monitor_router() -> Router {
-    let state = Arc::new(MonitorState::new());
+pub fn build_monitor_router(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>) -> Router {
+    let state = Arc::new(MonitorState::new(runtime, logs));
     Router::new()
-        .route("/actuator/metrics/detail", get(metrics_detail))
-        .route("/monitor/metrics/detail", get(metrics_detail))
-        .route("/monitor/quality", get(quality))
-        .route("/monitor/business", get(business))
-        .route("/monitor/alerts/summary", get(alerts_summary))
-        .route("/monitor/nodes", get(nodes))
-        .route("/monitor/nodes/:name/logs", get(node_logs))
-        .route("/monitor/nodes/:name/trace", get(node_trace))
-        .route("/monitor/alert-rules", get(list_alert_rules).post(create_alert_rule))
-        .route("/monitor/alert-rules/:id", put(update_alert_rule).delete(delete_alert_rule))
-        .route("/monitor/alert-rules/:id/toggle", put(toggle_alert_rule))
-        .route("/monitor/timeseries", get(timeseries))
-        .route("/monitor/business/timeseries", get(business_timeseries))
+        .route("/api/monitor/metrics/detail", get(metrics_detail))
+        .route("/api/monitor/quality", get(quality))
+        .route("/api/monitor/business", get(business))
+        .route("/api/monitor/alerts/summary", get(alerts_summary))
+        .route("/api/monitor/nodes", get(nodes))
+        .route("/api/monitor/nodes/:name/logs", get(node_logs))
+        .route("/api/monitor/nodes/:name/trace", get(node_trace))
+        .route("/api/monitor/alert-rules", get(list_alert_rules).post(create_alert_rule))
+        .route("/api/monitor/alert-rules/:id", put(update_alert_rule).delete(delete_alert_rule))
+        .route("/api/monitor/alert-rules/:id/toggle", put(toggle_alert_rule))
+        .route("/api/monitor/timeseries", get(timeseries))
+        .route("/api/monitor/business/timeseries", get(business_timeseries))
         .with_state(state)
 }

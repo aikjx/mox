@@ -87,7 +87,7 @@ impl LLMClient {
             .build()
             .unwrap_or_default();
 
-        let system_prompt = r#"你是算子统一系统的AI智能助手，集成在v3.0 AI驱动全维突破平台中。
+        let system_prompt = r#"你是算子统一系统的AI智能助手，集成在v3.0 AI驱动mox 模块化系统架构突破平台中。
 
 你的核心能力：
 1. 🧮 算子编排执行 - 帮助用户组合和执行数学/AI算子（线性变换、激活函数、归一化、卷积、注意力等）

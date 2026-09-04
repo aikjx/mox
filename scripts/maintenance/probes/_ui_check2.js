@@ -1,0 +1,730 @@
+
+"use strict";
+/* 诊断上报：JS 错误 / 加载状态 → Rust（写入诊断文件） */
+window.addEventListener("error", (e) => {
+  try { window.ipc.postMessage("err:" + (e.message || "unknown")); } catch (_) {}
+});
+function diag(tag) {
+  try { window.ipc.postMessage("diag:" + tag); } catch (_) {}
+}
+document.addEventListener("DOMContentLoaded", () => diag("dom-ready"));
+/* =====================================================================
+ * 小白 · 璇玑伙伴 —— WebGL2 3D 活体拓扑几何球
+ * 高阶拓扑（noise 变形球体）+ 双色流光（东方国风青金/绛紫）+ 粒子轨道
+ * 5 状态动画：idle/listen/think/speak/executing
+ * ===================================================================== */
+const canvas = document.getElementById("gl");
+const gl = canvas.getContext("webgl2", { alpha: true, antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true });
+if (!gl) {
+  document.getElementById("fallbackBall").classList.add("show");
+  diag("no-webgl");
+  showToast("WebGL2 不可用");
+} else {
+  diag("webgl-ok");
+}
+
+/* ---------------- 状态定义 ---------------- */
+const STATES = {
+  idle:      { label: "待 机",  hex: [0.61,0.64,0.69], accent: [0.00,0.90,1.00], mode: "idle" },
+  listen:    { label: "倾 听",  hex: [0.94,0.27,0.27], accent: [1.00,0.55,0.35], mode: "listen" },
+  think:     { label: "思 考",  hex: [0.23,0.51,0.96], accent: [0.00,0.90,1.00], mode: "think" },
+  speak:     { label: "回 应",  hex: [0.06,0.72,0.51], accent: [0.55,1.00,0.75], mode: "speak" },
+  executing: { label: "执 行",  hex: [0.98,0.45,0.09], accent: [1.00,0.84,0.30], mode: "executing" },
+};
+let cur = STATES.idle;
+let curColor = STATES.idle.hex.slice();
+let curAccent = STATES.idle.accent.slice();
+
+/* ---------------- 球体几何：lat/lng 细分 ---------------- */
+const LATS = 46, LNG = 64;
+const positions = [], uvs = [], indices = [];
+for (let y = 0; y <= LATS; y++) {
+  const v = y / LATS;
+  const phi = v * Math.PI;
+  for (let x = 0; x <= LNG; x++) {
+    const u = x / LNG;
+    const theta = u * Math.PI * 2;
+    const px = Math.sin(phi) * Math.cos(theta);
+    const py = Math.cos(phi);
+    const pz = Math.sin(phi) * Math.sin(theta);
+    positions.push(px, py, pz);
+    uvs.push(u, v);
+  }
+}
+for (let y = 0; y < LATS; y++) {
+  for (let x = 0; x < LNG; x++) {
+    const a = y * (LNG + 1) + x;
+    const b = a + LNG + 1;
+    indices.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+}
+
+/* ---------------- Shaders ---------------- */
+const VS = `#version 300 es
+precision highp float;
+uniform mat4 uProj, uView, uModel;
+uniform float uTime;
+uniform vec3 uColor, uAccent;
+uniform int uMode;
+uniform float uPulse;
+uniform float uBreath;
+in vec3 aPos;
+in vec2 aUv;
+out vec3 vNormal;
+out vec3 vPos;
+out vec2 vUv;
+out vec3 vColor;
+out float vFres;
+
+// --- 3D simplex noise (Ashima) ---
+vec3 mod289(vec3 x){return x - floor(x*(1.0/289.0))*289.0;}
+vec4 mod289(vec4 x){return x - floor(x*(1.0/289.0))*289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+float snoise(vec3 v){
+  const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+  const vec4 D = vec4(0.0,0.5,1.0,2.0);
+  vec3 i  = floor(v + dot(v, C.yyy));
+  vec3 x0 = v - i + dot(i, C.xxx);
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy);
+  vec3 i2 = max(g.xyz, l.zxy);
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+  i = mod289(i);
+  vec4 p = permute(permute(permute(
+            i.z + vec4(0.0, i1.z, i2.z, 1.0))
+          + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+          + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+  float n_ = 0.142857142857;
+  vec3 ns = n_ * D.wyz - D.xzx;
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_);
+  vec4 x = x_ * ns.x + ns.yyyy;
+  vec4 y = y_ * ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+  vec4 b0 = vec4(x.xy, y.xy);
+  vec4 b1 = vec4(x.zw, y.zw);
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+  vec3 p0 = vec3(a0.xy, h.x);
+  vec3 p1 = vec3(a0.zw, h.y);
+  vec3 p2 = vec3(a1.xy, h.z);
+  vec3 p3 = vec3(a1.zw, h.w);
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+}
+
+void main(){
+  vec3 p = aPos;
+  float n = snoise(p * 1.9 + vec3(0.0, uTime*0.22, uTime*0.16));
+  float n2 = snoise(p * 4.2 - vec3(uTime*0.11, 0.0, uTime*0.09));
+  float amp = 0.16 + 0.05*uPulse;
+  float disp = n * amp + n2 * 0.045;
+  if (uMode == 3) {
+    disp += 0.10 * sin(p.z*9.0 + uTime*6.0) * cos(p.y*7.0 + uTime*4.0);
+  }
+  if (uMode == 4) {
+    disp += 0.06 * sin(p.x*12.0 + uTime*10.0) * sin(p.y*12.0 + uTime*8.0);
+  }
+  vec3 dir = normalize(p + 0.001);
+  vec3 np = p + dir * disp * (0.85 + 0.15*uBreath);
+  vec4 world = uModel * vec4(np, 1.0);
+  vPos = world.xyz;
+  float e = 0.004;
+  vec3 p1 = p + dir*e;
+  vec3 n1 = normalize(p1 + 0.001);
+  float d1 = snoise(p1*1.9 + vec3(0.0,uTime*0.22,uTime*0.16))*amp;
+  vec3 p2 = p - dir*e;
+  vec3 n2v = normalize(p2 + 0.001);
+  float d2 = snoise(p2*1.9 + vec3(0.0,uTime*0.22,uTime*0.16))*amp;
+  vNormal = normalize((p + dir*d1) - (p - dir*d2) + vec3(0.0));
+  vNormal = mat3(uModel) * normalize(vNormal);
+  vUv = aUv;
+  float mixf = clamp(0.5 + 0.5*sin(aUv.y*6.283 + uTime*0.3) + n*0.5, 0.0, 1.0);
+  vColor = mix(uColor, uAccent, mixf*0.55);
+  vec3 viewDir = normalize(-vPos);
+  float f = 1.0 - max(dot(normalize(vNormal), viewDir), 0.0);
+  vFres = pow(f, 2.2);
+  gl_Position = uProj * uView * world;
+}`;
+
+const FS = `#version 300 es
+precision highp float;
+in vec3 vNormal;
+in vec3 vPos;
+in vec2 vUv;
+in vec3 vColor;
+in float vFres;
+out vec4 fragColor;
+uniform vec3 uLight;
+uniform float uGlow;
+uniform float uTime;
+uniform int uMode;
+void main(){
+  vec3 N = normalize(vNormal);
+  vec3 L = normalize(uLight);
+  vec3 V = normalize(-vPos);
+  float diff = max(dot(N,L), 0.0);
+  vec3 H = normalize(L+V);
+  float spec = pow(max(dot(N,H),0.0), 64.0) * (0.5 + 0.5*vFres);
+  vec3 col = vColor * (0.28 + 0.72*diff) + vec3(1.0)*spec*0.85;
+  col += vColor * vFres * 0.8;
+  col += vec3(1.0,0.85,0.4) * uGlow * 0.18;
+  float a = 0.92;
+  fragColor = vec4(col, a);
+}`;
+
+/* ---------------- 编译管线 ---------------- */
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(s)); throw new Error("shader");
+  }
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error("link");
+gl.useProgram(prog);
+
+function unif(name) { return gl.getUniformLocation(prog, name); }
+const U = {
+  proj: unif("uProj"), view: unif("uView"), model: unif("uModel"),
+  time: unif("uTime"), color: unif("uColor"), accent: unif("uAccent"),
+  mode: unif("uMode"), pulse: unif("uPulse"), breath: unif("uBreath"),
+  light: unif("uLight"), glow: unif("uGlow"),
+};
+
+const vao = gl.createVertexArray();
+gl.bindVertexArray(vao);
+const vbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, "aPos");
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
+const uvbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, uvbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
+const aUv = gl.getAttribLocation(prog, "aUv");
+gl.enableVertexAttribArray(aUv);
+gl.vertexAttribPointer(aUv, 2, gl.FLOAT, false, 0, 0);
+const ibo = gl.createBuffer();
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
+
+/* ---------------- 粒子轨道 ---------------- */
+const P_COUNT = 140;
+const pPos = [], pStart = [];
+for (let i = 0; i < P_COUNT; i++) {
+  pPos.push(0,0,0);
+  pStart.push(Math.random() * Math.PI * 2);
+}
+const P_VS = `#version 300 es
+precision highp float;
+uniform mat4 uProj, uView;
+uniform float uTime;
+uniform vec3 uAccent;
+uniform int uMode;
+in vec3 aPos;
+in float aStart;
+out vec3 vCol;
+void main(){
+  float t = uTime * (uMode==2 ? 0.55 : 0.32) + aStart;
+  float r1 = 1.32 + 0.08*sin(t*1.7);
+  float r2 = 1.62 + 0.10*cos(t*1.3);
+  vec3 p;
+  if (aStart < 2.0944) {
+    float a = t;
+    p = vec3(cos(a)*r1, sin(a)*0.35, sin(a*0.5)*r1*0.9 + 0.3);
+  } else if (aStart < 4.1888) {
+    float a = t*1.3 + 2.1;
+    p = vec3(cos(a)*0.5, sin(a)*r2, cos(a*0.7)*r2*0.8 - 0.25);
+  } else {
+    float a = t*0.9 + 4.0;
+    p = vec3(sin(a)*r1*0.85, cos(a*1.2)*r1*0.5, cos(a)*r1);
+  }
+  gl_Position = uProj * uView * vec4(p, 1.0);
+  gl_PointSize = (aStart < 2.0944 ? 2.6 : 2.0) * (uMode==3 ? 3.2 : 1.0);
+  vCol = mix(uAccent, vec3(1.0,0.85,0.4), 0.5 + 0.5*sin(aStart*3.0 + uTime));
+}`;
+const P_FS = `#version 300 es
+precision highp float;
+in vec3 vCol;
+out vec4 fragColor;
+void main(){ fragColor = vec4(vCol, 0.95); }`;
+const pprog = gl.createProgram();
+gl.attachShader(pprog, compile(gl.VERTEX_SHADER, P_VS));
+gl.attachShader(pprog, compile(gl.FRAGMENT_SHADER, P_FS));
+gl.linkProgram(pprog);
+const PU = {
+  proj: gl.getUniformLocation(pprog, "uProj"),
+  view: gl.getUniformLocation(pprog, "uView"),
+  time: gl.getUniformLocation(pprog, "uTime"),
+  accent: gl.getUniformLocation(pprog, "uAccent"),
+  mode: gl.getUniformLocation(pprog, "uMode"),
+};
+const pvao = gl.createVertexArray();
+gl.bindVertexArray(pvao);
+const pvbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, pvbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pPos), gl.STATIC_DRAW);
+const ap = gl.getAttribLocation(pprog, "aPos");
+gl.enableVertexAttribArray(ap); gl.vertexAttribPointer(ap, 3, gl.FLOAT, false, 0, 0);
+const psbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, psbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pStart), gl.STATIC_DRAW);
+const asp = gl.getAttribLocation(pprog, "aStart");
+gl.enableVertexAttribArray(asp); gl.vertexAttribPointer(asp, 1, gl.FLOAT, false, 0, 0);
+
+/* ---------------- 渲染循环 ---------------- */
+let W = 1, H = 1, DPR = 1, panelOpen = false;
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = canvas.clientWidth || 1; H = canvas.clientHeight || 1;
+  canvas.width = Math.max(1, Math.round(W * DPR));
+  canvas.height = Math.max(1, Math.round(H * DPR));
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+window.addEventListener("resize", resize);
+
+let stateStart = performance.now();
+function setState(name) {
+  const s = STATES[name] || STATES.idle;
+  cur = s;
+  stateStart = performance.now();
+  document.getElementById("stateLabel").textContent = s.label;
+  const dot = document.getElementById("stateDot");
+  dot.className = "dot" + (name === "idle" ? "" : " " + name);
+  document.getElementById("stateMini").textContent = s.label;
+}
+window.__setState = function (n) {
+  const map = ["idle", "listen", "think", "speak", "executing"];
+  setState(map[n] || "idle");
+};
+
+let pulse = 0, breath = 0, glow = 0;
+const M = new Float32Array(16), V = new Float32Array(16), P = new Float32Array(16);
+function matIdentity(o){ o.fill(0); o[0]=o[5]=o[10]=o[15]=1; }
+function matMul(o,a,b){
+  for(let c=0;c<4;c++)for(let r=0;r<4;r++){ let s=0; for(let k=0;k<4;k++) s+=a[k*4+r]*b[c*4+k]; o[c*4+r]=s; }
+}
+function render(now) {
+  const t = now / 1000;
+  resize();
+  gl.clearColor(0,0,0,0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  const since = (now - stateStart) / 1000;
+  let targetPulse = 0, targetBreath = 0, targetGlow = 0, spin = 0.5;
+  if (cur.mode === "listen") { targetPulse = 1.0; targetGlow = 0.5; spin = 1.1; }
+  if (cur.mode === "think")  { targetPulse = 0.4; targetGlow = 0.6; spin = 0.9; }
+  if (cur.mode === "speak")  { targetPulse = 0.9; targetGlow = 0.5; spin = 0.7; }
+  if (cur.mode === "executing") { targetPulse = 0.7; targetGlow = 0.9; spin = 1.6; }
+  if (cur.mode === "idle")   { targetBreath = 1.0; targetGlow = 0.3; }
+  pulse += (targetPulse - pulse) * 0.06;
+  breath += (targetBreath - breath) * 0.04;
+  glow += (targetGlow - glow) * 0.05;
+  for (let i = 0; i < 3; i++) curColor[i] += (cur.hex[i]-curColor[i])*0.05;
+  for (let i = 0; i < 3; i++) curAccent[i] += (cur.accent[i]-curAccent[i])*0.05;
+
+  const camZ = 3.0;
+  matIdentity(V);
+  V[14] = -camZ;
+  const f = 1.6;
+  matIdentity(P); P[5] = f; P[10] = -1.01; P[11] = -0.1;
+  matIdentity(M);
+  M[13] = 0.12;
+  const ca = Math.cos(t*spin), sa = Math.sin(t*spin);
+  const Rx = new Float32Array([1,0,0,0, 0,ca,-sa,0, 0,sa,ca,0, 0,0,0,1]);
+  const cb = Math.cos(t*0.7), sb = Math.sin(t*0.7);
+  const Ry = new Float32Array([cb,0,sb,0, 0,1,0,0, -sb,0,cb,0, 0,0,0,1]);
+  const tmp = new Float32Array(16); matMul(tmp, M, Ry); matMul(M, tmp, Rx);
+
+  gl.useProgram(prog);
+  gl.uniformMatrix4fv(U.proj, false, P);
+  gl.uniformMatrix4fv(U.view, false, V);
+  gl.uniformMatrix4fv(U.model, false, M);
+  gl.uniform1f(U.time, t);
+  gl.uniform3fv(U.color, curColor);
+  gl.uniform3fv(U.accent, curAccent);
+  gl.uniform1i(U.mode, ["idle","listen","think","speak","executing"].indexOf(cur.mode));
+  gl.uniform1f(U.pulse, pulse);
+  gl.uniform1f(U.breath, breath);
+  gl.uniform1f(U.glow, glow);
+  gl.uniform3f(U.light, 0.5, 0.7, 1.0);
+  gl.bindVertexArray(vao);
+  gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
+
+  gl.disable(gl.DEPTH_TEST);
+  gl.useProgram(pprog);
+  gl.uniformMatrix4fv(PU.proj, false, P);
+  gl.uniformMatrix4fv(PU.view, false, V);
+  gl.uniform1f(PU.time, t);
+  gl.uniform3fv(PU.accent, curAccent);
+  gl.uniform1i(PU.mode, ["idle","listen","think","speak","executing"].indexOf(cur.mode));
+  gl.bindVertexArray(pvao);
+  gl.drawArrays(gl.POINTS, 0, P_COUNT);
+
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+resize();
+
+/* ---------------- 悬浮球：拖动 / 点击 ---------------- */
+let downPos = null, dragging = false;
+canvas.addEventListener("pointerdown", (e) => {
+  downPos = [e.clientX, e.clientY];
+  dragging = false;
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!downPos || dragging) return;
+  const dx = e.clientX - downPos[0], dy = e.clientY - downPos[1];
+  if (dx * dx + dy * dy > 49) {
+    dragging = true;
+    try { window.ipc.postMessage("drag"); } catch (_) {}
+  }
+});
+canvas.addEventListener("pointerup", (e) => {
+  const wasDrag = dragging;
+  downPos = null; dragging = false;
+  if (wasDrag) return;
+  const r = Math.min(W, H) * 0.36;
+  const dx = e.clientX - W / 2, dy = e.clientY - H * 0.46;
+  if (dx * dx + dy * dy < r * r) togglePanel();
+});
+
+/* ---------------- 对话面板 ---------------- */
+const panel = document.getElementById("panel");
+const msgList = document.getElementById("msgList");
+const inputBox = document.getElementById("inputBox");
+const chips = document.getElementById("chips");
+const QUICK = ["音量状态", "ping 127.0.0.1 count 1", "列进程", "打开计算器", "截屏"];
+QUICK.forEach(q => {
+  const c = document.createElement("div");
+  c.className = "chip"; c.textContent = q;
+  c.onclick = () => send(q);
+  chips.appendChild(c);
+});
+
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 1800);
+}
+function addMsg(text, who) {
+  const m = document.createElement("div");
+  m.className = "msg " + who;
+  if (who === "bot") {
+    const h = document.createElement("div");
+    h.className = "head"; h.textContent = "◈ 小白";
+    m.appendChild(h);
+  }
+  const b = document.createElement("div");
+  b.textContent = text; m.appendChild(b);
+  msgList.appendChild(m);
+  msgList.scrollTop = msgList.scrollHeight;
+  return m;
+}
+function send(text) {
+  text = (text || "").trim();
+  if (!text) return;
+  addMsg(text, "user");
+  inputBox.value = "";
+  try { window.ipc.postMessage("chat:" + text); } catch (e) { addMsg("IPC 不可用", "bot err"); }
+  setState("think");
+  showToast("小白思考中…");
+}
+document.getElementById("btnSend").onclick = () => send(inputBox.value);
+inputBox.addEventListener("keydown", (e) => { if (e.key === "Enter") send(inputBox.value); });
+document.getElementById("btnClose").onclick = () => togglePanel();
+
+function togglePanel() {
+  panelOpen = !panelOpen;
+  panel.classList.toggle("open", panelOpen);
+  try { window.ipc.postMessage(panelOpen ? "open-panel" : "close-panel"); } catch (e) {}
+  if (panelOpen) setTimeout(() => inputBox.focus(), 120);
+}
+
+window.__chatResponse = function (jsonStr) {
+  let v;
+  try { v = JSON.parse(jsonStr); } catch (e) { addMsg("解析失败", "bot err"); return; }
+  const intent = v.intent || {};
+  const action = intent.action || "?";
+  const cat = intent.category || "?";
+  const exec = v.execution || {};
+  const ok = !!exec.ok;
+  const verdict = intent.verdict || "-";
+  const head = "◈ 小白 · " + cat + "::" + action + "  [" + verdict + "]";
+  let body;
+  if (ok) {
+    body = exec.output !== undefined && exec.output !== null
+      ? (typeof exec.output === "string" ? exec.output : JSON.stringify(exec.output, null, 1))
+      : "执行完成 ✔";
+  } else {
+    body = (v.error && v.error.message) ? v.error.message : "执行失败：" + (v.error || "未知");
+  }
+  const m = addMsg(body, ok ? "bot" : "bot err");
+  const h = document.createElement("div");
+  h.className = "head"; h.style.color = "#ffd700"; h.textContent = head;
+  m.insertBefore(h, m.firstChild);
+  setState("idle");
+};
+window.__toast = function (msg) { showToast(msg); };
+window.__panel = function (open) {
+  panelOpen = open; panel.classList.toggle("open", open);
+};
+
+/* 本地 TTS 不可用/失败时的浏览器拟人音兜底朗读（Web Speech API） */
+window.__speakFallback = function (text) {
+  try {
+    if (!text) return;
+    if (!("speechSynthesis" in window)) { showToast("本机无朗读引擎（speechSynthesis 不可用）"); return; }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(String(text));
+    u.lang = "zh-CN";
+    u.rate = 1.0;
+    u.pitch = 1.05;
+    const voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length) {
+      const zh = voices.find(v => /zh|chinese|mandarin|中文/i.test((v.lang || "") + " " + (v.name || "")));
+      if (zh) u.voice = zh;
+    }
+    window.speechSynthesis.speak(u);
+  } catch (e) {
+    showToast("浏览器朗读不可用");
+  }
+};
+
+/* =====================================================================
+ * 形象模型（AIS-FR14）：视觉参数驱动 + Q版小白小人渲染
+ * Rust 通过 window.__applyAvatar(visual) 推送模型视觉配置
+ * render_mode=xiaobai → 2D Q版小人（头/身体/四肢/发光眼，五状态光晕）
+ * render_mode=topo   → 保持 WebGL 拓扑球
+ * ===================================================================== */
+const c2 = document.getElementById("avatar2d");
+const ctx2 = c2.getContext("2d");
+let AV = null;          // 当前形象视觉配置
+let running2d = false;
+
+window.__applyAvatar = function (visual) {
+  AV = visual || {};
+  const mode = AV.render_mode || "topo";
+  const use2d = mode === "xiaobai";
+  document.getElementById("gl").style.display = use2d ? "none" : "block";
+  c2.style.display = use2d ? "block" : "none";
+  if (use2d) start2dLoop();
+};
+
+function start2dLoop() {
+  if (running2d) return;
+  running2d = true;
+  function frame(t) {
+    if (!AV || (AV.render_mode || "topo") !== "xiaobai") { running2d = false; return; }
+    drawXiaobai(t / 1000);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* 颜色工具：#rrggbb → rgba() */
+function hexA(hex, a) {
+  const h = String(hex || "#888888").replace("#", "");
+  const n = parseInt(h.length >= 6 ? h.slice(0, 6) : h + h, 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `rgba(${r},${g},${b},${a})`;
+}
+function parseHex(hex) {
+  const h = String(hex || "#888888").replace("#", "");
+  const n = parseInt(h.length >= 6 ? h.slice(0, 6) : h + h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mixHex(h1, h2, k) {
+  const a = parseHex(h1), b = parseHex(h2);
+  return `rgb(${Math.round(a[0] + (b[0] - a[0]) * k)},${Math.round(a[1] + (b[1] - a[1]) * k)},${Math.round(a[2] + (b[2] - a[2]) * k)})`;
+}
+
+/* 绘制 Q版小白小人（三视图设定：大头/短四肢/球形手脚/无嘴/发光眼） */
+function drawXiaobai(t) {
+  const W = c2.width, H = c2.height;
+  if (!W || !H) return;
+  ctx2.clearRect(0, 0, W, H);
+  const v = AV || {};
+  const body = v.body_color || "#f4f4f4";
+  const acc = v.accent || ["#4fa3ff", "#7b5cd6"];
+  const a1 = acc[0] || "#4fa3ff", a2 = acc[1] || "#7b5cd6";
+  const eye = v.eye_glow || "#ffffff";
+  const sc = v.state_colors || {};
+  const stateKey = (cur && cur.mode) || "idle";
+  const stateHex = sc[stateKey] || (STATES[stateKey] ? "#7fd4c1" : "#7fd4c1");
+  const mat = v.material || "matte";
+  const scale = (v.scale || 1) * (1 + 0.025 * Math.sin(t * 2.1));
+  const cx = W / 2, cy = H * 0.52;
+  const R = Math.min(W, H) * 0.175 * scale;      // 头半径
+  const talking = stateKey === "speak";
+  const listening = stateKey === "listen";
+  const breathe = 1 + 0.03 * Math.sin(t * 2.1);
+
+  // 背景粒子轨道（accent 双色）
+  const nP = Math.min(v.particle_count || 120, 300);
+  for (let i = 0; i < nP; i++) {
+    const ph = (i * 2.39996 + t * 0.14) % (Math.PI * 2);
+    const rr = R * (1.7 + 0.5 * Math.sin(i * 1.7 + t * 0.6));
+    const px = cx + Math.cos(ph) * rr, py = cy + Math.sin(ph) * rr * 0.75;
+    const col = i % 2 === 0 ? a1 : a2;
+    ctx2.beginPath();
+    ctx2.arc(px, py, R * 0.028, 0, Math.PI * 2);
+    ctx2.fillStyle = hexA(col, 0.55);
+    ctx2.fill();
+  }
+
+  // 地面阴影
+  ctx2.beginPath();
+  ctx2.ellipse(cx, cy + R * 2.15, R * 1.05, R * 0.2, 0, 0, Math.PI * 2);
+  ctx2.fillStyle = "rgba(0,0,0,0.16)";
+  ctx2.fill();
+
+  // 状态光晕（外圈）
+  const glowR = R * (1.5 + 0.08 * Math.sin(t * 2.5));
+  let g = ctx2.createRadialGradient(cx, cy - R * 0.1, R * 0.4, cx, cy - R * 0.1, glowR);
+  g.addColorStop(0, hexA(stateHex, 0.30));
+  g.addColorStop(1, hexA(stateHex, 0));
+  ctx2.beginPath();
+  ctx2.arc(cx, cy - R * 0.1, glowR, 0, Math.PI * 2);
+  ctx2.fillStyle = g;
+  ctx2.fill();
+
+  ctx2.save();
+  ctx2.translate(cx, cy + R * 1.05 * (1 - 0.02 * breathe));  // 身体中心基准
+  ctx2.scale(breathe, 1 / breathe * 0.97);
+
+  /* 腿（两条短腿） */
+  ctx2.fillStyle = mixHex(body, "#000000", 0.06);
+  roundRect2(ctx2, -R * 0.55, R * 0.95, R * 0.42, R * 0.5, R * 0.18); ctx2.fill();
+  roundRect2(ctx2, R * 0.13, R * 0.95, R * 0.42, R * 0.5, R * 0.18); ctx2.fill();
+  /* 脚球 */
+  ctx2.fillStyle = mixHex(body, "#000000", 0.05);
+  ctx2.beginPath(); ctx2.arc(-R * 0.34, R * 1.42, R * 0.22, 0, Math.PI * 2); ctx2.fill();
+  ctx2.beginPath(); ctx2.arc(R * 0.34, R * 1.42, R * 0.22, 0, Math.PI * 2); ctx2.fill();
+
+  /* 手臂（短手臂 + 球形手，轻微摆动） */
+  const armSwing = Math.sin(t * 1.6) * 0.06;
+  ctx2.fillStyle = mixHex(body, "#000000", 0.04);
+  // 左臂
+  ctx2.save();
+  ctx2.translate(-R * 0.72, R * 0.3);
+  ctx2.rotate(-0.5 + armSwing);
+  roundRect2(ctx2, 0, -R * 0.13, R * 0.42, R * 0.26, R * 0.13); ctx2.fill();
+  ctx2.beginPath(); ctx2.arc(R * 0.4, 0, R * 0.17, 0, Math.PI * 2); ctx2.fill();
+  ctx2.restore();
+  // 右臂
+  ctx2.save();
+  ctx2.translate(R * 0.72, R * 0.3);
+  ctx2.rotate(0.5 - armSwing);
+  roundRect2(ctx2, 0, -R * 0.13, R * 0.42, R * 0.26, R * 0.13); ctx2.fill();
+  ctx2.beginPath(); ctx2.arc(-R * 0.4, 0, R * 0.17, 0, Math.PI * 2); ctx2.fill();
+  ctx2.restore();
+
+  /* 身体（短胖椭圆，渐变 body→accent1 柔边） */
+  let bg = ctx2.createLinearGradient(0, -R * 0.1, 0, R * 1.1);
+  bg.addColorStop(0, mixHex(body, "#ffffff", 0.12));
+  bg.addColorStop(1, mixHex(body, "#000000", 0.12));
+  ctx2.beginPath();
+  ctx2.ellipse(0, R * 0.52, R * 0.78, R * 0.62, 0, 0, Math.PI * 2);
+  ctx2.fillStyle = bg;
+  ctx2.fill();
+
+  /* 头（大头圆球） */
+  const headY = -R * 0.98;
+  let hg = ctx2.createRadialGradient(-R * 0.3, headY - R * 0.35, R * 0.1, 0, headY, R * 1.05);
+  hg.addColorStop(0, mixHex(body, "#ffffff", mat === "gloss" ? 0.28 : 0.14));
+  hg.addColorStop(1, mixHex(body, "#000000", mat === "matte" ? 0.06 : 0.1));
+  ctx2.beginPath();
+  ctx2.arc(0, headY, R, 0, Math.PI * 2);
+  ctx2.fillStyle = hg;
+  ctx2.fill();
+  // 细黑描边（设定图边缘描线）
+  ctx2.lineWidth = Math.max(1, R * 0.018);
+  ctx2.strokeStyle = "rgba(0,0,0,0.22)";
+  ctx2.stroke();
+
+  /* 眼睛（两个圆形凹陷 + 内发光，listen 时放大） */
+  const eyeR = R * (listening ? 0.22 : 0.17);
+  const eyeY = headY - R * 0.02;
+  const eyeDX = R * 0.34;
+  const pulseEye = eyeR * (1 + (talking ? 0.12 * Math.sin(t * 9) : 0.04 * Math.sin(t * 2.2)));
+  for (const s of [-1, 1]) {
+    // 凹陷底色
+    ctx2.beginPath();
+    ctx2.arc(s * eyeDX, eyeY, pulseEye * 1.18, 0, Math.PI * 2);
+    ctx2.fillStyle = mixHex(body, "#000000", 0.16);
+    ctx2.fill();
+    // 发光瞳孔
+    ctx2.shadowBlur = R * 0.22;
+    ctx2.shadowColor = eye;
+    ctx2.beginPath();
+    ctx2.arc(s * eyeDX, eyeY, pulseEye, 0, Math.PI * 2);
+    ctx2.fillStyle = eye;
+    ctx2.fill();
+    ctx2.shadowBlur = 0;
+  }
+
+  /* 高光（材质：gloss 强 / frost 柔 / matte 弱） */
+  const hl = mat === "gloss" ? 0.65 : (mat === "frost" ? 0.4 : 0.22);
+  ctx2.beginPath();
+  ctx2.ellipse(-R * 0.36, headY - R * 0.42, R * 0.26, R * 0.14, -0.6, 0, Math.PI * 2);
+  ctx2.fillStyle = `rgba(255,255,255,${hl})`;
+  ctx2.fill();
+
+  /* 说话波纹（speak 状态，头侧） */
+  if (talking) {
+    ctx2.strokeStyle = hexA(stateHex, 0.75);
+    ctx2.lineWidth = R * 0.04;
+    ctx2.lineCap = "round";
+    for (let i = 0; i < 3; i++) {
+      const wv = R * (0.22 + i * 0.12) * (0.6 + 0.4 * Math.abs(Math.sin(t * 9 - i)));
+      ctx2.beginPath();
+      ctx2.arc(0, headY + R * 0.55, wv, -0.5, 0.5);
+      ctx2.stroke();
+    }
+  }
+
+  ctx2.restore();
+}
+
+/* 圆角矩形路径 */
+function roundRect2(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+/* avatar2d 尺寸跟随窗口 */
+function resize2d() {
+  c2.width = c2.clientWidth || window.innerWidth;
+  c2.height = c2.clientHeight || window.innerHeight;
+}
+window.addEventListener("resize", resize2d);
+resize2d();
+
+try { window.ipc.postMessage("ready"); } catch (e) {}

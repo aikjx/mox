@@ -7,7 +7,7 @@ BIZ_DB = os.path.join(ROOT, "platform", "mox-server", "mox_business.db")
 META_DB = os.path.join(ROOT, "platform", "mox-server", "mox_meta.db")
 
 print("=" * 60)
-print("  芯擎科技官网 — 全维完成度验证")
+print("  芯擎科技官网 — mox 模块化系统架构完成度验证")
 print("=" * 60)
 
 # 1. 业务数据

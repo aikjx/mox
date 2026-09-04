@@ -8,7 +8,7 @@
 //! 核心职责：
 //! - 外部调用（HTTP/Shell）需沙箱隔离
 //! - LLM 节点输出需内容校验 Guard（防提示词注入/越狱）
-//! - 强合规租户：PII 外发必须脱敏（与权限专家互补，但安全维度独立告警）
+//! - 强合规租户：PII 外发必须脱敏（与权限专家互补，但安mox 模块化系统架构维度独立告警）
 //!
 //! 敏感度判定统一使用 `crate::sensitivity::is_sensitive_leak` SSOT。
 
@@ -70,7 +70,7 @@ impl Expert for SecurityExpert {
             }
         }
 
-        // 强合规租户：PII 外发必须有脱敏（与权限专家互补，但安全维度独立告警）
+        // 强合规租户：PII 外发必须有脱敏（与权限专家互补，但安mox 模块化系统架构维度独立告警）
         if ctx.tenant.regulated {
             // 使用单一权威判定 is_sensitive_leak：已脱敏资源（如 var:citizen_safe）不再误判为泄露
             let pii_out = g.nodes.iter().any(|n| {

@@ -609,7 +609,7 @@ pub fn check_permission(
 |------|------|------|
 | **全部数据** | 可访问租户内所有数据 | 无额外过滤 |
 | **本部门数据** | 可访问本部门及子部门数据 | WHERE department_id IN (子部门树) |
-| **本人数据** | 只能访问自己创建的数据 | WHERE created_by = user_id |
+| **本人数据** | 只能访问自己创建的数据 | WHERE created_at = user_id |
 | **自定义** | 按规则过滤 | ABAC 策略引擎 |
 
 数据权限在 SQL 查询层自动追加过滤条件（通过 sqlx 中间件或 RLS 策略）。

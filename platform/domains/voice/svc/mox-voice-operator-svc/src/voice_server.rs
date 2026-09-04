@@ -74,7 +74,7 @@ pub struct XiaobaiVoiceService {
     pub config: VoiceServiceConfig,
     #[cfg(feature = "voice-engine")]
     pub voice: parking_lot::RwLock<Option<Arc<crate::voice_engine::VoiceEngine>>>,
-    /// 形象模型注册表（全维：视觉/语音/性格）
+    /// 形象模型注册表（mox 模块化系统架构：视觉/语音/性格）
     pub avatars: Arc<crate::avatar::AvatarRegistry>,
 }
 

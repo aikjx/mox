@@ -1,5 +1,5 @@
 <template>
-  <div class="page-container">
+  <div class="page-container" v-loading="loading" element-loading-text="工作流数据加载中...">
     <div class="page-header">
       <div class="page-header-left">
         <h2 class="page-title">工作流编排</h2>
@@ -239,6 +239,7 @@ function goAIGenerate() {
 }
 
 const tab = ref('flows')
+const loading = ref(false)
 const flows = ref([])
 const templates = ref([])
 const instances = ref([])
@@ -257,6 +258,7 @@ const execing = ref(false)
 const execResult = ref(null)
 
 async function loadAll() {
+  loading.value = true
   try {
     const [f, t, ins, sw] = await Promise.all([
       getFlows().catch(() => []),
@@ -270,6 +272,8 @@ async function loadAll() {
     savedWorkflows.value = sw.workflows || sw.data || (Array.isArray(sw) ? sw : [])
   } catch (e) {
     ElMessage.error('加载失败：' + e.message)
+  } finally {
+    loading.value = false
   }
   getFlowNodeTypes()
     .then((r) => { nodeTypes.value = r.types || [] })

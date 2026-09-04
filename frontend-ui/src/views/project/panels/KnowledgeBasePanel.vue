@@ -11,7 +11,7 @@
         <div class="page-header-left header-left">
           <div class="eyebrow">KNOWLEDGE BASE · 云盘知识库</div>
           <h1 class="page-title">云盘知识库</h1>
-          <p class="page-subtitle">AI+知识图谱 智能分类、版本管理、全维分析</p>
+          <p class="page-subtitle">AI+知识图谱 智能分类、版本管理、mox 模块化系统架构分析</p>
         </div>
         <div class="page-header-actions header-right">
           <div class="stat-card" v-for="s in statCards" :key="s.label">

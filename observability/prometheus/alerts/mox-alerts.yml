@@ -1,0 +1,257 @@
+# =============================================================================
+# MOX 平台 Prometheus 告警规则
+# =============================================================================
+
+groups:
+  # ── 服务可用性告警 ──────────────────────────────────────────────────────
+  - name: service-availability
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "服务 {{ $labels.job }} 已下线"
+          description: "服务 {{ $labels.job }} ({{ $labels.instance }}) 已超过1分钟无法访问"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)
+          /
+          sum(rate(http_requests_total[5m])) by (job)
+          > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "服务 {{ $labels.job }} 错误率过高"
+          description: "服务 {{ $labels.job }} 5xx错误率超过5%，持续5分钟"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))
+          > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "服务 {{ $labels.job }} P95延迟过高"
+          description: "服务 {{ $labels.job }} P95请求延迟超过1秒，持续5分钟"
+
+  # ── 联盟引擎告警 ────────────────────────────────────────────────────────
+  - name: alliance-engine
+    rules:
+      - alert: AllianceTaskFailureRateHigh
+        expr: |
+          sum(rate(mox_tasks_total{result="failure"}[5m])) by (type)
+          /
+          sum(rate(mox_tasks_total[5m])) by (type)
+          > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          category: alliance
+        annotations:
+          summary: "联盟任务 {{ $labels.type }} 失败率过高"
+          description: "联盟任务 {{ $labels.type }} 失败率超过10%，持续10分钟"
+
+      - alert: AllianceConsensusLow
+        expr: mox_alliance_consensus < 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: alliance
+        annotations:
+          summary: "联盟共识度过低"
+          description: "联盟引擎共识度低于0.5，专家意见分歧较大"
+
+      - alert: AllianceGateFailRateHigh
+        expr: |
+          sum(rate(mox_gate_results{pased="false"}[5m]))
+          /
+          sum(rate(mox_gate_results[5m]))
+          > 0.3
+        for: 10m
+        labels:
+          severity: warning
+          category: alliance
+        annotations:
+          summary: "质量门禁通过率低"
+          description: "质量门禁失败率超过30%，持续10分钟"
+
+      - alert: LLMDegradedMode
+        expr: increase(mox_llm_degraded_total[10m]) > 5
+        labels:
+          severity: warning
+          category: llm
+        annotations:
+          summary: "LLM服务频繁降级"
+          description: "LLM服务在10分钟内降级超过5次，可能存在可用性问题"
+
+  # ── 资源使用告警 ────────────────────────────────────────────────────────
+  - name: resource-usage
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "实例 {{ $labels.instance }} CPU使用率过高"
+          description: "CPU使用率超过85%，持续10分钟"
+
+      - alert: HighMemoryUsage
+        expr: 100 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "实例 {{ $labels.instance }} 内存使用率过高"
+          description: "内存使用率超过85%，持续10分钟"
+
+      - alert: HighDiskUsage
+        expr: 100 - (node_filesystem_avail_bytes / node_filesystem_size_bytes * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "实例 {{ $labels.instance }} 磁盘使用率过高"
+          description: "磁盘使用率超过85%，持续10分钟"
+
+  # ── 数据库告警 ──────────────────────────────────────────────────────────
+  - name: database
+    rules:
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "PostgreSQL 数据库已下线"
+          description: "PostgreSQL 实例 {{ $labels.instance }} 无法连接"
+
+      - alert: PostgresHighConnections
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "PostgreSQL 连接数过高"
+          description: "PostgreSQL 活跃连接数超过80，持续5分钟"
+
+      - alert: PostgresSlowQueries
+        expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "PostgreSQL 慢查询过多"
+          description: "PostgreSQL 平均查询时间超过1秒，持续5分钟"
+
+  # ── 缓存告警 ────────────────────────────────────────────────────────────
+  - name: cache
+    rules:
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: cache
+        annotations:
+          summary: "Redis 缓存已下线"
+          description: "Redis 实例 {{ $labels.instance }} 无法连接"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "Redis 内存使用率过高"
+          description: "Redis 内存使用率超过90%，可能触发键淘汰"
+
+      - alert: RedisHighConnections
+        expr: redis_connected_clients > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "Redis 连接数过高"
+          description: "Redis 客户端连接数超过100，持续5分钟"
+
+  # ── 安全告警 ────────────────────────────────────────────────────────────
+  - name: security
+    rules:
+      - alert: AuthenticationFailuresHigh
+        expr: rate(mox_auth_failures_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "认证失败次数过高"
+          description: "5分钟内认证失败超过10次，可能存在暴力破解攻击"
+
+      - alert: AuthorizationFailuresHigh
+        expr: rate(mox_authz_denied_total[5m]) > 5
+        for: 10m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "授权拒绝次数过高"
+          description: "10分钟内授权拒绝超过5次，用户可能在尝试越权访问"
+
+      - alert: AccountLockouts
+        expr: increase(mox_account_locked_total[10m]) > 3
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "账户被锁定"
+          description: "10分钟内有超过3个账户被锁定"
+
+  # ── 业务指标告警 ────────────────────────────────────────────────────────
+  - name: business-metrics
+    rules:
+      - alert: TaskQueueBacklog
+        expr: mox_queue_depth > 100
+        for: 10m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "任务队列积压"
+          description: "任务队列深度超过100，持续10分钟，处理能力不足"
+
+      - alert: KnowledgeBaseIndexingSlow
+        expr: rate(mox_kb_indexing_duration_seconds[5m]) > 30
+        for: 10m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "知识库索引过慢"
+          description: "知识库平均索引时间超过30秒，持续10分钟"
+
+      - alert: SearchResultsLow
+        expr: mox_kb_search_results < 1
+        for: 30m
+        labels:
+          severity: info
+          category: business
+        annotations:
+          summary: "搜索结果为空"
+          description: "知识库搜索连续30分钟返回空结果，可能索引有问题"

@@ -21,7 +21,7 @@ export const useUiStore = defineStore('ui', () => {
   // AI 全屏模式
   const aiFullscreen = ref(false)
 
-  // 当前阶段（用于全维流程条）
+  // 当前阶段（用于mox 模块化系统架构流程条）
   const currentPhase = ref('s1')
 
   // 命令面板可见性

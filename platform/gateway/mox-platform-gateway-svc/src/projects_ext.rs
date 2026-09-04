@@ -55,14 +55,18 @@ fn load_projects_persistent() -> ProjectsPersistent {
 
 fn save_projects_persistent(files: &[ProjectFile], favorites: &std::collections::HashSet<String>) {
     if let Some(parent) = std::path::Path::new(PROJECTS_FILES_PATH).parent() {
-        let _ = std::fs::create_dir_all(parent);
+        if let Err(e) = std::fs::create_dir_all(parent) {
+            eprintln!("[projects] 创建目录失败 {}: {}", parent.display(), e);
+        }
     }
     let data = ProjectsPersistent {
         files: files.to_vec(),
         favorites: favorites.iter().cloned().collect(),
     };
     if let Ok(json_str) = serde_json::to_string_pretty(&data) {
-        let _ = std::fs::write(PROJECTS_FILES_PATH, json_str);
+        if let Err(e) = std::fs::write(PROJECTS_FILES_PATH, json_str) {
+            eprintln!("[projects] 项目文件持久化失败 {}: {}", PROJECTS_FILES_PATH, e);
+        }
     }
 }
 
@@ -203,7 +207,9 @@ async fn upload_project_file(
     mut multipart: Multipart,
 ) -> ApiResponse<Value> {
     let upload_dir = std::path::Path::new("data/uploads").join(&id);
-    let _ = std::fs::create_dir_all(&upload_dir);
+    if let Err(e) = std::fs::create_dir_all(&upload_dir) {
+        eprintln!("[projects] 创建上传目录失败 {}: {}", upload_dir.display(), e);
+    }
 
     let mut uploaded: Vec<Value> = Vec::new();
     while let Ok(Some(field)) = multipart.next_field().await {
@@ -217,7 +223,9 @@ async fn upload_project_file(
         let file_id = format!("file-{}", uuid::Uuid::new_v4().simple());
         let safe_name: String = file_name.chars().map(|c| if c.is_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' }).collect();
         let storage_path = upload_dir.join(format!("{}_{}", file_id, safe_name));
-        let _ = std::fs::write(&storage_path, &data);
+        if let Err(e) = std::fs::write(&storage_path, &data) {
+            eprintln!("[projects] 项目文件写入失败 {}: {}", storage_path.display(), e);
+        }
 
         let file_info = ProjectFile {
             id: file_id.clone(),
@@ -503,19 +511,19 @@ async fn ai_recommend_projects(
 pub fn build_projects_ext_router() -> Router {
     let state = Arc::new(ProjectsState::new());
     Router::new()
-        .route("/projects/ai-recommend", post(ai_recommend_projects))
-        .route("/projects/:id/members", get(project_members).post(add_project_member))
-        .route("/projects/:id/members/:memberId", put(update_project_member).delete(remove_project_member))
-        .route("/projects/:id/phases", get(project_phases))
-        .route("/projects/:id/files", get(project_files))
-        .route("/projects/:id/files/upload", post(upload_project_file))
-        .route("/projects/:id/activities", get(project_activities))
-        .route("/projects/:id/documents", get(project_documents))
-        .route("/projects/:id/advance-phase", put(advance_phase))
-        .route("/projects/:id/phase-progress", get(phase_progress))
-        .route("/projects/:id/favorite", post(toggle_favorite))
-        .route("/projects/:id/share", post(share_project))
-        .route("/projects/:id/documents/:docId/download", get(download_document))
-        .route("/projects/:id/requirements-graph", get(requirements_graph))
+        .route("/api/projects/ai-recommend", post(ai_recommend_projects))
+        .route("/api/projects/:id/members", get(project_members).post(add_project_member))
+        .route("/api/projects/:id/members/:memberId", put(update_project_member).delete(remove_project_member))
+        .route("/api/projects/:id/phases", get(project_phases))
+        .route("/api/projects/:id/files", get(project_files))
+        .route("/api/projects/:id/files/upload", post(upload_project_file))
+        .route("/api/projects/:id/activities", get(project_activities))
+        .route("/api/projects/:id/documents", get(project_documents))
+        .route("/api/projects/:id/advance-phase", put(advance_phase))
+        .route("/api/projects/:id/phase-progress", get(phase_progress))
+        .route("/api/projects/:id/favorite", post(toggle_favorite))
+        .route("/api/projects/:id/share", post(share_project))
+        .route("/api/projects/:id/documents/:docId/download", get(download_document))
+        .route("/api/projects/:id/requirements-graph", get(requirements_graph))
         .with_state(state)
 }

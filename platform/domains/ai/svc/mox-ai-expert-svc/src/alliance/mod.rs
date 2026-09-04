@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! 开发专家联盟 · 全维分析 6 阶段管线编排器
+//! 开发专家联盟 · mox 模块化系统架构分析 6 阶段管线编排器
 //!
 //! 阶段顺序（严格，SSE 事件按此顺序发射）：
 //!   Intent（意图识别） → Team（专家组队） → Debate（并行咨询+辩论） →
@@ -59,7 +59,7 @@ impl AlliancePhase {
     }
 }
 
-/// 全维分析事件（SSE 每帧一条；trace_id 全链路一致）
+/// mox 模块化系统架构分析事件（SSE 每帧一条；trace_id 全链路一致）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AllianceEvent {
     /// 当前阶段（7 种之一）
@@ -132,7 +132,7 @@ fn default_team_size_4() -> usize { 4 }
 
 // ================== 引擎（占位骨架，T2~T5 填充） ==================
 
-/// 专家联盟全维分析引擎（对外入口结构体）
+/// 专家联盟mox 模块化系统架构分析引擎（对外入口结构体）
 ///
 /// 生产环境由 mox_platform_orchestrator_svc 网关的 AiEngineState 持 Arc<AllianceEngine>。
 /// 字段会在 Task 2~5 逐步追加（intent_classifier, expert_registry, harness_ctx, audit_sink 等）。
@@ -148,7 +148,7 @@ impl AllianceEngine {
         Self { started_at: Utc::now() }
     }
 
-    /// 运行完整的 6 阶段全维分析，返回事件流（SSE 友好）。
+    /// 运行完整的 6 阶段mox 模块化系统架构分析，返回事件流（SSE 友好）。
     ///
     /// T5 已填充为真实管线：gate::run_full_pipeline 返回 7 SSE 事件 + 7 审计事件。
     pub async fn run_full_analysis(
@@ -207,7 +207,7 @@ mod tests {
     async fn skeleton_emits_seven_phases_in_order_and_same_trace() {
         let eng = AllianceEngine::new();
         let req = AllianceRequest {
-            query: "帮我做 Rust 企业级服务全维分析".to_string(),
+            query: "帮我做 Rust 企业级服务mox 模块化系统架构分析".to_string(),
             session_id: Some("sess-1".to_string()),
             idempotency_key: None,
             context: BTreeMap::new(),

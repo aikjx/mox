@@ -349,7 +349,7 @@ async function loadOperLog() {
       throw new Error('数据格式错误')
     }
   } catch (e) {
-    console.warn('[AdminAudit] 操作日志加载失败:', e.message)
+    ElMessage.error('操作日志加载失败: ' + (e?.message || e))
   } finally {
     operLoading.value = false
   }
@@ -476,7 +476,7 @@ async function loadLoginLog() {
       throw new Error('数据格式错误')
     }
   } catch (e) {
-    console.warn('[AdminAudit] 登录日志加载失败:', e.message)
+    ElMessage.error('登录日志加载失败: ' + (e?.message || e))
   } finally {
     loginLoading.value = false
   }

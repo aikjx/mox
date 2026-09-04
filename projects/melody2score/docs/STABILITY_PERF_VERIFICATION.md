@@ -1,7 +1,7 @@
-# Melody2Score 全维度稳定性 / 性能优化 · 企业级验证报告
+# Melody2Score mox 模块化系统架构维度稳定性 / 性能优化 · 企业级验证报告
 
 > 日期：2026-08-18
-> 模式：开发专家联盟处理模式（全维度系统性优化）
+> 模式：开发专家联盟处理模式（mox 模块化系统架构维度系统性优化）
 > 验证工具：`tests/verify_all_dims.py`（无声卡 / 无 torch 依赖，CI 与打包后 green 环境可直接跑）
 
 ---
@@ -22,7 +22,7 @@
 
 ---
 
-## 二、全维度验证结果（`tests/verify_all_dims.py`，18/18 PASS）
+## 二、mox 模块化系统架构维度验证结果（`tests/verify_all_dims.py`，18/18 PASS）
 
 ```
 [P1] RingBuffer 批量 memoryview 拷贝
@@ -87,12 +87,12 @@ dist/Melody2Score/app/Melody2Score.exe  # 启动 GUI
 python tests/verify_all_dims.py
 ```
 
-退出码 0 = 全维度通过；1 = 存在失败项（对应维度名会列出）。
+退出码 0 = mox 模块化系统架构维度通过；1 = 存在失败项（对应维度名会列出）。
 
 ---
 
 ## 五、结论
 
-全维度（性能 / 稳定性 / 并发 / 确定性 / API 契约 / 打包一致性）优化已完成并通过企业级
+mox 模块化系统架构维度（性能 / 稳定性 / 并发 / 确定性 / API 契约 / 打包一致性）优化已完成并通过企业级
 验证套件，所有对外契约（CLI 参数、GUI 行为、WebUI API、测试接口）保持不变。现有
 `tests/test_audio_play.py` 与 `tests/test_pipeline.py` 契约不受影响。

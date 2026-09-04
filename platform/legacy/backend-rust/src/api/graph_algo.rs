@@ -1,7 +1,7 @@
 // Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 
-//! 知识图谱图算法（全维）：邻接表 / 邻居 / Dijkstra 最短路径 / 中心性 / PageRank / 社区发现 / 激活传播
+//! 知识图谱图算法（mox 模块化系统架构）：邻接表 / 邻居 / Dijkstra 最短路径 / 中心性 / PageRank / 社区发现 / 激活传播
 //!
 //! 由内存边表（DashMap<String, Value>）构建无向带权邻接表，再执行各类图算法，
 //! 供 `/api/graph/*` 系列接口使用，替代原先的空壳 stub。

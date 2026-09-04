@@ -1,4 +1,4 @@
-%% 对话开发系统 · 端到端流水线（开发专家联盟全维视角 · DEV-AA-STD-V1.0）
+%% 对话开发系统 · 端到端流水线（开发专家联盟mox 模块化系统架构视角 · DEV-AA-STD-V1.0）
 %% 单一机读源：可喂给 info-graph / Mermaid 渲染器 / 任意文档画布
 %% 12 阶段；任意闸门/G-A/⛨否决拒绝即阻断出码
 
@@ -25,7 +25,7 @@ flowchart TD
     S5 --> S6["S6 增量迭代 refine\n(再加一个X → 重建 flow)"]
     S6 --> S7["S7 蓝图导出/复用\nexport_json → template-market\n(随机/克隆继续编辑)"]
 
-    %% ===== 编程全维流水线（开发七维）=====
+    %% ===== 编程mox 模块化系统架构流水线（开发七维）=====
     S7 --> S8["S8 需求归一化\nnormalize_requirement\n(默认 Draft·未确认)"]
     S8 --> GA{"G-A 护栏\nis_confirmed?"}
     GA -->|否| STOP1(["止于 Normalized\n不出码"])

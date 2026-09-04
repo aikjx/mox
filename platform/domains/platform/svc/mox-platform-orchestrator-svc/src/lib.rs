@@ -18,6 +18,8 @@ pub const CRATE_META: mox_platform_foundation::CrateMeta = mox_platform_foundati
 };
 
 pub mod api_standard;
+/// meta.codegen 出码闸门接线（出码必经 ⛨verify + 8 闸门 + I-05 双验收，与 /api/mox/publish 同链）
+pub mod codegen_gate;
 pub mod openapi;
 pub mod rbac_middleware;
 /// 子服务聚合（mox-expert / mox-system / primiflow / primiflow-fusion）：

@@ -580,6 +580,7 @@ function generateShareLink() {
     shareLinkCreated.value = true;
     ElMessage.success({ message: `已生成分享链接（含 ${selectedRaw.length} 条消息）`, duration: 1500, showClose: false });
   } catch (e) {
+    // dev only: 分享编码失败，已回退为当前页面链接并提示用户
     console.warn('[share] encode failed', e);
     // fallback：简单用当前 URL 加 hash
     shareLinkUrl.value = typeof location !== 'undefined' ? location.href : '';
@@ -694,6 +695,7 @@ onMounted(() => {
       flowchart: { curve: "basis", padding: 14, nodeSpacing: 48, rankSpacing: 55, htmlLabels: true },
     });
   } catch (e) {
+    // dev only: mermaid 初始化失败属内部渲染错误，不影响消息展示
     console.warn("[MessageBubble] mermaid init failed", e);
   }
   supportsSpeechSynthesis.value = typeof window !== 'undefined' && !!window.speechSynthesis;
@@ -841,6 +843,7 @@ const renderedContent = computed(() => {
   try {
     return mdInstance.value.render(String(content));
   } catch (e) {
+    // dev only: Markdown 渲染失败，降级为 pre 标签显示原文
     console.warn("[MessageBubble] markdown render error", e);
     return "<pre>" + escapeHtml(String(content)) + "</pre>";
   }
@@ -891,6 +894,7 @@ async function renderMermaidBlocks() {
       loadingEl.style.display = "none";
       targetEl.classList.add("mb-mermaid-fade-in");
     } catch (err) {
+      // dev only: mermaid 渲染失败，已显示错误占位
       console.warn("[MessageBubble] mermaid render failed", err);
       loadingEl.style.display = "none";
       targetEl.style.display = "none";
@@ -954,7 +958,7 @@ async function tryWriteRichClipboard(htmlText, plainText) {
     });
     await navigator.clipboard.write([item]);
     return true;
-  } catch (e) { console.warn("[MessageBubble] clipboardItem write failed", e); return false; }
+  } catch (e) { /* dev only: clipboardItem 写入失败，回退到 execCommand */ console.warn("[MessageBubble] clipboardItem write failed", e); return false; }
 }
 async function copyTextUniversal(text, successMsg, silent) {
   try {
@@ -963,7 +967,7 @@ async function copyTextUniversal(text, successMsg, silent) {
       if (!silent) ElMessage.success({ message: successMsg || "\u5df2\u590d\u5236", duration: 1500, showClose: false });
       return true;
     }
-  } catch (e) { console.warn("[MessageBubble] clipboard API fallback", e); }
+  } catch (e) { /* dev only: clipboard API 不可用，回退到 execCommand */ console.warn("[MessageBubble] clipboard API fallback", e); }
   try {
     const ta = document.createElement("textarea");
     ta.value = text; ta.setAttribute("readonly", "");

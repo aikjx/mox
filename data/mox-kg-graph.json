@@ -5857,10 +5857,10 @@
     },
     {
       "id": "feat_mox_core",
-      "label": "璇玑健康度、全维治理优化、全维融合发布",
+      "label": "璇玑健康度、mox 模块化系统架构治理优化、mox 模块化系统架构融合发布",
       "node_type": "feature",
       "properties": {
-        "description": "双璇玑十四维治理：健康度查询（14维度+双联盟）、全维治理优化（返回GovernanceReport）、全维融合发布（双验收联动门禁）",
+        "description": "双璇玑十四维治理：健康度查询（14维度+双联盟）、mox 模块化系统架构治理优化（返回GovernanceReport）、mox 模块化系统架构融合发布（双验收联动门禁）",
         "domain": "mox",
         "missing_backend": false,
         "priority": "P0",
@@ -6141,7 +6141,7 @@
       "id": "mox-core",
       "label": "璇玑内核",
       "node_type": "core",
-      "summary": "全维统一内核与运行时"
+      "summary": "mox 模块化系统架构统一内核与运行时"
     },
     {
       "id": "gap_web_search_api",
@@ -6824,7 +6824,7 @@
       "label": "OUS前端治理台（Dashboard/专家状态/否决事件/审计/RBAC/WS推送）",
       "node_type": "feature",
       "properties": {
-        "description": "全维治理台：Dashboard、专家状态、否决事件、审计日志、RBAC配置、专家配置、WebSocket实时推送、治理评估",
+        "description": "mox 模块化系统架构治理台：Dashboard、专家状态、否决事件、审计日志、RBAC配置、专家配置、WebSocket实时推送、治理评估",
         "domain": "mox",
         "missing_backend": false,
         "priority": "P1",
@@ -7562,10 +7562,10 @@
     },
     {
       "id": "dom_mox",
-      "label": "璇玑全维治理",
+      "label": "璇玑mox 模块化系统架构治理",
       "node_type": "domain",
       "properties": {
-        "description": "璇玑全维治理",
+        "description": "璇玑mox 模块化系统架构治理",
         "domain": "mox"
       }
     },
@@ -10769,7 +10769,7 @@
     {
       "category": "运行层",
       "id": "mox-fusion",
-      "label": "全维融合",
+      "label": "mox 模块化系统架构融合",
       "node_type": "activation",
       "summary": "多源数据融合与编排"
     },
@@ -10901,10 +10901,10 @@
     },
     {
       "id": "feat_alliance_engine",
-      "label": "联盟能力查询、全维分析SSE流式",
+      "label": "联盟能力查询、mox 模块化系统架构分析SSE流式",
       "node_type": "feature",
       "properties": {
-        "description": "联盟6阶段全维分析引擎：能力矩阵查询、全维分析SSE流式执行",
+        "description": "联盟6阶段mox 模块化系统架构分析引擎：能力矩阵查询、mox 模块化系统架构分析SSE流式执行",
         "domain": "alliance",
         "missing_backend": true,
         "priority": "P1",
@@ -12187,19 +12187,19 @@
     },
     {
       "id": "mod_ai_full_analysis",
-      "label": "全维智能分析引擎",
+      "label": "mox 模块化系统架构智能分析引擎",
       "node_type": "module",
       "properties": {
-        "description": "全维智能分析引擎",
+        "description": "mox 模块化系统架构智能分析引擎",
         "domain": "ai"
       }
     },
     {
       "id": "page_views_graph_MoxFusionView_vue",
-      "label": "全维融合",
+      "label": "mox 模块化系统架构融合",
       "node_type": "frontend_page",
       "properties": {
-        "description": "全维融合",
+        "description": "mox 模块化系统架构融合",
         "domain": "graph",
         "file_path": "views/graph/MoxFusionView.vue",
         "route_path": "/mox-fusion"
@@ -13949,7 +13949,7 @@
       "node_type": "gap",
       "properties": {
         "affected_count": 6,
-        "description": "后端缺失 /api/ai/full-analysis等全维分析端点，前端6个全维智能分析函数无编排器后端支撑",
+        "description": "后端缺失 /api/ai/full-analysis等mox 模块化系统架构分析端点，前端6个mox 模块化系统架构智能分析函数无编排器后端支撑",
         "domain": "ai",
         "severity": "P0",
         "status": "todo",
@@ -14001,10 +14001,10 @@
     },
     {
       "id": "feat_ai_full_analysis",
-      "label": "全维分析、文档生成、流程图生成、开发测试修复",
+      "label": "mox 模块化系统架构分析、文档生成、流程图生成、开发测试修复",
       "node_type": "feature",
       "properties": {
-        "description": "全维智能分析、文档生成、流程图生成、开发-测试-修复闭环、全维完成、文档优化",
+        "description": "mox 模块化系统架构智能分析、文档生成、流程图生成、开发-测试-修复闭环、mox 模块化系统架构完成、文档优化",
         "domain": "ai",
         "missing_backend": true,
         "priority": "P0",

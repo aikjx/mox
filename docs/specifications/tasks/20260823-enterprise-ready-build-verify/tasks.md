@@ -1,4 +1,4 @@
-# 璇玑 mox · 企业级真实可运行落地 + 全维自动化测试验收 — 实施计划（tasks.md）
+# 璇玑 mox · 企业级真实可运行落地 + mox 模块化系统架构自动化测试验收 — 实施计划（tasks.md）
 
 > **依赖图（总览）**：T1 基线盘点 → T2 clippy 修复 → T3 测试缺失补齐（graph-algorithms / mox-expert / primiflow-fusion / runtime）→ T4 前端构建 + T11 Node 并行 → T5 melody2score 桌面打包级回归 → T6 T4 依赖治理 rubric → T7 SLO 规模 rubric → T8 三流程端点 E2E → T9 汇总报告 + 独立 review。
 > **优先级图例**：H = high（阻断），M = medium（推进），L = low（锦上添花）。
@@ -143,7 +143,7 @@
 - **Description**:
   - 生成 `.trae/specs/<folder>/evidence/` 目录，保存 7 份核心命令的完整输出文本、rubric 评分表、16 条 AC 的逐一 pass/fail 状态。
   - 写一页总表 `evidence/SUMMARY.md`：每条 AC 编号 → pass/fail → 证据文件路径 → 关键断言值。
-  - 报告同时对齐 docs/enterprise/11 全维测试报告 + 12 RBAC 验收 + 13 伪代码清零验收 + 16 P9 闸门验收，保证四者之间的测试数量不矛盾。
+  - 报告同时对齐 docs/enterprise/11 mox 模块化系统架构测试报告 + 12 RBAC 验收 + 13 伪代码清零验收 + 16 P9 闸门验收，保证四者之间的测试数量不矛盾。
 - **Acceptance Criteria Addressed**: 所有 17 条 AC 的汇总证据页
 - **Test Requirements**:
   - `rule` TR-9.1: evidence/ 内对 17 条 AC 每条至少有 1 个文件对应；SUMMARY.md 每条 AC 都显式 PASS

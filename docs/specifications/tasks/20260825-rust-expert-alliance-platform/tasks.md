@@ -1,4 +1,4 @@
-# 开发专家联盟全维分析 · Rust企业级Platform集成（Tasks）
+# 开发专家联盟mox 模块化系统架构分析 · Rust企业级Platform集成（Tasks）
 
 > **Spec 路径**：`d:\a10\aikjx\gitcode\infotopograph\.trae\specs\20260825-rust-expert-alliance-platform\spec.md`  
 > **自然语言**：中文  
@@ -23,7 +23,7 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
        └─ T9(P0) /ai/engine/metrics 扩展：alliance_gate_dist + 阶段延迟直方图
             │
             ├─ T10(P0) frontend API 层：allianceApi + voiceApi 封装
-            ├─ T11(P0) ChatView：全维分析 SSE + 5 Chip 流转 + 报告卡片
+            ├─ T11(P0) ChatView：mox 模块化系统架构分析 SSE + 5 Chip 流转 + 报告卡片
             ├─ T12(P0) ChatView：麦克风录音按钮 + 小白语音开关 UI
             ├─ T13(P0) MessageBubble 朗读三层回退(TTS引擎→浏览器→禁用)
             └─ T14(P0) Vite dev 代理 /voice/* + /api 统一前缀
@@ -345,7 +345,7 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 
 ---
 
-## Task 11：ChatView —— 全维分析 φ 真工作 + 5 Chip 流转 + 报告卡片
+## Task 11：ChatView —— mox 模块化系统架构分析 φ 真工作 + 5 Chip 流转 + 报告卡片
 
 - **Status**: pending
 - **Priority**: high
@@ -358,15 +358,15 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
      - phase 事件更新 `currentStage` Chip 激活（映射 phase→stage index）。
      - learn 阶段结束后把归一化报告 push 到 messages，类型 = `full_analysis_report`。
      - onError 把错误消息作为 assistant message 显示，Chip 回退到失败态。
-  2. 全维分析报告消息卡片模板新增（或在 MessageBubble 中新增 type=full_analysis_report 的渲染分支）：
+  2. mox 模块化系统架构分析报告消息卡片模板新增（或在 MessageBubble 中新增 type=full_analysis_report 的渲染分支）：
      - 顶部徽标：Gate A（绿）/ B（青）/ C（黄）/ D（红），显示综合得分。
      - 6 阶段完成列表：intent/team/debate/synthesize/gate/learn 各阶段时间戳 + 延迟 ms。
      - 14 维折叠面板：每维 score 进度条（按 0..1 百分比）+ 风险列表（带 severity 颜色）+ 建议列表。
-     - Mermaid 全维流程图（可展开，默认折叠）：展示 intent→team→debate→synth→gate→learn 流 + 各节点附关键参数（HC-2/HC-8）。
+     - Mermaid mox 模块化系统架构流程图（可展开，默认折叠）：展示 intent→team→debate→synth→gate→learn 流 + 各节点附关键参数（HC-2/HC-8）。
      - 底部两按钮：复制报告 MD、导出 JSON。
-  3. 空态快捷问法 3×2 Grid 内新增第 7 张卡片"启动全维分析示例"（FR-FE-07），点击触发 query="我想做一个 Rust 企业级服务，请帮我做架构开发专家联盟全维分析"并自动启动全维。
+  3. 空态快捷问法 3×2 Grid 内新增第 7 张卡片"启动mox 模块化系统架构分析示例"（FR-FE-07），点击触发 query="我想做一个 Rust 企业级服务，请帮我做架构开发专家联盟mox 模块化系统架构分析"并自动启动mox 模块化系统架构。
   4. 样式严格遵循：深空色系（global.css 令牌 `--ds-*`）+ 黄金间距 4/6/10/16/26/42（AC-20）。
-  5. Playwright 或 DOM 探针：全维分析流程跑完后，断言 5 Chip `.stage-chip.active` 按序出现（AC-14）。
+  5. Playwright 或 DOM 探针：mox 模块化系统架构分析流程跑完后，断言 5 Chip `.stage-chip.active` 按序出现（AC-14）。
 
 ### TR
 
@@ -503,7 +503,7 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
 - **产出文件**:
   - `platform/services/mox-expert/tests/alliance_e2e.rs`（新增 Rust 集成测试）
   - `.trae/specs/20260825-rust-expert-alliance-platform/review.md`（Review 阶段独立评审员生成，本任务不写）
-  - 前端 Playwright 用例追加到 `frontend-ui/tests/10-key-pages@P0.spec.js`（专家联盟全维分析场景）
+  - 前端 Playwright 用例追加到 `frontend-ui/tests/10-key-pages@P0.spec.js`（专家联盟mox 模块化系统架构分析场景）
 - **实现要求（冒烟清单）**:
   1. **Rust 层**：`cargo test -p mox-expert alliance_ --nocapture` → 全通过；`cargo test -p runtime ai_engine_alliance_ --nocapture` → 全通过；`cargo test --workspace` 基线 passed 数 ≥ 640（AC-R07 ≥ 1）。
   2. **Golang/HTTP 契约层**（curl 或脚本）：
@@ -515,7 +515,7 @@ T1(P0) alliance 模块骨架 + 常量（HC-2/5/8 参数写死）
      ```
   3. **前端 Playwright 层**：
      - 打开 http://localhost:3021/#/ai → 0 console error/warning（AC-19）。
-     - 点击「空态：启动全维分析示例」→ 5 Chip 流转（AC-14）→ 报告卡片出现（AC-13）→ 复制报告按钮成功。
+     - 点击「空态：启动mox 模块化系统架构分析示例」→ 5 Chip 流转（AC-14）→ 报告卡片出现（AC-13）→ 复制报告按钮成功。
      - 点麦克风按钮 → 录音→ASR→填入输入框（AC-11 或 degraded 提示不崩）。
      - 关闭 3717 → 点 MessageBubble 朗读 → 浏览器 TTS（AC-12）。
   4. **unsafe=0 + HC 常量锁死复查**：grep 代码确认（AC-18/07/08/09）。

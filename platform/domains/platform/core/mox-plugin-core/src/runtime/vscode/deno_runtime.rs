@@ -20,6 +20,7 @@
 //! - 阶段 3：模块加载器（支持 import/require）+ 异步操作完整支持 + 调试器
 
 use crate::runtime::vscode::host_ops::build_host_extension;
+use deno_core::v8;
 use anyhow::{anyhow, Context, Result};
 use serde_json::Value;
 use std::time::Duration;
@@ -47,6 +48,12 @@ pub struct DenoRuntime {
     /// 是否已释放
     disposed: bool,
 }
+// deno_core::JsRuntime 包含 v8::Isolate，本身是 !Send。
+// 但 v8 Isolate 可以安全地在线程间移动（同一时刻仅一个线程访问），
+// VsCodeRuntime 通过 Mutex<HashMap<String, DenoRuntime>> 保证单线程访问，
+// 因此这里 unsafe impl Send 是安全的。
+unsafe impl Send for DenoRuntime {}
+
 
 impl DenoRuntime {
     // ═══════════════════════════════════════════════════════════════════
@@ -84,12 +91,12 @@ impl DenoRuntime {
             extension_id.replace('\'', "\\'")
         );
         js_runtime
-            .execute_script("[mox-init]", inject_code.into())
+            .execute_script("[mox-init]", inject_code)
             .context("failed to inject extension id")?;
 
         // 3. 执行 VSCode API shim
         js_runtime
-            .execute_script("[vscode-api-shim]", VSCODE_API_SHIM.into())
+            .execute_script("[vscode-api-shim]", VSCODE_API_SHIM)
             .context("failed to execute vscode API shim")?;
 
         tracing::info!("DenoRuntime created successfully for extension: {}", extension_id);
@@ -124,7 +131,7 @@ impl DenoRuntime {
     /// # 错误
     /// - JS 语法错误或运行时异常
     /// - 运行时已被释放
-    pub fn execute_script(&mut self, name: &str, code: &str) -> Result<()> {
+    pub fn execute_script(&mut self, name: &'static str, code: &str) -> Result<()> {
         if self.disposed {
             return Err(anyhow!("DenoRuntime has been disposed"));
         }
@@ -132,7 +139,7 @@ impl DenoRuntime {
         tracing::debug!("executing script: {} ({} bytes)", name, code.len());
 
         self.js_runtime
-            .execute_script(name, code.into())
+            .execute_script(name, code.to_string())
             .with_context(|| format!("script execution failed: {}", name))?;
 
         Ok(())
@@ -146,25 +153,31 @@ impl DenoRuntime {
     /// # 参数
     /// - `name`: 脚本名称
     /// - `code`: JS 代码（最后一个表达式的值将被返回）
-    pub fn execute_script_with_result(&mut self, name: &str, code: &str) -> Result<Value> {
+    pub fn execute_script_with_result(&mut self, name: &'static str, code: &str) -> Result<Value> {
         if self.disposed {
             return Err(anyhow!("DenoRuntime has been disposed"));
         }
 
-        // 包装代码，将返回值转为 JSON 字符串
+        // 包装代码，使用 eval 执行代码
+        // 为什么用 eval 而不是 new Function 或直接 return <code>？
+        // 1. <code> 可能是语句（如 throw new Error()），不能作为 return 的表达式
+        // 2. new Function 的函数体没有隐式 return，表达式会被丢弃
+        // 3. eval 可以执行任意代码（语句和表达式），并返回最后一个表达式的值
+        // 4. 语法错误和运行时错误都能被外层 try-catch 捕获
         let wrapped = format!(
-            "(function() {{ try {{ return JSON.stringify((function() {{ return {}; }})()); }} catch(e) {{ return JSON.stringify({{__mox_error: e.message, __mox_stack: e.stack}}); }} }})()",
-            code
+            "(function() {{ try {{ return eval({}); }} catch(e) {{ return {{__mox_error: e.message, __mox_stack: e.stack}}; }} }})()",
+            // 将代码作为字符串字面量传递给 eval（Rust {:?} 生成与 JS 兼容的字符串字面量）
+            format!("{:?}", code)
         );
 
         let global = self
             .js_runtime
-            .execute_script(name, wrapped.into())
+            .execute_script(name, wrapped)
             .with_context(|| format!("script execution failed: {}", name))?;
 
         // 将 v8 值转换为 JSON
         let scope = &mut self.js_runtime.handle_scope();
-        let value = global.open(scope);
+        let value = v8::Local::new(scope, &global);
         let json = v8_value_to_json(scope, value);
 
         // 检查是否是内部错误包装
@@ -311,19 +324,20 @@ impl DenoRuntime {
     /// - `timeout`: 最大等待时间
     fn run_event_loop_with_timeout(&mut self, timeout: Duration) -> Result<()> {
         let start = std::time::Instant::now();
+        // deno_core 0.290 的 poll_event_loop 需要 &mut Context + PollEventLoopOptions
+        let waker = std::task::Waker::noop();
+        let mut cx = std::task::Context::from_waker(waker);
+        let options = deno_core::PollEventLoopOptions::default();
 
         loop {
             if start.elapsed() > timeout {
                 return Err(anyhow!("event loop timed out after {:?}", timeout));
             }
 
-            // poll_event_loop(wait=true) 会阻塞直到有事件可处理
-            // 返回 Poll::Ready(Ok(())) 表示事件循环已空
-            // 返回 Poll::Pending 表示还有待处理事件
-            match self.js_runtime.poll_event_loop(true) {
+            match self.js_runtime.poll_event_loop(&mut cx, options) {
                 std::task::Poll::Ready(Ok(())) => {
-                    // 事件循环已空，再检查一次是否有新任务（then 回调可能已加入）
-                    match self.js_runtime.poll_event_loop(false) {
+                    // 事件循环已空，再做一次非阻塞轮询确认
+                    match self.js_runtime.poll_event_loop(&mut cx, options) {
                         std::task::Poll::Ready(Ok(())) => break,
                         std::task::Poll::Ready(Err(e)) => {
                             return Err(anyhow!("event loop error: {}", e))
@@ -335,12 +349,10 @@ impl DenoRuntime {
                     return Err(anyhow!("event loop error: {}", e));
                 }
                 std::task::Poll::Pending => {
-                    // 还有待处理事件，继续循环
                     std::thread::sleep(Duration::from_millis(1));
                 }
             }
         }
-
         Ok(())
     }
 

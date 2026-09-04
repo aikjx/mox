@@ -81,7 +81,7 @@ impl AppState {
         // 演示项目
         let demo_projects = vec![
             serde_json::json!({
-                "id": "proj-demo-001", "name": "璇玑全维数字孪生中台",
+                "id": "proj-demo-001", "name": "璇玑mox 模块化系统架构数字孪生中台",
                 "type": "platform", "status": "active",
                 "description": "核心平台建设项目", "created_at": "2026-08-01T00:00:00Z"
             }),
@@ -137,9 +137,9 @@ impl AppState {
             }
         }
 
-        // 全维知识图谱：注入璇玑平台核心节点与关系，确保图谱页/搜索/路径分析首屏可用
+        // mox 模块化系统架构知识图谱：注入璇玑平台核心节点与关系，确保图谱页/搜索/路径分析首屏可用
         let demo_graph_nodes = vec![
-            serde_json::json!({"id":"mox-core","label":"璇玑内核","node_type":"core","category":"平台底座","summary":"全维统一内核与运行时"}),
+            serde_json::json!({"id":"mox-core","label":"璇玑内核","node_type":"core","category":"平台底座","summary":"mox 模块化系统架构统一内核与运行时"}),
             serde_json::json!({"id":"dsql-engine","label":"DSQL引擎","node_type":"graph","category":"数据层","summary":"动态SQL低代码查询引擎"}),
             serde_json::json!({"id":"kg-engine","label":"知识图谱引擎","node_type":"graph","category":"数据层","summary":"自研图谱存储与图算法"}),
             serde_json::json!({"id":"kb-store","label":"云盘知识库","node_type":"data","category":"数据层","summary":"文档/知识沉淀与检索"}),
@@ -149,7 +149,7 @@ impl AppState {
             serde_json::json!({"id":"op-engine","label":"算子引擎","node_type":"graph","category":"智能层","summary":"算子统一系统(OUS)执行"}),
             serde_json::json!({"id":"flow-engine","label":"流程引擎","node_type":"core","category":"运行层","summary":"工作流编排与实例调度"}),
             serde_json::json!({"id":"mcp-gateway","label":"MCP网关","node_type":"core","category":"运行层","summary":"Model Context Protocol 兼容层"}),
-            serde_json::json!({"id":"mox-fusion","label":"全维融合","node_type":"activation","category":"运行层","summary":"多源数据融合与编排"}),
+            serde_json::json!({"id":"mox-fusion","label":"mox 模块化系统架构融合","node_type":"activation","category":"运行层","summary":"多源数据融合与编排"}),
             serde_json::json!({"id":"inf-optimizer","label":"无穷维度优化","node_type":"optimizer","category":"智能层","summary":"多维参数寻优引擎"}),
             serde_json::json!({"id":"algo-lab","label":"算法实验室","node_type":"math","category":"科研层","summary":"算法分析/仿真/归一化"}),
             serde_json::json!({"id":"monitor","label":"实时监控","node_type":"signal","category":"观测层","summary":"运行观测与AI诊断"}),
@@ -570,7 +570,7 @@ pub fn api_router(state: AppState) -> Router {
         .route("/ai/resources", get(ai_resources))
         .route("/ai/resources/health", get(ai_resources_health))
 
-        // ===== 全维智能分析 =====
+        // ===== mox 模块化系统架构智能分析 =====
         .route("/ai/full-analysis", post(ai_full_analysis))
         .route("/ai/generate-doc", post(ai_generate_doc))
         .route("/ai/generate-flow-diagram", post(ai_generate_flow_diagram))
@@ -673,7 +673,7 @@ pub fn api_router(state: AppState) -> Router {
         .route("/automation/:id", put(automation_update))
         .route("/automation/ai-execute", post(automation_ai_execute))
 
-        // ===== 璇玑全维治理 =====
+        // ===== 璇玑mox 模块化系统架构治理 =====
         .route("/mox/health", get(mox_health))
         .route("/mox/optimize", post(mox_optimize))
         .route("/mox/publish", post(mox_publish))

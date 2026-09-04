@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! AI 大模型辅助编程 · 全维处理算法（Phase 1 落地）
+//! AI 大模型辅助编程 · mox 模块化系统架构处理算法（Phase 1 落地）
 //!
 //! 把设计文档《ai_programming_algorithm_design》的 10 步流程图落成可执行流水线：
 //!   ① 需求归一化(Normalize) → ② 流程图建模 → ③ 七专家审查 → ④ 裁决 →
@@ -138,7 +138,7 @@ pub fn normalize_requirement(
     }
 }
 
-/// 编程全维处理报告（①-⑩ 总报告）
+/// 编程mox 模块化系统架构处理报告（①-⑩ 总报告）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProgrammingReport {
     pub flow_id: String,
@@ -158,7 +158,7 @@ pub struct ProgrammingReport {
     pub audit: AuditChain,
 }
 
-/// 顶层编排：AI 大模型辅助编程全维处理流水线（①-⑩）。
+/// 顶层编排：AI 大模型辅助编程mox 模块化系统架构处理流水线（①-⑩）。
 ///
 /// 护栏执行顺序（对应设计文档第 5 章）：
 ///   G-A: 需求书未确认 → 直接止于 Normalized 回退点，不出码

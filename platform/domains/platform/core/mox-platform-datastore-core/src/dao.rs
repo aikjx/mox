@@ -107,6 +107,28 @@ impl UniversalBizDAO {
                CREATE INDEX IF NOT EXISTS idx_biz_dec_0 ON biz_data(ext_dec_0);"#,
         )?;
 
+        // 版本链表（与 ddl.sql 定义一致；供哈希链审计 audit_chain 使用）
+        conn.execute_batch(
+            r#"CREATE TABLE IF NOT EXISTS biz_data_version (
+                version_id TEXT PRIMARY KEY,
+                biz_id TEXT,
+                tenant_id TEXT,
+                entity_id TEXT,
+                version_num INTEGER,
+                snapshot_before TEXT,
+                snapshot_after TEXT,
+                changed_fields TEXT,
+                change_note TEXT,
+                operation_type TEXT,
+                operator_user_id TEXT,
+                prev_hash TEXT,
+                curr_hash TEXT,
+                created_at TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_ver_biz ON biz_data_version(biz_id);
+            CREATE INDEX IF NOT EXISTS idx_ver_op ON biz_data_version(operator_user_id);"#,
+        )?;
+
         Ok(())
     }
 

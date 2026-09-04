@@ -18,34 +18,71 @@ pub struct AuthConfig {
     /// Token issuer to validate.
     pub token_issuer: String,
     /// Public paths that don't require authentication.
+    /// 生产环境仅保留必要的认证端点和健康检查（≤3 个）。
     pub public_paths: Vec<String>,
+    /// Dev mode: when true, allows frontend dev token to bypass strict JWT
+    /// signature validation. Enabled by default in debug builds, must be
+    /// explicitly set via MOX_DEV_MODE=1 in release.
+    #[serde(default = "default_dev_mode")]
+    pub dev_mode: bool,
+}
+
+fn default_dev_mode() -> bool {
+    cfg!(debug_assertions)
 }
 
 impl Default for AuthConfig {
     fn default() -> Self {
         Self {
             enabled: true,
+            // 占位值：启动时由 resolve_jwt_secret() 从 JWT_SECRET 环境变量覆盖。
+            // release 模式下若环境变量未设置则 panic，禁止使用此默认值。
             jwt_secret: "change-me-in-production".into(),
             token_issuer: "mox-platform".into(),
+            // 生产收紧：仅保留健康检查 + 登录 + 注册 三个公开路径。
+            // /api/system、/api/security、/kg/v1、/ai/engine、/alliance/v1、/kb
+            // 均已回收为受保护路由，须携带有效 JWT 访问。
             public_paths: vec![
                 "/health".into(),
                 "/api/auth/login".into(),
-                // 迁移期：/system/* 与 /security/* 暂为公开（前端 dev 令牌非合法 JWT，
-                // 置于 protected 会直接 401 且阻断管理面板）。生产环境须移出 public_paths，
-                // 待 auth 对接 IAM JWT 校验后回收为受保护路由。
-                "/api/system".into(),
-                "/api/security".into(),
-                // 迁移期：/kg/v1/* 与 /ai/engine/* 暂为公开（知识图谱端点刚桥接真实算法，
-                // 前端 dev 与 E2E 测试需直接访问；生产环境待 auth 对接 IAM JWT 后回收）。
-                "/kg/v1".into(),
-                "/ai/engine".into(),
-                // 迁移期：/alliance/v1/* 暂为公开（专家联盟端点刚桥接真实实现，
-                // 前端 dev 与 E2E 测试需直接访问；生产环境待 auth 对接 IAM JWT 后回收）。
-                "/alliance/v1".into(),
-                // 迁移期：/kb/* 云盘知识库暂为公开（mox-kb-svc 100% 自研，对齐 legacy API 面
-                // 前端零改动；生产环境待 auth 对接 IAM JWT 后回收为受保护路由）。
-                "/kb".into(),
+                "/api/auth/register".into(),
             ],
+            dev_mode: default_dev_mode(),
+        }
+    }
+}
+
+impl AuthConfig {
+    /// Resolve JWT secret from environment variable.
+    ///
+    /// - `JWT_SECRET` 环境变量优先；
+    /// - debug 模式下未设置时使用 dev 密钥并打印警告（前端 dev 令牌可继续使用）；
+    /// - release 模式下未设置时 panic，禁止使用默认值启动。
+    pub fn resolve_jwt_secret(&mut self) {
+        match std::env::var("JWT_SECRET") {
+            Ok(secret) if !secret.is_empty() => {
+                self.jwt_secret = secret;
+            }
+            _ => {
+                if cfg!(debug_assertions) {
+                    eprintln!(
+                        "[WARN] JWT_SECRET 环境变量未设置，debug 模式使用 dev 密钥。\n\
+                         生产环境必须设置 JWT_SECRET，否则将拒绝启动。"
+                    );
+                    self.jwt_secret = "dev-only-insecure-secret".into();
+                    self.dev_mode = true;
+                } else {
+                    panic!(
+                        "JWT_SECRET 环境变量未设置！生产环境禁止使用默认密钥启动。\n\
+                         请设置: export JWT_SECRET=<your-strong-secret>"
+                    );
+                }
+            }
+        }
+        // MOX_DEV_MODE=1 可在 release 中显式开启 dev 模式（仅限临时调试）
+        if std::env::var("MOX_DEV_MODE").unwrap_or_default() == "1" {
+            self.dev_mode = true;
+            eprintln!("[WARN] MOX_DEV_MODE=1 已启用，dev 令牌可绕过严格 JWT 校验。仅限临时调试！");
         }
     }
 }
@@ -111,6 +148,19 @@ pub struct GatewayConfig {
     pub rate_limit: RateLimitConfig,
     /// Routing configuration.
     pub routing: RoutingConfig,
+    /// CORS allowed origins. 从 CORS_ALLOWED_ORIGINS 环境变量读取（逗号分隔），
+    /// 默认包含 localhost:3000 / localhost:5173 开发地址。
+    #[serde(default = "default_cors_origins")]
+    pub cors_allowed_origins: Vec<String>,
+}
+
+fn default_cors_origins() -> Vec<String> {
+    vec![
+        "http://localhost:3000".into(),
+        "http://localhost:5173".into(),
+        "http://127.0.0.1:3000".into(),
+        "http://127.0.0.1:5173".into(),
+    ]
 }
 
 fn default_timeout() -> Duration {
@@ -126,6 +176,7 @@ impl Default for GatewayConfig {
             auth: AuthConfig::default(),
             rate_limit: RateLimitConfig::default(),
             routing: RoutingConfig::default(),
+            cors_allowed_origins: default_cors_origins(),
         }
     }
 }
@@ -141,5 +192,20 @@ impl GatewayConfig {
     /// Get the bind address.
     pub fn bind_addr(&self) -> String {
         format!("{}:{}", self.host, self.port)
+    }
+
+    /// Resolve CORS allowed origins from `CORS_ALLOWED_ORIGINS` env var (comma-separated).
+    /// 生产环境应设置具体域名，禁止使用通配符 `*`。
+    pub fn resolve_cors_origins(&mut self) {
+        if let Ok(env_origins) = std::env::var("CORS_ALLOWED_ORIGINS") {
+            let origins: Vec<String> = env_origins
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty() && s != "*")
+                .collect();
+            if !origins.is_empty() {
+                self.cors_allowed_origins = origins;
+            }
+        }
     }
 }

@@ -448,7 +448,7 @@ mod tests {
     // TDD 1: 7 审计事件齐全（FR-CORE-07）
     #[tokio::test]
     async fn tdd1_seven_audit_events_complete() {
-        let req = fake_req("全维分析：Rust 网关路由性能与安全");
+        let req = fake_req("mox 模块化系统架构分析：Rust 网关路由性能与安全");
         let (events, audits) = run_full_pipeline(req).await.expect("pipeline ok");
         assert_eq!(audits.len(), 7, "审计事件必须 = 7 个，实际 {} 个；事件名依次 = {:?}", audits.len(), audits.iter().map(|a| a.event.clone()).collect::<Vec<_>>());
         for (i, name) in AUDIT_EVENTS_7.iter().enumerate() {

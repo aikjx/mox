@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>产品规范标准 · 人人爱用 · 全自动 · mox 模块化系统架构覆盖</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2933; --sub:#5b6b7b;
+    --line:#e3e9f0; --brand:#1f6feb; --brand2:#0f9d8a; --warn:#e8833a;
+    --gate:#b4266b; --ok:#1f9d55; --soft:#8a96a6; --block:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;line-height:1.55;}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 22px 60px;}
+  header.top{border-left:5px solid var(--brand);padding:6px 0 6px 16px;margin-bottom:8px;}
+  header.top h1{margin:0;font-size:25px;letter-spacing:.5px;}
+  header.top .meta{color:var(--sub);font-size:13px;margin-top:4px;}
+  .lead{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;margin:18px 0;font-size:14px;color:var(--sub);}
+  .lead b{color:var(--ink);}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:20px 22px;margin:20px 0;}
+  h2{font-size:19px;margin:0 0 14px;display:flex;align-items:center;gap:10px;}
+  h2 .tag{font-size:12px;background:var(--brand);color:#fff;border-radius:6px;
+    padding:2px 8px;font-weight:600;}
+  /* flow */
+  .flow{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch;}
+  .stage{flex:1 1 140px;min-width:135px;background:#fbfdff;border:1px solid var(--line);
+    border-radius:10px;padding:12px;position:relative;}
+  .stage .no{width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+  .stage h4{margin:8px 0 4px;font-size:14px;}
+  .stage .d{font-size:12px;color:var(--sub);}
+  .gate{flex:0 0 100%;display:flex;gap:10px;flex-wrap:wrap;margin:2px 0;}
+  .gchip{background:#fff0f6;border:1px solid #f3c0d6;color:var(--gate);
+    border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;}
+  .arrow{text-align:center;color:var(--soft);font-size:13px;margin:2px 0;}
+  /* principles */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .pc{border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+    border-top:3px solid var(--brand);}
+  .pc.p2{border-top-color:var(--brand2);}
+  .pc h4{margin:0 0 6px;font-size:14px;}
+  .pc .k{font-size:11px;color:#fff;background:var(--brand);border-radius:5px;
+    padding:1px 7px;margin-right:6px;}
+  .pc.p2 .k{background:var(--brand2);}
+  .pc p{margin:0;font-size:12.5px;color:var(--sub);}
+  /* matrix */
+  table{border-collapse:collapse;width:100%;font-size:12px;}
+  th,td{border:1px solid var(--line);padding:7px 8px;text-align:center;}
+  th{background:#eef3fa;color:var(--ink);font-weight:600;}
+  td.f{text-align:left;font-weight:600;background:#fbfdff;}
+  .ok{color:var(--ok);font-weight:700;}
+  .mid{color:var(--warn);font-weight:700;}
+  .no{color:var(--block);font-weight:700;}
+  .legend{font-size:12px;color:var(--sub);margin-top:10px;}
+  .legend span{margin-right:14px;}
+  footer{color:var(--soft);font-size:12px;text-align:center;margin-top:24px;}
+  .pill{display:inline-block;background:#eef7f2;color:var(--ok);border:1px solid #cdeedd;
+    border-radius:6px;padding:2px 9px;font-size:12px;margin:2px 4px 2px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>产品规范标准 · 人人爱用 · 快速操作 · 全自动处理 · mox 模块化系统架构覆盖</h1>
+    <div class="meta">ENT-PROD-STD v1.0 · 企业级产品体验与覆盖契约 · 统摄 14 / 01 / 02 / AA-STD / GR-STD / PT-STD</div>
+  </header>
+
+  <div class="lead">
+    <b>定位：</b>系统<b>每一个功能</b>都过<b>mox 模块化系统架构（双璇玑十四维 × 六维绑定）</b>打磨，由 AI <b>全自动</b>跑通需求→上线流水线，人类只在关键裁决点介入；产品做到<b>人人爱用、操作极快、全程无感自动化</b>。
+  </div>
+
+  <!-- 需求业务流程图 -->
+  <section>
+    <h2><span class="tag">流程图</span>需求业务流程图（需求全生命周期）</h2>
+    <div class="flow">
+      <div class="stage"><div class="no">①</div><h4>需求录入</h4><div class="d">关图 REQ 根<br/>+ 租户/RBAC 上下文</div></div>
+      <div class="stage"><div class="no">②</div><h4>归一化 G0</h4><div class="d">GR-STD 8 项<br/>CI 校验</div></div>
+      <div class="stage"><div class="no">③</div><h4>关图判重</h4><div class="d">能力指纹<br/>子图匹配</div></div>
+      <div class="stage"><div class="no">④</div><h4>双璇玑 G1</h4><div class="d">业务7+开发7<br/>并行诊断</div></div>
+      <div class="stage"><div class="no">⑤</div><h4>归一裁决</h4><div class="d">硬约束优先</div></div>
+      <div class="stage"><div class="no">⑥</div><h4>flow-ai 求解</h4><div class="d">CPM/RCPSP<br/>CodeGen</div></div>
+      <div class="stage"><div class="no">⑦</div><h4>⛨验证 G2</h4><div class="d">5 项最高<br/>权限否决</div></div>
+      <div class="stage"><div class="no">⑧</div><h4>治理 G3</h4><div class="d">六维绑定<br/>偏离门禁</div></div>
+      <div class="stage"><div class="no">⑨</div><h4>出码出图</h4><div class="d">上架算子</div></div>
+      <div class="stage"><div class="no">⑩</div><h4>上线运营</h4><div class="d">人人可用<br/>全自动</div></div>
+    </div>
+    <div class="gate">
+      <span class="gchip">G0 归一化闸门（阻断）</span>
+      <span class="gchip">G1 裁决闸门（硬约束优先）</span>
+      <span class="gchip">⛨ G2 璇玑验证（最高否决）</span>
+      <span class="gchip">G3 治理闸门（阻断）</span>
+    </div>
+    <div class="arrow">判重命中 → 复用编排 ｜ 近似 → 增量 ｜ 未命中 → 立项 ｜ 运营指标回流关图 → 持续自优化飞轮</div>
+  </section>
+
+  <!-- 十大原则 -->
+  <section>
+    <h2><span class="tag">契约</span>十大产品原则（P1–P10）</h2>
+    <div class="grid">
+      <div class="pc"><h4><span class="k">P1</span>零学习成本</h4><p>一句话入口、中文优先、术语即业务语言；任何角色开箱即用，无需培训。</p></div>
+      <div class="pc p2"><h4><span class="k">P4</span>极速响应</h4><p>核心操作端到端 &lt; 200ms（P95）；长任务异步、进度实时可见。</p></div>
+      <div class="pc"><h4><span class="k">P2</span>无障碍一致</h4><p>桌面/Web/移动交互一致；满足基础无障碍（对比度/键盘可达/语义）。</p></div>
+      <div class="pc p2"><h4><span class="k">P5</span>键盘优先·一键完成</h4><p>命令面板 ⌘K 覆盖 90% 高频动作；一键完成录入即归一、点击即判重。</p></div>
+      <div class="pc"><h4><span class="k">P3</span>容错友好</h4><p>草稿自动保存、危险操作二次确认、错误给可执行的修复建议，绝不丢输入。</p></div>
+      <div class="pc p2"><h4><span class="k">P6</span>批量与模板</h4><p>批量录入/裁决、模板复用；重复动作零重复输入。</p></div>
+      <div class="pc"><h4><span class="k">P7</span>全自动处理</h4><p>S1–S8 全链路 AI 自动跑通；人类仅介入 G1/G2/G3 阻断级分歧。</p></div>
+      <div class="pc p2"><h4><span class="k">P8</span>mox 模块化系统架构覆盖</h4><p>每个功能过双璇玑十四维 + 六维绑定；无孤儿、无断链、无未覆盖功能。</p></div>
+      <div class="pc"><h4><span class="k">P9</span>唯一事实基准</h4><p>关图 GR-STD 为唯一真相；描述互链、先判重后立项，杜绝重复造轮子。</p></div>
+      <div class="pc p2"><h4><span class="k">P10</span>持续自优化</h4><p>指标与算子回流关图，驱动下一轮架构与算法更优（飞轮闭环）。</p></div>
+    </div>
+  </section>
+
+  <!-- mox 模块化系统架构功能覆盖矩阵 -->
+  <section>
+    <h2><span class="tag">矩阵</span>mox 模块化系统架构功能覆盖矩阵（15 crate × 双璇玑十四维 + 六维绑定）</h2>
+    <table>
+      <thead>
+        <tr><th>功能 / crate</th><th>六维绑定</th><th>业务7</th><th>开发7</th><th>成熟度</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="f">mox-system 协作治理</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+        <tr><td class="f">mox-expert 双璇玑引擎</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+        <tr><td class="f">flow-ai 最优求解</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+        <tr><td class="f">primiflow-fusion 六维绑定</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+        <tr><td class="f">primiflow 流程编排</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+        <tr><td class="f">kg-hub 知识图谱枢纽</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+        <tr><td class="f">business-catalog 业务目录</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+        <tr><td class="f">runtime 运行时聚合</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+        <tr><td class="f">operator-core 算子核心</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="mid">🟡 在建</td></tr>
+        <tr><td class="f">operator-graph 算子图</td><td class="ok">✅</td><td class="mid">🟡</td><td class="ok">✅</td><td class="mid">🟡 在建</td></tr>
+        <tr><td class="f">operator-wasm 算子沙箱</td><td class="ok">✅</td><td class="ok">✅</td><td class="mid">🟡</td><td class="mid">🟡 在建</td></tr>
+        <tr><td class="f">optimizer 优化器</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="mid">🟡 在建</td></tr>
+        <tr><td class="f">template-market 模板市场</td><td class="ok">✅</td><td class="ok">✅</td><td class="mid">🟡</td><td class="mid">🟡 在建</td></tr>
+        <tr><td class="f">hermes-flow-bridge 流程桥接</td><td class="ok">✅</td><td class="mid">🟡</td><td class="ok">✅</td><td class="mid">🟡 在建</td></tr>
+        <tr><td class="f">ai-agent AI 智能体</td><td class="ok">✅</td><td class="mid">🟡</td><td class="mid">🟡</td><td class="no">⚪ 规划</td></tr>
+        <tr><td class="f">tools/info-graph + guantu_gate 关图门禁</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>✅ 成熟</td></tr>
+      </tbody>
+    </table>
+    <div class="legend">
+      <span><b class="ok">✅</b> 已覆盖且已验证</span>
+      <span><b class="mid">🟡</b> 部分 / 在建</span>
+      <span><b class="no">⚪</b> 标准要求待建</span>
+      <span>· 业务7 = 业务/算法/权限/资源/安全/数据/可观测</span>
+      <span>· 开发7 = 架构/安全代码/代码质量/性能/测试/文档/可维护性</span>
+    </div>
+    <p class="legend"><b>铁律 P8：</b>发布态功能必须为全列 ✅；任一 ⚪ 即"未覆盖功能"，禁止上线。由 G3 治理闸门 + 关图漂移门禁持续收敛。</p>
+  </section>
+
+  <div class="lead">
+    <b>验收速览：</b>
+    <span class="pill">首任务完成率 ≥90%</span>
+    <span class="pill">核心 P95 &lt;200ms</span>
+    <span class="pill">人工介入仅 G1/G2/G3</span>
+    <span class="pill">十四维覆盖率 100%</span>
+    <span class="pill">六维零孤儿</span>
+    <span class="pill">新需求先判重 100%</span>
+    <span class="pill">测试 0 error/0 fail</span>
+  </div>
+
+  <footer>企业级产品规范标准 ENT-PROD-STD v1.0 · 人人爱用 · 快速操作 · 全自动处理 · mox 模块化系统架构覆盖 · 任一层均可机读 / 可复核 / 可阻断</footer>
+</div>
+</body>
+</html>

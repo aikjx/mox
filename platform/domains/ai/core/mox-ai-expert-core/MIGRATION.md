@@ -78,7 +78,7 @@ mox-ai-expert-core/
     ├── tenant_policy/
     │   └── mod.rs          # 租户策略（八道治理闸门）
     │
-    └── pipeline.rs         # 全维处理流水线（mox_optimize）
+    └── pipeline.rs         # mox 模块化系统架构处理流水线（mox_optimize）
 ```
 
 ---
@@ -142,7 +142,7 @@ pub struct ExpertEngine {
 | Expert trait + dispatch | `src/expert.rs` | `src/expert/mod.rs` | 100% 完整迁移 |
 | IR (CodeIR/DimensionedFlow) | `src/ir.rs` | `src/ir/mod.rs` | 100% 完整迁移 |
 | 治理层 + 审计链 | `src/govern.rs` | `src/govern/mod.rs` | 100% 完整迁移 |
-| 全维处理流水线 | `src/pipeline.rs` | `src/pipeline.rs` | 100% 完整迁移 |
+| mox 模块化系统架构处理流水线 | `src/pipeline.rs` | `src/pipeline.rs` | 100% 完整迁移 |
 | 敏感度判定 | `src/sensitivity.rs` | `src/sensitivity.rs` | 100% 完整迁移（SSOT） |
 | 归一化逻辑 | `src/normalize.rs` | `src/normalize.rs` | 100% 完整迁移 |
 | 冲突裁决 | `src/reconcile.rs` | `src/reconcile.rs` | 100% 完整迁移 |
@@ -193,7 +193,7 @@ pub struct ExpertEngine {
 | `verify/` | 1 | 算法验证骨架 |
 | `tenant_policy/` | 2 | 八道闸门 + 合规租户严格策略 |
 | `sensitivity/` | 4 | 敏感度 SSOT 判定 |
-| `pipeline/` | 3 | 全维流水线 + 14 专家 + 审计链 |
+| `pipeline/` | 3 | mox 模块化系统架构流水线 + 14 专家 + 审计链 |
 | `experts/business.rs` | 6 | 业务专家：分支/兜底/悬垂/审批等 |
 | `experts/security.rs` | 5 | 安全专家：隔离/注入/PII外发/脱敏等 |
 | `experts/permission.rs` | 5 | 权限专家：跳过/否决/脱敏/Guard保护等 |
@@ -346,7 +346,7 @@ println!("治理结果: {:?}", verdict.status);
 | `src/govern/mod.rs` | 治理裁决 |
 | `src/verify/mod.rs` | 算法验证 |
 | `src/tenant_policy/mod.rs` | 租户策略 |
-| `src/pipeline.rs` | 全维处理流水线 |
+| `src/pipeline.rs` | mox 模块化系统架构处理流水线 |
 
 ### 未修改文件（mox-ai-expert-svc）
 

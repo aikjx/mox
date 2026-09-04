@@ -1,4 +1,4 @@
-# MOX 全维低代码平台
+# MOX mox 模块化系统架构低代码平台
 
 > 企业级动态SQL管理 + 自研知识图谱 + 字段级权限 + AI驱动
 > 版本: 1.0.0 | 状态: 生产就绪
@@ -65,7 +65,7 @@ infotopograph/
 
 ## 文档
 
-- [架构设计](docs/architecture.md) — 全维架构、三层数据、DSQL引擎、知识图谱、权限体系
+- [架构设计](docs/architecture.md) — mox 模块化系统架构、三层数据、DSQL引擎、知识图谱、权限体系
 - [数据交换规范](docs/data-exchange-spec.md) — MXDEF格式、导出/导入命令、跨系统发布
 - [部署指南](docs/deployment-guide.md) — 本地/Docker/Nginx/Systemd/一体化部署流程
 

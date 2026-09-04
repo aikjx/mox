@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! 专家联盟全维分析引擎（mox-ai-alliance-engine）
+//! 专家联盟mox 模块化系统架构分析引擎（mox-ai-alliance-engine）
 //!
 //! # 概述
 //!
@@ -45,7 +45,7 @@
 //! - **纯领域逻辑**：不含 HTTP 层，可被任何服务复用
 //! - **依赖注入**：通过 trait 注入专家注册表、KG 连接器、LLM 客户端等
 //! - **管线框架集成**：基于 `mox-pipeline-framework` 的 `PhaseId` trait
-//! - **SSE 流式支持**：辩论和全维分析支持流式事件输出
+//! - **SSE 流式支持**：辩论和mox 模块化系统架构分析支持流式事件输出
 //! - **功能对齐**：与原 `mox-ai-expert-svc` 联盟模块功能完全对齐
 //!
 //! # 依赖关系
@@ -66,14 +66,14 @@
 //!
 //! // 2. 构造请求
 //! let req = AllianceRequest {
-//!     query: "帮我做 Rust 企业级服务全维分析".into(),
+//!     query: "帮我做 Rust 企业级服务mox 模块化系统架构分析".into(),
 //!     session_id: Some("sess-1".into()),
 //!     context: BTreeMap::new(),
 //!     options: AllianceOptions::default(),
 //!     ..Default::default()
 //! };
 //!
-//! // 3. 运行全维分析
+//! // 3. 运行mox 模块化系统架构分析
 //! let events = engine.run_full_analysis(req).await?;
 //!
 //! // 4. 使用结果（7 个 SSE 事件）
@@ -94,7 +94,9 @@ pub mod gate;
 pub mod intent;
 pub mod kg;
 pub mod learning;
+pub mod llm_consultant;
 pub mod orchestration;
+pub mod persistence;
 pub mod router;
 pub mod team;
 
@@ -126,6 +128,11 @@ pub use team::{
 // 辩论
 pub use debate::{
     DebateEngine, DebateResult, ExpertConsultant, ExpertOpinion, LocalRuleConsultant,
+};
+
+// LLM 咨询器
+pub use llm_consultant::{
+    ChatMessage, ChatRole, ExpertOpinionJSON, HttpLLMConsultant, LLMConfig, SwitchableConsultant,
 };
 
 // 门禁

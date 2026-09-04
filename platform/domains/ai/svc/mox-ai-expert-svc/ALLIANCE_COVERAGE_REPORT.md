@@ -16,8 +16,8 @@
 | 5 | 多专家协同咨询 | 已补全 | `services.rs` + `alliance/debate.rs` | `POST /api/alliance/multi-consult` |
 | 6 | 专家辩论（同步） | 已补全 | `services.rs` + `alliance/mod.rs` | `POST /api/alliance/debate` |
 | 7 | 专家辩论（SSE 流式） | 已补全 | `server.rs` (SSE handler) | `GET /api/alliance/debate/stream` |
-| 8 | 全维分析（同步） | 已补全 | `services.rs` + `alliance/mod.rs` | `POST /api/alliance/full` |
-| 9 | 全维分析（SSE 流式） | 已补全 | `server.rs` (SSE handler) | `GET /api/alliance/full/stream` |
+| 8 | mox 模块化系统架构分析（同步） | 已补全 | `services.rs` + `alliance/mod.rs` | `POST /api/alliance/full` |
+| 9 | mox 模块化系统架构分析（SSE 流式） | 已补全 | `server.rs` (SSE handler) | `GET /api/alliance/full/stream` |
 | 10 | 任务编排引擎 | 新建 | `alliance/orchestration.rs` | `POST /api/alliance/orchestrate` |
 | 11 | 算法分析引擎 | 新建 | `alliance/algorithm.rs` | `POST /api/alliance/algorithm-analysis` |
 | 12 | 专家概览 | 已补全 | `services.rs` | `GET /api/alliance/overview` |
@@ -157,23 +157,23 @@ pub struct RegisterExpertRequest {
 
 ---
 
-### 2.6 全维分析（Full Analysis）
+### 2.6 mox 模块化系统架构分析（Full Analysis）
 
 **状态：已补全**
 
 **原有实现：**
-- `alliance/mod.rs`：`AllianceEngine::full_analysis()` 实现了完整的全维分析
+- `alliance/mod.rs`：`AllianceEngine::full_analysis()` 实现了完整的mox 模块化系统架构分析
 - 缺少 HTTP API 和 SSE 流式接口
 
 **补全内容：**
 - `types.rs`：新增 `FullAnalysisRequest` / `FullAnalysisResponse` / `FullAnalysisOptions` DTO
-- `services.rs`：`AllianceService::full_analysis()` 封装全维分析
+- `services.rs`：`AllianceService::full_analysis()` 封装mox 模块化系统架构分析
 - `server.rs`：新增 `POST /api/alliance/full`（同步）
 - `server.rs`：新增 `GET /api/alliance/full/stream`（SSE 流式）
 
-**全维分析 vs 专家辩论的区别：**
+**mox 模块化系统架构分析 vs 专家辩论的区别：**
 - 专家辩论：聚焦多方观点碰撞，输出共识/分歧
-- 全维分析：完整 6 阶段管线，含质量门禁评分 + 知识图谱沉淀
+- mox 模块化系统架构分析：完整 6 阶段管线，含质量门禁评分 + 知识图谱沉淀
 
 ---
 
@@ -299,12 +299,12 @@ pub struct RegisterExpertRequest {
 | POST | `/api/alliance/debate` | 专家辩论（同步） | `ExpertDebateRequest` | `ExpertDebateResponse` |
 | GET | `/api/alliance/debate/stream` | 专家辩论（SSE 流） | Query: `query`, `team_size?` | SSE: `done` event |
 
-### 3.5 全维分析
+### 3.5 mox 模块化系统架构分析
 
 | 方法 | 路径 | 功能 | 请求体 | 响应体 |
 |------|------|------|--------|--------|
-| POST | `/api/alliance/full` | 全维分析（同步） | `FullAnalysisRequest` | `FullAnalysisResponse` |
-| GET | `/api/alliance/full/stream` | 全维分析（SSE 流） | Query: `query` | SSE: `done` event |
+| POST | `/api/alliance/full` | mox 模块化系统架构分析（同步） | `FullAnalysisRequest` | `FullAnalysisResponse` |
+| GET | `/api/alliance/full/stream` | mox 模块化系统架构分析（SSE 流） | Query: `query` | SSE: `done` event |
 
 ### 3.6 任务编排
 

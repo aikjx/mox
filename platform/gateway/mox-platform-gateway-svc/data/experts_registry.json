@@ -1,0 +1,48 @@
+{
+  "exp-update-001": {
+    "id": "exp-update-001",
+    "name": "原名称",
+    "avatar": "",
+    "title": "更新后的头衔",
+    "organization": "",
+    "bio": "",
+    "domains": [
+      "ai"
+    ],
+    "skills": [
+      "Rust",
+      "Python"
+    ],
+    "capabilities": [],
+    "availability": {
+      "status": "online",
+      "last_active": "2026-09-03T17:18:13Z",
+      "avg_response_minutes": 5.0,
+      "current_load": 0,
+      "max_concurrent": 5
+    },
+    "metrics": {
+      "total_consultations": 100,
+      "today_consultations": 0,
+      "avg_rating": 4.9,
+      "rating_count": 0,
+      "resolution_rate": 0.9,
+      "first_response_accuracy": 0.0,
+      "total_service_minutes": 0
+    },
+    "expert_type": "ai",
+    "pricing_model": "free",
+    "hourly_rate_cents": 5000,
+    "languages": [
+      "zh-CN",
+      "en"
+    ],
+    "timezone": "Asia/Shanghai",
+    "verification_status": "verified",
+    "tags": [],
+    "created_at": "2026-09-03T17:18:13Z",
+    "updated_at": "2026-09-03T17:18:13Z",
+    "enabled": true,
+    "metadata": {}
+  }
+}

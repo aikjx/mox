@@ -8,7 +8,7 @@
         </div>
         <div class="header-titles">
           <h1 class="header-title">专家能力动态配置引擎</h1>
-          <p class="header-subtitle">全维可配置 · 企业级低代码 · 实时预览 · 一键发布</p>
+          <p class="header-subtitle">mox 模块化系统架构可配置 · 企业级低代码 · 实时预览 · 一键发布</p>
         </div>
       </div>
       <div class="header-right">
@@ -3381,29 +3381,27 @@ function runAiModuleTest() {
   }
   aiModuleTesting.value = true
   aiModuleTestResult.value = ''
-  const module = currentAiModule.value
-  aiModuleTestInfo.model = module.llm.useGlobal ? '全局配置' : `${module.llm.provider}/${module.llm.model}`
-  const startTime = Date.now()
-  
-  // 模拟测试
-  setTimeout(() => {
-    const duration = ((Date.now() - startTime) / 1000).toFixed(2)
-    aiModuleTestInfo.duration = parseFloat(duration)
-    aiModuleTestInfo.tokens = Math.floor(Math.random() * 500) + 100
-    aiModuleTestResult.value = `【${module.name}】处理结果：\n\n这是使用「${module.name}」模块处理的模拟结果。\n\n模型：${aiModuleTestInfo.model}\n问题：${aiModuleTestQuestion.value}\n\n模块描述：${module.description}\n\n（实际使用时，这里会调用对应的LLM模型进行处理）`
+  try {
+    // 后端 AI 模块测试接口未实现，不做静默成功模拟
+    ElMessage.error('AI 模块测试接口未实现，请联系后端开发')
+  } catch (e) {
+    ElMessage.error('测试失败：' + e.message)
+  } finally {
     aiModuleTesting.value = false
-  }, 1200)
+  }
 }
 
 // --- 底部操作 ---
 function saveConfig() {
   saving.value = true
-  setTimeout(() => {
+  try {
+    // 后端配置持久化接口未实现，不做静默成功模拟
+    ElMessage.error('配置保存接口未实现，请联系后端开发')
+  } catch (e) {
+    ElMessage.error('保存失败：' + e.message)
+  } finally {
     saving.value = false
-    isDirty.value = false
-    configVersion.value = (parseFloat(configVersion.value) + 0.01).toFixed(3)
-    ElMessage.success('配置已保存')
-  }, 600)
+  }
 }
 
 function publishConfig() {
@@ -3411,11 +3409,14 @@ function publishConfig() {
     type: 'info'
   }).then(() => {
     publishing.value = true
-    setTimeout(() => {
+    try {
+      // 后端配置发布接口未实现，不做静默成功模拟
+      ElMessage.error('配置发布接口未实现，请联系后端开发')
+    } catch (e) {
+      ElMessage.error('发布失败：' + e.message)
+    } finally {
       publishing.value = false
-      isDirty.value = false
-      ElMessage.success('🎉 配置已发布上线')
-    }, 1000)
+    }
   }).catch(() => {})
 }
 
@@ -3499,11 +3500,11 @@ function createNewExpert() {
 }
 
 function copyFromTemplate() {
-  ElMessage.info('模板复制功能：从已有专家配置复制')
+  ElMessage.error('模板复制接口暂不可用，请稍后重试')
 }
 
 function compareWithDefault() {
-  ElMessage.info('对比功能：展示当前配置与默认配置的差异')
+  ElMessage.error('配置对比接口暂不可用，请稍后重试')
 }
 
 // ========== LLM 模型方法 ==========
@@ -3516,17 +3517,16 @@ function testLlmConnection() {
   }
   llmTesting.value = true
   llmConnectionStatus.value = 'testing'
-  setTimeout(() => {
+  try {
+    // 后端 LLM 连接测试接口未实现，不做静默成功模拟
+    ElMessage.error('LLM 连接测试接口未实现，请联系后端开发')
+    llmConnectionStatus.value = 'failed'
+  } catch (e) {
+    ElMessage.error('测试失败：' + e.message)
+    llmConnectionStatus.value = 'failed'
+  } finally {
     llmTesting.value = false
-    // 模拟测试结果
-    const success = config.llm.primary.apiKey.length > 5
-    llmConnectionStatus.value = success ? 'success' : 'failed'
-    if (success) {
-      ElMessage.success('LLM 连接测试成功')
-    } else {
-      ElMessage.error('LLM 连接测试失败，请检查 API Key 和网络设置')
-    }
-  }, 1500)
+  }
 }
 
 // 添加备选模型
@@ -3587,23 +3587,16 @@ function testGraphConnection() {
   }
   graphTesting.value = true
   config.graph.connection.status = 'connecting'
-  setTimeout(() => {
+  try {
+    // 后端图谱连接测试接口未实现，不做静默成功模拟和假数据注入
+    ElMessage.error('图谱连接测试接口未实现，请联系后端开发')
+    config.graph.connection.status = 'error'
+  } catch (e) {
+    ElMessage.error('测试失败：' + e.message)
+    config.graph.connection.status = 'error'
+  } finally {
     graphTesting.value = false
-    // 模拟测试结果
-    const success = config.graph.connection.uri.length > 5
-    config.graph.connection.status = success ? 'connected' : 'error'
-    if (success) {
-      // 模拟统计数据
-      graphStats.nodes = 12580
-      graphStats.edges = 45320
-      graphStats.labels = 24
-      graphStats.latency = 23
-      graphStats.lastSync = new Date().toLocaleString()
-      ElMessage.success('图谱连接测试成功')
-    } else {
-      ElMessage.error('图谱连接测试失败，请检查连接地址和认证信息')
-    }
-  }, 1500)
+  }
 }
 
 // 断开图谱连接

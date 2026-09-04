@@ -334,26 +334,41 @@
 
         <!-- 未选中项目时的空状态 -->
         <div v-else class="empty-detail">
-          <el-empty description="选择或新建一个项目，开始全维归类" :image-size="100" />
+          <el-empty description="选择或新建一个项目，开始mox 模块化系统架构归类" :image-size="100" />
         </div>
       </div>
     </div>
 
-    <!-- ===== 深视图（开发中占位） ===== -->
+    <!-- ===== 深视图：项目开发工作台快捷入口 ===== -->
     <div v-else class="project-deep-placeholder">
       <div class="placeholder-content">
-        <el-empty description="项目开发工作台 · 功能开发中" :image-size="120">
-          <template #description>
-            <div style="text-align:center">
-              <p style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:8px">项目开发工作台</p>
-              <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">代码编辑器、实时预览、AI 建议等深度功能正在开发中</p>
-              <p style="font-size:12px;color:var(--text-muted)">当前项目：{{ current?.name || '未命名项目' }}</p>
-            </div>
-          </template>
-          <el-button type="primary" @click="backToList">
-            <el-icon><ArrowLeft /></el-icon> 返回项目列表
-          </el-button>
-        </el-empty>
+        <div style="text-align:center;margin-bottom:24px">
+          <p style="font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:6px">
+            {{ current?.name || '未命名项目' }} · 开发工作台
+          </p>
+          <p style="font-size:13px;color:var(--text-muted)">选择下方工具开始项目开发</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:480px;margin:0 auto 24px">
+          <button class="deep-quick-btn" @click="goModule('ai')">
+            <span style="font-size:24px">💬</span>
+            <span style="font-size:13px;font-weight:600;color:var(--text-primary)">AI 对话</span>
+          </button>
+          <button class="deep-quick-btn" @click="goModule('graph')">
+            <span style="font-size:24px">🕸️</span>
+            <span style="font-size:13px;font-weight:600;color:var(--text-primary)">知识图谱</span>
+          </button>
+          <button class="deep-quick-btn" @click="goModule('operators')">
+            <span style="font-size:24px">⚙️</span>
+            <span style="font-size:13px;font-weight:600;color:var(--text-primary)">算子执行</span>
+          </button>
+          <button class="deep-quick-btn" @click="goModule('workflow')">
+            <span style="font-size:24px">⚡</span>
+            <span style="font-size:13px;font-weight:600;color:var(--text-primary)">工作流</span>
+          </button>
+        </div>
+        <el-button @click="backToList">
+          <el-icon><ArrowLeft /></el-icon> 返回项目列表
+        </el-button>
       </div>
     </div>
 
@@ -395,8 +410,8 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 全维目录归档 Drawer（保留） ===== -->
-    <el-drawer v-model="binder.visible" title="全维资源目录 · 归类到项目" size="620px">
+    <!-- ===== mox 模块化系统架构目录归档 Drawer（保留） ===== -->
+    <el-drawer v-model="binder.visible" title="mox 模块化系统架构资源目录 · 归类到项目" size="620px">
       <div class="binder-head">
         <el-input v-model="binder.keyword" placeholder="搜索全部资源…" clearable>
           <template #prefix><el-icon><Search /></el-icon></template>
@@ -1844,6 +1859,24 @@ async function saveNote() {
 .placeholder-content {
   text-align: center;
   max-width: 480px;
+}
+
+.deep-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.deep-quick-btn:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+  transform: translateY(-2px);
 }
 
 /* ===== 深视图 ===== */

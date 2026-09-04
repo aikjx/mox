@@ -8,7 +8,7 @@
 |------|---------|------|---------|---------|
 | flow_engine | agent-svc | 流程图驱动 AI 综合处理核心 | `NodeType` (16种) / `FlowDefinition` | 顺序执行 + 条件分支 |
 | workflow_engine | agent-svc | BPMN 风格业务流程引擎 | `WorkflowNodeType` (11种) / `BusinessWorkflow` | BFS 执行 + 并行 + 子流程 |
-| pipeline (expert) | expert-svc | 全维治理流水线 | `GovernanceReport` / 专家插件体系 | 瀑布式阶段流水线 |
+| pipeline (expert) | expert-svc | mox 模块化系统架构治理流水线 | `GovernanceReport` / 专家插件体系 | 瀑布式阶段流水线 |
 | alliance/gate | expert-svc | 联盟管线 + 质量门禁 | `GateScore` / `AlliancePhase` | 6阶段 SSE 管线 |
 | pipeline (flow) | flow-svc | 全链路优化流水线 | `NodeKind` (10种) / `FlowGraph` / `OptimizationReport` | 6阶段优化管线 |
 

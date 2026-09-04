@@ -502,51 +502,51 @@ pub static ROUTES: [ApiRoute; 98] = [
     // =====================================================================
     // System 域（L5·系统管理+安全·/api/v1/system/* · /api/v1/security/*·IAM SQLite 真实数据链路）
     // =====================================================================
-    r("system.permissions.current", "GET", "/api/v1/system/permissions", "L5", "system", "ready", "当前用户权限/角色/菜单"),
-    r("system.dept.list", "ANY", "/api/v1/system/dept", "L5", "system", "ready", "部门列表/创建"),
-    r("system.dept.tree", "GET", "/api/v1/system/dept/tree", "L5", "system", "ready", "部门树"),
-    r("system.dept.detail", "ANY", "/api/v1/system/dept/:id", "L5", "system", "ready", "部门详情/更新/删除"),
-    r("system.dept.users", "GET", "/api/v1/system/dept/:id/users", "L5", "system", "ready", "部门用户列表"),
-    r("system.post.list", "ANY", "/api/v1/system/post", "L5", "system", "ready", "岗位列表/创建"),
-    r("system.post.by_dept", "GET", "/api/v1/system/post/dept/:deptId", "L5", "system", "ready", "按部门查询岗位"),
-    r("system.post.detail", "ANY", "/api/v1/system/post/:id", "L5", "system", "ready", "岗位详情/更新/删除"),
-    r("system.user.list", "ANY", "/api/v1/system/user", "L5", "system", "ready", "用户列表/创建"),
-    r("system.user.detail", "ANY", "/api/v1/system/user/:id", "L5", "system", "ready", "用户详情/更新/删除"),
-    r("system.user.reset_pwd", "PUT", "/api/v1/system/user/:id/resetPwd", "L5", "system", "ready", "重置用户密码"),
-    r("system.user.change_status", "PUT", "/api/v1/system/user/:id/changeStatus", "L5", "system", "ready", "用户状态切换（启用/停用）"),
-    r("system.user.roles", "ANY", "/api/v1/system/user/:id/roles", "L5", "system", "ready", "用户角色查询/分配"),
-    r("system.role.list", "ANY", "/api/v1/system/role", "L5", "system", "ready", "角色列表/创建"),
-    r("system.role.detail", "ANY", "/api/v1/system/role/:id", "L5", "system", "ready", "角色详情/更新/删除"),
-    r("system.role.menu_perms", "ANY", "/api/v1/system/role/:id/menuPerms", "L5", "system", "ready", "角色菜单权限查询/设置"),
-    r("system.role.data_perms", "ANY", "/api/v1/system/role/:id/dataPerms", "L5", "system", "ready", "角色数据权限查询/设置"),
-    r("system.role.users", "GET", "/api/v1/system/role/:id/users", "L5", "system", "ready", "角色用户列表"),
-    r("system.role.copy", "POST", "/api/v1/system/role/:id/copy", "L5", "system", "ready", "复制角色"),
-    r("system.menu.tree", "GET", "/api/v1/system/menu/tree", "L5", "system", "ready", "菜单树（用户可见）"),
-    r("system.menu.list", "ANY", "/api/v1/system/menu", "L5", "system", "ready", "菜单列表/创建"),
-    r("system.menu.detail", "ANY", "/api/v1/system/menu/:id", "L5", "system", "ready", "菜单详情/更新/删除"),
-    r("system.dict_type.list", "ANY", "/api/v1/system/dict/type", "L5", "system", "ready", "字典类型列表/创建"),
-    r("system.dict_type.all", "GET", "/api/v1/system/dict/type/all", "L5", "system", "ready", "全部字典类型"),
-    r("system.dict_type.detail", "ANY", "/api/v1/system/dict/type/:id", "L5", "system", "ready", "字典类型详情/更新/删除"),
-    r("system.dict_data.list", "ANY", "/api/v1/system/dict/data", "L5", "system", "ready", "字典数据列表/创建"),
-    r("system.dict_data.by_type", "GET", "/api/v1/system/dict/data/type/:dictType", "L5", "system", "ready", "按类型查询字典数据"),
-    r("system.dict_data.detail", "ANY", "/api/v1/system/dict/data/:id", "L5", "system", "ready", "字典数据详情/更新/删除"),
-    r("system.config.list", "ANY", "/api/v1/system/config", "L5", "system", "ready", "参数配置列表/创建"),
-    r("system.config.refresh", "DELETE", "/api/v1/system/config/refresh-cache", "L5", "system", "ready", "刷新配置缓存"),
-    r("system.config.detail", "ANY", "/api/v1/system/config/:id", "L5", "system", "ready", "配置详情/更新/删除"),
-    r("system.config.by_key", "GET", "/api/v1/system/config/key/:key", "L5", "system", "ready", "按键查询配置"),
-    r("system.operlog.list", "GET", "/api/v1/system/operlog", "L5", "system", "ready", "操作日志列表"),
-    r("system.operlog.clean", "DELETE", "/api/v1/system/operlog/clean", "L5", "system", "ready", "清空操作日志"),
-    r("system.operlog.detail", "ANY", "/api/v1/system/operlog/:id", "L5", "system", "ready", "操作日志详情/删除"),
-    r("system.operlog.export", "GET", "/api/v1/system/operlog/export", "L5", "system", "ready", "导出操作日志（CSV）"),
-    r("system.loginlog.list", "GET", "/api/v1/system/logininfor", "L5", "system", "ready", "登录日志列表"),
-    r("system.loginlog.clean", "DELETE", "/api/v1/system/logininfor/clean", "L5", "system", "ready", "清空登录日志"),
-    r("system.loginlog.detail", "DELETE", "/api/v1/system/logininfor/:id", "L5", "system", "ready", "删除登录日志"),
-    r("system.loginlog.export", "GET", "/api/v1/system/logininfor/export", "L5", "system", "ready", "导出登录日志（CSV）"),
-    r("system.security.status", "GET", "/api/v1/security/status", "L5", "system", "ready", "安全状态（认证/限流/IAM）"),
-    r("system.security.api_keys", "ANY", "/api/v1/security/api-keys", "L5", "system", "ready", "API Key 列表/创建（SQLite 持久化）"),
-    r("system.security.api_key_revoke", "DELETE", "/api/v1/security/api-keys/:id", "L5", "system", "ready", "吊销 API Key（DB+内存双删）"),
-    r("system.security.api_key_validate", "POST", "/api/v1/security/validate", "L5", "system", "ready", "校验 API Key 明文"),
-    r("system.security.audit_log", "GET", "/api/v1/security/audit-log", "L5", "system", "ready", "审计日志（SQLite 读取）"),
+    r("system.permissions.current", "GET", "/api/system/permissions", "L5", "system", "ready", "当前用户权限/角色/菜单"),
+    r("system.dept.list", "ANY", "/api/system/dept", "L5", "system", "ready", "部门列表/创建"),
+    r("system.dept.tree", "GET", "/api/system/dept/tree", "L5", "system", "ready", "部门树"),
+    r("system.dept.detail", "ANY", "/api/system/dept/:id", "L5", "system", "ready", "部门详情/更新/删除"),
+    r("system.dept.users", "GET", "/api/system/dept/:id/users", "L5", "system", "ready", "部门用户列表"),
+    r("system.post.list", "ANY", "/api/system/post", "L5", "system", "ready", "岗位列表/创建"),
+    r("system.post.by_dept", "GET", "/api/system/post/dept/:deptId", "L5", "system", "ready", "按部门查询岗位"),
+    r("system.post.detail", "ANY", "/api/system/post/:id", "L5", "system", "ready", "岗位详情/更新/删除"),
+    r("system.user.list", "ANY", "/api/system/user", "L5", "system", "ready", "用户列表/创建"),
+    r("system.user.detail", "ANY", "/api/system/user/:id", "L5", "system", "ready", "用户详情/更新/删除"),
+    r("system.user.reset_pwd", "PUT", "/api/system/user/:id/resetPwd", "L5", "system", "ready", "重置用户密码"),
+    r("system.user.change_status", "PUT", "/api/system/user/:id/changeStatus", "L5", "system", "ready", "用户状态切换（启用/停用）"),
+    r("system.user.roles", "ANY", "/api/system/user/:id/roles", "L5", "system", "ready", "用户角色查询/分配"),
+    r("system.role.list", "ANY", "/api/system/role", "L5", "system", "ready", "角色列表/创建"),
+    r("system.role.detail", "ANY", "/api/system/role/:id", "L5", "system", "ready", "角色详情/更新/删除"),
+    r("system.role.menu_perms", "ANY", "/api/system/role/:id/menuPerms", "L5", "system", "ready", "角色菜单权限查询/设置"),
+    r("system.role.data_perms", "ANY", "/api/system/role/:id/dataPerms", "L5", "system", "ready", "角色数据权限查询/设置"),
+    r("system.role.users", "GET", "/api/system/role/:id/users", "L5", "system", "ready", "角色用户列表"),
+    r("system.role.copy", "POST", "/api/system/role/:id/copy", "L5", "system", "ready", "复制角色"),
+    r("system.menu.tree", "GET", "/api/system/menu/tree", "L5", "system", "ready", "菜单树（用户可见）"),
+    r("system.menu.list", "ANY", "/api/system/menu", "L5", "system", "ready", "菜单列表/创建"),
+    r("system.menu.detail", "ANY", "/api/system/menu/:id", "L5", "system", "ready", "菜单详情/更新/删除"),
+    r("system.dict_type.list", "ANY", "/api/system/dict/type", "L5", "system", "ready", "字典类型列表/创建"),
+    r("system.dict_type.all", "GET", "/api/system/dict/type/all", "L5", "system", "ready", "全部字典类型"),
+    r("system.dict_type.detail", "ANY", "/api/system/dict/type/:id", "L5", "system", "ready", "字典类型详情/更新/删除"),
+    r("system.dict_data.list", "ANY", "/api/system/dict/data", "L5", "system", "ready", "字典数据列表/创建"),
+    r("system.dict_data.by_type", "GET", "/api/system/dict/data/type/:dictType", "L5", "system", "ready", "按类型查询字典数据"),
+    r("system.dict_data.detail", "ANY", "/api/system/dict/data/:id", "L5", "system", "ready", "字典数据详情/更新/删除"),
+    r("system.config.list", "ANY", "/api/system/config", "L5", "system", "ready", "参数配置列表/创建"),
+    r("system.config.refresh", "DELETE", "/api/system/config/refresh-cache", "L5", "system", "ready", "刷新配置缓存"),
+    r("system.config.detail", "ANY", "/api/system/config/:id", "L5", "system", "ready", "配置详情/更新/删除"),
+    r("system.config.by_key", "GET", "/api/system/config/key/:key", "L5", "system", "ready", "按键查询配置"),
+    r("system.operlog.list", "GET", "/api/system/operlog", "L5", "system", "ready", "操作日志列表"),
+    r("system.operlog.clean", "DELETE", "/api/system/operlog/clean", "L5", "system", "ready", "清空操作日志"),
+    r("system.operlog.detail", "ANY", "/api/system/operlog/:id", "L5", "system", "ready", "操作日志详情/删除"),
+    r("system.operlog.export", "GET", "/api/system/operlog/export", "L5", "system", "ready", "导出操作日志（CSV）"),
+    r("system.loginlog.list", "GET", "/api/system/logininfor", "L5", "system", "ready", "登录日志列表"),
+    r("system.loginlog.clean", "DELETE", "/api/system/logininfor/clean", "L5", "system", "ready", "清空登录日志"),
+    r("system.loginlog.detail", "DELETE", "/api/system/logininfor/:id", "L5", "system", "ready", "删除登录日志"),
+    r("system.loginlog.export", "GET", "/api/system/logininfor/export", "L5", "system", "ready", "导出登录日志（CSV）"),
+    r("system.security.status", "GET", "/api/security/status", "L5", "system", "ready", "安全状态（认证/限流/IAM）"),
+    r("system.security.api_keys", "ANY", "/api/security/api-keys", "L5", "system", "ready", "API Key 列表/创建（SQLite 持久化）"),
+    r("system.security.api_key_revoke", "DELETE", "/api/security/api-keys/:id", "L5", "system", "ready", "吊销 API Key（DB+内存双删）"),
+    r("system.security.api_key_validate", "POST", "/api/security/validate", "L5", "system", "ready", "校验 API Key 明文"),
+    r("system.security.audit_log", "GET", "/api/security/audit-log", "L5", "system", "ready", "审计日志（SQLite 读取）"),
 ];
 
 /// 判断路径是否属于管理面（管理端点不允许被停用，防止自锁）
@@ -733,7 +733,7 @@ async fn actuator_info() -> ApiResponse<Value> {
     api_ok(json!({
         "app": {
             "name": "mox-gateway",
-            "description": "MOX 全维低代码平台 · 企业级网关",
+            "description": "MOX mox 模块化系统架构低代码平台 · 企业级网关",
             "version": env!("CARGO_PKG_VERSION"),
             "framework": "Rust / axum 0.7",
             "build_time": option_env!("BUILD_TIME_UTC").unwrap_or("unknown"),
@@ -1042,21 +1042,21 @@ mod tests {
     fn test_match_best_prefers_specific() {
         // /api/system/user/u1/roles 应命中更具体的 roles 路由而非 user/:id
         let m = match_best("GET", "/api/system/user/u1/roles").expect("matched");
-        assert_eq!(m.id, "sys-user-roles");
+        assert_eq!(m.id, "system.user.roles");
         // 普通 /api/system/user 命中系统路由而非代理通配
         let m2 = match_best("GET", "/api/system/user").expect("matched");
-        assert_eq!(m2.id, "sys-user");
+        assert_eq!(m2.id, "system.user.list");
         // /api/others 落入代理
         let m3 = match_best("GET", "/api/others/foo").expect("matched");
-        assert_eq!(m3.id, "proxy-orchestrator");
+        assert_eq!(m3.id, "platform.proxy_orchestrator");
     }
 
     #[test]
     fn test_match_best_respects_method() {
-        let m = match_best("POST", "/ai/engine/process").expect("matched");
-        assert_eq!(m.id, "ai-process");
+        let m = match_best("POST", "/api/ai/engine/process").expect("matched");
+        assert_eq!(m.id, "ai.engine.process");
         // GET 不匹配 POST 路由 → 应落到别的（无匹配则 None）
-        assert!(match_best("GET", "/ai/engine/process").is_none());
+        assert!(match_best("GET", "/api/ai/engine/process").is_none());
     }
 
     #[test]
@@ -1087,12 +1087,12 @@ mod tests {
 
     #[test]
     fn test_route_toggle() {
-        let route = get_route("kg-stats").expect("route exists");
+        let route = get_route("kg.graph.stats").expect("route exists");
         assert!(route.enabled.load(Ordering::Relaxed));
         route.enabled.store(false, Ordering::Relaxed);
         // 停用后 match 仍命中（拦截在中间件层判定 enabled）
-        let m = match_best("GET", "/kg/v1/stats").expect("matched");
-        assert_eq!(m.id, "kg-stats");
+        let m = match_best("GET", "/api/kg/stats").expect("matched");
+        assert_eq!(m.id, "kg.graph.stats");
         assert!(!m.enabled.load(Ordering::Relaxed));
         route.enabled.store(true, Ordering::Relaxed);
         assert!(route.enabled.load(Ordering::Relaxed));

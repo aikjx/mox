@@ -1,9 +1,9 @@
-# 开发专家联盟 · 全维完成轮报告（阶段五）
+# 开发专家联盟 · mox 模块化系统架构完成轮报告（阶段五）
 
 - **文档编号**：EA-PHASE5-REPORT-20260901
 - **日期**：2026-09-01
 - **范围**：平台 `platform/domains/alliance`（专家联盟 Rust 域）
-- **任务**：三项"全维完成"——① scheduler/executor 真正接入 Nacos 配置中心启动；② Nacos 阶段三（NamingService 注册中心）探索与落地；③ 语音 3717→30010 端口迁移核验
+- **任务**：三项"mox 模块化系统架构完成"——① scheduler/executor 真正接入 Nacos 配置中心启动；② Nacos 阶段三（NamingService 注册中心）探索与落地；③ 语音 3717→30010 端口迁移核验
 - **硬约束**：禁止吹牛 / 诚实声明；配置错误显式报错；产物落 docs 可追溯
 
 ---
@@ -144,4 +144,4 @@ cargo test -p mox-alliance-boot-config --features nacos,naming \
 
 ---
 
-*开发专家联盟 · 阶段五全维完成轮 · 2026-09-01*
+*开发专家联盟 · 阶段五mox 模块化系统架构完成轮 · 2026-09-01*

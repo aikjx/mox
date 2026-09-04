@@ -24,7 +24,7 @@
 
 | 文档 | 路径 | 说明 |
 |------|------|------|
-| 架构总览 v3.0 | [`architecture.md`](../architecture.md) | **权威入口**：MOX AI 驱动全维平台 v3.0 架构总览 |
+| 架构总览 v3.0 | [`architecture.md`](../architecture.md) | **权威入口**：MOX AI 驱动mox 模块化系统架构平台 v3.0 架构总览 |
 | 元架构总纲 | [`cosmic-architecture/00-COSMIC-META-ARCHITECTURE.md`](../cosmic-architecture/00-COSMIC-META-ARCHITECTURE.md) | COSMIC 元架构设计哲学与 9 大能力域 |
 | 元架构文档索引 | [`cosmic-architecture/README.md`](../cosmic-architecture/README.md) | 元架构文档目录与导航 |
 | 全域顶层总设计 | [`enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md) | 三联盟模式全域顶层总设计 V1.0 |
@@ -97,16 +97,16 @@
 
 | 文档 | 说明 |
 |------|------|
-| [`08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md`](./08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md) | 全维低代码九层架构、行业融合引擎 |
+| [`08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md`](./08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md) | mox 模块化系统架构低代码九层架构、行业融合引擎 |
 | [`07-KG-DYNAMIC-SQL-ARCHITECTURE.md`](./07-KG-DYNAMIC-SQL-ARCHITECTURE.md) | KG 驱动动态 SQL、字段级权限 |
-| [`10-DSQL-CORE-FULL-DIMENSIONAL-VALIDATION.md`](./10-DSQL-CORE-FULL-DIMENSIONAL-VALIDATION.md) | DSQL 全维验证与竞品对比 |
+| [`10-DSQL-CORE-FULL-DIMENSIONAL-VALIDATION.md`](./10-DSQL-CORE-FULL-DIMENSIONAL-VALIDATION.md) | DSQL mox 模块化系统架构验证与竞品对比 |
 
 ### 企业级架构
 
 | 文档 | 说明 |
 |------|------|
 | [`enterprise-architecture/mox-zettabyte-architecture.html`](../enterprise-architecture/mox-zettabyte-architecture.html) | 企业级架构可视化展示 |
-| [`enterprise/02-architecture.md`](../enterprise/02-architecture.md) | 企业级全维平台架构设计 |
+| [`enterprise/02-architecture.md`](../enterprise/02-architecture.md) | 企业级mox 模块化系统架构平台架构设计 |
 
 ---
 

@@ -171,7 +171,7 @@ pub fn registered_subservers() -> Vec<Subserver> {
         },
         Subserver {
             name: "mox-expert-alliance",
-            purpose: "专家联盟 6 阶段全维分析引擎（Rust crate，内嵌于本 mox_platform_orchestrator_svc）",
+            purpose: "专家联盟 6 阶段mox 模块化系统架构分析引擎（Rust crate，内嵌于本 mox_platform_orchestrator_svc）",
             url: "builtin://mox-expert/alliance".into(),
             health: "/ai/engine/alliance/capabilities".into(),
             required: true,

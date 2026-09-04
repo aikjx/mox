@@ -1,0 +1,87 @@
+# =============================================================================
+# Prometheus 配置 - MOX 企业级平台
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: mox-production
+    environment: prod
+
+# 告警规则
+rule_files:
+  - "alerts/*.yml"
+# 告警管理器
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# 抓取配置
+scrape_configs:
+  # Prometheus 自身
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # 平台网关
+  - job_name: "platform-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["platform-gateway:8080"]
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # 联盟引擎服务
+  - job_name: "alliance-engine"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["alliance-engine:8081"]
+    scrape_interval: 10s
+
+  # LLM 推理服务
+  - job_name: "llm-inference"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["llm-inference-svc:8001"]
+    scrape_interval: 10s
+
+  # 知识库服务
+  - job_name: "knowledge-base"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["kb-svc:8082"]
+    scrape_interval: 10s
+
+  # 知识图谱服务
+  - job_name: "kg-service"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["kg-service-svc:8083"]
+    scrape_interval: 15s
+
+  # PostgreSQL
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+    scrape_interval: 30s
+
+  # Redis
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+    scrape_interval: 30s
+
+  # Node Exporter（主机指标）
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    scrape_interval: 30s
+
+  # Nginx
+  - job_name: "nginx"
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+    scrape_interval: 30s

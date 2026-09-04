@@ -72,6 +72,7 @@ export const useAppStore = defineStore('app', () => {
   // ===== Theme Actions =====
   function setTheme(themeKey) {
     if (!themeKeys.includes(themeKey)) {
+      // dev only: 未知主题键属内部配置错误，静默使用默认
       console.warn(`[appStore] 未知主题: ${themeKey}`)
       return
     }

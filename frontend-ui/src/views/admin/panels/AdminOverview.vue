@@ -1,5 +1,5 @@
 <template>
-  <div class="adm-overview">
+  <div class="adm-overview" v-loading="loading">
     <div class="grid grid-4 kpi-row">
       <div class="panel kpi" v-for="k in kpis" :key="k.label">
         <div class="kpi-icon" :style="{ background: k.bg, color: k.color }">
@@ -72,6 +72,7 @@ const storage = ref({})
 const modules = ref([])
 const llm = ref({})
 const full = ref({})
+const loading = ref(false)
 
 function fmtUptime(sec) {
   if (!sec && sec !== 0) return '-'
@@ -125,6 +126,7 @@ const quickLinks = [
 ]
 
 onMounted(async () => {
+  loading.value = true
   const tasks = [
     getSecurityStatus().then(d => { security.value = d || {} }).catch(() => {}),
     getStorageStatus().then(d => { storage.value = d || {} }).catch(() => {}),
@@ -133,6 +135,7 @@ onMounted(async () => {
     getFullStatus().then(d => { full.value = d || {} }).catch(() => {})
   ]
   await Promise.all(tasks)
+  loading.value = false
 })
 </script>
 

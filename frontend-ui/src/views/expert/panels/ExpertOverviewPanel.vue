@@ -14,7 +14,7 @@
         <section class="card phase-nav-card">
           <div class="card-header">
             <span class="card-title">项目阶段</span>
-            <span class="card-sub">4 阶段全维流程</span>
+            <span class="card-sub">4 阶段mox 模块化系统架构流程</span>
           </div>
           <div class="phase-list">
             <div

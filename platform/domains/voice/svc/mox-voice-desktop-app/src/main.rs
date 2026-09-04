@@ -566,7 +566,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                 UserEvent::Ipc(msg) => {
                     if let Some(rest) = msg.strip_prefix("chat:") {
                         let text = rest.to_string();
-                        // 形象模型切换命令（全维联动：语音 + 性格 + 视觉）
+                        // 形象模型切换命令（mox 模块化系统架构联动：语音 + 性格 + 视觉）
                         if let Some(avatar) = try_switch_avatar(&text, &avatars) {
                             if let Some(eng) = &engine {
                                 avatars.apply_voice(eng);

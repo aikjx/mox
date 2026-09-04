@@ -9,7 +9,7 @@
 
 ## 一、概述
 
-本阶段将专家联盟全维分析引擎从 `mox-ai-expert-svc` 的 `alliance` 模块
+本阶段将专家联盟mox 模块化系统架构分析引擎从 `mox-ai-expert-svc` 的 `alliance` 模块
 独立为独立 crate `mox-ai-alliance-engine`，实现纯领域逻辑与 HTTP 层的彻底解耦。
 
 **核心目标**：

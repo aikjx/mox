@@ -247,7 +247,7 @@ cargo check -p mox-cloud-filer-svc -p mox-cloud-volume-svc \
 |---|---|
 | `docs/working-reports/20260902_hybrid_architecture_route_a_design.md` | 混合架构（路线 A）整合方案架构设计文档 v1.0 |
 | `docs/working-reports/20260823_cloud_drive_and_relgraph_selfdev_plan.md` | 云盘×关系图自研计划（AIS 7 层架构、M0~M5 里程碑） |
-| `docs/working-reports/mox-vs-opensource-comparison-report.md` | 璇玑自研 vs 开源竞品全维对比分析报告 |
+| `docs/working-reports/mox-vs-opensource-comparison-report.md` | 璇玑自研 vs 开源竞品mox 模块化系统架构对比分析报告 |
 | `docs/expert-alliance/00-INTEGRATED-INDEX.md` | 开发专家联盟权威集成索引（EA-DOC-001） |
 | `docs/standards/expert-alliance-normalization-mode.md` | 归一化处理模式规范（EA-NORM-001） |
 | `platform/domains/cloud/svc/` | 自研云盘 5 个 svc crate 源码 |

@@ -538,7 +538,7 @@ body {
       <h1 class="cover-title">
         <span class="gradient-text">璇玑 RelGraph</span>
         <br>
-        <span class="cover-sub">全维开发文档</span>
+        <span class="cover-sub">mox 模块化系统架构开发文档</span>
       </h1>
       <p class="cover-desc">
         6层8域DDD矩阵 · Rust 全自研 · 契约驱动开发 · 纯核原则 · 零依赖可测试。
@@ -1271,7 +1271,7 @@ mod tests {
         <h4>公共字段（所有表必含）</h4>
 <pre><code>id          VARCHAR(64)  PRIMARY KEY,  -- 全局唯一ID（前缀+UUID）
 tenant_id   VARCHAR(64)  NOT NULL,      -- 租户ID（多租户隔离）
-created_by  VARCHAR(64)  NOT NULL,      -- 创建人
+created_at  VARCHAR(64)  NOT NULL,      -- 创建人
 created_at  TIMESTAMPTZ  NOT NULL,      -- 创建时间
 updated_by  VARCHAR(64),                 -- 更新人
 updated_at  TIMESTAMPTZ,                 -- 更新时间

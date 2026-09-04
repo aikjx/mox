@@ -1,4 +1,4 @@
-# 规格：璇玑系统 · Rust 后端全维度自研归一化（企业级 AIS 架构对齐 + 图谱双向绑定）
+# 规格：璇玑系统 · Rust 后端mox 模块化系统架构维度自研归一化（企业级 AIS 架构对齐 + 图谱双向绑定）
 
 > 规格语言：中文 · 适用范围：`platform/services/*` 全 workspace 16 个 Rust crate + `platform/gateway/runtime` · 治理方式：璇玑知识图谱唯一底层中枢 · AIS 自主自研分层范式（DIP 依赖反转）
 

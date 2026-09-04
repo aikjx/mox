@@ -5,7 +5,7 @@
       <div class="list-header">
         <div>
           <h2 class="list-title">联盟任务</h2>
-          <p class="list-subtitle">全维融合 · 智能编排 · 实时监控</p>
+          <p class="list-subtitle">mox 模块化系统架构融合 · 智能编排 · 实时监控</p>
         </div>
         <el-button type="primary" size="small" @click="showCreate = true">
           <el-icon><Plus /></el-icon> 新建任务
@@ -192,7 +192,7 @@
       <!-- 融合结果 -->
       <div class="fusion-section" v-if="fusionResult" v-loading="fusionLoading">
         <div class="section-header">
-          <h4 class="section-title"><el-icon><MagicStick /></el-icon> 全维融合结果</h4>
+          <h4 class="section-title"><el-icon><MagicStick /></el-icon> mox 模块化系统架构融合结果</h4>
           <el-tag size="small" :type="fusionResult.confidence > 0.8 ? 'success' : 'warning'" effect="dark">
             置信度 {{ (fusionResult.confidence * 100).toFixed(1) }}%
           </el-tag>

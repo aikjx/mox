@@ -1,0 +1,23 @@
+{
+  "sess-upd-001": {
+    "id": "sess-upd-001",
+    "title": "新标题",
+    "expert_ids": [
+      "exp-001"
+    ],
+    "user_id": "user-001",
+    "session_type": "single",
+    "status": "active",
+    "topic": "新主题",
+    "messages": [],
+    "tags": [
+      "test"
+    ],
+    "metadata": {
+      "priority": "high"
+    },
+    "created_at": "2026-09-03T17:18:13Z",
+    "last_active_at": "2026-09-03T17:18:13Z",
+    "archived_at": null
+  }
+}

@@ -76,7 +76,7 @@ impl AlliancePhase {
 
 // ================== SSE 事件 ==================
 
-/// 全维分析事件（SSE 每帧一条；trace_id 全链路一致）
+/// mox 模块化系统架构分析事件（SSE 每帧一条；trace_id 全链路一致）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AllianceEvent {
     /// 当前阶段（7 种之一）

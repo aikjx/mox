@@ -270,7 +270,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { runAllianceFullSSE, getAllianceCapabilities } from '@/api/alliance'
 import {
   getExperts, getExpertSessions, expertDebate,
@@ -279,7 +279,7 @@ import {
 import RegisterExpertDialog from '@/components/expert/RegisterExpertDialog.vue'
 import {
   kbListDocuments, kbGetCategories, kbGetTags,
-  kbSearch, kbGetVersions
+  kbSearch, kbGetVersions, kbCreateDocument
 } from '@/api/kb.api.js'
 import { getProjects } from '@/api/projects.api.js'
 import '@/styles/workspace.css'
@@ -786,7 +786,23 @@ async function searchKb() {
 }
 
 function filterByTag(tag) { kbSearchQuery.value = tag.name; activeKbTab.value = 'docs'; searchKb() }
-function createDoc() { ElMessage.info('新建文档功能开发中…') }
+async function createDoc() {
+  try {
+    const { value: title } = await ElMessageBox.prompt('请输入文档标题', '新建文档', {
+      confirmButtonText: '创建',
+      cancelButtonText: '取消',
+      inputPlaceholder: '如：需求分析文档',
+      inputValidator: (v) => !!v?.trim() || '文档标题不能为空'
+    })
+    const payload = { title: title.trim(), project_id: currentProject.value }
+    const created = await kbCreateDocument(payload)
+    ElMessage.success(`文档「${title.trim()}」创建成功`)
+    await loadDocuments()
+    if (created?.id) openDoc(created)
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(e?.message || '创建文档失败')
+  }
+}
 
 // ========== AI 助手 ==========
 const allianceCapabilitiesList = ref([])

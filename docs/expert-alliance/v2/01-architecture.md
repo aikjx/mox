@@ -11,7 +11,7 @@ source_of_truth: V2.0目标架构设计（未落地）
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-全维需求分析](docs/expert-alliance/v2/00-requirements.md)
+> 前置：[00-mox 模块化系统架构需求分析](docs/expert-alliance/v2/00-requirements.md)
 
 
 > ⚠️ **文档状态声明**  
@@ -33,7 +33,7 @@ source_of_truth: V2.0目标架构设计（未落地）
 | **渐进式拆分** | 从模块化单体起步，逐步拆分为微服务 |
 | **知识图谱驱动** | 专家匹配/协作编排/结果融合全部基于图谱关联关系 |
 | **多协议共存** | gRPC（内部）+ JSON-RPC/MCP（对外）+ REST（兼容）+ WebSocket（实时） |
-| **全维 Rust** | 后端核心用 Rust，AI 推理用 Python sidecar |
+| **mox 模块化系统架构 Rust** | 后端核心用 Rust，AI 推理用 Python sidecar |
 
 > 术语注释：前文架构图中"联盟调度器"指专家匹配与任务调度组件，对应代码实体 `TaskScheduler` trait。
 

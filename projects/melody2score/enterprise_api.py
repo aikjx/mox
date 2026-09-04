@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """企业级 Melody2Score API 服务（FastAPI）。
-全维分析、工业级转换、专业乐谱生成。
+mox 模块化系统架构分析、工业级转换、专业乐谱生成。
 
 端口：3008（与主项目 Node.js 后端 3002 配合）
 设计原则：
@@ -487,7 +487,7 @@ async def batch_recognize(files: List[UploadFile] = File(...)):
 
 def _algorithm_doc() -> str:
     return (
-        "本结果由 Melody2Score v2.0 企业级引擎生成，全维分析流水线：\n\n"
+        "本结果由 Melody2Score v2.0 企业级引擎生成，mox 模块化系统架构分析流水线：\n\n"
         "1. **采集层**：librosa/soundfile 加载，重采样至 16kHz 单声道，峰值归一化。\n"
         "2. **预处理层**：去直流偏移 + 峰值归一化 + 谱减降噪（以开头 0.1s 静音段估计噪声底）。\n"
         "3. **音高检测层**：可插拔后端（首选 crepe_onnx tiny，降级 pyin→torchcrepe），"

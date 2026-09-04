@@ -61,7 +61,7 @@ impl Expert for SecurityExpert {
             }
         }
 
-        // 强合规租户：PII 外发必须有脱敏（与权限专家互补，但安全维度独立告警）
+        // 强合规租户：PII 外发必须有脱敏（与权限专家互补，但安mox 模块化系统架构维度独立告警）
         if ctx.tenant.regulated {
             // 使用单一权威判定 is_sensitive_leak：已脱敏资源（如 var:citizen_safe）不再误判为泄露
             let pii_out = g.nodes.iter().any(|n| {

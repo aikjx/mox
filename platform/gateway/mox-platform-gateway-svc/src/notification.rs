@@ -34,10 +34,14 @@ fn load_notifications() -> Vec<Notification> {
 
 fn save_notifications(notifications: &[Notification]) {
     if let Some(parent) = std::path::Path::new(NOTIFICATIONS_PATH).parent() {
-        let _ = std::fs::create_dir_all(parent);
+        if let Err(e) = std::fs::create_dir_all(parent) {
+            eprintln!("[notification] 创建目录失败 {}: {}", parent.display(), e);
+        }
     }
     if let Ok(json_str) = serde_json::to_string_pretty(notifications) {
-        let _ = std::fs::write(NOTIFICATIONS_PATH, json_str);
+        if let Err(e) = std::fs::write(NOTIFICATIONS_PATH, json_str) {
+            eprintln!("[notification] 通知持久化失败 {}: {}", NOTIFICATIONS_PATH, e);
+        }
     }
 }
 
@@ -153,14 +157,58 @@ async fn mark_all_notifications_read(
 }
 
 // =====================================================================
+// 4. GET /notifications/unread-count — 未读通知数（真实数据）
+// =====================================================================
+//
+// 归一化（RC-6/RC-7）：此端点原由 workspace.rs 以硬编码全零 stub 提供，
+// 与通知域真实数据源（data/notifications.json）脱节，导致前端未读数恒为 0。
+// 现归位到通知域，直接统计 NotificationState，消除 stub 与双源不一致。
+
+async fn unread_count(
+    State(s): State<Arc<NotificationState>>,
+) -> ApiResponse<Value> {
+    let all = s.notifications.lock().clone();
+    let unread: Vec<&Notification> = all.iter().filter(|n| !n.read).collect();
+
+    // 按类型聚合（保持与旧 stub 相同的 by_type 键集，前端零改动）
+    let mut by_type: std::collections::BTreeMap<String, u64> = std::collections::BTreeMap::new();
+    for k in ["task_assigned", "mention", "comment", "system", "alert"] {
+        by_type.insert(k.to_string(), 0);
+    }
+    for n in unread.iter() {
+        *by_type.entry(n.notification_type.clone()).or_insert(0) += 1;
+    }
+
+    // 最新一条未读通知（按 created_at 降序）
+    let latest = unread
+        .iter()
+        .max_by_key(|n| n.created_at)
+        .map(|n| {
+            json!({
+                "id": n.id,
+                "title": n.title,
+                "type": n.notification_type,
+                "created_at": n.created_at,
+            })
+        });
+
+    ok(json!({
+        "total": unread.len(),
+        "by_type": by_type,
+        "latest_notification": latest,
+    }))
+}
+
+// =====================================================================
 // 路由装配
 // =====================================================================
 
 pub fn build_notification_router() -> Router {
     let state = Arc::new(NotificationState::new());
     Router::new()
-        .route("/notifications", get(list_notifications))
-        .route("/notifications/:id/read", put(mark_notification_read))
-        .route("/notifications/read-all", put(mark_all_notifications_read))
+        .route("/api/notifications", get(list_notifications))
+        .route("/api/notifications/unread-count", get(unread_count))
+        .route("/api/notifications/:id/read", put(mark_notification_read))
+        .route("/api/notifications/read-all", put(mark_all_notifications_read))
         .with_state(state)
 }

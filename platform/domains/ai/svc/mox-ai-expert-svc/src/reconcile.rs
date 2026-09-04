@@ -415,7 +415,7 @@ mod tests {
             vec!["desensitize".into()],
         ));
         let mut s = ExpertOpinion::empty("security", Dimension::Security);
-        // 安全维度对同节点也要求 MustGuard（不同脱敏策略）→ 同类别冲突
+        // 安mox 模块化系统架构维度对同节点也要求 MustGuard（不同脱敏策略）→ 同类别冲突
         s.constraints
             .push(Constraint::MustGuard("a".into(), vec!["sandbox".into()]));
         let plan = reconcile(&[p, s], &g, &[]);

@@ -4,7 +4,7 @@
 > 生成时间：2026-08-18
 > 适用范围：`infotopograph` 仓库 `docs/` 全量文档（结构归一化后，53 份 Markdown + 可视化/JSON 产物）
 > 治理入口：`docs/enterprise/00-INDEX.md`（唯一权威等级定义）
-> 配套导航：`docs/README.md`（关图/全维专题索引）
+> 配套导航：`docs/README.md`（关图/mox 模块化系统架构专题索引）
 
 ---
 
@@ -49,11 +49,11 @@
 | `docs/graph/` | 关图机读产物（graph.json 等）+ `requests/` 判重入口 | 🟡 产物 |
 | `docs/ai-architecture/` | AI 架构专题（AUS · L4 Agentic 闭环可视化） | 🟡 |
 | `docs/_archive/YYYY-MM-DD/` | 过程稿 / 验证快照归档（非权威，仅供追溯） | 🟡 归档 |
-| `docs/`（根） | 仅保留 🟢 顶层权威文档：`architecture.md`、`enterprise-architecture-analysis.md`、AA-STD（`璇玑-全维需求业务处理流程图-归一化企业级.md`）及其同位可视化 | 🟢 |
+| `docs/`（根） | 仅保留 🟢 顶层权威文档：`architecture.md`、`enterprise-architecture-analysis.md`、AA-STD（`璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md`）及其同位可视化 | 🟢 |
 
 ### 2.2 命名规则
 
-- **权威基准**：`璇玑-全维需求业务处理流程图-归一化企业级.md`（AA-STD）、`guantu-skeleton.md`（GR-STD 骨架）、`mox-requirement-baseline.md`（编号索引）保持既有命名，不缩写。
+- **权威基准**：`璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md`（AA-STD）、`guantu-skeleton.md`（GR-STD 骨架）、`mox-requirement-baseline.md`（编号索引）保持既有命名，不缩写。
 - **过程稿**：统一带 `-YYYYMMDD` 后缀，且**仅**可位于 `docs/_archive/`。
 - **可视化产物**：`*.html` / `*.mmd` 必须与源 `.md` **同位存放**（同目录），文件名主体一致。
 - **禁止**：根目录新增松散 `.md`；同一文件跨目录复制（单一事实源 Single Source of Truth）。
@@ -79,7 +79,7 @@
 | `docs/mox-requirement-baseline.md` | `docs/full-dimensional/mox-requirement-baseline.md` |
 
 ### FIX-02 过程稿归档（`docs/_archive/2026-08-16/`）
-`PrimiFlow-API健康探活与CORS-20260816.md`、`PrimiFlow-API项目注册表与重启复现-20260816.md`、`PrimiFlow-三层递进开发-验证总结-20260816.md`、`PrimiFlow-企业级验证-20260816.md`、`PrimiFlow-全维分析-核心功能补全-20260816.md`、`PrimiFlow-真实执行层开发-验证-20260816.md`、`mox-expert-验证总结-20260816.md`
+`PrimiFlow-API健康探活与CORS-20260816.md`、`PrimiFlow-API项目注册表与重启复现-20260816.md`、`PrimiFlow-三层递进开发-验证总结-20260816.md`、`PrimiFlow-企业级验证-20260816.md`、`PrimiFlow-mox 模块化系统架构分析-核心功能补全-20260816.md`、`PrimiFlow-真实执行层开发-验证-20260816.md`、`mox-expert-验证总结-20260816.md`
 
 ### FIX-03 模块文档归 `docs/modules/`
 `market-module.md`、`automation-module.md`、`mathematical-foundation.md`、`business-process-flows.md`、`business-process-flowcharts.md`、`mox-expert-alliance-fusion-flows.md`、`mox-expert-normalization.md`、`mox-expert-product.md`、`mox-expert-business-requirements.md`、`PrimiFlow-设计蓝图.md`
@@ -109,12 +109,12 @@
 重跑精确文档引用审计（仅判定指向 `.md`/`.html` 文档产物的引用）：**真实断链 0 处**。残余 41 条"未命中"均为噪声——通配符（`*.md`/`*.html`）、源码/仓根文件引用（`crates/...`、`CLAUDE.md`、`README.md`）、报告内目录树代码块、以及本报告描述性"旧路径→新路径"文字，均非文档交叉引用，不计入断链。
 
 ### FIX-14 规范术语表（GAP / F14 收口）
-新建**企业级规范术语表 `docs/GLOSSARY.md`（DOC-GLOSSARY-V1.0 · 🟢 权威）**作为全项目**术语唯一事实源（Single Source of Truth）**，覆盖：璇玑/关图(GR-STD)/AA-STD/PT-Primi/OUS/双璇玑十四维/TraceMatrix 六维绑定/⛨璇玑验证网关/治理闸门/归一化/全维/关图骨架；并定义命名与大小写强制约定（璇玑非「旋玑」、PT-Primi 非 PT-PRIMI、引用一律 `docs/<rel>` 等）。
+新建**企业级规范术语表 `docs/GLOSSARY.md`（DOC-GLOSSARY-V1.0 · 🟢 权威）**作为全项目**术语唯一事实源（Single Source of Truth）**，覆盖：璇玑/关图(GR-STD)/AA-STD/PT-Primi/OUS/双璇玑十四维/TraceMatrix 六维绑定/⛨璇玑验证网关/治理闸门/归一化/mox 模块化系统架构/关图骨架；并定义命名与大小写强制约定（璇玑非「旋玑」、PT-Primi 非 PT-PRIMI、引用一律 `docs/<rel>` 等）。
 为避免 52 份文档各自复制术语表导致漂移，采用「**统一规范术语表为唯一基准 + 各权威文档文末附速查段**」：通过脚本向 8 份核心权威文档（`architecture.md`、`enterprise-architecture-analysis.md`、AA-STD、`full-dimensional/guantu-skeleton.md`、`full-dimensional/mox-requirement-baseline.md`、`specs/PT-Primi`、`specs/GR-STD`、`specs/OUS`）追加「## 术语表 (Glossary)」速查段（已存在则跳过），均指向 `docs/GLOSSARY.md`。并在 `00-INDEX` §1.2 注册为 🟢 权威、在 `README.md` 导航增列入口。
 
 ### FIX-15 原始过程稿归档（F15 收口）
 将 `full-dimensional/` 下 4 份原始过程稿整体 `git mv` 至 `docs/_archive/2026-08-16/`（同目录整体迁移，其内部以同目录裸名互引仍有效）：
-`关图骨架定义.md`、`璇玑-全维分析-TraceMatrix-六维绑定追溯.md`、`璇玑-全维分析需求-测试分析验证报告.md`、`璇玑-全维分析需求业务处理流程图.md`。
+`关图骨架定义.md`、`璇玑-mox 模块化系统架构分析-TraceMatrix-六维绑定追溯.md`、`璇玑-mox 模块化系统架构分析需求-测试分析验证报告.md`、`璇玑-mox 模块化系统架构分析需求业务处理流程图.md`。
 同步 5 处外部描述性引用路径：`enterprise/00-INDEX.md:84`、`full-dimensional/00-README.md:18-21`、`README.md:23,68`、`full-dimensional/mox-requirement-baseline.md:13`（其余为内部裸名互引，迁移后无新增断链）。`full-dimensional/` 现仅余 🟢 权威文档，消除「过程稿与权威同目录」冲突。
 
 ---
@@ -130,9 +130,9 @@ docs/
 ├── graph/             graph.json · graph.enterprise.json · guantu.req.json · requests/
 ├── ai-architecture/   ai-unified-intelligent-system-architecture.html
 ├── _archive/2026-08-16/   11 份过程稿（4 份原始分析稿 + 7 份 -20260816 稿，非权威）
-├── 璇玑-全维需求业务处理流程图-归一化企业级.{md,html,mmd}   # AA-STD 🟢（根）
+├── 璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.{md,html,mmd}   # AA-STD 🟢（根）
 ├── 璇玑-璇玑验证子流程-归一化企业级.html
-├── 璇玑-全维流水线.mmd
+├── 璇玑-mox 模块化系统架构流水线.mmd
 ├── mox-system-business-architecture.html
 ├── GLOSSARY.md（术语表 🟢）· architecture.md · enterprise-architecture-analysis.md
 └── README.md · DOC-NORMALIZATION-REPORT.md
@@ -176,7 +176,7 @@ docs/
 ### 7.2 性质判定（明确，不模糊）
 二者为 **「原始草稿源 → 归一化权威」** 的衍生关系，而非平行冗余：
 - `关图骨架定义.md` 是 `guantu-skeleton.md` 的**前置原始稿**；其内容与 4 份同目录原始文档一起，已按 `full-dimensional/00-README.md` 与 `00-INDEX` §1.2 声明"归一承载于 AA-STD / guantu-skeleton"。
-- 4 份原始文档（`关图骨架定义.md`、`璇玑-全维分析-TraceMatrix-六维绑定追溯.md`、`璇玑-全维分析需求-测试分析验证报告.md`、`璇玑-全维分析需求业务处理流程图.md`）**仅在治理文档中被描述为过程稿**，且彼此以同目录裸名互引——属设计内的追溯稿。
+- 4 份原始文档（`关图骨架定义.md`、`璇玑-mox 模块化系统架构分析-TraceMatrix-六维绑定追溯.md`、`璇玑-mox 模块化系统架构分析需求-测试分析验证报告.md`、`璇玑-mox 模块化系统架构分析需求业务处理流程图.md`）**仅在治理文档中被描述为过程稿**，且彼此以同目录裸名互引——属设计内的追溯稿。
 
 ### 7.3 处置决策（企业级，单一事实源优先）
 - ✅ **唯一权威承载**为 `guantu-skeleton.md`（GR-STD 骨架）+ AA-STD（融合域需求基准）；任何引用以二者为准。

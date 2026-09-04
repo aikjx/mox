@@ -3,7 +3,7 @@
 
 //! 统一管线核心（Pipeline Core）
 //!
-//! 为 `pipeline.rs`（全维处理流水线）和 `alliance/gate.rs`（联盟 6 阶段管线）
+//! 为 `pipeline.rs`（mox 模块化系统架构处理流水线）和 `alliance/gate.rs`（联盟 6 阶段管线）
 //! 提供统一的阶段编排、上下文流转、钩子机制和审计基础设施。
 //!
 //! 设计原则：

@@ -7,7 +7,7 @@
 用户用一句话描述业务（如"做一个商城，有商品、购物车、下单、支付、退货"），系统自动：
 
 1. **生成业务处理流程图**：由 `ai-agent::requirement_compiler` 把需求编译为 `SystemBlueprint`（功能点 + 实体 + 数据流依赖网 + 流程图 `FlowDefinition`）。
-2. **生成全维度处理逻辑细节**：每个功能点渲染为带 `try/except` 兜底的 Python 函数；所有关联关系（实体字段、依赖顺序）落到流程图连线与 SQL 建表。
+2. **生成mox 模块化系统架构维度处理逻辑细节**：每个功能点渲染为带 `try/except` 兜底的 Python 函数；所有关联关系（实体字段、依赖顺序）落到流程图连线与 SQL 建表。
 3. **自动推导权限（RBAC）**：从功能点的"动作 × 实体"推导角色-权限映射（如「下单」→ `order:create`），`customer`/`merchant`/`admin` 多角色，可直接被 `runtime::rbac_middleware` 消费。
 4. **自动生成自动化代码**：Python 主流程 + SQL DDL + Vue 前端骨架，落盘为可编辑资产。
 5. **自动测试**：针对生成代码生成冒烟测试（`AutoTestGen`）。

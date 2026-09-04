@@ -1,0 +1,60 @@
+schema_version: 2
+template: mox_sys
+license: MIT
+# 治理字段（见 governance.md §1/§2）：owner=拥有团队，company=所属公司，contact=联系人
+modules:
+  - code: mox_sys
+    version: 1.0.0
+    kind: core
+    owner: platform-team
+    company: mox-core
+    contact: platform@mox.dev
+    tenant_mode: hybrid
+    tables: [mox_sys_module, mox_sys_module_version, mox_sys_module_dependency, mox_sys_schema_version, mox_sys_graph, mox_sys_node_type, mox_sys_relation_type, mox_sys_node, mox_sys_edge, mox_sys_evidence]
+    requires: []
+    capabilities: [identity, tenancy, organisation, iam, audit, outbox, idempotency, file, settings, graph]
+  - code: iam
+    version: 1.0.0
+    kind: platform
+    owner: platform-team
+    company: mox-core
+    contact: platform@mox.dev
+    tenant_mode: hybrid
+    requires: [mox_sys>=1.0.0]
+    capabilities: [rbac, abac, rebac, sso, mfa]
+  - code: meta
+    version: 1.0.0
+    kind: platform
+    owner: platform-team
+    company: mox-core
+    contact: platform@mox.dev
+    tenant_mode: logical
+    requires: [mox_sys>=1.0.0]
+    capabilities: [catalog, metadata, lowcode, codegen]
+  - code: ea
+    version: 1.0.0
+    kind: domain
+    owner: ea-team
+    company: mox-core
+    contact: ea@mox.dev
+    tenant_mode: logical
+    requires: [mox_sys>=1.0.0, iam>=1.0.0]
+    capabilities: [expert_registry, collaboration_dag, case_memory]
+  - code: kg
+    version: 1.0.0
+    kind: projection
+    owner: kg-team
+    company: mox-core
+    contact: kg@mox.dev
+    tenant_mode: logical
+    requires: [mox_sys>=1.0.0]
+    capabilities: [property_graph, provenance, rebuild]
+  - code: ai
+    version: 1.0.0
+    kind: domain
+    owner: ai-team
+    company: mox-core
+    contact: ai@mox.dev
+    tenant_mode: logical
+    requires: [mox_sys>=1.0.0, kg>=1.0.0]
+    capabilities: [model_registry, run_trace, tool_call, metering]

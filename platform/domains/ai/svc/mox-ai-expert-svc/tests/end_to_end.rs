@@ -88,7 +88,7 @@ fn mox_optimize_passes_and_audit_clean() {
     assert!(rep.gate.approved, "gate reason: {}", rep.gate.reason);
     // 审计链完整
     assert!(rep.audit.verify(), "审计链被篡改");
-    // 双璇玑十四维全维评分（业务七维 + 开发七维）
+    // 双璇玑十四维mox 模块化系统架构评分（业务七维 + 开发七维）
     assert!(
         rep.expert_scores.len() >= 14,
         "双璇玑应覆盖十四维，实际 {}",

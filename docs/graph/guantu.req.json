@@ -3,7 +3,7 @@
     {"id": "D01", "name": "算子内核与执行", "domain": "operator-core/operator-wasm", "status": "done"},
     {"id": "D02", "name": "知识图谱", "domain": "operator-graph/ai-agent", "status": "done"},
     {"id": "D03", "name": "流程图优化AI", "domain": "flow-ai", "status": "done"},
-    {"id": "D04", "name": "全维治理/璇玑", "domain": "mox-expert", "status": "partial"},
+    {"id": "D04", "name": "mox 模块化系统架构治理/璇玑", "domain": "mox-expert", "status": "partial"},
     {"id": "D05", "name": "业务全景目录", "domain": "business-catalog", "status": "done"},
     {"id": "D06", "name": "AI智能体", "domain": "ai-agent", "status": "done"},
     {"id": "D07", "name": "算子商城", "domain": "runtime(market)", "status": "partial"},

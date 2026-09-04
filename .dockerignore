@@ -1,0 +1,42 @@
+# Rust
+target/
+**/target/
+*.rs.bk
+Cargo.lock.bak
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 文档
+docs/
+*.md
+!README.md
+
+# 前端
+frontend-ui/node_modules/
+frontend-ui/dist/
+
+# 测试和临时文件
+tests/
+**/tests/
+*.test.rs
+tmp/
+temp/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 配置（运行时通过环境变量注入）
+.env
+.env.local
+*.env

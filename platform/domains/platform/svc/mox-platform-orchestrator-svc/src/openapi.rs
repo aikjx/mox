@@ -21,7 +21,7 @@ info:
   title: 算子统一系统运行时 API
   version: 1.0.0
   description: |
-    算子统一系统（operator-unified-system）v3.0 AI 驱动全维突破平台的对外 HTTP API。
+    算子统一系统（operator-unified-system）v3.0 AI 驱动mox 模块化系统架构突破平台的对外 HTTP API。
     所有错误响应统一为 RFC 9457 application/problem+json 格式。
   license:
     name: MIT

@@ -277,7 +277,7 @@ info-graph sync --old baseline.json --new graph.json
 |------|------|
 | **璇玑 (Xuánjī)** | 归一化 IR 驱动的元调度诊断系统（`mox-expert` crate） |
 | **关图 / GR-STD** | 信息关联关系图开发规范 V1.0，「一切皆是信息」 |
-| **AA-STD** | 璇玑-全维需求业务处理流程图-归一化企业级，融合域需求事实基准 |
+| **AA-STD** | 璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级，融合域需求事实基准 |
 | **PT-Primi / PrimiFlow** | 全域拓扑原语架构（κ-τ 调度，守恒律 `C² = κ² + τ²`） |
 | **OUS** | operator-unified-system，算子统一系统 |
 | **双璇玑十四维** | 业务 7 维 + 开发 7 维并行诊断 |

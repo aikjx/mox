@@ -3,13 +3,13 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! 璇玑全维融合端到端集成测试（I-05 / I-06 / I-07 闭环验收）
+//! 璇玑mox 模块化系统架构融合端到端集成测试（I-05 / I-06 / I-07 闭环验收）
 //!
 //! 不依赖服务器进程，纯库级串联：
 //!   1. 构造业务流程图（受监管租户的真实场景）
-//!   2. 走全维治理流水线 `mox_optimize` —— 触发治理 8 闸门（I-06）
+//!   2. 走mox 模块化系统架构治理流水线 `mox_optimize` —— 触发治理 8 闸门（I-06）
 //!   3. 双验收联动（I-05）：任务 Done ∧ 算法未否决 ∧ 闸门放行
-//!   4. 全维融合落盘 `publish_unified` —— 固化产物溯源（I-07 provenance）
+//!   4. mox 模块化系统架构融合落盘 `publish_unified` —— 固化产物溯源（I-07 provenance）
 //!
 //! 这是企业级「优化 → 治理 → 发布溯源」链路的最高级别硬验收证据。
 
@@ -53,7 +53,7 @@ fn e2e_governance_eight_gates_pipeline_publish_provenance() {
     let graph = build_compliant_graph();
     let ctx = build_regulated_ctx();
 
-    // 1. 全维治理流水线：归一化 → 派发专家 → 裁决 → 求解 → 治理 8 闸门 → 出码
+    // 1. mox 模块化系统架构治理流水线：归一化 → 派发专家 → 裁决 → 求解 → 治理 8 闸门 → 出码
     let report = mox_optimize(&graph, &ctx);
 
     // 2. I-06 治理 8 闸门全量门禁已生效
@@ -71,7 +71,7 @@ fn e2e_governance_eight_gates_pipeline_publish_provenance() {
     let dual_ok = !report.algo.vetoed && report.gate.approved;
     assert!(dual_ok, "I-05 双验收应达成");
 
-    // 4. I-07 全维融合落盘：把治理报告固化为产物溯源
+    // 4. I-07 mox 模块化系统架构融合落盘：把治理报告固化为产物溯源
     let pkg: OperatorPackage = publish_unified(
         "公民数据聚合算子".into(),
         "端到端验证产物".into(),

@@ -1,7 +1,7 @@
 # MOX 数据交换规范 (MXDEF)
 
 > 版本: 1.0 | 日期: 2026-08-28
-> MOX Data Exchange Format — 全维标准化数据导出/导入协议
+> MOX Data Exchange Format — mox 模块化系统架构标准化数据导出/导入协议
 
 ---
 

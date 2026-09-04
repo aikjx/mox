@@ -101,7 +101,7 @@ _（待实施时填写）_
 | Dependencies | Task 1 |
 
 ### 产物
-- `mox-data-plane/src/multipart.rs`：MultipartStore { upload_id, parts[]: Part, created_by, expires } + Create/Abort/Complete
+- `mox-data-plane/src/multipart.rs`：MultipartStore { upload_id, parts[]: Part, created_at, expires } + Create/Abort/Complete
 - `mox-data-plane/src/listeners.rs`：TripleListener { public, intra_ctrl, intra_data }；`--http3` 时 public 走 quinn endpoint
 - Rust SDK：`Client::create_multipart_upload()` → `Uploader::upload_part(part_num, bytes)` → `complete()` → PartAggregate{crc64, etag, n}
 - Node.js SDK：`uploadMultipart(bucket, key, stream, {partSize: 8*1024*1024})` 统一 Promise API

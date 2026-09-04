@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "璇玑 · 全维处理工具流程图：七位专家并行诊断 + 归一化裁决 + 企业治理，复用 flow-ai 引擎做最优求解"
+description = "璇玑 · mox 模块化系统架构处理工具流程图：七位专家并行诊断 + 归一化裁决 + 企业治理，复用 flow-ai 引擎做最优求解"
 
 [dependencies]
 mox-platform-foundation = { workspace = true }

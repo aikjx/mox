@@ -1,10 +1,10 @@
-﻿# 璇玑（Expert-Mox）全维整理 · 归一化 · 优化规范标准书
+﻿# 璇玑（Expert-Mox）mox 模块化系统架构整理 · 归一化 · 优化规范标准书
 
 > 📐 **mox-expert三视图声明**：本文档为 mox-expert 系统的三视图之一：product.md=产品需求架构，business-requirements.md=企业级业务流程需求，normalization.md=归一化优化规范。三份文档互为补充，共同描述 mox-expert 系统。
 >
 > 💡 **术语说明**：璇玑/Mox，指同一系统，代码中统一使用 mox- 前缀。
 
-> 版本：v1.0（全维治理 / 企业级 / 与 `docs/modules/mox-expert-product.md` 姊妹篇）
+> 版本：v1.0（mox 模块化系统架构治理 / 企业级 / 与 `docs/modules/mox-expert-product.md` 姊妹篇）
 > 代码落点：`crates/mox-expert`（ir / expert / experts / reconcile / verify / govern / programming / context / harness / audit / rbac / flow_loader / bench / server）
 > 定位：在"产品需求已对齐"基础上，做**功能归一化、冲突诊断、I/O 规范、知识库规范、落地下一步**的企业级收口。
 > 配套文档：`docs/modules/mox-expert-product.md`（SRS + 架构 + 业务流）、`docs/architecture.md`（OUS 企业级总架构 v7.0）、`docs/modules/mathematical-foundation.md`（数学内核）。
@@ -28,7 +28,7 @@
 ## 1. 功能全景总结（实际实现）
 
 ### 1.1 核心 IR 层（`ir.rs`）—— 单图多维铁律
-- **四维合一**：业务 / 算法 / 权限 / 资源四种"图"在内存中是**同一个 `FlowGraph`**，维度仅作为节点标签（`DimensionTag`）。"改一处，全维同步"天然成立，从物理上杜绝多图分裂。
+- **四维合一**：业务 / 算法 / 权限 / 资源四种"图"在内存中是**同一个 `FlowGraph`**，维度仅作为节点标签（`DimensionTag`）。"改一处，mox 模块化系统架构同步"天然成立，从物理上杜绝多图分裂。
 - **七维枚举 `Dimension` 与优先级**：`Permission=7, Security=7, Resource=6, Data=5, Business=4, Observability=3, Algorithm=2`。优先级即"否决权重"——权限与安全最高，性能最低。
 - **`auto_dimension()`**：按节点 `tags` 中的 `dim:xxx` 前缀 + `ToolKind` 自动着色，使外部输入无需手工标注维度。
 
@@ -94,7 +94,7 @@ ExpertOpinion {
 ```
 
 **四条不变式（架构正确性基石）**：
-1. **物理节点唯一**——单图多维，改一处全维同步。
+1. **物理节点唯一**——单图多维，改一处mox 模块化系统架构同步。
 2. **专家无状态只读、互不调用**——可并行、可插件化、可独立测试。
 3. **裁决器不求解**——唯一求解器是 flow-ai，避免多重最优解分叉。
 4. **否决权单向**——专家 `veto` → `algo.vetoed` → 治理不可覆盖（安全/权限不可逆降级）。
@@ -269,4 +269,4 @@ kb/
 
 ## 8. 一句话结论
 
-架构方向（**单图多维 + 只读并行专家 + 裁决不求解 + 三证出码 + 单向否决权**）是正确且优雅的企业级内核。**P0（敏感判据归一 + 冲突检测落地）、P1（Suggestion 进裁决 + 常量集中化）、P2（鉴权单入口委托 RBAC）已全部落地并通过全量测试**——判据分叉假阳性、冲突检测永久空、专家建议不落地、鉴权与 RBAC 脱节四项缺陷均已被根治。剩余可演进项：将维度优先级/门槛等 SSOT 进一步外置为 `policy.toml`、把角色字符串升级为 `Role` 枚举（根治 P4/P5），即可演进为"最伟大的"企业级全维治理产品。
+架构方向（**单图多维 + 只读并行专家 + 裁决不求解 + 三证出码 + 单向否决权**）是正确且优雅的企业级内核。**P0（敏感判据归一 + 冲突检测落地）、P1（Suggestion 进裁决 + 常量集中化）、P2（鉴权单入口委托 RBAC）已全部落地并通过全量测试**——判据分叉假阳性、冲突检测永久空、专家建议不落地、鉴权与 RBAC 脱节四项缺陷均已被根治。剩余可演进项：将维度优先级/门槛等 SSOT 进一步外置为 `policy.toml`、把角色字符串升级为 `Role` 枚举（根治 P4/P5），即可演进为"最伟大的"企业级mox 模块化系统架构治理产品。

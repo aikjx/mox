@@ -7,7 +7,7 @@
 > **最后更新日期**：2026-08-31
 > **单源声明**：本文档是"开发专家联盟"主题文档归一化的唯一权威规范。凡涉及专家联盟主题文档的目录划分、命名、分层、引用、术语、代码对齐、归一化流程、反模式与验收，均以本文档为准。本文档冲突时以 `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`（TOP-MASTER）为准。
 > **主责联盟**：开发联盟 R（架构·代码·文档治理）
-> **编制依据**：`docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0）、`docs/GLOSSARY.md`、`docs/working-reports/mox-expert-alliance-processing-mode.md`、`docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md`、`docs/enterprise/28-全维架构分析与文档归一化报告-V1.0.md`、`docs/enterprise/37-企业级处理流程规范-V1.0.md`、`docs/standards/expert-alliance-flow-standard.md`
+> **编制依据**：`docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0）、`docs/GLOSSARY.md`、`docs/working-reports/mox-expert-alliance-processing-mode.md`、`docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md`、`docs/enterprise/28-mox 模块化系统架构分析与文档归一化报告-V1.0.md`、`docs/enterprise/37-企业级处理流程规范-V1.0.md`、`docs/standards/expert-alliance-flow-standard.md`
 
 ---
 

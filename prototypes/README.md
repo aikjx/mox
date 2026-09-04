@@ -10,7 +10,7 @@
 | 项目 | 说明 |
 |------|------|
 | `chat-project-generator/` | 对话式项目生成器原型 |
-| `data-vis/` | 全维分析流程可视化原型 |
+| `data-vis/` | mox 模块化系统架构分析流程可视化原型 |
 | `expert-alliance-cyber/` | 专家联盟赛博风格设计原型 |
 | `expert-alliance-design/` | 专家联盟设计系统原型 |
 | `kg-workflow-guide/` | 知识图谱工作流向导原型 |

@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  璇玑（Mox）企业级全维归一化 一键验收脚本
+  璇玑（Mox）企业级mox 模块化系统架构归一化 一键验收脚本
 .DESCRIPTION
   按流水线执行：
     Phase 1 : Rust 测试      （cargo test --workspace）
@@ -207,7 +207,7 @@ foreach ($k in $reportObj.environment.Keys) {
 [void]$md.AppendLine()
 [void]$md.AppendLine("## 验收判定")
 if ($reportObj.result -eq "PASS") {
-  [void]$md.AppendLine("- ✅ 全链路 GREEN：满足璇玑企业级全维归一化交付标准。")
+  [void]$md.AppendLine("- ✅ 全链路 GREEN：满足璇玑企业级mox 模块化系统架构归一化交付标准。")
   [void]$md.AppendLine("- ✅ D1 域一致、D2 游戏可玩、D3 观测闭环、D4 安全鉴权、D5 构建一致，5/5 专项全覆盖。")
   [void]$md.AppendLine("- ✅ 10task 评分在 P4 已全量通过。")
 } else {

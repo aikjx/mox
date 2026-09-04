@@ -58,6 +58,7 @@ export async function runAllianceFullSSE(req, onFrame) {
           return lastTraceId
         }
       } catch (e) {
+        // dev only: SSE 帧解析失败属内部流处理错误
         console.warn('[alliance.sse] frame parse failed:', data, e)
       }
     }
@@ -162,6 +163,7 @@ export async function allianceExpertDebate(payload, onFrame) {
           }
         }
       } catch (e) {
+        // dev only: SSE 帧解析失败属内部流处理错误
         console.warn('[alliance.debate] frame parse failed:', data, e)
       }
     }
@@ -254,6 +256,7 @@ export async function getExecutionLogsSSE(taskId, onLog) {
           return
         }
       } catch (e) {
+        // dev only: SSE 帧解析失败属内部流处理错误
         console.warn('[alliance.logs] frame parse failed:', data, e)
       }
     }

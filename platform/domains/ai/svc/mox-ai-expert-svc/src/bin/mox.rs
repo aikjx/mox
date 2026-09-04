@@ -7,7 +7,7 @@
 //!
 //! 子命令：
 //!   mox serve [--port 8080]           启动独立 HTTP 服务 + Three.js 前端
-//!   mox optimize <flow.json> [--out DIR]   跑全维优化并输出报告 JSON / 生成的 Python
+//!   mox optimize <flow.json> [--out DIR]   跑mox 模块化系统架构优化并输出报告 JSON / 生成的 Python
 //!   mox demo                          内置政务场景端到端演示（含可视化 DTO 校验）
 
 use mox_ai_flow_svc::model::{FlowEdge, FlowNode, NodeKind, ToolKind};
@@ -50,10 +50,10 @@ fn usage() {
         r#"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   🌀 璇玑 Mox Core · 璇玑智能中心
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-  全维设计·分析·开发·测试·修复·优化 → 流程图即开发产物
+  mox 模块化系统架构设计·分析·开发·测试·修复·优化 → 流程图即开发产物
 
   mox serve [--port 8080]                 启动独立 HTTP 服务 + Three.js 前端
-  mox optimize <flow.json> [--out DIR]    全维优化并输出报告
+  mox optimize <flow.json> [--out DIR]    mox 模块化系统架构优化并输出报告
   mox verify <flow.json>                  璇玑验证（最高权限，退出码 0=通过 2=否决）
   mox bench                               多场景 Benchmark（量化加速比/剪伪依赖/冲突自愈/LLM削减）
   mox demo                                内置政务场景端到端演示

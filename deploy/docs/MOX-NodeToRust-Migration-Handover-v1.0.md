@@ -31,7 +31,7 @@
 | # | 验证项 | 证据 | 结果 |
 |---|---|---|---|
 | E1 | `cargo check -p mox-platform-gateway-svc` | 2026-08-27 终端日志 exit_code=0，0 错误 6 warning（unused） | ✅ PASS |
-| E2 | Gateway 启动绑定 8080 | `mox-server.exe` 控制台 banner：`MOX Rust Gateway 全维接管 @ http://0.0.0.0:8080` | ✅ PASS |
+| E2 | Gateway 启动绑定 8080 | `mox-server.exe` 控制台 banner：`MOX Rust Gateway mox 模块化系统架构接管 @ http://0.0.0.0:8080` | ✅ PASS |
 | E3 | 10 个 GET 接口全部 200 | `Invoke-RestMethod` 遍历：`/health` `/api/v1/status` `/kg/v1/{stats,neighborhood,path,shortest-path,centrality,communities}` `/ai/engine/{capabilities,metrics}` | ✅ 10/10 PASS |
 | E4 | 2 个 POST 接口通过 | `POST /ai/engine/process` & `POST /ai/engine/analyze` 返回 `ok=true` | ✅ 2/2 PASS |
 | E5 | backend-node 目录清理 | 删除后复核：`0 files, 0 dirs`（仅剩空目录壳，IDE 句柄锁定无法立即删除） | ✅ CONTENTS DELETED |

@@ -19,7 +19,7 @@
 
 ### 1.2 相关 API 文件
 
-- `src/api/ai.api.js` — AI 对话与全维分析 API（共 40+ 个接口）
+- `src/api/ai.api.js` — AI 对话与mox 模块化系统架构分析 API（共 40+ 个接口）
 - `src/api/http.js` — axios 核心实例（拦截器、项目 ID 注入、令牌管理）
 
 ### 1.3 相关组件
@@ -448,7 +448,7 @@ export const aiChat = (payload) => http.post('/ai/chat', payload)
 | | `webSearch` | 执行搜索 |
 | 无穷优化 | `getInfiniteBenchmarks` 等 8 个 | 无穷维度优化引擎 |
 | 本地制品 | `getArtifactConfig` 等 3 个 | 文档/代码自动创建 |
-| 全维分析 | `aiFullAnalysis` 等 6 个 | 真实 AI 驱动分析 |
+| mox 模块化系统架构分析 | `aiFullAnalysis` 等 6 个 | 真实 AI 驱动分析 |
 | 项目一体化 | `aiProjectFromChat` 等 7 个 | 对话→项目→知识库 |
 | 专家对话 | `aiExpertChat` | AI 专家对话（**未使用**） |
 | 16模块增强 | `aiRecommendOperators` 等 14 个 | 各模块 AI 增强 |

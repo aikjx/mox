@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! # 算子统一系统运行时 v3.0 - AI驱动全维突破平台
+//! # 算子统一系统运行时 v3.0 - AI驱动mox 模块化系统架构突破平台
 //!
 //! 集成五大核心能力：
 //! 1. AI智能对话 - 自然语言交互、意图识别、算子推荐
@@ -30,7 +30,7 @@ use mox_flow_operator_core::operator::{FunctionOperator, IdentityOperator, Linea
 use mox_flow_operator_core::state::StateVector;
 use mox_flow_operator_core::ExecutionContext;
 use mox_flow_operator_wasm_svc::WasmPluginManager;
-// 璇玑全维治理内核：双璇玑十四维 → 治理报告
+// 璇玑mox 模块化系统架构治理内核：双璇玑十四维 → 治理报告
 use mox_ai_expert_svc::context::GovernContext;
 use mox_ai_expert_svc::pipeline::mox_optimize;
 // OUS 前端治理台状态
@@ -60,6 +60,8 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
 /// 统一 AI 查询：路由语义（静态→少参数→长路径优先）+ Node sidecar 客户端
 mod ai_router;
 mod api_standard;
+/// meta.codegen 出码闸门接线（出码必经 ⛨verify + 8 闸门 + I-05 双验收，与 /api/mox/publish 同链）
+mod codegen_gate;
 /// AI 自动化中枢：需求对话 → 蓝图/流程图/代码/测试/RBAC → 沙箱实跑异常自动修复 → 回写
 mod automation;
 /// AI 自动化中枢共享资产模型 + 持久化（独立模块，避免与 market/automation 循环依赖）
@@ -82,7 +84,7 @@ mod sidecar;
 /// 以库方式挂载，由 mox_platform_orchestrator_svc 唯一对外暴露
 mod subservers;
 
-/// 应用状态 - AI全维系统核心
+/// 应用状态 - AImox 模块化系统架构系统核心
 #[derive(Clone)]
 struct AppState {
     // 原有组件
@@ -318,7 +320,7 @@ async fn main() -> anyhow::Result<()> {
     // T8 FR-GW-05：启动时打印"已注册的子服务清单"到 stderr
     subservers::print_subserver_registry();
 
-    tracing::info!("🚀 启动算子统一系统 v3.0 - AI驱动全维突破平台...");
+    tracing::info!("🚀 启动算子统一系统 v3.0 - AI驱动mox 模块化系统架构突破平台...");
 
     // 生产级安全配置：API 访问令牌（缺失则仅开放只读/健康检查接口）
     let api_token = std::env::var("OUS_API_TOKEN").ok();
@@ -462,7 +464,7 @@ async fn main() -> anyhow::Result<()> {
         audit_key,
     });
 
-    // 创建路由 - 全维API
+    // 创建路由 - mox 模块化系统架构API
     let app = Router::new()
         // ========== 基础系统API ==========
         .route("/api/health", get(health))
@@ -563,7 +565,7 @@ async fn main() -> anyhow::Result<()> {
         // ========== 统一 AI 查询：/ai/engine/* 四端点（T6）==========
         // 四端点：POST process / POST analyze / GET capabilities / GET metrics。
         // 统一语义网关：本地等价直调 sidecar → backend-node；AI 混合编排；返回 data 段 shape 与本地同。
-        .nest("/ai/engine", {
+        .nest("/api/ai/engine", {
             use crate::handlers::ai_engine::AiEngineState;
             use crate::sidecar::node_sidecar::NodeSidecarClient;
             let ai_state = AiEngineState::default()
@@ -588,12 +590,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/audit", get(get_access_audit))
         .route("/api/status", get(get_status))
         .route("/api/status/full", get(get_full_status))
-        // ========== 璇玑全维治理 API ==========
+        // ========== 璇玑mox 模块化系统架构治理 API ==========
         .route("/api/mox/health", get(mox_health))
         .route("/api/mox/optimize", post(mox_optimize_handler))
         .route("/api/mox/publish", post(mox_publish_handler))
+        .route("/api/mox/codegen-publish", post(mox_codegen_publish_handler))
         // ========== OUS 前端治理台 API（/api/governance/*）==========
-        // 全维治理：Dashboard / 专家状态 / 否决事件 / 审计日志 / RBAC 配置 / 专家配置 / WS 实时推送 / 治理评估。
+        // mox 模块化系统架构治理：Dashboard / 专家状态 / 否决事件 / 审计日志 / RBAC 配置 / 专家配置 / WS 实时推送 / 治理评估。
         // 状态自包含于 GovernanceState（handlers/governance.rs），已适配 mox-expert 当前 API。
         .nest("/api/governance", {
             let gov_state = state.governance.clone();
@@ -672,7 +675,7 @@ async fn main() -> anyhow::Result<()> {
     let addr = format!("{host}:{port}");
     tracing::info!("📡 服务器监听在 http://{}", addr);
     tracing::info!("══════════════════════════════════════════════════════════");
-    tracing::info!("  🚀 算子统一系统 v3.0 - AI驱动全维突破平台");
+    tracing::info!("  🚀 算子统一系统 v3.0 - AI驱动mox 模块化系统架构突破平台");
     tracing::info!("  🧠 AI智能对话 · 算法归一化 · 全资源管理 · 插件互通 · 流程自动化");
     tracing::info!("  🤖 真实AI对接(OpenAI兼容) · 浏览器自动化 · 知识图谱(34+节点)");
     tracing::info!("  🌐 访问地址: http://localhost:{}", port);
@@ -829,7 +832,7 @@ async fn auth_middleware(
     //       auth_middleware 之前短路处理，不再进入本函数。此处保留 /voice 判断是
     //       防御性冗余（防止中间件被误移除导致 /voice/** 突然被 401）。
     // /ai/engine/* 是统一 AI 能力编排入口，必须要求 Bearer 认证（防匿名烧 LLM 预算）。
-    let is_voice_proxy = path.starts_with("/voice");
+    let is_voice_proxy = path.starts_with("/voice") || path.starts_with("/api/voice");
     if !is_gateway
         && (path == "/api/health"
             || path == "/healthz"
@@ -897,7 +900,8 @@ async fn voice_proxy_short_circuit(
     next: Next,
 ) -> Response {
     let path = req.uri().path();
-    if path == "/voice" || path.starts_with("/voice/") {
+    if path == "/voice" || path.starts_with("/voice/")
+        || path == "/api/voice" || path.starts_with("/api/voice/") {
         // voice_proxy_handler 的抽取参数结构 = handler(State, Method, HeaderMap, OriginalUri, Body)
         // 中间件里直接从 Request 拆出所需信息再调用 handler。
         use crate::routes::voice_proxy::voice_proxy_handler;
@@ -1116,7 +1120,7 @@ async fn health() -> &'static str {
     "OK - AI Operator System v3.0 Running - Full-Dimensional Breakthrough"
 }
 
-// ========== 璇玑全维治理 API ==========
+// ========== 璇玑mox 模块化系统架构治理 API ==========
 // 把后端双璇玑十四维决策内核暴露给前端设计器：传入流程蓝图即可拿到
 // 各维度健康分、治理闸门、璇玑校验、采纳建议，驱动"可视化治理闭环"。
 
@@ -1130,7 +1134,7 @@ struct MoxOptimizeRequest {
     tenant: Option<String>,
 }
 
-/// 全维治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
+/// mox 模块化系统架构治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
 fn normalize_flow_to_graph(v: &serde_json::Value) -> mox_ai_flow_svc::model::FlowGraph {
     let mut g = mox_ai_flow_svc::model::FlowGraph::new("unified", "unified-flow");
     if let Some(nodes) = v.get("nodes").and_then(|n| n.as_array()) {
@@ -1242,6 +1246,15 @@ async fn mox_optimize_handler(
     api_ok(v)
 }
 
+async fn mox_codegen_publish_handler(
+    Json(req): Json<crate::codegen_gate::CodegenPublishRequest>,
+) -> ApiResponse<serde_json::Value> {
+    match crate::codegen_gate::codegen_publish(&req) {
+        Ok(v) => api_ok(v),
+        Err(msg) => api_error(400, msg),
+    }
+}
+
 async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> ApiResponse<serde_json::Value> {
     use mox_ai_expert_svc::context::{GovernContext, Principal, Tenant};
     let ctx = GovernContext::new(
@@ -1255,7 +1268,7 @@ async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> ApiResponse<
     } else {
         report.expert_scores.iter().map(|(_, s)| s).sum::<f64>() / report.expert_scores.len() as f64
     };
-    let name = req.name.clone().unwrap_or_else(|| "全维融合算子".into());
+    let name = req.name.clone().unwrap_or_else(|| "mox 模块化系统架构融合算子".into());
     let description = req
         .description
         .clone()
@@ -1264,7 +1277,7 @@ async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> ApiResponse<
     let tags = req
         .tags
         .clone()
-        .unwrap_or_else(|| vec!["全维融合".into(), "璇玑".into(), "业务流程图".into()]);
+        .unwrap_or_else(|| vec!["mox 模块化系统架构融合".into(), "璇玑".into(), "业务流程图".into()]);
 
     // ===== I-05 双验收联动门禁 =====
     // 需求侧任务 Done（req.task_done=true） ∧ 融合侧璇玑验证通过（algo 未否决且 gate 放行）

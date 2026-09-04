@@ -1,0 +1,51 @@
+[package]
+name = "mox-api-gateway"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX API 网关：统一 HTTP 入口，整合认证授权、联盟引擎、知识库、可观测性。企业级 API 服务。"
+
+[[bin]]
+name = "mox-api-gateway"
+path = "src/main.rs"
+
+[dependencies]
+# Web 框架
+axum = { version = "0.7", features = ["macros"] }
+tower = { version = "0.4", features = ["full"] }
+tower-http = { version = "0.5", features = ["trace", "cors", "compression-gzip", "limit"] }
+
+# 异步运行时
+tokio = { workspace = true }
+
+# 序列化
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# 时间
+chrono = { workspace = true, features = ["serde"] }
+
+# UUID
+uuid = { workspace = true, features = ["serde", "v4"] }
+
+# 错误处理
+thiserror = { workspace = true }
+
+# 日志
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# MOX 核心 crate
+mox-unified-contract = { workspace = true }
+mox-config-core = { workspace = true }
+mox-auth-core = { workspace = true }
+mox-observability-core = { workspace = true }
+mox-ai-alliance-engine = { workspace = true }
+mox-cloud-kb-core = { workspace = true }
+
+# 并发原语
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

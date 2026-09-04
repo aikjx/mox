@@ -338,7 +338,7 @@
         <div class="mox-head">
           <div>
             <h3 class="section-title">璇玑 · 双璇玑十四维治理</h3>
-            <p class="page-subtitle">业务七维 + 开发七维全维健康分；粘贴流程蓝图实时治理评分（璇玑最高权限校验）</p>
+            <p class="page-subtitle">业务七维 + 开发七维mox 模块化系统架构健康分；粘贴流程蓝图实时治理评分（璇玑最高权限校验）</p>
           </div>
           <div class="mox-actions">
             <el-upload
@@ -351,7 +351,7 @@
               <el-button><el-icon><Upload /></el-icon> 载入蓝图</el-button>
             </el-upload>
             <el-button type="primary" :loading="governing" @click="runGovernance">
-              <el-icon><MagicStick /></el-icon> 全维治理
+              <el-icon><MagicStick /></el-icon> mox 模块化系统架构治理
             </el-button>
           </div>
         </div>

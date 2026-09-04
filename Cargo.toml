@@ -99,6 +99,7 @@ members = [
     "platform/domains/cloud/svc/mox-cloud-s3-svc",
     "platform/domains/cloud/svc/mox-cloud-filer-svc",
     "platform/domains/cloud/core/mox-cloud-store-core",
+    "platform/domains/cloud/core/mox-cloud-kb-core",
     "platform/domains/cloud/core/mox-cloud-domain-traits",
     "platform/domains/cloud/core/mox-cloud-kernel",
     "platform/domains/cloud/svc/mox-cloud-rebalance-svc",
@@ -130,6 +131,11 @@ members = [
     "platform/domains/voice/sdk/mox-voice-dsp-py",
     "platform/framework",
     "platform/shared/mox-unified-algo-core",
+    "platform/shared/mox-unified-contract",
+    "platform/shared/mox-config-core",
+    "platform/shared/mox-auth-core",
+    "platform/shared/mox-observability-core",
+    "platform/gateway/mox-api-gateway",
     # === 专家联盟域 (alliance) ===
     "platform/domains/alliance/api",
     "platform/domains/alliance/proto/mox-alliance-common-proto",
@@ -366,6 +372,7 @@ mox-cloud-rebalance-svc = { path = "platform/domains/cloud/svc/mox-cloud-rebalan
 mox-cloud-s3-svc = { path = "platform/domains/cloud/svc/mox-cloud-s3-svc" }
 mox-cloud-filer-svc = { path = "platform/domains/cloud/svc/mox-cloud-filer-svc" }
 mox-cloud-store-core = { path = "platform/domains/cloud/core/mox-cloud-store-core" }
+mox-cloud-kb-core = { path = "platform/domains/cloud/core/mox-cloud-kb-core" }
 mox-cloud-kernel = { path = "platform/domains/cloud/core/mox-cloud-kernel" }
 mox-cloud-domain-traits = { path = "platform/domains/cloud/core/mox-cloud-domain-traits" }
 # Service 灞?(voice)
@@ -398,6 +405,12 @@ mox-data-norm-intent-native = { path = "platform/domains/data/sdk/mox-data-norm-
 mox-voice-dsp-py = { path = "platform/domains/voice/sdk/mox-voice-dsp-py" }
 # Framework 灞?
 mox-framework = { path = "platform/framework" }
+# Shared 统一契约层
+mox-unified-contract = { path = "platform/shared/mox-unified-contract" }
+mox-unified-algo-core = { path = "platform/shared/mox-unified-algo-core" }
+mox-config-core = { path = "platform/shared/mox-config-core" }
+mox-auth-core = { path = "platform/shared/mox-auth-core" }
+mox-observability-core = { path = "platform/shared/mox-observability-core" }
 
 # ================================================================
 # MOX 璁＄畻瀵嗛泦鏍稿績锛堢粺涓€ workspace 渚濊禆鐗堟湰锛岄伩鍏?FFI 缁戝畾鐗堟湰婕傜Щ锛?

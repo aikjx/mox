@@ -344,7 +344,7 @@
 | B (T11) | 关系图 R4：Flink CDC 10 万 + Spark R/W + Projection 20 + AC-15 14 | AC-T11-1..18 全通过；tests≥40 | M2 |
 | C (T17) | 3 语言 SDK × 90 示例 + ≥80 tests | AC-T17-1..18 全通过；tests≥80；examples=90 | M3 |
 | D (Review 1) | 独立审查 A/B/C 批次 artifacts + evidence | Review pass（修复需重测） | M3.5 |
-| E (E 批次) | T12/T13 → T15 → T18 全维串联 | AC-E-1..10 全通过 | M4 |
+| E (E 批次) | T12/T13 → T15 → T18 mox 模块化系统架构串联 | AC-E-1..10 全通过 | M4 |
 | F (F 批次) | T19(≥706) + T20(灰度 1→10→50→100) 闭环 | AC-F-1..10 + Review Final pass | M5 RELEASE |
 
 > **最终放行条件**（27 §T6 映射）：T0=18 烟测全过；7×8 算法对账 全绿；棘轮不退化；四闸门 G1/G2/G3/G4 全过；RELEASE_L2_PASS 签字 5 位齐全。若任一未满足 → REJECT 并开 remediation 队列。

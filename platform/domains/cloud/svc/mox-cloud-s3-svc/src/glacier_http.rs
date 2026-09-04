@@ -60,6 +60,7 @@ const MSG_RESTORE_REQUIRED: &str = "Restore required: call POST /object/:key/res
 const RETRY_EXPEDITED_SECS: u64 = 15 * 60; // 15 minutes
 const RETRY_STANDARD_SECS: u64 = 3 * 3_600; // 3 hours (mid of 1-5h)
 const RETRY_BULK_SECS: u64 = 8 * 3_600; // 8 hours (mid of 5-12h)
+#[allow(dead_code)]
 const RETRY_DEFAULT_SECS: u64 = 3_600; // 1 hour fallback (unknown tier)
 
 /// HTTP 445 status code (non-standard but widely used for this scenario).

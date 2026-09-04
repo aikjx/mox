@@ -25,23 +25,26 @@ import { actuatorHttp } from './http'
 import { getToken } from '@/utils/secureStorage'
 
 // ===== 管理面基础 =====
-export const getActuatorIndex = () => actuatorHttp.get('/actuator')
-export const getActuatorHealth = () => actuatorHttp.get('/actuator/health')
-export const getActuatorInfo = () => actuatorHttp.get('/actuator/info')
-export const getActuatorEnv = () => actuatorHttp.get('/actuator/env')
-export const getActuatorMetrics = () => actuatorHttp.get('/actuator/metrics')
+// 前缀归一化（RC-1）：actuatorHttp 的 baseURL 已为 '/actuator'，此处路径**不得**再带
+// '/actuator' 前缀，否则 axios 拼接成 '/actuator/actuator/*' → 404。
+// 索引用空串，避免拼成 '/actuator/'（尾斜杠与后端 '/actuator' 路由不匹配）。
+export const getActuatorIndex = () => actuatorHttp.get('')
+export const getActuatorHealth = () => actuatorHttp.get('/health')
+export const getActuatorInfo = () => actuatorHttp.get('/info')
+export const getActuatorEnv = () => actuatorHttp.get('/env')
+export const getActuatorMetrics = () => actuatorHttp.get('/metrics')
 
 // ===== API 注册表（接口管理）=====
-export const getApiMappings = (params) => actuatorHttp.get('/actuator/mappings', { params })
-export const getApiDetail = (id) => actuatorHttp.get(`/actuator/api/${encodeURIComponent(id)}`)
-export const enableApi = (id) => actuatorHttp.post(`/actuator/api/${encodeURIComponent(id)}/enable`)
-export const disableApi = (id) => actuatorHttp.post(`/actuator/api/${encodeURIComponent(id)}/disable`)
+export const getApiMappings = (params) => actuatorHttp.get('/mappings', { params })
+export const getApiDetail = (id) => actuatorHttp.get(`/api/${encodeURIComponent(id)}`)
+export const enableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/enable`)
+export const disableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/disable`)
 
 // ===== 在线日志 =====
-export const getLoggers = () => actuatorHttp.get('/actuator/loggers')
-export const setLoggerLevel = (level) => actuatorHttp.post('/actuator/loggers', { level })
-export const getOnlineLogs = (params) => actuatorHttp.get('/actuator/logs', { params })
-export const clearOnlineLogs = () => actuatorHttp.delete('/actuator/logs')
+export const getLoggers = () => actuatorHttp.get('/loggers')
+export const setLoggerLevel = (level) => actuatorHttp.post('/loggers', { level })
+export const getOnlineLogs = (params) => actuatorHttp.get('/logs', { params })
+export const clearOnlineLogs = () => actuatorHttp.delete('/logs')
 
 /**
  * 建立 SSE 实时日志流连接（/actuator/logs/tail）

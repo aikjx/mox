@@ -120,14 +120,14 @@
         },
         {
           "id": "ai_full_analysis",
-          "name": "全维智能分析引擎",
+          "name": "mox 模块化系统架构智能分析引擎",
           "features": [
             {
               "id": "feat_ai_full_analysis",
-              "name": "全维分析、文档生成、流程图生成、开发测试修复",
+              "name": "mox 模块化系统架构分析、文档生成、流程图生成、开发测试修复",
               "status": "frontend_only",
               "priority": "P0",
-              "description": "全维智能分析、文档生成、流程图生成、开发-测试-修复闭环、全维完成、文档优化",
+              "description": "mox 模块化系统架构智能分析、文档生成、流程图生成、开发-测试-修复闭环、mox 模块化系统架构完成、文档优化",
               "frontend_pages": ["views/ai/ChatView.vue"],
               "frontend_api_functions": ["aiFullAnalysis", "aiGenerateDoc", "aiGenerateFlowDiagram", "aiDevTestFix", "aiFullComplete", "aiOptimizeDoc"],
               "backend_endpoints": [],
@@ -889,7 +889,7 @@
     },
     {
       "id": "mox",
-      "name": "璇玑全维治理",
+      "name": "璇玑mox 模块化系统架构治理",
       "modules": [
         {
           "id": "mox_core",
@@ -897,10 +897,10 @@
           "features": [
             {
               "id": "feat_mox_core",
-              "name": "璇玑健康度、全维治理优化、全维融合发布",
+              "name": "璇玑健康度、mox 模块化系统架构治理优化、mox 模块化系统架构融合发布",
               "status": "implemented",
               "priority": "P0",
-              "description": "双璇玑十四维治理：健康度查询（14维度+双联盟）、全维治理优化（返回GovernanceReport）、全维融合发布（双验收联动门禁）",
+              "description": "双璇玑十四维治理：健康度查询（14维度+双联盟）、mox 模块化系统架构治理优化（返回GovernanceReport）、mox 模块化系统架构融合发布（双验收联动门禁）",
               "frontend_pages": ["views/graph/MoxFusionView.vue"],
               "frontend_api_functions": ["moxHealth", "moxOptimize", "moxPublish"],
               "backend_endpoints": [
@@ -922,7 +922,7 @@
               "name": "OUS前端治理台（Dashboard/专家状态/否决事件/审计/RBAC/WS推送）",
               "status": "implemented",
               "priority": "P1",
-              "description": "全维治理台：Dashboard、专家状态、否决事件、审计日志、RBAC配置、专家配置、WebSocket实时推送、治理评估",
+              "description": "mox 模块化系统架构治理台：Dashboard、专家状态、否决事件、审计日志、RBAC配置、专家配置、WebSocket实时推送、治理评估",
               "frontend_pages": [],
               "frontend_api_functions": [],
               "backend_endpoints": [],
@@ -1304,10 +1304,10 @@
           "features": [
             {
               "id": "feat_alliance_engine",
-              "name": "联盟能力查询、全维分析SSE流式",
+              "name": "联盟能力查询、mox 模块化系统架构分析SSE流式",
               "status": "frontend_only",
               "priority": "P1",
-              "description": "联盟6阶段全维分析引擎：能力矩阵查询、全维分析SSE流式执行",
+              "description": "联盟6阶段mox 模块化系统架构分析引擎：能力矩阵查询、mox 模块化系统架构分析SSE流式执行",
               "frontend_pages": ["views/expert/AllianceTaskView.vue"],
               "frontend_api_functions": ["getAllianceCapabilities", "runAllianceFullSSE", "runAllianceTask"],
               "backend_endpoints": [],
@@ -1701,7 +1701,7 @@
     {
       "id": "gap_full_analysis_api",
       "domain": "ai",
-      "description": "后端缺失 /api/ai/full-analysis等全维分析端点，前端6个全维智能分析函数无编排器后端支撑",
+      "description": "后端缺失 /api/ai/full-analysis等mox 模块化系统架构分析端点，前端6个mox 模块化系统架构智能分析函数无编排器后端支撑",
       "severity": "P0",
       "affected_frontend_functions": ["aiFullAnalysis", "aiGenerateDoc", "aiGenerateFlowDiagram", "aiDevTestFix", "aiFullComplete", "aiOptimizeDoc"],
       "status": "open"
@@ -1874,7 +1874,7 @@
     {"path": "views/expert/ExpertConfigView.vue", "name": "专家配置", "domain": "expert", "route": "/expert-config"},
     {"path": "views/expert/ExpertPlazaView.vue", "name": "专家广场", "domain": "expert", "route": "/expert-plaza"},
     {"path": "views/graph/GraphView.vue", "name": "知识图谱", "domain": "graph", "route": "/graph"},
-    {"path": "views/graph/MoxFusionView.vue", "name": "全维融合", "domain": "graph", "route": "/mox-fusion"},
+    {"path": "views/graph/MoxFusionView.vue", "name": "mox 模块化系统架构融合", "domain": "graph", "route": "/mox-fusion"},
     {"path": "views/graph/FlowGraph.vue", "name": "流程图", "domain": "graph", "route": "/flow-graph"},
     {"path": "views/market/MarketView.vue", "name": "算子商城", "domain": "market", "route": "/market"},
     {"path": "views/market/MarketDetailView.vue", "name": "算子详情", "domain": "market", "route": "/market/:id"},

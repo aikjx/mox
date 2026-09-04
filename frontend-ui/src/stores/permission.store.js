@@ -75,6 +75,7 @@ function _safeSet(key, value) {
       localStorage.setItem(key, String(value))
     }
   } catch (e) {
+    // dev only: 权限存储失败属内部工具错误
     console.warn('[permissionStore] 存储失败:', key, e)
   }
 }

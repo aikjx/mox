@@ -1,11 +1,11 @@
-﻿# AI 引擎全维分析与统一编排核心 — 设计文档
+﻿# AI 引擎mox 模块化系统架构分析与统一编排核心 — 设计文档
 
 > 版本：V1.0 ｜ 日期：2026-08-22 ｜ 范围：`platform/backend-node/src`（Node 层）+ `platform/domains/ai-agent`、`platform/gateway/runtime`（Rust 层）
-> 交付物：全维算法分析 → 缺陷清单 → 归一化设计 → 统一编排核心 `ai-engine-core.js`
+> 交付物：mox 模块化系统架构算法分析 → 缺陷清单 → 归一化设计 → 统一编排核心 `ai-engine-core.js`
 
 ---
 
-## 1. 全维 AI 模块清单与算法处理流程
+## 1. mox 模块化系统架构 AI 模块清单与算法处理流程
 
 ### 1.1 Node 层（7 大模块）
 
@@ -49,7 +49,7 @@ flowchart TD
     U --> RA[自治任务] --> RS["Rust ai-agent<br/>八态主循环+FSM"]
 ```
 
-## 2. 缺陷清单（全维分析发现）
+## 2. 缺陷清单（mox 模块化系统架构分析发现）
 
 | # | 缺陷 | 位置 | 影响 | 修复 |
 |---|---|---|---|---|

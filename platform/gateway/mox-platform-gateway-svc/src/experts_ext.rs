@@ -36,25 +36,23 @@ struct Booking {
 }
 
 // =====================================================================
-// JSON 持久化（data/experts_bookings.json）
+// SQLite 持久化（经 experts_db：data/experts.db；历史
+// data/experts_bookings.json 在启动时自动导入并归档）
 // =====================================================================
 
-const EXPERTS_BOOKINGS_PATH: &str = "data/experts_bookings.json";
-
 fn load_experts_bookings() -> Vec<Booking> {
-    match std::fs::read_to_string(EXPERTS_BOOKINGS_PATH) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    crate::experts_db::load_bookings()
+        .into_iter()
+        .filter_map(|v| serde_json::from_value(v).ok())
+        .collect()
 }
 
 fn save_experts_bookings(bookings: &[Booking]) {
-    if let Some(parent) = std::path::Path::new(EXPERTS_BOOKINGS_PATH).parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
-    if let Ok(json_str) = serde_json::to_string_pretty(bookings) {
-        let _ = std::fs::write(EXPERTS_BOOKINGS_PATH, json_str);
-    }
+    let rows: Vec<Value> = bookings
+        .iter()
+        .filter_map(|b| serde_json::to_value(b).ok())
+        .collect();
+    crate::experts_db::save_bookings(&rows);
 }
 
 #[derive(Clone)]
@@ -294,13 +292,13 @@ async fn consult_now(
 pub fn build_experts_ext_router() -> Router {
     let state = Arc::new(ExpertsState::new());
     Router::new()
-        .route("/experts/stats", get(experts_stats))
-        .route("/experts/bookings/mine", get(my_bookings))
-        .route("/experts/:id/favorite", post(toggle_expert_favorite))
-        .route("/experts/bookings", post(create_booking))
-        .route("/experts/bookings/:id/cancel", put(cancel_booking))
-        .route("/experts/bookings/:id/consult-room", get(consult_room))
-        .route("/experts/team", post(join_team))
-        .route("/experts/:id/consult-now", post(consult_now))
+        // 注意：以下4个端点已由 experts_registry.rs 提供真实实现（归一化升级）：
+        //   GET /api/experts/stats、GET /api/experts/bookings/:id/consult-room、
+        //   POST /api/experts/team、POST /api/experts/:id/consult-now
+        // 此处保留 booking/favorite 等广场管理端点。
+        .route("/api/experts/bookings/mine", get(my_bookings))
+        .route("/api/experts/:id/favorite", post(toggle_expert_favorite))
+        .route("/api/experts/bookings", post(create_booking))
+        .route("/api/experts/bookings/:id/cancel", put(cancel_booking))
         .with_state(state)
 }

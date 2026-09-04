@@ -1,5 +1,5 @@
 // ================================================================
-// mox-dsql-core 全维测试验证
+// mox-dsql-core mox 模块化系统架构测试验证
 // 覆盖：动态配置 / 版本管理 / 模板渲染 / 参数校验 / 缓存 / 审计 / 分页 / 错误处理 / 性能
 // ================================================================
 
@@ -61,7 +61,7 @@ fn create_test_sql(manager: &DsqlManager, code: &str, template: &str) -> SqlDefi
     manager.create_sql(&CreateSqlRequest {
         sql_code: code.to_string(),
         sql_name: format!("测试SQL-{code}"),
-        description: Some("全维测试用".to_string()),
+        description: Some("mox 模块化系统架构测试用".to_string()),
         datasource_code: "default".to_string(),
         sql_template: template.to_string(),
         param_defs,
@@ -733,14 +733,14 @@ fn test_performance_cached_vs_uncached() {
 }
 
 // ================================================================
-// 十、动态配置全维能力验证
+// 十、动态配置mox 模块化系统架构能力验证
 // ================================================================
 
 #[test]
 fn test_full_dimensional_dynamic_config() {
     let manager = setup();
 
-    println!("\n=== 全维动态配置能力验证 ===");
+    println!("\n=== mox 模块化系统架构动态配置能力验证 ===");
 
     // 维度1：实体维度 - 同一实体可配置多个SQL
     create_test_sql(&manager, "entity_query", "SELECT * FROM test_products");
@@ -794,5 +794,5 @@ fn test_full_dimensional_dynamic_config() {
     // 维度8：数据源维度 - datasource_code可配置
     println!("  ✅ 数据源维度：每个SQL可配置datasource_code，支持多数据源");
 
-    println!("\n  全维动态配置能力验证完成：8个维度全部支持 ✅");
+    println!("\n  mox 模块化系统架构动态配置能力验证完成：8个维度全部支持 ✅");
 }

@@ -24,6 +24,7 @@ mox-ai-flow-svc = { workspace = true }
 # 子服务聚合（Phase 1 收敛）：四套并行 server 以库方式挂载，由 runtime 唯一对外暴露。
 # 各自 bin 保留为独立部署选项，生产统一走 operator-server。
 mox-platform-system-core = { workspace = true }
+mox-platform-meta-core = { workspace = true }
 mox-flow-primiflow-svc = { workspace = true, features = ["server"] }
 mox-flow-fusion-svc = { workspace = true }
 tokio = { workspace = true }

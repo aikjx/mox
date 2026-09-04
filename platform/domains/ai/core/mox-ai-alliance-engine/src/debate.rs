@@ -401,7 +401,7 @@ mod tests {
 
     fn make_team() -> (TeamResult, crate::intent::IntentResult) {
         let intent = classify_intent(
-            "写一个 Rust 企业级网关路由，全维分析性能、安全、权限，带测试",
+            "写一个 Rust 企业级网关路由，mox 模块化系统架构分析性能、安全、权限，带测试",
             None::<fn(&[String], f64, u32) -> Result<BTreeMap<String, f64>, String>>,
         );
         let reg = build_expert_registry();

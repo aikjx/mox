@@ -62,6 +62,7 @@ export function renderMarkdown(content) {
   try {
     return md.render(content)
   } catch (e) {
+    // dev only: Markdown 渲染失败属内部渲染错误，降级显示原文
     console.warn('Markdown 渲染失败:', e)
     return escapeHtml(content)
   }

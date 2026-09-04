@@ -3,7 +3,7 @@
 
 
 > **标题**：开发专家联盟·权威集成索引
-> **版本**：V2.5
+> **版本**：V2.6
 > **权威等级**：🟢权威
 > **编号**：EA-DOC-001
 > **文档层级**：L1权威规范层
@@ -41,8 +41,8 @@
 
 | 统计项 | 数量 | 说明 |
 |--------|:----:|------|
-| **专家联盟主题文档总计** | **63** | 含归档3份、执行报告5份 |
-| 活跃文档（非归档） | 60 | 含执行报告5份 |
+| **专家联盟主题文档总计** | **66** | 含归档3份、执行报告5份 |
+| 活跃文档（非归档） | 63 | 含执行报告5份 |
 | 归档文档 | 3 | 2份旧版 + 1份归档README |
 | 本次归一化新建 | 4 | EA-NORM-001规范、02双平台、03术语表、归档README |
 | 本次归一化修改 | 45 | A组21 + B组22 + 引用修复2 |
@@ -54,7 +54,7 @@
 |------|:------:|:----:|------|
 | `docs/expert-alliance/` | 23 | 45.1% | 根目录7 + v2/ 9 + v3/ 4 + architecture/ 3HTML |
 | `docs/modules/` | 11 | 21.6% | mox-expert系列4 + 专家联盟系列5 + business-process系列2 |
-| `docs/working-reports/` | 19 | 30.2% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构5 + moxfs阶段四2 + moxfs阶段五5 |
+| `docs/working-reports/` | 22 | 35.5% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构5 + moxfs阶段四2 + moxfs阶段五5 + moxfs阶段六3 |
 | `docs/enterprise/` | 4 | 7.8% | 22号总控卡 + 26号×2 + 28号报告 |
 | `docs/standards/` | 2 | 3.9% | EA-NORM-001 + EAF-STD-001 |
 | `docs/cosmic-architecture/` | 2 | 3.9% | 02号 + 04号 |
@@ -108,7 +108,7 @@
 | 18 | EA-DOC-063 | `docs/standards/expert-alliance-flow-standard.md` | EAF-STD-001业务处理流程行业标准 | V1.2 | 专家联盟业务处理流程行业级标准 |
 | 19 | EA-DOC-064 | `docs/alliance-architecture-fix-report-20260831.html` | 架构修复报告 | 2026-08-31 | alliance域修复验证唯一权威 |
 | 20 | EA-DOC-065 | `docs/alliance-architecture-review-20260831.html` | 架构评审报告 | 2026-08-31 | alliance域架构评审权威（⚠️修复前快照） |
-| 21 | EA-DOC-066 | `docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md` | 全维业务流程归一化手册 | V1.0 | 专家联盟业务流程归一化唯一真相源 |
+| 21 | EA-DOC-066 | `docs/modules/专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md` | mox 模块化系统架构业务流程归一化手册 | V1.0 | 专家联盟业务流程归一化唯一真相源 |
 | 22 | EA-DOC-058 | `docs/modules/business-process-flows.md` | 企业级业务处理流程 | — | 业务流程规范主文档 |
 | 23 | EA-NORM-002 | `docs/standards/expert-alliance-port-norm.md` | 核心服务端口规划规范 PORT-NORM-001 | V1.0 | 核心服务 3000-3999 / 插件小服务 30000+ 唯一权威 |
 
@@ -157,7 +157,7 @@
 | EA-DOC-054 | `docs/modules/mox-expert-alliance-fusion-flows.md` | 璇玑融合业务流程图 | mox-expert融合流水线 |
 | EA-DOC-055 | `docs/modules/mox-expert-business-requirements.md` | 璇玑融合企业级业务需求 | mox-expert三视图之业务需求 |
 | EA-DOC-056 | `docs/modules/mox-expert-product.md` | 璇玑产品需求架构设计书 | mox-expert三视图之产品需求 |
-| — | `docs/modules/mox-expert-normalization.md` | 璇玑全维整理归一化优化规范 | mox-expert三视图之归一化规范 |
+| — | `docs/modules/mox-expert-normalization.md` | 璇玑mox 模块化系统架构整理归一化优化规范 | mox-expert三视图之归一化规范 |
 | EA-DOC-057 | `docs/modules/business-process-flowcharts.md` | 企业级业务处理流程图 | 可视化配套版，以flows.md为准 |
 | — | `docs/modules/ai-flow-graph-design.md` | AI流程图谱化设计 | AI引擎流程图谱设计 |
 
@@ -172,7 +172,7 @@
 
 | 路径 | 标题 | 说明 |
 |------|------|------|
-| `docs/enterprise/28-全维架构分析与文档归一化报告-V1.0.md` | 全维架构分析与文档归一化报告 | 全域架构分析 |
+| `docs/enterprise/28-mox 模块化系统架构分析与文档归一化报告-V1.0.md` | mox 模块化系统架构分析与文档归一化报告 | 全域架构分析 |
 | `docs/架构开发联盟知识库融合设计方案.md` | 架构开发联盟知识库融合设计方案 | CKB融合知识库架构 |
 | `docs/specifications/tasks/20260826-xiaobai-mox-full-arch/alliance-fr13-fr5-integration.md` | AIS专家联盟裁决流水线×FR-13/FR-5对接设计规范 | 对接设计规范 |
 | `docs/working-reports/mox-expert-alliance-processing-mode.md` | 璇玑开发专家联盟处理模式 | 5步法标准流程（过程稿） |
@@ -184,11 +184,14 @@
 | `docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md` | 混合架构第二阶段验证报告：核心算法吸收 | VR-CLOUD-HYBRID-A-P2-20260903，6 项 RustFS 算法吸收，1080 测试全绿 |
 | `docs/working-reports/20260903_moxfs_phase4_architecture_decoupling.md` | moxfs 阶段四架构解耦设计文档 | ADR-MOXFS-P4-20260903，L1-L6 六层架构/kernel 抽离/domain-traits/s3解耦/RustFS后端骨架/CloudError，11章节 |
 | `docs/working-reports/20260903_moxfs_phase4_verification_report.md` | moxfs 阶段四验证报告：架构解耦 | VR-MOXFS-P4-20260903，7项改造验证，1139测试全绿（467 lib+672集成），0失败 |
-| `docs/working-reports/20260903_moxfs_phase5_test_coverage_report.md` | MOXFS 阶段五 · 全维度测试覆盖率报告 | COV-MOXFS-P5-20260903，行覆盖率82.99%→94.39%(+11.40%)，函数覆盖率81.90%→94.47%(+12.57%)，5核心算法模块全部≥95%，八维度覆盖分析 |
+| `docs/working-reports/20260903_moxfs_phase5_test_coverage_report.md` | MOXFS 阶段五 · mox 模块化系统架构维度测试覆盖率报告 | COV-MOXFS-P5-20260903，行覆盖率82.99%→94.39%(+11.40%)，函数覆盖率81.90%→94.47%(+12.57%)，5核心算法模块全部≥95%，八维度覆盖分析 |
 | `docs/working-reports/20260903_moxfs_phase5_e2e_test_report.md` | MOXFS 阶段五 · 全链路端到端测试报告 | E2E-MOXFS-P5-20260903，24个e2e测试全部通过，5条全链路场景（写入/读取/删除/故障恢复/生命周期迁移），SHA-256全链路校验，故障注入验证 |
 | `docs/working-reports/20260903_moxfs_phase5_performance_benchmark_report.md` | MOXFS 阶段五 · 性能基准与优化报告 | PERF-MOXFS-P5-20260903，criterion基准套件已建立（5文件约131基准点，编译通过），RustFS对标分析，Top5瓶颈分析，6项优化建议P0-P3；⚠️基线数据采集因沙箱基础设施崩溃未完成，待后续补充 |
 | `docs/working-reports/20260903_moxfs_phase5_quality_audit_report.md` | MOXFS 阶段五 · 企业级质量审计报告 | QA-MOXFS-P5-20260903，7 crate clippy 0 warning 0 error，fmt通过，unsafe 27处（15生产代码全部有安全注释+测试覆盖），panic 81处生产代码（0新增，全部预存），依赖全部MIT/Apache-2.0无高危漏洞 |
 | `docs/working-reports/20260903_moxfs_phase5_verification_report.md` | MOXFS 阶段五 · 验证报告 | VR-MOXFS-P5-20260903，5大工作项4项完成1项部分完成，全量回归1188测试全绿（609 lib+579集成）0失败，阶段四→阶段五+49测试，10项关键验证全部通过 |
+| `docs/working-reports/20260903_moxfs_phase6_verification_report.md` | MOXFS 阶段六 · 验证报告 | VR-MOXFS-P6-20260903，全量测试1024项（617 lib+407 s3集成）1023通过+1 ignored 0失败，clippy零warning，6项验证全通过，3flaky修复连续3轮零flaky |
+| `docs/working-reports/20260903_moxfs_phase6_performance_optimization_report.md` | MOXFS 阶段六 · mox 模块化系统架构性能优化报告 | PERF-MOXFS-P6-20260903，4项优化（BufferPool分片锁/Backpressure缓存行对齐+thread-local/MultiWriter-HedgedReader Arc消除/ReedSolomon矩阵缓存LRU），Backpressure核心场景3.8x-6.0x加速，5criterion基准全可运行 |
+| `docs/working-reports/20260903_moxfs_phase6_stability_hardening_report.md` | MOXFS 阶段六 · 稳定性加固报告 | STAB-MOXFS-P6-20260903，3个flaky测试修复（t22 SIMD门控/filer环境变量竞态/backpressure并发压力），连续3轮零flaky确认，multi_writer 23基准点+hedged_reader 19基准点补齐 |
 
 ---
 
@@ -219,11 +222,14 @@
 | 9 | `docs/working-reports/20260903_hybrid_architecture_phase3_verification_report.md` | VR-CLOUD-HYBRID-A-P3-20260903 | 🟡验证报告 | v1.0 | 第三阶段验证：4项架构改造（PooledBuffer四层分档缓冲池/CAS背压接入写入主路径/ReaderCapability组合式reader管线/三维扫描预算+全局配置），新增52测试全绿，全量回归无回归，6个新增源码模块，10个Feature Flags | cargo check + cargo test 全量实测 + 新增模块代码审查 |
 | 10 | `docs/working-reports/20260903_moxfs_phase4_architecture_decoupling.md` | ADR-MOXFS-P4-20260903 | 🟢ADR | v1.0 | moxfs阶段四架构解耦设计：L1-L6六层架构总览、mox-cloud-kernel crate（10个L5算法模块零业务依赖）、mox-cloud-domain-traits crate（5大trait+36关联类型）、s3→volume解耦+StorageBackend依赖注入、RustFsEcstoreBackend骨架+feature flag、CloudError统一错误类型（15变体+From转换链）、PooledBuffer推广s3/filer、ReaderPipeline接入S3读路径、依赖关系与循环依赖保证、API兼容性验证、阶段五路线图 | 源码级模块梳理 + Cargo.toml审查 + 代码实测 + re-export模式验证 |
 | 11 | `docs/working-reports/20260903_moxfs_phase4_verification_report.md` | VR-MOXFS-P4-20260903 | 🟡验证报告 | v1.0 | moxfs阶段四验证：7项改造（4 P0+3 P1）全部通过验证，全量回归1139测试全绿（467 lib+672集成）0失败，kernel零业务依赖/domain-traits零svc依赖/无循环依赖，s3死依赖已移除，feature flag双路径编译验证，API兼容零变更，RustFS仅为对标参考对象不引入依赖 | cargo check --workspace + cargo test全量实测 + feature flag编译验证 + cargo tree依赖分析 + 代码审查 |
-| 12 | `docs/working-reports/20260903_moxfs_phase5_test_coverage_report.md` | COV-MOXFS-P5-20260903 | 🟡验证报告 | v1.0 | moxfs阶段五全维度测试覆盖率：行覆盖率82.99%→94.39%(+11.40%)，函数覆盖率81.90%→94.47%(+12.57%)，测试总数73→215(+142)，5核心算法模块全部≥95%（reed_solomon 98.38%/buffer_pool 99.38%/backpressure 97.85%/hedged_reader 96.79%/multi_writer 95.03%），八维度覆盖分析，未覆盖代码清单及原因 | cargo llvm-cov 0.8.7 全量实测 + 模块级覆盖率报告 |
+| 12 | `docs/working-reports/20260903_moxfs_phase5_test_coverage_report.md` | COV-MOXFS-P5-20260903 | 🟡验证报告 | v1.0 | moxfs阶段五mox 模块化系统架构维度测试覆盖率：行覆盖率82.99%→94.39%(+11.40%)，函数覆盖率81.90%→94.47%(+12.57%)，测试总数73→215(+142)，5核心算法模块全部≥95%（reed_solomon 98.38%/buffer_pool 99.38%/backpressure 97.85%/hedged_reader 96.79%/multi_writer 95.03%），八维度覆盖分析，未覆盖代码清单及原因 | cargo llvm-cov 0.8.7 全量实测 + 模块级覆盖率报告 |
 | 13 | `docs/working-reports/20260903_moxfs_phase5_e2e_test_report.md` | E2E-MOXFS-P5-20260903 | 🟡验证报告 | v1.0 | moxfs阶段五全链路端到端测试：24个e2e测试全部通过，5条全链路场景（对象写入5测试/对象读取5测试/对象删除3测试/故障恢复6测试/生命周期迁移5测试），InMemoryStorageBackend+Mock故障注入+SHA-256全链路校验，现有496测试无回归 | cargo test --test t_e2e_phase5 全量实测 + 故障注入验证 + SHA-256数据完整性校验 |
 | 14 | `docs/working-reports/20260903_moxfs_phase5_performance_benchmark_report.md` | PERF-MOXFS-P5-20260903 | 🟡参考 | v1.0 | moxfs阶段五性能基准与优化：criterion 0.5基准套件已建立（5文件约131基准点，编译通过），RustFS五模块对标分析，Top5性能瓶颈详细分析（纠删码标量GF乘法/BufferPool Mutex锁竞争/Backpressure CAS竞争/Arc克隆+Box::pin分配/矩阵缓存无上限），6项优化建议P0-P3优先级排序；⚠️基线数据采集因沙箱基础设施崩溃未完成，待沙箱恢复后运行cargo bench采集 | 代码静态分析 + RustFS源码对标 + criterion套件编译验证 + 领域经验 |
 | 15 | `docs/working-reports/20260903_moxfs_phase5_quality_audit_report.md` | QA-MOXFS-P5-20260903 | 🟡验证报告 | v1.0 | moxfs阶段五企业级质量审计：7 crate clippy 0 warning 0 error，cargo fmt通过，unsafe 27处（15生产代码全部在gf256_simd.rs SIMD内联汇编，100%安全注释+测试覆盖），panic 81处生产代码（0新增，全部预存，分类统计：受保护unwrap32/Mutex poison18/infallible12/expect10/其他9），依赖全部MIT/Apache-2.0无高危漏洞，全量回归1188测试全绿 | cargo clippy --all-targets -- -D warnings + cargo fmt --check + 代码审查 + cargo audit + cargo test全量实测 |
 | 16 | `docs/working-reports/20260903_moxfs_phase5_verification_report.md` | VR-MOXFS-P5-20260903 | 🟡验证报告 | v1.0 | moxfs阶段五验证：5大工作项4项完成1项部分完成（性能基线数据待采集），全量回归1188测试全绿（609 lib+579集成）0失败，阶段四→阶段五+49测试（1139→1188），行覆盖率94.39%，10项关键验证全部通过（clippy零warning/fmt通过/覆盖率≥90%/核心模块≥95%/e2e 24全绿/全量0失败/API兼容/unsafe安全注释/无新增panic/依赖无高危），2个预存flaky测试豁免 | cargo clippy + cargo fmt + cargo llvm-cov + cargo test全量实测 + 代码审查 + cargo audit |
+| 17 | `docs/working-reports/20260903_moxfs_phase6_verification_report.md` | VR-MOXFS-P6-20260903 | 🟡验证报告 | v1.0 | moxfs阶段六验证：mox 模块化系统架构性能优化与稳定性加固，全量测试1024项（617 lib+407 s3集成）1023通过+1 ignored 0失败，clippy 7云盘crate零warning零error，cargo fmt通过，公共API零变更，生产代码零新增panic，3个flaky测试全部修复连续3轮零flaky确认，5个criterion基准文件全部可运行 | cargo test全量实测 + cargo clippy --no-deps -D warnings + cargo fmt --check + 代码审查 + 公共API签名对比 |
+| 18 | `docs/working-reports/20260903_moxfs_phase6_performance_optimization_report.md` | PERF-MOXFS-P6-20260903 | 🟡参考 | v1.0 | moxfs阶段六mox 模块化系统架构性能优化：4项优化（BufferPool分片锁替换parking_lot::Mutex/Backpressure fetch_add替代CAS+缓存行对齐+thread-local批处理+cooldown快速路径/MultiWriter-HedgedReader消除6处Arc::clone/ReedSolomon矩阵缓存LRU上限1024+原子时间戳淘汰），Backpressure核心场景3.8x-6.0x加速（try_acquire 6.0x/permit 5.9x/batch10 4.5x/状态切换3.8x），Future对象池经评估不建议实施（收益<0.005%），5个criterion基准文件全部可运行数据已采集 | cargo bench（criterion 0.5）实测数据 + 代码审查 + 静态分析 |
+| 19 | `docs/working-reports/20260903_moxfs_phase6_stability_hardening_report.md` | STAB-MOXFS-P6-20260903 | 🟡验证报告 | v1.0 | moxfs阶段六稳定性加固：3个flaky测试修复（t22 SIMD性能门控改#[ignore]/filer环境变量竞态加模块级Mutex/backpressure并发压力thread-local计数器残留修复），连续3轮全量lib测试零flaky确认（kernel 221+1 ignored/filer 101），multi_writer基准补齐23基准点（4场景×3节点数×3数据大小，延迟随节点数线性增长n3≈1.2µs→n12≈3.5µs），hedged_reader基准补齐19基准点（5场景×2副本数×多延迟分布，Windows tokio定时器~15ms分辨率限制建议Linux复测） | flaky测试修复实测 + 连续3轮全量回归 + cargo bench基准补齐 |
 
 ---
 
@@ -330,10 +336,10 @@
 ## 12. 最后验证
 
 - **索引最后验证日期**：2026-09-03
-- **验证人**：开发联盟 R（moxfs 阶段五企业级质量加固与全链路验证）
-- **验证范围**：全部63份专家联盟主题文档（含归档3份）
+- **验证人**：开发联盟 R（moxfs 阶段六mox 模块化系统架构性能优化与稳定性加固）
+- **验证范围**：全部66份专家联盟主题文档（含归档3份）
 - **验证结果**：
-  - ✅ 索引登记文档数 = 物理文件数（63份）
+  - ✅ 索引登记文档数 = 物理文件数（66份）
   - ✅ 索引中每个登记路径物理存在
   - ✅ 物理目录中每个专家联盟文档已在索引登记
   - ✅ 索引权威等级与文档头部元信息一致
@@ -342,11 +348,14 @@
   - ✅ 代码-文档对齐声明与实际代码一致（11crate/2svc/:3100/:3200/10专家/6融合策略）
   - ✅ 新增moxfs阶段四架构解耦设计文档已登记（ADR-MOXFS-P4-20260903，L1-L6六层架构/kernel抽离/domain-traits/s3解耦/RustFS后端骨架/CloudError，11章节）
   - ✅ 新增moxfs阶段四验证报告已登记（VR-MOXFS-P4-20260903，7项改造验证，1139测试全绿，0失败）
-  - ✅ 新增moxfs阶段五全维度测试覆盖率报告已登记（COV-MOXFS-P5-20260903，行覆盖率94.39%，5核心模块≥95%）
+  - ✅ 新增moxfs阶段五mox 模块化系统架构维度测试覆盖率报告已登记（COV-MOXFS-P5-20260903，行覆盖率94.39%，5核心模块≥95%）
   - ✅ 新增moxfs阶段五全链路端到端测试报告已登记（E2E-MOXFS-P5-20260903，24 e2e测试全绿，5条全链路场景）
   - ✅ 新增moxfs阶段五性能基准与优化报告已登记（PERF-MOXFS-P5-20260903，criterion套件已建立编译通过，⚠️基线数据待采集）
   - ✅ 新增moxfs阶段五企业级质量审计报告已登记（QA-MOXFS-P5-20260903，7 crate clippy 0 warning，unsafe/panic/依赖审计全通过）
   - ✅ 新增moxfs阶段五验证报告已登记（VR-MOXFS-P5-20260903，1188测试全绿0失败，10项关键验证全通过）
+  - ✅ 新增moxfs阶段六验证报告已登记（VR-MOXFS-P6-20260903，全量1024测试1023通过+1 ignored 0失败，clippy零warning，6项验证全通过）
+  - ✅ 新增moxfs阶段六mox 模块化系统架构性能优化报告已登记（PERF-MOXFS-P6-20260903，4项优化完成，Backpressure核心场景3.8x-6.0x加速，5criterion基准全可运行）
+  - ✅ 新增moxfs阶段六稳定性加固报告已登记（STAB-MOXFS-P6-20260903，3flaky修复连续3轮零flaky，multi_writer 23+hedged_reader 19基准点补齐）
 
 ---
 
@@ -362,9 +371,10 @@
 | V2.2 | 2026-09-03 | 新增登记：混合架构第二阶段验证报告（VR-CLOUD-HYBRID-A-P2-20260903）；6项RustFS核心算法吸收完成（矩阵缓存/reconstruction verification/MultiWriter/HedgedReader/lifecycle门控/CAS背压），4个新源码模块，1080测试全绿 | 开发联盟 R |
 | V2.3 | 2026-09-03 | 新增登记：混合架构第三阶段架构分析文档（ADR-CLOUD-HYBRID-A-P3-20260903）+ 第三阶段验证报告（VR-CLOUD-HYBRID-A-P3-20260903）；4项架构改造完成（PooledBuffer四层分档缓冲池/CAS背压接入写入主路径/ReaderCapability组合式reader管线/三维扫描预算+全局配置），新增52测试全绿，6个新源码模块，10个Feature Flags，L1-L6六层目标架构，10个端到端业务流程图 | 开发联盟 R |
 | V2.4 | 2026-09-03 | 新增登记：moxfs阶段四架构解耦设计文档（ADR-MOXFS-P4-20260903）+ 阶段四验证报告（VR-MOXFS-P4-20260903）；项目主体统一为moxfs全自研云盘知识库，RustFS仅为对标参考对象；7项架构解耦改造完成（mox-cloud-kernel crate抽离10个L5算法模块/mox-cloud-domain-traits crate定义5大trait+36关联类型/s3→volume解耦+StorageBackend依赖注入/RustFsEcstoreBackend骨架+feature flag/CloudError统一错误类型15变体/PooledBuffer推广s3-filer/ReaderPipeline接入S3读路径），全量回归1139测试全绿（467 lib+672集成）0失败 | 开发联盟 R |
-| V2.5 | 2026-09-03 | 新增登记：moxfs阶段五全部交付物（5份文档）——全维度测试覆盖率报告（COV-MOXFS-P5-20260903，行覆盖率82.99%→94.39%，5核心算法模块全部≥95%）、全链路端到端测试报告（E2E-MOXFS-P5-20260903，24 e2e测试全绿，5条全链路场景）、性能基准与优化报告（PERF-MOXFS-P5-20260903，criterion套件5文件约131基准点编译通过，RustFS对标+Top5瓶颈+6项优化建议，⚠️基线数据因沙箱基础设施崩溃待采集）、企业级质量审计报告（QA-MOXFS-P5-20260903，7 crate clippy 0 warning 0 error，unsafe 27处100%安全注释+测试覆盖，panic 81处0新增，依赖全MIT/Apache-2.0无高危）、阶段五验证报告（VR-MOXFS-P5-20260903，全量回归1188测试全绿0失败，10项关键验证全通过）；文档总数58→63，活跃文档55→60 | 开发联盟 R |
+| V2.5 | 2026-09-03 | 新增登记：moxfs阶段五全部交付物（5份文档）——mox 模块化系统架构维度测试覆盖率报告（COV-MOXFS-P5-20260903，行覆盖率82.99%→94.39%，5核心算法模块全部≥95%）、全链路端到端测试报告（E2E-MOXFS-P5-20260903，24 e2e测试全绿，5条全链路场景）、性能基准与优化报告（PERF-MOXFS-P5-20260903，criterion套件5文件约131基准点编译通过，RustFS对标+Top5瓶颈+6项优化建议，⚠️基线数据因沙箱基础设施崩溃待采集）、企业级质量审计报告（QA-MOXFS-P5-20260903，7 crate clippy 0 warning 0 error，unsafe 27处100%安全注释+测试覆盖，panic 81处0新增，依赖全MIT/Apache-2.0无高危）、阶段五验证报告（VR-MOXFS-P5-20260903，全量回归1188测试全绿0失败，10项关键验证全通过）；文档总数58→63，活跃文档55→60 | 开发联盟 R |
+| V2.6 | 2026-09-03 | 新增登记：moxfs阶段六全部交付物（3份文档）——阶段六验证报告（VR-MOXFS-P6-20260903，全量1024测试1023通过+1 ignored 0失败，clippy 7云盘crate零warning，6项验证全通过）、mox 模块化系统架构性能优化报告（PERF-MOXFS-P6-20260903，4项优化完成：BufferPool分片锁替换parking_lot::Mutex/Backpressure fetch_add+缓存行对齐+thread-local批处理核心场景3.8x-6.0x加速/MultiWriter-HedgedReader消除6处Arc::clone/ReedSolomon矩阵缓存LRU上限1024，Future对象池经评估不建议实施，5criterion基准全可运行数据已采集）、稳定性加固报告（STAB-MOXFS-P6-20260903，3个flaky测试修复：t22 SIMD门控改#[ignore]/filer环境变量竞态加模块级Mutex/backpressure并发压力thread-local计数器残留，连续3轮零flaky确认，multi_writer 23基准点+hedged_reader 19基准点补齐）；文档总数63→66，活跃文档60→63 | 开发联盟 R |
 
 ---
 
 **版权所有**：© 2026 璇玑 RelGraph · 算子统一系统（OUS）· 三联盟
-**文档版本**：V2.5 ｜ **发布日期**：2026-09-03
+**文档版本**：V2.6 ｜ **发布日期**：2026-09-03

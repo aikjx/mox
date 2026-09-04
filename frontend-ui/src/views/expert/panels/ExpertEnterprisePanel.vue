@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="page-header-left">
         <h2 class="page-title">企业级专家管理控制台</h2>
-        <p class="page-subtitle">会话持久化 · 调度策略 · 能力图谱 · 全维协作</p>
+        <p class="page-subtitle">会话持久化 · 调度策略 · 能力图谱 · mox 模块化系统架构协作</p>
       </div>
       <div class="page-header-actions">
         <el-button @click="loadAll" :loading="loading">
@@ -432,7 +432,7 @@
     <el-dialog v-model="diagnosticVisible" title="企业级系统诊断报告" width="560px" :close-on-click-modal="false">
       <div v-if="diagnosticLoading" class="diag-loading">
         <el-icon class="is-loading" :size="28"><Refresh /></el-icon>
-        <span>正在执行全维度健康检查…</span>
+        <span>正在执行mox 模块化系统架构维度健康检查…</span>
       </div>
       <div v-else class="diag-body">
         <div class="diag-time">诊断时间：{{ diagnosticTime }} · 覆盖 会话 / 图谱 / 调度 三维度</div>
@@ -719,7 +719,7 @@ async function runDiagnostic() {
     const allOk = levels.every((l) => l === 'ok')
     diagnosticSummaryLevel.value = allOk ? 'ok' : (hasWarn ? 'warn' : 'err')
     diagnosticSummary.value = allOk
-      ? '全维度健康：会话、图谱、调度引擎运行状态良好'
+      ? 'mox 模块化系统架构维度健康：会话、图谱、调度引擎运行状态良好'
       : '存在需关注项：请查看下列维度详情并采取对应措施'
 
     diagnosticItems.value = [sessionItem, graphItem, dispItem]

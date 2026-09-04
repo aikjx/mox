@@ -55,6 +55,14 @@ mox-alliance-scheduler-core = { workspace = true }
 mox-alliance-common-proto = { workspace = true }
 mox-alliance-scheduler-proto = { workspace = true }
 
+# 真实 LLM 专家引擎：generate_expert_answer 接入真实模型（MOX_LLM_API_KEY）/
+# 本地 mox_optimize 引擎回退，消除专家回复模板化已知限制 #1
+mox-ai-expert-svc = { workspace = true }
+
+# 企业级审计基础设施：专家写操作审计留痕（SHA-256 哈希链 + 多 Sink 分发）。
+# 关闭默认 s3-sink 特性（本地用自实现的 FileAuditSink，无需 reqwest blocking）。
+mox-audit = { workspace = true, default-features = false }
+
 # 业务域反向代理（网关→编排器适配层，L6 归一化收敛）
 reqwest = { workspace = true }
 

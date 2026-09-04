@@ -10,7 +10,7 @@ $root = $PSScriptRoot
 Push-Location $root
 
 Write-Host "=================================================="
-Write-Host " Melody2Score 一键全维打包（PyInstaller + PyQt5）"
+Write-Host " Melody2Score 一键mox 模块化系统架构打包（PyInstaller + PyQt5）"
 Write-Host "=================================================="
 
 # 1) 确保打包依赖

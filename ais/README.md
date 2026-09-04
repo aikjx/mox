@@ -93,5 +93,5 @@ git submodule update --remote
 
 ## 相关文档
 
-- MOX 竞品分析报告：`docs/enterprise/23-竞品全维功能对比与可用性判定报告-V1.0.md`
+- MOX 竞品分析报告：`docs/enterprise/23-竞品mox 模块化系统架构功能对比与可用性判定报告-V1.0.md`
 - AI 引擎基准评测：`docs/enterprise/25-AI引擎真实基准评测报告-V1.0.md`

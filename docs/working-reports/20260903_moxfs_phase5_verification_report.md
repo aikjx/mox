@@ -231,7 +231,7 @@ cargo test --workspace --test '*'
 
 | 序号 | 交付物 | 文档编号 | 路径 |
 |------|--------|---------|------|
-| 1 | 全维度测试覆盖率报告 | COV-MOXFS-P5-20260903 | `docs/working-reports/20260903_moxfs_phase5_test_coverage_report.md` |
+| 1 | mox 模块化系统架构维度测试覆盖率报告 | COV-MOXFS-P5-20260903 | `docs/working-reports/20260903_moxfs_phase5_test_coverage_report.md` |
 | 2 | 全链路端到端测试报告 | E2E-MOXFS-P5-20260903 | `docs/working-reports/20260903_moxfs_phase5_e2e_test_report.md` |
 | 3 | 性能基准与优化报告 | PERF-MOXFS-P5-20260903 | `docs/working-reports/20260903_moxfs_phase5_performance_benchmark_report.md` |
 | 4 | 企业级质量审计报告 | QA-MOXFS-P5-20260903 | `docs/working-reports/20260903_moxfs_phase5_quality_audit_report.md` |

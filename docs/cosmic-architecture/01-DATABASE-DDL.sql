@@ -374,7 +374,7 @@ CREATE TABLE wf_definition (
     bpmn_xml      TEXT,                                    -- BPMN 2.0 XML定义
     status        VARCHAR(16)  DEFAULT 'draft',           -- 状态: draft(草稿)/published(已发布)/deprecated(已废弃)
     is_active     BOOLEAN      DEFAULT FALSE,              -- 是否当前激活版本(同def_code只有一个active)
-    created_by    VARCHAR(64),                             -- 创建人
+    created_at    VARCHAR(64),                             -- 创建人
     created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP
 );
@@ -460,7 +460,7 @@ CREATE TABLE ea_expert (
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP
 );
-COMMENT ON TABLE  ea_expert IS '专家注册表—— AI专家注册/能力定义/评分/版本管理，全维页面配置，专家匹配算法基于此表的embedding和评分';
+COMMENT ON TABLE  ea_expert IS '专家注册表—— AI专家注册/能力定义/评分/版本管理，mox 模块化系统架构页面配置，专家匹配算法基于此表的embedding和评分';
 COMMENT ON COLUMN ea_expert.model_config IS '模型配置JSON: model(模型名)/temperature(温度)/max_tokens(最大Token)/api_endpoint(API地址)/api_key(加密存储)';
 COMMENT ON COLUMN ea_expert.rating IS '综合评分0-5，算法: 0.4*ELO等级分 + 0.3*用户评分 + 0.2*成功率 - 0.1*成本系数';
 CREATE UNIQUE INDEX uk_ea_expert_tenant_code ON ea_expert(tenant_id, expert_code);
@@ -570,7 +570,7 @@ VALUES ('r_super_admin', 't_system', 'super_admin', '超级管理员', 'system',
 -- ============================================================
 -- 说明:
 -- 1. 业务表由元数据引擎自动生成: CREATE TABLE biz_{entity_code} (...公共字段 + 配置字段...)
--- 2. 所有业务表自动包含公共字段: id/tenant_id/created_by/created_at/updated_by/updated_at/deleted_at/version
+-- 2. 所有业务表自动包含公共字段: id/tenant_id/created_at/created_at/updated_by/updated_at/deleted_at/version
 -- 3. 推荐扩展: pgvector(向量检索) / pg_partman(分区管理) / pgcrypto(加密) / pg_stat_statements(性能监控)
 -- 4. 性能优化: 审计日志按月分区 / 大表建BRIN索引 / 热数据SSD / 冷数据对象存储 / 读写分离
 -- 5. 安全: 密码bcrypt / 敏感字段AES-256 / 连接TLS / RLS行级安全 / 最小权限账号 / 全量审计

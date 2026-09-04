@@ -32,7 +32,7 @@ Melody2Score 企业级一键打包脚本（纯 Python，跨 Windows 平台）
   1  环境/依赖错误
   2  PyInstaller 打包失败
   3  产物校验失败
-  5  精简预检失败（spec excludes 误排了运行必需依赖）
+  5  精简预检失败（请根据具体 [FAIL] 项定位）
 """
 
 import argparse
@@ -289,8 +289,11 @@ def main(argv=None) -> int:
     preflight = HERE / "tests" / "verify_slim_excludes.py"
     rc = run([sys.executable, str(preflight)])
     if rc != 0:
-        log.error("精简预检失败：spec excludes 误排了运行必需依赖，"
-                  "请根据上方 [FAIL] 项调整 excludes 后重试。")
+        log.error(
+            "精简预检失败：请根据上方 [FAIL] 项定位。"
+            "只有出现 Python 模块导入缺失时才需要调整 spec excludes；"
+            "若为 LilyPond 原生崩溃/外部工具错误，请检查 LilyPond 安装。"
+        )
         return 5
 
     # 3) 依赖（构建依赖 + 运行依赖）

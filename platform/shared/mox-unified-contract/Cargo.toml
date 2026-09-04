@@ -1,0 +1,33 @@
+[package]
+name = "mox-unified-contract"
+version = "3.0.0-ai-powered"
+edition = "2021"
+license = "MIT"
+authors = ["璇玑 RelGraph · 算子统一系统 (OUS)"]
+description = "MOX 统一归一化契约层（SSOT）：跨 Rust/Python/前端的统一错误码、质量分、事件格式、追踪ID、响应信封。所有业务域必须依赖此 crate，禁止自定义重复类型。"
+
+[dependencies]
+# 序列化
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# 时间
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID
+uuid = { version = "1", features = ["serde", "v4"] }
+
+# 错误处理
+thiserror = "1"
+
+# 日志
+tracing = "0.1"
+
+# 随机数（用于 SpanId 生成）
+rand = "0.8"
+
+[features]
+default = []
+
+[dev-dependencies]
+serde_json = "1"

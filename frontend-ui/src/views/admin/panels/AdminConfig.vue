@@ -214,7 +214,7 @@ async function loadConfigs() {
       throw new Error('数据格式错误')
     }
   } catch (e) {
-    console.warn('[AdminConfig] 参数配置加载失败:', e.message)
+    ElMessage.error('参数配置加载失败: ' + (e?.message || e))
   } finally {
     loading.value = false
   }

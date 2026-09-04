@@ -657,7 +657,7 @@ const categories = [
   { key: 'mcp', label: 'MCP协议', color: '#a855f7' },
   { key: 'automation', label: '自动化', color: '#0ea5e9' },
   { key: 'requirement', label: '需求工程', color: '#16a34a' },
-  { key: 'fusion', label: '全维融合', color: '#7c3aed' },
+  { key: 'fusion', label: 'mox 模块化系统架构融合', color: '#7c3aed' },
   { key: 'operator', label: '算子系统', color: '#8b5cf6' }
 ]
 

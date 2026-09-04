@@ -68,8 +68,8 @@
 <!-- 1. 系统定位 -->
 <h2>一、系统定位与建设目标</h2>
 <div class="panel">
-<p><b>璇玑</b>即本工作区的<b>璇玑（Xuánjī）</b>系统：一套以<b>归一化信息关系图（IR）</b>为单一事实源、对需求做<b>全维度并行诊断与最优求解</b>的企业级信息化系统。它承接"关图"框架（GR-STD：12 节点类型 / 7 边类型 / 六维绑定 <code>REQ→FUN→BIZ→ALG→TSK→COD</code>），并以前后两道强制闸门（⛨璇玑验证、治理）保障全链路<b>可靠、可控、可审计</b>。</p>
-<div class="okbox"><b>本轮建设目标</b>：在前序"全维需求业务处理流程图 / 璇玑验证子流程 / 机读流水线"的设计成果之上，<b>实装并验证所有架构功能</b>——以信息化系统开发生命周期（需求分析→设计→实现→测试验证→交付）形式收口，确保工作区可编译、全测试通过。</div>
+<p><b>璇玑</b>即本工作区的<b>璇玑（Xuánjī）</b>系统：一套以<b>归一化信息关系图（IR）</b>为单一事实源、对需求做<b>mox 模块化系统架构维度并行诊断与最优求解</b>的企业级信息化系统。它承接"关图"框架（GR-STD：12 节点类型 / 7 边类型 / 六维绑定 <code>REQ→FUN→BIZ→ALG→TSK→COD</code>），并以前后两道强制闸门（⛨璇玑验证、治理）保障全链路<b>可靠、可控、可审计</b>。</p>
+<div class="okbox"><b>本轮建设目标</b>：在前序"mox 模块化系统架构需求业务处理流程图 / 璇玑验证子流程 / 机读流水线"的设计成果之上，<b>实装并验证所有架构功能</b>——以信息化系统开发生命周期（需求分析→设计→实现→测试验证→交付）形式收口，确保工作区可编译、全测试通过。</div>
 </div>
 
 <!-- 2. ISD 生命周期 -->
@@ -77,7 +77,7 @@
 <div class="panel">
 <table>
   <tr><th>阶段</th><th>产出</th><th>本轮状态</th></tr>
-  <tr><td>① 需求分析</td><td>全维需求模型：双璇玑十四维 + 关图六维绑定 + 全链路可靠可控</td><td><span class="tag pass">已基线化</span></td></tr>
+  <tr><td>① 需求分析</td><td>mox 模块化系统架构需求模型：双璇玑十四维 + 关图六维绑定 + 全链路可靠可控</td><td><span class="tag pass">已基线化</span></td></tr>
   <tr><td>② 系统设计</td><td>八阶段流水线 + 四道强制闸门 + 双层璇玑 + 关图承载</td><td><span class="tag pass">已基线化</span></td></tr>
   <tr><td>③ 功能实现</td><td>双璇玑诊断 / 璇玑验证 / 治理闸门 / 拓扑路由 / 冲突仲裁 / 审计链 / 关图六维绑定</td><td><span class="tag pass">实装完成</span></td></tr>
   <tr><td>④ 测试验证</td><td>单元测试 + 集成测试 + 全工作区回归 + 质量门禁</td><td><span class="tag fix">修复 2 项缺陷后全绿</span></td></tr>
@@ -86,7 +86,7 @@
 </div>
 
 <!-- 3. 需求分析 -->
-<h2>三、需求分析（全维需求模型）</h2>
+<h2>三、需求分析（mox 模块化系统架构需求模型）</h2>
 <div class="panel">
 <h3>3.1 双璇玑十四维诊断需求</h3>
 <table>
@@ -131,7 +131,7 @@
   <div class="gate">G2 ⛨璇玑否决(最高权限)</div>
   <div class="gate">G3 治理闸门(5 条件)</div>
 </div>
-<p class="muted" style="margin-top:10px;">设计详情见关联资产：<code>璇玑-全维需求业务处理流程图-归一化企业级.html</code> 与 <code>璇玑-璇玑验证子流程-归一化企业级.html</code>，机读单一源 <code>璇玑-全维流水线.mmd</code>。</p>
+<p class="muted" style="margin-top:10px;">设计详情见关联资产：<code>璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.html</code> 与 <code>璇玑-璇玑验证子流程-归一化企业级.html</code>，机读单一源 <code>璇玑-mox 模块化系统架构流水线.mmd</code>。</p>
 </div>
 
 <!-- 5. 功能实现清单 -->
@@ -198,7 +198,7 @@
 <ul>
   <li><b>覆盖深度</b>：本轮聚焦"可编译 + 全测试通过"。建议补充 S3 双璇玑十四维诊断、S7 治理闸门的子流程级测试，进一步抬高边界覆盖。</li>
   <li><b>六维绑定 TraceMatrix</b>：可把六维绑定接实际 <code>graph.enterprise.json</code> 做覆盖度校验，纳入 CI 报表。</li>
-  <li><b>机读链路落地</b>：<code>璇玑-全维流水线.mmd</code> 可接入本仓库 <code>info-graph</code> 导出管线，生成可渲染/可编排产物。</li>
+  <li><b>机读链路落地</b>：<code>璇玑-mox 模块化系统架构流水线.mmd</code> 可接入本仓库 <code>info-graph</code> 导出管线，生成可渲染/可编排产物。</li>
   <li><b>并行安全</b>：缺陷 A 属测试隔离问题，生产路径（MoxSystem 单例）不受影响；已通过唯一目录隔离根治。</li>
 </ul>
 </div>
@@ -208,9 +208,9 @@
 <table>
   <tr><th>类型</th><th>文件</th></tr>
   <tr><td>验收报告（本件）</td><td><code>docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.html</code> / <code>.md</code></td></tr>
-  <tr><td>全维流程图</td><td><code>docs/璇玑-全维需求业务处理流程图-归一化企业级.html/.md</code></td></tr>
+  <tr><td>mox 模块化系统架构流程图</td><td><code>docs/璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.html/.md</code></td></tr>
   <tr><td>璇玑子流程</td><td><code>docs/璇玑-璇玑验证子流程-归一化企业级.html</code></td></tr>
-  <tr><td>机读流水线</td><td><code>docs/璇玑-全维流水线.mmd</code></td></tr>
+  <tr><td>机读流水线</td><td><code>docs/璇玑-mox 模块化系统架构流水线.mmd</code></td></tr>
   <tr><td>代码修复</td><td><code>crates/mox-system/tests/integration.rs</code>(temp_db) ｜ <code>crates/primiflow-fusion/src/unified.rs</code>(node_dups/G3)</td></tr>
 </table>
 </div>

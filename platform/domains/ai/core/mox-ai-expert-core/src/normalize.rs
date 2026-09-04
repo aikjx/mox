@@ -31,7 +31,7 @@ pub struct NormalizedScore {
     pub warning_risks: usize,
 }
 
-/// 全维归一化结果
+/// mox 模块化系统架构归一化结果
 #[derive(Debug, Clone)]
 pub struct NormalizedReport {
     /// 各维度归一化分数
@@ -93,7 +93,7 @@ pub fn normalize_opinion(op: &ExpertOpinion) -> NormalizedScore {
     }
 }
 
-/// 对一组专家观点进行全维归一化，产出综合报告
+/// 对一组专家观点进行mox 模块化系统架构归一化，产出综合报告
 pub fn normalize_all(opinions: &[ExpertOpinion]) -> NormalizedReport {
     let scores: Vec<NormalizedScore> = opinions.iter().map(normalize_opinion).collect();
 

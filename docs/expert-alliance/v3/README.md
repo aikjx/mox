@@ -1,16 +1,16 @@
 ---
-title: Mox 专家联盟 v3 — 全维优化架构
+title: Mox 专家联盟 v3 — mox 模块化系统架构优化架构
 version: V3.0
 authority: 🟡参考
 doc_id: EA-DOC-023
 last_updated: 2026-08-31
 source_of_truth: 参考（导航页）
 ---
-# Mox 专家联盟 v3 — 全维优化架构
+# Mox 专家联盟 v3 — mox 模块化系统架构优化架构
 
-> **版本**：v3.0（全维优化版）
+> **版本**：v3.0（mox 模块化系统架构优化版）
 > **日期**：2026-08-26
-> **基于**：v2.0 企业级全维版
+> **基于**：v2.0 企业级mox 模块化系统架构版
 > **状态**：优化定稿
 
 ---
@@ -45,9 +45,9 @@ v2 → v3 的关键改进：
 
 | # | 文档 | 核心内容 |
 |---|------|----------|
-| 01 | [架构优化分析](docs/expert-alliance/v3/01-architecture-optimization.md) | v2问题全维审计/5大优化点详解/v2 vs v3对比/性能预估 |
+| 01 | [架构优化分析](docs/expert-alliance/v3/01-architecture-optimization.md) | v2问题mox 模块化系统架构审计/5大优化点详解/v2 vs v3对比/性能预估 |
 | 02 | [架构需求矩阵](docs/expert-alliance/v3/02-requirements-matrix.md) | 42项功能需求/40项非功能需求/服务-需求映射/依赖矩阵 |
-| 03 | [全维业务流程图](docs/expert-alliance/v3/03-business-flow-diagrams.md) | **16张Mermaid图**：架构图/主流程/匹配/执行/ReAct/融合/部署/状态机 |
+| 03 | [mox 模块化系统架构业务流程图](docs/expert-alliance/v3/03-business-flow-diagrams.md) | **16张Mermaid图**：架构图/主流程/匹配/执行/ReAct/融合/部署/状态机 |
 
 ---
 
@@ -138,7 +138,7 @@ v3 保持 v2 的核心设计不变：
 - **图存储零修改**：自研图存储引擎不改，gRPC薄包装
 - **多租户三档隔离**：L1逻辑（默认）/L2 Schema/L3集群
 - **复用31个现有微服务**：不重复开发底层能力
-- **全维Rust后端**：核心Rust，AI推理Python sidecar
+- **mox 模块化系统架构Rust后端**：核心Rust，AI推理Python sidecar
 
 ---
 
@@ -188,9 +188,9 @@ grpcurl -plaintext localhost:50051 mox.expert.alliance.v1.ExpertAllianceService/
 | 版本 | 日期 | 说明 |
 |------|------|------|
 | v1.0 | 2026-08-26 | 初始设计：3篇文档（总览/注册协议/图谱Schema） |
-| v2.0 | 2026-08-26 | 企业级全维版：9篇文档，全维需求/归一化模型/全路径流程/多协议/数据/安全/路线图 |
-| **v3.0** | **2026-08-26** | **全维优化版：4篇文档，v2问题审计/5大架构优化/42+40需求矩阵/16张Mermaid全维流程图** |
+| v2.0 | 2026-08-26 | 企业级mox 模块化系统架构版：9篇文档，mox 模块化系统架构需求/归一化模型/全路径流程/多协议/数据/安全/路线图 |
+| **v3.0** | **2026-08-26** | **mox 模块化系统架构优化版：4篇文档，v2问题审计/5大架构优化/42+40需求矩阵/16张Mermaidmox 模块化系统架构流程图** |
 
 ---
 
-*文档导航：[01-架构优化分析](docs/expert-alliance/v3/01-architecture-optimization.md) | [02-架构需求矩阵](docs/expert-alliance/v3/02-requirements-matrix.md) | [03-全维业务流程图](docs/expert-alliance/v3/03-business-flow-diagrams.md)*
+*文档导航：[01-架构优化分析](docs/expert-alliance/v3/01-architecture-optimization.md) | [02-架构需求矩阵](docs/expert-alliance/v3/02-requirements-matrix.md) | [03-mox 模块化系统架构业务流程图](docs/expert-alliance/v3/03-business-flow-diagrams.md)*

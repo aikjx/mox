@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! 全维处理流水线：normalize → 并行派发专家 → 裁决 → flow-ai 求解 → 治理闸门 → 出码
+//! mox 模块化系统架构处理流水线：normalize → 并行派发专家 → 裁决 → flow-ai 求解 → 治理闸门 → 出码
 
 use crate::context::{ExpertContext, GovernContext};
 use crate::govern::{apply_rules, govern, AuditChain, FlowStatus, GateResult};
@@ -19,7 +19,7 @@ use mox_ai_flow_svc::model::FlowGraph;
 use mox_ai_flow_svc::pipeline::optimize;
 use serde::{Deserialize, Serialize};
 
-/// 全维治理报告：专家评分 + 裁决冲突 + 优化报告 + 治理闸门
+/// mox 模块化系统架构治理报告：专家评分 + 裁决冲突 + 优化报告 + 治理闸门
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GovernanceReport {
     pub flow_id: String,
@@ -39,7 +39,7 @@ pub struct GovernanceReport {
     pub adopted_suggestions: Vec<crate::expert::Suggestion>,
 }
 
-/// 全维优化入口
+/// mox 模块化系统架构优化入口
 ///
 /// 采用插件化运行时（参考 DeepSeek Harness "Everything is a Plugin"）：
 /// 专家被装载为 [`ExpertPlugin`]，由 [`HarnessCtx`] 的瀑布扩展点驱动，治理钩子可在

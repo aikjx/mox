@@ -1,4 +1,4 @@
-# 璇玑 mox · 企业级真实可运行落地 + 全维自动化测试验收（V1.0）
+# 璇玑 mox · 企业级真实可运行落地 + mox 模块化系统架构自动化测试验收（V1.0）
 
 ## Overview
 - **Summary**：把 `璇玑 RelGraph` 仓库当前的 Rust 16 crate 工作空间 + Node backend-node + 前端 frontend-ui + melody2score Python 桌面端 + 7×8 算法对账 + 三流程端点（graph_bulk / file_upload+link / ai_full_rag）+ AI 四端点（process/analyze/capabilities/metrics）从「文档声明完成」推进到「每一条声明都能通过一条可重复执行的自动化命令独立验证通过」，并修复所有验证暴露的编译/运行/对账/覆盖率缺口，形成企业级 SLO：**cargo test 全绿、clippy 零告警、前端构建 0 错误、Node test suite 70+ 全绿、RBAC 11 探针全过、7×8 对账 Δ≤1e-6、SixDim 绑定 ≥90% 护栏、full_gate 通过率 ≥90%**。
@@ -29,7 +29,7 @@
 - 7×8 对账 56/56 GREEN（baseline 已通过）。
 - docs/enterprise/18 TOP-MASTER 是 L0 最高权威，所有 AC 不得与 18 §二~§八冲突。
 - docs/enterprise/19 架构师主控提示词定义了 ⭕8 不可动，本 spec 严格继承。
-- 企业文档基线（09-企业级全维度完成归档.md §3）声明 649+ passed / 0 failed，本 spec 的目标是**复现 + 加固 + 把 649 上升到 ≥700**，并把"文档断言"翻译成"可重跑命令"。
+- 企业文档基线（09-企业级mox 模块化系统架构维度完成归档.md §3）声明 649+ passed / 0 failed，本 spec 的目标是**复现 + 加固 + 把 649 上升到 ≥700**，并把"文档断言"翻译成"可重跑命令"。
 
 ## Functional Requirements
 - **FR-1 三流程端点 E2E**：

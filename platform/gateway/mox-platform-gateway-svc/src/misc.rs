@@ -74,14 +74,18 @@ fn load_misc_data() -> MiscPersistent {
 
 fn save_misc_data(tasks: &[TaskItem], projects: &[ProjectItem]) {
     if let Some(parent) = std::path::Path::new(MISC_DATA_PATH).parent() {
-        let _ = std::fs::create_dir_all(parent);
+        if let Err(e) = std::fs::create_dir_all(parent) {
+            eprintln!("[misc] 创建目录失败 {}: {}", parent.display(), e);
+        }
     }
     let data = MiscPersistent {
         tasks: tasks.to_vec(),
         projects: projects.to_vec(),
     };
     if let Ok(json_str) = serde_json::to_string_pretty(&data) {
-        let _ = std::fs::write(MISC_DATA_PATH, json_str);
+        if let Err(e) = std::fs::write(MISC_DATA_PATH, json_str) {
+            eprintln!("[misc] 数据持久化失败 {}: {}", MISC_DATA_PATH, e);
+        }
     }
 }
 
@@ -114,7 +118,9 @@ fn ok(data: Value) -> ApiResponse<Value> {
 // =====================================================================
 async fn upload_avatar(Path(id): Path<String>, mut multipart: Multipart) -> ApiResponse<Value> {
     let upload_dir = std::path::Path::new("data/uploads/avatars");
-    let _ = std::fs::create_dir_all(&upload_dir);
+    if let Err(e) = std::fs::create_dir_all(&upload_dir) {
+        eprintln!("[misc] 创建头像目录失败: {}", e);
+    }
 
     let mut avatar_url: Option<String> = None;
     let mut file_size: u64 = 0;
@@ -134,7 +140,9 @@ async fn upload_avatar(Path(id): Path<String>, mut multipart: Multipart) -> ApiR
             .unwrap_or("png");
         let stored_name = format!("{}_{}.{}", id, uuid::Uuid::new_v4().simple(), ext);
         let storage_path = upload_dir.join(&stored_name);
-        let _ = std::fs::write(&storage_path, &data);
+        if let Err(e) = std::fs::write(&storage_path, &data) {
+            eprintln!("[misc] 头像写入失败 {}: {}", storage_path.display(), e);
+        }
         avatar_url = Some(format!("/avatars/{}", stored_name));
         break; // 只处理第一个文件字段
     }
@@ -156,25 +164,65 @@ async fn upload_avatar(Path(id): Path<String>, mut multipart: Multipart) -> ApiR
 // 2. POST /market/{id}/review — 市场模板审核
 // =====================================================================
 
+/// 市场模板审核请求体（字段归一化 RC-4）。
+///
+/// 历史上存在两套前端契约：
+/// - 标准契约：`{action: "approve"|"reject", reason?, reviewer?}`（market.api.js）
+/// - 变体契约：`{review_status: "approved"|"rejected", reject_reason?}`（operators.api.js）
+///
+/// 此前仅支持标准契约，变体调用因缺 `action` 导致 serde 反序列化失败 → 400。
+/// 归一化策略：**后端同时接受两套字段并归一到同一语义**，前端零改动。
 #[derive(Debug, Deserialize)]
 struct MarketReviewBody {
-    action: String,
+    /// 标准动作字段
+    #[serde(default)]
+    action: Option<String>,
+    /// 标准原因字段
+    #[serde(default)]
     reason: Option<String>,
+    #[serde(default)]
     reviewer: Option<String>,
+    /// 变体动作字段（operators.api.js 的 marketApprove/marketReject）
+    #[serde(default)]
+    review_status: Option<String>,
+    /// 变体原因字段
+    #[serde(default)]
+    reject_reason: Option<String>,
+}
+
+impl MarketReviewBody {
+    /// 归一化动作：优先标准 `action`，回退 `review_status`，并兼容 approve(d)/reject(ed) 词形。
+    fn normalized_action(&self) -> String {
+        let raw = self
+            .action
+            .clone()
+            .or_else(|| self.review_status.clone())
+            .unwrap_or_default()
+            .to_lowercase();
+        match raw.as_str() {
+            "approve" | "approved" | "pass" | "passed" => "approve".to_string(),
+            _ => "reject".to_string(),
+        }
+    }
+
+    /// 归一化原因：优先标准 `reason`，回退 `reject_reason`。
+    fn normalized_reason(&self) -> Option<String> {
+        self.reason.clone().or_else(|| self.reject_reason.clone())
+    }
 }
 
 async fn market_review(
     Path(id): Path<String>,
     Json(body): Json<MarketReviewBody>,
 ) -> ApiResponse<Value> {
-    let action = body.action.to_lowercase();
+    let action = body.normalized_action();
     let approved = action == "approve";
     ok(json!({
         "template_id": id,
-        "action": if approved { "approve" } else { "reject" },
+        "action": action,
         "status": if approved { "approved" } else { "rejected" },
-        "reason": body.reason,
-        "reviewer": body.reviewer.unwrap_or_else(|| "admin".into()),
+        "reason": body.normalized_reason(),
+        "reviewer": body.reviewer.clone().unwrap_or_else(|| "admin".into()),
         "reviewed_at": now_iso(),
         "message": if approved {
             format!("模板 {} 已审核通过", id)
@@ -356,10 +404,10 @@ async fn list_projects_paginated(
 pub fn build_misc_router() -> Router {
     let state = Arc::new(MiscState::new());
     Router::new()
-        .route("/users/:id/avatar", post(upload_avatar))
-        .route("/market/:id/review", post(market_review))
-        .route("/ai/flows/:id", put(update_flow))
-        .route("/tasks", get(list_tasks_paginated))
-        .route("/projects", get(list_projects_paginated))
+        .route("/api/users/:id/avatar", post(upload_avatar))
+        .route("/api/market/:id/review", post(market_review))
+        .route("/api/ai/flows/:id", put(update_flow))
+        .route("/api/tasks", get(list_tasks_paginated))
+        .route("/api/projects", get(list_projects_paginated))
         .with_state(state)
 }

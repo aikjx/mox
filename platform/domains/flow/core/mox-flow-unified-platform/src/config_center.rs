@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 全维归一化统一平台 (Unified Platform)
+// Copyright (c) 2026 璇玑 RelGraph · mox 模块化系统架构归一化统一平台 (Unified Platform)
 // Licensed under the MIT License.
 
 //! 统一配置中心

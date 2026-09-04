@@ -7,9 +7,7 @@
 //! (lost parity), and decode with verification across three (data, parity)
 //! profiles and four block sizes.
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use mox_cloud_kernel::{reed_solomon::PathChoice, EcProfile, ReedSolomonEngine};
 use std::time::Duration;
 
@@ -22,12 +20,7 @@ fn profiles() -> Vec<(u16, u16, &'static str)> {
 }
 
 fn block_sizes() -> Vec<(usize, &'static str)> {
-    vec![
-        (1024, "1KB"),
-        (4096, "4KB"),
-        (65536, "64KB"),
-        (1048576, "1MB"),
-    ]
+    vec![(1024, "1KB"), (4096, "4KB"), (65536, "64KB"), (1048576, "1MB")]
 }
 
 fn make_payload(size: usize) -> Vec<u8> {
@@ -142,8 +135,8 @@ fn bench_decode_reconstruct(c: &mut Criterion) {
             let shards = engine.encode(&profile, &payload).unwrap();
             // Drop all parity shards (indices data..total)
             let mut slots: Vec<Option<Vec<u8>>> = shards.into_iter().map(Some).collect();
-            for i in data as usize..slots.len() {
-                slots[i] = None;
+            for slot in slots.iter_mut().skip(data as usize) {
+                *slot = None;
             }
             group.throughput(Throughput::Bytes(size as u64));
             group.bench_with_input(

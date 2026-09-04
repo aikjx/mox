@@ -1,4 +1,4 @@
-# 任务清单 · AI 消息动作工具条 & 全维分析最佳布局
+# 任务清单 · AI 消息动作工具条 & mox 模块化系统架构分析最佳布局
 
 > 对应规格：`.trae/specs/20260825-ai-chat-actions-full-layout/spec.md`
 > 说明：每条任务均标注"所属 AC / 优先级 / 依赖"。所有 TR（局部验证）分为 `rule` 或 `rubric` 两类。
@@ -240,17 +240,17 @@
 - **顶栏**（`.chat-header`）：
   - 左："🧠 璇玑系统"、"新建对话"按钮；
   - 中：面包屑/会话标题（已有）保留；
-  - 右：按顺序排列"清空 / 导出 / 导入 / 转任务 / 创建项目 / 全维分析（primary）"6 按钮（新建已在左边），中间 φ 间距 10px。
+  - 右：按顺序排列"清空 / 导出 / 导入 / 转任务 / 创建项目 / mox 模块化系统架构分析（primary）"6 按钮（新建已在左边），中间 φ 间距 10px。
 - **快捷问法（quickQuestions）升级为 3×2 Grid**：`.suggestions` 由 `flex-wrap` 改为 `grid-template-columns: repeat(3, 1fr)`（≤960px 降 2；≤640px 降 1）；每个 chip 卡片有 φ 内边距 16×26、圆角 26（--radius-xl）、悬浮抬升 + 品牌底纹渐变。
 - **分析阶段指示器**：在 `suggestions` 上方加一行 5 阶段 chip（`需求→架构→实现→测试→验收`），φ 色系递进（靛→青→翠→金→红），点击则切 requirementFlowMode 阶段（若存在）。
 
 ### TR
-- rule：顶栏按指定顺序包含"新建对话、清空、导出、导入、转任务、创建项目、全维分析"7 个交互按钮（允许 1 两个位置合并但文字齐全）。
+- rule：顶栏按指定顺序包含"新建对话、清空、导出、导入、转任务、创建项目、mox 模块化系统架构分析"7 个交互按钮（允许 1 两个位置合并但文字齐全）。
 - rule：快捷问法卡片 `display`=grid，`grid-template-columns` 包含 "repeat(3" 或至少含 3 列 CSS；单卡片 `border-radius` ≥ 18。
 - rule：分析阶段 5 个 chip 文字命中 "需求/架构/实现/测试/验收" 至少 4 个。
 - rule：点击助手消息的 `@regenerate` → ChatView `onRegenerate` 被调用，且 1.5s 内要么：（a）旧助手消息从 messages 消失并出现新 loading 动画；或（b）toast 提示"重生成完成（占位）"。
 - rule：点击"追问" → `draft.value` 非空 && `textarea.focus === true`。
-- rubric（全维分析布局质感 ≥4/4）：顶栏 86px 固定、聊天体 809、输入面板 164 三段比例清晰；快捷卡片悬停出现柔和品牌阴影（多层柔边），卡片文字与图标对齐。
+- rubric（mox 模块化系统架构分析布局质感 ≥4/4）：顶栏 86px 固定、聊天体 809、输入面板 164 三段比例清晰；快捷卡片悬停出现柔和品牌阴影（多层柔边），卡片文字与图标对齐。
 
 **Status**: pending
 

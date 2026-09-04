@@ -371,7 +371,7 @@ fn crate_layer(name: &str) -> (&'static str, &'static str) {
         "graph-algorithms" => ("L6 资产沉淀", "知识图谱存储 / 查询"),
         "optimizer" => ("L3 拓扑涌现", "流程图优化"),
         "flow-ai" => ("L2 原语映射", "κ-τ 拓扑原语引擎 / 自涌现调度"),
-        "mox-expert" => ("L7 治理合规", "全维治理校验"),
+        "mox-expert" => ("L7 治理合规", "mox 模块化系统架构治理校验"),
         "hermes-flow-bridge" => ("L5 执行运行时", "外部流系统桥接"),
         "business-catalog" => ("L1 需求语义", "业务全景目录"),
         "ai-agent" => ("L5 执行运行时", "AI 智能体闭环"),

@@ -1,4 +1,4 @@
-# Melody2Score 全维分析与优化报告
+# Melody2Score mox 模块化系统架构分析与优化报告
 
 > 生成时间：2026-08-30
 > 分析范围：core/ 核心模块 + 渲染链路 + 文本简谱输出
@@ -265,7 +265,7 @@ jianpu = score.to_jianpu(notes, key, bpm, unicode_octave=True)
 | `core/score.py` | 修改 | `to_jianpu()` 新增 `unicode_octave` 参数 + 节奏优化集成 |
 | `core/jianpu_render.py` | 新增+修改 | `_optimize_event_rhythm()` + `_inject_lilypond_tweaks()` + 默认 DPI 200 |
 | `core/score_sheet.py` | 修改 | 默认 DPI 从 150 改为 200 |
-| `OPTIMIZATION_REPORT.md` | 新增 | 全维分析 + 优化方案 + 实施详情 |
+| `OPTIMIZATION_REPORT.md` | 新增 | mox 模块化系统架构分析 + 优化方案 + 实施详情 |
 
 ### 7.3 向后兼容性
 

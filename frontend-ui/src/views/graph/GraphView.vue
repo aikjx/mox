@@ -1293,7 +1293,7 @@ async function reload() {
       if (gRes.status === 'rejected') throw gRes.reason
       const g = gRes.value
       const st = stRes.status === 'fulfilled' ? stRes.value : {}
-      // 全维聚合：统计以聚合图谱为准（节点/关系/类型数），保留后端密度等指标
+      // mox 模块化系统架构聚合：统计以聚合图谱为准（节点/关系/类型数），保留后端密度等指标
       const aggNodes = (g.nodes || []).length
       const aggEdges = (g.edges || []).length
       const aggTypes = new Set((g.nodes || []).map((n) => n.node_type || 'default')).size

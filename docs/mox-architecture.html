@@ -45,7 +45,7 @@
 <div class="container">
 <header>
   <h1>MOX 控制中心 · 专家联盟子代理架构</h1>
-  <p>Master Orchestrator eXecutive — 所有第三方能力即插即用为子代理，MOX 统一调度、全维分析、布局优化</p>
+  <p>Master Orchestrator eXecutive — 所有第三方能力即插即用为子代理，MOX 统一调度、mox 模块化系统架构分析、布局优化</p>
 </header>
 
 <div class="section">
@@ -62,7 +62,7 @@ graph TB
     subgraph L1["② MOX 控制中心（核心调度层）"]
         direction TB
         M1[意图解析与任务建模]
-        M2[全维分析引擎<br/>能力评估·资源布局·风险识别]
+        M2[mox 模块化系统架构分析引擎<br/>能力评估·资源布局·风险识别]
         M3[子代理路由与调度器]
         M4[上下文与状态管理器]
         M5[结果聚合与质量管控]
@@ -118,7 +118,7 @@ graph TB
       </ul>
     </div>
     <div class="layer-card">
-      <h3><span class="tag tag-core">CORE</span> 全维分析引擎</h3>
+      <h3><span class="tag tag-core">CORE</span> mox 模块化系统架构分析引擎</h3>
       <ul>
         <li>能力评估：匹配子代理技能矩阵与任务需求</li>
         <li>资源布局：算力/配额/并发度最优分配</li>
@@ -167,11 +167,11 @@ graph TB
 
 <div class="section">
   <h2>三、业务处理全流程图</h2>
-  <p class="subtitle">从用户请求接入到最终交付的完整闭环，含全维分析、子代理协作、质量管控与反馈优化九大阶段。</p>
+  <p class="subtitle">从用户请求接入到最终交付的完整闭环，含mox 模块化系统架构分析、子代理协作、质量管控与反馈优化九大阶段。</p>
   <div class="mermaid">
 flowchart TD
     A([用户请求接入]) --> B[MOX 意图解析<br/>任务建模·约束提取]
-    B --> C{全维分析引擎}
+    B --> C{mox 模块化系统架构分析引擎}
     C --> C1[能力评估<br/>匹配专家代理]
     C --> C2[资源布局<br/>算力·配额·并发]
     C --> C3[风险识别<br/>依赖·安全·成本]
@@ -238,7 +238,7 @@ graph LR
   <div class="flow-steps">
     <div class="flow-step"><div class="num">01</div><div class="label">请求接入</div></div>
     <div class="flow-step"><div class="num">02</div><div class="label">意图解析</div></div>
-    <div class="flow-step"><div class="num">03</div><div class="label">全维分析</div></div>
+    <div class="flow-step"><div class="num">03</div><div class="label">mox 模块化系统架构分析</div></div>
     <div class="flow-step"><div class="num">04</div><div class="label">任务分解</div></div>
     <div class="flow-step"><div class="num">05</div><div class="label">代理调度</div></div>
     <div class="flow-step"><div class="num">06</div><div class="label">协作执行</div></div>
@@ -248,7 +248,7 @@ graph LR
   </div>
 </div>
 
-<footer>MOX Control Center · Expert Alliance Sub-Agent Architecture · 全维分析 · 布局优化 · 即插即用</footer>
+<footer>MOX Control Center · Expert Alliance Sub-Agent Architecture · mox 模块化系统架构分析 · 布局优化 · 即插即用</footer>
 </div>
 <script>
   mermaid.initialize({

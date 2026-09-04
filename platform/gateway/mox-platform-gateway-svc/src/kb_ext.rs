@@ -4,7 +4,8 @@
 //! # 知识库扩展域（KB Ext）HTTP 路由
 //!
 //! 提供实体搜索、文档-实体关联/解绑等知识库扩展能力。
-//! 文档-实体关联关系使用内存存储（parking_lot::Mutex），可后续接入 JSON 持久化。
+//! 文档-实体关联关系使用 JSON 文件持久化（data/kb_entity_relations.json），
+//! 启动时加载，写操作后自动保存。
 //!
 //! 路径：`/kb/entities/search` · `/kb/documents/:id/entities`
 
@@ -20,6 +21,32 @@ use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // =====================================================================
+// 实体关系 JSON 持久化（data/kb_entity_relations.json）
+// =====================================================================
+
+const KB_ENTITY_RELATIONS_PATH: &str = "data/kb_entity_relations.json";
+
+fn load_entity_relations() -> Vec<DocEntityRelation> {
+    match std::fs::read_to_string(KB_ENTITY_RELATIONS_PATH) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => Vec::new(),
+    }
+}
+
+fn save_entity_relations(relations: &[DocEntityRelation]) {
+    if let Some(parent) = std::path::Path::new(KB_ENTITY_RELATIONS_PATH).parent() {
+        if let Err(e) = std::fs::create_dir_all(parent) {
+            eprintln!("[kb_ext] 创建目录失败 {}: {}", parent.display(), e);
+        }
+    }
+    if let Ok(json_str) = serde_json::to_string_pretty(relations) {
+        if let Err(e) = std::fs::write(KB_ENTITY_RELATIONS_PATH, json_str) {
+            eprintln!("[kb_ext] 实体关系持久化失败 {}: {}", KB_ENTITY_RELATIONS_PATH, e);
+        }
+    }
+}
+
+// =====================================================================
 // 共享状态
 // =====================================================================
 
@@ -33,13 +60,13 @@ struct DocEntityRelation {
 
 #[derive(Clone)]
 struct KbExtState {
-    /// 文档-实体关联关系（内存存储，可后续持久化）
+    /// 文档-实体关联关系（JSON 文件持久化，启动时加载，变更时写回）
     relations: Arc<Mutex<Vec<DocEntityRelation>>>,
 }
 
 impl KbExtState {
     fn new() -> Self {
-        Self { relations: Arc::new(Mutex::new(Vec::new())) }
+        Self { relations: Arc::new(Mutex::new(load_entity_relations())) }
     }
 }
 
@@ -94,7 +121,9 @@ async fn link_document_entity(
         relation: body.relation.unwrap_or_else(|| "related".into()),
         created_at: now_ts(),
     };
-    s.relations.lock().push(relation.clone());
+    let mut relations = s.relations.lock();
+    relations.push(relation.clone());
+    save_entity_relations(&relations);
     ok(json!({
         "document_id": relation.document_id,
         "entity_id": relation.entity_id,
@@ -121,6 +150,7 @@ async fn unlink_document_entity(
     let before = relations.len();
     relations.retain(|r| !(r.document_id == id && r.entity_id == body.entity_id));
     if relations.len() < before {
+        save_entity_relations(&relations);
         ok(json!({ "deleted": true }))
     } else {
         api_error(404, format!("relation not found: document={}, entity={}", id, body.entity_id))
@@ -134,7 +164,7 @@ async fn unlink_document_entity(
 pub fn build_kb_ext_router() -> Router {
     let state = Arc::new(KbExtState::new());
     Router::new()
-        .route("/kb/entities/search", get(search_entities))
-        .route("/kb/documents/:id/entities", post(link_document_entity).delete(unlink_document_entity))
+        .route("/api/kb/entities/search", get(search_entities))
+        .route("/api/kb/documents/:id/entities", post(link_document_entity).delete(unlink_document_entity))
         .with_state(state)
 }

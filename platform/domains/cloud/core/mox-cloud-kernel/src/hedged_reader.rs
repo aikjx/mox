@@ -92,8 +92,10 @@ pub trait ShardReader: Send + Sync {
 // 类型别名
 // ---------------------------------------------------------------------------
 
-/// boxed 后的读 future，用于 FuturesUnordered（不同 async block 类型统一）
-type BoxedReadFuture = Pin<Box<dyn Future<Output = Result<Bytes, ReadError>> + Send>>;
+/// boxed 后的读 future，用于 FuturesUnordered（不同 async block 类型统一）。
+/// P2 优化：引入生命周期参数 `'a`，允许 future 借用 `&self.readers` 中的
+/// `Arc<dyn ShardReader>` 而非每次 `Arc::clone`，减少高 QPS 下的原子引用计数。
+type BoxedReadFuture<'a> = Pin<Box<dyn Future<Output = Result<Bytes, ReadError>> + Send + 'a>>;
 
 // ---------------------------------------------------------------------------
 // HedgedReader
@@ -160,11 +162,12 @@ impl HedgedReader {
             return Err(ReadError::AllReadersFailed(shard_index));
         }
 
-        let mut active: FuturesUnordered<BoxedReadFuture> = FuturesUnordered::new();
+        let mut active: FuturesUnordered<BoxedReadFuture<'_>> = FuturesUnordered::new();
 
         // 启动第一个（最优）reader
+        // P2 优化：直接借用 `sorted[0]`（&Arc<dyn ShardReader>）而非 Arc::clone
         {
-            let reader = Arc::clone(sorted[0]);
+            let reader = sorted[0];
             active.push(Box::pin(async move { reader.read_shard(shard_index).await }));
         }
         let mut next_idx: usize = 1;
@@ -179,7 +182,7 @@ impl HedgedReader {
                     return Err(ReadError::AllReadersFailed(shard_index));
                 }
                 // 立即补下一个 reader（失败时不等待 hedge_delay）
-                let reader = Arc::clone(sorted[next_idx]);
+                let reader = sorted[next_idx];
                 active.push(Box::pin(async move { reader.read_shard(shard_index).await }));
                 next_idx += 1;
                 next_hedge_deadline = Instant::now() + self.hedge_delay;
@@ -206,7 +209,7 @@ impl HedgedReader {
                             );
                             // 当前 reader 失败：立即启动下一个（不等待 hedge_delay）
                             if next_idx < sorted.len() {
-                                let reader = Arc::clone(sorted[next_idx]);
+                                let reader = sorted[next_idx];
                                 active.push(Box::pin(async move {
                                     reader.read_shard(shard_index).await
                                 }));
@@ -224,7 +227,7 @@ impl HedgedReader {
                             next_reader_index = next_idx,
                             "hedge delay elapsed, adding backup reader"
                         );
-                        let reader = Arc::clone(sorted[next_idx]);
+                        let reader = sorted[next_idx];
                         active.push(Box::pin(async move {
                             reader.read_shard(shard_index).await
                         }));

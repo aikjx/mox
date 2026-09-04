@@ -3,12 +3,12 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! KG 共享图谱地基：从 seed JSON 加载真实全维需求图谱，构建 mox-kg-algo-core
+//! KG 共享图谱地基：从 seed JSON 加载真实mox 模块化系统架构需求图谱，构建 mox-kg-algo-core
 //! 的 [`KnowledgeGraph`]，并以全局单例供 http_adapter 10 个端点共享。
 //!
 //! # 数据来源
 //! seed 文件：`platform/domains/kg/seed/functional-requirements-graph-seed.json`
-//! （687 节点 / 776 边，全维需求图谱真实数据）。
+//! （687 节点 / 776 边，mox 模块化系统架构需求图谱真实数据）。
 //!
 //! # 加载顺序
 //! 1. 环境变量 `MOX_KG_SEED_PATH`（若设置且文件存在）

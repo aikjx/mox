@@ -1,14 +1,14 @@
 # 两套管线架构对比分析与统一方案
 
 > 分析对象：`mox-ai-expert-svc` 中并存的两套管线架构
-> - **全维处理流水线** (`src/pipeline.rs`) — 同步、FlowGraph 驱动、面向出码治理
+> - **mox 模块化系统架构处理流水线** (`src/pipeline.rs`) — 同步、FlowGraph 驱动、面向出码治理
 > - **联盟 6 阶段管线** (`src/alliance/gate.rs`) — 异步 SSE、自然语言驱动、面向咨询质量
 
 ---
 
 ## 一、两套管线职责边界对比
 
-### 1.1 全维处理流水线（pipeline.rs）
+### 1.1 mox 模块化系统架构处理流水线（pipeline.rs）
 
 | 维度 | 说明 |
 |------|------|
@@ -38,7 +38,7 @@
 | **阶段数** | 6 阶段 + Done = 7 个 SSE 事件 |
 | **专家模型** | 动态组队（3~7 人），基于意图分类选专家 |
 | **闸门语义** | 四级评分（A/B/C/D），HC-8 加权公式，C 级可重试 |
-| **适用场景** | 全维分析咨询、ChatView 对话流、专家联盟服务 |
+| **适用场景** | mox 模块化系统架构分析咨询、ChatView 对话流、专家联盟服务 |
 
 **阶段顺序：**
 ```
@@ -84,7 +84,7 @@ Intent → Team → Debate → Synthesize → Gate → Learn → Done
 
 ### 2.2 执行模式差异
 
-| 特性 | 全维流水线 (pipeline) | 联盟管线 (alliance) |
+| 特性 | mox 模块化系统架构流水线 (pipeline) | 联盟管线 (alliance) |
 |------|----------------------|---------------------|
 | 同步/异步 | 同步 (`fn`) | 异步 (`async fn`) |
 | 返回方式 | 一次性返回完整结构体 | SSE 事件流（Vec\<Event\>） |
@@ -157,7 +157,7 @@ Intent → Team → Debate → Synthesize → Gate → Learn → Done
           ▲                    ▲
           │                    │
 ┌─────────┴──────┐    ┌────────┴─────────┐
-│ 全维优化管线    │    │ 联盟分析管线      │
+│ mox 模块化系统架构优化管线    │    │ 联盟分析管线      │
 │ (MoxPipeline)  │    │ (AlliancePipeline)│
 │  复用 6 个     │    │  复用 5 个        │
 │  通用阶段      │    │  通用阶段         │
@@ -177,7 +177,7 @@ pub enum Phase {
     Learn,        // 指标学习（可选）
     Done,         // 完成（收尾 + 审计）
 
-    // ---- 全维管线特有 ----
+    // ---- mox 模块化系统架构管线特有 ----
     Optimize,     // flow-ai 优化求解
     Verify,       // 璇玑算法验证
 
@@ -222,7 +222,7 @@ pub trait PhaseResult: Send + Sync + std::fmt::Debug {
 
 ### 3.7 两套管线如何基于统一核心实现
 
-#### 3.7.1 全维优化管线（MoxPipeline）
+#### 3.7.1 mox 模块化系统架构优化管线（MoxPipeline）
 
 ```
 Normalize    → Analyze     → Reconcile  → Optimize   → Verify     → Gate       → Learn(可选) → Done
@@ -270,16 +270,16 @@ Normalize  → Team    → Analyze    → Synthesize → Gate     → Learn    �
    - 将 `govern::AuditChain` 的哈希链能力整合进去
    - 两套管线逐步迁移到统一审计
 
-### 阶段二：迁移全维流水线（中等风险）
+### 阶段二：迁移mox 模块化系统架构流水线（中等风险）
 
-1. 为全维管线的每个步骤实现 `PhaseHandler`：
+1. 为mox 模块化系统架构管线的每个步骤实现 `PhaseHandler`：
    - `NormalizeHandler` → 包装 `auto_dimension`
    - `AnalyzeHandler` → 包装 `run_experts`（复用 harness）
    - `ReconcileHandler` → 包装 `reconcile`
    - `OptimizeHandler` → 包装 `flow-ai optimize`
    - `VerifyHandler` → 包装 `verify`
    - `GateHandler` → 包装 `govern`
-   - `LearnHandler` → 可选（目前全维管线无 Learn，留扩展位）
+   - `LearnHandler` → 可选（目前mox 模块化系统架构管线无 Learn，留扩展位）
 
 2. 用统一管线重写 `mox_optimize`，保持对外 API 不变
 
@@ -306,7 +306,7 @@ Normalize  → Team    → Analyze    → Synthesize → Gate     → Learn    �
    - 统一的重试机制
    - 统一的否决升级路径
 
-2. **专家引擎统一**：全维 14 专家和联盟动态组队共享同一专家注册中心
+2. **专家引擎统一**：mox 模块化系统架构 14 专家和联盟动态组队共享同一专家注册中心
    - harness 插件机制扩展到联盟管线
    - 专家可同时服务于两套管线
 
@@ -336,7 +336,7 @@ src/
 │   ├── hooks.rs             ← 钩子机制（pre_phase / post_phase）
 │   └── audit.rs             ← 统一审计桥接
 │
-├── pipeline.rs              ← 保留：全维优化管线（迁移到核心）
+├── pipeline.rs              ← 保留：mox 模块化系统架构优化管线（迁移到核心）
 ├── alliance/                ← 保留：联盟管线（迁移到核心）
 │   └── gate.rs              ← 保留：逐步迁移 PhaseHandler
 ├── harness.rs               ← 保留：插件化运行时（钩子机制迁移到核心后简化）

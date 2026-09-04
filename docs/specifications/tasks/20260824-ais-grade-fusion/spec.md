@@ -1,4 +1,4 @@
-# MOX v2.0 全维度融合架构规格（参考 NVIDIA AIS + 政企最佳实践）
+# MOX v2.0 mox 模块化系统架构维度融合架构规格（参考 NVIDIA AIS + 政企最佳实践）
 
 ## 1. Problem / Users / Goals / Non-Goals
 

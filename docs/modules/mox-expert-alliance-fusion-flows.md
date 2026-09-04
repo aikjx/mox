@@ -30,7 +30,7 @@
 
 ---
 
-## 1. 璇玑全维归一化流水线（核心引擎）
+## 1. 璇玑mox 模块化系统架构归一化流水线（核心引擎）
 
 入口：`mox_expert::pipeline::mox_optimize(raw: &FlowGraph, ctx: &GovernContext) -> GovernanceReport`
 （`crates/mox-expert/src/pipeline.rs:41`）。
@@ -81,7 +81,7 @@ sequenceDiagram
     participant M as 算子市场/插件平台
 
     U->>V: 粘贴蓝图 FlowGraph JSON
-    V->>V: 点「全维归一化(双璇玑十四维+璇玑)」
+    V->>V: 点「mox 模块化系统架构归一化(双璇玑十四维+璇玑)」
     V->>API: POST /api/mox/optimize { flow }
     API->>EA: mox_optimize_handler → pipeline::mox_optimize
     EA-->>API: GovernanceReport(评分/闸门/优化流程图)

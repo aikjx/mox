@@ -660,7 +660,7 @@ const showMoreQuick = ref(false)
 
 const PHASES = [
   { key: 'requirement', label: '📋 需求阶段', desc: '项目对话 / 需求编译 / 知识库', color: '#6366f1' },
-  { key: 'architecture', label: '🏗️ 架构阶段', desc: '知识图谱 / 专家联盟 / 全维融合', color: '#06b6d4' },
+  { key: 'architecture', label: '🏗️ 架构阶段', desc: '知识图谱 / 专家联盟 / mox 模块化系统架构融合', color: '#06b6d4' },
   { key: 'develop',     label: '⚙️ 开发阶段', desc: '算子 / 工作流 / 插件 / 自动化', color: '#10b981' },
   { key: 'release',     label: '🚀 发布阶段', desc: '监控 / 文档 / 系统管理', color: '#f59e0b' }
 ]
@@ -724,9 +724,9 @@ function runFullFlow() {
 
 // ==================== 快捷问法 ====================
 const QUICK_QUESTIONS = [
-  { icon: '🏢', label: '生成公司官网的需求图谱', hint: '覆盖角色/目标/用例/数据/技术', prompt: '生成「公司官网」的全维需求图谱：含角色、目标、用例、数据、技术选型与验收清单。', chip: '需求知识图谱' },
+  { icon: '🏢', label: '生成公司官网的需求图谱', hint: '覆盖角色/目标/用例/数据/技术', prompt: '生成「公司官网」的mox 模块化系统架构需求图谱：含角色、目标、用例、数据、技术选型与验收清单。', chip: '需求知识图谱' },
   { icon: '🧾', label: '需求知识图谱', hint: '生成项目需求的结构化知识图谱', prompt: '请生成当前项目的需求知识图谱，并输出节点与关系边列表。', chip: '需求知识图谱' },
-  { icon: '🏗', label: '需求架构（S1）', hint: '输入自定义问题，自动生成架构草案', prompt: '请对当前项目做全维的需求架构分析：业务场景、角色、核心用例、非功能需求。', chip: '需求知识图谱' },
+  { icon: '🏗', label: '需求架构（S1）', hint: '输入自定义问题，自动生成架构草案', prompt: '请对当前项目做mox 模块化系统架构的需求架构分析：业务场景、角色、核心用例、非功能需求。', chip: '需求知识图谱' },
   { icon: '⚙️', label: '算法分', hint: '复杂度 / 推荐 / 数据结构选型', prompt: '对当前对话/问题涉及的算法进行复杂度分析并给出推荐方案。', chip: '算法分析' },
   { icon: '🩸', label: '血清空（初始化会话）', hint: '清空上下文，重新开始项目分析', prompt: '（清空上下文）请从 0 开始重新分析当前项目。', chip: '自定义问题' },
   { icon: '📥', label: '导入需求', hint: '上传文档/JSON 解析为需求节点', prompt: '请导入并解析以下需求文件：', chip: '自定义问题' },
@@ -739,9 +739,9 @@ const customPlaceholder = computed(() => {
   if (selectedChip.value === '算法分') return '算法分：输入你想分析的算法/数据结构问题…'
   if (selectedChip.value === '生成公司官网的需求图谱') return '生成公司官网的需求图谱：请描述行业、目标客群、期望栏目…'
   if (selectedChip.value === '需求知识图谱') return '需求知识图谱：请描述项目/产品，系统将生成结构化知识图谱…'
-  if (selectedChip.value === '需求架构（S1）') return '需求架构：输入自定义问题，系统将全维分析处理…'
+  if (selectedChip.value === '需求架构（S1）') return '需求架构：输入自定义问题，系统将mox 模块化系统架构分析处理…'
   if (selectedChip.value === '血清空（初始化会话）') return '血清空：请确认要重置上下文，并输入新项目的描述…'
-  return '自定义问题：输入你的问题，系统将全维分析处理（支持生成需求图谱 / 架构 / 算法 / 任务拆解 / 创建项目）…'
+  return '自定义问题：输入你的问题，系统将mox 模块化系统架构分析处理（支持生成需求图谱 / 架构 / 算法 / 任务拆解 / 创建项目）…'
 })
 
 function pickQuick(q) {
@@ -758,7 +758,7 @@ function pickQuick(q) {
 
 // ==================== 流程模式动作 ====================
 const modeLabelMap = {
-  smart: '智能路由 · 全维',
+  smart: '智能路由 · mox 模块化系统架构',
   single: '单专家',
   multi: '多专家协同',
   debate: '专家辩论',
@@ -803,7 +803,7 @@ async function ensureProject() {
   ensureAndInjectProject()
 }
 
-// 启动全维开发：跳转到AI助手，带上项目上下文
+// 启动mox 模块化系统架构开发：跳转到AI助手，带上项目上下文
 function startFullDev() {
   ensureAndInjectProject()
   router.push({ path: '/ai', query: { source: 'expert', action: 'full-dev' } })

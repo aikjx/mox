@@ -88,7 +88,7 @@
 
 | 实体 | 关键属性 | 生命周期 |
 |------|----------|----------|
-| Mox（璇玑） | id, name, created_by, channels[] | 创建后常驻 |
+| Mox（璇玑） | id, name, created_at, channels[] | 创建后常驻 |
 | Member（成员） | id, mox_id, name, email, status, tier, expertise[] | Invited→Active→{Suspended\|Left} |
 | Task（任务） | id, mox_id, title, status, assignees[], deps[], subtasks[], comments[] | Draft→…→Done/Cancelled |
 | RoleBinding（角色绑定） | member_id, role, scope | 随成员/治理变更 |

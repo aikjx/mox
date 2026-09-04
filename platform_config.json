@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "project_name": "璇玑系统 · 全维数字孪生中台",
+  "project_name": "璇玑系统 · mox 模块化系统架构数字孪生中台",
   "dashboard_port": 3999,
   "admin": {
     "username": "admin",
@@ -359,17 +359,106 @@
         "fix_pass2.py"
       ]
     },
-    "temp": {
-      "path": "scripts/temp/",
-      "description": "临时/探测脚本（CosyVoice 权重下载、环境检查、端口探测、一次性运行）",
-      "files": [
-        "_auto_dl_cosy2_weights.py",
-        "_check_cosy_env.py",
-        "_probe_voice.py",
-        "_run_e2b.py",
-        "_run_e4.py",
-        "_tmp_t10_doc_check.js"
-      ]
+    "maintenance": {
+      "path": "scripts/maintenance/",
+      "description": "一次性/历史重构脚本（按领域分组，含硬编码路径，仅供追溯，勿重复执行）",
+      "groups": {
+        "gateway": {
+          "path": "scripts/maintenance/gateway/",
+          "description": "网关层：alliance / actuator / proxy 路由修复",
+          "files": [
+            "_fix_alliance.py",
+            "_fix_alliance_api.py",
+            "_fix_alliance_imports.py",
+            "_add_alliance_public.py",
+            "_fix_actuator_routes.py",
+            "_fix_actuator_type.py",
+            "_fix_proxy_entries.py"
+          ]
+        },
+        "cloud": {
+          "path": "scripts/maintenance/cloud/",
+          "description": "云存储：redis 连接修复、s3 上传、依赖注入",
+          "files": [
+            "_fix_redis_con.py",
+            "_fix_redis_v2.py",
+            "_fix_redis_v3.py",
+            "_add_redis_dep.py",
+            "_add_redis_v2.py",
+            "_fix_s3_move.py"
+          ]
+        },
+        "kg": {
+          "path": "scripts/maintenance/kg/",
+          "description": "知识图谱：storage / fusion / kb-svc 重构",
+          "files": [
+            "_fix_derive_residue.py",
+            "_fix_storage_lib.py",
+            "_fix_type_dup.py",
+            "_move_cdc_impl.py",
+            "_fix_fusion_mod.py",
+            "_fix_handlers.py"
+          ]
+        },
+        "protocol": {
+          "path": "scripts/maintenance/protocol/",
+          "description": "API 协议：ApiResponse.message→msg 改名 + 文档同步",
+          "files": [
+            "_rename_msg_protocol.py",
+            "_update_api_spec_msg.py"
+          ]
+        },
+        "enterprise": {
+          "path": "scripts/maintenance/enterprise/",
+          "description": "企业级 smoke 测试修复（括号/返回值类型）",
+          "files": [
+            "_fix_smoke_enterprise.py",
+            "_fix_smoke_v2.py",
+            "_fix_brackets.py"
+          ]
+        },
+        "frontend": {
+          "path": "scripts/maintenance/frontend/",
+          "description": "前端：清理 mock 占位、专家中心/监控面板接真实数据",
+          "files": [
+            "_fix_composables_mock.py",
+            "_fix_frontend_mock.py",
+            "_fix_remaining_mock.py",
+            "_fix_remaining_mock_v2.py",
+            "_fix_small_mock.py",
+            "_fix_expert_center.py",
+            "_fix_admin_monitor.py",
+            "_fix_remaining.py"
+          ]
+        },
+        "workspace": {
+          "path": "scripts/maintenance/workspace/",
+          "description": "架构分析 + 工作区成员清单",
+          "files": [
+            "_arch_analysis.py",
+            "_arch_full.py",
+            "_arch_full2.py",
+            "_fix_admin_config.py",
+            "_all_members.txt",
+            "_workspace_members.txt"
+          ]
+        },
+        "probes": {
+          "path": "scripts/maintenance/probes/",
+          "description": "临时探测/示例脚本（CosyVoice/TTS/Sherpa 等，可随时清理）",
+          "files": [
+            "_auto_dl_cosy2_weights.py",
+            "_check_cosy_env.py",
+            "_probe_voice.py",
+            "_run_e2b.py",
+            "_run_e4.py",
+            "_offline_tts.py",
+            "_tmp_t10_doc_check.js",
+            "_ui_check2.js",
+            "_probe_sherpa/"
+          ]
+        }
+      }
     }
   }
 }

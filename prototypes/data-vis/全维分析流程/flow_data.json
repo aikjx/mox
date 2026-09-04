@@ -1,7 +1,7 @@
 ﻿{
   "meta": {
-    "title": "PrimiFlow 全维分析 · 需求业务处理流程（企业级归一化）",
-    "source": "docs/PrimiFlow-全维分析-核心功能补全-20260816.md；crates/primiflow、primiflow-fusion、mox-expert 源码梳理",
+    "title": "PrimiFlow mox 模块化系统架构分析 · 需求业务处理流程（企业级归一化）",
+    "source": "docs/PrimiFlow-mox 模块化系统架构分析-核心功能补全-20260816.md；crates/primiflow、primiflow-fusion、mox-expert 源码梳理",
     "date": "2026-08-16",
     "normalization_rules": [
       "节点命名统一为：动作 + 关键函数/组件",
@@ -54,7 +54,7 @@
     },
     {
       "id": 6,
-      "name": "璇玑全维治理（mox_optimize）",
+      "name": "璇玑mox 模块化系统架构治理（mox_optimize）",
       "actions": ["14 维着色 auto_dimension", "14 位专家（业务7+开发7）并行分析", "reconcile 按优先级仲裁冲突", "flow-ai 最优调度求解", "璇玑验证网关 verify", "治理闸门 govern（尊重算法否决）", "SHA-256 审计链 AuditChain"],
       "modules": ["pipeline::mox_optimize", "ir::auto_dimension", "reconcile", "verify", "executor"],
       "outputs": ["GovernanceReport（expert_scores + optimization + gate + audit）"],

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>璇玑系统 · mox 模块化系统架构愿景 · 核心架构与业务流程总纲</title>
+<style>
+  :root{
+    --ink:#1f2937; --ink-soft:#475467; --line:#d8dee9; --bg:#f7f9fc; --card:#ffffff;
+    --navy:#1f3a5f; --navy2:#2c5282; --teal:#0d9488; --amber:#d97706; --red:#dc2626;
+    --green:#16a34a; --violet:#6d28d9; --blue:#2563eb; --gray:#64748b;
+    --biz:#2563eb; --dev:#7c3aed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.65;}
+  header.top{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:30px 38px;}
+  header.top h1{margin:0 0 8px;font-size:25px;letter-spacing:.5px;}
+  header.top .meta{font-size:13px;opacity:.92;display:flex;flex-wrap:wrap;gap:20px;}
+  header.top .meta b{color:#ffd479;}
+  main{max-width:1200px;margin:0 auto;padding:28px 24px 70px;}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 26px;margin:20px 0;box-shadow:0 1px 3px rgba(15,23,42,.04);}
+  section>h2{margin:0 0 4px;font-size:20px;color:var(--navy);border-left:5px solid var(--teal);padding-left:12px;}
+  section>.sub{color:var(--ink-soft);font-size:13px;margin:0 0 18px 17px;}
+  .north{background:linear-gradient(135deg,#0f2747,#1f3a5f);color:#eaf2ff;}
+  .north h2{color:#ffd479;border-color:#ffd479;}
+  .north p{color:#dbe7ff;}
+  .principle{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .principle .p{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fcfdff;}
+  .principle .p h4{margin:0 0 6px;color:var(--navy2);font-size:14.5px;}
+  .principle .p p{margin:0;font-size:13px;color:var(--ink-soft);}
+  .pipe{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:8px 0;}
+  .stage{flex:1 1 128px;min-width:124px;border:1px solid var(--line);border-radius:10px;padding:12px 12px 14px;background:#fff;position:relative;}
+  .stage .no{font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:20px;padding:1px 9px;display:inline-block;margin-bottom:6px;}
+  .stage h4{margin:2px 0 5px;font-size:13.5px;color:var(--navy);}
+  .stage .d{font-size:11.5px;color:var(--ink-soft);}
+  .arrow{flex:0 0 24px;display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:22px;font-weight:700;}
+  .gate{border-radius:10px;padding:12px 16px;font-size:13px;margin:10px 0 4px;border-left:5px solid var(--amber);background:#fffbeb;}
+  .gate.red{border-left-color:var(--red);background:#fef2f2;}
+  .gate.teal{border-left-color:var(--teal);background:#ecfdf9;}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:10px 0;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:#eef2f7;color:var(--navy);font-weight:600;}
+  td.c{text-align:center;}
+  .hard{color:var(--red);font-weight:700;}
+  .soft{color:var(--gray);}
+  .ok{color:var(--green);font-weight:700;}
+  .pend{color:var(--amber);font-weight:700;}
+  /* flywheel */
+  .fly{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:center;margin:14px 0;}
+  .fly .node{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;min-width:120px;text-align:center;font-size:13px;font-weight:600;color:var(--navy2);}
+  .fly .node small{display:block;font-weight:400;color:var(--ink-soft);font-size:11px;margin-top:3px;}
+  .fly .a{color:var(--teal);font-size:24px;font-weight:700;}
+  .fly .dash{border:1px dashed var(--violet);color:var(--violet);}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;margin:6px 0 14px;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:760px){.principle,.twocol{grid-template-columns:1fr;}}
+  code{background:#eef2f7;padding:1px 5px;border-radius:4px;font-size:11.5px;color:#334155;}
+  .small{font-size:12px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>璇玑系统 · mox 模块化系统架构愿景 · 核心架构与业务流程总纲</h1>
+  <div class="meta">
+    <span>标准编号 <b>ENT-CHARTER-V1.0</b></span>
+    <span>版本 <b>v1.0 (ENT)</b></span>
+    <span>更新 <b>2026-08-18</b></span>
+    <span>等级 <b>🟢 权威（顶层总纲）</b></span>
+  </div>
+</header>
+<main>
+
+  <section class="north">
+    <h2>北极星 · 一句话方法论</h2>
+    <p><b>用一张高维、可机读、全关联的需求关系图作为系统的唯一事实基准，让 AI 在mox 模块化系统架构约束下持续整理与优化架构算法，把人类从"原地重复"中解放出来，只做真正的创新。</b></p>
+    <p class="small">原始愿景：在高维把系统所有需求关系图设计好 → 每个接口写最详尽描述且描述互链 → 所有功能关联关系全明确 → 快速判重避免重复造系统 → mox 模块化系统架构 AI 整理持续优化架构与算法 → 人类聚焦创新而非原地重复。</p>
+  </section>
+
+  <section>
+    <h2>0 · mox 模块化系统架构工程方法论（七原则）</h2>
+    <div class="principle">
+      <div class="p"><h4>M1 高维需求关系图</h4><p>一切皆是信息，需求及其全部关系在高维被一次性设计清楚（关图 GR-STD，G=(N,E)）。</p></div>
+      <div class="p"><h4>M2 描述即关联</h4><p>节点带详尽描述，描述之间可互链（Doc→Doc、REQ→CODE）；描述链即溯源链。</p></div>
+      <div class="p"><h4>M3 关联关系全明确</h4><p>输入/输出/依赖/约束均显式建模；强消灭孤儿、悬空边、缺证据、孤岛、隐性依赖（GR-E1~E8）。</p></div>
+      <div class="p"><h4>M4 快速判重</h4><p>关系图即能力指纹库，新需求先查图——已存在则复用，不重复造系统。</p></div>
+      <div class="p"><h4>M5 AI mox 模块化系统架构整理</h4><p>双璇玑十四维并行诊断＋归一化裁决＋flow-ai 已验证最优求解。</p></div>
+      <div class="p"><h4>M6 持续优化闭环</h4><p>⛨璇玑验证网关＋治理闸门 G3＋关图漂移门禁，驱动架构算法持续进化。</p></div>
+      <div class="p"><h4>M7 人类聚焦创新</h4><p>机器承担抽取/判重/诊断/求解/验证/留痕；人类只做价值判断与创新设计。</p></div>
+      <div class="p"><h4>承载底座</h4><p>GR-STD 关图 ＋ PT-STD 六维绑定 ＋ AA-STD mox 模块化系统架构需求流程（均为 🟢 权威）。</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>5 · mox 模块化系统架构业务流程图（归一化 · 企业级）</h2>
+    <div class="sub">AA-STD-V1.0 唯一事实基准 · 8 阶段 S1~S8 ＋ 4 道强制闸门 · 任意闸门拒绝即阻断出码，无降级旁路</div>
+    <div class="pipe">
+      <div class="stage"><div class="no">S1</div><h4>需求接入</h4><div class="d">关图 REQ 根 D01~D13 / R01~R08<br/>Bind 六维骨架 ＋ 租户/RBAC</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="no">S2</div><h4>归一化</h4><div class="d"><code>auto_dimension</code> 维度着色<br/>→ 唯一 FlowGraph(base)</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="no">S3</div><h4>双璇玑诊断</h4><div class="d">14 位专家并行<br/>各出 ExpertOpinion</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="no">S4</div><h4>归一化裁决</h4><div class="d"><code>reconcile</code> → ReconciledPlan<br/>注入 Guard/Mutex</div></div>
+    </div>
+    <div class="pipe">
+      <div class="stage"><div class="no">S5</div><h4>flow-ai 求解</h4><div class="d">CPM+RCPSP+伪依赖剪除<br/>+冲突修复+CodeGen</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="no">S6</div><h4>⛨ 璇玑验证</h4><div class="d"><code>verify</code> 5 项阻断检查<br/>最高权限</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="no">S7</div><h4>治理闸门 G3</h4><div class="d">审计哈希链+版本机<br/>+SLA+预算+RBAC</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="no">S8</div><h4>出码 / 出图</h4><div class="d">代码工程+拓扑快路径<br/>+可视化+指标</div></div>
+    </div>
+    <div class="gate">G0 归一化闸门：IR 可拓扑排序 · 着色完整 · 孤儿/悬空边=0（对齐 GR-E1/E2）</div>
+    <div class="gate">G1 裁决闸门：硬约束优先落地，优先于一切软约束；同优先级平手升级 <code>Risk(Blocking)</code> 交人工/审批</div>
+    <div class="gate red">G2 ⛨ 璇玑否决（最高优先级）：任一阻断级失败 → <code>vetoed=true</code> → 治理闸门强制 Blocked，任何 RBAC/合规不可覆盖</div>
+    <div class="gate red">G3 治理闸门：<code>approved = !algorithm_veto ∧ status.can_emit() ∧ blocking==0 ∧ sla_ok ∧ budget_ok</code>，五条件任一不满足即拒；未批准仅 dry-run</div>
+  </section>
+
+  <section>
+    <h2>5.2 · 双璇玑十四维专家矩阵</h2>
+    <table>
+      <tr><th>维度</th><th>璇玑</th><th>专家</th><th>属性</th><th>典型产出</th></tr>
+      <tr><td>Business</td><td>业务</td><td>业务专家</td><td class="soft">软</td><td>分支完整性、失败兜底</td></tr>
+      <tr><td>Algorithm</td><td>业务</td><td>算法专家</td><td class="soft">软</td><td>缓存/拆分建议</td></tr>
+      <tr><td>Permission</td><td>业务</td><td>权限专家</td><td class="hard">硬</td><td><code>MustGuard(desensitize)</code>、<code>Risk(Blocking)</code></td></tr>
+      <tr><td>Resource</td><td>业务</td><td>资源专家</td><td class="hard">硬</td><td><code>ResourceCap</code>、<code>MustSerialize</code></td></tr>
+      <tr><td>Security</td><td>业务</td><td>安全专家</td><td class="hard">硬</td><td><code>MustIsolate</code>、泄露 <code>Risk(Blocking)</code></td></tr>
+      <tr><td>Data</td><td>业务</td><td>数据专家</td><td class="hard">硬</td><td><code>MustOrder</code>（血缘保序）</td></tr>
+      <tr><td>Observability</td><td>业务</td><td>可观测专家</td><td class="soft">软</td><td><code>MustAudit</code>、关键路径埋点</td></tr>
+      <tr><td>Architecture</td><td>开发</td><td>架构专家</td><td class="soft">软</td><td>架构偏离、绑定断链告警</td></tr>
+      <tr><td>Security_Code</td><td>开发</td><td>安全代码专家</td><td class="hard">硬</td><td>源码漏洞 <code>Risk(Blocking)</code></td></tr>
+      <tr><td>Code_Quality</td><td>开发</td><td>代码质量专家</td><td class="soft">软</td><td>质量分、重构建议</td></tr>
+      <tr><td>Performance</td><td>开发</td><td>性能专家</td><td class="soft">软</td><td>热点、瓶颈标记</td></tr>
+      <tr><td>Testing</td><td>开发</td><td>测试专家</td><td class="soft">软</td><td>测试缺口、强制单测</td></tr>
+      <tr><td>Documentation</td><td>开发</td><td>文档专家</td><td class="soft">软</td><td>文档缺口（PT-DOC）</td></tr>
+      <tr><td>Maintainability</td><td>开发</td><td>可维护性专家</td><td class="soft">软</td><td>可维护性分、重构优先级</td></tr>
+    </table>
+    <div class="gate teal">⛨ 璇玑 5 项检查（任一阻断级失败即否决）：① topology 节点守恒 ② data_dep 真依赖可达 ③ conflict 0 阻塞冲突 ④ gains speedup≥1（软）⑤ code_rt 往返一致（软）</div>
+  </section>
+
+  <section>
+    <h2>6 · mox 模块化系统架构分析优化飞轮（持续演进）</h2>
+    <div class="sub">愿景 ⑤⑥ 的落地形态：不是一次性优化，而是持续飞轮；每轮产出的指标与算子回流，使下一轮架构与算法更优</div>
+    <div class="fly">
+      <div class="node">需求录入<small>关图 REQ 根</small></div>
+      <div class="a">→</div>
+      <div class="node">AI mox 模块化系统架构诊断<small>双璇玑十四维</small></div>
+      <div class="a">→</div>
+      <div class="node">归一裁决<small>硬约束优先</small></div>
+      <div class="a">→</div>
+      <div class="node">最优求解<small>flow-ai CPM/RCPSP</small></div>
+      <div class="a">→</div>
+      <div class="node">⛨验证+治理<small>最高权限+G3</small></div>
+      <div class="a">→</div>
+      <div class="node">出码/出图/上架<small>可复用算子</small></div>
+      <div class="a">→</div>
+      <div class="node">指标回流<small>加速比/覆盖率/偏离</small></div>
+      <div class="a">→</div>
+      <div class="node">关图同步<small>零漂移门禁</small></div>
+      <div class="a">↻</div>
+    </div>
+    <div class="fly">
+      <div class="node dash">复用判重<small>已存在则不再开发</small></div>
+    </div>
+    <p class="small"><b>飞轮如何兑现愿景：</b>消灭重复（M4）——上架算子与录入需求同落一张关图，新需求先判重；持续提升架构算法（M5/M6）——求解经验沉淀为可复用算子，指标驱动下一轮更优，关图同步不腐化；人类聚焦创新（M7）——重复劳动在飞轮内自动化闭环。</p>
+  </section>
+
+  <section>
+    <h2>7 · 企业级交付与质量证据</h2>
+    <table>
+      <tr><th>维度</th><th>证据</th><th>数值</th></tr>
+      <tr><td>测试基线</td><td>workspace 全量回归（2026-08-18）</td><td class="ok">644 passed / 0 failed / 6 ignored</td></tr>
+      <tr><td>静态质量</td><td><code>cargo clippy</code></td><td class="ok">零告警 · workspace 0 warning</td></tr>
+      <tr><td>性能</td><td><code>mox bench</code> 融合加速比</td><td class="ok">≥ 2.32×</td></tr>
+      <tr><td>安全</td><td>RBAC 六角色双模式</td><td class="ok">11 探针 + 5 E2E 全过</td></tr>
+      <tr><td>代码质量</td><td>伪代码清零 / <code>allow(dead_code)</code></td><td class="ok">29→8 · rayon 真并行</td></tr>
+      <tr><td>关图</td><td>企业版图</td><td class="ok">372 节点 / 751 边 · 覆盖率 96.6%</td></tr>
+    </table>
+    <p class="small">完整证据见 <code>enterprise/09~13</code>。权威落点：需求 <code>01</code> · 架构 <code>02</code> · mox 模块化系统架构流程 AA-STD · 关图 GR-STD · 六维绑定 PT-STD · 文档治理 <code>00-INDEX</code>。</p>
+  </section>
+
+</main>
+</body>
+</html>

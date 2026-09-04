@@ -156,7 +156,11 @@ impl PluginLoader {
     ///
     /// VSIX 插件的运行时由宿主侧的 VSCode 兼容层负责，
     /// 此处只完成 manifest 解析、依赖检查、注册和事件通知。
-    async fn load_vsix_plugin(&self, vsix_path: &Path) -> Result<Arc<crate::registry::PluginInstance>, LifecycleError> {
+    /// 从 VSIX 包加载插件（公开方法，供外部调用）
+    ///
+    /// VSIX 插件的运行时由宿主侧的 VSCode 兼容层负责，
+    /// 此处只完成 manifest 解析、依赖检查、注册和事件通知。
+    pub async fn load_vsix_plugin(&self, vsix_path: &Path) -> Result<Arc<crate::registry::PluginInstance>, LifecycleError> {
         // 1. 解析 VSIX 中的 extension/package.json → PluginManifest
         let manifest = VsixLoader::load_vsix(vsix_path)
             .map_err(|e| LifecycleError::LoadFailed(format!("parse VSIX failed: {}", e)))?;

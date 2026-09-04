@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -103,7 +103,23 @@ pub async fn auth_middleware(
     let user_info = if let Some(auth_header) = request.headers().get(header::AUTHORIZATION) {
         let auth_str = auth_header.to_str().unwrap_or("");
         if let Some(token) = auth_str.strip_prefix("Bearer ") {
-            auth.validate_token(token)
+            // Dev mode: 允许前端 dev 令牌（可能非合法签名 JWT）通过结构校验。
+            // 生产模式下须通过 validate_token 的结构 + 声明校验。
+            if auth.config.dev_mode && !token.is_empty() {
+                // dev 模式下优先尝试正常解析；解析失败时构造 dev 用户信息放行，
+                // 确保前端管理面板在开发环境不被 401 阻断。
+                auth.validate_token(token).or_else(|| Some(UserInfo {
+                    id: "dev-user".into(),
+                    username: "dev-user".into(),
+                    email: String::new(),
+                    tenant_id: "default".into(),
+                    roles: vec!["admin".into()],
+                    enabled: true,
+                    created_at: String::new(),
+                }))
+            } else {
+                auth.validate_token(token)
+            }
         } else {
             None
         }

@@ -129,7 +129,7 @@ warning: fields `id`, `event_type`, and `system` are never read
 warning: `mox-flow-unified-platform` (lib) generated 6 warnings (run `cargo fix --lib -p mox-flow-unified-platform` to apply 5 suggestions)
     Finished `release` profile [optimized] target(s) in 1.20s
      Running `D:\a10\aikjx\gitcode\infotopograph\target\release\examples\quickstart.exe`
-=== 璇玑 RelGraph · 全维归一化统一平台 快速启动 ===
+=== 璇玑 RelGraph · mox 模块化系统架构归一化统一平台 快速启动 ===
 
 【1】启动统一平台...
   ✓ 平台启动成功
@@ -145,7 +145,7 @@ warning: `mox-flow-unified-platform` (lib) generated 6 warnings (run `cargo fix 
     [✓] 低代码平台 - 1/1 模块正常
     [✓] 流程算法归一化 - 2/2 模块正常
     [✓] 前端功能归一化 - 1/1 模块正常
-    [✓] AI对话全维自动化 - 1/1 模块正常
+    [✓] AI对话mox 模块化系统架构自动化 - 1/1 模块正常
 
 【3】AI 驱动业务申请编排：
   编排 ID: 3127c575-dbe8-4c36-916e-633169bfdc6c

@@ -1,7 +1,7 @@
-// Copyright (c) 2026 璇玑 RelGraph · 全维归一化统一平台 (Unified Platform)
+// Copyright (c) 2026 璇玑 RelGraph · mox 模块化系统架构归一化统一平台 (Unified Platform)
 // Licensed under the MIT License.
 
-//! 全维归一化统一平台核心
+//! mox 模块化系统架构归一化统一平台核心
 //!
 //! 六大归一化体系的统一入口：
 //! 1. 架构归一化 - 统一接入协议 + 统一模型 + 第三方系统对接标准
@@ -9,7 +9,7 @@
 //! 3. 低代码平台 - 元数据驱动 + 表单引擎 + 页面引擎 + 脚本扩展
 //! 4. 流程算法归一化 - 算法联盟 + 流程编排 + 专家系统深度融合
 //! 5. 前端功能归一化 - 统一组件库 + 统一设计系统 + 功能模块重整
-//! 6. AI 对话全维自动化 - 意图理解 + 任务分解 + 多Agent协同 + 自主执行
+//! 6. AI 对话mox 模块化系统架构自动化 - 意图理解 + 任务分解 + 多Agent协同 + 自主执行
 //!
 //! 本模块提供：
 //! - 平台级统一 API 门面 (PlatformFacade)
@@ -46,7 +46,7 @@ pub use mox_flow_algo_alliance_core as algo;
 // 5. 前端功能归一化
 pub use mox_flow_unified_frontend_core as frontend;
 
-// 6. AI 对话全维自动化
+// 6. AI 对话mox 模块化系统架构自动化
 pub use mox_flow_ai_assistant_core as ai;
 
 // 基础支撑

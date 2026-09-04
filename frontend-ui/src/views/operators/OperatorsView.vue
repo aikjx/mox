@@ -57,8 +57,7 @@
 
     <div class="grid grid-2 main-grid">
       <!-- 算子库 -->
-      <div class="panel card-pad">
-        <h3 class="section-title">算子库（{{ operators.length }}）</h3>
+      <div class="panel card-pad" v-loading="opsLoading" element-loading-text="算子库加载中...">`r`n        <h3 class="section-title">算子库（{{ operators.length }}）</h3>
         <div class="cats">
           <span
             v-for="c in OPERATOR_CATEGORIES"
@@ -234,6 +233,7 @@ const selectedOrder = ref([])
 const inputVec = ref('1,2,3,4')
 const scale = ref(2.0)
 const running = ref(false)
+const opsLoading = ref(false)
 const result = ref(null)
 const cmpEl = ref(null)
 let cmpChart = null
@@ -344,10 +344,13 @@ async function doRegister() {
 }
 
 async function loadOps() {
+  opsLoading.value = true
   try {
     operators.value = await getOperators()
   } catch (e) {
     ElMessage.error('算子列表加载失败：' + e.message)
+  } finally {
+    opsLoading.value = false
   }
 }
 

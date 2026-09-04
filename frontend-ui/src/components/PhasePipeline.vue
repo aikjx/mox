@@ -4,7 +4,7 @@
     <div v-if="compact && title !== false" class="pipeline-header">
       <div class="ph-left">
         <span class="ph-dot" :style="{ background: currentPhaseColor }"></span>
-        <span class="ph-title">{{ title || '项目全维流程' }}</span>
+        <span class="ph-title">{{ title || '项目mox 模块化系统架构流程' }}</span>
         <span v-if="showProgress && currentPhaseLabel" class="ph-current">
           · {{ currentPhaseLabel }}
         </span>

@@ -81,7 +81,7 @@ source_of_truth: V2.0目标架构安全与可观测性（未落地）
 **ABAC 数据权限**：
 - 全部数据：`tenant_admin`
 - 本部门数据：`department_id IN (子部门树)`
-- 本人数据：`created_by = user_id`
+- 本人数据：`created_at = user_id`
 - 自定义：策略引擎
 
 **接口权限矩阵**（部分）：

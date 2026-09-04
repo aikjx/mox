@@ -17,12 +17,13 @@
 //! `std::sync::Mutex` free queues instead of semaphores, and exposes a
 //! configurable four-tier layout rather than hard-coded tiers.
 
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::{
     ops::{Deref, DerefMut},
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, Mutex, Weak,
+        Arc, Weak,
     },
 };
 
@@ -165,8 +166,7 @@ impl BufferPoolInner {
         self.current_in_use.fetch_sub(1, Ordering::Relaxed);
         self.tier_in_use[tier_index].fetch_sub(1, Ordering::Relaxed);
 
-        let mut queue =
-            self.tiers[tier_index].lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut queue = self.tiers[tier_index].lock();
 
         if queue.len() < self.configs[tier_index].max_count {
             queue.push(vec);
@@ -289,9 +289,7 @@ impl BufferPool {
 
         // Try to reuse an idle buffer from the tier's free queue.
         let reused_opt = {
-            let mut queue = self.inner.tiers[tier_idx]
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let mut queue = self.inner.tiers[tier_idx].lock();
             queue.pop()
         };
 
@@ -333,10 +331,7 @@ impl BufferPool {
         let mut tier_stats = Vec::with_capacity(self.inner.configs.len());
 
         for (i, config) in self.inner.configs.iter().enumerate() {
-            let idle = self.inner.tiers[i]
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .len();
+            let idle = self.inner.tiers[i].lock().len();
             idle_total += idle;
             tier_stats.push(BufferTierStats {
                 tier_index: i,
@@ -369,7 +364,7 @@ impl BufferPool {
     /// when dropped because the queues are empty.
     pub fn clear(&self) {
         for tier in &self.inner.tiers {
-            let mut queue = tier.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            let mut queue = tier.lock();
             let freed: usize = queue.iter().map(|v| v.capacity()).sum();
             queue.clear();
             self.inner.current_bytes.fetch_sub(freed, Ordering::Relaxed);

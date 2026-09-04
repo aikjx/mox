@@ -958,7 +958,7 @@ async fn ensure_seed(state: &MarketState) {
         .insert(seed.id.clone(), seed.meta());
 }
 
-/// 全维融合落盘：接收璇玑归一化产出的优化流程图（mox_ai_flow_svc::FlowNode/FlowEdge）+
+/// mox 模块化系统架构融合落盘：接收璇玑归一化产出的优化流程图（mox_ai_flow_svc::FlowNode/FlowEdge）+
 /// 元信息，转换为算子商城节点模型并组装为算子包，上传到市场（插件/应用平台）。
 /// 这是"璇玑 -> 业务流程图 -> 上传系统平台"融合总线的最终落点。
 #[allow(clippy::too_many_arguments)]
@@ -969,7 +969,7 @@ pub fn publish_unified(
     nodes: Vec<mox_ai_flow_svc::model::FlowNode>,
     edges: Vec<mox_ai_flow_svc::model::FlowEdge>,
     tags: Vec<String>,
-    // 来源璇玑全维治理报告（I-07 产物来源追溯）
+    // 来源璇玑mox 模块化系统架构治理报告（I-07 产物来源追溯）
     report: Option<&mox_ai_expert_svc::pipeline::GovernanceReport>,
     // 来源任务 ID（双璇玑任务闭环）
     task_id: Option<String>,

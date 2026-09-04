@@ -9,9 +9,7 @@
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use mox_cloud_kernel::{HedgedReader, ReadError, ShardReadCost, ShardReader};
 use std::{sync::Arc, time::Duration};
 
@@ -49,7 +47,11 @@ impl ShardReader for DelayedReader {
 }
 
 /// Uniform-delay readers: all readers have same delay in [min, max].
-fn make_uniform_readers(count: usize, delay: Duration, payload: Bytes) -> Vec<Arc<dyn ShardReader>> {
+fn make_uniform_readers(
+    count: usize,
+    delay: Duration,
+    payload: Bytes,
+) -> Vec<Arc<dyn ShardReader>> {
     (0..count)
         .map(|i| {
             Arc::new(DelayedReader {
@@ -65,11 +67,7 @@ fn make_uniform_readers(count: usize, delay: Duration, payload: Bytes) -> Vec<Ar
 
 /// Skewed-delay readers: first is fast (1ms), second medium (10ms), rest slow (100ms).
 fn make_skewed_readers(count: usize, payload: Bytes) -> Vec<Arc<dyn ShardReader>> {
-    let delays = vec![
-        Duration::from_millis(1),
-        Duration::from_millis(10),
-        Duration::from_millis(100),
-    ];
+    let delays = [Duration::from_millis(1), Duration::from_millis(10), Duration::from_millis(100)];
     (0..count)
         .map(|i| {
             let delay = delays[i.min(delays.len() - 1)];
