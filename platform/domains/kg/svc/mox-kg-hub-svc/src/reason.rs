@@ -14,7 +14,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use mox_kg_algo_core::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
-use mox_flow_fusion_svc::{EntityKind, RelKind, UnifiedGraph};
+use mox_platform_graph_core::{EntityKind, RelKind, UnifiedGraph};
 use serde::{Deserialize, Serialize};
 
 use crate::ontology;
@@ -271,7 +271,7 @@ pub fn six_dim_coverage(graph: &UnifiedGraph) -> HashMap<String, usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_flow_fusion_svc::{Layer, PrimitiveCoords, UnifiedEdge, UnifiedNode};
+    use mox_platform_graph_core::{Layer, PrimitiveCoords, UnifiedEdge, UnifiedNode};
 
     fn n(id: &str, kind: EntityKind) -> UnifiedNode {
         UnifiedNode {

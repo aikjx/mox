@@ -403,8 +403,8 @@ mod tests {
         let mut hub = KgHub::new("default");
         hub.ingest(&InfoGraphConnector::from_str(sample())).unwrap();
         let id = crate::urn::build_default(
-            mox_flow_fusion_svc::Layer::ExecutionRuntime,
-            mox_flow_fusion_svc::EntityKind::Code,
+            mox_platform_graph_core::Layer::ExecutionRuntime,
+            mox_platform_graph_core::EntityKind::Code,
             "a.rs",
         );
         let Json(r) = trace(State(shared(hub)), Path(id)).await;

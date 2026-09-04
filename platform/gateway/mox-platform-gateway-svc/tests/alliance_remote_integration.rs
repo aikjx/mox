@@ -317,28 +317,17 @@ async fn test_remote_dag_fusion_and_status_poll() {
 // ====================================================================
 
 #[tokio::test]
-async fn test_fallback_to_local_when_remote_unreachable() {
-    // 指向不可达端口 → 传输失败 → 降级本地（任务真实创建成功）
+async fn configured_remote_failure_does_not_create_local_task() {
     let remote = RemoteAllianceClient::explicit(
-        Some("http://127.0.0.1:1".into()),
-        Some("http://127.0.0.1:1".into()),
+        Some("http://127.0.0.1:1".into()), Some("http://127.0.0.1:1".into()),
     );
     let gw = spawn(build_alliance_router_with(remote)).await;
-
-    let resp = reqwest::Client::new()
-        .post(format!("{}/api/alliance/tasks", gw))
-        .json(&json!({"title": "本地任务", "description": "d"}))
-        .send()
-        .await
-        .unwrap();
-    let body = resp.json::<Value>().await.unwrap();
-    assert_eq!(body["code"], 0, "远程不可达应降级本地创建成功: {}", body);
-    assert_eq!(body["data"]["data"]["status"], "pending");
-
-    // 本地列表可读回（同样降级本地）
+    let response = reqwest::Client::new().post(format!("{}/api/alliance/tasks", gw))
+        .json(&json!({"title":"must not appear locally", "description":"d"}))
+        .send().await.unwrap().json::<Value>().await.unwrap();
+    assert_eq!(response["code"], 503);
     let list = body_of(&format!("{}/api/alliance/tasks", gw)).await;
-    assert_eq!(list["code"], 0);
-    assert_eq!(list["data"]["data"]["total"], 1);
+    assert_eq!(list["code"], 503, "remote outage must not look like an empty local list");
 }
 
 #[tokio::test]

@@ -3878,6 +3878,7 @@ dependencies = [
  "chrono",
  "futures",
  "futures-util",
+ "mox-platform-model-core",
  "parking_lot",
  "reqwest",
  "serde",
@@ -5040,6 +5041,7 @@ dependencies = [
  "mox-ai-flow-svc",
  "mox-flow-primiflow-svc",
  "mox-platform-foundation",
+ "mox-platform-graph-core",
  "serde",
  "serde_json",
  "tokio",
@@ -5363,9 +5365,9 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
  "axum",
- "mox-flow-fusion-svc",
  "mox-kg-algo-core",
  "mox-platform-foundation",
+ "mox-platform-graph-core",
  "serde",
  "serde_json",
  "tokio",
@@ -5664,6 +5666,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-platform-graph-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "mox-platform-iam-core"
 version = "1.0.0"
 dependencies = [
@@ -5689,10 +5699,10 @@ dependencies = [
  "async-trait",
  "chrono",
  "futures",
- "mox-ai-core",
  "mox-connector-core",
  "mox-enterprise-core",
  "mox-framework",
+ "mox-platform-model-core",
  "mox-plugin-core",
  "parking_lot",
  "serde",
@@ -5721,6 +5731,25 @@ dependencies = [
  "serde_json",
  "sha2",
  "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "mox-platform-model-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "futures",
+ "futures-util",
+ "parking_lot",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -5968,8 +5997,8 @@ dependencies = [
  "approx",
  "criterion",
  "hashbrown 0.14.5",
- "mox-flow-operator-core",
  "mox-platform-foundation",
+ "mox-platform-operator-core",
  "nalgebra",
  "petgraph",
  "rand 0.8.7",

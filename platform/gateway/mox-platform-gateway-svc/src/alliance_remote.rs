@@ -21,8 +21,8 @@
 //!
 //! - **未启用**（未配置 URL 或 `MOX_ALLIANCE_REMOTE_MODE=off`）：
 //!   全部走本地进程内实现（默认行为，零风险）
-//! - **传输失败**（连接拒绝/超时，10s 上限）：记录告警 → 降级本地实现，
-//!   永不阻断业务
+//! - **传输失败**（连接拒绝/超时，10s 上限）：返回明确的 503，保持远程数据源。
+//!   不进行可能导致重复任务或状态丢失的本地兜底。
 //! - **业务失败**（远程返回 4xx/5xx 错误体）：归一化为网关错误响应直接
 //!   返回（远程已选定数据源，不产生本地脏写）
 //!
@@ -32,7 +32,7 @@
 //! |------|------|
 //! | `MOX_ALLIANCE_SCHEDULER_URL` | 调度器服务基址（如 `http://127.0.0.1:3100`），配置即启用调度器远程接入 |
 //! | `MOX_ALLIANCE_EXECUTOR_URL` | 执行器服务基址（如 `http://127.0.0.1:3200`），配置即启用执行器远程接入 |
-//! | `MOX_ALLIANCE_REMOTE_MODE` | `auto`（默认，远程优先本地兜底）/ `off`（强制本地） |
+//! | `MOX_ALLIANCE_REMOTE_MODE` | `auto`（默认，已配置远程时固定使用远程）/ `off`（强制本地） |
 //!
 //! 日志 / SSE 实时流 / 协作计划 / 统计暂无远程对应端点，始终走本地实现。
 
@@ -254,10 +254,11 @@ fn norm_node(v: &Value) -> Value {
     })
 }
 
-/// 传输失败 → 告警 + None（降级本地）
+/// Once a remote data source is selected, an uncertain outcome must never create
+/// a second local task or substitute an unrelated local execution state.
 fn transport_fallback(op: &str, e: String) -> Option<ApiResponse<Value>> {
-    eprintln!("[alliance_remote] {} 远程服务不可达，降级本地: {}", op, e);
-    None
+    tracing::warn!(operation = op, error = %e, "alliance remote unavailable");
+    Some(api_error(503, "任务服务暂时不可用；未切换数据源。若刚提交任务，请恢复连接后刷新列表确认结果。".to_string()))
 }
 
 /// 远程业务错误（4xx/5xx 错误体）→ 归一化网关错误响应（不降级，远程已选定数据源）
@@ -694,7 +695,7 @@ pub async fn remote_fusion_result(
             })))
         }
         // 远程暂无融合结果 → 归一化为本地 pending 形状（对齐本地空融合输出）
-        Ok((_, _)) => Some(api_ok(json!({
+        Ok((404, _)) => Some(api_ok(json!({
             "elapsed_ms": now_ms() - t0,
             "data": {
                 "task_id": task_id,
@@ -719,6 +720,7 @@ pub async fn remote_fusion_result(
                 "fused_at": Value::Null,
             },
         }))),
+        Ok((status, body)) => Some(http_err(status, &body, "任务结果读取失败".into())),
         Err(e) => transport_fallback("fusion_result", e),
     }
 }
@@ -758,7 +760,7 @@ pub async fn remote_status_poll(
         "elapsed_ms": now_ms() - t0,
         "data": {
             "task_id": task["task_id"],
-            "status": task["status"],
+            "status": effective_task_status(&task, &exec),
             "progress": exec["progress"],
             // 执行器状态接口无当前节点概念，归一化为 null（P2 精化）
             "current_phase": Value::Null,
@@ -775,4 +777,27 @@ pub async fn remote_status_poll(
             "updated_at": now_secs(),
         },
     })))
+}
+
+fn effective_task_status(task: &Value, execution: &Value) -> Value {
+    match task["status"].as_str() {
+        Some("paused" | "cancelled" | "failed" | "completed") => task["status"].clone(),
+        _ => match execution["status"].as_str() {
+            Some("completed" | "failed" | "cancelled") => execution["status"].clone(),
+            _ => task["status"].clone(),
+        },
+    }
+}
+
+#[cfg(test)]
+mod lifecycle_tests {
+    use super::*;
+    #[test]
+    fn terminal_execution_is_not_hidden_by_stale_scheduler() {
+        for status in ["completed", "failed", "cancelled"] {
+            assert_eq!(effective_task_status(&json!({"status":"running"}), &json!({"status":status})), status);
+        }
+        assert_eq!(effective_task_status(&json!({"status":"paused"}), &json!({"status":"completed"})), "paused");
+        assert_eq!(effective_task_status(&json!({"status":"running"}), &json!({"progress":1.0})), "running");
+    }
 }

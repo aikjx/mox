@@ -15,7 +15,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use mox_flow_fusion_svc::{EntityKind, Layer, RelKind, UnifiedGraph};
+use mox_platform_graph_core::{EntityKind, Layer, RelKind, UnifiedGraph};
 use serde::{Deserialize, Serialize};
 
 /// 检索权重配置
@@ -390,7 +390,7 @@ pub fn diffuse(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_flow_fusion_svc::{PrimitiveCoords, UnifiedEdge, UnifiedNode};
+    use mox_platform_graph_core::{PrimitiveCoords, UnifiedEdge, UnifiedNode};
 
     fn node(id: &str, name: &str, summary: &str, kind: EntityKind) -> UnifiedNode {
         UnifiedNode {

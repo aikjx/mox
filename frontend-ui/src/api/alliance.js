@@ -1,6 +1,7 @@
 // 联盟引擎 API - 已重构为统一 http.js fetcher
 // SSE 流式端点保留原生 fetch，鉴权头对齐 http.js 请求拦截器（getToken）
 import http from './http'
+import { normalizeTask, normalizeTaskList, normalizeTaskLogs, normalizeTaskDag, normalizeTaskFusion, unwrapTaskPayload } from './allianceTaskModel'
 import { getToken } from '@/utils/secureStorage'
 
 // ===== 联盟引擎能力 =====
@@ -201,15 +202,15 @@ export async function allianceGetSingleExpertMetrics(expertId) {
 
 // ===== 联盟任务 CRUD =====
 export async function createAllianceTask(payload) {
-  return http.post('/alliance/tasks', payload)
+  return normalizeTask(await http.post('/alliance/tasks', { title: payload.title ?? payload.name, description: payload.description, fusion_strategy: payload.fusion_strategy }, { _retry: 0, silent: true }))
 }
 
 export async function getAllianceTasks(params = {}) {
-  return http.get('/alliance/tasks', { params })
+  return normalizeTaskList(await http.get('/alliance/tasks', { params, _retry: 0, silent: true }))
 }
 
 export async function getAllianceTask(taskId) {
-  return http.get(`/alliance/tasks/${encodeURIComponent(taskId)}`)
+  return normalizeTask(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}`, { _retry: 0, silent: true }))
 }
 
 export async function getCollaborationPlan(taskId) {
@@ -291,15 +292,15 @@ export async function getAllianceStats() {
 
 // ===== 新增：联盟任务域端点（Task 2） =====
 export async function getAllianceTaskLogs(taskId, params = {}) {
-  return http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/logs`, { params })
+  return normalizeTaskLogs(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/logs`, { params, _retry: 0, silent: true }))
 }
 
 export async function getAllianceFusionResult(taskId) {
-  return http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/fusion-result`)
+  return normalizeTaskFusion(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/fusion-result`, { _retry: 0, silent: true }))
 }
 
 export async function getAllianceTaskDag(taskId) {
-  return http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/dag`)
+  return normalizeTaskDag(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/dag`, { _retry: 0, silent: true }))
 }
 
 export async function toggleAllianceTaskDone(taskId) {
@@ -307,5 +308,5 @@ export async function toggleAllianceTaskDone(taskId) {
 }
 
 export async function getAllianceTaskStatus(taskId) {
-  return http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/status`)
+  return normalizeTask(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/status`, { _retry: 0, silent: true }))
 }

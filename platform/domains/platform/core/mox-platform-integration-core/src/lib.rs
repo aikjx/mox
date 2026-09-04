@@ -131,7 +131,7 @@ pub use protocol::{
 };
 
 // 重导出4大对接能力（方便上层统一引用）
-pub use mox_ai_core as ai;
+pub use mox_platform_model_core as ai;
 pub use mox_connector_core as connector;
 pub use mox_enterprise_core as enterprise;
 pub use mox_plugin_core as plugin;

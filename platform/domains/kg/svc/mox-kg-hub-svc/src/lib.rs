@@ -62,7 +62,7 @@ pub mod ontology;
 pub mod reason;
 pub mod urn;
 
-use mox_flow_fusion_svc::UnifiedGraph;
+use mox_platform_graph_core::UnifiedGraph;
 use serde::{Deserialize, Serialize};
 
 pub use consolidator::{ConsolidationResult, EngineTrace, TraceConsolidator};
@@ -271,8 +271,8 @@ mod tests {
     fn trace_and_impact_work_end_to_end() {
         let h = hub();
         let code = urn::build_default(
-            mox_flow_fusion_svc::Layer::ExecutionRuntime,
-            mox_flow_fusion_svc::EntityKind::Code,
+            mox_platform_graph_core::Layer::ExecutionRuntime,
+            mox_platform_graph_core::EntityKind::Code,
             "crates/operator-core/src/lib.rs",
         );
         // 代码可溯源到需求
@@ -329,8 +329,8 @@ mod tests {
     fn vector_search_via_index_mut() {
         let mut h = hub();
         let doc = urn::build_default(
-            mox_flow_fusion_svc::Layer::AssetPrecipitation,
-            mox_flow_fusion_svc::EntityKind::Doc,
+            mox_platform_graph_core::Layer::AssetPrecipitation,
+            mox_platform_graph_core::EntityKind::Doc,
             "README.md",
         );
         h.index_mut().put_vector(&doc, vec![0.0, 1.0]);

@@ -21,7 +21,7 @@ parking_lot = { workspace = true }
 futures = { workspace = true }
 
 # 4大对接能力层
-mox-ai-core = { workspace = true }
+mox-platform-model-core = { workspace = true }
 mox-plugin-core = { workspace = true }
 mox-enterprise-core = { workspace = true }
 mox-connector-core = { workspace = true }

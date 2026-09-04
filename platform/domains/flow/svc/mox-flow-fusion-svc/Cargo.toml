@@ -7,6 +7,7 @@ authors.workspace = true
 description = "PrimiFlow 多维度融合归一化一体化架构层：把 13 crate 能力、关图 12 类实体、PT-Primi 六维绑定统一进一张守恒图"
 
 [dependencies]
+mox-platform-graph-core = { workspace = true }
 mox-platform-foundation = { workspace = true }
 mox-ai-flow-svc = { workspace = true }
 mox-flow-primiflow-svc = { workspace = true }

@@ -15,7 +15,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use mox_flow_fusion_svc::{
+use mox_platform_graph_core::{
     EntityKind, Layer, PrimitiveCoords, RelKind, SixDimRegistry, UnifiedEdge, UnifiedGraph,
     UnifiedNode,
 };

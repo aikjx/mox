@@ -12,7 +12,7 @@
 //! URN 是把它们归一到同一身份空间的唯一手段——**同一实体在任何来源都必须解析出同一 URN**，
 //! 这是「三图归一」可去重、可合并的第一性前提。
 
-use mox_flow_fusion_svc::{EntityKind, Layer};
+use mox_platform_graph_core::{EntityKind, Layer};
 
 pub const URN_PREFIX: &str = "urn:kg";
 pub const DEFAULT_TENANT: &str = "default";

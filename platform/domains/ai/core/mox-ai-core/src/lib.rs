@@ -48,10 +48,10 @@
 
 pub mod chat;
 pub mod graph;
-pub mod providers;
+pub use mox_platform_model_core::providers;
 pub mod reasoning;
-pub mod registry;
-pub mod router;
+pub use mox_platform_model_core::registry;
+pub use mox_platform_model_core::router;
 
 // ─── 统一重导出 ──────────────────────────────────────────────────────────────
 

@@ -1,13 +1,12 @@
 [package]
-name = "mox-ai-core"
+name = "mox-platform-model-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Mox AI Core: AI Provider Gateway — multi-provider LLM abstraction with registry, router, fallback (OpenAI/Anthropic/Qwen/Wenxin/GLM/Ollama)"
+description = "Mox platform model access: AI Provider Gateway — multi-provider LLM abstraction with registry, router, fallback (OpenAI/Anthropic/Qwen/Wenxin/GLM/Ollama)"
 
 [dependencies]
-mox-platform-model-core = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }

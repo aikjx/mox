@@ -27,6 +27,8 @@ default-members = [
     "platform/domains/project/svc/mox-project-graph-svc",
 ]
 members = [
+    "platform/domains/platform/core/mox-platform-model-core",
+    "platform/domains/platform/core/mox-platform-graph-core",
     "platform/arch-test",
     "platform/gateway/mox-platform-gateway-svc",
     "platform/foundation/mox-platform-foundation",
@@ -193,6 +195,8 @@ authors = ["Mox"]
 description = "Unified Operator System - AI-Driven Full-Dimensional Breakthrough Platform"
 
 [workspace.dependencies]
+mox-platform-model-core = { path = "platform/domains/platform/core/mox-platform-model-core" }
+mox-platform-graph-core = { path = "platform/domains/platform/core/mox-platform-graph-core" }
 # Core dependencies
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

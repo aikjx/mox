@@ -22,7 +22,7 @@
 
 use std::time::Instant;
 
-use mox_flow_fusion_svc::UnifiedGraph;
+use mox_platform_graph_core::UnifiedGraph;
 use serde::{Deserialize, Serialize};
 
 use crate::govern::{self, GovernanceSummary};

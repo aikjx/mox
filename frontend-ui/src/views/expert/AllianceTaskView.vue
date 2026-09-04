@@ -5,7 +5,7 @@
       <div class="list-header">
         <div>
           <h2 class="list-title">联盟任务</h2>
-          <p class="list-subtitle">mox 模块化系统架构融合 · 智能编排 · 实时监控</p>
+          <p class="list-subtitle">描述目标，让专家协作完成任务</p>
         </div>
         <el-button type="primary" size="small" @click="showCreate = true">
           <el-icon><Plus /></el-icon> 新建任务
@@ -14,7 +14,8 @@
 
       <!-- 筛选 chips -->
       <div class="filter-row">
-        <span
+        <button
+          type="button"
           v-for="f in statusFilters"
           :key="f.key"
           class="filter-chip"
@@ -22,10 +23,12 @@
           @click="currentFilter = f.key"
         >
           {{ f.label }} ({{ getStatusCount(f.key) }})
-        </span>
+        </button>
       </div>
 
-      <el-alert v-if="tasksError" type="error" :closable="false" show-icon title="任务列表加载失败" style="margin-bottom:8px" />
+      <el-alert v-if="tasksError" type="error" :closable="false" show-icon title="任务列表加载失败" :description="tasksError" style="margin-bottom:8px" />
+      <el-button size="small" :loading="tasksLoading" @click="loadTasks()">刷新任务</el-button>
+      <el-alert v-if="pollError" type="warning" :closable="false" :title="pollError" style="margin-top:8px" />
 
       <!-- 任务列表 -->
       <div class="task-list" v-if="filteredTasks.length > 0">
@@ -35,12 +38,14 @@
           class="task-item"
           :class="{ active: selectedTask?.id === task.id, done: task.status === 'completed' }"
           @click="selectTask(task)"
+          role="button" tabindex="0" :aria-label="task.name"
+          @keydown.enter="selectTask(task)" @keydown.space.prevent="selectTask(task)"
         >
-          <!-- checkbox -->
+          <!-- Execution status is read-only; completion comes from the executor. -->
           <div
             class="task-checkbox"
             :class="{ done: task.status === 'completed' }"
-            @click.stop="toggleTaskDone(task)"
+            :title="statusLabel(task.status)"
           >
             <span v-if="task.status === 'completed'" class="check-icon">✓</span>
           </div>
@@ -80,7 +85,7 @@
         </div>
       </div>
 
-      <div v-else class="empty-list">
+      <div v-else-if="!tasksLoading && !tasksError" class="empty-list">
         <el-empty :description="currentFilter === 'all' ? '暂无任务' : '暂无' + (statusFilters.find(f => f.key === currentFilter)?.label || '') + '任务'" :image-size="60" />
       </div>
     </div>
@@ -94,13 +99,13 @@
           <p class="detail-desc">{{ selectedTask.description }}</p>
         </div>
         <div class="detail-actions">
-          <el-button size="small" @click="runTask" :loading="running">
-            <el-icon><VideoPlay /></el-icon> 运行
+          <el-button size="small" @click="runTask" :loading="actionPending" :disabled="!canResume">
+            <el-icon><VideoPlay /></el-icon> {{ selectedTask.status === 'paused' ? '继续执行' : '启动任务' }}
           </el-button>
-          <el-button size="small" @click="pauseTask">
+          <el-button size="small" @click="pauseTask" :disabled="actionPending || !canPause">
             <el-icon><VideoPause /></el-icon> 暂停
           </el-button>
-          <el-button size="small" type="danger" @click="cancelTask">
+          <el-button size="small" type="danger" @click="cancelTask" :disabled="actionPending || !canCancel">
             <el-icon><Close /></el-icon> 取消
           </el-button>
         </div>
@@ -116,16 +121,16 @@
           <div class="progress-fill-large" :style="{ width: selectedTask.progress + '%' }"></div>
         </div>
         <div class="progress-stats">
-          <span><el-icon><Timer /></el-icon> 耗时: {{ selectedTask.duration || '0s' }}</span>
+          <span><el-icon><Timer /></el-icon> 耗时: {{ selectedTask.duration_ms != null ? (selectedTask.duration_ms / 1000).toFixed(1) + 's' : '--' }}</span>
           <span><el-icon><Clock /></el-icon> 预计: {{ selectedTask.eta || '--' }}</span>
-          <span><el-icon><User /></el-icon> 专家: {{ selectedTask.expert_count }} 位</span>
+          <span><el-icon><User /></el-icon> 专家: {{ selectedTask.expert_count ?? dagNodes.length }} 位</span>
         </div>
       </div>
 
       <!-- DAG 画布 -->
       <div class="dag-section" v-loading="dagLoading">
         <div class="section-header">
-          <h4 class="section-title"><el-icon><Share /></el-icon> 任务 DAG</h4>
+          <h4 class="section-title"><el-icon><Share /></el-icon> 执行流程</h4>
           <div class="dag-legend">
             <span class="legend-item"><span class="legend-dot pending"></span>待处理</span>
             <span class="legend-item"><span class="legend-dot running"></span>运行中</span>
@@ -133,7 +138,7 @@
             <span class="legend-item"><span class="legend-dot failed"></span>失败</span>
           </div>
         </div>
-        <el-alert v-if="dagError" type="error" :closable="false" show-icon title="DAG 数据加载失败" style="margin-bottom:8px" />
+        <el-alert v-if="dagError" type="error" :closable="false" show-icon title="执行流程加载失败" style="margin-bottom:8px" />
         <div class="dag-canvas" v-if="dagNodes.length > 0 || dagEdges.length > 0">
           <svg class="dag-svg" :viewBox="`0 0 ${dagWidth} ${dagHeight}`">
             <!-- 连线 -->
@@ -164,7 +169,7 @@
             </g>
           </svg>
         </div>
-        <el-empty v-else-if="!dagLoading && !dagError" description="暂无 DAG 数据" :image-size="50" />
+        <el-empty v-else-if="!dagLoading && !dagError" description="任务规划后将在这里显示执行流程" :image-size="50" />
       </div>
 
       <!-- 日志 -->
@@ -192,13 +197,15 @@
       <!-- 融合结果 -->
       <div class="fusion-section" v-if="fusionResult" v-loading="fusionLoading">
         <div class="section-header">
-          <h4 class="section-title"><el-icon><MagicStick /></el-icon> mox 模块化系统架构融合结果</h4>
-          <el-tag size="small" :type="fusionResult.confidence > 0.8 ? 'success' : 'warning'" effect="dark">
+          <h4 class="section-title"><el-icon><MagicStick /></el-icon> 任务结果</h4>
+          <el-tag v-if="Number.isFinite(fusionResult.confidence)" size="small" :type="fusionResult.confidence > 0.8 ? 'success' : 'warning'" effect="dark">
             置信度 {{ (fusionResult.confidence * 100).toFixed(1) }}%
           </el-tag>
         </div>
         <div class="fusion-content">
-          <div class="fusion-summary">{{ fusionResult.summary }}</div>
+          <div class="fusion-summary">{{ fusionResult.summary || '执行结果' }}</div>
+          <ul v-if="fusionResult.key_findings?.length"><li v-for="(finding, i) in fusionResult.key_findings" :key="i">{{ finding }}</li></ul>
+          <details><summary>查看完整结果</summary><pre class="result-json">{{ JSON.stringify(fusionResult.raw || fusionResult, null, 2) }}</pre></details>
           <div class="fusion-details" v-if="fusionResult.details?.length">
             <div v-for="(d, i) in fusionResult.details" :key="i" class="fusion-detail-item">
               <span class="detail-key">{{ d.key }}:</span>
@@ -241,32 +248,27 @@
     <div v-else class="no-task-selected">
       <div class="no-task-icon">🎯</div>
       <h3>选择一个任务查看详情</h3>
-      <p>从左侧列表选择任务，查看 DAG、日志和融合结果</p>
+      <p>从左侧列表选择任务，查看执行流程、日志和结果</p>
     </div>
 
     <!-- 新建任务弹窗 -->
-    <el-dialog v-model="showCreate" title="新建联盟任务" width="520px" class="create-dialog">
+    <el-dialog v-model="showCreate" title="新建联盟任务" width="min(520px, 94vw)" class="create-dialog">
       <el-form :model="newTask" label-position="top">
         <el-form-item label="任务名称">
-          <el-input v-model="newTask.name" placeholder="请输入任务名称" />
+          <el-input v-model="newTask.name" placeholder="例如：评估订单系统的性能与安全风险" maxlength="200" show-word-limit />
         </el-form-item>
         <el-form-item label="任务描述">
-          <el-input v-model="newTask.description" type="textarea" :rows="3" placeholder="请输入任务描述" />
+          <el-input v-model="newTask.description" type="textarea" :rows="3" placeholder="说明背景、要解决的问题和期望交付物。描述越具体，专家匹配越准确。" maxlength="10000" show-word-limit />
         </el-form-item>
         <el-form-item label="融合策略">
           <el-select v-model="newTask.fusion_strategy" style="width: 100%">
             <el-option label="加权融合" value="weighted" />
             <el-option label="投票融合" value="voting" />
             <el-option label="辩论融合" value="debate" />
-            <el-option label="级联融合" value="cascade" />
+            <el-option label="择优汇总" value="best_of" />
           </el-select>
         </el-form-item>
-        <el-form-item label="参与专家" v-loading="expertsLoading">
-          <el-select v-model="newTask.expert_ids" multiple style="width: 100%" placeholder="选择参与专家">
-            <el-option v-for="e in availableExperts" :key="e.id" :label="e.name" :value="e.id" />
-          </el-select>
-          <el-alert v-if="expertsError" type="error" :closable="false" show-icon title="专家列表加载失败" style="margin-top:8px" />
-        </el-form-item>
+        <p class="form-hint">调度服务根据任务描述自动匹配专家。提交后可在执行流程中查看参与专家。</p>
       </el-form>
       <template #footer>
         <el-button @click="showCreate = false">取消</el-button>
@@ -277,351 +279,81 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
-import {
-  Plus, VideoPlay, VideoPause, Close, Share, Document, MagicStick,
-  ChatDotRound, User, Calendar, Timer, Clock, Search
-} from '@element-plus/icons-vue'
-import {
-  getAllianceTasks, createAllianceTask,
-  pauseAllianceTask, cancelAllianceTask, resumeAllianceTask,
-  getExperts, aiChat,
-  getAllianceTaskLogs, getAllianceFusionResult, getAllianceTaskDag,
-  toggleAllianceTaskDone, getAllianceTaskStatus
-} from '@/api'
+import { Plus, VideoPlay, VideoPause, Close, Share, Document, MagicStick, ChatDotRound, User, Calendar, Timer, Clock, Search } from '@element-plus/icons-vue'
+import * as api from '@/api'
+import { useAllianceTasks, taskActions } from '@/composables/useAllianceTasks'
 
-// ===== 状态 =====
-const tasks = ref([])
-const selectedTask = ref(null)
-const currentFilter = ref('all')
-const running = ref(false)
-const showCreate = ref(false)
-const creating = ref(false)
-const logs = ref([])
-const fusionResult = ref(null)
-const logsContainer = ref(null)
-const availableExperts = ref([])
-const dagNodesData = ref(null)
-const dagEdgesData = ref(null)
-
-// ===== 分区加载 / 错误状态 =====
-const tasksLoading = ref(false)
-const tasksError = ref(false)
-const expertsLoading = ref(false)
-const expertsError = ref(false)
-const logsLoading = ref(false)
-const logsError = ref(false)
-const fusionLoading = ref(false)
-const fusionError = ref(false)
-const dagLoading = ref(false)
-const dagError = ref(false)
-
-// AI 助手
-const aiMessages = ref([
-  { role: 'assistant', content: '你好！我是联盟任务 AI 助手，可以帮你分析任务状态、优化执行策略。' }
-])
-const aiInput = ref('')
-const aiLoading = ref(false)
-
-// 新建任务表单
-const newTask = reactive({
-  name: '',
-  description: '',
-  fusion_strategy: 'weighted',
-  expert_ids: []
-})
-
-// 状态筛选
+const taskState = useAllianceTasks(api)
+const { tasks, selectedTask, tasksLoading, tasksError, logs, fusionResult, dagNodesData, dagEdgesData,
+  logsLoading, fusionLoading, dagLoading, logsError, fusionError, dagError, pollError, actionPending,
+  selectTask, loadTasks, performAction, startPolling, dispose } = taskState
+const currentFilter = ref('all'), showCreate = ref(false), creating = ref(false), logsContainer = ref(null)
+const newTask = reactive({ name: '', description: '', fusion_strategy: 'weighted' })
 const statusFilters = [
-  { key: 'all', label: '全部' },
-  { key: 'pending', label: '待处理' },
-  { key: 'running', label: '运行中' },
-  { key: 'completed', label: '已完成' },
-  { key: 'failed', label: '失败' }
+  { key: 'all', label: '全部' }, { key: 'pending', label: '待处理' },
+  { key: 'running', label: '运行中' }, { key: 'paused', label: '已暂停' },
+  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '已取消' },
 ]
-
-// ===== 计算属性 =====
-const filteredTasks = computed(() => {
-  if (currentFilter.value === 'all') return tasks.value
-  return tasks.value.filter(t => t.status === currentFilter.value)
-})
-
-// DAG 节点：由 API 加载，无数据时为空数组（无硬编码占位）
-const dagNodes = computed(() => {
-  if (dagNodesData.value && dagNodesData.value.length > 0) return dagNodesData.value
-  return []
-})
-
-// DAG 边：由 API 加载，无数据时为空数组（无硬编码占位）
-const dagEdges = computed(() => {
-  if (dagEdgesData.value && dagEdgesData.value.length > 0) return dagEdgesData.value
-  return []
-})
-
-const dagWidth = 740
-const dagHeight = 140
-
-// ===== 方法 =====
-function getStatusCount(key) {
-  if (key === 'all') return tasks.value.length
-  return tasks.value.filter(t => t.status === key).length
-}
-
-function statusLabel(status) {
-  const map = { pending: '待处理', running: '运行中', completed: '已完成', failed: '失败', cancelled: '已取消' }
-  return map[status] || status
-}
-
-function getPriority(task) {
-  return task.priority || 'mid'
-}
-
-function getPriorityLabel(p) {
-  const map = { high: '高优', mid: '中优', low: '低优' }
-  return map[p] || '中优'
-}
-
-function getAssignee(task) {
-  return task.assignee || '未分配'
-}
-
-function getDueDate(task) {
-  return task.due_date || '--'
-}
-
-// 任务完成状态切换：调用 PUT /api/alliance/tasks/:id/toggle-done，失败回滚本地状态
-async function toggleTaskDone(task) {
-  const prevStatus = task.status
-  const prevProgress = task.progress
-  if (task.status === 'completed') {
-    task.status = 'pending'
-    task.progress = 0
-  } else {
-    task.status = 'completed'
-    task.progress = 100
-  }
-  try {
-    await toggleAllianceTaskDone(task.id)
-    if (task.status === 'completed') {
-      ElMessage.success('任务已标记为完成')
-    } else {
-      ElMessage.info('任务已恢复为待处理')
-    }
-  } catch (e) {
-    task.status = prevStatus
-    task.progress = prevProgress
-    ElMessage.error('状态切换失败：' + (e.message || '未知错误'))
-  }
-}
-
-async function selectTask(task) {
-  selectedTask.value = task
-  // 加载任务日志
-  logsLoading.value = true
-  logsError.value = false
-  try {
-    const logData = await getAllianceTaskLogs(task.id)
-    logs.value = Array.isArray(logData) ? logData : (logData?.items || [])
-  } catch (e) {
-    logsError.value = true
-    logs.value = []
-    ElMessage.error('执行日志加载失败：' + (e.message || '未知错误'))
-  } finally {
-    logsLoading.value = false
-  }
-  // 加载融合结果：仅已完成任务
-  if (task.status === 'completed') {
-    fusionLoading.value = true
-    fusionError.value = false
-    try {
-      const fusion = await getAllianceFusionResult(task.id)
-      fusionResult.value = fusion || null
-    } catch (e) {
-      fusionError.value = true
-      fusionResult.value = null
-      ElMessage.error('融合结果加载失败：' + (e.message || '未知错误'))
-    } finally {
-      fusionLoading.value = false
-    }
-  } else {
-    fusionResult.value = null
-    fusionError.value = false
-  }
-  // 加载 DAG
-  dagLoading.value = true
-  dagError.value = false
-  try {
-    const dag = await getAllianceTaskDag(task.id)
-    if (dag && dag.nodes) {
-      dagNodesData.value = dag.nodes
-      dagEdgesData.value = dag.edges || []
-    } else {
-      dagNodesData.value = null
-      dagEdgesData.value = null
-    }
-  } catch (e) {
-    dagError.value = true
-    dagNodesData.value = null
-    dagEdgesData.value = null
-    ElMessage.error('DAG 数据加载失败：' + (e.message || '未知错误'))
-  } finally {
-    dagLoading.value = false
-  }
-  nextTick(() => {
-    if (logsContainer.value) {
-      logsContainer.value.scrollTop = logsContainer.value.scrollHeight
-    }
-  })
-}
-
-async function loadTasks() {
-  tasksLoading.value = true
-  tasksError.value = false
-  try {
-    const data = await getAllianceTasks()
-    tasks.value = Array.isArray(data) ? data : (data?.items || [])
-  } catch (e) {
-    tasksError.value = true
-    tasks.value = []
-    ElMessage.error('任务列表加载失败：' + (e.message || '未知错误'))
-  } finally {
-    tasksLoading.value = false
-  }
-  if (tasks.value.length > 0 && !selectedTask.value) {
-    selectTask(tasks.value[0])
-  }
-}
-
-async function loadExpertsList() {
-  expertsLoading.value = true
-  expertsError.value = false
-  try {
-    const data = await getExperts()
-    availableExperts.value = Array.isArray(data) ? data : (data?.items || [])
-  } catch (e) {
-    expertsError.value = true
-    availableExperts.value = []
-    ElMessage.error('专家列表加载失败：' + (e.message || '未知错误'))
-  } finally {
-    expertsLoading.value = false
-  }
-}
+const filteredTasks = computed(() => currentFilter.value === 'all' ? tasks.value : tasks.value.filter(t => t.status === currentFilter.value))
+const dagNodes = computed(() => dagNodesData.value || [])
+const dagEdges = computed(() => dagEdgesData.value || [])
+const dagWidth = computed(() => Math.max(740, ...dagNodes.value.map(n => n.x + 90)))
+const dagHeight = computed(() => Math.max(140, ...dagNodes.value.map(n => n.y + 60)))
+const canResume = computed(() => taskActions.resume.has(selectedTask.value?.status))
+const canPause = computed(() => taskActions.pause.has(selectedTask.value?.status))
+const canCancel = computed(() => taskActions.cancel.has(selectedTask.value?.status))
+const getStatusCount = key => key === 'all' ? tasks.value.length : tasks.value.filter(t => t.status === key).length
+const statusLabel = status => ({ pending: '待处理', planning: '规划中', ready: '已就绪', running: '运行中', paused: '已暂停', completed: '已完成', failed: '失败', cancelled: '已取消', unknown: '状态待确认' }[status] || status)
+const getPriority = task => task.priority || 'normal'
+const getPriorityLabel = p => ({ critical: '紧急', high: '高优', normal: '中优', mid: '中优', low: '低优' }[p] || '中优')
+const getAssignee = task => task.assignee || '自动匹配专家'
+const getDueDate = task => task.due_date || '--'
 
 async function createTask() {
-  if (!newTask.name.trim()) {
-    ElMessage.warning('请输入任务名称')
+  if (creating.value) return
+  if (!newTask.name.trim() || !newTask.description.trim()) {
+    ElMessage.warning('请填写任务名称和具体目标')
     return
   }
   creating.value = true
   try {
-    await createAllianceTask({
-      name: newTask.name,
-      description: newTask.description,
-      fusion_strategy: newTask.fusion_strategy,
-      expert_ids: newTask.expert_ids
-    })
-    ElMessage.success('任务创建成功')
+    const task = await api.createAllianceTask({ title: newTask.name.trim(), description: newTask.description.trim(), fusion_strategy: newTask.fusion_strategy })
     showCreate.value = false
-    newTask.name = ''
-    newTask.description = ''
-    newTask.fusion_strategy = 'weighted'
-    newTask.expert_ids = []
-    await loadTasks()
-  } catch (e) {
-    ElMessage.error('创建失败：' + (e.message || '未知错误'))
-  } finally {
-    creating.value = false
-  }
+    Object.assign(newTask, { name: '', description: '', fusion_strategy: 'weighted' })
+    currentFilter.value = 'all'
+    ElMessage.success('任务已提交')
+    await loadTasks(task.id)
+  } catch (error) { ElMessage.error(`提交失败：${error.message || '请稍后重试'}`) }
+  finally { creating.value = false }
 }
-
-async function runTask() {
-  if (!selectedTask.value) return
-  running.value = true
-  try {
-    await resumeAllianceTask(selectedTask.value.id)
-    selectedTask.value.status = 'running'
-    ElMessage.success('任务已启动')
-  } catch (e) {
-    ElMessage.error('启动失败：' + (e.message || '未知错误'))
-  } finally {
-    running.value = false
-  }
+async function act(action) {
+  try { if (await performAction(action)) ElMessage.success('操作已受理') }
+  catch (error) { ElMessage.error(`操作失败：${error.message || '请重试'}`) }
 }
-
-async function pauseTask() {
-  if (!selectedTask.value) return
-  try {
-    await pauseAllianceTask(selectedTask.value.id)
-    selectedTask.value.status = 'pending'
-    ElMessage.info('任务已暂停')
-  } catch (e) {
-    ElMessage.error('暂停失败：' + (e.message || '未知错误'))
-  }
-}
-
-async function cancelTask() {
-  if (!selectedTask.value) return
-  try {
-    await cancelAllianceTask(selectedTask.value.id)
-    selectedTask.value.status = 'cancelled'
-    ElMessage.info('任务已取消')
-  } catch (e) {
-    ElMessage.error('取消失败：' + (e.message || '未知错误'))
-  }
-}
-
-function clearLogs() {
-  logs.value = []
-}
-
+const runTask = () => act('resume')
+const pauseTask = () => act('pause')
+const cancelTask = () => act('cancel')
+const clearLogs = () => { logs.value = [] }
+const aiMessages = ref([{ role: 'assistant', content: '告诉我你想了解的任务问题，我会结合当前状态提供建议。' }])
+const aiInput = ref(''), aiLoading = ref(false)
 async function sendAiMessage() {
-  if (!aiInput.value.trim()) return
-  const msg = aiInput.value
-  aiMessages.value.push({ role: 'user', content: msg })
-  aiInput.value = ''
-  aiLoading.value = true
+  if (aiLoading.value || !aiInput.value.trim()) return
+  const message = aiInput.value.trim(), task = selectedTask.value
+  aiMessages.value.push({ role: 'user', content: message })
+  aiInput.value = ''; aiLoading.value = true
   try {
-    const taskCtx = selectedTask.value
-      ? `当前任务：${selectedTask.value.name}，状态：${statusLabel(selectedTask.value.status)}，进度：${selectedTask.value.progress || 0}%，预计剩余：${selectedTask.value.eta || '未知'}。`
-      : '当前未选择任务。'
-    const prompt = `你是联盟任务 AI 助手。${taskCtx}\n用户问题：${msg}\n请基于任务状态和日志给出分析与建议。`
-    const res = await aiChat({ message: prompt })
-    const reply = res?.data?.content || res?.content || res?.data?.message || res?.message || (typeof res === 'string' ? res : '分析完成。')
-    aiMessages.value.push({ role: 'assistant', content: reply })
-  } catch (e) {
-    aiMessages.value.push({ role: 'assistant', content: '抱歉，AI 分析失败：' + (e.message || '未知错误') + '。请稍后重试。' })
-  } finally {
-    aiLoading.value = false
-  }
+    const context = task ? `任务：${task.name}，状态：${statusLabel(task.status)}，进度：${task.progress}%。日志：${logs.value.slice(-10).map(l => l.message).join('；')}` : '当前未选择任务。'
+    const response = await api.aiChat({ message: `请根据以下任务状态和日志分析，缺少信息时明确说明。${context}\n用户问题：${message}` })
+    const content = response?.data?.content || response?.content || response?.data?.message || response?.message || (typeof response === 'string' ? response : '')
+    if (!content) throw new Error('AI 服务没有返回有效内容')
+    aiMessages.value.push({ role: 'assistant', content })
+  } catch (error) { aiMessages.value.push({ role: 'assistant', content: `暂时无法分析：${error.message}。可以重试，任务执行不受影响。` }) }
+  finally { aiLoading.value = false }
 }
-
-// 任务状态轮询：调用 GET /api/alliance/tasks/:id/status 获取真实状态，失败时仅记录错误不做模拟
-let progressTimer = null
-onMounted(async () => {
-  await Promise.all([loadTasks(), loadExpertsList()])
-  progressTimer = setInterval(async () => {
-    for (const t of tasks.value) {
-      if (t.status === 'running' && t.progress < 100) {
-        try {
-          const st = await getAllianceTaskStatus(t.id)
-          if (st) {
-            if (st.status) t.status = st.status
-            if (st.progress != null) t.progress = Math.min(100, st.progress)
-            if (t.progress >= 100 && t.status === 'running') t.status = 'completed'
-          }
-        } catch (e) {
-          // API 不可用时仅记录错误，不伪造前端进度
-          console.warn('[alliance] task status poll failed:', e.message)
-        }
-      }
-    }
-  }, 2000)
-})
-
-onBeforeUnmount(() => {
-  if (progressTimer) clearInterval(progressTimer)
-})
+onMounted(async () => { await loadTasks(); startPolling() })
+onBeforeUnmount(dispose)
 </script>
 
 <style scoped>
@@ -1160,4 +892,17 @@ onBeforeUnmount(() => {
 :deep(.el-dialog__title) { color: var(--text-primary); }
 :deep(.el-dialog__body) { color: var(--text-secondary); }
 :deep(.el-form-item__label) { color: var(--text-secondary); }
+.result-json { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 360px; overflow: auto; font-size: 12px; }
+.form-hint { color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.task-item:focus-visible, .filter-chip:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
+.filter-chip { font: inherit; }
+@media (max-width: 760px) {
+  .alliance-task { flex-direction: column; overflow: auto; padding: 12px; }
+  .task-list-col { width: 100%; flex-shrink: 0; max-height: 42vh; }
+  .task-detail-col { min-width: 0; overflow: visible; flex-shrink: 0; }
+  .detail-header { flex-wrap: wrap; gap: 12px; }
+  .detail-actions { flex-wrap: wrap; }
+  .filter-row { flex-wrap: wrap; }
+  .progress-stats { flex-wrap: wrap; gap: 8px; }
+}
 </style>

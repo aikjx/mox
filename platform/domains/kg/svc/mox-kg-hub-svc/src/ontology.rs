@@ -13,7 +13,7 @@
 //! 无法识别的来源类型统一落到 `Data`（信息兜底），并由治理层作为"待人工确认"暴露，
 //! 而不是静默丢弃——丢数据比归错类更危险。
 
-use mox_flow_fusion_svc::{EntityKind, Layer, RelKind};
+use mox_platform_graph_core::{EntityKind, Layer, RelKind};
 
 /// 静态关图 `InfoKind` 字符串 → 本体实体类型。
 ///

@@ -14,7 +14,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use mox_flow_fusion_svc::{EntityKind, UnifiedGraph};
+use mox_platform_graph_core::{EntityKind, UnifiedGraph};
 use serde::{Deserialize, Serialize};
 
 use crate::ontology;
@@ -44,7 +44,7 @@ pub struct DeviationReport {
     pub passed: bool,
 }
 
-/// 三重闸门 DTO（`mox_flow_fusion_svc::PlatformGate` 的可序列化投影）
+/// 三重闸门 DTO（`mox_platform_graph_core::PlatformGate` 的可序列化投影）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GateReport {
     pub passed: bool,
@@ -262,7 +262,7 @@ pub fn summarize(graph: &UnifiedGraph) -> GovernanceSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_flow_fusion_svc::{PrimitiveCoords, RelKind, UnifiedEdge, UnifiedNode};
+    use mox_platform_graph_core::{PrimitiveCoords, RelKind, UnifiedEdge, UnifiedNode};
 
     fn n(id: &str, kind: EntityKind, evidence: &str) -> UnifiedNode {
         UnifiedNode {
