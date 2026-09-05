@@ -6,7 +6,7 @@
 //! 用 mock 调度器/执行器（模拟 scheduler-svc :3100 / executor-svc :3200 的
 //! 真实 HTTP 契约）端到端驱动网关 `/api/alliance/*` 路由，验证：
 //! 1. 归一化正确性（枚举映射 / 时间戳秒精度 / 字段对齐 / 响应信封）
-//! 2. 远程优先 + 传输失败本地降级
+//! 2. 远程模式传输失败返回错误，禁止切换数据源
 //! 3. 未配置 URL / mode=off 全本地（默认行为不变）
 
 use axum::extract::Path;
@@ -345,4 +345,38 @@ async fn test_disabled_when_no_urls_configured() {
     let body = resp.json::<Value>().await.unwrap();
     assert_eq!(body["code"], 0);
     assert_eq!(body["data"]["data"]["status"], "pending");
+}
+
+#[tokio::test]
+async fn readiness_requires_configured_real_execution() {
+    let scheduler = spawn(Router::new().route("/health", get(|| async { Json(json!({"status":"healthy"})) }))).await;
+    for configured in [false, true] {
+        let executor = spawn(Router::new().route("/health", get(move || async move {
+            Json(json!({"status":"healthy","execution_ready":configured}))
+        }))).await;
+        let gw = spawn(build_alliance_router_with(RemoteAllianceClient::explicit(Some(scheduler.clone()), Some(executor)))).await;
+        let response = body_of(&format!("{gw}/api/alliance/runtime")).await;
+        assert_eq!(response["data"]["execution_ready"], configured);
+    }
+    let gw = spawn(build_alliance_router_with(None)).await;
+    let response = body_of(&format!("{gw}/api/alliance/runtime")).await;
+    assert_eq!(response["data"]["execution_ready"], false);
+}
+
+#[tokio::test]
+async fn result_service_failure_is_not_pending_success() {
+    let executor = spawn(Router::new().route("/tasks/:id/result", get(|| async {
+        (axum::http::StatusCode::SERVICE_UNAVAILABLE, Json(json!({"message":"unavailable"})))
+    }))).await;
+    let gw = spawn(build_alliance_router_with(RemoteAllianceClient::explicit(Some(executor.clone()), Some(executor)))).await;
+    let response = body_of(&format!("{gw}/api/alliance/tasks/22222222-2222-2222-2222-222222222222/fusion-result")).await;
+    assert_eq!(response["code"], 503);
+}
+
+#[tokio::test]
+async fn logs_are_remote_node_snapshots() {
+    let gw = setup_remote().await;
+    let response = body_of(&format!("{gw}/api/alliance/tasks/22222222-2222-2222-2222-222222222222/logs")).await;
+    assert_eq!(response["data"]["data"]["source"], "executor_snapshot");
+    assert!(!response["data"]["data"]["logs"].as_array().unwrap().is_empty());
 }

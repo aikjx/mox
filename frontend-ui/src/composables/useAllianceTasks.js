@@ -63,6 +63,9 @@ export function useAllianceTasks(api, { intervalMs = 2000 } = {}) {
     if (!current) return
     current.status = status.status
     current.progress = status.progress
+    for (const key of ['started_at', 'completed_at', 'duration_ms', 'estimated_remaining_ms']) {
+      if (status[key] != null) current[key] = status[key]
+    }
     if (selectedTask.value?.id === task.id) await selectTask(current, true)
   }
 

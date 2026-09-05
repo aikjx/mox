@@ -58,5 +58,11 @@ export function normalizeTaskFusion(value) {
   if (!data || data.fusion_status === 'pending' || data.status === 'pending') return null
   const result = data.fusion_result ?? data.result ?? data
   if (!result || typeof result !== 'object') throw new Error('任务结果格式不正确')
-  return { ...result, raw: data }
+  const outputs = result.content?.outputs || []
+  const expertResults = outputs.map(item => ({
+    expert: item.expert,
+    answer: (item.output?.steps || []).filter(step => step.startsWith('[结论] ')).map(step => step.slice(5)).join('\n\n'),
+  })).filter(item => item.answer)
+  const emptyReport = outputs.some(item => (item.output?.steps || []).some(step => step.includes('空报告')))
+  return { ...result, expertResults, emptyReport, raw: data }
 }

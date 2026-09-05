@@ -12,7 +12,7 @@
 import http from './http'
 
 // ===== 系统 =====
-export const getHealth = () => http.get('/health')
+export const getHealth = () => http.get('/health', { silent: true, _retry: 0 })
 export const getStatus = () => http.get('/status')
 export const getFullStatus = () => http.get('/status/full')
 export const getLogs = () => http.get('/logs')

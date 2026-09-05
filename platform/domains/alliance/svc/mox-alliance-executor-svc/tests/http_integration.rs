@@ -26,6 +26,26 @@ async fn build_test_app() -> axum::Router {
     server.build_app().await.expect("build_app 应成功")
 }
 
+#[tokio::test]
+async fn unconfigured_model_rejects_execution_without_creating_state() {
+    use mox_alliance_executor_core::{DagEngineImpl, MockExecutorConfig, MockNodeExecutor};
+    use mox_alliance_executor_svc::{app_state::ExecutorAppState, routes::build_router};
+    let config = ExecutorConfig::default();
+    let engine = DagEngineImpl::spawn(config.clone(), std::sync::Arc::new(MockNodeExecutor::new(MockExecutorConfig::default())));
+    let mut state = ExecutorAppState::new(config, engine);
+    state.execution_ready = false;
+    state.execution_mode = "llm";
+    let app = build_router(state);
+    let body = make_submit_json();
+    let task_id = body["task"]["task_id"].as_str().unwrap().to_owned();
+    let (status, bytes) = send(&app, "POST", "/internal/executions", Some(body), None).await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["code"], "MODEL_NOT_CONFIGURED");
+    assert_eq!(send(&app, "GET", &format!("/tasks/{task_id}/status"), None, None).await.0, StatusCode::NOT_FOUND);
+    let (_, bytes) = send(&app, "GET", "/health", None, None).await;
+    assert_eq!(serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["execution_ready"], false);
+}
+
 /// 发送 JSON 请求并返回 (status, json body bytes)
 async fn send(
     app: &axum::Router,

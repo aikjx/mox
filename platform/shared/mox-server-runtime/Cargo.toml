@@ -21,6 +21,8 @@ async-trait = { workspace = true }
 clap = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
 mox-observability-core = { path = "../mox-observability-core" }
 mox-auth-core = { path = "../mox-auth-core" }
 mox-config-core = { path = "../mox-config-core" }

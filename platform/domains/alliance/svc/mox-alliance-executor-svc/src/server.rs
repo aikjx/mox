@@ -10,7 +10,7 @@ use mox_alliance_executor_core::{
     DagEngineImpl, ExpertExecutorConfig, ExpertNodeExecutor, MockExecutorConfig, MockNodeExecutor,
 };
 use mox_alliance_executor_proto::types::ExecutorConfig;
-use mox_ai_expert_svc::expert_traits::llm_consultant;
+use mox_ai_expert_svc::llm::consultant::strict_llm_consultant_from_env;
 use tracing::info;
 
 use crate::app_state::ExecutorAppState;
@@ -50,7 +50,7 @@ impl ExecutorServer {
     /// 创建节点执行器
     fn create_node_executor(
         &self,
-    ) -> Arc<dyn mox_alliance_executor_proto::NodeExecutor> {
+    ) -> (Arc<dyn mox_alliance_executor_proto::NodeExecutor>, bool) {
         match self.mode {
             ExecutorMode::Mock => {
                 // Mock 执行器（Phase 1 / 测试用）
@@ -59,17 +59,20 @@ impl ExecutorServer {
                     success_rate: 1.0,
                     generate_output: true,
                 };
-                Arc::new(MockNodeExecutor::new(mock_config))
+                (Arc::new(MockNodeExecutor::new(mock_config)), false)
             }
             ExecutorMode::Expert => {
                 // 真实专家执行器（调用 AI 专家服务）
-                let consultant = llm_consultant();
+                let configured = strict_llm_consultant_from_env();
+                let ready = configured.is_some();
+                // Missing configuration is rejected by the submission endpoint before execution.
+                let consultant = configured.unwrap_or_else(mox_ai_expert_svc::expert_traits::local_consultant);
                 let expert_config = ExpertExecutorConfig {
                     timeout_ms: self.config.default_node_timeout_ms,
                     max_retries: self.config.default_max_retries,
                     ..ExpertExecutorConfig::default()
                 };
-                Arc::new(ExpertNodeExecutor::new(consultant, expert_config))
+                (Arc::new(ExpertNodeExecutor::new(consultant, expert_config)), ready)
             }
         }
     }
@@ -77,7 +80,7 @@ impl ExecutorServer {
     /// 构建应用（将构建逻辑与网络监听分离，便于测试注入与复用）
     pub async fn build_app(&self) -> anyhow::Result<axum::Router> {
         // 创建节点执行器
-        let node_executor = self.create_node_executor();
+        let (node_executor, execution_ready) = self.create_node_executor();
 
         info!(
             "Executor building app with mode: {:?}, executor: {}",
@@ -89,7 +92,9 @@ impl ExecutorServer {
         let engine = DagEngineImpl::spawn(self.config.clone(), node_executor);
 
         // 构建应用状态
-        let state = ExecutorAppState::new(self.config.clone(), engine);
+        let mut state = ExecutorAppState::new(self.config.clone(), engine);
+        state.execution_ready = execution_ready;
+        state.execution_mode = if self.mode == ExecutorMode::Expert { "llm" } else { "mock" };
 
         // 构建路由
         Ok(build_router(state))

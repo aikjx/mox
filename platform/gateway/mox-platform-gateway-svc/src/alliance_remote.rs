@@ -17,10 +17,10 @@
 //! 形状：枚举字符串映射（`parallel`→`expert_alliance`、`active`→`online`、
 //! `ready`→`pending` 等）、时间戳统一秒精度 RFC3339、字段名对齐本地 handler。
 //!
-//! ## 降级语义（远程优先，本地兜底）
+//! ## 数据源语义（远程模式失败时保持数据源）
 //!
 //! - **未启用**（未配置 URL 或 `MOX_ALLIANCE_REMOTE_MODE=off`）：
-//!   全部走本地进程内实现（默认行为，零风险）
+//!   使用历史本地预览实现；任务工作台据 readiness 禁止执行。
 //! - **传输失败**（连接拒绝/超时，10s 上限）：返回明确的 503，保持远程数据源。
 //!   不进行可能导致重复任务或状态丢失的本地兜底。
 //! - **业务失败**（远程返回 4xx/5xx 错误体）：归一化为网关错误响应直接
@@ -166,10 +166,11 @@ pub async fn runtime_readiness(
     let healthy = |result: &Option<Result<(u16, Value), String>>| {
         matches!(result, Some(Ok((200, body))) if body["status"] == "healthy")
     };
-    let ready = healthy(&scheduler) && healthy(&executor);
+    let executor_ready = healthy(&executor) && matches!(&executor, Some(Ok((200, body))) if body["execution_ready"] == true);
+    let ready = healthy(&scheduler) && executor_ready;
     api_ok(json!({"execution_ready":ready,"mode":"remote",
-        "scheduler_ready":healthy(&scheduler),"executor_ready":healthy(&executor),
-        "message":if ready {"任务服务已就绪"} else {"任务服务暂时不可用，请检查服务后刷新。"}}))
+        "scheduler_ready":healthy(&scheduler),"executor_ready":executor_ready,
+        "message":if ready {"任务服务已就绪，模型调用结果以实际执行为准"} else if healthy(&executor) && !executor_ready {"执行器尚未配置真实模型。请配置模型后重启执行器并刷新。"} else {"任务服务暂时不可用，请检查服务后刷新。"}}))
 }
 
 /// The executor currently exposes node snapshots, not an event-log API. Report
@@ -815,12 +816,13 @@ pub async fn remote_status_poll(
             "current_node_name": Value::Null,
             "started_at": secs_opt(&task["started_at"]),
             "completed_at": secs_opt(&task["completed_at"]),
+            "duration_ms": task["duration_ms"],
             "total_nodes": total,
             "completed_nodes": completed,
             "running_nodes": exec["running_nodes"],
             "pending_nodes": exec["pending_nodes"],
             "failed_nodes": exec["failed_nodes"],
-            "estimated_remaining_minutes": if total > 0 && completed >= total { 0 } else { (total - completed).max(0) * 3 },
+            "estimated_remaining_ms": exec["estimated_remaining_ms"],
             "updated_at": now_secs(),
         },
     })))

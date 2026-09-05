@@ -418,76 +418,103 @@ pub(crate) fn fusion_strategy_str(f: FusionStrategy) -> &'static str {
     }
 }
 
-/// 从任务标题/描述构建真实 DAG（基于专家流水线：需求→架构→数据→评审→融合）
-fn build_dag_for_task(title: &str, _description: &str) -> Vec<ExecNode> {
+/// 单节点构造（按序自动编号 node-N；Completed 补齐起止时间与耗时语义）
+fn exec_node(
+    seq: usize, name: &str, expert_id: &str, status: NodeExecStatus,
+    dependencies: Vec<String>, output: Option<String>, position: (i32, i32),
+) -> ExecNode {
     let now = Utc::now();
-    vec![
-        ExecNode {
-            node_id: "node-1".to_string(),
-            name: "需求分析".to_string(),
-            expert_id: "expert-requirement".to_string(),
-            status: NodeExecStatus::Completed,
-            dependencies: vec![],
-            started_at: Some(now),
-            completed_at: Some(now),
-            duration_ms: Some(0),
-            error_message: None,
-            output: Some(format!("需求分析完成：{}", title)),
-            position: (100, 200),
-        },
-        ExecNode {
-            node_id: "node-2".to_string(),
-            name: "架构设计".to_string(),
-            expert_id: "expert-architecture".to_string(),
-            status: NodeExecStatus::Running,
-            dependencies: vec!["node-1".to_string()],
-            started_at: Some(now),
-            completed_at: None,
-            duration_ms: None,
-            error_message: None,
-            output: None,
-            position: (350, 150),
-        },
-        ExecNode {
-            node_id: "node-3".to_string(),
-            name: "数据建模".to_string(),
-            expert_id: "expert-data".to_string(),
-            status: NodeExecStatus::Pending,
-            dependencies: vec!["node-1".to_string()],
-            started_at: None,
-            completed_at: None,
-            duration_ms: None,
-            error_message: None,
-            output: None,
-            position: (350, 280),
-        },
-        ExecNode {
-            node_id: "node-4".to_string(),
-            name: "方案评审".to_string(),
-            expert_id: "expert-review".to_string(),
-            status: NodeExecStatus::Pending,
-            dependencies: vec!["node-2".to_string(), "node-3".to_string()],
-            started_at: None,
-            completed_at: None,
-            duration_ms: None,
-            error_message: None,
-            output: None,
-            position: (600, 200),
-        },
-        ExecNode {
-            node_id: "node-5".to_string(),
-            name: "融合输出".to_string(),
-            expert_id: "expert-fusion".to_string(),
-            status: NodeExecStatus::Pending,
-            dependencies: vec!["node-4".to_string()],
-            started_at: None,
-            completed_at: None,
-            duration_ms: None,
-            error_message: None,
-            output: None,
-            position: (850, 200),
-        },
-    ]
+    let started = matches!(status, NodeExecStatus::Completed | NodeExecStatus::Running).then_some(now);
+    let completed = (status == NodeExecStatus::Completed).then_some(now);
+    ExecNode {
+        node_id: format!("node-{seq}"),
+        name: name.to_string(),
+        expert_id: expert_id.to_string(),
+        status,
+        dependencies,
+        started_at: started,
+        completed_at: completed,
+        duration_ms: (status == NodeExecStatus::Completed).then_some(0),
+        error_message: None,
+        output,
+        position,
+    }
+}
+
+/// 按联盟协作模式（AllianceMode）构建差异化执行 DAG —— 算法处理模式的本地拓扑落地。
+///
+/// 六种模式对应六种专家拓扑：
+/// - Sequential  single_expert  ：单专家串行链
+/// - Parallel    expert_alliance：多专家并行会诊后融合
+/// - Iterative   human_in_loop  ：迭代精炼，穿插人工评审闭环
+/// - Hierarchical autonomous    ：协调者分层派发子任务后汇总
+/// - Voting      voting         ：多专家独立产出后投票裁决
+/// - Debate      debate         ：正反方对辩后仲裁
+///
+/// 契约保持：首节点 `node-1 需求分析` 恒为 Completed（创建日志依赖），
+/// 末节点恒为「融合输出」（expert-fusion，下游展示契约）。
+fn build_dag_for_task(title: &str, _description: &str, mode: AllianceMode) -> Vec<ExecNode> {
+    let mut seq: usize = 0;
+    let mut n = |name: &str, expert_id: &str, status: NodeExecStatus,
+                 deps: Vec<String>, output: Option<String>, pos: (i32, i32)| {
+        seq += 1;
+        exec_node(seq, name, expert_id, status, deps, output, pos)
+    };
+
+    match mode {
+        AllianceMode::Sequential => {
+            let a = n("需求分析", "expert-requirement", NodeExecStatus::Completed, vec![], Some(format!("需求分析完成：{}", title)), (100, 200));
+            let b = n("方案设计", "expert-architecture", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 200));
+            let c = n("方案评审", "expert-review", NodeExecStatus::Pending, vec![b.node_id.clone()], None, (600, 200));
+            let end_deps = vec![c.node_id.clone()];
+            vec![a, b, c, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (850, 200))]
+        }
+        AllianceMode::Parallel => {
+            // 保持与历史固定流水线一致的多专家并行会诊拓扑（前端契约）
+            let a = n("需求分析", "expert-requirement", NodeExecStatus::Completed, vec![], Some(format!("需求分析完成：{}", title)), (100, 200));
+            let b = n("架构设计", "expert-architecture", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 150));
+            let c = n("数据建模", "expert-data", NodeExecStatus::Pending, vec![a.node_id.clone()], None, (350, 280));
+            let d = n("方案评审", "expert-review", NodeExecStatus::Pending, vec![b.node_id.clone(), c.node_id.clone()], None, (600, 200));
+            let end_deps = vec![d.node_id.clone()];
+            vec![a, b, c, d, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (850, 200))]
+        }
+        AllianceMode::Iterative => {
+            let a = n("需求分析", "expert-requirement", NodeExecStatus::Completed, vec![], Some(format!("需求分析完成：{}", title)), (100, 200));
+            let b = n("初稿生成", "expert-architecture", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 200));
+            let c = n("人工评审", "expert-human-review", NodeExecStatus::Pending, vec![b.node_id.clone()], None, (600, 200));
+            let d = n("修订迭代", "expert-architecture", NodeExecStatus::Pending, vec![c.node_id.clone()], None, (850, 150));
+            let e = n("二次确认", "expert-human-review", NodeExecStatus::Pending, vec![d.node_id.clone()], None, (850, 280));
+            let end_deps = vec![e.node_id.clone()];
+            vec![a, b, c, d, e, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (1100, 200))]
+        }
+        AllianceMode::Hierarchical => {
+            let a = n("需求分析", "expert-requirement", NodeExecStatus::Completed, vec![], Some(format!("需求分析完成：{}", title)), (100, 200));
+            let b = n("协调规划", "expert-lead", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 200));
+            let c = n("子任务·架构", "expert-architecture", NodeExecStatus::Pending, vec![b.node_id.clone()], None, (600, 120));
+            let d = n("子任务·数据", "expert-data", NodeExecStatus::Pending, vec![b.node_id.clone()], None, (600, 200));
+            let e = n("子任务·实现", "expert-implement", NodeExecStatus::Pending, vec![b.node_id.clone()], None, (600, 280));
+            let f = n("专家汇总", "expert-lead", NodeExecStatus::Pending, vec![c.node_id.clone(), d.node_id.clone(), e.node_id.clone()], None, (850, 200));
+            let end_deps = vec![f.node_id.clone()];
+            vec![a, b, c, d, e, f, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (1100, 200))]
+        }
+        AllianceMode::Voting => {
+            let a = n("需求分析", "expert-requirement", NodeExecStatus::Completed, vec![], Some(format!("需求分析完成：{}", title)), (100, 200));
+            let b = n("专家意见·甲", "expert-architecture", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 120));
+            let c = n("专家意见·乙", "expert-data", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 200));
+            let d = n("专家意见·丙", "expert-review", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 280));
+            let e = n("投票裁决", "expert-vote", NodeExecStatus::Pending, vec![b.node_id.clone(), c.node_id.clone(), d.node_id.clone()], None, (600, 200));
+            let end_deps = vec![e.node_id.clone()];
+            vec![a, b, c, d, e, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (850, 200))]
+        }
+        AllianceMode::Debate => {
+            let a = n("需求分析", "expert-requirement", NodeExecStatus::Completed, vec![], Some(format!("需求分析完成：{}", title)), (100, 200));
+            let b = n("正方陈述", "expert-pro", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 150));
+            let c = n("反方陈述", "expert-con", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 280));
+            let d = n("仲裁裁决", "expert-arbiter", NodeExecStatus::Pending, vec![b.node_id.clone(), c.node_id.clone()], None, (600, 200));
+            let end_deps = vec![d.node_id.clone()];
+            vec![a, b, c, d, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (850, 200))]
+        }
+    }
 }
 
 /// 基于节点输出构建真实融合结果
@@ -579,7 +606,7 @@ async fn create_task(
     match s.tasks.save(&task) {
         Ok(_) => {
             // 真实构建 DAG 并初始化执行状态
-            let dag = build_dag_for_task(&req.title, &req.description);
+            let dag = build_dag_for_task(&req.title, &req.description, mode);
             let mut exec = ExecutionState::new();
             exec.append_log("INFO", "system", &format!("任务 {} 初始化完成", task_id));
             exec.append_log("INFO", "system", "加载专家配置");
@@ -1542,5 +1569,73 @@ mod tests {
         assert_eq!(fusion_strategy_str(FusionStrategy::Debate), "debate");
         assert_eq!(fusion_strategy_str(FusionStrategy::MapReduce), "map_reduce");
         assert_eq!(fusion_strategy_str(FusionStrategy::Iterative), "iterative");
+    }
+
+    /// 六种协作模式各自生成差异化 DAG，且依赖引用必须有效（算法处理模式拓扑契约）
+    #[test]
+    fn test_build_dag_per_mode() {
+        let modes = [
+            AllianceMode::Sequential,
+            AllianceMode::Parallel,
+            AllianceMode::Iterative,
+            AllianceMode::Hierarchical,
+            AllianceMode::Voting,
+            AllianceMode::Debate,
+        ];
+        for mode in modes {
+            let dag = build_dag_for_task("测试任务", "描述", mode);
+            // DAG 有效性：依赖引用的 node_id 必须存在
+            let ids: std::collections::HashSet<&str> =
+                dag.iter().map(|n| n.node_id.as_str()).collect();
+            for node in &dag {
+                for dep in &node.dependencies {
+                    assert!(
+                        ids.contains(dep.as_str()),
+                        "{:?}: {} 依赖不存在的 {}",
+                        mode, node.node_id, dep
+                    );
+                }
+            }
+            // 首节点契约：需求分析恒为 Completed
+            assert_eq!(dag[0].name, "需求分析");
+            assert_eq!(dag[0].status, NodeExecStatus::Completed);
+            // 末节点契约：融合输出
+            assert_eq!(dag.last().unwrap().name, "融合输出");
+        }
+
+        // Sequential：串行单链（除首节点外，每个节点依赖唯一前驱）
+        let dag = build_dag_for_task("t", "d", AllianceMode::Sequential);
+        assert!(dag.len() >= 4);
+        for i in 1..dag.len() {
+            assert_eq!(dag[i].dependencies, vec![dag[i - 1].node_id.clone()]);
+        }
+
+        // Parallel：存在并行层（相邻两节点依赖同一前驱）
+        let dag = build_dag_for_task("t", "d", AllianceMode::Parallel);
+        assert!(dag.windows(2).any(|w| !w[0].dependencies.is_empty()
+            && w[0].dependencies == w[1].dependencies));
+
+        // Iterative：包含人工评审闭环
+        let dag = build_dag_for_task("t", "d", AllianceMode::Iterative);
+        assert!(dag.iter().any(|n| n.name.contains("人工评审")));
+        assert!(dag.iter().any(|n| n.name.contains("二次确认")));
+
+        // Hierarchical：协调规划 + 汇总节点聚合多个子任务
+        let dag = build_dag_for_task("t", "d", AllianceMode::Hierarchical);
+        assert!(dag.iter().any(|n| n.name == "协调规划"));
+        let summary = dag.iter().find(|n| n.name == "专家汇总").expect("应有专家汇总节点");
+        assert!(summary.dependencies.len() >= 3);
+
+        // Voting：至少三位专家意见进入投票裁决
+        let dag = build_dag_for_task("t", "d", AllianceMode::Voting);
+        let vote = dag.iter().find(|n| n.name == "投票裁决").expect("应有投票裁决节点");
+        assert!(vote.dependencies.len() >= 3);
+
+        // Debate：正方/反方对辩 + 仲裁
+        let dag = build_dag_for_task("t", "d", AllianceMode::Debate);
+        assert!(dag.iter().any(|n| n.name == "正方陈述"));
+        assert!(dag.iter().any(|n| n.name == "反方陈述"));
+        let arbiter = dag.iter().find(|n| n.name == "仲裁裁决").expect("应有仲裁裁决节点");
+        assert_eq!(arbiter.dependencies.len(), 2);
     }
 }

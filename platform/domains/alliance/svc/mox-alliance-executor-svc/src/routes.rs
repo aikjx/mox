@@ -51,6 +51,25 @@ fn status_from_execution(status: &ExecutionStatus) -> TaskStatus {
     }
 }
 
+#[cfg(test)]
+mod lifecycle_tests {
+    use super::*;
+    #[test]
+    fn cancelled_nodes_never_mean_success() {
+        let mut status = ExecutionStatus { task_id: Uuid::nil(), total_nodes: 2,
+            completed_nodes: 1, running_nodes: 0, failed_nodes: 0, pending_nodes: 0,
+            skipped_nodes: 0, cancelled_nodes: 1, progress: 1.0,
+            started_at: None, estimated_remaining_ms: None };
+        assert_eq!(status_from_execution(&status), TaskStatus::Cancelled);
+        status.cancelled_nodes = 0;
+        status.failed_nodes = 1;
+        assert_eq!(status_from_execution(&status), TaskStatus::Failed);
+        status.failed_nodes = 0;
+        status.completed_nodes = 2;
+        assert_eq!(status_from_execution(&status), TaskStatus::Completed);
+    }
+}
+
 /// 构建执行器 HTTP 路由
 pub fn build_router(state: ExecutorAppState) -> Router {
     Router::new()
@@ -69,10 +88,13 @@ pub fn build_router(state: ExecutorAppState) -> Router {
 }
 
 /// 健康检查
-async fn health_check() -> impl IntoResponse {
+async fn health_check(State(state): State<ExecutorAppState>) -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "healthy",
-        "service": "mox-alliance-executor"
+        "service": "mox-alliance-executor",
+        "execution_ready": state.execution_ready,
+        "execution_mode": state.execution_mode,
+        "message": if state.execution_ready { "模型已配置，调用结果以实际执行为准" } else { "尚未配置真实模型，不能执行专家分析。请配置模型后重启执行器。" }
     }))
 }
 
@@ -222,6 +244,11 @@ async fn submit_execution(
     Json(req): Json<SubmitExecutionRequest>,
 ) -> impl IntoResponse {
     let node_count = req.plan.nodes.len();
+    if !state.execution_ready && state.execution_mode != "mock" {
+        return (StatusCode::SERVICE_UNAVAILABLE, Json(serde_json::json!({
+            "code": "MODEL_NOT_CONFIGURED", "message": "尚未配置真实模型，无法执行专家分析"
+        }))).into_response();
+    }
     let task_id = req.task.task_id;
 
     match state

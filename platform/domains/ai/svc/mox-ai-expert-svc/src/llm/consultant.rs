@@ -34,6 +34,7 @@ pub struct LlmExpertConsultant {
     expert_lookup: Option<Arc<dyn Fn(&str) -> Option<(String, String, String, Vec<String>)> + Send + Sync>>,
     /// 整次咨询硬性截止时间（毫秒）：LLM 网络异常时超时即回退本地，杜绝卡顿
     consult_deadline_ms: u64,
+    allow_local_fallback: bool,
 }
 
 impl LlmExpertConsultant {
@@ -47,11 +48,18 @@ impl LlmExpertConsultant {
             local: ExpertServiceImpl::new(),
             expert_lookup: None,
             consult_deadline_ms: consult_deadline_ms_from_env(),
+            allow_local_fallback: true,
         }
     }
 
     pub fn with_react_config(mut self, config: ReactConfig) -> Self {
         self.react = config;
+        self
+    }
+
+    /// Text-task execution must surface provider failures, never succeed with a local empty graph report.
+    pub fn with_local_fallback(mut self, allowed: bool) -> Self {
+        self.allow_local_fallback = allowed;
         self
     }
 
@@ -129,13 +137,12 @@ pub fn react_to_report(id: &str, r: &ReactResult, model: &str) -> ConsultReport 
     let score = parse_score(&r.final_answer);
     let (vetoed, reason) = parse_veto(&r.final_answer);
     let mut steps = r.to_steps(model);
-    // 末尾附最终答案首行（去评分控制行）
+    // 保留完整交付物；轨迹摘要不能替代专家最终答案。
     let answer_line = r
         .final_answer
         .lines()
-        .map(|l| l.trim()).find(|l| !l.is_empty() && !l.starts_with("结论评分") && !l.starts_with("是否否决"))
-        .unwrap_or("")
-        .to_string();
+        .filter(|l| !l.trim().starts_with("结论评分") && !l.trim().starts_with("是否否决"))
+        .collect::<Vec<_>>().join("\n");
     if !answer_line.is_empty() && !steps.contains(&answer_line) {
         steps.push(format!("[结论] {}", answer_line));
     }
@@ -272,6 +279,7 @@ impl ExpertConsultant for LlmExpertConsultant {
         match result {
             Ok(report) => Ok(report),
             Err(e) => {
+                if !self.allow_local_fallback { return Err(e); }
                 if is_all_providers_broken(&e) {
                     log_warn(format!("所有 LLM Provider 不可用/熔断，立即回退本地引擎: {}", e));
                 } else {
@@ -286,6 +294,7 @@ impl ExpertConsultant for LlmExpertConsultant {
         match self.consult_sync(query) {
             Ok(r) => Ok(r),
             Err(e) => {
+                if !self.allow_local_fallback { return Err(e); }
                 if is_all_providers_broken(&e) {
                     log_warn(format!("所有 LLM Provider 不可用/熔断，立即回退本地引擎: {}", e));
                 } else {
@@ -331,6 +340,14 @@ pub fn consult_deadline_ms_from_env() -> u64 {
 ///   `MOX_LLM_{ID}_BASE_URL` / `MOX_LLM_{ID}_API_KEY` / `MOX_LLM_{ID}_MODEL`，
 ///   自动启用路由器（路由策略 + 熔断降级）
 pub fn llm_consultant_from_env() -> Option<Arc<dyn ExpertConsultant>> {
+    consultant_from_env_with_fallback(true)
+}
+
+pub fn strict_llm_consultant_from_env() -> Option<Arc<dyn ExpertConsultant>> {
+    consultant_from_env_with_fallback(false)
+}
+
+fn consultant_from_env_with_fallback(allow_local_fallback: bool) -> Option<Arc<dyn ExpertConsultant>> {
     if std::env::var("MOX_LLM_ENABLED")
         .ok()
         .map(|v| v == "0" || v == "false" || v == "FALSE")
@@ -347,6 +364,7 @@ pub fn llm_consultant_from_env() -> Option<Arc<dyn ExpertConsultant>> {
         Arc::new(OpenAiChatClient::new(config.clone())) as Arc<dyn ChatClient>
     };
     let consultant = LlmExpertConsultant::new(client, config.model.clone())
+        .with_local_fallback(allow_local_fallback)
         .with_expert_lookup(builtin_expert_lookup);
     Some(Arc::new(consultant) as Arc<dyn ExpertConsultant>)
 }
@@ -435,6 +453,25 @@ mod tests {
         assert!(expert_role(Some("medical-expert-001")).contains("医学"));
         assert!(expert_role(Some("code-expert-001")).contains("代码"));
         assert!(expert_role(None).contains("领域"));
+    }
+
+    #[test]
+    fn strict_consultant_preserves_full_deliverable_and_propagates_failure() {
+        let answer = "建议拆分订单与库存。\n验证重复提交不会重复扣库存。\n结论评分：0.8\n是否否决：否";
+        let client = Arc::new(MockChatClient::new(vec![answer.into()])) as Arc<dyn ChatClient>;
+        let consultant = LlmExpertConsultant::new(client, "test").with_local_fallback(false);
+        let report = consultant.consult_blocking(&query("q-full", "arch", "")).unwrap();
+        assert!(report.steps.iter().any(|s| s.contains("[结论] 建议拆分订单与库存。\n验证重复提交")));
+        let client = Arc::new(ErrorMockClient::new("provider unavailable")) as Arc<dyn ChatClient>;
+        let consultant = LlmExpertConsultant::new(client, "test").with_local_fallback(false);
+        assert!(consultant.consult_blocking(&query("q-failed", "arch", "")).is_err());
+    }
+
+    #[tokio::test]
+    async fn strict_async_consultant_propagates_provider_failure() {
+        let client = Arc::new(ErrorMockClient::new("provider unavailable")) as Arc<dyn ChatClient>;
+        let consultant = LlmExpertConsultant::new(client, "test").with_local_fallback(false);
+        assert!(consultant.consult(&query("q-failed", "arch", "")).await.is_err());
     }
 
     #[test]

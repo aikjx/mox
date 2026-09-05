@@ -10,6 +10,8 @@ pub mod error;
 pub mod model;
 pub mod process;
 pub mod storage;
+pub mod pool;
+pub mod audit_writer;
 
 pub use cache::DsqlCache;
 pub use engine::SqlEngine;
@@ -17,6 +19,7 @@ pub use error::{DsqlError, DsqlResult};
 pub use model::*;
 pub use process::ProcessEngine;
 pub use storage::DsqlStorage;
+pub use audit_writer::{AsyncAuditWriter, AuditWriterConfig, AuditWriterStats};
 
 use std::path::Path;
 use std::sync::Arc;
@@ -26,35 +29,32 @@ use std::time::Instant;
 pub struct DsqlManager {
     storage: Arc<DsqlStorage>,
     cache: Arc<DsqlCache>,
-    /// 执行连接（MVP阶段使用SQLite内存/文件，后续扩展多数据源）
-    exec_conn: Arc<parking_lot::Mutex<rusqlite::Connection>>,
+    /// 执行连接池（r2d2，替代全局Mutex，支持并发）
+    exec_pool: pool::SqlitePool,
 }
 
 impl DsqlManager {
     /// 创建动态SQL管理系统
     pub fn open<P: AsRef<Path>>(meta_path: P, exec_path: P) -> DsqlResult<Self> {
         let storage = DsqlStorage::open(meta_path)?;
-        let exec_conn = rusqlite::Connection::open(exec_path)
-            .map_err(|e| DsqlError::StorageError(format!("open exec db: {e}")))?;
-        exec_conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")
-            .map_err(|e| DsqlError::StorageError(format!("exec pragma: {e}")))?;
-
+        let exec_pool = pool::SqlitePool::file(exec_path, 10)
+            .map_err(|e| DsqlError::StorageError(format!("build exec pool: {e}")))?;
         Ok(Self {
             storage: Arc::new(storage),
             cache: Arc::new(DsqlCache::default()),
-            exec_conn: Arc::new(parking_lot::Mutex::new(exec_conn)),
+            exec_pool,
         })
     }
 
     /// 内存模式（用于测试）
     pub fn open_memory() -> DsqlResult<Self> {
         let storage = DsqlStorage::open_memory()?;
-        let exec_conn = rusqlite::Connection::open_in_memory()
-            .map_err(|e| DsqlError::StorageError(format!("open exec: {e}")))?;
+        let exec_pool = pool::SqlitePool::memory(5)
+            .map_err(|e| DsqlError::StorageError(format!("build memory pool: {e}")))?;
         Ok(Self {
             storage: Arc::new(storage),
             cache: Arc::new(DsqlCache::default()),
-            exec_conn: Arc::new(parking_lot::Mutex::new(exec_conn)),
+            exec_pool,
         })
     }
 
@@ -83,7 +83,6 @@ impl DsqlManager {
     /// 更新SQL定义
     pub fn update_sql(&self, sql_code: &str, req: &UpdateSqlRequest) -> DsqlResult<SqlDefinition> {
         let result = self.storage.update_sql(sql_code, req)?;
-        // 更新后失效缓存
         self.cache.invalidate_sql(sql_code);
         Ok(result)
     }
@@ -164,7 +163,7 @@ impl DsqlManager {
         }
 
         // 执行SQL
-        let conn = self.exec_conn.lock();
+        let conn = self.exec_pool.get_default().map_err(|e| DsqlError::StorageError(format!("get conn: {e}")))?;
         let mut result = SqlEngine::execute(&conn, &sql_def, &req.params)?;
         result.trace_id = req.trace_id.clone();
 
@@ -205,13 +204,13 @@ impl DsqlManager {
     // ==================== 执行连接管理 ====================
 
     /// 获取执行连接（用于DDL等操作）
-    pub fn exec_connection(&self) -> Arc<parking_lot::Mutex<rusqlite::Connection>> {
-        self.exec_conn.clone()
+    pub fn exec_pool(&self) -> &pool::SqlitePool {
+        &self.exec_pool
     }
 
     /// 在执行连接上执行DDL
     pub fn execute_ddl(&self, ddl: &str) -> DsqlResult<()> {
-        let conn = self.exec_conn.lock();
+        let conn = self.exec_pool.get_default().map_err(|e| DsqlError::StorageError(format!("get conn: {e}")))?;
         conn.execute_batch(ddl)
             .map_err(|e| DsqlError::ExecutionError(format!("ddl: {e}")))?;
         Ok(())
@@ -244,7 +243,7 @@ impl DsqlManager {
         duration_ms: u64,
         cache_hit: bool,
     ) -> DsqlResult<()> {
-        let is_slow = duration_ms > 1000; // 1秒以上为慢SQL
+        let is_slow = duration_ms > self.slow_query_threshold_ms;
         let log = AuditLog {
             id: 0,
             trace_id: req.trace_id.clone(),

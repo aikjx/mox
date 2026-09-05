@@ -84,14 +84,35 @@ impl DsqlCache {
     }
 
     /// 生成缓存键（SQL代码 + 版本哈希 + 参数哈希）
+    /// 参数 JSON 会先规范化（对象字段按 key 排序），确保相同内容不同顺序产生相同 key
     pub fn cache_key(sql_code: &str, version_hash: &str, params: &serde_json::Value) -> String {
         use sha2::{Digest, Sha256};
-        let param_str = params.to_string();
+        let normalized = normalize_json_value(params);
+        let param_str = normalized.to_string();
         let mut hasher = Sha256::new();
         hasher.update(version_hash.as_bytes());
         hasher.update(param_str.as_bytes());
         let param_hash = hex::encode(hasher.finalize());
         format!("{sql_code}:{param_hash}")
+    }
+}
+
+/// 规范化 JSON 值：递归地对对象字段按 key 排序，确保序列化结果确定性
+fn normalize_json_value(value: &serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Object(map) => {
+            let mut sorted: Vec<(&String, &serde_json::Value)> = map.iter().collect();
+            sorted.sort_by(|a, b| a.0.cmp(b.0));
+            let mut new_map = serde_json::Map::new();
+            for (k, v) in sorted {
+                new_map.insert(k.clone(), normalize_json_value(v));
+            }
+            serde_json::Value::Object(new_map)
+        }
+        serde_json::Value::Array(arr) => {
+            serde_json::Value::Array(arr.iter().map(normalize_json_value).collect())
+        }
+        other => other.clone(),
     }
 }
 
@@ -167,6 +188,25 @@ mod tests {
         let params2 = serde_json::json!({"a": 2});
         let k3 = DsqlCache::cache_key("sql1", "v1", &params2);
         assert_ne!(k1, k3);
+    }
+
+    #[test]
+    fn test_cache_key_normalization() {
+        // 字段顺序不同但内容相同，应产生相同 key
+        let params1 = serde_json::json!({"a": 1, "b": 2, "c": 3});
+        let params2 = serde_json::json!({"c": 3, "a": 1, "b": 2});
+        let params3 = serde_json::json!({"b": 2, "c": 3, "a": 1});
+        let k1 = DsqlCache::cache_key("sql1", "v1", &params1);
+        let k2 = DsqlCache::cache_key("sql1", "v1", &params2);
+        let k3 = DsqlCache::cache_key("sql1", "v1", &params3);
+        assert_eq!(k1, k2);
+        assert_eq!(k2, k3);
+        // 嵌套对象也应规范化
+        let nested1 = serde_json::json!({"outer": {"x": 1, "y": 2}});
+        let nested2 = serde_json::json!({"outer": {"y": 2, "x": 1}});
+        let kn1 = DsqlCache::cache_key("sql2", "v1", &nested1);
+        let kn2 = DsqlCache::cache_key("sql2", "v1", &nested2);
+        assert_eq!(kn1, kn2);
     }
 
     #[test]

@@ -1,4 +1,4 @@
-// mox-dsql-core SQL执行引擎：模板渲染 + 参数化查询 + 结果映射
+﻿// mox-dsql-core SQL执行引擎：模板渲染 + 参数化查询 + 结果映射
 use crate::error::{DsqlError, DsqlResult};
 use crate::model::*;
 use rusqlite::{Connection, OptionalExtension, params_from_iter};
@@ -429,10 +429,23 @@ impl SqlEngine {
             .map(json_to_sqlite_value)
             .collect();
 
-        let affected = conn.execute(sql, params_from_iter(param_values.iter()))
-            .map_err(|e| DsqlError::ExecutionError(format!("execute: {e}")))?;
+        // 开启事务
+        conn.execute_batch("BEGIN")
+            .map_err(|e| DsqlError::ExecutionError(format!("begin transaction: {e}")))?;
 
-        Ok((serde_json::json!({ "affected_rows": affected }), affected as i64))
+        let result = conn.execute(sql, params_from_iter(param_values.iter()));
+
+        match result {
+            Ok(affected) => {
+                conn.execute_batch("COMMIT")
+                    .map_err(|e| DsqlError::ExecutionError(format!("commit: {e}")))?;
+                Ok((serde_json::json!({ "affected_rows": affected }), affected as i64))
+            }
+            Err(e) => {
+                let _ = conn.execute_batch("ROLLBACK");
+                Err(DsqlError::ExecutionError(format!("execute: {e}")))
+            }
+        }
     }
 }
 

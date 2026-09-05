@@ -315,6 +315,45 @@ impl DsqlStorage {
         Ok(())
     }
 
+    /// 批量写入审计日志（在一个事务中完成，性能提升显著）
+    pub fn write_audit_logs_batch(&self, logs: &[AuditLog]) -> DsqlResult<usize> {
+        if logs.is_empty() {
+            return Ok(0);
+        }
+        let conn = self.conn.lock();
+        conn.execute_batch("BEGIN")
+            .map_err(|e| DsqlError::StorageError(format!("begin batch: {e}")))?;
+        let mut count = 0;
+        for log in logs {
+            match conn.execute(
+                "INSERT INTO dsql_audit_log (
+                    trace_id, sql_code, datasource_code, params, row_count,
+                    duration_ms, success, error_msg, is_slow, cache_hit
+                ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+                params![
+                    log.trace_id,
+                    log.sql_code,
+                    log.datasource_code,
+                    log.params,
+                    log.row_count,
+                    log.duration_ms,
+                    log.success,
+                    log.error_msg,
+                    log.is_slow,
+                    log.cache_hit,
+                ],
+            ) {
+                Ok(_) => count += 1,
+                Err(e) => {
+                    let _ = conn.execute_batch("ROLLBACK");
+                    return Err(DsqlError::StorageError(format!("batch audit log: {e}")));
+                }
+            }
+        }
+        conn.execute_batch("COMMIT")
+            .map_err(|e| DsqlError::StorageError(format!("commit batch: {e}")))?;
+        Ok(count)
+    }
     /// 记录动态流程执行审计。
     pub fn write_process_audit(
         &self,

@@ -153,11 +153,9 @@ pub async fn auth_middleware(
     let user_info = if let Some(auth_header) = request.headers().get(header::AUTHORIZATION) {
         let auth_str = auth_header.to_str().unwrap_or("");
         if let Some(token) = auth_str.strip_prefix("Bearer ") {
-            // Dev mode: 允许前端 dev 令牌（可能非合法签名 JWT）通过结构校验。
-            // 生产模式下须通过 validate_token 的真实签名校验。
-            if auth.config.dev_mode && !token.is_empty() {
-                // dev 模式下优先尝试正常解析；解析（严格验签）失败时构造 dev 用户信息放行，
-                // 确保前端管理面板在开发环境不被 401 阻断。
+            // Only the documented loopback development token gets the development identity.
+            // Arbitrary invalid tokens must fail even when development mode is enabled.
+            if auth.config.dev_mode && token == "dev-secret-token" {
                 auth.validate_token(token).or_else(|| Some(UserInfo {
                     id: "dev-user".into(),
                     username: "dev-user".into(),
@@ -425,5 +423,23 @@ mod tests {
             ApiAuth::from_request_parts(&mut parts, &()).await.is_err(),
             "未注入 UserInfo 时必须拒绝"
         );
+    }
+
+    #[tokio::test]
+    async fn dev_mode_rejects_arbitrary_bearer_tokens() {
+        use tower::ServiceExt;
+        let mut config = AuthConfig::default();
+        config.enabled = true;
+        config.dev_mode = true;
+        config.public_paths.clear();
+        let auth = Arc::new(AuthMiddleware::new(config));
+        let app = axum::Router::new().route("/api/auth/me", axum::routing::get(|| async { "ok" }))
+            .layer(axum::middleware::from_fn(move |req, next| auth_middleware(auth.clone(), req, next)));
+        for (token, expected) in [("invalid-test-token", StatusCode::UNAUTHORIZED), ("dev-secret-token", StatusCode::OK)] {
+            let request = axum::http::Request::builder().uri("/api/auth/me")
+                .header("Authorization", format!("Bearer {token}"))
+                .body(axum::body::Body::empty()).unwrap();
+            assert_eq!(app.clone().oneshot(request).await.unwrap().status(), expected);
+        }
     }
 }

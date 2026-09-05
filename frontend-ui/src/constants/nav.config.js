@@ -256,12 +256,12 @@ export const MODULE_SIDEBAR_CONFIG = {
     title: '专家联盟', subtitle: '专家协作与管理',
     sections: [
       { title: '专家', items: [
-        { key: 'all', label: '全部专家', icon: '👥', count: 156 },
-        { key: 'ai', label: 'AI 算法', icon: '🤖', count: 32 },
-        { key: 'arch', label: '架构设计', icon: '🏗️', count: 28 },
-        { key: 'frontend', label: '前端开发', icon: '🎨', count: 24 },
-        { key: 'backend', label: '后端开发', icon: '⚙️', count: 35 },
-        { key: 'data', label: '数据工程', icon: '📊', count: 20 },
+        { key: 'all', label: '全部专家', icon: '👥' },
+        { key: 'ai', label: 'AI 算法', icon: '🤖' },
+        { key: 'arch', label: '架构设计', icon: '🏗️' },
+        { key: 'frontend', label: '前端开发', icon: '🎨' },
+        { key: 'backend', label: '后端开发', icon: '⚙️' },
+        { key: 'data', label: '数据工程', icon: '📊' },
       ]},
     ]
   },

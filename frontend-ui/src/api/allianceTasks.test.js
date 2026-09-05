@@ -38,4 +38,13 @@ describe('alliance gateway contracts', () => {
     expect(await getAllianceFusionResult('a')).toBeNull()
     expect(await getAllianceFusionResult('a')).toMatchObject({ summary: '结论', evidence: [1] })
   })
+  it('shows the full expert answer and identifies legacy empty reports', async () => {
+    http.get.mockResolvedValueOnce({ fusion_result: { content: { outputs: [
+      { expert: 'arch', output: { steps: ['[结论] 第一项建议\n第二项验证'] } },
+    ] } } }).mockResolvedValueOnce({ fusion_result: { confidence: 1, content: { outputs: [
+      { expert: 'arch', output: { steps: ['未传入 FlowGraph（空报告）'] } },
+    ] } } })
+    expect((await getAllianceFusionResult('a')).expertResults[0].answer).toBe('第一项建议\n第二项验证')
+    expect((await getAllianceFusionResult('a')).emptyReport).toBe(true)
+  })
 })

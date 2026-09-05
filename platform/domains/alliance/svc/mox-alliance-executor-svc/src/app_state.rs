@@ -13,10 +13,12 @@ use mox_alliance_executor_proto::types::ExecutorConfig;
 pub struct ExecutorAppState {
     pub config: ExecutorConfig,
     pub engine: Arc<DagEngineImpl>,
+    pub execution_ready: bool,
+    pub execution_mode: &'static str,
 }
 
 impl ExecutorAppState {
     pub fn new(config: ExecutorConfig, engine: Arc<DagEngineImpl>) -> Self {
-        Self { config, engine }
+        Self { config, engine, execution_ready: true, execution_mode: "custom" }
     }
 }

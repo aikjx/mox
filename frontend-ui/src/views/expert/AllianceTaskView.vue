@@ -123,8 +123,8 @@
         </div>
         <div class="progress-stats">
           <span><el-icon><Timer /></el-icon> 耗时: {{ selectedTask.duration_ms != null ? (selectedTask.duration_ms / 1000).toFixed(1) + 's' : '--' }}</span>
-          <span><el-icon><Clock /></el-icon> 预计: {{ selectedTask.eta || '--' }}</span>
-          <span><el-icon><User /></el-icon> 专家: {{ selectedTask.expert_count ?? dagNodes.length }} 位</span>
+          <span><el-icon><Clock /></el-icon> 预计: {{ selectedTask.estimated_remaining_ms != null ? Math.ceil(selectedTask.estimated_remaining_ms / 1000) + 's' : '--' }}</span>
+          <span><el-icon><User /></el-icon> 专家: {{ selectedTask.expert_count ?? (dagError ? '--' : dagNodes.length) }} 位</span>
         </div>
       </div>
 
@@ -200,12 +200,16 @@
       <div class="fusion-section" v-if="fusionResult" v-loading="fusionLoading">
         <div class="section-header">
           <h4 class="section-title"><el-icon><MagicStick /></el-icon> 任务结果</h4>
-          <el-tag v-if="Number.isFinite(fusionResult.confidence)" size="small" :type="fusionResult.confidence > 0.8 ? 'success' : 'warning'" effect="dark">
-            置信度 {{ (fusionResult.confidence * 100).toFixed(1) }}%
+          <el-tag v-if="!fusionResult.emptyReport && Number.isFinite(fusionResult.confidence)" size="small" type="info" effect="dark">
+            专家自评分 {{ (fusionResult.confidence * 100).toFixed(1) }}%
           </el-tag>
         </div>
         <div class="fusion-content">
-          <div class="fusion-summary">{{ fusionResult.summary || '执行结果' }}</div>
+          <el-alert v-if="fusionResult.emptyReport" title="此历史任务仅返回空报告，未生成有效分析。配置模型后请重新提交。" type="warning" :closable="false" show-icon />
+          <div v-else class="fusion-summary">{{ fusionResult.summary || '执行结果' }}</div>
+          <article v-for="result in fusionResult.expertResults" :key="result.expert">
+            <h5>{{ result.expert }}</h5><div class="expert-answer">{{ result.answer }}</div>
+          </article>
           <ul v-if="fusionResult.key_findings?.length"><li v-for="(finding, i) in fusionResult.key_findings" :key="i">{{ finding }}</li></ul>
           <details><summary>查看完整结果</summary><pre class="result-json">{{ JSON.stringify(fusionResult.raw || fusionResult, null, 2) }}</pre></details>
           <div class="fusion-details" v-if="fusionResult.details?.length">
@@ -217,6 +221,7 @@
         </div>
       </div>
       <el-alert v-else-if="fusionError" type="error" :closable="false" show-icon title="融合结果加载失败" style="margin-bottom:12px" />
+      <el-alert v-else-if="selectedTask.status === 'completed' && !fusionLoading" type="warning" :closable="false" show-icon title="结果暂不可用" description="执行器未返回结果，可能尚未生成或重启后未恢复。请刷新核对；完成状态本身不代表交付物可用。" style="margin-bottom:12px" />
 
       <!-- AI 助手 -->
       <div class="ai-assistant">
@@ -797,6 +802,7 @@ onBeforeUnmount(dispose)
   flex-direction: column;
   gap: 12px;
 }
+.expert-answer { white-space: pre-wrap; line-height: 1.8; overflow-wrap: anywhere; }
 .fusion-summary {
   font-size: 13px;
   color: var(--text-secondary);

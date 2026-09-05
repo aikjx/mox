@@ -1,4 +1,4 @@
-[workspace]
+﻿[workspace]
 # default-members锛歚cargo check / cargo build / cargo test` 榛樿鍙Е鍙戣繖浜?crate
 #   - 4 涓?MOX 璁＄畻鏍稿績
 #   - 3 涓?FFI 缁戝畾锛坣api/PyO3锛変笉鏀鹃粯璁わ紝閬垮厤锛?
@@ -250,6 +250,7 @@ base64 = "0.22"
 # Redis client (cloud-filer-svc real Redis backend)
 redis = { version = "0.26", features = ["tokio-comp"] }
 rusqlite = { version = "0.31", features = ["bundled"] }
+r2d2 = "0.8"
 
 # Cryptography (audit SigV4, HMAC signatures, hex)
 sha2 = "0.10"
