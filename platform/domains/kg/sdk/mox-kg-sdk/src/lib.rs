@@ -718,3 +718,5 @@ impl GraphClient {
         Ok((n, r))
     }
 }
+
+pub mod consolidator;

@@ -106,6 +106,13 @@
           />
         </el-form>
 
+        <details class="token-login">
+          <summary>使用已有访问令牌</summary>
+          <p>适用于独立部署。令牌验证后仅在当前页面有效，刷新后需重新连接。</p>
+          <el-input v-model="existingToken" type="password" placeholder="访问令牌" autocomplete="off" @keyup.enter="handleTokenLogin" />
+          <el-button type="primary" :loading="authStore.loading" :disabled="!existingToken.trim()" @click="handleTokenLogin">验证并连接</el-button>
+        </details>
+
         <div class="form-footer">
           <span>还没有账户？</span>
           <router-link to="/register" class="register-link">立即注册</router-link>
@@ -138,6 +145,16 @@ const authStore = useAuthStore()
 
 const loginFormRef = ref(null)
 const showTenant = ref(false)
+const existingToken = ref('')
+
+async function handleTokenLogin() {
+  try {
+    await authStore.loginWithToken(existingToken.value)
+    existingToken.value = ''
+    const redirect = route.query.redirect
+    await router.push(typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/expert-center/tasks')
+  } catch { /* 错误由认证状态展示 */ }
+}
 
 const loginForm = reactive({
   username: '',
@@ -190,6 +207,10 @@ function handleSSO(provider) {
 </script>
 
 <style scoped>
+.token-login { margin-top: 20px; font-size: 13px; }
+.token-login summary { cursor: pointer; color: #5264bf; }
+.token-login p { color: #606266; line-height: 1.6; }
+.token-login .el-button { margin-top: 12px; width: 100%; }
 .login-container {
   display: flex;
   min-height: 100vh;

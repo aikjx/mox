@@ -6,12 +6,12 @@
 //! 代码骨架 · 由关联图谱自动生成（mox_flow_primiflow_svc::assoc::primiflow_seed）
 //! 溯源链路: R1 → F4 → B1 → A1 → T2 → C4
 //! 数据设计: S3(Topology)
-//! 说明: 需求结构化 + 拓扑涌现（复用 mox_ai_flow_svc κ‑τ 引擎 generate）。
+//! 说明: 需求结构化 + 拓扑涌现（复用 mox_ai_flow_sdk κ‑τ 引擎 generate）。
 //! 规格: primiflow/SPEC.md（§7 模块 / §10 DoD）
 
 /// 依赖模块: C2
-use mox_ai_flow_svc::model::ToolKind;
-use mox_ai_flow_svc::primitive::{
+use mox_ai_flow_sdk::model::ToolKind;
+use mox_ai_flow_sdk::primitive::{
     generate, CandidateTopology, KnowledgeBase, PrimitiveState, Requirement as PrimiRequirement,
     SubTask,
 };
@@ -198,7 +198,7 @@ fn truncate_name(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::primitive::PrimitiveState;
+    use mox_ai_flow_sdk::primitive::PrimitiveState;
 
     #[test]
     fn structures_into_subtasks() {
@@ -234,7 +234,7 @@ mod tests {
         let op = TopologyOperator::new();
         let s = op.structure_requirement("抓取销售数据。清洗对账。生成报告。", "r5");
         let state =
-            PrimitiveState::from_policy(10.0, mox_ai_flow_svc::primitive::DeliveryPolicy::Exploratory, 0.0);
+            PrimitiveState::from_policy(10.0, mox_ai_flow_sdk::primitive::DeliveryPolicy::Exploratory, 0.0);
         let topo = op.emerge_topology(&s.primi, &state, &KnowledgeBase::new());
         assert!(topo.graph.topo_order().is_ok());
     }

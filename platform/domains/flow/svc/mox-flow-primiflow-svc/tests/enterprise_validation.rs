@@ -9,7 +9,7 @@
 //!
 //! 设计目标：每一步验证都可独立定位失败，覆盖「一定要可以运行」的全部质量闸门。
 
-use mox_ai_flow_svc::primitive::{
+use mox_ai_flow_sdk::primitive::{
     DeliveryPolicy, KnowledgeBase, PrimiEngine, PrimitiveState, ResourceBudget,
 };
 use mox_flow_primiflow_svc::assoc::AssocGraph;

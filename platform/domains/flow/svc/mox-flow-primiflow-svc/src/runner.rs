@@ -18,11 +18,11 @@
 //! 因此第二个同类需求会命中知识库、自动抬高 κ 复用成熟链路。
 
 use anyhow::Result;
-use mox_ai_flow_svc::model::ToolKind;
-use mox_ai_flow_svc::primitive::{
+use mox_ai_flow_sdk::model::ToolKind;
+use mox_ai_flow_sdk::primitive::{
     DeliveryPolicy, EmergeStatus, Outcome, PrimiEngine, Requirement as EngineRequirement, SubTask,
 };
-use mox_ai_flow_svc::to_mermaid;
+use mox_ai_flow_sdk::to_mermaid;
 use serde::Serialize;
 use std::fmt;
 use std::path::Path;

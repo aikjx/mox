@@ -41,6 +41,10 @@ const DEFAULT_USER: &str = "admin-user";
 // 响应信封辅助
 // =====================================================================
 
+async fn current_user_handler(crate::auth::ApiAuth(user): crate::auth::ApiAuth) -> ApiResponse<Value> {
+    api_ok(json!(user))
+}
+
 fn ok(data: Value) -> ApiResponse<Value> {
     api_ok(data)
 }
@@ -140,6 +144,7 @@ fn build_tree(items: Vec<Map<String, Value>>) -> Vec<Value> {
 
 pub fn build_system_router() -> Router<GatewayState> {
     Router::new()
+        .route("/api/auth/me", get(current_user_handler))
         // ===== 权限 =====
         .route("/api/system/permissions", get(get_permissions))
         // ===== 部门 =====
@@ -1851,5 +1856,3 @@ async fn audit_log(
         Err(e) => err(&format!("audit log: {e}")),
     }
 }
-
-

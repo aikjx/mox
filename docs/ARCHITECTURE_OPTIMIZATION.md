@@ -1,4 +1,4 @@
-# MOX v3.0 全维架构优化报告
+﻿# MOX v3.0 全维架构优化报告
 
 > 项目：infotopograph / MOX 模块化系统架构低代码平台
 > 版本：v3.0.0-ai-powered
@@ -285,7 +285,7 @@ pub trait ServiceModule: Send + Sync {
 | ~~P1~~ | ~~单元测试覆盖扩充~~ | ✅ **已完成**：mox-server-runtime 2→15测试，mox-kb-core 1→11测试，mox-dsql-core 14测试，mox-cache-core 5测试，合计45+测试全部通过 |
 | ~~P2~~ | ~~CI/CD 流水线~~ | ✅ **已完成**：GitHub Actions 配置（fmt+clippy lint / 8 crate 并行编译 / 3 crate 单元测试 / redis-backend 特性编译 / 4 服务 Docker 镜像构建） |
 | ~~P2~~ | ~~分布式追踪~~ | ✅ **已完成**：mox-server-runtime 新增 tracing_utils.rs，trace_id 提取/生成/注入，兼容 W3C Trace Context（traceparent），与 tracing span 集成，7 个测试通过 |
-| P2 | 审计日志 | 关键操作（SQL 模板修改 / 权限变更 / 数据删除）的不可变审计日志（表结构已存在，查询 API 待实现） |
+| ~~P2~~ | ~~审计日志查询 API~~ | ✅ **已完成**：mox-dsql-core 新增 list_audit_logs（10维过滤+分页）/ get_audit_log / audit_stats（成功率/慢查询/缓存命中率/平均耗时），AuditLogQuery+AuditStats 模型，14个测试全部通过 |
 | P3 | 配置中心 | 接入 Nacos / Apollo / etcd，支持配置热更新 |
 | P3 | 服务发现 | 接入 Consul / etcd / Kubernetes Service |
 | ~~P3~~ | ~~限流熔断~~ | ✅ **已完成**：mox-server-runtime 新增 rate_limit.rs，令牌桶无锁实现（AtomicU64），支持 QPS/突发配置，429 响应，集成到 ServerConfig.rate_limit，5 个测试通过 |

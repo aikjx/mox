@@ -189,6 +189,10 @@ http.interceptors.response.use(responseOkInterceptor, makeResponseErrorIntercept
 // ========== 全局项目注入 ==========
 // 璇玑：所有请求自动带上当前 project_id，后端忽略未知参数即安全
 let _projectIdGetter = null
+let _authTokenGetter = null
+export function registerAuthTokenGetter(getter) {
+  _authTokenGetter = typeof getter === 'function' ? getter : null
+}
 /** 给 projectContext 用：在 setCurrentProject 后把 id 暴露给请求层 */
 export function registerProjectIdGetter(getter) {
   _projectIdGetter = typeof getter === 'function' ? getter : null
@@ -228,15 +232,17 @@ const isProd = typeof import.meta !== 'undefined' && import.meta.env && import.m
 
 const requestInterceptor = (config) => {
   // 优先从安全存储读取（自动兼容旧版 localStorage key）
-  const token =
+  const token = _authTokenGetter ? _authTokenGetter() : (
     getToken() ||
     (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_TOKEN) ||
     (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_OUS_API_TOKEN) ||
     // 仅开发环境允许使用默认令牌，生产环境必须显式配置
-    (isProd ? '' : 'dev-secret-token')
+    (isProd ? '' : 'dev-secret-token'))
 
   config.headers = config.headers || {}
-  if (token) config.headers['Authorization'] = 'Bearer ' + token
+  if (token && !Object.keys(config.headers).some(key => key.toLowerCase() === 'authorization')) {
+    config.headers['Authorization'] = 'Bearer ' + token
+  }
 
   // 兜底：未显式设置 Content-Type 时默认 JSON
   if (!config.headers['Content-Type'] && config.method && String(config.method).toLowerCase() !== 'get') {

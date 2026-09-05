@@ -310,3 +310,7 @@ export async function toggleAllianceTaskDone(taskId) {
 export async function getAllianceTaskStatus(taskId) {
   return normalizeTask(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/status`, { _retry: 0, silent: true }))
 }
+
+export async function getAllianceRuntime() {
+  return unwrapTaskPayload(await http.get('/alliance/runtime', { _retry: 0, silent: true }))
+}

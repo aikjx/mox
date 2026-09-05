@@ -6,7 +6,7 @@
 //! 算子真实执行层（离线确定性，可运行可验证）
 //!
 //! 平台闭环此前在 [`crate::runner::run_pipeline`] 中只「模拟」成功注荷；本层补齐真实执行：
-//! 按子任务顺序把每个 `mox_ai_flow_svc::model::ToolKind` 派发到对应的确定性实现，把上一步输出
+//! 按子任务顺序把每个 `mox_ai_flow_sdk::model::ToolKind` 派发到对应的确定性实现，把上一步输出
 //! 作为下一步输入，并据**真实**执行质量回灌 κ‑τ 引擎（`engine.accept`）。
 //!
 //! 设计要点：
@@ -14,7 +14,7 @@
 //! - 与「可运行/可验证」同源：同一 `dispatch` 被示例、单元测试、集成测试复用。
 
 use anyhow::Result;
-use mox_ai_flow_svc::model::ToolKind;
+use mox_ai_flow_sdk::model::ToolKind;
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -180,7 +180,7 @@ pub fn execute_chain(subtasks: &[SubtaskTriple], seed: &Value) -> (Vec<ExecRecor
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::model::ToolKind;
+    use mox_ai_flow_sdk::model::ToolKind;
 
     #[test]
     fn dispatch_each_toolkind_produces_rows() {

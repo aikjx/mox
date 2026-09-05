@@ -6,11 +6,11 @@
 //! 代码骨架 · 由关联图谱自动生成（mox_flow_primiflow_svc::assoc::primiflow_seed）
 //! 溯源链路: R1 → F4 → B1 → A1 → T3 → C2
 //! 数据设计: S3(Topology)
-//! 说明: κ/τ 预算 + ℛ̂ 裁剪（封装 mox_ai_flow_svc κ‑τ 引擎 validate/regularize）。
+//! 说明: κ/τ 预算 + ℛ̂ 裁剪（封装 mox_ai_flow_sdk κ‑τ 引擎 validate/regularize）。
 //! 规格: primiflow/SPEC.md（§1 滑块映射 / §5 调度算法 / §10 DoD）
 
-use mox_ai_flow_svc::model::FlowGraph;
-use mox_ai_flow_svc::primitive::{
+use mox_ai_flow_sdk::model::FlowGraph;
+use mox_ai_flow_sdk::primitive::{
     regularize as kt_regularize, validate as kt_validate, CandidateTopology, PrimitiveState,
     ResourceBudget, ValidationReport,
 };
@@ -83,8 +83,8 @@ impl Scheduler {
             graph: rt.graph,
             state: rs,
             delta,
-            regularized: report.has(mox_ai_flow_svc::primitive::ViolationKind::CausalCycle)
-                || report.has(mox_ai_flow_svc::primitive::ViolationKind::ResourceQuota),
+            regularized: report.has(mox_ai_flow_sdk::primitive::ViolationKind::CausalCycle)
+                || report.has(mox_ai_flow_sdk::primitive::ViolationKind::ResourceQuota),
             cost_ms,
             budget_ms: budget.total_ms,
         }
@@ -101,7 +101,7 @@ fn total_ms(g: &FlowGraph) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::model::{FlowEdge, FlowNode, ToolKind};
+    use mox_ai_flow_sdk::model::{FlowEdge, FlowNode, ToolKind};
 
     #[test]
     fn slider_extremes_map_correctly() {

@@ -18,8 +18,8 @@ use crate::gen::c7::CanvasState;
 use crate::gen::c8::AsrClient;
 use crate::gen::schema::{Artifact, Asset, Project, Topology, TopologyStatus, TraceLink};
 /// 依赖模块: C4, C2, C3
-use mox_ai_flow_svc::model::FlowGraph;
-use mox_ai_flow_svc::primitive::{KnowledgeBase, PrimitiveState, ResourceBudget};
+use mox_ai_flow_sdk::model::FlowGraph;
+use mox_ai_flow_sdk::primitive::{KnowledgeBase, PrimitiveState, ResourceBudget};
 
 /// 主链路输入：文本需求或音频路径
 #[derive(Debug, Clone)]
@@ -111,7 +111,7 @@ pub struct Orchestrator {
     doc_gen: DocGenerator,
     canvas: CanvasState,
     /// 跨多次运行累积的 κ‑τ 引擎（知识沉淀后复用）
-    engine: mox_ai_flow_svc::primitive::PrimiEngine,
+    engine: mox_ai_flow_sdk::primitive::PrimiEngine,
     /// 预算基准 C
     c_base: f64,
     /// 冻结时机策略（默认 Immediate，融合平台应设为 Deferred）
@@ -135,7 +135,7 @@ impl Orchestrator {
             smoke: SmokeTester::new(),
             doc_gen: DocGenerator::new(),
             canvas: CanvasState::new(),
-            engine: mox_ai_flow_svc::primitive::PrimiEngine::new(
+            engine: mox_ai_flow_sdk::primitive::PrimiEngine::new(
                 c_base,
                 KnowledgeBase::new(),
                 ResourceBudget {
@@ -342,26 +342,26 @@ impl Orchestrator {
         let (asset, _charge) =
             self.assets
                 .freeze_asset(topo_rec.id, name, Domain::BusinessSoftware, &reg.graph);
-        let emer = mox_ai_flow_svc::primitive::EmergenceResult {
-            topology: mox_ai_flow_svc::primitive::CandidateTopology {
+        let emer = mox_ai_flow_sdk::primitive::EmergenceResult {
+            topology: mox_ai_flow_sdk::primitive::CandidateTopology {
                 graph: reg.graph.clone(),
                 reused_subtasks: Vec::new(),
                 explored_subtasks: Vec::new(),
                 fanout: 1,
             },
             state: state.clone(),
-            validation: mox_ai_flow_svc::primitive::ValidationReport {
+            validation: mox_ai_flow_sdk::primitive::ValidationReport {
                 ok: true,
                 violations: Vec::new(),
             },
             charge_estimate: 1.0,
             attempts: 0,
-            status: mox_ai_flow_svc::primitive::EmergeStatus::Validated {
+            status: mox_ai_flow_sdk::primitive::EmergeStatus::Validated {
                 regularized: reg.regularized,
             },
         };
         self.engine
-            .accept(&emer, mox_ai_flow_svc::primitive::Outcome::Success { quality: 0.9 });
+            .accept(&emer, mox_ai_flow_sdk::primitive::Outcome::Success { quality: 0.9 });
 
         let mut topo_rec = topo_rec;
         topo_rec.set_status(TopologyStatus::Frozen);
@@ -535,6 +535,6 @@ mod tests {
             .primi
             .subtasks
             .iter()
-            .any(|s| s.tool == mox_ai_flow_svc::model::ToolKind::Human));
+            .any(|s| s.tool == mox_ai_flow_sdk::model::ToolKind::Human));
     }
 }

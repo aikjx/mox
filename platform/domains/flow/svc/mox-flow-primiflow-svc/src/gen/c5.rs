@@ -11,7 +11,7 @@
 
 use crate::gen::schema::{Artifact, ArtifactKind, Project, Topology, TraceLink};
 /// 依赖模块: C1
-use mox_ai_flow_svc::model::{FlowGraph, NodeKind};
+use mox_ai_flow_sdk::model::{FlowGraph, NodeKind};
 
 /// 数据 DDL（与 `emit_all` 产出的 `ddl.sql` 同源；此处保留本地确定性副本便于离线可跑）
 pub const SCHEMA_DDL: &str = "\
@@ -147,7 +147,7 @@ fn render_code_skeleton(g: &FlowGraph) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::model::{FlowNode, ToolKind};
+    use mox_ai_flow_sdk::model::{FlowNode, ToolKind};
 
     #[test]
     fn generates_all_eight_docs() {

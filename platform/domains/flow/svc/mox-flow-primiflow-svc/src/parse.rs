@@ -14,8 +14,8 @@
 //! 解析采用确定性启发式（关键词分类 + 分句），不依赖外部大模型，保证离线可跑、可复现。
 
 use crate::runner::Spec;
-use mox_ai_flow_svc::model::ToolKind;
-use mox_ai_flow_svc::primitive::DeliveryPolicy;
+use mox_ai_flow_sdk::model::ToolKind;
+use mox_ai_flow_sdk::primitive::DeliveryPolicy;
 
 /// 子任务能力类别：同时作为知识库复用的稳定标识（同类意图命中同一 key，自动抬高 κ）
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

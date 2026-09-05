@@ -8,7 +8,7 @@ description = "PrimiFlow 全域原语智能平台 · 关联图谱驱动的需求
 
 [dependencies]
 mox-platform-foundation = { workspace = true }
-mox-ai-flow-svc = { workspace = true }
+mox-ai-flow-sdk = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

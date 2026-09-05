@@ -34,7 +34,7 @@ pub mod server;
 pub mod gen;
 
 /// 复用 flow-ai 的 κ‑τ 拓扑原语引擎作为底层调度内核
-pub use mox_ai_flow_svc::primitive;
+pub use mox_ai_flow_sdk::primitive;
 
 /// 企业级端到端运行入口与场景规格（示例与集成测试共用）
 pub use runner::{enterprise_specs, run_all, run_pipeline, PipelineReport, Spec, Step};

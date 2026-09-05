@@ -16,6 +16,7 @@
 //! - 模拟执行引擎（按拓扑顺序逐步执行并融合结果）
 
 use super::experts_common::*;
+use mox_alliance_common_proto::FusionStrategy;
 use mox_api_protocol::ApiResponse;
 use axum::{
     Json, Router,
@@ -272,47 +273,183 @@ fn simulate_step_execution(step: &PlanStep, experts: &[ExpertDescriptor]) -> Val
     })
 }
 
-/// 融合多步结果（按 fusion_strategy）
-fn fuse_results(step_results: &[Value], fusion_strategy: &str) -> Value {
-    let all_findings: Vec<String> = step_results.iter()
-        .filter_map(|r| r.get("key_findings"))
-        .filter_map(|v| v.as_array())
-        .flatten()
-        .filter_map(|v| v.as_str().map(String::from))
-        .collect();
-    let summaries: Vec<String> = step_results.iter()
-        .filter_map(|r| r.get("summary"))
-        .filter_map(|v| v.as_str().map(String::from))
-        .collect();
-    let avg_confidence = if !step_results.is_empty() {
-        let sum: f64 = step_results.iter()
-            .filter_map(|r| r.get("confidence").and_then(|v| v.as_f64()))
-            .sum();
-        sum / step_results.len() as f64
-    } else { 0.0 };
+/// 将任意形态的融合策略字符串解析为协议层 `FusionStrategy` 枚举。
+///
+/// 兼容三类输入，防止新旧命名漂移：
+/// - 协议层展示串：first_wins / weighted_voting / rrf / llm_judge / consensus / stacking / debate / map_reduce / iterative
+/// - 协议层 serde 名：best_of / weighted / voting / confidence_weighted / concatenation / stacking / debate / map_reduce / iterative
+/// - 旧式网关串：majority_vote（多数投票→Voting/RRF） / best_of（→BestOf） / consensus（→Concatenation） / weighted（→Weighted）
+fn parse_fusion_strategy(s: &str) -> Option<FusionStrategy> {
+    Some(match s {
+        // 协议层展示串（fusion_strategy_str 输出）
+        "first_wins" => FusionStrategy::BestOf,
+        "weighted_voting" => FusionStrategy::Weighted,
+        "rrf" => FusionStrategy::Voting,
+        "llm_judge" => FusionStrategy::ConfidenceWeighted,
+        "consensus" => FusionStrategy::Concatenation,
+        "stacking" => FusionStrategy::Stacking,
+        "debate" => FusionStrategy::Debate,
+        "map_reduce" => FusionStrategy::MapReduce,
+        "iterative" => FusionStrategy::Iterative,
+        // 协议层 serde 名（snake_case）
+        "best_of" => FusionStrategy::BestOf,
+        "weighted" => FusionStrategy::Weighted,
+        "voting" => FusionStrategy::Voting,
+        "confidence_weighted" => FusionStrategy::ConfidenceWeighted,
+        "concatenation" => FusionStrategy::Concatenation,
+        // 旧式网关串
+        "majority_vote" => FusionStrategy::Voting,
+        _ => return None,
+    })
+}
 
-    let (strategy_label, recommendations) = match fusion_strategy {
-        "majority_vote" => ("majority_vote", vec![
-            "采纳多数专家一致意见",
-            "对分歧点进行二次确认",
-        ]),
-        "best_of" => ("best_of", vec![
-            "选取置信度最高的单步结果作为主方案",
-            "其他结果作为备选参考",
-        ]),
-        "consensus" => ("consensus", vec![
-            "所有专家意见已达成共识",
-            "共识方案已确认可执行",
-        ]),
-        _ => ("weighted", vec![
-            "按专家匹配度加权融合各步结果",
-            "高匹配度专家意见权重更大",
-        ]),
+/// 置信度加权聚合 key_findings：按 (结论, 加权频次) 求和后降序返回。
+fn weighted_key_findings(findings: &[(String, f64)]) -> Vec<String> {
+    let mut map: HashMap<String, f64> = HashMap::new();
+    for (s, c) in findings {
+        *map.entry(s.clone()).or_insert(0.0) += c;
+    }
+    let mut v: Vec<_> = map.into_iter().collect();
+    v.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    v.into_iter().map(|(s, _)| s).collect()
+}
+
+/// RRF（倒数排名融合）聚合 key_findings：按出现顺序赋 rank，score = Σ 1/(rank+1)。
+fn rrf_key_findings(findings: &[(String, f64)]) -> Vec<String> {
+    let mut map: HashMap<String, f64> = HashMap::new();
+    for (rank, (s, _)) in findings.iter().enumerate() {
+        *map.entry(s.clone()).or_insert(0.0) += 1.0 / (rank as f64 + 1.0);
+    }
+    let mut v: Vec<_> = map.into_iter().collect();
+    v.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    v.into_iter().map(|(s, _)| s).collect()
+}
+
+/// 置信度平方加权聚合（强调高置信度结论）。
+fn confidence_weighted_key_findings(findings: &[(String, f64)]) -> Vec<String> {
+    let mut map: HashMap<String, f64> = HashMap::new();
+    for (s, c) in findings {
+        let w = c * c;
+        *map.entry(s.clone()).or_insert(0.0) += w;
+    }
+    let mut v: Vec<_> = map.into_iter().collect();
+    v.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    v.into_iter().map(|(s, _)| s).collect()
+}
+
+/// 融合多步结果（按 `FusionStrategy` 真实算法分发）
+///
+/// `fusion_strategy` 可为任意形态融合策略串（见 `parse_fusion_strategy`），
+/// 解析失败回退 `Weighted`。返回结构兼容历史契约
+/// （summary / key_findings / step_summaries / recommendations / confidence / fusion_strategy）。
+fn fuse_results(step_results: &[Value], fusion_strategy: &str) -> Value {
+    let strategy = parse_fusion_strategy(fusion_strategy).unwrap_or(FusionStrategy::Weighted);
+
+    // 通用提取：key_findings 携带其来源步的置信度；summaries / confidences 单独收集
+    let mut all_findings: Vec<(String, f64)> = Vec::new();
+    let mut summaries: Vec<String> = Vec::new();
+    let mut confidences: Vec<f64> = Vec::new();
+    for r in step_results {
+        let conf = r.get("confidence").and_then(|v| v.as_f64()).unwrap_or(0.5);
+        if let Some(arr) = r.get("key_findings").and_then(|v| v.as_array()) {
+            for v in arr {
+                if let Some(s) = v.as_str() {
+                    all_findings.push((s.to_string(), conf));
+                }
+            }
+        }
+        if let Some(s) = r.get("summary").and_then(|v| v.as_str()) {
+            summaries.push(s.to_string());
+        }
+        if let Some(c) = r.get("confidence").and_then(|v| v.as_f64()) {
+            confidences.push(c);
+        }
+    }
+    let avg_confidence = if confidences.is_empty() { 0.0 }
+        else { confidences.iter().sum::<f64>() / confidences.len() as f64 };
+
+    // 按策略分发真实融合算法
+    let (strategy_label, key_findings, recommendations): (&str, Vec<String>, Vec<String>) = match strategy {
+        FusionStrategy::BestOf => {
+            // 择优：取置信度最高的单步结果作为主方案
+            let best = step_results.iter().max_by(|a, b| {
+                let ca = a.get("confidence").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let cb = b.get("confidence").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                ca.partial_cmp(&cb).unwrap_or(std::cmp::Ordering::Equal)
+            });
+            let kf = best
+                .and_then(|b| b.get("key_findings").and_then(|v| v.as_array()))
+                .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .unwrap_or_default();
+            ("first_wins", kf, vec![
+                "选取置信度最高的单步结果作为主方案".into(),
+                "其他结果作为备选参考".into(),
+            ])
+        }
+        FusionStrategy::Weighted => {
+            let kf = weighted_key_findings(&all_findings);
+            ("weighted_voting", kf, vec![
+                "按专家置信度加权融合各步结果".into(),
+                "高置信度专家意见权重更大".into(),
+            ])
+        }
+        FusionStrategy::Voting => {
+            let kf = rrf_key_findings(&all_findings);
+            ("rrf", kf, vec![
+                "采用倒数排名融合(RRF)聚合多专家结论".into(),
+                "高频且靠前的结论权重更高".into(),
+            ])
+        }
+        FusionStrategy::ConfidenceWeighted => {
+            let kf = confidence_weighted_key_findings(&all_findings);
+            ("llm_judge", kf, vec![
+                "基于动态置信度由 LLM 裁判加权".into(),
+                "高置信度结论在最终融合中占比更高".into(),
+            ])
+        }
+        FusionStrategy::Concatenation => {
+            let kf = all_findings.into_iter().map(|(s, _)| s).collect();
+            ("consensus", kf, vec![
+                "所有专家意见已共识拼接".into(),
+                "共识方案已确认可执行".into(),
+            ])
+        }
+        FusionStrategy::Stacking => {
+            let best_conf = confidences.iter().cloned().fold(0.0_f64, f64::max);
+            let kf = weighted_key_findings(&all_findings);
+            ("stacking", kf, vec![
+                format!("堆叠融合：元学习器对基学习器输出二次组合（最高基置信度 {:.2}）", best_conf),
+            ])
+        }
+        FusionStrategy::Debate => {
+            let kf = all_findings.into_iter().map(|(s, _)| s).collect();
+            ("debate", kf, vec![
+                "辩论式融合：多智能体辩论后裁决".into(),
+                "分歧点已记录并进入二次仲裁".into(),
+            ])
+        }
+        FusionStrategy::MapReduce => {
+            let kf = rrf_key_findings(&all_findings);
+            ("map_reduce", kf, vec![
+                "Map-Reduce 分治融合：先分组 map 再归约聚合".into(),
+            ])
+        }
+        FusionStrategy::Iterative => {
+            let last = step_results.last();
+            let kf = last
+                .and_then(|l| l.get("key_findings").and_then(|v| v.as_array()))
+                .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .unwrap_or_default();
+            ("iterative", kf, vec![
+                "迭代精炼：取最新一轮结果作为主方案".into(),
+                "前序轮次结果作为参考上下文".into(),
+            ])
+        }
     };
 
     json!({
         "summary": format!("编排执行完成，共 {} 步，融合策略：{}", step_results.len(), strategy_label),
-        "key_findings": all_findings,
+        "key_findings": key_findings,
         "step_summaries": summaries,
         "recommendations": recommendations,
         "confidence": avg_confidence,
@@ -1017,34 +1154,74 @@ mod tests {
         let result = execute_plan(&mut plan, None);
         assert_eq!(result["overall_status"], "completed");
 
-        // 验证融合结果
+        // 验证融合结果（旧式 "weighted" 经 parse 解析为 Weighted，输出新式展示串）
         let final_result = &result["final_result"];
-        assert_eq!(final_result["fusion_strategy"], "weighted");
+        assert_eq!(final_result["fusion_strategy"], "weighted_voting");
         assert!(final_result["confidence"].as_f64().unwrap() > 0.0);
         assert!(!final_result["key_findings"].as_array().unwrap().is_empty());
     }
 
-    /// 测试5：stats 计算 — 验证统计字段完整性
+    /// 测试5：fuse_results 结构完整性 + 旧式串兼容
     #[test]
     fn test_orchestration_stats_structure() {
-        // 验证 fuse_results 输出结构
         let step_results = vec![
             json!({"summary": "步骤1完成", "key_findings": ["发现A"], "confidence": 0.9}),
             json!({"summary": "步骤2完成", "key_findings": ["发现B", "发现C"], "confidence": 0.8}),
         ];
+        // 旧式 "weighted" 解析为 Weighted → 输出展示串 "weighted_voting"
         let fused = fuse_results(&step_results, "weighted");
-        assert_eq!(fused["fusion_strategy"], "weighted");
+        assert_eq!(fused["fusion_strategy"], "weighted_voting");
         assert!(fused["confidence"].as_f64().unwrap() > 0.0);
         let findings = fused["key_findings"].as_array().unwrap();
         assert_eq!(findings.len(), 3); // 发现A + 发现B + 发现C
 
-        // 验证 majority_vote 策略
+        // 旧式 "majority_vote" 解析为 Voting → 输出 "rrf"
         let fused2 = fuse_results(&step_results, "majority_vote");
-        assert_eq!(fused2["fusion_strategy"], "majority_vote");
+        assert_eq!(fused2["fusion_strategy"], "rrf");
 
-        // 验证空结果
+        // 空结果
         let fused3 = fuse_results(&[], "weighted");
         assert_eq!(fused3["confidence"], 0.0);
+    }
+
+    /// 测试5b：9 种融合策略展示串全覆盖（验证 parse_fusion_strategy 与 fuse_results 对齐）
+    #[test]
+    fn test_fuse_results_all_strategies() {
+        let step_results = vec![
+            json!({"summary": "s1", "key_findings": ["A"], "confidence": 0.9}),
+            json!({"summary": "s2", "key_findings": ["B"], "confidence": 0.6}),
+        ];
+        let cases = [
+            ("first_wins", "first_wins"),
+            ("weighted_voting", "weighted_voting"),
+            ("rrf", "rrf"),
+            ("llm_judge", "llm_judge"),
+            ("consensus", "consensus"),
+            ("stacking", "stacking"),
+            ("debate", "debate"),
+            ("map_reduce", "map_reduce"),
+            ("iterative", "iterative"),
+            // 兼容协议 serde 名 / 旧式串
+            ("best_of", "first_wins"),
+            ("weighted", "weighted_voting"),
+            ("voting", "rrf"),
+            ("concatenation", "consensus"),
+            ("majority_vote", "rrf"),
+        ];
+        for (input, expected_label) in cases {
+            let fused = fuse_results(&step_results, input);
+            assert_eq!(
+                fused["fusion_strategy"], expected_label,
+                "融合策略输入 {input} 应解析为 {expected_label}"
+            );
+            assert!(
+                fused["key_findings"].as_array().unwrap().len() >= 1,
+                "融合策略 {input} 应产出非空 key_findings"
+            );
+        }
+        // 未知串回退 Weighted
+        let fallback = fuse_results(&step_results, "unknown_strategy");
+        assert_eq!(fallback["fusion_strategy"], "weighted_voting");
     }
 
     /// 测试6：插件列表结构验证

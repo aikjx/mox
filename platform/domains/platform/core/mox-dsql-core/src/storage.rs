@@ -1,4 +1,4 @@
-// mox-dsql-core 存储层：SQL定义的CRUD操作
+﻿// mox-dsql-core 存储层：SQL定义的CRUD操作
 use crate::engine::SqlEngine;
 use crate::error::{DsqlError, DsqlResult};
 use crate::model::*;
@@ -343,6 +343,185 @@ impl DsqlStorage {
         Ok(())
     }
 
+
+    /// 分页查询审计日志
+    pub fn list_audit_logs(&self, query: &AuditLogQuery) -> DsqlResult<PageResult<AuditLog>> {
+        let conn = self.conn.lock();
+        let mut where_clauses = vec![];
+        let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = vec![];
+
+        if let Some(sql_code) = &query.sql_code {
+            where_clauses.push("sql_code = ?");
+            params_vec.push(Box::new(sql_code.clone()));
+        }
+        if let Some(ds) = &query.datasource_code {
+            where_clauses.push("datasource_code = ?");
+            params_vec.push(Box::new(ds.clone()));
+        }
+        if let Some(tid) = &query.trace_id {
+            where_clauses.push("trace_id = ?");
+            params_vec.push(Box::new(tid.clone()));
+        }
+        if let Some(s) = query.success {
+            where_clauses.push("success = ?");
+            params_vec.push(Box::new(s));
+        }
+        if let Some(slow) = query.is_slow {
+            where_clauses.push("is_slow = ?");
+            params_vec.push(Box::new(slow));
+        }
+        if let Some(ch) = query.cache_hit {
+            where_clauses.push("cache_hit = ?");
+            params_vec.push(Box::new(ch));
+        }
+        if let Some(st) = &query.start_time {
+            where_clauses.push("created_at >= ?");
+            params_vec.push(Box::new(st.clone()));
+        }
+        if let Some(et) = &query.end_time {
+            where_clauses.push("created_at <= ?");
+            params_vec.push(Box::new(et.clone()));
+        }
+
+        let where_sql = if where_clauses.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", where_clauses.join(" AND "))
+        };
+
+        // 总数
+        let count_sql = format!("SELECT COUNT(*) FROM dsql_audit_log {where_sql}");
+        let total: i64 = conn.query_row(&count_sql, rusqlite::params_from_iter(params_vec.iter()), |r| r.get(0))
+            .map_err(|e| DsqlError::StorageError(format!("audit count: {e}")))?;
+
+        // 分页查询
+        let offset = (query.page - 1) * query.page_size;
+        let data_sql = format!(
+            "SELECT id, trace_id, sql_code, datasource_code, params, row_count,
+                    duration_ms, success, error_msg, is_slow, cache_hit, created_at
+             FROM dsql_audit_log {where_sql}
+             ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        );
+        let mut stmt = conn.prepare(&data_sql)
+            .map_err(|e| DsqlError::StorageError(format!("audit prepare: {e}")))?;
+        let mut final_params: Vec<Box<dyn rusqlite::ToSql>> = params_vec;
+        final_params.push(Box::new(query.page_size));
+        final_params.push(Box::new(offset));
+
+        let items: Vec<AuditLog> = stmt.query_map(rusqlite::params_from_iter(final_params.iter()), |r| {
+            Ok(AuditLog {
+                id: r.get(0)?,
+                trace_id: r.get(1)?,
+                sql_code: r.get(2)?,
+                datasource_code: r.get(3)?,
+                params: r.get(4)?,
+                row_count: r.get(5)?,
+                duration_ms: r.get(6)?,
+                success: r.get(7)?,
+                error_msg: r.get(8)?,
+                is_slow: r.get(9)?,
+                cache_hit: r.get(10)?,
+                created_at: r.get(11)?,
+            })
+        })
+        .map_err(|e| DsqlError::StorageError(format!("audit query: {e}")))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+        Ok(PageResult {
+            items,
+            total,
+            page: query.page,
+            page_size: query.page_size,
+        })
+    }
+
+    /// 获取单条审计日志
+    pub fn get_audit_log(&self, id: i64) -> DsqlResult<Option<AuditLog>> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT id, trace_id, sql_code, datasource_code, params, row_count,
+                    duration_ms, success, error_msg, is_slow, cache_hit, created_at
+             FROM dsql_audit_log WHERE id = ?1",
+            params![id],
+            |r| Ok(AuditLog {
+                id: r.get(0)?,
+                trace_id: r.get(1)?,
+                sql_code: r.get(2)?,
+                datasource_code: r.get(3)?,
+                params: r.get(4)?,
+                row_count: r.get(5)?,
+                duration_ms: r.get(6)?,
+                success: r.get(7)?,
+                error_msg: r.get(8)?,
+                is_slow: r.get(9)?,
+                cache_hit: r.get(10)?,
+                created_at: r.get(11)?,
+            }),
+        )
+        .optional()
+        .map_err(|e| DsqlError::StorageError(format!("get audit: {e}")))
+    }
+
+    /// 审计统计
+    pub fn audit_stats(&self, start_time: Option<&str>, end_time: Option<&str>) -> DsqlResult<AuditStats> {
+        let conn = self.conn.lock();
+        let mut where_clauses = vec![];
+        let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = vec![];
+
+        if let Some(st) = start_time {
+            where_clauses.push("created_at >= ?");
+            params_vec.push(Box::new(st.to_string()));
+        }
+        if let Some(et) = end_time {
+            where_clauses.push("created_at <= ?");
+            params_vec.push(Box::new(et.to_string()));
+        }
+
+        let where_sql = if where_clauses.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", where_clauses.join(" AND "))
+        };
+
+        let sql = format!(
+            "SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as success_count,
+                SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_count,
+                SUM(CASE WHEN is_slow = 1 THEN 1 ELSE 0 END) as slow_count,
+                SUM(CASE WHEN cache_hit = 1 THEN 1 ELSE 0 END) as cache_hit_count,
+                AVG(duration_ms) as avg_duration,
+                MAX(duration_ms) as max_duration,
+                COALESCE(SUM(row_count), 0) as total_rows
+             FROM dsql_audit_log {where_sql}"
+        );
+
+        let (total, success_count, failed_count, slow_count, cache_hit_count, avg_duration, max_duration, total_rows):
+            (i64, i64, i64, i64, i64, Option<f64>, Option<i64>, i64) =
+            conn.query_row(&sql, rusqlite::params_from_iter(params_vec.iter()), |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?, r.get(6)?, r.get(7)?))
+            })
+            .map_err(|e| DsqlError::StorageError(format!("audit stats: {e}")))?;
+
+        let success_rate = if total > 0 { (success_count as f64 / total as f64) * 100.0 } else { 0.0 };
+        let cache_hit_rate = if total > 0 { (cache_hit_count as f64 / total as f64) * 100.0 } else { 0.0 };
+
+        Ok(AuditStats {
+            total_count: total,
+            success_count,
+            failed_count,
+            success_rate,
+            slow_count,
+            cache_hit_count,
+            cache_hit_rate,
+            avg_duration_ms: avg_duration.unwrap_or(0.0),
+            max_duration_ms: max_duration.unwrap_or(0),
+            total_row_count: total_rows,
+            start_time: start_time.unwrap_or("-").to_string(),
+            end_time: end_time.unwrap_or("-").to_string(),
+        })
+    }
     // ==================== 动态流程管理 ====================
 
     /// 创建动态流程定义。流程步骤以 JSON 保存，便于跨数据库迁移和版本化。

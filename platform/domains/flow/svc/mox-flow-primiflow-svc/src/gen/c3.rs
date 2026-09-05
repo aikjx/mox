@@ -11,7 +11,7 @@
 
 use crate::gen::c4::Domain;
 use crate::gen::schema::Asset;
-use mox_ai_flow_svc::model::FlowGraph;
+use mox_ai_flow_sdk::model::FlowGraph;
 
 /// embedding 维度（生产用 pgvector 1536，本地用 512 维哈希向量做离线可跑）
 const EMBED_DIM: usize = 512;
@@ -104,9 +104,9 @@ impl AssetService {
 
     /// 将已冻结资产沉淀为 κ‑τ 引擎可用的知识库，供下一次涌现时检索复用。
     /// 资产名 + 节点名作为关键词实体，命中后 `generate` 会把对应子任务实例化为 SubFlow。
-    pub fn to_knowledge_base(&self) -> mox_ai_flow_svc::primitive::KnowledgeBase {
-        use mox_ai_flow_svc::primitive::KnowledgeBase;
-        use mox_ai_flow_svc::topology::{Entity, EntityKind, Relation, RelationKind};
+    pub fn to_knowledge_base(&self) -> mox_ai_flow_sdk::primitive::KnowledgeBase {
+        use mox_ai_flow_sdk::primitive::KnowledgeBase;
+        use mox_ai_flow_sdk::topology::{Entity, EntityKind, Relation, RelationKind};
         let mut kb = KnowledgeBase::new();
         for (asset, _) in &self.store {
             let skill_id = format!("skill:asset:{}", asset.id);
@@ -116,7 +116,7 @@ impl AssetService {
                         .with_keywords([asset.name.clone()]),
                 );
             }
-            if let Ok(g) = serde_json::from_str::<mox_ai_flow_svc::model::FlowGraph>(&asset.graph_json) {
+            if let Ok(g) = serde_json::from_str::<mox_ai_flow_sdk::model::FlowGraph>(&asset.graph_json) {
                 for n in g.nodes {
                     if n.kind.is_executable() {
                         let fid = format!("flow:asset:{}:{}", asset.id, n.id);
@@ -199,7 +199,7 @@ fn fxhash_seeded(s: &str, seed: u64) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::model::{FlowEdge, FlowNode, ToolKind};
+    use mox_ai_flow_sdk::model::{FlowEdge, FlowNode, ToolKind};
 
     fn sample_graph() -> FlowGraph {
         let mut g = FlowGraph::new("topo:r1", "电商月度经营分析报告");

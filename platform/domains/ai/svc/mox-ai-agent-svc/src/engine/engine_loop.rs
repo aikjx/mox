@@ -19,7 +19,7 @@ use super::state_machine::{EngineEvent, EngineFSM, EngineState};
 use super::tools::{tool_type_to_name, ToolRegistry};
 use crate::browser_automation::{BrowserAction, BrowserAutomationEngine};
 use crate::llm_client::{LLMChatMessage, LLMClient};
-use mox_kg_hub_svc::consolidator::{EngineTrace, TraceConsolidator};
+use mox_kg_sdk::consolidator::{EngineTrace, TraceConsolidator};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -83,7 +83,7 @@ pub struct Engine {
     config: EngineConfig,
     step_count: u64,
     budget_used: f64,
-    consolidation_result: Option<mox_kg_hub_svc::consolidator::ConsolidationResult>,
+    consolidation_result: Option<mox_kg_sdk::consolidator::ConsolidationResult>,
     plan_step_index: usize,
     llm_client: Option<Arc<RwLock<LLMClient>>>,
     strong_model_client: Option<Arc<RwLock<LLMClient>>>,
@@ -155,7 +155,7 @@ impl Engine {
         self.fsm.current_state()
     }
 
-    pub fn consolidation_result(&self) -> Option<&mox_kg_hub_svc::consolidator::ConsolidationResult> {
+    pub fn consolidation_result(&self) -> Option<&mox_kg_sdk::consolidator::ConsolidationResult> {
         self.consolidation_result.as_ref()
     }
 

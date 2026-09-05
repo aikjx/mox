@@ -97,7 +97,10 @@ impl RemoteAllianceClient {
         path: &str,
         body: Option<&Value>,
     ) -> Option<Result<(u16, Value), String>> {
-        let base = base?;
+        let base = match base {
+            Some(base) => base,
+            None => return Some(Err("联盟服务地址未完整配置".into())),
+        };
         let url = format!("{}{}", base.trim_end_matches('/'), path);
         let mut req = self.http.request(method, &url);
         if let Some(b) = body {
@@ -149,6 +152,46 @@ impl RemoteAllianceClient {
 
 fn non_empty_env(key: &str) -> Option<String> {
     std::env::var(key).ok().filter(|v| !v.trim().is_empty())
+}
+
+/// Readiness is distinct from the gateway process being alive.
+pub async fn runtime_readiness(
+    axum::extract::State(state): axum::extract::State<std::sync::Arc<crate::alliance::AllianceGatewayState>>,
+) -> ApiResponse<Value> {
+    let Some(client) = &state.remote else {
+        return api_ok(json!({"execution_ready":false,"mode":"local_preview",
+            "message":"任务执行服务尚未连接。请启动联盟调度器和执行器后刷新。"}));
+    };
+    let (scheduler, executor) = tokio::join!(client.scheduler_get("/health"), client.executor_get("/health"));
+    let healthy = |result: &Option<Result<(u16, Value), String>>| {
+        matches!(result, Some(Ok((200, body))) if body["status"] == "healthy")
+    };
+    let ready = healthy(&scheduler) && healthy(&executor);
+    api_ok(json!({"execution_ready":ready,"mode":"remote",
+        "scheduler_ready":healthy(&scheduler),"executor_ready":healthy(&executor),
+        "message":if ready {"任务服务已就绪"} else {"任务服务暂时不可用，请检查服务后刷新。"}}))
+}
+
+/// The executor currently exposes node snapshots, not an event-log API. Report
+/// those real snapshots explicitly instead of manufacturing local task logs.
+pub async fn remote_task_logs(
+    state: &crate::alliance::AllianceGatewayState, task_id: Uuid,
+) -> Option<ApiResponse<Value>> {
+    let response = state.remote.as_ref()?.executor_get(&format!("/tasks/{task_id}/nodes")).await?;
+    let body = match response {
+        Ok((status, body)) if (200..300).contains(&status) => body,
+        Ok((status, body)) => return Some(http_err(status, &body, "执行记录读取失败".into())),
+        Err(error) => return transport_fallback("task_logs", error),
+    };
+    let logs: Vec<Value> = body["nodes"].as_array().into_iter().flatten().enumerate().map(|(index, node)| {
+        json!({"seq":index,"node_id":node["node_id"],
+            "ts":node.get("completed_at").filter(|v| !v.is_null()).unwrap_or(&node["started_at"]),
+            "level":if node["status"] == "failed" {"ERROR"} else {"INFO"},
+            "message":format!("{} · {}{}", node["name"].as_str().unwrap_or("专家节点"),
+                node["status"].as_str().unwrap_or("unknown"),
+                node["error_message"].as_str().map(|e| format!("：{e}")).unwrap_or_default())})
+    }).collect();
+    Some(api_ok(json!({"data":{"task_id":task_id,"source":"executor_snapshot","logs":logs}})))
 }
 
 // ====================================================================
@@ -803,5 +846,34 @@ mod lifecycle_tests {
         }
         assert_eq!(effective_task_status(&json!({"status":"paused"}), &json!({"status":"completed"})), "paused");
         assert_eq!(effective_task_status(&json!({"status":"running"}), &json!({"progress":1.0})), "running");
+    }
+
+    /// norm_mode：proto 串 → 网关展示串（含直通项）
+    #[test]
+    fn test_norm_mode_covers_all_variants() {
+        assert_eq!(norm_mode("sequential").as_str(), Some("single_expert"));
+        assert_eq!(norm_mode("parallel").as_str(), Some("expert_alliance"));
+        assert_eq!(norm_mode("iterative").as_str(), Some("human_in_loop"));
+        assert_eq!(norm_mode("hierarchical").as_str(), Some("autonomous"));
+        // 直通项
+        assert_eq!(norm_mode("debate").as_str(), Some("debate"));
+        assert_eq!(norm_mode("voting").as_str(), Some("voting"));
+        assert_eq!(norm_mode("unknown_x").as_str(), Some("unknown_x"));
+    }
+
+    /// norm_fusion：proto 串 → 网关展示串（含直通项）
+    #[test]
+    fn test_norm_fusion_covers_all_variants() {
+        assert_eq!(norm_fusion("best_of").as_str(), Some("first_wins"));
+        assert_eq!(norm_fusion("weighted").as_str(), Some("weighted_voting"));
+        assert_eq!(norm_fusion("voting").as_str(), Some("rrf"));
+        assert_eq!(norm_fusion("confidence_weighted").as_str(), Some("llm_judge"));
+        assert_eq!(norm_fusion("concatenation").as_str(), Some("consensus"));
+        // 直通项
+        assert_eq!(norm_fusion("stacking").as_str(), Some("stacking"));
+        assert_eq!(norm_fusion("debate").as_str(), Some("debate"));
+        assert_eq!(norm_fusion("map_reduce").as_str(), Some("map_reduce"));
+        assert_eq!(norm_fusion("iterative").as_str(), Some("iterative"));
+        assert_eq!(norm_fusion("unknown_y").as_str(), Some("unknown_y"));
     }
 }

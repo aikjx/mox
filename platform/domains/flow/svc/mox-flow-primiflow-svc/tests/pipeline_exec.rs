@@ -6,8 +6,8 @@
 //! 端到端验证：需求 → κτ 涌现 → **真实执行算子** → 注荷 → 落盘。
 //! 证明 `run_pipeline` 不再模拟成功，而是真跑每条子任务并把质量回灌引擎。
 
-use mox_ai_flow_svc::model::ToolKind;
-use mox_ai_flow_svc::primitive::{DeliveryPolicy, KnowledgeBase, PrimiEngine};
+use mox_ai_flow_sdk::model::ToolKind;
+use mox_ai_flow_sdk::primitive::{DeliveryPolicy, KnowledgeBase, PrimiEngine};
 use mox_flow_primiflow_svc::assoc::AssocGraph;
 use mox_flow_primiflow_svc::runner::{enterprise_specs, run_all, run_pipeline, Spec};
 
@@ -15,7 +15,7 @@ fn fresh_engine() -> PrimiEngine {
     PrimiEngine::new(
         1.0,
         KnowledgeBase::new(),
-        mox_ai_flow_svc::primitive::ResourceBudget::default(),
+        mox_ai_flow_sdk::primitive::ResourceBudget::default(),
     )
 }
 

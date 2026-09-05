@@ -23,7 +23,7 @@ pub use guards::{
     BudgetGuard, CompositeGuard, Guard, GuardContext, GuardResult, ProgressGuard, RiskGuard,
     RiskLevel,
 };
-pub use mox_kg_hub_svc::consolidator::ConsolidationResult;
+pub use mox_kg_sdk::consolidator::ConsolidationResult;
 pub use multi_agent::{AgentRole, MultiAgentOrchestrator, SubAgent};
 pub use state_machine::{transition_table, EngineEvent, EngineFSM, EngineState};
 pub use tools::{

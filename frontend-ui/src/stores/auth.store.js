@@ -6,6 +6,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import authApi from '../api/auth'
+import { registerAuthTokenGetter } from '../api/http'
+import { getToken, removeToken } from '../utils/secureStorage'
 
 // 本地存储键名
 const TOKEN_KEY = 'mox_access_token'
@@ -14,11 +16,12 @@ const USER_KEY = 'mox_user_info'
 
 export const useAuthStore = defineStore('auth', () => {
   // ── 状态 ──────────────────────────────────────────────────────────────
-  const accessToken = ref(localStorage.getItem(TOKEN_KEY) || '')
+  const accessToken = ref(localStorage.getItem(TOKEN_KEY) || getToken() || '')
   const refreshToken = ref(localStorage.getItem(REFRESH_TOKEN_KEY) || '')
   const userInfo = ref(JSON.parse(localStorage.getItem(USER_KEY) || 'null'))
   const loading = ref(false)
   const error = ref('')
+  registerAuthTokenGetter(() => accessToken.value)
 
   // ── 计算属性 ──────────────────────────────────────────────────────────
   const isLoggedIn = computed(() => !!accessToken.value)
@@ -29,6 +32,28 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = computed(() => roles.value.includes('admin'))
 
   // ── 方法 ──────────────────────────────────────────────────────────────
+  // 已有令牌须通过受保护接口验证；仅保存在当前页面内存，刷新后重新连接。
+  async function loginWithToken(token) {
+    if (loading.value) return
+    loading.value = true
+    error.value = ''
+    try {
+      const value = token.trim()
+      if (!value) throw new Error('请输入访问令牌')
+      let user = await authApi.getCurrentUser(value)
+      for (let i = 0; i < 4 && user?.data; i++) user = user.data
+      if (!user?.id || !user.enabled) throw new Error('当前身份不可用')
+      clearAuth()
+      accessToken.value = value
+      userInfo.value = user
+      return user
+    } catch (err) {
+      error.value = err.message || '令牌验证失败'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
 
   /**
    * 登录
@@ -132,6 +157,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
+    removeToken()
   }
 
   /**
@@ -173,6 +199,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     // 方法
     login,
+    loginWithToken,
     refreshAccessToken,
     fetchCurrentUser,
     logout,

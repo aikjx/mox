@@ -27,6 +27,7 @@ default-members = [
     "platform/domains/project/svc/mox-project-graph-svc",
 ]
 members = [
+    "platform/domains/ai/sdk/mox-ai-flow-sdk",
     "platform/domains/platform/core/mox-platform-model-core",
     "platform/domains/platform/core/mox-platform-graph-core",
     "platform/arch-test",
@@ -203,6 +204,7 @@ authors = ["Mox"]
 description = "Unified Operator System - AI-Driven Full-Dimensional Breakthrough Platform"
 
 [workspace.dependencies]
+mox-ai-flow-sdk = { path = "platform/domains/ai/sdk/mox-ai-flow-sdk" }
 mox-platform-model-core = { path = "platform/domains/platform/core/mox-platform-model-core" }
 mox-platform-graph-core = { path = "platform/domains/platform/core/mox-platform-graph-core" }
 # Core dependencies

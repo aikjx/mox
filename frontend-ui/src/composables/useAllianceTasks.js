@@ -16,12 +16,14 @@ export function useAllianceTasks(api, { intervalMs = 2000 } = {}) {
   let selectionVersion = 0, listVersion = 0, disposed = false, timer = null, polling = false, pollEnabled = false
   const message = error => error?.message || '服务暂时不可用，请重试'
 
-  async function selectTask(task) {
+  async function selectTask(task, quiet = false) {
+    const sameTask = selectedTask.value?.id === task?.id
     const version = ++selectionVersion
     selectedTask.value = task
-    logs.value = []; fusionResult.value = null; dagNodesData.value = []; dagEdgesData.value = []
+    if (!sameTask) { logs.value = []; fusionResult.value = null; dagNodesData.value = []; dagEdgesData.value = [] }
+    if (task?.status !== 'completed') fusionResult.value = null
     logsError.value = ''; fusionError.value = ''; dagError.value = ''
-    logsLoading.value = !!task; dagLoading.value = !!task; fusionLoading.value = task?.status === 'completed'
+    logsLoading.value = !!task && !quiet; dagLoading.value = !!task && !quiet; fusionLoading.value = task?.status === 'completed' && !quiet
     if (!task) return
     const current = () => !disposed && version === selectionVersion
     await Promise.all([
@@ -61,7 +63,7 @@ export function useAllianceTasks(api, { intervalMs = 2000 } = {}) {
     if (!current) return
     current.status = status.status
     current.progress = status.progress
-    if (selectedTask.value?.id === task.id) await selectTask(current)
+    if (selectedTask.value?.id === task.id) await selectTask(current, true)
   }
 
   async function performAction(action) {

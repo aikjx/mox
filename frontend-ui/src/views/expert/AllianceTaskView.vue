@@ -7,7 +7,7 @@
           <h2 class="list-title">联盟任务</h2>
           <p class="list-subtitle">描述目标，让专家协作完成任务</p>
         </div>
-        <el-button type="primary" size="small" @click="showCreate = true">
+        <el-button type="primary" size="small" @click="showCreate = true" :disabled="!runtimeReady">
           <el-icon><Plus /></el-icon> 新建任务
         </el-button>
       </div>
@@ -27,7 +27,8 @@
       </div>
 
       <el-alert v-if="tasksError" type="error" :closable="false" show-icon title="任务列表加载失败" :description="tasksError" style="margin-bottom:8px" />
-      <el-button size="small" :loading="tasksLoading" @click="loadTasks()">刷新任务</el-button>
+      <el-button size="small" :loading="tasksLoading || runtimeLoading" @click="refreshWorkspace">刷新任务</el-button>
+      <el-alert v-if="!runtimeReady" type="warning" :closable="false" :title="runtimeMessage" style="margin-top:8px" />
       <el-alert v-if="pollError" type="warning" :closable="false" :title="pollError" style="margin-top:8px" />
 
       <!-- 任务列表 -->
@@ -175,10 +176,11 @@
       <!-- 日志 -->
       <div class="logs-section" v-loading="logsLoading">
         <div class="section-header">
-          <h4 class="section-title"><el-icon><Document /></el-icon> 执行日志</h4>
-          <el-button size="small" text @click="clearLogs">清空</el-button>
+          <h4 class="section-title"><el-icon><Document /></el-icon> 执行记录</h4>
+          <el-button size="small" text @click="clearLogs">清空显示</el-button>
         </div>
-        <el-alert v-if="logsError" type="error" :closable="false" show-icon title="执行日志加载失败" style="margin-bottom:8px" />
+        <el-alert v-if="logsError" type="error" :closable="false" show-icon title="执行记录加载失败" style="margin-bottom:8px" />
+        <p class="form-hint">执行记录来自节点最新状态；完整过程以服务审计日志为准。</p>
         <div class="logs-container" ref="logsContainer">
           <div
             v-for="(log, i) in logs"
@@ -301,9 +303,9 @@ const dagNodes = computed(() => dagNodesData.value || [])
 const dagEdges = computed(() => dagEdgesData.value || [])
 const dagWidth = computed(() => Math.max(740, ...dagNodes.value.map(n => n.x + 90)))
 const dagHeight = computed(() => Math.max(140, ...dagNodes.value.map(n => n.y + 60)))
-const canResume = computed(() => taskActions.resume.has(selectedTask.value?.status))
-const canPause = computed(() => taskActions.pause.has(selectedTask.value?.status))
-const canCancel = computed(() => taskActions.cancel.has(selectedTask.value?.status))
+const canResume = computed(() => runtimeReady.value && taskActions.resume.has(selectedTask.value?.status))
+const canPause = computed(() => runtimeReady.value && taskActions.pause.has(selectedTask.value?.status))
+const canCancel = computed(() => runtimeReady.value && taskActions.cancel.has(selectedTask.value?.status))
 const getStatusCount = key => key === 'all' ? tasks.value.length : tasks.value.filter(t => t.status === key).length
 const statusLabel = status => ({ pending: '待处理', planning: '规划中', ready: '已就绪', running: '运行中', paused: '已暂停', completed: '已完成', failed: '失败', cancelled: '已取消', unknown: '状态待确认' }[status] || status)
 const getPriority = task => task.priority || 'normal'
@@ -312,7 +314,7 @@ const getAssignee = task => task.assignee || '自动匹配专家'
 const getDueDate = task => task.due_date || '--'
 
 async function createTask() {
-  if (creating.value) return
+  if (creating.value || !runtimeReady.value) return
   if (!newTask.name.trim() || !newTask.description.trim()) {
     ElMessage.warning('请填写任务名称和具体目标')
     return
@@ -352,7 +354,18 @@ async function sendAiMessage() {
   } catch (error) { aiMessages.value.push({ role: 'assistant', content: `暂时无法分析：${error.message}。可以重试，任务执行不受影响。` }) }
   finally { aiLoading.value = false }
 }
-onMounted(async () => { await loadTasks(); startPolling() })
+const runtimeReady = ref(false), runtimeLoading = ref(false), runtimeMessage = ref('正在检查任务服务…')
+async function checkRuntime() {
+  runtimeLoading.value = true
+  try {
+    const status = await api.getAllianceRuntime()
+    runtimeReady.value = status.execution_ready === true
+    runtimeMessage.value = status.message || '任务执行服务尚未就绪'
+  } catch (error) { runtimeReady.value = false; runtimeMessage.value = `无法检查任务服务：${error.message}` }
+  finally { runtimeLoading.value = false }
+}
+async function refreshWorkspace() { await Promise.all([loadTasks(), checkRuntime()]) }
+onMounted(async () => { await refreshWorkspace(); startPolling() })
 onBeforeUnmount(dispose)
 </script>
 

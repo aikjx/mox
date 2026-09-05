@@ -10,7 +10,7 @@
 //! 规格: primiflow/SPEC.md（§9 风险缓解 / §10 DoD）
 
 /// 依赖模块: C4
-use mox_ai_flow_svc::model::{FlowGraph, NodeKind};
+use mox_ai_flow_sdk::model::{FlowGraph, NodeKind};
 
 /// 单条 schema 校验结果
 #[derive(Debug, Clone)]
@@ -140,7 +140,7 @@ impl SmokeTester {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::model::{FlowEdge, FlowNode, ToolKind};
+    use mox_ai_flow_sdk::model::{FlowEdge, FlowNode, ToolKind};
 
     #[test]
     fn clean_graph_passes_smoke() {

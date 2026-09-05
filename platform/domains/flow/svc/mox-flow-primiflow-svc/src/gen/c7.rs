@@ -11,8 +11,8 @@
 
 use crate::gen::c2::RegularizeOutput;
 use crate::gen::c2::Scheduler;
-use mox_ai_flow_svc::model::{FlowEdge, FlowGraph, FlowNode};
-use mox_ai_flow_svc::primitive::{PrimitiveState, ResourceBudget};
+use mox_ai_flow_sdk::model::{FlowEdge, FlowGraph, FlowNode};
+use mox_ai_flow_sdk::primitive::{PrimitiveState, ResourceBudget};
 
 /// 画布编辑操作
 #[derive(Debug, Clone)]
@@ -123,8 +123,8 @@ impl CanvasState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::model::{NodeKind, ToolKind};
-    use mox_ai_flow_svc::primitive::DeliveryPolicy;
+    use mox_ai_flow_sdk::model::{NodeKind, ToolKind};
+    use mox_ai_flow_sdk::primitive::DeliveryPolicy;
 
     #[test]
     fn edit_adds_node_and_history() {

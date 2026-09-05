@@ -1,0 +1,9 @@
+[package]
+name = "mox-ai-flow-sdk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Public embedded client API for AI flow optimization; no service or CLI dependency"
+
+[dependencies]
+mox-ai-flow-core = { workspace = true }

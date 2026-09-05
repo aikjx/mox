@@ -3820,7 +3820,7 @@ dependencies = [
  "chrono",
  "mox-ai-flow-svc",
  "mox-kg-algo-core",
- "mox-kg-hub-svc",
+ "mox-kg-sdk",
  "mox-market-template-svc",
  "mox-platform-foundation",
  "mox-platform-operator-core",
@@ -3964,6 +3964,13 @@ dependencies = [
  "mox-platform-foundation",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "mox-ai-flow-sdk"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "mox-ai-flow-core",
 ]
 
 [[package]]
@@ -5156,7 +5163,7 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
- "mox-ai-flow-svc",
+ "mox-ai-flow-sdk",
  "mox-platform-foundation",
  "mox-platform-system-core",
  "reqwest",
@@ -5460,6 +5467,7 @@ dependencies = [
  "anyhow",
  "axum",
  "mox-kg-algo-core",
+ "mox-kg-sdk",
  "mox-platform-foundation",
  "mox-platform-graph-core",
  "serde",
@@ -5501,6 +5509,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

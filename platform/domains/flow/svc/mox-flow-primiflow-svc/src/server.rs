@@ -45,7 +45,7 @@ use crate::assoc::AssocGraph;
 use crate::parse::parse;
 use crate::persistence::Persistence;
 use crate::runner::{run_pipeline, PipelineReport};
-use mox_ai_flow_svc::primitive::{PrimiEngine, ResourceBudget};
+use mox_ai_flow_sdk::primitive::{PrimiEngine, ResourceBudget};
 
 /// 共享应用状态（跨请求保持引擎闭环节点状态与六维溯源主图）
 pub struct AppState {

@@ -19,8 +19,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use chrono::Utc;
-use mox_ai_flow_svc::primitive::{KnowledgeBase, PrimiEngine, StoredTopology};
-use mox_ai_flow_svc::topology::TopologyGraph;
+use mox_ai_flow_sdk::primitive::{KnowledgeBase, PrimiEngine, StoredTopology};
+use mox_ai_flow_sdk::topology::TopologyGraph;
 use serde::{Deserialize, Serialize};
 use mox_platform_system_core::persistence_provider::{PersistenceProvider, SqlRow, SqlValue};
 use mox_platform_system_core::sqlite_provider::SqlitePersistence;
@@ -414,7 +414,7 @@ impl Persistence {
 mod tests {
     use super::*;
     use crate::runner::{enterprise_specs, run_all};
-    use mox_ai_flow_svc::primitive::ResourceBudget;
+    use mox_ai_flow_sdk::primitive::ResourceBudget;
 
     fn memory_engine() -> PrimiEngine {
         PrimiEngine::new(10.0, KnowledgeBase::new(), ResourceBudget::default())

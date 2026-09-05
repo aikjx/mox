@@ -11,7 +11,7 @@
 //! 跑完整 κ‑τ 闭环并产出：分步验证报告 + 涌现 DAG 可视化 + 六维溯源 + 文档自生成产物。
 //! 退出码非 0 表示存在未通过项（可用于 CI 门禁）。
 
-use mox_ai_flow_svc::primitive::{KnowledgeBase, PrimiEngine, ResourceBudget};
+use mox_ai_flow_sdk::primitive::{KnowledgeBase, PrimiEngine, ResourceBudget};
 use mox_flow_primiflow_svc::{enterprise_specs, run_all};
 use std::collections::HashMap;
 use std::path::Path;

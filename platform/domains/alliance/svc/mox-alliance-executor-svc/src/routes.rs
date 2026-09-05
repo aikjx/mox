@@ -34,6 +34,9 @@ fn status_from_execution(status: &ExecutionStatus) -> TaskStatus {
     if status.total_nodes == 0 {
         return TaskStatus::Pending;
     }
+    if status.cancelled_nodes > 0 {
+        return TaskStatus::Cancelled;
+    }
     if status.failed_nodes > 0 {
         return TaskStatus::Failed;
     }

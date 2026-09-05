@@ -40,10 +40,13 @@ export function refreshToken(refreshToken) {
  * 获取当前用户信息
  * @returns {Promise<Object>} 用户信息
  */
-export function getCurrentUser() {
+export function getCurrentUser(token) {
   return request({
     url: '/auth/me',
-    method: 'get'
+    method: 'get',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    _retry: 0,
+    silent: true
   })
 }
 

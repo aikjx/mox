@@ -1,4 +1,4 @@
-// ================================================================
+﻿// ================================================================
 // mox-dsql-core: 动态SQL管理核心
 // 数据库SQL管理低代码平台：所有SQL定义存储在数据库中，动态配置执行
 // 支持模板渲染、参数校验、多级缓存、多数据源、审计日志
@@ -217,6 +217,23 @@ impl DsqlManager {
         Ok(())
     }
 
+
+    // ==================== 审计日志查询 ====================
+
+    /// 分页查询审计日志
+    pub fn list_audit_logs(&self, query: &AuditLogQuery) -> DsqlResult<PageResult<AuditLog>> {
+        self.storage.list_audit_logs(query)
+    }
+
+    /// 获取单条审计日志
+    pub fn get_audit_log(&self, id: i64) -> DsqlResult<Option<AuditLog>> {
+        self.storage.get_audit_log(id)
+    }
+
+    /// 审计统计（成功率/慢查询/缓存命中率/平均耗时）
+    pub fn audit_stats(&self, start_time: Option<&str>, end_time: Option<&str>) -> DsqlResult<AuditStats> {
+        self.storage.audit_stats(start_time, end_time)
+    }
     // ==================== 内部方法 ====================
 
     fn write_audit_log(

@@ -1084,6 +1084,9 @@ async fn get_task_logs(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    if let Some(result) = alliance_remote::remote_task_logs(&s, task_id).await {
+        return result;
+    }
     let t0 = now_ms();
 
     let exec = s.ensure_execution(task_id);
@@ -1448,6 +1451,7 @@ pub fn build_alliance_router_with(
 ) -> Router {
     let state = Arc::new(AllianceGatewayState::new().with_remote(remote));
     Router::new()
+        .route("/api/alliance/runtime", get(alliance_remote::runtime_readiness))
         // —— 调度器子域 · 任务管理（前端调用路径：/api/alliance/tasks）——
         .route("/api/alliance/tasks", post(create_task).get(list_tasks))
         .route("/api/alliance/tasks/:id", get(get_task).post(handle_task_action))
@@ -1515,5 +1519,28 @@ mod tests {
             .find(|(k, _)| *k == "ready")
             .map(|(_, v)| *v);
         assert_eq!(normalized, Some("pending"));
+    }
+
+    /// 枚举 → 展示串映射全变体（防止 AllianceMode / FusionStrategy 新增变体时遗漏）
+    #[test]
+    fn test_mode_and_fusion_str_covers_all_variants() {
+        // AllianceMode：6 种
+        assert_eq!(mode_str(AllianceMode::Sequential), "single_expert");
+        assert_eq!(mode_str(AllianceMode::Parallel), "expert_alliance");
+        assert_eq!(mode_str(AllianceMode::Iterative), "human_in_loop");
+        assert_eq!(mode_str(AllianceMode::Hierarchical), "autonomous");
+        assert_eq!(mode_str(AllianceMode::Debate), "debate");
+        assert_eq!(mode_str(AllianceMode::Voting), "voting");
+
+        // FusionStrategy：9 种
+        assert_eq!(fusion_strategy_str(FusionStrategy::BestOf), "first_wins");
+        assert_eq!(fusion_strategy_str(FusionStrategy::Weighted), "weighted_voting");
+        assert_eq!(fusion_strategy_str(FusionStrategy::Voting), "rrf");
+        assert_eq!(fusion_strategy_str(FusionStrategy::ConfidenceWeighted), "llm_judge");
+        assert_eq!(fusion_strategy_str(FusionStrategy::Concatenation), "consensus");
+        assert_eq!(fusion_strategy_str(FusionStrategy::Stacking), "stacking");
+        assert_eq!(fusion_strategy_str(FusionStrategy::Debate), "debate");
+        assert_eq!(fusion_strategy_str(FusionStrategy::MapReduce), "map_reduce");
+        assert_eq!(fusion_strategy_str(FusionStrategy::Iterative), "iterative");
     }
 }

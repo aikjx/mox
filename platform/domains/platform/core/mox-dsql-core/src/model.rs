@@ -337,3 +337,41 @@ pub struct ExecuteProcessResult {
     pub trace_id: Option<String>,
     pub error: Option<String>,
 }
+
+/// 审计日志查询参数
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AuditLogQuery {
+    pub page: i64,
+    pub page_size: i64,
+    pub sql_code: Option<String>,
+    pub datasource_code: Option<String>,
+    pub trace_id: Option<String>,
+    pub success: Option<bool>,
+    pub is_slow: Option<bool>,
+    pub cache_hit: Option<bool>,
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
+}
+
+impl AuditLogQuery {
+    pub fn new() -> Self {
+        Self { page: 1, page_size: 20, sql_code: None, datasource_code: None, trace_id: None, success: None, is_slow: None, cache_hit: None, start_time: None, end_time: None }
+    }
+}
+
+/// 审计统计结果
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditStats {
+    pub total_count: i64,
+    pub success_count: i64,
+    pub failed_count: i64,
+    pub success_rate: f64,
+    pub slow_count: i64,
+    pub cache_hit_count: i64,
+    pub cache_hit_rate: f64,
+    pub avg_duration_ms: f64,
+    pub max_duration_ms: i64,
+    pub total_row_count: i64,
+    pub start_time: String,
+    pub end_time: String,
+}

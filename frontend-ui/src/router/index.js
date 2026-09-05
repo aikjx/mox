@@ -1,6 +1,6 @@
 ﻿import { createRouter, createWebHashHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getToken as getSecureToken } from '@/utils/secureStorage'
+import { useAuthStore } from '@/stores/auth.store'
 import { usePermissionStore } from '@/stores/permission.store'
 
 const routes = [
@@ -478,7 +478,7 @@ function isInWhiteList(path) {
 
 function getToken() {
   // 使用安全存储读取 token（自动兼容旧版 localStorage key：mox-token / ous_api_token / ous_token）
-  return getSecureToken()
+  return useAuthStore().accessToken
 }
 
 router.beforeEach(async (to, from, next) => {

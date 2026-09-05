@@ -7,6 +7,7 @@ authors.workspace = true
 description = "智能自动化信息知识图谱关联关系平台（关图中枢）：企业全部知识库的唯一事实源与智能驱动闭环"
 
 [dependencies]
+mox-kg-sdk = { workspace = true }
 mox-platform-foundation = { workspace = true }
 mox-platform-graph-core = { workspace = true }
 mox-kg-algo-core = { workspace = true }

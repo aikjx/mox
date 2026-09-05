@@ -106,7 +106,7 @@ export default defineConfig(({ mode }) => {
           },
           // ========== Rust 后端网关（:8080）—— 原 Node BFF 已迁移至此 ==========
           '/api': {
-            target: 'http://localhost:8080',
+            target: GW,
             changeOrigin: true,
           },
           // ========== Rust 网关管理面（/actuator/*，Spring Boot 风格）==========
