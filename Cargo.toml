@@ -125,7 +125,6 @@ members = [
     "platform/domains/platform/core/mox-connector-core",
     "platform/domains/platform/core/mox-platform-integration-core",
     "platform/domains/platform/core/mox-platform-operator-core",
-    "platform/gateway/mox-platform-gateway-svc",
     "platform/domains/platform/sdk/mox-platform-test-harness",
     "platform/domains/platform/sdk/mox-plugin-sdk",
     "platform/domains/voice/svc/mox-voice-desktop-app",

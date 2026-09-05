@@ -11,7 +11,7 @@
 use crate::config::ResilienceConfig;
 use axum::{
     body::Body,
-    extract::Extension,
+    extract::State,
     http::Request,
     middleware::Next,
     response::Response,
@@ -105,7 +105,7 @@ impl Default for CircuitBreakerRegistry {
 ///     ));
 /// ```
 pub async fn circuit_breaker_middleware(
-    Extension(registry): Extension<CircuitBreakerRegistry>,
+    State(registry): State<CircuitBreakerRegistry>,
     request: Request<Body>,
     next: Next,
 ) -> Response {
