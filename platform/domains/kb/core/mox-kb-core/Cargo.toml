@@ -1,0 +1,20 @@
+[package]
+name = "mox-kb-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 知识库核心（独立域，从 kg/cloud 归一化迁出）"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+mox-base-model-core = { path = "../../../base/mox-base-model-core" }
+mox-base-store-core = { path = "../../../base/mox-base-store-core" }
+mox-base-query-core = { path = "../../../base/mox-base-query-core" }
+mox-cache-core = { path = "../../../../shared/mox-cache-core" }

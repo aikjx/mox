@@ -1,0 +1,28 @@
+[package]
+name = "mox-cloud-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 云盘独立微服务（可单独部署，端口 8102）"
+
+[[bin]]
+name = "mox-cloud-server"
+path = "src/main.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+axum = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+clap = { workspace = true }
+chrono = { workspace = true }
+mox-server-runtime = { path = "../../../../shared/mox-server-runtime" }
+mox-cloud-kernel = { path = "../../core/mox-cloud-kernel" }
+mox-cloud-store-core = { path = "../../core/mox-cloud-store-core" }
+mox-cache-core = { path = "../../../../shared/mox-cache-core" }
+mox-cloud-master-svc = { path = "../mox-cloud-master-svc" }
+parking_lot = { workspace = true }

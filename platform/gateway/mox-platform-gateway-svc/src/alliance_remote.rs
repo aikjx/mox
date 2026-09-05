@@ -36,7 +36,9 @@
 //!
 //! 日志 / SSE 实时流 / 协作计划 / 统计暂无远程对应端点，始终走本地实现。
 
-use crate::alliance::{fusion_strategy_str, mode_str, now_ms, priority_str};
+use crate::alliance::{
+    EXPERT_STATUS_NORM, NODE_STATUS_NORM, fusion_strategy_str, mode_str, now_ms, priority_str,
+};
 use mox_api_protocol::{api_error, api_ok, ApiResponse};
 use serde_json::{json, Value};
 use std::time::Duration;
@@ -201,25 +203,27 @@ fn norm_fusion(s: &str) -> Value {
     .into()
 }
 
-/// 专家状态：proto serde 名 → 网关展示名（对齐本地 ExpertStatus 映射）
+/// 专家状态：proto serde 名 → 网关展示名
+///
+/// 映射表复用 `alliance::EXPERT_STATUS_NORM`（唯一真源），避免与本地枚举映射漂移。
 fn norm_expert_status(s: &str) -> Value {
-    match s {
-        "active" => "online",
-        "inactive" => "offline",
-        "maintenance" => "busy",
-        "deprecated" => "error",
-        other => other,
-    }
-    .into()
+    lookup_norm(&EXPERT_STATUS_NORM, s).into()
 }
 
 /// 节点状态：proto serde 名 → 网关展示名（ready 归一化为 pending）
+///
+/// 映射表复用 `alliance::NODE_STATUS_NORM`（唯一真源）。
 fn norm_node_status(s: &str) -> Value {
-    match s {
-        "ready" => "pending",
-        other => other,
-    }
-    .into()
+    lookup_norm(&NODE_STATUS_NORM, s).into()
+}
+
+/// 按归一化表查表，未命中则原样返回（向前兼容未知枚举）
+fn lookup_norm(table: &[(&str, &str)], key: &str) -> String {
+    table
+        .iter()
+        .find(|(k, _)| *k == key)
+        .map(|(_, v)| (*v).to_string())
+        .unwrap_or_else(|| key.to_string())
 }
 
 /// 远程 TaskDetailResponse → 网关任务 JSON（对齐本地 list/detail 字段）

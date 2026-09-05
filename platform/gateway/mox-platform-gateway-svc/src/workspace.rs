@@ -58,12 +58,12 @@ fn save_workspace_history(history: &[HistoryItem]) {
 }
 
 #[derive(Clone)]
-struct WorkspaceState {
+pub struct WorkspaceState {
     history: Arc<parking_lot::Mutex<Vec<HistoryItem>>>,
 }
 
 impl WorkspaceState {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { history: Arc::new(parking_lot::Mutex::new(load_workspace_history())) }
     }
 }
@@ -271,8 +271,7 @@ async fn task_execute(
 // 路由装配
 // =====================================================================
 
-pub fn build_workspace_router() -> Router {
-    let state = Arc::new(WorkspaceState::new());
+pub fn build_workspace_router(state: Arc<WorkspaceState>) -> Router {
     Router::new()
         .route("/api/workspace/kpi", get(workspace_kpi))
         .route("/api/files/:id/preview", get(file_preview))

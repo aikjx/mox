@@ -61,12 +61,12 @@ struct Notification {
 }
 
 #[derive(Clone)]
-struct NotificationState {
+pub struct NotificationState {
     notifications: Arc<Mutex<Vec<Notification>>>,
 }
 
 impl NotificationState {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { notifications: Arc::new(Mutex::new(load_notifications())) }
     }
 }
@@ -203,8 +203,7 @@ async fn unread_count(
 // 路由装配
 // =====================================================================
 
-pub fn build_notification_router() -> Router {
-    let state = Arc::new(NotificationState::new());
+pub fn build_notification_router(state: Arc<NotificationState>) -> Router {
     Router::new()
         .route("/api/notifications", get(list_notifications))
         .route("/api/notifications/unread-count", get(unread_count))

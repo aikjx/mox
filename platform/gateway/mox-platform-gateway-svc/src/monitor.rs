@@ -64,7 +64,7 @@ struct AlertRule {
 }
 
 #[derive(Clone)]
-struct MonitorState {
+pub struct MonitorState {
     alert_rules: Arc<Mutex<Vec<AlertRule>>>,
     /// 运行时指标（来自 GatewayState.actuator.RuntimeMetrics，真实 HTTP 请求统计）
     runtime: Arc<RuntimeMetrics>,
@@ -73,7 +73,7 @@ struct MonitorState {
 }
 
 impl MonitorState {
-    fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>) -> Self {
+    pub fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>) -> Self {
         Self {
             alert_rules: Arc::new(Mutex::new(load_alert_rules())),
             runtime,
@@ -512,8 +512,7 @@ async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>, State(_s)
 // 路由装配
 // =====================================================================
 
-pub fn build_monitor_router(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>) -> Router {
-    let state = Arc::new(MonitorState::new(runtime, logs));
+pub fn build_monitor_router(state: Arc<MonitorState>) -> Router {
     Router::new()
         .route("/api/monitor/metrics/detail", get(metrics_detail))
         .route("/api/monitor/quality", get(quality))

@@ -1,0 +1,23 @@
+[package]
+name = "mox-cache-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 统一缓存核心：多级缓存抽象（内存 LRU + Redis），支持 TTL、版本失效、统计指标"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+chrono = { workspace = true }
+redis = { workspace = true, optional = true }
+mox-observability-core = { path = "../mox-observability-core" }
+
+[features]
+default = ["memory"]
+memory = []
+redis-backend = ["dep:redis"]

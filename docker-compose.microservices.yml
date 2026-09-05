@@ -1,0 +1,114 @@
+# =============================================================================
+# MOX 微服务独立部署 - docker-compose
+# 启动：docker-compose up -d
+# 停止：docker-compose down
+# 单服务：docker-compose up mox-kb-server
+# =============================================================================
+
+version: "3.9"
+
+services:
+  # ── 知识图谱服务 ─────────────────────────────────────────────────────────
+  mox-kg-server:
+    build:
+      context: .
+      dockerfile: platform/domains/kg/svc/mox-kg-server/Dockerfile
+      args:
+        SERVICE: mox-kg-server
+    container_name: mox-kg-server
+    ports:
+      - "8101:8101"
+    environment:
+      - MOX_SERVER_HOST=0.0.0.0
+      - MOX_SERVER_PORT=8101
+      - RUST_LOG=info
+    volumes:
+      - ./platform/domains/kg/svc/mox-kg-server/config:/etc/mox
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8101/health/live"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # ── 云盘服务 ─────────────────────────────────────────────────────────────
+  mox-cloud-server:
+    build:
+      context: .
+      dockerfile: platform/domains/cloud/svc/mox-cloud-server/Dockerfile
+      args:
+        SERVICE: mox-cloud-server
+    container_name: mox-cloud-server
+    ports:
+      - "8102:8102"
+    environment:
+      - MOX_SERVER_HOST=0.0.0.0
+      - MOX_SERVER_PORT=8102
+      - RUST_LOG=info
+    volumes:
+      - ./platform/domains/cloud/svc/mox-cloud-server/config:/etc/mox
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8102/health/live"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # ── IAM/SSO 服务 ─────────────────────────────────────────────────────────
+  mox-iam-server:
+    build:
+      context: .
+      dockerfile: platform/domains/platform/svc/mox-iam-server/Dockerfile
+      args:
+        SERVICE: mox-iam-server
+    container_name: mox-iam-server
+    ports:
+      - "8103:8103"
+    environment:
+      - MOX_SERVER_HOST=0.0.0.0
+      - MOX_SERVER_PORT=8103
+      - RUST_LOG=info
+    volumes:
+      - ./platform/domains/platform/svc/mox-iam-server/config:/etc/mox
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8103/health/live"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # ── 知识库服务 ───────────────────────────────────────────────────────────
+  mox-kb-server:
+    build:
+      context: .
+      dockerfile: platform/domains/kb/svc/mox-kb-server/Dockerfile
+      args:
+        SERVICE: mox-kb-server
+    container_name: mox-kb-server
+    ports:
+      - "8104:8104"
+    environment:
+      - MOX_SERVER_HOST=0.0.0.0
+      - MOX_SERVER_PORT=8104
+      - RUST_LOG=info
+    volumes:
+      - ./platform/domains/kb/svc/mox-kb-server/config:/etc/mox
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8104/health/live"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # ── Redis 缓存（可选，用于 L2 分布式缓存） ───────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: mox-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+
+networks:
+  default:
+    name: mox-microservices

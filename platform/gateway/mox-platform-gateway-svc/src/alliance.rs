@@ -355,6 +355,55 @@ pub(crate) fn mode_str(m: AllianceMode) -> &'static str {
     }
 }
 
+// ── 状态归一化契约（唯一真源） ──────────────────────────────────────
+//
+// 网关对外只暴露一套状态展示名。远程接入层（alliance_remote）收到的 proto
+// serde 名必须经下表归一，本地实现则经下方枚举映射函数输出同一套名字。
+// 二者由 `test_status_norm_table_matches_enum` 用例强制对齐，防止两处漂移。
+//
+// 表项：(proto serde 名, 网关展示名)
+
+/// 专家状态归一化表（proto 名 → 网关展示名）
+pub(crate) const EXPERT_STATUS_NORM: [(&str, &str); 4] = [
+    ("active", "online"),
+    ("inactive", "offline"),
+    ("maintenance", "busy"),
+    ("deprecated", "error"),
+];
+
+/// 节点状态归一化表（proto 名 → 网关展示名；`ready` 归一为 `pending`）
+pub(crate) const NODE_STATUS_NORM: [(&str, &str); 7] = [
+    ("ready", "pending"),
+    ("pending", "pending"),
+    ("running", "running"),
+    ("completed", "completed"),
+    ("failed", "failed"),
+    ("skipped", "skipped"),
+    ("cancelled", "cancelled"),
+];
+
+/// 本地专家状态 → 网关展示名
+pub(crate) fn expert_status_str(s: ExpertStatus) -> &'static str {
+    match s {
+        ExpertStatus::Active => "online",
+        ExpertStatus::Inactive => "offline",
+        ExpertStatus::Maintenance => "busy",
+        ExpertStatus::Deprecated => "error",
+    }
+}
+
+/// 本地节点执行状态 → 网关展示名
+pub(crate) fn node_status_str(s: NodeExecStatus) -> &'static str {
+    match s {
+        NodeExecStatus::Pending => "pending",
+        NodeExecStatus::Running => "running",
+        NodeExecStatus::Completed => "completed",
+        NodeExecStatus::Failed => "failed",
+        NodeExecStatus::Skipped => "skipped",
+        NodeExecStatus::Cancelled => "cancelled",
+    }
+}
+
 pub(crate) fn fusion_strategy_str(f: FusionStrategy) -> &'static str {
     match f {
         FusionStrategy::BestOf => "first_wins",
@@ -780,12 +829,7 @@ async fn search_experts(
                         "name": m.expert.name,
                         "description": m.expert.description,
                         "domains": m.expert.domains,
-                        "status": match m.expert.status {
-                            ExpertStatus::Active => "online",
-                            ExpertStatus::Inactive => "offline",
-                            ExpertStatus::Maintenance => "busy",
-                            ExpertStatus::Deprecated => "error",
-                        },
+                        "status": expert_status_str(m.expert.status),
                         "match_score": m.score,
                     })
                 })
@@ -880,14 +924,7 @@ async fn list_nodes(
                 "node_id": n.node_id,
                 "name": n.name,
                 "expert_id": n.expert_id,
-                "status": match n.status {
-                    NodeExecStatus::Pending => "pending",
-                    NodeExecStatus::Running => "running",
-                    NodeExecStatus::Completed => "completed",
-                    NodeExecStatus::Failed => "failed",
-                    NodeExecStatus::Skipped => "skipped",
-                    NodeExecStatus::Cancelled => "cancelled",
-                },
+                "status": node_status_str(n.status),
                 "dependencies": n.dependencies,
                 "started_at": n.started_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
                 "completed_at": n.completed_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
@@ -1164,14 +1201,7 @@ async fn get_task_dag(
                 "name": n.name,
                 "type": "expert",
                 "expert_id": n.expert_id,
-                "status": match n.status {
-                    NodeExecStatus::Pending => "pending",
-                    NodeExecStatus::Running => "running",
-                    NodeExecStatus::Completed => "completed",
-                    NodeExecStatus::Failed => "failed",
-                    NodeExecStatus::Skipped => "skipped",
-                    NodeExecStatus::Cancelled => "cancelled",
-                },
+                "status": node_status_str(n.status),
                 "progress": progress,
                 "dependencies": n.dependencies,
                 "started_at": n.started_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
@@ -1442,4 +1472,48 @@ pub fn build_alliance_router_with(
         .route("/api/alliance/tasks/:id/plan", get(get_collaboration_plan))
         .route("/api/alliance/stats", get(get_alliance_stats))
         .with_state(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 归一化契约一致性：远程接入层的常量表必须与本地枚举映射输出同一套展示名，
+    /// 防止「本地一套、远程一套」的状态名漂移。
+    #[test]
+    fn test_status_norm_table_matches_enum() {
+        for (proto, shown) in EXPERT_STATUS_NORM {
+            let expected = match proto {
+                "active" => expert_status_str(ExpertStatus::Active),
+                "inactive" => expert_status_str(ExpertStatus::Inactive),
+                "maintenance" => expert_status_str(ExpertStatus::Maintenance),
+                "deprecated" => expert_status_str(ExpertStatus::Deprecated),
+                other => panic!("归一化表出现未知 proto 状态名: {other}"),
+            };
+            assert_eq!(shown, expected, "专家状态归一化不一致: {proto}");
+        }
+
+        for (proto, shown) in NODE_STATUS_NORM {
+            let expected = match proto {
+                "ready" | "pending" => node_status_str(NodeExecStatus::Pending),
+                "running" => node_status_str(NodeExecStatus::Running),
+                "completed" => node_status_str(NodeExecStatus::Completed),
+                "failed" => node_status_str(NodeExecStatus::Failed),
+                "skipped" => node_status_str(NodeExecStatus::Skipped),
+                "cancelled" => node_status_str(NodeExecStatus::Cancelled),
+                other => panic!("归一化表出现未知 proto 状态名: {other}"),
+            };
+            assert_eq!(shown, expected, "节点状态归一化不一致: {proto}");
+        }
+    }
+
+    /// `ready` 必须归一为 `pending`（远程执行器语义 → 网关展示语义）
+    #[test]
+    fn test_node_ready_normalizes_to_pending() {
+        let normalized = NODE_STATUS_NORM
+            .iter()
+            .find(|(k, _)| *k == "ready")
+            .map(|(_, v)| *v);
+        assert_eq!(normalized, Some("pending"));
+    }
 }

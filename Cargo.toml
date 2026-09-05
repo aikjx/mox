@@ -1,4 +1,4 @@
-﻿[workspace]
+[workspace]
 # default-members锛歚cargo check / cargo build / cargo test` 榛樿鍙Е鍙戣繖浜?crate
 #   - 4 涓?MOX 璁＄畻鏍稿績
 #   - 3 涓?FFI 缁戝畾锛坣api/PyO3锛変笉鏀鹃粯璁わ紝閬垮厤锛?
@@ -160,6 +160,14 @@ members = [
     "platform/domains/base/mox-base-query-core",
     "platform/domains/base/mox-base-perm-core",
     "platform/domains/base/mox-base-lifecycle-core",
+    # === 全维归一化新增 v3.1 ===
+    "platform/shared/mox-cache-core",
+    "platform/shared/mox-server-runtime",
+    "platform/domains/kg/svc/mox-kg-server",
+    "platform/domains/cloud/svc/mox-cloud-server",
+    "platform/domains/platform/svc/mox-iam-server",
+    "platform/domains/kb/core/mox-kb-core",
+    "platform/domains/kb/svc/mox-kb-server",
 ]
 resolver = "2"
 
@@ -417,6 +425,10 @@ mox-unified-algo-core = { path = "platform/shared/mox-unified-algo-core" }
 mox-config-core = { path = "platform/shared/mox-config-core" }
 mox-auth-core = { path = "platform/shared/mox-auth-core" }
 mox-observability-core = { path = "platform/shared/mox-observability-core" }
+# === 全维归一化新增 v3.1 ===
+mox-cache-core = { path = "platform/shared/mox-cache-core" }
+mox-server-runtime = { path = "platform/shared/mox-server-runtime" }
+mox-kb-core = { path = "platform/domains/kb/core/mox-kb-core" }
 
 # ================================================================
 # MOX 璁＄畻瀵嗛泦鏍稿績锛堢粺涓€ workspace 渚濊禆鐗堟湰锛岄伩鍏?FFI 缁戝畾鐗堟湰婕傜Щ锛?

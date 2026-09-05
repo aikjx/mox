@@ -59,13 +59,13 @@ struct DocEntityRelation {
 }
 
 #[derive(Clone)]
-struct KbExtState {
+pub struct KbExtState {
     /// 文档-实体关联关系（JSON 文件持久化，启动时加载，变更时写回）
     relations: Arc<Mutex<Vec<DocEntityRelation>>>,
 }
 
 impl KbExtState {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { relations: Arc::new(Mutex::new(load_entity_relations())) }
     }
 }
@@ -161,8 +161,7 @@ async fn unlink_document_entity(
 // 路由装配
 // =====================================================================
 
-pub fn build_kb_ext_router() -> Router {
-    let state = Arc::new(KbExtState::new());
+pub fn build_kb_ext_router(state: Arc<KbExtState>) -> Router {
     Router::new()
         .route("/api/kb/entities/search", get(search_entities))
         .route("/api/kb/documents/:id/entities", post(link_document_entity).delete(unlink_document_entity))

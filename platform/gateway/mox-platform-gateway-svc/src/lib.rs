@@ -24,6 +24,7 @@ pub mod auth;
 pub mod rate_limit;
 pub mod o11y;
 pub mod routes;
+pub mod modules;
 pub mod alliance;
 pub mod alliance_remote;
 pub mod system;
@@ -61,7 +62,7 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::{AllowOrigin, CorsLayer};
-use auth::{AuthMiddleware, auth_middleware};
+use auth::AuthMiddleware;
 use rate_limit::{RateLimiter, rate_limit_middleware};
 use o11y::MetricsCollector;
 use actuator::{LogStore, RuntimeMetrics};
@@ -143,100 +144,15 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
         .route("/api/v1/domains", get(domains_handler))
         .route("/metrics", get(metrics_handler));
 
-    // 真实 KG+AI 业务路由（来自 mox-kg-service-svc/src/http_adapter.rs，自包含 Router<()>）
-    let kg_ai = http_adapter::build_kg_ai_router();
-
-    // 知识库域路由（mox-kb-svc 100% 自研：文档/分析/挂图/检索，对齐 legacy /kb/* API 面，自包含 Router<()>）
-    let kb = mox_kb_svc::handlers::build_kb_router();
-
-    // 联盟域业务路由（Api 模式·进程内路由桩，自包含 Router<()>）
-    let alliance = alliance::build_alliance_router();
-
-    // 系统管理 + 安全域路由（/api/system/* · /api/security/*，IAM 仓储真实数据链路）
-    let system = system::build_system_router();
-    let security = system::build_security_router();
-
-    // 业务域反向代理适配层（L6 归一化收敛）：
-    // 未被网关原生路由匹配的 /api/* 请求透明转发到编排器（默认 :3001）。
-    // axum 按具体度匹配：/api/system/* · /api/security/* · /api/v1/* 优先命中网关原生路由，
-    // 其余 /api/{*path} 落入本代理 wildcard 路由，实现「归一化入口 + 模块化后端」。
-    let business_proxy = proxy::build_proxy_router();
-
-    // 专家联盟全域共享状态（注册表/会话/调度/图谱/编排 归一化共享）
-    // 必须在 experts_ext_router 之前创建：专家广场扩展域（预约/收藏）复用同一份共享状态，
-    // 否则收藏集合会在 ExpertsSharedState 与 experts_ext 内部各存一份，形成数据分裂。
-    let experts_shared = Arc::new(experts_common::ExpertsSharedState::new());
-
-    // 新增业务域路由（自包含 Router<()>，进程内 stub）
-    let monitor_router = monitor::build_monitor_router(state.runtime.clone(), state.logs.clone());
-    let workspace_router = workspace::build_workspace_router();
-    let projects_ext_router = projects_ext::build_projects_ext_router();
-    let experts_ext_router = experts_ext::build_experts_ext_router(experts_shared.clone());
-    let misc_router = misc::build_misc_router();
-    let kb_ext_router = kb_ext::build_kb_ext_router();
-    let notification_router = notification::build_notification_router();
-
-    let experts_registry_router = experts_registry::build_experts_registry_router(experts_shared.clone());
-    let experts_collaboration_router = experts_collaboration::build_experts_collaboration_router(experts_shared.clone());
-    let experts_session_router = experts_session::build_experts_session_router(experts_shared.clone());
-    let experts_dispatcher_router = experts_dispatcher::build_experts_dispatcher_router(experts_shared.clone());
-    let experts_graph_router = experts_graph::build_experts_graph_router(experts_shared.clone());
-    let experts_orchestration_router = experts_orchestration::build_experts_orchestration_router(experts_shared.clone());
-
-    // 受保护的路由：认证 + 限流
-    // P0 安全收紧：/api/system、/api/security 已从 public_paths 回收为受保护路由，
-    // 须携带有效 JWT 访问。公开路径仅保留 /health、/api/auth/login、/api/auth/register。
-    // axum 0.7 无 From<Router<()>> for Router<S>：自包含 Router<()> 用 with_state(()) 升级为
-    // Router<GatewayState> 后再与 system/security 统一并入（Router<()> 无 State 提取器，运行期安全）。
-    let kg_ai: Router<GatewayState> = kg_ai.with_state(());
-    // 前缀归一化（RC-1）：mox-kb-svc 内部路由注册为 `/kb/*`，而前端 baseURL='/api'
-    // 实际请求 `/api/kb/*`，merge 直接挂接会导致 KB 全域 21 个接口 404。
-    // 采用 nest("/api", kb) 包装：对外暴露 `/api/kb/*`，对内保持 `/kb/*` 不变，
-    // 从而不破坏 mox-kb-svc 自身集成测试（tests/t4_kb_http.rs 直接驱动 /kb/*）。
-    let kb: Router<GatewayState> = Router::new().nest("/api", kb).with_state(());
-    let alliance: Router<GatewayState> = alliance.with_state(());
-    let business_proxy: Router<GatewayState> = business_proxy.with_state(());
-    let monitor_router: Router<GatewayState> = monitor_router.with_state(());
-    let workspace_router: Router<GatewayState> = workspace_router.with_state(());
-    let projects_ext_router: Router<GatewayState> = projects_ext_router.with_state(());
-    let experts_ext_router: Router<GatewayState> = experts_ext_router.with_state(());
-    let misc_router: Router<GatewayState> = misc_router.with_state(());
-    let kb_ext_router: Router<GatewayState> = kb_ext_router.with_state(());
-    let notification_router: Router<GatewayState> = notification_router.with_state(());
-    let experts_registry_router: Router<GatewayState> = experts_registry_router.with_state(());
-    let experts_collaboration_router: Router<GatewayState> = experts_collaboration_router.with_state(());
-    let experts_session_router: Router<GatewayState> = experts_session_router.with_state(());
-    let experts_dispatcher_router: Router<GatewayState> = experts_dispatcher_router.with_state(());
-    let experts_graph_router: Router<GatewayState> = experts_graph_router.with_state(());
-    let experts_orchestration_router: Router<GatewayState> = experts_orchestration_router.with_state(());
-    let auth_state = state.auth.clone();
-    let protected: Router<GatewayState> = Router::<GatewayState>::new()
-        .merge(kg_ai)
-        .merge(kb)
-        .merge(alliance)
-        .merge(system)
-        .merge(security)
-        .merge(business_proxy)
-        .merge(monitor_router)
-        .merge(workspace_router)
-        .merge(projects_ext_router)
-        .merge(experts_ext_router)
-        .merge(experts_registry_router)
-        .merge(experts_collaboration_router)
-        .merge(experts_session_router)
-        .merge(experts_dispatcher_router)
-        .merge(experts_graph_router)
-        .merge(experts_orchestration_router)
-        .merge(misc_router)
-        .merge(kb_ext_router)
-        .merge(notification_router)
-        .route_layer(from_fn(move |request: Request, next: Next| {
-            let auth = auth_state.clone();
-            async move { auth_middleware(auth, request, next).await }
-        }));
+    // 模块状态注册中心 + 业务域路由统一装配（受保护路由的鉴权层在其中统一挂载）。
+    // 布局归一化：共享状态构造、21 个路由单元 merge、Router<()> 状态类型升级
+    // 全部收敛到 `modules` 模块，本函数只保留中间件分层职责（详见 modules.rs 文档）。
+    let states = modules::ModuleStates::new(state.runtime.clone(), state.logs.clone());
+    let protected = modules::build_module_routers(&states, &state);
 
     // 整体统一为 Router<GatewayState>，最后一次性注入 state。
-    // 中间件分层（由内到外）：CORS → 限流 → 请求可观测（日志+指标+API 启停拦截）。
+    // 中间件分层（运行时由外到内）：可观测 → CORS → 限流 →（仅业务路由）鉴权。
+    // 注意：axum 的 layer 后注册者先执行，故下方书写顺序与运行时顺序相反。
     let limiter_state = state.rate_limiter.clone();
     let observability_state = state.clone();
 

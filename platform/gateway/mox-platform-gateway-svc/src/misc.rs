@@ -90,13 +90,13 @@ fn save_misc_data(tasks: &[TaskItem], projects: &[ProjectItem]) {
 }
 
 #[derive(Clone)]
-struct MiscState {
+pub struct MiscState {
     tasks: Arc<Mutex<Vec<TaskItem>>>,
     projects: Arc<Mutex<Vec<ProjectItem>>>,
 }
 
 impl MiscState {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let persisted = load_misc_data();
         Self {
             tasks: Arc::new(Mutex::new(persisted.tasks)),
@@ -401,8 +401,7 @@ async fn list_projects_paginated(
 // 路由装配
 // =====================================================================
 
-pub fn build_misc_router() -> Router {
-    let state = Arc::new(MiscState::new());
+pub fn build_misc_router(state: Arc<MiscState>) -> Router {
     Router::new()
         .route("/api/users/:id/avatar", post(upload_avatar))
         .route("/api/market/:id/review", post(market_review))

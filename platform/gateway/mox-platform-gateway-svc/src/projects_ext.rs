@@ -71,13 +71,13 @@ fn save_projects_persistent(files: &[ProjectFile], favorites: &std::collections:
 }
 
 #[derive(Clone)]
-struct ProjectsState {
+pub struct ProjectsState {
     files: Arc<Mutex<Vec<ProjectFile>>>,
     favorites: Arc<Mutex<std::collections::HashSet<String>>>,
 }
 
 impl ProjectsState {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let persisted = load_projects_persistent();
         let favorites: std::collections::HashSet<String> = persisted.favorites.into_iter().collect();
         Self {
@@ -508,8 +508,7 @@ async fn ai_recommend_projects(
 // 路由装配
 // =====================================================================
 
-pub fn build_projects_ext_router() -> Router {
-    let state = Arc::new(ProjectsState::new());
+pub fn build_projects_ext_router(state: Arc<ProjectsState>) -> Router {
     Router::new()
         .route("/api/projects/ai-recommend", post(ai_recommend_projects))
         .route("/api/projects/:id/members", get(project_members).post(add_project_member))

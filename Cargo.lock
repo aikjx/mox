@@ -4439,6 +4439,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-cache-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "mox-observability-core",
+ "parking_lot",
+ "redis",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "mox-cloud-api"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4627,6 +4642,27 @@ dependencies = [
  "sha2",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "mox-cloud-server"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "axum",
+ "chrono",
+ "clap",
+ "mox-cache-core",
+ "mox-cloud-kernel",
+ "mox-cloud-master-svc",
+ "mox-cloud-store-core",
+ "mox-server-runtime",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -5276,6 +5312,62 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-iam-server"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "axum",
+ "chrono",
+ "clap",
+ "mox-auth-core",
+ "mox-cache-core",
+ "mox-platform-iam-core",
+ "mox-server-runtime",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "mox-kb-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "mox-base-model-core",
+ "mox-base-query-core",
+ "mox-base-store-core",
+ "mox-cache-core",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mox-kb-server"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "axum",
+ "chrono",
+ "clap",
+ "mox-cache-core",
+ "mox-kb-core",
+ "mox-server-runtime",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "mox-kb-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -5407,6 +5499,27 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "mox-kg-server"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "axum",
+ "chrono",
+ "clap",
+ "mox-cache-core",
+ "mox-kg-algo-core",
+ "mox-kg-core",
+ "mox-kg-meta-core",
+ "mox-kg-service-svc",
+ "mox-server-runtime",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -5987,6 +6100,29 @@ dependencies = [
  "mox-error",
  "serde",
  "tracing",
+]
+
+[[package]]
+name = "mox-server-runtime"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "axum",
+ "chrono",
+ "clap",
+ "mox-auth-core",
+ "mox-config-core",
+ "mox-error",
+ "mox-observability-core",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "toml",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
