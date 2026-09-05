@@ -23,25 +23,13 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 // JSON 持久化（data/notifications.json）
 // =====================================================================
 
-const NOTIFICATIONS_PATH: &str = "data/notifications.json";
-
 fn load_notifications() -> Vec<Notification> {
-    match std::fs::read_to_string(NOTIFICATIONS_PATH) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    crate::store_json::try_migrate_json::<Notification>("notification.notifications", "data/notifications.json")
 }
 
 fn save_notifications(notifications: &[Notification]) {
-    if let Some(parent) = std::path::Path::new(NOTIFICATIONS_PATH).parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            eprintln!("[notification] 创建目录失败 {}: {}", parent.display(), e);
-        }
-    }
-    if let Ok(json_str) = serde_json::to_string_pretty(notifications) {
-        if let Err(e) = std::fs::write(NOTIFICATIONS_PATH, json_str) {
-            eprintln!("[notification] 通知持久化失败 {}: {}", NOTIFICATIONS_PATH, e);
-        }
+    if let Err(e) = crate::store_json::save_collection("notification.notifications", notifications) {
+        eprintln!("[notification] 通知持久化失败: {}", e);
     }
 }
 

@@ -38,8 +38,6 @@ struct ProjectFile {
 // JSON 持久化（data/projects_files.json）
 // =====================================================================
 
-const PROJECTS_FILES_PATH: &str = "data/projects_files.json";
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct ProjectsPersistent {
     files: Vec<ProjectFile>,
@@ -47,26 +45,33 @@ struct ProjectsPersistent {
 }
 
 fn load_projects_persistent() -> ProjectsPersistent {
-    match std::fs::read_to_string(PROJECTS_FILES_PATH) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => ProjectsPersistent::default(),
+    let files = crate::store_json::load_collection::<ProjectFile>("projects.files");
+    let favorites = crate::store_json::load_collection::<String>("projects.favorites");
+    if files.is_empty() && favorites.is_empty() {
+        // 首次启动：从旧 projects_files.json（{files, favorites}）迁移到两个集合
+        if let Ok(content) = std::fs::read_to_string("data/projects_files.json") {
+            if let Ok(p) = serde_json::from_str::<ProjectsPersistent>(&content) {
+                if !p.files.is_empty() {
+                    let _ = crate::store_json::save_collection("projects.files", &p.files);
+                }
+                if !p.favorites.is_empty() {
+                    let _ = crate::store_json::save_collection("projects.favorites", &p.favorites);
+                }
+                crate::store_json::archive_json("data/projects_files.json");
+                return p;
+            }
+        }
     }
+    ProjectsPersistent { files, favorites }
 }
 
 fn save_projects_persistent(files: &[ProjectFile], favorites: &std::collections::HashSet<String>) {
-    if let Some(parent) = std::path::Path::new(PROJECTS_FILES_PATH).parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            eprintln!("[projects] 创建目录失败 {}: {}", parent.display(), e);
-        }
+    if let Err(e) = crate::store_json::save_collection("projects.files", files) {
+        eprintln!("[projects] files 持久化失败: {}", e);
     }
-    let data = ProjectsPersistent {
-        files: files.to_vec(),
-        favorites: favorites.iter().cloned().collect(),
-    };
-    if let Ok(json_str) = serde_json::to_string_pretty(&data) {
-        if let Err(e) = std::fs::write(PROJECTS_FILES_PATH, json_str) {
-            eprintln!("[projects] 项目文件持久化失败 {}: {}", PROJECTS_FILES_PATH, e);
-        }
+    let fav_vec: Vec<String> = favorites.iter().cloned().collect();
+    if let Err(e) = crate::store_json::save_collection("projects.favorites", &fav_vec) {
+        eprintln!("[projects] favorites 持久化失败: {}", e);
     }
 }
 

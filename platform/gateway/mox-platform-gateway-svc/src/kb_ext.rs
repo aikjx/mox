@@ -24,25 +24,13 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 // 实体关系 JSON 持久化（data/kb_entity_relations.json）
 // =====================================================================
 
-const KB_ENTITY_RELATIONS_PATH: &str = "data/kb_entity_relations.json";
-
 fn load_entity_relations() -> Vec<DocEntityRelation> {
-    match std::fs::read_to_string(KB_ENTITY_RELATIONS_PATH) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    crate::store_json::try_migrate_json::<DocEntityRelation>("kb_ext.entity_relations", "data/kb_entity_relations.json")
 }
 
 fn save_entity_relations(relations: &[DocEntityRelation]) {
-    if let Some(parent) = std::path::Path::new(KB_ENTITY_RELATIONS_PATH).parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            eprintln!("[kb_ext] 创建目录失败 {}: {}", parent.display(), e);
-        }
-    }
-    if let Ok(json_str) = serde_json::to_string_pretty(relations) {
-        if let Err(e) = std::fs::write(KB_ENTITY_RELATIONS_PATH, json_str) {
-            eprintln!("[kb_ext] 实体关系持久化失败 {}: {}", KB_ENTITY_RELATIONS_PATH, e);
-        }
+    if let Err(e) = crate::store_json::save_collection("kb_ext.entity_relations", relations) {
+        eprintln!("[kb_ext] 实体关系持久化失败: {}", e);
     }
 }
 

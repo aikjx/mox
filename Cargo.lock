@@ -4939,6 +4939,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "hex",
+ "mox-cache-core",
  "parking_lot",
  "regex",
  "rusqlite",

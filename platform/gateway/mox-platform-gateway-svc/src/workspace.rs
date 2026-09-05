@@ -35,25 +35,13 @@ struct HistoryItem {
 // JSON 持久化（data/workspace_history.json）
 // =====================================================================
 
-const WORKSPACE_HISTORY_PATH: &str = "data/workspace_history.json";
-
 fn load_workspace_history() -> Vec<HistoryItem> {
-    match std::fs::read_to_string(WORKSPACE_HISTORY_PATH) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    crate::store_json::try_migrate_json::<HistoryItem>("workspace.history", "data/workspace_history.json")
 }
 
 fn save_workspace_history(history: &[HistoryItem]) {
-    if let Some(parent) = std::path::Path::new(WORKSPACE_HISTORY_PATH).parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            eprintln!("[workspace] 创建目录失败 {}: {}", parent.display(), e);
-        }
-    }
-    if let Ok(json_str) = serde_json::to_string_pretty(history) {
-        if let Err(e) = std::fs::write(WORKSPACE_HISTORY_PATH, json_str) {
-            eprintln!("[workspace] 历史记录持久化失败 {}: {}", WORKSPACE_HISTORY_PATH, e);
-        }
+    if let Err(e) = crate::store_json::save_collection("workspace.history", history) {
+        eprintln!("[workspace] 历史记录持久化失败: {}", e);
     }
 }
 

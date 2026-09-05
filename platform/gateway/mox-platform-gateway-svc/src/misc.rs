@@ -57,8 +57,6 @@ struct ProjectItem {
 // JSON 持久化（data/misc_data.json）
 // =====================================================================
 
-const MISC_DATA_PATH: &str = "data/misc_data.json";
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct MiscPersistent {
     tasks: Vec<TaskItem>,
@@ -66,26 +64,32 @@ struct MiscPersistent {
 }
 
 fn load_misc_data() -> MiscPersistent {
-    match std::fs::read_to_string(MISC_DATA_PATH) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => MiscPersistent::default(),
+    let tasks = crate::store_json::load_collection::<TaskItem>("misc.tasks");
+    let projects = crate::store_json::load_collection::<ProjectItem>("misc.projects");
+    if tasks.is_empty() && projects.is_empty() {
+        // 首次启动：从旧 misc_data.json（{tasks, projects}）迁移到两个集合
+        if let Ok(content) = std::fs::read_to_string("data/misc_data.json") {
+            if let Ok(p) = serde_json::from_str::<MiscPersistent>(&content) {
+                if !p.tasks.is_empty() {
+                    let _ = crate::store_json::save_collection("misc.tasks", &p.tasks);
+                }
+                if !p.projects.is_empty() {
+                    let _ = crate::store_json::save_collection("misc.projects", &p.projects);
+                }
+                crate::store_json::archive_json("data/misc_data.json");
+                return p;
+            }
+        }
     }
+    MiscPersistent { tasks, projects }
 }
 
 fn save_misc_data(tasks: &[TaskItem], projects: &[ProjectItem]) {
-    if let Some(parent) = std::path::Path::new(MISC_DATA_PATH).parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            eprintln!("[misc] 创建目录失败 {}: {}", parent.display(), e);
-        }
+    if let Err(e) = crate::store_json::save_collection("misc.tasks", tasks) {
+        eprintln!("[misc] tasks 持久化失败: {}", e);
     }
-    let data = MiscPersistent {
-        tasks: tasks.to_vec(),
-        projects: projects.to_vec(),
-    };
-    if let Ok(json_str) = serde_json::to_string_pretty(&data) {
-        if let Err(e) = std::fs::write(MISC_DATA_PATH, json_str) {
-            eprintln!("[misc] 数据持久化失败 {}: {}", MISC_DATA_PATH, e);
-        }
+    if let Err(e) = crate::store_json::save_collection("misc.projects", projects) {
+        eprintln!("[misc] projects 持久化失败: {}", e);
     }
 }
 

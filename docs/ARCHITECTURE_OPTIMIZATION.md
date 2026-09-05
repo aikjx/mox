@@ -279,9 +279,9 @@ pub trait ServiceModule: Send + Sync {
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
 | ~~P0~~ | ~~kg/cloud/iam 服务接入实际业务逻辑~~ | ✅ **已完成**：kg 复用 http_adapter(10端点)，cloud 基于 MasterServer(8端点)，iam 基于 mox-auth-core(10端点) |
-| P0 | mox-dsql-core 缓存替换为 mox-cache-core | 统一缓存抽象，消除内部 DsqlCache |
-| P1 | SQL 模板/业务逻辑数据库化表结构 + 迁移脚本 | dsql_templates / dsql_logic / dsql_params / dsql_executions |
-| P1 | Redis 缓存接入（L2 分布式缓存） | 当前 mox-cache-core 的 RedisCache 已有实现，需在 server 中启用 |
+| ~~P0~~ | ~~mox-dsql-core 缓存替换为 mox-cache-core~~ | ✅ **已完成**：DsqlCache 内部改用 MemoryCache（LRU+TTL+统计），同步 API 保持不变，14个单元测试全部通过 |
+| ~~P1~~ | ~~SQL 模板/业务逻辑数据库化表结构 + 迁移脚本~~ | ✅ **已完成**：migration 003 新增 dsql_logic/dsql_logic_version 业务逻辑表 + 7个性能索引；PostgreSQL 兼容完整 schema（8表+12索引）已交付；14个单元测试全部通过 |
+| P1 | Redis 缓存接入（L2 分布式缓存） | 当前 mox-cache-core 的 RedisCache 已有实现，需在 server 配置中启用 |
 | P1 | 单元测试覆盖 | 新增 crate 的核心逻辑测试（当前 mox-server-runtime 有 1 个测试） |
 | P2 | CI/CD 流水线 | GitHub Actions / GitLab CI：lint + test + build + docker push |
 | P2 | 审计日志 | 关键操作（SQL 模板修改 / 权限变更 / 数据删除）的不可变审计日志 |

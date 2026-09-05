@@ -24,25 +24,13 @@ use crate::actuator::{LogStore, RuntimeMetrics};
 // 告警规则 JSON 持久化
 // =====================================================================
 
-const ALERT_RULES_PATH: &str = "data/alert_rules.json";
-
 fn load_alert_rules() -> Vec<AlertRule> {
-    match std::fs::read_to_string(ALERT_RULES_PATH) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    }
+    crate::store_json::try_migrate_json::<AlertRule>("monitor.alert_rules", "data/alert_rules.json")
 }
 
 fn save_alert_rules(rules: &[AlertRule]) {
-    if let Some(parent) = std::path::Path::new(ALERT_RULES_PATH).parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            eprintln!("[monitor] 创建目录失败 {}: {}", parent.display(), e);
-        }
-    }
-    if let Ok(json_str) = serde_json::to_string_pretty(rules) {
-        if let Err(e) = std::fs::write(ALERT_RULES_PATH, json_str) {
-            eprintln!("[monitor] 告警规则持久化失败 {}: {}", ALERT_RULES_PATH, e);
-        }
+    if let Err(e) = crate::store_json::save_collection("monitor.alert_rules", rules) {
+        eprintln!("[monitor] 告警规则持久化失败: {}", e);
     }
 }
 

@@ -36,6 +36,7 @@ pub mod projects_ext;
 pub mod experts_ext;
 pub mod experts_common;
 pub mod experts_db;
+pub mod store_json;
 pub mod experts_registry;
 pub mod experts_collaboration;
 pub mod experts_session;

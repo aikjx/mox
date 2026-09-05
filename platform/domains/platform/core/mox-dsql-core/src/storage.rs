@@ -41,6 +41,9 @@ impl DsqlStorage {
         let process_schema = include_str!("../migrations/002_process.sql");
         conn.execute_batch(process_schema)
             .map_err(|e| DsqlError::StorageError(format!("init process schema: {e}")))?;
+        let logic_schema = include_str!("../migrations/003_logic_and_enhancement.sql");
+        conn.execute_batch(logic_schema)
+            .map_err(|e| DsqlError::StorageError(format!("init logic schema: {e}")))?;
         Ok(())
     }
 
