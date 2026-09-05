@@ -1,0 +1,223 @@
+# MOX v3.1 Prometheus 告警规则
+# 包含：服务可用性/性能/资源/业务指标四大类告警
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mox-alerts
+  namespace: mox
+  labels:
+    prometheus: mox
+    role: alert-rules
+spec:
+  groups:
+  - name: mox-service-availability
+    interval: 30s
+    rules:
+    # 服务宕机告警
+    - alert: MoxServiceDown
+      expr: up{job=~"mox-.*"} == 0
+      for: 1m
+      labels:
+        severity: critical
+        category: availability
+      annotations:
+        summary: "MOX服务 {{ $labels.job }} 宕机"
+        description: "服务 {{ $labels.job }} (实例 {{ $labels.instance }}) 已经超过1分钟无法访问"
+        runbook: "检查Pod状态: kubectl get pods -n mox -l app={{ $labels.job }}"
+
+    # 健康检查失败告警
+    - alert: MoxHealthCheckFailed
+      expr: mox_health_check_status == 0
+      for: 2m
+      labels:
+        severity: warning
+        category: availability
+      annotations:
+        summary: "MOX服务 {{ $labels.service }} 健康检查失败"
+        description: "服务 {{ $labels.service }} 健康检查连续2分钟失败"
+
+    # 5xx错误率过高告警
+    - alert: MoxHighErrorRate
+      expr: |
+        sum(rate(http_requests_total{job=~"mox-.*", status=~"5.."}[5m]))
+        /
+        sum(rate(http_requests_total{job=~"mox-.*"}[5m]))
+        > 0.05
+      for: 5m
+      labels:
+        severity: critical
+        category: availability
+      annotations:
+        summary: "MOX服务5xx错误率过高"
+        description: "过去5分钟内5xx错误率超过5%，当前值: {{ $value | humanizePercentage }}"
+        runbook: "检查服务日志和依赖服务状态"
+
+  - name: mox-performance
+    interval: 30s
+    rules:
+    # DSQL慢查询告警
+    - alert: MoxDsqlSlowQueries
+      expr: |
+        sum(rate(dsql_slow_queries_total[5m])) by (sql_code)
+        > 1
+      for: 5m
+      labels:
+        severity: warning
+        category: performance
+      annotations:
+        summary: "DSQL慢查询告警: {{ $labels.sql_code }}"
+        description: "SQL {{ $labels.sql_code }} 慢查询速率超过1次/秒，持续5分钟"
+        runbook: "检查SQL执行计划和索引: SELECT * FROM dsql_audit_log WHERE sql_code='{{ $labels.sql_code }}' AND is_slow=1 ORDER BY duration_ms DESC LIMIT 10"
+
+    # DSQL执行耗时P99过高告警
+    - alert: MoxDsqlHighLatency
+      expr: |
+        histogram_quantile(0.99, sum(rate(dsql_execute_duration_seconds_bucket[5m])) by (le))
+        > 1
+      for: 5m
+      labels:
+        severity: warning
+        category: performance
+      annotations:
+        summary: "DSQL执行P99耗时过高"
+        description: "DSQL执行P99耗时超过1秒，当前值: {{ $value }}秒"
+        runbook: "检查慢查询日志和数据库性能"
+
+    # 缓存命中率过低告警
+    - alert: MoxLowCacheHitRate
+      expr: |
+        sum(rate(dsql_cache_hits_total[5m]))
+        /
+        (sum(rate(dsql_cache_hits_total[5m])) + sum(rate(dsql_cache_misses_total[5m])))
+        < 0.5
+      for: 10m
+      labels:
+        severity: warning
+        category: performance
+      annotations:
+        summary: "DSQL缓存命中率过低"
+        description: "过去10分钟缓存命中率低于50%，当前值: {{ $value | humanizePercentage }}"
+        runbook: "检查缓存配置和SQL模板，考虑增加cache_ttl或优化缓存key"
+
+    # HTTP请求P99延迟过高
+    - alert: MoxHttpHighLatency
+      expr: |
+        histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=~"mox-.*"}[5m])) by (le, job))
+        > 2
+      for: 5m
+      labels:
+        severity: warning
+        category: performance
+      annotations:
+        summary: "MOX服务 {{ $labels.job }} HTTP P99延迟过高"
+        description: "服务 {{ $labels.job }} HTTP P99延迟超过2秒，当前值: {{ $value }}秒"
+
+  - name: mox-resources
+    interval: 30s
+    rules:
+    # CPU使用率过高
+    - alert: MoxHighCpuUsage
+      expr: |
+        sum(rate(container_cpu_usage_seconds_total{namespace="mox", container!=""}[5m])) by (pod)
+        /
+        sum(kube_pod_container_resource_limits{namespace="mox", resource="cpu"}) by (pod)
+        > 0.85
+      for: 10m
+      labels:
+        severity: warning
+        category: resource
+      annotations:
+        summary: "MOX Pod {{ $labels.pod }} CPU使用率过高"
+        description: "Pod {{ $labels.pod }} CPU使用率超过85%，持续10分钟，当前值: {{ $value | humanizePercentage }}"
+        runbook: "考虑增加HPA最大副本数或优化代码性能"
+
+    # 内存使用率过高
+    - alert: MoxHighMemoryUsage
+      expr: |
+        sum(container_memory_working_set_bytes{namespace="mox", container!=""}) by (pod)
+        /
+        sum(kube_pod_container_resource_limits{namespace="mox", resource="memory"}) by (pod)
+        > 0.9
+      for: 10m
+      labels:
+        severity: critical
+        category: resource
+      annotations:
+        summary: "MOX Pod {{ $labels.pod }} 内存使用率过高"
+        description: "Pod {{ $labels.pod }} 内存使用率超过90%，持续10分钟，当前值: {{ $value | humanizePercentage }}"
+        runbook: "检查内存泄漏，考虑增加内存限制或优化缓存大小"
+
+    # Redis内存使用率过高
+    - alert: MoxRedisHighMemory
+      expr: |
+        redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+      for: 10m
+      labels:
+        severity: warning
+        category: resource
+      annotations:
+        summary: "Redis内存使用率过高"
+        description: "Redis内存使用率超过85%，当前值: {{ $value | humanizePercentage }}"
+        runbook: "检查缓存key数量和大key，考虑增加Redis内存或优化缓存策略"
+
+  - name: mox-business
+    interval: 1m
+    rules:
+    # DSQL执行失败率过高
+    - alert: MoxDsqlHighFailureRate
+      expr: |
+        sum(rate(dsql_execute_total{success="false"}[5m]))
+        /
+        sum(rate(dsql_execute_total[5m]))
+        > 0.1
+      for: 5m
+      labels:
+        severity: critical
+        category: business
+      annotations:
+        summary: "DSQL执行失败率过高"
+        description: "过去5分钟DSQL执行失败率超过10%，当前值: {{ $value | humanizePercentage }}"
+        runbook: "检查审计日志: SELECT * FROM dsql_audit_log WHERE success=0 ORDER BY created_at DESC LIMIT 20"
+
+    # 审计写入失败告警
+    - alert: MoxAuditWriteFailed
+      expr: |
+        sum(rate(dsql_audit_write_total{result="failed"}[5m])) > 0
+      for: 5m
+      labels:
+        severity: warning
+        category: business
+      annotations:
+        summary: "审计日志写入失败"
+        description: "过去5分钟审计日志写入失败，可能导致审计数据丢失"
+        runbook: "检查数据库连接和磁盘空间"
+
+    # 流程执行失败率过高
+    - alert: MoxProcessHighFailureRate
+      expr: |
+        sum(rate(mox_process_execution_total{success="false"}[10m]))
+        /
+        sum(rate(mox_process_execution_total[10m]))
+        > 0.1
+      for: 10m
+      labels:
+        severity: warning
+        category: business
+      annotations:
+        summary: "动态流程执行失败率过高"
+        description: "过去10分钟动态流程执行失败率超过10%，当前值: {{ $value | humanizePercentage }}"
+        runbook: "检查流程审计日志和补偿执行情况"
+
+    # 熔断器打开告警
+    - alert: MoxCircuitBreakerOpen
+      expr: |
+        mox_circuit_breaker_state == 1
+      for: 1m
+      labels:
+        severity: critical
+        category: business
+      annotations:
+        summary: "熔断器打开: {{ $labels.name }}"
+        description: "熔断器 {{ $labels.name }} 已打开，请求被快速失败"
+        runbook: "检查下游服务状态，确认恢复后可手动重置熔断器"

@@ -28,8 +28,9 @@ pub mod rate_limit;
 pub mod tracing_utils;
 pub mod config_center;
 pub mod service_discovery;
+pub mod resilience;
 
-pub use config::{ServerConfig, DatabaseConfig, CacheConfig, AuthConfig, ObservabilityConfig};
+pub use config::{ServerConfig, DatabaseConfig, CacheConfig, AuthConfig, ObservabilityConfig, ResilienceConfig, CircuitBreakerConfig};
 pub use server::Server;
 pub use health::HealthRegistry;
 pub use cache_factory::{CacheHandle, CacheBackend};

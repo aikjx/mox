@@ -167,6 +167,7 @@ members = [
     # === 全维归一化新增 v3.1 ===
     "platform/shared/mox-cache-core",
     "platform/shared/mox-server-runtime",
+    "platform/shared/mox-resilience-core",
     "platform/domains/kg/svc/mox-kg-server",
     "platform/domains/cloud/svc/mox-cloud-server",
     "platform/domains/platform/svc/mox-iam-server",
@@ -437,6 +438,7 @@ mox-observability-core = { path = "platform/shared/mox-observability-core" }
 # === 全维归一化新增 v3.1 ===
 mox-cache-core = { path = "platform/shared/mox-cache-core" }
 mox-server-runtime = { path = "platform/shared/mox-server-runtime" }
+mox-resilience-core = { path = "platform/shared/mox-resilience-core" }
 mox-kb-core = { path = "platform/domains/kb/core/mox-kb-core" }
 
 # ================================================================
@@ -536,3 +538,4 @@ opt-level = 3
 lto = "fat"
 codegen-units = 1
 debug = true
+

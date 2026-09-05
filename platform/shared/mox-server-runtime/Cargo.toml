@@ -12,7 +12,7 @@ serde_json = { workspace = true }
 toml = "0.8"
 tokio = { workspace = true }
 axum = { workspace = true }
-tower = { workspace = true }
+tower = { workspace = true, features = ["util"] }
 tower-http = { workspace = true, features = ["timeout", "trace"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
@@ -27,4 +27,6 @@ mox-observability-core = { path = "../mox-observability-core" }
 mox-auth-core = { path = "../mox-auth-core" }
 mox-config-core = { path = "../mox-config-core" }
 mox-cache-core = { path = "../mox-cache-core" }
+mox-resilience-core = { path = "../mox-resilience-core" }
 mox-error = { path = "../../foundation/mox-error" }
+parking_lot = { workspace = true }

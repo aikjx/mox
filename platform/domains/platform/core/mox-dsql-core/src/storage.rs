@@ -725,6 +725,7 @@ fn row_to_process_definition(r: &rusqlite::Row) -> rusqlite::Result<ProcessDefin
             _ => ProcessStatus::Draft,
         },
         steps,
+        transactional: false,
         permission_code: r.get(7)?,
         entity_code: r.get(8)?,
         created_by: r.get(9)?,

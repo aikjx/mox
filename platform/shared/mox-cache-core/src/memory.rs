@@ -67,7 +67,7 @@ impl MemoryCache {
 
     /// 清理过期条目（惰性清理，在 set 时触发）
     fn evict_if_needed(&self, map: &mut HashMap<String, LruEntry>) {
-        if self.max_capacity == 0 || map.len() < self.max_capacity {
+        if self.max_capacity == 0 || map.len() <= self.max_capacity {
             return;
         }
         // 先清理过期的
@@ -81,8 +81,8 @@ impl MemoryCache {
         }
         self.evictions.fetch_add(expired.len() as u64, Ordering::Relaxed);
 
-        // 如果还超容量，按 LRU 淘汰
-        while map.len() >= self.max_capacity {
+        // 如果还超容量，按 LRU 淘汰（淘汰到容量等于max_capacity）
+        while map.len() > self.max_capacity {
             if let Some((oldest_key, _)) = map
                 .iter()
                 .min_by_key(|(_, v)| (v.last_access, v.seq))

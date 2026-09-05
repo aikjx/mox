@@ -1,0 +1,143 @@
+# MOX v3.1 Grafana 仪表盘配置
+# 包含：服务总览/DSQL性能/缓存监控/资源使用四个仪表盘
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mox-grafana-dashboards
+  namespace: mox
+  labels:
+    grafana_dashboard: "1"
+data:
+  mox-overview.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "uid": "mox-overview",
+        "title": "MOX 平台总览",
+        "tags": ["mox", "overview"],
+        "timezone": "browser",
+        "schemaVersion": 38,
+        "version": 1,
+        "refresh": "30s",
+        "panels": [
+          {
+            "type": "stat",
+            "title": "服务可用性",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+            "targets": [{"expr": "avg(up{job=~\"mox-.*\"})", "legendFormat": "可用性"}],
+            "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.95}, {"color": "green", "value": 0.99}]}}}
+          },
+          {
+            "type": "stat",
+            "title": "请求QPS",
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+            "targets": [{"expr": "sum(rate(http_requests_total{job=~\"mox-.*\"}[5m]))", "legendFormat": "QPS"}],
+            "fieldConfig": {"defaults": {"unit": "reqps"}}
+          },
+          {
+            "type": "stat",
+            "title": "错误率",
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+            "targets": [{"expr": "sum(rate(http_requests_total{job=~\"mox-.*\", status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=~\"mox-.*\"}[5m]))", "legendFormat": "错误率"}],
+            "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.01}, {"color": "red", "value": 0.05}]}}}
+          },
+          {
+            "type": "stat",
+            "title": "P99延迟",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+            "targets": [{"expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=~\"mox-.*\"}[5m])) by (le))", "legendFormat": "P99"}],
+            "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "red", "value": 1}]}}}
+          },
+          {
+            "type": "timeseries",
+            "title": "各服务请求量",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+            "targets": [{"expr": "sum(rate(http_requests_total{job=~\"mox-.*\"}[5m])) by (job)", "legendFormat": "{{job}}"}]
+          },
+          {
+            "type": "timeseries",
+            "title": "各服务错误率",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+            "targets": [{"expr": "sum(rate(http_requests_total{job=~\"mox-.*\", status=~\"5..\"}[5m])) by (job) / sum(rate(http_requests_total{job=~\"mox-.*\"}[5m])) by (job)", "legendFormat": "{{job}}"}]
+          },
+          {
+            "type": "table",
+            "title": "服务状态",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+            "targets": [{"expr": "up{job=~\"mox-.*\"}", "legendFormat": "{{job}} - {{instance}}", "instant": true}],
+            "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}]}}
+          }
+        ]
+      }
+    }
+  mox-dsql-performance.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "uid": "mox-dsql",
+        "title": "MOX DSQL 性能监控",
+        "tags": ["mox", "dsql", "performance"],
+        "timezone": "browser",
+        "schemaVersion": 38,
+        "version": 1,
+        "refresh": "30s",
+        "panels": [
+          {
+            "type": "stat",
+            "title": "DSQL执行QPS",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+            "targets": [{"expr": "sum(rate(dsql_execute_total[5m]))", "legendFormat": "QPS"}],
+            "fieldConfig": {"defaults": {"unit": "reqps"}}
+          },
+          {
+            "type": "stat",
+            "title": "执行成功率",
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+            "targets": [{"expr": "sum(rate(dsql_execute_total{success=\"true\"}[5m])) / sum(rate(dsql_execute_total[5m]))", "legendFormat": "成功率"}],
+            "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.95}, {"color": "green", "value": 0.99}]}}}
+          },
+          {
+            "type": "stat",
+            "title": "缓存命中率",
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+            "targets": [{"expr": "sum(rate(dsql_cache_hits_total[5m])) / (sum(rate(dsql_cache_hits_total[5m])) + sum(rate(dsql_cache_misses_total[5m])))", "legendFormat": "命中率"}],
+            "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "green", "value": 0.8}]}}}
+          },
+          {
+            "type": "stat",
+            "title": "慢查询数/分钟",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+            "targets": [{"expr": "sum(rate(dsql_slow_queries_total[5m])) * 60", "legendFormat": "慢查询"}],
+            "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "red", "value": 50}]}}}
+          },
+          {
+            "type": "timeseries",
+            "title": "DSQL执行耗时分布",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+            "targets": [
+              {"expr": "histogram_quantile(0.5, sum(rate(dsql_execute_duration_seconds_bucket[5m])) by (le))", "legendFormat": "P50"},
+              {"expr": "histogram_quantile(0.9, sum(rate(dsql_execute_duration_seconds_bucket[5m])) by (le))", "legendFormat": "P90"},
+              {"expr": "histogram_quantile(0.99, sum(rate(dsql_execute_duration_seconds_bucket[5m])) by (le))", "legendFormat": "P99"}
+            ],
+            "fieldConfig": {"defaults": {"unit": "s"}}
+          },
+          {
+            "type": "timeseries",
+            "title": "缓存命中/未命中",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+            "targets": [
+              {"expr": "sum(rate(dsql_cache_hits_total[5m]))", "legendFormat": "命中"},
+              {"expr": "sum(rate(dsql_cache_misses_total[5m]))", "legendFormat": "未命中"}
+            ]
+          },
+          {
+            "type": "barchart",
+            "title": "Top 10 慢SQL",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+            "targets": [{"expr": "topk(10, sum(rate(dsql_execute_duration_seconds_sum[5m])) by (sql_code) / sum(rate(dsql_execute_duration_seconds_count[5m])) by (sql_code))", "legendFormat": "{{sql_code}}"}],
+            "fieldConfig": {"defaults": {"unit": "s"}}
+          }
+        ]
+      }
+    }

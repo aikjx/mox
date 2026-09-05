@@ -30,6 +30,9 @@ pub struct ServerConfig {
     /// 限流配置
     #[serde(default)]
     pub rate_limit: crate::rate_limit::RateLimitConfig,
+    /// 弹性容错配置
+    #[serde(default)]
+    pub resilience: ResilienceConfig,
 }
 
 /// 服务元信息
@@ -294,6 +297,85 @@ impl Default for ServerConfig {
             auth: AuthConfig::default(),
             observability: ObservabilityConfig::default(),
             rate_limit: crate::rate_limit::RateLimitConfig::default(),
+            resilience: ResilienceConfig::default(),
+        }
+    }
+}
+
+/// 弹性容错配置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResilienceConfig {
+    /// 是否启用熔断
+    #[serde(default = "default_true")]
+    pub circuit_breaker_enabled: bool,
+    /// 熔断器配置
+    #[serde(default)]
+    pub circuit_breaker: CircuitBreakerConfig,
+    /// 是否启用重试
+    #[serde(default = "default_true")]
+    pub retry_enabled: bool,
+    /// 最大重试次数
+    #[serde(default = "default_max_retries")]
+    pub max_retries: u32,
+    /// 重试初始间隔（毫秒）
+    #[serde(default = "default_retry_initial_ms")]
+    pub retry_initial_ms: u64,
+    /// 重试最大间隔（毫秒）
+    #[serde(default = "default_retry_max_ms")]
+    pub retry_max_ms: u64,
+}
+
+/// 熔断器配置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CircuitBreakerConfig {
+    /// 失败率阈值（0.0 ~ 1.0）
+    #[serde(default = "default_failure_rate_threshold")]
+    pub failure_rate_threshold: f64,
+    /// 最小请求样本数
+    #[serde(default = "default_minimum_requests")]
+    pub minimum_requests: u64,
+    /// 滑动窗口大小
+    #[serde(default = "default_window_size")]
+    pub window_size: u64,
+    /// Open状态持续时间（秒）
+    #[serde(default = "default_open_duration_secs")]
+    pub open_duration_secs: u64,
+    /// HalfOpen状态允许的探测请求数
+    #[serde(default = "default_half_open_max_requests")]
+    pub half_open_max_requests: u64,
+}
+
+fn default_true() -> bool { true }
+fn default_max_retries() -> u32 { 3 }
+fn default_retry_initial_ms() -> u64 { 100 }
+fn default_retry_max_ms() -> u64 { 10000 }
+fn default_failure_rate_threshold() -> f64 { 0.5 }
+fn default_minimum_requests() -> u64 { 10 }
+fn default_window_size() -> u64 { 100 }
+fn default_open_duration_secs() -> u64 { 30 }
+fn default_half_open_max_requests() -> u64 { 5 }
+
+impl Default for ResilienceConfig {
+    fn default() -> Self {
+        Self {
+            circuit_breaker_enabled: true,
+            circuit_breaker: CircuitBreakerConfig::default(),
+            retry_enabled: true,
+            max_retries: 3,
+            retry_initial_ms: 100,
+            retry_max_ms: 10000,
+        }
+    }
+}
+
+impl Default for CircuitBreakerConfig {
+    fn default() -> Self {
+        Self {
+            failure_rate_threshold: 0.5,
+            minimum_requests: 10,
+            window_size: 100,
+            open_duration_secs: 30,
+            half_open_max_requests: 5,
         }
     }
 }

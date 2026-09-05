@@ -1,0 +1,529 @@
+# MOX v3.1 Kubernetes 部署清单
+# 包含：4个微服务 + Redis + ConfigMap + Namespace
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mox
+  labels:
+    app.kubernetes.io/part-of: mox-platform
+---
+# ConfigMap: 通用配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mox-common-config
+  namespace: mox
+data:
+  RUST_LOG: "info"
+  REDIS_URL: "redis://redis:6379"
+  CACHE_BACKEND: "redis"
+  TRACING_SAMPLE_RATE: "0.1"
+---
+# ConfigMap: KG服务配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mox-kg-config
+  namespace: mox
+data:
+  SERVER_PORT: "8101"
+  SERVER_HOST: "0.0.0.0"
+  RATE_LIMIT_QPS: "1000"
+  RATE_LIMIT_BURST: "200"
+---
+# ConfigMap: Cloud服务配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mox-cloud-config
+  namespace: mox
+data:
+  SERVER_PORT: "8102"
+  SERVER_HOST: "0.0.0.0"
+  RATE_LIMIT_QPS: "500"
+  RATE_LIMIT_BURST: "100"
+---
+# ConfigMap: IAM服务配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mox-iam-config
+  namespace: mox
+data:
+  SERVER_PORT: "8103"
+  SERVER_HOST: "0.0.0.0"
+  RATE_LIMIT_QPS: "200"
+  RATE_LIMIT_BURST: "50"
+  JWT_EXPIRE_SECONDS: "3600"
+  JWT_REFRESH_EXPIRE_SECONDS: "604800"
+---
+# ConfigMap: KB服务配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mox-kb-config
+  namespace: mox
+data:
+  SERVER_PORT: "8104"
+  SERVER_HOST: "0.0.0.0"
+  RATE_LIMIT_QPS: "300"
+  RATE_LIMIT_BURST: "60"
+---
+# Deployment: Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: mox
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Service: Redis
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: mox
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+# Deployment: mox-kg-server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mox-kg-server
+  namespace: mox
+  labels:
+    app: mox-kg-server
+    version: v3.1.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mox-kg-server
+  template:
+    metadata:
+      labels:
+        app: mox-kg-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8101"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: mox-kg-server
+        image: mox-kg-server:v3.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8101
+        envFrom:
+        - configMapRef:
+            name: mox-common-config
+        - configMapRef:
+            name: mox-kg-config
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8101
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8101
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30
+---
+# Service: mox-kg-server
+apiVersion: v1
+kind: Service
+metadata:
+  name: mox-kg-server
+  namespace: mox
+  labels:
+    app: mox-kg-server
+spec:
+  selector:
+    app: mox-kg-server
+  ports:
+  - name: http
+    port: 8101
+    targetPort: 8101
+  type: ClusterIP
+---
+# Deployment: mox-cloud-server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mox-cloud-server
+  namespace: mox
+  labels:
+    app: mox-cloud-server
+    version: v3.1.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mox-cloud-server
+  template:
+    metadata:
+      labels:
+        app: mox-cloud-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8102"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: mox-cloud-server
+        image: mox-cloud-server:v3.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8102
+        envFrom:
+        - configMapRef:
+            name: mox-common-config
+        - configMapRef:
+            name: mox-cloud-config
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8102
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8102
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30
+---
+# Service: mox-cloud-server
+apiVersion: v1
+kind: Service
+metadata:
+  name: mox-cloud-server
+  namespace: mox
+  labels:
+    app: mox-cloud-server
+spec:
+  selector:
+    app: mox-cloud-server
+  ports:
+  - name: http
+    port: 8102
+    targetPort: 8102
+  type: ClusterIP
+---
+# Deployment: mox-iam-server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mox-iam-server
+  namespace: mox
+  labels:
+    app: mox-iam-server
+    version: v3.1.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mox-iam-server
+  template:
+    metadata:
+      labels:
+        app: mox-iam-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8103"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: mox-iam-server
+        image: mox-iam-server:v3.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8103
+        envFrom:
+        - configMapRef:
+            name: mox-common-config
+        - configMapRef:
+            name: mox-iam-config
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8103
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8103
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30
+---
+# Service: mox-iam-server
+apiVersion: v1
+kind: Service
+metadata:
+  name: mox-iam-server
+  namespace: mox
+  labels:
+    app: mox-iam-server
+spec:
+  selector:
+    app: mox-iam-server
+  ports:
+  - name: http
+    port: 8103
+    targetPort: 8103
+  type: ClusterIP
+---
+# Deployment: mox-kb-server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mox-kb-server
+  namespace: mox
+  labels:
+    app: mox-kb-server
+    version: v3.1.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mox-kb-server
+  template:
+    metadata:
+      labels:
+        app: mox-kb-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8104"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: mox-kb-server
+        image: mox-kb-server:v3.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8104
+        envFrom:
+        - configMapRef:
+            name: mox-common-config
+        - configMapRef:
+            name: mox-kb-config
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8104
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8104
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30
+---
+# Service: mox-kb-server
+apiVersion: v1
+kind: Service
+metadata:
+  name: mox-kb-server
+  namespace: mox
+  labels:
+    app: mox-kb-server
+spec:
+  selector:
+    app: mox-kb-server
+  ports:
+  - name: http
+    port: 8104
+    targetPort: 8104
+  type: ClusterIP
+---
+# Ingress: 统一入口
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mox-ingress
+  namespace: mox
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  rules:
+  - host: mox.local
+    http:
+      paths:
+      - path: /kg
+        pathType: Prefix
+        backend:
+          service:
+            name: mox-kg-server
+            port:
+              number: 8101
+      - path: /cloud
+        pathType: Prefix
+        backend:
+          service:
+            name: mox-cloud-server
+            port:
+              number: 8102
+      - path: /iam
+        pathType: Prefix
+        backend:
+          service:
+            name: mox-iam-server
+            port:
+              number: 8103
+      - path: /kb
+        pathType: Prefix
+        backend:
+          service:
+            name: mox-kb-server
+            port:
+              number: 8104
+---
+# HorizontalPodAutoscaler: 自动扩缩容
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mox-kg-hpa
+  namespace: mox
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mox-kg-server
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+# PodDisruptionBudget: 保证可用性
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mox-pdb
+  namespace: mox
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: mox-platform

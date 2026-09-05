@@ -21,3 +21,6 @@ mox-observability-core = { path = "../mox-observability-core" }
 default = ["memory"]
 memory = []
 redis-backend = ["dep:redis"]
+
+[dev-dependencies]
+tokio = { workspace = true }

@@ -36,6 +36,7 @@ pub struct AppState {
     pub health: Arc<HealthRegistry>,
     pub service_name: String,
     pub service_version: String,
+    pub circuit_breakers: Arc<crate::resilience::CircuitBreakerRegistry>,
 }
 
 /// 统一 HTTP 服务器
@@ -53,11 +54,15 @@ impl Server {
     /// 构建路由（健康检查 + 业务路由 + 中间件），返回 Router<()>
     async fn build_router(&self) -> Router {
         let health = Arc::new(HealthRegistry::new(self.module.name().to_string()));
+        let circuit_breakers = Arc::new(crate::resilience::CircuitBreakerRegistry::from_config(
+            &self.config.resilience,
+        ));
         let state = Arc::new(AppState {
             config: Arc::new(self.config.clone()),
             health: health.clone(),
             service_name: self.module.name().to_string(),
             service_version: self.module.version().to_string(),
+            circuit_breakers: circuit_breakers.clone(),
         });
 
         // 健康检查路由
@@ -98,7 +103,7 @@ impl Server {
             );
 
         // 限流层（如果启用，放在最外层）
-        if self.config.rate_limit.enabled {
+        let router = if self.config.rate_limit.enabled {
             let rate_layer = crate::rate_limit::RateLimitLayer::new(
                 self.config.rate_limit.rate_per_sec,
                 self.config.rate_limit.capacity,
@@ -111,6 +116,21 @@ impl Server {
             base_router.layer(rate_layer)
         } else {
             base_router
+        };
+
+        // 熔断层（如果启用，放在最外层）
+        if self.config.resilience.circuit_breaker_enabled {
+            tracing::info!(
+                failure_threshold = self.config.resilience.circuit_breaker.failure_rate_threshold,
+                min_requests = self.config.resilience.circuit_breaker.minimum_requests,
+                "熔断器已启用"
+            );
+            router.layer(axum::middleware::from_fn_with_state(
+                (*circuit_breakers).clone(),
+                crate::resilience::circuit_breaker_middleware,
+            ))
+        } else {
+            router
         }
     }
 
@@ -223,6 +243,7 @@ mod tests {
             health: Arc::new(HealthRegistry::new("test".to_string())),
             service_name: "test".to_string(),
             service_version: "1.0.0".to_string(),
+            circuit_breakers: Arc::new(crate::resilience::CircuitBreakerRegistry::default()),
         });
         let response = live_handler(Extension(state)).await.into_response();
         assert_eq!(response.status(), StatusCode::OK);

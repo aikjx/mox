@@ -4478,6 +4478,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
  "tracing",
 ]
 
@@ -6152,6 +6153,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-resilience-core"
+version = "1.0.0"
+dependencies = [
+ "async-trait",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "mox-server-runtime"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -6165,6 +6178,8 @@ dependencies = [
  "mox-config-core",
  "mox-error",
  "mox-observability-core",
+ "mox-resilience-core",
+ "parking_lot",
  "serde",
  "serde_json",
  "sha2",

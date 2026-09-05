@@ -34,14 +34,17 @@ impl<'a> ProcessEngine<'a> {
         let mut step_results = Vec::with_capacity(process.steps.len());
         let mut success = true;
         let mut error = None;
+        // 记录已成功执行且有补偿SQL的步骤，用于事务回滚
+        let mut completed_steps: Vec<(usize, &ProcessStep)> = Vec::new();
 
-        for step in &process.steps {
+        for (_idx, step) in process.steps.iter().enumerate() {
             if !evaluate_condition(step.when.as_deref(), &context)? {
                 step_results.push(ProcessStepResult {
                     step_code: step.step_code.clone(),
                     executed: false,
                     skipped: true,
                     success: true,
+                    compensated: false,
                     output_key: step.output_key.clone(),
                     data: None,
                     error: None,
@@ -61,11 +64,16 @@ impl<'a> ProcessEngine<'a> {
                     if let Some(key) = &step.output_key {
                         set_path(&mut context, key, result.data.clone().unwrap_or(Value::Null))?;
                     }
+                    // 记录已成功步骤（用于补偿）
+                    if step.compensation_sql_code.is_some() {
+                        completed_steps.push((step_results.len(), step));
+                    }
                     step_results.push(ProcessStepResult {
                         step_code: step.step_code.clone(),
                         executed: true,
                         skipped: false,
                         success: true,
+                        compensated: false,
                         output_key: step.output_key.clone(),
                         data: result.data,
                         error: None,
@@ -79,12 +87,17 @@ impl<'a> ProcessEngine<'a> {
                         executed: true,
                         skipped: false,
                         success: false,
+                        compensated: false,
                         output_key: step.output_key.clone(),
                         data: result.data,
                         error: Some(message.clone()),
                     });
                     success = false;
                     error = Some(message);
+                    // 事务模式：执行补偿
+                    if should_stop && process.transactional {
+                        self.execute_compensation(&completed_steps, &context, request.trace_id.as_deref(), &mut step_results);
+                    }
                     if should_stop {
                         break;
                     }
@@ -96,12 +109,17 @@ impl<'a> ProcessEngine<'a> {
                         executed: true,
                         skipped: false,
                         success: false,
+                        compensated: false,
                         output_key: step.output_key.clone(),
                         data: None,
                         error: Some(message.clone()),
                     });
                     success = false;
                     error = Some(message);
+                    // 事务模式：执行补偿
+                    if !step.continue_on_error && process.transactional {
+                        self.execute_compensation(&completed_steps, &context, request.trace_id.as_deref(), &mut step_results);
+                    }
                     if !step.continue_on_error {
                         break;
                     }
@@ -130,6 +148,45 @@ impl<'a> ProcessEngine<'a> {
             result.error.as_deref(),
         )?;
         Ok(result)
+    }
+
+    /// 执行补偿操作：按逆序执行已成功步骤的补偿SQL
+    fn execute_compensation(
+        &self,
+        completed_steps: &[(usize, &ProcessStep)],
+        context: &Value,
+        trace_id: Option<&str>,
+        step_results: &mut Vec<ProcessStepResult>,
+    ) {
+        tracing::warn!("Process transaction failed, executing compensation for {} steps", completed_steps.len());
+        // 按逆序执行补偿
+        for (result_idx, step) in completed_steps.iter().rev() {
+            if let Some(comp_sql_code) = &step.compensation_sql_code {
+                let params = match resolve_params(step, context) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        tracing::error!("Compensation param resolution failed for step {}: {}", step.step_code, e);
+                        continue;
+                    }
+                };
+                match self.manager.execute(&crate::model::ExecuteRequest {
+                    sql_code: comp_sql_code.clone(),
+                    params,
+                    trace_id: trace_id.map(|s| s.to_string()),
+                }) {
+                    Ok(_) => {
+                        tracing::info!("Compensation succeeded for step: {}", step.step_code);
+                        if let Some(sr) = step_results.get_mut(*result_idx) {
+                            sr.compensated = true;
+                        }
+                    }
+                    Err(e) => {
+                        // 补偿失败只记录日志，不中断补偿流程
+                        tracing::error!("Compensation failed for step {}: {}", step.step_code, e);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -248,6 +305,7 @@ mod tests {
                 output_key: Some("matches".to_string()),
                 when: None,
                 continue_on_error: false,
+                compensation_sql_code: None,
             }],
             permission_code: None,
             entity_code: Some("people".to_string()),

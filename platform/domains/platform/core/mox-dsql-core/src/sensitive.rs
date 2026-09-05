@@ -11,6 +11,8 @@ use serde_json::Value;
 use std::collections::HashSet;
 
 /// 敏感字段名黑名单（不区分大小写匹配）
+/// 注意：身份证、手机号、邮箱、银行卡号等可部分脱敏的字段不在此列表中，
+/// 它们通过正则表达式进行部分掩码处理；此列表仅包含完全不能暴露的字段。
 const SENSITIVE_FIELD_NAMES: &[&str] = &[
     "password",
     "pwd",
@@ -22,16 +24,9 @@ const SENSITIVE_FIELD_NAMES: &[&str] = &[
     "api_key",
     "apikey",
     "private_key",
-    "id_card",
-    "idcard",
-    "identity_card",
-    "credit_card",
-    "card_number",
     "cvv",
     "cvc",
     "ssn",
-    "bank_card",
-    "bankcard",
     "authorization",
     "cookie",
     "session",

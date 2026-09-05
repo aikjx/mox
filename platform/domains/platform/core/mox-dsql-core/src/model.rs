@@ -1,4 +1,4 @@
-// mox-dsql-core 核心数据结构定义
+﻿// mox-dsql-core 核心数据结构定义
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -274,6 +274,10 @@ pub struct ProcessStep {
     pub when: Option<String>,
     #[serde(default)]
     pub continue_on_error: bool,
+    /// 补偿SQL code：当流程事务回滚时，按逆序执行已成功步骤的补偿操作。
+    /// 通常用于撤销写操作（如删除已插入的记录、恢复旧值）。
+    #[serde(default)]
+    pub compensation_sql_code: Option<String>,
 }
 
 /// 动态流程定义。
@@ -286,6 +290,9 @@ pub struct ProcessDefinition {
     pub version: i32,
     pub status: ProcessStatus,
     pub steps: Vec<ProcessStep>,
+    /// 是否启用事务模式：启用后，任何步骤失败都会按逆序执行已成功步骤的补偿SQL。
+    #[serde(default)]
+    pub transactional: bool,
     pub permission_code: Option<String>,
     pub entity_code: Option<String>,
     pub created_by: Option<String>,
@@ -321,6 +328,9 @@ pub struct ProcessStepResult {
     pub executed: bool,
     pub skipped: bool,
     pub success: bool,
+    /// 是否已执行补偿操作
+    #[serde(default)]
+    pub compensated: bool,
     pub output_key: Option<String>,
     pub data: Option<serde_json::Value>,
     pub error: Option<String>,
@@ -375,3 +385,5 @@ pub struct AuditStats {
     pub start_time: String,
     pub end_time: String,
 }
+
+

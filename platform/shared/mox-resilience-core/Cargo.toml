@@ -1,0 +1,15 @@
+[package]
+name = "mox-resilience-core"
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["Mox - 璇玑 RelGraph"]
+description = "企业级弹性容错核心：重试策略、熔断器、降级机制，保障高可用"
+
+[dependencies]
+tokio = { workspace = true }
+tracing = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
