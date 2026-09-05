@@ -5345,6 +5345,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
  "tracing",
  "uuid",
 ]
@@ -5747,6 +5748,7 @@ dependencies = [
  "clap",
  "futures",
  "hex",
+ "hmac",
  "mox-ai-expert-svc",
  "mox-alliance-api",
  "mox-alliance-common-proto",
@@ -6112,6 +6114,7 @@ dependencies = [
  "chrono",
  "clap",
  "mox-auth-core",
+ "mox-cache-core",
  "mox-config-core",
  "mox-error",
  "mox-observability-core",
@@ -6124,6 +6127,7 @@ dependencies = [
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

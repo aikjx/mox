@@ -46,6 +46,10 @@ impl Default for AuthConfig {
                 "/health".into(),
                 "/api/auth/login".into(),
                 "/api/auth/register".into(),
+                // 管理面探针端点（k8s / docker liveness & readiness）允许匿名访问，
+                // 其余 /actuator/*（env 配置泄露 / logs 日志泄露 / api 启停等）强制鉴权（见 lib.rs P0-2）。
+                "/actuator/health".into(),
+                "/actuator/info".into(),
             ],
             dev_mode: default_dev_mode(),
         }

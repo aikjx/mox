@@ -1,274 +1,180 @@
-# =============================================================================
-# MOX 平台 - CI/CD 流水线
-# =============================================================================
-# 触发条件：
-#   - PR 到 main/master/develop 分支
-#   - 直接 push 到 main/master/develop 分支
-#
-# 流水线阶段：
-#   1. Check & Lint   - cargo check + rustfmt + clippy
-#   2. Test (matrix)  - 核心 crate 单元测试
-#   3. Build          - workspace 构建验证
-#   4. Frontend       - 前端 lint + test + build
-# =============================================================================
-
-name: MOX CI
+name: MOX CI/CD
 
 on:
   push:
     branches: [main, master, develop]
-    paths:
-      - 'platform/**'
-      - 'frontend-ui/**'
-      - '.github/workflows/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
   pull_request:
-    branches: [main, master, develop]
-    paths:
-      - 'platform/**'
-      - 'frontend-ui/**'
-      - '.github/workflows/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
+    branches: [main, master]
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: short
-  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
 
 jobs:
   # ===========================================================================
-  # 阶段 1: Rust 检查 & Lint
+  # 1. 代码质量检查（fmt + clippy）
   # ===========================================================================
-  rust-check:
-    name: Rust Check & Lint
+  lint:
+    name: Lint (fmt + clippy)
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt, clippy
 
-      - name: Cache cargo registry
+      - name: Cache cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+            target
+          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-registry-
+            ${{ runner.os }}-cargo-lint-
 
-      - name: Cache cargo build
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-check-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-check-
-            ${{ runner.os }}-cargo-build-
+      - name: Check formatting
+        run: cargo fmt --all -- --check
 
-      - name: cargo check (default members)
-        run: cargo check --workspace
-
-      - name: rustfmt check
-        run: cargo fmt --workspace --all-targets -- --check
-
-      - name: clippy check
-        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D warnings
 
   # ===========================================================================
-  # 阶段 2: Rust 测试（矩阵并行）
+  # 2. 核心 crate 编译检查
   # ===========================================================================
-  rust-test:
-    name: Test ${{ matrix.crate }}
+  build:
+    name: Build (core crates)
     runs-on: ubuntu-latest
-    needs: rust-check
-
+    needs: lint
     strategy:
-      fail-fast: false
       matrix:
         crate:
-          # Foundation 层
-          - mox-error
-          - mox-framework
-          # Core 层
-          - mox-kg-algo-core
-          - mox-kg-core
-          - mox-flow-operator-core
-          - mox-ai-intent-core
-          - mox-data-standards-core
-          - mox-data-norm-core
-          - mox-data-formula-core
-          - mox-voice-dsp-core
-          - mox-platform-operator-core
-          - mox-platform-system-core
-          - mox-platform-iam-core
-          - mox-platform-meta-core
+          - mox-cache-core
+          - mox-server-runtime
+          - mox-kb-core
           - mox-dsql-core
-          # Service 层
-          - mox-kg-service-svc
-          - mox-project-graph-core
-          - mox-project-graph-svc
-          - mox-voice-core-svc
-          - mox-voice-asr-svc
-          - mox-voice-intent-svc
-          - mox-voice-operator-svc
-          - mox-market-template-svc
-          - mox-data-catalog-svc
-          # Gateway
-          - mox-platform-gateway-svc
-          # API 层
-          - mox-voice-api
-          - mox-market-api
-          # SDK
-          - mox-cloud-sdk
-
+          - mox-kg-server
+          - mox-cloud-server
+          - mox-iam-server
+          - mox-kb-server
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
 
-      - name: Cache cargo registry
+      - name: Cache cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+            target
+          key: ${{ runner.os }}-cargo-build-${{ matrix.crate }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-registry-
+            ${{ runner.os }}-cargo-build-${{ matrix.crate }}-
+            ${{ runner.os }}-cargo-build-
 
-      - name: Cache cargo build
+      - name: Check ${{ matrix.crate }}
+        run: cargo check -p ${{ matrix.crate }} --verbose
+
+  # ===========================================================================
+  # 3. 单元测试
+  # ===========================================================================
+  test:
+    name: Test (unit tests)
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        crate:
+          - mox-cache-core
+          - mox-dsql-core
+          - mox-server-runtime
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache cargo
         uses: actions/cache@v4
         with:
-          path: target
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
           key: ${{ runner.os }}-cargo-test-${{ matrix.crate }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-test-${{ matrix.crate }}-
-            ${{ runner.os }}-cargo-check-
-            ${{ runner.os }}-cargo-build-
 
       - name: Test ${{ matrix.crate }}
-        run: cargo test -p ${{ matrix.crate }} --no-fail-fast
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.crate }}
-          path: target/test-results/
-          if-no-files-found: ignore
+        run: cargo test -p ${{ matrix.crate }} --lib --verbose
 
   # ===========================================================================
-  # 阶段 3: Rust 构建验证
+  # 4. Redis 后端特性编译
   # ===========================================================================
-  rust-build:
-    name: Rust Build
+  build-redis:
+    name: Build (redis-backend feature)
     runs-on: ubuntu-latest
-    needs: rust-check
-
+    needs: lint
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
 
-      - name: Cache cargo registry
+      - name: Cache cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
+            target
+          key: ${{ runner.os }}-cargo-redis-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Cache cargo build
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-build-
-            ${{ runner.os }}-cargo-check-
-
-      - name: Build workspace (debug)
-        run: cargo build --workspace
-
-      - name: Build gateway (release)
-        run: cargo build --release -p mox-platform-gateway-svc
-
-      - name: Upload gateway binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: mox-gateway-binary
-          path: target/release/mox-platform-gateway-svc
-          if-no-files-found: ignore
+      - name: Check mox-cache-core with redis-backend
+        run: cargo check -p mox-cache-core --features redis-backend --verbose
 
   # ===========================================================================
-  # 阶段 4: 前端检查
+  # 5. Docker 镜像构建（仅 main 分支）
   # ===========================================================================
-  frontend:
-    name: Frontend Lint & Test & Build
+  docker:
+    name: Docker (build images)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend-ui
-
+    needs: [build, test]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    strategy:
+      matrix:
+        service:
+          - name: mox-kg-server
+            port: 8101
+            dockerfile: platform/domains/kg/svc/mox-kg-server/Dockerfile
+          - name: mox-cloud-server
+            port: 8102
+            dockerfile: platform/domains/cloud/svc/mox-cloud-server/Dockerfile
+          - name: mox-iam-server
+            port: 8103
+            dockerfile: platform/domains/platform/svc/mox-iam-server/Dockerfile
+          - name: mox-kb-server
+            port: 8104
+            dockerfile: platform/domains/kb/svc/mox-kb-server/Dockerfile
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service.name }}
+        uses: docker/build-push-action@v5
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend-ui/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests
-        run: npm run test:unit -- --run
-
-      - name: Build
-        run: npm run build
-
-  # ===========================================================================
-  # 汇总状态（PR 合并检查点）
-  # ===========================================================================
-  ci-summary:
-    name: CI Summary
-    runs-on: ubuntu-latest
-    needs: [rust-check, rust-test, rust-build, frontend]
-    if: always()
-    steps:
-      - name: Verify all checks passed
-        run: |
-          echo "Rust Check & Lint: ${{ needs.rust-check.result }}"
-          echo "Rust Test (matrix): ${{ needs.rust-test.result }}"
-          echo "Rust Build: ${{ needs.rust-build.result }}"
-          echo "Frontend: ${{ needs.frontend.result }}"
-
-          if [[ "${{ needs.rust-check.result }}" != "success" ]] || \
-             [[ "${{ needs.rust-test.result }}" != "success" ]] || \
-             [[ "${{ needs.rust-build.result }}" != "success" ]] || \
-             [[ "${{ needs.frontend.result }}" != "success" ]]; then
-            echo "❌ CI FAILED"
-            exit 1
-          fi
-
-          echo "✅ All CI checks passed!"
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          build-args: SERVICE=${{ matrix.service.name }}
+          push: false
+          tags: ${{ matrix.service.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

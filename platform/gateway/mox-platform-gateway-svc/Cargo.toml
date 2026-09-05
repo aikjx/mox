@@ -23,12 +23,13 @@ tokio = { workspace = true, features = ["full"] }
 parking_lot = { workspace = true }
 uuid = { workspace = true }
 sha2 = { workspace = true }
+hmac = { workspace = true }
 hex = { workspace = true }
 prometheus = { workspace = true }
 
 # HTTP 框架（直接构建，无需 feature 开关）
 axum = { workspace = true, features = ["json", "query", "http1", "tokio", "multipart"] }
-tower = { workspace = true }
+tower = { workspace = true, features = ["util"] }
 tower-http = { workspace = true, features = ["cors", "trace", "compression-full", "timeout"] }
 
 # 在线日志/可观测性（Actuator 管理面 + SSE 实时日志流）

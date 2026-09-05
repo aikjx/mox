@@ -27,6 +27,9 @@ pub struct ServerConfig {
     /// 可观测性配置
     #[serde(default)]
     pub observability: ObservabilityConfig,
+    /// 限流配置
+    #[serde(default)]
+    pub rate_limit: crate::rate_limit::RateLimitConfig,
 }
 
 /// 服务元信息
@@ -290,6 +293,7 @@ impl Default for ServerConfig {
             cache: CacheConfig::default(),
             auth: AuthConfig::default(),
             observability: ObservabilityConfig::default(),
+            rate_limit: crate::rate_limit::RateLimitConfig::default(),
         }
     }
 }

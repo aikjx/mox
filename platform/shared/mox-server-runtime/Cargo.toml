@@ -20,7 +20,9 @@ thiserror = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true }
 chrono = { workspace = true }
+uuid = { workspace = true }
 mox-observability-core = { path = "../mox-observability-core" }
 mox-auth-core = { path = "../mox-auth-core" }
 mox-config-core = { path = "../mox-config-core" }
+mox-cache-core = { path = "../mox-cache-core" }
 mox-error = { path = "../../foundation/mox-error" }

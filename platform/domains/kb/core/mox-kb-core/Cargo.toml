@@ -14,6 +14,7 @@ async-trait = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
+tokio = { workspace = true }
 mox-base-model-core = { path = "../../../base/mox-base-model-core" }
 mox-base-store-core = { path = "../../../base/mox-base-store-core" }
 mox-base-query-core = { path = "../../../base/mox-base-query-core" }

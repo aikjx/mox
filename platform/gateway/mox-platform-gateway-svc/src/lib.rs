@@ -63,7 +63,7 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::{AllowOrigin, CorsLayer};
-use auth::AuthMiddleware;
+use auth::{AuthMiddleware, auth_middleware};
 use rate_limit::{RateLimiter, rate_limit_middleware};
 use o11y::MetricsCollector;
 use actuator::{LogStore, RuntimeMetrics};
@@ -134,11 +134,18 @@ impl GatewayState {
 /// 中间件分层（从外到内）：
 /// 1. CORS 跨域
 /// 2. 限流（令牌桶）
-/// 3. 认证（JWT + API Key）
+/// 3. 认证（JWT + API Key）—— 业务路由组与 Actuator 管理面均经此鉴权（见各路由组 route_layer）
 /// 4. 业务路由
 pub fn build_gateway_router(state: GatewayState) -> Router {
     // L0 通用端点（无需认证）+ Spring Boot 风格 Actuator 管理面（/actuator/*）
-    let actuator = actuator::build_actuator_router();
+    // P0-2 安全：管理面除 health/info（已列入 public_paths）外强制鉴权，
+    // 防止匿名访问 /actuator/env（配置泄露）、/actuator/logs（日志泄露）、
+    // /actuator/api/:id/enable|disable（API 启停）等敏感端点。
+    let actuator_auth = state.auth.clone();
+    let actuator = actuator::build_actuator_router().route_layer(from_fn(move |request: Request, next: Next| {
+        let auth = actuator_auth.clone();
+        async move { auth_middleware(auth, request, next).await }
+    }));
     let l0 = Router::new()
         .route("/health", get(health_handler))
         .route("/api/v1/status", get(status_handler))
@@ -152,7 +159,7 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     let protected = modules::build_module_routers(&states, &state);
 
     // 整体统一为 Router<GatewayState>，最后一次性注入 state。
-    // 中间件分层（运行时由外到内）：可观测 → CORS → 限流 →（仅业务路由）鉴权。
+    // 中间件分层（运行时由外到内）：可观测 → CORS → 限流 → 鉴权（业务路由组 + Actuator 管理面均挂载 auth_middleware）。
     // 注意：axum 的 layer 后注册者先执行，故下方书写顺序与运行时顺序相反。
     let limiter_state = state.rate_limiter.clone();
     let observability_state = state.clone();
@@ -332,6 +339,12 @@ pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::body::Body;
+    use axum::http::{Request as HttpRequest, StatusCode};
+    use tower::util::ServiceExt;
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+    use base64::Engine;
 
     #[test]
     fn test_gateway_state_creation() {
@@ -348,5 +361,54 @@ mod tests {
         assert_eq!(config.port, 8080);
         assert_eq!(config.host, "0.0.0.0");
         assert!(config.auth.public_paths.contains(&"/health".to_string()));
+    }
+
+    /// 用给定密钥生成一枚 HS256 签名的测试用 JWT。
+    fn make_test_jwt(secret: &str, issuer: &str) -> String {
+        type HmacSha256 = Hmac<Sha256>;
+        let header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(r#"{"alg":"HS256","typ":"JWT"}"#);
+        let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
+            format!(r#"{{"sub":"tester","iss":"{}","exp":9999999999}}"#, issuer));
+        let signing_input = format!("{}.{}", header, payload);
+        let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(signing_input.as_bytes());
+        let sig = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(mac.finalize().into_bytes());
+        format!("{}.{}.{}", header, payload, sig)
+    }
+
+    #[tokio::test]
+    async fn actuator_sensitive_endpoints_require_auth() {
+        // 设置 JWT_SECRET 使 from_config 采用该密钥（debug 下 dev_mode 仍为 true，
+        // 但严格验签路径已生效；无令牌路径不受 dev 旁路影响）。
+        std::env::set_var("JWT_SECRET", "test-secret-xyz-123");
+        let config = GatewayConfig::default();
+        let state = GatewayState::from_config(config);
+        let app = build_gateway_router(state);
+
+        // 1) /actuator/env 无 token → 401（敏感端点强制鉴权，P0-2）
+        let resp = app.clone()
+            .oneshot(HttpRequest::get("/actuator/env").body(Body::empty()).unwrap())
+            .await.unwrap();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "/actuator/env 必须鉴权");
+
+        // 2) /actuator/health 无 token → 200（探针端点公开，public_paths 已含）
+        let resp = app.clone()
+            .oneshot(HttpRequest::get("/actuator/health").body(Body::empty()).unwrap())
+            .await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK, "/actuator/health 应匿名可用");
+
+        // 3) /actuator/env 带合法 JWT → 200
+        let token = make_test_jwt("test-secret-xyz-123", "mox-platform");
+        let resp = app.clone()
+            .oneshot(
+                HttpRequest::get("/actuator/env")
+                    .header("Authorization", format!("Bearer {}", token))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK, "合法 JWT 应可访问 actuator");
+
+        std::env::remove_var("JWT_SECRET");
     }
 }

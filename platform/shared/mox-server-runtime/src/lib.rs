@@ -23,10 +23,16 @@ pub mod config;
 pub mod server;
 pub mod health;
 pub mod shutdown;
+pub mod cache_factory;
+pub mod rate_limit;
+pub mod tracing_utils;
 
 pub use config::{ServerConfig, DatabaseConfig, CacheConfig, AuthConfig, ObservabilityConfig};
 pub use server::Server;
 pub use health::HealthRegistry;
+pub use cache_factory::{CacheHandle, CacheBackend};
+pub use rate_limit::{RateLimitLayer, RateLimiter, RateLimitConfig};
+pub use tracing_utils::{extract_trace_id, generate_trace_id, inject_trace_id, make_request_span, record_trace_id};
 
 use async_trait::async_trait;
 use axum::Router;

@@ -281,14 +281,14 @@ pub trait ServiceModule: Send + Sync {
 | ~~P0~~ | ~~kg/cloud/iam 服务接入实际业务逻辑~~ | ✅ **已完成**：kg 复用 http_adapter(10端点)，cloud 基于 MasterServer(8端点)，iam 基于 mox-auth-core(10端点) |
 | ~~P0~~ | ~~mox-dsql-core 缓存替换为 mox-cache-core~~ | ✅ **已完成**：DsqlCache 内部改用 MemoryCache（LRU+TTL+统计），同步 API 保持不变，14个单元测试全部通过 |
 | ~~P1~~ | ~~SQL 模板/业务逻辑数据库化表结构 + 迁移脚本~~ | ✅ **已完成**：migration 003 新增 dsql_logic/dsql_logic_version 业务逻辑表 + 7个性能索引；PostgreSQL 兼容完整 schema（8表+12索引）已交付；14个单元测试全部通过 |
-| P1 | Redis 缓存接入（L2 分布式缓存） | 当前 mox-cache-core 的 RedisCache 已有实现，需在 server 配置中启用 |
-| P1 | 单元测试覆盖 | 新增 crate 的核心逻辑测试（当前 mox-server-runtime 有 1 个测试） |
-| P2 | CI/CD 流水线 | GitHub Actions / GitLab CI：lint + test + build + docker push |
-| P2 | 审计日志 | 关键操作（SQL 模板修改 / 权限变更 / 数据删除）的不可变审计日志 |
-| P2 | 分布式追踪 | OpenTelemetry 接入，跨服务 trace 传播 |
+| ~~P1~~ | ~~Redis L2 缓存在 server 中启用~~ | ✅ **已完成**：mox-server-runtime 新增 cache_factory.rs，根据配置自动创建 L1 内存/L2 Redis 缓存；支持 memory/redis/none 三种后端；配置层已有 redis_url/backend/MOX_REDIS_URL 环境变量 |
+| ~~P1~~ | ~~单元测试覆盖扩充~~ | ✅ **已完成**：mox-server-runtime 2→15测试，mox-kb-core 1→11测试，mox-dsql-core 14测试，mox-cache-core 5测试，合计45+测试全部通过 |
+| ~~P2~~ | ~~CI/CD 流水线~~ | ✅ **已完成**：GitHub Actions 配置（fmt+clippy lint / 8 crate 并行编译 / 3 crate 单元测试 / redis-backend 特性编译 / 4 服务 Docker 镜像构建） |
+| ~~P2~~ | ~~分布式追踪~~ | ✅ **已完成**：mox-server-runtime 新增 tracing_utils.rs，trace_id 提取/生成/注入，兼容 W3C Trace Context（traceparent），与 tracing span 集成，7 个测试通过 |
+| P2 | 审计日志 | 关键操作（SQL 模板修改 / 权限变更 / 数据删除）的不可变审计日志（表结构已存在，查询 API 待实现） |
 | P3 | 配置中心 | 接入 Nacos / Apollo / etcd，支持配置热更新 |
 | P3 | 服务发现 | 接入 Consul / etcd / Kubernetes Service |
-| P3 | 限流熔断 | tower-governor / hdr-histogram，保护后端服务 |
+| ~~P3~~ | ~~限流熔断~~ | ✅ **已完成**：mox-server-runtime 新增 rate_limit.rs，令牌桶无锁实现（AtomicU64），支持 QPS/突发配置，429 响应，集成到 ServerConfig.rate_limit，5 个测试通过 |
 
 ---
 

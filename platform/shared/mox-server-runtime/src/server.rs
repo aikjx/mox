@@ -70,7 +70,7 @@ impl Server {
         let business_routes = self.module.routes(&self.config).await;
 
         // 合并路由 + 中间件（Extension 注入 state，保持 Router<()>）
-        Router::new()
+        let base_router = Router::new()
             .nest("/health", health_routes)
             .merge(business_routes)
             .layer(
@@ -95,7 +95,23 @@ impl Server {
                             ])
                             .allow_headers(Any),
                     ),
-            )
+            );
+
+        // 限流层（如果启用，放在最外层）
+        if self.config.rate_limit.enabled {
+            let rate_layer = crate::rate_limit::RateLimitLayer::new(
+                self.config.rate_limit.rate_per_sec,
+                self.config.rate_limit.capacity,
+            );
+            tracing::info!(
+                rate = self.config.rate_limit.rate_per_sec,
+                capacity = self.config.rate_limit.capacity,
+                "限流已启用"
+            );
+            base_router.layer(rate_layer)
+        } else {
+            base_router
+        }
     }
 
     /// 启动服务器（阻塞直到停机信号）
