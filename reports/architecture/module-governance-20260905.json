@@ -1,0 +1,248 @@
+{
+  "passed": false,
+  "counts": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 11
+  },
+  "stages": {
+    "normal_dependencies": {
+      "crates": 141,
+      "edges": 307,
+      "unknown": [
+        "mox-arch-test",
+        "mox-ai-expert-proto",
+        "mox-error",
+        "mox-alliance-common-proto",
+        "mox-alliance-http-sdk",
+        "mox-alliance-api",
+        "mox-alliance-executor-proto",
+        "mox-alliance-scheduler-proto",
+        "mox-alliance-scheduler-core",
+        "mox-alliance-config-core",
+        "mox-alliance-core",
+        "mox-api-protocol",
+        "mox-audit",
+        "mox-kb-svc",
+        "mox-base-store-core",
+        "mox-cloud-kernel",
+        "mox-platform-api",
+        "mox-platform-observability",
+        "mox-platform-paths",
+        "mox-rbac-engine",
+        "mox-pipeline-framework",
+        "mox-data-api",
+        "mox-ai-api",
+        "mox-kg-api",
+        "mox-cloud-api",
+        "mox-voice-api",
+        "mox-flow-api",
+        "mox-market-api",
+        "mox-flow-unified-platform",
+        "mox-ai-alliance-engine",
+        "mox-unified-contract",
+        "mox-project-graph-core",
+        "mox-kg-core",
+        "mox-project-graph-svc",
+        "mox-unified-algo-core",
+        "mox-cloud-domain-traits",
+        "mox-config-core",
+        "mox-content-publisher",
+        "mox-connector-core",
+        "mox-enterprise-core",
+        "mox-plugin-core",
+        "mox-dsql-core",
+        "mox-cache-core",
+        "mox-observability-core",
+        "mox-plugin-sdk",
+        "mox-auth-core",
+        "mox-api-gateway",
+        "mox-alliance-executor-core",
+        "mox-alliance-boot-config",
+        "mox-alliance-scheduler-svc",
+        "mox-alliance-executor-svc",
+        "mox-alliance-sdk",
+        "mox-base-model-core",
+        "mox-base-index-core",
+        "mox-base-graph-core",
+        "mox-base-query-core",
+        "mox-base-perm-core",
+        "mox-base-lifecycle-core",
+        "mox-server-runtime",
+        "mox-kg-server",
+        "mox-cloud-server",
+        "mox-iam-server",
+        "mox-kb-core",
+        "mox-kb-server"
+      ],
+      "findings": []
+    },
+    "declared_dependencies": {
+      "crates": 141,
+      "edges": 317,
+      "unknown": [
+        "mox-arch-test"
+      ],
+      "findings": [
+        {
+          "level": "P2",
+          "type": "layer_violation",
+          "description": "mox-platform-test-harness(sdk) → mox-platform-gateway-svc(application)",
+          "details": ""
+        },
+        {
+          "level": "P1",
+          "type": "god_module",
+          "description": "mox-platform-orchestrator-svc: 扇出=18 (阈值=10)",
+          "details": "依赖: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-svc, mox-api-protocol, mox-data-catalog-svc, mox-flow-bridge-svc, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc, mox-flow-optimizer-core..."
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-kb-svc(kg) → mox-ai-expert-svc(ai)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-kb-svc(kg) → mox-cloud-store-core(cloud)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-kg-algo-core(kg) → mox-flow-operator-core(flow)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-ai-agent-svc(ai) → mox-kg-algo-core(kg)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-ai-agent-svc(ai) → mox-market-template-svc(market)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-flow-bridge-svc(flow) → mox-ai-expert-svc(ai)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-data-catalog-svc(data) → mox-ai-expert-svc(ai)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-cloud-s3-svc(cloud) → mox-data-standards-core(data)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-cloud-kb-core(cloud) → mox-ai-alliance-engine(ai)",
+          "details": ""
+        },
+        {
+          "level": "P2",
+          "type": "cross_domain",
+          "description": "mox-alliance-executor-svc(alliance) → mox-ai-expert-svc(ai)",
+          "details": ""
+        }
+      ]
+    }
+  },
+  "findings": [
+    {
+      "level": "P2",
+      "type": "layer_violation",
+      "description": "mox-platform-test-harness(sdk) → mox-platform-gateway-svc(application)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P1",
+      "type": "god_module",
+      "description": "mox-platform-orchestrator-svc: 扇出=18 (阈值=10)",
+      "details": "依赖: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-svc, mox-api-protocol, mox-data-catalog-svc, mox-flow-bridge-svc, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc, mox-flow-optimizer-core...",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-kb-svc(kg) → mox-ai-expert-svc(ai)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-kb-svc(kg) → mox-cloud-store-core(cloud)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-kg-algo-core(kg) → mox-flow-operator-core(flow)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-ai-agent-svc(ai) → mox-kg-algo-core(kg)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-ai-agent-svc(ai) → mox-market-template-svc(market)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-flow-bridge-svc(flow) → mox-ai-expert-svc(ai)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-data-catalog-svc(data) → mox-ai-expert-svc(ai)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-cloud-s3-svc(cloud) → mox-data-standards-core(data)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-cloud-kb-core(cloud) → mox-ai-alliance-engine(ai)",
+      "details": "",
+      "checker": "declared_dependencies"
+    },
+    {
+      "level": "P2",
+      "type": "cross_domain",
+      "description": "mox-alliance-executor-svc(alliance) → mox-ai-expert-svc(ai)",
+      "details": "",
+      "checker": "declared_dependencies"
+    }
+  ]
+}

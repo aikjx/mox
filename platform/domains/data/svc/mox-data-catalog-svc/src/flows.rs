@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-use mox_ai_flow_svc::model::{
+use mox_ai_flow_sdk::model::{
     Access, ExpertRule, FlowEdge, FlowGraph, FlowNode, Severity, ToolKind,
 };
 

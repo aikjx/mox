@@ -36,7 +36,7 @@ pub const CRATE_META: mox_platform_foundation::CrateMeta = mox_platform_foundati
     owner: "expert-alliance",
 };
 
-pub use mox_platform_operator_core::Result;
+pub use mox_platform_foundation::operator_error::Result;
 
 // ============================================================================
 // 全局算法参数（单源真相，跨域一致性保证）

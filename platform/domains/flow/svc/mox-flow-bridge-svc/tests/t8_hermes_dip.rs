@@ -26,7 +26,7 @@ use std::sync::Arc;
 use mox_ai_expert_svc::expert_traits::ExpertConsultant;
 use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport};
 
-fn small_graph() -> (std::sync::Arc<BridgeState>, mox_ai_flow_svc::model::FlowGraph) {
+fn small_graph() -> (std::sync::Arc<BridgeState>, mox_ai_flow_sdk::model::FlowGraph) {
     let st = BridgeState::new();
     st.recorder.record(
         "default",
@@ -133,7 +133,7 @@ fn tr_h8_03_default_factory_returns_trait_object() {
 #[test]
 fn tr_h8_04_consultant_swappable_without_recompile() {
     let gate = GateState::new();
-    let g = mox_ai_flow_svc::model::FlowGraph::new("g", "g");
+    let g = mox_ai_flow_sdk::model::FlowGraph::new("g", "g");
 
     // 同一 gate，先用 Healthy consultant（不否决）
     let healthy: Arc<dyn ExpertConsultant> = Arc::new(MockHealthy);

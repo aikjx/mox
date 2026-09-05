@@ -9,7 +9,7 @@
 //! 后台任务周期性把图推给 mox-expert 服务做 optimize + verify（异步，不阻塞中间件）。
 
 use crate::normalize::{dependency_edges, to_flow_node, ToolCall};
-use mox_ai_flow_svc::model::{FlowEdge, FlowGraph, FlowNode};
+use mox_ai_flow_sdk::model::{FlowEdge, FlowGraph, FlowNode};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 

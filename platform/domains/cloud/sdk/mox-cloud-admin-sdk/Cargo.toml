@@ -1,0 +1,21 @@
+[package]
+name = "mox-cloud-admin-sdk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Cloud storage administration adapter; contracts remain independent of backends"
+
+[dependencies]
+mox-cloud-api = { workspace = true }
+mox-cloud-store-core = { workspace = true, features = ["s3"] }
+mox-base-store-core = { workspace = true }
+serde = { workspace = true }
+async-trait = { workspace = true }
+bytes = "1"
+parking_lot = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

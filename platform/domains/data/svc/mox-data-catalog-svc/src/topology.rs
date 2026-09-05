@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-use mox_ai_flow_svc::topology::{Entity, EntityKind, Relation, RelationKind, TopologyGraph};
+use mox_ai_flow_sdk::topology::{Entity, EntityKind, Relation, RelationKind, TopologyGraph};
 
 /// 跨业务共享的六维关系网：注入 Skill / Rule / Memory / Model 实体与关系
 pub fn build_topology() -> TopologyGraph {

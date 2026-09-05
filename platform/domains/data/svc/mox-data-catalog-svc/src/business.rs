@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use mox_ai_expert_svc::expert_traits::{ExpertConsultant, ExpertRegistry};
 use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport, ExpertMeta};
-use mox_ai_flow_svc::model::FlowGraph;
+use mox_ai_flow_sdk::model::FlowGraph;
 
 /// 一条业务 = (id, 名称, 域, 受监管?, 流程图构造器)
 ///

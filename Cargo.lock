@@ -4185,6 +4185,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-alliance-http-sdk"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "axum",
+ "chrono",
+ "futures",
+ "mox-alliance-api",
+ "mox-alliance-common-proto",
+ "mox-alliance-scheduler-core",
+ "mox-alliance-scheduler-proto",
+ "mox-api-protocol",
+ "parking_lot",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "mox-alliance-scheduler-core"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4461,20 +4482,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "mox-cloud-api"
+name = "mox-cloud-admin-sdk"
 version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
  "bytes",
- "chrono",
  "mox-base-store-core",
+ "mox-cloud-api",
  "mox-cloud-store-core",
  "parking_lot",
  "serde",
- "serde_json",
  "tempfile",
- "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "mox-cloud-api"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
  "uuid",
 ]
 
@@ -4794,7 +4824,7 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
  "mox-ai-expert-svc",
- "mox-ai-flow-svc",
+ "mox-ai-flow-sdk",
  "mox-platform-foundation",
  "serde",
  "serde_json",
@@ -4948,6 +4978,7 @@ dependencies = [
  "hex",
  "mox-cache-core",
  "parking_lot",
+ "prometheus",
  "regex",
  "rusqlite",
  "sea-query",
@@ -5049,7 +5080,7 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
  "mox-ai-expert-svc",
- "mox-ai-flow-svc",
+ "mox-ai-flow-sdk",
  "mox-platform-foundation",
  "reqwest",
  "serde",
@@ -5082,7 +5113,6 @@ dependencies = [
  "anyhow",
  "axum",
  "criterion",
- "mox-ai-flow-svc",
  "mox-flow-primiflow-svc",
  "mox-platform-foundation",
  "mox-platform-graph-core",
@@ -5741,8 +5771,10 @@ dependencies = [
 name = "mox-platform-foundation"
 version = "3.0.0-ai-powered"
 dependencies = [
+ "anyhow",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
  "uuid",
 ]
 
@@ -5759,17 +5791,13 @@ dependencies = [
  "hex",
  "hmac",
  "mox-ai-expert-svc",
- "mox-alliance-api",
  "mox-alliance-common-proto",
- "mox-alliance-scheduler-core",
- "mox-alliance-scheduler-proto",
+ "mox-alliance-http-sdk",
  "mox-api-protocol",
  "mox-audit",
- "mox-framework",
  "mox-kb-svc",
  "mox-kg-service-svc",
  "mox-platform-api",
- "mox-platform-foundation",
  "mox-platform-iam-core",
  "parking_lot",
  "prometheus",
@@ -5879,6 +5907,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-platform-module-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "mox-platform-observability"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -5960,6 +5996,7 @@ dependencies = [
  "mox-market-template-svc",
  "mox-platform-foundation",
  "mox-platform-meta-core",
+ "mox-platform-module-core",
  "mox-platform-system-core",
  "nalgebra",
  "parking_lot",
@@ -6150,7 +6187,6 @@ dependencies = [
  "criterion",
  "hashbrown 0.14.5",
  "mox-platform-foundation",
- "mox-platform-operator-core",
  "nalgebra",
  "petgraph",
  "rand 0.8.7",

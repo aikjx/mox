@@ -9,7 +9,7 @@ description = "零侵入插件：将 flow-ai + mox-expert 流程图/关系网优
 [dependencies]
 mox-platform-foundation = { workspace = true }
 # 已验证的优化内核
-mox-ai-flow-svc = { workspace = true }
+mox-ai-flow-sdk = { workspace = true }
 mox-ai-expert-svc = { workspace = true }
 
 # 序列化 / 异步

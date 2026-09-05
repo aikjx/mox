@@ -1,4 +1,4 @@
-﻿// ================================================================
+// ================================================================
 // mox-dsql-core: 动态SQL管理核心
 // 数据库SQL管理低代码平台：所有SQL定义存储在数据库中，动态配置执行
 // 支持模板渲染、参数校验、多级缓存、多数据源、审计日志
@@ -12,6 +12,8 @@ pub mod process;
 pub mod storage;
 pub mod pool;
 pub mod audit_writer;
+pub mod metrics;
+pub mod sensitive;
 
 pub use cache::DsqlCache;
 pub use engine::SqlEngine;
@@ -20,6 +22,8 @@ pub use model::*;
 pub use process::ProcessEngine;
 pub use storage::DsqlStorage;
 pub use audit_writer::{AsyncAuditWriter, AuditWriterConfig, AuditWriterStats};
+pub use metrics::DsqlMetrics;
+pub use sensitive::SensitiveMasker;
 
 use std::path::Path;
 use std::sync::Arc;
@@ -29,8 +33,16 @@ use std::time::Instant;
 pub struct DsqlManager {
     storage: Arc<DsqlStorage>,
     cache: Arc<DsqlCache>,
-    /// 执行连接池（r2d2，替代全局Mutex，支持并发）
+    /// 执行连接池（替代全局Mutex，支持并发）
     exec_pool: pool::SqlitePool,
+    /// 异步批量审计写入器
+    audit_writer: Option<Arc<AsyncAuditWriter>>,
+    /// 慢查询阈值（毫秒），超过此值的查询标记为慢查询
+    slow_query_threshold_ms: u64,
+    /// Prometheus 指标收集器
+    metrics: Arc<DsqlMetrics>,
+    /// 敏感数据脱敏器
+    masker: Arc<SensitiveMasker>,
 }
 
 impl DsqlManager {
@@ -39,10 +51,19 @@ impl DsqlManager {
         let storage = DsqlStorage::open(meta_path)?;
         let exec_pool = pool::SqlitePool::file(exec_path, 10)
             .map_err(|e| DsqlError::StorageError(format!("build exec pool: {e}")))?;
+        let storage_arc = Arc::new(storage);
+        let audit_writer = Arc::new(AsyncAuditWriter::new(
+            storage_arc.clone(),
+            AuditWriterConfig::default(),
+        ));
         Ok(Self {
-            storage: Arc::new(storage),
+            storage: storage_arc,
             cache: Arc::new(DsqlCache::default()),
             exec_pool,
+            audit_writer: Some(audit_writer),
+            slow_query_threshold_ms: 1000,
+            metrics: Arc::new(DsqlMetrics::new()),
+            masker: Arc::new(SensitiveMasker::new()),
         })
     }
 
@@ -51,10 +72,19 @@ impl DsqlManager {
         let storage = DsqlStorage::open_memory()?;
         let exec_pool = pool::SqlitePool::memory(5)
             .map_err(|e| DsqlError::StorageError(format!("build memory pool: {e}")))?;
+        let storage_arc = Arc::new(storage);
+        let audit_writer = Arc::new(AsyncAuditWriter::new(
+            storage_arc.clone(),
+            AuditWriterConfig::default(),
+        ));
         Ok(Self {
-            storage: Arc::new(storage),
+            storage: storage_arc,
             cache: Arc::new(DsqlCache::default()),
             exec_pool,
+            audit_writer: Some(audit_writer),
+            slow_query_threshold_ms: 1000,
+            metrics: Arc::new(DsqlMetrics::new()),
+            masker: Arc::new(SensitiveMasker::new()),
         })
     }
 
@@ -66,6 +96,43 @@ impl DsqlManager {
     /// 获取缓存引用
     pub fn cache(&self) -> &DsqlCache {
         &self.cache
+    }
+
+    /// 获取慢查询阈值（毫秒）
+    pub fn slow_query_threshold_ms(&self) -> u64 {
+        self.slow_query_threshold_ms
+    }
+
+    /// 设置慢查询阈值（毫秒）
+    pub fn set_slow_query_threshold_ms(&mut self, threshold_ms: u64) {
+        self.slow_query_threshold_ms = threshold_ms;
+    }
+
+    /// 获取 Prometheus 指标收集器引用
+    pub fn metrics(&self) -> &DsqlMetrics {
+        &self.metrics
+    }
+
+    /// 收集所有指标，输出 Prometheus 文本格式
+    pub fn gather_metrics(&self) -> String {
+        self.metrics.gather()
+    }
+
+    /// 获取敏感数据脱敏器引用
+    pub fn masker(&self) -> &SensitiveMasker {
+        &self.masker
+    }
+
+    /// 阻塞等待所有待处理审计日志落盘
+    pub fn flush_audit_logs(&self) {
+        if let Some(writer) = &self.audit_writer {
+            writer.flush();
+        }
+    }
+
+    /// 获取异步审计写入器统计信息
+    pub fn audit_writer_stats(&self) -> Option<AuditWriterStats> {
+        self.audit_writer.as_ref().map(|w| w.stats())
     }
 
     // ==================== SQL定义管理 ====================
@@ -156,10 +223,15 @@ impl DsqlManager {
             if let Some(mut cached) = self.cache.get(&cache_key) {
                 cached.trace_id = req.trace_id.clone();
                 cached.cache_hit = true;
+                // 记录缓存命中指标
+                self.metrics.record_cache_hit(&req.sql_code);
+                self.metrics.record_execution(&req.sql_code, "read", true, start.elapsed());
                 // 记录缓存命中审计
                 self.write_audit_log(&sql_def, req, &cached, start.elapsed().as_millis() as u64, true)?;
                 return Ok(cached);
             }
+            // 记录缓存未命中指标
+            self.metrics.record_cache_miss(&req.sql_code);
         }
 
         // 执行SQL
@@ -174,8 +246,20 @@ impl DsqlManager {
             self.cache.set(cache_key, result.clone(), sql_def.cache_ttl);
         }
 
+        // 记录执行指标
+        let duration = start.elapsed();
+        let op_type = match sql_def.operation_type {
+            OperationType::Read => "read",
+            OperationType::Write => "write",
+        };
+        self.metrics.record_execution(&req.sql_code, op_type, result.success, duration);
+        // 记录慢查询指标
+        if duration.as_millis() as u64 > self.slow_query_threshold_ms {
+            self.metrics.record_slow_query(&req.sql_code);
+        }
+
         // 记录审计日志
-        self.write_audit_log(&sql_def, req, &result, start.elapsed().as_millis() as u64, false)?;
+        self.write_audit_log(&sql_def, req, &result, duration.as_millis() as u64, false)?;
 
         Ok(result)
     }
@@ -203,7 +287,7 @@ impl DsqlManager {
 
     // ==================== 执行连接管理 ====================
 
-    /// 获取执行连接（用于DDL等操作）
+    /// 获取执行连接池引用
     pub fn exec_pool(&self) -> &pool::SqlitePool {
         &self.exec_pool
     }
@@ -244,12 +328,14 @@ impl DsqlManager {
         cache_hit: bool,
     ) -> DsqlResult<()> {
         let is_slow = duration_ms > self.slow_query_threshold_ms;
+        // 对请求参数进行敏感数据脱敏后再存储
+        let masked_params = self.masker.mask_json(&req.params);
         let log = AuditLog {
             id: 0,
             trace_id: req.trace_id.clone(),
             sql_code: sql_def.sql_code.clone(),
             datasource_code: Some(sql_def.datasource_code.clone()),
-            params: Some(req.params.to_string()),
+            params: Some(masked_params.to_string()),
             row_count: result.row_count,
             duration_ms: Some(duration_ms as i64),
             success: result.success,
@@ -258,7 +344,13 @@ impl DsqlManager {
             cache_hit,
             created_at: chrono::Utc::now().to_rfc3339(),
         };
-        self.storage.write_audit_log(&log)
+        // 使用异步批量写入器（非阻塞），审计写入失败不影响主流程
+        if let Some(writer) = &self.audit_writer {
+            writer.write(log);
+        } else {
+            self.storage.write_audit_log(&log)?;
+        }
+        Ok(())
     }
 }
 
@@ -567,5 +659,57 @@ mod tests {
             trace_id: None,
         });
         assert!(matches!(invalid_sql, Err(DsqlError::SqlNotActive(_, _))));
+    }
+
+    #[test]
+    fn test_metrics_exposure() {
+        let manager = setup_test_manager().unwrap();
+
+        manager.create_sql(&CreateSqlRequest {
+            sql_code: "metrics_test_sql".to_string(),
+            sql_name: "指标测试".to_string(),
+            description: None,
+            datasource_code: "default".to_string(),
+            sql_template: "SELECT * FROM test_users WHERE age >= {{min_age}}".to_string(),
+            param_defs: vec![ParamDef {
+                name: "min_age".to_string(),
+                data_type: "INT".to_string(),
+                required: true,
+                default_value: None,
+                description: None,
+                validation: None,
+            }],
+            result_type: ResultType::List,
+            operation_type: OperationType::Read,
+            cache_enabled: Some(true),
+            cache_ttl: Some(60),
+            permission_code: None,
+            entity_code: None,
+            created_by: None,
+        }).unwrap();
+        manager.activate_sql("metrics_test_sql").unwrap();
+
+        // 执行2次（第一次miss，第二次hit）
+        for _ in 0..2 {
+            manager.execute(&ExecuteRequest {
+                sql_code: "metrics_test_sql".to_string(),
+                params: serde_json::json!({ "min_age": 0 }),
+                trace_id: None,
+            }).unwrap();
+        }
+
+        let metrics_output = manager.gather_metrics();
+        assert!(metrics_output.contains("dsql_execute_total"));
+        assert!(metrics_output.contains("dsql_cache_hits_total"));
+        assert!(metrics_output.contains("dsql_cache_misses_total"));
+        assert!(metrics_output.contains("dsql_execute_duration_seconds"));
+    }
+
+    #[test]
+    fn test_slow_query_threshold_config() {
+        let mut manager = DsqlManager::open_memory().unwrap();
+        assert_eq!(manager.slow_query_threshold_ms(), 1000);
+        manager.set_slow_query_threshold_ms(500);
+        assert_eq!(manager.slow_query_threshold_ms(), 500);
     }
 }

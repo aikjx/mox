@@ -22,7 +22,7 @@ use std::time::Duration;
 // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
 struct IngestBody<'a> {
     session: &'a str,
-    flow: &'a mox_ai_flow_svc::model::FlowGraph,
+    flow: &'a mox_ai_flow_sdk::model::FlowGraph,
 }
 
 /// 周期性把会话图推送到 mox-expert 服务。在后台 tokio 任务里调用。

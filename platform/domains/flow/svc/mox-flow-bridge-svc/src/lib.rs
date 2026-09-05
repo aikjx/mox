@@ -7,7 +7,7 @@
 //! 注入 Hermes Agent Ultra。
 //!
 //! 模块：
-//! - `normalize`：Hermes 工具调用 ↔ mox_ai_flow_svc::FlowNode 映射
+//! - `normalize`：Hermes 工具调用 ↔ mox_ai_flow_sdk::FlowNode 映射
 //! - `recorder`：跨回合累积会话执行流程图
 //! - `router`：复用模板最短路径点亮（轻量同步版）
 //! - `plugin`：实现 Hermes Plugin trait，注册两个中间件（含算法否决拦截）

@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-use mox_ai_flow_svc::model::{ExpertRule, FlowNode, NodeKind, Severity};
+use mox_ai_flow_sdk::model::{ExpertRule, FlowNode, NodeKind, Severity};
 
 /// Guard 节点（校验/脱敏/审计，无外部工具）
 pub(crate) fn guard(id: &str, name: &str, ms: u64) -> FlowNode {

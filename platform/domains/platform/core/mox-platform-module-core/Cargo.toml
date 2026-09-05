@@ -1,0 +1,11 @@
+[package]
+name = "mox-platform-module-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Host-independent module composition contracts, dependency validation and startup readiness"
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }

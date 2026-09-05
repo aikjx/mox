@@ -1,0 +1,16 @@
+[
+  {
+    "id": "primiflow",
+    "contract_major": 1,
+    "required": true,
+    "dependencies": [],
+    "route_prefix": "/primiflow"
+  },
+  {
+    "id": "fusion",
+    "contract_major": 1,
+    "required": true,
+    "dependencies": [],
+    "route_prefix": "/fusion"
+  }
+]

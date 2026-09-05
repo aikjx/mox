@@ -5,7 +5,7 @@
 
 //! 子服务聚合（Phase 1 收敛）
 //!
-//! 将此前并行的四套 axum server 收敛为库，由 operator-server（mox_platform_orchestrator_svc）唯一对外暴露：
+//! 将四个可选领域模块按部署清单装配到 operator-server；各领域仍可独立部署：
 //! - [`PREFIX_MOX_VIZ`]    ← mox-expert  治理可视化 + 一键闭环演示
 //! - [`PREFIX_MOX_SYSTEM`] ← mox-system  成员/任务/RBAC/审计/WebSocket 协同
 //! - [`PREFIX_PRIMIFLOW`]     ← primiflow      六维溯源拓扑引擎（server feature）
@@ -41,103 +41,90 @@ pub struct SubServers {
     pub routers: Vec<(&'static str, Router)>,
     /// 启动说明（打日志用）
     pub notes: Vec<String>,
+    pub report: mox_platform_module_core::StartupReport,
 }
 
-fn sub_enabled(name: &str) -> bool {
-    match std::env::var(format!("OUS_ENABLE_{name}")) {
-        Ok(v) => !matches!(
-            v.trim().to_ascii_lowercase().as_str(),
-            "0" | "false" | "off" | "no"
-        ),
-        Err(_) => true,
-    }
+/// Explicit deployment composition; initialization outcomes are recorded, never assumed healthy.
+fn default_modules() -> Vec<mox_platform_module_core::ModuleSpec> {
+    [("mox-viz", "MOX_VIZ", PREFIX_MOX_VIZ), ("mox-system", "MOX_SYSTEM", PREFIX_MOX_SYSTEM),
+     ("primiflow", "PRIMIFLOW", PREFIX_PRIMIFLOW), ("fusion", "FUSION", PREFIX_FUSION)]
+        .into_iter().filter(|(_, env, _)| {
+            !std::env::var(format!("OUS_ENABLE_{env}")).map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "off" | "no")).unwrap_or(false)
+        }).map(|(id, _, prefix)| mox_platform_module_core::ModuleSpec {
+            id: id.into(), contract_major: 1, required: true, dependencies: vec![], route_prefix: Some(prefix.into()),
+        }).collect()
 }
 
-/// 构建并初始化全部已启用的子服务（初始化失败的服务会跳过并记录说明，不阻断 mox_platform_orchestrator_svc）
-pub async fn build() -> SubServers {
-    let mut out = SubServers {
-        routers: Vec::new(),
-        notes: Vec::new(),
+pub async fn build() -> anyhow::Result<SubServers> {
+    let specs = match std::env::var("MOX_MODULES_CONFIG") {
+        Ok(path) => serde_json::from_slice(&std::fs::read(path)?)?,
+        Err(_) => default_modules(),
     };
+    build_with_specs(specs).await
+}
 
-    // 1) mox-expert：治理可视化 + 一键闭环演示（原独立服务）
-    if sub_enabled("MOX_VIZ") {
-        let state = mox_ai_expert_svc::server::AppState::new_state();
-        out.routers
-            .push((PREFIX_MOX_VIZ, mox_ai_expert_svc::server::router(state)));
-        out.notes.push(format!(
-            "  [聚合] mox-viz → {PREFIX_MOX_VIZ}（治理可视化 + 闭环演示）"
-        ));
+pub async fn build_with_specs(specs: Vec<mox_platform_module_core::ModuleSpec>) -> anyhow::Result<SubServers> {
+    use mox_platform_module_core::ModulePlan;
+    // Route ownership and contract versions are validated before any service initialization.
+    for spec in &specs {
+        let prefix = match spec.id.as_str() {
+            "mox-viz" => PREFIX_MOX_VIZ, "mox-system" => PREFIX_MOX_SYSTEM,
+            "primiflow" => PREFIX_PRIMIFLOW, "fusion" => PREFIX_FUSION,
+            other => anyhow::bail!("unknown embedded module: {other}"),
+        };
+        anyhow::ensure!(spec.contract_major == 1 && spec.route_prefix.as_deref() == Some(prefix), "unsupported contract or route for {}", spec.id);
     }
-
-    // 2) mox-system：成员/任务/RBAC/审计/WS 协同（原 :3000 独立服务）
-    if sub_enabled("MOX_SYSTEM") {
-        let cfg = mox_platform_system_core::config::AppConfig::load();
-        match mox_platform_system_core::MoxSystem::with_config(cfg).await {
-            Ok(sys) => {
-                let sys = Arc::new(sys);
-                if sys.store.mox_count().await == 0 {
-                    match sys
-                        .bootstrap("默认璇玑", "系统管理员", "admin@mox.io")
-                        .await
-                    {
-                        Ok((mox, _admin, token)) => {
-                            out.notes.push(format!(
-                                "  [聚合] mox-system 首次引导：璇玑「{}」id={}，管理员令牌={}",
-                                mox.name, mox.id, token
-                            ));
-                        }
-                        Err(e) => out
-                            .notes
-                            .push(format!("  [聚合] mox-system 引导失败（跳过）: {e}")),
-                    }
-                } else {
-                    out.notes
-                        .push("  [聚合] mox-system 已有数据，跳过引导".into());
+    let plan = ModulePlan::new(specs)?;
+    let order = plan.order().to_vec();
+    let mut startup = plan.startup();
+    let mut routers = Vec::new();
+    let mut notes = Vec::new();
+    for id in order {
+        if let Err(error) = startup.can_start(&id) {
+            startup.failed(&id, error.to_string())?;
+            notes.push(format!("module {id}: skipped because dependencies are unavailable"));
+            continue;
+        }
+        let result: anyhow::Result<(&'static str, Router)> = async {
+            match id.as_str() {
+                "mox-viz" => {
+                    let state = mox_ai_expert_svc::server::AppState::new_state();
+                    Ok((PREFIX_MOX_VIZ, mox_ai_expert_svc::server::router(state)))
                 }
-                let _reactor = sys.start_reactor();
-                out.routers
-                    .push((PREFIX_MOX_SYSTEM, mox_platform_system_core::server::app(sys)));
-                out.notes.push(format!(
-                    "  [聚合] mox-system → {PREFIX_MOX_SYSTEM}（成员/任务/RBAC/审计/WS）"
-                ));
+                "mox-system" => {
+                    let cfg = mox_platform_system_core::config::AppConfig::load();
+                    let sys = Arc::new(mox_platform_system_core::MoxSystem::with_config(cfg).await?);
+                    anyhow::ensure!(sys.store.mox_count().await > 0,
+                        "mox-system has no initialized organization; provision it explicitly using MoxSystem::bootstrap before serving, or omit this module from the deployment");
+                    // Initialization must not create an administrator or print a bearer token.
+                    let _reactor = sys.start_reactor();
+                    Ok((PREFIX_MOX_SYSTEM, mox_platform_system_core::server::app(sys)))
+                }
+                "primiflow" => {
+                    let out_dir = std::env::var("OUS_PRIMIFLOW_OUT").map(PathBuf::from).unwrap_or_else(|_| PathBuf::from("./primiflow_runtime"));
+                    let state = mox_flow_primiflow_svc::server::new_state(out_dir, mox_flow_primiflow_svc::persistence::Persistence::memory());
+                    Ok((PREFIX_PRIMIFLOW, mox_flow_primiflow_svc::server::build_router(state)))
+                }
+                "fusion" => {
+                    let state = mox_flow_fusion_svc::server::new_state(mox_flow_fusion_svc::config::Config::default());
+                    Ok((PREFIX_FUSION, mox_flow_fusion_svc::server::build_router(state)))
+                }
+                _ => unreachable!("validated before initialization"),
             }
-            Err(e) => out
-                .notes
-                .push(format!("  [聚合] mox-system 启动失败（已跳过）: {e}")),
+        }.await;
+        match result {
+            Ok(router) => {
+                match startup.ready(&id) {
+                    Ok(()) => { routers.push(router); notes.push(format!("module {id}: initialized")); }
+                    Err(error) => { startup.failed(&id, error.to_string())?; }
+                }
+            }
+            Err(error) => { startup.failed(&id, error.to_string())?; notes.push(format!("module {id}: initialization failed: {error}")); }
         }
     }
-
-    // 3) primiflow：六维溯源 + 拓扑正则化/固化（原 server feature 独立服务）
-    if sub_enabled("PRIMIFLOW") {
-        let out_dir = std::env::var("OUS_PRIMIFLOW_OUT")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("./primiflow_runtime"));
-        let state = mox_flow_primiflow_svc::server::new_state(
-            out_dir,
-            mox_flow_primiflow_svc::persistence::Persistence::memory(),
-        );
-        out.routers.push((
-            PREFIX_PRIMIFLOW,
-            mox_flow_primiflow_svc::server::build_router(state),
-        ));
-        out.notes.push(format!(
-            "  [聚合] primiflow → {PREFIX_PRIMIFLOW}（六维溯源拓扑引擎）"
-        ));
-    }
-
-    // 4) primiflow-fusion：融合合成/注册/落库/闸门（原独立服务）
-    if sub_enabled("FUSION") {
-        let state =
-            mox_flow_fusion_svc::server::new_state(mox_flow_fusion_svc::config::Config::default());
-        out.routers
-            .push((PREFIX_FUSION, mox_flow_fusion_svc::server::build_router(state)));
-        out.notes.push(format!(
-            "  [聚合] primiflow-fusion → {PREFIX_FUSION}（融合合成/注册/落库/闸门）"
-        ));
-    }
-
-    out
+    let report = startup.report();
+    anyhow::ensure!(report.ready, "required modules failed to initialize: {:?}", report.modules);
+    Ok(SubServers { routers, notes, report })
 }
 
 // ========================
@@ -155,7 +142,7 @@ pub struct Subserver {
     pub purpose: &'static str,
     pub url: String,
     pub health: String,
-    pub required: bool, // true = 启动失败也不影响主进程（降级）；目前全部 true 保持弹性
+    pub required: bool, // External service inventory only; startup policy is declared in ModuleSpec.
     pub timeout_ms: u64,
 }
 
@@ -200,6 +187,21 @@ pub fn timeout(s: &Subserver) -> Duration {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn deployment_rejects_unknown_module_before_initialization() {
+        let specs = vec![mox_platform_module_core::ModuleSpec { id: "unknown".into(), contract_major: 1,
+            required: true, dependencies: vec![], route_prefix: Some("/unknown".into()) }];
+        assert!(build_with_specs(specs).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn empty_deployment_does_not_mount_or_initialize_services() {
+        let result = build_with_specs(vec![]).await.unwrap();
+        assert!(result.routers.is_empty());
+        assert!(result.report.ready);
+        assert!(!result.report.degraded);
+    }
 
     #[test]
     fn at_least_two_subservers_and_voice() {

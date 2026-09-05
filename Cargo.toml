@@ -119,6 +119,7 @@ members = [
     "platform/domains/platform/core/mox-dsql-core",
     "platform/domains/platform/core/mox-kg-core",
     "platform/domains/platform/core/mox-platform-orchestrator-core",
+    "platform/domains/platform/core/mox-platform-module-core",
     "platform/domains/platform/core/mox-plugin-core",
     "platform/domains/platform/core/mox-enterprise-core",
     "platform/domains/platform/core/mox-connector-core",
@@ -129,6 +130,8 @@ members = [
     "platform/domains/platform/sdk/mox-plugin-sdk",
     "platform/domains/voice/svc/mox-voice-desktop-app",
     "platform/domains/cloud/sdk/mox-cloud-sdk",
+    "platform/domains/cloud/sdk/mox-cloud-admin-sdk",
+    "platform/domains/alliance/sdk/mox-alliance-http-sdk",
     "platform/domains/kg/sdk/mox-kg-sdk",
     "platform/domains/data/sdk/mox-data-formula-native",
     "platform/domains/data/sdk/mox-data-norm-intent-native",
@@ -407,6 +410,9 @@ mox-data-api = { path = "platform/domains/data/api" }
 mox-ai-api = { path = "platform/domains/ai/api" }
 mox-kg-api = { path = "platform/domains/kg/api" }
 mox-cloud-api = { path = "platform/domains/cloud/api" }
+mox-cloud-admin-sdk = { path = "platform/domains/cloud/sdk/mox-cloud-admin-sdk" }
+mox-alliance-http-sdk = { path = "platform/domains/alliance/sdk/mox-alliance-http-sdk" }
+mox-platform-module-core = { path = "platform/domains/platform/core/mox-platform-module-core" }
 mox-platform-api = { path = "platform/domains/platform/api" }
 mox-voice-api = { path = "platform/domains/voice/api" }
 mox-flow-api = { path = "platform/domains/flow/api" }

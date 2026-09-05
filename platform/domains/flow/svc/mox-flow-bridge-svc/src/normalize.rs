@@ -3,12 +3,12 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! Step 2：Hermes 工具调用 ↔ mox_ai_flow_svc::FlowNode 规范化映射。
+//! Step 2：Hermes 工具调用 ↔ mox_ai_flow_sdk::FlowNode 规范化映射。
 //!
 //! 设计：bridge 只认 Hermes 中间件上下文里的 `tool_name` + `args`（均为 serde_json::Value），
-//! 把它们转成 mox_ai_flow_svc 的统一流程图节点，使任何 Hermes 工具（含 MCP 第三方工具）都能成为流程图节点。
+//! 把它们转成 mox_ai_flow_sdk 的统一流程图节点，使任何 Hermes 工具（含 MCP 第三方工具）都能成为流程图节点。
 
-use mox_ai_flow_svc::model::{FlowEdge, FlowNode, ToolKind};
+use mox_ai_flow_sdk::model::{FlowEdge, FlowNode, ToolKind};
 use serde_json::Value;
 
 /// Hermes 中间件传入的最小上下文（与 `hermes-agent::plugins::ToolRequestMiddlewareContext`
@@ -20,7 +20,7 @@ pub struct ToolCall {
     pub turn: u32,
 }
 
-/// 把 Hermes 工具名映射到 mox_ai_flow_svc 的 ToolKind。
+/// 把 Hermes 工具名映射到 mox_ai_flow_sdk 的 ToolKind。
 /// 未知/第三方/MCP 工具一律归为 `External`（仍可参与流程图与并行调度）。
 pub fn tool_kind_of(name: &str) -> ToolKind {
     let n = name.to_ascii_lowercase();
@@ -104,7 +104,7 @@ pub fn dependency_edges(prev: &[FlowNode], cur: &FlowNode) -> Vec<FlowEdge> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_ai_flow_svc::model::NodeKind;
+    use mox_ai_flow_sdk::model::NodeKind;
     use serde_json::json;
 
     #[test]

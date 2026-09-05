@@ -7,7 +7,7 @@
 //! 并用璇玑（mox-expert）在运行中不断优化架构。
 //!
 //! 核心思想（与 Hermes / 璇玑架构一致）：
-//! - **流程图是唯一需求源与开发产物**：每个业务 = 一张 `mox_ai_flow_svc::FlowGraph`，
+//! - **流程图是唯一需求源与开发产物**：每个业务 = 一张 `mox_ai_flow_sdk::FlowGraph`，
 //!   `tags` 携带 `dim:algo|perm|res|sec|data|obs` 做七维着色。
 //! - **关系图是跨业务的六维知识网**：所有业务 flow 经 `TopologyGraph::ingest_flow`
 //!   汇入同一张图，叠加 Skill/Rule/Memory/Model 实体与 Binds/Recalls/Constrains/Serves 关系。

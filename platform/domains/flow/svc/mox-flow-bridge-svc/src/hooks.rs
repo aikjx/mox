@@ -80,7 +80,7 @@ pub fn on_tool_execution(state: &BridgeState) -> ExecutionDecision {
 }
 
 /// 给后台优化任务用：把会话图转成可用于 optimize 的 FlowGraph。
-pub fn session_graph(recorder: &Recorder, session: &str) -> Option<mox_ai_flow_svc::model::FlowGraph> {
+pub fn session_graph(recorder: &Recorder, session: &str) -> Option<mox_ai_flow_sdk::model::FlowGraph> {
     recorder.snapshot(session)
 }
 

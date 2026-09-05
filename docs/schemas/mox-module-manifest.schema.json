@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MOX module deployment composition v1",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "contract_major", "required", "dependencies", "route_prefix"],
+    "properties": {
+      "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+      "contract_major": {"type": "integer", "minimum": 1, "maximum": 65535},
+      "required": {"type": "boolean"},
+      "route_prefix": {"type": ["string", "null"], "description": "Exclusive route prefix. The runtime additionally rejects overlapping ownership and unsafe path segments."},
+      "dependencies": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["module", "contract_major"],
+          "properties": {
+            "module": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+            "contract_major": {"type": "integer", "minimum": 1, "maximum": 65535}
+          }
+        }
+      }
+    }
+  }
+}

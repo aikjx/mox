@@ -19,7 +19,7 @@
 
 use crate::recorder::Recorder;
 use crate::state::GateState;
-use mox_ai_flow_svc::model::FlowGraph;
+use mox_ai_flow_sdk::model::FlowGraph;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;

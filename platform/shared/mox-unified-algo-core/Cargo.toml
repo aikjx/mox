@@ -20,7 +20,6 @@ full = ["graph-algo", "similarity", "ranking", "clustering", "activation", "embe
 [dependencies]
 # 平台基础
 mox-platform-foundation = { workspace = true }
-mox-platform-operator-core = { workspace = true }
 
 # 数据结构
 petgraph = { workspace = true }

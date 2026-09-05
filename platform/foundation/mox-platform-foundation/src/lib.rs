@@ -4,6 +4,7 @@
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
 // mox-common-meta: T2 Green version
+pub mod operator_error;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum AisLayer {
     L2Gateway,

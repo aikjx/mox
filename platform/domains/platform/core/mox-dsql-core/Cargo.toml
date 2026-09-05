@@ -23,6 +23,7 @@ regex = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
+prometheus = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

@@ -615,7 +615,12 @@ async fn main() -> anyhow::Result<()> {
     let mut app = app;
 
     // ========== 子服务聚合（Phase 1 收敛）==========
-    let subs = subservers::build().await;
+    let subs = subservers::build().await?;
+    let startup_report = subs.report.clone();
+    app = app.route("/api/runtime/modules", get(move || {
+        let report = startup_report.clone();
+        async move { api_ok(report) }
+    }));
     for note in &subs.notes {
         tracing::info!("{note}");
     }

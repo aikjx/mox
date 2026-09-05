@@ -38,11 +38,9 @@ tracing-subscriber = { workspace = true }
 futures = { workspace = true }
 
 # 企业级基础层 & 业务域
-mox-framework = { workspace = true }
 mox-api-protocol = { workspace = true }
 mox-kg-service-svc = { workspace = true, features = ["http-adapter"] }
 mox-kb-svc = { workspace = true }
-mox-platform-foundation = { workspace = true }
 mox-platform-api = { workspace = true }
 
 # 平台 IAM 核心（/system/* · /security/* 真实数据链路）+ SQLite
@@ -51,10 +49,8 @@ rusqlite = { workspace = true }
 base64 = { workspace = true }
 
 # 联盟域 API（DTO 类型契约 + 真实调度/执行核心）
-mox-alliance-api = { workspace = true }
-mox-alliance-scheduler-core = { workspace = true }
+mox-alliance-http-sdk = { workspace = true }
 mox-alliance-common-proto = { workspace = true }
-mox-alliance-scheduler-proto = { workspace = true }
 
 # 真实 LLM 专家引擎：generate_expert_answer 接入真实模型（MOX_LLM_API_KEY）/
 # 本地 mox_optimize 引擎回退，消除专家回复模板化已知限制 #1
@@ -81,4 +77,3 @@ glacier = []
 [dev-dependencies]
 tempfile = "3"
 rand = "0.8"
-
