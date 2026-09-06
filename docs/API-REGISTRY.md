@@ -327,6 +327,29 @@
 | primiflow | 前端子项目 | — | `:8000`，经 `/api/projects/{*path}` 代理 |
 | melody2score | 前端子项目 | — | `:8012`，简谱转谱 |
 
+### 4.1 全链路启动命令（2026-09-07 实测通过）
+
+五个进程按依赖顺序启动（Windows PowerShell，均为 debug 构建）：
+
+```powershell
+# 1) 联盟调度器 :3100 / 执行器 :3200（独立二进制，配置读 config/alliance-*.yml）
+Start-Process target\debug\mox-alliance-scheduler.exe -ArgumentList @("--port","3100") -WindowStyle Hidden
+Start-Process target\debug\mox-alliance-executor.exe -ArgumentList @("--port","3200") -WindowStyle Hidden
+
+# 2) 知识库独立服务 :8104
+Start-Process target\debug\mox-kb-server.exe -ArgumentList @("--port","8104") -WindowStyle Hidden
+
+# 3) 编排器 :3001（OUS_ENABLE_MOX_SYSTEM=0 跳过未 bootstrap 的 mox-system 模块；OUS_API_TOKEN 与网关对齐）
+$env:OUS_ENABLE_MOX_SYSTEM="0"; $env:OUS_API_TOKEN="dev-secret-token"
+Start-Process target\debug\operator-server.exe -ArgumentList @("--port","3001") -WindowStyle Hidden
+
+# 4) 网关 :8080（MOX_ALLIANCE_*_URL 激活联盟远程模式）
+$env:MOX_ALLIANCE_SCHEDULER_URL="http://127.0.0.1:3100"; $env:MOX_ALLIANCE_EXECUTOR_URL="http://127.0.0.1:3200"
+Start-Process target\debug\mox-server.exe -ArgumentList @("--port","8080") -WindowStyle Hidden
+```
+
+验证要点：网关 `/api/v1/status` → `iam: ready`；`/api/alliance/runtime` → `mode: remote, execution_ready: true`；联盟任务创建后经调度器真实执行（DAG 节点流转）；编排器 `/api/graph/export`、`/api/status` 需带 `Authorization: Bearer dev-secret-token`。
+
 ## 5. 治理规则（新增/修改 API 必须遵守）
 
 1. **单一权威源**：所有对外路由必须先登记到 `actuator.rs` `ROUTES`，再写 handler；`/actuator/mappings` 是唯一注册表视图。
