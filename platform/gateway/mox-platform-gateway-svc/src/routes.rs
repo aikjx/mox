@@ -52,16 +52,16 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     // L2 KG
     DomainDescriptor { prefix: "/kg/v1",         name: "KG",          layer: "L2", description: "知识图谱·核心 6 接口", status: "ready" },
     DomainDescriptor { prefix: "/graph/v1",      name: "Graph",       layer: "L2", description: "图谱·投影/社区/可视化", status: "stub" },
-    DomainDescriptor { prefix: "/kb",            name: "KB",          layer: "L2", description: "云盘知识库·文档/分析/挂图/检索（mox-kb-svc 100% 自研）", status: "ready" },
+    DomainDescriptor { prefix: "/api/kb",        name: "KB",          layer: "L2", description: "云盘知识库·文档/分析/挂图/检索（mox-kb-svc 100% 自研）", status: "ready" },
     DomainDescriptor { prefix: "/cypher/v1",     name: "Cypher",      layer: "L2", description: "Cypher 查询解析", status: "stub" },
     DomainDescriptor { prefix: "/ngql/v1",       name: "nGQL",        layer: "L2", description: "nGQL 查询解析", status: "stub" },
     // L3 AI
     DomainDescriptor { prefix: "/ai/engine",     name: "AIEngine",    layer: "L3", description: "AI 引擎统一编排 4 接口", status: "ready" },
     DomainDescriptor { prefix: "/ai/v1",         name: "AI-Core",     layer: "L3", description: "AI 推理/微调/上下文", status: "stub" },
-    DomainDescriptor { prefix: "/expert/v1",     name: "Expert",      layer: "L3", description: "专家联盟·匹配/派单/结算", status: "stub" },
+    DomainDescriptor { prefix: "/api/experts",   name: "Expert",      layer: "L3", description: "专家智能体集群·注册/协作/调度/图谱/编排/会话 48 接口", status: "ready" },
     DomainDescriptor { prefix: "/intent/v1",     name: "Intent",      layer: "L3", description: "A5 激活扩散意图识别", status: "stub" },
     // L4 Alliance（真实 scheduler-core 进程内实现）
-    DomainDescriptor { prefix: "/alliance/v1",   name: "Alliance",    layer: "L4", description: "专家联盟·调度+执行 13 接口", status: "ready" },
+    DomainDescriptor { prefix: "/api/alliance",  name: "Alliance",    layer: "L4", description: "专家联盟·调度+执行 20 接口", status: "ready" },
     // L5 Flow
     DomainDescriptor { prefix: "/flow/v1",       name: "Flow",        layer: "L5", description: "流程图谱·业务+算法统一承载", status: "stub" },
     DomainDescriptor { prefix: "/workflow/v1",   name: "Workflow",    layer: "L4", description: "BPMN+AI 工作流", status: "stub" },
@@ -69,7 +69,7 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     DomainDescriptor { prefix: "/pipeline/v1",   name: "Pipeline",    layer: "L4", description: "P0-P12 自动开发流水线", status: "stub" },
     // L5 Cloud
     DomainDescriptor { prefix: "/cloud/v1",      name: "Cloud",       layer: "L5", description: "云资源编排/成本/CMDB", status: "stub" },
-    DomainDescriptor { prefix: "/s3",            name: "S3",          layer: "L5", description: "S3 兼容对象存储", status: "ready" },
+    DomainDescriptor { prefix: "/s3",            name: "S3",          layer: "L5", description: "S3 兼容对象存储", status: "stub" },
     DomainDescriptor { prefix: "/volume/v1",     name: "Volume",      layer: "L5", description: "块卷/EC 纠删码", status: "stub" },
     DomainDescriptor { prefix: "/fs/v1",         name: "FS",          layer: "L5", description: "文件系统/POSIX", status: "stub" },
     // L6 Data

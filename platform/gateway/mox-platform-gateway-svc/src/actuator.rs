@@ -420,9 +420,9 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 98] = [
+pub static ROUTES: [ApiRoute; 199] = [
     // =====================================================================
-    // Actuator 域（L0·Spring Boot 风格管理面·/actuator/*）
+    // Actuator 域（L0·Spring Boot 风格管理面·actuator.rs 实现）
     // =====================================================================
     r("actuator.index", "GET", "/actuator", "L0", "actuator", "ready", "管理面端点索引"),
     r("actuator.health", "GET", "/actuator/health", "L0", "actuator", "ready", "健康检查（Spring Boot 风格）"),
@@ -436,17 +436,17 @@ pub static ROUTES: [ApiRoute; 98] = [
     r("actuator.api", "ANY", "/actuator/api/:id", "L0", "actuator", "ready", "按 API 启停管理（/enable|/disable）"),
 
     // =====================================================================
-    // Platform 域（L0·通用接入·/health /metrics /api/v1/* + L6 反向代理）
+    // Platform 域（L0·通用接入·lib.rs 内联路由 + proxy.rs 反向代理）
     // =====================================================================
     r("platform.health", "GET", "/health", "L0", "platform", "ready", "存活探针（网关 Rust axum 版本）"),
-    r("platform.metrics", "GET", "/metrics", "L0", "platform", "ready", "Prometheus 指标端点（占位）"),
+    r("platform.metrics", "GET", "/metrics", "L0", "platform", "ready", "Prometheus 指标端点（o11y.rs 真实采集）"),
     r("platform.status", "GET", "/api/v1/status", "L0", "platform", "ready", "网关状态（域就绪统计+认证+限流）"),
-    r("platform.domains", "GET", "/api/v1/domains", "L0", "platform", "ready", "31 业务域描述符列表（自描述）"),
+    r("platform.domains", "GET", "/api/v1/domains", "L0", "platform", "ready", "43 业务域描述符列表（自描述）"),
     r("platform.proxy_orchestrator", "ANY", "/api/{*path}", "L6", "platform", "ready", "业务域反向代理→编排器（默认 :3001，catch-all）"),
     r("platform.proxy_primiflow", "ANY", "/api/projects/{*path}", "L6", "platform", "ready", "项目域反向代理→PrimiFlow（默认 :8000）"),
 
     // =====================================================================
-    // KG 域（L2·知识图谱·/kg/v1/*·mox-kg-service-svc 真实算法）
+    // KG 域（L2·知识图谱·/kg/v1/*·kg-svc http_adapter.rs 真实算法）
     // =====================================================================
     r("kg.graph.neighborhood", "GET", "/kg/v1/neighborhood", "L2", "kg", "ready", "实体邻域查询（多跳邻居+边）"),
     r("kg.graph.path", "GET", "/kg/v1/path", "L2", "kg", "ready", "两实体间路径枚举（BFS）"),
@@ -456,51 +456,62 @@ pub static ROUTES: [ApiRoute; 98] = [
     r("kg.graph.stats", "GET", "/kg/v1/stats", "L2", "kg", "ready", "图谱统计（节点/边/标签分布）"),
 
     // =====================================================================
-    // AI 域（L3·AI 引擎·/ai/v1/*·归一化版本前缀）
+    // AI 域（L3·AI 引擎·/ai/engine/*·kg-svc http_adapter.rs 实现）
     // =====================================================================
-    r("ai.engine.process", "POST", "/ai/v1/process", "L3", "ai", "ready", "AI 引擎统一处理（多模型路由）"),
-    r("ai.engine.analyze", "POST", "/ai/v1/analyze", "L3", "ai", "ready", "AI 深度分析（结构化输出）"),
-    r("ai.engine.capabilities", "GET", "/ai/v1/capabilities", "L3", "ai", "ready", "AI 引擎能力清单（模型/工具/配额）"),
-    r("ai.engine.metrics", "GET", "/ai/v1/metrics", "L3", "ai", "ready", "AI 引擎运行指标（调用量/延迟/成功率）"),
+    r("ai.engine.process", "POST", "/ai/engine/process", "L3", "ai", "ready", "AI 引擎统一处理（多模型路由）"),
+    r("ai.engine.analyze", "POST", "/ai/engine/analyze", "L3", "ai", "ready", "AI 深度分析（结构化输出）"),
+    r("ai.engine.capabilities", "GET", "/ai/engine/capabilities", "L3", "ai", "ready", "AI 引擎能力清单（模型/工具/配额）"),
+    r("ai.engine.metrics", "GET", "/ai/engine/metrics", "L3", "ai", "ready", "AI 引擎运行指标（调用量/延迟/成功率）"),
 
     // =====================================================================
-    // KB 域（L2·云盘知识库·/kb/v1/*·mox-kb-svc 100% 自研·归一化版本前缀）
+    // KB 域（L2·云盘知识库·/api/kb/*·kb-svc handlers.rs nest /api 实现 + kb_ext.rs 扩展）
     // =====================================================================
-    r("kb.documents.list", "ANY", "/kb/v1/documents", "L2", "kb", "ready", "文档列表/上传/搜索（云盘根目录）"),
-    r("kb.documents.detail", "ANY", "/kb/v1/documents/:id", "L2", "kb", "ready", "文档详情/下载/删除/元数据更新"),
-    r("kb.documents.analyze", "POST", "/kb/v1/documents/:id/analyze", "L2", "kb", "ready", "文档 AI 分析（摘要/关键词/实体）"),
-    r("kb.documents.batch_analyze", "POST", "/kb/v1/batch-analyze", "L2", "kb", "ready", "批量文档分析（异步任务）"),
-    r("kb.categories.list", "GET", "/kb/v1/categories", "L2", "kb", "ready", "知识库分类树"),
-    r("kb.tags.list", "GET", "/kb/v1/tags", "L2", "kb", "ready", "标签云/标签列表"),
-    r("kb.search.query", "POST", "/kb/v1/search", "L2", "kb", "ready", "全文检索（向量+关键词混合）"),
-    r("kb.versions.list", "ANY", "/kb/v1/documents/:id/versions", "L2", "kb", "ready", "文档版本列表"),
-    r("kb.versions.detail", "GET", "/kb/v1/documents/:id/versions/:ver", "L2", "kb", "ready", "指定版本详情/下载"),
-    r("kb.versions.compare", "POST", "/kb/v1/documents/:id/versions/compare", "L2", "kb", "ready", "版本差异对比（diff）"),
-    r("kb.versions.revert", "POST", "/kb/v1/documents/:id/versions/revert", "L2", "kb", "ready", "回滚到指定版本"),
-    r("kb.entities.list", "GET", "/kb/v1/documents/:id/entities", "L2", "kb", "ready", "文档实体抽取结果"),
-    r("kb.graph.link", "ANY", "/kb/v1/documents/:id/graph-link", "L2", "kb", "ready", "文档→知识图谱关联/挂图"),
-    r("kb.documents.history", "GET", "/kb/v1/documents/:id/history", "L2", "kb", "ready", "文档操作历史（审计）"),
-    r("kb.stats.summary", "GET", "/kb/v1/stats", "L2", "kb", "ready", "知识库统计（文档数/容量/活跃度）"),
-    r("kb.history.list", "GET", "/kb/v1/history", "L2", "kb", "ready", "全局操作历史（最近活动）"),
+    r("kb.documents.list", "ANY", "/api/kb/documents", "L2", "kb", "ready", "文档列表/上传/搜索（云盘根目录）"),
+    r("kb.documents.detail", "ANY", "/api/kb/documents/:id", "L2", "kb", "ready", "文档详情/下载/删除/元数据更新"),
+    r("kb.documents.analyze", "POST", "/api/kb/documents/:id/analyze", "L2", "kb", "ready", "文档 AI 分析（摘要/关键词/实体）"),
+    r("kb.documents.batch_analyze", "POST", "/api/kb/batch-analyze", "L2", "kb", "ready", "批量文档分析（异步任务）"),
+    r("kb.categories.list", "GET", "/api/kb/categories", "L2", "kb", "ready", "知识库分类树"),
+    r("kb.tags.list", "GET", "/api/kb/tags", "L2", "kb", "ready", "标签云/标签列表"),
+    r("kb.search.query", "POST", "/api/kb/search", "L2", "kb", "ready", "全文检索（向量+关键词混合）"),
+    r("kb.versions.list", "ANY", "/api/kb/documents/:id/versions", "L2", "kb", "ready", "文档版本列表"),
+    r("kb.versions.detail", "GET", "/api/kb/documents/:id/versions/:ver", "L2", "kb", "ready", "指定版本详情/下载"),
+    r("kb.versions.compare", "POST", "/api/kb/documents/:id/versions/compare", "L2", "kb", "ready", "版本差异对比（diff）"),
+    r("kb.versions.revert", "POST", "/api/kb/documents/:id/versions/revert", "L2", "kb", "ready", "回滚到指定版本"),
+    r("kb.entities.list", "ANY", "/api/kb/documents/:id/entities", "L2", "kb", "ready", "文档实体抽取结果/关联/解关联（handlers+ext）"),
+    r("kb.graph.link", "ANY", "/api/kb/documents/:id/graph-link", "L2", "kb", "ready", "文档→知识图谱关联/挂图"),
+    r("kb.documents.history", "GET", "/api/kb/documents/:id/history", "L2", "kb", "ready", "文档操作历史（审计）"),
+    r("kb.stats.summary", "GET", "/api/kb/stats", "L2", "kb", "ready", "知识库统计（文档数/容量/活跃度）"),
+    r("kb.history.list", "GET", "/api/kb/history", "L2", "kb", "ready", "全局操作历史（最近活动）"),
+    r("kb.entities.search", "GET", "/api/kb/entities/search", "L2", "kb", "ready", "实体语义搜索（kb_ext.rs）"),
 
     // =====================================================================
-    // Alliance 域（L4·专家联盟·/alliance/v1/*·scheduler-core 真实存储+匹配+执行）
+    // Alliance 域（L4·专家联盟·/api/alliance/*·mox-alliance-http-sdk alliance.rs 实现）
     // =====================================================================
-    r("alliance.tasks.list", "ANY", "/alliance/v1/tasks", "L4", "alliance", "ready", "联盟任务列表/创建（InMemoryTaskRepository 真实存储）"),
-    r("alliance.tasks.detail", "ANY", "/alliance/v1/tasks/:task_id", "L4", "alliance", "ready", "任务详情/操作（暂停/恢复/取消）"),
-    r("alliance.experts.search", "POST", "/alliance/v1/experts/search", "L4", "alliance", "ready", "专家匹配搜索（RuleBasedExpertMatcher 真实匹配）"),
-    r("alliance.tasks.status", "GET", "/alliance/v1/tasks/:task_id/status", "L4", "alliance", "ready", "执行状态查询（真实节点统计）"),
-    r("alliance.tasks.nodes", "GET", "/alliance/v1/tasks/:task_id/nodes", "L4", "alliance", "ready", "执行节点列表（真实 DAG 节点）"),
-    r("alliance.tasks.node", "ANY", "/alliance/v1/tasks/:task_id/nodes/:node_id", "L4", "alliance", "ready", "节点详情/跳过（人工干预）"),
-    r("alliance.tasks.logs", "GET", "/alliance/v1/tasks/:id/logs", "L4", "alliance", "ready", "任务执行日志（真实存储）"),
-    r("alliance.tasks.fusion", "GET", "/alliance/v1/tasks/:id/fusion-result", "L4", "alliance", "ready", "融合结果（真实从节点输出融合）"),
-    r("alliance.tasks.dag", "GET", "/alliance/v1/tasks/:id/dag", "L4", "alliance", "ready", "DAG 节点+边（真实存储的 DAG）"),
-    r("alliance.tasks.toggle_done", "PUT", "/alliance/v1/tasks/:id/toggle-done", "L4", "alliance", "ready", "完成状态切换（真实状态流转）"),
-    r("alliance.tasks.status_poll", "GET", "/alliance/v1/tasks/:id/status", "L4", "alliance", "ready", "任务状态轮询（供前端轮询）"),
+    r("alliance.runtime", "GET", "/api/alliance/runtime", "L4", "alliance", "ready", "运行时就绪状态（远程/本地预览）"),
+    r("alliance.tasks.list", "ANY", "/api/alliance/tasks", "L4", "alliance", "ready", "联盟任务列表/创建（InMemoryTaskRepository 真实存储）"),
+    r("alliance.tasks.detail", "ANY", "/api/alliance/tasks/:id", "L4", "alliance", "ready", "任务详情/操作（暂停/恢复/取消）"),
+    r("alliance.tasks.pause", "POST", "/api/alliance/tasks/:id/pause", "L4", "alliance", "ready", "暂停任务"),
+    r("alliance.tasks.resume", "POST", "/api/alliance/tasks/:id/resume", "L4", "alliance", "ready", "恢复任务"),
+    r("alliance.tasks.cancel", "POST", "/api/alliance/tasks/:id/cancel", "L4", "alliance", "ready", "取消任务"),
+    r("alliance.tasks.retry", "POST", "/api/alliance/tasks/:id/retry", "L4", "alliance", "ready", "重试任务"),
+    r("alliance.experts.search", "POST", "/api/alliance/experts/search", "L4", "alliance", "ready", "专家匹配搜索（RuleBasedExpertMatcher 真实匹配）"),
+    r("alliance.tasks.execution_status", "GET", "/api/alliance/tasks/:id/execution-status", "L4", "alliance", "ready", "执行状态查询（真实节点统计）"),
+    r("alliance.tasks.nodes", "GET", "/api/alliance/tasks/:id/nodes", "L4", "alliance", "ready", "执行节点列表（真实 DAG 节点）"),
+    r("alliance.tasks.node", "ANY", "/api/alliance/tasks/:id/nodes/:node_id", "L4", "alliance", "ready", "节点详情/跳过（人工干预）"),
+    r("alliance.tasks.logs", "GET", "/api/alliance/tasks/:id/logs", "L4", "alliance", "ready", "任务执行日志（真实存储）"),
+    r("alliance.tasks.logs_stream", "GET", "/api/alliance/tasks/:id/logs/stream", "L4", "alliance", "ready", "任务日志流式推送"),
+    r("alliance.tasks.fusion", "GET", "/api/alliance/tasks/:id/fusion-result", "L4", "alliance", "ready", "融合结果（真实从节点输出融合）"),
+    r("alliance.tasks.fusion_alias", "GET", "/api/alliance/tasks/:id/fusion", "L4", "alliance", "ready", "融合结果（兼容别名）"),
+    r("alliance.tasks.dag", "GET", "/api/alliance/tasks/:id/dag", "L4", "alliance", "ready", "DAG 节点+边（真实存储的 DAG）"),
+    r("alliance.tasks.toggle_done", "PUT", "/api/alliance/tasks/:id/toggle-done", "L4", "alliance", "ready", "完成状态切换（真实状态流转）"),
+    r("alliance.tasks.status_poll", "GET", "/api/alliance/tasks/:id/status", "L4", "alliance", "ready", "任务状态轮询（供前端轮询）"),
+    r("alliance.tasks.plan", "GET", "/api/alliance/tasks/:id/plan", "L4", "alliance", "ready", "协作计划查询"),
+    r("alliance.stats", "GET", "/api/alliance/stats", "L4", "alliance", "ready", "联盟统计（专家/任务/成功率）"),
 
     // =====================================================================
-    // System 域（L5·系统管理+安全·/api/v1/system/* · /api/v1/security/*·IAM SQLite 真实数据链路）
+    // System 域（L5·系统管理+安全·system.rs 实现·IAM SQLite 真实数据链路）
     // =====================================================================
+    r("system.auth.me", "GET", "/api/auth/me", "L5", "system", "ready", "当前登录用户信息"),
     r("system.permissions.current", "GET", "/api/system/permissions", "L5", "system", "ready", "当前用户权限/角色/菜单"),
     r("system.dept.list", "ANY", "/api/system/dept", "L5", "system", "ready", "部门列表/创建"),
     r("system.dept.tree", "GET", "/api/system/dept/tree", "L5", "system", "ready", "部门树"),
@@ -546,6 +557,120 @@ pub static ROUTES: [ApiRoute; 98] = [
     r("system.security.api_key_revoke", "DELETE", "/api/security/api-keys/:id", "L5", "system", "ready", "吊销 API Key（DB+内存双删）"),
     r("system.security.api_key_validate", "POST", "/api/security/validate", "L5", "system", "ready", "校验 API Key 明文"),
     r("system.security.audit_log", "GET", "/api/security/audit-log", "L5", "system", "ready", "审计日志（SQLite 读取）"),
+
+    // =====================================================================
+    // Experts 域（L3·专家智能体集群·experts_*.rs 七个模块实现）
+    // =====================================================================
+    r("experts.registry.list", "GET", "/api/experts", "L3", "experts", "ready", "专家列表（注册中心）"),
+    r("experts.registry.capabilities", "GET", "/api/experts/capabilities", "L3", "experts", "ready", "专家能力清单"),
+    r("experts.registry.metrics", "GET", "/api/experts/metrics", "L3", "experts", "ready", "专家运行指标"),
+    r("experts.registry.overview", "GET", "/api/experts/overview", "L3", "experts", "ready", "专家体系总览"),
+    r("experts.registry.stats", "GET", "/api/experts/stats", "L3", "experts", "ready", "专家统计"),
+    r("experts.registry.detail", "ANY", "/api/experts/:id", "L3", "experts", "ready", "专家详情/维护"),
+    r("experts.registry.detail_metrics", "GET", "/api/experts/:id/metrics", "L3", "experts", "ready", "单个专家指标"),
+    r("experts.registry.consult_room", "GET", "/api/experts/bookings/:id/consult-room", "L3", "experts", "ready", "咨询室接入（真实房间）"),
+    r("experts.registry.team", "POST", "/api/experts/team", "L3", "experts", "ready", "组建专家团队"),
+    r("experts.registry.consult_now", "POST", "/api/experts/:id/consult-now", "L3", "experts", "ready", "立即咨询专家"),
+    r("experts.collab.consult", "POST", "/api/experts/:id/consult", "L3", "experts", "ready", "单专家咨询"),
+    r("experts.collab.multi_consult", "POST", "/api/experts/multi-consult", "L3", "experts", "ready", "多专家协同咨询"),
+    r("experts.collab.debate", "POST", "/api/experts/debate", "L3", "experts", "ready", "专家辩论"),
+    r("experts.collab.route", "POST", "/api/experts/route", "L3", "experts", "ready", "智能路由"),
+    r("experts.collab.intelligent_consult", "POST", "/api/experts/intelligent-consult", "L3", "experts", "ready", "智能咨询"),
+    r("experts.collab.algorithm_analysis", "POST", "/api/experts/algorithm-analysis", "L3", "experts", "ready", "算法分析"),
+    r("experts.collab.enterprise_consult", "POST", "/api/experts/enterprise/consult", "L3", "experts", "ready", "企业级咨询"),
+    r("experts.collab.enterprise_analyze", "POST", "/api/experts/enterprise/analyze", "L3", "experts", "ready", "企业级分析"),
+    r("experts.dispatch.status", "GET", "/api/experts/dispatcher/status", "L3", "experts", "ready", "调度器状态"),
+    r("experts.dispatch.dispatch", "POST", "/api/experts/dispatcher/dispatch", "L3", "experts", "ready", "任务分发"),
+    r("experts.dispatch.consult", "POST", "/api/experts/dispatcher/consult", "L3", "experts", "ready", "调度咨询"),
+    r("experts.dispatch.multi_consult", "POST", "/api/experts/dispatcher/multi-consult", "L3", "experts", "ready", "调度多专家咨询"),
+    r("experts.dispatch.reset", "POST", "/api/experts/dispatcher/reset/:id", "L3", "experts", "ready", "重置调度状态"),
+    r("experts.dispatch.reset_all", "POST", "/api/experts/dispatcher/reset-all", "L3", "experts", "ready", "全量重置调度"),
+    r("experts.graph.overview", "GET", "/api/expert-graph", "L3", "experts", "ready", "专家协作图总览"),
+    r("experts.graph.stats", "GET", "/api/expert-graph/stats", "L3", "experts", "ready", "协作图统计"),
+    r("experts.graph.neighbors", "GET", "/api/expert-graph/neighbors/:id", "L3", "experts", "ready", "专家邻域"),
+    r("experts.graph.collaborators", "GET", "/api/expert-graph/collaborators/:id", "L3", "experts", "ready", "协作伙伴"),
+    r("experts.graph.path", "GET", "/api/expert-graph/path/:source/:target", "L3", "experts", "ready", "专家间路径"),
+    r("experts.graph.communities", "GET", "/api/expert-graph/communities", "L3", "experts", "ready", "协作社区发现"),
+    r("experts.graph.optimal_team", "POST", "/api/expert-graph/optimal-team", "L3", "experts", "ready", "最优团队推荐"),
+    r("experts.graph.rebuild", "POST", "/api/expert-graph/rebuild", "L3", "experts", "ready", "重建协作图"),
+    r("experts.orch.orchestrate", "POST", "/api/experts/orchestrate", "L3", "experts", "ready", "专家编排执行"),
+    r("experts.orch.plan_generate", "POST", "/api/experts/plan/generate", "L3", "experts", "ready", "生成协作计划"),
+    r("experts.orch.plan_execute", "POST", "/api/experts/plan/execute", "L3", "experts", "ready", "执行协作计划"),
+    r("experts.orch.stats", "GET", "/api/experts/orchestration/stats", "L3", "experts", "ready", "编排统计"),
+    r("experts.orch.plugins", "GET", "/api/experts/orchestration/plugins", "L3", "experts", "ready", "编排插件清单"),
+    r("experts.orch.history", "GET", "/api/experts/orchestration/history", "L3", "experts", "ready", "编排历史"),
+    r("experts.session.stats", "GET", "/api/experts/sessions/stats", "L3", "experts", "ready", "会话统计"),
+    r("experts.session.messages", "POST", "/api/experts/sessions/:id/messages", "L3", "experts", "ready", "发送会话消息"),
+    r("experts.session.similar_search", "POST", "/api/experts/sessions/:id/similar-search", "L3", "experts", "ready", "会话相似检索"),
+    r("experts.session.export", "GET", "/api/experts/sessions/:id/export", "L3", "experts", "ready", "导出会话"),
+    r("experts.session.archive", "POST", "/api/experts/sessions/:id/archive", "L3", "experts", "ready", "归档会话"),
+    r("experts.session.semantic_search", "POST", "/api/experts/semantic-search", "L3", "experts", "ready", "全局语义搜索"),
+    r("experts.ext.bookings_mine", "GET", "/api/experts/bookings/mine", "L3", "experts", "ready", "我的预约"),
+    r("experts.ext.favorite", "POST", "/api/experts/:id/favorite", "L3", "experts", "ready", "收藏专家"),
+    r("experts.ext.bookings_create", "POST", "/api/experts/bookings", "L3", "experts", "ready", "创建预约"),
+    r("experts.ext.bookings_cancel", "PUT", "/api/experts/bookings/:id/cancel", "L3", "experts", "ready", "取消预约"),
+
+    // =====================================================================
+    // Monitor 域（L5·平台可观测·monitor.rs 实现）
+    // =====================================================================
+    r("monitor.metrics_detail", "GET", "/api/monitor/metrics/detail", "L5", "monitor", "ready", "指标详情"),
+    r("monitor.quality", "GET", "/api/monitor/quality", "L5", "monitor", "ready", "质量评估"),
+    r("monitor.business", "GET", "/api/monitor/business", "L5", "monitor", "ready", "业务监控"),
+    r("monitor.alerts_summary", "GET", "/api/monitor/alerts/summary", "L5", "monitor", "ready", "告警摘要"),
+    r("monitor.nodes", "GET", "/api/monitor/nodes", "L5", "monitor", "ready", "节点列表"),
+    r("monitor.node_logs", "GET", "/api/monitor/nodes/:name/logs", "L5", "monitor", "ready", "节点日志"),
+    r("monitor.node_trace", "GET", "/api/monitor/nodes/:name/trace", "L5", "monitor", "ready", "节点链路追踪"),
+    r("monitor.alert_rules", "ANY", "/api/monitor/alert-rules", "L5", "monitor", "ready", "告警规则列表/创建"),
+    r("monitor.alert_rule_detail", "ANY", "/api/monitor/alert-rules/:id", "L5", "monitor", "ready", "告警规则详情/更新/删除"),
+    r("monitor.alert_rule_toggle", "PUT", "/api/monitor/alert-rules/:id/toggle", "L5", "monitor", "ready", "启停告警规则"),
+    r("monitor.timeseries", "GET", "/api/monitor/timeseries", "L5", "monitor", "ready", "时序数据"),
+    r("monitor.business_timeseries", "GET", "/api/monitor/business/timeseries", "L5", "monitor", "ready", "业务时序数据"),
+
+    // =====================================================================
+    // Projects 域（L6·项目管理·projects_ext.rs 实现）
+    // =====================================================================
+    r("projects.ai_recommend", "POST", "/api/projects/ai-recommend", "L6", "projects", "ready", "AI 项目推荐"),
+    r("projects.members", "ANY", "/api/projects/:id/members", "L6", "projects", "ready", "成员列表/添加"),
+    r("projects.member_detail", "ANY", "/api/projects/:id/members/:memberId", "L6", "projects", "ready", "成员更新/移除"),
+    r("projects.phases", "GET", "/api/projects/:id/phases", "L6", "projects", "ready", "项目阶段"),
+    r("projects.files", "GET", "/api/projects/:id/files", "L6", "projects", "ready", "项目文件列表"),
+    r("projects.files_upload", "POST", "/api/projects/:id/files/upload", "L6", "projects", "ready", "项目文件上传"),
+    r("projects.activities", "GET", "/api/projects/:id/activities", "L6", "projects", "ready", "项目动态"),
+    r("projects.documents", "GET", "/api/projects/:id/documents", "L6", "projects", "ready", "项目文档列表"),
+    r("projects.advance_phase", "PUT", "/api/projects/:id/advance-phase", "L6", "projects", "ready", "推进阶段"),
+    r("projects.phase_progress", "GET", "/api/projects/:id/phase-progress", "L6", "projects", "ready", "阶段进度"),
+    r("projects.favorite", "POST", "/api/projects/:id/favorite", "L6", "projects", "ready", "收藏项目"),
+    r("projects.share", "POST", "/api/projects/:id/share", "L6", "projects", "ready", "分享项目"),
+    r("projects.document_download", "GET", "/api/projects/:id/documents/:docId/download", "L6", "projects", "ready", "项目文档下载"),
+    r("projects.requirements_graph", "GET", "/api/projects/:id/requirements-graph", "L6", "projects", "ready", "需求关系图"),
+
+    // =====================================================================
+    // Workspace 域（L5·工作台·workspace.rs 实现）
+    // =====================================================================
+    r("workspace.kpi", "GET", "/api/workspace/kpi", "L5", "workspace", "ready", "工作台 KPI"),
+    r("workspace.file_preview", "GET", "/api/files/:id/preview", "L5", "workspace", "ready", "文件预览"),
+    r("workspace.file_download", "GET", "/api/files/:id/download", "L5", "workspace", "ready", "文件下载"),
+    r("workspace.whiteboard_save", "POST", "/api/whiteboard/:sessionId/save", "L5", "workspace", "ready", "白板保存"),
+    r("workspace.history", "GET", "/api/workspace/history", "L5", "workspace", "ready", "工作台历史"),
+    r("workspace.tasks_decompose", "POST", "/api/tasks/decompose", "L5", "workspace", "ready", "任务分解"),
+    r("workspace.tasks_execute", "POST", "/api/tasks/:id/execute", "L5", "workspace", "ready", "任务执行"),
+
+    // =====================================================================
+    // Notification 域（L5·通知中心·notification.rs 实现）
+    // =====================================================================
+    r("notification.list", "GET", "/api/notifications", "L5", "notification", "ready", "通知列表"),
+    r("notification.unread_count", "GET", "/api/notifications/unread-count", "L5", "notification", "ready", "未读数量"),
+    r("notification.read", "PUT", "/api/notifications/:id/read", "L5", "notification", "ready", "标记已读"),
+    r("notification.read_all", "PUT", "/api/notifications/read-all", "L5", "notification", "ready", "全部已读"),
+
+    // =====================================================================
+    // Misc 域（L5·通用业务端点·misc.rs 实现）
+    // =====================================================================
+    r("misc.avatar", "POST", "/api/users/:id/avatar", "L5", "misc", "ready", "用户头像上传"),
+    r("misc.market_review", "POST", "/api/market/:id/review", "L5", "misc", "ready", "市场评论"),
+    r("misc.ai_flow_update", "PUT", "/api/ai/flows/:id", "L5", "misc", "ready", "AI 流程更新"),
+    r("misc.tasks", "GET", "/api/tasks", "L5", "misc", "ready", "任务列表（通用）"),
+    r("misc.projects", "GET", "/api/projects", "L5", "misc", "ready", "项目列表（通用）"),
 ];
 
 /// 判断路径是否属于管理面（管理端点不允许被停用，防止自锁）
@@ -602,15 +727,15 @@ fn method_ok(route: &ApiRoute, method: &str) -> bool {
 
 /// 兼容迁移期历史入口，但始终把它们归一化到唯一的 canonical route。
 ///
-/// `/api/*` 是旧编排入口，`/kg/v1/*` 和 `/ai/v1/*` 是当前 L2/L3 入口。
+/// `/api/*` 是旧编排入口，`/kg/v1/*` 与 `/ai/engine/*` 是当前 L2/L3 权威前缀。
 /// 管理面需要同时识别两者，否则通配代理会在精确业务路由之前抢占匹配。
 fn canonical_path(path: &str) -> &str {
     match path {
         "/api/kg/stats" => "/kg/v1/stats",
-        "/api/ai/engine/process" => "/ai/v1/process",
-        "/api/ai/engine/analyze" => "/ai/v1/analyze",
-        "/api/ai/engine/capabilities" => "/ai/v1/capabilities",
-        "/api/ai/engine/metrics" => "/ai/v1/metrics",
+        "/api/ai/engine/process" => "/ai/engine/process",
+        "/api/ai/engine/analyze" => "/ai/engine/analyze",
+        "/api/ai/engine/capabilities" => "/ai/engine/capabilities",
+        "/api/ai/engine/metrics" => "/ai/engine/metrics",
         _ => path,
     }
 }
