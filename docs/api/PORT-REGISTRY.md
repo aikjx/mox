@@ -28,7 +28,7 @@
 
 | 服务 | 端口 | 协议 | 绑定 | 入口/访问 | 配置权威来源 |
 |---|---|---|---|---|---|
-| **api**（Rust 网关 mox-server，crate `mox-platform-gateway-svc`） | **8080** | HTTP | 0.0.0.0 | `http://localhost:8080/health` | `platform_config.json`、`deploy/config/gateway.yaml`、`mox-workspace/.env.example`、`platform/gateway/mox-platform-gateway-svc/` |
+| **api**（Rust 网关 mox-server，crate `mox-platform-gateway-svc`） | **8080** | HTTP | 0.0.0.0 | `http://localhost:8080/health` | `platform_config.json`、`deploy/config/gateway.yaml`、`platform/gateway/mox-platform-gateway-svc/` |
 | **frontend**（Vite Vue3 dev server） | **3020** | HTTP | 0.0.0.0 | `http://localhost:3020/` | `frontend-ui/vite.config.js`、`platform_config.json` |
 | **xiaobai_voice**（ASR+TTS） | **30010** | HTTP/WS | 127.0.0.1 | `http://localhost:30010/voice/health` | `projects/xiaobai_voice/xiaobai_voice/config/default_config.yaml`、`cli.py`、`platform_config.json` |
 | **melody2score**（旋律转谱 WebUI） | **8012** | HTTP | 0.0.0.0 | `http://localhost:8012/` | `projects/melody2score/app/webui.py`、`platform_config.json` |
@@ -70,7 +70,7 @@
 
 | 端口 | 用途 | 绑定/默认 | 权威来源 |
 |---|---|---|---|
-| 50051 | gRPC（`mox-dualrpc` / framework 默认 / 专家联盟内部 gRPC） | 0.0.0.0 | `mox-workspace/.env.example` → `MOX_GRPC_PORT`；`platform/framework/src/config.rs` |
+| 50051 | gRPC（`mox-dualrpc` / framework 默认 / 专家联盟内部 gRPC） | 0.0.0.0 | gRPC 接入示例见 `docs/architecture/06-rpc-integration-guide.md` |
 | 50052 | gRPC 备用端口（架构文档提及） | — | `docs/architecture/OPTIMAL_ARCHITECTURE.md` |
 | 9080 | data-plane-svc 内网控制面（ctrl） | 127.0.0.1 | `platform/domains/data/svc/mox-data-plane-svc/src/listeners.rs` |
 | 9081 | data-plane-svc 内网数据面（data） | 127.0.0.1 | `platform/domains/data/svc/mox-data-plane-svc/src/listeners.rs` |
@@ -87,7 +87,7 @@
 |---|---|---|---|---|
 | 8600 | legacy Python `mox-server`（低代码平台旧后端） | docker-compose / systemd / nginx 反向代理指向此端口；**与 Rust 网关 api=8080 是两个不同服务**，注意同名“mox-server”易混淆 | `docker-compose.yml`、`deploy/Dockerfile`、`deploy/systemd.service`、`tools/deploy.py`、`platform/legacy/mox-server/run.py` | 🟡遗留（仍在部署链路） |
 | 8601 | legacy `mox-store`（应用商店） | FastAPI 商店服务 | `platform/legacy/mox-store/store_server.py` | 🟡遗留 |
-| 6379 | **redis**（基础设施） | docker-compose / systemd 引用 | `docker-compose.yml`、`deploy/systemd.service`、`mox-workspace/.env.example` | 🟢基础设施 |
+| 6379 | **redis**（基础设施） | docker-compose / systemd 引用 | `docker-compose.yml`、`deploy/systemd.service` | 🟢基础设施 |
 
 > **注意**：legacy `mox-server`(8600) 与 Rust 网关 `mox-server`(8080) **二进制同名不同物**。新代码一律以 8080 为唯一 API 入口；8600 仅服务遗留静态站点（`mox-website` / `mox-console` / `chip-website`）。
 

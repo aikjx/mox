@@ -153,7 +153,7 @@ EXPECTED_DASHBOARD_PORT = 3999
 # 扫描参数
 # --------------------------------------------------------------------------- #
 SCAN_ROOTS = ["platform", "projects", "frontend-ui", "scripts", "config", "deploy",
-              "tests", "shared", "proto", "tools", "mox-workspace", "prototypes",
+              "tests", "shared", "proto", "tools", "prototypes",
               "my_projects", "docs", "plugins", "start.sh", "docker-compose.yml",
               "Cargo.toml", "deny.toml", "platform_config.json"]
 PRUNE_DIRS = {"node_modules", "dist", "build", "target", "__pycache__", ".venv",

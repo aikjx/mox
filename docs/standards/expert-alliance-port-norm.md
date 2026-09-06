@@ -53,7 +53,7 @@
 | **3300** | AI 专家服务（ai-expert 桥接） | 领域专家（33xx） | scheduler 内部桥接的专家服务基地址 | 已启用 |
 | **8080** ⚠️例外 | **Rust 平台网关**（api / mox-gateway） | 兼容段（例外） | Rust axum 单二进制 HTTP 入口，为全平台唯一对外 API；端口因历史兼容（原 Python mox-server / 部署链路）**钉死为 8080**，详见注 2.1a | 已启用（例外） |
 
-> **注 2.1a（8080 例外说明）**：本规范 1.1 要求核心服务端口落在 3000–3999，但 **Rust 平台网关 api=8080** 为**全平台唯一对外 HTTP 入口**，且已同步固化于 `platform_config.json`、`deploy/config/gateway.yaml`、`mox-workspace/.env.example`、`frontend-ui/vite.config.js`、docker-compose/helm 等全链路，迁移成本与风险极高。故**特批为例外**：8080 为网关保留端口，任何其他服务禁止占用；若未来整体迁移到 3xxx，须走第5章变更流程并同步全链路。
+> **注 2.1a（8080 例外说明）**：本规范 1.1 要求核心服务端口落在 3000–3999，但 **Rust 平台网关 api=8080** 为**全平台唯一对外 HTTP 入口**，且已同步固化于 `platform_config.json`、`deploy/config/gateway.yaml`、`frontend-ui/vite.config.js`、docker-compose/helm 等全链路，迁移成本与风险极高。故**特批为例外**：8080 为网关保留端口，任何其他服务禁止占用；若未来整体迁移到 3xxx，须走第5章变更流程并同步全链路。
 
 ### 2.2 段位预留
 
