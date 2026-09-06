@@ -8,19 +8,19 @@
 <style>
   @font-face {
     font-family: 'Instrument Sans';
-    src: url('../_shared/fonts/InstrumentSans-Regular.ttf') format('truetype');
+    src: url('../../_shared/fonts/InstrumentSans-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
   }
   @font-face {
     font-family: 'Instrument Sans';
-    src: url('../_shared/fonts/InstrumentSans-Bold.ttf') format('truetype');
+    src: url('../../_shared/fonts/InstrumentSans-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
   }
   @font-face {
     font-family: 'JetBrains Mono';
-    src: url('../_shared/fonts/JetBrainsMono-Regular.ttf') format('truetype');
+    src: url('../../_shared/fonts/JetBrainsMono-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
   }
@@ -529,7 +529,7 @@
 
   <div class="card danger">
     <div class="card-title"><span class="icon">🔴</span>P0 — 顶层散落的 HTML 演示项目</div>
-    <p>根目录下散落着 <strong>6+ 个独立的 HTML 演示/原型项目</strong>：<code>chat-project-generator/</code>、<code>data-vis/</code>、<code>expert-alliance-cyber/</code>、<code>expert-alliance-design/</code>、<code>kg-workflow-guide/</code>、<code>mox-enterprise-optimization/</code>。每个项目都自带 <code>_shared/</code> 字体和 JS 库，存在大量重复资源。</p>
+    <p>根目录下散落着 <strong>6+ 个独立的 HTML 演示/原型项目</strong>：<code>chat-project-generator/</code>、<code>data-vis/</code>、<code>expert-alliance-cyber/</code>、<code>expert-alliance-design/</code>、<code>kg-workflow-guide/</code>、<code>mox-enterprise-optimization/</code>。每个项目都自带 <code>../../_shared/</code> 字体和 JS 库，存在大量重复资源。</p>
   </div>
 
   <div class="card warn">
@@ -831,11 +831,11 @@ mindmap
   <h3>4.2 HTML 原型项目归并</h3>
   <div class="card warn">
     <div class="card-title">问题</div>
-    <p>根目录散落 6 个 HTML 原型项目，每个都有重复的 <code>_shared/</code> 字体和 JS 资源，且命名不统一，新人无法快速区分哪些是生产代码、哪些是演示原型。</p>
+    <p>根目录散落 6 个 HTML 原型项目，每个都有重复的 <code>../../_shared/</code> 字体和 JS 资源，且命名不统一，新人无法快速区分哪些是生产代码、哪些是演示原型。</p>
   </div>
   <div class="card success">
     <div class="card-title">方案 — 统一迁入 prototypes/</div>
-    <p>新建 <code>prototypes/</code> 目录，将所有 HTML 演示项目移入，共享一份 <code>_shared/</code> 资源：</p>
+    <p>新建 <code>prototypes/</code> 目录，将所有 HTML 演示项目移入，共享一份 <code>../../_shared/</code> 资源：</p>
     <ul style="margin-left:1.5rem;color:var(--muted);">
       <li><code>prototypes/chat-project-generator/</code></li>
       <li><code>prototypes/data-vis/</code></li>
@@ -1019,7 +1019,7 @@ frontend-ui/playwright-report/
     <ul style="margin-left:1.5rem;color:var(--muted);">
       <li>新建 <code>prototypes/</code> 目录</li>
       <li>将 6 个 HTML 原型项目移入</li>
-      <li>提取公共 <code>_shared/</code> 资源到 <code>prototypes/_shared/</code></li>
+      <li>提取公共 <code>../../_shared/</code> 资源到 <code>prototypes/../../_shared/</code></li>
       <li>更新各原型中的资源引用路径</li>
     </ul>
   </div>
@@ -1102,8 +1102,8 @@ frontend-ui/playwright-report/
 </div>
 
 <!-- REQUIRED JS Libraries -->
-<script src="../_shared/js/echarts.min.js"></script>
-<script src="../_shared/js/mermaid.min.js"></script>
+<script src="../../_shared/js/echarts.min.js"></script>
+<script src="../../_shared/js/mermaid.min.js"></script>
 <script src="assets/charts.js"></script>
 
 <script>

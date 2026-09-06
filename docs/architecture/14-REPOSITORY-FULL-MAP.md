@@ -205,16 +205,16 @@
 
 | 目录 | 产物 | 说明 |
 |------|------|------|
-| `chat-project-generator/` | chat-project-generator.html | **对话驱动项目生成器**：AI 对话→自动编排→项目落地（含 flow.yaml + autoOrchestrator.js / flowEngine.js + examples.js） |
-| `directory-audit-report/` | directory-audit-report.html | MOX 项目目录结构审计与整理方案（开发专家联盟） |
-| `expert-alliance-cyber/` | expert-alliance-cyber.html | 专家联盟系统 CYBERPUNK 版 |
-| `expert-alliance-design/` | expert-alliance-design.html | 专家联盟平台mox 模块化系统架构维度设计方案（Element Plus 规范） |
-| `kg-workflow-guide/` | kg-workflow-guide.html | 知识图谱数据处理工作流（采集到入库全链路，含 kg-pipeline-flow.yaml） |
-| `mox-enterprise-optimization/` | mox-enterprise-optimization.html | 璇玑（MOX）企业级mox 模块化系统架构分析与优化设计报告 |
-| `xuanji-ux-redesign/` | xuanji-ux-redesign.html | 璇玑系统 UX 重设计规划（信息架构与布局） |
-| `data-vis/` | mox 模块化系统架构分析流程.html + flow_data.json | mox 模块化系统架构分析需求业务处理流程图可视化 |
+| `prototypes/chat-project-generator/` | chat-project-generator.html | **对话驱动项目生成器**：AI 对话→自动编排→项目落地（含 flow.yaml + autoOrchestrator.js / flowEngine.js + examples.js） |
+| `reports/html/directory-audit-report/` | directory-audit-report.html | MOX 项目目录结构审计与整理方案（开发专家联盟） |
+| `prototypes/expert-alliance-cyber/` | expert-alliance-cyber.html | 专家联盟系统 CYBERPUNK 版 |
+| `prototypes/expert-alliance-design/` | expert-alliance-design.html | 专家联盟平台mox 模块化系统架构维度设计方案（Element Plus 规范） |
+| `prototypes/kg-workflow-guide/` | kg-workflow-guide.html | 知识图谱数据处理工作流（采集到入库全链路，含 kg-pipeline-flow.yaml） |
+| `prototypes/mox-enterprise-optimization/` | mox-enterprise-optimization.html | 璇玑（MOX）企业级mox 模块化系统架构分析与优化设计报告 |
+| `reports/html/xuanji-ux-redesign/` | xuanji-ux-redesign.html | 璇玑系统 UX 重设计规划（信息架构与布局） |
+| `prototypes/data-vis/` | mox 模块化系统架构分析流程.html + flow_data.json | mox 模块化系统架构分析需求业务处理流程图可视化 |
 
-> 每个 HTML 项目均含 `assets/`（静态资源）与 `_shared/`（共享资源）；`.trae-html-share-packages/` 存放其分享打包 zip。
+> 每个 HTML 项目均含 `assets/`（独有资源）；共享字体与 JS 统一存放于 `reports/_shared/`（报告类）与 `prototypes/_shared/`（原型类），`_shared/` 不随各项目复制。
 
 ---
 
