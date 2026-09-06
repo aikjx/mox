@@ -662,11 +662,14 @@ pub async fn observability_middleware(
     let method = req.method().as_str().to_string();
     let path = req.uri().path().to_string();
     state.runtime.begin();
+    state.metrics.active_inc();
 
     // API 启停拦截：最具体匹配的路由被停用 → 403（管理面豁免）
     if let Some(route) = match_best(&method, &path) {
         if !route.enabled.load(Ordering::Relaxed) && !is_management(&path) {
             state.runtime.end(403, Duration::ZERO, &method);
+            state.metrics.record_request(&method, 403, Duration::ZERO);
+            state.metrics.active_dec();
             state.logs.push(
                 "WARN",
                 "gateway",
@@ -681,6 +684,8 @@ pub async fn observability_middleware(
     let status = resp.status().as_u16();
     let dur = start.elapsed();
     state.runtime.end(status, dur, &method);
+    state.metrics.record_request(&method, status, dur);
+    state.metrics.active_dec();
 
     let level = if status >= 500 {
         "ERROR"

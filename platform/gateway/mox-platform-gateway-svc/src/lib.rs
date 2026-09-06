@@ -257,14 +257,12 @@ async fn domains_handler() -> ApiResponse<serde_json::Value> {
     }))
 }
 
-/// 指标端点（Prometheus 格式占位）
+/// 指标端点（Prometheus 文本格式：o11y 运行时指标 + 限流器状态）
 async fn metrics_handler(State(state): State<GatewayState>) -> String {
+    let mut body = state.metrics.render();
     let rl_stats = state.rate_limiter.stats();
-    format!(
-        "# HELP mox_gateway_requests_total Total requests processed\n\
-         # TYPE mox_gateway_requests_total counter\n\
-         mox_gateway_requests_total{{service=\"gateway\"}} 0\n\
-         # HELP mox_rate_limit_clients Total tracked rate limit clients\n\
+    body.push_str(&format!(
+        "# HELP mox_rate_limit_clients Total tracked rate limit clients\n\
          # TYPE mox_rate_limit_clients gauge\n\
          mox_rate_limit_clients {}\n\
          # HELP mox_rate_limit_enabled Whether rate limiting is enabled\n\
@@ -272,7 +270,8 @@ async fn metrics_handler(State(state): State<GatewayState>) -> String {
          mox_rate_limit_enabled {}\n",
         rl_stats.total_clients,
         if rl_stats.enabled { 1 } else { 0 },
-    )
+    ));
+    body
 }
 
 /// 启动网关：绑定地址端口，Ctrl-C 优雅退出
