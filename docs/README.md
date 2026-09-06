@@ -11,6 +11,7 @@
 | 文档 | 说明 | 状态 |
 |------|------|------|
 | **[CORE-CAPABILITIES.md](CORE-CAPABILITIES.md)** | 核心能力与解决的问题 — 知识图谱 + 多智能体 + 统一服务化三合一，问题→功能映射 | 🟢 权威 |
+| **[API-REGISTRY.md](API-REGISTRY.md)** | **API 注册表（权威·接口↔实现一一对应）** — 199 条注册路由逐域映射实现源码、43 域描述符、独立服务矩阵、治理规则 | 🟢 权威 |
 | **[architecture.md](architecture/architecture.md)** | 统一架构规范 **v3.0-ai-powered** — AI 驱动mox 模块化系统架构平台：对话中心 + 四向弹框 + Agent 运行时 + 原有技术底座 | 🟢 权威 |
 | **[operations-manual.md](architecture/operations-manual.md)** | 操作说明手册 v2.0 — 快速开始、平台使用、数据导出导入、应用发布安装、运维监控 | 🟢 权威 |
 | **[mox 模块化系统架构分析 v3.0](enterprise/MOX-AI驱动mox 模块化系统架构平台-企业级设计-mox 模块化系统架构分析-v3.0.md)** | 完整设计决策：现状诊断、架构优化、业务流程优化、开源对标、路线图 | 📘 设计依据 |
