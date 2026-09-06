@@ -7,12 +7,12 @@
 | 目录 | 原位置 | 废弃原因 | 替代方案 |
 |------|--------|----------|----------|
 | `mox-server/` | platform/mox-server | Python 版初代后端，已被 Rust 重写 | `platform/domains/` 下的 Rust 模块化架构 |
-| `backend-rust/` | platform/backend-rust | 早期 Rust 后端原型，架构已重构 | `platform/domains/` + `platform/gateway/` |
 | `mox-store/` | platform/mox-store | 商城服务原型，已整合入 market 域 | `platform/domains/market/` |
 
 ## 保留期限
 
-这些代码将保留至 v3.0 正式发布后 3 个月，届时如无特殊需求将彻底删除。
+- `backend-rust/` 已于 2026-09 移除（自隔离 workspace 旧后端，v3.0 发布已超 3 个月）。
+- `mox-server/`、`mox-store/` 为 Python 旧版快照，保留至 v3.0 后 3 个月，届时如无特殊需求将彻底删除。
 
 ## 注意事项
 

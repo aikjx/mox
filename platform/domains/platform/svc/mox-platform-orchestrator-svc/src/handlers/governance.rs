@@ -20,7 +20,7 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use mox_ai_flow_svc::model::FlowGraph;
+use mox_ai_flow_sdk::model::FlowGraph;
 use futures_util::SinkExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

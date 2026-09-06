@@ -1,0 +1,29 @@
+[package]
+name = "mox-lock-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX 统一分布式锁核心 - 企业级分布式锁基础设施，支持内存锁/Redis锁，可重入、自动续期、超时释放"
+
+[dependencies]
+# 异步运行时
+tokio = { workspace = true }
+
+# 并发原语
+parking_lot = { workspace = true }
+
+# 错误处理
+thiserror = { workspace = true }
+
+# 异步trait
+async-trait = { workspace = true }
+
+# 追踪
+tracing = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full", "test-util"] }

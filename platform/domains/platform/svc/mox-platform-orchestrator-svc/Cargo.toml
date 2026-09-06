@@ -21,7 +21,7 @@ mox-flow-optimizer-core = { workspace = true }
 mox-ai-agent-svc = { workspace = true }
 mox-data-catalog-svc = { workspace = true }
 mox-ai-expert-svc = { workspace = true }
-mox-ai-flow-svc = { workspace = true }
+mox-ai-flow-sdk = { workspace = true }
 # 子服务聚合（Phase 1 收敛）：四套并行 server 以库方式挂载，由 runtime 唯一对外暴露。
 # 各自 bin 保留为独立部署选项，生产统一走 operator-server。
 mox-platform-system-core = { workspace = true }
@@ -53,6 +53,8 @@ futures-util = { workspace = true }
 reqwest = { workspace = true }
 
 [dev-dependencies]
+# Only service identity/compatibility tests import the service crate.
+mox-ai-flow-svc = { workspace = true }
 tokio = { workspace = true }
 reqwest = { workspace = true }
 # T2 跨 crate 常量一致性测试：runtime 的集成测试需要能 extern crate 全部 15 个 workspace 成员。

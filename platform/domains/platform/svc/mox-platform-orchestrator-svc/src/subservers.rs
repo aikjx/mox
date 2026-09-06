@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -19,8 +19,7 @@
 //! - [`PASSTHROUGH_PREFIXES`]：由子服务自带成员令牌 RBAC 鉴权，网关透传；
 //! - [`GATEWAY_PREFIXES`]：子服务无自带鉴权，由网关 `OUS_API_TOKEN` 统一保护。
 
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use axum::Router;
 
@@ -46,13 +45,26 @@ pub struct SubServers {
 
 /// Explicit deployment composition; initialization outcomes are recorded, never assumed healthy.
 fn default_modules() -> Vec<mox_platform_module_core::ModuleSpec> {
-    [("mox-viz", "MOX_VIZ", PREFIX_MOX_VIZ), ("mox-system", "MOX_SYSTEM", PREFIX_MOX_SYSTEM),
-     ("primiflow", "PRIMIFLOW", PREFIX_PRIMIFLOW), ("fusion", "FUSION", PREFIX_FUSION)]
-        .into_iter().filter(|(_, env, _)| {
-            !std::env::var(format!("OUS_ENABLE_{env}")).map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "off" | "no")).unwrap_or(false)
-        }).map(|(id, _, prefix)| mox_platform_module_core::ModuleSpec {
-            id: id.into(), contract_major: 1, required: true, dependencies: vec![], route_prefix: Some(prefix.into()),
-        }).collect()
+    [
+        ("mox-viz", "MOX_VIZ", PREFIX_MOX_VIZ),
+        ("mox-system", "MOX_SYSTEM", PREFIX_MOX_SYSTEM),
+        ("primiflow", "PRIMIFLOW", PREFIX_PRIMIFLOW),
+        ("fusion", "FUSION", PREFIX_FUSION),
+    ]
+    .into_iter()
+    .filter(|(_, env, _)| {
+        !std::env::var(format!("OUS_ENABLE_{env}"))
+            .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "off" | "no"))
+            .unwrap_or(false)
+    })
+    .map(|(id, _, prefix)| mox_platform_module_core::ModuleSpec {
+        id: id.into(),
+        contract_major: 1,
+        required: true,
+        dependencies: vec![],
+        route_prefix: Some(prefix.into()),
+    })
+    .collect()
 }
 
 pub async fn build() -> anyhow::Result<SubServers> {
@@ -63,16 +75,24 @@ pub async fn build() -> anyhow::Result<SubServers> {
     build_with_specs(specs).await
 }
 
-pub async fn build_with_specs(specs: Vec<mox_platform_module_core::ModuleSpec>) -> anyhow::Result<SubServers> {
+pub async fn build_with_specs(
+    specs: Vec<mox_platform_module_core::ModuleSpec>,
+) -> anyhow::Result<SubServers> {
     use mox_platform_module_core::ModulePlan;
     // Route ownership and contract versions are validated before any service initialization.
     for spec in &specs {
         let prefix = match spec.id.as_str() {
-            "mox-viz" => PREFIX_MOX_VIZ, "mox-system" => PREFIX_MOX_SYSTEM,
-            "primiflow" => PREFIX_PRIMIFLOW, "fusion" => PREFIX_FUSION,
+            "mox-viz" => PREFIX_MOX_VIZ,
+            "mox-system" => PREFIX_MOX_SYSTEM,
+            "primiflow" => PREFIX_PRIMIFLOW,
+            "fusion" => PREFIX_FUSION,
             other => anyhow::bail!("unknown embedded module: {other}"),
         };
-        anyhow::ensure!(spec.contract_major == 1 && spec.route_prefix.as_deref() == Some(prefix), "unsupported contract or route for {}", spec.id);
+        anyhow::ensure!(
+            spec.contract_major == 1 && spec.route_prefix.as_deref() == Some(prefix),
+            "unsupported contract or route for {}",
+            spec.id
+        );
     }
     let plan = ModulePlan::new(specs)?;
     let order = plan.order().to_vec();
@@ -113,13 +133,19 @@ pub async fn build_with_specs(specs: Vec<mox_platform_module_core::ModuleSpec>) 
             }
         }.await;
         match result {
-            Ok(router) => {
-                match startup.ready(&id) {
-                    Ok(()) => { routers.push(router); notes.push(format!("module {id}: initialized")); }
-                    Err(error) => { startup.failed(&id, error.to_string())?; }
-                }
-            }
-            Err(error) => { startup.failed(&id, error.to_string())?; notes.push(format!("module {id}: initialization failed: {error}")); }
+            Ok(router) => match startup.ready(&id) {
+                Ok(()) => {
+                    routers.push(router);
+                    notes.push(format!("module {id}: initialized"));
+                },
+                Err(error) => {
+                    startup.failed(&id, error.to_string())?;
+                },
+            },
+            Err(error) => {
+                startup.failed(&id, error.to_string())?;
+                notes.push(format!("module {id}: initialization failed: {error}"));
+            },
         }
     }
     let report = startup.report();
@@ -171,10 +197,7 @@ pub fn registered_subservers() -> Vec<Subserver> {
 pub fn print_subserver_registry() {
     eprintln!("\n========== Platform Subservers (FR-GW-05) ==========");
     for s in registered_subservers() {
-        eprintln!(
-            "  • {:26} | required={} | {} | health={}",
-            s.name, s.required, s.url, s.health
-        );
+        eprintln!("  • {:26} | required={} | {} | health={}", s.name, s.required, s.url, s.health);
     }
     eprintln!("=====================================================\n");
 }
@@ -190,8 +213,13 @@ mod tests {
 
     #[tokio::test]
     async fn deployment_rejects_unknown_module_before_initialization() {
-        let specs = vec![mox_platform_module_core::ModuleSpec { id: "unknown".into(), contract_major: 1,
-            required: true, dependencies: vec![], route_prefix: Some("/unknown".into()) }];
+        let specs = vec![mox_platform_module_core::ModuleSpec {
+            id: "unknown".into(),
+            contract_major: 1,
+            required: true,
+            dependencies: vec![],
+            route_prefix: Some("/unknown".into()),
+        }];
         assert!(build_with_specs(specs).await.is_err());
     }
 
@@ -204,24 +232,33 @@ mod tests {
     }
 
     #[test]
+    fn deployment_rejects_unknown_configuration_fields() {
+        let value = serde_json::json!([{"id":"fusion", "contract_major":1, "required":true,
+            "dependencies":[], "route_prefix":"/fusion", "enable":false}]);
+        assert!(serde_json::from_value::<Vec<mox_platform_module_core::ModuleSpec>>(value).is_err());
+    }
+
+    #[tokio::test]
+    async fn deployment_rejects_route_override_before_initialization() {
+        let specs = vec![mox_platform_module_core::ModuleSpec {
+            id: "fusion".into(),
+            contract_major: 1,
+            required: true,
+            dependencies: vec![],
+            route_prefix: Some("/mox-system".into()),
+        }];
+        assert!(build_with_specs(specs).await.is_err());
+    }
+
+    #[test]
     fn at_least_two_subservers_and_voice() {
         let list = registered_subservers();
         assert!(list.len() >= 2);
-        let voice = list
-            .iter()
-            .find(|s| s.name == "xiaobai_voice")
-            .expect("voice必须注册");
-        assert!(
-            voice.url.contains("30010"),
-            "voice URL 必须是 30010：{}",
-            voice.url
-        );
+        let voice = list.iter().find(|s| s.name == "xiaobai_voice").expect("voice必须注册");
+        assert!(voice.url.contains("30010"), "voice URL 必须是 30010：{}", voice.url);
         assert!(voice.health.starts_with("/voice/"));
-        let alliance = list
-            .iter()
-            .find(|s| s.name == "mox-expert-alliance")
-            .expect("alliance必须注册");
+        let alliance =
+            list.iter().find(|s| s.name == "mox-expert-alliance").expect("alliance必须注册");
         assert!(alliance.health.starts_with("/ai/engine/"));
     }
 }
-

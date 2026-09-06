@@ -212,7 +212,7 @@ pub async fn run_handler(
                     })
                     .map(|n| n.id.clone());
                 if let Some(nid) = target {
-                    mox_ai_flow_svc::automation::patch_flow_with_fix(&mut flow_json, &nid, &fixed_code);
+                    mox_ai_flow_sdk::automation::patch_flow_with_fix(&mut flow_json, &nid, &fixed_code);
                     if let Ok(flow) =
                         serde_json::from_value::<mox_ai_agent_svc::flow_engine::FlowDefinition>(flow_json)
                     {

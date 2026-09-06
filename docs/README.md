@@ -10,10 +10,10 @@
 
 | 文档 | 说明 | 状态 |
 |------|------|------|
-| **[architecture.md](architecture.md)** | 统一架构规范 **v3.0-ai-powered** — AI 驱动mox 模块化系统架构平台：对话中心 + 四向弹框 + Agent 运行时 + 原有技术底座 | 🟢 权威 |
-| **[operations-manual.md](operations-manual.md)** | 操作说明手册 v2.0 — 快速开始、平台使用、数据导出导入、应用发布安装、运维监控 | 🟢 权威 |
-| **[mox 模块化系统架构分析 v3.0](MOX-AI驱动mox 模块化系统架构平台-企业级设计-mox 模块化系统架构分析-v3.0.md)** | 完整设计决策：现状诊断、架构优化、业务流程优化、开源对标、路线图 | 📘 设计依据 |
-| **[统一平台架构与API文档](unified-platform-architecture-docs.html)** | 六大归一化体系完整架构说明与 API 接口参考 | 🌐 HTML |
+| **[architecture.md](architecture/architecture.md)** | 统一架构规范 **v3.0-ai-powered** — AI 驱动mox 模块化系统架构平台：对话中心 + 四向弹框 + Agent 运行时 + 原有技术底座 | 🟢 权威 |
+| **[operations-manual.md](architecture/operations-manual.md)** | 操作说明手册 v2.0 — 快速开始、平台使用、数据导出导入、应用发布安装、运维监控 | 🟢 权威 |
+| **[mox 模块化系统架构分析 v3.0](enterprise/MOX-AI驱动mox 模块化系统架构平台-企业级设计-mox 模块化系统架构分析-v3.0.md)** | 完整设计决策：现状诊断、架构优化、业务流程优化、开源对标、路线图 | 📘 设计依据 |
+| **[统一平台架构与API文档](architecture/unified-platform-architecture-docs.html)** | 六大归一化体系完整架构说明与 API 接口参考 | 🌐 HTML |
 
 ---
 
@@ -27,7 +27,7 @@
 - [代码审计报告](enterprise/31-mox 模块化系统架构代码审计与验证报告-V1.0.md) · [可观测性体系设计](enterprise/31-可观测性体系设计文档-ADR-12.md)
 
 ### 🏛️ 架构设计
-- [🏛️ 架构文档中心](architecture-hub.html) 🌐 **（一站式索引）** · [架构文档索引](architecture/README.md)
+- [🏛️ 架构文档中心](architecture/architecture-hub.html) 🌐 **（一站式索引）** · [架构文档索引](architecture/README.md)
 - [最优架构方案](architecture/OPTIMAL_ARCHITECTURE.md) · [归一化架构](architecture/NORMALIZED_ARCHITECTURE.md)
 - [扩展开发指南](architecture/02-extension-guide.md) · [错误码参考](architecture/04-error-code-reference.md)
 - [KG动态SQL架构](architecture/07-KG-DYNAMIC-SQL-ARCHITECTURE.md) · [mox 模块化系统架构低代码架构](architecture/08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md)
@@ -41,8 +41,8 @@
 - [v2 完整文档集](expert-alliance/v2/README.md) · [v3 架构优化](expert-alliance/v3/01-architecture-optimization.md)
 
 ### 🔄 归一化统一平台
-- [统一平台架构与API文档](unified-platform-architecture-docs.html) 🌐
-- [产品手册 v3](mox-relgraph-product-handbook-v3.md)
+- [统一平台架构与API文档](architecture/unified-platform-architecture-docs.html) 🌐
+- [产品手册 v3](modules/mox-relgraph-product-handbook-v3.md)
 - [TraceMatrix 六维追溯](full-dimensional/mox-tracematrix.html) 🌐
 - **[文档归一化总索引（SSoT 枢纽）](normalization/README.md)** · [BP](normalization/BP-INDEX.md) · [API](normalization/API-INDEX.md) · [ARC](normalization/ARC-INDEX.md) · [VAL](normalization/VAL-INDEX.md) · [TPL](normalization/TPL-INDEX.md)
 
@@ -50,13 +50,13 @@
 - [部署文档索引总图](../deploy/docs/DOCUMENT-INDEX.md)
 - [企业级统一规格 v2.0](../deploy/docs/MOX-Enterprise-Unified-Spec-v2.0.md)
 - [架构决策记录 ADR](../deploy/docs/MOX-Architecture-Decision-Records-v1.0.md)
-- [部署指南](deployment-guide.md) · [运维操作手册](../deploy/docs/ops-manual.md)
+- [部署指南](architecture/deployment-guide.md) · [运维操作手册](../deploy/docs/ops-manual.md)
 - [HA容量与TCO规划](../deploy/docs/ha-capacity-tco.md) · [信创兼容矩阵](../deploy/docs/xinchuang-matrix.md)
 
 ### 📋 规范与标准
 - [AI原生架构标准](standards/ai-native-architecture-standard.md)
-- [数据交换规范 MXDEF](data-exchange-spec.md)
-- [应用商店架构 MXAP](app-store-architecture.md)
+- [数据交换规范 MXDEF](architecture/data-exchange-spec.md)
+- [应用商店架构 MXAP](architecture/app-store-architecture.md)
 - [引擎内核规范](standards/engine-kernel.md) · [专家联盟流程标准](standards/expert-alliance-flow-standard.md)
 
 ### 🧩 模块技术文档
@@ -78,12 +78,12 @@
 ## 按角色阅读路径
 
 ### 👋 新手入门
-1. [操作手册 第一章](operations-manual.md) → 5分钟跑起来
-2. [操作手册 第二章](operations-manual.md) → 平台使用指南
-3. [架构总览](architecture.md) → 了解整体架构
+1. [操作手册 第一章](architecture/operations-manual.md) → 5分钟跑起来
+2. [操作手册 第二章](architecture/operations-manual.md) → 平台使用指南
+3. [架构总览](architecture/architecture.md) → 了解整体架构
 
 ### 🏗️ 架构师
-1. [架构文档中心](architecture-hub.html) → 完整架构文档索引 🌐
+1. [架构文档中心](architecture/architecture-hub.html) → 完整架构文档索引 🌐
 2. [企业级架构](enterprise/02-architecture.md) → 整体架构设计
 3. [最优架构方案](architecture/OPTIMAL_ARCHITECTURE.md) → 技术方案选型
 4. [ADR 决策记录](../deploy/docs/MOX-Architecture-Decision-Records-v1.0.md) → 历史决策
@@ -94,7 +94,7 @@
 3. [错误码参考](architecture/04-error-code-reference.md) → 调试排错
 
 ### 🚀 运维/DevOps
-1. [部署指南](deployment-guide.md) → 完整部署流程
+1. [部署指南](architecture/deployment-guide.md) → 完整部署流程
 2. [运维手册](../deploy/docs/ops-manual.md) → 日常运维
 3. [容量规划](../deploy/docs/ha-capacity-tco.md) → 资源规划
 

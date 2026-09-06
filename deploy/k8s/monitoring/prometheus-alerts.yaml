@@ -1,5 +1,5 @@
-# MOX v3.1 Prometheus 告警规则
-# 包含：服务可用性/性能/资源/业务指标四大类告警
+# MOX v3.3 Prometheus 告警规则
+# 包含：服务可用性/性能/资源/业务指标/连接池/弹性容错 六大类告警
 
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
@@ -113,6 +113,148 @@ spec:
         summary: "MOX服务 {{ $labels.job }} HTTP P99延迟过高"
         description: "服务 {{ $labels.job }} HTTP P99延迟超过2秒，当前值: {{ $value }}秒"
 
+  - name: mox-connection-pool
+    interval: 30s
+    rules:
+    # 连接池耗尽告警（活跃连接数达到最大连接数的90%）
+    - alert: MoxConnectionPoolExhausted
+      expr: |
+        dsql_pool_active_connections / dsql_pool_max_connections > 0.9
+      for: 2m
+      labels:
+        severity: critical
+        category: connection-pool
+      annotations:
+        summary: "连接池即将耗尽: {{ $labels.pool }}"
+        description: "连接池 {{ $labels.pool }} 活跃连接数超过最大连接数的90%，当前值: {{ $value | humanizePercentage }}"
+        runbook: "检查慢查询和连接泄漏，考虑增加max_size或优化查询性能"
+
+    # 连接获取超时告警
+    - alert: MoxConnectionAcquireTimeout
+      expr: |
+        sum(rate(dsql_pool_timeout_total[5m])) by (pool) > 0.1
+      for: 5m
+      labels:
+        severity: critical
+        category: connection-pool
+      annotations:
+        summary: "连接获取超时: {{ $labels.pool }}"
+        description: "连接池 {{ $labels.pool }} 连接获取超时速率超过0.1次/秒，持续5分钟"
+        runbook: "检查数据库性能和连接池配置，考虑增加max_size或优化查询"
+
+    # 连接丢弃率过高告警（不健康/过期连接丢弃）
+    - alert: MoxConnectionDiscardRateHigh
+      expr: |
+        sum(rate(dsql_pool_discard_total[5m])) by (pool)
+        /
+        sum(rate(dsql_pool_create_total[5m])) by (pool)
+        > 0.2
+      for: 10m
+      labels:
+        severity: warning
+        category: connection-pool
+      annotations:
+        summary: "连接丢弃率过高: {{ $labels.pool }}"
+        description: "连接池 {{ $labels.pool }} 连接丢弃率超过20%，可能存在数据库连接不稳定问题"
+        runbook: "检查数据库连接稳定性和网络状况"
+
+    # 连接池空闲连接数为0（持续高负载）
+    - alert: MoxConnectionPoolNoIdle
+      expr: |
+        dsql_pool_idle_connections == 0
+      for: 5m
+      labels:
+        severity: warning
+        category: connection-pool
+      annotations:
+        summary: "连接池无空闲连接: {{ $labels.pool }}"
+        description: "连接池 {{ $labels.pool }} 连续5分钟无空闲连接，所有连接都在使用中"
+        runbook: "检查是否存在连接泄漏或高负载，考虑增加max_size"
+
+  - name: mox-resilience
+    interval: 30s
+    rules:
+    # 熔断器打开告警（状态=2表示Open）
+    - alert: MoxCircuitBreakerOpen
+      expr: |
+        resilience_circuit_breaker_state == 2
+      for: 1m
+      labels:
+        severity: critical
+        category: resilience
+      annotations:
+        summary: "熔断器打开: {{ $labels.name }}"
+        description: "熔断器 {{ $labels.name }} 已打开，请求被快速失败"
+        runbook: "检查下游服务状态，确认恢复后可手动重置熔断器"
+
+    # 熔断器HalfOpen告警（状态=1表示HalfOpen）
+    - alert: MoxCircuitBreakerHalfOpen
+      expr: |
+        resilience_circuit_breaker_state == 1
+      for: 2m
+      labels:
+        severity: warning
+        category: resilience
+      annotations:
+        summary: "熔断器半开: {{ $labels.name }}"
+        description: "熔断器 {{ $labels.name }} 处于半开状态超过2分钟，正在探测下游服务恢复情况"
+        runbook: "观察下游服务恢复情况，如持续半开可能需要人工介入"
+
+    # 熔断器请求拒绝率过高
+    - alert: MoxCircuitBreakerRejectRateHigh
+      expr: |
+        sum(rate(resilience_circuit_breaker_requests_total{result="rejected"}[5m])) by (name)
+        /
+        sum(rate(resilience_circuit_breaker_requests_total[5m])) by (name)
+        > 0.3
+      for: 5m
+      labels:
+        severity: critical
+        category: resilience
+      annotations:
+        summary: "熔断器拒绝率过高: {{ $labels.name }}"
+        description: "熔断器 {{ $labels.name }} 请求拒绝率超过30%，持续5分钟"
+        runbook: "检查下游服务健康状况，确认是否需要扩容或降级"
+
+    # 熔断器频繁打开（1小时内打开超过3次）
+    - alert: MoxCircuitBreakerFrequentOpen
+      expr: |
+        sum(increase(resilience_circuit_breaker_opened_total[1h])) by (name) > 3
+      for: 1m
+      labels:
+        severity: warning
+        category: resilience
+      annotations:
+        summary: "熔断器频繁打开: {{ $labels.name }}"
+        description: "熔断器 {{ $labels.name }} 过去1小时内打开超过3次，下游服务可能不稳定"
+        runbook: "检查下游服务稳定性，考虑调整熔断阈值或增加重试"
+
+    # 重试次数突增告警
+    - alert: MoxRetryRateHigh
+      expr: |
+        sum(rate(resilience_retry_attempts_total[5m])) by (name) > 1
+      for: 5m
+      labels:
+        severity: warning
+        category: resilience
+      annotations:
+        summary: "重试次数突增: {{ $labels.name }}"
+        description: "操作 {{ $labels.name }} 重试速率超过1次/秒，持续5分钟，可能存在间歇性故障"
+        runbook: "检查下游服务稳定性和网络状况"
+
+    # 降级触发告警
+    - alert: MoxFallbackTriggered
+      expr: |
+        sum(rate(resilience_fallback_triggered_total[5m])) by (name) > 0
+      for: 1m
+      labels:
+        severity: warning
+        category: resilience
+      annotations:
+        summary: "降级触发: {{ $labels.name }}"
+        description: "操作 {{ $labels.name }} 触发降级，返回降级值而非真实结果"
+        runbook: "检查主流程失败原因，确认降级值是否符合业务预期"
+
   - name: mox-resources
     interval: 30s
     rules:
@@ -208,16 +350,3 @@ spec:
         summary: "动态流程执行失败率过高"
         description: "过去10分钟动态流程执行失败率超过10%，当前值: {{ $value | humanizePercentage }}"
         runbook: "检查流程审计日志和补偿执行情况"
-
-    # 熔断器打开告警
-    - alert: MoxCircuitBreakerOpen
-      expr: |
-        mox_circuit_breaker_state == 1
-      for: 1m
-      labels:
-        severity: critical
-        category: business
-      annotations:
-        summary: "熔断器打开: {{ $labels.name }}"
-        description: "熔断器 {{ $labels.name }} 已打开，请求被快速失败"
-        runbook: "检查下游服务状态，确认恢复后可手动重置熔断器"

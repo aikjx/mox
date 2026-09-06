@@ -30,7 +30,9 @@ pub enum ModuleError {
     Duplicate(String),
     #[error("module {module} requires missing module {dependency}")]
     Missing { module: String, dependency: String },
-    #[error("module {module} requires {dependency} contract major {required}, installed {installed}")]
+    #[error(
+        "module {module} requires {dependency} contract major {required}, installed {installed}"
+    )]
     Version { module: String, dependency: String, required: u16, installed: u16 },
     #[error("route ownership conflicts between {0} and {1}")]
     RouteConflict(String, String),
@@ -50,45 +52,89 @@ impl ModulePlan {
     pub fn new(specs: Vec<ModuleSpec>) -> Result<Self, ModuleError> {
         let mut modules = BTreeMap::<String, ModuleSpec>::new();
         for spec in specs {
-            if spec.id.is_empty() || !spec.id.bytes().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-') || spec.contract_major == 0 {
+            if !spec.id.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
+                || !spec
+                    .id
+                    .bytes()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+                || spec.contract_major == 0
+            {
                 return Err(ModuleError::Invalid(spec.id));
             }
             if let Some(prefix) = &spec.route_prefix {
-                if !prefix.starts_with('/') || prefix.ends_with('/') || prefix.contains("//") || prefix.contains(['?', '#', '*', ':', '%', '\\']) || prefix.split('/').any(|p| matches!(p, "." | "..")) {
+                if !prefix.starts_with('/')
+                    || prefix.ends_with('/')
+                    || prefix.contains("//")
+                    || !prefix.bytes().all(|c| c.is_ascii_alphanumeric() || b"/-._~".contains(&c))
+                    || prefix.split('/').any(|p| matches!(p, "." | ".."))
+                {
                     return Err(ModuleError::Invalid(spec.id));
                 }
                 for other in modules.values() {
                     if let Some(path) = &other.route_prefix {
-                        if path == prefix || path.starts_with(&format!("{prefix}/")) || prefix.starts_with(&format!("{path}/")) {
+                        if path == prefix
+                            || path.starts_with(&format!("{prefix}/"))
+                            || prefix.starts_with(&format!("{path}/"))
+                        {
                             return Err(ModuleError::RouteConflict(other.id.clone(), spec.id));
                         }
                     }
                 }
             }
-            if modules.contains_key(&spec.id) { return Err(ModuleError::Duplicate(spec.id)); }
+            if modules.contains_key(&spec.id) {
+                return Err(ModuleError::Duplicate(spec.id));
+            }
             modules.insert(spec.id.clone(), spec);
         }
         for spec in modules.values() {
+            let mut dependencies = BTreeSet::new();
             for dep in &spec.dependencies {
-                let installed = modules.get(&dep.module).ok_or_else(|| ModuleError::Missing { module: spec.id.clone(), dependency: dep.module.clone() })?;
+                if !dependencies.insert(&dep.module) {
+                    return Err(ModuleError::Invalid(format!(
+                        "{}: duplicate dependency {}", spec.id, dep.module
+                    )));
+                }
+                let installed = modules.get(&dep.module).ok_or_else(|| ModuleError::Missing {
+                    module: spec.id.clone(),
+                    dependency: dep.module.clone(),
+                })?;
                 if dep.contract_major != installed.contract_major {
-                    return Err(ModuleError::Version { module: spec.id.clone(), dependency: dep.module.clone(), required: dep.contract_major, installed: installed.contract_major });
+                    return Err(ModuleError::Version {
+                        module: spec.id.clone(),
+                        dependency: dep.module.clone(),
+                        required: dep.contract_major,
+                        installed: installed.contract_major,
+                    });
                 }
             }
         }
         let mut order = Vec::new();
         let mut resolved = BTreeSet::new();
         while order.len() < modules.len() {
-            let next = modules.values().find(|s| !resolved.contains(&s.id) && s.dependencies.iter().all(|d| resolved.contains(&d.module)));
+            let next = modules.values().find(|s| {
+                !resolved.contains(&s.id)
+                    && s.dependencies.iter().all(|d| resolved.contains(&d.module))
+            });
             match next {
-                Some(spec) => { resolved.insert(spec.id.clone()); order.push(spec.id.clone()); }
-                None => return Err(ModuleError::Cycle(modules.keys().filter(|id| !resolved.contains(*id)).cloned().collect())),
+                Some(spec) => {
+                    resolved.insert(spec.id.clone());
+                    order.push(spec.id.clone());
+                },
+                None => {
+                    return Err(ModuleError::Cycle(
+                        modules.keys().filter(|id| !resolved.contains(*id)).cloned().collect(),
+                    ))
+                },
             }
         }
         Ok(Self { modules, order })
     }
-    pub fn order(&self) -> &[String] { &self.order }
-    pub fn spec(&self, id: &str) -> Option<&ModuleSpec> { self.modules.get(id) }
+    pub fn order(&self) -> &[String] {
+        &self.order
+    }
+    pub fn spec(&self, id: &str) -> Option<&ModuleSpec> {
+        self.modules.get(id)
+    }
     pub fn startup(self) -> Startup {
         let states = self.modules.keys().map(|id| (id.clone(), ModuleState::Pending)).collect();
         Startup { plan: self, states }
@@ -97,7 +143,11 @@ impl ModulePlan {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "status", rename_all = "snake_case")]
-pub enum ModuleState { Pending, Ready, Failed { message: String } }
+pub enum ModuleState {
+    Pending,
+    Ready,
+    Failed { message: String },
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct StartupReport {
@@ -113,8 +163,14 @@ pub struct Startup {
 impl Startup {
     pub fn can_start(&self, id: &str) -> Result<(), ModuleError> {
         let spec = self.plan.spec(id).ok_or_else(|| ModuleError::Transition(id.into()))?;
-        if self.states.get(id) != Some(&ModuleState::Pending) { return Err(ModuleError::Transition(id.into())); }
-        if spec.dependencies.iter().any(|d| self.states.get(&d.module) != Some(&ModuleState::Ready)) {
+        if self.states.get(id) != Some(&ModuleState::Pending) {
+            return Err(ModuleError::Transition(id.into()));
+        }
+        if spec
+            .dependencies
+            .iter()
+            .any(|d| self.states.get(&d.module) != Some(&ModuleState::Ready))
+        {
             return Err(ModuleError::Transition(format!("{id}: dependencies not ready")));
         }
         Ok(())
@@ -127,13 +183,20 @@ impl Startup {
         self.finish(id, ModuleState::Failed { message: message.into() })
     }
     fn finish(&mut self, id: &str, state: ModuleState) -> Result<(), ModuleError> {
-        if self.states.get(id) != Some(&ModuleState::Pending) { return Err(ModuleError::Transition(id.into())); }
+        if self.states.get(id) != Some(&ModuleState::Pending) {
+            return Err(ModuleError::Transition(id.into()));
+        }
         self.states.insert(id.into(), state);
         Ok(())
     }
     pub fn report(&self) -> StartupReport {
         StartupReport {
-            ready: self.plan.modules.values().filter(|s| s.required).all(|s| self.states.get(&s.id) == Some(&ModuleState::Ready)),
+            ready: self
+                .plan
+                .modules
+                .values()
+                .filter(|s| s.required)
+                .all(|s| self.states.get(&s.id) == Some(&ModuleState::Ready)),
             degraded: self.states.values().any(|s| s != &ModuleState::Ready),
             modules: self.states.clone(),
         }
@@ -144,41 +207,92 @@ impl Startup {
 mod tests {
     use super::*;
     fn spec(id: &str, deps: &[&str], required: bool) -> ModuleSpec {
-        ModuleSpec { id: id.into(), contract_major: 1, required, route_prefix: Some(format!("/{id}")), dependencies: deps.iter().map(|id| Dependency { module: (*id).into(), contract_major: 1 }).collect() }
+        ModuleSpec {
+            id: id.into(),
+            contract_major: 1,
+            required,
+            route_prefix: Some(format!("/{id}")),
+            dependencies: deps
+                .iter()
+                .map(|id| Dependency { module: (*id).into(), contract_major: 1 })
+                .collect(),
+        }
     }
     #[test]
     fn plans_independently_of_registration_order() {
-        let plan = ModulePlan::new(vec![spec("tasks", &["identity"], true), spec("identity", &[], true)]).unwrap();
+        let plan =
+            ModulePlan::new(vec![spec("tasks", &["identity"], true), spec("identity", &[], true)])
+                .unwrap();
         assert_eq!(plan.order(), &["identity", "tasks"]);
         let mut run = plan.startup();
         assert!(!run.report().ready);
         assert!(run.ready("tasks").is_err());
-        run.ready("identity").unwrap(); run.ready("tasks").unwrap();
-        assert!(run.report().ready); assert!(!run.report().degraded);
+        run.ready("identity").unwrap();
+        run.ready("tasks").unwrap();
+        assert!(run.report().ready);
+        assert!(!run.report().degraded);
         assert!(run.failed("tasks", "late failure").is_err());
     }
     #[test]
     fn rejects_missing_incompatible_and_cyclic_dependencies() {
-        assert!(matches!(ModulePlan::new(vec![spec("tasks", &["identity"], true)]), Err(ModuleError::Missing { .. })));
-        let mut identity = spec("identity", &[], true); identity.contract_major = 2;
-        assert!(matches!(ModulePlan::new(vec![spec("tasks", &["identity"], true), identity]), Err(ModuleError::Version { .. })));
-        assert!(matches!(ModulePlan::new(vec![spec("a", &["b"], true), spec("b", &["a"], true)]), Err(ModuleError::Cycle(_))));
+        assert!(matches!(
+            ModulePlan::new(vec![spec("tasks", &["identity"], true)]),
+            Err(ModuleError::Missing { .. })
+        ));
+        let mut identity = spec("identity", &[], true);
+        identity.contract_major = 2;
+        assert!(matches!(
+            ModulePlan::new(vec![spec("tasks", &["identity"], true), identity]),
+            Err(ModuleError::Version { .. })
+        ));
+        assert!(matches!(
+            ModulePlan::new(vec![spec("a", &["b"], true), spec("b", &["a"], true)]),
+            Err(ModuleError::Cycle(_))
+        ));
     }
     #[test]
     fn optional_failure_does_not_hide_a_required_dependency_failure() {
-        let mut run = ModulePlan::new(vec![spec("tasks", &["identity"], true), spec("identity", &[], false)]).unwrap().startup();
+        let mut run =
+            ModulePlan::new(vec![spec("tasks", &["identity"], true), spec("identity", &[], false)])
+                .unwrap()
+                .startup();
         run.failed("identity", "unavailable").unwrap();
-        assert!(run.ready("tasks").is_err()); assert!(!run.report().ready);
-        let mut run = ModulePlan::new(vec![spec("tasks", &[], true), spec("search", &[], false)]).unwrap().startup();
-        run.ready("tasks").unwrap(); run.failed("search", "unavailable").unwrap();
-        assert!(run.report().ready); assert!(run.report().degraded);
+        assert!(run.ready("tasks").is_err());
+        assert!(!run.report().ready);
+        let mut run = ModulePlan::new(vec![spec("tasks", &[], true), spec("search", &[], false)])
+            .unwrap()
+            .startup();
+        run.ready("tasks").unwrap();
+        run.failed("search", "unavailable").unwrap();
+        assert!(run.report().ready);
+        assert!(run.report().degraded);
+    }
+    #[test]
+    fn rejects_nonliteral_routes_and_duplicate_dependencies() {
+        for path in ["/tasks/{id}", "/tasks/:id", "/tasks with space", "/tasks\n", "/tasks/%2f", "/tasks/.."] {
+            let mut module = spec("tasks", &[], true);
+            module.route_prefix = Some(path.into());
+            assert!(matches!(ModulePlan::new(vec![module]), Err(ModuleError::Invalid(_))), "{path:?}");
+        }
+        assert!(matches!(
+            ModulePlan::new(vec![spec("tasks", &["identity", "identity"], true), spec("identity", &[], true)]),
+            Err(ModuleError::Invalid(_))
+        ));
     }
     #[test]
     fn rejects_duplicate_identity_and_route_shadowing() {
-        let mut duplicate = spec("tasks", &[], true); duplicate.route_prefix = None;
-        assert!(matches!(ModulePlan::new(vec![spec("tasks", &[], true), duplicate]), Err(ModuleError::Duplicate(_))));
-        let mut nested = spec("nested", &[], true); nested.route_prefix = Some("/tasks/private".into());
-        assert!(matches!(ModulePlan::new(vec![spec("tasks", &[], true), nested]), Err(ModuleError::RouteConflict(..))));
+        let mut duplicate = spec("tasks", &[], true);
+        duplicate.route_prefix = None;
+        assert!(matches!(
+            ModulePlan::new(vec![spec("tasks", &[], true), duplicate]),
+            Err(ModuleError::Duplicate(_))
+        ));
+        let mut nested = spec("nested", &[], true);
+        nested.route_prefix = Some("/tasks/private".into());
+        assert!(matches!(
+            ModulePlan::new(vec![spec("tasks", &[], true), nested]),
+            Err(ModuleError::RouteConflict(..))
+        ));
         assert!(ModulePlan::new(vec![spec("task", &[], true), spec("tasks", &[], true)]).is_ok());
     }
 }

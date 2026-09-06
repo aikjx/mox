@@ -10,7 +10,7 @@
 //! 由 `automation` 与 `main` 单向引用。
 
 use mox_ai_agent_svc::requirement_compiler::SystemBlueprint;
-use mox_ai_flow_svc::automation::{AutoTest, RolePermission};
+use mox_ai_flow_sdk::automation::{AutoTest, RolePermission};
 use serde::{Deserialize, Serialize};
 
 /// 自动生成的全栈代码（与 flow-ai 解耦，避免其内部 model 类型耦合）

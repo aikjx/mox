@@ -19,7 +19,7 @@ pub const CRATE_META: mox_platform_foundation::CrateMeta = mox_platform_foundati
     owner: "mox-core",
 };
 
-pub use mox_flow_operator_core::Result;
+pub use mox_platform_foundation::operator_error::Result;
 
 // ============================================================================
 // T3 单源真相参数：锁死 7 算法的精度护栏（严禁修改）

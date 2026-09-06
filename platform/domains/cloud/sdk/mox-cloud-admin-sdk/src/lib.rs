@@ -1,16 +1,20 @@
 //! Storage administration adapter. Contracts belong to mox-cloud-api; backend implementations stay here.
-use mox_cloud_api::admin::{GcReport, MigrateReport, StorageAdmin, StorageStats, StorageStatus, VerifyReport};
-use mox_cloud_api::{CloudApiError, CloudApiResult};
 use async_trait::async_trait;
 use mox_base_store_core::StoreError;
+use mox_cloud_api::{
+    admin::{GcReport, MigrateReport, StorageAdmin, StorageStats, StorageStatus, VerifyReport},
+    CloudApiError, CloudApiResult,
+};
 use mox_cloud_store_core::{
     collect_store_stats, create_backend, list_object_refs, BackendKind, GarbageCollector,
     KeyPathCodec, S3ClientConfig, StoreBackend, StoreConfig,
 };
 use parking_lot::Mutex;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    path::PathBuf,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 /// 可热切换的后端持有者
 struct BackendCell {
@@ -155,7 +159,7 @@ impl StorageAdmin for StoreAdmin {
             Err(e) => {
                 self.record_error(&e.to_string());
                 return Err(store_err(e));
-            }
+            },
         };
         Ok(StorageStatus {
             backend: backend_kind_name(&backend.kind).to_string(),
@@ -205,11 +209,11 @@ impl StorageAdmin for StoreAdmin {
                 Ok(_) => {
                     report.missing += 1;
                     report.errors.push(format!("{path}: chunk 空文件 {sha}"));
-                }
+                },
                 Err(_) => {
                     report.missing += 1;
                     report.errors.push(format!("{path}: chunk 缺失 {sha}"));
-                }
+                },
             }
         }
         report.duration_ms = now_ms().saturating_sub(t0);
@@ -264,25 +268,21 @@ impl StorageAdmin for StoreAdmin {
         for (path, _sha) in refs {
             match src.object.get(&path).await {
                 Ok(data) => {
-                    match dst
-                        .object
-                        .put(&path, "application/octet-stream", data.clone())
-                        .await
-                    {
+                    match dst.object.put(&path, "application/octet-stream", data.clone()).await {
                         Ok(_) => {
                             report.objects_ok += 1;
                             report.bytes_migrated += data.len() as u64;
-                        }
+                        },
                         Err(e) => {
                             report.objects_failed += 1;
                             report.errors.push(format!("{path}: {e}"));
-                        }
+                        },
                     }
-                }
+                },
                 Err(e) => {
                     report.objects_failed += 1;
                     report.errors.push(format!("{path}: {e}"));
-                }
+                },
             }
         }
         report.duration_ms = now_ms().saturating_sub(t0);

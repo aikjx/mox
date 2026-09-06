@@ -28,7 +28,7 @@ use axum::{
     routing::{get, post, put},
     Json, Router,
 };
-use mox_ai_flow_svc::automation::{
+use mox_ai_flow_sdk::automation::{
     AutoTestGen, BusinessBlueprintLite, ErrorAnalyzer, Feature, FixProposal, RbacDeriver,
     RolePermission, RunResult,
 };
@@ -513,7 +513,7 @@ fn extract_code_block(text: &str) -> Option<String> {
     Some(after[..end].trim().to_string())
 }
 
-/// 流程图 → Mermaid（独立实现，避免与 mox_ai_flow_svc 内部 model 类型耦合）
+/// 流程图 → Mermaid（独立实现，避免与 mox_ai_flow_sdk 内部 model 类型耦合）
 pub fn flow_definition_to_mermaid(flow: &mox_ai_agent_svc::flow_engine::FlowDefinition) -> String {
     use mox_ai_agent_svc::flow_engine::NodeType;
     let mut s = String::from("flowchart TD\n");
@@ -765,7 +765,7 @@ pub async fn run_handler(
                     })
                     .map(|n| n.id.clone());
                 if let Some(nid) = target {
-                    mox_ai_flow_svc::automation::patch_flow_with_fix(&mut flow_json, &nid, &fixed_code);
+                    mox_ai_flow_sdk::automation::patch_flow_with_fix(&mut flow_json, &nid, &fixed_code);
                     if let Ok(flow) =
                         serde_json::from_value::<mox_ai_agent_svc::flow_engine::FlowDefinition>(flow_json)
                     {

@@ -85,7 +85,12 @@ impl Workflow {
     }
 
     /// 添加算子到工作流末尾
-    pub fn then<O: Operator + 'static>(mut self, op: O) -> Result<Self> {
+    pub fn then<O: Operator + 'static>(self, op: O) -> Result<Self> {
+        self.then_shared(Arc::new(op))
+    }
+
+    /// Append an already planned operator without rebuilding its allocation or configuration.
+    pub fn then_shared(mut self, op: Arc<dyn Operator>) -> Result<Self> {
         if let Some(last) = self.operators.last() {
             let last_type = last.type_pair();
             let new_type = op.type_pair();
@@ -96,7 +101,7 @@ impl Workflow {
                 )));
             }
         }
-        self.operators.push(Arc::new(op));
+        self.operators.push(op);
         Ok(self)
     }
 

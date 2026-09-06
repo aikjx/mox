@@ -7,6 +7,7 @@
 //!
 //! 实现公理5：资源约束优化
 //! 基于DAG的算子调度，最小化资源消耗和执行时间
+pub mod execution;
 
 pub const CRATE_ID: &str = "e56676c7-ec1f-5415-9587-ba8249d0178a";
 pub const ENGINE_NAME: &str = "mox::optimizer";

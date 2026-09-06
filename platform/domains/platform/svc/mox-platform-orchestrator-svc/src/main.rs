@@ -25,10 +25,6 @@ use mox_kg_algo_core::{
     CentralityMetrics, Community, GraphStats, KnowledgeEdge, KnowledgeGraph, KnowledgeGraphBuilder,
     KnowledgeNode, NodeRecommendation, PathResult,
 };
-use mox_flow_operator_core::category::Workflow;
-use mox_flow_operator_core::operator::{FunctionOperator, IdentityOperator, LinearOperator, Operator};
-use mox_flow_operator_core::state::StateVector;
-use mox_flow_operator_core::ExecutionContext;
 use mox_flow_operator_wasm_svc::WasmPluginManager;
 // 璇玑mox 模块化系统架构治理内核：双璇玑十四维 → 治理报告
 use mox_ai_expert_svc::context::GovernContext;
@@ -144,29 +140,7 @@ struct ExecutionLog {
 
 // ========== 请求/响应结构 ==========
 
-#[derive(Debug, Deserialize)]
-struct ExecuteRequest {
-    workflow: Vec<String>,
-    input: Vec<f64>,
-    parameters: Option<HashMap<String, f64>>,
-}
-
-#[derive(Debug, Serialize)]
-struct ExecuteResponse {
-    success: bool,
-    output: Option<Vec<f64>>,
-    execution_time_ms: u64,
-    logs: Vec<String>,
-    error: Option<String>,
-    metrics: Option<ExecutionMetrics>,
-}
-
-#[derive(Debug, Serialize)]
-struct ExecutionMetrics {
-    input_norm: f64,
-    output_norm: f64,
-    l1_residual: f64,
-}
+use mox_flow_optimizer_core::execution::{ExecuteRequest, ExecuteResponse};
 
 #[derive(Debug, Deserialize)]
 struct ChatRequest {
@@ -1140,70 +1114,6 @@ struct MoxOptimizeRequest {
 }
 
 /// mox 模块化系统架构治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
-fn normalize_flow_to_graph(v: &serde_json::Value) -> mox_ai_flow_svc::model::FlowGraph {
-    let mut g = mox_ai_flow_svc::model::FlowGraph::new("unified", "unified-flow");
-    if let Some(nodes) = v.get("nodes").and_then(|n| n.as_array()) {
-        for n in nodes {
-            let id = n
-                .get("id")
-                .and_then(|x| x.as_str())
-                .unwrap_or("")
-                .to_string();
-            let name = n
-                .get("name")
-                .and_then(|x| x.as_str())
-                .unwrap_or("")
-                .to_string();
-            let t = n.get("type").and_then(|x| x.as_str()).unwrap_or("operator");
-            let kind = match t {
-                "start" => mox_ai_flow_svc::model::NodeKind::Start,
-                "end" => mox_ai_flow_svc::model::NodeKind::End,
-                "condition" | "decision" => mox_ai_flow_svc::model::NodeKind::Decision,
-                "parallel" => mox_ai_flow_svc::model::NodeKind::ParallelFork,
-                "guard" => mox_ai_flow_svc::model::NodeKind::Guard,
-                "subflow" => mox_ai_flow_svc::model::NodeKind::SubFlow,
-                _ => mox_ai_flow_svc::model::NodeKind::Task,
-            };
-            let mut node = mox_ai_flow_svc::model::FlowNode::new(id, name, kind);
-            if let Some(tool) = n.get("tool").and_then(|x| x.as_str()) {
-                node.tool =
-                    serde_json::from_str::<mox_ai_flow_svc::model::ToolKind>(&format!("\"{}\"", tool)).ok();
-            }
-            g.add_node(node);
-        }
-    }
-    if let Some(edges) = v.get("edges").and_then(|e| e.as_array()) {
-        for e in edges {
-            let from = e
-                .get("from")
-                .and_then(|x| x.as_str())
-                .unwrap_or("")
-                .to_string();
-            let to = e
-                .get("to")
-                .and_then(|x| x.as_str())
-                .unwrap_or("")
-                .to_string();
-            let kind = if e.get("condition").is_some() || e.get("label").is_some() {
-                mox_ai_flow_svc::model::EdgeKind::Conditional
-            } else {
-                mox_ai_flow_svc::model::EdgeKind::Sequence
-            };
-            let condition = e
-                .get("condition")
-                .and_then(|x| x.as_str())
-                .map(|s| s.to_string());
-            let edge = mox_ai_flow_svc::model::FlowEdge {
-                from,
-                to,
-                kind,
-                condition,
-            };
-            g.add_edge(edge);
-        }
-    }
-    g
-}
 async fn mox_optimize_handler(
     Json(req): Json<MoxOptimizeRequest>,
 ) -> ApiResponse<serde_json::Value> {
@@ -1215,7 +1125,7 @@ async fn mox_optimize_handler(
         tenant,
         mox_ai_expert_svc::context::Principal::new("designer").with_roles(vec!["editor".into()]),
     );
-    let report = mox_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
+    let report = mox_optimize(&mox_ai_flow_sdk::blueprint::normalize_blueprint(&req.flow, "unified", "unified-flow"), &ctx);
     // 契约适配层：在原 GovernanceReport 基础上注入前端友好字段
     // （governance.score/gate、optimization.metric/algorithm），不改动治理内核。
     let score: f64 = if report.expert_scores.is_empty() {
@@ -1266,7 +1176,7 @@ async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> ApiResponse<
         Tenant::new("default", "default"),
         Principal::new("designer").with_roles(vec!["editor".into()]),
     );
-    let report = mox_optimize(&normalize_flow_to_graph(&req.flow), &ctx);
+    let report = mox_optimize(&mox_ai_flow_sdk::blueprint::normalize_blueprint(&req.flow, "unified", "unified-flow"), &ctx);
     let optimized = &report.optimization.optimized_graph;
     let score: f64 = if report.expert_scores.is_empty() {
         0.0
@@ -1414,356 +1324,45 @@ async fn register_operator(
 
     api_ok(serde_json::json!({"success": true, "message": "算子注册成功", "operator": op_info}))}
 
-// 内部复用：真正执行算子/工作流的核心逻辑，供 HTTP handler 与 MCP 兼容层共用
-pub(crate) async fn run_workflow_inner(
-    state: &Arc<AppState>,
-    req: ExecuteRequest,
-) -> ExecuteResponse {
-    let start = std::time::Instant::now();
-    let mut ctx = ExecutionContext::default();
-    let input = StateVector::from_vec(req.input.clone());
-    let input_norm = input.norm();
-    let params = req.parameters.unwrap_or_default();
-
-    // 安全加固：客户端可控 input 维度；linear 算子会构造 n×n 稠密矩阵（O(n²) 内存）。
-    // 若不设上限，2MB 请求体（n≈25 万）即可触发数百 GB 分配 → OOM abort 进程。
-    // 资源预检在算子构造之后才运行，无法拦截分配本身，故此处先行拒绝超限维度。
-    const MAX_VECTOR_DIM: usize = 1024; // 1024² × 8B = 8MB，安全
-    let max_dim = std::env::var("OUS_EXEC_MAX_DIM")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(MAX_VECTOR_DIM);
-    if input.dimension > max_dim {
-        return ExecuteResponse {
-            success: false,
-            output: None,
-            execution_time_ms: start.elapsed().as_millis() as u64,
-            logs: vec![format!(
-                "[scheduler] 输入维度 {} 超过上限 {}（阻止 O(n²) 矩阵分配导致 OOM）",
-                input.dimension, max_dim
-            )],
-            error: Some(format!(
-                "输入维度 {} 超过允许上限 {}，拒绝执行；可经 OUS_EXEC_MAX_DIM 调优",
-                input.dimension, max_dim
-            )),
-            metrics: None,
-        };
-    }
-
-    // 公理5（资源约束优化）接线：构造算子 DAG 做调度预检。
-    // 每个算子按请求顺序建立串行依赖；预检通过后才进入真实执行。
-    // 配额默认宽松（10^12 cycles / 10^12 B），可通过环境变量收紧：
-    //   OUS_EXEC_MAX_CPU / OUS_EXEC_MAX_MEM（企业部署建议显式配置）。
-    let mut dag_ops: Vec<std::sync::Arc<dyn Operator>> = Vec::new();
-    for op_id in &req.workflow {
-        let arc: std::sync::Arc<dyn Operator> = match op_id.as_str() {
-            "identity" => std::sync::Arc::new(IdentityOperator::new(input.dimension)),
-            "linear" => {
-                let scale = params.get("scale").copied().unwrap_or(2.0);
-                let n = input.dimension;
-                std::sync::Arc::new(LinearOperator::new(
-                    nalgebra::DMatrix::from_diagonal_element(n, n, scale),
-                ))
-            }
-            "normalize" => std::sync::Arc::new(FunctionOperator::new(
-                "normalize",
-                |s: &StateVector, _ctx| {
-                    let mut s = s.clone();
-                    s.normalize();
-                    Ok(s)
-                },
-            )),
-            "normalize_l1" => std::sync::Arc::new(FunctionOperator::new(
-                "normalize_l1",
-                |s: &StateVector, _ctx| {
-                    let mut s = s.clone();
-                    s.normalize_probability();
-                    Ok(s)
-                },
-            )),
-            "relu" => {
-                std::sync::Arc::new(FunctionOperator::new("relu", |s: &StateVector, _ctx| {
-                    let mut result = s.clone();
-                    for i in 0..result.dimension {
-                        result[i] = result[i].max(0.0);
-                    }
-                    Ok(result)
-                }))
-            }
-            "sigmoid" => {
-                std::sync::Arc::new(FunctionOperator::new("sigmoid", |s: &StateVector, _ctx| {
-                    let mut result = s.clone();
-                    for i in 0..result.dimension {
-                        result[i] = 1.0 / (1.0 + (-result[i]).exp());
-                    }
-                    Ok(result)
-                }))
-            }
-            "tanh" => {
-                std::sync::Arc::new(FunctionOperator::new("tanh", |s: &StateVector, _ctx| {
-                    let mut result = s.clone();
-                    for i in 0..result.dimension {
-                        result[i] = result[i].tanh();
-                    }
-                    Ok(result)
-                }))
-            }
-            "softmax" => {
-                std::sync::Arc::new(FunctionOperator::new("softmax", |s: &StateVector, _ctx| {
-                    let mut result = s.clone();
-                    let max_val = (0..result.dimension)
-                        .map(|i| result[i])
-                        .fold(f64::NEG_INFINITY, f64::max);
-                    let sum_exp: f64 = (0..result.dimension)
-                        .map(|i| (result[i] - max_val).exp())
-                        .sum();
-                    for i in 0..result.dimension {
-                        result[i] = (result[i] - max_val).exp() / sum_exp;
-                    }
-                    Ok(result)
-                }))
-            }
-            "scale" => {
-                let factor = params.get("factor").copied().unwrap_or(1.0);
-                std::sync::Arc::new(FunctionOperator::new(
-                    "scale",
-                    move |s: &StateVector, _ctx| {
-                        let mut result = s.clone();
-                        for i in 0..result.dimension {
-                            result[i] *= factor;
-                        }
-                        Ok(result)
-                    },
-                ))
-            }
-            _ => {
-                return ExecuteResponse {
-                    success: false,
-                    output: None,
-                    execution_time_ms: start.elapsed().as_millis() as u64,
-                    logs: vec![],
-                    error: Some(format!("未知算子: {}", op_id)),
-                    metrics: None,
-                };
-            }
-        };
-        dag_ops.push(arc);
-    }
-
-    // 构建串行 DAG 并执行公理5 资源约束预检（拓扑有效 + 配额内）
-    let mut dag = mox_flow_optimizer_core::OperatorDag::new();
-    for (i, op) in dag_ops.iter().enumerate() {
-        dag.add_operator(&req.workflow[i], op.clone());
-        if i > 0 {
-            if let Err(e) = dag.add_dependency(&req.workflow[i - 1], &req.workflow[i]) {
-                return ExecuteResponse {
-                    success: false,
-                    output: None,
-                    execution_time_ms: start.elapsed().as_millis() as u64,
-                    logs: vec![],
-                    error: Some(e),
-                    metrics: None,
-                };
-            }
-        }
-    }
-    if let Err(e) = dag.topological_order() {
-        return ExecuteResponse {
-            success: false,
-            output: None,
-            execution_time_ms: start.elapsed().as_millis() as u64,
-            logs: vec![],
-            error: Some(format!("调度预检失败（DAG 含环）: {}", e)),
-            metrics: None,
-        };
-    }
-    let max_cpu = std::env::var("OUS_EXEC_MAX_CPU")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(1_000_000_000_000_u64);
-    let max_mem = std::env::var("OUS_EXEC_MAX_MEM")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(1_000_000_000_000_u64);
-    let scheduler = mox_flow_optimizer_core::ResourceOptimizer::new(max_cpu, max_mem);
-    if !scheduler.check_resources(&dag_ops) {
-        let cost = dag.estimated_resource_cost();
-        return ExecuteResponse {
-            success: false, output: None,
-            execution_time_ms: start.elapsed().as_millis() as u64,
-            logs: vec![], error: Some(format!(
-                "公理5 资源约束预检失败：估算 CPU={} cycles / MEM={} B 超出配额 CPU={} / MEM={}（可用 OUS_EXEC_MAX_CPU/OUS_EXEC_MAX_MEM 调优）",
-                cost.cpu_cycles, cost.memory_bytes, max_cpu, max_mem
-            )), metrics: None,
-        };
-    }
-    let est_ms = dag.estimated_execution_time();
-    let est_cost = dag.estimated_resource_cost();
-    let mut all_logs =
-        vec![format!(
-        "[scheduler] 公理5 预检通过: 关键路径={:?} 预估执行时间={}ms 资源成本=CPU {} / MEM {} B",
-        dag.critical_path(), est_ms, est_cost.cpu_cycles, est_cost.memory_bytes
-    )];
-
-    let mut workflow = Workflow::new("ai-workflow");
-    for op_id in &req.workflow {
-        let result = match op_id.as_str() {
-            "identity" => workflow.then(IdentityOperator::new(input.dimension)),
-            "linear" => {
-                let scale = params.get("scale").copied().unwrap_or(2.0);
-                let n = input.dimension;
-                let matrix = nalgebra::DMatrix::from_diagonal_element(n, n, scale);
-                workflow.then(LinearOperator::new(matrix))
-            }
-            "normalize" => workflow.then(FunctionOperator::new(
-                "normalize",
-                |s: &StateVector, _ctx| {
-                    let mut s = s.clone();
-                    s.normalize();
-                    Ok(s)
-                },
-            )),
-            "normalize_l1" => workflow.then(FunctionOperator::new(
-                "normalize_l1",
-                |s: &StateVector, _ctx| {
-                    let mut s = s.clone();
-                    s.normalize_probability();
-                    Ok(s)
-                },
-            )),
-            "relu" => workflow.then(FunctionOperator::new("relu", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                for i in 0..result.dimension {
-                    result[i] = result[i].max(0.0);
-                }
-                Ok(result)
-            })),
-            "sigmoid" => {
-                workflow.then(FunctionOperator::new("sigmoid", |s: &StateVector, _ctx| {
-                    let mut result = s.clone();
-                    for i in 0..result.dimension {
-                        result[i] = 1.0 / (1.0 + (-result[i]).exp());
-                    }
-                    Ok(result)
-                }))
-            }
-            "tanh" => workflow.then(FunctionOperator::new("tanh", |s: &StateVector, _ctx| {
-                let mut result = s.clone();
-                for i in 0..result.dimension {
-                    result[i] = result[i].tanh();
-                }
-                Ok(result)
-            })),
-            "softmax" => {
-                workflow.then(FunctionOperator::new("softmax", |s: &StateVector, _ctx| {
-                    let mut result = s.clone();
-                    let max_val = (0..result.dimension)
-                        .map(|i| result[i])
-                        .fold(f64::NEG_INFINITY, f64::max);
-                    let sum_exp: f64 = (0..result.dimension)
-                        .map(|i| (result[i] - max_val).exp())
-                        .sum();
-                    for i in 0..result.dimension {
-                        result[i] = (result[i] - max_val).exp() / sum_exp;
-                    }
-                    Ok(result)
-                }))
-            }
-            "scale" => {
-                let factor = params.get("factor").copied().unwrap_or(1.0);
-                workflow.then(FunctionOperator::new(
-                    "scale",
-                    move |s: &StateVector, _ctx| {
-                        let mut result = s.clone();
-                        for i in 0..result.dimension {
-                            result[i] *= factor;
-                        }
-                        Ok(result)
-                    },
-                ))
-            }
-            _ => {
-                return ExecuteResponse {
-                    success: false,
-                    output: None,
-                    execution_time_ms: start.elapsed().as_millis() as u64,
-                    logs: vec![],
-                    error: Some(format!("未知算子: {}", op_id)),
-                    metrics: None,
-                };
-            }
-        };
-
-        match result {
-            Ok(w) => workflow = w,
-            Err(e) => {
-                return ExecuteResponse {
-                    success: false,
-                    output: None,
-                    execution_time_ms: start.elapsed().as_millis() as u64,
-                    logs: all_logs,
-                    error: Some(e.to_string()),
-                    metrics: None,
-                };
-            }
-        }
-    }
-
-    match workflow.execute(&input, &mut ctx) {
-        Ok(result) => {
-            let output_norm = result
-                .output_state
-                .as_ref()
-                .map(|s| s.norm())
-                .unwrap_or(0.0);
-            let l1_residual = result
-                .output_state
-                .as_ref()
-                .map(|_| (input_norm - output_norm).abs())
-                .unwrap_or(0.0);
-            all_logs.extend(result.logs.clone());
-
-            let mut logs = state.execution_logs.lock().await;
-            logs.push(ExecutionLog {
-                timestamp: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                operator_id: "workflow".to_string(),
-                workflow: req.workflow.clone(),
-                success: result.success,
-                execution_time_ms: result.execution_time_ms,
-                residual: result.residual,
-                input_dim: input.dimension,
-                output_dim: result
-                    .output_state
-                    .as_ref()
-                    .map(|s| s.dimension)
-                    .unwrap_or(0),
-            });
-
-            ExecuteResponse {
-                success: result.success,
-                output: result.output_state.map(|s| s.to_vec()),
-                execution_time_ms: result.execution_time_ms,
-                logs: all_logs,
-                error: result.error,
-                metrics: Some(ExecutionMetrics {
-                    input_norm,
-                    output_norm,
-                    l1_residual,
-                }),
-            }
-        }
-        Err(e) => ExecuteResponse {
-            success: false,
-            output: None,
-            execution_time_ms: start.elapsed().as_millis() as u64,
-            logs: all_logs,
-            error: Some(e.to_string()),
-            metrics: None,
+// Host adapter: configuration and audit stay here; numerical execution belongs to the flow domain.
+pub(crate) async fn run_workflow_inner(state: &Arc<AppState>, req: ExecuteRequest) -> ExecuteResponse {
+    use mox_flow_optimizer_core::execution::{execute, ExecutionLimits};
+    let defaults = ExecutionLimits::default();
+    let limits = ExecutionLimits {
+        max_dimension: std::env::var("OUS_EXEC_MAX_DIM").ok().and_then(|v| v.parse().ok()).unwrap_or(defaults.max_dimension),
+        max_steps: std::env::var("OUS_EXEC_MAX_STEPS").ok().and_then(|v| v.parse().ok()).unwrap_or(defaults.max_steps),
+        max_allocation_bytes: std::env::var("OUS_EXEC_MAX_ALLOC_BYTES").ok().and_then(|v| v.parse().ok()).unwrap_or(defaults.max_allocation_bytes),
+        max_cpu: std::env::var("OUS_EXEC_MAX_CPU").ok().and_then(|v| v.parse().ok()).unwrap_or(defaults.max_cpu),
+        max_memory: std::env::var("OUS_EXEC_MAX_MEM").ok().and_then(|v| v.parse().ok()).unwrap_or(defaults.max_memory),
+    };
+    let workflow = req.workflow.clone();
+    let input_dim = req.input.len();
+    static EXECUTION_SLOTS: std::sync::OnceLock<Arc<tokio::sync::Semaphore>> = std::sync::OnceLock::new();
+    let slots = EXECUTION_SLOTS.get_or_init(|| {
+        let capacity = std::env::var("OUS_EXEC_MAX_CONCURRENT").ok().and_then(|v| v.parse::<usize>().ok())
+            .filter(|v| (1..=64).contains(v)).unwrap_or(2);
+        Arc::new(tokio::sync::Semaphore::new(capacity))
+    });
+    let failed = |message: String| ExecuteResponse { success: false, output: None,
+        execution_time_ms: 0, logs: vec![], error: Some(message), metrics: None };
+    let response = match slots.clone().try_acquire_owned() {
+        Ok(permit) => match tokio::task::spawn_blocking(move || {
+            let _permit = permit;
+            execute(req, &limits)
+        }).await {
+            Ok(response) => response,
+            Err(error) => failed(format!("执行工作线程失败: {error}")),
         },
-    }
+        Err(_) => failed("执行资源繁忙，请稍后重试".into()),
+    };
+    state.execution_logs.lock().await.push(ExecutionLog {
+        timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as u64,
+        operator_id: "workflow".into(), workflow, success: response.success,
+        execution_time_ms: response.execution_time_ms,
+        residual: response.metrics.as_ref().map(|m| m.l1_residual).unwrap_or(0.0),
+        input_dim, output_dim: response.output.as_ref().map(Vec::len).unwrap_or(0),
+    });
+    response
 }
 
 async fn execute_workflow(

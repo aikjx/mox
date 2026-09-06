@@ -7,3 +7,4 @@ description = "Public embedded client API for AI flow optimization; no service o
 
 [dependencies]
 mox-ai-flow-core = { workspace = true }
+serde_json = { workspace = true }

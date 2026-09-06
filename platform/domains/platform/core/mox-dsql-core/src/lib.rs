@@ -137,6 +137,53 @@ impl DsqlManager {
         self.metrics.record_pool_stats("default", &stats);
     }
 
+    /// 启动连接池指标自动采集（后台线程定期刷新）
+    ///
+    /// # 参数
+    /// - `interval_secs`: 采集间隔（秒），建议1-5秒
+    ///
+    /// # 注意
+    /// - 重复调用会先停止之前的采集任务
+    /// - DsqlManager drop 时后台线程会自动退出
+    /// - 调用 stop_metrics_collection() 可手动停止
+    pub fn start_metrics_collection(&mut self, interval_secs: u64) {
+        // 先停止之前的采集任务
+        self.stop_metrics_collection();
+
+        let running = Arc::new(AtomicBool::new(true));
+        let running_clone = running.clone();
+        let exec_pool = self.exec_pool.clone();
+        let metrics = self.metrics.clone();
+        let interval = Duration::from_secs(interval_secs.max(1));
+
+        std::thread::spawn(move || {
+            tracing::info!(interval_secs = interval_secs, "连接池指标自动采集已启动");
+            while running_clone.load(Ordering::Relaxed) {
+                let stats = exec_pool.stats();
+                metrics.record_pool_stats("default", &stats);
+                std::thread::sleep(interval);
+            }
+            tracing::info!("连接池指标自动采集已停止");
+        });
+
+        self.metrics_running = Some(running);
+    }
+
+    /// 停止连接池指标自动采集
+    pub fn stop_metrics_collection(&mut self) {
+        if let Some(running) = self.metrics_running.take() {
+            running.store(false, Ordering::Relaxed);
+        }
+    }
+
+    /// 检查指标自动采集是否在运行
+    pub fn is_metrics_collection_running(&self) -> bool {
+        self.metrics_running
+            .as_ref()
+            .map(|r| r.load(Ordering::Relaxed))
+            .unwrap_or(false)
+    }
+
     /// 获取敏感数据脱敏器引用
     pub fn masker(&self) -> &SensitiveMasker {
         &self.masker
@@ -736,5 +783,58 @@ mod tests {
         assert_eq!(manager.slow_query_threshold_ms(), 1000);
         manager.set_slow_query_threshold_ms(500);
         assert_eq!(manager.slow_query_threshold_ms(), 500);
+    }
+
+    #[test]
+    fn test_refresh_pool_metrics() {
+        let manager = setup_test_manager().unwrap();
+        // 手动刷新连接池指标
+        manager.refresh_pool_metrics();
+        let metrics = manager.gather_metrics();
+        assert!(metrics.contains("dsql_pool_idle_connections"));
+        assert!(metrics.contains("dsql_pool_active_connections"));
+        assert!(metrics.contains("dsql_pool_max_connections"));
+        assert!(metrics.contains("dsql_pool_wait_total"));
+        assert!(metrics.contains("dsql_pool_timeout_total"));
+        assert!(metrics.contains("dsql_pool_create_total"));
+        assert!(metrics.contains("dsql_pool_discard_total"));
+    }
+
+    #[test]
+    fn test_metrics_collection_start_stop() {
+        let mut manager = DsqlManager::open_memory().unwrap();
+        // 初始状态：未启动
+        assert!(!manager.is_metrics_collection_running());
+
+        // 启动自动采集
+        manager.start_metrics_collection(1);
+        assert!(manager.is_metrics_collection_running());
+
+        // 等待采集执行
+        std::thread::sleep(Duration::from_millis(1500));
+
+        // 验证指标已采集
+        let metrics = manager.gather_metrics();
+        assert!(metrics.contains("dsql_pool_idle_connections"));
+
+        // 停止采集
+        manager.stop_metrics_collection();
+        assert!(!manager.is_metrics_collection_running());
+    }
+
+    #[test]
+    fn test_metrics_collection_restart() {
+        let mut manager = DsqlManager::open_memory().unwrap();
+        // 第一次启动
+        manager.start_metrics_collection(1);
+        assert!(manager.is_metrics_collection_running());
+
+        // 重复启动（应该先停止之前的）
+        manager.start_metrics_collection(2);
+        assert!(manager.is_metrics_collection_running());
+
+        // 停止
+        manager.stop_metrics_collection();
+        assert!(!manager.is_metrics_collection_running());
     }
 }

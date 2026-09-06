@@ -25,6 +25,7 @@ pub mod health;
 pub mod shutdown;
 pub mod cache_factory;
 pub mod rate_limit;
+pub mod security;
 pub mod tracing_utils;
 pub mod config_center;
 pub mod service_discovery;

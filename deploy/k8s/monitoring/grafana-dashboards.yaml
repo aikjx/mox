@@ -1,5 +1,5 @@
-# MOX v3.1 Grafana 仪表盘配置
-# 包含：服务总览/DSQL性能/缓存监控/资源使用四个仪表盘
+# MOX v3.3 Grafana 仪表盘配置
+# 包含：服务总览/DSQL性能/连接池监控/弹性容错监控 四个仪表盘
 
 apiVersion: v1
 kind: ConfigMap
@@ -18,7 +18,7 @@ data:
         "tags": ["mox", "overview"],
         "timezone": "browser",
         "schemaVersion": 38,
-        "version": 1,
+        "version": 2,
         "refresh": "30s",
         "panels": [
           {
@@ -50,21 +50,56 @@ data:
             "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "red", "value": 1}]}}}
           },
           {
+            "type": "stat",
+            "title": "打开的熔断器",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 4},
+            "targets": [{"expr": "count(resilience_circuit_breaker_state == 2)", "legendFormat": "打开数"}],
+            "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}]}}}
+          },
+          {
+            "type": "stat",
+            "title": "连接池使用率",
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 4},
+            "targets": [{"expr": "avg(dsql_pool_active_connections / dsql_pool_max_connections)", "legendFormat": "使用率"}],
+            "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}]}}}
+          },
+          {
+            "type": "stat",
+            "title": "DSQL执行QPS",
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 4},
+            "targets": [{"expr": "sum(rate(dsql_execute_total[5m]))", "legendFormat": "QPS"}],
+            "fieldConfig": {"defaults": {"unit": "reqps"}}
+          },
+          {
+            "type": "stat",
+            "title": "缓存命中率",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 4},
+            "targets": [{"expr": "sum(rate(dsql_cache_hits_total[5m])) / (sum(rate(dsql_cache_hits_total[5m])) + sum(rate(dsql_cache_misses_total[5m])))", "legendFormat": "命中率"}],
+            "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "green", "value": 0.8}]}}}
+          },
+          {
             "type": "timeseries",
             "title": "各服务请求量",
-            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
             "targets": [{"expr": "sum(rate(http_requests_total{job=~\"mox-.*\"}[5m])) by (job)", "legendFormat": "{{job}}"}]
           },
           {
             "type": "timeseries",
             "title": "各服务错误率",
-            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
             "targets": [{"expr": "sum(rate(http_requests_total{job=~\"mox-.*\", status=~\"5..\"}[5m])) by (job) / sum(rate(http_requests_total{job=~\"mox-.*\"}[5m])) by (job)", "legendFormat": "{{job}}"}]
           },
           {
             "type": "table",
+            "title": "熔断器状态",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+            "targets": [{"expr": "resilience_circuit_breaker_state", "legendFormat": "{{name}}", "instant": true}],
+            "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "Closed", "color": "green"}, "1": {"text": "HalfOpen", "color": "yellow"}, "2": {"text": "Open", "color": "red"}}}]}}
+          },
+          {
+            "type": "table",
             "title": "服务状态",
-            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
             "targets": [{"expr": "up{job=~\"mox-.*\"}", "legendFormat": "{{job}} - {{instance}}", "instant": true}],
             "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}]}}
           }
@@ -80,7 +115,7 @@ data:
         "tags": ["mox", "dsql", "performance"],
         "timezone": "browser",
         "schemaVersion": 38,
-        "version": 1,
+        "version": 2,
         "refresh": "30s",
         "panels": [
           {
@@ -137,6 +172,172 @@ data:
             "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
             "targets": [{"expr": "topk(10, sum(rate(dsql_execute_duration_seconds_sum[5m])) by (sql_code) / sum(rate(dsql_execute_duration_seconds_count[5m])) by (sql_code))", "legendFormat": "{{sql_code}}"}],
             "fieldConfig": {"defaults": {"unit": "s"}}
+          }
+        ]
+      }
+    }
+  mox-connection-pool.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "uid": "mox-connection-pool",
+        "title": "MOX 连接池监控",
+        "tags": ["mox", "connection-pool", "database"],
+        "timezone": "browser",
+        "schemaVersion": 38,
+        "version": 1,
+        "refresh": "30s",
+        "panels": [
+          {
+            "type": "stat",
+            "title": "活跃连接数",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+            "targets": [{"expr": "sum(dsql_pool_active_connections)", "legendFormat": "活跃"}],
+            "fieldConfig": {"defaults": {"unit": "short"}}
+          },
+          {
+            "type": "stat",
+            "title": "空闲连接数",
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+            "targets": [{"expr": "sum(dsql_pool_idle_connections)", "legendFormat": "空闲"}],
+            "fieldConfig": {"defaults": {"unit": "short"}}
+          },
+          {
+            "type": "stat",
+            "title": "最大连接数",
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+            "targets": [{"expr": "sum(dsql_pool_max_connections)", "legendFormat": "最大"}],
+            "fieldConfig": {"defaults": {"unit": "short"}}
+          },
+          {
+            "type": "stat",
+            "title": "连接池使用率",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+            "targets": [{"expr": "avg(dsql_pool_active_connections / dsql_pool_max_connections)", "legendFormat": "使用率"}],
+            "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}]}}}
+          },
+          {
+            "type": "timeseries",
+            "title": "连接数趋势（活跃/空闲/最大）",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+            "targets": [
+              {"expr": "sum(dsql_pool_active_connections) by (pool)", "legendFormat": "活跃 - {{pool}}"},
+              {"expr": "sum(dsql_pool_idle_connections) by (pool)", "legendFormat": "空闲 - {{pool}}"},
+              {"expr": "sum(dsql_pool_max_connections) by (pool)", "legendFormat": "最大 - {{pool}}"}
+            ]
+          },
+          {
+            "type": "timeseries",
+            "title": "连接获取等待/超时",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+            "targets": [
+              {"expr": "sum(rate(dsql_pool_wait_total[5m])) by (pool)", "legendFormat": "等待 - {{pool}}"},
+              {"expr": "sum(rate(dsql_pool_timeout_total[5m])) by (pool)", "legendFormat": "超时 - {{pool}}"}
+            ]
+          },
+          {
+            "type": "timeseries",
+            "title": "连接创建/丢弃速率",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+            "targets": [
+              {"expr": "sum(rate(dsql_pool_create_total[5m])) by (pool)", "legendFormat": "创建 - {{pool}}"},
+              {"expr": "sum(rate(dsql_pool_discard_total[5m])) by (pool)", "legendFormat": "丢弃 - {{pool}}"}
+            ]
+          },
+          {
+            "type": "table",
+            "title": "各连接池状态详情",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+            "targets": [
+              {"expr": "dsql_pool_active_connections", "legendFormat": "{{pool}} - 活跃", "instant": true},
+              {"expr": "dsql_pool_idle_connections", "legendFormat": "{{pool}} - 空闲", "instant": true},
+              {"expr": "dsql_pool_max_connections", "legendFormat": "{{pool}} - 最大", "instant": true}
+            ]
+          }
+        ]
+      }
+    }
+  mox-resilience.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "uid": "mox-resilience",
+        "title": "MOX 弹性容错监控",
+        "tags": ["mox", "resilience", "circuit-breaker", "retry", "fallback"],
+        "timezone": "browser",
+        "schemaVersion": 38,
+        "version": 1,
+        "refresh": "30s",
+        "panels": [
+          {
+            "type": "stat",
+            "title": "Closed熔断器",
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+            "targets": [{"expr": "count(resilience_circuit_breaker_state == 0)", "legendFormat": "Closed"}],
+            "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "fixed", "fixedColor": "green"}}}
+          },
+          {
+            "type": "stat",
+            "title": "HalfOpen熔断器",
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+            "targets": [{"expr": "count(resilience_circuit_breaker_state == 1)", "legendFormat": "HalfOpen"}],
+            "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "fixed", "fixedColor": "yellow"}}}
+          },
+          {
+            "type": "stat",
+            "title": "Open熔断器",
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+            "targets": [{"expr": "count(resilience_circuit_breaker_state == 2)", "legendFormat": "Open"}],
+            "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "fixed", "fixedColor": "red"}}}
+          },
+          {
+            "type": "stat",
+            "title": "请求拒绝率",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+            "targets": [{"expr": "sum(rate(resilience_circuit_breaker_requests_total{result=\"rejected\"}[5m])) / sum(rate(resilience_circuit_breaker_requests_total[5m]))", "legendFormat": "拒绝率"}],
+            "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.1}, {"color": "red", "value": 0.3}]}}}
+          },
+          {
+            "type": "timeseries",
+            "title": "熔断器状态变化",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+            "targets": [{"expr": "resilience_circuit_breaker_state", "legendFormat": "{{name}}"}],
+            "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "Closed"}, "1": {"text": "HalfOpen"}, "2": {"text": "Open"}}}]}}
+          },
+          {
+            "type": "timeseries",
+            "title": "熔断器请求结果（成功/失败/拒绝）",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+            "targets": [
+              {"expr": "sum(rate(resilience_circuit_breaker_requests_total{result=\"success\"}[5m])) by (name)", "legendFormat": "成功 - {{name}}"},
+              {"expr": "sum(rate(resilience_circuit_breaker_requests_total{result=\"failure\"}[5m])) by (name)", "legendFormat": "失败 - {{name}}"},
+              {"expr": "sum(rate(resilience_circuit_breaker_requests_total{result=\"rejected\"}[5m])) by (name)", "legendFormat": "拒绝 - {{name}}"}
+            ]
+          },
+          {
+            "type": "timeseries",
+            "title": "熔断器打开/恢复次数",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+            "targets": [
+              {"expr": "sum(rate(resilience_circuit_breaker_opened_total[5m])) by (name)", "legendFormat": "打开 - {{name}}"},
+              {"expr": "sum(rate(resilience_circuit_breaker_closed_total[5m])) by (name)", "legendFormat": "恢复 - {{name}}"}
+            ]
+          },
+          {
+            "type": "timeseries",
+            "title": "重试/降级触发速率",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+            "targets": [
+              {"expr": "sum(rate(resilience_retry_attempts_total[5m])) by (name)", "legendFormat": "重试 - {{name}}"},
+              {"expr": "sum(rate(resilience_fallback_triggered_total[5m])) by (name)", "legendFormat": "降级 - {{name}}"}
+            ]
+          },
+          {
+            "type": "table",
+            "title": "熔断器状态详情",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+            "targets": [{"expr": "resilience_circuit_breaker_state", "legendFormat": "{{name}}", "instant": true}],
+            "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "Closed", "color": "green"}, "1": {"text": "HalfOpen", "color": "yellow"}, "2": {"text": "Open", "color": "red"}}}]}}
           }
         ]
       }

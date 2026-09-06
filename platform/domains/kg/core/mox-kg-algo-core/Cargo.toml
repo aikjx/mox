@@ -8,7 +8,6 @@ description.workspace = true
 
 [dependencies]
 mox-platform-foundation = { workspace = true }
-mox-flow-operator-core = { workspace = true }
 petgraph = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

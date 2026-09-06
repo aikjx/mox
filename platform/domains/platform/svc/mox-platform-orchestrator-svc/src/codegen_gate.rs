@@ -103,43 +103,10 @@ pub fn codegen_flow_blueprint(entity_code: &str, tpl_code: &str) -> Value {
     })
 }
 
-/// 蓝图 → FlowGraph（与 main.rs `normalize_flow_to_graph` 同语义，供 lib 侧复用）。
+/// 蓝图 → FlowGraph（委托流程 SDK 的唯一转换实现）。
 #[must_use]
-pub fn normalize_blueprint(v: &Value) -> mox_ai_flow_svc::model::FlowGraph {
-    let mut g = mox_ai_flow_svc::model::FlowGraph::new("unified", "codegen-unified-flow");
-    if let Some(nodes) = v.get("nodes").and_then(Value::as_array) {
-        for n in nodes {
-            let id = n.get("id").and_then(Value::as_str).unwrap_or("").to_string();
-            let name = n.get("name").and_then(Value::as_str).unwrap_or("").to_string();
-            let t = n.get("type").and_then(Value::as_str).unwrap_or("operator");
-            let kind = match t {
-                "start" => mox_ai_flow_svc::model::NodeKind::Start,
-                "end" => mox_ai_flow_svc::model::NodeKind::End,
-                "condition" | "decision" => mox_ai_flow_svc::model::NodeKind::Decision,
-                "parallel" => mox_ai_flow_svc::model::NodeKind::ParallelFork,
-                "guard" => mox_ai_flow_svc::model::NodeKind::Guard,
-                "subflow" => mox_ai_flow_svc::model::NodeKind::SubFlow,
-                _ => mox_ai_flow_svc::model::NodeKind::Task,
-            };
-            g.add_node(mox_ai_flow_svc::model::FlowNode::new(id, name, kind));
-        }
-    }
-    if let Some(edges) = v.get("edges").and_then(Value::as_array) {
-        for e in edges {
-            let kind = if e.get("condition").is_some() || e.get("label").is_some() {
-                mox_ai_flow_svc::model::EdgeKind::Conditional
-            } else {
-                mox_ai_flow_svc::model::EdgeKind::Sequence
-            };
-            g.add_edge(mox_ai_flow_svc::model::FlowEdge {
-                from: e.get("from").and_then(Value::as_str).unwrap_or("").to_string(),
-                to: e.get("to").and_then(Value::as_str).unwrap_or("").to_string(),
-                kind,
-                condition: e.get("condition").and_then(Value::as_str).map(std::string::ToString::to_string),
-            });
-        }
-    }
-    g
+pub fn normalize_blueprint(v: &Value) -> mox_ai_flow_sdk::model::FlowGraph {
+    mox_ai_flow_sdk::blueprint::normalize_blueprint(v, "unified", "codegen-unified-flow")
 }
 
 /// 出码 + 闸门：生成产物 → 同链治理裁决。

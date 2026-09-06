@@ -5,11 +5,7 @@ pub enum OperatorError {
     TypeMismatch { expected: std::any::TypeId, actual: std::any::TypeId },
 
     #[error("守恒律违反: {law} - 残差 {residual} 超过阈值 {threshold}")]
-    ConservationViolation {
-        law: String,
-        residual: f64,
-        threshold: f64,
-    },
+    ConservationViolation { law: String, residual: f64, threshold: f64 },
 
     #[error("资源不足: 需要 {required}, 可用 {available}")]
     ResourceExhausted { required: String, available: String },
