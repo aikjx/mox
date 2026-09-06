@@ -10,8 +10,9 @@
 //! 所有指标使用 lazy_static 全局注册，可通过 `gather_metrics()` 输出 Prometheus 文本格式。
 
 use prometheus::{
-    register_counter_vec_with_registry, register_histogram_vec_with_registry,
-    register_int_counter_vec_with_registry, CounterVec, HistogramVec, IntCounterVec, Registry,
+    register_counter_vec_with_registry, register_gauge_vec_with_registry,
+    register_histogram_vec_with_registry, register_int_counter_vec_with_registry,
+    CounterVec, GaugeVec, HistogramVec, IntCounterVec, Registry,
 };
 use std::time::Duration;
 
@@ -29,6 +30,20 @@ pub struct DsqlMetrics {
     pub slow_queries_total: IntCounterVec,
     /// 审计写入次数（标签：result: success/failed）
     pub audit_write_total: IntCounterVec,
+    /// 连接池空闲连接数（标签：pool）
+    pub pool_idle_connections: GaugeVec,
+    /// 连接池活跃连接数（标签：pool）
+    pub pool_active_connections: GaugeVec,
+    /// 连接池最大连接数（标签：pool）
+    pub pool_max_connections: GaugeVec,
+    /// 连接池累计等待次数（标签：pool）
+    pub pool_wait_total: IntCounterVec,
+    /// 连接池累计超时次数（标签：pool）
+    pub pool_timeout_total: IntCounterVec,
+    /// 连接池累计创建连接次数（标签：pool）
+    pub pool_create_total: IntCounterVec,
+    /// 连接池累计丢弃连接次数（标签：pool）
+    pub pool_discard_total: IntCounterVec,
     /// 指标注册表
     registry: Registry,
 }
@@ -103,6 +118,77 @@ impl DsqlMetrics {
         )
         .expect("register dsql_audit_write_total");
 
+        // 连接池指标
+        let pool_idle_connections = register_gauge_vec_with_registry!(
+            prometheus::Opts::new(
+                "dsql_pool_idle_connections",
+                "Number of idle connections in the pool"
+            ),
+            &["pool"],
+            registry
+        )
+        .expect("register dsql_pool_idle_connections");
+
+        let pool_active_connections = register_gauge_vec_with_registry!(
+            prometheus::Opts::new(
+                "dsql_pool_active_connections",
+                "Number of active (borrowed) connections in the pool"
+            ),
+            &["pool"],
+            registry
+        )
+        .expect("register dsql_pool_active_connections");
+
+        let pool_max_connections = register_gauge_vec_with_registry!(
+            prometheus::Opts::new(
+                "dsql_pool_max_connections",
+                "Maximum number of connections in the pool"
+            ),
+            &["pool"],
+            registry
+        )
+        .expect("register dsql_pool_max_connections");
+
+        let pool_wait_total = register_int_counter_vec_with_registry!(
+            prometheus::Opts::new(
+                "dsql_pool_wait_total",
+                "Total number of connection acquisition waits"
+            ),
+            &["pool"],
+            registry
+        )
+        .expect("register dsql_pool_wait_total");
+
+        let pool_timeout_total = register_int_counter_vec_with_registry!(
+            prometheus::Opts::new(
+                "dsql_pool_timeout_total",
+                "Total number of connection acquisition timeouts"
+            ),
+            &["pool"],
+            registry
+        )
+        .expect("register dsql_pool_timeout_total");
+
+        let pool_create_total = register_int_counter_vec_with_registry!(
+            prometheus::Opts::new(
+                "dsql_pool_create_total",
+                "Total number of connections created"
+            ),
+            &["pool"],
+            registry
+        )
+        .expect("register dsql_pool_create_total");
+
+        let pool_discard_total = register_int_counter_vec_with_registry!(
+            prometheus::Opts::new(
+                "dsql_pool_discard_total",
+                "Total number of connections discarded (unhealthy/expired)"
+            ),
+            &["pool"],
+            registry
+        )
+        .expect("register dsql_pool_discard_total");
+
         Self {
             execute_total,
             execute_duration_seconds,
@@ -110,6 +196,13 @@ impl DsqlMetrics {
             cache_misses_total,
             slow_queries_total,
             audit_write_total,
+            pool_idle_connections,
+            pool_active_connections,
+            pool_max_connections,
+            pool_wait_total,
+            pool_timeout_total,
+            pool_create_total,
+            pool_discard_total,
             registry,
         }
     }
@@ -158,6 +251,52 @@ impl DsqlMetrics {
         self.audit_write_total
             .with_label_values(&[result])
             .inc();
+    }
+
+    /// 记录连接池统计指标（Gauge实时更新，Counter增量更新）
+    ///
+    /// 注意：Counter类型指标（wait/timeout/create/discard）使用绝对值设置，
+    /// 因为PoolStats中存储的是累计值，需要用set而非inc。
+    pub fn record_pool_stats(&self, pool_name: &str, stats: &crate::pool::PoolStats) {
+        // Gauge指标：实时状态
+        self.pool_idle_connections
+            .with_label_values(&[pool_name])
+            .set(stats.idle_count as f64);
+        self.pool_active_connections
+            .with_label_values(&[pool_name])
+            .set(stats.active_count as f64);
+        self.pool_max_connections
+            .with_label_values(&[pool_name])
+            .set(stats.max_size as f64);
+
+        // Counter指标：累计值（使用set设置绝对值）
+        self.pool_wait_total
+            .with_label_values(&[pool_name])
+            .reset();
+        self.pool_wait_total
+            .with_label_values(&[pool_name])
+            .inc_by(stats.wait_count as u64);
+
+        self.pool_timeout_total
+            .with_label_values(&[pool_name])
+            .reset();
+        self.pool_timeout_total
+            .with_label_values(&[pool_name])
+            .inc_by(stats.timeout_count as u64);
+
+        self.pool_create_total
+            .with_label_values(&[pool_name])
+            .reset();
+        self.pool_create_total
+            .with_label_values(&[pool_name])
+            .inc_by(stats.create_count as u64);
+
+        self.pool_discard_total
+            .with_label_values(&[pool_name])
+            .reset();
+        self.pool_discard_total
+            .with_label_values(&[pool_name])
+            .inc_by(stats.discard_count as u64);
     }
 
     /// 收集所有指标，输出 Prometheus 文本格式
@@ -252,5 +391,79 @@ mod tests {
         assert!(output.contains("dsql_execute_duration_seconds_count{operation_type=\"read\",sql_code=\"sql1\"} 4"));
         // 验证总和
         assert!(output.contains("dsql_execute_duration_seconds_sum{operation_type=\"read\",sql_code=\"sql1\"}"));
+    }
+
+    #[test]
+    fn test_pool_metrics() {
+        use crate::pool::PoolStats;
+        let metrics = DsqlMetrics::new();
+
+        // 构造连接池统计
+        let stats = PoolStats {
+            max_size: 10,
+            idle_count: 3,
+            active_count: 5,
+            total_count: 8,
+            wait_count: 12,
+            timeout_count: 2,
+            total_acquire_time_ns: 1_000_000_000,
+            create_count: 15,
+            discard_count: 3,
+        };
+
+        metrics.record_pool_stats("test_pool", &stats);
+
+        let output = metrics.gather();
+        // 验证Gauge指标
+        assert!(output.contains("dsql_pool_idle_connections{pool=\"test_pool\"} 3"));
+        assert!(output.contains("dsql_pool_active_connections{pool=\"test_pool\"} 5"));
+        assert!(output.contains("dsql_pool_max_connections{pool=\"test_pool\"} 10"));
+        // 验证Counter指标
+        assert!(output.contains("dsql_pool_wait_total{pool=\"test_pool\"} 12"));
+        assert!(output.contains("dsql_pool_timeout_total{pool=\"test_pool\"} 2"));
+        assert!(output.contains("dsql_pool_create_total{pool=\"test_pool\"} 15"));
+        assert!(output.contains("dsql_pool_discard_total{pool=\"test_pool\"} 3"));
+    }
+
+    #[test]
+    fn test_pool_metrics_update() {
+        use crate::pool::PoolStats;
+        let metrics = DsqlMetrics::new();
+
+        // 第一次记录
+        let stats1 = PoolStats {
+            max_size: 10,
+            idle_count: 5,
+            active_count: 3,
+            total_count: 8,
+            wait_count: 10,
+            timeout_count: 1,
+            total_acquire_time_ns: 500_000_000,
+            create_count: 8,
+            discard_count: 1,
+        };
+        metrics.record_pool_stats("pool1", &stats1);
+
+        // 第二次记录（更新）
+        let stats2 = PoolStats {
+            max_size: 10,
+            idle_count: 2,
+            active_count: 6,
+            total_count: 8,
+            wait_count: 20,
+            timeout_count: 3,
+            total_acquire_time_ns: 2_000_000_000,
+            create_count: 12,
+            discard_count: 4,
+        };
+        metrics.record_pool_stats("pool1", &stats2);
+
+        let output = metrics.gather();
+        // 验证Gauge指标已更新
+        assert!(output.contains("dsql_pool_idle_connections{pool=\"pool1\"} 2"));
+        assert!(output.contains("dsql_pool_active_connections{pool=\"pool1\"} 6"));
+        // 验证Counter指标已更新（绝对值）
+        assert!(output.contains("dsql_pool_wait_total{pool=\"pool1\"} 20"));
+        assert!(output.contains("dsql_pool_timeout_total{pool=\"pool1\"} 3"));
     }
 }

@@ -15,6 +15,9 @@ pub mod audit_writer;
 pub mod metrics;
 pub mod sensitive;
 
+#[cfg(test)]
+mod integration;
+
 pub use cache::DsqlCache;
 pub use engine::SqlEngine;
 pub use error::{DsqlError, DsqlResult};
@@ -26,8 +29,9 @@ pub use metrics::DsqlMetrics;
 pub use sensitive::SensitiveMasker;
 
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// 动态SQL管理系统：高层API，整合存储+引擎+缓存
 pub struct DsqlManager {
@@ -43,6 +47,8 @@ pub struct DsqlManager {
     metrics: Arc<DsqlMetrics>,
     /// 敏感数据脱敏器
     masker: Arc<SensitiveMasker>,
+    /// 指标自动采集控制标志（None表示未启动）
+    metrics_running: Option<Arc<AtomicBool>>,
 }
 
 impl DsqlManager {
@@ -64,6 +70,7 @@ impl DsqlManager {
             slow_query_threshold_ms: 1000,
             metrics: Arc::new(DsqlMetrics::new()),
             masker: Arc::new(SensitiveMasker::new()),
+            metrics_running: None,
         })
     }
 
@@ -85,6 +92,7 @@ impl DsqlManager {
             slow_query_threshold_ms: 1000,
             metrics: Arc::new(DsqlMetrics::new()),
             masker: Arc::new(SensitiveMasker::new()),
+            metrics_running: None,
         })
     }
 
@@ -114,8 +122,19 @@ impl DsqlManager {
     }
 
     /// 收集所有指标，输出 Prometheus 文本格式
+    /// 收集 Prometheus 指标（文本格式）
     pub fn gather_metrics(&self) -> String {
         self.metrics.gather()
+    }
+
+    /// 刷新连接池指标到 Prometheus（建议定期调用，如每秒一次）
+    ///
+    /// 调用后，gather_metrics() 输出中将包含连接池相关指标：
+    /// - dsql_pool_idle_connections / active / max
+    /// - dsql_pool_wait_total / timeout_total / create_total / discard_total
+    pub fn refresh_pool_metrics(&self) {
+        let stats = self.exec_pool.stats();
+        self.metrics.record_pool_stats("default", &stats);
     }
 
     /// 获取敏感数据脱敏器引用
@@ -244,6 +263,12 @@ impl DsqlManager {
             let version_hash = sql_def.version_hash.clone().unwrap_or_default();
             let cache_key = DsqlCache::cache_key(&req.sql_code, &version_hash, &req.params);
             self.cache.set(cache_key, result.clone(), sql_def.cache_ttl);
+        }
+
+        // 写操作成功后自动失效所有缓存（确保数据一致性）
+        if sql_def.operation_type == OperationType::Write && result.success {
+            self.cache.clear();
+            tracing::debug!(sql_code = %req.sql_code, "写操作成功，缓存已全部失效");
         }
 
         // 记录执行指标

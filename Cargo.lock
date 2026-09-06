@@ -6158,6 +6158,7 @@ version = "1.0.0"
 dependencies = [
  "async-trait",
  "parking_lot",
+ "prometheus",
  "serde",
  "serde_json",
  "tokio",

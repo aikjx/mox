@@ -13,3 +13,4 @@ parking_lot = { workspace = true }
 async-trait = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+prometheus = { workspace = true }

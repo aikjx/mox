@@ -16,7 +16,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use mox_resilience_core::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
+use mox_resilience_core::{CircuitBreaker, CircuitBreakerConfig, CircuitState, ResilienceMetrics};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -27,6 +27,8 @@ use std::time::Duration;
 pub struct CircuitBreakerRegistry {
     inner: Arc<RwLock<HashMap<String, CircuitBreaker>>>,
     default_config: CircuitBreakerConfig,
+    /// 可选的 Prometheus 指标收集器
+    metrics: Option<Arc<ResilienceMetrics>>,
 }
 
 impl CircuitBreakerRegistry {
@@ -35,7 +37,27 @@ impl CircuitBreakerRegistry {
         Self {
             inner: Arc::new(RwLock::new(HashMap::new())),
             default_config,
+            metrics: None,
         }
+    }
+
+    /// 创建带指标收集的熔断器注册表
+    pub fn with_metrics(default_config: CircuitBreakerConfig, metrics: Arc<ResilienceMetrics>) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(HashMap::new())),
+            default_config,
+            metrics: Some(metrics),
+        }
+    }
+
+    /// 设置指标收集器
+    pub fn set_metrics(&mut self, metrics: Arc<ResilienceMetrics>) {
+        self.metrics = Some(metrics);
+    }
+
+    /// 获取指标收集器引用
+    pub fn metrics(&self) -> Option<&Arc<ResilienceMetrics>> {
+        self.metrics.as_ref()
     }
 
     /// 从配置创建
@@ -62,6 +84,10 @@ impl CircuitBreakerRegistry {
         }
         let cb = CircuitBreaker::new(name, self.default_config.clone());
         map.insert(name.to_string(), cb.clone());
+        // 初始化指标状态
+        if let Some(metrics) = &self.metrics {
+            metrics.record_circuit_breaker_state(name, mox_resilience_core::metrics::CB_STATE_CLOSED);
+        }
         cb
     }
 
@@ -83,6 +109,30 @@ impl CircuitBreakerRegistry {
     pub fn reset_all(&self) {
         for cb in self.inner.read().values() {
             cb.reset();
+        }
+    }
+
+    /// 刷新所有熔断器的状态指标到 Prometheus
+    ///
+    /// 建议定期调用（如每秒一次），确保指标实时反映熔断器状态。
+    pub fn refresh_metrics(&self) {
+        let Some(metrics) = &self.metrics else {
+            return;
+        };
+        for (name, cb) in self.inner.read().iter() {
+            let state_value = match cb.state() {
+                CircuitState::Closed => mox_resilience_core::metrics::CB_STATE_CLOSED,
+                CircuitState::HalfOpen => mox_resilience_core::metrics::CB_STATE_HALF_OPEN,
+                CircuitState::Open => mox_resilience_core::metrics::CB_STATE_OPEN,
+            };
+            metrics.record_circuit_breaker_state(name, state_value);
+        }
+    }
+
+    /// 记录熔断器请求结果指标
+    fn record_request_metric(&self, name: &str, result: &str) {
+        if let Some(metrics) = &self.metrics {
+            metrics.record_circuit_breaker_request(name, result);
         }
     }
 }
@@ -120,6 +170,8 @@ pub async fn circuit_breaker_middleware(
     // 检查熔断器状态
     if !cb.allow_request() {
         tracing::warn!(path = %path, "熔断器已打开，请求被快速失败");
+        // 记录被拒绝的请求指标
+        registry.record_request_metric(&path, "rejected");
         return axum::http::Response::builder()
             .status(axum::http::StatusCode::SERVICE_UNAVAILABLE)
             .header("Content-Type", "application/json")
@@ -141,9 +193,14 @@ pub async fn circuit_breaker_middleware(
     let status = response.status();
     if status.is_server_error() {
         cb.record_failure();
+        registry.record_request_metric(&path, "failure");
     } else {
         cb.record_success();
+        registry.record_request_metric(&path, "success");
     }
+
+    // 刷新熔断器状态指标（检测状态变更）
+    registry.refresh_metrics();
 
     response
 }

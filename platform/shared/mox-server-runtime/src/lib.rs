@@ -29,8 +29,12 @@ pub mod tracing_utils;
 pub mod config_center;
 pub mod service_discovery;
 pub mod resilience;
+pub mod resilience_metrics;
+pub mod metrics;
 
 pub use config::{ServerConfig, DatabaseConfig, CacheConfig, AuthConfig, ObservabilityConfig, ResilienceConfig, CircuitBreakerConfig};
+pub use metrics::{MetricsRegistry, MetricsProvider};
+pub use resilience_metrics::ResilienceMetricsProvider;
 pub use server::Server;
 pub use health::HealthRegistry;
 pub use cache_factory::{CacheHandle, CacheBackend};

@@ -538,3 +538,7 @@ lto = "fat"
 codegen-units = 1
 debug = true
 
+# 统一构建输出目录：避免各 crate target/ 散落（已清理 1.8GB 废弃产物），集中到仓库根 target/
+[build]
+target-dir = "target"
+

@@ -10,6 +10,7 @@
 pub mod circuit_breaker;
 pub mod fallback;
 pub mod retry;
+pub mod metrics;
 
 pub use circuit_breaker::{
     CircuitBreaker, CircuitBreakerConfig, CircuitOpenError, CircuitState,
@@ -18,6 +19,7 @@ pub use fallback::{
     Fallback, FallbackExecutor, FallbackResult, FunctionFallback, NoFallback, StaticFallback,
 };
 pub use retry::{BackoffStrategy, RetryPolicy, Retryable};
+pub use metrics::{ResilienceMetrics, SharedMetrics};
 
 use std::time::{Duration, Instant};
 

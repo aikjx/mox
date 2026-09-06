@@ -37,6 +37,7 @@ pub struct AppState {
     pub service_name: String,
     pub service_version: String,
     pub circuit_breakers: Arc<crate::resilience::CircuitBreakerRegistry>,
+    pub metrics_registry: Arc<crate::metrics::MetricsRegistry>,
 }
 
 /// 统一 HTTP 服务器
@@ -63,6 +64,7 @@ impl Server {
             service_name: self.module.name().to_string(),
             service_version: self.module.version().to_string(),
             circuit_breakers: circuit_breakers.clone(),
+            metrics_registry: Arc::new(crate::metrics::MetricsRegistry::new()),
         });
 
         // 健康检查路由
@@ -224,7 +226,15 @@ async fn ready_handler(Extension(state): Extension<Arc<AppState>>) -> impl IntoR
 }
 
 async fn metrics_handler(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
-    let metrics = state.health.metrics();
+    let mut metrics = state.health.metrics();
+    // 收集所有注册的额外指标（如DSQL执行指标、缓存指标等）
+    let extra = state.metrics_registry.gather_all();
+    if !extra.is_empty() {
+        if !metrics.ends_with('\n') {
+            metrics.push('\n');
+        }
+        metrics.push_str(&extra);
+    }
     (
         StatusCode::OK,
         [("content-type", "text/plain; version=0.0.4")],
@@ -244,6 +254,7 @@ mod tests {
             service_name: "test".to_string(),
             service_version: "1.0.0".to_string(),
             circuit_breakers: Arc::new(crate::resilience::CircuitBreakerRegistry::default()),
+            metrics_registry: Arc::new(crate::metrics::MetricsRegistry::new()),
         });
         let response = live_handler(Extension(state)).await.into_response();
         assert_eq!(response.status(), StatusCode::OK);
