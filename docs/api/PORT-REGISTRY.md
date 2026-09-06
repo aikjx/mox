@@ -63,6 +63,9 @@
 | 3100 | scheduler-svc（调度编排） | `mox-alliance-scheduler-svc` | HTTP | `config/alliance-scheduler.yml` | 🟢已启用 |
 | 3200 | executor-svc（执行引擎） | `mox-alliance-executor-svc` | HTTP | `config/alliance-executor.yml` | 🟢已启用 |
 | 3300 | AI 专家服务（桥接基址） | scheduler 内部桥接 | HTTP | `config/alliance-scheduler.yml` → `expert_service` | 🟢已启用 |
+| 33080 | 联盟本地网关（start-alliance-local.ps1 默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
+| 33100 | 联盟本地调度器（默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
+| 33200 | 联盟本地执行器（默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
 
 > 配置加载优先级：内置默认 < `config/alliance-*.yml` < 环境变量 `MOX_ALLIANCE_*`（如 `MOX_ALLIANCE_SERVER_PORT=3100`）。
 
@@ -80,6 +83,13 @@
 | 3000 | OUS 算子统一系统边缘（`mox-platform-system-core` 默认绑定；曾为 Node 边缘入口；注意 Grafana 默认同为 3000，部署需避让） | 0.0.0.0 | `platform/domains/platform/core/mox-platform-system-core/src/config.rs` |
 | 3001 | orchestrator-svc（operator-server，bin `operator-server`）HTTP 默认绑定；网关 `/api/*` 通配转发目标；承载 `/api/graph/*` 知识图谱、`/ai/engine/*` AI 引擎、`/alliance/v1/*` 专家联盟等端点 | 0.0.0.0 | `platform/domains/platform/svc/mox-platform-orchestrator-svc/src/main.rs`、`Cargo.toml [[bin]] name=operator-server` |
 | 3002 | enterprise-svc 默认绑定（休眠/备用服务） | 0.0.0.0 | `platform/domains/platform/svc/mox-platform-enterprise-svc/src/main.rs` |
+| 8765 | ai-intent-svc 默认监听（`MOX_AI_INTENT_PORT` 环境变量驱动，默认 8765） | 0.0.0.0 | `platform/domains/ai/svc/mox-ai-intent-svc/src/main.rs` |
+| 5173 | Vite dev 默认端口（网关 CORS 白名单引用，非监听） | — | `platform/gateway/mox-platform-gateway-svc/src/config.rs` → `default_cors_origins` |
+| 33020 | 专家联盟前端 dev（npm run dev --port 33020，127.0.0.1） | 127.0.0.1 | `docs/working-reports/20260905_alliance_modular_usable_acceptance.md` |
+| 8101 | mox-kg-server（K8s Service） | — | `deploy/k8s/base/mox-platform.yaml` |
+| 8102 | mox-cloud-server（K8s Service） | — | `deploy/k8s/base/mox-platform.yaml` |
+| 8103 | mox-iam-server（K8s Service） | — | `deploy/k8s/base/mox-platform.yaml` |
+| 8104 | mox-kb-server（K8s Service） | — | `deploy/k8s/base/mox-platform.yaml` |
 
 ### 3.4 LEGACY —— 遗留模块（自洽，不纳入统一运维）
 
@@ -130,6 +140,7 @@
 | 3079 | mox-flow-bridge serve demo（`mox serve --port 3079`） |
 | 3123 | alliance boot-config 测试 fixture |
 | 8307 / 63001 | voice-operator netstat 解析测试样本 |
+| 31111 / 31112 | test_stream_e2e_probe 流式 E2E 探针 | `tests/test_stream_e2e_probe.py` |
 
 ### 3.7 THIRD-PARTY —— 第三方基础设施默认端口（部署引用）
 
@@ -146,6 +157,7 @@
 | 8848 | Nacos | 9000 / 9001 | MinIO API / Console |
 | 9090 | Prometheus | 9093 | Alertmanager |
 | 6006 | Storybook（dev） | 33060 / 33306 | MySQL X / 映射端口（本机） |
+| 11434 | Ollama（本地 LLM 推理） | 19302 | STUN（stun.l.google.com，WebRTC） |
 
 ---
 

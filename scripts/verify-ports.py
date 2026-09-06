@@ -48,6 +48,10 @@ CANONICAL: dict[int, tuple[str, str]] = {
     3100: ("ALLIANCE", "scheduler-svc（调度编排）"),
     3200: ("ALLIANCE", "executor-svc（执行引擎）"),
     3300: ("ALLIANCE", "AI 专家服务桥接（scheduler 内部基址）"),
+33080: ("ALLIANCE", "联盟本地网关（start-alliance-local.ps1 默认，127.0.0.1）"),
+33100: ("ALLIANCE", "联盟本地调度器（start-alliance-local.ps1 默认，127.0.0.1）"),
+33200: ("ALLIANCE", "联盟本地执行器（start-alliance-local.ps1 默认，127.0.0.1）"),
+33300: ("ALLIANCE", "orchestrator 本地运行端口（MOX_ORCHESTRATOR_PORT，MOX-MODULE-COMPOSITION）"),
     # ---- ANCILLARY（运行期附属） ----
     50051: ("ANCILLARY", "gRPC（framework/dualrpc 默认）"),
     50052: ("ANCILLARY", "gRPC 备用端口（架构文档提及）"),
@@ -59,6 +63,13 @@ CANONICAL: dict[int, tuple[str, str]] = {
     3000: ("ANCILLARY", "OUS 算子统一系统边缘（mox-platform-system-core 默认绑定；曾为 Node 边缘入口；注意 Grafana 默认同为 3000 需避让）"),
     3001: ("ANCILLARY", "orchestrator-svc（operator-unified-system）HTTP 默认绑定（--port 默认 3001）"),
     3002: ("ANCILLARY", "enterprise-svc 默认绑定（休眠/备用服务）"),
+8765: ("ANCILLARY", "ai-intent-svc 默认监听（MOX_AI_INTENT_PORT，默认 8765）"),
+5173: ("ANCILLARY", "Vite dev 默认端口（网关 CORS 白名单引用，非监听）"),
+33020: ("ANCILLARY", "专家联盟前端 dev（npm run dev --port 33020，127.0.0.1）"),
+8101: ("ANCILLARY", "mox-kg-server（K8s Service）"),
+8102: ("ANCILLARY", "mox-cloud-server（K8s Service）"),
+8103: ("ANCILLARY", "mox-iam-server（K8s Service）"),
+8104: ("ANCILLARY", "mox-kb-server（K8s Service）"),
     # ---- LEGACY（遗留模块，自洽） ----
     8600: ("LEGACY", "legacy Python mox-server（docker/systemd/nginx）"),
     8601: ("LEGACY", "legacy mox-store（应用商店）"),
@@ -113,6 +124,8 @@ CANONICAL: dict[int, tuple[str, str]] = {
     3123: ("TEST", "alliance boot-config 测试 fixture"),
     8307: ("TEST", "voice-operator netstat 解析测试样本"),
     63001: ("TEST", "voice-operator netstat 解析测试样本"),
+31111: ("TEST", "test_stream_e2e_probe 流式 E2E 探针"),
+31112: ("TEST", "test_stream_e2e_probe 流式 E2E 探针"),
     # ---- THIRD（第三方基础设施默认端口，部署引用） ----
     2379: ("THIRD", "etcd client"), 2380: ("THIRD", "etcd peer"),
     3306: ("THIRD", "MySQL"), 4222: ("THIRD", "NATS"),
@@ -125,6 +138,8 @@ CANONICAL: dict[int, tuple[str, str]] = {
     9090: ("THIRD", "Prometheus"), 9093: ("THIRD", "Alertmanager"),
     6006: ("THIRD", "Storybook（dev）"), 8888: ("THIRD", "前端 Web 搜索服务占位"),
     7688: ("THIRD", "mox-dr 部署映射 7688:7687（Neo4j Bolt 备用映射）"),
+11434: ("THIRD", "Ollama（本地 LLM 推理）"),
+19302: ("THIRD", "STUN（stun.l.google.com，WebRTC ICE）"),
 }
 
 # 有意保留的遗留 opt-in 引用（不视为漂移）——(相对路径, 端口) → 理由
