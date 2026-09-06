@@ -5,6 +5,23 @@
 
 ---
 
+## 产品定位
+
+**MOX 是「Rust 原生 · 企业级 AI 基础设施平台」，不是通用 AI 应用 SDK。**
+
+与 LangChain / CrewAI / LlamaIndex 等库模式框架不同，MOX 解决的是**服务化部署层**的问题：gRPC 契约 + 8080 统一网关入口、多智能体编排（专家联盟 scheduler/executor）、自研知识图谱引擎（kg 域）、Prometheus 指标端点（`/metrics`）、K8s/Helm 一键部署。其差异化定位为：
+
+| 维度 | MOX | Python 库模式框架（LangChain 等） |
+|---|---|---|
+| 运行形态 | gRPC 服务 + 统一网关（多语言客户端） | 嵌入应用进程的 SDK |
+| 多智能体 + 知识图谱 | 双原生（alliance 域 + kg 域） | 需集成第三方（Neo4j 等） |
+| 性能 | Rust 级开销、无 GC、单二进制 | ~5-10ms 框架层开销 |
+| 场景 | 企业级内部 AI 服务平台 | 快速搭建 AI 应用 |
+
+技术栈为 Rust 时、需要知识图谱与多智能体深度集成、且面向生产服务化部署的团队，MOX 是当前唯一同时具备以上能力的自研方案。
+
+---
+
 ## 架构速览
 
 MOX 平台采用 **6 层分层架构**（`platform/domains/` 域驱动），核心为自研 Rust 高性能知识图谱引擎，支持知识图谱与 SQL 融合查询、字段级权限、AI 智能助手。完整架构说明见 [ARCHITECTURE.md](ARCHITECTURE.md)（v3.0.0-ai-powered）。
