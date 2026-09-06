@@ -2,7 +2,7 @@
 
 > 本文档是架构文档的核心入口，汇集了 MOX 平台所有架构相关文档。
 >
-> 🎨 **可视化版**：[architecture-hub.html](../architecture-hub.html)（推荐浏览）
+> 🎨 **可视化版**：[architecture-hub.html](./architecture-hub.html)（推荐浏览）
 
 ---
 
@@ -24,7 +24,7 @@
 
 | 文档 | 路径 | 说明 |
 |------|------|------|
-| 架构总览 v3.0 | [`architecture.md`](../architecture.md) | **权威入口**：MOX AI 驱动mox 模块化系统架构平台 v3.0 架构总览 |
+| 架构总览 v3.0 | [`architecture.md`](./architecture.md) | **权威入口**：MOX AI 驱动mox 模块化系统架构平台 v3.0 架构总览 |
 | 元架构总纲 | [`cosmic-architecture/00-COSMIC-META-ARCHITECTURE.md`](../cosmic-architecture/00-COSMIC-META-ARCHITECTURE.md) | COSMIC 元架构设计哲学与 9 大能力域 |
 | 元架构文档索引 | [`cosmic-architecture/README.md`](../cosmic-architecture/README.md) | 元架构文档目录与导航 |
 | 全域顶层总设计 | [`enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md) | 三联盟模式全域顶层总设计 V1.0 |
@@ -105,7 +105,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| [`enterprise-architecture/mox-zettabyte-architecture.html`](../enterprise-architecture/mox-zettabyte-architecture.html) | 企业级架构可视化展示 |
+| [`enterprise/mox-zettabyte-architecture.html`](../enterprise/mox-zettabyte-architecture.html) | 企业级架构可视化展示 |
 | [`enterprise/02-architecture.md`](../enterprise/02-architecture.md) | 企业级mox 模块化系统架构平台架构设计 |
 
 ---
@@ -132,7 +132,7 @@
 | [`02-extension-guide.md`](./02-extension-guide.md) | 扩展开发指南（零改动核心架构） |
 | [`04-error-code-reference.md`](./04-error-code-reference.md) | 6 位错误码体系完整参考 |
 | [`05-normalization-checklist.md`](./05-normalization-checklist.md) | 10 大类归一化检查清单 |
-| [`specs/PT-Primi-架构规范-V1.0-完整版.md`](../specs/PT-Primi-架构规范-V1.0-完整版.md) | Primi 架构规范 V1.0 |
+| [`specifications/PT-Primi-架构规范-V1.0-完整版.md`](../specifications/PT-Primi-架构规范-V1.0-完整版.md) | Primi 架构规范 V1.0 |
 
 ---
 
@@ -186,7 +186,7 @@ L1 基础框架层 → framework/foundation/observability
 
 ## 文档维护
 
-- **可视化索引**：[architecture-hub.html](../architecture-hub.html)
+- **可视化索引**：[architecture-hub.html](./architecture-hub.html)
 - **更新频率**：架构变更时同步更新
 - **负责人**：架构开发联盟
 - **最后整理**：2026-08-31

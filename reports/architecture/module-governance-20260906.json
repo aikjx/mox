@@ -81,7 +81,7 @@
     },
     "declared_dependencies": {
       "crates": 143,
-      "edges": 312,
+      "edges": 308,
       "unknown": [
         "mox-arch-test"
       ],
@@ -95,8 +95,8 @@
         {
           "level": "P1",
           "type": "god_module",
-          "description": "mox-platform-orchestrator-svc: 扇出=19 (阈值=10)",
-          "details": "依赖: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-sdk, mox-ai-flow-svc, mox-api-protocol, mox-data-catalog-svc, mox-flow-bridge-svc, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc..."
+          "description": "mox-platform-orchestrator-svc: 扇出=15 (阈值=10)",
+          "details": "依赖: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-sdk, mox-api-protocol, mox-data-catalog-svc, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc, mox-flow-optimizer-core, mox-flow-primiflow-svc..."
         },
         {
           "level": "P2",
@@ -153,6 +153,28 @@
           "details": ""
         }
       ]
+    },
+    "contract_meta": {
+      "crates": 16,
+      "findings": [],
+      "warnings": [
+        "mox-ai-expert-core: CRATE_ID is not UUIDv5: a1b2c3d4-0004-5e4c-8354-expertcore0001",
+        "mox-ai-expert-proto: CRATE_ID is not UUIDv5: a1b2c3d4-0000-5e4c-8354-expertproto0001",
+        "mox-ai-flow-core: CRATE_ID is not UUIDv5: mox-ai-flow-core",
+        "mox-auth-core: CRATE_ID is not UUIDv5: mox-auth-core",
+        "mox-cache-core: CRATE_ID is not UUIDv5: mox-cache-core",
+        "mox-cloud-kb-core: CRATE_ID is not UUIDv5: mox-cloud-kb-core",
+        "mox-config-core: CRATE_ID is not UUIDv5: mox-config-core",
+        "mox-event-core: CRATE_ID is not UUIDv5: mox-event-core",
+        "mox-flow-algo-alliance-core: CRATE_ID is not UUIDv5: algo-alliance-0001",
+        "mox-kb-core: CRATE_ID is not UUIDv5: mox-kb-core",
+        "mox-lock-core: CRATE_ID is not UUIDv5: mox-lock-core",
+        "mox-observability-core: CRATE_ID is not UUIDv5: mox-observability-core",
+        "mox-platform-operator-core: CRATE_ID is not UUIDv5: mox-platform-operator-core",
+        "mox-server-runtime: CRATE_ID is not UUIDv5: mox-server-runtime",
+        "mox-unified-algo-core: CRATE_ID is not UUIDv5: ua1c0r3a-41cd-5274-be2f-a1g0n0rmc0re",
+        "mox-unified-contract: CRATE_ID is not UUIDv5: mox-unified-contract"
+      ]
     }
   },
   "findings": [
@@ -166,8 +188,8 @@
     {
       "level": "P1",
       "type": "god_module",
-      "description": "mox-platform-orchestrator-svc: 扇出=19 (阈值=10)",
-      "details": "依赖: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-sdk, mox-ai-flow-svc, mox-api-protocol, mox-data-catalog-svc, mox-flow-bridge-svc, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc...",
+      "description": "mox-platform-orchestrator-svc: 扇出=15 (阈值=10)",
+      "details": "依赖: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-sdk, mox-api-protocol, mox-data-catalog-svc, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc, mox-flow-optimizer-core, mox-flow-primiflow-svc...",
       "checker": "declared_dependencies"
     },
     {

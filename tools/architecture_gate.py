@@ -8,6 +8,7 @@ from pathlib import Path
 
 import arch_test
 import architecture_constraint_test as constraints
+import contract_meta_check
 
 
 def combine(stages):
@@ -29,12 +30,23 @@ def run():
     cross, _ = constraints.detect_cross_domain(deps)
     # Always report individual cross-domain findings, including those below the aggregate warning threshold.
     violations += cross
+    # Contract constants are verified statically instead of by a Rust test that had to
+    # extern crate every member, which kept test-only edges in the dependency graph.
+    contract_findings, contract_warnings = contract_meta_check.check()
+    contract_violations = [
+        {"level": "P1", "type": "contract_meta",
+         "description": "{}: {}".format(crate, message), "details": ""}
+        for crate, message in contract_findings
+    ]
     return combine({
         "normal_dependencies": {"crates": normal.total_crates, "edges": normal.total_edges,
             "unknown": normal.unknown_crates, "findings": [asdict(v) for v in normal.violations]},
         "declared_dependencies": {"crates": len(deps), "edges": sum(map(len, deps.values())),
             "unknown": sorted(k for k, v in constraints.CRATE_LAYERS.items() if v == "unknown"),
             "findings": [asdict(v) for v in violations]},
+        "contract_meta": {"crates": len(contract_meta_check.EXPECTED),
+            "findings": contract_violations,
+            "warnings": ["{}: {}".format(crate, message) for crate, message in contract_warnings]},
     })
 
 
@@ -56,8 +68,10 @@ def main():
         for item in report["findings"]:
             print(f'[{item["level"]}] {item["checker"]}: {item["description"]}')
         for name, stage in report["stages"].items():
-            if stage["unknown"]:
+            if stage.get("unknown"):
                 print(f'{name} unclassified: {", ".join(stage["unknown"])}')
+            for warning in stage.get("warnings", []):
+                print(f'{name} warning: {warning}')
     return 0 if report["passed"] else 1
 
 

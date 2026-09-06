@@ -2,7 +2,7 @@
 
 > 编号：**DOC-NORM-HUB-V1.0**
 > 定位：mox 模块化系统的**归一化文档单一事实源（SSoT）枢纽**。
-> 上层愿景：[reports/html/codegen-normalization-plan/index.html](../reports/html/codegen-normalization-plan/index.html)
+> 上层愿景：[reports/html/codegen-normalization-plan/index.html](../../reports/html/codegen-normalization-plan/index.html)
 > 下层权威：各分类索引（BP / API / ARC / VAL / TPL）见本目录。
 > 物理治理：沿用 `docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0）目录职责与引用规则（仓根相对 `docs/<rel>`）。
 

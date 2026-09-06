@@ -15,6 +15,13 @@ mox-api-protocol = { workspace = true }
 mox-platform-foundation = { workspace = true }
 mox-platform-module-core = { workspace = true }
 mox-flow-operator-core = { workspace = true }
+# Cross-domain capabilities this host still implements inline rather than consuming as a
+# contract. /api/graph/* (17 endpoints, proxied by the gateway and targeted by AI intent
+# routing) comes from the kg algorithm crate; /api/analyze/spiral comes from the data catalog
+# and is called by the admin console; WASM plugin management backs the plugin centre page.
+# Retiring these edges means proxying to the owning domain services, which depends on the
+# four-domain independent deployment work, so they stay recorded as known debt instead of
+# being relocated purely to lower this crate's fan-out.
 mox-kg-algo-core = { workspace = true }
 mox-flow-operator-wasm-svc = { workspace = true }
 mox-flow-optimizer-core = { workspace = true }
@@ -53,14 +60,11 @@ futures-util = { workspace = true }
 reqwest = { workspace = true }
 
 [dev-dependencies]
-# Only service identity/compatibility tests import the service crate.
-mox-ai-flow-svc = { workspace = true }
+# No workspace service crate is declared here. Cross-crate contract constants are verified
+# statically by tools/contract_meta_check.py, which keeps this crate's declared fan-out free
+# of edges that exist only for testing.
 tokio = { workspace = true }
 reqwest = { workspace = true }
-# T2 跨 crate 常量一致性测试：runtime 的集成测试需要能 extern crate 全部 15 个 workspace 成员。
-mox-flow-bridge-svc = { workspace = true }
-mox-market-template-svc = { workspace = true }
-mox-kg-hub-svc = { workspace = true }
 
 [features]
 # 治理台 API（/api/governance/*）：挂载 OUS 前端治理台的全部 REST + WebSocket 端点。

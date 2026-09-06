@@ -13,7 +13,10 @@
 //!
 //! 这是企业级「优化 → 治理 → 发布溯源」链路的最高级别硬验收证据。
 
-use mox_ai_flow_svc::model::{Access, FlowEdge, FlowGraph, FlowNode, NodeKind};
+// Flow models are consumed through the SDK, not the service crate: the test needs the
+// contract types only, and importing the service would keep a dev-dependency edge that
+// inflates the orchestrator's declared fan-out.
+use mox_ai_flow_sdk::model::{Access, FlowEdge, FlowGraph, FlowNode, NodeKind};
 use mox_platform_orchestrator_svc::market::{publish_unified, OperatorPackage};
 use mox_ai_expert_svc::context::{GovernContext, Principal, Tenant};
 use mox_ai_expert_svc::pipeline::mox_optimize;

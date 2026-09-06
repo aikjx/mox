@@ -1,5 +1,5 @@
 # 开发专家联盟 · 权威集成索引（EA-DOC-001）
-> **⚠️ 状态标注（2026-09-03 端口归一化）**：本文档中提及的 **Node.js 平台层（:3010，platform/backend-node/）已退役删除**，其 API 网关、专家联盟、AI 引擎、知识图谱等能力已由 **Rust 网关 mox-server（:8080）** 统一接管。当前有效端口以 [PORT-REGISTRY.md](../ports/PORT-REGISTRY.md) 为准。本文保留 :3010 作为历史架构记录。
+> **⚠️ 状态标注（2026-09-03 端口归一化）**：本文档中提及的 **Node.js 平台层（:3010，platform/backend-node/）已退役删除**，其 API 网关、专家联盟、AI 引擎、知识图谱等能力已由 **Rust 网关 mox-server（:8080）** 统一接管。当前有效端口以 [PORT-REGISTRY.md](../api/PORT-REGISTRY.md) 为准。本文保留 :3010 作为历史架构记录。
 
 
 > **标题**：开发专家联盟·权威集成索引
