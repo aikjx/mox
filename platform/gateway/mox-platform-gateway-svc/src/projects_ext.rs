@@ -11,13 +11,13 @@
 use axum::{
     Json, Router,
     extract::{Multipart, Path, Query, State},
-    routing::{delete, get, post, put},
+    routing::{get, post, put},
 };
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error};
+use mox_api_protocol::{ApiResponse, api_ok};
 
 // =====================================================================
 // 共享状态

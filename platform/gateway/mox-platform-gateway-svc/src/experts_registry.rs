@@ -16,7 +16,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{delete, get, post, put},
+    routing::{get, post},
 };
 use base64::Engine;
 use serde_json::{Value, json};

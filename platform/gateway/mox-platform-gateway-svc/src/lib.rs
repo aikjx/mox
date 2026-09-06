@@ -59,7 +59,7 @@ use axum::{
 };
 use mox_platform_iam_core::IamRepository;
 use serde_json::json;
-use mox_api_protocol::{ApiResponse, api_ok, api_error};
+use mox_api_protocol::{ApiResponse, api_ok};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::{AllowOrigin, CorsLayer};

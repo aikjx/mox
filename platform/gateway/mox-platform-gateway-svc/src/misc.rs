@@ -16,7 +16,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error};
+use mox_api_protocol::{ApiResponse, api_ok};
 
 // =====================================================================
 // 共享状态
@@ -84,6 +84,15 @@ fn load_misc_data() -> MiscPersistent {
     MiscPersistent { tasks, projects }
 }
 
+/// 持久化 tasks / projects 到 `misc.tasks` / `misc.projects` 两个集合。
+///
+/// **待接线（刻意保留该 dead_code 警告）**：`MiscState` 在 `new()` 时从磁盘加载
+/// tasks / projects，但全模块对这两个集合只有 `.lock().clone()` 读取，
+/// 没有任何增删改的写入点 —— 即 misc 的 tasks / projects 当前是只读静态数据，
+/// 没有 CRUD 接口。因此本函数从未被调用。
+///
+/// 不删除也不静默：它是「misc CRUD 尚未实现」的唯一机器可检信号。
+/// 注意区分：这不是数据丢失 bug（无写入即无可丢失），而是功能未接线。
 fn save_misc_data(tasks: &[TaskItem], projects: &[ProjectItem]) {
     if let Err(e) = crate::store_json::save_collection("misc.tasks", tasks) {
         eprintln!("[misc] tasks 持久化失败: {}", e);

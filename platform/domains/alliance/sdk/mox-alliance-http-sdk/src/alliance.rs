@@ -535,8 +535,7 @@ fn build_fusion_result(nodes: &[ExecNode], strategy: &str) -> FusionResultData {
         .collect();
     let node_contributions: Vec<NodeContribution> = completed
         .iter()
-        .enumerate()
-        .map(|(i, n)| NodeContribution {
+        .map(|n| NodeContribution {
             node_id: n.node_id.clone(),
             expert: n.name.clone(),
             weight: 1.0 / completed.len() as f32,

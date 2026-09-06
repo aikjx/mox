@@ -178,6 +178,16 @@ pub fn parse_score(answer: &str) -> f64 {
 }
 
 /// 从最终答案解析是否否决
+///
+/// 判定分两级：
+/// 1. **显式控制行**（行首「是否否决：是/否」）—— 模型明确声明，置信度最高
+/// 2. **语义兜底** —— 仅匹配「整体方案被否定」的强模式
+///
+/// 语义兜底此前用裸子串（"否决" / "不可行" / "无法处理"）做全文匹配，会把
+/// 「方案 A 不可行，建议改用方案 B」这类**正常且高价值的对比分析**误判为否决。
+/// 下游 gateway 按 `ConsultReport.vetoed` 的契约会对 vetoed=true 强制拦截，
+/// 误判的代价是正常回答被吞掉 —— 因此限定为带主语/结论性的强模式，
+/// 宁可漏报（用户仍看到内容），不可误报（正常回答被拦截）。
 pub fn parse_veto(answer: &str) -> (bool, Option<String>) {
     // 显式控制行（行首），例如「是否否决：否 / 是否否决: 是」
     for line in answer.lines() {
@@ -192,12 +202,40 @@ pub fn parse_veto(answer: &str) -> (bool, Option<String>) {
             return (true, Some(snippet(answer)));
         }
     }
-    // 语义兜底：仅正文中出现明确否决语义词
-    if answer.contains("否决") || answer.contains("不可行") || answer.contains("无法处理") {
+    // 语义兜底：仅整体方案被否定的强语义，不含局部方案讨论
+    if veto_semantics(answer) {
         (true, Some(snippet(answer)))
     } else {
         (false, None)
     }
+}
+
+/// 整体方案被否定的强语义模式。
+///
+/// 与局部否定的区别示例：
+/// - `方案 A 不可行，建议改用方案 B` → **不命中**（局部否定 + 给出替代，属正常分析）
+/// - `该方案不可行，无法落地` → 命中（整体否定）
+const VETO_PATTERNS: &[&str] = &[
+    "该方案不可行",
+    "此方案不可行",
+    "整体不可行",
+    "方案整体不可行",
+    "整体方案不可行",
+    "无法处理该",
+    "无法完成该",
+    "无法给出",
+    "无法提供",
+    "建议否决",
+    "予以否决",
+    "应予否决",
+    "决定否决",
+    "不予采纳",
+    "存在重大风险",
+    "严重违反",
+];
+
+fn veto_semantics(answer: &str) -> bool {
+    VETO_PATTERNS.iter().any(|p| answer.contains(p))
 }
 
 fn snippet(answer: &str) -> String {
@@ -445,6 +483,28 @@ mod tests {
         assert!(!parse_veto("结论评分：0.5\n是否否决：否").0);
         assert!(parse_veto("该方案不可行，无法落地").0);
         assert!(!parse_veto("结论正常。").0);
+    }
+
+    /// 误伤防护：局部否定（否定某个子方案但给出可行替代）不应判为整体否决。
+    ///
+    /// 下游 gateway 对 vetoed=true 强制拦截，误判会直接吞掉这类高价值回答。
+    #[test]
+    fn parse_veto_does_not_flag_partial_rejection() {
+        assert!(
+            !parse_veto("方案 A 不可行，建议改用方案 B：先做灰度再全量。").0,
+            "否定子方案并给出替代属正常分析，不应判为否决"
+        );
+        assert!(
+            !parse_veto("该设计曾因成本被否决，现改用折中方案。").0,
+            "陈述历史否决不等于本次结论被否决"
+        );
+        assert!(
+            !parse_veto("同步调用在跨机房场景下不可行，改用消息队列异步化。").0,
+            "局部技术选型否定不应判为整体否决"
+        );
+        // 整体否定仍须命中
+        assert!(parse_veto("该方案不可行，建议整体重构。").0);
+        assert!(parse_veto("依据现有信息无法给出可行结论。").0);
     }
 
     #[test]

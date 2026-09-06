@@ -247,6 +247,18 @@ fn norm_fusion(s: &str) -> Value {
     .into()
 }
 
+/// 从融合结果 body 中取出 `fusion_strategy` 并归一化为网关展示名。
+///
+/// 单独成函数以便回归测试守护：曾出现融合结果出口直接透传 proto 原始名
+/// （`weighted`）而任务详情出口已归一化（`weighted_voting`）的不一致缺陷。
+/// 字段缺失或非字符串时返回 `Value::Null`（保持与历史行为一致）。
+fn norm_fusion_field(body: &Value) -> Value {
+    body.get("fusion_strategy")
+        .and_then(|v| v.as_str())
+        .map(norm_fusion)
+        .unwrap_or(Value::Null)
+}
+
 /// 专家状态：proto serde 名 → 网关展示名
 ///
 /// 映射表复用 `alliance::EXPERT_STATUS_NORM`（唯一真源），避免与本地枚举映射漂移。
@@ -422,7 +434,7 @@ pub async fn remote_task_action(
         .scheduler_post(&format!("/tasks/{}", task_id), &body)
         .await?
     {
-        Ok((st, v)) if (200..300).contains(&st) => {
+        Ok((st, _v)) if (200..300).contains(&st) => {
             // 归一化为本地消息文案（远程 SuccessResponse.message 为通用 "OK"）
             let message = match req.action {
                 mox_alliance_api::dto::TaskAction::Pause => format!("任务 {} 已暂停", task_id),
@@ -606,7 +618,7 @@ pub async fn remote_skip_node(
         .executor_post_raw(&format!("/tasks/{}/nodes/{}", task_id, node_id))
         .await?
     {
-        Ok((st, v)) if (200..300).contains(&st) => {
+        Ok((st, _v)) if (200..300).contains(&st) => {
             Some(api_ok(json!({
                 "elapsed_ms": now_ms() - t0,
                 "data": {
@@ -732,7 +744,9 @@ pub async fn remote_fusion_result(
                     "task_id": task_id,
                     "status": "completed",
                     "fusion_status": body.get("fusion_status").cloned().unwrap_or(json!("completed")),
-                    "fusion_strategy": body.get("fusion_strategy").cloned().unwrap_or(Value::Null),
+                    // 归一化 proto serde 名 → 网关展示名，与本地 fusion_strategy_str
+                    // 及任务详情的 norm_mode 保持一致（修复远程/本地两态返回不一致）
+                    "fusion_strategy": norm_fusion_field(&body),
                     "participating_nodes": body.get("participating_nodes").cloned().unwrap_or(json!(0)),
                     "fusion_result": body,
                     "result": body,
@@ -877,5 +891,30 @@ mod lifecycle_tests {
         assert_eq!(norm_fusion("map_reduce").as_str(), Some("map_reduce"));
         assert_eq!(norm_fusion("iterative").as_str(), Some("iterative"));
         assert_eq!(norm_fusion("unknown_y").as_str(), Some("unknown_y"));
+    }
+
+    /// 回归：融合结果出口必须对 `fusion_strategy` 做归一化（对齐任务详情的 norm_mode
+    /// 与本地 fusion_strategy_str）。曾出现出口直接透传 proto 原始名导致远程/本地
+    /// 两态返回不一致（`weighted` vs `weighted_voting`）。
+    #[test]
+    fn fusion_result_field_is_normalized_not_passthrough() {
+        // proto 原始名 → 网关展示名（证明不是透传）
+        assert_eq!(
+            norm_fusion_field(&json!({"fusion_strategy": "weighted"})).as_str(),
+            Some("weighted_voting")
+        );
+        assert_eq!(
+            norm_fusion_field(&json!({"fusion_strategy": "best_of"})).as_str(),
+            Some("first_wins")
+        );
+        // 直通项保持原样
+        assert_eq!(
+            norm_fusion_field(&json!({"fusion_strategy": "debate"})).as_str(),
+            Some("debate")
+        );
+        // 字段缺失 / 非字符串 → Null（保持历史行为，不 panic）
+        assert_eq!(norm_fusion_field(&json!({})), Value::Null);
+        assert_eq!(norm_fusion_field(&json!({"fusion_strategy": null})), Value::Null);
+        assert_eq!(norm_fusion_field(&json!({"fusion_strategy": 42})), Value::Null);
     }
 }

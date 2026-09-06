@@ -18,7 +18,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{delete, get, post, put},
+    routing::{get, post},
 };
 use mox_api_protocol::ApiResponse;
 use serde::Deserialize;

@@ -19,7 +19,7 @@
 use axum::{
     Json, Router,
     extract::{Path, State},
-    routing::{get, post, put},
+    routing::{get, post},
 };
 use mox_api_protocol::ApiResponse;
 use mox_audit::{AuditAction, AuditOutcome};
@@ -215,9 +215,14 @@ fn weighted_random_pick(
 /// 核心调度函数：根据策略选择专家
 ///
 /// 返回 (assigned_expert_ids, match_scores, strategy_used)
+///
+/// 已知缺口：`task_type` 当前**未参与调度**——匹配仅依据 `input` 的关键词
+/// （`compute_match_score`），即不同任务类型（如"代码生成"与"数据分析"）
+/// 走的是同一套匹配逻辑。参数保留在签名中是因为调用方已按此契约传参，
+/// 补齐按类型路由属独立能力项，需先定义类型→专家领域的映射规则。
 pub fn dispatch_task(
     state: &ExpertsSharedState,
-    task_type: &str,
+    _task_type: &str,
     input: &str,
     specified_ids: Option<Vec<String>>,
 ) -> (Vec<String>, HashMap<String, f64>, String) {

@@ -11,7 +11,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{delete, get, post, put},
+    routing::{get, put},
 };
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};

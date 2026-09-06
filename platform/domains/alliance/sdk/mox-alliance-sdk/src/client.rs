@@ -97,6 +97,15 @@ impl AllianceClient {
                 .await
                 .map_err(|e| AllianceError::internal(format!("Failed to parse response: {}", e)))
         } else {
+            // 网关/代理类错误（502/503/504）：后端调度器不可达，语义上属 SchedulerUnavailable
+            // 而非 internal。部署环境存在 HTTP 代理时最常见——代理接管请求后回 502，
+            // 若此处归为 internal，故障语义会失真（调用方无法据此做"调度器不可用"的降级）。
+            if matches!(status.as_u16(), 502 | 503 | 504) {
+                return Err(AllianceError::new(
+                    AllianceErrorCode::SchedulerUnavailable,
+                    format!("Scheduler unreachable via gateway: HTTP {}", status),
+                ));
+            }
             let body = response
                 .text()
                 .await

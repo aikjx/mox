@@ -12,7 +12,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{delete, get, post},
+    routing::{get, post},
 };
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};

@@ -35,7 +35,6 @@
 
 use axum::{
     extract::{Path, Query, Request, State},
-    http::StatusCode,
     middleware::Next,
     response::{
         IntoResponse, Response,

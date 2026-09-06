@@ -13,7 +13,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error};
+use mox_api_protocol::{ApiResponse, api_ok};
 
 // =====================================================================
 // 共享状态
@@ -39,6 +39,14 @@ fn load_workspace_history() -> Vec<HistoryItem> {
     crate::store_json::try_migrate_json::<HistoryItem>("workspace.history", "data/workspace_history.json")
 }
 
+/// 持久化工作区历史到 `data/workspace_history.json`。
+///
+/// **待接线（刻意保留该 dead_code 警告）**：当前工作区历史是「只读不写」——
+/// `WorkspaceState::new()` 从磁盘加载 `history`，但全模块没有任何向 `history`
+/// 追加记录的调用点，因此历史查询接口实际恒返回磁盘上已有的存量数据
+/// （全新部署时恒为空）。本函数是写入路径就位后的持久化出口，先于调用点存在。
+///
+/// 不删除也不静默：删掉等于抹掉「这个功能没写完」的唯一机器可检信号。
 fn save_workspace_history(history: &[HistoryItem]) {
     if let Err(e) = crate::store_json::save_collection("workspace.history", history) {
         eprintln!("[workspace] 历史记录持久化失败: {}", e);

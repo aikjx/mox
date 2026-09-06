@@ -207,6 +207,28 @@ fn build_expert_persona(expert: &ExpertDescriptor) -> String {
 /// 将 mox-ai-expert-svc 的 `ConsultReport`（治理型）映射回前端契约
 /// `{analysis, solution, references, confidence}`，并附 `source` / `vetoed` 透明字段
 fn map_report_to_answer(report: &ConsultReport, expert: &ExpertDescriptor, _persona: &str) -> Value {
+    // 治理契约（mox-ai-expert-proto::ConsultReport.vetoed）：
+    // 「veto=true 时下游应强制拦截」。此前实现仅把标志透传给前端，
+    // 正文 analysis/solution 照常返回 —— 被否决内容照样出网，并会经
+    // fuse_answers 污染融合结论。此处履行契约：拦截时不输出被否决正文，
+    // 仅回执拦截说明与原因，置信度归零。
+    if report.vetoed {
+        let reason = report
+            .reason
+            .clone()
+            .unwrap_or_else(|| "未给出否决原因".to_string());
+        return json!({
+            "analysis": format!("该回复已被治理闸门拦截，内容不予展示。原因：{}", reason),
+            "solution": format!("【已拦截】{}", reason),
+            "references": Vec::<String>::new(),
+            "confidence": 0.0,
+            "source": "llm",
+            "vetoed": true,
+            "veto_reason": reason,
+            "blocked": true,
+        });
+    }
+
     // LLM 最终结论行（react_to_report 在 steps 末尾追加 "[结论] ..."）
     let conclusion = report
         .steps
@@ -275,9 +297,28 @@ pub fn fuse_answers(answers: &[(ExpertDescriptor, Value, f64)]) -> Value {
         });
     }
 
+    // 治理闸门：被否决（vetoed）的回复不得参与加权投票与主导观点评选，
+    // 否则一条被拦截的回复仍可能凭借高 match_score 成为 dominant_view。
+    let admitted: Vec<&(ExpertDescriptor, Value, f64)> = answers
+        .iter()
+        .filter(|(_, a, _)| !a.get("vetoed").and_then(|v| v.as_bool()).unwrap_or(false))
+        .collect();
+    if admitted.is_empty() {
+        let blocked = answers.len();
+        return json!({
+            "summary": format!("{} 位专家的回复全部被治理闸门否决，无法给出融合结论", blocked),
+            "consensus_score": 0.0,
+            "dominant_view": "",
+            "alternative_views": [],
+            "confidence": 0.0,
+            "vetoed": true,
+            "blocked": true,
+        });
+    }
+
     // 1. 计算每个专家的权重 = match_score * avg_rating/5
     let mut weighted: Vec<(usize, f64, String)> = Vec::new();
-    for (i, (expert, answer, score)) in answers.iter().enumerate() {
+    for (i, (expert, answer, score)) in admitted.iter().copied().enumerate() {
         let weight = score * (expert.metrics.avg_rating / 5.0).max(0.1);
         let solution = answer.get("solution")
             .and_then(|v| v.as_str())
@@ -308,8 +349,10 @@ pub fn fuse_answers(answers: &[(ExpertDescriptor, Value, f64)]) -> Value {
         }
     }
 
-    let dominant_expert = &answers[dominant_idx].0;
-    let dominant_answer = &answers[dominant_idx].1;
+    // dominant_idx 是 admitted 的下标 —— 必须用 admitted 索引，
+    // 否则过滤掉被否决项后会错位取到原数组里的其他专家。
+    let dominant_expert = &admitted[dominant_idx].0;
+    let dominant_answer = &admitted[dominant_idx].1;
     let dominant_view = format!(
         "【{}】{}",
         dominant_expert.name,
@@ -317,7 +360,7 @@ pub fn fuse_answers(answers: &[(ExpertDescriptor, Value, f64)]) -> Value {
     );
 
     // 4. 差异化观点：其他专家的方案
-    let alternative_views: Vec<String> = answers.iter().enumerate()
+    let alternative_views: Vec<String> = admitted.iter().copied().enumerate()
         .filter(|(i, _)| *i != dominant_idx)
         .map(|(_, (expert, answer, _))| {
             format!(
@@ -329,10 +372,10 @@ pub fn fuse_answers(answers: &[(ExpertDescriptor, Value, f64)]) -> Value {
         .collect();
 
     // 5. 综合摘要
-    let expert_names: Vec<&str> = answers.iter().map(|(e, _, _)| e.name.as_str()).collect();
+    let expert_names: Vec<&str> = admitted.iter().map(|(e, _, _)| e.name.as_str()).collect();
     let summary = format!(
         "综合{}位专家（{}）的协同分析，共识度为{:.2}。主导方案由{}提出，融合了多领域视角，建议优先验证主导方案并参考差异化观点进行风险对冲。",
-        answers.len(),
+        admitted.len(),
         expert_names.join("、"),
         consensus_score,
         dominant_expert.name
@@ -1819,5 +1862,95 @@ mod tests {
         // 任一路径均可：模板降级（含专家名）或真实 LLM（source=llm）
         let ok = analysis.contains("架构师·LLM") || answer.get("source").and_then(|v| v.as_str()) == Some("llm");
         assert!(ok, "应走模板降级或真实 LLM 路径");
+    }
+
+    // 测试：治理契约 —— ConsultReport.vetoed=true 时下游必须强制拦截，不得透传正文
+    #[test]
+    fn vetoed_report_is_blocked_not_passthrough() {
+        let expert = make_test_expert("exp-v", "风控专家", "合规", vec!["risk"], vec!["审计"]);
+        let report = ConsultReport {
+            report_id: "r-veto".into(),
+            steps: vec!["[结论] 直接删除生产库以释放存储空间".into()],
+            score: 0.2,
+            vetoed: true,
+            reason: Some("高危操作：不可逆数据破坏".into()),
+        };
+
+        let out = map_report_to_answer(&report, &expert, "persona");
+
+        assert_eq!(out["blocked"].as_bool(), Some(true), "被否决必须标记 blocked");
+        assert_eq!(out["vetoed"].as_bool(), Some(true));
+        assert_eq!(out["confidence"].as_f64(), Some(0.0), "被否决置信度必须归零");
+
+        let analysis = out["analysis"].as_str().expect("analysis 应为字符串");
+        let solution = out["solution"].as_str().expect("solution 应为字符串");
+        assert!(
+            !analysis.contains("删除生产库"),
+            "拦截后不得泄露被否决正文，实际 analysis: {}",
+            analysis
+        );
+        assert!(
+            !solution.contains("删除生产库"),
+            "拦截后不得泄露被否决正文，实际 solution: {}",
+            solution
+        );
+        assert!(analysis.contains("高危操作"), "应说明拦截原因");
+    }
+
+    // 测试：融合不得采纳被否决的回复（即便其 match_score 更高）
+    #[test]
+    fn fuse_answers_excludes_vetoed_replies() {
+        let exp1 = make_test_expert("exp-1", "专家甲", "架构", vec!["architecture"], vec!["Rust"]);
+        let exp2 = make_test_expert("exp-2", "专家乙", "AI", vec!["ai"], vec!["PyTorch"]);
+
+        // 显式构造回复体（贴近 map_report_to_answer 的真实产出形状）
+        let a1 = json!({
+            "analysis": "甲的分析",
+            "solution": "甲提出的高分方案",
+            "confidence": 0.9,
+            "vetoed": true,
+            "blocked": true,
+        });
+        let a2 = json!({
+            "analysis": "乙的分析",
+            "solution": "乙提出的方案",
+            "confidence": 0.8,
+            "vetoed": false,
+        });
+        assert_eq!(a1["vetoed"].as_bool(), Some(true), "fixture 自身校验");
+        assert_eq!(a2["vetoed"].as_bool(), Some(false), "fixture 自身校验");
+
+        // 被否决者 match_score 更高 —— 修复前它会成为主导观点
+        let answers = vec![(exp1.clone(), a1, 0.99), (exp2.clone(), a2, 0.10)];
+        let fused = fuse_answers(&answers);
+
+        let dominant = fused["dominant_view"].as_str().expect("dominant_view 应为字符串");
+        assert!(
+            dominant.contains("专家乙"),
+            "被否决回复不得成为主导观点，实际: {}",
+            dominant
+        );
+        assert!(!dominant.contains("专家甲"), "被否决回复不应出现在主导观点");
+        assert_ne!(fused["blocked"].as_bool(), Some(true), "仍有可用回复时不应整体拦截");
+    }
+
+    // 测试：全部回复被否决时，融合必须整体拦截而非给出伪结论
+    #[test]
+    fn fuse_answers_all_vetoed_returns_blocked() {
+        let exp1 = make_test_expert("exp-1", "专家甲", "架构", vec!["architecture"], vec!["Rust"]);
+        let a1 = json!({
+            "analysis": "甲的分析",
+            "solution": "甲提出的方案",
+            "confidence": 0.9,
+            "vetoed": true,
+            "blocked": true,
+        });
+
+        let answers = vec![(exp1.clone(), a1, 0.9)];
+        let fused = fuse_answers(&answers);
+
+        assert_eq!(fused["blocked"].as_bool(), Some(true), "全部被否决应整体拦截");
+        assert_eq!(fused["confidence"].as_f64(), Some(0.0), "整体拦截时置信度必须归零");
+        assert_eq!(fused["dominant_view"].as_str(), Some(""), "整体拦截不应给出主导观点");
     }
 }

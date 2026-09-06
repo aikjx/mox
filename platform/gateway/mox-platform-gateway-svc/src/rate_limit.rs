@@ -64,23 +64,30 @@ impl TokenBucket {
 impl RateLimiter {
     /// Create a new rate limiter with the given configuration.
     pub fn new(config: RateLimitConfig) -> Self {
-        let max_tokens = (config.max_requests + config.burst) as f64;
-        let refill_rate = config.max_requests as f64 / config.window_secs as f64;
         Self {
             config,
             buckets: Arc::new(parking_lot::Mutex::new(HashMap::new())),
         }
     }
 
+    /// 令牌桶参数：`(容量, 每秒补充速率)`。
+    ///
+    /// 此前 `new()` 与 `check()` 各写了一遍同一公式，且 `new()` 算出的两个结果
+    /// 从未被使用（死变量）—— 改动容量或速率公式时极易只改一处而静默不一致。
+    /// 现统一收敛到此处，两处共用。
+    fn bucket_params(&self) -> (f64, f64) {
+        let capacity = (self.config.max_requests + self.config.burst) as f64;
+        let refill_rate = self.config.max_requests as f64 / self.config.window_secs as f64;
+        (capacity, refill_rate)
+    }
+
     /// Check if a request from the given client should be allowed.
     pub fn check(&self, client_id: &str) -> bool {
         if !self.config.enabled { return true; }
+        let (capacity, refill_rate) = self.bucket_params();
         let mut buckets = self.buckets.lock();
         let bucket = buckets.entry(client_id.to_string())
-            .or_insert_with(|| TokenBucket::new(
-                (self.config.max_requests + self.config.burst) as f64,
-                self.config.max_requests as f64 / self.config.window_secs as f64,
-            ));
+            .or_insert_with(|| TokenBucket::new(capacity, refill_rate));
         bucket.try_consume(1.0)
     }
 

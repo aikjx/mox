@@ -14,7 +14,6 @@
 //! - 响应信封统一使用 mox_api_protocol::{ApiResponse, api_ok, api_error}
 //! - 时间戳统一 RFC3339（秒精度，UTC）
 
-use axum::{Json, Router};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
