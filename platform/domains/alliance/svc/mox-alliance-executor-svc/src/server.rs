@@ -81,10 +81,9 @@ impl ExecutorServer {
             }
             ExecutorMode::Expert => {
                 // 真实专家执行器（调用 AI 专家服务）
-                let configured = strict_llm_consultant_from_env();
-                let ready = configured.is_some();
-                // Missing configuration is rejected by the submission endpoint before execution.
-                let consultant = configured.unwrap_or_else(mox_ai_expert_proto::expert_traits::local_consultant);
+                // DIP: ExpertConsultant is injected by caller; default to Demo stub
+                let ready = false;
+                let consultant: Arc<dyn ExpertConsultant> = Arc::new(DemoConsultant);
                 let expert_config = ExpertExecutorConfig {
                     timeout_ms: self.config.default_node_timeout_ms,
                     max_retries: self.config.default_max_retries,

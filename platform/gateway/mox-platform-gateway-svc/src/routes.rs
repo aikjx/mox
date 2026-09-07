@@ -50,6 +50,8 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     DomainDescriptor { prefix: "/auth/v1",       name: "Auth",        layer: "L1", group: "platform", description: "登录/登出/JWT/API Key", status: "stub" },
     DomainDescriptor { prefix: "/tenant/v1",     name: "Tenant",      layer: "L1", group: "platform", description: "多租户三档隔离管理", status: "stub" },
     DomainDescriptor { prefix: "/rbac/v1",       name: "RBAC",        layer: "L1", group: "platform", description: "角色/权限/当前用户（IAM 真实仓储）3 接口", status: "ready" },
+    DomainDescriptor { prefix: "/api/system",    name: "System",      layer: "L1", group: "platform", description: "系统管理（部门/角色/用户/菜单/权限/操作日志/登录日志）46 接口，IamRepository SQLite 真实 CRUD", status: "ready" },
+    DomainDescriptor { prefix: "/api/security",  name: "Security",    layer: "L1", group: "platform", description: "安全管理（API Key 全生命周期/安全状态/审计日志）5 接口，SQLite 持久化 + auth 中间件联动", status: "ready" },
     // L2 KG
     DomainDescriptor { prefix: "/kg/v1",         name: "KG",          layer: "L2", group: "knowledge", description: "知识图谱·核心 6 接口", status: "ready" },
     DomainDescriptor { prefix: "/graph/v1",      name: "Graph",       layer: "L2", group: "knowledge", description: "图谱·投影/社区/可视化（与 kg 同源算法）3 接口", status: "ready" },
@@ -73,6 +75,7 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     DomainDescriptor { prefix: "/s3",            name: "S3",          layer: "L5", group: "storage", description: "S3 兼容 API（Cloud 域已提供存储后端，待接协议层）", status: "stub" },
     DomainDescriptor { prefix: "/volume/v1",     name: "Volume",      layer: "L5", group: "storage", description: "块卷/EC 纠删码（依赖 Cloud 存储后端扩展）", status: "stub" },
     DomainDescriptor { prefix: "/fs/v1",         name: "FS",          layer: "L5", group: "storage", description: "文件系统/POSIX（依赖 Cloud 存储后端扩展）", status: "stub" },
+    DomainDescriptor { prefix: "/api/monitor",   name: "Monitor",     layer: "L5", group: "platform", description: "监控运维（指标详情/质量/业务/告警/节点日志/链路追踪/告警规则）12 接口，部分真实部分 stub", status: "beta" },
     // L6 Data
     DomainDescriptor { prefix: "/data/v1",       name: "Data",        layer: "L6", group: "data", description: "数据资产目录", status: "stub" },
     DomainDescriptor { prefix: "/etl/v1",        name: "ETL",         layer: "L6", group: "data", description: "CDC+ETL+Fusion", status: "stub" },

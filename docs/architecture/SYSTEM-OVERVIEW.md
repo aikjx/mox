@@ -1,6 +1,6 @@
 # MOX 系统总览（SYSTEM OVERVIEW）
 
-> 数据基准日：2026-09-07 | 注册表 223 条 | 43 域 / 9 能力组 | 143 crates
+> 数据基准日：2026-09-07 | 注册表 223 条 | 46 域 / 9 能力组 | 143 crates
 > 本文档是 MOX 系统的顶层总览，整合架构、能力、运行、模块化、治理与演进。
 > 配套文档：`API-REGISTRY.md`（接口映射）、`BUSINESS-FLOWS.md`（处理流程）、
 > `MODULARITY.md`（模块化分析）、`ROADMAP-DOMAINS.md`（域排产）、`CORE-CAPABILITIES.md`（产品定位）。
@@ -156,7 +156,7 @@ actuator ROUTES 为单一权威源，`scripts/gen-api-registry.py` 自动生成 
 | `docs/API-REGISTRY.md` | 223 条接口↔实现映射（自动生成） |
 | `docs/architecture/BUSINESS-FLOWS.md` | 全模块业务处理流程 |
 | `docs/architecture/MODULARITY.md` | 模块化模式智能分析（4.3/5） |
-| `docs/ROADMAP-DOMAINS.md` | 43 域排产与就绪状态 |
+| `docs/ROADMAP-DOMAINS.md` | 46 域排产与就绪状态 |
 | `docs/CORE-CAPABILITIES.md` | 产品定位与核心能力 |
 | `docs/api/PORT-REGISTRY.md` | 端口权威注册表 |
 | `AGENTS.md` | 仓库维护指南（常用命令/架构/治理规则） |

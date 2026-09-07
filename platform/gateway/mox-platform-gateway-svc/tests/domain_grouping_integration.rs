@@ -1,9 +1,9 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 
 //! # 域归并分组集成测试
 //!
-//! 验证 43 个域描述符按 9 个能力组（platform/knowledge/ai/orchestration/
+//! 验证 46 个域描述符按 9 个能力组（platform/knowledge/ai/orchestration/
 //! storage/data/media/commerce/streaming）归并，且 /api/v1/domains 端点
 //! 输出 group 字段。这是企业级模块化治理的门禁测试：新增域必须归入正确能力组。
 
@@ -41,11 +41,11 @@ async fn spawn(router: Router) -> String {
 // ====================================================================
 
 #[test]
-fn test_domain_count_is_43() {
+fn test_domain_count_is_46() {
     assert_eq!(
         DOMAINS.len(),
-        43,
-        "域数量变更：当前 {}，预期 43。若为有意新增/删除，请同步更新本测试与文档。",
+        46,
+        "域数量变更：当前 {}，预期 46。若为有意新增/删除，请同步更新本测试与文档。",
         DOMAINS.len()
     );
 }
@@ -146,7 +146,7 @@ async fn test_domains_endpoint_returns_group_field() {
 
     let body: Value = resp.json().await.unwrap();
     let domains = body["data"]["domains"].as_array().expect("domains 应为数组");
-    assert_eq!(domains.len(), 43);
+    assert_eq!(domains.len(), 46);
 
     // 每个域都必须有 group 字段且非空
     for (i, d) in domains.iter().enumerate() {
@@ -160,7 +160,7 @@ async fn test_domains_endpoint_returns_group_field() {
     }
 
     // 验证 total 字段
-    assert_eq!(body["data"]["total"].as_i64().unwrap(), 43);
+    assert_eq!(body["data"]["total"].as_i64().unwrap(), 46);
 }
 
 #[tokio::test]
@@ -190,3 +190,4 @@ async fn test_domains_endpoint_group_distribution() {
     assert!(counts.get("ai").unwrap() >= &3, "ai 组应至少 3 个域");
     assert!(counts.get("media").unwrap() >= &2, "media 组应至少 2 个域");
 }
+
