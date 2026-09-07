@@ -516,7 +516,7 @@ pub static ROUTES: [ApiRoute; 223] = [
     // Alliance 域（L4·专家联盟·/api/alliance/*·mox-alliance-http-sdk alliance.rs 实现）
     // =====================================================================
     r("alliance.runtime", "GET", "/api/alliance/runtime", "L4", "alliance", "ready", "运行时就绪状态（远程/本地预览）"),
-    r("alliance.tasks.list", "ANY", "/api/alliance/tasks", "L4", "alliance", "ready", "联盟任务列表/创建（InMemoryTaskRepository 真实存储）"),
+    r("alliance.tasks.list", "ANY", "/api/alliance/tasks", "L4", "alliance", "ready", "联盟任务列表/创建（可插拔仓储：MOX_ALLIANCE_STORAGE_MODE=file 默认快照持久化）"),
     r("alliance.tasks.detail", "ANY", "/api/alliance/tasks/:id", "L4", "alliance", "ready", "任务详情/操作（暂停/恢复/取消）"),
     r("alliance.tasks.pause", "POST", "/api/alliance/tasks/:id/pause", "L4", "alliance", "ready", "暂停任务"),
     r("alliance.tasks.resume", "POST", "/api/alliance/tasks/:id/resume", "L4", "alliance", "ready", "恢复任务"),
@@ -807,13 +807,27 @@ pub fn get_route(id: &str) -> Option<&'static ApiRoute> {
 // 5) 请求可观测中间件（日志 + 指标 + API 启停拦截）
 // =====================================================================
 
+/// 链路追踪 ID 请求扩展（observability_middleware 注入，handler 可经 `Extension<RequestId>` 读取）
+#[derive(Debug, Clone)]
+pub struct RequestId(pub String);
+
 pub async fn observability_middleware(
     State(state): State<GatewayState>,
-    req: Request,
+    mut req: Request,
     next: Next,
 ) -> Response {
     let method = req.method().as_str().to_string();
     let path = req.uri().path().to_string();
+    // 链路追踪 ID：透传客户端 `x-request-id`（跨进程调用链串联），否则生成新 UUID；
+    // 注入请求扩展供下游 handler/代理读取，并在响应头回写（同请求幂等）。
+    let request_id = req
+        .headers()
+        .get("x-request-id")
+        .and_then(|v| v.to_str().ok())
+        .filter(|s| !s.trim().is_empty() && s.len() <= 64)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| uuid::Uuid::new_v4().simple().to_string());
+    req.extensions_mut().insert(RequestId(request_id.clone()));
     state.runtime.begin();
     state.metrics.active_inc();
 
@@ -833,9 +847,15 @@ pub async fn observability_middleware(
     }
 
     let start = Instant::now();
-    let resp = next.run(req).await;
+    let mut resp = next.run(req).await;
     let status = resp.status().as_u16();
     let dur = start.elapsed();
+    // 响应头回写 trace id（同请求幂等：客户端传入则原样回传，否则回传生成值）
+    resp.headers_mut().insert(
+        axum::http::header::HeaderName::from_static("x-request-id"),
+        axum::http::HeaderValue::from_str(&request_id)
+            .unwrap_or_else(|_| axum::http::HeaderValue::from_static("")),
+    );
     state.runtime.end(status, dur, &method);
     state.metrics.record_request(&method, status, dur);
     state.metrics.active_dec();
@@ -850,7 +870,7 @@ pub async fn observability_middleware(
     state.logs.push(
         level,
         "gateway",
-        format!("{method} {path} -> {status} ({}ms)", dur.as_millis()),
+        format!("{method} {path} -> {status} ({}ms) rid={}", dur.as_millis(), request_id),
     );
     resp
 }
