@@ -225,6 +225,30 @@ async fn cloud_delete_object(
     }
 }
 
+/// DELETE /cloud/v1/buckets/:bucket —— 删除空存储桶（S3 语义：非空返回 409）
+async fn cloud_delete_bucket(
+    State(s): State<CloudState>,
+    Path(bucket): Path<String>,
+) -> ApiResponse<Value> {
+    match s.bucket_path(&bucket) {
+        Some(p) if p.is_dir() => {
+            // S3 语义：仅允许删除空桶（非空返回 409 Conflict，避免静默丢对象）
+            let has_objects = fs::read_dir(&p)
+                .map(|it| it.flatten().next().is_some())
+                .unwrap_or(true);
+            if has_objects {
+                return api_error(409, &format!("bucket 非空，无法删除（先删除对象）: {}", bucket));
+            }
+            match fs::remove_dir(&p) {
+                Ok(_) => api_ok(json!({ "bucket": bucket, "deleted": true })),
+                Err(e) => api_error(500, &format!("删除 bucket 失败: {}", e)),
+            }
+        }
+        Some(_) => api_error(404, &format!("bucket 不存在: {}", bucket)),
+        None => api_error(400, "非法 bucket 名称"),
+    }
+}
+
 /// 装配 Cloud 域路由（自含存储状态，nest + 外层 `with_state(())`，与 Voice 同模式）
 pub fn build_cloud_router() -> Router<()> {
     Router::new()
@@ -233,6 +257,7 @@ pub fn build_cloud_router() -> Router<()> {
             Router::new()
                 .route("/buckets", get(cloud_list_buckets))
                 .route("/buckets", post(cloud_create_bucket))
+                .route("/buckets/:bucket", delete(cloud_delete_bucket))
                 .route("/buckets/:bucket/objects", get(cloud_list_objects))
                 .route("/buckets/:bucket/objects/:key", put(cloud_put_object))
                 .route("/buckets/:bucket/objects/:key", get(cloud_get_object))

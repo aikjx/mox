@@ -420,7 +420,7 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 222] = [
+pub static ROUTES: [ApiRoute; 223] = [
     // =====================================================================
     // Actuator 域（L0·Spring Boot 风格管理面·actuator.rs 实现）
     // =====================================================================
@@ -477,6 +477,7 @@ pub static ROUTES: [ApiRoute; 222] = [
     // —— Cloud 域（L5 · /cloud/v1/* · 本地磁盘对象存储，S3 兼容语义）——
     r("cloud.buckets.list", "GET", "/cloud/v1/buckets", "L5", "cloud", "ready", "列出存储桶（本地磁盘）"),
     r("cloud.buckets.create", "POST", "/cloud/v1/buckets", "L5", "cloud", "ready", "创建存储桶（本地磁盘）"),
+    r("cloud.buckets.delete", "DELETE", "/cloud/v1/buckets/:bucket", "L5", "cloud", "ready", "删除空存储桶（S3 语义，非空 409）"),
     r("cloud.objects.list", "GET", "/cloud/v1/buckets/:bucket/objects", "L5", "cloud", "ready", "列出桶内对象"),
     r("cloud.objects.put", "PUT", "/cloud/v1/buckets/:bucket/objects/:key", "L5", "cloud", "ready", "写入对象（原始字节）"),
     r("cloud.objects.get", "GET", "/cloud/v1/buckets/:bucket/objects/:key", "L5", "cloud", "ready", "读取对象（流式下载）"),

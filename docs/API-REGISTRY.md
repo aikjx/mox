@@ -6,7 +6,7 @@
 
 | 指标 | 值 |
 | --- | --- |
-| 注册路由总数 | **222 条**（全部 ready，全部有真实实现） |
+| 注册路由总数 | **223 条**（全部 ready，全部有真实实现） |
 | 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |
 | 域描述符（业务规划） | 43 个：ready 7 · beta 1 · stub 35（见 §3） |
 | 独立服务进程 | 6 个：kg-hub / kb-server / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
