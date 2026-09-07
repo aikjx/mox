@@ -473,14 +473,14 @@ pub static ROUTES: [ApiRoute; 221] = [
     r("melody.recognize-record", "POST", "/melody/v1/recognize-record", "L7", "melody", "ready", "识别录音（透传）"),
     r("melody.save-md", "POST", "/melody/v1/save-md", "L7", "melody", "ready", "保存简谱 Markdown（透传）"),
     r("melody.export-sheet", "POST", "/melody/v1/export-sheet", "L7", "melody", "ready", "导出表格（透传）"),
-    r("melody.download", "GET", "/melody/v1/download/{fname}", "L7", "melody", "ready", "下载转谱产物（流式）"),
+    r("melody.download", "GET", "/melody/v1/download/:fname", "L7", "melody", "ready", "下载转谱产物（流式）"),
     // —— Cloud 域（L5 · /cloud/v1/* · 本地磁盘对象存储，S3 兼容语义）——
     r("cloud.buckets.list", "GET", "/cloud/v1/buckets", "L5", "cloud", "ready", "列出存储桶（本地磁盘）"),
     r("cloud.buckets.create", "POST", "/cloud/v1/buckets", "L5", "cloud", "ready", "创建存储桶（本地磁盘）"),
-    r("cloud.objects.list", "GET", "/cloud/v1/buckets/{bucket}/objects", "L5", "cloud", "ready", "列出桶内对象"),
-    r("cloud.objects.put", "PUT", "/cloud/v1/buckets/{bucket}/objects/{key}", "L5", "cloud", "ready", "写入对象（原始字节）"),
-    r("cloud.objects.get", "GET", "/cloud/v1/buckets/{bucket}/objects/{key}", "L5", "cloud", "ready", "读取对象（流式下载）"),
-    r("cloud.objects.delete", "DELETE", "/cloud/v1/buckets/{bucket}/objects/{key}", "L5", "cloud", "ready", "删除对象"),
+    r("cloud.objects.list", "GET", "/cloud/v1/buckets/:bucket/objects", "L5", "cloud", "ready", "列出桶内对象"),
+    r("cloud.objects.put", "PUT", "/cloud/v1/buckets/:bucket/objects/:key", "L5", "cloud", "ready", "写入对象（原始字节）"),
+    r("cloud.objects.get", "GET", "/cloud/v1/buckets/:bucket/objects/:key", "L5", "cloud", "ready", "读取对象（流式下载）"),
+    r("cloud.objects.delete", "DELETE", "/cloud/v1/buckets/:bucket/objects/:key", "L5", "cloud", "ready", "删除对象"),
 
     // =====================================================================
     // AI 域（L3·AI 引擎·/ai/engine/*·kg-svc http_adapter.rs 实现）

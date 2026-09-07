@@ -144,7 +144,7 @@ pub fn build_melody_router() -> Router<()> {
                 .route("/recognize-record", post(melody_recognize_record))
                 .route("/save-md", post(melody_save_md))
                 .route("/export-sheet", post(melody_export_sheet))
-                .route("/download/{fname}", get(melody_download))
+                .route("/download/:fname", get(melody_download))
                 .with_state(VoiceState::new()),
         )
         .with_state(())
