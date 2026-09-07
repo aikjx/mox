@@ -382,6 +382,82 @@ pub fn detect_communities(graph: &ExpertGraph) -> (Vec<Vec<String>>, f64, u32, b
 // 五、核心算法：带权集合覆盖贪心优化（最优团队组建）
 // =====================================================================
 
+/// 从目标文本规则提取需求（goal → required_skills/required_domains）
+///
+/// 设计原则（一一对应、不模糊化）：
+/// - 提取结果**只来自 registry 中真实存在的域/技能 id**（枚举专家 descriptors 的
+///   domains/skills 全量），绝不虚构需求项；
+/// - 每个真实 id 挂一张中英文别名表（id 本身 + 常见同义词/上位词），
+///   goal 文本小写后按 `contains` 命中即纳入需求；
+/// - 无任何命中时返回空集（与显式空需求行为一致，set-cover 如实报告空覆盖）。
+fn extract_requirements(
+    goal: &str,
+    registry: &HashMap<String, ExpertDescriptor>,
+) -> (Vec<String>, Vec<String>) {
+    /// 域 id → 中英文别名（id 本身必含）
+    fn domain_aliases(id: &str) -> Vec<&'static str> {
+        match id {
+            "data" => vec!["data", "数据", "数仓", "数据仓库", "数据分析", "数据治理"],
+            "ai" => vec!["ai", "人工智能", "大模型", "智能体", "智能"],
+            "algorithm" => vec!["algorithm", "算法", "优化", "推演"],
+            "programming" => vec!["programming", "code", "代码", "编程", "开发", "软件", "工程"],
+            "security" => vec!["security", "安全", "防护", "攻防"],
+            "cloud" => vec!["cloud", "云", "云计算", "容器", "k8s", "kubernetes"],
+            "database" => vec!["database", "sql", "数据库", "存储"],
+            "architecture" => vec!["architecture", "架构", "设计"],
+            "network" => vec!["network", "网络", "通信"],
+            "ml" => vec!["ml", "机器学习", "模型训练"],
+            "llm" => vec!["llm", "语言模型", "提示词", "prompt"],
+            "graph" => vec!["graph", "图", "图谱", "社区发现"],
+            "audio" => vec!["audio", "音频", "声音"],
+            "voice" => vec!["voice", "语音", "说话"],
+            "music" => vec!["music", "音乐", "乐谱", "旋律"],
+            "math" => vec!["math", "数学", "计算"],
+            "finance" => vec!["finance", "金融", "财务", "投资"],
+            "marketing" => vec!["marketing", "营销", "市场", "运营"],
+            "legal" => vec!["legal", "法律", "合规", "合同"],
+            "medical" => vec!["medical", "医疗", "医学", "健康"],
+            "project" => vec!["project", "项目管理", "交付"],
+            "product" => vec!["product", "产品", "设计"],
+            _ => vec![],
+        }
+    }
+
+    let lower = goal.to_lowercase();
+    let mut skills: Vec<String> = Vec::new();
+    let mut domains: Vec<String> = Vec::new();
+
+    let mut seen_skill: HashSet<String> = HashSet::new();
+    let mut seen_domain: HashSet<String> = HashSet::new();
+
+    for e in registry.values() {
+        for d in &e.domains {
+            if seen_domain.contains(d) {
+                continue;
+            }
+            seen_domain.insert(d.clone());
+            let aliases = domain_aliases(d);
+            // id 本身（小写）作为兜底别名
+            if aliases.iter().any(|a| lower.contains(&a.to_lowercase())) || lower.contains(&d.to_lowercase())
+            {
+                domains.push(d.clone());
+            }
+        }
+        for sk in &e.skills {
+            if seen_skill.contains(sk) {
+                continue;
+            }
+            seen_skill.insert(sk.clone());
+            // 技能 id 多为技术词本身，直接按小写包含匹配（≥2 字符防过泛）
+            if sk.len() >= 2 && lower.contains(&sk.to_lowercase()) {
+                skills.push(sk.clone());
+            }
+        }
+    }
+    (skills, domains)
+}
+
+
 /// 最优团队组建：带权集合覆盖 + 贪心优化
 /// - 候选专家：满足 min_rating、enabled、可用的专家
 /// - 覆盖值 = 交集大小 * (avg_rating/5) * availability_score
@@ -524,6 +600,10 @@ struct OptimalTeamBody {
     min_rating: Option<f64>,
     #[serde(default)]
     constraints: Option<Value>,
+    /// 目标描述（自然语言）：当未显式提供 required_skills/required_domains 时，
+    /// 由 `extract_requirements` 规则提取真实存在的域/技能 id，保证一一对应。
+    #[serde(default)]
+    goal: Option<String>,
 }
 
 // =====================================================================
@@ -767,10 +847,22 @@ async fn post_optimal_team(
     let registry = state.registry.lock();
     let max_members = body.max_members.unwrap_or(5);
     let min_rating = body.min_rating.unwrap_or(4.0);
+    // goal 文本规则提取：仅当未显式声明需求时启用，提取结果来自 registry 真实 id
+    let (req_skills, req_domains) = if body.required_skills.is_empty()
+        && body.required_domains.is_empty()
+    {
+        if let Some(goal) = body.goal.as_deref() {
+            extract_requirements(goal, &registry)
+        } else {
+            (body.required_skills.clone(), body.required_domains.clone())
+        }
+    } else {
+        (body.required_skills.clone(), body.required_domains.clone())
+    };
     let result = find_optimal_team(
         &registry,
-        &body.required_skills,
-        &body.required_domains,
+        &req_skills,
+        &req_domains,
         max_members,
         min_rating,
     );

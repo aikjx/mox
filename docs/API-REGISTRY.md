@@ -6,7 +6,7 @@
 
 | 指标 | 值 |
 | --- | --- |
-| 注册路由总数 | **221 条**（全部 ready，全部有真实实现） |
+| 注册路由总数 | **222 条**（全部 ready，全部有真实实现） |
 | 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |
 | 域描述符（业务规划） | 43 个：ready 7 · beta 1 · stub 35（见 §3） |
 | 独立服务进程 | 6 个：kg-hub / kb-server / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
@@ -174,7 +174,7 @@
 | `system.security.api_key_validate` | POST | `/api/security/validate` | L5 | 校验 API Key 明文 |
 | `system.security.audit_log` | GET | `/api/security/audit-log` | L5 | 审计日志（SQLite 读取） |
 
-### experts（48 条）
+### experts（49 条）
 
 实现：`experts_registry/collaboration/dispatcher/graph/orchestration/session/ext.rs` 七模块
 
@@ -219,6 +219,7 @@
 | `experts.orch.plugins` | GET | `/api/experts/orchestration/plugins` | L3 | 编排插件清单 |
 | `experts.orch.history` | GET | `/api/experts/orchestration/history` | L3 | 编排历史 |
 | `experts.session.stats` | GET | `/api/experts/sessions/stats` | L3 | 会话统计 |
+| `experts.session.list` | GET | `/api/experts/sessions` | L3 | 会话列表（分页+状态/类型/专家/用户过滤+搜索） |
 | `experts.session.messages` | POST | `/api/experts/sessions/:id/messages` | L3 | 发送会话消息 |
 | `experts.session.similar_search` | POST | `/api/experts/sessions/:id/similar-search` | L3 | 会话相似检索 |
 | `experts.session.export` | GET | `/api/experts/sessions/:id/export` | L3 | 导出会话 |

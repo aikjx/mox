@@ -420,7 +420,7 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 221] = [
+pub static ROUTES: [ApiRoute; 222] = [
     // =====================================================================
     // Actuator 域（L0·Spring Boot 风格管理面·actuator.rs 实现）
     // =====================================================================
@@ -627,6 +627,7 @@ pub static ROUTES: [ApiRoute; 221] = [
     r("experts.orch.plugins", "GET", "/api/experts/orchestration/plugins", "L3", "experts", "ready", "编排插件清单"),
     r("experts.orch.history", "GET", "/api/experts/orchestration/history", "L3", "experts", "ready", "编排历史"),
     r("experts.session.stats", "GET", "/api/experts/sessions/stats", "L3", "experts", "ready", "会话统计"),
+    r("experts.session.list", "GET", "/api/experts/sessions", "L3", "experts", "ready", "会话列表（分页+状态/类型/专家/用户过滤+搜索）"),
     r("experts.session.messages", "POST", "/api/experts/sessions/:id/messages", "L3", "experts", "ready", "发送会话消息"),
     r("experts.session.similar_search", "POST", "/api/experts/sessions/:id/similar-search", "L3", "experts", "ready", "会话相似检索"),
     r("experts.session.export", "GET", "/api/experts/sessions/:id/export", "L3", "experts", "ready", "导出会话"),
