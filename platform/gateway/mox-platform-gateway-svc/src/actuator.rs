@@ -828,6 +828,13 @@ pub async fn observability_middleware(
         .map(|s| s.to_string())
         .unwrap_or_else(|| uuid::Uuid::new_v4().simple().to_string());
     req.extensions_mut().insert(RequestId(request_id.clone()));
+    // 写回请求头：proxy 反代全量转发 headers（含 x-request-id），保证客户端未携带时
+    // 网关生成的同一 ID 能随请求透传到上游（:3001/:8000），形成端到端链路追踪。
+    req.headers_mut().insert(
+        axum::http::header::HeaderName::from_static("x-request-id"),
+        axum::http::HeaderValue::from_str(&request_id)
+            .unwrap_or_else(|_| axum::http::HeaderValue::from_static("")),
+    );
     state.runtime.begin();
     state.metrics.active_inc();
 

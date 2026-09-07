@@ -50,7 +50,7 @@ mox 的模块化结构优于 LangChain/CrewAI 的库模式，与其"平台级"�
 | 1 | 可观测 | `x-request-id` 全链路追踪：透传客户端 ID 或生成 UUID，注入响应头 + 日志关联（rid=） | ✅ 已落地 |
 | 2 | 声明诚实 | 联盟任务仓储描述修正：InMemoryTaskRepository → 可插拔（MOX_ALLIANCE_STORAGE_MODE=file 默认快照持久化，data/alliance_tasks.json） | ✅ 已落地 |
 | 3 | 域粒度 | Voice/Melody/MIDI 归并为 audio 能力组；S3/Volume/FS/Cloud 归并为 storage 能力组（描述符层分组，代码不动） | ⏳ 建议 |
-| 4 | 跨进程追踪 | proxy 反代透传 `x-request-id` 到 :3001/:8000（编排器侧记录） | ⏳ 建议 |
+| 4 | 跨进程追踪 | proxy 反代透传 `x-request-id` 到 :3001/:8000（middleware 写回请求头，全量转发天然携带） | ✅ 已落地 |
 | 5 | 配置统一 | 环境变量入口收敛到 platform_config.json 单一登记（当前已登记 9 服务） | ⏳ 建议 |
 | 6 | 测试门禁 | 新增域（rbac/graph/voice/melody/cloud）补 http 集成测试进 CI | ⏳ 建议 |
 | 7 | 契约版本化 | proto 层 gRPC 契约语义化版本（当前内部未公开承诺） | ⏳ 建议 |
