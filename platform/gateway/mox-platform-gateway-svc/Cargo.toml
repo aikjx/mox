@@ -55,6 +55,9 @@ mox-alliance-common-proto = { workspace = true }
 # 真实 LLM 专家引擎：generate_expert_answer 接入真实模型（MOX_LLM_API_KEY）/
 # 本地 mox_optimize 引擎回退，消除专家回复模板化已知限制 #1
 mox-ai-expert-svc = { workspace = true }
+# LLM 后验治理：把 LLM 输出的 steps 文本映射成 FlowGraph 再走 mox_optimize，
+# 补足 LLM 路径游离于治理闸门之外的缺口。
+mox-ai-flow-svc = { workspace = true }
 
 # 企业级审计基础设施：专家写操作审计留痕（SHA-256 哈希链 + 多 Sink 分发）。
 # 关闭默认 s3-sink 特性（本地用自实现的 FileAuditSink，无需 reqwest blocking）。

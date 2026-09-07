@@ -48,10 +48,10 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     DomainDescriptor { prefix: "/iam/v1",        name: "IAM",         layer: "L1", description: "身份与访问管理", status: "beta" },
     DomainDescriptor { prefix: "/auth/v1",       name: "Auth",        layer: "L1", description: "登录/登出/JWT/API Key", status: "stub" },
     DomainDescriptor { prefix: "/tenant/v1",     name: "Tenant",      layer: "L1", description: "多租户三档隔离管理", status: "stub" },
-    DomainDescriptor { prefix: "/rbac/v1",       name: "RBAC",        layer: "L1", description: "角色权限/ABAC", status: "stub" },
+    DomainDescriptor { prefix: "/rbac/v1",       name: "RBAC",        layer: "L1", description: "角色/权限/当前用户（IAM 真实仓储）3 接口", status: "ready" },
     // L2 KG
     DomainDescriptor { prefix: "/kg/v1",         name: "KG",          layer: "L2", description: "知识图谱·核心 6 接口", status: "ready" },
-    DomainDescriptor { prefix: "/graph/v1",      name: "Graph",       layer: "L2", description: "图谱·投影/社区/可视化", status: "stub" },
+    DomainDescriptor { prefix: "/graph/v1",      name: "Graph",       layer: "L2", description: "图谱·投影/社区/可视化（与 kg 同源算法）3 接口", status: "ready" },
     DomainDescriptor { prefix: "/api/kb",        name: "KB",          layer: "L2", description: "云盘知识库·文档/分析/挂图/检索（mox-kb-svc 100% 自研）", status: "ready" },
     DomainDescriptor { prefix: "/cypher/v1",     name: "Cypher",      layer: "L2", description: "Cypher 查询解析", status: "stub" },
     DomainDescriptor { prefix: "/ngql/v1",       name: "nGQL",        layer: "L2", description: "nGQL 查询解析", status: "stub" },
@@ -78,7 +78,7 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     DomainDescriptor { prefix: "/norm/v1",       name: "Norm",        layer: "L6", description: "数据标准化/规约", status: "stub" },
     DomainDescriptor { prefix: "/standard/v1",   name: "Standard",    layer: "L6", description: "数据标准/字典", status: "stub" },
     // L7 Voice
-    DomainDescriptor { prefix: "/voice/v1",      name: "Voice",       layer: "L7", description: "音频/乐谱/ASR", status: "stub" },
+    DomainDescriptor { prefix: "/voice/v1",      name: "Voice",       layer: "L7", description: "音频/乐谱/ASR（桥接 melody2score :8012）3 接口", status: "ready" },
     DomainDescriptor { prefix: "/midi/v1",       name: "MIDI",        layer: "L7", description: "MIDI 合成/解析", status: "stub" },
     DomainDescriptor { prefix: "/melody/v1",     name: "Melody",      layer: "L7", description: "melody2score 简谱转谱", status: "stub" },
     DomainDescriptor { prefix: "/tts/v1",        name: "TTS",         layer: "L7", description: "文本转语音", status: "stub" },

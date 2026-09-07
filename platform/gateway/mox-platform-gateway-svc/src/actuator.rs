@@ -420,7 +420,7 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 199] = [
+pub static ROUTES: [ApiRoute; 208] = [
     // =====================================================================
     // Actuator 域（L0·Spring Boot 风格管理面·actuator.rs 实现）
     // =====================================================================
@@ -454,6 +454,18 @@ pub static ROUTES: [ApiRoute; 199] = [
     r("kg.graph.centrality", "GET", "/kg/v1/centrality", "L2", "kg", "ready", "中心性分析（度/介数/接近）"),
     r("kg.graph.communities", "GET", "/kg/v1/communities", "L2", "kg", "ready", "社区发现（Louvain 模块度）"),
     r("kg.graph.stats", "GET", "/kg/v1/stats", "L2", "kg", "ready", "图谱统计（节点/边/标签分布）"),
+    // —— RBAC 域（L1 · /rbac/v1/* · IAM 真实仓储）——
+    r("rbac.roles.list", "GET", "/rbac/v1/roles", "L1", "rbac", "ready", "角色列表（IAM list_roles 真实现）"),
+    r("rbac.permissions.list", "GET", "/rbac/v1/permissions", "L1", "rbac", "ready", "用户权限授予清单（IAM get_user_permissions）"),
+    r("rbac.current", "GET", "/rbac/v1/current", "L1", "rbac", "ready", "当前用户角色+权限摘要（Bearer 解析）"),
+    // —— Graph 域（L2 · /graph/v1/* · 与 kg 同源真实算法）——
+    r("graph.overview", "GET", "/graph/v1/overview", "L2", "graph", "ready", "图谱总览（规模/密度/标签/类型/关系分布）"),
+    r("graph.stats", "GET", "/graph/v1/stats", "L2", "graph", "ready", "图谱统计（GraphStats 真实算法）"),
+    r("graph.communities", "GET", "/graph/v1/communities", "L2", "graph", "ready", "社区发现（CNM 真实算法）"),
+    // —— Voice 域（L7 · /voice/v1/* · 桥接 melody2score :8012）——
+    r("voice.health", "GET", "/voice/v1/health", "L7", "voice", "ready", "上游 melody2score 健康探测"),
+    r("voice.samples", "GET", "/voice/v1/samples", "L7", "voice", "ready", "上游样例音频列表"),
+    r("voice.recognize", "POST", "/voice/v1/recognize", "L7", "voice", "ready", "旋律识别（透传到上游）"),
 
     // =====================================================================
     // AI 域（L3·AI 引擎·/ai/engine/*·kg-svc http_adapter.rs 实现）

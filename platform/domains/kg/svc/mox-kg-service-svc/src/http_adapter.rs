@@ -483,6 +483,81 @@ async fn kg_stats(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
     }))
 }
 
+async fn graph_overview(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
+    let t0 = now_ms();
+    let kg = &s.kg;
+    let stats = kg.graph.stats();
+
+    // 标签 / 类型 / 关系分布（node_meta / edge_meta 快查表聚合）
+    let mut label_count: HashMap<String, usize> = HashMap::new();
+    let mut type_count: HashMap<String, usize> = HashMap::new();
+    for (_id, (label, ntype)) in &kg.node_meta {
+        *label_count.entry(label.clone()).or_insert(0) += 1;
+        *type_count.entry(ntype.clone()).or_insert(0) += 1;
+    }
+    let mut rel_count: HashMap<String, usize> = HashMap::new();
+    for (_eid, (_src, _tgt, _w, rel)) in &kg.edge_meta {
+        *rel_count.entry(rel.clone()).or_insert(0) += 1;
+    }
+
+    api_ok(json!({
+        "elapsed_ms": now_ms() - t0,
+        "graph": {
+            "nodes": stats.node_count,
+            "edges": stats.edge_count,
+            "density": round6(stats.density),
+            "average_degree": round4(stats.average_degree),
+            "clustering_coefficient": round6(stats.clustering_coefficient),
+            "strongly_connected_components": stats.strongly_connected_components,
+        },
+        "distribution": {
+            "node_labels": label_count,
+            "node_types": type_count,
+            "relation_types": rel_count,
+        },
+        "meta": { "seed_source": kg.source_path, "fallback": kg.fallback, "domain": "graph" },
+    }))
+}
+
+/// GET /graph/v1/stats —— 图谱统计（Graph 域视角，真实 GraphStats 算法）
+async fn graph_stats(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
+    let t0 = now_ms();
+    let kg = &s.kg;
+    let stats = kg.graph.stats();
+    api_ok(json!({
+        "elapsed_ms": now_ms() - t0,
+        "graph": {
+            "nodes": stats.node_count,
+            "edges": stats.edge_count,
+            "density": round6(stats.density),
+            "density_tier": density_tier(stats.density),
+            "average_degree": round4(stats.average_degree),
+            "clustering_coefficient": round6(stats.clustering_coefficient),
+            "strongly_connected_components": stats.strongly_connected_components,
+        },
+        "meta": { "algo": "mox-kg-algo-core GraphStats", "domain": "graph" },
+    }))
+}
+
+/// GET /graph/v1/communities —— 社区发现（真实 CNM 算法，返回社区与规模）
+async fn graph_communities(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
+    let t0 = now_ms();
+    let kg = &s.kg;
+    let communities_raw = kg.graph.detect_communities(50);
+    let covered: usize = communities_raw.iter().map(|c| c.nodes.len()).sum();
+    api_ok(json!({
+        "elapsed_ms": now_ms() - t0,
+        "communities_count": communities_raw.len(),
+        "covered_nodes": covered,
+        "communities": communities_raw.iter().enumerate().map(|(idx, c)| json!({
+            "index": idx,
+            "size": c.nodes.len(),
+            "nodes": c.nodes,
+        })).collect::<Vec<_>>(),
+        "meta": { "algo": "CNM（模块度社区发现）", "domain": "graph" },
+    }))
+}
+
 // ====================================================================
 // 4 AI Engine Handler（基于图谱算法的真实化实现）
 // ====================================================================
@@ -767,6 +842,10 @@ pub fn build_kg_ai_router() -> Router {
         .route("/kg/v1/centrality", get(kg_centrality))
         .route("/kg/v1/communities", get(kg_communities))
         .route("/kg/v1/stats", get(kg_stats))
+        // —— Graph 域（L2 · /graph/v1/* · 图谱投影/社区/可视化，与 kg 同源真实算法）——
+        .route("/graph/v1/overview", get(graph_overview))
+        .route("/graph/v1/stats", get(graph_stats))
+        .route("/graph/v1/communities", get(graph_communities))
         .route("/ai/engine/process", post(ai_process))
         .route("/ai/engine/analyze", post(ai_analyze))
         .route("/ai/engine/capabilities", get(ai_capabilities))

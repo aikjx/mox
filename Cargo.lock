@@ -5774,6 +5774,7 @@ dependencies = [
  "hex",
  "hmac",
  "mox-ai-expert-svc",
+ "mox-ai-flow-svc",
  "mox-alliance-common-proto",
  "mox-alliance-http-sdk",
  "mox-api-protocol",

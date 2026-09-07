@@ -15,15 +15,15 @@
 
 > 排产原则：① 能直接复用现有 ready 能力/独立服务的域最优先（低投入高收益）；② 治理闭环（认证/租户/审计）先于业务域；③ 数据管道先于商业化；④ 每个域落地必须满足"**声明状态与实际路由/实现一一对应**"（注册表门禁），禁止"声明 ready 但无路由"。
 
-### Phase 0 —— 对接现有能力（低投入高收益，建议 1 个迭代）
+### Phase 0 —— 对接现有能力（✅ RBAC/Graph/Voice 已完成 2026-09-07；剩余 3 项建议 1 个迭代）
 
-| 域 | 所在层（目录） | 现成可对接能力 | 落地路径 | 验收标准（路由） |
-| --- | --- | --- | --- | --- |
-| RBAC | platform | system 域已实现 `/api/system/*`、`/api/security/*`（46 条，含权限相关） | 在 system 域之上声明 RBAC 描述符，补齐权限/角色 CRUD 路由 | `/api/rbac/*` 全部 200，非空实现 |
-| Graph | kg | kg 域已 ready：`/kg/v1/*`（图存储/查询/节点边 CRUD） | 高层图 API（图谱构建/图算法入口） | `/api/graph/*` 与 `/kg/v1/*` 数据一致 |
-| Voice | voice | melody2score 独立服务 :8012 已运行 | 桥接网关 `/api/voice/*` → :8012 | `/api/voice/*` 200 |
-| Melody / MIDI | voice | 同 Voice | 语音域子能力，随 Voice 一并承接 | `/api/voice/melody*`、`/api/voice/midi*` 200 |
-| S3 / Volume / FS | cloud | 无现成实现（S3 已如实降 stub） | 统一文件/对象存储抽象，MinIO 兼容 S3 优先 | `/api/cloud/s3/*` 200（本地磁盘 fallback） |
+| 域 | 所在层（目录） | 现成可对接能力 | 落地路径 | 验收标准（路由） | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| RBAC | platform | system 域已实现 `/api/system/*`、`/api/security/*`（46 条，含权限相关） | 在 system 域之上声明 RBAC 描述符，补齐权限/角色 CRUD 路由 | `/api/rbac/*` 全部 200，非空实现 | ✅ 已落地（`/rbac/v1/*` 3 条，IAM 真实仓储，实测 200） |
+| Graph | kg | kg 域已 ready：`/kg/v1/*`（图存储/查询/节点边 CRUD） | 高层图 API（图谱构建/图算法入口） | `/api/graph/*` 与 `/kg/v1/*` 数据一致 | ✅ 已落地（`/graph/v1/*` 3 条：总览/统计/社区，与 kg 同源算法，实测 200） |
+| Voice | voice | melody2score 独立服务 :8012 已运行 | 桥接网关 `/api/voice/*` → :8012 | `/api/voice/*` 200 | ✅ 已落地（`/voice/v1/*` 3 条：健康/样例/识别，桥接 :8012 真实上游，实测 200） |
+| Melody / MIDI | voice | 同 Voice | 语音域子能力，随 Voice 一并承接 | `/api/voice/melody*`、`/api/voice/midi*` 200 | ⏳ 待办（Voice 已就绪，直接承接） |
+| S3 / Volume / FS | cloud | 无现成实现（S3 已如实降 stub） | 统一文件/对象存储抽象，MinIO 兼容 S3 优先 | `/api/cloud/s3/*` 200（本地磁盘 fallback） | ⏳ 待办 |
 
 ### Phase 1 —— 治理闭环（企业级地基，建议 2 个迭代）
 
@@ -86,4 +86,5 @@
 | 日期 | 变更 |
 | --- | --- |
 | 2026-09-07 | 初版：35 stub 域按"对接现有能力→治理→编排→数据→商业化"五阶段排产，落地门禁与验收标准一一对应 |
+| 2026-09-07 | **Phase 0 首批落地**：RBAC（`/rbac/v1/*`，IAM 真实仓储）、Graph（`/graph/v1/*`，与 kg 同源算法）、Voice（`/voice/v1/*`，桥接 melody2score :8012）三域共 9 条路由全部实测 200，描述符 stub→ready（43 域：ready 10 / beta 1 / stub 32） |
 

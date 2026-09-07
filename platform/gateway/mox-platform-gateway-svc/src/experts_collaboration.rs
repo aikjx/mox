@@ -186,7 +186,7 @@ pub async fn generate_expert_answer(expert: &ExpertDescriptor, question: &str) -
             .map(|s| s.contains("未传入 FlowGraph") || s.contains("跳过璇玑"))
             .unwrap_or(false);
         if !is_empty_local {
-            return map_report_to_answer(&report, expert, &persona);
+            return map_report_to_answer(&report, expert, &persona, question);
         }
     }
 
@@ -206,7 +206,12 @@ fn build_expert_persona(expert: &ExpertDescriptor) -> String {
 
 /// 将 mox-ai-expert-svc 的 `ConsultReport`（治理型）映射回前端契约
 /// `{analysis, solution, references, confidence}`，并附 `source` / `vetoed` 透明字段
-fn map_report_to_answer(report: &ConsultReport, expert: &ExpertDescriptor, _persona: &str) -> Value {
+fn map_report_to_answer(
+    report: &ConsultReport,
+    expert: &ExpertDescriptor,
+    _persona: &str,
+    question: &str,
+) -> Value {
     // 治理契约（mox-ai-expert-proto::ConsultReport.vetoed）：
     // 「veto=true 时下游应强制拦截」。此前实现仅把标志透传给前端，
     // 正文 analysis/solution 照常返回 —— 被否决内容照样出网，并会经
@@ -226,6 +231,33 @@ fn map_report_to_answer(report: &ConsultReport, expert: &ExpertDescriptor, _pers
             "vetoed": true,
             "veto_reason": reason,
             "blocked": true,
+        });
+    }
+
+    // P0 后验治理：把 LLM 输出的 steps 文本映射成 FlowGraph 并跑一次 mox_optimize，
+    // 补足 LLM 路径游离于璇玑 14 维治理闸门之外的缺口（见 llm_governance.rs 文档）。
+    // 与 `parse_veto`（拦截文本中的"否决"语义词）互补：本模块拦截**实际描述的
+    // 写操作**是否触敏。即便 LLM 自评 Pass，其输出若描述"把公民数据搬到生产库"
+    // 仍会被本闸门 Veto。
+    let post_hoc = crate::llm_governance::govern_llm_answer(expert, &report.steps, question);
+    if post_hoc.decision == crate::llm_governance::GovernanceDecision::Veto {
+        let reason = post_hoc
+            .reason
+            .clone()
+            .unwrap_or_else(|| "后验治理未给出原因".to_string());
+        return json!({
+            "analysis": format!(
+                "该回复被 LLM 后验治理闸门拦截：{}\n涉及敏感资源：{:?}。内容不予展示。",
+                reason, post_hoc.sensitive_resources
+            ),
+            "solution": format!("【已拦截】{}", reason),
+            "references": Vec::<String>::new(),
+            "confidence": 0.0,
+            "source": "llm",
+            "vetoed": true,
+            "veto_reason": reason,
+            "blocked": true,
+            "governance": "post_hoc_veto",
         });
     }
 
@@ -269,6 +301,19 @@ fn map_report_to_answer(report: &ConsultReport, expert: &ExpertDescriptor, _pers
         })
         .collect();
 
+    // 后验治理 Warn 透传：仅附 governance_warnings，不拦截
+    let governance_warnings = if post_hoc.decision == crate::llm_governance::GovernanceDecision::Warn {
+        serde_json::json!({
+            "decision": "warn",
+            "reason": post_hoc.reason,
+            "sensitive_resources": post_hoc.sensitive_resources,
+            "graph_id": post_hoc.graph_id,
+            "node_count": post_hoc.node_count,
+        })
+    } else {
+        serde_json::Value::Null
+    };
+
     json!({
         "analysis": analysis,
         "solution": solution,
@@ -277,6 +322,7 @@ fn map_report_to_answer(report: &ConsultReport, expert: &ExpertDescriptor, _pers
         "source": "llm",
         "vetoed": report.vetoed,
         "veto_reason": report.reason,
+        "governance_warnings": governance_warnings,
     })
 }
 
@@ -1876,7 +1922,7 @@ mod tests {
             reason: Some("高危操作：不可逆数据破坏".into()),
         };
 
-        let out = map_report_to_answer(&report, &expert, "persona");
+        let out = map_report_to_answer(&report, &expert, "persona", "如何释放存储？");
 
         assert_eq!(out["blocked"].as_bool(), Some(true), "被否决必须标记 blocked");
         assert_eq!(out["vetoed"].as_bool(), Some(true));

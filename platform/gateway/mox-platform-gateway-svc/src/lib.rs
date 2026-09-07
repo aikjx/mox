@@ -39,6 +39,7 @@ pub mod experts_db;
 pub mod store_json;
 pub mod experts_registry;
 pub mod experts_collaboration;
+pub mod llm_governance;
 pub mod experts_session;
 pub mod experts_dispatcher;
 pub mod experts_graph;
@@ -46,6 +47,8 @@ pub mod experts_orchestration;
 pub mod misc;
 pub mod kb_ext;
 pub mod notification;
+pub mod rbac;
+pub mod voice;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
