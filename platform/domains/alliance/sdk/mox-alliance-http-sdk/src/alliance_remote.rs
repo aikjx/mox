@@ -166,11 +166,27 @@ pub async fn runtime_readiness(
     let healthy = |result: &Option<Result<(u16, Value), String>>| {
         matches!(result, Some(Ok((200, body))) if body["status"] == "healthy")
     };
-    let executor_ready = healthy(&executor) && matches!(&executor, Some(Ok((200, body))) if body["execution_ready"] == true);
+    let executor_ready = healthy(&executor)
+        && matches!(&executor, Some(Ok((200, body))) if body["execution_ready"] == true || body["execution_mode"] == "mock");
     let ready = healthy(&scheduler) && executor_ready;
+    let mode = match &executor {
+        Some(Ok((200, body))) => body["execution_mode"].as_str().unwrap_or("llm"),
+        _ => "llm",
+    };
+    let message = if ready {
+        if mode == "mock" {
+            "Mock 执行器已就绪（开发/测试模式，仅限本地验证）。"
+        } else {
+            "任务服务已就绪，模型调用结果以实际执行为准"
+        }
+    } else if healthy(&executor) && !executor_ready {
+        "执行器尚未配置真实模型。请配置模型后重启执行器并刷新。"
+    } else {
+        "任务服务暂时不可用，请检查服务后刷新。"
+    };
     api_ok(json!({"execution_ready":ready,"mode":"remote",
         "scheduler_ready":healthy(&scheduler),"executor_ready":executor_ready,
-        "message":if ready {"任务服务已就绪，模型调用结果以实际执行为准"} else if healthy(&executor) && !executor_ready {"执行器尚未配置真实模型。请配置模型后重启执行器并刷新。"} else {"任务服务暂时不可用，请检查服务后刷新。"}}))
+        "message":message}))
 }
 
 /// The executor currently exposes node snapshots, not an event-log API. Report

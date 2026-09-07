@@ -12,14 +12,16 @@
   },
   "services": {
     "api": {
-      "name": "API 后端服务（Rust mox-gateway）",
-      "description": "璇玑系统核心 API 网关（Rust axum，原 Node 后端已迁移）；监听 8080，/health 健康检查，/api/* 路由代理",
+      "name": "API 后端服务（Rust mox-server 企业级网关）",
+      "description": "MOX 企业级网关（Rust axum，8080 唯一入口）：199 条注册路由、JWT 鉴权、kg/ai/kb/alliance 等 13 域、/health /metrics /actuator/*",
       "port": 8080,
       "health_check": "/health",
-      "cwd": "platform/backend-rust",
-      "command": ".\\target\\release\\mox-gateway.exe",
+      "cwd": ".",
+      "command": "target/debug/mox-server.exe",
       "args": [
-        ".\\target\\release\\mox-gateway.exe"
+        "target/debug/mox-server.exe",
+        "--port",
+        "8080"
       ],
       "binary_requires": [],
       "npm_deps": false,
@@ -34,7 +36,8 @@
         "后端",
         "核心",
         "Rust",
-        "Gateway"
+        "Gateway",
+        "Enterprise"
       ]
     },
     "frontend": {
@@ -161,6 +164,114 @@
         "拓扑",
         "FastAPI",
         "引擎"
+      ]
+    },
+    "operator-server": {
+      "name": "编排器（mox-platform-orchestrator）",
+      "description": "MOX 编排器：AI 能力/图谱导出/系统用户；依赖外部 token（OUS_API_TOKEN），生产由 start-mox-enterprise.ps1 拉起",
+      "port": 3001,
+      "health_check": "/mox-viz/api/health",
+      "cwd": ".",
+      "command": "target/debug/operator-server.exe",
+      "args": [
+        "target/debug/operator-server.exe",
+        "--port",
+        "3001"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": true,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 15,
+      "depends_on": [],
+      "tags": [
+        "编排",
+        "AI",
+        "图谱",
+        "Rust"
+      ]
+    },
+    "mox-kb-server": {
+      "name": "知识库独立服务（mox-kb-server）",
+      "description": "知识库服务：文档管理/版本/全文检索/关系链接；端口 8104（PORT-REGISTRY）",
+      "port": 8104,
+      "health_check": "/health/live",
+      "cwd": ".",
+      "command": "target/debug/mox-kb-server.exe",
+      "args": [
+        "target/debug/mox-kb-server.exe",
+        "--port",
+        "8104"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 20,
+      "depends_on": [],
+      "tags": [
+        "知识库",
+        "KB",
+        "Rust",
+        "检索"
+      ]
+    },
+    "mox-alliance-scheduler": {
+      "name": "联盟调度器（mox-alliance-scheduler）",
+      "description": "专家联盟调度器：任务 DAG 调度/专家搜索；端口 3100",
+      "port": 3100,
+      "health_check": "/health",
+      "cwd": ".",
+      "command": "target/debug/mox-alliance-scheduler.exe",
+      "args": [
+        "target/debug/mox-alliance-scheduler.exe",
+        "--port",
+        "3100"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 25,
+      "depends_on": [],
+      "tags": [
+        "联盟",
+        "调度",
+        "DAG",
+        "Rust"
+      ]
+    },
+    "mox-alliance-executor": {
+      "name": "联盟执行器（mox-alliance-executor）",
+      "description": "专家联盟执行器：DAG 节点执行（expert=真实LLM / mock=开发测试）；端口 3200",
+      "port": 3200,
+      "health_check": "/health",
+      "cwd": ".",
+      "command": "target/debug/mox-alliance-executor.exe",
+      "args": [
+        "target/debug/mox-alliance-executor.exe",
+        "--port",
+        "3200"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 26,
+      "depends_on": [],
+      "tags": [
+        "联盟",
+        "执行",
+        "DAG",
+        "Rust"
       ]
     }
   },
