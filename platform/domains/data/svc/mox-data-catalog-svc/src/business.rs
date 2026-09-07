@@ -6,8 +6,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use mox_ai_expert_svc::expert_traits::{ExpertConsultant, ExpertRegistry};
-use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport, ExpertMeta};
+use mox_ai_expert_proto::{ExpertConsultant, ExpertRegistry};
+use mox_ai_expert_proto::{ConsultQuery, ConsultReport, ExpertMeta};
 use mox_ai_flow_sdk::model::FlowGraph;
 
 /// 一条业务 = (id, 名称, 域, 受监管?, 流程图构造器)
@@ -27,8 +27,10 @@ impl Business {
     ///
     /// 返回 `ConsultReport`（归一化投影报告：steps / score / vetoed），
     /// 替代此前直接暴露 `mox_ai_expert_svc::pipeline::GovernanceReport` 这一内部 concrete 类型。
-    pub fn optimize(&self) -> ConsultReport {
-        self.optimize_with(mox_ai_expert_svc::expert_traits::default_consultant())
+    /// 七维着色后交给璇玑优化（DIP 版：通过 ExpertConsultant trait，不出现 concrete struct）。
+    /// 调用方必须注入 consultant。
+    pub fn optimize(&self, consultant: Arc<dyn ExpertConsultant>) -> ConsultReport {
+        self.optimize_with(consultant)
     }
 
     /// 指定 consultant（DIP 证据：测试可替换 Mock 实现，无需真实璇玑引擎）。
@@ -93,7 +95,7 @@ fn build_query(biz: &Business) -> ConsultQuery {
 /// 不再污染架构 business-catalog 源码。
 pub async fn register_business_experts(
     registry: Arc<dyn ExpertRegistry>,
-) -> mox_ai_expert_svc::types::Result<()> {
+) -> anyhow::Result<()> {
     use crate::flows::all_businesses;
     for b in all_businesses() {
         let meta = ExpertMeta {

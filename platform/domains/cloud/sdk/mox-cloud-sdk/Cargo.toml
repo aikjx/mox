@@ -20,6 +20,7 @@ hex = { workspace = true }
 base64 = { workspace = true }
 bytes = "1"
 chrono = { workspace = true }
+mox-cloud-store-core = { workspace = true }
 
 [lib]
 path = "src/lib.rs"

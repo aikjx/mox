@@ -12,8 +12,25 @@
 //!   cargo run -p business-catalog --bin catalog
 //!   cargo run -p business-catalog --bin catalog -- --simulate    # 模拟多轮使用后的权重衰减/复用
 
+use std::sync::Arc;
 use mox_data_catalog_svc::{all_businesses, build_topology};
-use mox_ai_expert_svc::types::ConsultReport;
+use mox_ai_expert_proto::{ConsultQuery, ConsultReport, ExpertConsultant};
+
+#[derive(Clone)]
+struct DemoConsultant;
+
+#[async_trait::async_trait]
+impl ExpertConsultant for DemoConsultant {
+    async fn consult(&self, q: &ConsultQuery) -> anyhow::Result<ConsultReport> {
+        Ok(ConsultReport {
+            report_id: q.id.clone(),
+            steps: vec!['demo-stub'.into()],
+            score: 0.85,
+            vetoed: false,
+            reason: None,
+        })
+    }
+}
 
 fn summarize(rep: &ConsultReport) -> (String, bool, f64) {
     // 从 steps/score/vetoed 提取摘要（旧版 GovernanceReport 的 algo/gate/optimization 已投影到 steps 文本）
@@ -43,7 +60,7 @@ fn main() {
     for b in &biz {
         let flow = (b.build)();
         let nodes_count = flow.nodes.len();
-        let rep: ConsultReport = b.optimize();
+        let rep: ConsultReport = b.optimize(Arc::new(DemoConsultant));
         let (summary, vetoed, score) = summarize(&rep);
 
         if vetoed {

@@ -84,3 +84,9 @@ pub use scanner::{CapacityBudget, IoBudget, ScanBudget, ScanBudgetTracker, ScanS
 pub use storage::InMemoryStorageBackend;
 #[cfg(feature = "rustfs_ecstore_backend")]
 pub use storage::RustFsEcstoreBackend;
+
+mod etag_crc32c;
+pub use etag_crc32c::*;
+
+mod sigv4;
+pub use sigv4::*;

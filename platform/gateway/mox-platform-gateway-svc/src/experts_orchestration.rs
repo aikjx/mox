@@ -16,7 +16,7 @@
 //! - 模拟执行引擎（按拓扑顺序逐步执行并融合结果）
 
 use super::experts_common::*;
-use mox_alliance_common_proto::FusionStrategy;
+use mox_alliance_http_sdk::FusionStrategy;
 use mox_api_protocol::ApiResponse;
 use axum::{
     Json, Router,

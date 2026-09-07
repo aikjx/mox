@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -19,13 +19,12 @@
 
 use crate::recorder::Recorder;
 use crate::state::GateState;
+use mox_ai_expert_proto::{ConsultQuery, ConsultReport, ExpertConsultant};
 use mox_ai_flow_sdk::model::FlowGraph;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use mox_ai_expert_svc::expert_traits::ExpertConsultant;
-use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport};
 
 /// 把 FlowGraph 序列化为 JSON + 默认 Hermes 主体/租户参数，构造 ConsultQuery。
 ///
@@ -49,14 +48,14 @@ fn build_query(graph: &FlowGraph, id: impl Into<String>) -> ConsultQuery {
     }
 }
 
-/// 用默认 consultant 做优化 + 验证，返回 ConsultReport（便于调试/测试）。
+/// 便捷入口：调用方传入 consultant；无参 factory 版本已移除（DIP 收敛）。
 /// 同时根据 `report.vetoed` 置位 `GateState.vetoed` 算法否决标志（最高权限）。
-pub fn optimize_session(graph: &FlowGraph, gate: &GateState) -> ConsultReport {
-    optimize_session_with(
-        graph,
-        gate,
-        mox_ai_expert_svc::expert_traits::default_consultant(),
-    )
+pub fn optimize_session(
+    graph: &FlowGraph,
+    gate: &GateState,
+    consultant: Arc<dyn ExpertConsultant>,
+) -> ConsultReport {
+    optimize_session_with(graph, gate, consultant)
 }
 
 /// 接受自定义 consultant（DIP 证据：测试可替换为 Mock，无需真实璇玑引擎）。
@@ -88,13 +87,14 @@ pub fn optimize_session_with(
 }
 
 /// 启动后台轮询线程：周期性把各会话累积图推给优化内核。
+/// consultant 必须由调用方注入（DIP 收敛，不再内部构造默认实现）。
 /// 返回句柄（真实环境用 tokio task；此处用 std 线程演示，避免引入 async 运行时复杂度）。
-pub fn spawn_optimizer(recorder: Recorder, gate: GateState) -> Arc<()> {
-    spawn_optimizer_with(
-        recorder,
-        gate,
-        mox_ai_expert_svc::expert_traits::default_consultant(),
-    )
+pub fn spawn_optimizer(
+    recorder: Recorder,
+    gate: GateState,
+    consultant: Arc<dyn ExpertConsultant>,
+) -> Arc<()> {
+    spawn_optimizer_with(recorder, gate, consultant)
 }
 
 /// 接受自定义 consultant 的后台轮询版本。
@@ -164,9 +164,25 @@ mod tests {
     use crate::state::BridgeState;
     use serde_json::json;
 
+    // 最小 Mock consultant：直接返回 score=0.9 的 ConsultReport
+    #[derive(Clone)]
+    struct MockSimple;
+    #[async_trait::async_trait]
+    impl ExpertConsultant for MockSimple {
+        async fn consult(&self, q: &ConsultQuery) -> anyhow::Result<ConsultReport> {
+            Ok(ConsultReport {
+                report_id: q.id.clone(),
+                steps: vec!["mock-simple".into()],
+                score: 0.9,
+                vetoed: false,
+                reason: None,
+            })
+        }
+    }
+
     #[test]
     fn optimize_marks_non_veto_for_simple_graph() {
-        let st = BridgeState::new();
+        let st = BridgeState::with_consultant(Arc::new(MockSimple));
         // 构造一张简单政务图：db.read → guard → web1
         st.recorder.record(
             "default",
@@ -208,17 +224,17 @@ mod tests {
         #[async_trait]
         // 说明：impl mox_expert —— 企业级数据/实现项，按 AIS 契约要求提供幂等接口
         // 设计：保持单一职责；相关字段变更需同步修改对应序列化 / 反序列化结构
-        impl mox_ai_expert_svc::expert_traits::ExpertConsultant for MockHealthy {
+        impl mox_ai_expert_proto::ExpertConsultant for MockHealthy {
             async fn consult(
                 &self,
                 _q: &ConsultQuery,
-            ) -> mox_ai_expert_svc::types::Result<ConsultReport> {
+            ) -> anyhow::Result<ConsultReport> {
                 unreachable!("sync 测试路径使用 consult_blocking，不应走到 async consult")
             }
             fn consult_blocking(
                 &self,
                 q: &ConsultQuery,
-            ) -> mox_ai_expert_svc::types::Result<ConsultReport> {
+            ) -> anyhow::Result<ConsultReport> {
                 Ok(ConsultReport {
                     report_id: q.id.clone(),
                     steps: vec!["mock".into()],

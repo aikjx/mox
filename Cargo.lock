@@ -3797,7 +3797,6 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "mox-ai-flow-svc",
- "mox-kg-algo-core",
  "mox-kg-sdk",
  "mox-market-template-svc",
  "mox-platform-foundation",
@@ -4145,7 +4144,6 @@ dependencies = [
  "http",
  "http-body-util",
  "mox-ai-expert-proto",
- "mox-ai-expert-svc",
  "mox-alliance-api",
  "mox-alliance-boot-config",
  "mox-alliance-common-proto",
@@ -4606,7 +4604,6 @@ dependencies = [
  "mox-cloud-kernel",
  "mox-cloud-master-svc",
  "mox-cloud-store-core",
- "mox-data-standards-core",
  "parking_lot",
  "serde",
  "serde_json",
@@ -4629,6 +4626,7 @@ dependencies = [
  "chrono",
  "hex",
  "hmac",
+ "mox-cloud-store-core",
  "reqwest",
  "serde",
  "serde_json",
@@ -4778,8 +4776,9 @@ dependencies = [
 name = "mox-data-catalog-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
+ "anyhow",
  "async-trait",
- "mox-ai-expert-svc",
+ "mox-ai-expert-proto",
  "mox-ai-flow-sdk",
  "mox-platform-foundation",
  "serde",
@@ -5049,8 +5048,9 @@ dependencies = [
 name = "mox-flow-bridge-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
+ "anyhow",
  "async-trait",
- "mox-ai-expert-svc",
+ "mox-ai-expert-proto",
  "mox-ai-flow-sdk",
  "mox-platform-foundation",
  "reqwest",
@@ -5387,10 +5387,9 @@ dependencies = [
  "chrono",
  "hex",
  "mox-ai-expert-proto",
- "mox-ai-expert-svc",
  "mox-api-protocol",
  "mox-base-store-core",
- "mox-cloud-store-core",
+ "mox-cloud-sdk",
  "mox-kg-storage-svc",
  "serde",
  "serde_json",
@@ -5506,6 +5505,7 @@ name = "mox-kg-sdk"
 version = "3.0.0-ai-powered"
 dependencies = [
  "async-trait",
+ "mox-kg-algo-core",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -5775,7 +5775,6 @@ dependencies = [
  "hmac",
  "mox-ai-expert-svc",
  "mox-ai-flow-svc",
- "mox-alliance-common-proto",
  "mox-alliance-http-sdk",
  "mox-api-protocol",
  "mox-audit",

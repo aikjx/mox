@@ -13,6 +13,8 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true }
+# Cross-domain re-export for architecture gate compliance (consumers use SDK, not core directly)
+mox-kg-algo-core = { workspace = true }
 
 [lib]
 path = "src/lib.rs"

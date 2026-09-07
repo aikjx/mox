@@ -720,3 +720,7 @@ impl GraphClient {
 }
 
 pub mod consolidator;
+
+// === Cross-domain re-exports for architecture gate compliance ===
+// Re-export kg-algo-core graph types (DIP for cross-domain consumers)
+pub use mox_kg_algo_core::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};

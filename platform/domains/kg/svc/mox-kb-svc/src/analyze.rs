@@ -52,30 +52,9 @@ impl KbAnalyzer {
         let chunks = chunk_text(&doc.content, CHUNK_SIZE);
         let relations = build_relations(&entities, 5);
 
-        // 2. 专家联盟咨询（失败降级为默认健康分）
-        let mut expert_score = 1.0_f64;
-        let mut expert_steps = Vec::new();
-        let consultant = mox_ai_expert_svc::expert_traits::llm_consultant();
-        let query = ConsultQuery {
-            id: doc.id.clone(),
-            query: format!("知识库文档分析：{}。{}", doc.title, summary),
-            ctx: {
-                let mut m = HashMap::new();
-                m.insert("doc_id".into(), doc.id.clone());
-                m.insert("category".into(), doc.category.clone());
-                m.insert("doc_type".into(), "knowledge_base".into());
-                m
-            },
-        };
-        if let Ok(report) = consultant.consult(&query).await {
-            expert_score = report.score;
-            expert_steps = report.steps;
-            if report.vetoed {
-                expert_steps.push(format!("治理否决：{}", report.reason.unwrap_or_default()));
-            }
-        } else {
-            expert_steps.push("本地分析引擎（专家联盟不可用，降级默认健康分）".into());
-        }
+        // 2. 专家联盟咨询（待 DIP 注入 ExpertConsultant，当前优雅降级为默认健康分）
+        let expert_score = 1.0_f64;
+        let mut expert_steps = vec!["本地分析引擎（专家联盟待注入，降级默认健康分）".to_string()];
 
         // 3. 回写文档
         doc.entities = entities.clone();

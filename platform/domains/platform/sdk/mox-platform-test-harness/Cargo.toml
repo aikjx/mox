@@ -11,7 +11,6 @@ description = "Mox v2.0 T21 E2E Harness (>=700 integration tests) + Task12 Rubri
 mox-cloud-volume-svc = { workspace = true }
 mox-data-compliance-svc = { workspace = true }
 mox-kg-fusion-svc = { workspace = true }
-mox-platform-gateway-svc = { workspace = true }
 mox-data-plane-svc = { workspace = true }
 mox-data-etl-svc = { workspace = true }
 
@@ -27,5 +26,7 @@ sha2 = { workspace = true }
 petgraph = { workspace = true }
 
 [dev-dependencies]
+# Gate layer-violation: gateway-svc(app) is consumed only by E2E tests, so keep it here.
+mox-platform-gateway-svc = { workspace = true }
 rand = "0.8"
 tempfile = "3"

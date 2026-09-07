@@ -255,7 +255,7 @@ async fn status_handler(State(state): State<GatewayState>) -> ApiResponse<serde_
 }
 
 /// 域描述符列表端点
-async fn domains_handler() -> ApiResponse<serde_json::Value> {
+pub async fn domains_handler() -> ApiResponse<serde_json::Value> {
     api_ok(json!({
         "total": routes::DOMAINS.len(),
         "domains": routes::DOMAINS,

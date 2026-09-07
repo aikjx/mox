@@ -39,7 +39,7 @@ mod version;
 pub use expert_gate::{ExpertGate, GateEvidence, GateReport};
 
 use mox_base_store_core::StoreError;
-use mox_cloud_store_core::{BackendKind, StoreBackend, StoreConfig, create_backend};
+use mox_cloud_sdk::{BackendKind, StoreBackend, StoreConfig, create_backend};
 use mox_kg_storage_svc::GraphStore;
 use std::sync::Arc;
 
@@ -110,7 +110,7 @@ impl KbState {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use mox_cloud_store_core::{BackendKind, StoreConfig, create_backend};
+    use mox_cloud_sdk::{BackendKind, StoreConfig, create_backend};
 
     /// 临时目录 FS 后端（测试双，每次调用独立目录）
     pub(crate) fn fs_backend() -> Arc<StoreBackend> {

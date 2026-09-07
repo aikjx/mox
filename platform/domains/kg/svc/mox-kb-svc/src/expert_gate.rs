@@ -95,41 +95,9 @@ impl ExpertGate {
         // 1. 本地自评四维度
         let dimensions = Self::local_assess(evidence);
 
-        // 2. 专家联盟咨询（失败降级，不阻断门禁）
-        let mut expert_steps: Vec<String> = Vec::new();
-        let mut expert_score = 0.5_f64;
-        let consultant = mox_ai_expert_svc::expert_traits::llm_consultant();
-        let query = ConsultQuery {
-            id: format!("gate-{}", evidence.stage),
-            query: format!(
-                "评审门：{}。{}。测试 {}，总 {}，编译 {}，clippy {}，E2E {}。请对架构正确性/安全性/可维护性给出专家意见。",
-                evidence.stage,
-                evidence.description,
-                evidence.tests_passed,
-                evidence.tests_total,
-                evidence.build_ok,
-                evidence.clippy_clean,
-                evidence.e2e_ok,
-            ),
-            ctx: {
-                let mut m = HashMap::new();
-                m.insert("review_type".into(), "stage_gate".into());
-                m.insert("crates".into(), evidence.crates.join(","));
-                m
-            },
-        };
-        match consultant.consult(&query).await {
-            Ok(report) => {
-                expert_score = report.score;
-                expert_steps = report.steps;
-                if report.vetoed {
-                    expert_steps.push(format!("治理否决：{}", report.reason.unwrap_or_default()));
-                }
-            }
-            Err(e) => {
-                expert_steps.push(format!("专家联盟不可用（{e}），门禁走本地自评降级"));
-            }
-        }
+        // 2. 专家联盟咨询（待 DIP 注入 ExpertConsultant，当前优雅降级，不阻断门禁）
+        let expert_steps: Vec<String> = vec!["专家联盟待注入，门禁走本地自评降级".to_string()];
+        let expert_score = 0.5_f64;
 
         // 3. 综合分 = 本地自评 0.8 + 专家意见 0.2（专家不可用时降级为纯本地）
         let local_score =

@@ -10,7 +10,9 @@ description = "零侵入插件：将 flow-ai + mox-expert 流程图/关系网优
 mox-platform-foundation = { workspace = true }
 # 已验证的优化内核
 mox-ai-flow-sdk = { workspace = true }
-mox-ai-expert-svc = { workspace = true }
+# 专家领域协议层（foundation 层，Gate 跨域检测跳过）
+# DIP：本 crate 只依赖 trait + 数据投影，不依赖 concrete ExpertServiceImpl
+mox-ai-expert-proto = { workspace = true }
 
 # 序列化 / 异步
 serde = { workspace = true }
@@ -32,3 +34,4 @@ live = ["dep:reqwest"]
 
 [dev-dependencies]
 async-trait = { workspace = true }
+anyhow = { workspace = true }

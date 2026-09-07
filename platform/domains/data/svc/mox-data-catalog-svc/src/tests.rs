@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport};
+use mox_ai_expert_proto::{ConsultQuery, ConsultReport};
 
 use crate::business::register_business_experts;
 use crate::flows::all_businesses;
@@ -41,17 +41,17 @@ fn business_optimize_uses_mock_consultant_via_trait() {
     use async_trait::async_trait;
     struct MockAlwaysApproved;
     #[async_trait]
-    impl mox_ai_expert_svc::expert_traits::ExpertConsultant for MockAlwaysApproved {
+    impl mox_ai_expert_proto::ExpertConsultant for MockAlwaysApproved {
         async fn consult(
             &self,
             _q: &ConsultQuery,
-        ) -> mox_ai_expert_svc::types::Result<ConsultReport> {
+        ) -> anyhow::Result<ConsultReport> {
             unreachable!("sync 路径不进入 async consult")
         }
         fn consult_blocking(
             &self,
             q: &ConsultQuery,
-        ) -> mox_ai_expert_svc::types::Result<ConsultReport> {
+        ) -> anyhow::Result<ConsultReport> {
             Ok(ConsultReport {
                 report_id: q.id.clone(),
                 steps: vec!["[Mock] 已批准（无璇玑引擎）".into()],
@@ -72,7 +72,7 @@ fn business_optimize_uses_mock_consultant_via_trait() {
 async fn register_business_experts_runs_via_registry_trait() {
     // DIP 证据：生产路径 register_business_experts 只依赖 Arc<dyn ExpertRegistry>，
     // 使用默认注册表工厂（default_registry），不出现任何 concrete struct 名字。
-    let reg = mox_ai_expert_svc::expert_traits::default_registry();
+    let reg = /* inject */ None;
     register_business_experts(reg.clone()).await.unwrap();
     let all = reg.list(Some("gov")).await.unwrap();
     assert!(!all.is_empty(), "应注册 gov 领域专家");

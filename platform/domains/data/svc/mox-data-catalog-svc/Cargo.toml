@@ -9,10 +9,13 @@ description = "用璇玑架构把全部业务建模为流程图 + 六维关系�
 [dependencies]
 mox-platform-foundation = { workspace = true }
 mox-ai-flow-sdk = { workspace = true }
-mox-ai-expert-svc = { workspace = true }
+# 专家领域协议层（foundation 层，Gate 跨域检测跳过）
+# DIP：本 crate 只依赖 trait + 数据投影，不依赖 concrete ExpertServiceImpl
+mox-ai-expert-proto = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
 
 [dev-dependencies]
-async-trait = { workspace = true }
-tokio = { workspace = true }

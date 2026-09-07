@@ -11,7 +11,7 @@
 
 use hex::ToHex;
 use md5::{Digest as Md5Digest, Md5};
-use mox_data_standards_core::etag_crc32c::{crc32c_base64, crc32c_checksum, etag_multipart};
+use crate::etag_crc32c::{crc32c_base64, crc32c_checksum, etag_multipart};
 
 /// 小对象 ETag：MD5 hex，加引号。
 pub fn etag_small(data: &[u8]) -> String {

@@ -13,7 +13,7 @@
 use crate::model::{KbDocument, now_iso, new_kb_id};
 use bytes::Bytes;
 use mox_base_store_core::StoreError;
-use mox_cloud_store_core::{StoreBackend, list_object_refs};
+use mox_cloud_sdk::StoreBackend;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -30,6 +30,32 @@ pub const CATEGORIES: &[(&str, &str)] = &[
     ("cat-business", "业务文档"),
     ("cat-research", "研究文档"),
 ];
+
+/// 递归列出数据目录下的所有对象文件（FS 后端对象为扁平文件，key=相对路径）。
+fn list_object_refs_sync(data_dir: &std::path::Path) -> Vec<(String, u64)> {
+    let mut result = Vec::new();
+    let Ok(entries) = std::fs::read_dir(data_dir) else { return result };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_file() {
+            if let Ok(rel) = path.strip_prefix(data_dir) {
+                let key = rel.to_string_lossy().replace('\\', "/");
+                let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+                result.push((key, size));
+            }
+        } else if path.is_dir() {
+            result.extend(list_object_refs_sync(&path));
+        }
+    }
+    result
+}
+
+async fn list_object_refs(data_dir: &std::path::Path) -> Vec<(String, u64)> {
+    let dir = data_dir.to_path_buf();
+    tokio::task::spawn_blocking(move || list_object_refs_sync(&dir))
+        .await
+        .unwrap_or_default()
+}
 
 /// 知识库文档服务
 #[derive(Clone)]
@@ -203,7 +229,6 @@ impl KbDocumentService {
         let mut tags = HashMap::<String, usize>::new();
         let mut keys: Vec<String> = list_object_refs(&self.backend.data_dir)
             .await
-            .unwrap_or_default()
             .into_iter()
             .map(|(p, _)| p)
             .filter(|p| p.starts_with(DOC_KEY_PREFIX) && p.ends_with(".json"))

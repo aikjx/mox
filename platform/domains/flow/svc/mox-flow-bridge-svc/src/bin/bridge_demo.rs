@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -13,18 +13,37 @@
 //!
 //! 运行：cargo run -p hermes-flow-bridge --bin bridge-demo
 
+use async_trait::async_trait;
+use mox_ai_expert_proto::{ConsultQuery, ConsultReport, ExpertConsultant};
 use mox_flow_bridge_svc::bridge::{optimize_session, optimize_session_with};
 use mox_flow_bridge_svc::hooks::{on_tool_execution, on_tool_request};
 use mox_flow_bridge_svc::router::FlowTemplate;
 use mox_flow_bridge_svc::state::BridgeState;
 use serde_json::json;
 use std::collections::HashMap;
-use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport};
+use std::sync::Arc;
+
+// Demo stub consultant for binary example
+#[derive(Clone)]
+struct DemoConsultant;
+
+#[async_trait]
+impl ExpertConsultant for DemoConsultant {
+    async fn consult(&self, q: &ConsultQuery) -> anyhow::Result<ConsultReport> {
+        Ok(ConsultReport {
+            report_id: q.id.clone(),
+            steps: vec!["demo-stub".into()],
+            score: 0.85,
+            vetoed: false,
+            reason: None,
+        })
+    }
+}
 
 fn main() {
     println!("=== hermes-flow-bridge 闭环演示（零侵入插件注入 · DIP 版）===\n");
 
-    let st = BridgeState::new();
+    let st = BridgeState::new(Arc::new(DemoConsultant));
 
     // 注册一张「政务 PII 归集」复用模板（来自 mox-expert 关系网最短路径挖掘）
     st.router.register(FlowTemplate {
@@ -67,7 +86,7 @@ fn main() {
 
     // ---- 阶段 2：后台把会话图推给璇玑引擎（通过 ExpertConsultant trait）----
     println!("\n[2] 后台咨询（通过 ExpertConsultant trait，不出现 concrete struct）：");
-    optimize_session(&g, &st.gate);
+    optimize_session(&g, &st.gate, st.consultant.clone());
     println!("    算法否决 = {}", st.gate.is_vetoed());
 
     // ---- 阶段 3：通过 trait 调 ExpertConsultant.consult_blocking 获取投影报告 ConsultReport ----
@@ -137,7 +156,7 @@ fn main() {
     mox_flow_bridge_svc::mini_hermes::run_baseline(&plan, &b_tracer);
     let baseline_calls = b_tracer.count();
     // bridge：复用模板整段回放 → 0 次 LLM
-    let b_st = BridgeState::new();
+    let b_st = BridgeState::new(Arc::new(DemoConsultant));
     mox_flow_bridge_svc::mini_hermes::register_gov_template(&b_st);
     let br_tracer = mox_flow_bridge_svc::mini_hermes::LlmTracer::new();
     let br_out = mox_flow_bridge_svc::mini_hermes::run_bridge(&b_st, &plan, &br_tracer);

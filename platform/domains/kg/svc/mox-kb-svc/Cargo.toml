@@ -8,13 +8,12 @@ description = "MOX 云盘知识库服务：文档 CRUD+版本 / 专家联盟分�
 
 [dependencies]
 # 存储基座：内容寻址去重 FS 后端（阶段1）+ 可插拔 S3（阶段2）
-mox-cloud-store-core = { workspace = true }
+mox-cloud-sdk = { workspace = true }
 # 物理口契约（ObjectStore / KvStore / StoreError）
 mox-base-store-core = { workspace = true }
 # 图谱挂图目标：Document/Chunk/Entity/Relation 节点边落库
 mox-kg-storage-svc = { workspace = true }
 # 专家联盟：文档分析咨询（有 LLM 走真实 LLM，否则本地引擎）
-mox-ai-expert-svc = { workspace = true }
 mox-ai-expert-proto = { workspace = true }
 mox-api-protocol = { workspace = true }
 

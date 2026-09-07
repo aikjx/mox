@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -15,7 +15,7 @@ use crate::recorder::Recorder;
 use crate::router::Router;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use mox_ai_expert_svc::expert_traits::ExpertConsultant;
+use mox_ai_expert_proto::ExpertConsultant;
 
 /// 算法否决闸门（璇玑）。内部可变性。
 #[derive(Debug)]
@@ -64,10 +64,9 @@ pub struct BridgeState {
 }
 
 impl BridgeState {
-    /// 创建共享状态，默认装配 mox-expert 内置 concrete 实现（通过工厂函数，
-    /// 不出现 concrete struct 名字，满足 DIP 静态检查）。
-    pub fn new() -> Arc<Self> {
-        Self::with_consultant(mox_ai_expert_svc::expert_traits::default_consultant())
+    /// 创建共享状态，必须由调用方注入 consultant（DIP 收敛）。
+    pub fn new(consultant: Arc<dyn ExpertConsultant>) -> Arc<Self> {
+        Self::with_consultant(consultant)
     }
     /// 自定义 consultant：测试时可替换 Mock 实现，不依赖 mox-expert 引擎。
     pub fn with_consultant(consultant: Arc<dyn ExpertConsultant>) -> Arc<Self> {

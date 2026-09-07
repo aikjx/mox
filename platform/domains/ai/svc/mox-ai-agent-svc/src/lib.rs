@@ -64,7 +64,7 @@ pub use types::{
 pub use workflow_engine::*;
 
 use crate::engine::{AgentRole, Engine, EngineConfig, EngineContext, MultiAgentOrchestrator};
-use mox_kg_algo_core::KnowledgeGraph;
+use mox_kg_sdk::KnowledgeGraph;
 use mox_platform_operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use std::sync::Arc;

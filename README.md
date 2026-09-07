@@ -37,6 +37,8 @@ L1  Foundation   mox-platform-foundation / mox-cloud-foundation
 
 ## 目录结构
 
+按功能查找源码：[功能与模块导航](docs/modules/README.md) · [全仓代码目录](docs/modules/CODE-CATALOG.md)。目录由真实 workspace 和前端文件生成，使用 `python tools/module_catalog.py --check` 检查漂移。
+
 ```
 infotopograph/
 ├── platform/           # 后端主体（Rust workspace，143 crates）

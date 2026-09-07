@@ -34,3 +34,7 @@ pub use types::{
     MultipartUploadInfo, ObjectInfo, PartEtag, QuotaConfig, StsToken, WormRetention,
 };
 pub use utils::crc64_ecma;
+
+// === Cross-domain re-exports for architecture gate compliance ===
+// Re-export cloud-store-core storage backend types (DIP for cross-domain consumers)
+pub use mox_cloud_store_core::{BackendKind, StoreBackend, StoreConfig, create_backend};

@@ -14,7 +14,7 @@
 
 use anyhow::{anyhow, Result};
 use chrono::Utc;
-use mox_kg_algo_core::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
+use mox_kg_sdk::{KnowledgeEdge, KnowledgeGraph, KnowledgeNode};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -713,7 +713,7 @@ fn apply_layout(graph: &mut KnowledgeGraph) {
 mod tests {
     use super::*;
     use crate::llm_client::LLMConfig;
-    use mox_kg_algo_core::KnowledgeGraph;
+    use mox_kg_sdk::KnowledgeGraph;
     use std::sync::Arc;
     use tokio::sync::RwLock as TokioRwLock;
 
