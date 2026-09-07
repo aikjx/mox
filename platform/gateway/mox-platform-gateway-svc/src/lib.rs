@@ -160,7 +160,7 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     // 模块状态注册中心 + 业务域路由统一装配（受保护路由的鉴权层在其中统一挂载）。
     // 布局归一化：共享状态构造、21 个路由单元 merge、Router<()> 状态类型升级
     // 全部收敛到 `modules` 模块，本函数只保留中间件分层职责（详见 modules.rs 文档）。
-    let states = modules::ModuleStates::new(state.runtime.clone(), state.logs.clone());
+    let states = modules::ModuleStates::new(state.runtime.clone(), state.logs.clone(), state.iam.clone());
     let protected = modules::build_module_routers(&states, &state);
 
     // 整体统一为 Router<GatewayState>，最后一次性注入 state。

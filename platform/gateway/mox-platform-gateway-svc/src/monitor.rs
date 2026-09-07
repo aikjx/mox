@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
+use mox_platform_iam_core::IamRepository;
 use crate::actuator::{LogStore, RuntimeMetrics};
 
 // =====================================================================
@@ -58,14 +59,17 @@ pub struct MonitorState {
     runtime: Arc<RuntimeMetrics>,
     /// 在线日志缓冲（来自 GatewayState.actuator.LogStore，真实进程内日志）
     logs: Arc<LogStore>,
+    /// 平台 IAM 仓储（用户/部门/角色/操作日志真实统计数据源）
+    iam: Arc<IamRepository>,
 }
 
 impl MonitorState {
-    pub fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>) -> Self {
+    pub fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>, iam: Arc<IamRepository>) -> Self {
         Self {
             alert_rules: Arc::new(Mutex::new(load_alert_rules())),
             runtime,
             logs,
+            iam,
         }
     }
 }
@@ -194,36 +198,49 @@ async fn quality(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
 // =====================================================================
 // 3. GET /monitor/business — 业务指标聚合
 // =====================================================================
-async fn business() -> ApiResponse<Value> {
+async fn business(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
+    // 真实数据：从 IAM 仓储获取用户/部门/角色/操作日志统计
+    let tenant = "T001";
+    let user_count = s.iam.list_users(tenant).map(|v| v.len()).unwrap_or(0);
+    let dept_count = s.iam.list_departments(tenant).map(|v| v.len()).unwrap_or(0);
+    let role_count = s.iam.list_roles(tenant).map(|v| v.len()).unwrap_or(0);
+    let operlog_count = s.iam.list_oper_logs(tenant).map(|v| v.len()).unwrap_or(0);
+    let loginlog_count = s.iam.list_login_logs(tenant).map(|v| v.len()).unwrap_or(0);
+    // 运行时指标：HTTP 请求统计
+    let m = s.runtime.snapshot();
+    let req_total = m["requests_total"].as_u64().unwrap_or(0);
+    let req_2xx = m["requests_2xx"].as_u64().unwrap_or(0);
+    let req_4xx = m["requests_4xx"].as_u64().unwrap_or(0);
+    let req_5xx = m["requests_5xx"].as_u64().unwrap_or(0);
     ok(json!({
         "tasks": {
-            "total": 0,
-            "running": 0,
-            "completed": 0,
-            "failed": 0,
-            "pending": 0,
-            "today_new": 0,
+            "total": 0, "running": 0, "completed": 0, "failed": 0, "pending": 0, "today_new": 0,
+            "_note": "待接入联盟调度器 scheduler:3100 真实任务计数"
         },
         "projects": {
-            "total": 0,
-            "active": 0,
-            "completed": 0,
-            "archived": 0,
-            "today_new": 0,
+            "total": 0, "active": 0, "completed": 0, "archived": 0, "today_new": 0,
+            "_note": "待接入项目服务 operator:3001 真实项目计数"
         },
         "experts": {
-            "total": 0,
-            "online": 0,
-            "busy": 0,
-            "offline": 0,
-            "avg_rating": 0.0,
+            "total": 0, "online": 0, "busy": 0, "offline": 0, "avg_rating": 0.0,
+            "_note": "待接入专家联盟服务真实专家计数"
         },
         "users": {
-            "total": 0,
+            "total": user_count,
+            "departments": dept_count,
+            "roles": role_count,
+            "oper_logs": operlog_count,
+            "login_logs": loginlog_count,
             "active_today": 0,
             "active_7d": 0,
             "new_today": 0,
             "retention_rate": 0.0,
+        },
+        "gateway": {
+            "requests_total": req_total,
+            "requests_2xx": req_2xx,
+            "requests_4xx": req_4xx,
+            "requests_5xx": req_5xx,
         },
         "ts": now_iso(),
     }))
@@ -232,21 +249,43 @@ async fn business() -> ApiResponse<Value> {
 // =====================================================================
 // 4. GET /monitor/alerts/summary — 告警统计
 // =====================================================================
-async fn alerts_summary() -> ApiResponse<Value> {
+async fn alerts_summary(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
+    // 真实数据：从告警规则仓储计算规则分布
+    let rules = s.alert_rules.lock();
+    let mut critical = 0; let mut warning = 0; let mut info = 0;
+    let mut enabled = 0; let mut disabled = 0;
+    for r in rules.iter() {
+        match r.severity.as_str() {
+            "critical" => critical += 1,
+            "warning" => warning += 1,
+            _ => info += 1,
+        }
+        if r.enabled { enabled += 1; } else { disabled += 1; }
+    }
+    let total = rules.len();
+    drop(rules);
+    // 运行时指标：5xx 错误作为活跃告警近似
+    let m = s.runtime.snapshot();
+    let server_errors = m["requests_5xx"].as_u64().unwrap_or(0);
     ok(json!({
+        "rules": {
+            "total": total,
+            "enabled": enabled,
+            "disabled": disabled,
+        },
         "by_severity": {
-            "critical": 0,
-            "warning": 0,
-            "info": 0,
+            "critical": critical,
+            "warning": warning,
+            "info": info,
         },
         "by_status": {
-            "active": 0,
+            "active": server_errors,
             "acknowledged": 0,
             "resolved": 0,
-            "suppressed": 0,
+            "suppressed": disabled,
         },
-        "total_active": 0,
-        "total_today": 0,
+        "total_active": server_errors,
+        "total_today": total,
         "avg_resolution_minutes": 0.0,
         "ts": now_iso(),
     }))

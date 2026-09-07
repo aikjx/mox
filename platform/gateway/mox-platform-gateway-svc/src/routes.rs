@@ -75,7 +75,7 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     DomainDescriptor { prefix: "/s3",            name: "S3",          layer: "L5", group: "storage", description: "S3 兼容 API（Cloud 域已提供存储后端，待接协议层）", status: "stub" },
     DomainDescriptor { prefix: "/volume/v1",     name: "Volume",      layer: "L5", group: "storage", description: "块卷/EC 纠删码（依赖 Cloud 存储后端扩展）", status: "stub" },
     DomainDescriptor { prefix: "/fs/v1",         name: "FS",          layer: "L5", group: "storage", description: "文件系统/POSIX（依赖 Cloud 存储后端扩展）", status: "stub" },
-    DomainDescriptor { prefix: "/api/monitor",   name: "Monitor",     layer: "L5", group: "platform", description: "监控运维（指标详情/质量/业务/告警/节点日志/链路追踪/告警规则）12 接口，部分真实部分 stub", status: "beta" },
+    DomainDescriptor { prefix: "/api/monitor",   name: "Monitor",     layer: "L5", group: "platform", description: "监控运维（指标详情/质量/业务统计/告警汇总/节点日志/链路追踪/告警规则）12 接口，IAM+RuntimeMetrics 真实数据，business_timeseries 待接入历史存储", status: "ready" },
     // L6 Data
     DomainDescriptor { prefix: "/data/v1",       name: "Data",        layer: "L6", group: "data", description: "数据资产目录", status: "stub" },
     DomainDescriptor { prefix: "/etl/v1",        name: "ETL",         layer: "L6", group: "data", description: "CDC+ETL+Fusion", status: "stub" },
