@@ -49,6 +49,8 @@ pub mod kb_ext;
 pub mod notification;
 pub mod rbac;
 pub mod voice;
+pub mod melody;
+pub mod cloud;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;

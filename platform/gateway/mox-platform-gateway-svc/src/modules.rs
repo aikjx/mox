@@ -130,7 +130,11 @@ pub fn build_module_routers(
         // —— RBAC 域（L1 /rbac/v1/* · IAM 真实仓储：角色/权限/当前用户）——
         .merge(crate::rbac::build_rbac_router())
         // —— Voice 域（L7 /voice/v1/* · 桥接 melody2score :8012）——
-        .merge(upgrade(crate::voice::build_voice_router())).merge(upgrade(proxy::build_proxy_router()))
+        .merge(upgrade(crate::voice::build_voice_router()))
+        // —— Melody 域（L7 /melody/v1/* · melody2score 转谱桥接，复用 Voice 上游）——
+        .merge(upgrade(crate::melody::build_melody_router()))
+        // —— Cloud 域（L5 /cloud/v1/* · 本地磁盘对象存储，S3 兼容语义）——
+        .merge(upgrade(crate::cloud::build_cloud_router())).merge(upgrade(proxy::build_proxy_router()))
         // —— 通用业务域（状态由注册中心注入，路由构建器不负责创建） ——
         .merge(upgrade(monitor::build_monitor_router(
             states.monitor.clone(),

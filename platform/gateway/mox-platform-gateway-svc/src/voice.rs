@@ -25,8 +25,8 @@ use std::time::Duration;
 /// 桥接共享状态：reqwest 客户端 + 上游基址
 #[derive(Clone)]
 pub struct VoiceState {
-    client: reqwest::Client,
-    base: String,
+    pub(crate) client: reqwest::Client,
+    pub(crate) base: String,
 }
 
 impl VoiceState {
@@ -47,7 +47,7 @@ impl Default for VoiceState {
     }
 }
 
-async fn proxy_get(state: &VoiceState, path: &str) -> ApiResponse<Value> {
+pub(crate) async fn proxy_get(state: &VoiceState, path: &str) -> ApiResponse<Value> {
     let url = format!("{}{}", state.base.trim_end_matches('/'), path);
     match state.client.get(&url).send().await {
         Ok(resp) => {

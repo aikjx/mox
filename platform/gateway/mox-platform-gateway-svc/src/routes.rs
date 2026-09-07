@@ -68,10 +68,10 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     DomainDescriptor { prefix: "/bpm/v1",        name: "BPM",         layer: "L4", description: "审批流/人工任务", status: "stub" },
     DomainDescriptor { prefix: "/pipeline/v1",   name: "Pipeline",    layer: "L4", description: "P0-P12 自动开发流水线", status: "stub" },
     // L5 Cloud
-    DomainDescriptor { prefix: "/cloud/v1",      name: "Cloud",       layer: "L5", description: "云资源编排/成本/CMDB", status: "stub" },
-    DomainDescriptor { prefix: "/s3",            name: "S3",          layer: "L5", description: "S3 兼容对象存储", status: "stub" },
-    DomainDescriptor { prefix: "/volume/v1",     name: "Volume",      layer: "L5", description: "块卷/EC 纠删码", status: "stub" },
-    DomainDescriptor { prefix: "/fs/v1",         name: "FS",          layer: "L5", description: "文件系统/POSIX", status: "stub" },
+    DomainDescriptor { prefix: "/cloud/v1",      name: "Cloud",       layer: "L5", description: "对象存储（本地磁盘/S3 兼容语义）6 接口", status: "ready" },
+    DomainDescriptor { prefix: "/s3",            name: "S3",          layer: "L5", description: "S3 兼容 API（Cloud 域已提供存储后端，待接协议层）", status: "stub" },
+    DomainDescriptor { prefix: "/volume/v1",     name: "Volume",      layer: "L5", description: "块卷/EC 纠删码（依赖 Cloud 存储后端扩展）", status: "stub" },
+    DomainDescriptor { prefix: "/fs/v1",         name: "FS",          layer: "L5", description: "文件系统/POSIX（依赖 Cloud 存储后端扩展）", status: "stub" },
     // L6 Data
     DomainDescriptor { prefix: "/data/v1",       name: "Data",        layer: "L6", description: "数据资产目录", status: "stub" },
     DomainDescriptor { prefix: "/etl/v1",        name: "ETL",         layer: "L6", description: "CDC+ETL+Fusion", status: "stub" },
@@ -79,8 +79,8 @@ pub const DOMAINS: &[DomainDescriptor] = &[
     DomainDescriptor { prefix: "/standard/v1",   name: "Standard",    layer: "L6", description: "数据标准/字典", status: "stub" },
     // L7 Voice
     DomainDescriptor { prefix: "/voice/v1",      name: "Voice",       layer: "L7", description: "音频/乐谱/ASR（桥接 melody2score :8012）3 接口", status: "ready" },
-    DomainDescriptor { prefix: "/midi/v1",       name: "MIDI",        layer: "L7", description: "MIDI 合成/解析", status: "stub" },
-    DomainDescriptor { prefix: "/melody/v1",     name: "Melody",      layer: "L7", description: "melody2score 简谱转谱", status: "stub" },
+    DomainDescriptor { prefix: "/midi/v1",       name: "MIDI",        layer: "L7", description: "MIDI 合成/解析（上游 melody2score 无 MIDI 能力，需先扩展上游）", status: "stub" },
+    DomainDescriptor { prefix: "/melody/v1",     name: "Melody",      layer: "L7", description: "melody2score 转谱桥接（:8012）7 接口", status: "ready" },
     DomainDescriptor { prefix: "/tts/v1",        name: "TTS",         layer: "L7", description: "文本转语音", status: "stub" },
     // L8 Market
     DomainDescriptor { prefix: "/market/v1",     name: "Market",      layer: "L8", description: "应用市场/AI 插件", status: "stub" },
