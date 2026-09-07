@@ -11,6 +11,8 @@ cargo clippy --all-targets  # lint（CI 门禁，workspace.lints 已配置）
 python scripts/verify-ports.py   # 端口漂移校验（CI 门禁）
 docker-compose up -d --build     # 一键部署
 ./start.sh --dry-run             # 启动前预检
+scripts/start-mox-enterprise.ps1 # 企业级五进程一键启动（实测通过：编排器3001/知识库8104/联盟调度3100/执行3200/网关8080）
+scripts/stop-mox-enterprise.ps1  # 对应一键停止（不动前端3020/primiflow8000/melody2score8012）
 ```
 
 注意：部分 crate（napi/PyO3 绑定）不在 `default-members` 中，需单独 `cargo check -p <crate>`。
