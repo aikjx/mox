@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 
 //! 执行器服务器
@@ -6,15 +6,33 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use mox_alliance_executor_core::{
     DagEngineImpl, ExpertExecutorConfig, ExpertNodeExecutor, MockExecutorConfig, MockNodeExecutor,
 };
 use mox_alliance_executor_proto::types::ExecutorConfig;
-use /* inject consultant */ panic!("executor requires injected ExpertConsultant");
+use mox_ai_expert_proto::{ConsultQuery, ConsultReport, ExpertConsultant};
 use tracing::info;
 
 use crate::app_state::ExecutorAppState;
 use crate::routes::build_router;
+
+// DIP: Demo consultant stub — callers must inject real ExpertConsultant
+#[derive(Clone)]
+struct DemoConsultant;
+
+#[async_trait]
+impl ExpertConsultant for DemoConsultant {
+    async fn consult(&self, q: &ConsultQuery) -> anyhow::Result<ConsultReport> {
+        Ok(ConsultReport {
+            report_id: q.id.clone(),
+            steps: vec!["demo-consultant-stub".into()],
+            score: 0.0,
+            vetoed: false,
+            reason: Some("Demo consultant stub — inject real ExpertConsultant".into()),
+        })
+    }
+}
 
 /// 执行器运行模式
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

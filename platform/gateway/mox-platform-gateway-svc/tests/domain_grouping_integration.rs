@@ -145,7 +145,7 @@ async fn test_domains_endpoint_returns_group_field() {
     assert_eq!(resp.status(), 200);
 
     let body: Value = resp.json().await.unwrap();
-    let domains = body["domains"].as_array().expect("domains 应为数组");
+    let domains = body["data"]["domains"].as_array().expect("domains 应为数组");
     assert_eq!(domains.len(), 43);
 
     // 每个域都必须有 group 字段且非空
@@ -160,7 +160,7 @@ async fn test_domains_endpoint_returns_group_field() {
     }
 
     // 验证 total 字段
-    assert_eq!(body["total"].as_i64().unwrap(), 43);
+    assert_eq!(body["data"]["total"].as_i64().unwrap(), 43);
 }
 
 #[tokio::test]
@@ -172,7 +172,7 @@ async fn test_domains_endpoint_group_distribution() {
         .await
         .unwrap();
     let body: Value = resp.json().await.unwrap();
-    let domains = body["domains"].as_array().unwrap();
+    let domains = body["data"]["domains"].as_array().unwrap();
 
     // 统计各能力组的域数量
     let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
