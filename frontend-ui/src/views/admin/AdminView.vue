@@ -3,7 +3,7 @@
     <div class="head">
       <div>
         <h2 class="page-title">系统管理</h2>
-        <p class="page-subtitle">菜单管理 · 字典管理 · 参数配置 · 访问凭证 · 审计日志 · 存储与模块 · HITL 人机协同审批</p>
+        <p class="page-subtitle">租户管理 · 用户管理 · 角色权限 · 部门管理 · 菜单管理 · 字典配置 · 访问凭证 · 审计日志 · 系统监控</p>
       </div>
     </div>
 
@@ -34,6 +34,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 const TABS = [
   { key: 'overview', label: '管理总览', icon: 'Odometer' },
+  { key: 'tenant', label: '租户管理', icon: 'Grid' },
   { key: 'user', label: '用户管理', icon: 'User' },
   { key: 'role', label: '角色管理', icon: 'UserFilled' },
   { key: 'department', label: '部门管理', icon: 'OfficeBuilding' },

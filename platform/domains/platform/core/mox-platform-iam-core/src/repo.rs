@@ -672,6 +672,93 @@ impl IamRepository {
         Ok(())
     }
 
+
+    pub fn list_tenants(&self) -> Result<Vec<IamTenant>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT tenant_id,tenant_code,tenant_name,tenant_mode,tenant_status,tenant_plan,config_json,settings,created_at,updated_at,version FROM iam_tenant ORDER BY created_at ASC"
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(IamTenant {
+                tenant_id: r.get(0)?,
+                tenant_code: r.get(1)?,
+                tenant_name: r.get(2)?,
+                tenant_mode: r.get(3)?,
+                tenant_status: r.get(4)?,
+                tenant_plan: r.get(5)?,
+                config_json: r.get(6)?,
+                settings: r.get(7)?,
+                created_at: r.get(8)?,
+                updated_at: r.get(9)?,
+                version: r.get(10)?,
+            })
+        })?;
+        let items: Vec<IamTenant> = rows.collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(items)
+    }
+
+    pub fn update_tenant(&self, tenant_id: &str, tenant_name: Option<&str>, tenant_status: Option<&str>, tenant_plan: Option<&str>) -> Result<()> {
+        let conn = self.conn.lock();
+        let ts = now_iso();
+        match (tenant_name, tenant_status, tenant_plan) {
+            (Some(name), Some(status), Some(plan)) => {
+                conn.execute(
+                    "UPDATE iam_tenant SET tenant_name=?1, tenant_status=?2, tenant_plan=?3, updated_at=?4 WHERE tenant_id=?5",
+                    params![name, status, plan, ts, tenant_id],
+                )?;
+            }
+            (Some(name), Some(status), None) => {
+                conn.execute(
+                    "UPDATE iam_tenant SET tenant_name=?1, tenant_status=?2, updated_at=?3 WHERE tenant_id=?4",
+                    params![name, status, ts, tenant_id],
+                )?;
+            }
+            (Some(name), None, Some(plan)) => {
+                conn.execute(
+                    "UPDATE iam_tenant SET tenant_name=?1, tenant_plan=?2, updated_at=?3 WHERE tenant_id=?4",
+                    params![name, plan, ts, tenant_id],
+                )?;
+            }
+            (Some(name), None, None) => {
+                conn.execute(
+                    "UPDATE iam_tenant SET tenant_name=?1, updated_at=?2 WHERE tenant_id=?3",
+                    params![name, ts, tenant_id],
+                )?;
+            }
+            (None, Some(status), Some(plan)) => {
+                conn.execute(
+                    "UPDATE iam_tenant SET tenant_status=?1, tenant_plan=?2, updated_at=?3 WHERE tenant_id=?4",
+                    params![status, plan, ts, tenant_id],
+                )?;
+            }
+            (None, Some(status), None) => {
+                conn.execute(
+                    "UPDATE iam_tenant SET tenant_status=?1, updated_at=?2 WHERE tenant_id=?3",
+                    params![status, ts, tenant_id],
+                )?;
+            }
+            (None, None, Some(plan)) => {
+                conn.execute(
+                    "UPDATE iam_tenant SET tenant_plan=?1, updated_at=?2 WHERE tenant_id=?3",
+                    params![plan, ts, tenant_id],
+                )?;
+            }
+            (None, None, None) => {
+                conn.execute(
+                    "UPDATE iam_tenant SET updated_at=?1 WHERE tenant_id=?2",
+                    params![ts, tenant_id],
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn delete_tenant(&self, tenant_id: &str) -> Result<()> {
+        let conn = self.conn.lock();
+        conn.execute("DELETE FROM iam_tenant WHERE tenant_id = ?1", params![tenant_id])?;
+        Ok(())
+    }
+
     pub fn list_roles(&self, tenant_id: &str) -> Result<Vec<IamRole>> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(

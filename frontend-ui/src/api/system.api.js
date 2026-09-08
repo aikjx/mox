@@ -127,6 +127,58 @@ export const deleteLoginLog = (id) => http.delete(`/system/logininfor/${id}`)
 export const cleanLoginLog = () => http.delete('/system/logininfor/clean')
 export const exportLoginLog = (params) => http.get('/system/logininfor/export', { params, responseType: 'blob' })
 
+// ===== 租户管理（多租户企业级）=====
+export const getTenantList = (params) => http.get('/tenant', { params })
+export const getTenantDetail = (id) => http.get(`/tenant/${id}`)
+export const createTenant = (data) => http.post('/tenant', data)
+export const updateTenant = (id, data) => http.put(`/tenant/${id}`, data)
+export const deleteTenant = (id) => http.delete(`/tenant/${id}`)
+export const switchTenant = (id) => http.get(`/tenant/switch/${id}`)
+
+// ===== 权限模板预设（快速分配）=====
+export const ROLE_TEMPLATES = [
+  {
+    code: 'super_admin',
+    name: '超级管理员',
+    description: '拥有系统全部权限，可管理所有租户、用户、角色、菜单',
+    dataScope: 'all',
+    menuCodes: ['*'],
+    color: '#EA6668'
+  },
+  {
+    code: 'tenant_admin',
+    name: '租户管理员',
+    description: '管理本租户的用户、角色、部门、菜单，不可跨租户',
+    dataScope: 'dept_and_sub',
+    menuCodes: ['system:user:*', 'system:role:*', 'system:dept:*', 'system:menu:view', 'system:dict:view', 'system:config:view', 'monitor:*'],
+    color: '#FAAD14'
+  },
+  {
+    code: 'dept_manager',
+    name: '部门主管',
+    description: '管理本部门及子部门用户，可查看部门数据，不可管理系统配置',
+    dataScope: 'dept_and_sub',
+    menuCodes: ['system:user:view', 'system:user:add', 'system:user:edit', 'system:dept:view', 'monitor:view'],
+    color: '#8BC8EA'
+  },
+  {
+    code: 'normal_user',
+    name: '普通员工',
+    description: '仅可查看和操作本人数据，不可管理其他用户',
+    dataScope: 'self',
+    menuCodes: ['system:user:view', 'profile:*'],
+    color: '#94D8C3'
+  },
+  {
+    code: 'readonly_auditor',
+    name: '只读审计员',
+    description: '可查看全部数据和日志，但不可修改任何内容，适用于合规审计场景',
+    dataScope: 'all',
+    menuCodes: ['system:user:view', 'system:role:view', 'system:menu:view', 'system:dict:view', 'system:config:view', 'system:operlog:view', 'system:logininfor:view', 'monitor:view'],
+    color: '#C9A7E8'
+  }
+]
+
 // ===== 用户头像上传 =====
 export const uploadUserAvatar = (userId, file) => {
   const formData = new FormData()

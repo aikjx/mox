@@ -14,6 +14,12 @@ export default [  // ===== 系统管理（嵌套路由） =====
         meta: { title: '管理总览', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
+        path: 'tenant',
+        name: 'AdminTenant',
+        component: () => import('@/views/admin/panels/AdminTenant.vue'),
+        meta: { title: '租户管理', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
         path: 'user',
         name: 'AdminUser',
         component: () => import('@/views/admin/panels/AdminUser.vue'),

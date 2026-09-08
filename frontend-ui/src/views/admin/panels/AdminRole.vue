@@ -33,6 +33,7 @@
         </div>
         <div class="toolbar-right">
           <el-button :icon="Refresh" :loading="loading" @click="loadList">刷新</el-button>
+          <el-button :icon="CopyDocument" @click="templateVisible = true" v-role="'admin'">从模板创建</el-button>
           <el-button type="primary" :icon="Plus" @click="openRoleForm()" v-role="'admin'">新增角色</el-button>
         </div>
       </div>
@@ -234,6 +235,37 @@
       </template>
     </el-dialog>
 
+    <!-- 权限模板选择对话框 -->
+    <el-dialog v-model="templateVisible" title="从权限模板创建角色" width="680px" @close="selectedTemplate = null">
+      <div class="template-grid">
+        <div
+          v-for="tpl in roleTemplates"
+          :key="tpl.code"
+          class="template-card"
+          :class="{ active: selectedTemplate?.code === tpl.code }"
+          :style="{ '--tc': tpl.color }"
+          @click="selectedTemplate = tpl"
+        >
+          <div class="tpl-header">
+            <span class="tpl-name">{{ tpl.name }}</span>
+            <el-tag size="small" :type="tpl.dataScope === 'all' ? 'danger' : tpl.dataScope === 'dept_and_sub' ? 'warning' : 'success'" effect="plain">
+              {{ tpl.dataScope === 'all' ? '全部数据' : tpl.dataScope === 'dept_and_sub' ? '部门及以下' : tpl.dataScope === 'dept' ? '本部门' : '仅本人' }}
+            </el-tag>
+          </div>
+          <div class="tpl-desc">{{ tpl.description }}</div>
+          <div class="tpl-meta">
+            <span class="tpl-meta-item">权限码: {{ tpl.menuCodes.length }} 组</span>
+          </div>
+          <div v-if="selectedTemplate?.code === tpl.code" class="tpl-check">✓</div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="templateVisible = false">取消</el-button>
+        <el-button type="primary" :disabled="!selectedTemplate" @click="createFromTemplate">用此模板创建</el-button>
+      </template>
+    </el-dialog>
+
+
     <!-- 分配数据权限弹窗 -->
     <el-dialog v-model="dataPermVisible" title="分配数据权限" width="560px" destroy-on-close>
       <el-alert
@@ -368,7 +400,8 @@ import {
   getRoleMenuPerms, assignRoleMenuPerms,
   getRoleDataPerms, assignRoleDataPerms,
   getRoleUsers, copyRole,
-  getMenuTree, getDeptTree
+  getMenuTree, getDeptTree,
+  ROLE_TEMPLATES
 } from '@/api'
 import FormDialog from '@/components/common/FormDialog.vue'
 
@@ -448,6 +481,11 @@ const roleForm = reactive({
 
 const roleFormEditData = ref(null)
 
+// ===== 权限模板预设 =====
+const templateVisible = ref(false)
+const selectedTemplate = ref(null)
+const roleTemplates = ROLE_TEMPLATES
+
 const roleFormSchema = [
   { prop: 'name', label: '角色名称', type: 'input', maxlength: 64, showWordLimit: true,
     rules: [{ required: true, message: '请输入角色名称', trigger: 'blur' }] },
@@ -515,6 +553,34 @@ async function submitRoleForm(formData) {
 }
 
 // ===== 更多操作 =====
+async function createFromTemplate() {
+  if (!selectedTemplate.value) return
+  const tpl = selectedTemplate.value
+  try {
+    // 先创建角色基础信息
+    const role = await createRole({
+      code: tpl.code + '_' + Date.now().toString(36),
+      name: tpl.name,
+      description: tpl.description,
+      dataScope: tpl.dataScope,
+      status: 'active'
+    })
+    const roleId = role?.id || role?.roleId
+    if (roleId) {
+      // 设置数据权限
+      await assignRoleDataPerms(roleId, { scopeType: tpl.dataScope })
+      ElMessage.success(`已从模板「${tpl.name}」创建角色，并预置数据权限`)
+    } else {
+      ElMessage.success(`已从模板「${tpl.name}」创建角色`)
+    }
+    templateVisible.value = false
+    selectedTemplate.value = null
+    loadList()
+  } catch (e) {
+    ElMessage.error('从模板创建失败: ' + (e?.message || e))
+  }
+}
+
 function handleMoreAction(cmd, row) {
   if (cmd === 'users') {
     openUserListDialog(row)
@@ -874,6 +940,19 @@ onMounted(() => {
   margin-top: 16px;
 }
 
+.template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 8px 0; }
+.template-card {
+  position: relative; padding: 14px; border: 2px solid rgba(0,0,0,0.06);
+  border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #fff;
+}
+.template-card:hover { border-color: var(--tc, #8BC8EA); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.template-card.active { border-color: var(--tc, #8BC8EA); background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7)); }
+.tpl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.tpl-name { font-size: 14px; font-weight: 600; color: #1A1B1C; }
+.tpl-desc { font-size: 12px; color: #6B7280; line-height: 1.5; margin-bottom: 8px; min-height: 36px; }
+.tpl-meta { display: flex; gap: 8px; }
+.tpl-meta-item { font-size: 11px; color: #9CA3AF; background: rgba(0,0,0,0.03); padding: 2px 8px; border-radius: 4px; }
+.tpl-check { position: absolute; top: 8px; right: 10px; width: 22px; height: 22px; background: var(--tc, #8BC8EA); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
 .role-name-cell {
   display: flex;
   align-items: center;
