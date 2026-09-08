@@ -77,9 +77,10 @@ impl ModuleStates {
     /// - 各域状态构造时读取各自的 JSON 持久化文件；专家共享状态还会完成
     ///   启动期 JSON→SQLite 一次性迁移、内置专家种子化、能力图谱首次构建（均幂等）。
     pub fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>, iam: Arc<mox_platform_iam_core::IamRepository>) -> Self {
+        let experts = Arc::new(experts_common::ExpertsSharedState::new());
         Self {
-            experts: Arc::new(experts_common::ExpertsSharedState::new()),
-            monitor: Arc::new(monitor::MonitorState::new(runtime, logs, iam)),
+            experts: experts.clone(),
+            monitor: Arc::new(monitor::MonitorState::new(runtime, logs, iam, experts)),
             workspace: Arc::new(workspace::WorkspaceState::new()),
             projects: Arc::new(projects_ext::ProjectsState::new()),
             misc: Arc::new(misc::MiscState::new()),

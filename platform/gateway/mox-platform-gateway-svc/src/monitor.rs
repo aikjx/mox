@@ -20,6 +20,7 @@ use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
 use mox_platform_iam_core::IamRepository;
 use crate::actuator::{LogStore, RuntimeMetrics};
+use crate::experts_common::ExpertsSharedState;
 
 // =====================================================================
 // 告警规则 JSON 持久化
@@ -61,15 +62,115 @@ pub struct MonitorState {
     logs: Arc<LogStore>,
     /// 平台 IAM 仓储（用户/部门/角色/操作日志真实统计数据源）
     iam: Arc<IamRepository>,
+    /// 专家联盟共享状态（专家/会话/调度/图谱真实统计数据源）
+    experts: Arc<ExpertsSharedState>,
+    /// 轻量级业务指标时序存储（内存环形缓冲 + 懒采集）
+    timeseries: Arc<TimeseriesStore>,
+}
+
+
+// =====================================================================
+// 轻量级业务指标时序存储（内存环形缓冲 + 懒采集）
+// =====================================================================
+
+#[derive(Clone, Serialize, Deserialize)]
+struct TimeseriesPoint {
+    ts: String,
+    values: std::collections::HashMap<String, f64>,
+}
+
+#[derive(Clone)]
+struct TimeseriesStore {
+    points: Arc<Mutex<std::collections::VecDeque<TimeseriesPoint>>>,
+    last_collect: Arc<Mutex<i64>>,
+    max_points: usize,
+    collect_interval_secs: i64,
+}
+
+impl TimeseriesStore {
+    fn new() -> Self {
+        Self {
+            points: Arc::new(Mutex::new(std::collections::VecDeque::with_capacity(100))),
+            last_collect: Arc::new(Mutex::new(0)),
+            max_points: 100,
+            collect_interval_secs: 60,
+        }
+    }
+
+    /// 懒采集：如果距离上次采集超过间隔，则采集一个新点
+    fn maybe_collect(&self, iam: &IamRepository, experts: &ExpertsSharedState, runtime: &RuntimeMetrics) {
+        let now = chrono::Utc::now().timestamp();
+        let mut last = self.last_collect.lock();
+        if now - *last < self.collect_interval_secs {
+            return;
+        }
+        *last = now;
+        drop(last);
+
+        let mut values = std::collections::HashMap::new();
+        // 用户统计
+        if let Ok(users) = iam.list_users("T001") {
+            values.insert("users_total".into(), users.len() as f64);
+        }
+        // 专家统计
+        let reg = experts.registry.lock();
+        values.insert("experts_total".into(), reg.len() as f64);
+        let online = reg.values().filter(|e| e.availability.status == "online").count();
+        values.insert("experts_online".into(), online as f64);
+        drop(reg);
+        // 会话统计
+        let sess = experts.sessions.lock();
+        values.insert("sessions_active".into(), sess.len() as f64);
+        drop(sess);
+        // 网关请求统计
+        let m = runtime.snapshot();
+        values.insert("requests_total".into(), m["requests_total"].as_u64().unwrap_or(0) as f64);
+        values.insert("requests_5xx".into(), m["requests_5xx"].as_u64().unwrap_or(0) as f64);
+
+        let point = TimeseriesPoint {
+            ts: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            values,
+        };
+        let mut pts = self.points.lock();
+        pts.push_back(point);
+        if pts.len() > self.max_points {
+            pts.pop_front();
+        }
+    }
+
+    fn query(&self, metric: &str, start: Option<i64>, end: Option<i64>) -> Vec<serde_json::Value> {
+        let pts = self.points.lock();
+        pts.iter()
+            .filter(|p| {
+                if let Some(s) = start {
+                    if let Ok(t) = chrono::DateTime::parse_from_rfc3339(&p.ts) {
+                        if t.timestamp() < s { return false; }
+                    }
+                }
+                if let Some(e) = end {
+                    if let Ok(t) = chrono::DateTime::parse_from_rfc3339(&p.ts) {
+                        if t.timestamp() > e { return false; }
+                    }
+                }
+                true
+            })
+            .map(|p| serde_json::json!({
+                "ts": p.ts,
+                "value": p.values.get(metric).copied().unwrap_or(0.0),
+            }))
+            .collect()
+    }
 }
 
 impl MonitorState {
-    pub fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>, iam: Arc<IamRepository>) -> Self {
+    pub fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>, iam: Arc<IamRepository>, experts: Arc<ExpertsSharedState>) -> Self {
         Self {
             alert_rules: Arc::new(Mutex::new(load_alert_rules())),
             runtime,
             logs,
             iam,
+            experts,
+            timeseries: Arc::new(TimeseriesStore::new()),
         }
     }
 }
@@ -212,6 +313,22 @@ async fn business(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
     let req_2xx = m["requests_2xx"].as_u64().unwrap_or(0);
     let req_4xx = m["requests_4xx"].as_u64().unwrap_or(0);
     let req_5xx = m["requests_5xx"].as_u64().unwrap_or(0);
+    // 真实数据：从 ExpertsSharedState 获取专家统计
+    let reg = s.experts.registry.lock();
+    let expert_total = reg.len();
+    let expert_online = reg.values().filter(|e| e.availability.status == "online").count();
+    let expert_busy = reg.values().filter(|e| e.availability.status == "busy").count();
+    let expert_ai = reg.values().filter(|e| e.expert_type == "ai").count();
+    let expert_human = reg.values().filter(|e| e.expert_type == "human").count();
+    let expert_verified = reg.values().filter(|e| e.verification_status == "verified" || e.verification_status == "certified").count();
+    let ratings: Vec<f64> = reg.values().map(|e| e.metrics.avg_rating).filter(|r| *r > 0.0).collect();
+    let expert_avg_rating = if ratings.is_empty() { 0.0 } else { ratings.iter().sum::<f64>() / ratings.len() as f64 };
+    drop(reg);
+    let session_count = s.experts.sessions.lock().len();
+    let dispatch_count = s.experts.dispatch_records.lock().len();
+    // 懒采集时序点
+    s.timeseries.maybe_collect(&s.iam, &s.experts, &s.runtime);
+
     ok(json!({
         "tasks": {
             "total": 0, "running": 0, "completed": 0, "failed": 0, "pending": 0, "today_new": 0,
@@ -222,8 +339,17 @@ async fn business(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
             "_note": "待接入项目服务 operator:3001 真实项目计数"
         },
         "experts": {
-            "total": 0, "online": 0, "busy": 0, "offline": 0, "avg_rating": 0.0,
-            "_note": "待接入专家联盟服务真实专家计数"
+            // 真实数据：从 ExpertsSharedState 获取专家统计
+            "total": expert_total,
+            "online": expert_online,
+            "busy": expert_busy,
+            "offline": expert_total - expert_online,
+            "ai_experts": expert_ai,
+            "human_experts": expert_human,
+            "verified": expert_verified,
+            "active_sessions": session_count,
+            "dispatch_records": dispatch_count,
+            "avg_rating": expert_avg_rating,
         },
         "users": {
             "total": user_count,
@@ -524,14 +650,20 @@ struct BusinessTimeseriesQuery {
     step: Option<String>,
 }
 
-async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>, State(_s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
-    let metric = q.metric.unwrap_or_else(|| "task_completions".into());
-    // 待接入: 真实业务指标时序源（任务/项目/专家统计的历史聚合存储）；
-    // 当前无业务指标历史存储。无真实数据源时返回空 points 数组。
-    let _ = (q.start, q.end, q.step);
+async fn business_timeseries(Query(q): Query<BusinessTimeseriesQuery>, State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
+    let metric = q.metric.clone().unwrap_or_else(|| "users_total".into());
+    // 真实数据：从内存时序存储查询（懒采集，最近 100 个采样点，60 秒间隔）
+    s.timeseries.maybe_collect(&s.iam, &s.experts, &s.runtime);
+    let start = q.start.and_then(|v| v.parse::<i64>().ok());
+    let end = q.end.and_then(|v| v.parse::<i64>().ok());
+    let points = s.timeseries.query(&metric, start, end);
     ok(json!({
         "metric": metric,
-        "points": [],
+        "points": points,
+        "storage": "memory_ring_buffer",
+        "max_points": 100,
+        "collect_interval_secs": 60,
+        "available_metrics": ["users_total", "experts_total", "experts_online", "sessions_active", "requests_total", "requests_5xx"],
     }))
 }
 
