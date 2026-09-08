@@ -193,6 +193,7 @@ pub struct IamDataPermission {
     pub scope_type: String,
     pub custom_rule_expression_sql: Option<String>,
     pub custom_rule_expression_json: Option<String>,
+    pub field_permissions_json: Option<String>,
     pub status: String,
     pub created_at: String,
     pub created_by: Option<String>,
@@ -262,6 +263,8 @@ pub struct ScopeRule {
     pub scope_type: String,
     pub expression: Option<String>,
     pub dp_codes: Vec<String>,
+    pub allowed_fields: Option<Vec<String>>,
+    pub denied_fields: Option<Vec<String>>,
 }
 
 // ============================================================

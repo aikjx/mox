@@ -65,6 +65,11 @@ impl IamRepository {
                 return Err(e).with_context(|| format!("executing DDL: {}", stmt));
             }
         }
+        // 字段级权限列（幂等：列已存在时 duplicate column 被上面的循环忽略）
+        let _ = conn.execute(
+            "ALTER TABLE iam_data_permission ADD COLUMN field_permissions_json TEXT",
+            [],
+        );
         Ok(())
     }
 
@@ -1031,11 +1036,13 @@ impl IamRepository {
         let mut scope_type = "self".to_string();
         let mut expression: Option<String> = None;
         let mut dp_codes: Vec<String> = vec![];
+        let mut allowed_fields: Option<Vec<String>> = None;
+        let mut denied_fields: Option<Vec<String>> = None;
 
         if !all_role_ids.is_empty() {
             let placeholders: Vec<String> = all_role_ids.iter().map(|_| "?".to_string()).collect();
             let sql = format!(
-                "SELECT dp_code, scope_type, custom_rule_expression_sql FROM iam_data_permission \
+                "SELECT dp_code, scope_type, custom_rule_expression_sql, field_permissions_json FROM iam_data_permission \
                  WHERE tenant_id=?1 AND resource_code=?2 AND subject_type='role' \
                  AND subject_id IN ({}) AND status='active' \
                  ORDER BY CASE scope_type \
@@ -1056,7 +1063,22 @@ impl IamRepository {
                 let code: String = row.get(0)?;
                 let st: String = row.get(1)?;
                 let expr: Option<String> = row.get(2).ok();
+                let field_perm: Option<String> = row.get(3).ok();
                 dp_codes.push(code);
+                if let Some(fp) = field_perm {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&fp) {
+                        if let Some(allowed) = parsed.get("allowed_fields").and_then(|v| v.as_array()) {
+                            let mut af = allowed_fields.take().unwrap_or_default();
+                            af.extend(allowed.iter().filter_map(|v| v.as_str().map(|s| s.to_string())));
+                            allowed_fields = Some(af);
+                        }
+                        if let Some(denied) = parsed.get("denied_fields").and_then(|v| v.as_array()) {
+                            let mut df = denied_fields.take().unwrap_or_default();
+                            df.extend(denied.iter().filter_map(|v| v.as_str().map(|s| s.to_string())));
+                            denied_fields = Some(df);
+                        }
+                    }
+                }
                 scope_type = st;
                 if scope_type == "custom" {
                     expression = expr;
@@ -1086,6 +1108,8 @@ impl IamRepository {
             scope_type,
             expression,
             dp_codes,
+            allowed_fields,
+            denied_fields,
         })
     }
 
@@ -1638,7 +1662,7 @@ impl IamRepository {
     ) -> Result<Vec<IamDataPermission>> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT dp_id,tenant_id,dp_code,dp_name,subject_type,subject_id,subject_uuids_json,resource_code,scope_type,custom_rule_expression_sql,custom_rule_expression_json,status,created_at,created_by,updated_at FROM iam_data_permission WHERE tenant_id=?1 AND subject_type='role' AND subject_id=?2",
+            "SELECT dp_id,tenant_id,dp_code,dp_name,subject_type,subject_id,subject_uuids_json,resource_code,scope_type,custom_rule_expression_sql,custom_rule_expression_json,field_permissions_json,status,created_at,created_by,updated_at FROM iam_data_permission WHERE tenant_id=?1 AND subject_type='role' AND subject_id=?2",
         )?;
         let rows = stmt.query_map(params![tenant_id, role_id], |r| {
             Ok(IamDataPermission {
@@ -1653,10 +1677,11 @@ impl IamRepository {
                 scope_type: r.get(8)?,
                 custom_rule_expression_sql: r.get(9)?,
                 custom_rule_expression_json: r.get(10)?,
-                status: r.get(11)?,
-                created_at: r.get(12)?,
-                created_by: r.get(13)?,
-                updated_at: r.get(14)?,
+                field_permissions_json: r.get(11)?,
+                status: r.get(12)?,
+                created_at: r.get(13)?,
+                created_by: r.get(14)?,
+                updated_at: r.get(15)?,
             })
         })?;
         Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
