@@ -237,6 +237,46 @@ pub struct ProcessContext {
     pub ended_at: Option<u64>,
 }
 
+
+/// 审批记录
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApprovalRecord {
+    /// 记录 ID
+    pub record_id: String,
+    /// 流程实例 ID
+    pub instance_id: String,
+    /// 步骤 ID
+    pub step_id: String,
+    /// 审批人
+    pub approver: String,
+    /// 审批动作：approved / rejected / transferred / cc
+    pub action: String,
+    /// 审批意见
+    pub comment: Option<String>,
+    /// 附件（JSON 数组）
+    pub attachments: Option<serde_json::Value>,
+    /// 审批时间
+    pub approved_at: u64,
+}
+
+impl ApprovalRecord {
+    pub fn new(instance_id: &str, step_id: &str, approver: &str, action: &str) -> Self {
+        Self {
+            record_id: uuid::Uuid::new_v4().to_string(),
+            instance_id: instance_id.to_string(),
+            step_id: step_id.to_string(),
+            approver: approver.to_string(),
+            action: action.to_string(),
+            comment: None,
+            attachments: None,
+            approved_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+        }
+    }
+}
+
 /// 流程日志条目
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProcessLogEntry {

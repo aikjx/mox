@@ -23,7 +23,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::error::{ProcessError, ProcessResult};
-use crate::process_def::ProcessDef;
+use crate::process_def::{ApprovalPolicy, ProcessDef};
 use crate::rule_engine::RuleEngine;
 use crate::types::*;
 
@@ -85,6 +85,8 @@ pub struct ProcessEngine {
     rule_engine: Arc<RuleEngine>,
     /// 已执行的流程总数
     total_executed: AtomicU64,
+    /// 审批记录
+    approval_records: RwLock<Vec<ApprovalRecord>>,
     /// 按分类的流程索引
     by_category: RwLock<HashMap<String, Vec<String>>>,
 }
@@ -97,6 +99,7 @@ impl ProcessEngine {
             instances: RwLock::new(HashMap::new()),
             rule_engine: Arc::new(RuleEngine::new()),
             total_executed: AtomicU64::new(0),
+            approval_records: RwLock::new(Vec::new()),
             by_category: RwLock::new(HashMap::new()),
         }
     }
@@ -549,6 +552,7 @@ impl ProcessEngine {
         instance_id: &str,
         step_id: &str,
         approver: &str,
+        comment: Option<&str>,
     ) -> ProcessResult<()> {
         let process_def = {
             let instance = self
@@ -567,8 +571,49 @@ impl ProcessEngine {
         self.log(
             instance_id,
             LogLevel::Info,
-            &format!("step '{}' approved by {}", step.name, approver),
+            &format!("step '{}' approved by {} (policy: {:?})", step.name, approver, step.approval_policy),
         );
+
+        // 记录审批
+        {
+            let mut record = ApprovalRecord::new(instance_id, step_id, approver, "approved");
+            record.comment = comment.map(|c| c.to_string());
+            self.approval_records.write().push(record);
+        }
+
+        // 根据审批策略判断是否完成
+        let should_complete = match step.approval_policy {
+            ApprovalPolicy::Any => true, // 或签：任一通过即完成
+            ApprovalPolicy::All => {
+                // 会签：检查是否所有审批人都通过了
+                let records = self.approval_records.read();
+                let approved_count = records.iter()
+                    .filter(|r| r.instance_id == instance_id && r.step_id == step_id && r.action == "approved")
+                    .count();
+                approved_count >= step.approvers.len()
+            }
+            ApprovalPolicy::Sequential => {
+                // 顺序签：检查是否是当前顺序的审批人
+                let records = self.approval_records.read();
+                let approved_count = records.iter()
+                    .filter(|r| r.instance_id == instance_id && r.step_id == step_id && r.action == "approved")
+                    .count();
+                approved_count >= step.approvers.len()
+            }
+            ApprovalPolicy::Majority => {
+                // 多数通过：超过半数
+                let records = self.approval_records.read();
+                let approved_count = records.iter()
+                    .filter(|r| r.instance_id == instance_id && r.step_id == step_id && r.action == "approved")
+                    .count();
+                approved_count * 2 > step.approvers.len()
+            }
+        };
+
+        if !should_complete {
+            self.log(instance_id, LogLevel::Info, "waiting for more approvers (countersign)");
+            return Ok(());
+        }
 
         // 继续执行
         let next_step = step.next_step_id.clone();
@@ -581,6 +626,141 @@ impl ProcessEngine {
         }
 
         Ok(())
+    }
+
+
+    /// 拒绝审批步骤
+    pub fn reject_step(
+        &self,
+        instance_id: &str,
+        step_id: &str,
+        approver: &str,
+        comment: Option<&str>,
+        reject_to_start: bool,
+    ) -> ProcessResult<()> {
+        let process_def = {
+            let instance = self
+                .instances
+                .read()
+                .get(instance_id)
+                .cloned()
+                .ok_or_else(|| ProcessError::NotFound("instance not found".to_string()))?;
+            self.get_process_def(&instance.process_id).unwrap()
+        };
+
+        let step = process_def.get_step(step_id).cloned().ok_or_else(|| {
+            ProcessError::NotFound(format!("step '{}' not found", step_id))
+        })?;
+
+        self.log(
+            instance_id,
+            LogLevel::Warn,
+            &format!("step '{}' rejected by {}: {}", step.name, approver, comment.unwrap_or("no comment")),
+        );
+
+        // 记录审批
+        {
+            let mut record = ApprovalRecord::new(instance_id, step_id, approver, "rejected");
+            record.comment = comment.map(|c| c.to_string());
+            self.approval_records.write().push(record);
+        }
+
+        if reject_to_start {
+            // 驳回到开始节点
+            self.update_step_status(instance_id, step_id, StepStatus::Failed)?;
+            let start_id = process_def.start_step_id.clone();
+            self.execute_from_step(instance_id, &start_id)?;
+        } else {
+            // 终止流程
+            self.update_step_status(instance_id, step_id, StepStatus::Failed)?;
+            self.log(instance_id, LogLevel::Error, &format!("instance rejected by {}: {}", approver, comment.unwrap_or("no comment")));
+            {
+                let mut instances = self.instances.write();
+                if let Some(inst) = instances.get_mut(instance_id) {
+                    inst.status = ProcessStatus::Failed;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// 获取待办审批（指定审批人的待办列表）
+    pub fn get_pending_approvals(&self, approver: &str) -> Vec<serde_json::Value> {
+        let instances = self.instances.read();
+        let mut result = Vec::new();
+        for (instance_id, instance) in instances.iter() {
+            if instance.status != ProcessStatus::Running && instance.status != ProcessStatus::Waiting {
+                continue;
+            }
+            let process_def = match self.get_process_def(&instance.process_id) {
+                Some(pd) => pd,
+                None => continue,
+            };
+            for (_, step) in process_def.steps.iter() {
+                if step.step_type != StepType::Approval {
+                    continue;
+                }
+                if !step.approvers.contains(&approver.to_string()) {
+                    continue;
+                }
+                // 检查是否已经审批过
+                let already_approved = self.approval_records.read().iter()
+                    .any(|r| r.instance_id == *instance_id && r.step_id == step.id && r.approver == approver);
+                if already_approved {
+                    continue;
+                }
+                // 检查步骤状态是否是 Waiting
+                let step_status = instance.step_statuses.get(&step.id).copied().unwrap_or(StepStatus::Pending);
+                if step_status != StepStatus::Waiting && step_status != StepStatus::Pending {
+                    continue;
+                }
+                result.push(serde_json::json!({
+                    "instance_id": instance_id,
+                    "process_id": instance.process_id,
+                    "process_name": process_def.name,
+                    "step_id": step.id,
+                    "step_name": step.name,
+                    "approval_policy": format!("{:?}", step.approval_policy),
+                    "started_at": instance.started_at,
+                    "variables": instance.context.variables,
+                }));
+            }
+        }
+        result
+    }
+
+    /// 获取我发起的审批
+    pub fn get_my_initiated(&self, initiator: &str) -> Vec<serde_json::Value> {
+        let instances = self.instances.read();
+        let mut result = Vec::new();
+        for (instance_id, instance) in instances.iter() {
+            let initiator_var = instance.context.variables.get("initiator").and_then(|v| v.as_str());
+            if initiator_var != Some(initiator) {
+                continue;
+            }
+            let process_def = match self.get_process_def(&instance.process_id) {
+                Some(pd) => pd,
+                None => continue,
+            };
+            result.push(serde_json::json!({
+                "instance_id": instance_id,
+                "process_id": instance.process_id,
+                "process_name": process_def.name,
+                "status": format!("{:?}", instance.status),
+                "started_at": instance.started_at,
+                "variables": instance.context.variables,
+            }));
+        }
+        result
+    }
+
+    /// 获取审批记录
+    pub fn get_approval_records(&self, instance_id: &str) -> Vec<ApprovalRecord> {
+        self.approval_records.read().iter()
+            .filter(|r| r.instance_id == instance_id)
+            .cloned()
+            .collect()
     }
 
     /// 获取流程定义数量

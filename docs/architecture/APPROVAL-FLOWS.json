@@ -1,0 +1,403 @@
+{
+  "_comment": "MOX 企业级审批流程定义库 - 人事/财务/业务全场景",
+  "_version": "1.0.0",
+  "_engine": "mox-flow-unified-process-core",
+
+  "hr_leave": {
+    "name": "人事-请假审批",
+    "category": "hr",
+    "description": "员工请假申请，按天数分级审批",
+    "steps": {
+      "start": { "type": "start", "next": "dept_manager" },
+      "dept_manager": {
+        "type": "approval",
+        "name": "部门主管审批",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "timeout_seconds": 86400,
+        "next": "decision_days"
+      },
+      "decision_days": {
+        "type": "decision",
+        "name": "按天数分级",
+        "branches": [
+          { "name": "3天以内", "condition": "leave_days <= 3", "target": "end", "priority": 1 },
+          { "name": "3-7天", "condition": "leave_days > 3 && leave_days <= 7", "target": "hr_approval", "priority": 2 },
+          { "name": "7天以上", "condition": "leave_days > 7", "target": "gm_approval", "priority": 3 }
+        ]
+      },
+      "hr_approval": {
+        "type": "approval",
+        "name": "HR审批",
+        "approvers": ["{hr_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "gm_approval": {
+        "type": "approval",
+        "name": "总经理审批",
+        "approvers": ["{general_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["leave_type", "start_date", "end_date", "leave_days", "reason", "attachments"],
+    "notifications": ["dept_manager", "hr_manager", "applicant"]
+  },
+
+  "hr_overtime": {
+    "name": "人事-加班审批",
+    "category": "hr",
+    "description": "员工加班申请",
+    "steps": {
+      "start": { "type": "start", "next": "dept_manager" },
+      "dept_manager": {
+        "type": "approval",
+        "name": "部门主管审批",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["overtime_date", "start_time", "end_time", "overtime_hours", "reason", "project"]
+  },
+
+  "hr_onboarding": {
+    "name": "人事-入职审批",
+    "category": "hr",
+    "description": "新员工入职审批，会签确认",
+    "steps": {
+      "start": { "type": "start", "next": "hr_init" },
+      "hr_init": {
+        "type": "approval",
+        "name": "HR入职登记",
+        "approvers": ["{hr_specialist}"],
+        "approval_policy": "any",
+        "next": "dept_confirm"
+      },
+      "dept_confirm": {
+        "type": "approval",
+        "name": "部门确认",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "next": "it_account"
+      },
+      "it_account": {
+        "type": "approval",
+        "name": "IT账号开通",
+        "approvers": ["{it_admin}"],
+        "approval_policy": "any",
+        "next": "countersign"
+      },
+      "countersign": {
+        "type": "approval",
+        "name": "入职会签确认",
+        "approvers": ["{hr_manager}", "{dept_manager}", "{it_admin}"],
+        "approval_policy": "all",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["name", "id_card", "phone", "email", "dept_id", "position", "salary", "entry_date", "probation_months"]
+  },
+
+  "hr_resignation": {
+    "name": "人事-离职审批",
+    "category": "hr",
+    "description": "员工离职审批，多部门会签交接",
+    "steps": {
+      "start": { "type": "start", "next": "dept_manager" },
+      "dept_manager": {
+        "type": "approval",
+        "name": "部门主管审批",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "next": "hr_review"
+      },
+      "hr_review": {
+        "type": "approval",
+        "name": "HR审核",
+        "approvers": ["{hr_manager}"],
+        "approval_policy": "any",
+        "next": "handover_countersign"
+      },
+      "handover_countersign": {
+        "type": "approval",
+        "name": "交接会签（部门/IT/行政/财务）",
+        "approvers": ["{dept_manager}", "{it_admin}", "{admin_manager}", "{finance_manager}"],
+        "approval_policy": "all",
+        "next": "gm_final"
+      },
+      "gm_final": {
+        "type": "approval",
+        "name": "总经理最终审批",
+        "approvers": ["{general_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["resign_date", "last_day", "reason", "handover_person", "handover_items"]
+  },
+
+  "finance_reimbursement": {
+    "name": "财务-报销审批",
+    "category": "finance",
+    "description": "费用报销，按金额分级审批",
+    "steps": {
+      "start": { "type": "start", "next": "dept_manager" },
+      "dept_manager": {
+        "type": "approval",
+        "name": "部门主管审批",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "next": "decision_amount"
+      },
+      "decision_amount": {
+        "type": "decision",
+        "name": "按金额分级",
+        "branches": [
+          { "name": "5000以内", "condition": "amount <= 5000", "target": "finance_audit", "priority": 1 },
+          { "name": "5000-20000", "condition": "amount > 5000 && amount <= 20000", "target": "finance_manager", "priority": 2 },
+          { "name": "20000以上", "condition": "amount > 20000", "target": "gm_approval", "priority": 3 }
+        ]
+      },
+      "finance_audit": {
+        "type": "approval",
+        "name": "财务审核",
+        "approvers": ["{finance_auditor}"],
+        "approval_policy": "any",
+        "next": "payment"
+      },
+      "finance_manager": {
+        "type": "approval",
+        "name": "财务经理审批",
+        "approvers": ["{finance_manager}"],
+        "approval_policy": "any",
+        "next": "payment"
+      },
+      "gm_approval": {
+        "type": "approval",
+        "name": "总经理审批",
+        "approvers": ["{general_manager}"],
+        "approval_policy": "any",
+        "next": "payment"
+      },
+      "payment": {
+        "type": "notification",
+        "name": "付款通知",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["expense_type", "amount", "currency", "invoice_count", "invoice_amount", "expense_date", "description", "attachments"],
+    "notifications": ["finance_auditor", "applicant"]
+  },
+
+  "finance_payment": {
+    "name": "财务-付款审批",
+    "category": "finance",
+    "description": "对外付款审批，合同/采购付款",
+    "steps": {
+      "start": { "type": "start", "next": "dept_manager" },
+      "dept_manager": {
+        "type": "approval",
+        "name": "部门主管审批",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "next": "finance_audit"
+      },
+      "finance_audit": {
+        "type": "approval",
+        "name": "财务审核",
+        "approvers": ["{finance_auditor}"],
+        "approval_policy": "any",
+        "next": "decision_amount"
+      },
+      "decision_amount": {
+        "type": "decision",
+        "name": "按金额分级",
+        "branches": [
+          { "name": "10万以内", "condition": "amount <= 100000", "target": "finance_manager", "priority": 1 },
+          { "name": "10万以上", "condition": "amount > 100000", "target": "gm_approval", "priority": 2 }
+        ]
+      },
+      "finance_manager": {
+        "type": "approval",
+        "name": "财务经理审批",
+        "approvers": ["{finance_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "gm_approval": {
+        "type": "approval",
+        "name": "总经理审批",
+        "approvers": ["{general_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["payee_name", "payee_account", "payee_bank", "amount", "currency", "payment_type", "contract_id", "invoice_id", "reason", "attachments"]
+  },
+
+  "business_contract": {
+    "name": "业务-合同审批",
+    "category": "business",
+    "description": "合同审批，业务/法务/财务/总经理多级审批",
+    "steps": {
+      "start": { "type": "start", "next": "dept_manager" },
+      "dept_manager": {
+        "type": "approval",
+        "name": "部门主管审批",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "next": "legal_review"
+      },
+      "legal_review": {
+        "type": "approval",
+        "name": "法务审核",
+        "approvers": ["{legal_counsel}"],
+        "approval_policy": "any",
+        "next": "finance_review"
+      },
+      "finance_review": {
+        "type": "approval",
+        "name": "财务审核",
+        "approvers": ["{finance_manager}"],
+        "approval_policy": "any",
+        "next": "decision_amount"
+      },
+      "decision_amount": {
+        "type": "decision",
+        "name": "按合同金额分级",
+        "branches": [
+          { "name": "50万以内", "condition": "contract_amount <= 500000", "target": "vp_approval", "priority": 1 },
+          { "name": "50万以上", "condition": "contract_amount > 500000", "target": "gm_approval", "priority": 2 }
+        ]
+      },
+      "vp_approval": {
+        "type": "approval",
+        "name": "分管副总审批",
+        "approvers": ["{vp}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "gm_approval": {
+        "type": "approval",
+        "name": "总经理审批",
+        "approvers": ["{general_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["contract_name", "contract_type", "party_a", "party_b", "contract_amount", "currency", "start_date", "end_date", "payment_terms", "risk_level", "attachments"],
+    "notifications": ["legal_counsel", "finance_manager", "applicant"]
+  },
+
+  "business_purchase": {
+    "name": "业务-采购审批",
+    "category": "business",
+    "description": "采购申请审批，按金额分级",
+    "steps": {
+      "start": { "type": "start", "next": "dept_manager" },
+      "dept_manager": {
+        "type": "approval",
+        "name": "部门主管审批",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "next": "decision_amount"
+      },
+      "decision_amount": {
+        "type": "decision",
+        "name": "按金额分级",
+        "branches": [
+          { "name": "1万以内", "condition": "amount <= 10000", "target": "end", "priority": 1 },
+          { "name": "1-10万", "condition": "amount > 10000 && amount <= 100000", "target": "procurement_manager", "priority": 2 },
+          { "name": "10万以上", "condition": "amount > 100000", "target": "gm_approval", "priority": 3 }
+        ]
+      },
+      "procurement_manager": {
+        "type": "approval",
+        "name": "采购经理审批",
+        "approvers": ["{procurement_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "gm_approval": {
+        "type": "approval",
+        "name": "总经理审批",
+        "approvers": ["{general_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["item_name", "specification", "quantity", "unit", "estimated_price", "amount", "supplier", "purpose", "expected_date", "attachments"]
+  },
+
+  "business_project": {
+    "name": "业务-项目立项审批",
+    "category": "business",
+    "description": "项目立项审批，会签评估",
+    "steps": {
+      "start": { "type": "start", "next": "dept_manager" },
+      "dept_manager": {
+        "type": "approval",
+        "name": "部门主管审批",
+        "approvers": ["{dept_manager}"],
+        "approval_policy": "any",
+        "next": "pmo_review"
+      },
+      "pmo_review": {
+        "type": "approval",
+        "name": "PMO审核",
+        "approvers": ["{pmo_manager}"],
+        "approval_policy": "any",
+        "next": "countersign"
+      },
+      "countersign": {
+        "type": "approval",
+        "name": "立项会签（技术/财务/法务）",
+        "approvers": ["{tech_director}", "{finance_manager}", "{legal_counsel}"],
+        "approval_policy": "all",
+        "next": "gm_approval"
+      },
+      "gm_approval": {
+        "type": "approval",
+        "name": "总经理审批",
+        "approvers": ["{general_manager}"],
+        "approval_policy": "any",
+        "next": "end"
+      },
+      "end": { "type": "end" }
+    },
+    "form_fields": ["project_name", "project_type", "background", "objectives", "scope", "budget", "duration_months", "team_members", "risks", "attachments"]
+  },
+
+  "_approval_policies_explained": {
+    "any": "或签：任一审批人通过即通过，适用于部门主管等单人审批场景",
+    "all": "会签：所有审批人都要通过才通过，适用于入职/离职/项目立项等多部门确认场景",
+    "sequential": "顺序签：按顺序依次审批，前一人通过后下一人才能审批",
+    "majority": "多数通过：超过半数审批人通过即通过，适用于委员会评审场景"
+  },
+
+  "_role_variables": {
+    "{dept_manager}": "申请人所在部门的主管（从 IAM 部门树自动解析）",
+    "{hr_manager}": "HR经理（角色编码 hr_manager）",
+    "{hr_specialist}": "HR专员（角色编码 hr_specialist）",
+    "{finance_manager}": "财务经理（角色编码 finance_manager）",
+    "{finance_auditor}": "财务审核员（角色编码 finance_auditor）",
+    "{general_manager}": "总经理（角色编码 general_manager）",
+    "{vp}": "分管副总（角色编码 vp）",
+    "{legal_counsel}": "法务顾问（角色编码 legal_counsel）",
+    "{it_admin}": "IT管理员（角色编码 it_admin）",
+    "{admin_manager}": "行政经理（角色编码 admin_manager）",
+    "{procurement_manager}": "采购经理（角色编码 procurement_manager）",
+    "{pmo_manager}": "PMO经理（角色编码 pmo_manager）",
+    "{tech_director}": "技术总监（角色编码 tech_director）"
+  }
+}
