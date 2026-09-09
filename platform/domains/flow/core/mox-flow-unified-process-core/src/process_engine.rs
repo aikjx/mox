@@ -965,7 +965,7 @@ mod tests {
 
         // 通过审批
         engine
-            .approve_step(&inst_id, &approval_id, "manager1")
+            .approve_step(&inst_id, &approval_id, "manager1", None)
             .unwrap();
 
         // 审批后：完成

@@ -18,6 +18,8 @@ mox-ai-expert-proto = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
 
 # 实时联动推送（feature=live 时启用，可选；默认不引第三方 HTTP 客户端）
 reqwest = { workspace = true, optional = true }
@@ -33,5 +35,3 @@ hermes = []
 live = ["dep:reqwest"]
 
 [dev-dependencies]
-async-trait = { workspace = true }
-anyhow = { workspace = true }

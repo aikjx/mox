@@ -24,7 +24,7 @@ impl ExpertConsultant for DemoConsultant {
     async fn consult(&self, q: &ConsultQuery) -> anyhow::Result<ConsultReport> {
         Ok(ConsultReport {
             report_id: q.id.clone(),
-            steps: vec!['demo-stub'.into()],
+            steps: vec!["demo-stub".into()],
             score: 0.85,
             vetoed: false,
             reason: None,

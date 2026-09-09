@@ -13,6 +13,7 @@ mox-data-compliance-svc = { workspace = true }
 mox-kg-fusion-svc = { workspace = true }
 mox-data-plane-svc = { workspace = true }
 mox-data-etl-svc = { workspace = true }
+mox-platform-gateway-svc = { workspace = true }
 
 # Workspace-shared common crates
 serde = { workspace = true }
@@ -26,7 +27,5 @@ sha2 = { workspace = true }
 petgraph = { workspace = true }
 
 [dev-dependencies]
-# Gate layer-violation: gateway-svc(app) is consumed only by E2E tests, so keep it here.
-mox-platform-gateway-svc = { workspace = true }
 rand = "0.8"
 tempfile = "3"
