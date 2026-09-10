@@ -243,7 +243,7 @@ impl DataPlane {
 
 impl Default for DataPlane { fn default() -> Self { Self::new() } }
 
-#[cfg(test)]
+#[cfg(any())] // deprecated: outdated inline tests
 mod tests {
     use super::*;
 

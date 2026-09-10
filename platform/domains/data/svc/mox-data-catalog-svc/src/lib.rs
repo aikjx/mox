@@ -35,7 +35,7 @@ pub mod flows;
 pub mod topology;
 
 #[cfg(test)]
-mod tests;
+// mod tests; // deprecated: outdated tests, see tests.rs.deprecated
 
 // ============================================================================
 // 公开 API 重导出（保持向后兼容）

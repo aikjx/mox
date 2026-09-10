@@ -27,7 +27,7 @@ use mox_ai_expert_svc::expert_traits::ExpertConsultant;
 use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport};
 
 fn small_graph() -> (std::sync::Arc<BridgeState>, mox_ai_flow_sdk::model::FlowGraph) {
-    let st = BridgeState::new();
+    let st = BridgeState::default();
     st.recorder.record(
         "default",
         &ToolCall {

@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn hermes_plugin_registers_middlewares() {
-        let st = Arc::new(BridgeState::new());
+        let st = BridgeState::default();
         st.router.register(FlowTemplate {
             id: "x".into(),
             tool_seq: vec!["a".into()],

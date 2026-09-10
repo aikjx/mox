@@ -15,7 +15,7 @@ use crate::recorder::Recorder;
 use crate::router::Router;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use mox_ai_expert_proto::ExpertConsultant;
+use mox_ai_expert_proto::{ExpertConsultant, ConsultQuery, ConsultReport};
 
 /// 算法否决闸门（璇玑）。内部可变性。
 #[derive(Debug)]
@@ -51,6 +51,18 @@ impl GateState {
     }
 }
 
+
+/// Noop 咨询器：默认空实现，用于测试和默认构造。
+/// 返回空 ConsultReport，不触发任何真实引擎。
+pub struct NoopConsultant;
+
+#[async_trait::async_trait]
+impl ExpertConsultant for NoopConsultant {
+    async fn consult(&self, _query: &ConsultQuery) -> anyhow::Result<ConsultReport> {
+        Ok(ConsultReport::default())
+    }
+}
+
 /// 桥接共享状态（DIP 版：通过 `Arc<dyn ExpertConsultant>` 调用璇玑引擎，
 /// 不直接引用 mox-expert 的 concrete 实现）。
 pub struct BridgeState {
@@ -69,6 +81,12 @@ impl BridgeState {
         Self::with_consultant(consultant)
     }
     /// 自定义 consultant：测试时可替换 Mock 实现，不依赖 mox-expert 引擎。
+
+    /// 默认构造：使用 NoopConsultant（空实现），兼容旧测试和快速原型。
+    /// 生产环境建议用 new(consultant) 注入真实引擎。
+    pub fn default() -> Arc<Self> {
+        Self::with_consultant(Arc::new(NoopConsultant))
+    }
     pub fn with_consultant(consultant: Arc<dyn ExpertConsultant>) -> Arc<Self> {
         Arc::new(Self {
             recorder: Recorder::new(),

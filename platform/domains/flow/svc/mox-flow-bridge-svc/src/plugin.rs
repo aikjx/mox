@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn plugin_registers_two_middlewares() {
-        let st = BridgeState::new();
+        let st = BridgeState::default();
         let plugin = FlowBridgePlugin::new(st.clone());
         let mut ctx = PluginContext::new();
         plugin.register(&mut ctx);
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn execution_middleware_blocks_when_vetoed() {
-        let st = BridgeState::new();
+        let st = BridgeState::default();
         st.set_vetoed(true);
         let plugin = FlowBridgePlugin::new(st.clone());
         let mut ctx = PluginContext::new();
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn request_middleware_returns_route_source() {
-        let st = BridgeState::new();
+        let st = BridgeState::default();
         st.router.register(crate::router::FlowTemplate {
             id: "gov".into(),
             tool_seq: vec!["a".into(), "b".into()],

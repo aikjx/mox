@@ -19,3 +19,5 @@ tokio = { workspace = true }
 async-trait = { workspace = true }
 
 [dev-dependencies]
+# DIP 验收测试需要 concrete 工厂 default_consultant() 构建 trait object
+mox-ai-expert-svc = { workspace = true }

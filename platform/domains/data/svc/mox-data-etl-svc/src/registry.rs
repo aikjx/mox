@@ -152,7 +152,7 @@ mod tests {
     struct CompressZero;
     impl InlinePut for CompressZero {
         fn name(&self) -> &str { "compress_zero" }
-        fn transform(&self, input: &[u8], _ctx: &EtContext) -> crate::EtResult<Vec<u8>> {
+        fn transform(&self, input: &[u8], _ctx: &EtContext) -> EtResult<Vec<u8>> {
             Ok(input.iter().copied().filter(|&b| b != 0x00).collect())
         }
     }
@@ -212,7 +212,7 @@ mod tests {
     struct IdentityInlineGet { name: String }
     impl InlineGet for IdentityInlineGet {
         fn name(&self) -> &str { &self.name }
-        fn transform(&self, input: &[u8], _ctx: &EtContext) -> crate::EtResult<Vec<u8>> {
+        fn transform(&self, input: &[u8], _ctx: &EtContext) -> EtResult<Vec<u8>> {
             Ok(input.to_vec())
         }
     }

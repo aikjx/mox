@@ -189,9 +189,13 @@ mod tests {
 
     /// 构造测试用注册中心（运行时指标与日志缓冲用最小容量实例，不触碰生产数据）
     fn test_states() -> ModuleStates {
+        let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+        let iam = mox_platform_iam_core::IamRepository::new(Arc::new(parking_lot::Mutex::new(conn)));
+        let _ = iam.init_schema();
         ModuleStates::new(
             Arc::new(RuntimeMetrics::new()),
             LogStore::new(16),
+            Arc::new(iam),
         )
     }
 

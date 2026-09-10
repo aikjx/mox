@@ -110,4 +110,4 @@ Rust（axum / tonic / sqlx）· Vue3（Vite）· PostgreSQL · Redis · Docker �
 
 ## License
 
-[MIT OR Apache-2.0](LICENSE)
+[MIT](LICENSE)

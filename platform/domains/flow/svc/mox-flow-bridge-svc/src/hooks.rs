@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn request_hook_records_and_routes() {
-        let st = BridgeState::new();
+        let st = BridgeState::default();
         st.router.register(crate::router::FlowTemplate {
             id: "gov".into(),
             tool_seq: vec!["db.read".into(), "guard".into()],
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn execution_hook_blocks_on_veto() {
-        let st = BridgeState::new();
+        let st = BridgeState::default();
         st.gate.set_vetoed(true);
         assert!(on_tool_execution(&st).blocked);
         st.gate.set_vetoed(false);

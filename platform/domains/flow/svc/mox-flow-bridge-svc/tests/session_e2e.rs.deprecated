@@ -38,7 +38,7 @@ fn simulate_session(st: &BridgeState, session: &str) {
 
 #[test]
 fn session_recording_accumulates_graph_nodes() {
-    let st = BridgeState::new();
+    let st = BridgeState::default();
     simulate_session(&st, "s1");
     let g = st.recorder.snapshot("s1").expect("session graph exists");
     // 4 次工具调用 → 4 个节点（id 为 <tool>#<turn>）
@@ -50,13 +50,13 @@ fn session_recording_accumulates_graph_nodes() {
 
 #[test]
 fn unknown_session_has_no_graph() {
-    let st = BridgeState::new();
+    let st = BridgeState::default();
     assert!(st.recorder.snapshot("never").is_none());
 }
 
 #[test]
 fn router_short_circuits_repeated_sequence() {
-    let st = BridgeState::new();
+    let st = BridgeState::default();
     // 注册一张「政务 PII 归集」复用模板
     st.router.register(FlowTemplate {
         id: "gov-pii".into(),
@@ -81,7 +81,7 @@ fn router_short_circuits_repeated_sequence() {
 
 #[test]
 fn optimize_runs_real_engine_and_passes_verification() {
-    let st = BridgeState::new();
+    let st = BridgeState::default();
     simulate_session(&st, "s3");
     let g = st.recorder.snapshot("s3").expect("graph");
     // 调真实 mox-expert 引擎（非桩）：优化 + 七专家 + 算法验证网关
@@ -92,7 +92,7 @@ fn optimize_runs_real_engine_and_passes_verification() {
 
 #[test]
 fn execution_middleware_blocks_when_algorithm_vetoes() {
-    let st = BridgeState::new();
+    let st = BridgeState::default();
     // 模拟算法验证网关否决（verify 在发现语义破坏时会置位）
     st.set_vetoed(true);
     let decision = on_tool_execution(&st);
@@ -105,7 +105,7 @@ fn execution_middleware_blocks_when_algorithm_vetoes() {
 
 #[test]
 fn full_chain_session_then_optimize_then_route_free() {
-    let st = BridgeState::new();
+    let st = BridgeState::default();
     // 1) Hermes 真实调用逐轮录制
     on_tool_request(
         &st,

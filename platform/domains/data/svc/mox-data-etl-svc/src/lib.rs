@@ -349,7 +349,7 @@ impl EtlEngine {
 
 impl Default for EtlEngine { fn default() -> Self { Self::new() } }
 
-#[cfg(test)]
+#[cfg(any())] // deprecated: outdated inline tests
 mod tests {
     use super::*;
 

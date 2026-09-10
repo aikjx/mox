@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn bridge_skips_llm_when_template_known() {
-        let st = BridgeState::new();
+        let st = BridgeState::default();
         register_gov_template(&st);
         let tracer = LlmTracer::new();
         let out = run_bridge(&st, &gov_pii_plan(), &tracer);
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn bridge_calls_llm_only_for_unknown_tail() {
-        let st = BridgeState::new();
+        let st = BridgeState::default();
         // 只注册前缀模板：db.read→guard
         st.router.register(FlowTemplate {
             id: "partial".into(),
