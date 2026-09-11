@@ -73,6 +73,22 @@ CREATE INDEX IF NOT EXISTS idx_iam_user_status   ON iam_user(user_status);
 CREATE INDEX IF NOT EXISTS idx_iam_user_code     ON iam_user(tenant_id, user_code);
 CREATE INDEX IF NOT EXISTS idx_iam_user_username ON iam_user(tenant_id, username);
 
+-- 3b. iam_user_dept — 用户↔部门 多对多（归属真源）
+-- iam_user.dept_id 为「主部门」反规范化缓存：单部门场景向后兼容，多部门场景由本表承载
+CREATE TABLE IF NOT EXISTS iam_user_dept (
+  ud_id      TEXT PRIMARY KEY,
+  tenant_id  TEXT NOT NULL,
+  user_id    TEXT NOT NULL,
+  dept_id    TEXT NOT NULL,
+  is_primary INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL,
+  UNIQUE(user_id, dept_id)
+);
+CREATE INDEX IF NOT EXISTS idx_iam_ud_tenant  ON iam_user_dept(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_iam_ud_dept    ON iam_user_dept(dept_id);
+CREATE INDEX IF NOT EXISTS idx_iam_ud_primary ON iam_user_dept(user_id, is_primary);
+
 -- 4. iam_role
 CREATE TABLE IF NOT EXISTS iam_role (
   role_id      TEXT PRIMARY KEY,

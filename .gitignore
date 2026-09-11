@@ -17,7 +17,7 @@
 /exports/
 # 第三方源码暂存
 /third_party/
-
+tests\regression
 # ---- 日志与临时文件 ----
 *.log
 *.out

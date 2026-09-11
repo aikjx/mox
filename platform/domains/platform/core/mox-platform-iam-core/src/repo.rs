@@ -833,7 +833,97 @@ impl IamRepository {
                 u.last_login_ip, u.created_at, u.updated_at, u.version
             ],
         )?;
+        // 主部门同步写入关联表（is_primary=1）：单部门调用方自动获得完整归属记录
+        if let Some(did) = &u.dept_id {
+            conn.execute(
+                "INSERT OR IGNORE INTO iam_user_dept (ud_id,tenant_id,user_id,dept_id,is_primary,sort_order,created_at) VALUES (?1,?2,?3,?4,1,0,?5)",
+                params![new_id(), u.tenant_id, u.user_id, did, u.created_at],
+            )?;
+        }
         Ok(u)
+    }
+
+    /// 用户归属的全部部门（真源：iam_user_dept）
+    pub fn list_user_depts(&self, user_id: &str) -> Result<Vec<IamUserDept>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT ud_id,tenant_id,user_id,dept_id,is_primary,sort_order,created_at \
+             FROM iam_user_dept WHERE user_id=?1 ORDER BY is_primary DESC, sort_order ASC, created_at ASC",
+        )?;
+        let rows = stmt.query_map(params![user_id], |r| {
+            Ok(IamUserDept {
+                ud_id: r.get(0)?,
+                tenant_id: r.get(1)?,
+                user_id: r.get(2)?,
+                dept_id: r.get(3)?,
+                is_primary: r.get(4)?,
+                sort_order: r.get(5)?,
+                created_at: r.get(6)?,
+            })
+        })?;
+        Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
+    }
+
+    /// 一次性设置用户归属部门（多对多，首个为主部门）。
+    /// 事务内：校验部门归属租户 → 全量替换关联行 → 同步主部门缓存 iam_user.dept_id。
+    pub fn set_user_depts(
+        &self,
+        tenant_id: &str,
+        user_id: &str,
+        dept_ids: &[&str],
+    ) -> Result<Vec<IamUserDept>> {
+        // 去重保序；空列表 = 清空归属
+        let mut seen = HashSet::new();
+        let ids: Vec<&str> = dept_ids
+            .iter()
+            .filter(|d| !d.is_empty())
+            .filter(|d| seen.insert(**d))
+            .copied()
+            .collect();
+        {
+            let conn = self.conn.lock();
+            for did in &ids {
+                let ok = conn
+                    .prepare("SELECT 1 FROM iam_department WHERE dept_id=?1 AND tenant_id=?2")?
+                    .query_row(params![did, tenant_id], |r| r.get::<_, i64>(0))
+                    .is_ok();
+                if !ok {
+                    return Err(IamRepoError::NotFound(format!(
+                        "dept {did} not in tenant {tenant_id}"
+                    ))
+                    .into());
+                }
+            }
+        }
+        let ts = now_iso();
+        let mut conn = self.conn.lock();
+        let tx = conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM iam_user_dept WHERE user_id=?1", params![user_id])?;
+        let mut out = Vec::with_capacity(ids.len());
+        for (i, did) in ids.iter().enumerate() {
+            let ud = IamUserDept {
+                ud_id: new_id(),
+                tenant_id: tenant_id.to_string(),
+                user_id: user_id.to_string(),
+                dept_id: (*did).to_string(),
+                is_primary: if i == 0 { 1 } else { 0 },
+                sort_order: Some(i as i64),
+                created_at: ts.clone(),
+            };
+            tx.execute(
+                "INSERT INTO iam_user_dept (ud_id,tenant_id,user_id,dept_id,is_primary,sort_order,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7)",
+                params![ud.ud_id, ud.tenant_id, ud.user_id, ud.dept_id, ud.is_primary, ud.sort_order, ud.created_at],
+            )?;
+            out.push(ud);
+        }
+        // 主部门缓存 = 首个部门（空列表时置 NULL）
+        let primary = ids.first().copied();
+        tx.execute(
+            "UPDATE iam_user SET dept_id=?1, updated_at=?2 WHERE user_id=?3",
+            params![primary, ts, user_id],
+        )?;
+        tx.commit()?;
+        Ok(out)
     }
 
     pub fn assign_role_to_user(
@@ -1229,7 +1319,7 @@ impl IamRepository {
     pub fn list_users_by_dept(&self, tenant_id: &str, dept_id: &str) -> Result<Vec<IamUser>> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT user_id,tenant_id,user_code,username,password_hash,real_name,nickname,email,phone,avatar,dept_id,position,user_status,is_superuser,last_login_at,last_login_ip,created_at,updated_at,version FROM iam_user WHERE tenant_id=?1 AND dept_id=?2 ORDER BY created_at DESC",
+            "SELECT user_id,tenant_id,user_code,username,password_hash,real_name,nickname,email,phone,avatar,dept_id,position,user_status,is_superuser,last_login_at,last_login_ip,created_at,updated_at,version FROM iam_user WHERE tenant_id=?1 AND (dept_id=?2 OR EXISTS(SELECT 1 FROM iam_user_dept ud WHERE ud.user_id=iam_user.user_id AND ud.dept_id=?2)) ORDER BY created_at DESC",
         )?;
         let rows = stmt.query_map(params![tenant_id, dept_id], |r| {
             Ok(IamUser {
@@ -1493,12 +1583,22 @@ impl IamRepository {
         let conn = self.conn.lock();
         let sql = format!("UPDATE iam_user SET {} WHERE user_id=?", sets.join(","));
         conn.execute(&sql, rusqlite::params_from_iter(params.iter()))?;
+        // 主部门变更 → 仅切换主部门（保留其余归属，防止单值调用方误清多部门成员关系）
+        if let Some(v) = dept_id {
+            conn.execute("UPDATE iam_user_dept SET is_primary=0 WHERE user_id=?1", params![user_id])?;
+            conn.execute("UPDATE iam_user_dept SET is_primary=1 WHERE user_id=?1 AND dept_id=?2", params![user_id, v])?;
+            conn.execute(
+                "INSERT OR IGNORE INTO iam_user_dept (ud_id,tenant_id,user_id,dept_id,is_primary,sort_order,created_at) SELECT ?1,tenant_id,?2,?3,1,0,?4 FROM iam_user WHERE user_id=?2",
+                params![new_id(), user_id, v, now],
+            )?;
+        }
         Ok(())
     }
 
     pub fn delete_user(&self, user_id: &str) -> Result<()> {
         let conn = self.conn.lock();
         conn.execute("DELETE FROM iam_user_role WHERE user_id=?1", params![user_id])?;
+        conn.execute("DELETE FROM iam_user_dept WHERE user_id=?1", params![user_id])?;
         conn.execute("DELETE FROM iam_user WHERE user_id=?1", params![user_id])?;
         Ok(())
     }

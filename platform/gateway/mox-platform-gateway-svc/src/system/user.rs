@@ -45,17 +45,33 @@ pub(crate) async fn create_user_handler(
     let real_name = opt_str(&body, "realName");
     let password_hash = opt_str(&body, "password");
     let dept_id = opt_str(&body, "deptId");
-    match s.iam.create_user(
+    let created = match s.iam.create_user(
         &tenant,
         &user_code,
         username,
         real_name,
         password_hash,
-        dept_id,
+        dept_id.as_deref(),
         false,
     ) {
-        Ok(u) => ok(user_json(&u)),
-        Err(e) => err(&format!("user create: {e}")),
+        Ok(u) => u,
+        Err(e) => return err(&format!("user create: {e}")),
+    };
+    // 多部门归属：deptIds 数组（首个为主部门；显式 deptId 若不在数组中则提升为主）
+    if let Some(mut ids) = dept_ids_of(&body) {
+        if let Some(primary) = &dept_id {
+            if !ids.iter().any(|i| i == primary) {
+                ids.insert(0, primary.to_string());
+            }
+        }
+        let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+        if let Err(e) = s.iam.set_user_depts(&tenant, &created.user_id, &refs) {
+            return err(&format!("user multi-dept set: {e}"));
+        }
+    }
+    match s.iam.get_user(&created.user_id) {
+        Ok(Some(u)) => ok(user_json(&u)),
+        _ => ok(user_json(&created)),
     }
 }
 
@@ -90,12 +106,83 @@ pub(crate) async fn update_user_handler(
         real_name,
         email,
         phone,
-        dept_id,
+        dept_id.as_deref(),
         position,
         user_status,
     ) {
-        Ok(_) => ok(json!(null)),
-        Err(e) => err(&format!("user update: {e}")),
+        Ok(_) => {}
+        Err(e) => return err(&format!("user update: {e}")),
+    }
+    // deptIds 显式传入时全量重设归属（首个为主部门），优先级高于单值 deptId
+    if let Some(ids) = dept_ids_of(&body) {
+        let tenant = user_tenant_of(&s, &id);
+        if tenant.is_empty() {
+            return err("user not found");
+        }
+        let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+        if let Err(e) = s.iam.set_user_depts(&tenant, &id, &refs) {
+            return err(&format!("user multi-dept set: {e}"));
+        }
+    }
+    ok(json!(null))
+}
+
+/// 解析 body.deptIds（字符串数组）；不存在或非数组时返回 None（单值 deptId 路径不受影响）
+fn dept_ids_of(body: &Value) -> Option<Vec<String>> {
+    body.get("deptIds").and_then(|v| v.as_array()).map(|a| {
+        a.iter()
+            .filter_map(|x| x.as_str().map(String::from))
+            .filter(|s| !s.is_empty())
+            .collect()
+    })
+}
+
+fn user_tenant_of(s: &GatewayState, user_id: &str) -> String {
+    s.iam.get_user(user_id)
+        .ok()
+        .flatten()
+        .map(|u| u.tenant_id)
+        .unwrap_or_default()
+}
+
+/// GET /api/system/user/:id/depts — 用户归属的全部部门（含主部门标记）
+pub(crate) async fn get_user_depts_handler(
+    State(s): State<GatewayState>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
+    match s.iam.list_user_depts(&id) {
+        Ok(list) => ok(json!(list
+            .iter()
+            .map(|m| json!({
+                "deptId": m.dept_id,
+                "isPrimary": m.is_primary == 1,
+                "sort": m.sort_order,
+            }))
+            .collect::<Vec<_>>())),
+        Err(e) => err(&format!("user depts: {e}")),
+    }
+}
+
+/// PUT /api/system/user/:id/depts — 全量重设归属部门（deptIds 数组，首个为主部门）
+pub(crate) async fn set_user_depts_handler(
+    State(s): State<GatewayState>,
+    Path(id): Path<String>,
+    Json(body): Json<Value>,
+) -> ApiResponse<Value> {
+    let Some(ids) = dept_ids_of(&body) else {
+        return err("deptIds (string array) is required");
+    };
+    let tenant = user_tenant_of(&s, &id);
+    if tenant.is_empty() {
+        return err("user not found");
+    }
+    let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+    match s.iam.set_user_depts(&tenant, &id, &refs) {
+        Ok(list) => ok(json!(list
+            .iter()
+            .map(|m| json!({"deptId": m.dept_id, "isPrimary": m.is_primary == 1}))
+            .collect::<Vec<_>>())),
+        Err(e) => err(&format!("user depts set: {e}")),
     }
 }
 

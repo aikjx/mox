@@ -1,0 +1,575 @@
+﻿{
+  "version": "3.0",
+  "project_name": "鐠囩帒绯荤粺 路 mox 妯″潡鍖栫郴缁熸灦鏋勬暟瀛楀鐢熶腑鍙?,
+  "dashboard_port": 3999,
+  "admin": {
+    "username": "admin",
+    "password": "***REPLACE_ME***"
+  },
+  "log_rolling": {
+    "max_bytes": 5242880,
+    "backup": 3
+  },
+  "services": {
+    "api": {
+      "name": "API 鍚庣鏈嶅姟锛圧ust mox-server 浼佷笟绾х綉鍏筹級",
+      "description": "MOX 浼佷笟绾х綉鍏筹紙Rust axum锛?080 鍞竴鍏ュ彛锛夛細199 鏉℃敞鍐岃矾鐢便€丣WT 閴存潈銆乲g/ai/kb/alliance 绛?13 鍩熴€?health /metrics /actuator/*",
+      "port": 8080,
+      "health_check": "/health",
+      "cwd": ".",
+      "command": "target/debug/mox-server.exe",
+      "args": [
+        "target/debug/mox-server.exe",
+        "--port",
+        "8080"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": true,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 10,
+      "depends_on": [],
+      "tags": [
+        "API",
+        "鍚庣",
+        "鏍稿績",
+        "Rust",
+        "Gateway",
+        "Enterprise"
+      ]
+    },
+    "frontend": {
+      "name": "鐢ㄦ埛鍓嶇鐣岄潰",
+      "description": "Vite + Vue3 鍓嶅彴锛涢€氳繃 /api 浠ｇ悊鍒?api 鏈嶅姟 :8080",
+      "port": 3020,
+      "health_check": "/",
+      "cwd": "frontend-ui",
+      "command": "npm run dev",
+      "args": [
+        "npm",
+        "run",
+        "dev"
+      ],
+      "binary_requires": [
+        "node",
+        "npm"
+      ],
+      "npm_deps": true,
+      "is_admin_only": false,
+      "auto_start": false,
+      "wait_time": 14,
+      "startup_order_hint": 20,
+      "depends_on": [
+        "api"
+      ],
+      "tags": [
+        "鍓嶇",
+        "鐢ㄦ埛鐣岄潰",
+        "Vite"
+      ]
+    },
+    "xiaobai_voice": {
+      "name": "灏忕櫧璇煶鏈嶅姟锛圓SR + TTS锛?,
+      "description": "鏈湴绂荤嚎璇煶锛歅araformer ASR / CosyVoice2 TTS锛堣眴鍖呯骇鍔ㄥ惉濂冲０锛孉pache2锛夛紱绔彛 30010锛屼緵 Rust 缃戝叧 /voice/** 浠ｇ悊璋冪敤銆侫I 瀵硅瘽椤甸潰鏈楄绗竴灞傚繀鍛戒腑锛涙潈閲嶇己澶辨椂鑷姩鍒囨祻瑙堝櫒鎷熶汉闊冲厹搴曘€?,
+      "port": 30010,
+      "health_check": "/voice/health",
+      "cwd": "projects/xiaobai_voice",
+      "command": "python -m xiaobai_voice serve --host 0.0.0.0",
+      "args": [
+        "python",
+        "-m",
+        "xiaobai_voice",
+        "serve",
+        "--host",
+        "0.0.0.0"
+      ],
+      "binary_requires": [
+        "python"
+      ],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": true,
+      "restart_delay": 3,
+      "wait_time": 12,
+      "startup_order_hint": 5,
+      "depends_on": [],
+      "tags": [
+        "璇煶",
+        "AI浜や簰",
+        "TTS",
+        "ASR",
+        "鏈湴鎺ㄧ悊"
+      ]
+    },
+    "melody2score": {
+      "name": "鏃嬪緥杞氨鏈嶅姟锛圡elody2Score WebUI锛?,
+      "description": "浼佷笟绾у彲瑙嗗寲闊抽杞氨锛氶噰闆嗏啋棰勫鐞嗏啋闊抽珮妫€娴嬧啋瑙ｆ瀽鈫掓瓕璋憋紱FastAPI 鍚庣 + 闈欐€佸墠绔紝绔彛 8012锛屾敮鎸佸綍闊宠瘑鍒€佹枃浠朵笂浼犮€丮arkdown 瀵煎嚭",
+      "port": 8012,
+      "health_check": "/",
+      "cwd": "projects/melody2score",
+      "command": "python app/webui.py",
+      "args": [
+        "python",
+        "app/webui.py"
+      ],
+      "binary_requires": [
+        "python"
+      ],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 10,
+      "startup_order_hint": 30,
+      "depends_on": [],
+      "tags": [
+        "闊抽",
+        "杞氨",
+        "AI",
+        "FastAPI",
+        "WebUI"
+      ]
+    },
+    "primiflow": {
+      "name": "PrimiFlow 浣庝唬鐮佹嫇鎵戝紩鎿?,
+      "description": "MVP 浣庝唬鐮佹嫇鎵戠敓鎴愬紩鎿庯細FastAPI 鍗曟湇鍔★紙绔彛 8000锛夛紝鍐呯疆鎷撴墤鏋勫缓銆乀race 鐢熸垚銆佹枃妗ｅ鍑猴紝鑷姩鎵樼 web/index.html 闈欐€侀〉",
+      "port": 8000,
+      "health_check": "/",
+      "cwd": "projects/primiflow/backend",
+      "command": "python -m uvicorn main:app --host 0.0.0.0 --port 8000",
+      "args": [
+        "python",
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "binary_requires": [
+        "python"
+      ],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 40,
+      "depends_on": [],
+      "tags": [
+        "浣庝唬鐮?,
+        "鎷撴墤",
+        "FastAPI",
+        "寮曟搸"
+      ]
+    },
+    "operator-server": {
+      "name": "缂栨帓鍣紙mox-platform-orchestrator锛?,
+      "description": "MOX 缂栨帓鍣細AI 鑳藉姏/鍥捐氨瀵煎嚭/绯荤粺鐢ㄦ埛锛涗緷璧栧閮?token锛圤US_API_TOKEN锛夛紝鐢熶骇鐢?start-mox-enterprise.ps1 鎷夎捣",
+      "port": 3001,
+      "health_check": "/mox-viz/api/health",
+      "cwd": ".",
+      "command": "target/debug/operator-server.exe",
+      "args": [
+        "target/debug/operator-server.exe",
+        "--port",
+        "3001"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": true,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 15,
+      "depends_on": [],
+      "tags": [
+        "缂栨帓",
+        "AI",
+        "鍥捐氨",
+        "Rust"
+      ]
+    },
+    "mox-kb-server": {
+      "name": "鐭ヨ瘑搴撶嫭绔嬫湇鍔★紙mox-kb-server锛?,
+      "description": "鐭ヨ瘑搴撴湇鍔★細鏂囨。绠＄悊/鐗堟湰/鍏ㄦ枃妫€绱?鍏崇郴閾炬帴锛涚鍙?8104锛圥ORT-REGISTRY锛?,
+      "port": 8104,
+      "health_check": "/health/live",
+      "cwd": ".",
+      "command": "target/debug/mox-kb-server.exe",
+      "args": [
+        "target/debug/mox-kb-server.exe",
+        "--port",
+        "8104"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 20,
+      "depends_on": [],
+      "tags": [
+        "鐭ヨ瘑搴?,
+        "KB",
+        "Rust",
+        "妫€绱?
+      ]
+    },
+    "mox-alliance-scheduler": {
+      "name": "鑱旂洘璋冨害鍣紙mox-alliance-scheduler锛?,
+      "description": "涓撳鑱旂洘璋冨害鍣細浠诲姟 DAG 璋冨害/涓撳鎼滅储锛涚鍙?3100",
+      "port": 3100,
+      "health_check": "/health",
+      "cwd": ".",
+      "command": "target/debug/mox-alliance-scheduler.exe",
+      "args": [
+        "target/debug/mox-alliance-scheduler.exe",
+        "--port",
+        "3100"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 25,
+      "depends_on": [],
+      "tags": [
+        "鑱旂洘",
+        "璋冨害",
+        "DAG",
+        "Rust"
+      ]
+    },
+    "mox-alliance-executor": {
+      "name": "鑱旂洘鎵ц鍣紙mox-alliance-executor锛?,
+      "description": "涓撳鑱旂洘鎵ц鍣細DAG 鑺傜偣鎵ц锛坋xpert=鐪熷疄LLM / mock=寮€鍙戞祴璇曪級锛涚鍙?3200",
+      "port": 3200,
+      "health_check": "/health",
+      "cwd": ".",
+      "command": "target/debug/mox-alliance-executor.exe",
+      "args": [
+        "target/debug/mox-alliance-executor.exe",
+        "--port",
+        "3200"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 26,
+      "depends_on": [],
+      "tags": [
+        "鑱旂洘",
+        "鎵ц",
+        "DAG",
+        "Rust"
+      ]
+    }
+  },
+  "project_registry": {
+    "_comment": "鍏ㄩ噺椤圭洰鐩綍娓呭崟锛屼緵 server-manage.py list-projects / dashboard 灞曠ず锛泃ype: service(鍙惎鍔ㄦ湇鍔?|library(搴?SDK)|artifact(娴嬭瘯浜х墿)|task(涓€娆℃€т换鍔?",
+    "core_platform": {
+      "type": "service",
+      "path": "platform/backend-rust",
+      "description": "鐠囩帒鏍稿績骞冲彴 Rust 鍚庣锛坢ox-gateway 缃戝叧 + domains 棰嗗煙鏈嶅姟锛?,
+      "service_key": "api",
+      "status": "active"
+    },
+    "frontend_ui": {
+      "type": "service",
+      "path": "frontend-ui",
+      "description": "Vite + Vue3 鐢ㄦ埛鍓嶇鐣岄潰",
+      "service_key": "frontend",
+      "status": "active"
+    },
+    "xiaobai_voice": {
+      "type": "service",
+      "path": "projects/xiaobai_voice",
+      "description": "灏忕櫧绂荤嚎璇煶鏈嶅姟锛圓SR + TTS锛?,
+      "service_key": "xiaobai_voice",
+      "status": "active"
+    },
+    "melody2score": {
+      "type": "service",
+      "path": "projects/melody2score",
+      "description": "鏃嬪緥杞氨锛堥煶棰戔啋绠€璋?浜旂嚎璋憋級锛屽惈 WebUI 鍜屾闈?GUI",
+      "service_key": "melody2score",
+      "status": "active"
+    },
+    "primiflow": {
+      "type": "service",
+      "path": "projects/primiflow",
+      "description": "浣庝唬鐮佹嫇鎵戠敓鎴愬紩鎿庯紙FastAPI + 闈欐€佸墠绔級",
+      "service_key": "primiflow",
+      "status": "active"
+    },
+    "mox_dualrpc": {
+      "type": "library",
+      "path": "projects/mox-dualrpc",
+      "description": "Rust 鍙屽崗璁?RPC 妗嗘灦锛堝畯 + 杩愯鏃讹級锛屾敮鎸?HTTP/gRPC 鍙屾爤",
+      "service_key": null,
+      "status": "active"
+    },
+    "business_court_docs": {
+      "type": "library",
+      "path": "my_projects/business-court-docs",
+      "description": "鏀垮姟娉曢櫌鏂囦功 Rust 搴擄紙鏂囦功鐢熸垚/妯℃澘/娴佺▼锛?,
+      "service_key": null,
+      "status": "active"
+    },
+    "market_games": {
+      "type": "artifact",
+      "path": "projects/market-games",
+      "description": "甯傚満鍗氬紙瀹為獙浜х墿鐩綍",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t10_cloud_artifacts": {
+      "type": "artifact",
+      "path": "projects/t10-cloud-artifacts",
+      "description": "T10 浜戝師鐢熸祴璇曚骇鐗?,
+      "service_key": null,
+      "status": "archived"
+    },
+    "t11_graph_artifacts": {
+      "type": "artifact",
+      "path": "projects/t11-graph-artifacts",
+      "description": "T11 鍥捐氨娴嬭瘯浜х墿",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t17_ef_runs": {
+      "type": "artifact",
+      "path": "projects/t17-ef-runs",
+      "description": "T17 Entity Framework 娴嬭瘯杩愯浜х墿",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t17_sdk_examples": {
+      "type": "artifact",
+      "path": "projects/t17-sdk-examples",
+      "description": "T17 SDK 绀轰緥浠ｇ爜",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t19_regression": {
+      "type": "artifact",
+      "path": "projects/t19-regression",
+      "description": "T19 鍥炲綊娴嬭瘯浜х墿",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t19_regression_report": {
+      "type": "artifact",
+      "path": "projects/t19-regression-report",
+      "description": "T19 鍥炲綊娴嬭瘯鎶ュ憡",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t20_canary_metrics": {
+      "type": "artifact",
+      "path": "projects/t20-canary-metrics",
+      "description": "T20 閲戜笣闆€鍙戝竷鎸囨爣",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t22_simd_artifacts": {
+      "type": "artifact",
+      "path": "projects/t22-simd-artifacts",
+      "description": "T22 SIMD 浼樺寲娴嬭瘯浜х墿",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t23_projection_artifacts": {
+      "type": "artifact",
+      "path": "projects/t23-projection-artifacts",
+      "description": "T23 鎶曞奖绠楁硶娴嬭瘯浜х墿",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t24_gm_artifacts": {
+      "type": "artifact",
+      "path": "projects/t24-gm-artifacts",
+      "description": "T24 鍑犱綍寤烘ā娴嬭瘯浜х墿",
+      "service_key": null,
+      "status": "archived"
+    },
+    "t25_glacier_artifacts": {
+      "type": "artifact",
+      "path": "projects/t25-glacier-artifacts",
+      "description": "T25 鍐板窛瀛樺偍娴嬭瘯浜х墿",
+      "service_key": null,
+      "status": "archived"
+    },
+    "vendor_eval": {
+      "type": "artifact",
+      "path": "projects/vendor-eval",
+      "description": "渚涘簲鍟嗚瘎浼颁骇鐗?,
+      "service_key": null,
+      "status": "archived"
+    }
+  },
+  "script_catalog": {
+    "_comment": "scripts/ 鐩綍鍒嗙被绱㈠紩锛屼緵 server-manage.py scripts 瀛愬懡浠ゅ睍绀?,
+    "core": {
+      "path": "scripts/server-manage.py",
+      "description": "缁熶竴杩愮淮鍏ュ彛锛堟湇鍔＄敓鍛藉懆鏈?+ Web 闈㈡澘 + 鍏悊楠岃瘉锛?
+    },
+    "ci": {
+      "path": "scripts/ci/",
+      "description": "CI/CD 鑴氭湰锛坈i.py, git_create_tag_auto.py锛?,
+      "files": [
+        "ci.py",
+        "git_create_tag_auto.py"
+      ]
+    },
+    "deploy": {
+      "path": "scripts/deploy/",
+      "description": "閮ㄧ讲/鍚姩鑴氭湰锛坰tart.ps1, smoke_test.sh, deploy-kg-storage.ps1, Gray-Warmup.ps1锛?,
+      "files": [
+        "start.ps1",
+        "smoke_test.sh",
+        "deploy-kg-storage.ps1",
+        "Gray-Warmup.ps1"
+      ]
+    },
+    "tests": {
+      "path": "scripts/tests/",
+      "description": "娴嬭瘯鎵ц鑴氭湰锛圱10/T11/T17/T19 鍏ㄩ噺娴嬭瘯銆佷紒涓氶獙鏀躲€?闂ㄩ棬绂侊級",
+      "files": [
+        "Run-T10-AllTests.ps1",
+        "Run-T11-AllTests.ps1",
+        "Run-T17-EF-All.ps1",
+        "Run-T17-SDK-All.ps1",
+        "Run-T19-Regression-706.ps1",
+        "run-t1-baseline.ps1",
+        "run-enterprise-final-acceptance.ps1",
+        "run_enterprise_7gates.ps1",
+        "verify_tests.ps1",
+        "verify_tests.sh",
+        "parse_test_report.py"
+      ]
+    },
+    "validation": {
+      "path": "scripts/validation/",
+      "description": "楠岃瘉/鏍￠獙鑴氭湰锛圧ust 渚濊禆鏍￠獙銆佸崟鑺傜偣楠岃瘉銆乀TS 鍏ㄦ爤楠岃瘉銆丏SP 鍥炲綊锛?,
+      "files": [
+        "validate-single-node.js",
+        "validate_rust_workspace_deps.js",
+        "verify_tts_rust_fullstack.py",
+        "tts_rust_vs_py_dsp_regression.py",
+        "fix_pass2.py"
+      ]
+    },
+    "maintenance": {
+      "path": "scripts/maintenance/",
+      "description": "涓€娆℃€?鍘嗗彶閲嶆瀯鑴氭湰锛堟寜棰嗗煙鍒嗙粍锛屽惈纭紪鐮佽矾寰勶紝浠呬緵杩芥函锛屽嬁閲嶅鎵ц锛?,
+      "groups": {
+        "gateway": {
+          "path": "scripts/maintenance/gateway/",
+          "description": "缃戝叧灞傦細alliance / actuator / proxy 璺敱淇",
+          "files": [
+            "_fix_alliance.py",
+            "_fix_alliance_api.py",
+            "_fix_alliance_imports.py",
+            "_add_alliance_public.py",
+            "_fix_actuator_routes.py",
+            "_fix_actuator_type.py",
+            "_fix_proxy_entries.py"
+          ]
+        },
+        "cloud": {
+          "path": "scripts/maintenance/cloud/",
+          "description": "浜戝瓨鍌細redis 杩炴帴淇銆乻3 涓婁紶銆佷緷璧栨敞鍏?,
+          "files": [
+            "_fix_redis_con.py",
+            "_fix_redis_v2.py",
+            "_fix_redis_v3.py",
+            "_add_redis_dep.py",
+            "_add_redis_v2.py",
+            "_fix_s3_move.py"
+          ]
+        },
+        "kg": {
+          "path": "scripts/maintenance/kg/",
+          "description": "鐭ヨ瘑鍥捐氨锛歴torage / fusion / kb-svc 閲嶆瀯",
+          "files": [
+            "_fix_derive_residue.py",
+            "_fix_storage_lib.py",
+            "_fix_type_dup.py",
+            "_move_cdc_impl.py",
+            "_fix_fusion_mod.py",
+            "_fix_handlers.py"
+          ]
+        },
+        "protocol": {
+          "path": "scripts/maintenance/protocol/",
+          "description": "API 鍗忚锛欰piResponse.message鈫抦sg 鏀瑰悕 + 鏂囨。鍚屾",
+          "files": [
+            "_rename_msg_protocol.py",
+            "_update_api_spec_msg.py"
+          ]
+        },
+        "enterprise": {
+          "path": "scripts/maintenance/enterprise/",
+          "description": "浼佷笟绾?smoke 娴嬭瘯淇锛堟嫭鍙?杩斿洖鍊肩被鍨嬶級",
+          "files": [
+            "_fix_smoke_enterprise.py",
+            "_fix_smoke_v2.py",
+            "_fix_brackets.py"
+          ]
+        },
+        "frontend": {
+          "path": "scripts/maintenance/frontend/",
+          "description": "鍓嶇锛氭竻鐞?mock 鍗犱綅銆佷笓瀹朵腑蹇?鐩戞帶闈㈡澘鎺ョ湡瀹炴暟鎹?,
+          "files": [
+            "_fix_composables_mock.py",
+            "_fix_frontend_mock.py",
+            "_fix_remaining_mock.py",
+            "_fix_remaining_mock_v2.py",
+            "_fix_small_mock.py",
+            "_fix_expert_center.py",
+            "_fix_admin_monitor.py",
+            "_fix_remaining.py"
+          ]
+        },
+        "workspace": {
+          "path": "scripts/maintenance/workspace/",
+          "description": "鏋舵瀯鍒嗘瀽 + 宸ヤ綔鍖烘垚鍛樻竻鍗?,
+          "files": [
+            "_arch_analysis.py",
+            "_arch_full.py",
+            "_arch_full2.py",
+            "_fix_admin_config.py",
+            "_all_members.txt",
+            "_workspace_members.txt"
+          ]
+        },
+        "probes": {
+          "path": "scripts/maintenance/probes/",
+          "description": "涓存椂鎺㈡祴/绀轰緥鑴氭湰锛圕osyVoice/TTS/Sherpa 绛夛紝鍙殢鏃舵竻鐞嗭級",
+          "files": [
+            "_auto_dl_cosy2_weights.py",
+            "_check_cosy_env.py",
+            "_probe_voice.py",
+            "_run_e2b.py",
+            "_run_e4.py",
+            "_offline_tts.py",
+            "_tmp_t10_doc_check.js",
+            "_ui_check2.js",
+            "_probe_sherpa/"
+          ]
+        }
+      }
+    }
+  }
+}

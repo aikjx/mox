@@ -61,6 +61,18 @@ pub struct IamUser {
     pub version: i64,
 }
 
+/// 用户-部门多对多关联（归属真源；is_primary 标记主部门，与 iam_user.dept_id 缓存同步）
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct IamUserDept {
+    pub ud_id: String,
+    pub tenant_id: String,
+    pub user_id: String,
+    pub dept_id: String,
+    pub is_primary: i64,
+    pub sort_order: Option<i64>,
+    pub created_at: String,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IamRole {
     pub role_id: String,

@@ -407,6 +407,10 @@ pub fn build_system_router() -> Router<GatewayState> {
             "/api/system/user/:id/roles",
             get(permission::get_user_roles).put(user::assign_user_roles_handler),
         )
+        .route(
+            "/api/system/user/:id/depts",
+            get(user::get_user_depts_handler).put(user::set_user_depts_handler),
+        )
         // ===== 角色 =====
         .route("/api/system/role", get(role::list_roles).post(role::create_role_handler))
         .route(
