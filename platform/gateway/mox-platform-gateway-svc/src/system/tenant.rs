@@ -3,12 +3,11 @@
 // =====================================================================
 
 use crate::GatewayState;
-use crate::system::{ok, err, q_str, now_iso};
-use axum::extract::{Path, Query, State};
+use crate::system::{ok, err};
+use axum::extract::{Path, State};
 use axum::Json;
 use mox_api_protocol::ApiResponse;
 use serde_json::{json, Value};
-use std::collections::HashMap;
 
 fn tenant_json(t: &mox_platform_iam_core::IamTenant) -> Value {
     json!({

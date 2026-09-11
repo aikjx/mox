@@ -19,7 +19,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::time::Duration;
 
 /// 桥接共享状态：reqwest 客户端 + 上游基址

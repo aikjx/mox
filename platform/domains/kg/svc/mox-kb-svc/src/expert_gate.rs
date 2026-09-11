@@ -20,9 +20,7 @@
 //!    任一维度 fail 则整体不通过。
 //! 5. **落盘**：结构化评审 JSON 原子写至 `.runtime/expert_gate_{stage}.json`。
 
-use mox_ai_expert_proto::types::ConsultQuery;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// 阶段验证证据（调用方传入真实验证结果，门禁不伪造）
 #[derive(Debug, Clone, Serialize, Deserialize)]

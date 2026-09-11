@@ -52,7 +52,7 @@
 //! 事件类型包括：VertexCreated、VertexUpdated、VertexDeleted、EdgeCreated、EdgeDeleted
 
 use crate::cdc_publisher::{CdcEvent, CdcEventType, CdcPublisher};
-use crate::error::{StorageError, StorageResult};
+use crate::error::StorageResult;
 use crate::kv_rocksdb::{StoredEdge, StoredNode};
 use crate::shard_raft::{RaftLogEntry, ShardRaft};
 use parking_lot::Mutex;
@@ -336,7 +336,7 @@ impl DistributedStorageEngine {
     }
 
     /// 获取指定分片的 Leader 地址
-    pub fn get_shard_leader(&self, shard_id: u16) -> Option<String> {
+    pub fn get_shard_leader(&self, _shard_id: u16) -> Option<String> {
         // 简化实现：从本地 Raft 组获取
         // 实际集群中需要通过元数据服务获取
         None

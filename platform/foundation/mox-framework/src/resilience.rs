@@ -164,7 +164,7 @@ impl Bulkhead {
     }
 
     /// 获取并发许可
-    pub async fn acquire(&self) -> Result<tokio::sync::SemaphorePermit, tokio::sync::AcquireError> {
+    pub async fn acquire(&self) -> Result<tokio::sync::SemaphorePermit<'_>, tokio::sync::AcquireError> {
         self.semaphore.acquire().await
     }
 

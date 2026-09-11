@@ -1871,7 +1871,7 @@ impl PhysicalOperator for TraverseOperator {
         Ok(())
     }
 
-    fn next_batch(&mut self, ctx: &ExecutionContext) -> GraphResult<RowBatch> {
+    fn next_batch(&mut self, _ctx: &ExecutionContext) -> GraphResult<RowBatch> {
         if self.current_step >= self.steps {
             return Ok(RowBatch::new(self.output_columns.clone()));
         }

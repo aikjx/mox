@@ -5780,6 +5780,7 @@ dependencies = [
  "mox-alliance-http-sdk",
  "mox-api-protocol",
  "mox-audit",
+ "mox-flow-unified-process-core",
  "mox-kb-svc",
  "mox-kg-service-svc",
  "mox-platform-api",

@@ -295,7 +295,7 @@ impl CdcPublisher {
             };
 
             // 分配 offset
-            let offset = state.next_offset;
+            let _offset = state.next_offset;
             state.next_offset += 1;
 
             // 存入队列

@@ -562,7 +562,7 @@ impl CsrAdj {
             let rng = self.offsets[i]..self.offsets[i + 1];
             for k in rng {
                 let j = self.targets[k];
-                let slot = curs[j];
+                let _slot = curs[j];
                 curs[j] += 1;
                 rev_sources.push(i);
                 rev_weights.push(self.weights[k]);

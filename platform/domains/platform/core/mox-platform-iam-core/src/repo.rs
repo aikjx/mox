@@ -896,7 +896,7 @@ impl IamRepository {
             }
         }
         let ts = now_iso();
-        let mut conn = self.conn.lock();
+        let conn = self.conn.lock();
         let tx = conn.unchecked_transaction()?;
         tx.execute("DELETE FROM iam_user_dept WHERE user_id=?1", params![user_id])?;
         let mut out = Vec::with_capacity(ids.len());

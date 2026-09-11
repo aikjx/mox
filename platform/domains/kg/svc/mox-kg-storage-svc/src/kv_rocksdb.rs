@@ -38,7 +38,7 @@
 use crate::error::{StorageError, StorageResult};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -954,7 +954,7 @@ impl RocksDBStore {
             // 解析出目标顶点和边类型，更新入边索引
             if let Ok((_, _, _, _, dst, rank)) = parse_edge_key_bytes(ek) {
                 // 删除入边
-                let in_key = edge_key(space_id, &dst, "", vid, rank);
+                let _in_key = edge_key(space_id, &dst, "", vid, rank);
                 // 注意：入边 key 格式不同，需要从 ek 中提取信息
             }
         }

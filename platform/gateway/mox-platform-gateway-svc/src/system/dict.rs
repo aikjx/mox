@@ -2,16 +2,13 @@
 // system/dict.rs — 系统管理子模块
 // ====================================================================
 
-use crate::auth::ApiAuth;
 use crate::GatewayState;
-use crate::system::{DEFAULT_TENANT, DEFAULT_USER, ok, err, q_str, resolve_tenant, now_iso, status_flag, build_tree,
-    opt_str, opt_i64, opt_status, user_json, dept_json, role_json, post_json,
-    menu_json, dict_type_json, dict_data_json, config_json, oper_log_json,
-    login_log_json, api_key_json};
+use crate::system::{DEFAULT_TENANT, ok, err, q_str, resolve_tenant,
+    opt_str, opt_i64, opt_status, dict_type_json, dict_data_json};
 use axum::extract::{Path, Query, State};
 use axum::Json;
 use mox_api_protocol::ApiResponse;
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use std::collections::HashMap;
 
 pub(crate) async fn list_dict_types_handler(

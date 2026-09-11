@@ -9,7 +9,6 @@
 //! - 专家联盟咨询：有 `MOX_LLM_API_KEY` 走真实 LLM，否则本地引擎；失败降级不阻断
 
 use crate::model::{ET_CONCEPT, ET_ORG, ET_TECH, KbDocument, KbEntity, KbRelation, now_iso};
-use mox_ai_expert_proto::types::ConsultQuery;
 use std::collections::HashMap;
 
 /// 分析产出（analyze 端点返回体）
@@ -54,7 +53,7 @@ impl KbAnalyzer {
 
         // 2. 专家联盟咨询（待 DIP 注入 ExpertConsultant，当前优雅降级为默认健康分）
         let expert_score = 1.0_f64;
-        let mut expert_steps = vec!["本地分析引擎（专家联盟待注入，降级默认健康分）".to_string()];
+        let expert_steps = vec!["本地分析引擎（专家联盟待注入，降级默认健康分）".to_string()];
 
         // 3. 回写文档
         doc.entities = entities.clone();

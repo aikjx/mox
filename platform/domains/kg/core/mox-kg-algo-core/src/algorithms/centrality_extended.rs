@@ -432,7 +432,7 @@ pub(crate) fn hits_centrality_csr(csr: &CsrAdj, config: &HITSConfig) -> HITSResu
         let rng = csr.offsets[i]..csr.offsets[i + 1];
         for k in rng {
             let j = csr.targets[k];
-            let slot = curs[j];
+            let _slot = curs[j];
             curs[j] += 1;
             in_sources.push(i);
             in_weights.push(csr.weights[k]);

@@ -6,7 +6,6 @@
 //! 统一错误类型 + 企业级错误码体系
 
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 /// 企业级错误码（7位数字：2位模块+3位子码+2位严重度）
 pub type ErrorCode = u32;

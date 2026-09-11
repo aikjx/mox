@@ -78,15 +78,15 @@ impl ProcessInstance {
 /// 流程引擎
 pub struct ProcessEngine {
     /// 流程定义表
-    process_defs: RwLock<HashMap<String, ProcessDef>>,
+    pub process_defs: RwLock<HashMap<String, ProcessDef>>,
     /// 流程实例表
-    instances: RwLock<HashMap<String, ProcessInstance>>,
+    pub instances: RwLock<HashMap<String, ProcessInstance>>,
     /// 规则引擎
     rule_engine: Arc<RuleEngine>,
     /// 已执行的流程总数
     total_executed: AtomicU64,
     /// 审批记录
-    approval_records: RwLock<Vec<ApprovalRecord>>,
+    pub approval_records: RwLock<Vec<ApprovalRecord>>,
     /// 按分类的流程索引
     by_category: RwLock<HashMap<String, Vec<String>>>,
 }

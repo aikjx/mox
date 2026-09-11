@@ -44,22 +44,26 @@ infotopograph/
 ├── platform/           # 后端主体（Rust workspace，143 crates）
 │   ├── domains/        #   业务域（kg/ai/flow/data/cloud/voice/market/alliance/base…）
 │   ├── foundation/     #   基础层（error/audit/paths/observability…）
-│   ├── gateway/        #   网关（mox-platform-gateway-svc）
-│   ├── legacy/         #   历史 Python 版服务归档（勿用）
+│   ├── gateway/        #   网关（mox-platform-gateway-svc，8080唯一入口）
 │   └── shared/         #   跨模块共享 core
 ├── frontend-ui/        # 前端（Vite Vue3，3020 dev）
-├── projects/           # 独立子项目（melody2score、xiaobai_voice 等）
+├── frontend-shared/    # 前端共享资源（constants/schemas/metering）
+├── projects/           # 独立子项目（8个正式项目，含llm-inference-svc）
 ├── proto/              # protobuf 契约定义
 ├── deploy/             # 部署配置（Docker / Nginx / Systemd / Helm）
-├── config/             # 运行时配置
-├── scripts/            # 统一运维脚本（verify-ports.py 等）
-├── tools/              # 开发/运维工具
-├── docs/               # 文档中心（权威治理，见 docs/README.md）
+├── config/             # 运行时配置（platform_config.example.json为模板）
+├── scripts/            # 统一运维脚本（verify-ports.py/start-mox-enterprise.ps1等）
+├── docs/               # 文档中心（23个子目录，权威治理）
+│   ├── enterprise/     #   企业级架构/测试/场景文档
+│   ├── architecture/   #   架构设计文档
+│   ├── modules/        #   模块导航与代码目录
+│   ├── expert-alliance/#   专家联盟设计文档
+│   ├── specifications/ #   规范与标准
+│   └── _archive/       #   历史文档归档
 ├── reports/            # 报告归档（html/ + markdown/ + data/，共享 _shared/）
-├── prototypes/         # HTML 原型（共享 _shared/）
+├── tests/              # 测试目录（regression/存10个回归测试项目）
 ├── observability/      # Prometheus / Grafana 配置
 ├── nginx/              # Nginx 配置
-├── ais/ third_party/   # 第三方参考代码（不入库）
 ├── docker-compose.yml  # 编排：nginx / api-gateway / llm-inference-svc / ollama / postgres / redis / prometheus / grafana
 └── start.sh            # 一键启动（--with-services / --build-rust / --verify）
 ```

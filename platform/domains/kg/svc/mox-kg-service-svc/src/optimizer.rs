@@ -34,7 +34,7 @@
 //! 新增功能通过 `CboOptimizer` / `PlanCache` 等新类型提供。
 
 use crate::ngql_parser::PlanNode;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -505,7 +505,7 @@ impl CostModel {
         &self,
         left_rows: u64,
         right_rows: u64,
-        left_size: u64,
+        _left_size: u64,
         right_size: u64,
     ) -> CostEstimate {
         // 构建哈希表：右表
@@ -667,7 +667,7 @@ impl<'a> JoinOrderOptimizer<'a> {
         let mut total_cost = 0.0;
 
         // 选择最小的关系作为起点
-        let mut current = relations
+        let current = relations
             .iter()
             .min_by_key(|r| r.rows)
             .map(|r| r.id)

@@ -1111,7 +1111,7 @@ pub(crate) fn slpa_csr(csr: &CsrAdj, config: &SLPAConfig) -> SLPAResult {
     }
 
     // 计算频率并过滤
-    let total_iter = config.iterations + 1; // 初始 + 迭代次数
+    let _total_iter = config.iterations + 1; // 初始 + 迭代次数
     let mut result_labels: Vec<HashMap<usize, f64>> = Vec::with_capacity(n);
     for labels in &node_labels {
         let total: usize = labels.values().sum();

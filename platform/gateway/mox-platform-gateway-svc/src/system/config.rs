@@ -2,14 +2,13 @@
 // system/config.rs — 参数配置管理
 // ====================================================================
 
-use crate::auth::ApiAuth;
 use crate::GatewayState;
-use crate::system::{DEFAULT_TENANT, DEFAULT_USER, ok, err, q_str, resolve_tenant, now_iso,
-    opt_str, opt_i64, opt_status, config_json};
+use crate::system::{DEFAULT_TENANT, ok, err, q_str, resolve_tenant,
+    opt_str, opt_status, config_json};
 use axum::extract::{Path, Query, State};
 use axum::Json;
-use mox_api_protocol::{ApiResponse, api_ok};
-use serde_json::{json, Map, Value};
+use mox_api_protocol::ApiResponse;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 
 pub(crate) async fn list_configs_handler(

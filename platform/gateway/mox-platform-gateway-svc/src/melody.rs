@@ -21,8 +21,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde_json::{Value, json};
-use std::time::Duration;
+use serde_json::Value;
 
 use crate::voice::{VoiceState, proxy_get};
 

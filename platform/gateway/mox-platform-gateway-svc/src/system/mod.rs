@@ -21,9 +21,7 @@
 use crate::GatewayState;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
 use axum::{
-    extract::{Path, Query, State},
-    routing::{delete, get, post, put},
-    Json, Router,
+    routing::{delete, get, post, put}, Router,
 };
 use mox_platform_iam_core::{
     IamDepartment, IamMenu, IamRole, IamUser, SysApiKey, SysConfig, SysDictData, SysDictType,
@@ -55,6 +53,7 @@ pub mod logininfor;
 pub mod security;
 pub mod permission;
 pub mod tenant;
+pub mod approval;
 
 pub(crate) fn ok(data: Value) -> ApiResponse<Value> {
     api_ok(data)
@@ -515,6 +514,14 @@ pub fn build_system_router() -> Router<GatewayState> {
             "/api/system/logininfor/export",
             get(logininfor::export_login_logs_handler),
         )
+        // ===== 审批流程 =====
+        .route("/api/system/approval", get(approval::list_approvals_handler).post(approval::create_approval_handler))
+        .route("/api/system/approval/definitions", get(approval::approval_definitions_handler))
+        .route("/api/system/approval/pending", get(approval::pending_approvals_handler))
+        .route("/api/system/approval/:id", get(approval::approval_detail_handler))
+        .route("/api/system/approval/:id/approve", post(approval::approve_handler))
+        .route("/api/system/approval/:id/reject", post(approval::reject_handler))
+        .route("/api/system/approval/:id/history", get(approval::approval_history_handler))
 }
 
 

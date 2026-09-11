@@ -663,7 +663,7 @@ pub(crate) fn yen_k_shortest_paths_csr(
 
             // 构建临时 CSR（通过修改权重实现）
             // 简化实现：使用带屏蔽的 Dijkstra
-            if let Some((spur_cost, spur_path)) =
+            if let Some((_spur_cost, spur_path)) =
                 dijkstra_with_exclusions(csr, spur_node, target, &removed_edges, &removed_nodes)
             {
                 if !spur_path.is_empty() && spur_path[0] == spur_node {

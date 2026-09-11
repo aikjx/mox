@@ -63,6 +63,7 @@ use axum::{
     routing::get,
 };
 use mox_platform_iam_core::IamRepository;
+use mox_flow_unified_process_core::ProcessEngine;
 use serde_json::json;
 use mox_api_protocol::{ApiResponse, api_ok};
 use std::net::SocketAddr;
@@ -86,6 +87,8 @@ pub struct GatewayState {
     pub logs: Arc<LogStore>,
     /// 运行时指标（Actuator /actuator/metrics）
     pub runtime: Arc<RuntimeMetrics>,
+    /// 统一流程引擎（/system/approval/* 审批流程：人事/财务/业务审批）
+    pub process_engine: Arc<ProcessEngine>,
 }
 
 impl GatewayState {
@@ -122,6 +125,10 @@ impl GatewayState {
         iam.init_schema().expect("iam init_schema");
         iam.seed().expect("iam seed");
 
+        // 统一流程引擎：预置人事/财务/业务三类审批流程定义
+        let process_engine = Arc::new(ProcessEngine::new());
+        crate::system::approval::seed_approval_processes(&process_engine);
+
         Self {
             config: Arc::new(config),
             auth,
@@ -130,6 +137,7 @@ impl GatewayState {
             iam,
             logs,
             runtime,
+            process_engine,
         }
     }
 }

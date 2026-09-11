@@ -5,9 +5,8 @@
 
 //! 标准化服务器启动器 — 统一生命周期/优雅关停/零配置
 
-use axum::{middleware, Router};
+use axum::Router;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use tokio::signal;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;

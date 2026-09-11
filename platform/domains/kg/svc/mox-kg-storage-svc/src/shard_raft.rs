@@ -56,15 +56,14 @@
 
 use crate::error::{StorageError, StorageResult};
 use crate::kv_rocksdb::{
-    edge_key, node_key, node_type_index_key, out_index_key, in_index_key, RocksDBStore,
-    StoredEdge, StoredNode, CF_EDGES, CF_EDGE_INDEX, CF_NODE_INDEX, CF_NODES, WriteBatch,
+    node_key, node_type_index_key, RocksDBStore,
+    StoredEdge, StoredNode, CF_NODE_INDEX, CF_NODES, WriteBatch,
 };
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 
 // ============================================================================
 // 类型定义

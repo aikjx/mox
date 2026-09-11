@@ -45,6 +45,8 @@ mox-platform-api = { workspace = true }
 
 # 平台 IAM 核心（/system/* · /security/* 真实数据链路）+ SQLite
 mox-platform-iam-core = { workspace = true }
+# 统一流程引擎（/system/approval/* 审批流程：人事/财务/业务审批）
+mox-flow-unified-process-core = { workspace = true }
 rusqlite = { workspace = true }
 base64 = { workspace = true }
 
