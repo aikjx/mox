@@ -51,6 +51,13 @@ pub mod rbac;
 pub mod voice;
 pub mod melody;
 pub mod cloud;
+pub mod integration;
+pub mod designer;
+pub mod sso;
+pub mod document;
+pub mod message_center;
+pub mod enterprise;
+pub mod enterprise_features;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
@@ -89,6 +96,45 @@ pub struct GatewayState {
     pub runtime: Arc<RuntimeMetrics>,
     /// 统一流程引擎（/system/approval/* 审批流程：人事/财务/业务审批）
     pub process_engine: Arc<ProcessEngine>,
+    /// 企业级功能统一状态（/api/enterprise/*：OA集成/低代码设计器/SSO/消息/文档）
+    pub enterprise: Arc<enterprise_features::EnterpriseState>,
+}
+
+// FromRef 实现：使子状态可以从 GatewayState 中提取，用于路由嵌套
+impl axum::extract::FromRef<GatewayState> for Arc<crate::integration::api::IntegrationState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.integration.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::designer::api::DesignerState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.designer.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::sso::api::SsoState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.sso.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::message_center::api::MessageCenterState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.message_center.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::document::api::DocumentState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.document.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::enterprise::admin_api::AdminState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.admin.clone()
+    }
 }
 
 impl GatewayState {
@@ -129,6 +175,9 @@ impl GatewayState {
         let process_engine = Arc::new(ProcessEngine::new());
         crate::system::approval::seed_approval_processes(&process_engine);
 
+        // 企业级功能统一状态：OA集成/低代码设计器/SSO/消息/文档
+        let enterprise = Arc::new(enterprise_features::EnterpriseState::new());
+
         Self {
             config: Arc::new(config),
             auth,
@@ -138,6 +187,7 @@ impl GatewayState {
             logs,
             runtime,
             process_engine,
+            enterprise,
         }
     }
 }

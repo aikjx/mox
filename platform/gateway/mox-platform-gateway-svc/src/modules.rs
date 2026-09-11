@@ -173,7 +173,9 @@ pub fn build_module_routers(
         .merge(upgrade(kb_ext::build_kb_ext_router(states.kb_ext.clone())))
         .merge(upgrade(notification::build_notification_router(
             states.notification.clone(),
-        )));
+        )))
+        // —— 企业级功能域（/api/enterprise/*：OA集成/低代码设计器/SSO/消息/文档）——
+        .merge(crate::enterprise_features::build_enterprise_router_for_gateway(gateway));
 
     // 受保护路由统一鉴权：JWT Bearer 或 X-API-Key
     let auth_state: Arc<AuthMiddleware> = gateway.auth.clone();

@@ -5768,6 +5768,7 @@ name = "mox-platform-gateway-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum",
  "base64 0.22.1",
  "chrono",
