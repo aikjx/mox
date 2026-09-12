@@ -275,10 +275,14 @@ function Invoke-G6 {
     Write-Step "G6 · 契约 / 审计 / 文档同步"
     Push-Location $root
     try {
-        # 6.1 文档同步检查: 主规范 + 落地图必须存在
+        # 6.1 文档同步检查: 企业级治理体系文档必须存在
+        #   (主规范已重构为 docs/enterprise 治理体系 + docs/standards 标准;
+        #    基座落地图位于 docs/modules/)
         $docs = @(
-            "expert-alliance-enterprise-standard.html",
-            "docs/统一基座层落地改造.html"
+            "docs/enterprise/00-INDEX.md",
+            "docs/enterprise/37-企业级处理流程规范-V1.0.md",
+            "docs/enterprise/38-企业级管理系统架构与业务处理流程文档-V2.1.md",
+            "docs/modules/统一基座层落地改造.html"
         )
         $missingDocs = @()
         foreach ($d in $docs) {
@@ -287,7 +291,7 @@ function Invoke-G6 {
         if ($missingDocs.Count -gt 0) {
             Assert-Fail "G6" "文档缺失: $($missingDocs -join ', ')"
         } else {
-            Write-Host "  [OK] 文档同步: 主规范 + 落地图存在" -ForegroundColor DarkGray
+            Write-Host "  [OK] 文档同步: 企业级治理文档存在" -ForegroundColor DarkGray
         }
 
         # 6.2 依赖安全审计 (cargo deny advisories)
@@ -310,6 +314,23 @@ function Invoke-G6 {
         } else {
             Write-Host "  [WARN] cargo-deny 未安装, 跳过依赖审计" -ForegroundColor Yellow
             Assert-Pass "G6" "cargo-deny 未安装 (跳过, 文档同步已校验)"
+        }
+
+        # 6.3 DOC-EP-038 文档↔代码自动化核对 (verify-doc-ep038.py)
+        #   任一 FAIL (域/crate/选型/端点/视图/映射/核心功能 19 项) 即阻断。
+        $verifyPy = Join-Path $root "scripts\verify-doc-ep038.py"
+        if (Test-Path $verifyPy) {
+            $vOut = python $verifyPy --quiet 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                $vOut | ForEach-Object { Write-Host "    $_" -ForegroundColor Yellow }
+                Assert-Fail "G6" "DOC-EP-038 文档↔代码核对存在 FAIL (见 38-VERIFY-REPORT.md)"
+            } else {
+                Write-Host "  [OK] DOC-EP-038 核对: $($vOut | Select-Object -Last 1)" -ForegroundColor DarkGray
+                Assert-Pass "G6" "DOC-EP-038 文档↔代码全项核对 PASS"
+            }
+        } else {
+            Write-Host "  [WARN] verify-doc-ep038.py 缺失, 跳过文档核对" -ForegroundColor Yellow
+            Assert-Pass "G6" "verify-doc-ep038.py 不存在 (跳过)"
         }
     } catch {
         Assert-Fail "G6" "执行异常: $_"

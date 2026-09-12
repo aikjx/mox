@@ -1,0 +1,33 @@
+# DOC-EP-038 文档↔代码事实自动核对报告
+
+> 生成时间：2026-09-12 13:47:04 · 生成脚本：`scripts/verify-doc-ep038.py` · 核对对象：`38-企业级管理系统架构与业务处理流程文档-V2.1.md`
+> 结论：**全部 PASS ✅**（D1~D8 + E1~E7 共 20 项核对）
+
+| 编号 | 核对项 | 代码事实 | 文档声明 | 结果 | 说明 |
+|------|--------|----------|----------|------|------|
+| D1 | 业务域数量 | 13 个 | 13 个 | ✅ PASS | 代码: ai, alliance, base, cloud, data, flow, foundation, kb, kg, market, platform, project, voice |
+| D2 | 域列表覆盖 | ai, alliance, base, cloud, data, flow, foundation, kb, kg, market, platform, project, voice | 文档 6.2 域表 | ✅ PASS | 缺失: 无 |
+| D3 | crate 总数 | 143 | 143 | ✅ PASS | cargo metadata workspace_members |
+| D4-axum | 依赖 axum | 0.7（代码） | 0.7（文档） | ✅ PASS |  |
+| D4-sqlx | 依赖 sqlx | 0.8（代码） | 0.8（文档） | ✅ PASS |  |
+| D4-rusqlite | 依赖 rusqlite | 0.31（代码） | 0.31（文档） | ✅ PASS |  |
+| D4-redis | 依赖 redis | 0.26（代码） | 0.26（文档） | ✅ PASS |  |
+| D4-rocksdb | 依赖 rocksdb | 0.25（代码） | 0.25（文档） | ✅ PASS |  |
+| D4-tokio | 依赖 tokio | 1.0（代码） | 1.0（文档） | ✅ PASS |  |
+| D5 | 网关 AI 四端点 | /ai/engine/analyze, /ai/engine/capabilities, /ai/engine/metrics, /ai/engine/process | process/analyze/capabilities/metrics | ✅ PASS | 缺失: 无 |
+| D6 | 前端视图数 | 72 | 72 | ✅ PASS | 视图区: admin, ai, auth, expert, graph, market, misc, operators, project, workflow, workspace |
+| D7 | 业务↔平台映射关键 crate | 39 个抽样 | 文档 6.2 映射表 | ✅ PASS | 缺失: 无 |
+| D8 | API-REGISTRY 新鲜度 | 223 条（重新生成） | docs/API-REGISTRY.md | ✅ PASS | 一致 |
+| E1 | 核心功能·组织权限（SSO / RBAC） | API 5 + crate 4 + 视图 4 | 38 号 6.2 业务视角映射表 | ✅ PASS | 证据全齐 ✅  | 映射: platform:mox-platform-iam-core/mox-iam-server; base:mox-base-perm-core; foundation:mox-rbac-engine |
+| E2 | 核心功能·主数据 / 编码 / 字典 | API 2 + crate 2 + 视图 1 | 38 号 6.2 业务视角映射表 | ✅ PASS | 证据全齐 ✅  | 映射: platform:mox-platform-meta-core / mox-platform-datastore-core |
+| E3 | 核心功能·业务办理（单据生命周期 / 编排执行） | API 3 + crate 3 + 视图 3 | 38 号 6.2 业务视角映射表 | ✅ PASS | 证据全齐 ✅  | 映射: platform:mox-platform-orchestrator-svc / mox-platform-enterprise-svc; flow:mox-flow-operator-core |
+| E4 | 核心功能·审批 / 流程（低代码 + 统一流程） | API 2 + crate 2 + 视图 3 | 38 号 6.2 业务视角映射表 | ✅ PASS | 证据全齐 ✅  | 映射: flow:mox-flow-unified-process-core / mox-flow-lowcode-core |
+| E5 | 核心功能·报表统计（KPI / 数据标准） | API 2 + crate 3 + 视图 2 | 38 号 6.2 业务视角映射表 | ✅ PASS | 证据全齐 ✅  | 映射: data:mox-data-formula-core / mox-data-standards-core / mox-data-catalog-svc |
+| E6 | 核心功能·系统管理 / 审计 / 通知 | API 5 + crate 2 + 视图 4 | 38 号 6.2 业务视角映射表 | ✅ PASS | 证据全齐 ✅  | 映射: platform:mox-platform-system-core; alliance:mox-alliance-config-core |
+| E7 | 核心功能·AI 服务（Agent / RAG / Function Calling） | API 4 + crate 5 + 视图 3 | 38 号 6.2 业务视角映射表 | ✅ PASS | 证据全齐 ✅  | 映射: ai:mox-ai-agent-svc / mox-ai-intent-svc / mox-ai-expert-svc; kb/kg 知识底座 |
+
+## 结论
+
+文档与代码一致，DOC-EP-038 登记的全部代码事实（域 / crate / 选型 / 端点 / 视图 / 映射）均可在仓库中核实。
+
+*本报告由脚本确定性生成，禁止手改；核对项新增/变更须同步修改脚本与文档。*

@@ -20,6 +20,7 @@
 //! - 总计：4 通用 + 6 KG + 4 AI + 系统/安全域 3X 端点（读接口真实现 + 写接口 stub）
 
 pub mod config;
+pub mod system_config;
 pub mod auth;
 pub mod rate_limit;
 pub mod o11y;
@@ -58,6 +59,12 @@ pub mod document;
 pub mod message_center;
 pub mod enterprise;
 pub mod enterprise_features;
+pub mod scheduler;
+pub mod dictionary;
+pub mod operation_log;
+pub mod file_storage;
+pub mod organization;
+pub mod mailer;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
@@ -134,6 +141,48 @@ impl axum::extract::FromRef<GatewayState> for Arc<crate::document::api::Document
 impl axum::extract::FromRef<GatewayState> for Arc<crate::enterprise::admin_api::AdminState> {
     fn from_ref(state: &GatewayState) -> Self {
         state.enterprise.admin.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::scheduler::api::SchedulerState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.scheduler.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::mailer::api::MailerState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.mailer.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::organization::api::OrganizationState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.organization.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::file_storage::api::FileStorageState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.file_storage.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::operation_log::api::OperationLogState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.operation_log.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::dictionary::api::DictionaryState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.dictionary.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::system_config::api::ConfigState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.config.clone()
     }
 }
 

@@ -3,11 +3,18 @@
 //! 整合：OA/ERP集成适配器 / 低代码设计器 / SSO单点登录 / 消息推送 / 文档管理 / 企业级管理
 //! 所有企业级功能路由统一在此注册，挂载到 /api/enterprise/* 路径下
 
+use crate::system_config::api::{build_config_router, ConfigState};
+use crate::dictionary::api::{build_dictionary_router, DictionaryState};
+use crate::operation_log::api::{build_operation_log_router, OperationLogState};
+use crate::file_storage::api::{build_file_storage_router, FileStorageState};
+use crate::organization::api::{build_organization_router, OrganizationState};
+use crate::mailer::api::{build_mailer_router, MailerState};
 use crate::designer::api::{build_designer_router, DesignerState};
 use crate::document::api::{build_document_router, DocumentState};
 use crate::enterprise::admin_api::{build_admin_router, AdminState};
 use crate::integration::api::{build_integration_router, IntegrationState};
 use crate::message_center::api::{build_message_center_router, MessageCenterState};
+use crate::scheduler::api::{build_scheduler_router, SchedulerState};
 use crate::sso::api::{build_sso_router, SsoState};
 use crate::GatewayState;
 use axum::{Router, extract::State};
@@ -28,6 +35,15 @@ pub struct EnterpriseState {
     pub document: Arc<DocumentState>,
     /// 企业级管理状态（租户/部门/角色权限/审计日志）
     pub admin: Arc<AdminState>,
+    /// 定时任务调度状态
+    pub scheduler: Arc<SchedulerState>,
+    /// 系统配置管理状态
+    pub config: Arc<ConfigState>,
+    pub dictionary: Arc<DictionaryState>,
+    pub operation_log: Arc<OperationLogState>,
+    pub file_storage: Arc<FileStorageState>,
+    pub organization: Arc<OrganizationState>,
+    pub mailer: Arc<MailerState>,
 }
 
 impl EnterpriseState {
@@ -39,6 +55,13 @@ impl EnterpriseState {
             message_center: Arc::new(MessageCenterState::new()),
             document: Arc::new(DocumentState::new()),
             admin: Arc::new(AdminState::new()),
+            scheduler: Arc::new(SchedulerState::new()),
+            config: Arc::new(ConfigState::new()),
+            dictionary: Arc::new(DictionaryState::new()),
+            operation_log: Arc::new(OperationLogState::new()),
+            file_storage: Arc::new(FileStorageState::new()),
+            organization: Arc::new(OrganizationState::new()),
+            mailer: Arc::new(MailerState::new()),
         }
     }
 }
@@ -67,6 +90,9 @@ pub fn build_enterprise_router_for_gateway(_gateway: &GatewayState) -> Router<Ga
     let message_router: Router<GatewayState> = build_message_center_router::<GatewayState>();
     let document_router: Router<GatewayState> = build_document_router::<GatewayState>();
     let admin_router: Router<GatewayState> = build_admin_router::<GatewayState>();
+    let scheduler_router: Router<GatewayState> = build_scheduler_router::<GatewayState>();
+    let config_router: Router<GatewayState> = build_config_router::<GatewayState>();
+    let dictionary_router: Router<GatewayState> = build_dictionary_router::<GatewayState>();
 
     // 健康检查路由
     let health_router: Router<GatewayState> = Router::new()
@@ -80,6 +106,9 @@ pub fn build_enterprise_router_for_gateway(_gateway: &GatewayState) -> Router<Ga
         .nest("/message", message_router)
         .nest("/document", document_router)
         .nest("/admin", admin_router)
+        .nest("/scheduler", scheduler_router)
+        .nest("/config", config_router)
+        .nest("/dictionary", dictionary_router)
         .merge(health_router)
 }
 

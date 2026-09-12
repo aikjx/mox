@@ -101,7 +101,7 @@
 | ID | 方法 | 路径 | 层 | 说明 |
 | --- | --- | --- | --- | --- |
 | `alliance.runtime` | GET | `/api/alliance/runtime` | L4 | 运行时就绪状态（远程/本地预览） |
-| `alliance.tasks.list` | ANY | `/api/alliance/tasks` | L4 | 联盟任务列表/创建（InMemoryTaskRepository 真实存储） |
+| `alliance.tasks.list` | ANY | `/api/alliance/tasks` | L4 | 联盟任务列表/创建（可插拔仓储：MOX_ALLIANCE_STORAGE_MODE=file 默认快照持久化） |
 | `alliance.tasks.detail` | ANY | `/api/alliance/tasks/:id` | L4 | 任务详情/操作（暂停/恢复/取消） |
 | `alliance.tasks.pause` | POST | `/api/alliance/tasks/:id/pause` | L4 | 暂停任务 |
 | `alliance.tasks.resume` | POST | `/api/alliance/tasks/:id/resume` | L4 | 恢复任务 |
