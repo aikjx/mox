@@ -29,7 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 os.sys.path.insert(0, ROOT)
 
-from core.config import Config                       # noqa: E402
+from core.config import Config, config_for_sample                       # noqa: E402
 from core.paths import resource_path                 # noqa: E402
 from core import capture, score_sheet                # noqa: E402
 
@@ -49,17 +49,20 @@ MANIFEST_PATH = resource_path("audio", "manifest.json")
 
 
 def _build_config(model_size: str, denoise: bool, threads: int, hop: int,
-                  robust: bool = True) -> Config:
+                  robust: bool = True, backend: str = "auto", ai_review: bool = False) -> Config:
     cfg = Config()
     cfg.model_size = model_size or cfg.model_size
     cfg.enable_denoise = denoise
     cfg.robust = robust
+    cfg.ai_review = ai_review
     if threads and threads > 0:
         cfg.intra_op_threads = threads
     if hop and hop > 0:
         cfg.hop = hop
     # 首选 crepe_onnx tiny（企业级默认，稳定可复现）
-    cfg.preferred_backend = "crepe_onnx"
+    if backend not in ("auto", "pyin", "torchcrepe", "crepe_onnx"):
+        raise HTTPException(422, "未知音高后端")
+    cfg.preferred_backend = backend
     return cfg
 
 
@@ -119,9 +122,10 @@ async def recognize(file: UploadFile = File(...),
                     denoise: bool = Form(True),
                     threads: int = Form(0),
                     hop: int = Form(0),
-                    robust: bool = Form(True)):
+                    robust: bool = Form(True),
+                    backend: str = Form("auto"), ai_review: bool = Form(False)):
     import anyio
-    cfg = _build_config(model_size, denoise, threads, hop, robust)
+    cfg = _build_config(model_size, denoise, threads, hop, robust, backend, ai_review)
     data = await file.read()
     try:
         y, sr = _load_bytes_fallback(data, cfg.sr)
@@ -154,9 +158,10 @@ async def recognize_sample(name: str = Form(...),
                             denoise: bool = Form(True),
                             threads: int = Form(0),
                             hop: int = Form(0),
-                            robust: bool = Form(True)):
+                            robust: bool = Form(True),
+                            backend: str = Form("auto"), ai_review: bool = Form(False)):
     import anyio
-    cfg = _build_config(model_size, denoise, threads, hop, robust)
+    cfg = _build_config(model_size, denoise, threads, hop, robust, backend, ai_review)
     if not os.path.exists(MANIFEST_PATH):
         raise HTTPException(404, "未找到 audio/manifest.json")
     with open(MANIFEST_PATH, encoding="utf-8") as f:
@@ -164,6 +169,7 @@ async def recognize_sample(name: str = Form(...),
     item = next((it for it in manifest if it["file"].endswith(name) or it["title_zh"] == name), None)
     if not item:
         raise HTTPException(404, f"样例不存在: {name}")
+    cfg = config_for_sample(cfg, item.get("category", ""))
     y = capture.load_audio(resource_path(item["file"]), cfg.sr)
     try:
         res = await anyio.to_thread.run_sync(_recognize_array, y, cfg.sr, cfg)
@@ -180,9 +186,10 @@ async def recognize_record(audio_b64: str = Form(...),
                             denoise: bool = Form(True),
                             threads: int = Form(0),
                             hop: int = Form(0),
-                            robust: bool = Form(True)):
+                            robust: bool = Form(True),
+                            backend: str = Form("auto"), ai_review: bool = Form(False)):
     import anyio
-    cfg = _build_config(model_size, denoise, threads, hop, robust)
+    cfg = _build_config(model_size, denoise, threads, hop, robust, backend, ai_review)
     try:
         raw = base64.b64decode(audio_b64)
         y, sr = _load_bytes_fallback(raw, cfg.sr)

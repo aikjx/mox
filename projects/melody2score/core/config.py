@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """全局可调参数。PC 与开发板共用，板端通过 Config.board() 取调优副本。"""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Optional
 
 
@@ -8,7 +8,7 @@ from typing import Optional
 class Config:
     # ---- 音高检测（架构首选：crepe_onnx tiny，稳定可复现） ----
     sr: int = 16000                 # 采样率（Crepe 输入即 16k，不必再降）
-    preferred_backend: str = "crepe_onnx"  # 首选后端（auto 时以此为第一优先）
+    preferred_backend: str = "auto"  # 首选后端（auto 时以此为第一优先）
     conf_thresh: float = 0.32       # 音高置信度阈值（v2: 提高到 0.32，抑制低置信噪声帧）
     model_size: str = "small"       # crepe_onnx 模型（v2: 改为 small 以提高精度，CPU 友好）
     hop: int = 10                   # 音高帧移（毫秒），越大越快、精度略降
@@ -24,7 +24,7 @@ class Config:
     #   enable_separation=None 表示「跟随 vocal_mode」：人声模式自动开，
     #   纯乐器模式自动关。用户可显式 True/False 覆盖该规则。
     enable_separation: Optional[bool] = None  # 跟随 vocal_mode
-    separation_strategy: str = "auto"  # auto | demucs | hpss | none（auto=有Demucs用Demucs否则HPSS）
+    separation_strategy: str = "auto"  # auto | demucs | hpss | none（auto 缺少 Demucs 时保留原音并提示）
 
     # ---- 人声模式（识别人唱歌/哼唱，默认开启） ----
     vocal_mode: bool = True         # 人声模式：收窄基频、启用 VAD、加强颤音平滑
@@ -47,6 +47,7 @@ class Config:
     onset_min_gap_s: float = 0.08      # 最小起音间隔（秒），避免颤音伪起音
 
     # ---- MIDI 后处理纠错层（v2 新增，默认全开） ----
+    ai_review: bool = False        # Independent neural/pYIN cross-check, marks disputed notes.
     normalize_octaves: bool = False # Only opt in when intentionally transposing for display.
     enable_postprocess: bool = True # 音域/跳音/短音/长音/同音合并 全局纠错
 
@@ -67,3 +68,14 @@ class Config:
         return cls(vocal_mode=True, fmin=80.0, fmax=1000.0,
                    median_win=7, enable_vad=True, min_note_dur=0.12,
                    enable_separation=True, enable_postprocess=True)
+
+
+def config_for_sample(cfg: Config, category: str) -> Config:
+    """Known synthetic monophonic samples need no source separation."""
+    if category not in ("voice", "instrument", "pure"):
+        return cfg
+    vocal = category == "voice"
+    return replace(cfg, preferred_backend="pyin" if cfg.preferred_backend == "auto" else cfg.preferred_backend,
+                   vocal_mode=vocal, enable_vad=vocal,
+                   enable_separation=False, fmin=70.0, fmax=1050.0,
+                   median_win=7 if vocal else 5)

@@ -62,6 +62,7 @@ def main():
     ap.add_argument("--timbres", default="")
     ap.add_argument("--code-root")
     ap.add_argument("--no-denoise", action="store_true")
+    ap.add_argument("--stress", choices=("clean", "noise", "mixed"), default="clean")
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
     if args.code_root: sys.path.insert(0, str(Path(args.code_root).resolve()))
@@ -87,8 +88,21 @@ def main():
             path = ROOT/item['file']
             row['audio_sha256']=hashlib.sha256(path.read_bytes()).hexdigest()
             y = load_audio(str(path),cfg.sr)
+            rng = np.random.default_rng(20260912)
+            rms = max(float(np.sqrt(np.mean(y*y))), 1e-6)
+            if args.stress == "noise":
+                y = (y + rng.normal(0, rms / np.sqrt(10), len(y))).astype(np.float32)
+            elif args.stress == "mixed":
+                t = np.arange(len(y)) / cfg.sr
+                bass = rms * np.sin(2*np.pi*110*t)
+                drums = rms * rng.normal(size=len(y)) * np.exp(-(t % .48)/.025)
+                y = (y + bass + drums).astype(np.float32)
+            row['processed_audio_sha256'] = hashlib.sha256(y.tobytes()).hexdigest()
+
             result = Melody2Score(cfg).recognize({'kind':'array','y':y,'sr':cfg.sr})
-            row.update(backend=result['backend'], confidence=result['confidence'], notes=result['notes'], bpm=result['bpm'], key=result['key'])
+            row.update(backend=result['backend'], effective_model=result.get('effective_model'), confidence=result['confidence'], notes=result['notes'], bpm=result['bpm'], key=result['key'])
+            if args.backend != 'auto' and result['backend'] != args.backend:
+                raise RuntimeError(f"Backend mismatch: requested {args.backend}, got {result['backend']}; {result.get('backend_failures', {})}")
             row['strict']=note_metrics(expected,result['notes'],.05)
             row['loose']=note_metrics(expected,result['notes'],.15)
         except Exception as exc:

@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-09 AI 精度验证
+
+已增加 AI 后端选择、独立模型复核、异议音符标记，以及实际后端/降级原因展示。周期性评分不代表整首识别正确率。144 个干净合成样例与噪声/伴奏压力测试的结果、剩余错误见[AI 精度验证报告](../../reports/markdown/melody2score-ai-accuracy-20260912.md)。
+
+本机独立 AI 环境启动：`powershell -ExecutionPolicy Bypass -File projects/melody2score/app/start-ai.ps1`（从仓库根运行）。依赖见 `requirements-ai.txt`；此启动脚本要求已创建 `.runtime/melody2score-ai-env`，旧 EXE 不包含这些改动。干净样例自动使用 pYIN，实际文件可选择 CREPE，复核结果供逐音检查，不能保证 100%。
+
 ## 2026-09 播放与精度修复
 
 桌面原曲试听现支持暂停、拖动进度与音量；自带 Web 页面提供原生音频播放器。原曲播放保留原采样率与声道。识别默认保留绝对八度，只有显式设置 `Config(normalize_octaves=True)` 才移调。验证范围与结果见[修复记录](../../reports/markdown/melody2score-playback-accuracy-20260912.md)。旧 EXE 需重新打包才能包含本次改动。
@@ -291,3 +297,5 @@ python board/run_board.py record 6 -o /tmp/melody.xml
 ## 八、输出格式
 - **简谱文本**：数字 1–7 表音级，`.` 前缀表高八度，`_` 后缀表低八度，`-` 表延音；`#` 为近似离调音。
 - **musicxml**：标准可导入 MuseScore / 各打谱软件，含调号、速度标记、量化音符。
+
+最新优化：保留合法半音/八度与长音，AI 复核增加覆盖率和疑似漏音区间，企业页面接通复核。实测与未完成项见 [2026-09-13 优化交付](../../reports/markdown/melody2score-optimization-20260913.md)。

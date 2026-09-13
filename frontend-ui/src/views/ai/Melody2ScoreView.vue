@@ -97,7 +97,8 @@
               <el-option label="small 模型" value="small" />
             </el-select>
             <el-switch v-model="params.denoise" active-text="降噪" size="small" />
-            <el-switch v-model="params.robust" active-text="稳健识别" size="small" />
+            <el-switch v-model="params.robust" active-text="阈值稳定性复核" size="small" />
+            <el-switch v-model="params.ai_review" active-text="AI 独立复核" size="small" />
             <el-switch v-model="params.vocal_mode" active-text="人声模式" size="small" />
           </div>
 
@@ -155,7 +156,7 @@
                 <span class="value">{{ result.duration_sec }}s</span>
               </div>
               <div class="summary-item">
-                <span class="label">置信度</span>
+                <span class="label" title="声学周期性，不代表识别正确率">周期性评分</span>
                 <span class="value">{{ (result.confidence * 100).toFixed(1) }}%</span>
               </div>
               <div class="summary-item">
@@ -172,6 +173,9 @@
               </div>
             </div>
           </el-card>
+
+          <el-alert v-for="(warning, index) in (result.quality?.warnings || [])"
+            :key="index" :title="warning" type="warning" :closable="false" show-icon />
 
           <!-- 简谱 -->
           <el-card shadow="never" class="m2s-card">
@@ -276,6 +280,7 @@ export default {
       model_size: 'tiny',
       denoise: true,
       robust: true,
+      ai_review: false,
       vocal_mode: true
     })
 
@@ -432,6 +437,7 @@ export default {
         formData.append('model_size', params.model_size)
         formData.append('denoise', params.denoise ? 'true' : 'false')
         formData.append('robust', params.robust ? 'true' : 'false')
+        formData.append('ai_review', params.ai_review ? 'true' : 'false')
         formData.append('vocal_mode', params.vocal_mode ? 'true' : 'false')
 
         if (inputMode.value === 'upload' && uploadFile.value) {

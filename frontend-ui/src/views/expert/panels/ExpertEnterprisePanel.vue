@@ -1001,10 +1001,36 @@ function buildFlowOption() {
 function renderFlowGraph() {
   const option = buildFlowOption()
   if (!option) return
-  if (!flowInst && flowChart.value) {
-    flowInst = echarts.init(flowChart.value, null, { renderer: 'canvas' })
+  const el = flowChart.value
+  if (!el) return
+  // 流程图谱使用 SVG renderer：canvas 渲染在嵌套/隐藏面板上下文可能不创建画布，
+  // SVG 为纯 DOM 渲染，稳定可靠。
+  if (!flowInst) {
+    // 释放 DOM 上残留的旧实例：echarts 在 dom 记录 _echarts_instance_ 属性，
+    // 不清除则 init 复用旧实例（canvas 版）而不创建 svg。
+    const existing = echarts.getInstanceByDom(el)
+    if (existing) { try { existing.dispose() } catch (e) {} }
+    flowInst = echarts.init(el, null, { renderer: 'svg' })
   }
-  flowInst && flowInst.setOption(option, true)
+  flowInst.setOption(option, true)
+  // v-show 面板布局可能滞后于数据到达：延迟数帧校正尺寸，
+  // 容器 0 宽时可能无画布，dispose 重建（最多重试数次）
+  let tries = 0
+  const ensure = () => {
+    if (!flowInst || !el) return
+    flowInst.resize()
+    const hasSvg = !!el.querySelector('svg')
+    const hasWidth = el.offsetWidth > 0
+    if ((!hasSvg || !hasWidth) && tries < 6) {
+      tries++
+      const cur = echarts.getInstanceByDom(el)
+      if (cur) { try { cur.dispose() } catch (e) {} }
+      flowInst = echarts.init(el, null, { renderer: 'svg' })
+      flowInst.setOption(option, true)
+      setTimeout(ensure, 120)
+    }
+  }
+  setTimeout(ensure, 60)
 }
 
 function resizeFlowChart() {
@@ -1017,7 +1043,7 @@ watch(activeTab, async (tab) => {
       await loadFlowGraph()
     } else {
       await nextTick()
-      resizeFlowChart()
+      renderFlowGraph()
     }
   }
 })

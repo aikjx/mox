@@ -18,7 +18,7 @@ import {
   DataZoomComponent,
 } from 'echarts/components'
 
-import { CanvasRenderer } from 'echarts/renderers'
+import { CanvasRenderer, SVGRenderer } from 'echarts/renderers'
 import { graphic as echartsGraphic } from 'echarts'
 
 echartsCore.use([
@@ -35,8 +35,10 @@ echartsCore.use([
   GraphicComponent,
   DataZoomComponent,
   CanvasRenderer,
+  SVGRenderer,
 ])
 
 export const init = echartsCore.init
+export const getInstanceByDom = echartsCore.getInstanceByDom
 export const graphic = echartsGraphic
 export default echartsCore

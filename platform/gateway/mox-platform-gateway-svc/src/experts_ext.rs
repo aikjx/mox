@@ -222,6 +222,60 @@ async fn cancel_booking(
 }
 
 // =====================================================================
+// AI 引擎流程图谱（GET /api/ai/engine/flow-graph）
+// =====================================================================
+
+/// 编排引擎流程图谱：反映专家联盟真实协作流水线
+/// （意图识别→最优组队→并行辩论→综合合成→质量门禁→反馈学习），
+/// 以及各阶段委托的 AI 能力与引擎节点。
+async fn engine_flow_graph() -> Json<ApiResponse<Value>> {
+    let nodes = vec![
+        json!({"id": "intent", "label": "意图识别", "type": "step", "desc": "激活扩散：命中关键词 → 能力激活（个性化 PageRank）"}),
+        json!({"id": "team", "label": "最优组队", "type": "step", "desc": "能力匹配 + 图谱协同增益 + 负载均衡多目标选择"}),
+        json!({"id": "deliberate", "label": "并行辩论", "type": "step", "desc": "并行咨询 + 2 轮交叉评审收敛（加权表决）"}),
+        json!({"id": "synthesize", "label": "综合合成", "type": "step", "desc": "置信度加权 → 网关生成结构化 JSON 报告"}),
+        json!({"id": "gate", "label": "质量门禁", "type": "step", "desc": "置信度阈值 + 共识度校验，A/B/C/D 分级"}),
+        json!({"id": "learn", "label": "反馈学习", "type": "step", "desc": "意图先验回写 + 专家 metrics 更新"}),
+        json!({"id": "cap-consult", "label": "专家咨询", "type": "capability", "desc": "多专家并行咨询（会话/意图路由）"}),
+        json!({"id": "cap-review", "label": "交叉评审", "type": "capability", "desc": "专家两轮互评，Jaccard 共识度收敛"}),
+        json!({"id": "cap-fusion", "label": "结果融合", "type": "capability", "desc": "置信度加权合成 + 首席分析师 Prompt"}),
+        json!({"id": "cap-gate", "label": "质量校验", "type": "capability", "desc": "共识度 + 置信度双阈值校验，可降级重试"}),
+        json!({"id": "eng-llm", "label": "LLM 引擎", "type": "engine", "desc": "多模型路由 + 结构化输出"}),
+        json!({"id": "eng-graph", "label": "专家图谱引擎", "type": "engine", "desc": "协同增益 / 边权 / 社区计算"}),
+        json!({"id": "eng-dispatcher", "label": "调度引擎", "type": "engine", "desc": "负载均衡 + 熔断派发"}),
+    ];
+    let edges = vec![
+        json!({"source": "intent", "target": "team", "type": "flows_to", "weight": 1}),
+        json!({"source": "team", "target": "deliberate", "type": "flows_to", "weight": 1}),
+        json!({"source": "deliberate", "target": "synthesize", "type": "flows_to", "weight": 1}),
+        json!({"source": "synthesize", "target": "gate", "type": "flows_to", "weight": 1}),
+        json!({"source": "gate", "target": "learn", "type": "flows_to", "weight": 1}),
+        json!({"source": "intent", "target": "cap-consult", "type": "delegates_to", "weight": 1}),
+        json!({"source": "team", "target": "eng-graph", "type": "delegates_to", "weight": 1}),
+        json!({"source": "team", "target": "eng-dispatcher", "type": "delegates_to", "weight": 1}),
+        json!({"source": "deliberate", "target": "cap-review", "type": "delegates_to", "weight": 1}),
+        json!({"source": "synthesize", "target": "cap-fusion", "type": "delegates_to", "weight": 1}),
+        json!({"source": "cap-fusion", "target": "eng-llm", "type": "delegates_to", "weight": 1}),
+        json!({"source": "gate", "target": "cap-gate", "type": "delegates_to", "weight": 1}),
+        json!({"source": "eng-llm", "target": "cap-consult", "type": "degrades_to", "weight": 0.5}),
+        json!({"source": "eng-dispatcher", "target": "cap-consult", "type": "triggers", "weight": 0.3}),
+    ];
+    Json(api_ok(json!({
+        "nodes": nodes,
+        "edges": edges,
+        "stats": {
+            "node_count": nodes.len(),
+            "edge_count": edges.len(),
+            "by_type": { "step": 6, "capability": 4, "engine": 3 },
+        },
+        "formulas": {
+            "activation_spread": "A(u) = 0.5\u{00b7}S(u) + 0.3\u{00b7}\u{03a3}w(v,u)\u{00b7}A(v) + 0.2\u{00b7}prior(u)",
+            "note": "个性化 PageRank 激活扩散：意图关键词命中 → 能力节点激活 → 委托引擎执行，失败可降级重试。",
+        },
+    })))
+}
+
+// =====================================================================
 // 路由装配
 // =====================================================================
 
@@ -236,6 +290,7 @@ pub fn build_experts_ext_router(shared: Arc<ExpertsSharedState>) -> Router {
         .route("/api/experts/:id/favorite", post(toggle_expert_favorite))
         .route("/api/experts/bookings", post(create_booking))
         .route("/api/experts/bookings/:id/cancel", put(cancel_booking))
+        .route("/api/ai/engine/flow-graph", get(engine_flow_graph))
         .with_state(state)
 }
 

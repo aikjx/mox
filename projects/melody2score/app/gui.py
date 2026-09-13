@@ -25,13 +25,13 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QFileDialog, QComboBox, QSlider, QCheckBox, QTabWidget, QTextEdit,
     QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QMessageBox,
-    QGroupBox, QLineEdit, QFrame, QSizePolicy, QDialog, QScrollArea)
+    QGroupBox, QLineEdit, QFrame, QSizePolicy, QDialog, QScrollArea, QLayout)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from core.paths import resource_path, is_frozen
-from core.config import Config
+from core.config import Config, config_for_sample
 from core import score_sheet
 from app.original_player import OriginalPlayer
 from app.audio_play import (play_raw, play_score, is_playing,
@@ -565,8 +565,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Melody2Score · 哼唱旋律转谱（企业级桌面版）")
-        self.setMinimumSize(1680, 1250)
-        self.resize(1760, 1280)
+        self.setMinimumSize(1100, 720)
+        screen = QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else None
+        self.resize(min(1440, available.width()) if available else 1440,
+                    min(960, max(720, available.height() - 60)) if available else 960)
         self.current = None
         self.pending_file = None
         self._pending_bytes = None
@@ -658,6 +661,14 @@ class MainWindow(QMainWindow):
         self.cbModel = QComboBox()
         self.cbModel.addItems(["tiny", "small", "full"])
         pv.addWidget(self.cbModel)
+        self.cbBackend = QComboBox()
+        self.cbBackend.addItem("自动选择（显示实际后端）", "auto")
+        self.cbBackend.addItem("AI · CREPE（噪声/哼唱）", "torchcrepe")
+        self.cbBackend.addItem("pYIN（干净单声部）", "pyin")
+        self.cbBackend.setToolTip("AI 需要 torchcrepe；缺依赖时会明确显示降级。tiny/small/full 仅对神经网络有效。")
+        pv.addWidget(self.cbBackend)
+        self.cbAiReview = QCheckBox("AI 独立复核（较慢，标出异议音符）")
+        pv.addWidget(self.cbAiReview)
         self.cbVocal = QComboBox()
         self.cbVocal.addItems(["人声模式（唱歌/哼唱）", "器乐/通用模式"])
         pv.addWidget(QLabel("识别场景"))
@@ -667,7 +678,7 @@ class MainWindow(QMainWindow):
         self.cbDenoise.addItems(["开启", "关闭（板端省内存）"])
         pv.addWidget(self.cbDenoise)
         # 稳健重识别：多次识别取共识，抑制单次偶发假音高/漏音
-        self.cbRobust = QCheckBox("稳健重识别（多次取共识，更准但更慢）")
+        self.cbRobust = QCheckBox("阈值稳定性复核（同一模型）")
         self.cbRobust.setChecked(False)   # 默认关闭：识别只跑 1 遍，大幅提速；需更准时再勾选
         pv.addWidget(self.cbRobust)
         pv.addWidget(QLabel("帧移 hop(ms)"))
@@ -729,7 +740,19 @@ class MainWindow(QMainWindow):
         row_play.addWidget(self.btnPlayScore)
         row_play.addWidget(self.btnStop)
         lv.addLayout(row_play)
-        h.addWidget(left)
+        # Keep controls usable on smaller displays instead of squeezing
+        # the additional backend/review controls into overlapping rows.
+        for control in left.findChildren(QComboBox) + left.findChildren(QCheckBox):
+            control.ensurePolished()
+            control.setMinimumHeight(control.sizeHint().height())
+        pv.setSizeConstraint(QLayout.SetMinimumSize)
+        lv.setSizeConstraint(QLayout.SetMinimumSize)
+        control_scroll = QScrollArea()
+        control_scroll.setWidgetResizable(True)
+        control_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        control_scroll.setFixedWidth(454)
+        control_scroll.setWidget(left)
+        h.addWidget(control_scroll)
 
         # 右侧
         right = QFrame()
@@ -744,7 +767,7 @@ class MainWindow(QMainWindow):
         self.mConf = QLabel("—")
         self.mBackend = QLabel("")
         self.mBackend.setStyleSheet(f"color:{MUTED};font-size:12px;")
-        for w, t in [(self.mKey, "调式"), (self.mBpm, "BPM"), (self.mNotes, "音符数"), (self.mConf, "置信度")]:
+        for w, t in [(self.mKey, "调式"), (self.mBpm, "BPM"), (self.mNotes, "音符数"), (self.mConf, "周期性评分")]:
             box = QGroupBox(t)
             bv = QVBoxLayout(box)
             w.setStyleSheet(f"font-size:20px;font-weight:800;color:{ACCENT};")
@@ -782,8 +805,8 @@ class MainWindow(QMainWindow):
         self.pitch = PitchView()
         tabs.addTab(self.pitch, "音高轮廓")
         # 音符表
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["#", "MIDI", "音名", "起始(s)", "时长(s)"])
+        self.table = QTableWidget(0, 6)
+        self.table.setHorizontalHeaderLabels(["#", "MIDI", "音名", "起始(s)", "时长(s)", "AI复核"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         tabs.addTab(self.table, "音符明细")
         # 识别歌曲
@@ -813,6 +836,8 @@ class MainWindow(QMainWindow):
     def _cfg(self) -> Config:
         cfg = Config()
         cfg.model_size = self.cbModel.currentText()
+        cfg.preferred_backend = self.cbBackend.currentData()
+        cfg.ai_review = self.cbAiReview.isChecked()
         cfg.enable_denoise = self.cbDenoise.currentIndex() == 0
         cfg.robust = self.cbRobust.isChecked()
         cfg.hop = self.slHop.value()
@@ -1013,7 +1038,7 @@ class MainWindow(QMainWindow):
             title = item.get("title_zh") or item.get("title") or os.path.splitext(os.path.basename(file_rel))[0]
             if title:
                 self.titleEdit.setText(title)
-        self._start({"kind": "sample", "name": file_rel, "cfg": self._cfg(),
+        self._start({"kind": "sample", "name": file_rel, "cfg": config_for_sample(self._cfg(), item.get("category", "") if item else ""),
                      "source": file_rel})
 
     def _sample_abs_path(self, item: Dict) -> str:
@@ -1104,21 +1129,36 @@ class MainWindow(QMainWindow):
         self.mBpm.setText(str(res["bpm"]))
         self.mNotes.setText(str(res["note_count"]))
         self.mConf.setText(f"{res.get('confidence', 0):.0%}")
+        self.mConf.setToolTip("音高周期性评分，不是整首识别正确率；重复推理的一致也不代表正确。")
         self.mBackend.setText(f"后端 {res['backend']} · 预处理 {res['perf']['preprocess_ms']}ms · "
                               f"音高 {res['perf']['pitch_ms']}ms · 解析 {res['perf']['parse_ms']}ms")
+        warnings = res.get("quality", {}).get("warnings", [])
+        if warnings:
+            self.mBackend.setText(self.mBackend.text() + "\n" + "\n".join(warnings))
+        self.mBackend.setWordWrap(True)
         self.jianpu.setPlainText(res["jianpu"] or "（无声）")
         self.staff.setData(res["notes"], res["key"], bpm=res.get("bpm", 120.0))
         self.pitch.setData(res["notes"])
         self.table.setRowCount(len(res["notes"]))
+        audits = {d["index"]: d for d in res.get("ai_review", {}).get("details", [])}
         for i, n in enumerate(res["notes"]):
             self.table.setItem(i, 0, QTableWidgetItem(str(i + 1)))
             self.table.setItem(i, 1, QTableWidgetItem(str(n["midi"])))
             self.table.setItem(i, 2, QTableWidgetItem(n["name"]))
             self.table.setItem(i, 3, QTableWidgetItem(str(n["start"])))
             self.table.setItem(i, 4, QTableWidgetItem(str(n["dur"])))
+            audit = audits.get(i)
+            labels = {"agree": "模型一致", "disagree": "音高异议", "ambiguous": "不确定", "insufficient_evidence": "证据不足"}
+            label = labels.get(audit["status"], "未复核") if audit else "未复核"
+            if audit and audit["status"] == "disagree":
+                label += "：" + midi_name(audit["peer_midi"])
+            cell = QTableWidgetItem(label)
+            if audit and "coverage" in audit:
+                cell.setToolTip(f"复核支持覆盖率 {audit['coverage']:.0%}；覆盖率和模型一致均不是正确率。")
+            self.table.setItem(i, 5, cell)
         robust_info = ""
         if res.get("robust_runs", 1) > 1:
-            robust_info = f" · 重识别{res['robust_runs']}次→共识保留 {res['robust_kept']} 音 · 置信度 {res.get('confidence',0):.0%}"
+            robust_info = f" · 重识别{res['robust_runs']}次→共识保留 {res['robust_kept']} 音 · 周期性 {res.get('confidence',0):.0%}"
 
         # 自动生成标准歌谱（后台线程，避免 LilyPond 渲染阻塞主线程造成卡顿）
         self.sheetLabel.setText("正在生成标准歌谱…")

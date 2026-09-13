@@ -83,7 +83,10 @@ def test_twinkle_pipeline():
         f"简谱不匹配:\n  期望 {EXPECTED_JIANPU}\n  实际 {res['jianpu']}"
 
     # 6) 置信度与稳健共识健康
-    assert res["confidence"] >= 0.9, f"置信度过低: {res['confidence']}"
+    assert res["confidence_kind"] == "mean_voiced_periodicity"
+    assert 0 <= res["confidence"] <= 1
+    assert res["consensus_agreement"] >= 0.9
+    assert res["quality"]["accuracy"] is None
     assert res["robust_kept"] == len(EXPECTED), \
         f"共识保留数异常: {res['robust_kept']} (期望 {len(EXPECTED)})"
 

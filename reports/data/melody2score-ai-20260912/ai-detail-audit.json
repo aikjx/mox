@@ -1,0 +1,46 @@
+{
+  "chromatic_neighbor": {
+    "input": [
+      60,
+      61,
+      60
+    ],
+    "output": [
+      60,
+      60,
+      60
+    ]
+  },
+  "intentional_octave": {
+    "input": [
+      60,
+      72,
+      60
+    ],
+    "output": [
+      60,
+      60,
+      60
+    ]
+  },
+  "empty_notes_with_peer_voice": {
+    "status": "reviewed",
+    "accuracy": null,
+    "details": [],
+    "review_note_indices": []
+  },
+  "sparse_support_long_note": {
+    "status": "reviewed",
+    "accuracy": null,
+    "details": [
+      {
+        "index": 0,
+        "primary_midi": 60,
+        "peer_midi": 60,
+        "status": "agree",
+        "dominance": 1.0
+      }
+    ],
+    "review_note_indices": []
+  }
+}

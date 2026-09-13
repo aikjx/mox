@@ -1,24 +1,9 @@
 # -*- coding: utf-8 -*-
-"""MIDI 音符后处理纠错层（缺失的关键一环，错误一路传导到谱面的根因）。
+"""Structural note cleanup without neighbor-based pitch rewriting.
 
-用户痛点链路：
-  音高帧 → 初分音符 → segment_notes 已经做了局部毛刺过滤，但：
-    1) 旋律整体可能被伴奏低谐波拉偏，出现「一串 C 中夹一个 G」的孤立错音；
-    2) 无意义的大跳（相邻音间隔>10 半音且该跳音前后音程都回原位置）；
-    3) 人声/乐器音域外的 MIDI（例如 CREPE 把底噪解成 20Hz 的 C1）；
-    4) 时长异常：< 60ms 的零散短音符、> 6 秒的不自然长音；
-    5) 连续重复极短同音（应该合并成一个长音）。
-
-本模块在 octave_normalize 之后、BPM/调式之前插入，对音符列表做全局
-语义级纠错。不修改输入，返回新的 notes 列表 + 诊断统计。
-
-统一输出：{
-  "notes": List[Dict]（修正后音符）,
-  "dropped_count": int（被丢弃的异常音符数）,
-  "merged_count": int（连续短同音被合并的次数）,
-  "corrected_jumps": int（被纠正的无意义大跳次数）,
-  "kept_range": (min_midi, max_midi),
-}
+Retains sustained notes and independent repeated notes. Pitch disagreements
+require acoustic review; legacy pitch helpers are not used by this pipeline.
+Returns new notes and cleanup counts without modifying caller input.
 """
 from typing import Dict, List, Tuple
 
@@ -34,8 +19,6 @@ _JUMP_OCTAVE_THRESH = 12
 # 最短音符绝对下限（秒）：低于此值的孤立音符一律丢弃（比配置层更激进，
 # 因为配置层 min_note_dur 是"正常音符过滤"，这里处理"全局语义"）
 _DUR_FLOOR_SEC = 0.06
-# 最长音符绝对上限（秒）：超过视为持续尾音拖长被误合成一个音，按 4 拍截断
-_DUR_CEIL_SEC = 6.0
 # 连续同音合并最大间隔（秒）：相邻同音间隔 ≤ 该值 且 每个都短时，合并
 _GAP_MERGE_SEC = 0.05
 
@@ -54,7 +37,7 @@ def drop_out_of_range(notes: List[Dict]) -> Tuple[List[Dict], int]:
 
 
 def drop_too_short_or_long(notes: List[Dict]) -> Tuple[List[Dict], int]:
-    """丢弃过短孤立、截断过长拖音。"""
+    """丢弃短于支持下限的片段，保留长音并同步时长字段。"""
     out = []
     dropped = 0
     for n in notes:
@@ -65,8 +48,7 @@ def drop_too_short_or_long(notes: List[Dict]) -> Tuple[List[Dict], int]:
             dropped += 1
             continue
         item = dict(n)
-        if d > _DUR_CEIL_SEC:
-            item["end"] = item["start"] + _DUR_CEIL_SEC
+        item["dur"] = d  # Preserve sustained notes; notation handles bar boundaries.
         out.append(item)
     return out, dropped
 
@@ -195,12 +177,15 @@ def postprocess_notes(notes: List[Dict]) -> Dict:
     step1, d1 = drop_out_of_range(notes)
     step2, d2 = drop_too_short_or_long(step1)
     step3, m1 = merge_consecutive_repeats(step2)
-    step4, j1 = fix_spurious_octave_jumps(step3)
-    step5, s1 = median_smooth_pitch(step4, win=3)
+    # Neighbor votes alone cannot distinguish ornamentation from tracking errors.
+    # Keep pitches intact; independent acoustic review surfaces disagreements.
+    step5, j1, s1 = step3, 0, 0
 
     # 最终确保按 start 排序（下游所有量化/渲染依赖时序）
     step5.sort(key=lambda n: float(n.get("start", 0.0)))
 
+    for note in step5:
+        note["dur"] = float(note["end"] - note["start"])
     midi_list = [int(round(float(n.get("midi", 60)))) for n in step5]
     kept_range = (min(midi_list), max(midi_list)) if midi_list else (60, 72)
 

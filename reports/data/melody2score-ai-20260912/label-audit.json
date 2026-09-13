@@ -1,0 +1,12 @@
+{
+  "file": "audio/m05_instrument_guitar.wav",
+  "interval_seconds": [
+    0.05,
+    0.3
+  ],
+  "annotated_midi": 76,
+  "expected_hz": 659.2551138257398,
+  "spectral_peak_hz": 680.84716796875,
+  "spectral_midi": 76.55792957122716,
+  "method": "Hann-window FFT; 262144 bins; peak searched in 600-750 Hz. Original audio and labels unchanged."
+}

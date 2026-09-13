@@ -13,11 +13,9 @@ def preprocess(y: np.ndarray, sr: int = 16000, enable_denoise: bool = True) -> n
 
 
 def _spectral_subtract(y: np.ndarray, sr: int) -> np.ndarray:
-    """轻量谱减：以开头 0.1s 静音段为噪声底估计，带过减因子与下限保护。
+    """Estimate noise only from low-energy frames; preserve active starts.
 
-    数值稳定点：
-    - 过减因子(2.0)在噪声较强处多减，抑制残留噪声/谐波毛刺；
-    - 下限保护 0.1*mag 避免把有效谐波削成 0（否则 CREPE 置信骤降→假音高）。
+    If no quiet region is observed, keep the signal instead of guessing noise.
     """
     D = librosa.stft(y, n_fft=512, hop_length=128)
     mag = np.abs(D)

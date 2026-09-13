@@ -1,0 +1,36 @@
+{
+  "vexflow_1_5_beats": {
+    "key_signature": "C",
+    "time_signature": "4/4",
+    "bpm": 120,
+    "notes": [
+      {
+        "note": "C/4",
+        "duration": "hd",
+        "midi": 60
+      }
+    ],
+    "total_beats": 1.5
+  },
+  "long_note_8_seconds": {
+    "notes": [
+      {
+        "midi": 60,
+        "start": 0.0,
+        "end": 6.0,
+        "dur": 8.0
+      }
+    ],
+    "dropped_count": 0,
+    "merged_count": 0,
+    "corrected_jumps": 0,
+    "smoothed": 0,
+    "kept_range": [
+      60,
+      60
+    ]
+  },
+  "timeout_raised": true,
+  "worker_completed_after_timeout": true,
+  "enterprise_config_has_ai_review_parameter": false
+}

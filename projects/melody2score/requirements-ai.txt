@@ -1,0 +1,3 @@
+# Optional neural backend. Install matching CPU/CUDA torch and torchaudio first.
+# Validated locally with torch==2.4.1+cpu and torchaudio==2.4.1+cpu on Python 3.8.
+torchcrepe==0.0.24

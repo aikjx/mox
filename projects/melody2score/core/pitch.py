@@ -1,18 +1,9 @@
 # -*- coding: utf-8 -*-
-"""音高检测层（可插拔后端，首选 crepe_onnx tiny，稳定可降级）。
+"""Pitch detection with optional CREPE neural backends and pYIN fallback.
 
-设计原则（企业级稳定高效）：
-  1) 首选后端锁定：auto 模式下以 Config.preferred_backend 为第一优先；
-     默认 crepe_onnx(tiny) —— 嵌入式 ONNX 版 CREPE，加载快、CPU 友好、可复现。
-  2) 懒加载 + 可用性缓存：每个后端首次 import 后记录「可用/不可用」，
-     后续调用不再反复 try/except 探测，避免重复 import 开销与偶发崩溃。
-  3) 降级顺序：crepe_onnx → pyin（零额外依赖、稳定） → torchcrepe
-     （PyTorch 实现，部分 Windows 环境 onnxruntime 段错误，放最后兜底）。
-  4) 单次推理超时保护：防止模型异常卡死拖垮 UI/服务。
-  5) 确定性：固定 OMP 线程，保证同一输入相同输出。
-
-统一输出：[{t, freq, conf}, ...]（time 秒 / freq Hz / conf 0~1）。
-无论哪个后端，下游解析层拿到的是同一种轮廓，保证流水线一致。
+Report the actual backend/model and fallback errors. Reuse raw frame evidence
+when robust mode changes only the confidence threshold. Python thread timeouts
+bound waiting, not the lifetime of a native inference call.
 """
 from typing import Dict, List, Optional, Tuple
 
@@ -20,8 +11,8 @@ import numpy as np
 
 
 class PitchDetector:
-    # 降级顺序：首选 crepe_onnx，pyin 最稳作第二，torchcrepe 易崩放最后
-    FALLBACK_ORDER = ("crepe_onnx", "pyin", "torchcrepe")
+    # 自动选择优先可用神经网络；缺依赖时使用 pYIN 并在结果中说明。
+    FALLBACK_ORDER = ("crepe_onnx", "torchcrepe", "pyin")
 
     def __init__(self, model_size: str = "tiny", conf_thresh: float = 0.3,
                  hop: int = 10, intra_op_threads: int = 0,
@@ -42,6 +33,8 @@ class PitchDetector:
         self._used: Optional[str] = None
         self.effective_model = None
         self.failures = {}
+        self._frame_cache = None
+        self.inference_calls = 0
         # 后端可用性缓存：None=未探测, True=可用, False=不可用
         self._backend_ok: Dict[str, Optional[bool]] = {
             k: None for k in self.FALLBACK_ORDER
@@ -151,6 +144,10 @@ class PitchDetector:
         缺省用构造时的 self.conf_thresh。
         返回 [{t, freq, conf}]；若所有后端均不可用抛 RuntimeError。
         """
+        threshold = self.conf_thresh if conf_thresh is None else conf_thresh
+        cached = self._frame_cache
+        if cached is not None and cached[0] == sr and np.array_equal(cached[1], y):
+            return [dict(p) for p in cached[2] if p["conf"] >= threshold]
         last_err: Optional[BaseException] = None
         for kind in self._candidates():
             if not self._is_backend_ok(kind):
@@ -158,15 +155,17 @@ class PitchDetector:
             try:
                 if kind == "crepe_onnx":
                     out = self._run_with_timeout(self._detect_crepe_onnx, y, sr,
-                                                 conf_thresh=conf_thresh)
+                                                 conf_thresh=0.0)
                 elif kind == "torchcrepe":
                     out = self._run_with_timeout(self._detect_torchcrepe, y, sr,
-                                                 conf_thresh=conf_thresh)
+                                                 conf_thresh=0.0)
                 else:
                     out = self._run_with_timeout(self._detect_pyin, y, sr,
-                                                 conf_thresh=conf_thresh)
+                                                 conf_thresh=0.0)
                 self._used = kind
-                return out
+                self.inference_calls += 1
+                self._frame_cache = (sr, np.array(y, copy=True), out)
+                return [dict(p) for p in out if p["conf"] >= threshold]
             except Exception as e:
                 # 该后端本次失败：标记不可用，下次跳过，继续降级
                 self._backend_ok[kind] = False
@@ -186,7 +185,7 @@ class PitchDetector:
         def _worker():
             try:
                 q.put(("ok", fn(y, sr, **kw)))
-            except BaseException as e:  # 捕获一切，含段错误前的异常
+            except BaseException as e:  # Python exceptions only; native crashes cannot be caught here.
                 exc.append(e)
                 q.put(("err", e))
 

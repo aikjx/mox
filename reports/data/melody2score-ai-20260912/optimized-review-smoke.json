@@ -1,0 +1,77 @@
+{
+  "jianpu": "1",
+  "bpm": 60.0,
+  "key": {
+    "tonic": "A",
+    "mode": "major"
+  },
+  "note_count": 1,
+  "duration_sec": 1.0,
+  "backend": "pyin",
+  "notes": [
+    {
+      "midi": 69,
+      "start": 0.0,
+      "end": 1.0,
+      "dur": 1.0,
+      "name": "A4"
+    }
+  ],
+  "confidence": 0.972,
+  "confidence_kind": "mean_voiced_periodicity",
+  "consensus_agreement": null,
+  "requested_backend": "pyin",
+  "neural_backend": false,
+  "effective_model": null,
+  "backend_failures": {},
+  "quality": {
+    "status": "unverified",
+    "accuracy": null,
+    "review_note_indices": [],
+    "warnings": [],
+    "confidence_meaning": "音高周期性评分，不是识别正确率"
+  },
+  "octave_shift": 0,
+  "robust_runs": 1,
+  "robust_kept": 1,
+  "perf": {
+    "preprocess_ms": 0.0,
+    "pitch_ms": 7418.3,
+    "parse_ms": 4109.0,
+    "pitch_frames": 51,
+    "inference_calls": 1
+  },
+  "separation": {
+    "strategy": "disabled",
+    "snr_est": 0.0
+  },
+  "postprocess": {
+    "dropped_count": 0,
+    "merged_count": 0,
+    "corrected_jumps": 0,
+    "smoothed": 0,
+    "kept_range": [
+      69,
+      69
+    ]
+  },
+  "source": "",
+  "ai_review": {
+    "status": "reviewed",
+    "accuracy": null,
+    "details": [
+      {
+        "index": 0,
+        "primary_midi": 69,
+        "peer_midi": 69,
+        "status": "agree",
+        "dominance": 1.0,
+        "coverage": 1.0
+      }
+    ],
+    "review_intervals": [],
+    "review_note_indices": [],
+    "backend": "torchcrepe",
+    "model": "tiny"
+  }
+}

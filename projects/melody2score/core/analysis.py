@@ -359,15 +359,10 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
                 })
         raw = new_raw
 
-    # VAD 切边回补（须在过滤之前）：VAD 以能量门限判有声，attack 爬升段
-    # 与指数衰减尾系统性低于门限，且 pyin 帧中心落在静音区的边缘帧会被
-    # 整帧判杀 → 音符边界两端被切（实测 0.42s → 0.27~0.32s，BPM 反推
-    # 随之落到错误拍类）。回补量取 50ms：足以找回边缘帧并让 0.25 拍
-    # 短音符存活，首音符的 attack 损失也能基本补回；
-    # 边界毛刺因两边对称回补后中点不变，时长不增 → 不会越过过滤线。
-    # 无 VAD 不回补。
+    # Compensate at most one VAD hop for boundary quantization. The former
+    # fixed 50ms per side lengthened valid notes and biased BPM downwards.
     if vad_mask is not None and len(vad_mask) > 0:
-        raw = _pad_note_boundaries(raw, 0.05)
+        raw = _pad_note_boundaries(raw, max(0.0, vad_hop_ms / 1000.0))
     # 边界伪音清除：短音符夹在两个相同音高之间（A|B|A 且 B 短），
     # B 是帧窗口横跨 A|gap|A 解出的中间伪音高，截断两侧 A 的边界即可。
     raw = _drop_boundary_artifacts(raw, min_note_dur)

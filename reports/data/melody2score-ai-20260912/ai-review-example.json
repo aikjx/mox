@@ -1,0 +1,259 @@
+{
+  "jianpu": "_.1 3_6 __.1 __6 3_.1 _#4 _6 _5 3 _5_ _7_ _3 #4",
+  "bpm": 83.3,
+  "key": {
+    "tonic": "F",
+    "mode": "major"
+  },
+  "note_count": 13,
+  "duration_sec": 6.06,
+  "backend": "pyin",
+  "notes": [
+    {
+      "midi": 77,
+      "start": 0.02,
+      "end": 0.36,
+      "dur": 0.34,
+      "name": "F5"
+    },
+    {
+      "midi": 74,
+      "start": 0.48,
+      "end": 0.7,
+      "dur": 0.22,
+      "name": "D5"
+    },
+    {
+      "midi": 77,
+      "start": 0.78,
+      "end": 0.96,
+      "dur": 0.18,
+      "name": "F5"
+    },
+    {
+      "midi": 74,
+      "start": 1.06,
+      "end": 1.22,
+      "dur": 0.16,
+      "name": "D5"
+    },
+    {
+      "midi": 77,
+      "start": 1.28,
+      "end": 1.5,
+      "dur": 0.22,
+      "name": "F5"
+    },
+    {
+      "midi": 71,
+      "start": 1.6,
+      "end": 1.92,
+      "dur": 0.32,
+      "name": "B4"
+    },
+    {
+      "midi": 74,
+      "start": 2.06,
+      "end": 2.46,
+      "dur": 0.4,
+      "name": "D5"
+    },
+    {
+      "midi": 72,
+      "start": 2.54,
+      "end": 2.9,
+      "dur": 0.36,
+      "name": "C5"
+    },
+    {
+      "midi": 69,
+      "start": 3.02,
+      "end": 3.82,
+      "dur": 0.8,
+      "name": "A4"
+    },
+    {
+      "midi": 60,
+      "start": 3.94,
+      "end": 4.32,
+      "dur": 0.38,
+      "name": "C4"
+    },
+    {
+      "midi": 64,
+      "start": 4.42,
+      "end": 4.8,
+      "dur": 0.38,
+      "name": "E4"
+    },
+    {
+      "midi": 69,
+      "start": 4.9,
+      "end": 5.28,
+      "dur": 0.38,
+      "name": "A4"
+    },
+    {
+      "midi": 71,
+      "start": 5.36,
+      "end": 6.06,
+      "dur": 0.7,
+      "name": "B4"
+    }
+  ],
+  "confidence": 0.925,
+  "confidence_kind": "mean_voiced_periodicity",
+  "consensus_agreement": 1.0,
+  "requested_backend": "pyin",
+  "neural_backend": false,
+  "effective_model": null,
+  "backend_failures": {},
+  "quality": {
+    "status": "needs_review",
+    "accuracy": null,
+    "review_note_indices": [
+      0,
+      1,
+      6,
+      8,
+      11,
+      12
+    ],
+    "warnings": [
+      "独立模型对 6 个音符存在异议或证据不足，请检查音符明细。"
+    ],
+    "confidence_meaning": "音高周期性评分，不是识别正确率"
+  },
+  "octave_shift": 0,
+  "robust_runs": 3,
+  "robust_kept": 13,
+  "perf": {
+    "preprocess_ms": 123.7,
+    "pitch_ms": 1903.7,
+    "parse_ms": 6588.5,
+    "pitch_frames": 254,
+    "inference_calls": 1
+  },
+  "separation": {
+    "strategy": "disabled",
+    "snr_est": 0.0
+  },
+  "postprocess": {
+    "dropped_count": 0,
+    "merged_count": 0,
+    "corrected_jumps": 0,
+    "smoothed": 0,
+    "kept_range": [
+      60,
+      77
+    ]
+  },
+  "source": "",
+  "ai_review": {
+    "status": "reviewed",
+    "accuracy": null,
+    "details": [
+      {
+        "index": 0,
+        "primary_midi": 77,
+        "peer_midi": 77,
+        "status": "ambiguous",
+        "dominance": 0.557
+      },
+      {
+        "index": 1,
+        "primary_midi": 74,
+        "peer_midi": 74,
+        "status": "ambiguous",
+        "dominance": 0.603
+      },
+      {
+        "index": 2,
+        "primary_midi": 77,
+        "peer_midi": 77,
+        "status": "agree",
+        "dominance": 1.0
+      },
+      {
+        "index": 3,
+        "primary_midi": 74,
+        "peer_midi": 74,
+        "status": "agree",
+        "dominance": 0.803
+      },
+      {
+        "index": 4,
+        "primary_midi": 77,
+        "peer_midi": 77,
+        "status": "agree",
+        "dominance": 0.885
+      },
+      {
+        "index": 5,
+        "primary_midi": 71,
+        "peer_midi": 71,
+        "status": "agree",
+        "dominance": 0.753
+      },
+      {
+        "index": 6,
+        "primary_midi": 74,
+        "peer_midi": 74,
+        "status": "ambiguous",
+        "dominance": 0.672
+      },
+      {
+        "index": 7,
+        "primary_midi": 72,
+        "peer_midi": 72,
+        "status": "agree",
+        "dominance": 1.0
+      },
+      {
+        "index": 8,
+        "primary_midi": 69,
+        "peer_midi": 69,
+        "status": "ambiguous",
+        "dominance": 0.623
+      },
+      {
+        "index": 9,
+        "primary_midi": 60,
+        "peer_midi": 60,
+        "status": "agree",
+        "dominance": 1.0
+      },
+      {
+        "index": 10,
+        "primary_midi": 64,
+        "peer_midi": 64,
+        "status": "agree",
+        "dominance": 1.0
+      },
+      {
+        "index": 11,
+        "primary_midi": 69,
+        "peer_midi": 69,
+        "status": "ambiguous",
+        "dominance": 0.685
+      },
+      {
+        "index": 12,
+        "primary_midi": 71,
+        "peer_midi": 71,
+        "status": "ambiguous",
+        "dominance": 0.597
+      }
+    ],
+    "review_note_indices": [
+      0,
+      1,
+      6,
+      8,
+      11,
+      12
+    ],
+    "backend": "torchcrepe",
+    "model": "tiny"
+  }
+}

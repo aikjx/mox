@@ -1,28 +1,9 @@
 # -*- coding: utf-8 -*-
-"""声源分离层：从混合音频中提取主旋律/人声轨道（企业级多策略优雅降级）。
+"""Optional source separation with explicit fallback diagnostics.
 
-核心目标：解决「伴奏+人声」混合音频的音高检测错音爆炸问题。
-开源工业级首选是 Demucs (htdemucs)，但它依赖 PyTorch 且模型体积大。
-为了在缺省环境下依然可用，本模块提供 3 级降级：
-
-  1) Demucs：htdemucs 四源分离（人声 / 鼓 / 贝斯 / 其他）→ 取人声轨。
-     - 需要 `demucs` 包 + PyTorch + 模型（首跑自动下载 ~80MB）。
-  2) Spleeter Lite（基于 Librosa 的 HPSS + 谐波源启发式）：无额外依赖，
-     用「谐波/打击分离 + 能量+频带集中性」近似提取主旋律，虽不如 Demucs
-     精准，但对「钢琴弹唱/低伴奏混合」的分离效果足以显著降低错音率。
-  3) 无分离直通：环境完全不支持分离时直接回原信号，保证链路不断裂。
-
-输出统一规范：
-  分离结果返回 Dict，至少含：
-    {
-      "strategy": "demucs" | "hpss" | "passthrough",
-      "vocals":   np.ndarray (float32, mono, 与输入同采样率同长度),
-      "other":    np.ndarray (same shape, 伴奏/其他合计),
-      "snr_est":  float (估计分离信噪比 dB, 仅用于诊断)
-    }
-调用方直接取 vocals 作为「主旋律」喂给后续音高检测。
-
-确定性：无随机源，同一输入相同输出。
+Auto tries Demucs and otherwise preserves the input with a warning. HPSS is
+an explicit harmonic/percussive option, not a vocal separation model. Results
+contain vocals/other waveforms and diagnostic metadata; no accuracy guarantee.
 """
 from typing import Dict, List, Optional, Tuple
 
@@ -112,8 +93,8 @@ def _demucs_separate(y: np.ndarray, sr: int, model_name: str = "htdemucs") -> Di
 
     - 输入：numpy 单声道 float32；Demucs 需要 stereo+2 声道 + 44100Hz，
       内部先升采样/复制声道，分离后再降回原采样率取左=右=单声道。
-    - 模型首跑会下载 ~80MB 权重，后续走本地缓存；timeout 兜底。
-    - 失败（硬件不足/模型下载失败等）统一抛异常，调用方回退 HPSS。
+    - 模型首跑下载权重；本函数尚无进程级超时保护。
+    - 失败统一抛异常，auto 调用方回退原音并报告原因。
     """
     import torch
     import librosa
@@ -137,11 +118,11 @@ def _demucs_separate(y: np.ndarray, sr: int, model_name: str = "htdemucs") -> Di
     ref = torch.from_numpy(np.stack([y44, y44], axis=0))  # [2, T]
     ref = ref.unsqueeze(0)  # [1, 2, T]
 
-    # 按官方默认参数分离（shifts=1 折中速度/稳定性；segment=8s 降低显存）
+    # 按官方默认参数分离（shifts=1 折中速度/稳定性；segment=7s，兼容 Hybrid Transformer 的 7.8s 上限）
     with torch.no_grad():
         sources = apply_model(
             model, ref, device=device, shifts=1,
-            split=True, overlap=0.25, segment=8,
+            split=True, overlap=0.25, segment=7,
         )
     # htdemucs 源顺序: drums, bass, other, vocals
     src_names = model.sources
@@ -182,7 +163,7 @@ def separate_melody(y: np.ndarray, sr: int,
     y : np.ndarray (float32, mono)
     sr : int
     strategy : str
-      - "auto"      : 有 Demucs → Demucs，否则 HPSS Lite。
+      - "auto"      : 有 Demucs → Demucs，否则保留原音并报告未分离。
       - "demucs"    : 强制 Demucs（不可用则抛出异常）。
       - "hpss"      : 强制 HPSS Lite（零依赖，速度快）。
       - "none"      : 直通（不分离，仅返回 {vocals=y, other=0}）。
@@ -194,6 +175,10 @@ def separate_melody(y: np.ndarray, sr: int,
         y = y.mean(axis=-1)
 
     strategy = (strategy or "auto").lower()
+
+    if strategy not in ("auto", "demucs", "hpss", "none"):
+        raise ValueError(f"Unknown separation strategy: {strategy}")
+    fallback_reason = "未安装 Demucs，人声未分离；保留原音。"
 
     # 策略分发
     if strategy == "none":
@@ -225,20 +210,21 @@ def separate_melody(y: np.ndarray, sr: int,
                     "snr_est": _estimate_snr_db(d["vocals"], d["other"]),
                 }
             except Exception as e:
+                fallback_reason = f"Demucs 分离失败，保留原音：{e}"
                 if verbose:
-                    print(f"[sep] Demucs 失败，回退 HPSS: {e}")
+                    print(f"[sep] Demucs 失败，保留原音: {e}")
                 if strategy == "demucs":
                     # demucs 强制模式：失败抛错而非静默回退，便于诊断
                     raise
         elif strategy == "demucs":
             raise RuntimeError("demucs / torch 未安装，且已强制 strategy=demucs")
 
-    # 兜底 HPSS
-    vocals = _hpss_separate(y, sr)
-    other = y - vocals
+    # HPSS cannot isolate vocals from other harmonic instruments. Keep the
+    # original unless the caller explicitly requests that transformation.
     return {
-        "strategy": "hpss",
-        "vocals": vocals,
-        "other": other,
-        "snr_est": _estimate_snr_db(vocals, other),
+        "strategy": "passthrough",
+        "vocals": y.copy(),
+        "other": np.zeros_like(y),
+        "snr_est": 0.0,
+        "warning": fallback_reason,
     }

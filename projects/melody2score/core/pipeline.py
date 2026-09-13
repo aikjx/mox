@@ -13,6 +13,8 @@
 输出 dict 与现有 GUI/WebUI 契约一致，便于零改动接入。
 """
 import hashlib
+from copy import deepcopy
+from dataclasses import asdict
 import io
 import os
 import shutil
@@ -45,11 +47,11 @@ class _LRUCache:
             v = self._d.pop(key, None)
             if v is not None:
                 self._d[key] = v  # 最近使用置尾
-            return v
+            return deepcopy(v)
 
     def put(self, key: str, value: Dict) -> None:
         with self._lock:
-            self._d[key] = value
+            self._d[key] = deepcopy(value)
             self._d.move_to_end(key)
             while len(self._d) > self._cap:
                 self._d.popitem(last=False)
@@ -170,13 +172,33 @@ def _load_source(source: Dict, cfg: Config) -> Tuple[np.ndarray, int]:
     raise ValueError(f"未知音源类型: {kind}")
 
 
-def _conf(notes) -> float:
-    """置信度：基于音符平均时长与数量（越长越多越可信）。"""
-    if not notes:
-        return 0.0
-    durs = [n["end"] - n["start"] for n in notes]
-    avg = float(np.mean(durs))
-    return float(min(1.0, 0.4 + avg / 0.3))
+def _conf(points) -> float:
+    """Mean acoustic periodicity, never an estimate of transcription accuracy."""
+    values = [float(p.get("conf", 0)) for p in points
+              if np.isfinite(p.get("conf", 0))]
+    return float(np.clip(np.mean(values), 0, 1)) if values else 0.0
+
+
+def _quality(notes, points, det, separation):
+    warnings = []
+    if det.preferred_backend != "auto" and det.used_backend != det.preferred_backend:
+        warnings.append(f"请求 {det.preferred_backend}，实际使用 {det.used_backend}；模型已降级。")
+    if det.preferred_backend == "auto" and det.used_backend == "pyin":
+        warnings.append("未启用神经网络模型，当前使用 pYIN。")
+    if separation.get("warning"):
+        warnings.append(separation["warning"])
+    if separation.get("strategy") == "hpss":
+        warnings.append("HPSS 仅分离谐波与打击声，不能保证分离出人声主旋律。")
+    review = []
+    for index, note in enumerate(notes):
+        support = [p for p in points if note["start"] <= p["t"] <= note["end"]]
+        if len(support) < 2 or _conf(support) < .6:
+            review.append(index)
+    if review:
+        warnings.append(f"{len(review)} 个音符的声学证据较弱，请复核。")
+    return {"status": "needs_review" if warnings or not notes else "unverified",
+            "accuracy": None, "review_note_indices": review, "warnings": warnings,
+            "confidence_meaning": "音高周期性评分，不是识别正确率"}
 
 
 def _consensus(runs: List[List[Dict]], cfg: Config) -> Tuple[List[Dict], Dict]:
@@ -328,21 +350,13 @@ class Melody2Score:
             raw = source.get("data")
             if raw is not None and isinstance(raw, (bytes, bytearray)):
                 raw = bytes(raw)
-                eff_sep_tag = (cfg.enable_separation if cfg.enable_separation is not None
-                               else bool(cfg.vocal_mode))
-                cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
-                           cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh,
-                           eff_sep_tag, cfg.separation_strategy,
-                           cfg.enable_postprocess, cfg.normalize_octaves)
-                cache_key = "v3:" + hashlib.sha256(raw).hexdigest() + ":" + repr(cfg_tag)
+                cfg_tag = repr(sorted(asdict(cfg).items()))
+                cache_key = "v4:" + hashlib.sha256(raw).hexdigest() + ":" + cfg_tag
             elif source.get("kind") == "sample":
-                eff_sep_tag = (cfg.enable_separation if cfg.enable_separation is not None
-                               else bool(cfg.vocal_mode))
-                cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
-                           cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh,
-                           eff_sep_tag, cfg.separation_strategy,
-                           cfg.enable_postprocess, cfg.normalize_octaves)
-                cache_key = "v3:sample:" + str(source.get("name")) + ":" + repr(cfg_tag)
+                cfg_tag = repr(sorted(asdict(cfg).items()))
+                with open(resource_path(source["name"]), "rb") as sample_file:
+                    digest = hashlib.sha256(sample_file.read()).hexdigest()
+                cache_key = "v4:sample:" + digest + ":" + cfg_tag
             if cache_key:
                 cached = _RESULT_CACHE.get(cache_key)
                 if cached is not None:
@@ -374,7 +388,7 @@ class Melody2Score:
                 try:
                     sep_res = _separator.separate_melody(
                         y, sr, strategy=cfg.separation_strategy, verbose=False)
-                    sep_info = {k: v for k, v in sep_res.items() if k != "vocals"}
+                    sep_info = {k: v for k, v in sep_res.items() if k not in ("vocals", "other")}
                     y = sep_res["vocals"]  # 后续整条链路用分离后的主旋律
                 except Exception as _se:
                     # 分离失败（缺依赖/不支持）：静默回退原音，保证不崩
@@ -460,7 +474,7 @@ class Melody2Score:
             # ---- v2 新增：MIDI 后处理全局纠错层 ----
             # 修复 octave_normalize 之后的残留问题：
             #   孤立八度幻影跳、重复短同音、音域外音符、过短/过长音。
-            # 开启后显著减少「满屏错音」，且不修改正确音符。
+            # 仅做结构清理；音高异议交给声学复核，不能按邻居强改。
             post_info: Dict = {}
             if cfg.enable_postprocess:
                 pres = _postproc.postprocess_notes(notes)
@@ -486,20 +500,50 @@ class Melody2Score:
                 "key": {"tonic": key_name[0], "mode": key_name[1]},
                 "note_count": len(notes), "duration_sec": round(total_dur, 2),
                 "backend": used_backend, "notes": notes_out,
-                "confidence": round(float(merge_info["confidence"]) if merge_info else _conf(runs[0]), 2),
+                "confidence": round(_conf(last_pts), 3),
+                "confidence_kind": "mean_voiced_periodicity",
+                "consensus_agreement": round(float(merge_info["confidence"]), 3) if merge_info else None,
+                "requested_backend": cfg.preferred_backend,
+                "neural_backend": used_backend in ("crepe_onnx", "torchcrepe"),
+                "effective_model": det.effective_model if used_backend == "torchcrepe" else (cfg.model_size if used_backend == "crepe_onnx" else None),
+                "backend_failures": dict(det.failures),
+                "quality": _quality(notes, last_pts, det, sep_info),
                 "octave_shift": int(octave_shift),
                 "robust_runs": n_runs,
                 "robust_kept": merge_info["kept"] if merge_info else len(runs[0]),
                 "perf": {"preprocess_ms": round(t_pre * 1000, 1),
                          "pitch_ms": round(t_pitch * 1000, 1),
                          "parse_ms": round(t_parse * 1000, 1),
-                         "pitch_frames": len(last_pts)},
+                         "pitch_frames": len(last_pts),
+                         "inference_calls": det.inference_calls},
                 # v2 新增诊断：分离/纠错结果，便于用户看到「176 BPM bug / 错音爆炸」
                 # 是在哪个阶段被修复的（支持排障 & 验收）。
                 "separation": sep_info,
                 "postprocess": post_info,
                 "source": source.get("source", ""),
             }
+            if cfg.ai_review:
+                from core.ai_review import review_audio
+                if progress_cb:
+                    progress_cb("review", "独立模型复核中…", .96)
+                result["ai_review"] = review_audio(y, sr, notes, used_backend, cfg)
+                audit = result["ai_review"]
+                if audit["status"] == "unavailable":
+                    result["quality"]["warnings"].append("独立 AI 复核不可用，未获得第二模型证据。")
+                    result["quality"]["status"] = "needs_review"
+                elif audit["review_note_indices"]:
+                    disputed = audit["review_note_indices"]
+                    result["quality"]["review_note_indices"] = sorted(set(result["quality"]["review_note_indices"] + disputed))
+                    result["quality"]["warnings"].append(f"独立模型对 {len(disputed)} 个音符存在异议或证据不足，请检查音符明细。")
+                    result["quality"]["status"] = "needs_review"
+                intervals = audit.get("review_intervals", [])
+                if intervals:
+                    result["quality"]["status"] = "needs_review"
+                    result["quality"]["review_intervals"] = intervals
+                    spans = ", ".join(f"{r['start']:.2f}–{r['end']:.2f}s" for r in intervals[:8])
+                    result["quality"]["warnings"].append(f"独立模型发现 {len(intervals)} 处可能漏音区间：{spans}，请回听确认。")
+            else:
+                result["ai_review"] = {"status": "disabled", "accuracy": None}
             if cache_key:
                 _RESULT_CACHE.put(cache_key, result)
             return result
