@@ -22,9 +22,14 @@ def _spectral_subtract(y: np.ndarray, sr: int) -> np.ndarray:
     D = librosa.stft(y, n_fft=512, hop_length=128)
     mag = np.abs(D)
     phase = np.angle(D)
-    noise_len = max(1, int(0.1 * sr / 128))
-    noise = np.mean(mag[:, :noise_len], axis=1, keepdims=True)
-    # 噪声底下限，避免过减把谐波彻底抹掉
+    # A recording may start with a note. Never assume its first 100ms is noise.
+    energy = np.mean(mag ** 2, axis=0)
+    peak = float(np.max(energy))
+    quiet = energy <= min(float(np.quantile(energy, 0.15)), peak * 0.01)
+    if peak <= 1e-12 or np.count_nonzero(quiet) < 3:
+        return y.astype(np.float32, copy=True)
+    noise = np.median(mag[:, quiet], axis=1, keepdims=True)
     floor = 0.1 * mag
     mag_clean = np.maximum(mag - 2.0 * noise, floor)
-    return librosa.istft(mag_clean * np.exp(1j * phase), hop_length=128).astype(np.float32)
+    return librosa.istft(mag_clean * np.exp(1j * phase), hop_length=128,
+                         length=len(y)).astype(np.float32)

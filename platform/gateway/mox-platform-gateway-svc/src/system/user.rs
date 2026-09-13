@@ -5,6 +5,7 @@
 use crate::GatewayState;
 use crate::system::{DEFAULT_TENANT, ok, err, q_str, resolve_tenant,
     opt_str, opt_status, user_json};
+use crate::system::auth_session::hash_password;
 use axum::extract::{Path, Query, State};
 use axum::Json;
 use mox_api_protocol::ApiResponse;
@@ -40,14 +41,15 @@ pub(crate) async fn create_user_handler(
         .map(String::from)
         .unwrap_or_else(|| format!("U{}", chrono::Utc::now().timestamp()));
     let real_name = opt_str(&body, "realName");
-    let password_hash = opt_str(&body, "password");
+    // 密码统一 SHA-256 落库（历史明文存量经登录校验兜底兼容）
+    let password_hash = opt_str(&body, "password").map(|p| hash_password(&p));
     let dept_id = opt_str(&body, "deptId");
     let created = match s.iam.create_user(
         &tenant,
         &user_code,
         username,
         real_name,
-        password_hash,
+        password_hash.as_deref(),
         dept_id.as_deref(),
         false,
     ) {
@@ -200,8 +202,11 @@ pub(crate) async fn reset_user_pwd_handler(
     Path(id): Path<String>,
     Json(body): Json<Value>,
 ) -> ApiResponse<Value> {
-    let password = opt_str(&body, "password").unwrap_or("");
-    match s.iam.reset_password(&id, password) {
+    let password = opt_str(&body, "password").unwrap_or_default();
+    if password.is_empty() {
+        return err("密码不能为空");
+    }
+    match s.iam.reset_password(&id, &hash_password(&password)) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("reset password: {e}")),
     }

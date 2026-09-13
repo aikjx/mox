@@ -490,7 +490,7 @@ pub async fn config_stats_handler(
 }
 
 /// 构建系统配置管理路由（泛型版本）
-pub fn build_config_router<S>() -> axum::Router<S>
+pub fn build_system_config_router<S>() -> axum::Router<S>
 where
     S: Clone + Send + Sync + 'static,
     Arc<ConfigState>: axum::extract::FromRef<S>,

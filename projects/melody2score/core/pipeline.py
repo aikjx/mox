@@ -150,7 +150,10 @@ def load_audio_bytes(data: bytes, sr: int):
         y, _ = librosa.load(io.BytesIO(data), sr=sr, mono=True)
         return np.asarray(y, dtype=np.float32), sr
     except Exception:
-        y, _ = sf.read(io.BytesIO(data), samplerate=sr, dtype="float32", always_2d=False)
+        y, source_sr = sf.read(io.BytesIO(data), dtype="float32", always_2d=True)
+        y = y.mean(axis=1)
+        if source_sr != sr:
+            y = librosa.resample(y, orig_sr=source_sr, target_sr=sr)
         return np.asarray(y, dtype=np.float32), sr
 
 
@@ -232,7 +235,8 @@ def _consensus(runs: List[List[Dict]], cfg: Config) -> Tuple[List[Dict], Dict]:
             start, end = starts[0], ends[-1]
         # 仅在 ≥2 次识别都出现，或单次但长音，才保留
         if counts[best_midi] >= 2 or (end - start) > 2 * cfg.min_note_dur:
-            merged.append({"midi": best_midi, "start": start, "end": end})
+            merged.append({"midi": best_midi, "start": start, "end": end,
+                           "sep_prev": sum(bool(m.get("sep_prev")) for m in members) > len(members) / 2})
             kept += 1
             conf_sum += counts[best_midi] / len(runs)
 
@@ -269,7 +273,7 @@ def _merge_adjacent_short_fragments(notes: List[Dict],
         gap = float(n["start"]) - float(prev["end"])
         short_prev = (float(prev["end"]) - float(prev["start"])) < short_max
         short_cur = (float(n["end"]) - float(n["start"])) < short_max
-        if same_pitch and gap < gap_max and short_prev and short_cur:
+        if same_pitch and not n.get("sep_prev") and gap < gap_max and short_prev and short_cur:
             prev["start"] = min(float(prev["start"]), float(n["start"]))
             prev["end"] = max(float(prev["end"]), float(n["end"]))
         else:
@@ -329,7 +333,7 @@ class Melody2Score:
                 cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
                            cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh,
                            eff_sep_tag, cfg.separation_strategy,
-                           cfg.enable_postprocess)
+                           cfg.enable_postprocess, cfg.normalize_octaves)
                 cache_key = "v3:" + hashlib.sha256(raw).hexdigest() + ":" + repr(cfg_tag)
             elif source.get("kind") == "sample":
                 eff_sep_tag = (cfg.enable_separation if cfg.enable_separation is not None
@@ -337,7 +341,7 @@ class Melody2Score:
                 cfg_tag = (cfg.robust, cfg.enable_denoise, cfg.model_size, cfg.hop,
                            cfg.vocal_mode, cfg.fmin, cfg.fmax, cfg.conf_thresh,
                            eff_sep_tag, cfg.separation_strategy,
-                           cfg.enable_postprocess)
+                           cfg.enable_postprocess, cfg.normalize_octaves)
                 cache_key = "v3:sample:" + str(source.get("name")) + ":" + repr(cfg_tag)
             if cache_key:
                 cached = _RESULT_CACHE.get(cache_key)
@@ -449,7 +453,9 @@ class Melody2Score:
                 progress_cb("parse", "后处理纠错 / 节拍 / 调式 / 音符解析…", 0.90)
 
             # 八度归一化（halving 修复）：半频锁定导致 midi 偏低 1-2 八度
-            notes, octave_shift = analysis.octave_normalize(notes)
+            octave_shift = 0
+            if cfg.normalize_octaves:
+                notes, octave_shift = analysis.octave_normalize(notes)
 
             # ---- v2 新增：MIDI 后处理全局纠错层 ----
             # 修复 octave_normalize 之后的残留问题：

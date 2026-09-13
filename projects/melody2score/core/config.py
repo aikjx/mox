@@ -47,6 +47,7 @@ class Config:
     onset_min_gap_s: float = 0.08      # 最小起音间隔（秒），避免颤音伪起音
 
     # ---- MIDI 后处理纠错层（v2 新增，默认全开） ----
+    normalize_octaves: bool = False # Only opt in when intentionally transposing for display.
     enable_postprocess: bool = True # 音域/跳音/短音/长音/同音合并 全局纠错
 
     @classmethod

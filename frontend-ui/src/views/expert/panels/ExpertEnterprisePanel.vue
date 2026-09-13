@@ -596,13 +596,13 @@ const kpiCards = computed(() => [
   },
   {
     label: '调度总次数',
-    value: dispatcherStatus.value?.dispatcher?.total_dispatches || 0,
+    value: (dispatcherStatus.value?.total_dispatches ?? dispatcherStatus.value?.dispatcher?.total_dispatches) || 0,
     desc: '历史累计调度次数', color: 'warning',
     icon: markRaw(Refresh)
   },
   {
     label: '熔断器触发',
-    value: dispatcherStatus.value?.circuit_breaker?.states?.filter(s => s.status === 'open').length || 0,
+    value: (dispatcherStatus.value?.circuit_breakers || dispatcherStatus.value?.circuit_breaker?.states || []).filter(s => s.status === 'open').length || 0,
     desc: '当前熔断中的专家数', color: 'danger',
     icon: markRaw(DataAnalysis)
   },
@@ -670,7 +670,7 @@ async function runDiagnostic() {
       api.getExpertGraphStats(),
       api.getDispatcherStatus()
     ])
-    const sessList = Array.isArray(sessionRes) ? sessionRes : []
+    const sessList = Array.isArray(sessionRes) ? sessionRes : (Array.isArray(sessionRes && sessionRes.sessions) ? sessionRes.sessions : [])
     const graph = graphRes || {}
     const disp = dispRes || {}
 
@@ -699,9 +699,9 @@ async function runDiagnostic() {
     }
 
     // 维度3：调度引擎与熔断器
-    const cbStates = disp.circuit_breaker?.states || []
+    const cbStates = disp.circuit_breakers || disp.circuit_breaker?.states || []
     const openCbs = cbStates.filter((c) => c.status === 'open' || c.status === 'half_open')
-    const dispatchCount = disp.dispatcher?.recent_dispatches?.length || 0
+    const dispatchCount = (disp.recent_dispatches || disp.dispatcher?.recent_dispatches || []).length
     const dispLevel = openCbs.length > 0 ? 'warn' : 'ok'
     const dispItem = {
       label: '调度引擎',
@@ -742,9 +742,10 @@ async function loadSessions() {
   try {
     const res = await api.getExpertSessions({
       status: sessionFilterStatus.value || undefined,
-      mode: sessionFilterMode.value || undefined
+      session_type: sessionFilterMode.value || undefined
     })
-    sessions.value = Array.isArray(res) ? res : []
+    // 兼容分页信封 {sessions:[...], total, page} 与裸数组两种形态
+    sessions.value = Array.isArray(res) ? res : (Array.isArray(res && res.sessions) ? res.sessions : [])
   } catch (e) {
     sessions.value = []
   }

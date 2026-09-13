@@ -406,6 +406,8 @@ export const useAIStore = defineStore('ai', () => {
       assistant: currentAssistant.value,
       scope: currentScope.value,
       project_id: currentProjectId.value,
+      consult_mode: consultMode.value,
+      selected_experts: selectedExpertIds.value,
       stream: true,
       messages: messages.value
         .filter(m => m.role === 'user' || m.role === 'assistant')

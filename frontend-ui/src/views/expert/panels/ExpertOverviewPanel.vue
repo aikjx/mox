@@ -85,7 +85,11 @@
                   <div class="expert-name">{{ exp.name }}</div>
                   <div class="expert-type">{{ typeLabel(exp.type) }}</div>
                   <div class="expert-tags">
-                    <span v-for="cap in (exp.capabilities || []).slice(0,2)" :key="cap" class="cap-tag">{{ cap }}</span>
+                    <span
+                      v-for="cap in (exp.capabilities || []).slice(0,2)"
+                      :key="typeof cap === 'string' ? cap : (cap.id || cap.name)"
+                      class="cap-tag"
+                    >{{ typeof cap === 'string' ? cap : (cap.name || cap.id) }}</span>
                   </div>
                 </div>
                 <div v-if="isSelected(exp.id)" class="expert-check">
@@ -317,7 +321,9 @@ const filteredExperts = computed(() => {
     const kw = keyword.value.toLowerCase()
     list = list.filter(e =>
       e.name.toLowerCase().includes(kw) ||
-      e.capabilities.some(c => c.toLowerCase().includes(kw))
+      (e.capabilities || []).some(c =>
+        (typeof c === 'string' ? c : (c.name || c.id || '')).toLowerCase().includes(kw)
+      )
     )
   }
   return list

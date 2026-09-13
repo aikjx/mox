@@ -351,9 +351,16 @@ async function sendAiMessage() {
   aiMessages.value.push({ role: 'user', content: message })
   aiInput.value = ''; aiLoading.value = true
   try {
-    const context = task ? `任务：${task.name}，状态：${statusLabel(task.status)}，进度：${task.progress}%。日志：${logs.value.slice(-10).map(l => l.message).join('；')}` : '当前未选择任务。'
-    const response = await api.aiChat({ message: `请根据以下任务状态和日志分析，缺少信息时明确说明。${context}\n用户问题：${message}` })
-    const content = response?.data?.content || response?.content || response?.data?.message || response?.message || (typeof response === 'string' ? response : '')
+    let content = ''
+    if (task) {
+      // 任务问答：基于任务真实状态/日志/融合结果的后端诊断
+      const resp = await api.askAllianceTaskQa(task.id, message)
+      content = resp?.content || resp?.message || ''
+    } else {
+      const context = `当前未选择任务。`
+      const response = await api.aiChat({ message: `请根据以下任务状态和日志分析，缺少信息时明确说明。${context}\n用户问题：${message}` })
+      content = response?.data?.content || response?.content || response?.data?.message || response?.message || (typeof response === 'string' ? response : '')
+    }
     if (!content) throw new Error('AI 服务没有返回有效内容')
     aiMessages.value.push({ role: 'assistant', content })
   } catch (error) { aiMessages.value.push({ role: 'assistant', content: `暂时无法分析：${error.message}。可以重试，任务执行不受影响。` }) }

@@ -270,7 +270,11 @@ impl ConnectorRegistry {
 
     pub fn register(&self, connector: Arc<dyn OaErpConnector>) {
         let ct = connector.connector_type();
-        self.connectors.blocking_write().insert(ct, connector);
+        // 启动期在 tokio 运行时上下文中构造，blocking_write() 会 panic；
+        // 构造阶段无并发写者，try_write() 必然成功且不阻塞线程。
+        if let Ok(mut guard) = self.connectors.try_write() {
+            guard.insert(ct, connector);
+        }
     }
 
     pub async fn get(&self, connector_type: &ConnectorType) -> Option<Arc<dyn OaErpConnector>> {

@@ -1,0 +1,14 @@
+{
+  "qt_error": "",
+  "duration_ms": 7560,
+  "position_ms": 2357,
+  "state": 1,
+  "pause_stable": true,
+  "seek_position_ms": 4000,
+  "resume_position_ms": 4370,
+  "repeated_note_fixture": {
+    "expected": 3,
+    "before": 2,
+    "after": 3
+  }
+}

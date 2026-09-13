@@ -147,7 +147,7 @@ onMounted(() => {
   font-size: 9px;
   color: var(--text-muted, #6b7280);
   writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  text-orientation: upright;
   letter-spacing: 2px;
   margin: 10px 0 4px;
   font-weight: 500;

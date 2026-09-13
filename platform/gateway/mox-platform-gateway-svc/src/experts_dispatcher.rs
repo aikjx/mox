@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 
 //! # 专家联盟调度策略引擎域（Experts Dispatcher）HTTP 路由
@@ -515,6 +515,7 @@ async fn dispatcher_status(
     // 专家负载
     let expert_loads: Vec<Value> = registry
         .values()
+        .filter(|e| e.enabled) // 仅统计启用中专家，软删除/禁用不参与负载展示
         .map(|e| {
             json!({
                 "expert_id": e.id,

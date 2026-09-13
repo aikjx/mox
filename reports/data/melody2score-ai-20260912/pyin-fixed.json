@@ -1,0 +1,2512 @@
+{
+  "arguments": {
+    "backend": "pyin",
+    "model": "full",
+    "melodies": "0,2",
+    "timbres": "",
+    "code_root": null,
+    "no_denoise": false,
+    "output": "reports/data/melody2score-ai-20260912/pyin-fixed.json"
+  },
+  "summary": {
+    "count": 18,
+    "failed": 0,
+    "strict": {
+      "precision": 1.0,
+      "recall": 0.9957264957264957,
+      "f1": 0.9978586723768736,
+      "matched": 233,
+      "expected": 234,
+      "predicted": 233
+    },
+    "loose": {
+      "precision": 1.0,
+      "recall": 0.9957264957264957,
+      "f1": 0.9978586723768736,
+      "matched": 233,
+      "expected": 234,
+      "predicted": 233
+    }
+  },
+  "by_timbre": {
+    "bell": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      }
+    },
+    "flute": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      }
+    },
+    "guitar": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      }
+    },
+    "human_voice": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      }
+    },
+    "organ": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      }
+    },
+    "piano": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      }
+    },
+    "pure_sine": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      }
+    },
+    "pure_triangle": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "matched": 26,
+        "expected": 26,
+        "predicted": 26
+      }
+    },
+    "strings": {
+      "count": 2,
+      "failed": 0,
+      "strict": {
+        "precision": 1.0,
+        "recall": 0.9615384615384616,
+        "f1": 0.9803921568627451,
+        "matched": 25,
+        "expected": 26,
+        "predicted": 25
+      },
+      "loose": {
+        "precision": 1.0,
+        "recall": 0.9615384615384616,
+        "f1": 0.9803921568627451,
+        "matched": 25,
+        "expected": 26,
+        "predicted": 25
+      }
+    }
+  },
+  "items": [
+    {
+      "id": "m00_instrument_piano",
+      "timbre": "piano",
+      "category": "instrument",
+      "n_expected": 14,
+      "audio_sha256": "89639e1c9f8b9fdcb23288a064dac0e2f1ed6bb3621f1a4a38b18fd004fbcf7e",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.42,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.48,
+          "end": 0.9,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 0.96,
+          "end": 1.43,
+          "dur": 0.47,
+          "name": "G4"
+        },
+        {
+          "midi": 67,
+          "start": 1.43,
+          "end": 1.88,
+          "dur": 0.45,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.92,
+          "end": 2.39,
+          "dur": 0.47,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.39,
+          "end": 2.84,
+          "dur": 0.45,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.88,
+          "end": 3.74,
+          "dur": 0.86,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.78,
+          "end": 4.25,
+          "dur": 0.47,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.25,
+          "end": 4.7,
+          "dur": 0.45,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.74,
+          "end": 5.21,
+          "dur": 0.47,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.21,
+          "end": 5.66,
+          "dur": 0.45,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.7,
+          "end": 6.17,
+          "dur": 0.47,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.17,
+          "end": 6.62,
+          "dur": 0.45,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.66,
+          "end": 7.5,
+          "dur": 0.84,
+          "name": "C4"
+        }
+      ],
+      "bpm": 127.7,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "loose": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "seconds": 38.141
+    },
+    {
+      "id": "m00_instrument_guitar",
+      "timbre": "guitar",
+      "category": "instrument",
+      "n_expected": 14,
+      "audio_sha256": "1954d45743f4a754b6eaf39a2d47ae785deac6c74f1950083362f2da3b33b284",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.04,
+          "end": 0.42,
+          "dur": 0.38,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.52,
+          "end": 0.88,
+          "dur": 0.36,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 1.0,
+          "end": 1.36,
+          "dur": 0.36,
+          "name": "G4"
+        },
+        {
+          "midi": 67,
+          "start": 1.48,
+          "end": 1.86,
+          "dur": 0.38,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.96,
+          "end": 2.32,
+          "dur": 0.36,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.42,
+          "end": 2.8,
+          "dur": 0.38,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.92,
+          "end": 3.7,
+          "dur": 0.78,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.82,
+          "end": 4.18,
+          "dur": 0.36,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.3,
+          "end": 4.64,
+          "dur": 0.34,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.78,
+          "end": 5.16,
+          "dur": 0.38,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.24,
+          "end": 5.64,
+          "dur": 0.4,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.74,
+          "end": 6.12,
+          "dur": 0.38,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.22,
+          "end": 6.6,
+          "dur": 0.38,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.7,
+          "end": 7.46,
+          "dur": 0.76,
+          "name": "C4"
+        }
+      ],
+      "bpm": 153.8,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 37.142857142856826,
+        "offset_mae_ms": 14.28571428571467
+      },
+      "loose": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 37.142857142856826,
+        "offset_mae_ms": 14.28571428571467
+      },
+      "seconds": 4.531
+    },
+    {
+      "id": "m00_instrument_strings",
+      "timbre": "strings",
+      "category": "instrument",
+      "n_expected": 14,
+      "audio_sha256": "e5d692e6c198ade4e659282de7b1a3cdb3e3ca2574aae54512d68149f23044f4",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.02,
+          "end": 0.42,
+          "dur": 0.4,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.5,
+          "end": 0.9,
+          "dur": 0.4,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 0.96,
+          "end": 1.88,
+          "dur": 0.92,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.92,
+          "end": 2.39,
+          "dur": 0.47,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.39,
+          "end": 2.84,
+          "dur": 0.45,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.88,
+          "end": 3.74,
+          "dur": 0.86,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.8,
+          "end": 4.22,
+          "dur": 0.42,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.28,
+          "end": 4.7,
+          "dur": 0.42,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.76,
+          "end": 5.18,
+          "dur": 0.42,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.24,
+          "end": 5.66,
+          "dur": 0.42,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.72,
+          "end": 6.14,
+          "dur": 0.42,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.2,
+          "end": 6.62,
+          "dur": 0.42,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.68,
+          "end": 7.5,
+          "dur": 0.82,
+          "name": "C4"
+        }
+      ],
+      "bpm": 139.5,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 13,
+        "expected": 14,
+        "predicted": 13,
+        "precision": 1.0,
+        "recall": 0.9285714285714286,
+        "f1": 0.9629629629629629,
+        "onset_mae_ms": 14.615384615384201,
+        "offset_mae_ms": 54.61538461538455
+      },
+      "loose": {
+        "tp": 13,
+        "expected": 14,
+        "predicted": 13,
+        "precision": 1.0,
+        "recall": 0.9285714285714286,
+        "f1": 0.9629629629629629,
+        "onset_mae_ms": 14.615384615384201,
+        "offset_mae_ms": 54.61538461538455
+      },
+      "seconds": 4.38
+    },
+    {
+      "id": "m00_instrument_flute",
+      "timbre": "flute",
+      "category": "instrument",
+      "n_expected": 14,
+      "audio_sha256": "f77eb7c9094c21d9c17093c67c00e98f00762e6272b607c3eb884218daac928e",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.02,
+          "end": 0.42,
+          "dur": 0.4,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.5,
+          "end": 0.9,
+          "dur": 0.4,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 0.96,
+          "end": 1.43,
+          "dur": 0.47,
+          "name": "G4"
+        },
+        {
+          "midi": 67,
+          "start": 1.43,
+          "end": 1.88,
+          "dur": 0.45,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.92,
+          "end": 2.39,
+          "dur": 0.47,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.39,
+          "end": 2.84,
+          "dur": 0.45,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.88,
+          "end": 3.74,
+          "dur": 0.86,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.78,
+          "end": 4.25,
+          "dur": 0.47,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.25,
+          "end": 4.7,
+          "dur": 0.45,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.76,
+          "end": 5.21,
+          "dur": 0.45,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.21,
+          "end": 5.66,
+          "dur": 0.45,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.72,
+          "end": 6.14,
+          "dur": 0.42,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.2,
+          "end": 6.62,
+          "dur": 0.42,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.68,
+          "end": 7.5,
+          "dur": 0.82,
+          "name": "C4"
+        }
+      ],
+      "bpm": 130.4,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 11.428571428571075,
+        "offset_mae_ms": 24.285714285714267
+      },
+      "loose": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 11.428571428571075,
+        "offset_mae_ms": 24.285714285714267
+      },
+      "seconds": 4.097
+    },
+    {
+      "id": "m00_instrument_organ",
+      "timbre": "organ",
+      "category": "instrument",
+      "n_expected": 14,
+      "audio_sha256": "7929b78fad0b105366d34485d69aa56deee0a0160177f309b07e51ee34bc5c58",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.42,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.48,
+          "end": 0.9,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 0.96,
+          "end": 1.43,
+          "dur": 0.47,
+          "name": "G4"
+        },
+        {
+          "midi": 67,
+          "start": 1.43,
+          "end": 1.88,
+          "dur": 0.45,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.92,
+          "end": 2.39,
+          "dur": 0.47,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.39,
+          "end": 2.84,
+          "dur": 0.45,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.88,
+          "end": 3.74,
+          "dur": 0.86,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.78,
+          "end": 4.25,
+          "dur": 0.47,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.25,
+          "end": 4.7,
+          "dur": 0.45,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.74,
+          "end": 5.21,
+          "dur": 0.47,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.21,
+          "end": 5.66,
+          "dur": 0.45,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.7,
+          "end": 6.17,
+          "dur": 0.47,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.17,
+          "end": 6.62,
+          "dur": 0.45,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.66,
+          "end": 7.5,
+          "dur": 0.84,
+          "name": "C4"
+        }
+      ],
+      "bpm": 127.7,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "loose": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "seconds": 3.75
+    },
+    {
+      "id": "m00_instrument_bell",
+      "timbre": "bell",
+      "category": "instrument",
+      "n_expected": 14,
+      "audio_sha256": "96a102207b1e00dd83e13a5a6f75046992a4577d8e65c0d2a7b782722a117231",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.42,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.48,
+          "end": 0.9,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 0.96,
+          "end": 1.43,
+          "dur": 0.47,
+          "name": "G4"
+        },
+        {
+          "midi": 67,
+          "start": 1.43,
+          "end": 1.88,
+          "dur": 0.45,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.92,
+          "end": 2.39,
+          "dur": 0.47,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.39,
+          "end": 2.84,
+          "dur": 0.45,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.88,
+          "end": 3.74,
+          "dur": 0.86,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.78,
+          "end": 4.25,
+          "dur": 0.47,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.25,
+          "end": 4.7,
+          "dur": 0.45,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.74,
+          "end": 5.21,
+          "dur": 0.47,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.21,
+          "end": 5.66,
+          "dur": 0.45,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.7,
+          "end": 6.17,
+          "dur": 0.47,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.17,
+          "end": 6.62,
+          "dur": 0.45,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.66,
+          "end": 7.5,
+          "dur": 0.84,
+          "name": "C4"
+        }
+      ],
+      "bpm": 127.7,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "loose": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "seconds": 3.923
+    },
+    {
+      "id": "m00_voice_human_voice",
+      "timbre": "human_voice",
+      "category": "voice",
+      "n_expected": 14,
+      "audio_sha256": "631a3dfe601bbb3d9140aaf67a5bb68f859162b41c0b826bed65c1e58779e32b",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": -0.03,
+          "end": 0.45,
+          "dur": 0.48,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.45,
+          "end": 0.93,
+          "dur": 0.48,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 0.93,
+          "end": 1.41,
+          "dur": 0.48,
+          "name": "G4"
+        },
+        {
+          "midi": 67,
+          "start": 1.41,
+          "end": 1.89,
+          "dur": 0.48,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.89,
+          "end": 2.37,
+          "dur": 0.48,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.37,
+          "end": 2.85,
+          "dur": 0.48,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.85,
+          "end": 3.75,
+          "dur": 0.9,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.75,
+          "end": 4.23,
+          "dur": 0.48,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.23,
+          "end": 4.71,
+          "dur": 0.48,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.73,
+          "end": 5.19,
+          "dur": 0.46,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.21,
+          "end": 5.67,
+          "dur": 0.46,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.67,
+          "end": 6.15,
+          "dur": 0.48,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.15,
+          "end": 6.63,
+          "dur": 0.48,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.63,
+          "end": 7.53,
+          "dur": 0.9,
+          "name": "C4"
+        }
+      ],
+      "bpm": 131.8,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 27.142857142857387,
+        "offset_mae_ms": 29.99999999999981
+      },
+      "loose": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 27.142857142857387,
+        "offset_mae_ms": 29.99999999999981
+      },
+      "seconds": 4.258
+    },
+    {
+      "id": "m00_pure_pure_sine",
+      "timbre": "pure_sine",
+      "category": "pure",
+      "n_expected": 14,
+      "audio_sha256": "658f5716671c5ca7f218f5a6ca21696a032a27be928fcd1213402a8ed41974f9",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.42,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.48,
+          "end": 0.9,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 0.96,
+          "end": 1.43,
+          "dur": 0.47,
+          "name": "G4"
+        },
+        {
+          "midi": 67,
+          "start": 1.43,
+          "end": 1.88,
+          "dur": 0.45,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.92,
+          "end": 2.39,
+          "dur": 0.47,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.39,
+          "end": 2.84,
+          "dur": 0.45,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.88,
+          "end": 3.74,
+          "dur": 0.86,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.78,
+          "end": 4.25,
+          "dur": 0.47,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.25,
+          "end": 4.7,
+          "dur": 0.45,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.74,
+          "end": 5.21,
+          "dur": 0.47,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.21,
+          "end": 5.66,
+          "dur": 0.45,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.7,
+          "end": 6.17,
+          "dur": 0.47,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.17,
+          "end": 6.62,
+          "dur": 0.45,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.66,
+          "end": 7.5,
+          "dur": 0.84,
+          "name": "C4"
+        }
+      ],
+      "bpm": 127.7,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "loose": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "seconds": 3.93
+    },
+    {
+      "id": "m00_pure_pure_triangle",
+      "timbre": "pure_triangle",
+      "category": "pure",
+      "n_expected": 14,
+      "audio_sha256": "77313b41aafcb3ffb81e2311b15e2796b3767379f96413e53e40a17c4a512c09",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.42,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.48,
+          "end": 0.9,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 0.96,
+          "end": 1.43,
+          "dur": 0.47,
+          "name": "G4"
+        },
+        {
+          "midi": 67,
+          "start": 1.43,
+          "end": 1.88,
+          "dur": 0.45,
+          "name": "G4"
+        },
+        {
+          "midi": 69,
+          "start": 1.92,
+          "end": 2.39,
+          "dur": 0.47,
+          "name": "A4"
+        },
+        {
+          "midi": 69,
+          "start": 2.39,
+          "end": 2.84,
+          "dur": 0.45,
+          "name": "A4"
+        },
+        {
+          "midi": 67,
+          "start": 2.88,
+          "end": 3.74,
+          "dur": 0.86,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 3.78,
+          "end": 4.25,
+          "dur": 0.47,
+          "name": "F4"
+        },
+        {
+          "midi": 65,
+          "start": 4.25,
+          "end": 4.7,
+          "dur": 0.45,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 4.74,
+          "end": 5.21,
+          "dur": 0.47,
+          "name": "E4"
+        },
+        {
+          "midi": 64,
+          "start": 5.21,
+          "end": 5.66,
+          "dur": 0.45,
+          "name": "E4"
+        },
+        {
+          "midi": 62,
+          "start": 5.7,
+          "end": 6.17,
+          "dur": 0.47,
+          "name": "D4"
+        },
+        {
+          "midi": 62,
+          "start": 6.17,
+          "end": 6.62,
+          "dur": 0.45,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 6.66,
+          "end": 7.5,
+          "dur": 0.84,
+          "name": "C4"
+        }
+      ],
+      "bpm": 127.7,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "loose": {
+        "tp": 14,
+        "expected": 14,
+        "predicted": 14,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 3.571428571428892,
+        "offset_mae_ms": 26.42857142857143
+      },
+      "seconds": 3.848
+    },
+    {
+      "id": "m02_instrument_piano",
+      "timbre": "piano",
+      "category": "instrument",
+      "n_expected": 12,
+      "audio_sha256": "f0311fa5236dc57157ace61e8fb1ec68b9f3793f1518115cf8427bcada9a9063",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.32,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.38,
+          "end": 0.48,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.54,
+          "end": 0.98,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 1.02,
+          "end": 1.44,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.5,
+          "end": 1.94,
+          "dur": 0.44,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 1.98,
+          "end": 2.84,
+          "dur": 0.86,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.88,
+          "end": 3.2,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.26,
+          "end": 3.36,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.42,
+          "end": 3.86,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.9,
+          "end": 4.32,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.38,
+          "end": 4.82,
+          "dur": 0.44,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.86,
+          "end": 5.72,
+          "dur": 0.86,
+          "name": "F4"
+        }
+      ],
+      "bpm": 136.4,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "seconds": 3.159
+    },
+    {
+      "id": "m02_instrument_guitar",
+      "timbre": "guitar",
+      "category": "instrument",
+      "n_expected": 12,
+      "audio_sha256": "2a7e11e42dc5b2a29c6d1cbc64bb3465e3ba5aad72e5c7b586bea77e5a5b34a9",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.04,
+          "end": 0.32,
+          "dur": 0.28,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.42,
+          "end": 0.48,
+          "dur": 0.06,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.58,
+          "end": 0.96,
+          "dur": 0.38,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 1.06,
+          "end": 1.44,
+          "dur": 0.38,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.54,
+          "end": 1.92,
+          "dur": 0.38,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 2.02,
+          "end": 2.82,
+          "dur": 0.8,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.92,
+          "end": 3.2,
+          "dur": 0.28,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.3,
+          "end": 3.36,
+          "dur": 0.06,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.46,
+          "end": 3.84,
+          "dur": 0.38,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.94,
+          "end": 4.32,
+          "dur": 0.38,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.42,
+          "end": 4.8,
+          "dur": 0.38,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.9,
+          "end": 5.7,
+          "dur": 0.8,
+          "name": "F4"
+        }
+      ],
+      "bpm": 118.6,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 40.833333333333414,
+        "offset_mae_ms": 0.8333333333334358
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 40.833333333333414,
+        "offset_mae_ms": 0.8333333333334358
+      },
+      "seconds": 3.046
+    },
+    {
+      "id": "m02_instrument_strings",
+      "timbre": "strings",
+      "category": "instrument",
+      "n_expected": 12,
+      "audio_sha256": "dc8359729b2c84542843d67115f124985ea61056acd147e476993db02164fa07",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.02,
+          "end": 0.32,
+          "dur": 0.3,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.4,
+          "end": 0.48,
+          "dur": 0.08,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.56,
+          "end": 0.98,
+          "dur": 0.42,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 1.04,
+          "end": 1.44,
+          "dur": 0.4,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.52,
+          "end": 1.94,
+          "dur": 0.42,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 2.0,
+          "end": 2.84,
+          "dur": 0.84,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.9,
+          "end": 3.2,
+          "dur": 0.3,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.28,
+          "end": 3.36,
+          "dur": 0.08,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.44,
+          "end": 3.86,
+          "dur": 0.42,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.92,
+          "end": 4.32,
+          "dur": 0.4,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.38,
+          "end": 4.82,
+          "dur": 0.44,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.88,
+          "end": 5.72,
+          "dur": 0.84,
+          "name": "F4"
+        }
+      ],
+      "bpm": 136.4,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 19.16666666666671,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 19.16666666666671,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "seconds": 3.219
+    },
+    {
+      "id": "m02_instrument_flute",
+      "timbre": "flute",
+      "category": "instrument",
+      "n_expected": 12,
+      "audio_sha256": "fdf436515152c54bfcfb0f6d8d422864af4a9a70264a9a659e3bbe2f7f0f4e56",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.02,
+          "end": 0.32,
+          "dur": 0.3,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.38,
+          "end": 0.48,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.56,
+          "end": 0.98,
+          "dur": 0.42,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 1.04,
+          "end": 1.44,
+          "dur": 0.4,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.5,
+          "end": 1.94,
+          "dur": 0.44,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 1.98,
+          "end": 2.84,
+          "dur": 0.86,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.9,
+          "end": 3.2,
+          "dur": 0.3,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.26,
+          "end": 3.36,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.44,
+          "end": 3.86,
+          "dur": 0.42,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.92,
+          "end": 4.32,
+          "dur": 0.4,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.38,
+          "end": 4.82,
+          "dur": 0.44,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.86,
+          "end": 5.72,
+          "dur": 0.86,
+          "name": "F4"
+        }
+      ],
+      "bpm": 139.5,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 10.833333333333409,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 10.833333333333409,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "seconds": 3.138
+    },
+    {
+      "id": "m02_instrument_organ",
+      "timbre": "organ",
+      "category": "instrument",
+      "n_expected": 12,
+      "audio_sha256": "cdf14a307a6bac5485de6409b8ba0a42c644b48aef620320e19cf5e64a2419b3",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.32,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.38,
+          "end": 0.48,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.54,
+          "end": 0.98,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 1.02,
+          "end": 1.44,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.5,
+          "end": 1.94,
+          "dur": 0.44,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 1.98,
+          "end": 2.84,
+          "dur": 0.86,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.88,
+          "end": 3.2,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.26,
+          "end": 3.36,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.42,
+          "end": 3.86,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.9,
+          "end": 4.32,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.38,
+          "end": 4.82,
+          "dur": 0.44,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.86,
+          "end": 5.72,
+          "dur": 0.86,
+          "name": "F4"
+        }
+      ],
+      "bpm": 136.4,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "seconds": 2.735
+    },
+    {
+      "id": "m02_instrument_bell",
+      "timbre": "bell",
+      "category": "instrument",
+      "n_expected": 12,
+      "audio_sha256": "02bd8e9d339f3348e2adeb2a21d9665ec6acc675e2507d466fbc7a77339d20e8",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.32,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.38,
+          "end": 0.48,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.54,
+          "end": 0.98,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 1.02,
+          "end": 1.44,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.5,
+          "end": 1.94,
+          "dur": 0.44,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 1.98,
+          "end": 2.84,
+          "dur": 0.86,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.88,
+          "end": 3.2,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.26,
+          "end": 3.36,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.42,
+          "end": 3.86,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.9,
+          "end": 4.32,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.38,
+          "end": 4.82,
+          "dur": 0.44,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.86,
+          "end": 5.72,
+          "dur": 0.86,
+          "name": "F4"
+        }
+      ],
+      "bpm": 136.4,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "seconds": 2.882
+    },
+    {
+      "id": "m02_voice_human_voice",
+      "timbre": "human_voice",
+      "category": "voice",
+      "n_expected": 12,
+      "audio_sha256": "9f959aba8c96034f73965933ef18b960a55af59f62c5823734ce82cbb452dd0c",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": -0.03,
+          "end": 0.35,
+          "dur": 0.38,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.35,
+          "end": 0.51,
+          "dur": 0.16,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.51,
+          "end": 0.99,
+          "dur": 0.48,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 0.99,
+          "end": 1.47,
+          "dur": 0.48,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.47,
+          "end": 1.95,
+          "dur": 0.48,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 1.97,
+          "end": 2.85,
+          "dur": 0.88,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.85,
+          "end": 3.23,
+          "dur": 0.38,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.23,
+          "end": 3.39,
+          "dur": 0.16,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.39,
+          "end": 3.87,
+          "dur": 0.48,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.87,
+          "end": 4.35,
+          "dur": 0.48,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.35,
+          "end": 4.83,
+          "dur": 0.48,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.83,
+          "end": 5.73,
+          "dur": 0.9,
+          "name": "F4"
+        }
+      ],
+      "bpm": 119.9,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 27.499999999999925,
+        "offset_mae_ms": 30.833333333333478
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 27.499999999999925,
+        "offset_mae_ms": 30.833333333333478
+      },
+      "seconds": 3.2
+    },
+    {
+      "id": "m02_pure_pure_sine",
+      "timbre": "pure_sine",
+      "category": "pure",
+      "n_expected": 12,
+      "audio_sha256": "80c8916333db1c3d82fad94de5bab437ad3fee2cac5697716f9e3d91a775c04a",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.32,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.38,
+          "end": 0.48,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.54,
+          "end": 0.98,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 1.02,
+          "end": 1.44,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.5,
+          "end": 1.94,
+          "dur": 0.44,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 1.98,
+          "end": 2.84,
+          "dur": 0.86,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.88,
+          "end": 3.2,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.26,
+          "end": 3.36,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.42,
+          "end": 3.86,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.9,
+          "end": 4.32,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.38,
+          "end": 4.82,
+          "dur": 0.44,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.86,
+          "end": 5.72,
+          "dur": 0.86,
+          "name": "F4"
+        }
+      ],
+      "bpm": 136.4,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "seconds": 3.072
+    },
+    {
+      "id": "m02_pure_pure_triangle",
+      "timbre": "pure_triangle",
+      "category": "pure",
+      "n_expected": 12,
+      "audio_sha256": "b5fb6bd61d7d206fb6d703d9941177e2e94ebec03c29b0cbdea770fdd29cb2d6",
+      "backend": "pyin",
+      "confidence": 1.0,
+      "notes": [
+        {
+          "midi": 60,
+          "start": 0.0,
+          "end": 0.32,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 0.38,
+          "end": 0.48,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 0.54,
+          "end": 0.98,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 1.02,
+          "end": 1.44,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 65,
+          "start": 1.5,
+          "end": 1.94,
+          "dur": 0.44,
+          "name": "F4"
+        },
+        {
+          "midi": 64,
+          "start": 1.98,
+          "end": 2.84,
+          "dur": 0.86,
+          "name": "E4"
+        },
+        {
+          "midi": 60,
+          "start": 2.88,
+          "end": 3.2,
+          "dur": 0.32,
+          "name": "C4"
+        },
+        {
+          "midi": 60,
+          "start": 3.26,
+          "end": 3.36,
+          "dur": 0.1,
+          "name": "C4"
+        },
+        {
+          "midi": 62,
+          "start": 3.42,
+          "end": 3.86,
+          "dur": 0.44,
+          "name": "D4"
+        },
+        {
+          "midi": 60,
+          "start": 3.9,
+          "end": 4.32,
+          "dur": 0.42,
+          "name": "C4"
+        },
+        {
+          "midi": 67,
+          "start": 4.38,
+          "end": 4.82,
+          "dur": 0.44,
+          "name": "G4"
+        },
+        {
+          "midi": 65,
+          "start": 4.86,
+          "end": 5.72,
+          "dur": 0.86,
+          "name": "F4"
+        }
+      ],
+      "bpm": 136.4,
+      "key": {
+        "tonic": "C",
+        "mode": "major"
+      },
+      "strict": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "loose": {
+        "tp": 12,
+        "expected": 12,
+        "predicted": 12,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "onset_mae_ms": 0.8333333333333989,
+        "offset_mae_ms": 10.833333333333444
+      },
+      "seconds": 3.175
+    }
+  ]
+}

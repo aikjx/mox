@@ -40,6 +40,8 @@ class PitchDetector:
         # backend 显式指定 > 配置首选
         self.preferred_backend = backend if backend != "auto" else preferred_backend
         self._used: Optional[str] = None
+        self.effective_model = None
+        self.failures = {}
         # 后端可用性缓存：None=未探测, True=可用, False=不可用
         self._backend_ok: Dict[str, Optional[bool]] = {
             k: None for k in self.FALLBACK_ORDER
@@ -61,7 +63,8 @@ class PitchDetector:
             else:  # pyin
                 import librosa  # noqa: F401
             ok = True
-        except Exception:
+        except Exception as exc:
+            self.failures[kind] = str(exc)
             ok = False
         self._backend_ok[kind] = ok
         return ok
@@ -87,12 +90,20 @@ class PitchDetector:
         import torchcrepe
         audio = torch.tensor(y, dtype=torch.float32).unsqueeze(0)  # [1, T]
         hop_length = max(1, int(round(sr * self.hop / 1000.0)))  # 样本数
-        out = torchcrepe.predict(
-            audio, sr, model=self.model_size, hop_length=hop_length,
-            fmin=self.fmin, fmax=self.fmax, device="cpu", return_periodicity=True)
-        pitch, periodicity = out
-        f0 = np.asarray(pitch.squeeze().detach().cpu().float().numpy())
-        conf = np.asarray(periodicity.squeeze().detach().cpu().float().numpy())
+        # torchcrepe provides tiny/full only; map the shared "small" option
+        # to full instead of failing and silently falling back to pYIN.
+        self.effective_model = "tiny" if self.model_size == "tiny" else "full"
+        if self.intra_op_threads > 0:
+            torch.set_num_threads(self.intra_op_threads)
+        with torch.no_grad():
+            pitch, periodicity = torchcrepe.predict(
+                audio, sr, model=self.effective_model, hop_length=hop_length,
+                fmin=self.fmin, fmax=self.fmax, device="cpu", batch_size=128,
+                return_periodicity=True)
+            periodicity = torchcrepe.threshold.Silence(-60.)(
+                periodicity, audio, sr, hop_length)
+        f0 = np.atleast_1d(pitch.squeeze().detach().cpu().float().numpy())
+        conf = np.atleast_1d(periodicity.squeeze().detach().cpu().float().numpy())
         times = np.arange(len(f0)) * hop_length / sr
         res = []
         for t, f, c in zip(times, f0, conf):
@@ -116,7 +127,7 @@ class PitchDetector:
         hop_len = max(1, int(round(sr * eff_hop / 1000.0)))
         f0, voiced_flag, voiced_prob = librosa.pyin(
             y, fmin=fmin, fmax=fmax, sr=sr, frame_length=frame, hop_length=hop_len)
-        times = librosa.times_like(f0, sr=sr, hop_length=hop_len, n_fft=frame)
+        times = librosa.times_like(f0, sr=sr, hop_length=hop_len)
         res = []
         for t, f, v, p in zip(times, f0, voiced_flag, voiced_prob):
             if f is None or not v or p < thr or f <= 20:
@@ -159,6 +170,7 @@ class PitchDetector:
             except Exception as e:
                 # 该后端本次失败：标记不可用，下次跳过，继续降级
                 self._backend_ok[kind] = False
+                self.failures[kind] = str(e)
                 last_err = e
                 continue
         raise RuntimeError(f"所有音高后端均不可用（首选={self.preferred_backend}）: {last_err}")

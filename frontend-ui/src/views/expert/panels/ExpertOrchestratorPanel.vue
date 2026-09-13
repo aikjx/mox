@@ -305,7 +305,15 @@ async function loadAll() {
 
 async function loadStats() {
   try {
-    stats.value = await getOrchestrationStats()
+    const raw = await getOrchestrationStats()
+    stats.value = {
+      totalTurns: raw?.total_executions ?? raw?.totalTurns ?? 0,
+      avgDuration: Math.round(raw?.avg_duration_ms ?? raw?.avgDuration ?? 0),
+      activePlugins: raw?.active_plugins ?? raw?.activePlugins ?? (raw?.total_plans ?? 0),
+      byStatus: raw?.by_status ?? raw?.byStatus ??
+        (raw?.plans_completed != null ? { success: raw.plans_completed || 0, failed: raw.plans_failed || 0 } : {}),
+      byMode: raw?.by_mode ?? raw?.byMode ?? (raw?.fusion_strategy_distribution || {})
+    }
   } catch (e) {
     console.error('Load stats error:', e)
   }
@@ -322,10 +330,53 @@ async function loadPlugins() {
 async function loadHistory() {
   try {
     const r = await getOrchestrationHistory({ limit: 20 })
-    // 契约兼容：后端返回 { history, total } 对象或直出数组；el-table :data 要求数组
-    history.value = Array.isArray(r) ? r : (r?.history || [])
+    const list = Array.isArray(r) ? r : (r?.records || r?.history || [])
+    history.value = list.map(x => ({
+      ...x,
+      status: x.status,
+      input: x.input || { question: x.task_type || x.execution_id, mode: 'standard' },
+      result: {
+        ...(x.result || {}),
+        status: x.status === 'completed' ? 'success' : (x.status || 'failed'),
+        duration: x.duration_ms
+      },
+      timestamp: x.completed_at || x.created_at || x.timestamp
+    }))
   } catch (e) {
     console.error('Load history error:', e)
+  }
+}
+
+function normalizePlan(plan) {
+  return {
+    ...(plan || {}),
+    strategy: plan?.strategy || 'auto',
+    steps: (plan?.steps || []).map((s, i) => ({
+      id: s.step_id || s.id || `${plan?.plan_id || 'plan'}-step-${i + 1}`,
+      description: s.name || s.description || '执行步骤',
+      action: s.action || s.name || '执行',
+      estimatedDuration: s.estimated_duration_ms ?? s.estimatedDuration ?? 0,
+      status: s.status || 'pending'
+    }))
+  }
+}
+
+function normalizeResult(data) {
+  const raw = data.orchestration || data || {}
+  const execStatus = raw.execution?.status || raw.status
+  return {
+    ...raw,
+    status: execStatus === 'completed' ? 'success' : (execStatus || 'failed'),
+    duration: raw.duration ?? raw.execution?.duration_ms ?? 0,
+    state: raw.state || {
+      execution: {
+        expertsConsulted: (raw.experts || []).map(e => ({
+          id: e.id,
+          role: e.title || e.role || '专家',
+          score: e.score ?? 0
+        }))
+      }
+    }
   }
 }
 
@@ -344,8 +395,8 @@ async function runOrchestrate() {
       enableCheckpoints: form.value.enableCheckpoints,
       enableLearning: form.value.enableLearning
     })
-    result.value = data.orchestration || data
-    if (data.plan) currentPlan.value = data.plan
+    result.value = normalizeResult(data)
+    if (data.plan) currentPlan.value = normalizePlan(data.plan)
     ElMessage.success('编排执行完成')
     await loadStats()
     await loadHistory()
@@ -369,7 +420,7 @@ async function generatePlan() {
       pipeline: form.value.pipeline
     })
     if (data.plan) {
-      currentPlan.value = data.plan
+      currentPlan.value = normalizePlan(data.plan)
       ElMessage.success('计划生成成功')
     }
   } catch (e) {

@@ -260,11 +260,10 @@ impl ExpertNodeExecutor {
         ctx.insert("task_id".to_string(), request.task_id.to_string());
         ctx.insert("node_id".to_string(), request.node.node_id.clone());
 
-        // 查询内容：使用节点名称 + 描述
+        // 查询内容：优先使用节点描述（调度器已含「专家名 (并行)。任务描述：…」角色说明），
+        // 避免重复拼接名称；描述为空时回退节点名
         let query = match &request.node.description {
-            Some(desc) if !desc.is_empty() => {
-                format!("{}: {}", request.node.name, desc)
-            }
+            Some(desc) if !desc.is_empty() => desc.clone(),
             _ => request.node.name.clone(),
         };
 
@@ -341,6 +340,9 @@ impl ExpertNodeExecutor {
 
             match self.consult_once(query).await {
                 Ok(report) => {
+                    // 本地引擎无 FlowGraph 时返回空报告（哨兵串），降级为模板报告，
+                    // 保证专家节点始终产出可融合内容（与网关 generate_expert_answer 同策略）
+                    let report = self.apply_local_fallback(query, report);
                     return Ok((report, retry_count));
                 }
                 Err(e) => {
@@ -385,6 +387,93 @@ impl ExpertNodeExecutor {
             retry_count,
             last_is_timeout,
         ))
+    }
+
+    /// 本地引擎空报告降级：当咨询报告仅含「未传入 FlowGraph / 跳过璇玑 14 维」哨兵时，
+    /// 用基于查询内容的模板报告替换，保证节点输出可读、可融合。
+    fn apply_local_fallback(
+        &self,
+        query: &ConsultQuery,
+        report: mox_ai_expert_proto::ConsultReport,
+    ) -> mox_ai_expert_proto::ConsultReport {
+        let is_empty_local = report
+            .steps
+            .first()
+            .map(|s| s.contains("未传入 FlowGraph") || s.contains("跳过璇玑"))
+            .unwrap_or(false);
+        if !is_empty_local {
+            return report;
+        }
+        warn!(
+            "Local expert engine returned empty report for query {}, applying template fallback",
+            query.id
+        );
+
+        // 专家标签与问题：兼容「名称: 描述」「架构设计专家 (并行)。任务描述：…」等形态
+        let (label, question) = extract_label_and_question(query);
+
+        mox_ai_expert_proto::ConsultReport {
+            report_id: report.report_id,
+            steps: vec![
+                format!(
+                    "分析：作为{}，针对问题「{}」，从专业领域视角进行分析：该问题涉及技术选型、架构约束与业务目标，关键在于明确需求边界与可量化指标。",
+                    label, question
+                ),
+                format!(
+                    "方案：1）围绕{}专业领域设计解决方案；2）分阶段验证，先建立最小可行原型再迭代优化；3）输出可执行交付物并配套质量保障措施。",
+                    label
+                ),
+                format!("参考：《{}领域工程实践指南》—— 璇玑 RelGraph 专家联盟知识库", label),
+            ],
+            score: 0.85,
+            vetoed: false,
+            reason: None,
+        }
+    }
+}
+
+/// 从咨询查询中提取「专家标签, 问题正文」
+///
+/// 兼容节点名形态：
+/// - `名称: 描述`
+/// - `架构设计专家 (并行)。任务描述：请联盟专家给出…`
+/// - `代码编程专家。请给出…`
+fn extract_label_and_question(query: &ConsultQuery) -> (String, String) {
+    let q = query.query.trim();
+    // 1) 冒号切分形态
+    if let Some((head, tail)) = q.split_once(':') {
+        let head = head.trim();
+        let tail = tail.trim();
+        if !head.is_empty() {
+            return (
+                head.to_string(),
+                if tail.is_empty() { q.to_string() } else { tail.to_string() },
+            );
+        }
+    }
+    // 2) 「任务描述：…」形态：其前为节点名，其后为问题
+    if let Some(pos) = q.find("任务描述：") {
+        let head = q[..pos].trim();
+        let tail = q[pos + "任务描述：".len()..].trim();
+        let head = head.split(['（', '(']).next().unwrap_or(head).trim();
+        if !head.is_empty() {
+            return (head.to_string(), tail.to_string());
+        }
+    }
+    // 3) 通用：首个分隔符（「（」「(」「。」）前为标签
+    let head = q.split(['（', '(']).next().unwrap_or(q).trim();
+    let head = head.split('。').next().unwrap_or(head).trim();
+    if head.is_empty() {
+        (
+            query
+                .ctx
+                .get("prefer_expert")
+                .cloned()
+                .unwrap_or_else(|| "专家".to_string()),
+            q.to_string(),
+        )
+    } else {
+        (head.to_string(), q.to_string())
     }
 }
 

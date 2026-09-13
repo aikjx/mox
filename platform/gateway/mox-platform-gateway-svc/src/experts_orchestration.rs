@@ -196,7 +196,7 @@ pub fn generate_plan(
     CollaborationPlan {
         plan_id: plan_id.clone(),
         task_id: None,
-        title: format!("协作计划：{}", if task.len() > 50 { &task[..50] } else { task }),
+        title: format!("协作计划：{}", task.chars().take(50).collect::<String>()),
         description: task.to_string(),
         expert_ids,
         steps,
@@ -552,11 +552,14 @@ pub fn execute_plan(plan: &mut CollaborationPlan, step_ids: Option<Vec<String>>)
 
 #[derive(Debug, Deserialize)]
 struct OrchestrateBody {
+    /// 兼容前端 question 字段名
+    #[serde(default, alias = "question")]
     task: String,
     #[serde(default)]
     task_type: Option<String>,
     #[serde(default)]
     expert_ids: Option<Vec<String>>,
+    #[serde(default)]
     max_experts: Option<usize>,
     #[serde(default)]
     fusion_strategy: Option<String>,
@@ -564,6 +567,8 @@ struct OrchestrateBody {
 
 #[derive(Debug, Deserialize)]
 struct GeneratePlanBody {
+    /// 兼容前端 question 字段名
+    #[serde(default, alias = "question")]
     task: String,
     #[serde(default)]
     task_type: Option<String>,
@@ -590,6 +595,9 @@ async fn orchestrate(
     Json(body): Json<OrchestrateBody>,
 ) -> ApiResponse<Value> {
     let start = std::time::Instant::now();
+    if body.task.trim().is_empty() {
+        return err(400, "缺少编排任务描述（task/question）");
+    }
     let task_type = body.task_type.unwrap_or_else(|| "general".into());
     let fusion_strategy = body.fusion_strategy.unwrap_or_else(|| "weighted".into());
     let max_experts = body.max_experts.unwrap_or(3);
@@ -681,6 +689,9 @@ async fn generate_plan_handler(
     State(state): State<Arc<ExpertsSharedState>>,
     Json(body): Json<GeneratePlanBody>,
 ) -> ApiResponse<Value> {
+    if body.task.trim().is_empty() {
+        return err(400, "缺少任务描述（task/question）");
+    }
     let task_type = body.task_type.unwrap_or_else(|| "general".into());
     let fusion_strategy = body.fusion_strategy.unwrap_or_else(|| "weighted".into());
 

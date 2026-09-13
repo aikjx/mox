@@ -294,7 +294,7 @@
                   <div class="chat-label">对话风格预览</div>
                   <div class="chat-bubble expert-bubble" :style="{ background: config.profile.themeColor + '15', borderColor: config.profile.themeColor + '30' }">
                     <span class="bubble-avatar" :style="{ background: config.profile.themeColor }">{{ config.profile.avatar?.charAt(0) || '🤖' }}</span>
-                    <div class="bubble-content">
+                    <div v-if="false" class="bubble-content">
                       <div class="bubble-text">
                         你好！我是{{ config.profile.name || '专家' }}，很高兴为您服务。
                         <span v-if="config.profile.personality.catchphrases?.length" class="catchphrase">

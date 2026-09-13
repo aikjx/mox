@@ -6,33 +6,16 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use mox_alliance_executor_core::{
     DagEngineImpl, ExpertExecutorConfig, ExpertNodeExecutor, MockExecutorConfig, MockNodeExecutor,
 };
 use mox_alliance_executor_proto::types::ExecutorConfig;
-use mox_ai_expert_proto::{ConsultQuery, ConsultReport, ExpertConsultant};
+use mox_ai_expert_svc::expert_traits::llm_consultant;
 use tracing::info;
 
 use crate::app_state::ExecutorAppState;
 use crate::routes::build_router;
 
-// DIP: Demo consultant stub — callers must inject real ExpertConsultant
-#[derive(Clone)]
-struct DemoConsultant;
-
-#[async_trait]
-impl ExpertConsultant for DemoConsultant {
-    async fn consult(&self, q: &ConsultQuery) -> anyhow::Result<ConsultReport> {
-        Ok(ConsultReport {
-            report_id: q.id.clone(),
-            steps: vec!["demo-consultant-stub".into()],
-            score: 0.0,
-            vetoed: false,
-            reason: Some("Demo consultant stub — inject real ExpertConsultant".into()),
-        })
-    }
-}
 
 /// 执行器运行模式
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,10 +63,10 @@ impl ExecutorServer {
                 (Arc::new(MockNodeExecutor::new(mock_config)), false)
             }
             ExecutorMode::Expert => {
-                // 真实专家执行器（调用 AI 专家服务）
-                // DIP: ExpertConsultant is injected by caller; default to Demo stub
-                let ready = false;
-                let consultant: Arc<dyn ExpertConsultant> = Arc::new(DemoConsultant);
+                // 真实专家执行器：优先真实 LLM（MOX_LLM_* 环境变量），未配置时回退本地引擎
+                // （本地引擎始终可用，ready 恒为 true，任务执行不依赖外部模型）
+                let consultant = llm_consultant();
+                let ready = true;
                 let expert_config = ExpertExecutorConfig {
                     timeout_ms: self.config.default_node_timeout_ms,
                     max_retries: self.config.default_max_retries,

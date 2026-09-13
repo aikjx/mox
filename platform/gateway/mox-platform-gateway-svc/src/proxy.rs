@@ -32,6 +32,10 @@ pub struct ProxyState {
     /// 编排器服务地址，默认 http://127.0.0.1:3001
     /// 可通过环境变量 ORCHESTRATOR_URL 覆盖
     target: String,
+    /// 网关→编排器调用时注入的服务令牌（Bearer），替换客户端 JWT。
+    /// 编排器只认 OUS_API_TOKEN / OUS_RBAC_TOKENS，不认网关签发的用户 JWT；
+    /// 取 ORCHESTRATOR_SERVICE_TOKEN，回退 OUS_API_TOKEN。
+    service_token: Option<String>,
 }
 
 impl ProxyState {
@@ -43,13 +47,16 @@ impl ProxyState {
 
     /// 使用指定目标地址构建代理状态（用于 PrimiFlow 等多目标代理）
     pub fn with_target(target: String) -> Self {
+        let service_token = std::env::var("ORCHESTRATOR_SERVICE_TOKEN")
+            .ok()
+            .or_else(|| std::env::var("OUS_API_TOKEN").ok());
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(120))
             .connect_timeout(Duration::from_secs(5))
             .pool_idle_timeout(Duration::from_secs(30))
             .build()
             .expect("build proxy reqwest client");
-        Self { client, target }
+        Self { client, target, service_token }
     }
 
     pub fn target(&self) -> &str {
@@ -118,10 +125,11 @@ async fn proxy_handler(
         .client
         .request(method.clone(), &target_url);
 
-    // 转发请求头（跳过 hop-by-hop 和 host）
+    // 转发请求头（跳过 hop-by-hop 和 host；authorization 由下方服务令牌统一注入）
     for (name, value) in headers.iter() {
         let name_str = name.as_str();
         if name_str == "host"
+            || name_str == "authorization"
             || name_str == "content-length"
             || name_str == "connection"
             || name_str == "proxy-authorization"
@@ -136,6 +144,17 @@ async fn proxy_handler(
         if let Ok(v) = value.to_str() {
             req_builder = req_builder.header(name_str, v);
         }
+    }
+
+    // 注入服务令牌：编排器只认 OUS_API_TOKEN / OUS_RBAC_TOKENS，
+    // 用服务令牌替换客户端 JWT，实现「网关鉴用户、后端用服务凭证」。
+    if let Some(tok) = &state.service_token {
+        if let Ok(v) = HeaderValue::from_str(&format!("Bearer {tok}")) {
+            req_builder = req_builder.header("authorization", v);
+            tracing::debug!(target: "gateway.proxy", path = %path_and_query, "proxy injected service token");
+        }
+    } else {
+        tracing::warn!(target: "gateway.proxy", path = %path_and_query, "proxy has NO service token configured");
     }
 
     // 读取请求体字节并转发

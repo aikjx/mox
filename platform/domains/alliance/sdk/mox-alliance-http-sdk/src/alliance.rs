@@ -1,4 +1,4 @@
-// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -1078,29 +1078,52 @@ async fn get_alliance_stats() -> ApiResponse<Value> {
     }))
 }
 
-/// GET /alliance/tasks/:id/plan — 协作计划（真实空结果）
+/// GET /alliance/tasks/:id/plan — 协作计划（远程 DAG 推导；不可达/本地任务降级本地节点）
 async fn get_collaboration_plan(
     State(s): State<Arc<AllianceGatewayState>>,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
-    let t0 = now_ms();
-    match s.tasks.get(task_id) {
-        Ok(None) => {
-            return api_error(404, format!("任务 {} 不存在", task_id),);
-        }
-        Err(e) => {
-            return api_error(500, format!("任务读取失败: {}", e),);
-        }
-        _ => {}
+    // 远程优先：executor 真实 DAG 节点 → 阶段列表
+    if let Some(r) = alliance_remote::remote_task_plan(&s, task_id).await {
+        return r;
     }
+    let t0 = now_ms();
+
+    let exec = s.ensure_execution(task_id);
+    let phases: Vec<Value> = exec
+        .nodes
+        .iter()
+        .map(|n| {
+            let progress = match n.status {
+                NodeExecStatus::Completed => 100,
+                NodeExecStatus::Running => 50,
+                _ => 0,
+            };
+            json!({
+                "phase_id": n.node_id,
+                "name": n.name,
+                "expert_id": n.expert_id,
+                "status": node_status_str(n.status),
+                "duration_ms": n.duration_ms,
+                "progress": progress,
+                "dependencies": n.dependencies,
+            })
+        })
+        .collect();
+    let assigned_experts: Vec<Value> = phases
+        .iter()
+        .map(|p| p["expert_id"].clone())
+        .collect();
+
     api_ok(json!({
         "elapsed_ms": now_ms() - t0,
         "data": {
             "task_id": task_id,
-            "phases": [],
-            "total_phases": 0,
+            "phases": phases,
+            "total_phases": phases.len(),
             "estimated_duration_minutes": 0,
-            "assigned_experts": [],
+            "assigned_experts": assigned_experts,
+            "source": "local_nodes",
         },
     }))
 }
@@ -1200,6 +1223,250 @@ async fn get_fusion_result(
                 "fused_at": fused_at_str,
             },
         }))
+}
+
+/// POST /alliance/tasks/:id/qa — 任务智能问答
+///
+/// 基于任务真实状态、最近执行记录与融合结果生成结构化诊断回答。
+/// 远程优先（调度器/执行器数据源）；不可达时降级本地执行状态。
+#[derive(Debug, Deserialize)]
+pub struct TaskQaBody {
+    #[serde(default)]
+    pub question: String,
+    /// 保留的最大日志条数（默认 10）
+    #[serde(default)]
+    pub max_logs: Option<usize>,
+}
+
+async fn task_qa(
+    State(s): State<Arc<AllianceGatewayState>>,
+    Path(task_id): Path<Uuid>,
+    Json(body): Json<TaskQaBody>,
+) -> ApiResponse<Value> {
+    let question = body.question.trim().to_string();
+    if question.is_empty() {
+        return api_error(400, "缺少问题内容（question）");
+    }
+    let max_logs = body.max_logs.unwrap_or(10).clamp(1, 50);
+    let t0 = now_ms();
+
+    // 1. 任务基础信息（远程优先 → 本地降级）
+    let task_value = match alliance_remote::remote_get_task(&s, task_id).await {
+        Some(resp) => resp.data.as_ref().and_then(|d| d.get("data")).cloned().unwrap_or_default(),
+        None => match s.tasks.get(task_id) {
+            Ok(Some(t)) => json!({
+                "task_id": t.task_id,
+                "title": t.title,
+                "description": t.description,
+                "status": task_status_str(t.status),
+                "priority": priority_str(t.priority),
+                "progress": t.progress,
+                "mode": mode_str(t.mode),
+                "duration_ms": t.duration_ms,
+            }),
+            Ok(None) => return api_error(404, format!("任务 {} 不存在", task_id)),
+            Err(e) => return api_error(500, format!("任务读取失败: {}", e)),
+        },
+    };
+    if task_value.is_null() || task_value.get("status").is_none() {
+        return api_error(404, format!("任务 {} 不存在", task_id));
+    }
+
+    // 2. 最近执行记录（远程优先 → 本地降级）
+    let mut logs: Vec<Value> = match alliance_remote::remote_task_logs(&s, task_id).await {
+        Some(resp) => resp
+            .data
+            .as_ref()
+            .and_then(|d| d.get("data"))
+            .and_then(|d| d.get("logs"))
+            .and_then(|v| v.as_array().cloned())
+            .unwrap_or_default(),
+        None => s
+            .ensure_execution(task_id)
+            .logs
+            .iter()
+            .map(|l| {
+                json!({
+                    "level": l.level,
+                    "message": l.message,
+                    "node_id": l.node_id,
+                })
+            })
+            .collect(),
+    };
+    if logs.len() > max_logs {
+        logs = logs[logs.len() - max_logs..].to_vec();
+    }
+
+    // 3. 融合结果（远程优先 → 本地降级）
+    let fusion = match alliance_remote::remote_fusion_result(&s, task_id).await {
+        Some(resp) => resp
+            .data
+            .as_ref()
+            .and_then(|d| d.get("data"))
+            .and_then(|d| d.get("fusion_result"))
+            .cloned(),
+        None => {
+            let exec = s.ensure_execution(task_id);
+            let strategy = task_value
+                .get("mode")
+                .and_then(|v| v.as_str())
+                .unwrap_or("expert_alliance");
+            let f = build_fusion_result(&exec.nodes, strategy);
+            Some(json!({
+                "confidence": f.confidence,
+                "summary": f.summary,
+                "key_findings": f.key_findings,
+                "recommendations": f.recommendations,
+            }))
+        }
+    };
+
+    // 4. 组装诊断回答（真实数据 + 状态感知模板；LLM 接入后可由上层升级）
+    let title = task_value.get("title").and_then(|v| v.as_str()).unwrap_or("未命名任务").to_string();
+    let status = task_value.get("status").and_then(|v| v.as_str()).unwrap_or("unknown").to_string();
+    let progress = task_value.get("progress").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let mode = task_value.get("mode").and_then(|v| v.as_str()).unwrap_or("unknown").to_string();
+    let duration_ms = task_value.get("duration_ms").and_then(|v| v.as_i64()).unwrap_or(0);
+    let duration_desc = if duration_ms > 0 {
+        if duration_ms >= 1000 {
+            format!("{:.1}s", duration_ms as f64 / 1000.0)
+        } else {
+            format!("{}ms", duration_ms)
+        }
+    } else {
+        "--".to_string()
+    };
+
+    let status_label = status_display(&status);
+    let experts: Vec<String> = fusion
+        .as_ref()
+        .and_then(|f| f.get("content").and_then(|v| v.get("outputs")).cloned())
+        .and_then(|v| v.as_array().cloned())
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|o| o.get("expert").and_then(|e| e.as_str()).map(str::to_string))
+        .collect();
+    let confidence = fusion
+        .as_ref()
+        .and_then(|f| f.get("confidence").and_then(|c| c.as_f64()))
+        .unwrap_or(0.0);
+    let summary = fusion
+        .as_ref()
+        .and_then(|f| f.get("summary").and_then(|s| s.as_str()))
+        .unwrap_or("");
+
+    let log_lines: Vec<String> = logs
+        .iter()
+        .filter_map(|l| l.get("message").and_then(|m| m.as_str()).map(str::to_string))
+        .collect();
+
+    // 状态感知的结论段
+    let mut conclusion = String::new();
+    match status.as_str() {
+        "completed" => {
+            conclusion.push_str(&format!(
+                "任务已完成：进度 {:.0}%，耗时 {}，{}",
+                progress * 100.0, duration_desc, summary
+            ));
+        }
+        "running" => {
+            conclusion.push_str(&format!(
+                "任务执行中：当前进度 {:.0}%，已耗时 {}，请稍后刷新查看最新节点状态。",
+                progress * 100.0, duration_desc
+            ));
+        }
+        "failed" => {
+            let reasons: Vec<&str> = logs
+                .iter()
+                .filter_map(|l| {
+                    let msg = l.get("message").and_then(|m| m.as_str()).unwrap_or("");
+                    if msg.contains("失败") || msg.contains("failed") || msg.contains("error") {
+                        Some(msg)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            if reasons.is_empty() {
+                conclusion.push_str("任务执行失败，请查看执行记录中的错误信息后重试。");
+            } else {
+                conclusion.push_str("任务执行失败，最近失败记录：");
+                for r in reasons.iter().take(3) {
+                    conclusion.push_str(&format!("\n- {}", r));
+                }
+            }
+        }
+        "paused" | "cancelled" => {
+            conclusion.push_str(&format!("任务当前为 {}，进度停留在 {:.0}%。", status_label, progress * 100.0));
+        }
+        _ => {
+            conclusion.push_str(&format!("任务当前状态：{}，进度 {:.0}%。", status_label, progress * 100.0));
+        }
+    }
+
+    let mut answer = String::new();
+    answer.push_str(&format!("【任务诊断】「{}」\n", title));
+    answer.push_str(&format!("· 状态：{}（进度 {:.0}%）", status_label, progress * 100.0));
+    answer.push_str(&format!("，耗时 {}", duration_desc));
+    if !mode.is_empty() && mode != "unknown" {
+        answer.push_str(&format!("，执行模式 {}", mode));
+    }
+    answer.push('\n');
+    if !experts.is_empty() {
+        answer.push_str(&format!(
+            "· 参与专家：{} 位（{}）\n",
+            experts.len(),
+            experts.join(" / ")
+        ));
+    }
+    if confidence > 0.0 {
+        answer.push_str(&format!("· 融合置信度：{:.1}%\n", confidence * 100.0));
+    }
+    if !log_lines.is_empty() {
+        answer.push_str("· 最近执行记录：\n");
+        for line in log_lines.iter().take(5) {
+            answer.push_str(&format!("  - {}\n", line));
+        }
+    }
+    answer.push('\n');
+    answer.push_str("【结论】");
+    answer.push_str(&conclusion);
+    answer.push_str("\n\n【优化建议】\n");
+    answer.push_str("- 若需调整专家组合，可在创建新任务时补充更具体的背景、约束与期望交付物，以提升专家匹配准确度。\n");
+    answer.push_str("- 若对结果置信度不满意，可改用投票/辩论融合策略，或减少参与专家数聚焦高相关领域。\n");
+    answer.push_str("- 任务执行链路为「创建→调度→执行→融合」，任一步骤异常请结合执行记录与系统日志定位。\n");
+
+    api_ok(json!({
+        "elapsed_ms": now_ms() - t0,
+        "data": {
+            "task_id": task_id,
+            "content": answer,
+            "mode": "task_qa",
+            "question": question,
+            "context": {
+                "status": status,
+                "progress": progress,
+                "expert_count": experts.len(),
+                "confidence": confidence,
+            },
+        },
+    }))
+}
+
+/// 状态 → 中文展示名
+fn status_display<'a>(status: &'a str) -> &'a str {
+    match status {
+        "pending" => "待处理",
+        "planning" => "规划中",
+        "ready" => "已就绪",
+        "running" => "运行中",
+        "paused" => "已暂停",
+        "completed" => "已完成",
+        "failed" => "失败",
+        "cancelled" => "已取消",
+        other => other,
+    }
 }
 
 /// GET /alliance/tasks/:id/dag — DAG 节点（真实存储的 DAG）
@@ -1499,6 +1766,7 @@ pub fn build_alliance_router_with(
         .route("/api/alliance/tasks/:id/dag", get(get_task_dag))
         .route("/api/alliance/tasks/:id/toggle-done", put(toggle_task_done))
         .route("/api/alliance/tasks/:id/status", get(get_task_status_poll))
+        .route("/api/alliance/tasks/:id/qa", post(task_qa))
         .route("/api/alliance/tasks/:id/plan", get(get_collaboration_plan))
         .route("/api/alliance/stats", get(get_alliance_stats))
         .with_state(state)

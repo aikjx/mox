@@ -1,27 +1,9 @@
 # -*- coding: utf-8 -*-
-"""企业级旋律/音频播放引擎（零卡顿 + 零死锁会话化架构 · V2 mox 模块化系统架构优化版）。
+"""PCM score playback with session isolation and bounded buffering.
 
-V2 关键修复（针对「播放卡顿」P0/P1 根因）：
-  [P0-A] 缓存路径一致性：_score_samples_gen 直接复用 _synth_score_cached 的整段
-    输出，消除「缓存命中走 has_start 时间轴、未命中走背靠背拼接」导致的节奏
-    紊乱 / 音符合成欠载。听感从「一卡卡的」变为零抖动。
-  [P0-B] 预充水位机制：play() 启动声卡前先灌满 ~300ms 环形缓冲（可配置），
-    首声零欠载。旧版 stream.start() 后 ring 为空→声卡回调首帧必补静音→
-    开头"咔哒"+ 前 100ms 丢失。
-  [P1-A] 自适应 blocksize + latency：按 sr 选择 4096/8192/16384 block，
-    latency=0.2（具体数值）替代 'high' 模糊值，低端声卡下欠载率下降约 80%。
-  [P1-B] Condition.notify()：替代 notify_all() 避免生产者/消费者惊群，
-    CPU 上下文切换下降，GUI 主线程被音频线程抢占的概率显著降低。
-  [P1-C] 零转换生产者管道：_synth_score_cached 产出整段 int16 PCM bytes
-    与整段 float32 波形，生产者线程直接写 bytes 到 ring，无重复 astype/
-    tobytes 操作；CPU 占用下降约 35%。
-  [P1-D] 合成缓存扩容：_SYNTH_CACHE_MAX 8→32，常用 15 首经典样例 + 用户
-    自定义样例全部命中，冷合成 CPU 峰值从 60%→持续 <10%。
-  [P1-E] 欠载细化指标：underruns + underrun_bytes，定位单次欠载严重度
-    而非仅计数。
-  [P0-继承] 会话化隔离 + 采样率随调用传递（V1 修复项，继续保留）。
-
-对外接口保持不变：play_score / play_audio / play_file / play_bytes。
+Partial writes are retried, read/write cursors have separate owners, and
+completion waits for buffered audio to drain. Original file playback in the
+desktop GUI uses original_player's native media transport.
 """
 import io
 import os
@@ -110,7 +92,7 @@ class _LazyStreamPool:
             if sess is None:
                 # 槽位空：全静音（空闲/已停止）
                 outdata[:] = b"\x00" * (frames * sess._itemsize) if False else (
-                    b"\x00" * (frames * 2))  # 默认 int16 mono（与 itemsize 稍后对齐）
+                    b"\x00" * len(outdata))  # 默认 int16 mono（与 itemsize 稍后对齐）
                 return
             itemsize = sess.itemsize
             nbytes = frames * itemsize
@@ -120,7 +102,7 @@ class _LazyStreamPool:
                 outdata[:nd] = data
                 outdata[nd:] = b"\x00" * (nbytes - nd)
                 # 仅在生产者尚未结束时记欠载（尾部自然消费完不记）
-                if not sess.finished_ev.is_set() and not sess.stop_ev.is_set():
+                if not sess.producer_done.is_set() and not sess.stop_ev.is_set():
                     with sess.underrun_lock:
                         sess.underruns += 1
                         sess.underrun_bytes += (nbytes - nd)
@@ -157,7 +139,7 @@ class _LazyStreamPool:
             sess = self._cur.get(k)
             if sess is None:
                 # 默认 int16 mono=2 bytes/sample（创建期无 play 必然静音）
-                outdata[:] = b"\x00" * (frames * 2)
+                outdata[:] = b"\x00" * len(outdata)
                 return
             itemsize = sess.itemsize
             nb = frames * itemsize
@@ -166,7 +148,7 @@ class _LazyStreamPool:
             if nd < nb:
                 outdata[:nd] = data
                 outdata[nd:] = b"\x00" * (nb - nd)
-                if not sess.finished_ev.is_set() and not sess.stop_ev.is_set():
+                if not sess.producer_done.is_set() and not sess.stop_ev.is_set():
                     with sess.underrun_lock:
                         sess.underruns += 1
                         sess.underrun_bytes += (nb - nd)
@@ -221,94 +203,55 @@ class _LazyStreamPool:
 _STREAM_POOL = _LazyStreamPool()
 
 class RingBuffer:
-    """固定容量 SPSC 无锁字节环形缓冲（V2+ 终极零卡顿架构）。
+    """Single producer/consumer buffer with separately owned monotonic cursors.
 
-    写者：生产者线程（单一）；读者：声卡回调线程（单一）。
-    利用 CPython GIL 保证单一方向 int 计数器读写原子（_used / _start 仅一方
-    推进），彻底消除「回调拿不到 Lock → 立即 underrun」的 Windows
-    WASAPI + threading.Lock 死锁争用（T2 压测前 21/296KB 欠载 → 0）。
-
-    语义兼容旧版接口：write/read/readable/capacity/clear 签名一致；仅
-    Condition 机制移除以换取回调绝对不阻塞。
+    Only the producer publishes _written; only the consumer publishes _read.
+    clear() must only be called while both are stopped.
     """
-
-    __slots__ = ("_cap", "_buf", "_start", "_used")
-
-    def __init__(self, capacity: int):
+    def __init__(self, capacity):
+        if capacity <= 0:
+            raise ValueError("capacity must be positive")
         self._cap = capacity
         self._buf = bytearray(capacity)
-        self._start = 0   # 读者下一位置（仅读者修改）
-        self._used = 0    # 可读字节数（写者加，读者减；单写单读 GIL 原子）
+        self._written = self._read = 0
 
-    def capacity(self) -> int:
+    def capacity(self):
         return self._cap
 
-    def readable(self) -> int:
-        # 单读者 GIL snapshot 原子（仅读者/外部只读调用）
-        return self._used
+    def readable(self):
+        return self._written - self._read
 
-    def write(self, data: bytes, timeout: float = 5.0) -> int:
-        """写者侧：memoryview 分段写入，无锁仅短暂 yield。
-
-        满时短暂 sleep 1ms 重试（不持锁→读者永不被阻塞）。超时返回已写字节。
-        """
+    def write(self, data, timeout=5.0):
         data = memoryview(data)
-        total = len(data)
         wrote = 0
-        deadline = time.time() + timeout
-        cap = self._cap
-        while wrote < total:
-            free = cap - self._used       # 单写者：used 仅本方加 + 读者减，快照一致
-            while free == 0:
-                # 无锁自旋让步：让读者推进 used（1ms，远小于 block 周期 256+ms）
-                # 注意：此处永不持 Python Lock，避免阻塞声卡回调
+        deadline = time.monotonic() + timeout
+        while wrote < len(data):
+            free = self._cap - (self._written - self._read)
+            if not free:
+                if time.monotonic() >= deadline:
+                    break
                 time.sleep(0.001)
-                if time.time() > deadline:
-                    return wrote
-                free = cap - self._used
-            n = min(free, total - wrote)
-            chunk = data[wrote:wrote + n]
-            end = self._start + self._used
-            if end >= cap:
-                end -= cap
-            if end + n <= cap:
-                self._buf[end:end + n] = chunk
-            else:
-                first = cap - end
-                self._buf[end:end + first] = chunk[:first]
-                self._buf[:n - first] = chunk[first:]
-            self._used += n
+                continue
+            pos = self._written % self._cap
+            n = min(free, len(data) - wrote, self._cap - pos)
+            self._buf[pos:pos+n] = data[wrote:wrote+n]
+            self._written += n
             wrote += n
         return wrote
 
-    def read(self, n: int) -> bytes:
-        """读者侧（声卡回调）：零阻塞、零 Lock。
-
-        写者持锁场景下仍能立刻返回，绝不把声卡回调拖进互斥争用。
-        """
-        used = self._used
-        if used == 0:
-            return b""
-        k = n if n <= used else used
-        out = bytearray(k)
-        s = self._start
-        cap = self._cap
-        if s + k <= cap:
-            out[:] = self._buf[s:s + k]
-        else:
-            first = cap - s
-            out[:first] = self._buf[s:]
-            out[first:] = self._buf[:k - first]
-        self._start = (s + k) % cap
-        self._used -= k
-        return bytes(out)
+    def read(self, n):
+        n = min(max(0, n), self.readable())
+        pos = self._read % self._cap
+        first = min(n, self._cap - pos)
+        data = bytes(self._buf[pos:pos+first]) + bytes(self._buf[:n-first])
+        self._read += n
+        return data
 
     def clear(self):
-        self._start = 0
-        self._used = 0
+        self._written = self._read = 0
 
-    def fill_ratio(self) -> float:
-        return self._used / self._cap if self._cap else 0.0
+    def fill_ratio(self):
+        return self.readable() / self._cap
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +272,7 @@ class _PlaySession:
         self.ring = RingBuffer(int(sr * itemsize * RING_DURATION_SEC))
         self.stop_ev = threading.Event()
         self.finished_ev = threading.Event()
+        self.producer_done = threading.Event()
         self.underruns = 0
         self.underrun_bytes = 0      # V2: 欠载字节数（定位严重度）
         self.underrun_lock = threading.Lock()
@@ -349,9 +293,9 @@ def _produce(session: _PlaySession, pcm_chunks_iter, on_done=None) -> None:
             if chunk is None or len(chunk) == 0:
                 continue
             # 直接 bytes→ring（pipeline 已转 int16 PCM bytes）
-            w = session.ring.write(chunk, timeout=0.25)
-            if w < len(chunk) and session.stop_ev.is_set():
-                break
+            offset = 0
+            while offset < len(chunk) and not session.stop_ev.is_set():
+                offset += session.ring.write(memoryview(chunk)[offset:], timeout=0.05)
         # 尾部补 0.1s 静音，确保末尾干净淡出、不截断
         if not session.stop_ev.is_set():
             session.ring.write(b"\x00" * (session.sr * session.itemsize // 10),
@@ -442,65 +386,50 @@ class _ScorePlayer:
                 is_playing() 立刻 False（用户观察到「三个按钮都播放不了」）。
                 """
                 try:
-                    pre = min(session.pre_fill_bytes, session.ring.capacity() - 1)
+                    pre = min(session.pre_fill_bytes, session.ring.capacity())
                     swapped = False
                     for blob in pcm_chunks_iter:
                         if session.stop_ev.is_set():
                             break
-                        if blob is None or len(blob) == 0:
+                        if blob is None:
                             continue
-                        # 分段写：blob 可 > 1 chunk（允许调用方一次传整块 bytes）
-                        if chunk_step > 0 and len(blob) > chunk_step:
-                            total = len(blob)
-                            off = 0
-                            while off < total:
-                                if session.stop_ev.is_set():
-                                    break
-                                end = off + chunk_step
-                                chunk = blob[off:end]
-                                off = end
-                                w = session.ring.write(chunk, timeout=0.25)
-                                if w < len(chunk) and session.stop_ev.is_set():
-                                    break
-                                if (not swapped) and session.ring.readable() >= pre:
-                                    _STREAM_POOL.assign(stream_key, session)
-                                    swapped = True
-                        else:
-                            w = session.ring.write(blob, timeout=0.25)
-                            if w < len(blob) and session.stop_ev.is_set():
-                                break
-                            if (not swapped) and session.ring.readable() >= pre:
-                                _STREAM_POOL.assign(stream_key, session)
-                                swapped = True
-                    # 尾部补 0.1s 静音（淡出）
-                    if not session.stop_ev.is_set():
-                        tail = b"\x00" * (session.sr * session.itemsize // 10)
-                        session.ring.write(tail, timeout=0.25)
+                        offset = 0
+                        while offset < len(blob) and not session.stop_ev.is_set():
+                            # Never discard a partial write. Bound writes so playback
+                            # can start before a large first chunk fills the ring.
+                            step = min(chunk_step or DEFAULT_CHUNK_BYTES, pre)
+                            chunk = memoryview(blob)[offset:offset + step]
+                            offset += session.ring.write(chunk, timeout=0.05)
+                            if not swapped and session.ring.readable() >= pre:
+                                with self._lock:
+                                    if self._session is session and not session.stop_ev.is_set():
+                                        _STREAM_POOL.assign(stream_key, session)
+                                        swapped = True
                     if not swapped:
-                        # 极端：PCM 总量 < pre_fill_bytes（比如 < 500ms 短音）也要换指针
-                        _STREAM_POOL.assign(stream_key, session)
-                        swapped = True
+                        with self._lock:
+                            if self._session is session and not session.stop_ev.is_set():
+                                _STREAM_POOL.assign(stream_key, session)
+                    session.producer_done.set()
                 except Exception:
-                    # 异常也必须走最后的清槽流程，否则 CUR 永远占着 session 不释放
-                    pass
+                    import logging
+                    logging.getLogger(__name__).exception("Audio producer failed")
+                    session.stop_ev.set()
                 # 播放自然结束：等 ring 最后一段被声卡消费完再清 CUR 槽
                 #   延迟 = 2×blocksize 时间 + ring 剩余按采样率播放时间
                 #   注意：必须保证 CUR 清零 = 声卡真正静音 = 「播放完」语义，
                 #   之后才 on_done() / finished_ev.set()（GUI 进度一致）。
-                sr_i = int(session.sr)
-                itemsize_i = int(session.itemsize)
-                bs = int(_adaptive_blocksize(sr_i))
-                tail_time = 2.0 * bs / sr_i + float(session.ring.readable()) / (sr_i * itemsize_i)
-                deadline = time.time() + max(0.0, tail_time)
-                while time.time() < deadline:
-                    if session.stop_ev.is_set():
-                        break
-                    time.sleep(0.01)
-                if _STREAM_POOL.current(stream_key) is session:
-                    _STREAM_POOL.assign(stream_key, None)
+                session.producer_done.set()
+                while session.ring.readable() and not session.stop_ev.is_set():
+                    session.stop_ev.wait(0.01)
+                # The last callback has queued samples, not yet played them.
+                if not session.stop_ev.is_set():
+                    session.stop_ev.wait(0.2 + _adaptive_blocksize(session.sr) / session.sr)
+                with self._lock:
+                    if _STREAM_POOL.current(stream_key) is session:
+                        _STREAM_POOL.assign(stream_key, None)
                 # 「播完」事件：on_done 最后才触发（对应 GUI 进度条完成）
                 try:
-                    if on_done: on_done()
+                    if on_done and not session.stop_ev.is_set(): on_done()
                 except Exception:
                     pass
                 # 最终：写→放→清槽→回调 全链路完成 → finished

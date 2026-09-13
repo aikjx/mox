@@ -20,7 +20,6 @@
 //! - 总计：4 通用 + 6 KG + 4 AI + 系统/安全域 3X 端点（读接口真实现 + 写接口 stub）
 
 pub mod config;
-pub mod system_config;
 pub mod auth;
 pub mod rate_limit;
 pub mod o11y;
@@ -59,12 +58,15 @@ pub mod document;
 pub mod message_center;
 pub mod enterprise;
 pub mod enterprise_features;
+pub mod system_config;
 pub mod scheduler;
 pub mod dictionary;
 pub mod operation_log;
 pub mod file_storage;
 pub mod organization;
 pub mod mailer;
+pub mod api_permission;
+pub mod batch_operation;
 
 pub use mox_kg_service_svc::http_adapter;
 pub use alliance as alliance_adapter;
@@ -150,6 +152,18 @@ impl axum::extract::FromRef<GatewayState> for Arc<crate::scheduler::api::Schedul
     }
 }
 
+impl axum::extract::FromRef<GatewayState> for Arc<crate::batch_operation::TemplateState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.batch_operation.clone()
+    }
+}
+
+impl axum::extract::FromRef<GatewayState> for Arc<crate::api_permission::ApiPermissionState> {
+    fn from_ref(state: &GatewayState) -> Self {
+        state.enterprise.api_permission.clone()
+    }
+}
+
 impl axum::extract::FromRef<GatewayState> for Arc<crate::mailer::api::MailerState> {
     fn from_ref(state: &GatewayState) -> Self {
         state.enterprise.mailer.clone()
@@ -182,7 +196,7 @@ impl axum::extract::FromRef<GatewayState> for Arc<crate::dictionary::api::Dictio
 
 impl axum::extract::FromRef<GatewayState> for Arc<crate::system_config::api::ConfigState> {
     fn from_ref(state: &GatewayState) -> Self {
-        state.enterprise.config.clone()
+        state.enterprise.system_config.clone()
     }
 }
 

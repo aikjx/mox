@@ -4144,6 +4144,7 @@ dependencies = [
  "http",
  "http-body-util",
  "mox-ai-expert-proto",
+ "mox-ai-expert-svc",
  "mox-alliance-api",
  "mox-alliance-boot-config",
  "mox-alliance-common-proto",

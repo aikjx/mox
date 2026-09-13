@@ -1,4 +1,4 @@
-// 联盟引擎 API - 已重构为统一 http.js fetcher
+﻿// 联盟引擎 API - 已重构为统一 http.js fetcher
 // SSE 流式端点保留原生 fetch，鉴权头对齐 http.js 请求拦截器（getToken）
 import http from './http'
 import { normalizeTask, normalizeTaskList, normalizeTaskLogs, normalizeTaskDag, normalizeTaskFusion, unwrapTaskPayload } from './allianceTaskModel'
@@ -309,6 +309,12 @@ export async function toggleAllianceTaskDone(taskId) {
 
 export async function getAllianceTaskStatus(taskId) {
   return normalizeTask(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/status`, { _retry: 0, silent: true }))
+}
+
+/** 任务智能问答：基于任务真实状态/日志/融合结果生成诊断回答 */
+export async function askAllianceTaskQa(taskId, question) {
+  const resp = await http.post(`/alliance/tasks/${encodeURIComponent(taskId)}/qa`, { question }, { _retry: 0, silent: true })
+  return resp?.data?.data || resp?.data || resp
 }
 
 export async function getAllianceRuntime() {

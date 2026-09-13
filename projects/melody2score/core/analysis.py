@@ -343,7 +343,7 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
                         "midi": seg_midi,
                         "start": cur_start,
                         "end": ct,
-                        "sep_prev": bool(seg.get("sep_prev")) if cur_start == seg_start else False,
+                        "sep_prev": bool(seg.get("sep_prev")) if cur_start == seg_start else True,
                         "nfr": max(1, int(piece_dur / 0.01)),
                     })
                 cur_start = ct
@@ -354,7 +354,7 @@ def segment_notes(pitch_points: List[Dict], min_note_dur: float = 0.1,
                     "midi": seg_midi,
                     "start": cur_start,
                     "end": seg_end,
-                    "sep_prev": False,
+                    "sep_prev": True,
                     "nfr": max(1, int(last_dur / 0.01)),
                 })
         raw = new_raw

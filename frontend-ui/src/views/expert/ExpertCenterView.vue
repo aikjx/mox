@@ -41,6 +41,33 @@
         <component :is="Component" />
       </transition>
     </router-view>
+
+    <!-- 注册专家弹窗 -->
+    <el-dialog v-model="showRegister" title="注册专家" width="520px" :close-on-click-modal="false">
+      <el-form label-width="90px" label-position="right">
+        <el-form-item label="专家名称" required>
+          <el-input v-model="newExpert.name" placeholder="例如：算法策略专家·玄策" />
+        </el-form-item>
+        <el-form-item label="专家类型">
+          <el-select v-model="newExpert.type" style="width: 100%">
+            <el-option v-for="t in expertTypes" :key="t" :label="typeLabel(t)" :value="t" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="能力标签">
+          <el-input v-model="newExpert.capabilities_str" placeholder="逗号分隔，例如：架构设计,微服务,性能优化" />
+        </el-form-item>
+        <el-form-item label="专家描述">
+          <el-input v-model="newExpert.description" type="textarea" :rows="3" placeholder="一句话介绍该专家的擅长领域" />
+        </el-form-item>
+        <el-form-item label="系统提示词">
+          <el-input v-model="newExpert.systemPrompt" type="textarea" :rows="4" placeholder="定义该专家的行为模式与回答风格（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showRegister = false">取消</el-button>
+        <el-button type="primary" :loading="registering" @click="doRegister">注册</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -316,6 +343,7 @@ async function doConsult() {
 
   try {
     const result = await consultExpert(expertId, {
+      question: question.value,
       messages: [{ role: 'user', content: question.value }]
     })
     results.value = [{

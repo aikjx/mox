@@ -742,6 +742,59 @@ pub async fn remote_dag(
 ///
 /// 执行器 FusionOutput 形状与本地不同，做宽容归一化：已知字段取用，
 /// 整体作为 fusion_result / result 透传；无结果（404）→ 本地 pending 形状。
+/// GET /api/alliance/tasks/:id/plan - remote GET {executor}/tasks/:id/nodes derived plan
+///
+/// Executor nodes (name/expert/status/duration/deps) -> phases; None on transport error
+/// so caller can fall back locally.
+pub async fn remote_task_plan(
+    s: &crate::alliance::AllianceGatewayState,
+    task_id: Uuid,
+) -> Option<ApiResponse<Value>> {
+    let t0 = now_ms();
+    let (_, v) = match s
+        .remote
+        .as_ref()?
+        .executor_get(&format!("/tasks/{}/nodes", task_id))
+        .await?
+    {
+        Ok(r) if (200..300).contains(&r.0) => r,
+        Ok((st, v)) => return Some(http_err(st, &v, format!("task {} not found", task_id))),
+        Err(e) => return transport_fallback("plan", e),
+    };
+    let raw = v["nodes"].as_array()?.clone();
+    let phases: Vec<Value> = raw
+        .iter()
+        .map(|n| {
+            let status = n["status"].as_str().unwrap_or("pending");
+            let progress = match status {
+                "completed" => 100,
+                "running" => 50,
+                _ => 0,
+            };
+            json!({
+                "phase_id": n["node_id"],
+                "name": n["name"],
+                "expert_id": n["expert_id"],
+                "status": status,
+                "duration_ms": n["duration_ms"],
+                "progress": progress,
+                "dependencies": n["dependencies"],
+            })
+        })
+        .collect();
+    let assigned_experts: Vec<Value> = phases.iter().map(|p| p["expert_id"].clone()).collect();
+    Some(api_ok(json!({
+        "elapsed_ms": now_ms() - t0,
+        "data": {
+            "task_id": task_id,
+            "phases": phases,
+            "total_phases": phases.len(),
+            "estimated_duration_minutes": 0,
+            "assigned_experts": assigned_experts,
+            "source": "executor_dag",
+        },
+    })))
+}
 pub async fn remote_fusion_result(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,

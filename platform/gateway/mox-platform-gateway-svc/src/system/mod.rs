@@ -54,6 +54,7 @@ pub mod security;
 pub mod permission;
 pub mod tenant;
 pub mod approval;
+pub mod auth_session;
 
 pub(crate) fn ok(data: Value) -> ApiResponse<Value> {
     api_ok(data)
@@ -356,6 +357,9 @@ pub(crate) fn api_key_json(k: &SysApiKey) -> Value {
 pub fn build_system_router() -> Router<GatewayState> {
     Router::new()
         .route("/api/auth/me", get(permission::current_user_handler))
+        .route("/api/auth/login", post(auth_session::login_handler))
+        .route("/api/auth/register", post(auth_session::register_handler))
+        .route("/api/auth/refresh", post(auth_session::refresh_handler))
         .route("/api/tenant", get(tenant::list_tenants).post(tenant::create_tenant_handler))
         .route("/api/tenant/:id", get(tenant::get_tenant_detail).put(tenant::update_tenant_handler).delete(tenant::delete_tenant_handler))
         .route("/api/tenant/switch/:id", get(tenant::switch_tenant))

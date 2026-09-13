@@ -88,6 +88,15 @@ def _midi_name(m: int) -> str:
     return f"{names[m % 12]}{m // 12 - 1}"
 
 
+@app.get("/api/sample-audio")
+def sample_audio(name: str):
+    root = os.path.realpath(resource_path("audio"))
+    path = os.path.realpath(os.path.join(root, name))
+    if not path.startswith(root + os.sep) or not os.path.isfile(path):
+        raise HTTPException(404, "样例音频不存在")
+    return FileResponse(path, media_type="audio/wav")
+
+
 @app.get("/api/samples")
 def list_samples():
     """列出内置经典旋律样例，供前端直接试听/识别。"""

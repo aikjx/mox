@@ -33,6 +33,7 @@ if ROOT not in sys.path:
 from core.paths import resource_path, is_frozen
 from core.config import Config
 from core import score_sheet
+from app.original_player import OriginalPlayer
 from app.audio_play import (play_raw, play_score, is_playing,
                             stop as audio_stop)
 
@@ -644,6 +645,10 @@ class MainWindow(QMainWindow):
         row_aud.addWidget(self.btnPreview)
         row_aud.addWidget(self.btnStop)
         iv.addLayout(row_aud)
+        self.originalPlayer = OriginalPlayer(self)
+        self.originalPlayer.starting.connect(self._stop_score_for_original)
+        self.btnStop.clicked.connect(self.originalPlayer.media.stop)
+        iv.addWidget(self.originalPlayer)
         lv.addWidget(g_in)
 
         # 参数
@@ -899,6 +904,7 @@ class MainWindow(QMainWindow):
             self, "选择音频", "", "音频 (*.wav *.mp3 *.flac *.ogg *.m4a)")
         if not path:
             return
+        self.originalPlayer.set_source(path=path)
         self.pending_file = path
         self.lblFile.setText(os.path.basename(path))
         self.btnPreview.setEnabled(True)
@@ -948,6 +954,7 @@ class MainWindow(QMainWindow):
             self.status.setText(f"已取消录音。" + (f"（错误：{err}）" if err else ""))
             return
         wav_bytes, y_rec, sr = dlg.result
+        self.originalPlayer.set_source(data=wav_bytes)
         self.pending_file = None
         self._raw_y, self._raw_sr = y_rec, sr
         self.btnPreview.setEnabled(True)
@@ -1000,6 +1007,7 @@ class MainWindow(QMainWindow):
             path = self._sample_abs_path(item)
             if os.path.exists(path):
                 self._pending_sample_path = path
+                self.originalPlayer.set_source(path=path)
                 self.btnPreview.setEnabled(True)
             # 用样例曲名填充标题（优先用清单里的中文标题，没有就用文件名）
             title = item.get("title_zh") or item.get("title") or os.path.splitext(os.path.basename(file_rel))[0]
@@ -1013,59 +1021,16 @@ class MainWindow(QMainWindow):
         return resource_path(item["file"])
 
     def play_sample(self):
-        """播放当前选中样例的原曲音频（读取 audio/<id>.wav 并回放）。
-
-        解码 + 重采样（librosa.load）CPU 密集，放到后台 DecodeWorker，
-        避免在主线程阻塞导致界面卡死（点播放后长时间无响应）。
-        """
-        if not self.sampleCombo.isEnabled():
-            return
-        # V2+ 三播放器防抖：波形模式（试听/样例）播放中再点=停止
-        if is_playing() and not getattr(self, "_score_playing", False):
-            audio_stop()
-            self.btnPreview.setEnabled(True)
-            self.status.setText("已停止原曲播放。")
-            return
-        file_rel = self.sampleCombo.currentData()
-        item = self._sample_by_file(file_rel)
+        item = self._sample_by_file(self.sampleCombo.currentData())
         if not item:
             return
         path = self._sample_abs_path(item)
         if not os.path.exists(path):
-            QMessageBox.information(self, "播放原曲",
-                                    f"未找到样例音频：{item['file']}\n请先运行 gen_classic_melodies.py 生成。")
+            QMessageBox.information(self, "播放原曲", "未找到样例音频。")
             return
-        try:
-            with open(path, "rb") as f:
-                data = f.read()
-        except Exception as e:
-            QMessageBox.critical(self, "播放失败", f"读取样例音频出错：{e}")
-            return
-        status_msg = f"▶ 试听原曲：{item['title_zh']} · {item['timbre']}"
-        # 解码中禁用按钮防连点，并提示进度
-        self.btnPlaySample.setEnabled(False)
-        self.btnPlaySample.setText("解码中…")
-        self.status.setText(f"⏳ 正在解码原曲：{item['title_zh']}")
-        w = DecodeWorker(data, 22050, status_msg)
-
-        def _ok(y, sr, msg):
-            self.btnPlaySample.setEnabled(True)
-            self.btnPlaySample.setText("▶ 播放原曲")
-            self._raw_y, self._raw_sr = y, sr
-            self.btnPreview.setEnabled(True)
-            self.status.setText(msg)
-            from app.audio_play import play_raw
-            play_raw(y, sr)
-
-        def _err(e):
-            self.btnPlaySample.setEnabled(True)
-            self.btnPlaySample.setText("▶ 播放原曲")
-            QMessageBox.critical(self, "播放失败", f"解码样例音频出错：{e}")
-
-        w.done.connect(_ok)
-        w.failed.connect(_err)
-        w.start()
-        self._decode_worker = w  # 保引用防 GC
+        self.originalPlayer.set_source(path=path)
+        self.originalPlayer.toggle()
+        self.btnPreview.setEnabled(True)
 
     def add_sample(self):
         """添加样例：导入本地音频文件为内置样例。
@@ -1201,85 +1166,18 @@ class MainWindow(QMainWindow):
         self.status.setText(f"错误：{msg}")
         QMessageBox.critical(self, "识别失败", msg)
 
+    def _stop_score_for_original(self):
+        audio_stop()
+        self._score_playing = False
+        self.btnPlayScore.setText("🎹 播放钢琴曲")
+
     def preview_original(self):
-        """试听已选择的原曲（mp3/wav 等）。
-
-        V2 零阻塞：若波形尚未解码（_raw_y is None），走 DecodeWorker
-        后台线程 librosa 解码/重采样（CPU 密集 100~2000ms，不能卡主线程），
-        完成后自动播放；已解码则立刻 play_raw。V1 主线程同步 librosa.load
-        → 点「试听原曲」后 GUI 冻结数秒（最常见的"卡顿"投诉来源）。
-        """
-        # V2+ 三播放器防抖：波形模式播放中再点=停止
-        if is_playing() and not getattr(self, "_score_playing", False):
-            audio_stop()
-            self.btnPlaySample.setEnabled(True)
-            self.status.setText("已停止原曲播放。")
-            return
-        # V2+ 三播放器防抖：钢琴曲播放中 -> 先停钢琴曲再切波形模式
-        if getattr(self, "_score_playing", False):
-            audio_stop()
-            self._score_playing = False
-            self.btnPlayScore.setText("🎹 播放钢琴曲")
-        raw = getattr(self, "_raw_y", None)
-        if raw is not None:
-            # 已解码 → 立即播放（零阻塞）
-            try:
-                self.status.setText("正在播放原曲…")
-                self._score_playing = False
-                self.btnPlayScore.setText("🎹 播放钢琴曲")
-                play_raw(raw, self._raw_sr)
-            except Exception as e:
-                self.status.setText(f"播放失败：{e}")
-            return
-        # 未解码 → 后台 DecodeWorker 解码（与 play_sample 路径一致，零重复代码）
-        pending_bytes = getattr(self, "_pending_bytes", None)
-        pending_path = getattr(self, "_pending_sample_path", None)
-        if not pending_bytes and not pending_path:
-            QMessageBox.information(self, "试听", "尚未载入可播放的音频。")
-            return
-        # 组装 bytes
-        if pending_bytes:
-            data = pending_bytes
-            msg_src = "文件原曲"
-        else:
-            try:
-                with open(pending_path, "rb") as f:
-                    data = f.read()
-                msg_src = "样例原曲"
-            except Exception as e:
-                QMessageBox.critical(self, "试听失败", f"读取文件出错：{e}")
-                return
-        # 防连点：同 preview_original 期间只跑一个 DecodeWorker
-        old = getattr(self, "_preview_decode_worker", None)
-        if old is not None and old.isRunning():
-            self.status.setText("⏳ 正在后台解码原曲…请勿重复点击。")
-            return
-        self.btnPreview.setEnabled(False)
-        self.status.setText(f"⏳ 正在后台解码{msg_src}…")
-        w = DecodeWorker(data, 22050, f"正在播放{msg_src}…")
-
-        def _ok(y, sr, status_msg):
-            self.btnPreview.setEnabled(True)
-            self._raw_y, self._raw_sr = y, sr
-            self.status.setText(status_msg)
-            self._score_playing = False
-            self.btnPlayScore.setText("🎹 播放钢琴曲")
-            try:
-                play_raw(y, sr)
-            except Exception as e:
-                self.status.setText(f"播放失败：{e}")
-
-        def _err(e):
-            self.btnPreview.setEnabled(True)
-            QMessageBox.critical(self, "试听失败", f"解码原曲出错：{e}")
-
-        w.done.connect(_ok)
-        w.failed.connect(_err)
-        w.start()
-        self._preview_decode_worker = w
+        """Pause/resume the original source without recognition resampling."""
+        self.originalPlayer.toggle()
 
     def play_score_audio(self):
         """按识别出的音符序列合成钢琴曲播放（播放中再点 = 停止）。"""
+        self.originalPlayer.media.stop()
         if not self.current or not self.current.get("notes"):
             QMessageBox.information(self, "播放", "尚无可播放的识别结果。")
             return

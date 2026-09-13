@@ -62,13 +62,16 @@ struct DebateBody {
 
 #[derive(Debug, Deserialize)]
 struct RouteBody {
-    query: String,
+    /// 兼容旧字段名 query；前端统一传 question
+    #[serde(default, alias = "query")]
+    question: Option<String>,
     #[serde(default)]
     domain: Option<String>,
     #[serde(default)]
     constraints: Option<Value>,
-    #[serde(default)]
-    top_n: Option<usize>,
+    /// 兼容旧字段名 top_n；前端统一传 maxExperts
+    #[serde(default, alias = "top_n")]
+    max_experts: Option<usize>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -87,6 +90,31 @@ struct AlgorithmAnalysisBody {
     input_constraints: Option<String>,
     #[serde(default)]
     requirements: Option<String>,
+}
+
+/// POST /api/ai/expert-chat 请求体（前端 AIChatPanel 专家模式统一载荷）
+#[derive(Debug, Deserialize)]
+struct ExpertChatBody {
+    message: String,
+    #[serde(default)]
+    session_id: Option<String>,
+    #[serde(default)]
+    assistant: Option<String>,
+    #[serde(default)]
+    scope: Option<String>,
+    #[serde(default)]
+    project_id: Option<String>,
+    /// single | multi | debate | algorithm | smart（默认 smart）
+    #[serde(default, alias = "consult_mode")]
+    mode: String,
+    #[serde(default)]
+    selected_experts: Vec<String>,
+    #[serde(default)]
+    expert_type: Option<String>,
+    #[serde(default)]
+    messages: Vec<Value>,
+    #[serde(default)]
+    stream: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1027,7 +1055,11 @@ async fn route_query(
     State(state): State<Arc<ExpertsSharedState>>,
     Json(body): Json<RouteBody>,
 ) -> ApiResponse<Value> {
-    let top_n = body.top_n.unwrap_or(5).clamp(1, 20);
+    let query = body.question.clone().unwrap_or_default();
+    if query.trim().is_empty() {
+        return err(400, "缺少查询内容（question）");
+    }
+    let top_n = body.max_experts.unwrap_or(5).clamp(1, 20);
 
     // 解析约束
     let min_rating = body.constraints.as_ref()
@@ -1065,7 +1097,7 @@ async fn route_query(
                     true
                 }
             })
-            .map(|e| (e.clone(), compute_match_score(&body.query, e)))
+            .map(|e| (e.clone(), compute_match_score(&query, e)))
             .collect();
 
         scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -1075,7 +1107,7 @@ async fn route_query(
 
     if matched.is_empty() {
         return ok(json!({
-            "query": body.query,
+            "query": query,
             "matched_experts": [],
             "routing_decision": {
                 "recommended_expert_id": null,
@@ -1119,7 +1151,7 @@ async fn route_query(
     );
 
     ok(json!({
-        "query": body.query,
+        "query": query,
         "matched_experts": matched_experts,
         "routing_decision": {
             "recommended_expert_id": recommended.0.id,
@@ -1629,6 +1661,198 @@ fn generate_finance_analysis(subject: &str) -> (Vec<Value>, Value, Vec<Value>, f
 // 十四、路由装配
 // =====================================================================
 
+/// POST /api/ai/expert-chat — 专家 AI 对话统一入口（前端 AIChatPanel 专家模式）
+///
+/// 前端在 single / multi / debate / algorithm / smart 模式下统一调用
+/// `/api/ai/expert-chat`，但编排器并无此路由（此前被代理后返回 405）。
+/// 本端点由网关原生专家模块接管，按 consult_mode 分发到已有专家能力，
+/// 并以 `{content, mode, ...}` 形状返回（前端取 content 渲染）。
+async fn expert_chat_dispatch(
+    State(state): State<Arc<ExpertsSharedState>>,
+    Json(body): Json<ExpertChatBody>,
+) -> ApiResponse<Value> {
+    if body.message.trim().is_empty() {
+        return err(400, "缺少消息内容（message）");
+    }
+    let mode = if body.mode.is_empty() {
+        "smart".to_string()
+    } else {
+        body.mode.to_ascii_lowercase()
+    };
+    tracing::debug!(
+        "expert_chat_dispatch mode={} selected_experts={:?} expert_type={:?}",
+        mode,
+        body.selected_experts,
+        body.expert_type
+    );
+
+    match mode.as_str() {
+        "single" => {
+            let id = body
+                .selected_experts
+                .first()
+                .cloned()
+                .or_else(|| body.expert_type.clone())
+                .unwrap_or_default();
+            if id.is_empty() {
+                return err(400, "单专家模式需要 selected_experts 指定专家");
+            }
+            let expert = {
+                let reg = state.registry.lock();
+                match reg.get(&id) {
+                    Some(e) if e.enabled => e.clone(),
+                    _ => return err(404, format!("专家不存在或已禁用: {}", id)),
+                }
+            };
+            let answer = generate_expert_answer(&expert, &body.message).await;
+            let analysis = answer.get("analysis").and_then(|v| v.as_str()).unwrap_or("");
+            let solution = answer.get("solution").and_then(|v| v.as_str()).unwrap_or("");
+            let content = format!("{}\n\n{}", analysis, solution);
+            ok(json!({
+                "content": content,
+                "mode": "single",
+                "expert_id": expert.id,
+                "expert_name": expert.name,
+                "confidence": answer.get("confidence"),
+                "answer": answer,
+            }))
+        }
+        "multi" => {
+            let resp = multi_consult(
+                State(state.clone()),
+                Json(MultiConsultBody {
+                    question: body.message.clone(),
+                    expert_ids: if body.selected_experts.is_empty() {
+                        None
+                    } else {
+                        Some(body.selected_experts.clone())
+                    },
+                    domain: None,
+                    max_experts: Some(3),
+                }),
+            )
+            .await;
+            let content = resp
+                .data
+                .as_ref()
+                .and_then(|d| d.get("results").cloned())
+                .map(|results| {
+                    results
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|r| {
+                            let ok_flag = r.get("success").and_then(|v| v.as_bool()).unwrap_or(true);
+                            if !ok_flag {
+                                return None;
+                            }
+                            let name = r
+                                .get("expert")
+                                .and_then(|e| e.get("name"))
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("专家");
+                            let text = r
+                                .get("response")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("");
+                            Some(format!("【{}】{}", name, text))
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n\n")
+                })
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| "多专家协同完成".to_string());
+            ok(json!({
+                "content": content,
+                "mode": "multi",
+                "raw": resp.to_json_value(),
+            }))
+        }
+        "debate" => {
+            let resp = debate(
+                State(state.clone()),
+                Json(DebateBody {
+                    topic: body.message.clone(),
+                    expert_ids: if body.selected_experts.is_empty() {
+                        None
+                    } else {
+                        Some(body.selected_experts.clone())
+                    },
+                    rounds: Some(2),
+                    stance: None,
+                }),
+            )
+            .await;
+            let content = resp
+                .data
+                .as_ref()
+                .and_then(|d| d.get("summary"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("专家辩论完成");
+            ok(json!({
+                "content": content,
+                "mode": "debate",
+                "raw": resp.to_json_value(),
+            }))
+        }
+        "algorithm" => {
+            let resp = algorithm_analysis(
+                State(state.clone()),
+                Json(AlgorithmAnalysisBody {
+                    algorithm_description: body.message.clone(),
+                    input_constraints: None,
+                    requirements: None,
+                }),
+            )
+            .await;
+            let content = resp
+                .data
+                .as_ref()
+                .and_then(|d| {
+                    let c = d.get("complexity").cloned().unwrap_or(Value::Null);
+                    let f = d.get("feasibility").cloned().unwrap_or(Value::Null);
+                    serde_json::to_string_pretty(&json!({"complexity": c, "feasibility": f})).ok()
+                })
+                .unwrap_or_else(|| "算法分析完成".to_string());
+            ok(json!({
+                "content": content,
+                "mode": "algorithm",
+                "raw": resp.to_json_value(),
+            }))
+        }
+        _ => {
+            // smart / 默认：智能路由 + 最优专家深度咨询
+            let resp = intelligent_consult(
+                State(state.clone()),
+                Json(IntelligentConsultBody {
+                    question: body.message.clone(),
+                    context: None,
+                    history: None,
+                }),
+            )
+            .await;
+            let content = resp
+                .data
+                .as_ref()
+                .and_then(|d| {
+                    let a = d.get("answer").and_then(|a| a.get("analysis")).and_then(|v| v.as_str()).unwrap_or("");
+                    let s = d.get("answer").and_then(|a| a.get("solution")).and_then(|v| v.as_str()).unwrap_or("");
+                    if a.is_empty() && s.is_empty() {
+                        None
+                    } else {
+                        Some(format!("{}\n\n{}", a, s))
+                    }
+                })
+                .unwrap_or_else(|| "智能路由完成".to_string());
+            ok(json!({
+                "content": content,
+                "mode": "smart",
+                "raw": resp.to_json_value(),
+            }))
+        }
+    }
+}
+
 pub fn build_experts_collaboration_router(state: Arc<ExpertsSharedState>) -> Router {
     Router::new()
         .route("/api/experts/:id/consult", post(consult_expert))
@@ -1639,6 +1863,7 @@ pub fn build_experts_collaboration_router(state: Arc<ExpertsSharedState>) -> Rou
         .route("/api/experts/algorithm-analysis", post(algorithm_analysis))
         .route("/api/experts/enterprise/consult", post(enterprise_consult))
         .route("/api/experts/enterprise/analyze", post(enterprise_analyze))
+        .route("/api/ai/expert-chat", post(expert_chat_dispatch))
         .with_state(state)
 }
 

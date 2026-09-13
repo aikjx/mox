@@ -827,7 +827,9 @@ async function loadExperts() {
   error.value = ''
   try {
     const data = await getExperts()
-    experts.value = processExperts(data)
+    // 兼容分页信封 {experts,total} / {list} / 裸数组 三种形态
+    const list = Array.isArray(data) ? data : (data?.experts || data?.list || data?.data || [])
+    experts.value = processExperts(list)
     allLoaded.value = true
   } catch (e) {
     console.error('[ExpertPlaza] API 加载失败:', e)

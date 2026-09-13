@@ -80,6 +80,48 @@ fn merge_expert_from_value(exp: &mut ExpertDescriptor, body: &Value) {
     if let Some(tags) = body.get("tags").and_then(|v| v.as_array()) {
         exp.tags = tags.iter().filter_map(|v| v.as_str().map(String::from)).collect();
     }
+    // ---- 前端注册契约兼容：type/description/systemPrompt/字符串 capabilities ----
+    if let Some(t) = body.get("type").and_then(|v| v.as_str()) {
+        let t = t.to_string();
+        if !exp.tags.iter().any(|x| x == &t) {
+            exp.tags.insert(0, t.clone());
+        }
+        exp.metadata.insert("type".into(), json!(t));
+    }
+    if let Some(d) = body.get("description").and_then(|v| v.as_str()) {
+        if !d.is_empty() {
+            exp.bio = d.to_string();
+            if exp.title.is_empty() {
+                exp.title = d.to_string();
+            }
+        }
+    }
+    if let Some(sp) = body.get("systemPrompt").and_then(|v| v.as_str()) {
+        if !sp.is_empty() {
+            exp.metadata.insert("system_prompt".into(), json!(sp));
+        }
+    }
+    // capabilities 允许字符串列表（前端传的是能力名称）
+    if let Some(caps) = body.get("capabilities").and_then(|v| v.as_array()) {
+        let mut parsed: Vec<ExpertCapability> = Vec::new();
+        for v in caps {
+            if let Some(name) = v.as_str() {
+                parsed.push(ExpertCapability {
+                    id: format!("cap-{}", name),
+                    name: name.to_string(),
+                    domain: exp.tags.first().cloned().unwrap_or_else(|| "general".into()),
+                    proficiency: 85,
+                    description: format!("专家能力：{}", name),
+                });
+            } else if let Ok(c) = serde_json::from_value::<ExpertCapability>(v.clone()) {
+                parsed.push(c);
+            }
+        }
+        if !parsed.is_empty() {
+            exp.capabilities = parsed;
+        }
+    }
+
     // availability 子字段合并
     if let Some(av) = body.get("availability").and_then(|v| v.as_object()) {
         if let Some(s) = av.get("status").and_then(|v| v.as_str()) {
@@ -267,7 +309,7 @@ async fn list_experts(
         .collect();
 
     ok(json!({
-        "experts": page_items,
+        "experts": page_items.iter().map(|e| expert_json(e)).collect::<Vec<_>>(),
         "total": total,
         "page": (offset / page_size) + 1,
         "page_size": page_size,
@@ -281,9 +323,25 @@ async fn get_expert(
 ) -> ApiResponse<Value> {
     let reg = s.registry.lock();
     match reg.get(&id) {
-        Some(exp) if exp.enabled => ok(json!(exp)),
+        Some(exp) if exp.enabled => ok(expert_json(exp)),
         _ => err(404, format!("expert not found: {}", id)),
     }
+}
+
+/// 序列化专家并注入前端需要的 type 字段（优先取 tags[0] / capabilities[0].domain / metadata.type）
+fn expert_json(exp: &ExpertDescriptor) -> Value {
+    let mut v = serde_json::to_value(exp).unwrap_or(Value::Null);
+    if let Value::Object(ref mut m) = v {
+        let t = exp.tags
+            .first()
+            .or_else(|| exp.capabilities.first().map(|c| &c.domain))
+            .map(|s| s.as_str())
+            .or_else(|| exp.metadata.get("type").and_then(|x| x.as_str()))
+            .unwrap_or("custom")
+            .to_string();
+        m.insert("type".into(), json!(t));
+    }
+    v
 }
 
 /// POST /api/experts — 注册专家
@@ -317,7 +375,7 @@ async fn create_expert(
     emit_audit(&s, AuditAction::Unknown("expert.register".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", exp.name)));
 
     ok(json!({
-        "expert": exp,
+        "expert": expert_json(&exp),
         "created": true,
         "id": id,
     }))
@@ -338,7 +396,7 @@ async fn update_expert(
             save_registry(&reg);
             emit_audit(&s, AuditAction::Unknown("expert.update".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", updated.name)));
             ok(json!({
-                "expert": updated,
+                "expert": expert_json(&updated),
                 "updated": true,
             }))
         }
