@@ -8,11 +8,11 @@
 | --- | --- |
 | 注册路由总数 | **223 条**（全部 ready，全部有真实实现） |
 | 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |
-| 域描述符（业务规划） | 43 个：ready 7 · beta 1 · stub 35（见 §3） |
+| 域描述符（业务规划） | 46 个：全部 ready · 0 beta · 0 stub（见 §3，2026-09-13 核对） |
 | 独立服务进程 | 6 个：kg-hub / kb-server / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
 | 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |
 
-## 2. 逐域注册表（199 条）
+## 2. 逐域注册表（223 条）
 
 按域分组，实现位置逐一标注；`ANY` 表示该方法+参数可匹配多方法（GET/POST/PUT/DELETE）。
 

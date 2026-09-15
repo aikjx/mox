@@ -411,18 +411,18 @@ docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md#sec-3-2-service-end
 
 ### 6.2 alliance 域代码结构权威描述
 
-#### 6.2.1 11 crate 结构
+#### 6.2.1 13 crate 结构
 
-`platform/domains/alliance/` 域采用 **11 crate 结构**，按层划分为：
+`platform/domains/alliance/` 域采用 **13 crate 结构**（2026-09-13 实测；原 11 crate 为 2026-08-31 口径，后续新增 `mox-alliance-boot-config` 与 `mox-alliance-http-sdk`），按层划分为：
 
 | 层级 | crate 数量 | crate 类型 | 职责 |
 |------|:----------:|-----------|------|
-| proto | 3 | 协议定义层 | gRPC/HTTP 协议的 `.proto` 文件与生成代码，定义服务间通信契约 |
-| core | 4 | 核心逻辑层 | 领域模型、纯业务逻辑、trait 定义、融合策略实现、专家注册表，无 I/O 依赖 |
-| svc | 2 | 服务层 | 应用服务 + 基础设施适配（HTTP handler、外部 API client），承载两个运行时服务 |
-| sdk | 1 | 客户端库层 | 对外暴露的类型定义 + 客户端库，供其他域或外部系统引用 |
+| proto | 3 | 协议定义层 | gRPC/HTTP 协议的 `.proto` 文件与生成代码，定义服务间通信契约（common / scheduler / executor） |
+| core | 5 | 核心逻辑层 | 领域模型、纯业务逻辑、trait 定义、融合策略实现、专家注册表；含 `mox-alliance-core`（融合/DAG）、`-config-core`、`-scheduler-core`、`-executor-core`、`-boot-config`（专家配置 yml 外部化） |
+| svc | 2 | 服务层 | 应用服务 + 基础设施适配（HTTP handler、外部 API client），承载两个运行时服务（scheduler / executor） |
+| sdk | 2 | 客户端库层 | 对外暴露的类型定义 + 客户端库（`mox-alliance-sdk` 与 `mox-alliance-http-sdk`） |
 | api | 1 | 契约层 | 域间契约定义（trait / interface / DTO），实现依赖倒置 |
-| **合计** | **11** | — | — |
+| **合计** | **13** | — | — |
 
 #### 6.2.2 目录结构
 
@@ -432,18 +432,20 @@ platform/domains/alliance/
 │   ├── <proto-crate-1>/
 │   ├── <proto-crate-2>/
 │   └── <proto-crate-3>/
-├── core/           # 4 crate：核心逻辑层
-│   ├── <core-crate-1>/
-│   ├── <core-crate-2>/
-│   ├── <core-crate-3>/
-│   └── <core-crate-4>/
+├── core/           # 5 crate：核心逻辑层
+│   ├── mox-alliance-core/
+│   ├── mox-alliance-config-core/
+│   ├── mox-alliance-scheduler-core/
+│   ├── mox-alliance-executor-core/
+│   └── mox-alliance-boot-config/
 ├── svc/            # 2 crate：服务层
 │   ├── scheduler-svc/     # 调度服务（:3100）
 │   └── executor-svc/      # 执行服务（:3200）
-├── sdk/            # 1 crate：客户端库层
-│   └── <sdk-crate>/
+├── sdk/            # 2 crate：客户端库层
+│   ├── mox-alliance-sdk/
+│   └── mox-alliance-http-sdk/
 └── api/            # 1 crate：契约层
-    └── <api-crate>/
+    └── mox-alliance-api/
 ```
 
 #### 6.2.3 依赖方向规则
@@ -489,43 +491,45 @@ alliance 域内部遵循 DDD 依赖倒置原则：
 
 ### 6.4 内置专家清单规范
 
-alliance 域内置 **10 个专家**，文档中描述专家时必须使用准确的 ID 和名称：
+alliance 域内置 **10 个领域专家**（定义于 `mox-alliance-config-core/src/examples/domain_experts.rs`，并经 `mox-alliance-boot-config` 支持 yml 覆盖），文档中描述专家时必须使用准确的 `module_id` 和名称：
 
-| 序号 | 专家 ID | 专家名称 | 职责 |
+| 序号 | module_id | 专家名称 | 职责（能力域） |
 |:----:|---------|---------|------|
-| 1 | `expert-01` | 需求解析专家 | 解析用户需求，提取结构化需求实体 |
-| 2 | `expert-02` | 架构设计专家 | 进行架构分层与模块拆分设计 |
-| 3 | `expert-03` | 算法选型专家 | 从八大算法家族中选型并输出对账报告 |
-| 4 | `expert-04` | 代码实现专家 | 编写代码实现，遵循编码规范 |
-| 5 | `expert-05` | 测试验证专家 | 编写测试用例，执行单元/集成/性能测试 |
-| 6 | `expert-06` | 安全审计专家 | 进行安全扫描与权限审计 |
-| 7 | `expert-07` | 性能优化专家 | 定位性能瓶颈，输出优化方案 |
-| 8 | `expert-08` | 文档治理专家 | 维护文档归一化与术语一致性 |
-| 9 | `expert-09` | 部署运维专家 | 负责部署、监控、回滚预案 |
-| 10 | `expert-10` | 综合裁决专家 | 综合多专家意见，输出最终裁决 |
+| 1 | `expert-code` | 代码编程专家 | 代码生成、调试、重构、架构设计 |
+| 2 | `expert-math` | 数学推理专家 | 数学证明、逻辑推理、定量分析、统计学 |
+| 3 | `expert-medical` | 医疗健康专家 | 医学知识、临床推理、健康咨询 |
+| 4 | `expert-law` | 法律专家 | 法条检索、合规分析、合同审阅 |
+| 5 | `expert-finance` | 金融专家 | 财务分析、投资决策、风险评估 |
+| 6 | `expert-creative` | 创意写作专家 | 文案创作、头脑风暴、内容生成 |
+| 7 | `expert-vision` | 视觉图像专家 | 图像理解、多模态视觉分析 |
+| 8 | `expert-translation` | 翻译专家 | 多语种互译、跨语言沟通 |
+| 9 | `expert-research` | 学术研究专家 | 文献调研、深度研究、综述生成 |
+| 10 | `expert-arch` | 架构设计专家 | 系统架构、技术选型、混合推理 |
 
 **强制规则**：
-1. 文档中引用内置专家时，必须使用上表中的准确 ID（`expert-01` ~ `expert-10`）和名称。
-2. **禁止**虚构不存在的专家 ID 或名称。
+1. 文档中引用内置专家时，必须使用上表中的准确 `module_id`（`expert-code` 等语义化 ID）和名称。
+2. **禁止**虚构不存在的专家 ID 或名称；早期设计稿中的 `expert-01`~`expert-10`（需求解析/架构设计/算法选型等流程专家）**未在 alliance 域落地**，不得作为当前实现描述。
 3. **禁止**将专家数量描述为"14专家"或其他非10的数字（14专家是 `mox-ai-expert-svc` 的 Verify 管线专家，与 alliance 域内置专家是不同概念，不得混淆）。
 4. 专家清单变更时，必须同步更新本文档 §6.4 和所有引用该清单的文档。
 
 ### 6.5 融合策略描述规范
 
-alliance 域支持 **6 种融合策略**，文档中描述融合策略时必须使用准确名称：
+alliance 域在 `mox-alliance-core/src/fusion/strategies/` 提供 **6 大 trait 融合策略**（`FusionStrategy` 体系），文档中描述融合策略时必须使用准确名称：
 
 | 序号 | 策略名称 | 英文标识 | 适用场景 |
 |:----:|---------|---------|---------|
-| 1 | 加权平均融合 | `weighted-average` | 数值型结果的加权平均合成 |
-| 2 | 投票表决融合 | `voting` | 分类/决策型结果的多数表决 |
-| 3 | RRF 融合 | `rrf` | 排序列表的 Reciprocal Rank Fusion（k=60） |
-| 4 | 共识提取融合 | `consensus` | 文本型结果的共识提取与分歧保留 |
-| 5 | 级联融合 | `cascade` | 多阶段流水线的级联合成 |
-| 6 | 辩论收敛融合 | `debate-convergence` | 多专家自适应辩论与收敛检测 |
+| 1 | 加权投票融合 | `weighted_voting` | 分类/决策任务按权重投票、并列裁决 |
+| 2 | 置信度加权融合 | `confidence_weighting` | 数值型结果的置信度加权平均（含 softmax 归一化） |
+| 3 | 堆叠融合 | `stacking` | 元学习器（mean / linear / weighted-median）组合多模型输出 |
+| 4 | 辩论融合 | `debate` | 多智能体辩论与收敛检测 |
+| 5 | Map-Reduce 融合 | `map_reduce` | 分治式分区融合，大规模数据 |
+| 6 | 迭代精炼融合 | `iterative_refinement` | 多轮迭代逐步求精 |
+
+> 此外 `fusion/mod.rs` 另保留 6 个向后兼容的基础融合函数：`rrf`（Reciprocal Rank Fusion）、`weighted`、`voting`、`best_of`、`concatenate`、`merge_json`。它们是工具函数，不属于上述 6 大 trait 策略。
 
 **强制规则**：
 1. 文档中引用融合策略时，必须使用上表中的准确名称和英文标识。
-2. **禁止**虚构不存在的融合策略。
+2. **禁止**虚构不存在的融合策略；早期设计稿中的 `weighted-average` / `consensus` / `cascade` / `debate-convergence` 标识**未在 alliance 域落地**，不得作为当前实现描述。
 3. **禁止**将融合策略数量描述为非6的数字。
 4. 融合策略变更时，必须同步更新本文档 §6.5 和所有引用该策略的文档。
 
@@ -535,7 +539,7 @@ alliance 域支持 **6 种融合策略**，文档中描述融合策略时必须�
 
 | 序号 | 检查项 | 检查方法 | 通过标准 |
 |:----:|--------|---------|---------|
-| 1 | crate 数量一致 | 文档描述的 crate 数量与 `platform/domains/alliance/` 实际 crate 数对比 | 11 crate（proto×3/core×4/svc×2/sdk×1/api×1） |
+| 1 | crate 数量一致 | 文档描述的 crate 数量与 `platform/domains/alliance/` 实际 crate 数对比 | 13 crate（proto×3/core×5/svc×2/sdk×2/api×1） |
 | 2 | svc 数量一致 | 文档描述的服务数量与实际 svc crate 对比 | 2 个 svc（scheduler-svc / executor-svc） |
 | 3 | 端口准确 | 文档描述的端口与实际服务监听端口对比 | scheduler-svc :3100 / executor-svc :3200 |
 | 4 | 路由准确 | 文档描述的路由与实际代码路由定义对比 | 所有路由与代码一致 |
@@ -554,7 +558,7 @@ alliance 域支持 **6 种融合策略**，文档中描述融合策略时必须�
 
 | 等级 | 标记 | 定义 | 示例 | 修复时限 | 责任人 |
 |------|:----:|------|------|---------|--------|
-| 架构级错误 | 🔴 | 文档描述的架构与代码存在根本性不一致，导致读者无法正确理解系统结构 | 描述为"7服务架构"但实际为2 svc；描述为"15 crate"但实际为11 crate；描述不存在的 crate 或端口 | **24小时** | 开发联盟 R |
+| 架构级错误 | 🔴 | 文档描述的架构与代码存在根本性不一致，导致读者无法正确理解系统结构 | 描述为"7服务架构"但实际为2 svc；描述为"11 crate/15 crate"但实际为13 crate；描述不存在的 crate 或端口 | **24小时** | 开发联盟 R |
 | 细节错误 | 🟡 | 文档描述的细节与代码不一致，但不影响整体架构理解 | 路由路径拼写错误；HTTP 方法错误；专家名称错别字；融合策略英文标识大小写错误 | **72小时** | 文档主责人 |
 | 术语不统一 | 🟢 | 术语使用与 `docs/GLOSSARY.md` 不一致，但不影响理解 | "专家联盟"与"专家系统"混用；英文缩写大小写不一致 | **随版本修复** | 文档治理专家 |
 
@@ -819,7 +823,7 @@ alliance 域支持 **6 种融合策略**，文档中描述融合策略时必须�
 |------|------|
 | **表现** | 文档中描述已不存在的旧架构，如"7服务架构"、"31微服务"、"15 crate扁平模型"、`platform/domains/ai-agent` 等旧路径 |
 | **危害** | 新人按文档找不到代码；文档-代码全面分裂；违反"代码是唯一事实源"原则 |
-| **正确做法** | 文档中所有架构描述必须与 `platform/domains/alliance/` 真实代码一致（11 crate、2 svc、:3100/:3200）；发布前必须通过 §6.6 代码对齐校验清单；发现过时描述按 🔴架构级错误24h内修复 |
+| **正确做法** | 文档中所有架构描述必须与 `platform/domains/alliance/` 真实代码一致（13 crate、2 svc、:3100/:3200）；发布前必须通过 §6.6 代码对齐校验清单；发现过时描述按 🔴架构级错误24h内修复 |
 
 ### AP-04 使用 ../ 或裸名引用
 
@@ -922,13 +926,13 @@ alliance 域支持 **6 种融合策略**，文档中描述融合策略时必须�
 
 | 序号 | 检查项 | 验收标准 | 结果 |
 |:----:|--------|---------|:----:|
-| 1 | crate 数量 | 文档描述为 11 crate（proto×3/core×4/svc×2/sdk×1/api×1） | ☐ |
+| 1 | crate 数量 | 文档描述为 13 crate（proto×3/core×5/svc×2/sdk×2/api×1） | ☐ |
 | 2 | svc 数量 | 文档描述为 2 个 svc（scheduler-svc / executor-svc） | ☐ |
 | 3 | 端口准确 | scheduler-svc :3100 / executor-svc :3200 | ☐ |
 | 4 | 路由准确 | 所有路由描述与代码一致 | ☐ |
 | 5 | HTTP 方法准确 | 所有 HTTP 方法描述与代码一致 | ☐ |
 | 6 | 专家数量 | 文档描述为 10 个内置专家 | ☐ |
-| 7 | 专家 ID/名称准确 | 所有专家 ID（expert-01~10）和名称与代码一致 | ☐ |
+| 7 | 专家 ID/名称准确 | 所有专家 module_id（expert-code/math/.../arch）和名称与代码一致 | ☐ |
 | 8 | 融合策略数量 | 文档描述为 6 种融合策略 | ☐ |
 | 9 | 融合策略名称准确 | 所有融合策略名称和英文标识与代码一致 | ☐ |
 | 10 | 无过时架构描述 | 0 处"7服务"、"31微服务"、"15 crate"等旧架构描述 | ☐ |
@@ -1080,7 +1084,7 @@ docs/expert-alliance/
 | 第3章 文档分层与权威分级 | DOC-GOV-V1.0 §2.4 权威分级与锚点 | 本规范在通用四级权威分级基础上，增加6层文档分层模型（L1~L6）和元信息块模板；权威链规则细化专家联盟域的裁决优先级 |
 | 第4章 引用规则 | DOC-GOV-V1.0 §2.3 引用规则 | 本规范在通用仓根相对路径规则基础上，增加锚点生成规则、跨目录引用格式、引用审计触发条件和审计内容；禁止形式与 DOC-GOV-V1.0 一致 |
 | 第5章 术语单源管理 | DOC-GOV-V1.0 §2.4（术语须配 glossary）、FIX-14 | 本规范细化术语登记要求（5字段）、使用规则（首次链接、后续一致）、变更流程（6步）；术语唯一事实源与 DOC-GOV-V1.0 一致为 `docs/GLOSSARY.md` |
-| 第6章 文档-代码对齐要求 | DOC-GOV-V1.0 F2（索引路径与物理位置错位）、28号报告 §2.3（三重分裂） | **本规范新增核心章节**：DOC-GOV-V1.0 仅识别文档-代码分裂问题，本规范定义具体的对齐原则、alliance 域11 crate权威描述、服务端点/专家/融合策略规范、对齐校验清单、错位分级与修复时限 |
+| 第6章 文档-代码对齐要求 | DOC-GOV-V1.0 F2（索引路径与物理位置错位）、28号报告 §2.3（三重分裂） | **本规范新增核心章节**：DOC-GOV-V1.0 仅识别文档-代码分裂问题，本规范定义具体的对齐原则、alliance 域13 crate权威描述、服务端点/专家/融合策略规范、对齐校验清单、错位分级与修复时限 |
 | 第7章 归一化处理流程 | mox-expert-alliance-processing-mode.md 5步法 | 本规范将代码开发5步法（Locate→Audit→Compare&Decide→Implement→Verify）升级为文档归一化专用流程，每步定义输入/输出/检查点/验收标准 |
 | 第8章 反模式清单 | mox-expert-alliance-processing-mode.md §三 反模式清单 | 本规范将代码开发反模式升级为文档归一化反模式，新增10条文档治理专项反模式（多版本并存、索引不符、过时架构、引用不合规等） |
 | 第9章 验收模板 | mox-expert-alliance-processing-mode.md §四 验收文档模板 | 本规范将代码验收模板升级为文档归一化验收模板，包含7大类检查项（元信息、引用、代码对齐、索引、术语、归档、流程完成度） |

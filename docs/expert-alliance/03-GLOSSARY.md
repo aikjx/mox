@@ -94,9 +94,9 @@
 |------|------|
 | **中文名（标准）** | 专家联盟 |
 | **英文名/缩写** | Expert Alliance（缩写 EA） |
-| **定义** | 三联盟模式中负责"做不做得稳（工程落地&部署&稳定性）"的组织治理角色，与产品联盟（PA）、算法联盟（AA）并列。在技术实现层面，专家联盟指 `platform/domains/alliance/` 域的Rust实现（11 crate、2 svc、10内置专家、6融合策略），以及Node.js层的专家联盟引擎（`expert-alliance-engine.js`）。 |
+| **定义** | 三联盟模式中负责"做不做得稳（工程落地&部署&稳定性）"的组织治理角色，与产品联盟（PA）、算法联盟（AA）并列。在技术实现层面，专家联盟指 `platform/domains/alliance/` 域的Rust实现（13 crate、2 svc、10内置领域专家、6大trait融合策略），以及Node.js层的专家联盟引擎（`expert-alliance-engine.js`）。 |
 | **别名清单（4种）** | ①开发专家联盟（企业级文档编号体系中的称谓，如"26-开发专家联盟-..."） ②专家联盟（标准简称，大部分文档使用） ③Expert Alliance（英文正式名） ④MOX Alliance（修复报告中使用的英文变体，为Mox+Alliance的组合） |
-| **代码对应** | **Rust alliance域**：`platform/domains/alliance/`（11 crate）<br/>**Node.js层**：`platform/backend-node/src/expert-alliance.js`、`expert-alliance-engine.js`、`expert-dispatcher.js`、`expert-graph.js` |
+| **代码对应** | **Rust alliance域**：`platform/domains/alliance/`（13 crate）<br/>**Node.js层**：`platform/backend-node/src/expert-alliance.js`、`expert-alliance-engine.js`、`expert-dispatcher.js`、`expert-graph.js` |
 | **首次出现文档** | `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`（TOP-MASTER） |
 | **使用规则** | ①标准简称为"专家联盟"；②"开发专家联盟"仅在企业级文档编号体系中使用（如26号文档标题），正文叙述统一用"专家联盟"；③英文正式名为"Expert Alliance"，缩写"EA"；④"MOX Alliance"为非标准变体，禁止在新文档中使用，已有文档保留原样；⑤禁止与"算法联盟"（Algorithm Alliance）或"产品联盟"（Product Alliance）混淆。 |
 
@@ -110,7 +110,7 @@
 |------|------|
 | **中文名** | alliance 域 |
 | **英文名/缩写** | alliance Domain |
-| **定义** | `platform/domains/alliance/` 下的 Rust 代码域，采用11 crate DDD分层结构（proto×3 / core×4 / svc×2 / sdk×1 / api×1），承载专家联盟的调度与执行能力。是专家联盟当前活跃开发的实现层。 |
+| **定义** | `platform/domains/alliance/` 下的 Rust 代码域，采用13 crate DDD分层结构（proto×3 / core×5 / svc×2 / sdk×2 / api×1），承载专家联盟的调度与执行能力。是专家联盟当前活跃开发的实现层。 |
 | **代码对应** | `platform/domains/alliance/` |
 | **首次出现文档** | `docs/standards/expert-alliance-normalization-mode.md` §6.2 |
 

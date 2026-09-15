@@ -1,6 +1,7 @@
 # MOX 模块化模式智能分析（MODULARITY）
 
-> 数据基准日：2026-09-07（注册表 223 条 · 43 域 · ready 12/beta 1/stub 30）
+> 数据基准日：2026-09-13（注册表 223 条 · 46 域 · 全部 ready / 0 stub / 0 beta）
+> 注：2026-09-07 曾为"43 域 · ready 12/beta 1/stub 30"，经 `2cd3cc8a` 域归一化后全部 ready。
 > 配套：`docs/API-REGISTRY.md`（接口↔实现）、`docs/ROADMAP-DOMAINS.md`（域排产）、
 > `docs/architecture/BUSINESS-FLOWS.md`（业务处理流程）。本文档回答"模块化模式是否最优、如何全维调整"。
 

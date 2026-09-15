@@ -1,15 +1,17 @@
 # MOX 域路线图（Domain Roadmap）
 
-> 权威状态基准：`platform/gateway/mox-platform-gateway-svc/src/routes.rs` 的 43 域描述符 + `docs/API-REGISTRY.md`（199 条路由）。
-> 本文档回答：**35 个 stub 域按什么顺序、以什么路径、达到什么标准落地**。与注册表一一对应，不做模糊承诺。
+> 权威状态基准：`platform/gateway/mox-platform-gateway-svc/src/routes.rs` 的 46 域描述符 + `src/actuator.rs` 的 `ROUTES` 注册表（223 条路由）。
+> 本文档回答：**各域按什么顺序、以什么路径、达到什么标准落地**。与注册表一一对应，不做模糊承诺。
+>
+> > **📌 状态变更（2026-09-13 核对代码）**：经提交 `2cd3cc8a refactor(domain): 46 域全部归一化为 ready，0 stub 0 beta`，下方"五阶段排产"表中所列 stub 域现已全部落地为 ready。该排产表保留为**历史路线图**，用于说明落地顺序与决策依据，不再代表当前未完成工作。当前真实状态以 `/actuator/mappings`（223 条路由全量 ready）与 `routes.rs` 的 `DOMAINS`（46 域）为准。
 
-## 1. 现状总览（43 域）
+## 1. 现状总览（46 域）
 
-| 状态 | 数量 | 域 |
+| 状态 | 数量 | 说明 |
 | --- | --- | --- |
-| ready（有真实路由+handler） | 7 | Health · Metrics · KG · KB · AIEngine · Alliance · Expert |
-| beta（可用但依赖外部进程） | 1 | IAM（依赖编排器 :3001） |
-| **stub（仅规划声明）** | **35** | 见下表 |
+| ready（有真实路由+handler，SQLite/进程内真实 CRUD 或桥接真实上游） | **46** | 全部域已落地；路由前缀矩阵见 `routes.rs`，逐路由见 `/actuator/mappings` |
+| beta（可用但依赖外部进程） | 0 | — |
+| stub（仅规划声明） | 0 | — |
 
 ## 2. 35 个 stub 域排产总表
 
@@ -87,4 +89,5 @@
 | --- | --- |
 | 2026-09-07 | 初版：35 stub 域按"对接现有能力→治理→编排→数据→商业化"五阶段排产，落地门禁与验收标准一一对应 |
 | 2026-09-07 | **Phase 0 首批落地**：RBAC（`/rbac/v1/*`，IAM 真实仓储）、Graph（`/graph/v1/*`，与 kg 同源算法）、Voice（`/voice/v1/*`，桥接 melody2score :8012）三域共 9 条路由全部实测 200，描述符 stub→ready（43 域：ready 10 / beta 1 / stub 32） |
+| 2026-09-13 | 代码核对：提交 `2cd3cc8a` 已将全部域归一化为 ready（46 域 / 223 路由 / 0 stub / 0 beta）。本文档"五阶段排产"转为历史路线图，现状总览已对齐代码事实。编译门禁 `cargo check`+`clippy`+`verify-ports.py` 全绿（ERROR=0） |
 

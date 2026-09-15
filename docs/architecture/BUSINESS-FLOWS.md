@@ -1,7 +1,7 @@
 # MOX 全架构业务处理流程（BUSINESS FLOWS）
 
 > 数据基准日：2026-09-07（提交 a609bdc0 + 53986b18 之后，注册表 223 条）
-> 本文档与 `docs/API-REGISTRY.md`（222 条接口↔实现映射）、`docs/ROADMAP-DOMAINS.md`（43 域排产）互为配套：
+> 本文档与 `docs/API-REGISTRY.md`（223 条接口↔实现映射）、`docs/ROADMAP-DOMAINS.md`（46 域，已全部 ready）互为配套：
 > 注册表回答"有什么"，路线图回答"何时做"，本文档回答"请求怎么走"。
 
 ## 0. 总览：唯一入口 + 分层处理
@@ -38,7 +38,7 @@
 | --- | --- | --- |
 | `GET /health` | 进程存活探针 → 200 `{"status":"ok"}` | 静态 |
 | `GET /api/v1/status` | GatewayState 聚合 → 域状态/注册表/服务矩阵 | runtime + actuator ROUTES |
-| `GET /api/v1/domains` | 遍历 43 域描述符 → 分层分组 JSON | routes.rs 描述符 |
+| `GET /api/v1/domains` | 遍历 46 域描述符 → 分层分组 JSON | routes.rs 描述符 |
 | `GET /metrics` | Prometheus 文本格式指标（QPS/延迟/活跃请求） | metrics 采集器 |
 
 ## 2. Actuator 管理面（L0 · 强制鉴权）

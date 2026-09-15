@@ -70,7 +70,7 @@ actuator ROUTES 为单一权威源，`scripts/gen-api-registry.py` 自动生成 
 | **语音转谱** | ready | 10 接口：桥接 melody2score:8012，音频识别/简谱/歌谱/下载 |
 | **RBAC 治理** | ready | 3 接口：角色/权限/当前用户，IAM SQLite 真实仓储 |
 
-**就绪率**：12 ready / 1 beta / 30 stub（stub 域如实标注，不虚标）。
+**就绪率**：46 ready / 0 beta / 0 stub（2026-09-13 核对；此前 2026-09-07 为 12 ready/1 beta/30 stub，经域归一化全部 ready）。
 
 ---
 

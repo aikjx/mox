@@ -142,6 +142,23 @@ v3 保持 v2 的核心设计不变：
 
 ---
 
+## ⚠️ 设计 vs 当前落地差异（2026-09-13 代码核对）
+
+> 本文档为 **v3 架构目标态**。当前代码已落地务实子集，下表为设计与实现的差异，阅读"快速开始 / API / 端口"前请先对照，避免照设计示例调不通。
+
+| 维度 | v3 设计目标态 | 当前落地（代码事实） |
+|------|--------------|---------------------|
+| 服务拆分 | 7 服务：scheduler / executor / fusion / registry / agent / memory / gateway | **2 独立服务**：scheduler-svc:3100、executor-svc:3200；fusion/registry/agent/memory 内联在网关 experts_*.rs 7 模块，共享 ExpertsSharedState |
+| 对外 REST 前缀 | /api/v1/expert/tasks、/ws/v1/expert/tasks/... | 实际为 **/api/experts/*（49 接口）+ /api/alliance/*（20 接口）**；WebSocket 走 /ws/v1/* |
+| 内部通信 | gRPC :50051（gateway-grpc） | 网关进程内直调；gRPC :50051 仅 framework/dualrpc 基础设施保留 |
+| 存储 | PostgreSQL + Redis + pgvector | **SQLite（IamRepository）+ JSON 文件持久化**；图谱/记忆为进程内结构 |
+| 协议 | gRPC / JSON-RPC / MCP / REST / WebSocket 五协议 | REST + SSE/WebSocket 为主；JSON-RPC/MCP 转码未单独落地 |
+| 已落地核心能力 | 见 §FR-001~042 | 多轮辩论引擎、协作计划/DAG 执行、专家匹配评分、失败重试/降级、任务智能问答、WebSocket 进度推送均已在网关侧实现并随 experts_* 路由可测 |
+
+> 结论：v3 是演进目标，**不是当前交付清单**。当前可工作接口以 GET /actuator/mappings（223 条全量 ready）与 docs/API-REGISTRY.md 为准。
+
+---
+
 ## 快速开始
 
 ### REST API

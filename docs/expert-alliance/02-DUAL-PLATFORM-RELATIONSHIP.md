@@ -170,7 +170,7 @@
 | 文档 | 路径 | 引用内容 |
 |------|------|---------|
 | 盘点报告 §5 裁决组C3 | `docs/working-reports/expert-alliance-doc-inventory-20260831.md` | 双平台并存裁决 |
-| 代码对齐报告 | `docs/working-reports/expert-alliance-code-alignment-20260831.md` | Rust alliance域11 crate代码事实 |
+| 代码对齐报告 | `docs/working-reports/expert-alliance-code-alignment-20260831.md` | Rust alliance域代码事实（该报告成稿时11 crate；2026-09-13 复测为13 crate） |
 | 集成对齐分析报告 | `docs/modules/专家联盟V2.0-集成对齐分析报告.md` | Node层专家联盟模块映射 |
 | 业务流程图第九章 | `docs/modules/business-process-flowcharts.md` | Node平台层23业务域总览 |
 | 归一化规范 | `docs/standards/expert-alliance-normalization-mode.md` | 文档-代码对齐要求 |

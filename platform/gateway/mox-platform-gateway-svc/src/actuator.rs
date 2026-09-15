@@ -441,7 +441,7 @@ pub static ROUTES: [ApiRoute; 223] = [
     r("platform.health", "GET", "/health", "L0", "platform", "ready", "存活探针（网关 Rust axum 版本）"),
     r("platform.metrics", "GET", "/metrics", "L0", "platform", "ready", "Prometheus 指标端点（o11y.rs 真实采集）"),
     r("platform.status", "GET", "/api/v1/status", "L0", "platform", "ready", "网关状态（域就绪统计+认证+限流）"),
-    r("platform.domains", "GET", "/api/v1/domains", "L0", "platform", "ready", "43 业务域描述符列表（自描述）"),
+    r("platform.domains", "GET", "/api/v1/domains", "L0", "platform", "ready", "46 业务域描述符列表（自描述）"),
     r("platform.proxy_orchestrator", "ANY", "/api/{*path}", "L6", "platform", "ready", "业务域反向代理→编排器（默认 :3001，catch-all）"),
     r("platform.proxy_primiflow", "ANY", "/api/projects/{*path}", "L6", "platform", "ready", "项目域反向代理→PrimiFlow（默认 :8000）"),
 

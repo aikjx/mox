@@ -3,7 +3,7 @@
 
 
 > **标题**：开发专家联盟·权威集成索引
-> **版本**：V2.6
+> **版本**：V2.7
 > **权威等级**：🟢权威
 > **编号**：EA-DOC-001
 > **文档层级**：L1权威规范层
@@ -239,7 +239,7 @@
 
 | 子系统 | 技术栈 | 端口 | 专家数量 | 代码路径 | 权威文档 | 关系说明 |
 |--------|--------|:----:|:--------:|---------|---------|---------|
-| **Rust alliance域** | Rust (Axum) | :3100 / :3200 | **10个**内置领域专家 | `platform/domains/alliance/`（11 crate） | 修复报告、评审报告、EA-NORM-001§6 | 当前活跃开发的新架构，专家联盟核心实现 |
+| **Rust alliance域** | Rust (Axum) | :3100 / :3200 | **10个**内置领域专家 | `platform/domains/alliance/`（13 crate） | 修复报告、评审报告、EA-NORM-001§6 | 当前活跃开发的新架构，专家联盟核心实现 |
 | **Rust mox-expert域** | Rust | — | **7位**专家 | `platform/domains/mox-expert/`（或`platform/services/mox-expert/`） | mox-expert-product.md、mox-expert-normalization.md | 融合优化引擎，与alliance域并列，XOPT 8步管线 |
 | **Node.js平台层** | Node.js (Express) | :3010 | **15位**默认专家 | `platform/backend-node/`（23个业务域） | business-process-flowcharts.md第九章、集成对齐报告 | 较早实现，包含专家联盟、AI引擎、知识图谱等，与Rust层并存 |
 
@@ -270,11 +270,11 @@
 
 | 维度 | 实际值 | 说明 |
 |------|--------|------|
-| **crate结构** | 11 crate（proto×3 / core×4 / svc×2 / sdk×1 / api×1） | `platform/domains/alliance/` |
+| **crate结构** | 13 crate（proto×3 / core×5 / svc×2 / sdk×2 / api×1） | `platform/domains/alliance/`（2026-09-13 实测：core 含 boot-config 共5个，sdk 含 http-sdk 共2个） |
 | **服务数量** | 2个svc（scheduler-svc / executor-svc） | 非"7服务"或"31微服务" |
 | **端口** | scheduler-svc **:3100** / executor-svc **:3200** | 非8701/8702（代码对齐报告中的错误值已修正） |
-| **内置专家** | **10个**（expert-01~10） | 非"15+"或"16种"（那些是目标设计/扩展设计） |
-| **融合策略** | **6种**（weighted-average / voting / rrf / consensus / cascade / debate-convergence） | 已贯通到DAG执行引擎 |
+| **内置专家** | **10个**（语义化 ID：expert-code / math / medical / law / finance / creative / vision / translation / research / arch） | 非"15+"或"16种"（那些是目标设计/扩展设计）；专家配置已外部化为 `config/alliance-experts.yml`（boot-config 覆盖式合并） |
+| **融合策略** | **6大 trait 策略**（weighted_voting / confidence_weighting / stacking / debate / map_reduce / iterative_refinement）+ 6 个基础函数（rrf / weighted / voting / best_of / concatenate / merge_json） | 代码事实见 `mox-alliance-core/src/fusion/strategies/`；RRF 为基础函数之一；旧清单"weighted-average/voting/rrf/consensus/cascade/debate-convergence"已作废（无 consensus/cascade/debate-convergence 实现） |
 | **数据存储** | 内存 + 文件快照（`data/alliance_tasks.json`） | 非PostgreSQL+Redis+Kafka+MinIO（那些是v2目标设计） |
 | **安全机制** | 租户头 `X-Tenant-Id` | 非OAuth2.0+JWT（v2目标设计） |
 | **部署方式** | 无容器化部署配置 | 非K8s+Helm+Istio（architecture/ HTML为目标部署架构） |
@@ -335,8 +335,8 @@
 
 ## 12. 最后验证
 
-- **索引最后验证日期**：2026-09-03
-- **验证人**：开发联盟 R（moxfs 阶段六mox 模块化系统架构性能优化与稳定性加固）
+- **索引最后验证日期**：2026-09-13
+- **验证人**：开发联盟 R（DOC-EP-038 复跑 + alliance 域 cargo test 实测）
 - **验证范围**：全部66份专家联盟主题文档（含归档3份）
 - **验证结果**：
   - ✅ 索引登记文档数 = 物理文件数（66份）
@@ -356,6 +356,9 @@
   - ✅ 新增moxfs阶段六验证报告已登记（VR-MOXFS-P6-20260903，全量1024测试1023通过+1 ignored 0失败，clippy零warning，6项验证全通过）
   - ✅ 新增moxfs阶段六mox 模块化系统架构性能优化报告已登记（PERF-MOXFS-P6-20260903，4项优化完成，Backpressure核心场景3.8x-6.0x加速，5criterion基准全可运行）
   - ✅ 新增moxfs阶段六稳定性加固报告已登记（STAB-MOXFS-P6-20260903，3flaky修复连续3轮零flaky，multi_writer 23+hedged_reader 19基准点补齐）
+  - ✅ 2026-09-13 复跑 `scripts/verify-doc-ep038.py`：D1~D8 + E1~E7 共 20 项全 PASS、0 FAIL（系统管理 E6「系统管理/审计/通知」三证据齐备）
+  - ✅ 2026-09-13 alliance 域 `cargo test` 全量实测：13 crate 约 300 测试通过、0 失败（7 个 ignored 为需本机 Nacos 的 e2e，属环境依赖）；修正过期单测 `build_consult_query_includes_expert_id`（实现已改为「描述非空时 query 取描述、不重复拼节点名」）
+  - ✅ 2026-09-13 代码事实漂移修正：crate 数 11→13、融合策略清单按 `fusion/strategies/` 实际 6 大 trait 策略重列、内置专家改为语义化 module_id
 
 ---
 
@@ -373,8 +376,9 @@
 | V2.4 | 2026-09-03 | 新增登记：moxfs阶段四架构解耦设计文档（ADR-MOXFS-P4-20260903）+ 阶段四验证报告（VR-MOXFS-P4-20260903）；项目主体统一为moxfs全自研云盘知识库，RustFS仅为对标参考对象；7项架构解耦改造完成（mox-cloud-kernel crate抽离10个L5算法模块/mox-cloud-domain-traits crate定义5大trait+36关联类型/s3→volume解耦+StorageBackend依赖注入/RustFsEcstoreBackend骨架+feature flag/CloudError统一错误类型15变体/PooledBuffer推广s3-filer/ReaderPipeline接入S3读路径），全量回归1139测试全绿（467 lib+672集成）0失败 | 开发联盟 R |
 | V2.5 | 2026-09-03 | 新增登记：moxfs阶段五全部交付物（5份文档）——mox 模块化系统架构维度测试覆盖率报告（COV-MOXFS-P5-20260903，行覆盖率82.99%→94.39%，5核心算法模块全部≥95%）、全链路端到端测试报告（E2E-MOXFS-P5-20260903，24 e2e测试全绿，5条全链路场景）、性能基准与优化报告（PERF-MOXFS-P5-20260903，criterion套件5文件约131基准点编译通过，RustFS对标+Top5瓶颈+6项优化建议，⚠️基线数据因沙箱基础设施崩溃待采集）、企业级质量审计报告（QA-MOXFS-P5-20260903，7 crate clippy 0 warning 0 error，unsafe 27处100%安全注释+测试覆盖，panic 81处0新增，依赖全MIT/Apache-2.0无高危）、阶段五验证报告（VR-MOXFS-P5-20260903，全量回归1188测试全绿0失败，10项关键验证全通过）；文档总数58→63，活跃文档55→60 | 开发联盟 R |
 | V2.6 | 2026-09-03 | 新增登记：moxfs阶段六全部交付物（3份文档）——阶段六验证报告（VR-MOXFS-P6-20260903，全量1024测试1023通过+1 ignored 0失败，clippy 7云盘crate零warning，6项验证全通过）、mox 模块化系统架构性能优化报告（PERF-MOXFS-P6-20260903，4项优化完成：BufferPool分片锁替换parking_lot::Mutex/Backpressure fetch_add+缓存行对齐+thread-local批处理核心场景3.8x-6.0x加速/MultiWriter-HedgedReader消除6处Arc::clone/ReedSolomon矩阵缓存LRU上限1024，Future对象池经评估不建议实施，5criterion基准全可运行数据已采集）、稳定性加固报告（STAB-MOXFS-P6-20260903，3个flaky测试修复：t22 SIMD门控改#[ignore]/filer环境变量竞态加模块级Mutex/backpressure并发压力thread-local计数器残留，连续3轮零flaky确认，multi_writer 23基准点+hedged_reader 19基准点补齐）；文档总数63→66，活跃文档60→63 | 开发联盟 R |
+| V2.7 | 2026-09-13 | 实测复跑：`verify-doc-ep038.py` 20 项全 PASS；alliance 域 `cargo test` 13 crate 约 300 测试 0 失败。修正 §7/§9 代码事实漂移：crate 数 11→13（proto×3/core×5/svc×2/sdk×2/api×1）；融合策略由旧清单（weighted-average/voting/rrf/consensus/cascade/debate-convergence）更正为实际 6 大 trait 策略（weighted_voting/confidence_weighting/stacking/debate/map_reduce/iterative_refinement）+ 6 基础函数；内置专家由 "expert-01~10" 更正为语义化 module_id（code/math/medical/law/finance/creative/vision/translation/research/arch），并登记专家配置 yml 外部化；修正过期单测 build_consult_query_includes_expert_id | 开发联盟 R |
 
 ---
 
 **版权所有**：© 2026 璇玑 RelGraph · 算子统一系统（OUS）· 三联盟
-**文档版本**：V2.6 ｜ **发布日期**：2026-09-03
+**文档版本**：V2.7 ｜ **发布日期**：2026-09-13

@@ -843,8 +843,15 @@ mod tests {
         let query = executor.build_consult_query(&request);
         assert_eq!(query.ctx.get("prefer_expert").unwrap(), "security");
         assert_eq!(query.ctx.get("tenant").unwrap(), "tenant-1");
-        assert!(query.query.contains("安全审查"));
+        // 描述非空时：query 直接采用节点描述（调度器已含专家名/角色说明），不重复拼接节点名
+        assert_eq!(query.query, "检查 PII 数据泄露风险");
         assert!(query.query.contains("PII"));
+
+        // 描述为空时：回退使用节点名作为查询内容
+        let mut fallback_req = request.clone();
+        fallback_req.node.description = None;
+        let fallback_query = executor.build_consult_query(&fallback_req);
+        assert_eq!(fallback_query.query, "安全审查");
     }
 
     // ---- 成功执行测试 ----

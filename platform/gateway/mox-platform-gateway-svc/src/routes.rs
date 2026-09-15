@@ -10,7 +10,7 @@
 //! `serve_axum_gateway()` 及 KG/AI stub 路由器已移除——主入口为
 //! `lib.rs::build_gateway_router(state)`，真实域路由由各 service-svc 提供。
 //!
-//! 31 业务域路由前缀矩阵（可挂接）：
+//! 46 业务域路由前缀矩阵（可挂接）：
 //! ```text
 //!   L0 接入通用:  /health  /metrics  /ready  /api/v1/openapi.json
 //!   L1 IAM 域:    /iam/v1/*  /auth/v1/*  /tenant/v1/*  /rbac/v1/*

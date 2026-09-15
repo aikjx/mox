@@ -151,7 +151,7 @@ ALLOWED_LEGACY_REFS = {
 
 # 噪声上下文（毫秒/UID/采样率/ISO 编号/netstat 样本等，非端口）
 NOISE_CTX = re.compile(
-    r"setTimeout|timeout\?|sampleRate|uptime_ms|USER\s+\d+:\d+|ISO/IEC|returncode|"
+    r"setTimeout|timeout\?|sampleRate|sample_?rate|['\"]?sr['\"]?\s*[:=]|uptime_ms|USER\s+\d+:\d+|ISO/IEC|returncode|"
     r"ESTABLISHED|LISTENING\s+\(|time\.time\(\)|trace_id|app_key|GRPCPort|ms_uptime|"
     r"status:|\bstatus=\"|\[\s*:\d{2,5}\s*\]|"
     r"[A-Za-z][\w.-]*\.(vue|rs|ts|tsx|js|jsx|py|java|go|c|h|cpp|hpp|rb|php|kt|swift):\d{3,5}", re.I
