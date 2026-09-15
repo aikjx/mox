@@ -19,7 +19,9 @@ use mox_alliance_api::dto::{
     CreateTaskResponse, TaskAction, TaskActionRequest, TaskDetailResponse, TaskListResponse,
 };
 use mox_alliance_common_proto::{AllianceError, AllianceResult, CollaborationPlan, Node, Task};
-use mox_alliance_executor_proto::{DagEngine, ExecutionOptions, ExecutionStatus, ExecutorConfig};
+use mox_alliance_executor_proto::{
+    DagEngine, ExecutionOptions, ExecutionStatus, ExecutorConfig, FusionOutput,
+};
 use mox_alliance_scheduler_core::InMemoryTaskRepository;
 use mox_alliance_scheduler_proto::types::SchedulerConfig;
 use mox_alliance_scheduler_svc::{SchedulerMode, SchedulerServer};
@@ -92,6 +94,13 @@ impl DagEngine for StubEngine {
         _reason: Option<String>,
     ) -> AllianceResult<()> {
         Ok(())
+    }
+    async fn get_fusion_output(
+        &self,
+        _task_id: Uuid,
+        _tenant_id: Uuid,
+    ) -> AllianceResult<Option<FusionOutput>> {
+        Ok(None)
     }
     fn config(&self) -> &ExecutorConfig {
         &self.config

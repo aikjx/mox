@@ -66,3 +66,19 @@ export INCLUDE="C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/V
   敏感域关键字：citizen_/pii/id_card/phone/bank_card；生产环境前缀：prod/production/main。
 - FlowGraph 类型从 `mox_ai_flow_svc::model::*` 取（`mox_ai_flow_svc` re-exports
   `mox_ai_flow_core::*`），使用 `FlowNode::task` / `with_access` / `with_tag` 构造。
+
+### 联盟域接口契约要点（第 13 轮对账后确立）
+
+- 四套契约与实现、HTTP 端点一一对应：`TaskScheduler`(9) / `DagEngine`(9) /
+  `ExpertMatcher`(4) / `ExecutorBridge`(6)。pause/cancel/resume 经 ExecutorBridge
+  转发 executor-svc，链路闭合。scheduler 3100 / executor 3200。
+- **给 trait 补方法时，若返回类型定义在实现层，必须先把类型下沉到协议层**，
+  否则协议层无法声明该方法。已按此把 `FusionOutput` 下沉到 `mox-alliance-executor-proto`
+  并纳入 `DagEngine::get_fusion_output`。
+- Rust 陷阱：私有模块里的 `pub use X` 对 crate 外仍算 "private import"（E0603），
+  转出类型要在 crate 根 `lib.rs` 直接 `pub use proto::X`。
+- **未接线（已标注，待决策，勿新增生产依赖）**：`scheduler-core/src/dag_engine.rs`
+  (981行) + `fusion.rs`(809行) 是一套零调用的平行实现，与 executor-core 同名能力重叠；
+  生产链路一律走 `ExecutorBridge` 委派 executor-svc。
+- 两个同名 `FusionOutput` 不可混用：`executor_proto::FusionOutput`（权威，Serialize）
+  vs `scheduler_core::fusion::FusionOutput`（孤儿，无 Serialize）。

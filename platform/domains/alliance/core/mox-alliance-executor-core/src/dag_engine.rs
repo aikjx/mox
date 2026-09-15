@@ -23,7 +23,7 @@ use mox_alliance_common_proto::{
     TaskStatus,
 };
 use mox_alliance_executor_proto::{
-    DagEngine, ExecutionOptions, ExecutionStatus, NodeExecutor, NodeExecutionRequest,
+    DagEngine, ExecutionOptions, ExecutionStatus, FusionOutput, NodeExecutor, NodeExecutionRequest,
     NodeExecutionResult,
 };
 use mox_alliance_core::dag;
@@ -34,7 +34,7 @@ use uuid::Uuid;
 
 use mox_alliance_executor_proto::types::ExecutorConfig;
 
-use crate::fusion::{FusionEngine, FusionInput, FusionItem, FusionOutput};
+use crate::fusion::{FusionEngine, FusionInput, FusionItem};
 
 /// 任务执行状态（内部完整状态）
 pub(crate) struct TaskExecutionState {
@@ -441,24 +441,6 @@ impl DagEngineImpl {
         }
     }
 
-    /// 获取任务的融合结果（DAG 尾部融合产出；未完成/无结果返回 Ok(None)）
-    pub fn get_fusion_output(
-        &self,
-        task_id: Uuid,
-        tenant_id: Uuid,
-    ) -> AllianceResult<Option<FusionOutput>> {
-        let states = self.states.read();
-        let state = states
-            .get(&task_id)
-            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
-        if state.task.tenant_id != tenant_id {
-            return Err(AllianceError::new(
-                AllianceErrorCode::TenantMismatch,
-                "Task does not belong to this tenant",
-            ));
-        }
-        Ok(state.fusion_output.clone())
-    }
 }
 
 #[async_trait]
@@ -658,6 +640,25 @@ impl DagEngine for DagEngineImpl {
             })?;
 
         Ok(())
+    }
+
+    /// 获取任务的融合结果（DAG 尾部融合产出；未完成/无结果返回 Ok(None)）
+    async fn get_fusion_output(
+        &self,
+        task_id: Uuid,
+        tenant_id: Uuid,
+    ) -> AllianceResult<Option<FusionOutput>> {
+        let states = self.states.read();
+        let state = states
+            .get(&task_id)
+            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
+        if state.task.tenant_id != tenant_id {
+            return Err(AllianceError::new(
+                AllianceErrorCode::TenantMismatch,
+                "Task does not belong to this tenant",
+            ));
+        }
+        Ok(state.fusion_output.clone())
     }
 
     fn config(&self) -> &ExecutorConfig {

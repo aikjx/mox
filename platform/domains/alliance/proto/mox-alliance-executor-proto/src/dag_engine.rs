@@ -31,6 +31,28 @@ impl Default for ExecutionOptions {
     }
 }
 
+/// 融合输出
+///
+/// 定义在协议层而非执行器核心，原因：
+/// `get_fusion_output` 是 `DagEngine` 契约的一部分，返回类型必须比实现层更"低"，
+/// 否则 `Arc<dyn DagEngine>` 调用方（进程内桥接、 mocked 引擎）无法取得融合结论，
+/// 迫使上层依赖具体类型 `DagEngineImpl`，破坏 DIP。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FusionOutput {
+    /// 融合后的结构化内容（策略相关）
+    pub content: serde_json::Value,
+    /// 融合置信度 0.0 ~ 1.0
+    pub confidence: f64,
+    /// 参与融合的专家数量
+    pub expert_count: usize,
+    /// 使用的融合策略
+    pub strategy: mox_alliance_common_proto::FusionStrategy,
+    /// 各专家的贡献度（归一化权重）
+    pub contributions: std::collections::HashMap<String, f64>,
+    /// 融合摘要说明
+    pub summary: String,
+}
+
 /// DAG 执行引擎 trait
 ///
 /// 负责执行协作计划（DAG），管理节点调度、依赖解析、状态追踪。
@@ -65,6 +87,16 @@ pub trait DagEngine: Send + Sync {
 
     /// 跳过某个节点（人工干预）
     async fn skip_node(&self, task_id: Uuid, node_id: &str, tenant_id: Uuid, reason: Option<String>) -> AllianceResult<()>;
+
+    /// 获取 DAG 尾部融合结论
+    ///
+    /// - 任务未开始 / 尚未产出融合结论 → `Ok(None)`
+    /// - 任务不存在或租户不匹配 → 对应错误
+    async fn get_fusion_output(
+        &self,
+        task_id: Uuid,
+        tenant_id: Uuid,
+    ) -> AllianceResult<Option<FusionOutput>>;
 
     /// 获取执行引擎配置
     fn config(&self) -> &ExecutorConfig;

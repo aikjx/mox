@@ -21,5 +21,8 @@ pub use dag_engine::DagEngineImpl;
 pub use expert_executor::{
     ExecutorStatsView, ExpertExecutorConfig, ExpertNodeExecutor,
 };
-pub use fusion::{FusionEngine, FusionInput, FusionItem, FusionOutput};
+pub use fusion::{FusionEngine, FusionInput, FusionItem};
 pub use mock_executor::{MockExecutorConfig, MockNodeExecutor};
+
+// 融合产出类型的权威定义在协议层（它是 `DagEngine` 契约的返回类型），此处仅转出
+pub use mox_alliance_executor_proto::FusionOutput;

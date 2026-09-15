@@ -16,6 +16,15 @@
 //! - 模块化：每个节点执行时使用对应的模块配置
 //! - 可观测：完整的执行轨迹和状态追踪
 //! - 容错：支持节点级重试和降级
+//!
+//! # ⚠️ 接线状态：未接线（历史遗留）
+//!
+//! 本模块是一套自包含的 DAG 执行实现，但**当前没有任何服务层调用方**：
+//! `mox-alliance-scheduler-svc` 通过 `executor_bridge::ExecutorBridge` 把执行
+//! 委派给 `mox-alliance-executor-svc`（其引擎为 `mox_alliance_executor_core::DagEngineImpl`）。
+//! 本模块与 `mox-alliance-executor-core` 的实现功能重叠，属历史资产。
+//!
+//! 请勿新增生产依赖；去留待架构决策后统一收敛（删除 或 正式启用）。
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;

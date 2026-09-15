@@ -18,6 +18,7 @@
 # 第三方源码暂存
 /third_party/
 tests\regression
+my-projects
 # ---- 日志与临时文件 ----
 *.log
 *.out

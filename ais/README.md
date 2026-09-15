@@ -35,6 +35,20 @@
 | `hermes-agent/` | GitHub | Hermes Agent 框架 |
 | `langchain/` | GitHub | LangChain 框架 |
 
+### 检索与知识库（Search & Knowledge）
+
+| 仓库 | 来源 | 说明 |
+|------|------|------|
+| `sirchmunk/` | GitHub (ModelScope) | 无向量库、无预索引的自进化智能体搜索引擎（LENS 预算化证据探索 + 知识聚类），Python/FastAPI/Next.js，Apache-2.0 |
+| `WeKnora/` | GitHub (Tencent) | 腾讯开源的 LLM 知识管理框架：文档理解 + 语义检索 + RAG/ReAct Agent + 自动 Wiki，Go/Vue，MIT |
+| `WeMM-Embedding/` | GitHub (Tencent) | 微信视觉团队通用多模态 Embedding 模型系列（2B/4B/9B，文/图/视频/视觉文档统一表示，MRL 可变维度），用于检索召回；Python + HuggingFace/vLLM/SGLang 推理，Apache-2.0 |
+
+### 代码审查（Code Review）
+
+| 仓库 | 来源 | 说明 |
+|------|------|------|
+| `open-code-review/` | GitHub (Alibaba) | 阿里开源的 AI 驱动代码审查 CLI（命令 `ocr`）：读 Git diff → 可配置 LLM Agent 生成行级审查；含 `ocr scan` 全仓扫描、MCP、CI/CD 集成；Go 核心 + npm/TS 扩展，Apache-2.0 |
+
 ### 存储与基础设施
 
 | 仓库 | 来源 | 说明 |

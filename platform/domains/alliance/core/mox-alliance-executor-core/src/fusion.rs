@@ -18,7 +18,7 @@
 
 use mox_alliance_common_proto::{AllianceError, AllianceResult, FusionStrategy, Node};
 use mox_alliance_core::fusion::FusionEngine as CoreFusionEngine;
-use mox_alliance_executor_proto::NodeExecutionResult;
+use mox_alliance_executor_proto::{FusionOutput, NodeExecutionResult};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -90,22 +90,8 @@ pub struct FusionInput {
     pub task_description: String,
 }
 
-/// 融合输出
-#[derive(Debug, Clone, Serialize)]
-pub struct FusionOutput {
-    /// 融合后的结构化内容（策略相关）
-    pub content: Value,
-    /// 融合置信度 0.0 ~ 1.0
-    pub confidence: f64,
-    /// 参与融合的专家数量
-    pub expert_count: usize,
-    /// 使用的融合策略
-    pub strategy: FusionStrategy,
-    /// 各专家的贡献度（归一化权重）
-    pub contributions: HashMap<String, f64>,
-    /// 融合摘要说明
-    pub summary: String,
-}
+// 注：`FusionOutput` 的权威定义已下沉到 `mox-alliance-executor-proto`，
+// 本模块不再定义同名类型，改为直接使用协议层类型。
 
 /// 结果融合引擎（执行器侧）
 #[derive(Clone)]

@@ -222,7 +222,7 @@ async fn get_fusion_result(
 ) -> impl IntoResponse {
     let tenant_id = tenant_from_headers(&headers);
 
-    match state.engine.get_fusion_output(task_id, tenant_id) {
+    match state.engine.get_fusion_output(task_id, tenant_id).await {
         Ok(Some(output)) => (StatusCode::OK, Json(output)).into_response(),
         Ok(None) => (
             StatusCode::NOT_FOUND,

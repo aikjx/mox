@@ -11,6 +11,15 @@
 //! - 迭代精炼融合
 //!
 //! 每个融合策略可以独立配置，支持动态切换。
+//!
+//! # ⚠️ 接线状态：未接线（历史遗留）
+//!
+//! 本模块仅被本 crate 的 [`dag_engine`](crate::dag_engine) 使用，而后者同样未接线
+//! （详见其模块文档）。生产链路的融合结论由 `mox-alliance-executor-core::fusion`
+//! 产出，经 `DagEngine::get_fusion_output` 对外提供。
+//!
+//! 注意：本模块的 `FusionOutput` 与协议层 `mox_alliance_executor_proto::FusionOutput`
+//! 字段同名但类型不同（且本类型未实现 `Serialize`），不可混用。
 
 use mox_alliance_common_proto::{AllianceResult, FusionStrategy};
 use serde_json::Value;

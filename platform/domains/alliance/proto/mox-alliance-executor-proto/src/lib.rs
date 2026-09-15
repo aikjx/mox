@@ -18,6 +18,6 @@ pub mod types;
 
 // ─── 重导出 ────────────────────────────────────────────────────────────────
 
-pub use dag_engine::{DagEngine, ExecutionOptions, ExecutionStatus};
+pub use dag_engine::{DagEngine, ExecutionOptions, ExecutionStatus, FusionOutput};
 pub use node_executor::{NodeExecutor, NodeExecutionRequest, NodeExecutionResult};
 pub use types::ExecutorConfig;
