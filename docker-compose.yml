@@ -1,5 +1,5 @@
 # 璇玑 RelGraph · 算子统一系统（OUS）Docker Compose 部署
-# 一键启动：后端平台 + LLM 推理服务 + 前端 + 数据库 + 缓存
+# 一键启动：后端平台 + LLM 推理服务 + 前端
 #
 # 使用方式：
 #   1. 复制 .env.example 为 .env 并修改配置
@@ -8,12 +8,11 @@
 #
 # 服务架构：
 #   nginx (8080) → 前端静态资源 + 反向代理
-#     ├─ /api → api-gateway (8080)
+#     ├─ /api → api-gateway (3080)
 #     └─ /llm → llm-inference-svc (8001)
 #   api-gateway → 各业务域服务
 #   llm-inference-svc → Ollama / OpenAI / 通义千问 / 豆包
-#   postgres (5432) → 业务数据
-#   redis (6379) → 缓存 + 会话
+#   postgres / redis 仅在 --profile infrastructure 下按需启动
 
 services:
   # ============================================================
@@ -46,32 +45,33 @@ services:
   api-gateway:
     build:
       context: .
-      dockerfile: platform/gateway/mox-api-gateway/Dockerfile
+      dockerfile: deploy/docker/Dockerfile.rust-service
+      args:
+        PACKAGE: mox-platform-gateway-svc
+        BINARY: mox-server
+        PORT: 3080
     container_name: mox-api-gateway
     restart: unless-stopped
+    volumes:
+      - gateway-data:/app/data
     environment:
       - RUST_LOG=${RUST_LOG:-info,mox_api_gateway=info}
       - MOX_ENV=production
       - MOX_GATEWAY_HOST=0.0.0.0
-      - MOX_GATEWAY_PORT=8080
-      - MOX_JWT_SECRET=${JWT_SECRET:-mox-default-jwt-secret-change-in-production-12345}
-      - DATABASE_URL=postgres://${POSTGRES_USER:-mox}:${POSTGRES_PASSWORD:-mox}@postgres:5432/${POSTGRES_DB:-mox}
-      - REDIS_URL=redis://redis:6379
-      - LLM_API_BASE=http://llm-inference-svc:8001/v1
-      - LLM_API_KEY=${LLM_SERVICE_API_KEY:-}
+      - MOX_GATEWAY_PORT=3080
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - MOX_LLM_BASE_URL=http://llm-inference-svc:8001/v1
+      - MOX_LLM_API_KEY=${LLM_SERVICE_API_KEY:-}
+      - MOX_LLM_MODEL=${LLM_MODEL:-qwen2.5}
     ports:
-      - "${API_GATEWAY_PORT:-8081}:8080"
+      - "${API_GATEWAY_PORT:-3080}:3080"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
       llm-inference-svc:
         condition: service_started
     networks:
       - mox-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:3080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -82,7 +82,7 @@ services:
   # ============================================================
   llm-inference-svc:
     build:
-      context: ./platform/services/llm-inference-svc
+      context: ./projects/llm-inference-svc
       dockerfile: Dockerfile
     container_name: mox-llm-inference-svc
     restart: unless-stopped
@@ -151,6 +151,8 @@ services:
     image: postgres:16-alpine
     container_name: mox-postgres
     restart: unless-stopped
+    profiles:
+      - infrastructure
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-mox}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mox}
@@ -176,6 +178,8 @@ services:
     image: redis:7-alpine
     container_name: mox-redis
     restart: unless-stopped
+    profiles:
+      - infrastructure
     command: >
       redis-server
       --appendonly yes
@@ -236,6 +240,7 @@ services:
 # 数据卷
 # ============================================================
 volumes:
+  gateway-data:
   frontend-dist:
     driver: local
   postgres-data:

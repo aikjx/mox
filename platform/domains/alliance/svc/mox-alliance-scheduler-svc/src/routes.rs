@@ -19,6 +19,7 @@ use crate::app_state::SchedulerAppState;
 pub fn build_router(state: SchedulerAppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
+        .route("/metrics", get(metrics_handler))
         .route("/tasks", post(create_task).get(list_tasks))
         .route("/tasks/:task_id", get(get_task).post(handle_task_action))
         .route("/tasks/:task_id/nodes", get(proxy_task_nodes))
@@ -45,12 +46,42 @@ fn user_from_headers(headers: &HeaderMap) -> Uuid {
         .unwrap_or_else(Uuid::nil)
 }
 
-/// 健康检查
-async fn health_check() -> impl IntoResponse {
-    Json(serde_json::json!({
-        "status": "healthy",
-        "service": "mox-alliance-scheduler"
-    }))
+/// 健康检查（liveness：进程存活即 200；body 真实标注下游依赖，不再恒真）
+///
+/// 探测 `executor_base_url/health` 写入 `dependencies.executor`：
+/// 存活探针恒返回 200；readiness / 监控应依据 body 中依赖状态决定是否摘流。
+async fn health_check(State(state): State<SchedulerAppState>) -> impl IntoResponse {
+    let executor_url = format!(
+        "{}/health",
+        state.executor_base_url.trim_end_matches('/')
+    );
+    let executor_up = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_millis(1500))
+        .build()
+    {
+        Ok(client) => client
+            .get(&executor_url)
+            .send()
+            .await
+            .map(|r| r.status().is_success())
+            .unwrap_or(false),
+        Err(_) => false,
+    };
+
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "ok",
+            "service": "mox-alliance-scheduler",
+            "dependencies": { "executor": if executor_up { "up" } else { "down" } }
+        })),
+    )
+        .into_response()
+}
+
+/// 运行指标快照（供监控抓取 / 面板展示）
+async fn metrics_handler(State(state): State<SchedulerAppState>) -> impl IntoResponse {
+    Json(state.metrics.snapshot())
 }
 
 /// 创建任务
@@ -189,8 +220,10 @@ async fn search_experts(
         max_results: req.limit,
     };
 
+    let start = std::time::Instant::now();
     match state.matcher.match_experts(query).await {
         Ok(result) => {
+            state.metrics.record_match(start.elapsed().as_micros() as u64, true);
             let experts: Vec<ExpertSummary> = result
                 .matches
                 .into_iter()
@@ -212,7 +245,10 @@ async fn search_experts(
             )
                 .into_response()
         }
-        Err(e) => error_response(e).into_response(),
+        Err(e) => {
+            state.metrics.record_match(start.elapsed().as_micros() as u64, false);
+            error_response(e).into_response()
+        }
     }
 }
 

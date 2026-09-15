@@ -11,6 +11,16 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  architecture:
+    name: Architecture contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify deployment and port contracts
+        run: |
+          python -m unittest scripts.tests.test_deployment_architecture -v
+          python scripts/verify-ports.py
+
   # ===========================================================================
   # 1. 代码质量检查（fmt + clippy）
   # ===========================================================================
@@ -48,7 +58,7 @@ jobs:
   build:
     name: Build (core crates)
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, architecture]
     strategy:
       matrix:
         crate:
@@ -56,6 +66,7 @@ jobs:
           - mox-server-runtime
           - mox-kb-core
           - mox-dsql-core
+          - mox-platform-gateway-svc
           - mox-kg-server
           - mox-cloud-server
           - mox-iam-server
@@ -80,6 +91,15 @@ jobs:
 
       - name: Check ${{ matrix.crate }}
         run: cargo check -p ${{ matrix.crate }} --verbose
+
+      - name: Verify fused and independent domain hosts
+        if: matrix.crate == 'mox-platform-gateway-svc'
+        run: |
+          cargo build -p mox-platform-gateway-svc --bin mox-server
+          python scripts/tests/verify_domain_hosts.py target/debug/mox-server
+          cargo test -p mox-platform-gateway-svc --lib host_role_rejects_unknown_or_empty_values
+          cargo test -p mox-platform-gateway-svc --lib external_callback_never_creates_a_mock_session
+          cargo test -p mox-kb-svc document::tests
 
   # ===========================================================================
   # 3. 单元测试
@@ -150,18 +170,21 @@ jobs:
     strategy:
       matrix:
         service:
+          - name: mox-server
+            package: mox-platform-gateway-svc
+            port: 3080
           - name: mox-kg-server
-            port: 8101
-            dockerfile: platform/domains/kg/svc/mox-kg-server/Dockerfile
+            package: mox-kg-server
+            port: 3411
           - name: mox-cloud-server
-            port: 8102
-            dockerfile: platform/domains/cloud/svc/mox-cloud-server/Dockerfile
+            package: mox-cloud-server
+            port: 3412
           - name: mox-iam-server
-            port: 8103
-            dockerfile: platform/domains/platform/svc/mox-iam-server/Dockerfile
+            package: mox-iam-server
+            port: 3413
           - name: mox-kb-server
-            port: 8104
-            dockerfile: platform/domains/kb/svc/mox-kb-server/Dockerfile
+            package: mox-kb-server
+            port: 3414
     steps:
       - uses: actions/checkout@v4
 
@@ -172,8 +195,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.service.dockerfile }}
-          build-args: SERVICE=${{ matrix.service.name }}
+          file: deploy/docker/Dockerfile.rust-service
+          build-args: |
+            PACKAGE=${{ matrix.service.package }}
+            BINARY=${{ matrix.service.name }}
+            PORT=${{ matrix.service.port }}
           push: false
           tags: ${{ matrix.service.name }}:latest
           cache-from: type=gha

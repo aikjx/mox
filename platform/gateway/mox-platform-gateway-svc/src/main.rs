@@ -7,7 +7,7 @@
 //!
 //! # 用法
 //! ```powershell
-//! # 默认 0.0.0.0:8080
+//! # 默认 0.0.0.0:3080
 //! cargo run -p mox-platform-gateway-svc
 //! # 或自定义端口
 //! ./target/release/mox-server --bind 127.0.0.1 --port 9000
@@ -24,7 +24,7 @@ fn parse_args() -> (String, u16) {
     let mut port: u16 = std::env::var("MOX_GATEWAY_PORT")
         .ok()
         .and_then(|p| p.parse::<u16>().ok())
-        .unwrap_or(8080);
+        .unwrap_or(3080);
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {
@@ -39,7 +39,7 @@ fn parse_args() -> (String, u16) {
             "--single-node" | "server" => { /* 兼容历史 CLI 子命令 */ }
             "-h" | "--help" => {
                 println!("Usage: mox-server [--bind ADDR] [--port PORT]\n\
-                          Default: 0.0.0.0:8080 (全面接管 backend-node 3000/3001/3002)");
+                          Default: 0.0.0.0:3080 (MOX 平台统一入口)");
                 std::process::exit(0);
             }
             other => eprintln!("[mox-server] ⚠️  忽略未知参数: {other} (用 --help 查看用法)"),

@@ -10,7 +10,7 @@
     "total_backend_endpoints_legacy_rust": 200,
     "total_routes": 44,
     "api_integration_rate": "~85%",
-    "architecture": "三服务架构：网关(mox-server:8080) + 编排器(operator-server:3001) + PrimiFlow(Python:8000) + 前端Vite(:3020)",
+    "architecture": "模块化网关(mox-server:3080) + 编排器(operator-server:3001) + 联盟调度(3100) + 联盟执行(3200) + 前端Vite(:3020)",
     "gateway_proxy_rules": "/api/system/*,/api/security/* → 网关原生IAM; /api/projects/* → PrimiFlow:8000; 其余 /api/* → 编排器:3001",
     "i18n_status": "not_built",
     "accessibility_status": "not_built"
@@ -1432,7 +1432,7 @@
               "name": "统一入口网关（IAM原生+反向代理适配层）",
               "status": "implemented",
               "priority": "P0",
-              "description": "Rust网关mox-server运行在:8080：/api/system/*和/api/security/*→网关原生IAM(data/mox.db)；/api/projects/*→PrimiFlow:8000反向代理；其余/api/*→编排器:3001反向代理；含请求头过滤、响应头复制、502/504降级、超时控制",
+              "description": "Rust网关mox-server运行在:3080：/api/system/*和/api/security/*→网关原生IAM(data/mox.db)；/api/projects/*→PrimiFlow:8000反向代理；其余/api/*→编排器:3001反向代理；含请求头过滤、响应头复制、502/504降级、超时控制",
               "frontend_pages": [],
               "frontend_api_functions": [],
               "backend_endpoints": [
@@ -1902,7 +1902,7 @@
   "i18n_status": "not_built",
   "accessibility_status": "not_built",
   "architecture_summary": {
-    "gateway": {"name": "mox-server (Rust)", "port": 8080, "role": "统一入口+IAM原生+反向代理适配层"},
+    "gateway": {"name": "mox-server (Rust)", "port": 3080, "role": "统一入口+IAM原生+反向代理适配层"},
     "orchestrator": {"name": "operator-server (Rust)", "port": 3001, "role": "AI/图谱/算子/治理/商城等全业务域，~60-80端点"},
     "primiflow": {"name": "PrimiFlow (Python)", "port": 8000, "role": "项目/拓扑/资产业务"},
     "frontend": {"name": "Vue3 SPA (Vite)", "port": 3020, "role": "前端单页应用"},

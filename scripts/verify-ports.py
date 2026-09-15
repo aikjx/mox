@@ -5,7 +5,7 @@ verify-ports.py —— 璇玑系统全局端口漂移校验（PORT-REGISTRY-001 
 
 职责：
   1. 扫描全仓库源码/配置中的端口引用（排除第三方参考库、构建产物、node_modules、日志/数据噪声）。
-  2. 对照权威注册表（本文件 CANONICAL，与 docs/ports/PORT-REGISTRY.md 保持一致）分类：
+  2. 对照权威注册表（本文件 CANONICAL，与 docs/api/PORT-REGISTRY.md 保持一致）分类：
        RUNTIME / ALLIANCE / ANCILLARY / LEGACY / DEPRECATED / TEST-ONLY / THIRD-PARTY
   3. 检出三类漂移并决定退出码：
        ERROR  : 已退役端口(DEPRECATED)仍被活跃代码/配置引用；platform_config.json 与注册表不一致；
@@ -19,7 +19,7 @@ verify-ports.py —— 璇玑系统全局端口漂移校验（PORT-REGISTRY-001 
   python scripts/verify-ports.py --json     # 输出 JSON 报告到 stdout
   python scripts/verify-ports.py --repo <路径>   # 指定仓库根（默认脚本上级两级）
 
-规范依据：docs/ports/PORT-REGISTRY.md（PORT-REGISTRY-001）
+规范依据：docs/api/PORT-REGISTRY.md（PORT-REGISTRY-001）
           docs/standards/expert-alliance-port-norm.md（PORT-NORM-001）
 """
 from __future__ import annotations
@@ -33,12 +33,12 @@ from collections import defaultdict
 from pathlib import Path
 
 # --------------------------------------------------------------------------- #
-# 权威端口注册表（与 docs/ports/PORT-REGISTRY.md 同步维护；改动须走变更流程） #
+# 权威端口注册表（与 docs/api/PORT-REGISTRY.md 同步维护；改动须走变更流程） #
 # --------------------------------------------------------------------------- #
 # 分类: RUNTIME / ALLIANCE / ANCILLARY / LEGACY / DEPRECATED / TEST / THIRD
 CANONICAL: dict[int, tuple[str, str]] = {
     # ---- RUNTIME（platform_config.json 登记，manage.py 管理） ----
-    8080: ("RUNTIME", "api（Rust 网关 mox-gateway，唯一对外 HTTP 入口，例外端口）"),
+    3080: ("RUNTIME", "api（Rust 网关 mox-server，唯一对外 HTTP 入口）"),
     3020: ("RUNTIME", "frontend（Vite Vue3 dev server）"),
     30010: ("RUNTIME", "xiaobai_voice（ASR+TTS，PORT-NORM 30000+ 段）"),
     8012: ("RUNTIME", "melody2score（旋律转谱 WebUI）"),
@@ -66,10 +66,10 @@ CANONICAL: dict[int, tuple[str, str]] = {
 8765: ("ANCILLARY", "ai-intent-svc 默认监听（MOX_AI_INTENT_PORT，默认 8765）"),
 5173: ("ANCILLARY", "Vite dev 默认端口（网关 CORS 白名单引用，非监听）"),
 33020: ("ANCILLARY", "专家联盟前端 dev（npm run dev --port 33020，127.0.0.1）"),
-8101: ("ANCILLARY", "mox-kg-server（K8s Service）"),
-8102: ("ANCILLARY", "mox-cloud-server（K8s Service）"),
-8103: ("ANCILLARY", "mox-iam-server（K8s Service）"),
-8104: ("ANCILLARY", "mox-kb-server（K8s Service）"),
+    3411: ("ANCILLARY", "mox-kg-server（可选独立部署）"),
+    3412: ("ANCILLARY", "mox-cloud-server（可选独立部署）"),
+    3413: ("ANCILLARY", "mox-iam-server（可选独立部署）"),
+    3414: ("ANCILLARY", "mox-kb-server（可选独立部署）"),
     # ---- LEGACY（遗留模块，自洽） ----
     8600: ("LEGACY", "legacy Python mox-server（docker/systemd/nginx）"),
     8601: ("LEGACY", "legacy mox-store（应用商店）"),
@@ -78,6 +78,10 @@ CANONICAL: dict[int, tuple[str, str]] = {
     3010: ("DEPRECATED", "Node.js API / Node sidecar（backend-node 已删除）"),
     3021: ("DEPRECATED", "前端旧端口（AI 对话 UI 曾用，已迁 3020）"),
     3717: ("DEPRECATED", "xiaobai_voice 旧端口（ASR+TTS，2026-09 已迁 30010）"),
+    8101: ("DEPRECATED", "mox-kg-server 旧独立部署端口（已迁 3411）"),
+    8102: ("DEPRECATED", "mox-cloud-server 旧独立部署端口（已迁 3412）"),
+    8103: ("DEPRECATED", "mox-iam-server 旧独立部署端口（已迁 3413）"),
+    8104: ("DEPRECATED", "mox-kb-server 旧独立部署端口（已迁 3414）"),
     # ---- TEST（测试/内存 mock，不进入运行链路） ----
     8001: ("TEST", "cloud-master 卷节点测试"), 8002: ("TEST", "cloud-master 卷节点测试"),
     8003: ("TEST", "cloud-master 卷节点测试"),
@@ -139,11 +143,12 @@ CANONICAL: dict[int, tuple[str, str]] = {
     6006: ("THIRD", "Storybook（dev）"), 8888: ("THIRD", "前端 Web 搜索服务占位"),
     7688: ("THIRD", "mox-dr 部署映射 7688:7687（Neo4j Bolt 备用映射）"),
 11434: ("THIRD", "Ollama（本地 LLM 推理）"),
-19302: ("THIRD", "STUN（stun.l.google.com，WebRTC ICE）"),
+    19302: ("THIRD", "STUN（stun.l.google.com，WebRTC ICE）"),
+    8080: ("THIRD", "Nginx 对外代理/第三方软件常用端口（MOX 进程不得监听）"),
 }
 
 # 有意保留的遗留 opt-in 引用（不视为漂移）——(相对路径, 端口) → 理由
-# 说明：orchestrator Node 侧车默认指向已删除的 backend-node:3010，2026-09 已清理为 Rust 网关 8080；
+# 说明：orchestrator Node 侧车默认指向已删除的 backend-node:3010，2026-09 已清理为 Rust 网关 3080；
 #       DEPRECATED 3010 现仅存于历史文档（.md）中，由"文档类豁免"自动放行。
 ALLOWED_LEGACY_REFS = {
     ("start.sh", 3000): "start.sh --legacy 遗留 operator-server 路径（默认关闭，opt-in）",
@@ -159,10 +164,26 @@ NOISE_CTX = re.compile(
 
 # platform_config.json 中 RUNTIME 服务的期望端口（单一事实源校验）
 EXPECTED_PLATFORM_PORTS = {
-    "api": 8080, "frontend": 3020, "xiaobai_voice": 30010,
+    "api": 3080, "frontend": 3020, "xiaobai_voice": 30010,
     "melody2score": 8012, "primiflow": 8000,
 }
 EXPECTED_DASHBOARD_PORT = 3999
+
+# MOX 自有进程与插件的段位契约；第三方基础设施和独立子项目不在此集合。
+MOX_SYSTEM_PORTS = {
+    "gateway": 3080,
+    "frontend": 3020,
+    "orchestrator": 3001,
+    "alliance-scheduler": 3100,
+    "alliance-executor": 3200,
+    "expert-bridge": 3300,
+    "kg-standalone": 3411,
+    "cloud-standalone": 3412,
+    "iam-standalone": 3413,
+    "kb-standalone": 3414,
+    "dashboard": 3999,
+}
+MOX_PLUGIN_PORTS = {"xiaobai_voice": 30010}
 
 # --------------------------------------------------------------------------- #
 # 扫描参数
@@ -285,7 +306,27 @@ def check_platform_config(repo: Path) -> list[dict]:
     return issues
 
 
+def check_port_ranges() -> list[dict]:
+    """强制 MOX 自有进程与插件落入各自端口段。"""
+    issues = []
+    for name, port in MOX_SYSTEM_PORTS.items():
+        if not 3000 <= port <= 3999:
+            issues.append({
+                "severity": "ERROR",
+                "msg": f"MOX 系统服务 {name}={port} 不在 3000–3999",
+            })
+    for name, port in MOX_PLUGIN_PORTS.items():
+        if not 30000 <= port <= 39999:
+            issues.append({
+                "severity": "ERROR",
+                "msg": f"MOX 插件 {name}={port} 不在 30000–39999",
+            })
+    return issues
+
+
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description="璇玑系统端口漂移校验（PORT-REGISTRY-001）")
     ap.add_argument("--json", action="store_true", help="输出 JSON 报告")
     ap.add_argument("--repo", default=None, help="仓库根路径（默认脚本上级两级）")
@@ -295,7 +336,7 @@ def main():
     repo = repo.resolve()
 
     hits = scan(repo)
-    issues = check_platform_config(repo)
+    issues = check_platform_config(repo) + check_port_ranges()
 
     # 分类扫描结果
     seen_per_port: dict[int, set[str]] = {}

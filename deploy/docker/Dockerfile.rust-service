@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+FROM rust:1.98-slim AS builder
+ARG PACKAGE
+WORKDIR /workspace
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY Cargo.toml Cargo.lock ./
+COPY platform ./platform
+RUN cargo build --locked --release -p "${PACKAGE}"
+
+FROM debian:bookworm-slim
+ARG BINARY
+ARG PORT
+ENV RUST_LOG=info \
+    MOX_SERVER_HOST=0.0.0.0 \
+    MOX_SERVER_PORT=${PORT}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl libssl3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 10001 mox \
+    && useradd --system --uid 10001 --gid mox mox
+
+WORKDIR /app
+COPY --from=builder /workspace/target/release/${BINARY} /app/server
+RUN mkdir -p /app/data && chown -R mox:mox /app
+USER mox
+
+EXPOSE ${PORT}
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl --fail "http://127.0.0.1:${MOX_SERVER_PORT}/health" || curl --fail "http://127.0.0.1:${MOX_SERVER_PORT}/health/live" || exit 1
+
+ENTRYPOINT ["/app/server"]

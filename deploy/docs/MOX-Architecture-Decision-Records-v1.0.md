@@ -44,7 +44,7 @@ MOX 后端经历了 3 个阶段演进：
 ### 决策
 
 1. **立即退役 Node.js 技术栈**：`platform/backend-node/` 全部源码和数据于 2026-08-27 物理删除（当前仅残留 IDE 句柄锁定的空壳目录，重启后自动消失）
-2. **统一后端入口**：所有业务流量 **必须** 经过 `mox-platform-gateway-svc`（二进制 `mox-server`），默认端口 **0.0.0.0:8080**
+2. **统一后端入口**：所有业务流量 **必须** 经过 `mox-platform-gateway-svc`（二进制 `mox-server`），默认端口 **0.0.0.0:3080**
 3. **`platform/backend-rust/` 的 Q/R/S/T 能力不直接删除**，按 ADR-002 计划逐模块迁入 6 层架构的对应层
 4. **任何新开发的后端代码 100% 使用 Rust**，禁止引入新的 Node.js/TypeScript 后端模块；前端与 MCP/CLI 层的脚本工具不受此限
 
@@ -55,7 +55,7 @@ MOX 后端经历了 3 个阶段演进：
 | 单语言技术栈降低招聘/维护成本 | 32 Node 路由模块需按 P0-P3 优先级逐模块迁移，初期加权覆盖度仅 23% |
 | 内存安全 + 无 GC 停顿 = 金融级稳定性 | 原 Node.js 生态的 80 余个测试用例需要重写为 Rust `#[test]` |
 | 单二进制部署（mox-server.exe）取代多进程 Node 集群 | 部分 Node 独有库（jianpu-ly、music21、PortAudio 音频）需要独立打包或 WASM 化 |
-| 单端口 8080 对外，运维收敛 | |
+| 单端口 3080 对外，运维收敛 | |
 
 ### 验证信号
 
@@ -255,7 +255,7 @@ L5 sdk：       可依赖任何层（FFI 绑定边界）
 
 | 提案号 | 议题 | 预计决策日期 |
 |---|---|---|
-| ADR-007 | Enterprise 3002 路由合并入 Gateway 8080（去独立端口） | 2026-09-03 |
+| ADR-007 | Enterprise 3002 路由合并入 Gateway 3080（去独立端口） | 2026-09-03 |
 | ADR-008 | 图谱算法 SQLite/PG 存储实桥接（demo→真实生产数据） | 2026-09-10 |
 | ADR-009 | RBAC JWT AuthLayer 集中网关集成（当前全接口匿名访问） | 2026-09-03 |
 | ADR-010 | 项目配置 `platform_config.json` 统一真相源（禁止 SERVICE_DEFINITIONS 硬编码） | 2026-09-17 |

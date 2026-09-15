@@ -3,8 +3,8 @@
 // =============================================================================
 //
 // 独立部署：cargo run -p mox-iam-server
-// 默认端口：8103
-// 健康检查：http://localhost:8103/health/live
+// 默认端口：3413
+// 健康检查：http://localhost:3413/health/live
 //
 // 基于 mox-auth-core 构建完整认证/授权 API：
 //   - 注册 / 登录 / 刷新 Token / 验证 Token / 登出
@@ -434,11 +434,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = if cli.config.exists() {
         ServerConfig::from_file(&cli.config)?
     } else {
-        ServerConfig::default()
+        let mut config = ServerConfig::default();
+        config.server.port = 3413;
+        config
     };
     config.apply_env_overrides();
     if let Some(port) = cli.port { config.server.port = port; }
-    if config.server.port == 8080 { config.server.port = 8103; }
 
     let module = IamModule::new();
     Server::new(Box::new(module), config).run().await?;

@@ -1,6 +1,6 @@
 # mox-platform-gateway-svc
 
-MOX L1 企业级网关 — 基于 axum 的纯 Rust 单二进制网关，模块化路由架构，全面接管原 backend-node 的 8080 端口。
+MOX L1 企业级网关 — 基于 axum 的纯 Rust 单二进制网关，模块化承载 KG、KB、Cloud、IAM 等域，监听 3080。
 
 ## 功能特性
 
@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let app = build_gateway_router(state);
 
     // 启动服务
-    let addr: SocketAddr = "0.0.0.0:8080".parse()?;
+    let addr: SocketAddr = "0.0.0.0:3080".parse()?;
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
 
@@ -74,7 +74,7 @@ use mox_platform_gateway_svc::serve_forever;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    serve_forever("0.0.0.0", 8080).await?;
+    serve_forever("0.0.0.0", 3080).await?;
     Ok(())
 }
 ```
@@ -84,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 ```bash
 cargo run -p mox-platform-gateway-svc
 # 或直接运行二进制
-mox-server --host 0.0.0.0 --port 8080
+mox-server --bind 0.0.0.0 --port 3080
 ```
 
 ## 核心模块/类型列表

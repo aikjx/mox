@@ -57,7 +57,7 @@
 | `docs/working-reports/` | 22 | 35.5% | 盘点1 + 代码对齐1 + 执行记录3 + 处理模式2 + 混合架构5 + moxfs阶段四2 + moxfs阶段五5 + moxfs阶段六3 |
 | `docs/enterprise/` | 4 | 7.8% | 22号总控卡 + 26号×2 + 28号报告 |
 | `docs/standards/` | 2 | 3.9% | EA-NORM-001 + EAF-STD-001 |
-| `docs/cosmic-architecture/` | 2 | 3.9% | 02号 + 04号 |
+| `docs/architecture/meta/` | 2 | 3.9% | 02号 + 04号 |
 | `docs/`（根） | 3 | 5.9% | 修复报告HTML + 评审报告HTML + 知识库融合方案 |
 | `docs/specifications/` | 1 | 2.0% | alliance-fr13-fr5-integration |
 | `docs/_archive/expert-alliance/` | 3 | — | 归档区（不计入活跃） |
@@ -106,8 +106,8 @@
 | 16 | EA-DOC-061 | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md` | 架构诊断与SaaS化最优方案V1.1 | V1.1 | 26号架构诊断唯一权威（V1.0已归档） |
 | 17 | EA-DOC-062 | `docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md` | 全文档归一化总控卡 | V1.0 | 全域归一化治理枢纽 |
 | 18 | EA-DOC-063 | `docs/standards/expert-alliance-flow-standard.md` | EAF-STD-001业务处理流程行业标准 | V1.2 | 专家联盟业务处理流程行业级标准 |
-| 19 | EA-DOC-064 | `docs/alliance-architecture-fix-report-20260831.html` | 架构修复报告 | 2026-08-31 | alliance域修复验证唯一权威 |
-| 20 | EA-DOC-065 | `docs/alliance-architecture-review-20260831.html` | 架构评审报告 | 2026-08-31 | alliance域架构评审权威（⚠️修复前快照） |
+| 19 | EA-DOC-064 | `docs/working-reports/alliance-architecture-fix-report-20260831.html` | 架构修复报告 | 2026-08-31 | alliance域修复验证唯一权威 |
+| 20 | EA-DOC-065 | `docs/working-reports/alliance-architecture-review-20260831.html` | 架构评审报告 | 2026-08-31 | alliance域架构评审权威（⚠️修复前快照） |
 | 21 | EA-DOC-066 | `docs/modules/专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md` | mox 模块化系统架构业务流程归一化手册 | V1.0 | 专家联盟业务流程归一化唯一真相源 |
 | 22 | EA-DOC-058 | `docs/modules/business-process-flows.md` | 企业级业务处理流程 | — | 业务流程规范主文档 |
 | 23 | EA-NORM-002 | `docs/standards/expert-alliance-port-norm.md` | 核心服务端口规划规范 PORT-NORM-001 | V1.0 | 核心服务 3000-3999 / 插件小服务 30000+ 唯一权威 |
@@ -161,19 +161,19 @@
 | EA-DOC-057 | `docs/modules/business-process-flowcharts.md` | 企业级业务处理流程图 | 可视化配套版，以flows.md为准 |
 | — | `docs/modules/ai-flow-graph-design.md` | AI流程图谱化设计 | AI引擎流程图谱设计 |
 
-### 4.6 docs/cosmic-architecture/
+### 4.6 docs/architecture/meta/
 
 | doc_id | 路径 | 标题 | 说明 |
 |--------|------|------|------|
-| EA-DOC-040 | `docs/cosmic-architecture/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | 专家联盟架构（宇宙架构系列） | 宇宙架构哲学视角，技术事实以expert-alliance/为准 |
-| EA-DOC-041 | `docs/cosmic-architecture/04-EXPERT-ALLIANCE-v3-MODULAR.md` | V3.0模块化架构（宇宙架构系列） | 同上 |
+| EA-DOC-040 | `docs/architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | 专家联盟架构（宇宙架构系列） | 宇宙架构哲学视角，技术事实以expert-alliance/为准 |
+| EA-DOC-041 | `docs/architecture/meta/04-EXPERT-ALLIANCE-v3-MODULAR.md` | V3.0模块化架构（宇宙架构系列） | 同上 |
 
 ### 4.7 其他参考文档
 
 | 路径 | 标题 | 说明 |
 |------|------|------|
 | `docs/enterprise/28-mox 模块化系统架构分析与文档归一化报告-V1.0.md` | mox 模块化系统架构分析与文档归一化报告 | 全域架构分析 |
-| `docs/架构开发联盟知识库融合设计方案.md` | 架构开发联盟知识库融合设计方案 | CKB融合知识库架构 |
+| `docs/modules/架构开发联盟知识库融合设计方案.md` | 架构开发联盟知识库融合设计方案 | CKB融合知识库架构 |
 | `docs/specifications/tasks/20260826-xiaobai-mox-full-arch/alliance-fr13-fr5-integration.md` | AIS专家联盟裁决流水线×FR-13/FR-5对接设计规范 | 对接设计规范 |
 | `docs/working-reports/mox-expert-alliance-processing-mode.md` | 璇玑开发专家联盟处理模式 | 5步法标准流程（过程稿） |
 | `docs/working-reports/mox-algorithm-alliance-flow.md` | 璇玑算法联盟最优处理流程 | 算法联盟6步法（过程稿） |
@@ -199,9 +199,11 @@
 
 | # | 归档路径 | 原路径 | 归档原因 | 替代文档 | 归档日期 |
 |---|---------|--------|---------|---------|---------|
+<!-- check-doc-links:ignore-start -->
 | 1 | `docs/_archive/expert-alliance/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md` | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md` | 已被V1.1补充修订版替代（V1.0中"31微服务"等结论已修正） | `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md` | 2026-08-31 |
 | 2 | `docs/_archive/expert-alliance/modules/专家联盟AI对话需求文档-V1.0.md` | `docs/modules/专家联盟AI对话需求文档-V1.0.md` | 已被V2.0架构优化版替代 | `docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md` | 2026-08-31 |
 | 3 | `docs/_archive/expert-alliance/README.md` | —（新建） | 归档区说明与清单 | — | 2026-08-31 |
+<!-- check-doc-links:ignore-end -->
 
 **归档规则**：归档文档只读，不得修改；不得被新增引用；已有引用必须在归档时更新为指向替代文档。
 
@@ -307,7 +309,7 @@
 | 禁止`./`同级简写 | — | `./01-architecture.md` |
 | 禁止绝对路径 | — | `D:\a10\...\docs\...` |
 | 禁止`file:///`URL | — | `file:///d:/a10/.../docs/...` |
-| 锚点引用 | `docs/expert-alliance/EA-001.md#sec-3-2` | 仅引用文档根路径不定位章节 |
+| 锚点引用 | `docs/expert-alliance/00-INTEGRATED-INDEX.md#10-引用规范` | 仅引用文档根路径不定位章节 |
 
 ### 10.2 引用审计结果（2026-08-31）
 

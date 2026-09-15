@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! KG/AI HTTP 适配层（Rust 纯实现，挂接网关 8080）
+//! KG/AI HTTP 适配层（Rust 纯实现，挂接网关 3080）
 //!
 //! 10 个端点已全部桥接到 [`mox_kg_algo_core`] 真实算法：
 //! - 6 个 KG 查询端点：邻域 BFS / Yen k-最短 / Dijkstra / 中心性 / CNM 社区 / 图统计

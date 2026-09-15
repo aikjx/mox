@@ -1,7 +1,7 @@
 # MOX · AI 驱动mox 模块化系统架构平台 — 企业级最伟大产品设计（mox 模块化系统架构分析 v3.0）
 
 > **版本**：3.0-ai-powered | **日期**：2026-08-28 | **状态**：权威设计建议稿
-> **定位**：对 `docs/architecture.md`（v2.0）的**mox 模块化系统架构升级**，落位「一切由 AI 驱动」。
+> **定位**：对 `docs/architecture/architecture.md`（v2.0）的**mox 模块化系统架构升级**，落位「一切由 AI 驱动」。
 > **本文档来源**：整合产品顶层设计讨论 + 开源生态调研 + 现有平台代码/文档事实（`architecture.md` v2.0、`app-store-architecture.md` v1.0、`Cargo.toml`）。
 
 ---
@@ -58,7 +58,7 @@ MOX 已具备企业级低代码底座（DSQL / KG / RBAC+ 字段权限 / AI 助�
 
 | 能力域 | 现状（事实来源） | 成熟度 |
 |---|---|---|
-| 动态SQL引擎 DSQL | `docs/architecture.md` §四：Jinja2 模板渲染、多数据源、字段级权限过滤、Redis 缓存 | 🟢 生产就绪 |
+| 动态SQL引擎 DSQL | `docs/architecture/architecture.md` §四：Jinja2 模板渲染、多数据源、字段级权限过滤、Redis 缓存 | 🟢 生产就绪 |
 | 自研知识图谱 KG | §五：实体/关系、多跳遍历、与 SQL 双向融合 | 🟢 生产就绪 |
 | 字段级权限 RBAC+ | §六：角色→菜单→操作→字段四级，可见/可写/脱敏 | 🟢 生产就绪 |
 | AI 智能助手 | §七：NL→SQL、SQL 优化、业务流程生成、双引擎（规则+LLM） | 🟡 已有雏形，需升级为「对话中心大脑」 |
@@ -286,9 +286,9 @@ L3 执行层（mox-flow-operator-core） DSL→节点执行（并行/分支/循�
 
 | 文档 | 建议 |
 |---|---|
-| `docs/architecture.md`（v2.0） | 升级 v3.0：新增「AI 对话中心 + 弹框体系」章节，AI 助手升级为意图中枢 |
-| `docs/app-store-architecture.md`（v1.0） | 扩展：Agent 商品化（DSL 即商品）与 MXAP 打通，AI 代安装流程 |
-| `docs/operations-manual.md`（v2.0） | 补充：对话中心操作指引、弹框导航说明、AI 主动推送管理 |
+| `docs/architecture/architecture.md`（v2.0） | 升级 v3.0：新增「AI 对话中心 + 弹框体系」章节，AI 助手升级为意图中枢 |
+| `docs/architecture/app-store-architecture.md`（v1.0） | 扩展：Agent 商品化（DSL 即商品）与 MXAP 打通，AI 代安装流程 |
+| `docs/architecture/operations-manual.md`（v2.0） | 补充：对话中心操作指引、弹框导航说明、AI 主动推送管理 |
 | `docs/对话开发系统-mox 模块化系统架构分析与业务流程图.md` | 保持（开发态专用），本文档为产品/架构态权威 |
 
 ## 9 · P1 落地状态（已实现 · 2026-08-29 验证）

@@ -33,7 +33,7 @@
 
 - **新建 `scripts/manage.py` 兼容别名薄壳**（1202 字节）：检测权威入口存在性 → `subprocess.run([sys.executable, 权威路径] + sys.argv[1:])` 原样转发 → `KeyboardInterrupt` 返回 130。历史命令 / 历史文档不再断链。
 - **外部调用方全部改指权威名** `server-manage.py`（上表 6 处）。
-- **权威规范文档同步**：`docs/ports/PORT-REGISTRY.md`（§3.1 标题）、`docs/architecture/14-REPOSITORY-FULL-MAP.md`（主入口 + 运维面板）、`docs/enterprise/37-企业级处理流程规范-V1.0.md`（verify 命令）。
+- **权威规范文档同步**：`docs/api/PORT-REGISTRY.md`（§3.1 标题）、`docs/architecture/14-REPOSITORY-FULL-MAP.md`（主入口 + 运维面板）、`docs/enterprise/37-企业级处理流程规范-V1.0.md`（verify 命令）。
 - **历史工作报告保留原样**（`service_startup_script_optimization_plan.md` 等 27 处）：为当时快照，且兼容别名保证其命令仍可执行，不篡改历史。
 
 ### 2. `_spawn_command` 句柄泄漏修复
@@ -77,7 +77,7 @@
 | `scripts/server-manage.py` | M：docstring 归一化（版本 3.0）、内部引用归一化、`_spawn_command` 句柄 + args[0] 修复、`start/restart all` 语义对齐、url 统一 |
 | `scripts/manage.py` | A：兼容别名薄壳（转发权威入口） |
 | `start.sh` / `scripts/start-all.ps1` / `scripts/stop-all.ps1` / `scripts/deploy/start.ps1` / `platform_config.json` / `scripts/README.md` | M：外部调用改指权威名 + 说明 |
-| `docs/ports/PORT-REGISTRY.md` / `docs/architecture/14-REPOSITORY-FULL-MAP.md` / `docs/enterprise/37-企业级处理流程规范-V1.0.md` | M：权威文档统一为 `server-manage.py` |
+| `docs/api/PORT-REGISTRY.md` / `docs/architecture/14-REPOSITORY-FULL-MAP.md` / `docs/enterprise/37-企业级处理流程规范-V1.0.md` | M：权威文档统一为 `server-manage.py` |
 
 ## 五、边界说明（诚实声明）
 

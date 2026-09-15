@@ -151,6 +151,41 @@ async fn health_check_ok() {
 }
 
 #[tokio::test]
+async fn metrics_endpoint_returns_snapshot() {
+    let app = build_test_app().await;
+    let (status, bytes) = send(&app, "GET", "/metrics", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    let body: serde_json::Value =
+        serde_json::from_slice(&bytes).expect("/metrics 必须返回 JSON 快照");
+    // 四大维度计数器字段齐备（初始为 0）
+    for field in [
+        "match_requests",
+        "llm_calls",
+        "fusion_calls",
+        "dag_executions",
+        "dag_node_executions",
+    ] {
+        assert!(body.get(field).is_some(), "缺少指标字段 {field}");
+    }
+}
+
+#[tokio::test]
+async fn health_reports_executor_dependency() {
+    let app = build_test_app().await;
+    let (status, bytes) = send(&app, "GET", "/health", None, None).await;
+    // liveness：进程存活即 200
+    assert_eq!(status, StatusCode::OK);
+    let body: serde_json::Value =
+        serde_json::from_slice(&bytes).expect("/health 必须返回 JSON");
+    assert_eq!(body["service"], "mox-alliance-scheduler");
+    // body 真实标注依赖（不再恒真）；测试环境无 executor，预期 down
+    assert!(
+        body["dependencies"]["executor"] == "down"
+            || body["dependencies"]["executor"] == "up"
+    );
+}
+
+#[tokio::test]
 async fn create_then_get_task_full_flow() {
     let app = build_test_app().await;
     let tenant = Uuid::new_v4();

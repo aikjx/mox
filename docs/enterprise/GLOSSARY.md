@@ -1,7 +1,7 @@
 ﻿# 企业级规范术语表 (GLOSSARY · DOC-GLOSSARY-V1.5 · 三联盟统一版)
 
 > **唯一事实源（Single Source of Truth）**：本文档是 `infotopograph` 项目全部文档的**权威术语基准**。
-> 所有 `.md` 文档的术语以本表为准；各权威文档在文末以「见 `docs/GLOSSARY.md`」引用，**禁止各自复制维护术语表以避免漂移**。
+> 所有 `.md` 文档的术语以本表为准；各权威文档在文末以「见 `docs/enterprise/GLOSSARY.md`」引用，**禁止各自复制维护术语表以避免漂移**。
 > 命名约定：中文术语为主，英文/缩写首次出现附原文；专有名词大小写固定。
 > **版本**：DOC-GLOSSARY-V1.5 · 2026-08-24
 > **主责联盟**：三联盟联合（产品=业务与产品名 · 算法=图谱/算法术语 · 开发=工程/路径术语 · 测试联盟=评测术语）
@@ -31,12 +31,12 @@
 | **🔹 9 里程碑（M0~M8）**（v1.1 新增） | 9 Milestone Roadmap（M0→M8） | 璇玑 RelGraph 统一排期口径：M0 全域归一化 / M1 业务闭环 / M2 算法核 / M3 AI 统一编排 / M4 存储分布式 / M5 可观测 HA / M6 多云 / M7 生态 / M8 自治；**三级验收门槛**：L0（单元&静态全绿）→ L1（集成&E2E 全过）→ L2（SLO 达标 & 外部验收）。 | 18 §八 · `docs/enterprise/05` §7 里程碑表 · ADR-DOC-008 |
 | **🔹 八大算法家族**（v1.1 新增） | Eight Algorithm Families（A1~A8） | 璇玑 RelGraph 唯一指定算法实现集合，禁止等价自研：A1 CNM 社区检测 / A2 Brandes 2001 介数中心性 / A3 Harmonic 紧密中心性 / A4 PageRank（含转置图处理）/ A5 激活扩散（个性化 PR·d=0.85·30 轮）/ A6 RRF 结果融合（k=60）/ A7 CEM 交叉熵优化 / A8 CPM 关键路径 + RCPSP 资源调度。 | 18 §五 · `platform/domains/graph-algorithms` · `optimizer` · `ai-agent` · ADR-DOC-007 |
 | **璇玑**（保留，与「璇玑 RelGraph」不混用） | Xuánjī Engine / `mox-expert` crate（技术代号） | 归一化 IR 驱动的**元调度诊断引擎实体**：双璇玑十四维并行诊断 → 裁决 → flow-ai 求解 → ⛨验证网关 → 治理闸门 → 出码/出图。注意：「璇玑 RelGraph」是**整个产品名**；「璇玑」单独出现时指 `mox-expert` 中的最高权限引擎。 | `platform/domains/mox-expert/` · ⛨璇玑验证网关 |
-| **关图**（保留，图谱别名） | 信息关联关系图 / GR-STD-V1.0 | 「一切皆是信息」：所有信息实体抽象为**节点**，关联关系抽象为**边**，以需求为根节点无限扩展，构成全栈信息关联图，作为项目唯一基准。是璇玑 RelGraph「八层图谱（L0~L7）」的 GR-STD 原始子集（12 节点 / 7 边）。 | `docs/specs/GR-STD-信息关联关系图开发规范-V1.0.md` · 八层图谱 L0~L7 扩集 |
+| **关图**（保留，图谱别名） | 信息关联关系图 / GR-STD-V1.0 | 「一切皆是信息」：所有信息实体抽象为**节点**，关联关系抽象为**边**，以需求为根节点无限扩展，构成全栈信息关联图，作为项目唯一基准。是璇玑 RelGraph「八层图谱（L0~L7）」的 GR-STD 原始子集（12 节点 / 7 边）。 | `docs/specifications/GR-STD-信息关联关系图开发规范-V1.0.md` · 八层图谱 L0~L7 扩集 |
 | **AA-STD**（保留） | mox 模块化系统架构需求业务处理流程图-归一化企业级 | 融合域**需求事实基准**，承载 REQ→FUN→BIZ→ALG→TSK→COD 五向绑定的归一化主流程。 | `docs/璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md` |
-| **PT-Primi / PrimiFlow**（保留） | 全域拓扑原语架构 V1.0 | operator-unified-system 之上的**元调度大脑层**（meta-scheduling brain）；κ-τ 拓扑原语调度，守恒律 `C² = κ² + τ²`。 | `docs/specs/PT-Primi-架构规范-V1.0-完整版.md` |
+| **PT-Primi / PrimiFlow**（保留） | 全域拓扑原语架构 V1.0 | operator-unified-system 之上的**元调度大脑层**（meta-scheduling brain）；κ-τ 拓扑原语调度，守恒律 `C² = κ² + τ²`。 | `docs/specifications/PT-Primi-架构规范-V1.0-完整版.md` |
 | **OUS**（保留 · 父系统代号） | operator-unified-system | 算子统一系统（Rust 底层父系统 v3.0.0-ai-powered，多 crate 架构），提供算子侧稳定能力。**对外产品名统一为「璇玑 RelGraph」**，OUS 仅作父系统技术代号，禁止在对外文档中与产品名混用。 | 仓库根 `platform/domains/`（原 `crates/`） · README 技术描述区 · ADR-DOC-011 |
 | **双璇玑十四维**（保留） | Dual-Xuánjī 14-Dim | 业务 7 维 + 开发 7 维并行诊断的体系化维度模型。三联盟责任：业务 7 维=算法联盟 R+产品联盟 C；开发 7 维=开发联盟 R。 | 璇玑系统 · 06 §5 RACI |
-| **mox 模块化系统架构**（保留） | full-dimensional | 覆盖需求/架构/设计/业务/测试/验收/归档的mox 模块化系统架构维度工程视图。 | `docs/full-dimensional/` |
+| **mox 模块化系统架构**（保留） | full-dimensional | 覆盖需求/架构/设计/业务/测试/验收/归档的mox 模块化系统架构维度工程视图。 | `docs/architecture/full-dimensional/` |
 | **🔹 全文档归一化总控卡（v1.3 新增 · DOC-NORMALIZATION-MASTER · 22 号文档）** | Docs Normalization Master Card（9 大映射表 + 8 步裁决流程） | enterprise 23 份文档（00~22）的**归一化治理枢纽**。唯一功能 = 把散落在 18/01/02/04/05/06/07/08/10~17/19/20/21 共 19 份文档中的「命名 · 架构分层 · 业务链路 · 图谱 Schema · 算法组合 · 版本打包 · NFR 棘轮 · 文档职责 · SRS 逐段锚点」9 大类等价关系焊死成 9 张单源映射表（合计 156 行）。权威级 = **L1 · 治理枢纽**（仅低于 18 TOP-MASTER，高于所有 L1/L2 下游文档；冲突=改下游，不得反改本卡，改本卡须 4 位签字）。 | `docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md`（权威源） · 00-INDEX §0 三大红线入口第 3 条（归一化裁决入口=本卡） |
 | **🔹 Aura SRS 全要点落地清单（v1.3 新增 · 4 栏 100% 打钩=归一化闭环完成证书）** | Aura SRS 100% Coverage Checklist（4-Column ✅） | 21 号对外 SRS 文末 §十一 的**可交付验收清单**。方法 = 把用户给的 SRS 原文按「最小可验收单元」拆成 N 条原子要点（本次 v1.0 = 99 条），每条 4 栏打钩：① 21 SRS 有没有载点位（=对外不悬空）② 内部 22 份权威文档有没有对应锚点（=对内能落地）③ 22 总控卡有没有对应表/行（=名实分裂已焊死）④ 15 Crate 有没有对应代码载体（=有实锤，不是空话）。**4 栏全 ✅ = 这条真正闭环**；本次 99×4=396 钩 100% 全齐 = Aura 对外 SRS 已归一化闭环，可直接 Word/PDF 导出合同。 | `docs/enterprise/21` §十一（清单载体） · 22 号总控卡「8 步裁决流程」（发现 ❌ 怎么补的标准流程） |
 | **🔹 Aura 前端最佳开源 Skills 矩阵（v1.4 新增 · S1~S12 12 类选型 · 前端开发联盟必须 100% 按此选型）** | Aura Frontend Open-Source Skills Matrix（S1~S12，12 Categories） | 璇玑 Aura 前端生态的**最佳选型矩阵 12 类**（写死，前端开发者不得自造轮子/换栈）：S1 基础 UI=Element Plus / S2 状态=Pinia+持久化+时间旅行 / S3 关图可视化=G6 Graphin 或 vis-network / S4 流程可视化=LogicFlow+ElSteps / S5 图表=ECharts 5 / S6 表单校验=zod+VeeValidate / S7 请求+Mock+SSE=Axios+MSW+@vueuse/core / S8 测试三件套=Vitest+Playwright+Storybook / S9 脚手架=Plop / S10 拖拽=vuedraggable / S11 Diff Viewer=Monaco Editor+diff-match-patch / S12 指引与通知=Shepherd+ElTour。选型原则 = 原生 Vue3 + TS 类型完美 + Star≥10k + 与关图/RBAC/对账天然适配 + 与 Element Plus 风格统一。 | `docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md` §四 选型矩阵（权威源） · frontend-ui/package.json · frontend-ui/README.md 顶部前端 PR 模板 |
@@ -51,9 +51,9 @@
 | **κ-τ 拓扑原语调度** | PrimiFlow 原生调度算法：κ（曲率/结构复杂度）与 τ（扭转/时序约束）守恒。 | 守恒律 `C² = κ² + τ²` |
 | **⛨ 璇玑验证网关** | 闭环出码/出图前的**最高权限验证网关**，对诊断结论做最终裁决与放行。 | 治理闸门上游 |
 | **治理闸门** | Governance Gate：在出码前对合规性、零死代码、禁伪代码做门禁拦截。 | `govern` crate |
-| **归一化** | Normalization：将分散/重复/过程稿文档统一为单一事实源、统一命名/编号/引用/锚点的治理动作。 | 见 `docs/DOC-NORMALIZATION-REPORT.md` |
+| **归一化** | Normalization：将分散/重复/过程稿文档统一为单一事实源、统一命名/编号/引用/锚点的治理动作。 | 见 `docs/enterprise/DOC-NORMALIZATION-REPORT.md` |
 | **判重闸门 (P9)** | 需求判重与去噪闸门，防止重复需求进入流水线。 | enterprise/16 |
-| **关图骨架** | guantu-skeleton：GR-STD 的 REQ 根 + 六维绑定骨架 + 偏离检测承载文件。 | `docs/full-dimensional/guantu-skeleton.md` |
+| **关图骨架** | guantu-skeleton：GR-STD 的 REQ 根 + 六维绑定骨架 + 偏离检测承载文件。 | `docs/architecture/full-dimensional/guantu-skeleton.md` |
 
 ## 3. 文档治理等级
 

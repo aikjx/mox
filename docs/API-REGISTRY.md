@@ -1,6 +1,6 @@
 # API 注册表（权威·接口↔实现一一对应）
 
-> 本文档为网关 8080 暴露的全部 API 的唯一权威清单，由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表直接生成（生成脚本 `scripts/gen-api-registry.py`）。**声明即实现**：表中每一条都有对应源码注册与真实 handler，不存在纯占位条目。
+> 本文档为网关 3080 暴露的全部 API 的唯一权威清单，由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表直接生成（生成脚本 `scripts/gen-api-registry.py`）。**声明即实现**：表中每一条都有对应源码注册与真实 handler，不存在纯占位条目。
 
 ## 1. 总览
 
@@ -9,7 +9,7 @@
 | 注册路由总数 | **223 条**（全部 ready，全部有真实实现） |
 | 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |
 | 域描述符（业务规划） | 46 个：全部 ready · 0 beta · 0 stub（见 §3，2026-09-13 核对） |
-| 独立服务进程 | 6 个：kg-hub / kb-server / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
+| 网关外进程 | 5 个：kg-hub / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
 | 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |
 
 ## 2. 逐域注册表（223 条）
@@ -322,7 +322,6 @@
 | 服务 | 二进制 | 路由前缀 | 说明 |
 | --- | --- | --- | --- |
 | kg-hub | `mox-kg-hub-svc` | `/api/kg/*`（15 条） | 知识图谱枢纽：检索/影响/治理/闭环 |
-| kb-server | `mox-kb-server` | `/api/v1/kb/*`（4 条） | 知识库独立服务（与网关内嵌 kb 并存） |
 | alliance-executor | `mox-alliance-executor` | `/health` `/tasks/:id/*` `/internal/*`（8 条） | 联盟任务执行器 |
 | alliance-scheduler | `mox-alliance-scheduler` | `/tasks` `/experts/search`（5 条） | 联盟调度器 |
 | primiflow | 前端子项目 | — | `:8000`，经 `/api/projects/{*path}` 代理 |
@@ -330,23 +329,20 @@
 
 ### 4.1 全链路启动命令（2026-09-07 实测通过）
 
-五个进程按依赖顺序启动（Windows PowerShell，均为 debug 构建）：
+四个核心进程按依赖顺序启动（Windows PowerShell，均为 debug 构建）：
 
 ```powershell
 # 1) 联盟调度器 :3100 / 执行器 :3200（独立二进制，配置读 config/alliance-*.yml）
 Start-Process target\debug\mox-alliance-scheduler.exe -ArgumentList @("--port","3100") -WindowStyle Hidden
 Start-Process target\debug\mox-alliance-executor.exe -ArgumentList @("--port","3200") -WindowStyle Hidden
 
-# 2) 知识库独立服务 :8104
-Start-Process target\debug\mox-kb-server.exe -ArgumentList @("--port","8104") -WindowStyle Hidden
-
-# 3) 编排器 :3001（OUS_ENABLE_MOX_SYSTEM=0 跳过未 bootstrap 的 mox-system 模块；OUS_API_TOKEN 与网关对齐）
+# 2) 编排器 :3001（OUS_ENABLE_MOX_SYSTEM=0 跳过未 bootstrap 的 mox-system 模块；OUS_API_TOKEN 与网关对齐）
 $env:OUS_ENABLE_MOX_SYSTEM="0"; $env:OUS_API_TOKEN="dev-secret-token"
 Start-Process target\debug\operator-server.exe -ArgumentList @("--port","3001") -WindowStyle Hidden
 
-# 4) 网关 :8080（MOX_ALLIANCE_*_URL 激活联盟远程模式）
+# 3) 网关 :3080（内嵌 KG/KB/Cloud/IAM；MOX_ALLIANCE_*_URL 激活联盟远程模式）
 $env:MOX_ALLIANCE_SCHEDULER_URL="http://127.0.0.1:3100"; $env:MOX_ALLIANCE_EXECUTOR_URL="http://127.0.0.1:3200"
-Start-Process target\debug\mox-server.exe -ArgumentList @("--port","8080") -WindowStyle Hidden
+Start-Process target\debug\mox-server.exe -ArgumentList @("--port","3080") -WindowStyle Hidden
 ```
 
 验证要点：网关 `/api/v1/status` → `iam: ready`；`/api/alliance/runtime` → `mode: remote, execution_ready: true`；联盟任务创建后经调度器真实执行（DAG 节点流转）；编排器 `/api/graph/export`、`/api/status` 需带 `Authorization: Bearer dev-secret-token`。

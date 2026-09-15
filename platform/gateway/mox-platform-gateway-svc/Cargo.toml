@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "MOX L1 企业级网关：axum 单二进制 · 31域模块化路由 · 8080 全面接管原 backend-node"
+description = "MOX L1 企业级网关：axum 单二进制 · 31 域模块化路由 · 3080 唯一入口"
 
 [[bin]]
 name = "mox-server"

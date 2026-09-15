@@ -7,7 +7,7 @@
 > **文档层级**：L1权威规范层
 > **最后更新日期**：2026-08-31
 > **主责联盟**：开发联盟 R
-> **单源声明**：本术语表是专家联盟领域术语的唯一事实源，与 `docs/GLOSSARY.md` 互为补充。`docs/GLOSSARY.md` 覆盖全仓库通用术语，本表覆盖专家联盟领域专项术语。冲突时以 `docs/GLOSSARY.md` 为准。
+> **单源声明**：本术语表是专家联盟领域术语的唯一事实源，与 `docs/enterprise/GLOSSARY.md` 互为补充。`docs/enterprise/GLOSSARY.md` 覆盖全仓库通用术语，本表覆盖专家联盟领域专项术语。冲突时以 `docs/enterprise/GLOSSARY.md` 为准。
 > **编制依据**：`docs/working-reports/expert-alliance-doc-inventory-20260831.md` §3.6 术语不一致项、`docs/standards/expert-alliance-normalization-mode.md` §5 术语单源管理
 
 ---
@@ -164,9 +164,9 @@
 
 ---
 
-## 5. 与 docs/GLOSSARY.md 的关系
+## 5. 与 docs/enterprise/GLOSSARY.md 的关系
 
-| 维度 | `docs/GLOSSARY.md`（通用术语表） | 本文档（专家联盟术语表） |
+| 维度 | `docs/enterprise/GLOSSARY.md`（通用术语表） | 本文档（专家联盟术语表） |
 |------|----------------------------------|------------------------|
 | 覆盖范围 | 全仓库所有领域的通用术语 | 专家联盟领域专项术语 |
 | 权威关系 | 全仓库术语唯一事实源（最高优先级） | 专家联盟领域术语事实源，与GLOSSARY互为补充 |

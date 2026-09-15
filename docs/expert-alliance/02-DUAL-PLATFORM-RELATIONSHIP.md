@@ -1,5 +1,5 @@
 # 专家联盟双平台架构关系说明
-> **⚠️ 状态标注（2026-09-03 端口归一化）**：本文档中提及的 **Node.js 平台层（:3010，platform/backend-node/）已退役删除**，其 API 网关、专家联盟、AI 引擎、知识图谱等能力已由 **Rust 网关 mox-server（:8080）** 统一接管。当前有效端口以 [PORT-REGISTRY.md](../ports/PORT-REGISTRY.md) 为准。本文保留 :3010 作为历史架构记录。
+> **⚠️ 状态标注（2026-09-03 端口归一化）**：本文档中提及的 **Node.js 平台层（:3010，platform/backend-node/）已退役删除**，其 API 网关、专家联盟、AI 引擎、知识图谱等能力已由 **Rust 网关 mox-server（:8080）** 统一接管。当前有效端口以 [PORT-REGISTRY.md](../api/PORT-REGISTRY.md) 为准。本文保留 :3010 作为历史架构记录。
 
 
 > **标题**：专家联盟双平台架构关系说明
@@ -174,7 +174,7 @@
 | 集成对齐分析报告 | `docs/modules/专家联盟V2.0-集成对齐分析报告.md` | Node层专家联盟模块映射 |
 | 业务流程图第九章 | `docs/modules/business-process-flowcharts.md` | Node平台层23业务域总览 |
 | 归一化规范 | `docs/standards/expert-alliance-normalization-mode.md` | 文档-代码对齐要求 |
-| 架构修复报告 | `docs/alliance-architecture-fix-report-20260831.html` | Rust层修复后状态 |
+| 架构修复报告 | `docs/working-reports/alliance-architecture-fix-report-20260831.html` | Rust层修复后状态 |
 
 ---
 

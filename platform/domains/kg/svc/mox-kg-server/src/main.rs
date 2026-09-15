@@ -3,8 +3,8 @@
 // =============================================================================
 //
 // 独立部署：cargo run -p mox-kg-server
-// 默认端口：8101
-// 健康检查：http://localhost:8101/health/live
+// 默认端口：3411
+// 健康检查：http://localhost:3411/health/live
 //
 // 复用 mox-kg-service-svc 的 http_adapter（10个真实端点）：
 //   - 6个KG查询：邻域BFS / Yen k-最短 / Dijkstra / 中心性 / CNM社区 / 图统计
@@ -61,11 +61,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = if cli.config.exists() {
         ServerConfig::from_file(&cli.config)?
     } else {
-        ServerConfig::default()
+        let mut config = ServerConfig::default();
+        config.server.port = 3411;
+        config
     };
     config.apply_env_overrides();
     if let Some(port) = cli.port { config.server.port = port; }
-    if config.server.port == 8080 { config.server.port = 8101; }
 
     let module = KgModule;
     Server::new(Box::new(module), config).run().await?;

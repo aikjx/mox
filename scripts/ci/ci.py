@@ -7,7 +7,7 @@
 用法：
     python scripts/ci.py            # 全量：build + test + fe build + 启服 + 健康检查
     python scripts/ci.py --no-serve # 仅 build + test + fe build，不启服
-    python scripts/ci.py --port 8080
+    python scripts/ci.py --port 3080
 """
 
 import argparse

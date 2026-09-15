@@ -3,7 +3,7 @@
 > **标准编号**：ENT-SPEC-TOP-MASTER-V1.0  
 > **自然语言**：中文  
 > **适用范围**：`docs/**` 全量文档的归一重写、业务流程再梳理、算法联盟/开发联盟/产品联盟"三联盟模式"沉淀、产品总设计师顶层方案的机读+人读双权威档案。  
-> **事实来源（汇总并重写）**：`docs/enterprise/00~17`、`docs/enterprise-architecture-analysis.md`、`docs/architecture.md(v7)`、`docs/standards/*`（引擎内核/引擎全域/专家联盟流程/项目图谱/工作台）、`docs/specs/*`（GR-STD/PT-STD/OUS 规划）、`docs/modules/*`（15 专题）、`docs/GLOSSARY.md`、`docs/DOC-NORMALIZATION-REPORT.md`、`docs/mox-mox-product-handbook-v3.md`、`docs/full-dimensional/*`、项目记忆（11 条硬约束）、当前仓库实际目录与代码事实。
+> **事实来源（汇总并重写）**：`docs/enterprise/00~17`、`docs/enterprise/enterprise-architecture-analysis.md`、`docs/architecture/architecture.md(v7)`、`docs/standards/*`（引擎内核/引擎全域/专家联盟流程/项目图谱/工作台）、`docs/specifications/*`（GR-STD/PT-STD/OUS 规划）、`docs/modules/*`（15 专题）、`docs/enterprise/GLOSSARY.md`、`docs/DOC-NORMALIZATION-REPORT.md`、`docs/mox-mox-product-handbook-v3.md`、`docs/architecture/full-dimensional/*`、项目记忆（11 条硬约束）、当前仓库实际目录与代码事实。
 
 ---
 
@@ -74,7 +74,7 @@
 | S9 | **更新需求-架构映射 `06`**：把三联盟模式（算法/开发/产品）映射到对应 crate 与流程图。 | `docs/enterprise/06-requirements-architecture-map.md` |
 | S10 | **更新mox 模块化系统架构需求明确书 `07`**：在铁律末尾追加"三联盟协同铁律（4 条）"。 | `docs/enterprise/07-mox 模块化系统架构需求明确书.md` |
 | S11 | **更新mox 模块化系统架构自动化明确书 `08`**：把 mox_optimize 8 步对齐到三联盟（产品联盟 M0→M1、算法联盟 M2→M4、开发联盟 M5→M8）。 | `docs/enterprise/08-mox 模块化系统架构自动化处理明确书.md` |
-| S12 | **更新 GLOSSARY**：登记术语「mox / 三联盟 / 九层金字塔 / 10 条标准业务流程 / 9 里程碑 / 三档验收 / 兼容承诺」共 7 条。 | `docs/GLOSSARY.md` |
+| S12 | **更新 GLOSSARY**：登记术语「mox / 三联盟 / 九层金字塔 / 10 条标准业务流程 / 9 里程碑 / 三档验收 / 兼容承诺」共 7 条。 | `docs/enterprise/GLOSSARY.md` |
 | S13 | **更新 docs/README.md**（导航，非治理入口）：首行改为统一产品定名 + 指向 enterprise/00-INDEX + 指向 18。 | `docs/README.md` |
 | S14 | **更新仓库根 README.md**：首行改为统一产品定名「璇玑 mox · 企业级全域归一化知识图谱系统」；把 §12 产品矩阵描述链接到 18 与产品手册 v3。 | `README.md` |
 
@@ -148,7 +148,7 @@
 
 - D1：本 Spec 中引用的 18~14 份目标文档真实存在于仓库（见 §3.1 S1~S14 列表）。
 - D2：项目记忆的 11 条硬约束与 enterprise/00-INDEX v1.0 的权威等级体系已经生效。
-- D3：`docs/specs/GR-STD` / `PT-STD` / `OUS 规划` 三份规范的内容保持不变，只在 enterprise 做"引用与归一"。
+- D3：`docs/specifications/GR-STD` / `PT-STD` / `OUS 规划` 三份规范的内容保持不变，只在 enterprise 做"引用与归一"。
 
 ### 6.3 假设（Assumptions）
 

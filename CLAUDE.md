@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-> 本文件是 AI 编码上下文规范（项目「关图 / 璇玑」算子统一mox 模块化系统架构治理系统）。深度架构、需求、验收、路线图见 `docs/enterprise/00-INDEX.md` 与 `docs/full-dimensional/`，本文件只规定**编码与架构约束**，不重复文档集内容。
+> 本文件是 AI 编码上下文规范（项目「关图 / 璇玑」算子统一mox 模块化系统架构治理系统）。深度架构、需求、验收、路线图见 `docs/enterprise/00-INDEX.md` 与 `docs/architecture/full-dimensional/`，本文件只规定**编码与架构约束**，不重复文档集内容。
 
 ## 项目概览
 

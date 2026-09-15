@@ -1,32 +1,35 @@
 # =============================================================================
-# MOX 微服务独立部署 - docker-compose
-# 启动：docker-compose up -d
+# MOX 旧独立域演示服务 - docker-compose
+# 同 API 的融合/独立部署请使用 docker-compose.domains.yml；本文件各服务实现并不等价。
+# 默认生产入口是 mox-server:3080；仅在调试或验证独立扩展边界时使用本文件。
+# 启动：docker compose -f docker-compose.microservices.yml up -d
 # 停止：docker-compose down
 # 单服务：docker-compose up mox-kb-server
 # =============================================================================
-
-version: "3.9"
 
 services:
   # ── 知识图谱服务 ─────────────────────────────────────────────────────────
   mox-kg-server:
     build:
       context: .
-      dockerfile: platform/domains/kg/svc/mox-kg-server/Dockerfile
+      dockerfile: deploy/docker/Dockerfile.rust-service
       args:
-        SERVICE: mox-kg-server
+        PACKAGE: mox-kg-server
+        BINARY: mox-kg-server
+        PORT: 3411
     container_name: mox-kg-server
     ports:
-      - "8101:8101"
+      - "3411:3411"
     environment:
       - MOX_SERVER_HOST=0.0.0.0
-      - MOX_SERVER_PORT=8101
+      - MOX_SERVER_PORT=3411
       - RUST_LOG=info
+    command: ["--config", "/etc/mox/server.example.toml"]
     volumes:
       - ./platform/domains/kg/svc/mox-kg-server/config:/etc/mox
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8101/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:3411/health/live"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -35,21 +38,24 @@ services:
   mox-cloud-server:
     build:
       context: .
-      dockerfile: platform/domains/cloud/svc/mox-cloud-server/Dockerfile
+      dockerfile: deploy/docker/Dockerfile.rust-service
       args:
-        SERVICE: mox-cloud-server
+        PACKAGE: mox-cloud-server
+        BINARY: mox-cloud-server
+        PORT: 3412
     container_name: mox-cloud-server
     ports:
-      - "8102:8102"
+      - "3412:3412"
     environment:
       - MOX_SERVER_HOST=0.0.0.0
-      - MOX_SERVER_PORT=8102
+      - MOX_SERVER_PORT=3412
       - RUST_LOG=info
+    command: ["--config", "/etc/mox/server.example.toml"]
     volumes:
       - ./platform/domains/cloud/svc/mox-cloud-server/config:/etc/mox
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8102/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:3412/health/live"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -58,21 +64,24 @@ services:
   mox-iam-server:
     build:
       context: .
-      dockerfile: platform/domains/platform/svc/mox-iam-server/Dockerfile
+      dockerfile: deploy/docker/Dockerfile.rust-service
       args:
-        SERVICE: mox-iam-server
+        PACKAGE: mox-iam-server
+        BINARY: mox-iam-server
+        PORT: 3413
     container_name: mox-iam-server
     ports:
-      - "8103:8103"
+      - "3413:3413"
     environment:
       - MOX_SERVER_HOST=0.0.0.0
-      - MOX_SERVER_PORT=8103
+      - MOX_SERVER_PORT=3413
       - RUST_LOG=info
+    command: ["--config", "/etc/mox/server.example.toml"]
     volumes:
       - ./platform/domains/platform/svc/mox-iam-server/config:/etc/mox
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8103/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:3413/health/live"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -81,33 +90,27 @@ services:
   mox-kb-server:
     build:
       context: .
-      dockerfile: platform/domains/kb/svc/mox-kb-server/Dockerfile
+      dockerfile: deploy/docker/Dockerfile.rust-service
       args:
-        SERVICE: mox-kb-server
+        PACKAGE: mox-kb-server
+        BINARY: mox-kb-server
+        PORT: 3414
     container_name: mox-kb-server
     ports:
-      - "8104:8104"
+      - "3414:3414"
     environment:
       - MOX_SERVER_HOST=0.0.0.0
-      - MOX_SERVER_PORT=8104
+      - MOX_SERVER_PORT=3414
       - RUST_LOG=info
+    command: ["--config", "/etc/mox/server.example.toml"]
     volumes:
       - ./platform/domains/kb/svc/mox-kb-server/config:/etc/mox
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8104/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:3414/health/live"]
       interval: 30s
       timeout: 3s
       retries: 3
-
-  # ── Redis 缓存（可选，用于 L2 分布式缓存） ───────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: mox-redis
-    ports:
-      - "6379:6379"
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
-    restart: unless-stopped
 
 networks:
   default:

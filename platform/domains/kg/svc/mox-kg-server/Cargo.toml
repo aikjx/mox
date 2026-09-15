@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "MOX 知识图谱独立微服务（可单独部署，端口 8101）"
+description = "MOX 知识图谱可选独立服务（端口 3411）"
 
 [[bin]]
 name = "mox-kg-server"

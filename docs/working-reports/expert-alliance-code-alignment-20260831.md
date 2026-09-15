@@ -457,7 +457,7 @@ common-proto (独立基础)
 
 ---
 
-### 文档6：`docs/cosmic-architecture/02-EXPERT-ALLIANCE-ARCHITECTURE.md`（宇宙架构）
+### 文档6：`docs/architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md`（宇宙架构）
 
 **文档定位**：宏观架构设计，描述7服务架构
 

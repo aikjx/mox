@@ -3,8 +3,8 @@
 // =============================================================================
 //
 // 独立部署：cargo run -p mox-kb-server -- --config /etc/mox/kb.toml
-// 默认端口：8104
-// 健康检查：http://localhost:8104/health/live
+// 默认端口：3414
+// 健康检查：http://localhost:3414/health/live
 //
 // 从 kg/svc/mox-kb-svc 独立迁出，成为 kb 域的独立微服务。
 // 提供：文档管理 / 版本控制 / 全文检索 / 知识分析 / 关联链接 / 专家门禁
@@ -173,11 +173,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = if cli.config.exists() {
         ServerConfig::from_file(&cli.config)?
     } else {
-        ServerConfig::default()
+        let mut config = ServerConfig::default();
+        config.server.port = 3414;
+        config
     };
     config.apply_env_overrides();
     if let Some(port) = cli.port { config.server.port = port; }
-    if config.server.port == 8080 { config.server.port = 8104; }
     let module = KbModule::new();
     Server::new(Box::new(module), config).run().await?;
     Ok(())

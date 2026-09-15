@@ -130,7 +130,7 @@ cargo test -p mox-alliance-boot-config --features nacos,naming \
 | 配置 | `config/alliance-scheduler.yml`、`config/alliance-executor.yml` | 新增 `naming:` 段 |
 | 脚本 | `tools/alliance_nacos_e2e.py` | **新增**：配置中心+注册中心一次验证 |
 | 脚本 | `scripts/verify-ports.py` | CANONICAL 增 5 端口；NOISE_CTX 行号过滤；PRUNE nacos_db |
-| 文档 | `docs/ports/PORT-REGISTRY.md` | §3.6 登记 8999/9848/10848 |
+| 文档 | `docs/api/PORT-REGISTRY.md` | §3.6 登记 8999/9848/10848 |
 | 文档 | `docs/standards/expert-alliance-port-norm.md` | **V1.3 → V1.4**：§7.11 补配置中心启动 e2e、§7.13 NamingService 阶段三、§7.14 语音核验 |
 
 ---

@@ -175,7 +175,7 @@ if [ "$rc" -ne 0 ]; then
 fi
 
 # 打印访问地址（端口一律以 platform_config.json 为单一事实源，禁止硬编码漂移）
-API_PORT=$("$PY_BIN" -c "import json; d=json.load(open('platform_config.json',encoding='utf-8')); print(d['services']['api']['port'])" 2>/dev/null || echo 8080)
+API_PORT=$("$PY_BIN" -c "import json; d=json.load(open('platform_config.json',encoding='utf-8')); print(d['services']['api']['port'])" 2>/dev/null || echo 3080)
 FE_PORT=$("$PY_BIN" -c "import json; d=json.load(open('platform_config.json',encoding='utf-8')); print(d['services']['frontend']['port'])" 2>/dev/null || echo 3020)
 DASH_PORT=$("$PY_BIN" -c "import json,sys; d=json.load(open('platform_config.json',encoding='utf-8')); print(d.get('dashboard_port',3999))" 2>/dev/null || echo 3999)
 echo

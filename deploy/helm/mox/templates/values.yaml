@@ -18,7 +18,7 @@ mijiEnforce: true
 
 service:
   type: ClusterIP
-  publicPort: 8080
+  publicPort: 3080
   ctrlPort: 9080
   dataPort: 9081
 

@@ -6,7 +6,7 @@
 # On all 4 stages pass -> exit 0.
 #
 # PARAMETERS:
-#   -BaseUrl            Mox service base URL (default: http://localhost:8080)
+#   -BaseUrl            Mox service base URL (default: http://localhost:3080)
 #   -HealthThreshold    Minimum health % required per stage (default 95)
 #   -WarmupSeconds      Wait time per stage (default 60)
 #   -ForceFailPercent   Injected health score to test rollback path (-1 = disable)
@@ -19,7 +19,7 @@
 
 [CmdletBinding()]
 param(
-    [string]$BaseUrl = "http://localhost:8080",
+    [string]$BaseUrl = "http://localhost:3080",
     [int]$HealthThreshold = 95,
     [int]$WarmupSeconds = 60,
     [int]$ForceFailPercent = -1,

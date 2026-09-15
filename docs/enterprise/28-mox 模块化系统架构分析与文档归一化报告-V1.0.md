@@ -514,10 +514,10 @@ L4  验收报告          11/12/13/16/25/27                         （棘轮基
 
 | 文档 | 大小 | 处置 | 理由 |
 |------|------|------|------|
-| docs/architecture.md | 79KB | 📦 归档至 docs/archive/ | OUS父系统总架构视角，与02高度重叠，且基于旧crate |
+| docs/architecture/architecture.md | 79KB | 📦 归档至 docs/archive/ | OUS父系统总架构视角，与02高度重叠，且基于旧crate |
 | docs/enterprise/02-architecture.md | 35KB | ✏️ **重写**为新架构权威 | 七视图架构，定位最清晰，作为唯一架构事实源 |
 | docs/enterprise/17-算子系统mox 模块化系统架构分析与归一化设计.md | 24KB | 📦 归档至 docs/archive/ | 15+1 crate旧蓝图，已被新架构取代 |
-| docs/enterprise-architecture-analysis.md | 17KB | ✂️ 提取"双璇玑十四维"部分并入02，其余归档 | 能力矩阵有价值，但整体基于旧架构 |
+| docs/enterprise/enterprise-architecture-analysis.md | 17KB | ✂️ 提取"双璇玑十四维"部分并入02，其余归档 | 能力矩阵有价值，但整体基于旧架构 |
 
 **结果**：架构文档从4份（155KB）收敛为1份权威（02，重写后预计50-60KB）+ 归档3份。
 

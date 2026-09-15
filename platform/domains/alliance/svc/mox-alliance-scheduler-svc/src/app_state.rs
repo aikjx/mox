@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use mox_alliance_scheduler_core::{TaskSchedulerImpl, ExecutorBridge};
+use mox_alliance_scheduler_core::{AllianceMetrics, TaskSchedulerImpl, ExecutorBridge};
 use mox_alliance_scheduler_proto::ExpertMatcher;
 use tokio::sync::mpsc;
 
@@ -25,6 +25,8 @@ pub struct SchedulerAppState {
     pub dispatch_tx: mpsc::UnboundedSender<Task>,
     /// 执行器服务基础 URL（用于代理 /tasks/:id/nodes 和 /tasks/:id/result）
     pub executor_base_url: String,
+    /// 联盟运行指标（匹配/LLM/融合/DAG 计数器，经 /metrics 暴露）
+    pub metrics: Arc<AllianceMetrics>,
 }
 
 impl SchedulerAppState {
@@ -45,6 +47,7 @@ impl SchedulerAppState {
             executor_bridge,
             dispatch_tx,
             executor_base_url: "http://127.0.0.1:3200".to_string(),
+            metrics: Arc::new(AllianceMetrics::new()),
         }
     }
 
@@ -65,12 +68,19 @@ impl SchedulerAppState {
             executor_bridge,
             dispatch_tx,
             executor_base_url: "http://127.0.0.1:3200".to_string(),
+            metrics: Arc::new(AllianceMetrics::new()),
         }
     }
 
     /// 设置执行器服务基础 URL（用于代理端点）
     pub fn with_executor_base_url(mut self, url: impl Into<String>) -> Self {
         self.executor_base_url = url.into();
+        self
+    }
+
+    /// 注入共享的指标收集器（让调度器内部与 HTTP handler 共用同一实例）
+    pub fn with_metrics(mut self, metrics: Arc<AllianceMetrics>) -> Self {
+        self.metrics = metrics;
         self
     }
 }

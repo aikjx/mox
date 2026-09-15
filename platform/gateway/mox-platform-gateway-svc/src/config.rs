@@ -85,7 +85,9 @@ impl AuthConfig {
             }
         }
         // MOX_DEV_MODE=1 可在 release 中显式开启 dev 模式（仅限临时调试）
-        if std::env::var("MOX_DEV_MODE").unwrap_or_default() == "1" {
+        if std::env::var("MOX_DEV_MODE").unwrap_or_default() == "0" {
+            self.dev_mode = false;
+        } else if std::env::var("MOX_DEV_MODE").unwrap_or_default() == "1" {
             self.dev_mode = true;
             eprintln!("[WARN] MOX_DEV_MODE=1 已启用，dev 令牌可绕过严格 JWT 校验。仅限临时调试！");
         }
@@ -176,7 +178,7 @@ impl Default for GatewayConfig {
     fn default() -> Self {
         Self {
             host: "0.0.0.0".into(),
-            port: 8080,
+            port: 3080,
             request_timeout: Duration::from_secs(30),
             auth: AuthConfig::default(),
             rate_limit: RateLimitConfig::default(),

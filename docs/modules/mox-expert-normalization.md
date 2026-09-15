@@ -7,7 +7,7 @@
 > 版本：v1.0（mox 模块化系统架构治理 / 企业级 / 与 `docs/modules/mox-expert-product.md` 姊妹篇）
 > 代码落点：`crates/mox-expert`（ir / expert / experts / reconcile / verify / govern / programming / context / harness / audit / rbac / flow_loader / bench / server）
 > 定位：在"产品需求已对齐"基础上，做**功能归一化、冲突诊断、I/O 规范、知识库规范、落地下一步**的企业级收口。
-> 配套文档：`docs/modules/mox-expert-product.md`（SRS + 架构 + 业务流）、`docs/architecture.md`（OUS 企业级总架构 v7.0）、`docs/modules/mathematical-foundation.md`（数学内核）。
+> 配套文档：`docs/modules/mox-expert-product.md`（SRS + 架构 + 业务流）、`docs/architecture/architecture.md`（OUS 企业级总架构 v7.0）、`docs/modules/mathematical-foundation.md`（数学内核）。
 
 ---
 

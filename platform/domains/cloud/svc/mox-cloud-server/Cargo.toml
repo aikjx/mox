@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "MOX 云盘独立微服务（可单独部署，端口 8102）"
+description = "MOX 云盘可选独立服务（端口 3412）"
 
 [[bin]]
 name = "mox-cloud-server"

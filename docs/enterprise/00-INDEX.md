@@ -96,7 +96,7 @@
 **配套参考文档（既有，纳入本索引统一管理，不重复造轮子）**：
 
 > ⚠️ **`docs/` 各分区文档的权威等级说明**（已按归一化布局归位，避免歧义）：
-> - 🟢 **权威基准（以它们为准）**：`docs/GLOSSARY.md`（DOC-GLOSSARY-V1.0，全项目术语唯一事实源）、`docs/璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0，融合域唯一需求事实基准，位于 `docs/` 根）、`docs/modules/mox-expert-business-requirements.md`（BR-01…BR-21，协作域需求来源）、`docs/architecture.md`（OUS 父总架构）、`docs/enterprise-architecture-analysis.md`（双璇玑十四维能力矩阵）。
+> - 🟢 **权威基准（以它们为准）**：`docs/enterprise/GLOSSARY.md`（DOC-GLOSSARY-V1.0，全项目术语唯一事实源）、`docs/璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0，融合域唯一需求事实基准，位于 `docs/` 根）、`docs/modules/mox-expert-business-requirements.md`（BR-01…BR-21，协作域需求来源）、`docs/architecture/architecture.md`（OUS 父总架构）、`docs/enterprise/enterprise-architecture-analysis.md`（双璇玑十四维能力矩阵）。
 > - 🟡 **过程稿 / 验证记录（仅供追溯，非权威）**：统一归档于 `docs/_archive/2026-08-16/`（原 `PrimiFlow-*`、`mox-expert-验证总结-*` 等 `-20260816` 后缀文档），为当日开发与验证的过程快照，结论已沉淀进本 `enterprise/` 文档集与代码，查阅以本目录为准。
 > - 🟡 **可视化产物**：`*.html` / `*.mmd` 为对应 `.md` 的渲染版本，内容以 `.md` 为源，已与源 `.md` 同位存放（root / `modules/` / `full-dimensional/` / `enterprise/`）。
 
@@ -104,9 +104,9 @@
 |------|----------|------------|------|
 | `docs/璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0） | 融合域需求基准 | **融合治理mox 模块化系统架构需求唯一事实基准**；映射到 `06` §2 | 🟢 权威 |
 | `docs/modules/mox-expert-business-requirements.md` | 需求/业务规则 | 璇玑融合业务规则（BR-01…BR-21、GAP 清单），是 `01/04` 的权威来源 | 🟢 权威 |
-| `docs/architecture.md`（v7.0） | 总体技术架构 | 父系统 OUS 总架构，本文是其「璇玑子系统」切面 | 🟢 权威 |
-| `docs/enterprise-architecture-analysis.md` | 架构/能力矩阵 | 双璇玑十四维、能力覆盖矩阵、持续优化清单 | 🟢 权威 |
-| `docs/GLOSSARY.md`（DOC-GLOSSARY-V1.0） | 规范术语表 | **全项目术语唯一事实源（Single Source of Truth）**；所有文档术语以本表为准 | 🟢 权威 |
+| `docs/architecture/architecture.md`（v7.0） | 总体技术架构 | 父系统 OUS 总架构，本文是其「璇玑子系统」切面 | 🟢 权威 |
+| `docs/enterprise/enterprise-architecture-analysis.md` | 架构/能力矩阵 | 双璇玑十四维、能力覆盖矩阵、持续优化清单 | 🟢 权威 |
+| `docs/enterprise/GLOSSARY.md`（DOC-GLOSSARY-V1.0） | 规范术语表 | **全项目术语唯一事实源（Single Source of Truth）**；所有文档术语以本表为准 | 🟢 权威 |
 | `docs/modules/business-process-flows.md` | 业务处理（执行引擎） | WorkflowEngine / 6 企业模板落地 | 🟡 参考 |
 | `docs/modules/business-process-flowcharts.md` | 业务处理（可视化） | Mermaid 流程图 / 时序图全集 | 🟡 参考 |
 | `docs/modules/mox-expert-alliance-fusion-flows.md` | 业务处理（融合） | BP-6 璇玑融合优化链路 | 🟡 参考 |
@@ -114,19 +114,19 @@
 | `docs/modules/mox-expert-product.md` | 产品/架构 | 产品化视角 | 🟡 参考 |
 | `docs/modules/algorithm-verification.md`（AV-STD-V1.0） | 设计（校验） | 璇玑校验：L1 数学公理自洽 / L2 PT-Primi 合规（ε≤1e-3·六维绑定）/ L3 璇玑治理闸门统一验证矩阵 | 🟢 权威 |
 | `crates/mox-expert/DESIGN.md` / `DESIGN_STAGE2.md` | 设计（融合引擎） | 璇玑引擎实现设计 | 🟡 参考 |
-| `docs/mox-system-business-architecture.html` | 架构（可视化） | mox 模块化系统架构维度分层架构交互图（源为 `.md`） | 🟡 可视化 |
+| `docs/architecture/mox-system-business-architecture.html` | 架构（可视化） | mox 模块化系统架构维度分层架构交互图（源为 `.md`） | 🟡 可视化 |
 | `docs/_archive/2026-08-16/*.md`（PrimiFlow-/mox-expert-验证总结- 等） | 过程稿归档 | 当日开发验证快照，结论已沉淀入本目录 | 🟡 过程稿（非权威） |
-| `docs/specs/PT-Primi-架构规范-V1.0-完整版.md` | 规范 | PT-STD-V1.0 全域拓扑原语架构（六维物理底座） | 🟢 权威 |
-| `docs/specs/GR-STD-信息关联关系图开发规范-V1.0.md` | 规范 | GR-STD-V1.0 关图开发规范（信息实体建模） | 🟢 权威 |
-| `docs/specs/OUS-业务功能规划与架构数据关系分析.md` | 规划 | 12 crate 现状盘点 + 能力域规划 | 🟢 权威 |
-| `docs/full-dimensional/guantu-skeleton.md` | 关图骨架 | REQ 根（D01-D13/R01-R08）+ 六维绑定 + 偏离检测（GR-E6） | 🟢 权威 |
-| `docs/full-dimensional/mox-requirement-baseline.md` | 索引 | 编号归一化收口（①-⑩ / C1-C8 → S1-S8） | 🟢 索引 |
-| `docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` | 治理台 API | RBAC/审计链契约（v3.0） | 🟢 权威 |
-| `docs/_archive/2026-08-16/关图骨架定义.md` 等四份原始文档 | 过程稿（已归档） | 已归一承载于 AA-STD / guantu-skeleton，见 `docs/full-dimensional/00-README.md` | 🟡 过程稿 |
-| `docs/graph/graph.json` `graph.enterprise.json` `guantu.req.json` | 关图产物 | 机读图谱（代码级 352 节点 / 企业版 372 节点含 REQ/Bind） | 🟡 产物 |
+| `docs/specifications/PT-Primi-架构规范-V1.0-完整版.md` | 规范 | PT-STD-V1.0 全域拓扑原语架构（六维物理底座） | 🟢 权威 |
+| `docs/specifications/GR-STD-信息关联关系图开发规范-V1.0.md` | 规范 | GR-STD-V1.0 关图开发规范（信息实体建模） | 🟢 权威 |
+| `docs/specifications/OUS-业务功能规划与架构数据关系分析.md` | 规划 | 12 crate 现状盘点 + 能力域规划 | 🟢 权威 |
+| `docs/architecture/full-dimensional/guantu-skeleton.md` | 关图骨架 | REQ 根（D01-D13/R01-R08）+ 六维绑定 + 偏离检测（GR-E6） | 🟢 权威 |
+| `docs/architecture/full-dimensional/mox-requirement-baseline.md` | 索引 | 编号归一化收口（①-⑩ / C1-C8 → S1-S8） | 🟢 索引 |
+| `docs/architecture/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` | 治理台 API | RBAC/审计链契约（v3.0） | 🟢 权威 |
+| `docs/_archive/2026-08-16/关图骨架定义.md` 等四份原始文档 | 过程稿（已归档） | 已归一承载于 AA-STD / guantu-skeleton，见 `docs/architecture/full-dimensional/00-README.md` | 🟡 过程稿 |
+| `docs/architecture/graph/`（`graph.mmd` / `guantu.req.json`） | 关图产物 | 机读图谱（代码级 352 节点 / 企业版 372 节点含 REQ/Bind）；历史 `graph.json` / `graph.enterprise.json` 已移除 | 🟡 产物 |
 | `docs/README.md` | 专题导航 | 关图/mox 模块化系统架构快捷分区索引，本 `00-INDEX` 为唯一治理入口 | 🟢 导航 |
 | `docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md` / `.html`（ISD-V1.0） | 验收报告 | 信息化系统开发验收报告，对外交付/审计用，已并入 `enterprise/` 分区 | 🟢 权威（交付物） |
-| `docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0） | 治理 / 归一化标准 | `docs/` 全量审计 + 归一化标准 + 逐文件动作表 + 残留 GAP | 🟢 治理（本活文档） |
+| `docs/enterprise/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0） | 治理 / 归一化标准 | `docs/` 全量审计 + 归一化标准 + 逐文件动作表 + 残留 GAP | 🟢 治理（本活文档） |
 | `docs/normalization/README.md`（DOC-NORM-HUB-V1.0） | 归一化枢纽（SSoT） | mox 模块化系统 BP/API/ARC/VAL/TPL 归一化单一事实源枢纽；平台分层↔文档映射；落地状态对照 | 🟢 导航 |
 | `docs/normalization/BP-INDEX.md`（DOC-NORM-BP-V1.0） | 业务流程 | 5 阶段 SOP（需求→架构→实现→测试→验收）+ 领域包流程 + 核心子流程 | 🟡 参考 |
 | `docs/normalization/API-INDEX.md`（DOC-NORM-API-V1.0） | 接口契约 | 17 API 模块（SSoT=`MODULE-MANIFEST.md`）+ 191 端点归一化 + 契约规范 | 🟡 参考 |
@@ -201,12 +201,12 @@
 | 日期 | 变更 | 主责 | 说明 |
 |------|------|------|------|
 | 2026-09-12 | DOC-EP-038 核对新增 D8：API-REGISTRY 新鲜度门禁 | 开发联盟 · 文档组 | `scripts/verify-doc-ep038.py` 新增 D8「API-REGISTRY 新鲜度」：以 `gen-api-registry.py`（actuator.rs ROUTES 单一权威源）重新生成注册表并与 `docs/API-REGISTRY.md` 对比（备份-生成-对比-恢复，全程只读），不一致即 FAIL 并提示运行生成脚本同步——守护 E 系列 API 证据地基。实测 223 条一致，核对扩至 20 项（D1~D8 + E1~E7）全 PASS；CI G6 同步输出 20 checks 0 FAIL。 |
-| 2026-09-12 | CI 门禁存量漂移修复：G6 §6.1 文档清单校正 | 开发联盟 · 文档组 | `scripts/ci-gate.ps1` G6 §6.1 原引用 `expert-alliance-enterprise-standard.html`（已重构为 docs/enterprise 治理体系）与 `docs/统一基座层落地改造.html`（实际位于 docs/modules/），校正为真实路径：`docs/enterprise/00-INDEX.md`、37 号、38 号、`docs/modules/统一基座层落地改造.html`；§6.3 DOC-EP-038 核对门禁保持全 PASS。标准用法 `-File scripts/ci-gate.ps1 -Gate G6` 验证：文档同步 [OK]、核对 19/19 PASS、退出码 0；负向验证 FAIL→exit 1 正确阻断。 |
+| 2026-09-12 | CI 门禁存量漂移修复：G6 §6.1 文档清单校正 | 开发联盟 · 文档组 | `scripts/ci-gate.ps1` G6 §6.1 原引用 `expert-alliance-enterprise-standard.html`（已重构为 docs/enterprise 治理体系）与 `docs/modules/统一基座层落地改造.html`（实际位于 docs/modules/），校正为真实路径：`docs/enterprise/00-INDEX.md`、37 号、38 号、`docs/modules/统一基座层落地改造.html`；§6.3 DOC-EP-038 核对门禁保持全 PASS。标准用法 `-File scripts/ci-gate.ps1 -Gate G6` 验证：文档同步 [OK]、核对 19/19 PASS、退出码 0；负向验证 FAIL→exit 1 正确阻断。 |
 | 2026-09-12 | DOC-EP-038 核对挂接 CI 门禁（ci-gate.ps1 G6 §6.3） | 开发联盟 · 文档组 | `scripts/ci-gate.ps1` G6「契约/审计/文档同步」新增 6.3 子门禁：自动执行 `scripts/verify-doc-ep038.py --quiet`，19 项核对任一 FAIL 即阻断（退出码非 0 → Assert-Fail）；全 PASS 输出 [PASS] 与核对结论。实测：19/19 PASS 通过门禁。 |
 | 2026-09-12 | DOC-EP-038 自动化核对扩展：核心功能完成度（E 系列） | 开发联盟 · 文档组 | `scripts/verify-doc-ep038.py` 扩展 E1~E7：对照 38 号 6.2 业务视角映射，7 项核心功能（组织权限 / 主数据 / 业务办理 / 审批流程 / 报表统计 / 系统管理审计通知 / AI 服务）按「后端 API 路由（API-REGISTRY 223 条全 ready）+ 引擎 crate + 前端视图」三证据自动核对，全部开发完成；38 号 6.2 增补核心功能完成度表。全量核对 19/19 PASS，退出码 0（可接 CI）。 |
 | 2026-09-12 | 新增 DOC-EP-038 自动化核对脚本与核对报告（企业级自动化） | 开发联盟 · 文档组 | 新增 `scripts/verify-doc-ep038.py`：对 38 号文档登记的代码事实（13 域 / 143 crate / 中间件选型 6 项 / 网关 AI 四端点 / 前端 72 视图 / 业务↔平台映射 39 个关键 crate）与仓库真实代码自动比对，全 PASS 退出码 0、任一 FAIL 退出码 1（可接入 CI 闸门）；报告由脚本确定性生成至 `docs/enterprise/38-VERIFY-REPORT.md`（禁止手改）。首跑 12/12 PASS，文档与代码零漂移。 |
 | 2026-09-12 | 新增 `38-企业级管理系统架构与业务处理流程文档-V2.1.md`（DOC-EP-038-V2.1，L2） | 开发联盟 · 文档组 | 由飞书在线文档《企业级管理系统架构与业务处理流程文档》v2.0 转写归档（V2.0），V2.1 对照 mox 仓库代码核实回填：模块清单更新为 13 域 143 crate 归一化结构（api/core/proto/sdk/svc 五层）+ 业务视角↔平台域映射；中间件选型确认（axum 0.7 / sqlx 0.8 多后端 / rusqlite / redis / rocksdb / tokio）；网关 AI 四端点（/ai/engine/{process,analyze,capabilities,metrics}）与前端 72 视图事实登记；6.2/10.2 待确认项转为【已确认 · 代码核实】，13 章未决表 6 项中 2 项已回填。 |
-| 2026-09-04 | 新增 `docs/normalization/` 归一化文档体系登记 | 文档维护者 | 登记 DOC-NORM-HUB-V1.0（SSoT 枢纽）+ BP/API/ARC/VAL/TPL 五类索引（DOC-NORM-{BP,API,ARC,VAL,TPL}-V1.0）；锚定 mox_sys / meta(codegen) / primiflow(DAG) / MODULE-MANIFEST 真实资产；与 `docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0）引用规则一致（仓根相对 `docs/<rel>`、权威分级、glossary）。首个行业领域包样例（政务审批）已落地：`docs/normalization/business/BP-GOV-政务审批.md`（DOC-NORM-BP-GOV-V1.0），于 BP-INDEX §3 登记，证明"任意行业业务系统=母版+领域包+模板，无需重造轮子"。 |
+| 2026-09-04 | 新增 `docs/normalization/` 归一化文档体系登记 | 文档维护者 | 登记 DOC-NORM-HUB-V1.0（SSoT 枢纽）+ BP/API/ARC/VAL/TPL 五类索引（DOC-NORM-{BP,API,ARC,VAL,TPL}-V1.0）；锚定 mox_sys / meta(codegen) / primiflow(DAG) / MODULE-MANIFEST 真实资产；与 `docs/enterprise/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0）引用规则一致（仓根相对 `docs/<rel>`、权威分级、glossary）。首个行业领域包样例（政务审批）已落地：`docs/normalization/business/BP-GOV-政务审批.md`（DOC-NORM-BP-GOV-V1.0），于 BP-INDEX §3 登记，证明"任意行业业务系统=母版+领域包+模板，无需重造轮子"。 |
 | 2026-09-04 | meta.codegen 能力由声明落成真实生成器 | 开发联盟 | `mox-platform-meta-core` 新增 `codegen` 模块（mod 分派 / naming 归一化 / tpl_crud 模板）：TPL-01 单表 CRUD 从 `EntityWithFields` 元数据确定性产出 7 类工件（DDL/Rust 模型/TS API/列表页/表单页/路由/菜单），同输入字节级一致，纯函数零 I/O（L2 Core 分层合规），12 项单测全绿、新代码 clippy 零告警；TPL-02~06 预留 arm 扩展点。TPL-INDEX §2 状态已同步更新。 |
 | 2026-09-04 | codegen 全维完成：TPL 全家桶 + svc 接线 + 闸门接线 | 开发联盟 | ① `mox-platform-meta-core` 补齐 TPL-02 树表/TPL-03 主子表/TPL-04 图谱实体/TPL-05 工作流/TPL-06 AI 对话域 五模板 + `parse_template`/`build_entity_view` 公共件（meta-core 22 测试全绿）；② `mox-platform-enterprise-svc` 新增 `POST /api/enterprise/v1/entities/codegen` 端点（3 项集成测试）；③ `mox-platform-orchestrator-svc` 新增 `POST /api/mox/codegen-publish` 闸门接线——出码必经与 `/api/mox/publish` 同一条 ⛨verify + 治理 8 闸门 + I-05 双验收链，`task_done=false` 或门禁未过时拦截不放行（codegen_gate 4 测试全绿），治理内核零改动。API-INDEX §1.1 已登记两端点。注：enterprise-svc 存量 smoke_enterprise t04~t11（biz_data CRUD 链）失败为本任务开始前已存在的 schema 问题，与本次改动无关，待单独任务修复。 |
 | 2026-09-04 | 修复 biz_data CRUD 链 schema 漂移（存量缺陷） | 开发联盟 | 根因：`Orchestrator` 便捷同步层 `create_sync/update_sync/delete_sync/get_sync/list_sync` 使用 legacy 列（biz_id/status/data），而 `UniversalBizDAO::init_schema` 建表为规范列（id/data_json/curr_hash 哈希链），写入即报 "no column named biz_id"。修复：① `mox-platform-datastore-core` init_schema 补建 `biz_data_version` 版本链表（与 ddl.sql 一致，IF NOT EXISTS 对既有库安全）；② orchestrator-core 全部 `*_sync` 方法对齐规范 schema 并接入 `compute_hash` 哈希链（create/update 每版本落 `biz_data_version`，prev_hash→curr_hash 链式续接）、`audit_chain_sync` 由空实现改为真实版本链查询、`version_count_sync` 改按版本链计数、软删除补 deleted_by/deleted_at、update 返回合并后完整 data。回归：smoke_enterprise 11/11 全绿（t10 审计链连续性 3 节点 prev→curr 校验通过），datastore/orchestrator/enterprise 全测试 0 失败，新代码 clippy 零告警。 |

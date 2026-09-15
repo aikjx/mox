@@ -4,13 +4,13 @@
 //! 业务域反向代理适配层（L6 归一化收敛）
 //!
 //! # 架构定位
-//! 网关（8080）原生承载 IAM 域（/api/system/* · /api/security/*）+ KG + AI引擎 + Alliance。
+//! 网关（3080）原生承载 IAM 域（/api/system/* · /api/security/*）+ KG + AI引擎 + Alliance。
 //! 编排器（mox-platform-orchestrator-svc，默认 :3001）承载全部业务域
 //! （/api/ai/* · /api/graph/* · /api/market/* · /api/agent/* · /api/mox/* ·
 //!  /api/governance/* · /api/caomei/* · /api/automation/* · /api/operators · /api/execute 等）。
 //!
 //! 本模块作为网关→编排器的反向代理适配层，将未被网关原生路由匹配的 /api/* 请求
-//! 透明转发到编排器，保持前端单一入口（:8080），实现「归一化入口 + 模块化后端」。
+//! 透明转发到编排器，保持前端单一入口（:3080），实现「归一化入口 + 模块化后端」。
 //!
 //! # 路由优先级
 //! axum 路由匹配按具体度排序：/api/system/* · /api/security/* · /api/v1/* 等

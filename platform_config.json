@@ -13,15 +13,15 @@
   "services": {
     "api": {
       "name": "API 后端服务（Rust mox-server 企业级网关）",
-      "description": "MOX 企业级网关（Rust axum，8080 唯一入口）：199 条注册路由、JWT 鉴权、kg/ai/kb/alliance 等 13 域、/health /metrics /actuator/*",
-      "port": 8080,
+      "description": "MOX 企业级网关（Rust axum，3080 唯一入口）：内嵌 KG/KB/Cloud/IAM 模块、JWT 鉴权、/health /metrics /actuator/*",
+      "port": 3080,
       "health_check": "/health",
       "cwd": ".",
       "command": "target/debug/mox-server.exe",
       "args": [
         "target/debug/mox-server.exe",
         "--port",
-        "8080"
+        "3080"
       ],
       "binary_requires": [],
       "npm_deps": false,
@@ -42,7 +42,7 @@
     },
     "frontend": {
       "name": "用户前端界面",
-      "description": "Vite + Vue3 前台；通过 /api 代理到 api 服务 :8080",
+      "description": "Vite + Vue3 前台；通过 /api 代理到 api 服务 :3080",
       "port": 3020,
       "health_check": "/",
       "cwd": "frontend-ui",
@@ -191,33 +191,6 @@
         "AI",
         "图谱",
         "Rust"
-      ]
-    },
-    "mox-kb-server": {
-      "name": "知识库独立服务（mox-kb-server）",
-      "description": "知识库服务：文档管理/版本/全文检索/关系链接；端口 8104（PORT-REGISTRY）",
-      "port": 8104,
-      "health_check": "/health/live",
-      "cwd": ".",
-      "command": "target/debug/mox-kb-server.exe",
-      "args": [
-        "target/debug/mox-kb-server.exe",
-        "--port",
-        "8104"
-      ],
-      "binary_requires": [],
-      "npm_deps": false,
-      "is_admin_only": false,
-      "auto_start": false,
-      "restart_delay": 3,
-      "wait_time": 8,
-      "startup_order_hint": 20,
-      "depends_on": [],
-      "tags": [
-        "知识库",
-        "KB",
-        "Rust",
-        "检索"
       ]
     },
     "mox-alliance-scheduler": {

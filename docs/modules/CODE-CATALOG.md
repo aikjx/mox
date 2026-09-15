@@ -1,6 +1,6 @@
 # 全仓代码模块目录
 
-由 `python tools/module_catalog.py` 从 Cargo 元数据与目录生成；请勿手改。
+由 `python scripts/module_catalog.py` 从 Cargo 元数据与目录生成；请勿手改。
 
 本目录记录代码归属和入口，不代表功能验收、生产可用性或部署就绪。运行时依赖包含可选依赖；开发和构建依赖分别列出。
 
@@ -14,7 +14,7 @@
 
 | 模块 | 层/目录 | 可执行入口 | workspace 依赖 |
 |---|---|---|---|
-| [mox-ai-agent-svc](<../../platform/domains/ai/svc/mox-ai-agent-svc/Cargo.toml>) | svc | — | dev: mox-ai-flow-svc, mox-market-template-svc<br>runtime: mox-kg-algo-core, mox-kg-sdk, mox-platform-foundation, mox-platform-operator-core, mox-platform-system-core |
+| [mox-ai-agent-svc](<../../platform/domains/ai/svc/mox-ai-agent-svc/Cargo.toml>) | svc | — | dev: mox-ai-flow-svc, mox-market-template-svc<br>runtime: mox-kg-sdk, mox-platform-foundation, mox-platform-operator-core, mox-platform-system-core |
 | [mox-ai-alliance-engine](<../../platform/domains/ai/core/mox-ai-alliance-engine/Cargo.toml>) | core | — | runtime: mox-ai-expert-core, mox-ai-expert-proto, mox-audit, mox-pipeline-framework, mox-unified-contract |
 | [mox-ai-api](<../../platform/domains/ai/api/Cargo.toml>) | api | — | — |
 | [mox-ai-core](<../../platform/domains/ai/core/mox-ai-core/Cargo.toml>) | core | — | runtime: mox-platform-model-core |
@@ -69,8 +69,8 @@
 | [mox-cloud-kernel](<../../platform/domains/cloud/core/mox-cloud-kernel/Cargo.toml>) | core | — | — |
 | [mox-cloud-master-svc](<../../platform/domains/cloud/svc/mox-cloud-master-svc/Cargo.toml>) | svc | — | dev: mox-cloud-volume-svc<br>runtime: mox-cloud-foundation |
 | [mox-cloud-rebalance-svc](<../../platform/domains/cloud/svc/mox-cloud-rebalance-svc/Cargo.toml>) | svc | — | runtime: mox-cloud-foundation, mox-cloud-master-svc, mox-cloud-volume-svc |
-| [mox-cloud-s3-svc](<../../platform/domains/cloud/svc/mox-cloud-s3-svc/Cargo.toml>) | svc | — | runtime: mox-cloud-domain-traits, mox-cloud-foundation, mox-cloud-kernel, mox-cloud-master-svc, mox-cloud-store-core, mox-data-standards-core |
-| [mox-cloud-sdk](<../../platform/domains/cloud/sdk/mox-cloud-sdk/Cargo.toml>) | sdk | — | — |
+| [mox-cloud-s3-svc](<../../platform/domains/cloud/svc/mox-cloud-s3-svc/Cargo.toml>) | svc | — | runtime: mox-cloud-domain-traits, mox-cloud-foundation, mox-cloud-kernel, mox-cloud-master-svc, mox-cloud-store-core |
+| [mox-cloud-sdk](<../../platform/domains/cloud/sdk/mox-cloud-sdk/Cargo.toml>) | sdk | — | runtime: mox-cloud-store-core |
 | [mox-cloud-server](<../../platform/domains/cloud/svc/mox-cloud-server/Cargo.toml>) | svc | mox-cloud-server | runtime: mox-cache-core, mox-cloud-kernel, mox-cloud-master-svc, mox-cloud-store-core, mox-server-runtime |
 | [mox-cloud-store-core](<../../platform/domains/cloud/core/mox-cloud-store-core/Cargo.toml>) | core | — | runtime: mox-base-store-core, mox-cloud-foundation, mox-cloud-kernel |
 | [mox-cloud-volume-svc](<../../platform/domains/cloud/svc/mox-cloud-volume-svc/Cargo.toml>) | svc | — | runtime: mox-cloud-domain-traits, mox-cloud-foundation, mox-cloud-kernel |
@@ -80,7 +80,7 @@
 | 模块 | 层/目录 | 可执行入口 | workspace 依赖 |
 |---|---|---|---|
 | [mox-data-api](<../../platform/domains/data/api/Cargo.toml>) | api | — | — |
-| [mox-data-catalog-svc](<../../platform/domains/data/svc/mox-data-catalog-svc/Cargo.toml>) | svc | catalog | runtime: mox-ai-expert-svc, mox-ai-flow-sdk, mox-platform-foundation |
+| [mox-data-catalog-svc](<../../platform/domains/data/svc/mox-data-catalog-svc/Cargo.toml>) | svc | catalog | dev: mox-ai-expert-svc<br>runtime: mox-ai-expert-proto, mox-ai-flow-sdk, mox-platform-foundation |
 | [mox-data-compliance-svc](<../../platform/domains/data/svc/mox-data-compliance-svc/Cargo.toml>) | svc | — | — |
 | [mox-data-etl-svc](<../../platform/domains/data/svc/mox-data-etl-svc/Cargo.toml>) | svc | — | — |
 | [mox-data-formula-core](<../../platform/domains/data/core/mox-data-formula-core/Cargo.toml>) | core | — | runtime: mox-platform-foundation |
@@ -97,7 +97,7 @@
 | [mox-flow-ai-assistant-core](<../../platform/domains/flow/core/mox-flow-ai-assistant-core/Cargo.toml>) | core | — | — |
 | [mox-flow-algo-alliance-core](<../../platform/domains/flow/core/mox-flow-algo-alliance-core/Cargo.toml>) | core | — | runtime: mox-flow-operator-core, mox-platform-foundation |
 | [mox-flow-api](<../../platform/domains/flow/api/Cargo.toml>) | api | — | — |
-| [mox-flow-bridge-svc](<../../platform/domains/flow/svc/mox-flow-bridge-svc/Cargo.toml>) | svc | bridge_demo | runtime: mox-ai-expert-svc, mox-ai-flow-sdk, mox-platform-foundation |
+| [mox-flow-bridge-svc](<../../platform/domains/flow/svc/mox-flow-bridge-svc/Cargo.toml>) | svc | bridge_demo | dev: mox-ai-expert-svc<br>runtime: mox-ai-expert-proto, mox-ai-flow-sdk, mox-platform-foundation |
 | [mox-flow-ea-workspace-svc](<../../platform/domains/flow/svc/mox-flow-ea-workspace-svc/Cargo.toml>) | svc | — | runtime: mox-flow-unified-arch-core, mox-platform-foundation, mox-unified-algo-core |
 | [mox-flow-fusion-svc](<../../platform/domains/flow/svc/mox-flow-fusion-svc/Cargo.toml>) | svc | mox-flow-fusion-svc | runtime: mox-flow-primiflow-svc, mox-platform-foundation, mox-platform-graph-core |
 | [mox-flow-lowcode-core](<../../platform/domains/flow/core/mox-flow-lowcode-core/Cargo.toml>) | core | — | — |
@@ -131,13 +131,13 @@
 
 | 模块 | 层/目录 | 可执行入口 | workspace 依赖 |
 |---|---|---|---|
-| [mox-kb-svc](<../../platform/domains/kg/svc/mox-kb-svc/Cargo.toml>) | svc | — | runtime: mox-ai-expert-proto, mox-ai-expert-svc, mox-api-protocol, mox-base-store-core, mox-cloud-store-core, mox-kg-storage-svc |
+| [mox-kb-svc](<../../platform/domains/kg/svc/mox-kb-svc/Cargo.toml>) | svc | — | runtime: mox-ai-expert-proto, mox-api-protocol, mox-base-store-core, mox-cloud-sdk, mox-kg-storage-svc |
 | [mox-kg-algo-core](<../../platform/domains/kg/core/mox-kg-algo-core/Cargo.toml>) | core | compare_with_node, export_formula | runtime: mox-platform-foundation |
 | [mox-kg-api](<../../platform/domains/kg/api/Cargo.toml>) | api | — | runtime: mox-error |
 | [mox-kg-fusion-svc](<../../platform/domains/kg/svc/mox-kg-fusion-svc/Cargo.toml>) | svc | — | runtime: mox-kg-service-svc |
 | [mox-kg-hub-svc](<../../platform/domains/kg/svc/mox-kg-hub-svc/Cargo.toml>) | svc | — | runtime: mox-kg-algo-core, mox-kg-sdk, mox-platform-foundation, mox-platform-graph-core |
 | [mox-kg-meta-core](<../../platform/domains/kg/core/mox-kg-meta-core/Cargo.toml>) | core | — | runtime: mox-cloud-foundation |
-| [mox-kg-sdk](<../../platform/domains/kg/sdk/mox-kg-sdk/Cargo.toml>) | sdk | — | — |
+| [mox-kg-sdk](<../../platform/domains/kg/sdk/mox-kg-sdk/Cargo.toml>) | sdk | — | runtime: mox-kg-algo-core |
 | [mox-kg-server](<../../platform/domains/kg/svc/mox-kg-server/Cargo.toml>) | svc | mox-kg-server | runtime: mox-cache-core, mox-kg-algo-core, mox-kg-core, mox-kg-meta-core, mox-kg-service-svc, mox-server-runtime |
 | [mox-kg-service-svc](<../../platform/domains/kg/svc/mox-kg-service-svc/Cargo.toml>) | svc | — | runtime: mox-api-protocol, mox-cloud-foundation, mox-framework, mox-kg-algo-core, mox-kg-meta-core, mox-kg-storage-svc |
 | [mox-kg-spark-svc](<../../platform/domains/kg/svc/mox-kg-spark-svc/Cargo.toml>) | svc | — | — |
@@ -177,7 +177,7 @@
 | [mox-platform-datastore-core](<../../platform/domains/platform/core/mox-platform-datastore-core/Cargo.toml>) | core | — | — |
 | [mox-platform-enterprise-svc](<../../platform/domains/platform/svc/mox-platform-enterprise-svc/Cargo.toml>) | svc | enterprise-svc | runtime: mox-platform-datastore-core, mox-platform-iam-core, mox-platform-meta-core, mox-platform-orchestrator-core |
 | [mox-platform-foundation](<../../platform/foundation/mox-platform-foundation/Cargo.toml>) | foundation | — | — |
-| [mox-platform-gateway-svc](<../../platform/gateway/mox-platform-gateway-svc/Cargo.toml>) | gateway | mox-server | runtime: mox-ai-expert-svc, mox-ai-flow-svc, mox-alliance-common-proto, mox-alliance-http-sdk, mox-api-protocol, mox-audit, mox-kb-svc, mox-kg-service-svc, mox-platform-api, mox-platform-iam-core |
+| [mox-platform-gateway-svc](<../../platform/gateway/mox-platform-gateway-svc/Cargo.toml>) | gateway | mox-server | runtime: mox-ai-expert-svc, mox-ai-flow-svc, mox-alliance-http-sdk, mox-api-protocol, mox-audit, mox-flow-unified-process-core, mox-kb-svc, mox-kg-service-svc, mox-platform-api, mox-platform-iam-core |
 | [mox-platform-graph-core](<../../platform/domains/platform/core/mox-platform-graph-core/Cargo.toml>) | core | — | — |
 | [mox-platform-iam-core](<../../platform/domains/platform/core/mox-platform-iam-core/Cargo.toml>) | core | — | — |
 | [mox-platform-integration-core](<../../platform/domains/platform/core/mox-platform-integration-core/Cargo.toml>) | core | — | runtime: mox-connector-core, mox-enterprise-core, mox-framework, mox-platform-model-core, mox-plugin-core |
@@ -236,7 +236,7 @@
 - [frontend-ui/src/router/modules/system.js](<../../frontend-ui/src/router/modules/system.js>)
 - [frontend-ui/src/router/modules/workflow.js](<../../frontend-ui/src/router/modules/workflow.js>)
 
-### views（71）
+### views（72）
 
 - [frontend-ui/src/views/admin/AdminView.vue](<../../frontend-ui/src/views/admin/AdminView.vue>)
 - [frontend-ui/src/views/admin/panels/AdminAccess.vue](<../../frontend-ui/src/views/admin/panels/AdminAccess.vue>)
@@ -254,6 +254,7 @@
 - [frontend-ui/src/views/admin/panels/AdminOverview.vue](<../../frontend-ui/src/views/admin/panels/AdminOverview.vue>)
 - [frontend-ui/src/views/admin/panels/AdminRole.vue](<../../frontend-ui/src/views/admin/panels/AdminRole.vue>)
 - [frontend-ui/src/views/admin/panels/AdminStorage.vue](<../../frontend-ui/src/views/admin/panels/AdminStorage.vue>)
+- [frontend-ui/src/views/admin/panels/AdminTenant.vue](<../../frontend-ui/src/views/admin/panels/AdminTenant.vue>)
 - [frontend-ui/src/views/admin/panels/AdminUser.vue](<../../frontend-ui/src/views/admin/panels/AdminUser.vue>)
 - [frontend-ui/src/views/ai/AlgoLabView.vue](<../../frontend-ui/src/views/ai/AlgoLabView.vue>)
 - [frontend-ui/src/views/ai/BotCenterView.vue](<../../frontend-ui/src/views/ai/BotCenterView.vue>)
@@ -372,20 +373,11 @@
 
 | 目录 | 顶层说明/构建入口 |
 |---|---|
+| [llm-inference-svc](<../../projects/llm-inference-svc>) | [Dockerfile](<../../projects/llm-inference-svc/Dockerfile>) · [README.md](<../../projects/llm-inference-svc/README.md>) |
 | [market-games](<../../projects/market-games>) | 无顶层入口标记，需人工确认归属 |
 | [melody2score](<../../projects/melody2score>) | [README.md](<../../projects/melody2score/README.md>) |
 | [mox-dualrpc](<../../projects/mox-dualrpc>) | [Cargo.toml](<../../projects/mox-dualrpc/Cargo.toml>) · [README.md](<../../projects/mox-dualrpc/README.md>) |
 | [mox-official-site](<../../projects/mox-official-site>) | 无顶层入口标记，需人工确认归属 |
 | [primiflow](<../../projects/primiflow>) | [README.md](<../../projects/primiflow/README.md>) |
-| [t10-cloud-artifacts](<../../projects/t10-cloud-artifacts>) | [README.md](<../../projects/t10-cloud-artifacts/README.md>) |
-| [t11-graph-artifacts](<../../projects/t11-graph-artifacts>) | [README.md](<../../projects/t11-graph-artifacts/README.md>) |
-| [t17-ef-runs](<../../projects/t17-ef-runs>) | 无顶层入口标记，需人工确认归属 |
-| [t17-sdk-examples](<../../projects/t17-sdk-examples>) | [README.md](<../../projects/t17-sdk-examples/README.md>) |
-| [t19-regression](<../../projects/t19-regression>) | 无顶层入口标记，需人工确认归属 |
-| [t19-regression-report](<../../projects/t19-regression-report>) | [README.md](<../../projects/t19-regression-report/README.md>) |
-| [t20-canary-metrics](<../../projects/t20-canary-metrics>) | [README.md](<../../projects/t20-canary-metrics/README.md>) |
-| [t22-simd-artifacts](<../../projects/t22-simd-artifacts>) | 无顶层入口标记，需人工确认归属 |
-| [t24-gm-artifacts](<../../projects/t24-gm-artifacts>) | 无顶层入口标记，需人工确认归属 |
-| [t25-glacier-artifacts](<../../projects/t25-glacier-artifacts>) | 无顶层入口标记，需人工确认归属 |
 | [vendor-eval](<../../projects/vendor-eval>) | 无顶层入口标记，需人工确认归属 |
 | [xiaobai_voice](<../../projects/xiaobai_voice>) | [pyproject.toml](<../../projects/xiaobai_voice/pyproject.toml>) · [README.md](<../../projects/xiaobai_voice/README.md>) |

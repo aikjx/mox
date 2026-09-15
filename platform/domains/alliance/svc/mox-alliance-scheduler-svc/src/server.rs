@@ -317,6 +317,9 @@ impl SchedulerServer {
             .with_task_repository(task_repository),
         );
 
+        // ── 初始化共享指标收集器（/metrics 暴露，/experts/search 实时 record）──
+        let metrics = Arc::new(mox_alliance_scheduler_core::AllianceMetrics::new());
+
         // 构建应用状态
         let executor_base_url = self
             .executor_url
@@ -328,7 +331,8 @@ impl SchedulerServer {
             matcher,
             executor_bridge,
         )
-        .with_executor_base_url(executor_base_url);
+        .with_executor_base_url(executor_base_url)
+        .with_metrics(metrics);
 
         // 构建路由
         Ok(build_router(state))

@@ -8,7 +8,7 @@ import json
 import urllib.request
 from collections import Counter, defaultdict
 
-BASE_URL = "http://localhost:8080"
+BASE_URL = "http://localhost:3080"
 SEED_PATH = r"D:\a10\aikjx\gitcode\infotopograph\platform\domains\kg\seed\functional-requirements-graph-seed.json"
 
 

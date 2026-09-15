@@ -347,7 +347,7 @@ plugins/extensions/.gitkeep
 ### 8.1 相关文档
 
 - [架构分层规范](../enterprise/02-architecture.md)
-- [ADR-15: Voice 域独立工作区](../enterprise/adr/ADR-015-voice-workspace.md)
+- [ADR-15: Voice 域独立工作区](../../deploy/docs/MOX-Architecture-Decision-Records-v1.0.md)
 - [全文档归一化总控卡](../enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md)
 
 ### 8.2 变更记录

@@ -1,10 +1,10 @@
 # 开发专家联盟·核心服务端口规划规范（PORT-NORM-001）
 
 > **标题**：开发专家联盟·核心服务端口规划规范
-> **版本**：V1.3
+> **版本**：V1.4
 > **权威等级**：🟢权威
 > **编号**：PORT-NORM-001
-> **最后更新日期**：2026-09-01
+> **最后更新日期**：2026-09-14
 > **单源声明**：本文档是"开发专家联盟"全部核心服务与插件/小服务端口分配的**唯一权威规范**。凡涉及端口规划、端口分配、端口避让、端口迁移的决策与文档，均以本文档为准。本文档冲突时以 `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`（TOP-MASTER）为准。
 > **主责联盟**：开发联盟 R（架构·代码·文档治理）
 > **编制依据**：`docs/expert-alliance/00-INTEGRATED-INDEX.md`、`docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md`、`docs/standards/expert-alliance-normalization-mode.md`（EA-NORM-001）
@@ -28,7 +28,7 @@
 
 **强制约束**：
 1. 任何新增/修改的核心服务端口必须落在 `3000–3999`，否则拒绝合并。
-2. 任何新增插件/小服务端口必须落在 `30000+`。
+2. 任何新增插件/小服务端口必须落在 `30000–39999`。
 3. 端口分配必须通过本规范第5章的避让校验，不得占用常用软件端口。
 
 ### 1.2 设计原则
@@ -46,14 +46,16 @@
 
 | 端口 | 服务 | 业务域 | 说明 | 状态 |
 |---|---|---|---|---|
-| **3010** | Node.js 平台 API（api） | 平台层（30xx） | Node.js 层统一入口（Express）；已由 Rust 网关 **:8080** 取代 | 已退役 |
+| **3010** | Node.js 平台 API（api） | 平台层（30xx） | Node.js 层统一入口（Express）；已由 Rust 网关 **:3080** 取代 | 已退役 |
 | **3020** | Node.js 前端（frontend） | 平台层（30xx） | 前端开发/静态服务 | 已启用 |
+| **3080** | **Rust 平台网关**（mox-server） | 平台层（30xx） | KG/KB/Cloud/IAM 模块化宿主，全平台唯一 API 入口 | 已启用 |
 | **3100** | **scheduler-svc**（调度编排） | 编排（31xx） | 任务调度、专家匹配、计划生成 | 已启用 |
 | **3200** | **executor-svc**（执行引擎） | 执行（32xx） | DAG 执行、节点调度 | 已启用 |
 | **3300** | AI 专家服务（ai-expert 桥接） | 领域专家（33xx） | scheduler 内部桥接的专家服务基地址 | 已启用 |
-| **8080** ⚠️例外 | **Rust 平台网关**（api / mox-gateway） | 兼容段（例外） | Rust axum 单二进制 HTTP 入口，为全平台唯一对外 API；端口因历史兼容（原 Python mox-server / 部署链路）**钉死为 8080**，详见注 2.1a | 已启用（例外） |
-
-> **注 2.1a（8080 例外说明）**：本规范 1.1 要求核心服务端口落在 3000–3999，但 **Rust 平台网关 api=8080** 为**全平台唯一对外 HTTP 入口**，且已同步固化于 `platform_config.json`、`deploy/config/gateway.yaml`、`frontend-ui/vite.config.js`、docker-compose/helm 等全链路，迁移成本与风险极高。故**特批为例外**：8080 为网关保留端口，任何其他服务禁止占用；若未来整体迁移到 3xxx，须走第5章变更流程并同步全链路。
+| **3411** | mox-kg-server | KG 域（可选） | 独立扩展/边界验证；默认由网关内嵌 | 可选 |
+| **3412** | mox-cloud-server | Cloud 域（可选） | 独立扩展/边界验证；默认由网关内嵌 | 可选 |
+| **3413** | mox-iam-server | IAM 域（可选） | 独立扩展/边界验证；默认由网关内嵌 | 可选 |
+| **3414** | mox-kb-server | KB 域（可选） | 独立扩展/边界验证；默认由网关内嵌 | 可选 |
 
 ### 2.2 段位预留
 
@@ -113,7 +115,7 @@
 ## 第5章 端口变更流程
 
 1. **申请**：提出新服务端口需求，说明服务名、业务域、用途。
-2. **落段**：核心服务 → 按第2章段位表选 3000–3999 空闲端口；插件/小服务 → 选 30000+ 空闲端口。
+2. **落段**：核心服务 → 按第2章段位表选 3000–3999 空闲端口；插件/小服务 → 选 30000–39999 空闲端口。
 3. **避让校验**：对照第3章避让清单 + 本机 `netstat -ano | findstr LISTENING` 实查占用，确认不冲突。
 4. **登记**：在本文档第2章/第4章表中登记（端口、服务、域、状态）。
 5. **同步**：同步更新代码（`main.rs` 监听端口、SDK 默认基址、桥接默认 URL）与 `docs/expert-alliance/00-INTEGRATED-INDEX.md`。
@@ -128,7 +130,8 @@
 | scheduler-svc | 8081 | **3100** | 核心服务强制 3xxx 段 | `svc/.../bin/main.rs`、SDK `client.rs` 默认基址 |
 | executor-svc | 8082 | **3200** | 核心服务强制 3xxx 段 | `svc/.../bin/main.rs`、`scheduler-core/executor_bridge.rs`、`server.rs` 默认桥接 |
 | AI 专家服务（桥接） | 8080 | **3300** | 核心服务强制 3xxx 段 | `scheduler-core/registry.rs` 默认基址 |
-| Node.js api / frontend | 3010 / 3020 | api 退役→Rust 网关 **8080**（例外）；frontend 3020 不变 | Node BFF 迁移至 Rust 网关（8080 例外见 2.1a） | `platform_config.json`、`vite.config.js` |
+| Node.js api / frontend | 3010 / 3020 | api 退役→Rust 网关 **3080**；frontend 3020 不变 | Node BFF 迁移至模块化 Rust 网关 | `platform_config.json`、`vite.config.js` |
+| KG / Cloud / IAM / KB 独立服务 | 8101–8104 | **3411–3414** | MOX 核心服务统一进入 3000–3999 | 独立二进制、compose、端口注册表 |
 | 语音服务 xiaobai_voice | 3717 | **30010**（已迁移） | 小服务归 30000+ 段 | `platform_config.json`、`cli.py`、Rust `voice_server`、orchestrator `voice_proxy`、桌面端、`verify_tts_rust_fullstack.py` 等全链路 |
 
 > 迁移后同步更新：`docs/expert-alliance/00-INTEGRATED-INDEX.md`（6 处）、`02-DUAL-PLATFORM-RELATIONSHIP.md`（8 处）、`03-GLOSSARY.md`（2 处）、`v2/*`（56 处）——共 72 处文档端口引用，全部对齐新端口，引用审计零残留。
@@ -175,7 +178,7 @@
 
 本规范第7章的 yml 文件即未来 Nacos 配置中心的 **dataId**（`mox-alliance-scheduler.yml` / `mox-alliance-executor.yml`）：
 - 阶段一（当前）：本地 yml + 环境变量覆盖（`mox-alliance-boot-config`）
-- 阶段二：`ConfigStore` 抽象 → `NacosConfigStore`（nacos-sdk-rust `ConfigService` 拉取 + watch 热更新），见 `docs/microservices/02-communication.md` §6.3
+- 阶段二：`ConfigStore` 抽象 → `NacosConfigStore`（nacos-sdk-rust `ConfigService` 拉取 + watch 热更新），见 `docs/architecture/microservices/02-communication.md` §6.3
 - 阶段三：`NamingService` 注册中心（服务发现，规模化）
 
 ### 7.5 yml 配置清单（2026-08-31 落地）
@@ -333,7 +336,7 @@
 ### 7.14 语音 3717->30010 迁移核验（V1.4 更新，2026-09-01）
 
 > 如实结论：语音端口迁移实际早已完成（非本轮新做）。核验证据：
-> - docs/ports/PORT-REGISTRY.md 第 215 行声明「已完结（2026-09-01）…已完成并通过 verify-ports.py」；
+> - docs/api/PORT-REGISTRY.md 第 215 行声明「已完结（2026-09-01）…已完成并通过 verify-ports.py」；
 > - 全库扫描：活动代码 3717 仅剩 5 个模型二进制词表文件（非端口）；30010 遍布 17 个活动文件（mox-voice-desktop-app/src/main.rs 11 处、voice_server.rs 4 处绑定 127.0.0.1:30010、verify_tts_rust_fullstack.py 7 处等）；
 > - verify-ports.py 实测：ERROR=0，30010 登记 RUNTIME（引用 14 处）。
 > - 3 个 WARN（8999 / 9848 / 10848）为本轮 e2e 新增端口，已登记 PORT-REGISTRY 3.6 TEST-ONLY，复跑清零。

@@ -147,7 +147,7 @@
 | Dockerfile ×4 | 各 server 目录下 | 多阶段构建，统一运行时镜像 |
 | docker-compose | `docker-compose.microservices.yml` | 4 服务 + Redis，一键启动 |
 | 配置示例 ×4 | 各 server `config/server.example.toml` | 三级配置模板 |
-| 本报告 | `docs/ARCHITECTURE_OPTIMIZATION.md` | 全维架构优化文档 |
+| 本报告 | `docs/architecture/ARCHITECTURE_OPTIMIZATION.md` | 全维架构优化文档 |
 
 ---
 

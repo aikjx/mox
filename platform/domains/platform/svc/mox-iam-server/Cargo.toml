@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "MOX IAM/SSO 独立微服务（可单独部署，端口 8103）"
+description = "MOX IAM/SSO 可选独立服务（端口 3413）"
 
 [[bin]]
 name = "mox-iam-server"

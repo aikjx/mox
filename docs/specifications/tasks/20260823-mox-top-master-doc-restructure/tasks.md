@@ -41,10 +41,10 @@ T0 (P0)  撰写 18·TOP-MASTER 全域顶层总设计（12 章节 + 三联盟 + 5
   3. 产品手册：`docs/mox-mox-product-handbook-v3.md`（§1.1 核心价值、§1.5 模块地图 G01~E06、§2.1 六维闭环、§四 6 阶段流程）—— **内容不可丢失，只能在 18 中做"统一收纳"**
   4. 专家联盟流程标准：`docs/standards/expert-alliance-flow-standard.md` §3 图谱模型 + §4 六阶段
   5. 归一化规范：`docs/modules/mox-expert-normalization.md` §1 四维合一 + §2 三层收口 + 四条不变式
-  6. 总架构 v7：`docs/architecture.md` §0 导航 / §1 设计哲学 / §2 总体架构 / §19 璇玑内核
-  7. 架构分析：`docs/enterprise-architecture-analysis.md` §0 一句话 / §1.2 决策内核 / §2 双璇玑十四维 / §3 能力矩阵
+  6. 总架构 v7：`docs/architecture/architecture.md` §0 导航 / §1 设计哲学 / §2 总体架构 / §19 璇玑内核
+  7. 架构分析：`docs/enterprise/enterprise-architecture-analysis.md` §0 一句话 / §1.2 决策内核 / §2 双璇玑十四维 / §3 能力矩阵
   8. GR-STD / PT-STD / OUS 规划三大规范的开头摘要
-  9. TERMINOLOGY：`docs/GLOSSARY.md`（所有专名大小写必须沿用此表）
+  9. TERMINOLOGY：`docs/enterprise/GLOSSARY.md`（所有专名大小写必须沿用此表）
 - **写作强制结构（12 章，不可少一章）**:
   1. §一 顶层核心使命（定名一句话 + 九大标准表格 + 事实基线声明）
   2. §二 产品全局架构（六层金字塔图 mermaid + 层级铁律 + crate 落点映射表）
@@ -62,7 +62,7 @@ T0 (P0)  撰写 18·TOP-MASTER 全域顶层总设计（12 章节 + 三联盟 + 5
   - 图 A：六层金字塔（L6→L1 六层盒子；每层 1 行职责 + 典型 crate/模块）
   - 图 B：三联盟协作闭环（产品联盟→需求入图→算法联盟→最优约束→开发联盟→代码 CDC→图谱更新→回产品联盟；四角标注"Blocking 信号 / 门禁放行"等）
   - 图 C：BP-05 算法推理流程（关键词 → 激活扩散 → RRF → 双专家辩论 → 裁决；每条边附阈值参数）
-- **引用规则（必须执行，否则 FR-15 不通过）**：凡涉及 crate / 规范 / 测试基线 / 算法名的段落，结尾必须用括号给出溯源路径，例如：（参见 `platform/services/mox-expert/src/reconcile.rs` · `docs/specs/GR-STD-信息关联关系图开发规范-V1.0.md` · T14 200×CRC 基线）
+- **引用规则（必须执行，否则 FR-15 不通过）**：凡涉及 crate / 规范 / 测试基线 / 算法名的段落，结尾必须用括号给出溯源路径，例如：（参见 `platform/services/mox-expert/src/reconcile.rs` · `docs/specifications/GR-STD-信息关联关系图开发规范-V1.0.md` · T14 200×CRC 基线）
 - **变更记录**：文末必须附，第一条 = v1.0 ENT / 2026-08-23 / TOP-MASTER 首次发布 / 依据 spec.md §4 FR-2。
 
 ### 任务内测试要求（TR，本任务完成后自验）
@@ -339,14 +339,14 @@ T0 (P0)  撰写 18·TOP-MASTER 全域顶层总设计（12 章节 + 三联盟 + 5
 
 ---
 
-## Task 11：更新 `docs/GLOSSARY.md`（7 条新术语）
+## Task 11：更新 `docs/enterprise/GLOSSARY.md`（7 条新术语）
 
 - **Status**: pending
 - **Priority**: high
 - **Depends On**: T0
 - **对应 AC**: AC-2, AC-3
 - **覆盖 FR**: FR-1（定名一致性）
-- **产出文件**: `docs/GLOSSARY.md`
+- **产出文件**: `docs/enterprise/GLOSSARY.md`
 - **改动清单**：
   1. 版本 bump v1.1 / 2026-08-23；变更记录。
   2. 在 §1 系统与架构主体，按现有格式（术语 / 英文缩写 / 定义 / 载体）追加 7 条：
@@ -387,7 +387,7 @@ T0 (P0)  撰写 18·TOP-MASTER 全域顶层总设计（12 章节 + 三联盟 + 5
      > **唯一治理入口**：[`docs/enterprise/00-INDEX.md`](enterprise/00-INDEX.md)  
      > **顶层总设计（TOP-MASTER，最高权威）**：[`docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)  
      > **产品手册（对外宣讲）**：[`docs/mox-mox-product-handbook-v3.md`](mox-mox-product-handbook-v3.md)  
-     > **唯一术语真相源**：[`docs/GLOSSARY.md`](GLOSSARY.md)
+     > **唯一术语真相源**：[`docs/enterprise/GLOSSARY.md`](GLOSSARY.md)
      ```
   3. 保持原有关图/mox 模块化系统架构快捷分区索引内容不变（NG2），只在原首屏上方插入上述四链接导航。
   4. 版本/日期：文档顶部补一行「最后更新：2026-08-23 · 导航 v1.1」。
@@ -420,10 +420,10 @@ T0 (P0)  撰写 18·TOP-MASTER 全域顶层总设计（12 章节 + 三联盟 + 5
      > 🏛 **TOP-MASTER 顶层总设计（唯一权威·最高调度权）**：[`docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)  
      > 📚 **企业级文档治理入口（19 份文档 00~18，唯一真相源）**：[`docs/enterprise/00-INDEX.md`](docs/enterprise/00-INDEX.md)  
      > 🎯 **产品手册 v3（对外介绍、开源 vs 企业版）**：[`docs/mox-mox-product-handbook-v3.md`](docs/mox-mox-product-handbook-v3.md)  
-     > 📐 **术语唯一基准**：[`docs/GLOSSARY.md`](docs/GLOSSARY.md)
+     > 📐 **术语唯一基准**：[`docs/enterprise/GLOSSARY.md`](docs/enterprise/GLOSSARY.md)
      ```
   4. 在 §项目定位（🌟 项目定位）段首句改为"璇玑 mox 是一套 **企业级全域归一化知识图谱底座与自动化治理系统**：…"，保留原 6 大公理 / 算子 / WASM 插件 / AI 智能体 等优势描述（NG2：原卖点不删，只换主定位）。
-  5. §📁 项目结构段中，对 `platform/`、`frontend-ui/`、`docs/enterprise/`、`docs/specs/` 的路径描述保持**真实存在路径**（不得再出现 `crates/`）。
+  5. §📁 项目结构段中，对 `platform/`、`frontend-ui/`、`docs/enterprise/`、`docs/specifications/` 的路径描述保持**真实存在路径**（不得再出现 `crates/`）。
   6. 版本留痕：在文末 License 之前新增「文档治理版本：TOP-MASTER v1.0 ENT · 2026-08-23」一行。
   7. 检查并纠正 `README.md` 中所有旧路径（`crates/`、`frontend/` 等）——与 T1 规则一致。
 - **TR**:

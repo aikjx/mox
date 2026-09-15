@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
   const isProd = mode === 'production'
 
   console.log('[vite-config] mode=', mode, '_TOKEN=', _TOKEN ? `set(${_TOKEN.length}chars)` : 'EMPTY')
-  console.log('[vite-config] GATEWAY_URL=', process.env.GATEWAY_URL || 'default :8080')
+  console.log('[vite-config] GATEWAY_URL=', process.env.GATEWAY_URL || 'default :3080')
 
   return {
     plugins: [vue()],
@@ -50,7 +50,7 @@ export default defineConfig(({ mode }) => {
         'Referrer-Policy': 'strict-origin-when-cross-origin'
       },
       proxy: (() => {
-        const GW = process.env.GATEWAY_URL || 'http://localhost:8080'
+        const GW = process.env.GATEWAY_URL || 'http://localhost:3080'
         const AUTH = _TOKEN ? `Bearer ${_TOKEN}` : ''
         // Vite 官方推荐：configure(proxy, options) —— 在 http-proxy 实例创建后注册事件，100% 触发。
         // 相比直接写 on 对象（部分 Vite 5.x 补丁版本里被内部 wrapper 覆盖），configure 永远生效。
@@ -85,7 +85,7 @@ export default defineConfig(({ mode }) => {
         }
         console.log('[vite-config] proxy target GW=', GW, 'AUTH_LEN=', AUTH.length)
         return {
-          // ========== Rust 专家联盟网关（:8080）==========
+          // ========== Rust 专家联盟网关（:3080）==========
           '/ai/engine': {
             target: GW,
             changeOrigin: true,
@@ -97,14 +97,14 @@ export default defineConfig(({ mode }) => {
             changeOrigin: true,
             configure: mkAuthOnlyConfigure('voice'),
           },
-          // HITL 人机协同审批 WebSocket：由 Rust 网关承载（默认 :8080，可用 GATEWAY_URL 覆盖）
+          // HITL 人机协同审批 WebSocket：由 Rust 网关承载（默认 :3080，可用 GATEWAY_URL 覆盖）
           '/ws': {
             target: GW,
             ws: true,
             changeOrigin: true,
             configure: mkAuthOnlyConfigure('ws'),
           },
-          // ========== Rust 后端网关（:8080）—— 原 Node BFF 已迁移至此 ==========
+          // ========== Rust 后端网关（:3080）—— 原 Node BFF 已迁移至此 ==========
           '/api': {
             target: GW,
             changeOrigin: true,
@@ -117,7 +117,7 @@ export default defineConfig(({ mode }) => {
             changeOrigin: true,
             configure: mkConfigure('actuator'),
           },
-          // ========== 知识图谱 KG 域（/kg/v1/*，网关 :8080）==========
+          // ========== 知识图谱 KG 域（/kg/v1/*，网关 :3080）==========
           // Rust 网关 routes.rs 注册 /kg/v1/stats · /kg/v1/neighborhood · /kg/v1/path 等 6 接口；
           // dev 下若缺此代理，浏览器请求 /kg/v1/stats 会命中 Vite SPA 回退返回 index.html，图谱视图拿不到真实数据。
           '/kg': {
@@ -125,9 +125,9 @@ export default defineConfig(({ mode }) => {
             changeOrigin: true,
             configure: mkConfigure('kg'),
           },
-          // ========== 专家联盟 Alliance 域（/alliance/*，网关 :8080）==========
+          // ========== 专家联盟 Alliance 域（/alliance/*，网关 :3080）==========
           // 网关 routing.rs 注册 /alliance/v1 前缀；前端 api/alliance.js 调用 /alliance/tasks · /alliance/stats ·
-          // /alliance/tasks/{id}/logs/stream（SSE）等。统一代理到网关 mox-server（:8080），
+          // /alliance/tasks/{id}/logs/stream（SSE）等。统一代理到网关 mox-server（:3080），
           // 由 mkConfigure 透传 SSE（Accept-Encoding: identity + keep-alive）与 Bearer 注入。
           '/alliance': {
             target: GW,

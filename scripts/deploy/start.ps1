@@ -199,7 +199,7 @@ $($C.C)============================================================
         $dashPort = [int]$cfg.dashboard_port
         $apiPort = [int]$cfg.services.api.port
         $fePort  = [int]$cfg.services.frontend.port
-      } catch { $dashPort = 3999; $apiPort = 8080; $fePort = 3020 }
+      } catch { $dashPort = 3999; $apiPort = 3080; $fePort = 3020 }
       Write-Host @"
 
 $($C.G)============================================================$($C._)

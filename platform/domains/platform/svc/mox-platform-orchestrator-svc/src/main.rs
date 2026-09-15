@@ -546,7 +546,7 @@ async fn main() -> anyhow::Result<()> {
                 .with_agent(state.ai_agent.clone())
                 .with_sidecar(NodeSidecarClient::new(
                     std::env::var("BACKEND_NODE_INTERNAL_BASE")
-                        .unwrap_or_else(|_| "http://127.0.0.1:8080".to_string()) // backend-node 已删除(2026-09)，默认指向接管其职责的 Rust 网关 8080,
+                        .unwrap_or_else(|_| "http://127.0.0.1:3080".to_string()) // backend-node 已删除(2026-09)，默认指向模块化 Rust 网关,
                 ));
             let r: Router =
                 crate::routes::ai_engine::ai_engine_routes(std::sync::Arc::new(ai_state));

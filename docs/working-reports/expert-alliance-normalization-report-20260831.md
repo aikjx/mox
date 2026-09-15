@@ -102,8 +102,8 @@
 | 17 | `docs/expert-alliance/architecture/deployment-guide.html` | P1-1+P2-1 | HTML注释元信息 + 可见警告div（K8s目标部署） | A组 |
 | 18 | `docs/expert-alliance/architecture/ops-manual.html` | P1-1元信息 | HTML注释元信息 + 可见元信息div | A组 |
 | 19 | `docs/expert-alliance/architecture/system-architecture-design.html` | P1-1+P2-1 | HTML注释元信息 + 可见警告div | A组 |
-| 20 | `docs/cosmic-architecture/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | P1-1+P2-2 | 元信息 + "宇宙架构哲学视角"声明 | A组 |
-| 21 | `docs/cosmic-architecture/04-EXPERT-ALLIANCE-v3-MODULAR.md` | P1-1+P2-2 | 元信息 + "宇宙架构哲学视角"声明 | A组 |
+| 20 | `docs/architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | P1-1+P2-2 | 元信息 + "宇宙架构哲学视角"声明 | A组 |
+| 21 | `docs/architecture/meta/04-EXPERT-ALLIANCE-v3-MODULAR.md` | P1-1+P2-2 | 元信息 + "宇宙架构哲学视角"声明 | A组 |
 
 ### 3.2 B组执行动作（22份修改 + 2份新建）
 
@@ -257,7 +257,7 @@
 | 案例1 | 归一化手册L15 | `](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)` | `](docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)` |
 | 案例2 | v2/README.md L42 | `](./00-requirements.md)` | `](docs/expert-alliance/v2/00-requirements.md)` |
 | 案例3 | 26-V1.1 L22 | `](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/mox-expert/src/rbac/policy.rs#L133-L158)` | `](platform/domains/mox-expert/src/rbac/policy.rs#L133-L158)` |
-| 案例4 | expert-alliance/README.md L676 | `](../microservices/README.md)` | `](docs/microservices/README.md)` |
+| 案例4 | expert-alliance/README.md L676 | `](../architecture/microservices/README.md)` | `](docs/architecture/microservices/README.md)` |
 | 案例5 | 代码对齐报告L445 | `` `docs/enterprise/26-...-V1.0.md` `` | `` `docs/_archive/expert-alliance/enterprise/26-...-V1.0.md` `` |
 
 ### 8.4 验证结果
@@ -306,7 +306,7 @@
 |---|------|------|:------:|
 | 1 | 定期引用审计 | 每季度执行一次全量引用审计，确保0断链、0断锚、0不合规引用 | P0 |
 | 2 | 文档生命周期管理 | 建立文档创建→评审→发布→维护→归档→废弃的全生命周期管理流程，与EA-NORM-001§2.4归档规则对齐 | P1 |
-| 3 | 术语一致性CI检查 | 将术语一致性检查纳入CI lint，确保新文档中术语首次出现必须链接到`docs/GLOSSARY.md`或`03-GLOSSARY.md` | P1 |
+| 3 | 术语一致性CI检查 | 将术语一致性检查纳入CI lint，确保新文档中术语首次出现必须链接到`docs/enterprise/GLOSSARY.md`或`03-GLOSSARY.md` | P1 |
 | 4 | 代码-文档对齐自动化 | 建立代码-文档对齐自动化校验工具，定期扫描文档中描述的crate数/服务数/端口/专家数与实际代码是否一致 | P1 |
 | 5 | 索引自动同步 | 开发索引自动同步脚本，新增/移动/归档文档时自动更新00-INTEGRATED-INDEX.md | P2 |
 | 6 | v2目标架构落地评估 | 评估v2全套文档描述的"7服务/31微服务/PG+Redis"目标架构是否有落地计划，如无则考虑归档v2系列 | P2 |

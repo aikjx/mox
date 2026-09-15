@@ -41,6 +41,27 @@ impl Default for SsoState {
     }
 }
 
+#[cfg(test)]
+mod callback_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn external_callback_never_creates_a_mock_session() {
+        let state = Arc::new(SsoState::new());
+        let provider_id = {
+            let mut providers = state.providers.write().await;
+            let provider = providers.values_mut().next().expect("builtin provider template");
+            provider.status = "enabled".into();
+            provider.provider_id.clone()
+        };
+        let response = callback_handler(State(state.clone()), Json(SsoCallbackRequest {
+            provider_id, code: "unverified-code".into(), state: "unverified-state".into(),
+        })).await;
+        assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
+        assert!(state.sessions.read().await.is_empty());
+    }
+}
+
 /// GET /api/enterprise/sso/protocols —— 获取支持的协议列表
 pub async fn list_protocols_handler() -> Response {
     let protocols = supported_protocols();
@@ -187,37 +208,11 @@ pub async fn callback_handler(
     let providers = state.providers.read().await;
     match providers.get(&req.provider_id) {
         Some(p) if p.status == "enabled" => {
-            // 实际实现中需要：
-            // 1. 用授权码交换token（调用token_endpoint）
-            // 2. 用access_token获取用户信息（调用userinfo_endpoint）
-            // 3. 映射字段，查找或创建本地用户
-            // 4. 创建本地会话，返回JWT token
-            // 当前为框架实现，返回模拟结果
-            let session_id = format!("sess_{}", uuid::Uuid::new_v4().simple());
-            let now = chrono::Utc::now().to_rfc3339();
-            let session = SsoSession {
-                session_id: session_id.clone(),
-                provider_id: req.provider_id.clone(),
-                user_id: "user_001".to_string(),
-                external_user_id: "external_001".to_string(),
-                access_token: "mock_access_token".to_string(),
-                refresh_token: Some("mock_refresh_token".to_string()),
-                login_at: now.clone(),
-                expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(2)).to_rfc3339()),
-                ip_address: None,
-                user_agent: None,
-                status: "active".to_string(),
-            };
-            state.sessions.write().await.insert(session_id.clone(), session);
-            Json(json!({
-                "code": 0,
-                "message": "登录成功",
-                "data": {
-                    "session_id": session_id,
-                    "token": "mock_jwt_token",
-                    "user": { "user_id": "user_001", "username": "demo_user" }
-                }
-            })).into_response()
+            // 未完成身份源授权码、state/nonce 与签名验证前，禁止创建会话。
+            (StatusCode::NOT_IMPLEMENTED, Json(json!({
+                "code": 501,
+                "message": "External SSO provider integration is not implemented; use /api/auth/login"
+            }))).into_response()
         }
         Some(_) => (StatusCode::BAD_REQUEST, Json(json!({ "code": 400, "message": "SSO提供商未启用" }))).into_response(),
         None => (StatusCode::NOT_FOUND, Json(json!({ "code": 404, "message": "SSO提供商不存在" }))).into_response(),

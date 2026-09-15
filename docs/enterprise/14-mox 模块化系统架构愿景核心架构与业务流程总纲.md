@@ -232,7 +232,7 @@
 
 ### 4.3 权威等级与 RACI（摘要）
 
-- 🟢 权威（以之为准）：AA-STD、BR 业务规则、`docs/architecture.md`、`enterprise-architecture-analysis.md`、各 `specs/`、`docs/full-dimensional/guantu-skeleton.md`。
+- 🟢 权威（以之为准）：AA-STD、BR 业务规则、`docs/architecture/architecture.md`、`enterprise-architecture-analysis.md`、各 `specs/`、`docs/architecture/full-dimensional/guantu-skeleton.md`。
 - 🟡 过程稿/可视化：`*-20260816*`、原始四份文档、`*.html`/`*.mmd`（以同名 `.md` 为源）。
 - RACI：需求变更评审（架构师 A／模块 Owner R）、ADR（架构师 R）、文档发布 ENT（文档维护者 R／架构师 A）、安全合规（安全 A）。
 
@@ -367,7 +367,7 @@ flowchart LR
 
 | 本节 | 权威落点 |
 |------|----------|
-| 高维需求关系图 | `specs/GR-STD-信息关联关系图开发规范-V1.0.md` ＋ `docs/full-dimensional/guantu-skeleton.md` |
+| 高维需求关系图 | `specs/GR-STD-信息关联关系图开发规范-V1.0.md` ＋ `docs/architecture/full-dimensional/guantu-skeleton.md` |
 | 六维绑定 / TraceMatrix | `specs/PT-Primi-架构规范-V1.0-完整版.md` ＋ `crates/primiflow-core/trace_matrix.md` |
 | 双璇玑 / 四闸门 / 主流程 | `璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0） |
 | 需求 / 架构 / 设计 / 业务 | `enterprise/01` `02` `03` `04` |

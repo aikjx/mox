@@ -93,7 +93,7 @@ python scripts/server-manage.py bootstrap --with-dashboard
 | 服务 Key | 名称 | 端口 | 类型 | 自动启动 |
 |----------|------|------|------|----------|
 | xiaobai_voice | 小白语音服务（ASR + TTS） | 30010 | Python | ✅ |
-| api | API 后端服务（Rust mox-gateway） | 8080 | Rust | ❌ |
+| api | API 后端服务（Rust mox-gateway） | 3080 | Rust | ❌ |
 | frontend | 用户前端界面（Vite + Vue3） | 3020 | Node | ❌ |
 | melody2score | 旋律转谱服务（WebUI） | 8012 | Python | ❌ |
 | primiflow | PrimiFlow 低代码拓扑引擎 | 8000 | Python | ❌ |

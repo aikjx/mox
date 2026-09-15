@@ -2,7 +2,7 @@
 
 > **执行日期**：2026-08-31
 > **执行组**：文档归一化执行员A组
-> **执行范围**：`docs/expert-alliance/`（21份）+ `docs/cosmic-architecture/`（2份）= 23份
+> **执行范围**：`docs/expert-alliance/`（21份）+ `docs/architecture/meta/`（2份）= 23份
 > **实际修改**：21份（2份按规则不修改）
 > **执行性质**：纯内容修复（in-place edit），不移动、不删除、不重命名任何文件
 > **参考规范**：`docs/standards/expert-alliance-normalization-mode.md`（EA-NORM-001）
@@ -72,12 +72,12 @@
 | 18 | `docs/expert-alliance/architecture/ops-manual.html` | EA-DOC-031 | P1-1元信息 | `<body>`标签后 | ①HTML注释元信息（🟡参考）②可见元信息div（权威等级/编号/更新日期） |
 | 19 | `docs/expert-alliance/architecture/system-architecture-design.html` | EA-DOC-032 | P1-1元信息 + P2-1提示div | `<body>`标签后 | ①HTML注释元信息（🟡参考）②可见警告div：K8s/Helm/Istio为目标设计 |
 
-### 2.5 docs/cosmic-architecture/（2份全部修改）
+### 2.5 docs/architecture/meta/（2份全部修改）
 
 | # | 文件路径 | doc_id | 修改类型 | 修改位置 | 修改摘要 |
 |---|---------|--------|---------|---------|---------|
-| 20 | `docs/cosmic-architecture/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | EA-DOC-040 | P1-1元信息 + P2-2视角声明 | 顶部frontmatter；副标题后 | ①YAML frontmatter（🟡参考）②"宇宙架构哲学视角"声明，技术事实以`docs/expert-alliance/`及代码为准 |
-| 21 | `docs/cosmic-architecture/04-EXPERT-ALLIANCE-v3-MODULAR.md` | EA-DOC-041 | P1-1元信息 + P2-2视角声明 | 顶部frontmatter；头部blockquote后 | ①YAML frontmatter（🟡参考）②"宇宙架构哲学视角"声明 |
+| 20 | `docs/architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | EA-DOC-040 | P1-1元信息 + P2-2视角声明 | 顶部frontmatter；副标题后 | ①YAML frontmatter（🟡参考）②"宇宙架构哲学视角"声明，技术事实以`docs/expert-alliance/`及代码为准 |
+| 21 | `docs/architecture/meta/04-EXPERT-ALLIANCE-v3-MODULAR.md` | EA-DOC-041 | P1-1元信息 + P2-2视角声明 | 顶部frontmatter；头部blockquote后 | ①YAML frontmatter（🟡参考）②"宇宙架构哲学视角"声明 |
 
 ---
 
@@ -89,7 +89,7 @@
 | EA-DOC-010~018 | `docs/expert-alliance/v2/` | 010=00-requirements, 011=01-architecture, 012=02-domain-model, 013=03-business-flow, 014=04-api-design, 015=05-data-architecture, 016=06-security-observability, 017=07-roadmap, 018=README |
 | EA-DOC-020~023 | `docs/expert-alliance/v3/` | 020=01-architecture-optimization, 021=02-requirements-matrix, 022=03-business-flow-diagrams, 023=README |
 | EA-DOC-030~032 | `docs/expert-alliance/architecture/` | 030=deployment-guide.html, 031=ops-manual.html, 032=system-architecture-design.html |
-| EA-DOC-040~041 | `docs/cosmic-architecture/` | 040=02-EXPERT-ALLIANCE-ARCHITECTURE, 041=04-EXPERT-ALLIANCE-v3-MODULAR |
+| EA-DOC-040~041 | `docs/architecture/meta/` | 040=02-EXPERT-ALLIANCE-ARCHITECTURE, 041=04-EXPERT-ALLIANCE-v3-MODULAR |
 
 ---
 

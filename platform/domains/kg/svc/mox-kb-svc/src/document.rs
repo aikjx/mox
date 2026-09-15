@@ -13,7 +13,7 @@
 use crate::model::{KbDocument, now_iso, new_kb_id};
 use bytes::Bytes;
 use mox_base_store_core::StoreError;
-use mox_cloud_sdk::StoreBackend;
+use mox_cloud_sdk::{StoreBackend, list_object_refs};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -31,36 +31,11 @@ pub const CATEGORIES: &[(&str, &str)] = &[
     ("cat-research", "研究文档"),
 ];
 
-/// 递归列出数据目录下的所有对象文件（FS 后端对象为扁平文件，key=相对路径）。
-fn list_object_refs_sync(data_dir: &std::path::Path) -> Vec<(String, u64)> {
-    let mut result = Vec::new();
-    let Ok(entries) = std::fs::read_dir(data_dir) else { return result };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.is_file() {
-            if let Ok(rel) = path.strip_prefix(data_dir) {
-                let key = rel.to_string_lossy().replace('\\', "/");
-                let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
-                result.push((key, size));
-            }
-        } else if path.is_dir() {
-            result.extend(list_object_refs_sync(&path));
-        }
-    }
-    result
-}
-
-async fn list_object_refs(data_dir: &std::path::Path) -> Vec<(String, u64)> {
-    let dir = data_dir.to_path_buf();
-    tokio::task::spawn_blocking(move || list_object_refs_sync(&dir))
-        .await
-        .unwrap_or_default()
-}
-
 /// 知识库文档服务
 #[derive(Clone)]
 pub struct KbDocumentService {
     backend: Arc<StoreBackend>,
+    mutation: Arc<tokio::sync::Mutex<()>>,
 }
 
 /// 文档摘要（索引条目，用于 list/stats）
@@ -76,7 +51,7 @@ pub struct DocSummary {
 impl KbDocumentService {
     /// 包装已装配的存储后端
     pub fn new(backend: Arc<StoreBackend>) -> Self {
-        Self { backend }
+        Self { backend, mutation: Arc::new(tokio::sync::Mutex::new(())) }
     }
 
     fn doc_key(id: &str) -> String {
@@ -95,6 +70,7 @@ impl KbDocumentService {
 
     /// 保存文档（原子写对象 + 刷新索引）
     pub async fn save(&self, doc: &KbDocument) -> crate::Result<()> {
+        let _mutation = self.mutation.lock().await;
         let blob = Bytes::from(serde_json::to_vec(doc).map_err(crate::err_other)?);
         self.backend
             .object
@@ -133,6 +109,7 @@ impl KbDocumentService {
 
     /// 删除文档
     pub async fn delete(&self, id: &str) -> crate::Result<bool> {
+        let _mutation = self.mutation.lock().await;
         let existed = self.backend.object.exists(&Self::doc_key(id)).await?;
         if existed {
             self.backend.object.delete(&Self::doc_key(id)).await?;
@@ -179,6 +156,7 @@ impl KbDocumentService {
 
     /// 全局标签聚合（tags 端点）
     pub async fn tags(&self) -> crate::Result<Vec<Value>> {
+        let _ = self.read_index().await?;
         let mut tags = HashMap::<String, usize>::new();
         if let Some(raw) = self.backend.kv.get(TAGS_KEY).await? {
             let map: HashMap<String, usize> = serde_json::from_slice(&raw).unwrap_or_default();
@@ -228,7 +206,7 @@ impl KbDocumentService {
         let mut summaries = Vec::new();
         let mut tags = HashMap::<String, usize>::new();
         let mut keys: Vec<String> = list_object_refs(&self.backend.data_dir)
-            .await
+            .await?
             .into_iter()
             .map(|(p, _)| p)
             .filter(|p| p.starts_with(DOC_KEY_PREFIX) && p.ends_with(".json"))
@@ -266,6 +244,11 @@ impl KbDocumentService {
 
     /// 读取摘要索引
     pub(crate) async fn read_index(&self) -> crate::Result<Vec<DocSummary>> {
+        let _mutation = self.mutation.lock().await;
+        // ponytail: O(n) rebuild; move to a transactional index when document volume requires it.
+        // Existing releases wrote empty indexes by confusing physical hashes with logical keys.
+        // Rebuild from the store's metadata so restart also repairs those indexes.
+        self.rebuild_index().await?;
         match self.backend.kv.get(INDEX_KEY).await? {
             Some(raw) => serde_json::from_slice(&raw)
                 .map_err(|e| StoreError::Other(format!("索引损坏: {e}"))),

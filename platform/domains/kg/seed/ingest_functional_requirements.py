@@ -16,7 +16,7 @@ import urllib.error
 from pathlib import Path
 
 # ========== 配置 ==========
-BASE_URL = "http://localhost:8080"
+BASE_URL = "http://localhost:3080"
 SEED_PATH = Path(__file__).parent / "functional-requirements-graph-seed.json"
 NODE_DELAY = 0.05  # 节点录入间隔(秒)
 EDGE_DELAY = 0.03  # 边录入间隔(秒)

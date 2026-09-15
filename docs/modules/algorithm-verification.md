@@ -1,11 +1,11 @@
 # 璇玑校验设计（Algorithm Verification · AV）
 
-> 配套文档：`docs/architecture.md`(总架构) · `docs/modules/mathematical-foundation.md`(数学内核) · `docs/modules/mox-expert-normalization.md`(归一化) · `docs/modules/mox-expert-product.md`(产品化) · `docs/modules/business-process-flows.md`(企业级业务处理流程)
+> 配套文档：`docs/architecture/architecture.md`(总架构) · `docs/modules/mathematical-foundation.md`(数学内核) · `docs/modules/mox-expert-normalization.md`(归一化) · `docs/modules/mox-expert-product.md`(产品化) · `docs/modules/business-process-flows.md`(企业级业务处理流程)
 
 - 文档等级：🟢 权威（设计态 · modules/）
 - 编号：AV-STD-V1.0
 - 适用范围：operator-unified-system（OUS）数学内核自洽性、PT‑Primi 合规、璇玑治理闸门的统一验证矩阵
-- 关联规范：`docs/specs/pt-primi-架构规范-v1.0-完整版.md` §9 · `docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` · `docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md`
+- 关联规范：`docs/specifications/pt-primi-架构规范-v1.0-完整版.md` §9 · `docs/architecture/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` · `docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md`
 
 ---
 
@@ -26,10 +26,10 @@ AV 不负责"生成"，只负责"证明自洽"；其结论作为治理闸门（G
 | 维度 | 名称 | 验证对象 | 判定标准（阈值） | 工具/来源 |
 | --- | --- | --- | --- | --- |
 | L1 | 数学公理自洽 | operator-core 六公理 + 守恒律 | 六公理全部 `pass`，概率守恒 L1 范数 = 1、能量守恒 L2 范数稳定 | `verify_axioms.py`（仓根） |
-| L2‑a | PT‑Primi 守恒 | 涌现拓扑 `C² = κ² + τ²` | 残差 `ε = \|C − √(κ²+τ²)\| ≤ ε_max`（默认 `1e‑3`），否则拒绝并报警 | `docs/specs/pt-primi-架构规范-v1.0-完整版.md` §3.1 / §9.1 |
+| L2‑a | PT‑Primi 守恒 | 涌现拓扑 `C² = κ² + τ²` | 残差 `ε = \|C − √(κ²+τ²)\| ≤ ε_max`（默认 `1e‑3`），否则拒绝并报警 | `docs/specifications/pt-primi-架构规范-v1.0-完整版.md` §3.1 / §9.1 |
 | L2‑b | 六维绑定 | REQ/FUN/BIZ/ALG/TSK/COD | 零孤儿；`TraceMatrix` 全量导出且连通至 `REQ` | 静态扫描 + TraceMatrix |
 | L2‑c | 确定性 | 生产拓扑 | 记录 `(G, B, P, seed)`，`Emerge` 可复现；无 seed 视为实验态，禁入验收 | 配置校验 |
-| L3 | 璇玑治理闸门 | ⛨璇玑验证网关（最高权限） | `GovernanceReport` 全绿、`AuditChain` 完整可追溯 | `docs/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` |
+| L3 | 璇玑治理闸门 | ⛨璇玑验证网关（最高权限） | `GovernanceReport` 全绿、`AuditChain` 完整可追溯 | `docs/architecture/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md` |
 | L4 | 工程质量 | 编译/测试/覆盖 | 错误/失败 = 0；核心 crate 行覆盖 ≥ 70% | `cargo test` / `tarpaulin` |
 
 ---

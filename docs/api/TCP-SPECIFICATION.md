@@ -2,7 +2,7 @@
 
 > 版本：v1.0 · 生效日期：2026-09-03
 > 适用范围：MOX 平台所有服务的 TCP 监听端口绑定与管理
-> 端口单一事实源：`platform_config.json` + `docs/ports/PORT-REGISTRY.md`
+> 端口单一事实源：`platform_config.json` + `docs/api/PORT-REGISTRY.md`
 
 ---
 
@@ -23,7 +23,7 @@
 
 | 端口范围 | 用途 | 说明 |
 |----------|------|------|
-| `8080` | API 网关 | 统一 HTTP 入口（mox-server） |
+| `3080` | API 网关 | 统一 HTTP 入口（mox-server） |
 | `3000 ~ 3099` | 平台核心服务 | 编排器、企业服务等 |
 | `3100 ~ 3199` | 知识图谱域 | KG 存储、服务、流处理 |
 | `3200 ~ 3299` | AI 能力域 | 意图、专家、引擎 |
@@ -38,7 +38,7 @@
 
 ### 2.2 端口注册表
 
-所有端口必须在 `docs/ports/PORT-REGISTRY.md` 中登记，包含：
+所有端口必须在 `docs/api/PORT-REGISTRY.md` 中登记，包含：
 
 | 字段 | 说明 |
 |------|------|
@@ -68,7 +68,7 @@
 {
   "server": {
     "host": "0.0.0.0",
-    "port": 8080,
+    "port": 3080,
     "health_check": "/health",
     "shutdown_timeout_secs": 30,
     "connect_timeout_secs": 10,
@@ -93,7 +93,7 @@
 | 环境变量 | 对应字段 | 示例 |
 |----------|----------|------|
 | `MOX_<SERVICE>_HOST` | `host` | `MOX_GATEWAY_HOST=127.0.0.1` |
-| `MOX_<SERVICE>_PORT` | `port` | `MOX_GATEWAY_PORT=8080` |
+| `MOX_<SERVICE>_PORT` | `port` | `MOX_GATEWAY_PORT=3080` |
 
 ---
 
@@ -218,25 +218,21 @@ pub async fn serve_with_graceful_shutdown(
 
 | 服务 | Crate | 端口 | 协议 | 健康检查 | 状态 |
 |------|-------|------|------|----------|------|
-| API 网关 | `mox-platform-gateway-svc` | 8080 | HTTP | `/health` | active |
+| API 网关 | `mox-platform-gateway-svc` | 3080 | HTTP | `/health` | active |
 | 平台编排器 | `mox-platform-orchestrator-svc` | 3001 | HTTP | `/health` | active |
-| 平台企业服务 | `mox-platform-enterprise-svc` | 3002 | HTTP | `/health` | active |
-| KG 存储服务 | `mox-kg-storage-svc` | 3101 | HTTP | `/health` | active |
-| KG 服务 | `mox-kg-service-svc` | 3102 | HTTP | `/health` | active |
-| KG 流服务 | `mox-kg-streams-svc` | 3103 | HTTP/WebSocket | `/health` | active |
-| AI 意图服务 | `mox-ai-intent-svc` | 3201 | HTTP | `/health` | active |
-| AI 专家服务 | `mox-ai-expert-svc` | 3202 | HTTP | `/health` | active |
-| 联盟调度器 | `mox-alliance-scheduler-svc` | 3301 | HTTP | `/health` | active |
-| 联盟执行器 | `mox-alliance-executor-svc` | 3302 | HTTP | `/health` | active |
+| 平台企业服务 | `mox-platform-enterprise-svc` | 3002 | HTTP | `/health` | standby |
+| 系统核心 | `mox-platform-system-core` | 3003 | HTTP | `/health` | optional |
+| 联盟调度器 | `mox-alliance-scheduler-svc` | 3100 | HTTP | `/health` | active |
+| 联盟执行器 | `mox-alliance-executor-svc` | 3200 | HTTP | `/health` | active |
+| AI 专家桥接 | scheduler 内部桥接 | 3300 | HTTP | — | active |
 | 工作流引擎 | `mox-flow-primiflow-svc` | 3401 | HTTP | `/health` | active |
 | 工作流融合 | `mox-flow-fusion-svc` | 3402 | HTTP | `/health` | active |
-| 云存储 S3 | `mox-cloud-s3-svc` | 3501 | HTTP | `/health` | active |
-| 数据平面 | `mox-data-plane-svc` | 3601 | HTTP | `/health` | active |
-| 语音算子 | `mox-voice-operator-svc` | 3701 | HTTP/WebSocket | `/health` | active |
-| 项目图谱 | `mox-project-graph-svc` | 3801 | HTTP | `/health` | active |
-| 系统核心 | `mox-platform-system-core` | 3003 | HTTP | `/health` | active |
+| KG 独立服务 | `mox-kg-server` | 3411 | HTTP | `/health/live` | optional |
+| Cloud 独立服务 | `mox-cloud-server` | 3412 | HTTP | `/health/live` | optional |
+| IAM 独立服务 | `mox-iam-server` | 3413 | HTTP | `/health/live` | optional |
+| KB 独立服务 | `mox-kb-server` | 3414 | HTTP | `/health/live` | optional |
 
-> 注：端口号为归一化目标值，实际以 `platform_config.json` 和 `PORT-REGISTRY.md` 为准。
+> 默认部署只暴露网关 3080；3411–3414 用于独立扩展验证，不与默认部署同时启动。
 
 ---
 

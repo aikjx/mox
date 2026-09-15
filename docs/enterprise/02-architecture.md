@@ -4,7 +4,7 @@
 > **文档版本**：v2.0 (ENT) · 最后更新 2026-08-26（v1.1→v2.0：架构从旧15-crate扁平模型迁移至新6层8域DDD矩阵，全量路径与crate映射更新）
 > **权威链**：🟢 L0 第一级 → [`18-全域顶层总设计-三联盟模式-V1.0.md`](18-全域顶层总设计-三联盟模式-V1.0.md)（TOP-MASTER §二：六层金字塔 · §三：八层知识图谱建模）。本文为 L2 第三级（架构层），所有声明不得与 18 冲突。架构迁移基准见 [`ARCHITECTURE-MIGRATION.md`](ARCHITECTURE-MIGRATION.md)。
 > **主责联盟**：算法联盟（图算法/图谱） + 开发联盟（分层/工程落地） · 联合签署：产品联盟（需求一致性）
-> **配套**：`01-requirements.md`（需求）、`03-design.md`（设计）、`04-business-processing.md`（业务处理）、`docs/architecture.md`（OUS 父总架构 · 归档参考）、`ARCHITECTURE-MIGRATION.md`（旧→新crate完整映射）
+> **配套**：`01-requirements.md`（需求）、`03-design.md`（设计）、`04-business-processing.md`（业务处理）、`docs/architecture/architecture.md`（OUS 父总架构 · 归档参考）、`ARCHITECTURE-MIGRATION.md`（旧→新crate完整映射）
 >
 > 本文以「璇玑 RelGraph」为切面，沿 **业务 / 信息 / 应用 / 技术 / 安全 / 集成 / 部署** 七视图展开，并附
 > **架构锚点（与 18 TOP-MASTER 六层金字塔的 L 层级对应表）**、**架构决策记录（ADR）** 与 **跨视图 NFR 落地表**。
@@ -26,7 +26,7 @@
 | TOGAF 七视图 | 对应 L 层级（六层金字塔） | 核心承载模块（路径零老化 · 6层8域DDD矩阵） | 三联盟责任 |
 |--------------|--------------------------|-----------------------------------------------|:--:|
 | ① 业务 Business | **L5 业务流程层**（协作/融合/判重/文档治理 10 BP） | `platform/domains/platform/svc/mox-platform-enterprise-svc` + `frontend-ui` 28 视图 | 产品联盟 R，开发/算法 C |
-| ② 信息 Information | **L4 知识图谱核心层**（八层图谱 L0~L7 · 14 节点族 · 19 边族） | `platform/domains/kg/svc/mox-kg-hub-svc` · `docs/graph/graph.enterprise.json`（372 节点 / 751 边） | 算法联盟 R，开发 C |
+| ② 信息 Information | **L4 知识图谱核心层**（八层图谱 L0~L7 · 14 节点族 · 19 边族） | `platform/domains/kg/svc/mox-kg-hub-svc` · `docs/architecture/graph/guantu.req.json`（372 节点 / 751 边） | 算法联盟 R，开发 C |
 | ③ 应用 Application | **L3 算法推理层** + **L6 产品应用层**（前端视图） | L3: `mox-kg-algo-core` / `mox-flow-optimizer-core` / `mox-ai-flow-svc` / `mox-ai-expert-svc`；L6: frontend-ui（28 views） | 算法联盟 + 产品联盟 |
 | ④ 技术 Technology | **L2 Rust 自研工程底座**（6层8域DDD矩阵 · 50+ crate · workspace 统一治理 · 零重型脚手架依赖） | `platform/domains/{8域}/{core,svc,sdk}`（50+） + `platform/foundation/`（2） + `platform/gateway/mox-platform-gateway-svc` | 开发联盟 R，算法 C |
 | ⑤ 安全 Security | 横切 **L1 部署运维层** · L2 · L3 · L5 | `mox-platform-iam-core` + `mox-ai-expert-svc`（⛨璇玑验证网关 G2） + gateway RBAC 中间件 | 开发联盟 · 安全组 R |
@@ -430,7 +430,7 @@ DomainEvent ──▶ EventBus(broadcast)
 ### 7.3 灾备
 
 - **已落地**：Store 持久化写透 + 启动重放、审计链落盘重放（I-01/I-02）。SQLite 单文件可冷备；PostgreSQL / MySQL 可复用其原生主从与 PITR 备份体系。
-- **待办**：WAL 快照与混沌演练（I-12，见 `05` 路线图）。对齐 `docs/architecture.md` §16。
+- **待办**：WAL 快照与混沌演练（I-12，见 `05` 路线图）。对齐 `docs/architecture/architecture.md` §16。
 
 ### 7.4 持久化后端选型与配置矩阵（唯一权威落点）
 
@@ -498,8 +498,8 @@ DomainEvent ──▶ EventBus(broadcast)
 
 ## 10. 与父系统 OUS 的关系
 
-- 本文是 `docs/architecture.md`（v7.0，79KB 总架构）的**璇玑子系统切面**。
-- 能力对齐见 `docs/enterprise-architecture-analysis.md`（双璇玑十四维、能力覆盖矩阵）。
+- 本文是 `docs/architecture/architecture.md`（v7.0，79KB 总架构）的**璇玑子系统切面**。
+- 能力对齐见 `docs/enterprise/enterprise-architecture-analysis.md`（双璇玑十四维、能力覆盖矩阵）。
 - 融合链路见 `docs/modules/mox-expert-alliance-fusion-flows.md`。
 
 ---

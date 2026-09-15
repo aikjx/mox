@@ -1036,7 +1036,7 @@ service VectorStoreService {
 - `docs/architecture/NORMALIZED_ARCHITECTURE.md` — 归一化架构
 - `docs/expert-alliance/v3/01-architecture-optimization.md` — 联盟架构优化
 - `docs/standards/` — 标准规范系列
-- `docs/microservices/` — 微服务系列
+- `docs/architecture/microservices/` — 微服务系列
 
 ---
 

@@ -161,7 +161,7 @@ A-1(凭据收口) ──→ A-2(secret 门禁)
 ## 7. 与既有文档的关系
 
 - `00-INTEGRATED-INDEX.md`：主题全景导航（本文档是其"优化执行"章节）
-- `docs/enterprise/26-V1.0/V1.1`：历史方案，保留存档；**V1.0 中 backend-node 相关条目标记"已过时（架构迁移）"**，不建议按原样执行
+- `docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md`：历史方案，保留存档；**V1.0 中 backend-node 相关条目标记"已过时（架构迁移）"**，不建议按原样执行
 - `docs/architecture/14-REPOSITORY-FULL-MAP.md`：B-1 目录归一后需同步
 
 ---

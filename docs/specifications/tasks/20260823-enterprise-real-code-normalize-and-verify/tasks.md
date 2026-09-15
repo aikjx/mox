@@ -119,7 +119,7 @@ agent=None 与 hybrid 两个分支，`ai_summary` 长度 ≥ 20 字符、不含 
 - 优先级: high
 - 依赖: 无（与 Task 1-4 可并行）
 - 修改范围：
-  - `platform/backend-node/src/lib/graph-algos.js`：`degreeCentrality / betweennessCentrality / pagerank` 三个函数体改为薄包装 `const GF = require('../graph/graph-formulas'); return GF.<同名>(nodes, edges, {directed:false/damping,maxIter});`（参数兼容旧 signature）；保留独有 `labelPropagation` / `bfsPath` / `graphAdjacency` / `activateSpread` 不碰。
+  - `platform/backend-node/src/lib/graph-algos.js`：`degreeCentrality / betweennessCentrality / pagerank` 三个函数体改为薄包装 `const GF = require('../architecture/graph/graph-formulas'); return GF.<同名>(nodes, edges, {directed:false/damping,maxIter});`（参数兼容旧 signature）；保留独有 `labelPropagation` / `bfsPath` / `graphAdjacency` / `activateSpread` 不碰。
   - `platform/backend-node/src/ai-flow-graph.js`：`FlowGraphFormula` class 的 3 个方法 body 改为 2 行 thin wrapper。
   - `platform/backend-node/src/routes/graph.js` + `api-server.js`：对 `lib/graph-algos.js` 中那三个方法的 import，注释标注"实际由 GraphFormulas 单源执行，此处为兼容 wrapper"；不删 import 以免破坏下游接口签名。
   - 新增绿测：`test/test-graph-formulas-single-source.js`：对同一份种子节点+边，跑 3 条路径（graph-formulas、graph-algos、ai-flow-graph）做 20+ 断言（度 top 3 顺序相等、介数 max 值差 <1e-9、PageRank 前 5 交集 100%）。

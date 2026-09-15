@@ -1,10 +1,10 @@
 # 璇玑系统 · 全局端口注册表（PORT-REGISTRY-001）
 
 > **标题**：璇玑系统 · 全局端口注册表
-> **版本**：V1.1
+> **版本**：V1.2
 > **权威等级**：🟢权威
 > **编号**：PORT-REGISTRY-001
-> **最后更新日期**：2026-09-03
+> **最后更新日期**：2026-09-14
 > **适用范围**：**整个 infotopograph 仓库**（全部运行服务、附属服务、遗留服务、测试服务、历史/已退役端口、第三方基础设施引用）
 > **单源声明**：本文档是**全仓库端口分配的唯一权威来源**。凡涉及端口规划、分配、迁移、避让的决策与文档，均以本文档为准；与本文档冲突时，以本文档为准并修复冲突来源。专家联盟核心服务段（3000–3999）同时受 `docs/standards/expert-alliance-port-norm.md`（PORT-NORM-001）约束，两者一致，PORT-NORM-001 为本表 3000–3999 段的细粒度权威。
 
@@ -14,11 +14,11 @@
 
 | 分类 | 说明 | 端口段/示例 |
 |---|---|---|
-| **RUNTIME** | 由 `scripts/server-manage.py` 统一管理、`platform_config.json` 登记的**当前运行服务** | 8080 / 3020 / 30010 / 8012 / 8000 / 3999 |
+| **RUNTIME** | 由 `scripts/server-manage.py` 统一管理、`platform_config.json` 登记的**当前运行服务** | 3080 / 3020 / 30010 / 8012 / 8000 / 3999 |
 | **ALLIANCE** | 专家联盟核心服务（PORT-NORM-001 强制 3000–3999 段） | 3100 / 3200 / 3300 |
 | **ANCILLARY** | 运行期附属端口（gRPC、内网控制面、OUS 边缘、前端预览等） | 50051 / 50052 / 9080 / 9081 / 4173 / 3998 / 7000 / 3000 / 3001 / 3002 |
 | **LEGACY** | 遗留模块，自洽但不再纳入统一运维（Python mox-server / mox-store / docker） | 8600 / 8601 / 6379(infra) |
-| **DEPRECATED** | 已退役/历史端口，**禁止新服务复用** | 3010 / 3021 / 3717 |
+| **DEPRECATED** | 已退役/历史端口，**禁止新服务复用** | 3010 / 3021 / 3717 / 8101–8104 |
 | **TEST-ONLY** | 仅供测试/内存 mock 的端口，不进入运行链路 | 8001–8003、9000–9003、9101–9103、9201–9203、9301–9303、9333、9401–9403、9501–9503、9669、9779–9781、9998/9999、12345、13130、19601–19603、19876、19999、35432、65528–65530 等 |
 | **THIRD-PARTY** | 第三方基础设施/中间件默认端口（部署引用，非本项目监听） | 3306 / 5432 / 2379 / 2380 / 4222 / 4317 / 6379 / 7687 / 8200 / 8848 / 9000 / 9001 / 9090 / 9093 / 5236 / 54321 / 7480 等 |
 
@@ -28,7 +28,7 @@
 
 | 服务 | 端口 | 协议 | 绑定 | 入口/访问 | 配置权威来源 |
 |---|---|---|---|---|---|
-| **api**（Rust 网关 mox-server，crate `mox-platform-gateway-svc`） | **8080** | HTTP | 0.0.0.0 | `http://localhost:8080/health` | `platform_config.json`、`deploy/config/gateway.yaml`、`platform/gateway/mox-platform-gateway-svc/` |
+| **api**（Rust 网关 mox-server，crate `mox-platform-gateway-svc`） | **3080** | HTTP | 0.0.0.0 | `http://localhost:3080/health` | `platform_config.json`、`deploy/config/gateway.yaml`、`platform/gateway/mox-platform-gateway-svc/` |
 | **frontend**（Vite Vue3 dev server） | **3020** | HTTP | 0.0.0.0 | `http://localhost:3020/` | `frontend-ui/vite.config.js`、`platform_config.json` |
 | **xiaobai_voice**（ASR+TTS） | **30010** | HTTP/WS | 127.0.0.1 | `http://localhost:30010/voice/health` | `projects/xiaobai_voice/xiaobai_voice/config/default_config.yaml`、`cli.py`、`platform_config.json` |
 | **melody2score**（旋律转谱 WebUI） | **8012** | HTTP | 0.0.0.0 | `http://localhost:8012/` | `projects/melody2score/app/webui.py`、`platform_config.json` |
@@ -46,15 +46,15 @@
 
 | 端口 | 服务 key | 名称 | 协议 | 绑定 | 健康检查 | 状态 |
 |---|---|---|---|---|---|---|
-| 8080 | `api` | API 后端服务（Rust mox-gateway） | HTTP | 0.0.0.0 | `/health` | 🟢运行中 |
+| 3080 | `api` | API 后端服务（Rust mox-server） | HTTP | 0.0.0.0 | `/health` | 🟢运行中 |
 | 3020 | `frontend` | 用户前端界面（Vite + Vue3） | HTTP | 0.0.0.0 | `/` | 🟢运行中 |
 | 30010 | `xiaobai_voice` | 小白语音服务（ASR + TTS） | HTTP/WS | 127.0.0.1 | `/voice/health` | 🟢运行中 |
 | 8012 | `melody2score` | 旋律转谱服务（FastAPI WebUI） | HTTP | 0.0.0.0 | `/` | 🟢运行中 |
 | 8000 | `primiflow` | PrimiFlow 低代码拓扑引擎 | HTTP | 0.0.0.0 | `/` | 🟢运行中 |
 | 3999 | `dashboard` | Web 管理面板 | HTTP | 0.0.0.0 | `/` | 🟢运行中 |
 
-> **依赖关系**：`frontend`(3020) `depends_on` `api`(8080)；`api` 的 `/voice/**` 路由代理到 `xiaobai_voice`(30010)。
-> **前端代理**：`frontend-ui/vite.config.js` 中 `/api` → `http://localhost:8080`；`/ai/engine`、`/voice`、`/ws` 默认 → `http://localhost:8080`（可用 `GATEWAY_URL` 环境变量覆盖）。
+> **依赖关系**：`frontend`(3020) `depends_on` `api`(3080)；`api` 的 `/voice/**` 路由代理到 `xiaobai_voice`(30010)。
+> **前端代理**：`frontend-ui/vite.config.js` 中 `/api`、`/ai/engine`、`/voice`、`/ws` 默认 → `http://localhost:3080`（可用 `GATEWAY_URL` 环境变量覆盖）。
 
 ### 3.2 ALLIANCE —— 专家联盟核心服务（3000–3999 段，PORT-NORM-001）
 
@@ -86,28 +86,29 @@
 | 8765 | ai-intent-svc 默认监听（`MOX_AI_INTENT_PORT` 环境变量驱动，默认 8765） | 0.0.0.0 | `platform/domains/ai/svc/mox-ai-intent-svc/src/main.rs` |
 | 5173 | Vite dev 默认端口（网关 CORS 白名单引用，非监听） | — | `platform/gateway/mox-platform-gateway-svc/src/config.rs` → `default_cors_origins` |
 | 33020 | 专家联盟前端 dev（npm run dev --port 33020，127.0.0.1） | 127.0.0.1 | `docs/working-reports/20260905_alliance_modular_usable_acceptance.md` |
-| 8101 | mox-kg-server（K8s Service） | — | `deploy/k8s/base/mox-platform.yaml` |
-| 8102 | mox-cloud-server（K8s Service） | — | `deploy/k8s/base/mox-platform.yaml` |
-| 8103 | mox-iam-server（K8s Service） | — | `deploy/k8s/base/mox-platform.yaml` |
-| 8104 | mox-kb-server（K8s Service） | — | `deploy/k8s/base/mox-platform.yaml` |
+| 3411 | KG 独立宿主（`mox-server`，`MOX_HOST_ROLE=kg`） | 容器 0.0.0.0；宿主机仅 127.0.0.1 | `docker-compose.domains.yml`；旧 `mox-kg-server` 不可同时占用 |
+| 3412 | CLOUD 独立宿主（`mox-server`，`MOX_HOST_ROLE=cloud`） | 容器 0.0.0.0；宿主机仅 127.0.0.1 | `docker-compose.domains.yml`；旧 `mox-cloud-server` 不可同时占用 |
+| 3413 | IAM 独立宿主（`mox-server`，`MOX_HOST_ROLE=iam`） | 容器 0.0.0.0；宿主机仅 127.0.0.1 | `docker-compose.domains.yml`；旧 `mox-iam-server` 不可同时占用 |
+| 3414 | KB 独立宿主（`mox-server`，`MOX_HOST_ROLE=kb`） | 容器 0.0.0.0；宿主机仅 127.0.0.1 | `docker-compose.domains.yml`；旧 `mox-kb-server` 不可同时占用 |
 
 ### 3.4 LEGACY —— 遗留模块（自洽，不纳入统一运维）
 
 | 端口 | 模块 | 说明 | 权威来源 | 状态 |
 |---|---|---|---|---|
-| 8600 | legacy Python `mox-server`（低代码平台旧后端） | docker-compose / systemd / nginx 反向代理指向此端口；**与 Rust 网关 api=8080 是两个不同服务**，注意同名“mox-server”易混淆 | `docker-compose.yml`、`deploy/Dockerfile`、`deploy/systemd.service`、`tools/deploy.py`、`platform/legacy/mox-server/run.py` | 🟡遗留（仍在部署链路） |
+| 8600 | legacy Python `mox-server`（低代码平台旧后端） | 与 Rust 网关 api=3080 是两个不同服务，注意同名“mox-server”易混淆 | `deploy/Dockerfile`、`deploy/systemd.service`、`tools/deploy.py`、`platform/legacy/mox-server/run.py` | 🟡遗留 |
 | 8601 | legacy `mox-store`（应用商店） | FastAPI 商店服务 | `platform/legacy/mox-store/store_server.py` | 🟡遗留 |
 | 6379 | **redis**（基础设施） | docker-compose / systemd 引用 | `docker-compose.yml`、`deploy/systemd.service` | 🟢基础设施 |
 
-> **注意**：legacy `mox-server`(8600) 与 Rust 网关 `mox-server`(8080) **二进制同名不同物**。新代码一律以 8080 为唯一 API 入口；8600 仅服务遗留静态站点（`mox-website` / `mox-console` / `chip-website`）。
+> **注意**：legacy `mox-server`(8600) 与 Rust 网关 `mox-server`(3080) **二进制同名不同物**。新代码一律以 3080 为唯一 API 入口。
 
 ### 3.5 DEPRECATED —— 已退役/历史端口（禁止新服务复用）
 
 | 端口 | 原归属 | 退役原因 | 备注 |
 |---|---|---|---|
-| 3010 | Node.js 平台 API / Node sidecar（`platform/backend-node`） | `backend-node` 已删除 | orchestrator 侧车默认已改指向 Rust 网关 8080（2026-09-01，见 §6.2）；历史文档仍可能引用 |
+| 3010 | Node.js 平台 API / Node sidecar（`platform/backend-node`） | `backend-node` 已删除 | 由 Rust 网关 3080 接管；历史文档仍可能引用 |
 | 3021 | 前端旧端口（AI 对话 UI 曾用） | 前端端口统一为 **3020**（vite `server.port`） | 桌面端/shared 常量/校验脚本均已改为 3020 |
 | 3717 | xiaobai_voice 旧端口（ASR+TTS） | 2026-09-01 按 PORT-NORM-001 4.2 迁至 **30010** | 历史文档（ARCHITECTURE/enterprise 报告）仍可能显示 3717，以本表为准 |
+| 8101–8104 | KG / Cloud / IAM / KB 独立服务旧端口 | 迁至 **3411–3414** | 默认部署已收敛到网关 3080，独立服务仅作可选扩展 |
 | 8081 / 8082 | 专家联盟 scheduler-svc / executor-svc 旧端口（已迁 **3100 / 3200**） | 按 PORT-NORM-001 迁移 | 现仅作 `mox-dualrpc` 测试端口（TEST-ONLY） |
 | 18080 / 19080 / 19081 | single-node 验证模式（public / ctrl / data） | 仅 t19 回归验证产物使用 | `projects/t19-regression/`、`scripts/validation/validate-single-node.js` |
 
@@ -164,7 +165,7 @@
 ## 第4章 归一化原则（强制约束）
 
 1. **单一事实源**：运行服务端口一律以 `platform_config.json` 为准；启动脚本（`start.sh` / `scripts/deploy/start.ps1`）**禁止硬编码端口**，必须从 `platform_config.json` 读取（已完成）。
-2. **核心服务归 3xxx**：专家联盟核心服务必须落在 `3000–3999`（PORT-NORM-001 1.1）；**唯一例外**是 Rust 网关 `api=8080`（见 PORT-NORM-001 注 2.1a），任何其他服务禁止占用 8080。
+2. **核心服务归 3xxx**：MOX 核心服务必须落在 `3000–3999`（PORT-NORM-001 1.1），插件/小服务使用 `30000–39999`。
 3. **一端口一服务**：同一端口全局唯一，禁止一端口多服务；DEPRECATED 端口禁止复用。
 4. **禁止占用常见软件端口**：新增端口须对照第3章避让清单（PORT-NORM-001 第3章）与 `netstat -ano | findstr LISTENING` 实查。
 5. **测试端口隔离**：测试/mock 端口（TEST-ONLY）不得与运行端口混用，不得出现在启动链路配置中。
@@ -175,7 +176,7 @@
 ## 第5章 端口变更流程
 
 1. **申请**：说明服务名、业务域、用途、协议。
-2. **落段**：RUNTIME → 避开已占用与保留段，选空闲端口并同步 `platform_config.json`；ALLIANCE 核心服务 → 3000–3999；附属/插件 → 30000+（PORT-NORM-001 第4章）。
+2. **落段**：MOX 核心服务 → 3000–3999；插件/小服务 → 30000–39999；第三方基础设施保留其标准端口。
 3. **避让校验**：对照第3章避让清单 + 本机实查占用。
 4. **登记**：在本文档第3章登记（端口、服务、用途、状态）。
 5. **同步**：同步更新 `platform_config.json`、`config/alliance-*.yml`、启动脚本、前端代理、docker/helm、部署文档、PORT-NORM-001（如涉 3xxx 段）。
@@ -222,10 +223,10 @@ python scripts/verify-ports.py --json     # 输出机器可读 JSON 报告
 | `platform_config.json` / `scripts/server-manage.py` | xiaobai_voice `port: 3717` | `port: 30010` |
 | orchestrator 侧车（main.rs / ai_engine.rs / sidecar/*） | 默认 `http://127.0.0.1:3010`（指向已删除 backend-node） | 默认 `http://127.0.0.1:8080`（接管其职责的 Rust 网关，注释标注） |
 
-| `docs/ARCHITECTURE_SAAS_PRIVATE.md` | 前端 `:3021`（2处）、voice `:3717`（3处）、Vite `/voice` 代理→`:3001` | `:3020`、`:30010`、→`:8080`（网关→编排器 voice_proxy→:30010） |
+| `docs/architecture/ARCHITECTURE_SAAS_PRIVATE.md` | 前端 `:3021`（2处）、voice `:3717`（3处）、Vite `/voice` 代理→`:3001` | `:3020`、`:30010`、→`:8080`（网关→编排器 voice_proxy→:30010） |
 | `deploy/docs/FS-S3-full-lifecycle-ops-guide.md` | `localhost:3010`（6处 curl 示例） | `localhost:8080`（Rust 网关） |
 | `docs/architecture/14-REPOSITORY-FULL-MAP.md` | 语音服务 `:3717` | `:30010` |
-| `docs/mox-relgraph-product-handbook-v3.md` | `127.0.0.1:3010`（intent API 示例） | `127.0.0.1:8080` |
+| `docs/modules/mox-relgraph-product-handbook-v3.md` | `127.0.0.1:3010`（intent API 示例） | `127.0.0.1:8080` |
 | `docs/modules/ai-flow-graph-design.md` | `localhost:3010`（preview 地址） | `localhost:8080` |
 | `docs/expert-alliance/00-INTEGRATED-INDEX.md`、`02-DUAL-PLATFORM-RELATIONSHIP.md` | Node.js 层 `:3010` 未标注退役 | 顶部加状态标注：backend-node 已删除，能力由 Rust 网关 :8080 接管；正文保留 :3010 作为历史记录 |
 
@@ -235,6 +236,17 @@ python scripts/verify-ports.py --json     # 输出机器可读 JSON 报告
 
 > 已完结（2026-09-01）：xiaobai_voice **3717 → 30010** 全链路迁移（Python 服务 / Rust `voice_server` / orchestrator voice 代理 / `platform_config.json` / 桌面端 / 校验脚本）已完成并通过 `verify-ports.py`；orchestrator Node 侧车默认 `127.0.0.1:3010` 已清理为 Rust 网关 8080。旧端口 3717 与 3010 现仅存于历史文档（.md/.html 报告），属 DEPRECATED 文档引用，予以保留。
 
+### 6.4 默认部署归一化（2026-09-14）
+
+补充：`docker-compose.domains.yml` 提供同一业务实现的 fused/split 形态；
+具体接口、持久化及外部 SSO 的能力边界见
+[域部署契约](../architecture/microservices/DOMAIN-DEPLOYMENT.md)。
+
+- Rust 网关从 8080 迁至 **3080**，取消核心服务段例外。
+- 默认企业部署由五进程收敛为四进程：网关 3080、编排器 3001、联盟调度 3100、联盟执行 3200。
+- KG、KB、Cloud、IAM 继续由网关内嵌；可选独立二进制使用 **3411–3414**，不进入默认启动链路。
+- K8s Ingress 只转发至网关，避免绕过统一鉴权；SQLite 数据使用单副本 PVC。
+
 ---
 
-*PORT-REGISTRY-001 V1.1 · 全局端口唯一权威 · 2026-09-03*
+*PORT-REGISTRY-001 V1.2 · 全局端口唯一权威 · 2026-09-14*

@@ -3,7 +3,7 @@
 覆盖 E-2 ~ E-5 四项验收：
   E-2 健康检查（tts ready + cosyvoice2 + rust_dsp available）
   E-3 直连 :30010 合成中文 → x-tts-engine=cosyvoice2 + WAV meta 22050Hz + _last_dsp_impl=Rust
-  E-4 三层代理 :3020 -> :8080 -> :30010 /voice/tts/stream
+  E-4 三层代理 :3020 -> :3080 -> :30010 /voice/tts/stream
   E-5 （可选）浏览器前端点击播放按钮验证——脚本只输出提示与 curl 对比
 
 用法：
@@ -274,7 +274,7 @@ def case_e4_proxy(results: list[CaseResult], out_dir: pathlib.Path) -> None:
     base = "http://localhost:3020"
     text = "人工智能正在改变我们的生活，语音合成就是其中最直观的一环。清晰自然的语音，让机器更有温度。"
     url = _build_url(base, text)
-    name = "E-4 三层代理 :3020 -> :8080 -> :30010"
+    name = "E-4 三层代理 :3020 -> :3080 -> :30010"
     try:
         status, hdrs, body, dt_ms = http_get(url, timeout=600)
     except Exception as e:

@@ -170,5 +170,5 @@ domains/<domain>/
 ## 7. 相关文档
 
 - [架构规范](../standards/ai-native-architecture-standard.md)
-- [归一化架构](architecture/NORMALIZED_ARCHITECTURE.md)
+- [归一化架构](NORMALIZED_ARCHITECTURE.md)
 - [企业级文档索引](../enterprise/00-INDEX.md)

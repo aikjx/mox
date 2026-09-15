@@ -9,7 +9,7 @@
 
 **MOX 是「Rust 原生 · 企业级 AI 基础设施平台」，不是通用 AI 应用 SDK。**
 
-与 LangChain / CrewAI / LlamaIndex 等库模式框架不同，MOX 解决的是**服务化部署层**的问题：gRPC 契约 + 8080 统一网关入口、多智能体编排（专家联盟 scheduler/executor）、自研知识图谱引擎（kg 域）、Prometheus 指标端点（`/metrics`）、K8s/Helm 一键部署。其差异化定位为：
+与 LangChain / CrewAI / LlamaIndex 等库模式框架不同，MOX 解决的是**服务化部署层**的问题：gRPC 契约 + 3080 统一网关入口、多智能体编排（专家联盟 scheduler/executor）、自研知识图谱引擎（kg 域）、Prometheus 指标端点（`/metrics`）、K8s/Helm 一键部署。其差异化定位为：
 
 | 维度 | MOX | Python 库模式框架（LangChain 等） |
 |---|---|---|
@@ -27,7 +27,7 @@
 MOX 平台采用 **6 层分层架构**（`platform/domains/` 域驱动），核心为自研 Rust 高性能知识图谱引擎，支持知识图谱与 SQL 融合查询、字段级权限、AI 智能助手。完整架构说明见 [ARCHITECTURE.md](ARCHITECTURE.md)（v3.0.0-ai-powered）。
 
 ```
-L6  Gateway      mox-platform-gateway-svc（8080 唯一对外 HTTP 入口）
+L6  Gateway      mox-platform-gateway-svc（3080 唯一对外 HTTP 入口）
 L5  Services     mox-*-svc（kg / ai / flow / data / cloud / voice / platform…）
 L4  SvcAPI       domains/*/proto（gRPC 契约）
 L3  Core         mox-*-core（纯计算 · 无 IO）
@@ -44,7 +44,7 @@ infotopograph/
 ├── platform/           # 后端主体（Rust workspace，143 crates）
 │   ├── domains/        #   业务域（kg/ai/flow/data/cloud/voice/market/alliance/base…）
 │   ├── foundation/     #   基础层（error/audit/paths/observability…）
-│   ├── gateway/        #   网关（mox-platform-gateway-svc，8080唯一入口）
+│   ├── gateway/        #   网关（mox-platform-gateway-svc，3080 唯一入口）
 │   └── shared/         #   跨模块共享 core
 ├── frontend-ui/        # 前端（Vite Vue3，3020 dev）
 ├── frontend-shared/    # 前端共享资源（constants/schemas/metering）
@@ -64,7 +64,7 @@ infotopograph/
 ├── tests/              # 测试目录（regression/存10个回归测试项目）
 ├── observability/      # Prometheus / Grafana 配置
 ├── nginx/              # Nginx 配置
-├── docker-compose.yml  # 编排：nginx / api-gateway / llm-inference-svc / ollama / postgres / redis / prometheus / grafana
+├── docker-compose.yml  # 默认：nginx / api-gateway / llm；其余能力通过 profile 启用
 └── start.sh            # 一键启动（--with-services / --build-rust / --verify）
 ```
 
@@ -72,7 +72,10 @@ infotopograph/
 
 ```bash
 # Docker 一体化部署（推荐）
-docker-compose up -d --build
+docker compose up -d --build
+
+# 可选基础设施或监控
+docker compose --profile infrastructure --profile monitoring up -d
 
 # 或本地启动（POSIX / WSL）
 ./start.sh --with-services --build-rust
@@ -87,7 +90,7 @@ cargo clippy --all-targets # lint（CI 门禁）
 
 | 服务 | 端口 |
 |------|------|
-| api（Rust 网关） | 8080 |
+| api（Rust 网关） | 3080 |
 | frontend（Vite dev） | 3020 |
 | gRPC（专家联盟内部） | 50051 |
 | redis / postgres / ollama / prometheus / grafana | 6379 / 5432 / 11434 / 9090 / 3000 |
@@ -115,3 +118,5 @@ Rust（axum / tonic / sqlx）· Vue3（Vite）· PostgreSQL · Redis · Docker �
 ## License
 
 [MIT](LICENSE)
+
+KG、Cloud、KB、IAM 的融合/独立部署使用同一个 `mox-server` 宿主，见 [域部署契约](docs/architecture/microservices/DOMAIN-DEPLOYMENT.md)。

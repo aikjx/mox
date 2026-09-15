@@ -7680,7 +7680,7 @@
     "status": "developing",
     "priority": "P0",
     "missing_backend": false,
-    "description": "Rust网关mox-server运行在:8080：/api/system/*和/api/security/*→网关原生IAM(data/mox.db)；/api/projects/*→PrimiFlow:8000反向代理；其余/api/*→编排器:3001反向代理；含请求头过滤、响应头复制、502/504降级、超时控制",
+    "description": "Rust网关mox-server运行在:3080：/api/system/*和/api/security/*→网关原生IAM(data/mox.db)；/api/projects/*→PrimiFlow:8000反向代理；其余/api/*→编排器:3001反向代理；含请求头过滤、响应头复制、502/504降级、超时控制",
     "status_label": "开发"
    }
   },

@@ -48,11 +48,11 @@ L1 mox_sys 母版              → ARC-INDEX §内核 + API-INDEX(system/iam)
 
 ## 3. 现有 docs 总导航（依 DOC-GOV-V1.0 物理归位）
 
-- 🟢 治理中心：`docs/enterprise/00-INDEX.md` · 术语表 `docs/GLOSSARY.md`
-- 🟢 架构权威：`docs/architecture.md` · `docs/enterprise/02-architecture.md`
+- 🟢 治理中心：`docs/enterprise/00-INDEX.md` · 术语表 `docs/enterprise/GLOSSARY.md`
+- 🟢 架构权威：`docs/architecture/architecture.md` · `docs/enterprise/02-architecture.md`
 - 🟢 母版内核：`docs/database/mox_sys/`（README / module-registry / relation-model / module-contract / cross-database）
 - 🟡 模块文档：`docs/modules/`（PrimiFlow 蓝图 / 业务流程 / mox-expert 系列）
-- 🌐 交互中心：`docs/docs-hub/docs-hub.html` · `docs/architecture-hub.html`
+- 🌐 交互中心：`docs/docs-hub/docs-hub.html` · `docs/architecture/architecture-hub.html`
 - 📘 设计依据：`MOX-AI驱动mox 模块化系统架构平台-企业级设计-mox 模块化系统架构分析-v3.0.md`
 
 ---

@@ -95,7 +95,7 @@ spec:
           args: ["--single-node", "--features=simd,gm-sm,glacier"]
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: 3080
             - name: metrics
               containerPort: 9090
           env:
@@ -114,13 +114,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 8080
+              port: 3080
             initialDelaySeconds: 15
             periodSeconds: 20
           readinessProbe:
             httpGet:
               path: /health
-              port: 8080
+              port: 3080
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
@@ -150,8 +150,8 @@ spec:
     app: mox-server
   ports:
     - name: http
-      port: 8080
-      targetPort: 8080
+      port: 3080
+      targetPort: 3080
     - name: metrics
       port: 9090
       targetPort: 9090
@@ -176,7 +176,7 @@ spec:
               service:
                 name: mox-server
                 port:
-                  number: 8080
+                  number: 3080
 ---
 # mox-etcd StatefulSet 3 副本 (control-plane 反亲和)。
 apiVersion: apps/v1

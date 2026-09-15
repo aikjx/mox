@@ -16,7 +16,7 @@ source_of_truth: V2.0目标架构需求规格（未落地）
 
 > ⚠️ **文档状态声明**  
 > 本文档为 V2.0 **目标架构设计**，描述的"7个核心服务/31个微服务/PostgreSQL+Redis+Kafka/v2 API路径"等架构**尚未落地实现**。  
-> 当前实际实现以 `docs/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:3100 / executor-svc:3200），10个内置领域专家，任务仓库为内存+文件快照。
+> 当前实际实现以 `docs/working-reports/alliance-architecture-fix-report-20260831.html` 为准：11个crate（proto×3/core×4/svc×2/sdk×1/api×1），2个HTTP服务（scheduler-svc:3100 / executor-svc:3200），10个内置领域专家，任务仓库为内存+文件快照。
 
 ---
 
@@ -392,7 +392,7 @@ infotopograph 平台已具备知识图谱存储、AI 推理、数据治理、流
 
 | 假设 | 说明 |
 |------|------|
-| 微服务架构按计划实施 | 假设 docs/microservices/ 中的架构优化按路线图推进 |
+| 微服务架构按计划实施 | 假设 docs/architecture/microservices/ 中的架构优化按路线图推进 |
 | gRPC 服务间通信就绪 | 假设所有底层服务已 gRPC 化（或在专家联盟上线前完成） |
 | K8s 集群就绪 | 假设生产环境有 K8s 集群，支持 HPA/PDB/拓扑分布 |
 | NATS JetStream 就绪 | 假设事件总线 NATS JetStream 已部署 |

@@ -26,7 +26,7 @@ L5 SQL/配置脚本层     1 份  图谱 DDL 脚本
 | # | 编号 | 文件名 | 角色 | 核心内容 | 定义的唯一概念 |
 |---|---|---|---|---|---|
 | 1 | **总纲** | [MOX-Enterprise-Unified-Spec-v2.0.md](./MOX-Enterprise-Unified-Spec-v2.0.md) | 架构师 / 全体开发 | 8 章 + 附录 A-F（代码锚点/子规范/接管说明/迁移矩阵/缺口清单/去重决策） | 6 层架构定义 · T0-T3 阈值 · 三大铁律 · Schema 25 实体/40 关系 · 11 项图谱算法红线 · 28 项验收门禁 |
-| 2 | B-09 | [MOX-Architecture-Decision-Records-v1.0.md](./MOX-Architecture-Decision-Records-v1.0.md) | 架构委员会 | ADR-001 ~ ADR-006 + 待办 4 提案 | **不可逆决策**：纯 Rust 技术栈 · 双架构迁入路线 · 分层+跨域API规则 · 单二进制 8080 · 数学红线 · once-defined 文档规则 |
+| 2 | B-09 | [MOX-Architecture-Decision-Records-v1.0.md](./MOX-Architecture-Decision-Records-v1.0.md) | 架构委员会 | ADR-001 ~ ADR-006 + 待办 4 提案 | **不可逆决策**：纯 Rust 技术栈 · 双架构迁入路线 · 分层+跨域API规则 · 单二进制 3080 · 数学红线 · once-defined 文档规则 |
 | 3 | B-10 | [MOX-NodeToRust-Migration-Handover-v1.0.md](./MOX-NodeToRust-Migration-Handover-v1.0.md) | 后端 Lead / 新接手开发 | 5 项交接证据 · 32 模块逐行矩阵 · P0-P3 20 项缺口 · Week 1-4 甘特 · 遗留物/回滚策略 | 迁移覆盖度 23% 唯一定义 · P0-1~P3-4 缺口编号 |
 | 4 | B-08 | [MOX-Fullstack-Auto-Delivery-Plan-v2.0.md](./MOX-Fullstack-Auto-Delivery-Plan-v2.0.md) | PM / 交付经理 | 12 周全自动开发执行计划 · P0-P12 Gate · 回滚机制 · 报告模板 | W1-W12 阶段周期（唯一排期）· 各 Gate 退出验收 |
 | 5 | B-01 | [FS-S3-full-lifecycle-ops-guide.md](./FS-S3-full-lifecycle-ops-guide.md) | SRE / DBA | 图谱 5 步切换 · 云盘 4 步切换 · 9 日上云节奏 · 回滚流程 · F1-F14 Runbook · 巡检 | Key 同构规则（FS↔S3 零改）· 双写对账窗口 ≥7 天 · 一键回滚链 |

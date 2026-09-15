@@ -70,7 +70,7 @@
 
 ## 6. 已知差异（暂不改造）
 
-- **后端挂接进度**：Rust 网关（`:8080`）已挂接 `/api/system/*` 与 `/api/security/*`（IAM SQLite 真实数据链路）。读接口（部门/角色/用户角色/菜单树/权限）为仓储真实现；写接口与未落库域（岗位/字典/参数配置/日志/API Key 列表/审计）为 `{success,data}` 信封 stub，不再 404 触发 mock 兜底。迁移期 `/api/system`、`/api/security` 位于网关 public_paths（dev 令牌非合法 JWT），生产需回收为受保护路由；数据落库写实现待 IAM 仓储补齐。
+- **后端挂接进度**：Rust 网关（`:3080`）已挂接 `/api/system/*` 与 `/api/security/*`（IAM SQLite 真实数据链路）。读接口（部门/角色/用户角色/菜单树/权限）为仓储真实现；写接口与未落库域（岗位/字典/参数配置/日志/API Key 列表/审计）为 `{success,data}` 信封 stub，不再 404 触发 mock 兜底。迁移期 `/api/system`、`/api/security` 位于网关 public_paths（dev 令牌非合法 JWT），生产需回收为受保护路由；数据落库写实现待 IAM 仓储补齐。
 - `alliance.js` 为独立 fetch 客户端（`ALLIANCE_BASE` + `authHeaders`，读 `VITE_OUS_API_TOKEN`），不依赖 `http.js` 的 axios 拦截器；保持现状，不强行并入 `http.js`。
 
 ## 7. 检查命令

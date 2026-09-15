@@ -11,7 +11,7 @@
 
 > 📄 **主从关系声明**：本文档为 `business-process-flows.md` 的可视化配套版，规范内容以flows.md为准。
 
-> 配套文档：`docs/architecture.md`（§9 业务处理流程卡、§28 业务流程设计模块）、`docs/modules/business-process-flows.md`（企业级流程执行引擎）。
+> 配套文档：`docs/architecture/architecture.md`（§9 业务处理流程卡、§28 业务流程设计模块）、`docs/modules/business-process-flows.md`（企业级流程执行引擎）。
 > 本文用 **Mermaid 流程图/时序图** 把"企业级处理业务流程"可视化，便于评审、与代码对齐、以及对客演示。
 > 所有端点以 `crates/runtime/src/main.rs` 真实路由为准，所有流程以 `crates/ai-agent/src/workflow_engine.rs` / `flow_engine.rs` 真实实现为准。
 
@@ -33,7 +33,7 @@
 
 ## 1. 统一业务处理流水线（所有请求的通用状态机）
 
-任何业务请求都流经标准阶段，并遵循统一状态机（与 `docs/architecture.md` §5/§9 对齐）。
+任何业务请求都流经标准阶段，并遵循统一状态机（与 `docs/architecture/architecture.md` §5/§9 对齐）。
 
 ```mermaid
 stateDiagram-v2
@@ -146,7 +146,7 @@ flowchart TD
 
 ## 3. 端到端时序图：AI 对话 + 算子编排
 
-对应 `docs/architecture.md` §5.6，覆盖鉴权、会话日志溯源、算子沙箱执行、守恒校验。
+对应 `docs/architecture/architecture.md` §5.6，覆盖鉴权、会话日志溯源、算子沙箱执行、守恒校验。
 
 ```mermaid
 sequenceDiagram
@@ -179,7 +179,7 @@ sequenceDiagram
 
 ## 4. SUPER_EXPERT mox 模块化系统架构处理工作流（璇玑 + 璇玑）
 
-对应 `docs/architecture.md` §19：最高权限、受控、不失控。
+对应 `docs/architecture/architecture.md` §19：最高权限、受控、不失控。
 
 ```mermaid
 flowchart TD
@@ -213,7 +213,7 @@ flowchart LR
 
 ## 5. 业务流程设计模块飞轮（设计-执行-优化）
 
-对应 `docs/architecture.md` §28：让业务流程成为一等公民，形成闭环飞轮。
+对应 `docs/architecture/architecture.md` §28：让业务流程成为一等公民，形成闭环飞轮。
 
 ```mermaid
 flowchart TD
@@ -234,7 +234,7 @@ flowchart TD
 
 ## 6. 系统分层架构与流程归属
 
-将 §1–§5 的流程落到 `docs/architecture.md` §2 的分层拓扑：
+将 §1–§5 的流程落到 `docs/architecture/architecture.md` §2 的分层拓扑：
 
 ```mermaid
 flowchart TB
@@ -280,7 +280,7 @@ flowchart TB
     GW -.P-13 mox 模块化系统架构.-> EXP
 ```
 
-> 全流程卡 P-01…P-13 与端点映射见 `docs/architecture.md` §9.1；企业模板与执行引擎见 `docs/modules/business-process-flows.md`。
+> 全流程卡 P-01…P-13 与端点映射见 `docs/architecture/architecture.md` §9.1；企业模板与执行引擎见 `docs/modules/business-process-flows.md`。
 
 ---
 
@@ -466,4 +466,4 @@ flowchart TB
 
 ---
 
-*本文以 Mermaid 图形式补全 `docs/architecture.md` §9 / §28 与 `docs/modules/business-process-flows.md` 的文字流程规范，使"企业级处理业务流程"可在一页内被可视化评审、对齐代码、对客演示。所有图节点均可追溯到 `crates/runtime/src/main.rs` 与 `crates/ai-agent/src/*_engine.rs` 的真实实现。第 9 章追加 Node 平台层总览（2026-08-22），追溯 `platform/backend-node/src/*` 真实实现。*
+*本文以 Mermaid 图形式补全 `docs/architecture/architecture.md` §9 / §28 与 `docs/modules/business-process-flows.md` 的文字流程规范，使"企业级处理业务流程"可在一页内被可视化评审、对齐代码、对客演示。所有图节点均可追溯到 `crates/runtime/src/main.rs` 与 `crates/ai-agent/src/*_engine.rs` 的真实实现。第 9 章追加 Node 平台层总览（2026-08-22），追溯 `platform/backend-node/src/*` 真实实现。*

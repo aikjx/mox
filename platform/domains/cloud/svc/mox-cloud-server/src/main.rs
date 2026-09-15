@@ -3,8 +3,8 @@
 // =============================================================================
 //
 // 独立部署：cargo run -p mox-cloud-server
-// 默认端口：8102
-// 健康检查：http://localhost:8102/health/live
+// 默认端口：3412
+// 健康检查：http://localhost:3412/health/live
 //
 // 基于 mox-cloud-master-svc 的 MasterServer 构建 REST API：
 //   - 卷注册 / 心跳 / 分配 / 列表
@@ -206,11 +206,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = if cli.config.exists() {
         ServerConfig::from_file(&cli.config)?
     } else {
-        ServerConfig::default()
+        let mut config = ServerConfig::default();
+        config.server.port = 3412;
+        config
     };
     config.apply_env_overrides();
     if let Some(port) = cli.port { config.server.port = port; }
-    if config.server.port == 8080 { config.server.port = 8102; }
 
     let module = CloudModule::new();
     Server::new(Box::new(module), config).run().await?;

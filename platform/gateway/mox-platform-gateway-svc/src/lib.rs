@@ -25,6 +25,7 @@ pub mod rate_limit;
 pub mod o11y;
 pub mod routes;
 pub mod modules;
+pub mod deployment;
 pub mod alliance;
 pub mod alliance_remote;
 pub mod system;
@@ -263,6 +264,11 @@ impl GatewayState {
 /// 3. 认证（JWT + API Key）—— 业务路由组与 Actuator 管理面均经此鉴权（见各路由组 route_layer）
 /// 4. 业务路由
 pub fn build_gateway_router(state: GatewayState) -> Router {
+    build_host_router(state, deployment::HostRole::All)
+}
+
+/// 相同业务实现按进程角色装配；默认保持融合部署。
+pub fn build_host_router(state: GatewayState, role: deployment::HostRole) -> Router {
     // L0 通用端点（无需认证）+ Spring Boot 风格 Actuator 管理面（/actuator/*）
     // P0-2 安全：管理面除 health/info（已列入 public_paths）外强制鉴权，
     // 防止匿名访问 /actuator/env（配置泄露）、/actuator/logs（日志泄露）、
@@ -281,8 +287,12 @@ pub fn build_gateway_router(state: GatewayState) -> Router {
     // 模块状态注册中心 + 业务域路由统一装配（受保护路由的鉴权层在其中统一挂载）。
     // 布局归一化：共享状态构造、21 个路由单元 merge、Router<()> 状态类型升级
     // 全部收敛到 `modules` 模块，本函数只保留中间件分层职责（详见 modules.rs 文档）。
-    let states = modules::ModuleStates::new(state.runtime.clone(), state.logs.clone(), state.iam.clone());
-    let protected = modules::build_module_routers(&states, &state);
+    let protected = if role == deployment::HostRole::All {
+        let states = modules::ModuleStates::new(state.runtime.clone(), state.logs.clone(), state.iam.clone());
+        modules::build_module_routers(&states, &state)
+    } else {
+        deployment::domain_router(role, &state)
+    };
 
     // 整体统一为 Router<GatewayState>，最后一次性注入 state。
     // 中间件分层（运行时由外到内）：可观测 → CORS → 限流 → 鉴权（业务路由组 + Actuator 管理面均挂载 auth_middleware）。
@@ -402,6 +412,7 @@ async fn metrics_handler(State(state): State<GatewayState>) -> String {
 
 /// 启动网关：绑定地址端口，Ctrl-C 优雅退出
 pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let role = std::env::var("MOX_HOST_ROLE").unwrap_or_else(|_| "all".into()).parse::<deployment::HostRole>()?;
     let config = GatewayConfig::default();
     let state = GatewayState::from_config(config);
 
@@ -413,7 +424,7 @@ pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std
         format!("gateway starting: {}:{port} (actuator management enabled)", bind_addr),
     );
 
-    let app = build_gateway_router(state.clone());
+    let app = build_host_router(state.clone(), role);
     let addr: SocketAddr = format!("{bind_addr}:{port}").parse()?;
 
     eprintln!("====================================================================");
@@ -483,7 +494,7 @@ mod tests {
     fn test_health_json_structure() {
         // 验证配置结构完整性
         let config = GatewayConfig::default();
-        assert_eq!(config.port, 8080);
+        assert_eq!(config.port, 3080);
         assert_eq!(config.host, "0.0.0.0");
         assert!(config.auth.public_paths.contains(&"/health".to_string()));
     }

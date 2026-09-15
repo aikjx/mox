@@ -645,7 +645,7 @@ workflow_id = GH-...
 PR 提交包含三个文件：
 1. `src/storage/chunk-backend-azure.js`（插件实现）
 2. `test/test-chunkbackend-azure.js`（RED→GREEN 测试）
-3. `docs/plugins/chunk-backend-azure.md`（使用说明，绑定 Doc-README-Azure-Contrib）
+3. `docs/plugins/chunk-backend-azure.md`（使用说明，绑定 Doc-README-Azure-Contrib）<!-- check-doc-links:ignore -->
 - **最佳实践**：PR 描述里写清楚 `workflow_id` + "129 GREEN + 新增 X GREEN" 截图 —— maintainer 一眼能判。
 
 #### 第 8 步：合入后：精度护栏 CI + Release

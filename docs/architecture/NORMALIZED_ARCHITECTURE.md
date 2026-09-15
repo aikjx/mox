@@ -253,4 +253,4 @@ L0 Foundation:   platform-foundation / cloud-foundation
 
 ---
 
-*关联文档：[架构审计报告](../architecture-audit-report.txt) | [算法指标数据](../architecture-metrics.json)*
+*关联文档：[架构审计报告](../working-reports/architecture-audit-report.txt) | [算法指标数据](./assets/architecture-metrics.json)*

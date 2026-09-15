@@ -16,7 +16,7 @@
 |--------|--------|------|------|
 | A. `docs/expert-alliance/` | 21 | 44.7% | 任务清单标注23份，实际物理存在21份（差异见§3.7） |
 | B. `docs/enterprise/` | 5 | 10.6% | 编号22/26/28 |
-| C. `docs/cosmic-architecture/` | 2 | 4.3% | 编号02/04 |
+| C. `docs/architecture/meta/` | 2 | 4.3% | 编号02/04 |
 | D. `docs/modules/` | 12 | 25.5% | 含2份HTML |
 | E. 其他位置 | 7 | 14.9% | working-reports×2 / standards×1 / specifications×1 / docs根×3 |
 | **合计** | **47** | **100%** | |
@@ -95,12 +95,12 @@
 | 25 | `docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md` | 全文档归一化总控卡与权威链单源映射表 | V1.0 | 🟢声明为"全域归一化治理枢纽" | 归一化治理 | 全域文档归一化的总控卡，定义权威链L0-L4、单源映射表、文档生命周期管理 | 定义L0顶层设计→L1治理枢纽→L2领域标准→L3实施文档的四级权威链；声称覆盖全仓库文档 |
 | 26 | `docs/enterprise/28-mox 模块化系统架构分析与文档归一化报告-V1.0.md` | mox 模块化系统架构分析与文档归一化报告 | V1.0 | 🟡参考 | 归一化治理/架构 | 对全域架构进行mox 模块化系统架构分析，提出文档归一化方案 | 分析"文档碎片化"、"版本冲突"、"权威缺失"等问题；提出归一化5步法 |
 
-### C组：docs/cosmic-architecture/（2份）
+### C组：docs/architecture/meta/（2份）
 
 | # | 文件路径 | 文档标题 | 版本 | 权威等级 | 主题分类 | 核心内容摘要 | 关键声明/数据点 |
 |---|----------|----------|------|----------|----------|--------------|-----------------|
-| 27 | `docs/cosmic-architecture/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | 专家联盟架构（宇宙架构系列） | 未标注 | 🟡参考 | 架构 | 从"宇宙架构"视角描述专家联盟的宏观架构定位与设计哲学 | 将专家联盟定位为"宇宙架构中的协作星系"；提及"三联盟模式"（产品/算法/开发） |
-| 28 | `docs/cosmic-architecture/04-EXPERT-ALLIANCE-v3-MODULAR.md` | 专家联盟V3.0模块化架构（宇宙架构系列） | V3.0 | 🟡参考 | 架构/模块化 | V3.0模块化架构的宇宙架构视角描述，强调模块化、可插拔、自包含 | 声称"11个自包含crate"；每个crate独立编译/测试/部署 |
+| 27 | `docs/architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md` | 专家联盟架构（宇宙架构系列） | 未标注 | 🟡参考 | 架构 | 从"宇宙架构"视角描述专家联盟的宏观架构定位与设计哲学 | 将专家联盟定位为"宇宙架构中的协作星系"；提及"三联盟模式"（产品/算法/开发） |
+| 28 | `docs/architecture/meta/04-EXPERT-ALLIANCE-v3-MODULAR.md` | 专家联盟V3.0模块化架构（宇宙架构系列） | V3.0 | 🟡参考 | 架构/模块化 | V3.0模块化架构的宇宙架构视角描述，强调模块化、可插拔、自包含 | 声称"11个自包含crate"；每个crate独立编译/测试/部署 |
 
 ### D组：docs/modules/（12份）
 
@@ -176,8 +176,8 @@
 
 #### 重复组R6：cosmic-architecture 02/04 vs expert-alliance v2/v3
 - **涉及文件**：
-  - `docs/cosmic-architecture/02-EXPERT-ALLIANCE-ARCHITECTURE.md`（#27）
-  - `docs/cosmic-architecture/04-EXPERT-ALLIANCE-v3-MODULAR.md`（#28）
+  - `docs/architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md`（#27）
+  - `docs/architecture/meta/04-EXPERT-ALLIANCE-v3-MODULAR.md`（#28）
   - `docs/expert-alliance/v2/01-architecture.md`（#7）
   - `docs/expert-alliance/v3/01-architecture-optimization.md`（#15）
 - **重叠度**：cosmic版是expert-alliance版的"宇宙架构视角"重述，核心架构数据（服务数、crate数、分层）约70%重叠。

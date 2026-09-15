@@ -676,7 +676,7 @@ async fn bench_alliance_round7() {
         },
     });
 
-    let output_path = r"D:\a10\aikjx\gitcode\infotopograph\docs\bench_results_round7.json";
+    let output_path = r"D:\a10\aikjx\gitcode\infotopograph\docs\architecture\assets\bench_results_round7.json";
     std::fs::create_dir_all(std::path::Path::new(output_path).parent().unwrap()).unwrap();
     let json_str = serde_json::to_string_pretty(&output).unwrap();
     std::fs::write(output_path, &json_str).unwrap();

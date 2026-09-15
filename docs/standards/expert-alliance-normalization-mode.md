@@ -7,7 +7,7 @@
 > **最后更新日期**：2026-08-31
 > **单源声明**：本文档是"开发专家联盟"主题文档归一化的唯一权威规范。凡涉及专家联盟主题文档的目录划分、命名、分层、引用、术语、代码对齐、归一化流程、反模式与验收，均以本文档为准。本文档冲突时以 `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`（TOP-MASTER）为准。
 > **主责联盟**：开发联盟 R（架构·代码·文档治理）
-> **编制依据**：`docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0）、`docs/GLOSSARY.md`、`docs/working-reports/mox-expert-alliance-processing-mode.md`、`docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md`、`docs/enterprise/28-mox 模块化系统架构分析与文档归一化报告-V1.0.md`、`docs/enterprise/37-企业级处理流程规范-V1.0.md`、`docs/standards/expert-alliance-flow-standard.md`
+> **编制依据**：`docs/DOC-NORMALIZATION-REPORT.md`（DOC-GOV-V1.0）、`docs/enterprise/GLOSSARY.md`、`docs/working-reports/mox-expert-alliance-processing-mode.md`、`docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md`、`docs/enterprise/28-mox 模块化系统架构分析与文档归一化报告-V1.0.md`、`docs/enterprise/37-企业级处理流程规范-V1.0.md`、`docs/standards/expert-alliance-flow-standard.md`
 
 ---
 
@@ -21,7 +21,7 @@
 2. **单一事实源（Single Source of Truth）**：同一主题只允许一个 🟢权威文档，其他版本必须标注替代关系或归档，杜绝多版本并存不裁决。
 3. **文档-代码对齐**：专家联盟主题文档中所有架构描述、服务端点、专家清单、融合策略必须与 `platform/domains/alliance/` 域真实代码一致，代码是唯一事实源。
 4. **引用零断裂**：所有文档间引用统一使用仓根相对路径，新增/移动文件后必须重跑全量引用审计。
-5. **术语零漂移**：所有术语以 `docs/GLOSSARY.md` 为唯一事实源，文档中首次出现必须链接，后续使用保持一致。
+5. **术语零漂移**：所有术语以 `docs/enterprise/GLOSSARY.md` 为唯一事实源，文档中首次出现必须链接，后续使用保持一致。
 
 ### 1.2 适用范围
 
@@ -46,7 +46,7 @@
 
 ### 1.4 术语定义
 
-本规范中使用的关键术语定义如下（完整术语表见 `docs/GLOSSARY.md`）：
+本规范中使用的关键术语定义如下（完整术语表见 `docs/enterprise/GLOSSARY.md`）：
 
 | 术语 | 英文/缩写 | 定义 |
 |------|----------|------|
@@ -91,7 +91,7 @@
 |------|---------|----------------|
 | `docs/enterprise/` | 企业级治理中心：00-INDEX + 编号 01~37 企业级文档 | 专家联盟的组织治理角色（开发联盟 R）定义在 enterprise/ 文档中；专家联盟主题的**专项文档**不放入 enterprise/，除非是企业级编号文档（如 37 号） |
 | `docs/modules/` | 模块级设计/参考文档 | `mox-expert-*` 系列模块文档存放于此；若内容升级为专家联盟主题权威文档，应迁移至 `docs/expert-alliance/` 并在 modules/ 保留引用指针 |
-| `docs/cosmic-architecture/` | 全域架构专题 | 专家联盟架构若涉及全域架构层面，可在 cosmic-architecture/ 存放跨域分析，但专家联盟**专项文档**以 `docs/expert-alliance/` 为准 |
+| `docs/architecture/meta/` | 全域架构专题 | 专家联盟架构若涉及全域架构层面，可在 cosmic-architecture/ 存放跨域分析，但专家联盟**专项文档**以 `docs/expert-alliance/` 为准 |
 | `docs/standards/` | 企业级/行业级规范标准 | 专家联盟的流程标准（如 `expert-alliance-flow-standard.md`）存放于此；本规范 EA-NORM-001 也存放于此。standards/ 存放**可复用的规范标准**，expert-alliance/ 存放**主题文档集** |
 | `docs/working-reports/` | 过程稿/工作报告 | 专家联盟处理模式的过程稿（如 `mox-expert-alliance-processing-mode.md`）存放于此；过程稿结论沉淀为权威文档后，必须迁移至 `docs/expert-alliance/` 并在 working-reports/ 标注"已被 XX 替代" |
 
@@ -249,7 +249,7 @@ docs/<相对路径>/<文件名>
 **正确示例**：
 - `docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md`
 - `docs/standards/expert-alliance-flow-standard.md`
-- `docs/GLOSSARY.md`
+- `docs/enterprise/GLOSSARY.md`
 - `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`
 
 ### 4.2 禁止的引用形式
@@ -299,7 +299,7 @@ docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md#sec-3-2-service-end
 
 | 当前文档位置 | 引用目标 | 正确写法 | 错误写法 |
 |-------------|---------|---------|---------|
-| `docs/expert-alliance/v2/` | `docs/GLOSSARY.md` | `docs/GLOSSARY.md` | `../../GLOSSARY.md` |
+| `docs/expert-alliance/v2/` | `docs/enterprise/GLOSSARY.md` | `docs/enterprise/GLOSSARY.md` | `.././enterprise/GLOSSARY.md` |
 | `docs/expert-alliance/architecture/` | `docs/enterprise/18-...md` | `docs/enterprise/18-...md` | `../../enterprise/18-...md` |
 | `docs/standards/` | `docs/expert-alliance/EA-001-...md` | `docs/expert-alliance/EA-001-...md` | `../expert-alliance/EA-001-...md` |
 | `docs/working-reports/` | `docs/standards/expert-alliance-flow-standard.md` | `docs/standards/expert-alliance-flow-standard.md` | `../standards/expert-alliance-flow-standard.md` |
@@ -345,16 +345,16 @@ docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md#sec-3-2-service-end
 
 ### 5.1 术语唯一事实源
 
-`docs/GLOSSARY.md` 是 `infotopograph` 项目**全部文档的权威术语基准（唯一事实源）**。专家联盟主题文档中使用的所有术语必须以 `docs/GLOSSARY.md` 为准。
+`docs/enterprise/GLOSSARY.md` 是 `infotopograph` 项目**全部文档的权威术语基准（唯一事实源）**。专家联盟主题文档中使用的所有术语必须以 `docs/enterprise/GLOSSARY.md` 为准。
 
 **强制规则**：
 1. 专家联盟文档**禁止**各自复制维护术语表，避免术语漂移。
-2. 各权威文档可在文末附"术语速查段"，但必须指向 `docs/GLOSSARY.md`，不得独立维护术语定义。
-3. 术语命名与大小写遵循 `docs/GLOSSARY.md` §5 的强制约定（如"璇玑"非"旋玑"、"PT-Primi"非"PT-PRIMI"等）。
+2. 各权威文档可在文末附"术语速查段"，但必须指向 `docs/enterprise/GLOSSARY.md`，不得独立维护术语定义。
+3. 术语命名与大小写遵循 `docs/enterprise/GLOSSARY.md` §5 的强制约定（如"璇玑"非"旋玑"、"PT-Primi"非"PT-PRIMI"等）。
 
 ### 5.2 专家联盟领域术语登记要求
 
-专家联盟领域的术语（如 alliance 域相关概念、专家、融合策略等）必须在 `docs/GLOSSARY.md` 中登记。每个术语必须包含以下字段：
+专家联盟领域的术语（如 alliance 域相关概念、专家、融合策略等）必须在 `docs/enterprise/GLOSSARY.md` 中登记。每个术语必须包含以下字段：
 
 | 字段 | 要求 | 示例 |
 |------|------|------|
@@ -365,20 +365,20 @@ docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md#sec-3-2-service-end
 | 首次出现文档 | 使用仓根相对路径指向首次定义该术语的文档 | `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md` |
 
 **登记流程**：
-1. 新术语在文档中首次使用前，必须先在 `docs/GLOSSARY.md` 中登记。
+1. 新术语在文档中首次使用前，必须先在 `docs/enterprise/GLOSSARY.md` 中登记。
 2. 登记时由主责联盟 R 审核术语定义的准确性。
-3. 登记后在 `docs/GLOSSARY.md` 的变更记录中追加一行。
-4. 未经登记即使用的新术语 = 文档漂移，CI lint 失败（参照 `docs/GLOSSARY.md` §5 三联盟术语管理流程）。
+3. 登记后在 `docs/enterprise/GLOSSARY.md` 的变更记录中追加一行。
+4. 未经登记即使用的新术语 = 文档漂移，CI lint 失败（参照 `docs/enterprise/GLOSSARY.md` §5 三联盟术语管理流程）。
 
 ### 5.3 术语使用规则
 
-1. **首次出现链接**：文档中首次出现某个术语时，必须使用 Markdown 链接指向 `docs/GLOSSARY.md` 中该术语的锚点：
+1. **首次出现链接**：文档中首次出现某个术语时，必须使用 Markdown 链接指向 `docs/enterprise/GLOSSARY.md` 中该术语的锚点：
    ```markdown
-   [开发专家联盟](docs/GLOSSARY.md#term-expert-alliance)
+   [开发专家联盟](docs/enterprise/GLOSSARY.md#term-expert-alliance)
    ```
 2. **后续使用一致**：同一术语在文档后续出现时，使用与首次出现完全一致的写法（中文/英文/缩写），不得随意变换。
 3. **禁止同义混用**：禁止在同一文档中使用多个不同术语指代同一概念（如"专家联盟"和"专家系统"混用）；若确需使用别名，必须在首次出现时注明"= <标准术语>"。
-4. **英文术语大小写固定**：英文术语的大小写必须与 `docs/GLOSSARY.md` 中登记的一致，不得随意变更（如 `Expert Alliance` 不得写为 `expert alliance` 或 `EXPERT ALLIANCE`）。
+4. **英文术语大小写固定**：英文术语的大小写必须与 `docs/enterprise/GLOSSARY.md` 中登记的一致，不得随意变更（如 `Expert Alliance` 不得写为 `expert alliance` 或 `EXPERT ALLIANCE`）。
 5. **代码标识符保留英文**：文档中引用代码标识符（crate 名、函数名、结构体名等）时保留原始英文写法，不翻译。
 
 ### 5.4 术语变更流程
@@ -389,9 +389,9 @@ docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md#sec-3-2-service-end
 2. **影响分析**：全量 grep 该术语在所有文档中的出现位置，评估变更影响。
 3. **三联盟评审**：术语变更需经三联盟评审签字（产品联盟确认对外口径、算法联盟确认技术口径、开发联盟确认工程口径）。
 4. **执行变更**：
-   - 修改 `docs/GLOSSARY.md` 中该术语的定义；
+   - 修改 `docs/enterprise/GLOSSARY.md` 中该术语的定义；
    - 全量更新所有文档中该术语的使用（若为重命名）；
-   - 在 `docs/GLOSSARY.md` 变更记录中追加一行。
+   - 在 `docs/enterprise/GLOSSARY.md` 变更记录中追加一行。
 5. **验证**：重跑术语一致性检查，确认所有文档中术语使用统一。
 6. **CI lint 通过**：命名大小写 & 路径格式检查通过后正式生效。
 
@@ -560,7 +560,7 @@ alliance 域在 `mox-alliance-core/src/fusion/strategies/` 提供 **6 大 trait 
 |------|:----:|------|------|---------|--------|
 | 架构级错误 | 🔴 | 文档描述的架构与代码存在根本性不一致，导致读者无法正确理解系统结构 | 描述为"7服务架构"但实际为2 svc；描述为"11 crate/15 crate"但实际为13 crate；描述不存在的 crate 或端口 | **24小时** | 开发联盟 R |
 | 细节错误 | 🟡 | 文档描述的细节与代码不一致，但不影响整体架构理解 | 路由路径拼写错误；HTTP 方法错误；专家名称错别字；融合策略英文标识大小写错误 | **72小时** | 文档主责人 |
-| 术语不统一 | 🟢 | 术语使用与 `docs/GLOSSARY.md` 不一致，但不影响理解 | "专家联盟"与"专家系统"混用；英文缩写大小写不一致 | **随版本修复** | 文档治理专家 |
+| 术语不统一 | 🟢 | 术语使用与 `docs/enterprise/GLOSSARY.md` 不一致，但不影响理解 | "专家联盟"与"专家系统"混用；英文缩写大小写不一致 | **随版本修复** | 文档治理专家 |
 
 **修复流程**：
 1. 发现错位后，立即在 `docs/expert-alliance/architecture/` 下创建错位登记文档（`EA-ALIGN-错位登记-YYYYMMDD.md`），记录错位位置、等级、修复方案。
@@ -620,7 +620,7 @@ alliance 域在 `mox-alliance-core/src/fusion/strategies/` 提供 **6 大 trait 
    - 权威等级合理性（是否与文档内容匹配）；
    - 引用合规性（是否含 `../`、裸名、绝对路径）；
    - 引用有效性（目标文件是否存在、锚点是否有效）；
-   - 术语一致性（是否与 `docs/GLOSSARY.md` 一致）；
+   - 术语一致性（是否与 `docs/enterprise/GLOSSARY.md` 一致）；
    - 代码对齐性（架构/服务/专家/策略描述是否与代码一致）；
    - 内容重叠度（与其他文档的段落级重复）；
    - 索引登记状态（是否在 `00-INDEX.md` 中登记）。
@@ -764,7 +764,7 @@ alliance 域在 `mox-alliance-core/src/fusion/strategies/` 提供 **6 大 trait 
    - 验证物理目录中每个文档在索引中已登记；
    - 验证索引中标注的权威等级与文档头部元信息一致。
 5. **术语一致性校验**：
-   - 检查文档中使用的术语是否与 `docs/GLOSSARY.md` 一致；
+   - 检查文档中使用的术语是否与 `docs/enterprise/GLOSSARY.md` 一致；
    - 检查首次出现术语是否链接到 GLOSSARY；
    - 检查无未登记的新术语。
 6. **归档规范性校验**：
@@ -845,9 +845,9 @@ alliance 域在 `mox-alliance-core/src/fusion/strategies/` 提供 **6 大 trait 
 
 | 维度 | 内容 |
 |------|------|
-| **表现** | 同一文档或跨文档中使用不同术语指代同一概念（如"专家联盟"和"专家系统"混用）；术语大小写不固定（如 `Expert Alliance` 和 `expert alliance` 混用）；使用未在 `docs/GLOSSARY.md` 登记的新术语 |
+| **表现** | 同一文档或跨文档中使用不同术语指代同一概念（如"专家联盟"和"专家系统"混用）；术语大小写不固定（如 `Expert Alliance` 和 `expert alliance` 混用）；使用未在 `docs/enterprise/GLOSSARY.md` 登记的新术语 |
 | **危害** | 术语漂移，读者困惑；违反术语单源管理原则；CI lint 失败 |
-| **正确做法** | 所有术语以 `docs/GLOSSARY.md` 为唯一事实源（§5.1）；首次出现必须链接到 GLOSSARY（§5.3）；新术语必须先登记再使用（§5.2）；术语变更遵循 §5.4 流程 |
+| **正确做法** | 所有术语以 `docs/enterprise/GLOSSARY.md` 为唯一事实源（§5.1）；首次出现必须链接到 GLOSSARY（§5.3）；新术语必须先登记再使用（§5.2）；术语变更遵循 §5.4 流程 |
 
 ### AP-07 可视化产物与源 .md 不同位
 
@@ -953,10 +953,10 @@ alliance 域在 `mox-alliance-core/src/fusion/strategies/` 提供 **6 大 trait 
 
 | 序号 | 检查项 | 验收标准 | 结果 |
 |:----:|--------|---------|:----:|
-| 1 | 术语已登记 | 文档中使用的所有术语均已在 `docs/GLOSSARY.md` 中登记 | ☐ |
-| 2 | 首次出现链接 | 术语首次出现时已链接到 `docs/GLOSSARY.md` 对应锚点 | ☐ |
+| 1 | 术语已登记 | 文档中使用的所有术语均已在 `docs/enterprise/GLOSSARY.md` 中登记 | ☐ |
+| 2 | 首次出现链接 | 术语首次出现时已链接到 `docs/enterprise/GLOSSARY.md` 对应锚点 | ☐ |
 | 3 | 术语写法一致 | 同一术语在文档中使用完全一致的写法（中文/英文/缩写） | ☐ |
-| 4 | 大小写固定 | 英文术语大小写与 `docs/GLOSSARY.md` 登记一致 | ☐ |
+| 4 | 大小写固定 | 英文术语大小写与 `docs/enterprise/GLOSSARY.md` 登记一致 | ☐ |
 | 5 | 无未登记新术语 | 0 处使用未在 GLOSSARY 中登记的新术语 | ☐ |
 
 ### 9.7 归档规范性检查
@@ -1044,7 +1044,7 @@ docs/expert-alliance/
 服务端点定义见 [架构总纲 §3.2](docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md#sec-3-2-service-endpoints)。
 
 <!-- 引用术语表 -->
-[开发专家联盟](docs/GLOSSARY.md#term-expert-alliance)负责工程落地与稳定性。
+[开发专家联盟](docs/enterprise/GLOSSARY.md#term-expert-alliance)负责工程落地与稳定性。
 
 <!-- 引用通用规范 -->
 目录职责划分遵循 [DOC-GOV-V1.0](docs/DOC-NORMALIZATION-REPORT.md) §2.1。
@@ -1083,7 +1083,7 @@ docs/expert-alliance/
 | 第2章 目录职责与命名规则 | DOC-GOV-V1.0 §2.1 目录职责、§2.2 命名规则 | 本规范细化 `docs/expert-alliance/` 目录的内部子目录划分和与其他目录的边界；命名规则在通用规则基础上增加 EA- 编号前缀规范 |
 | 第3章 文档分层与权威分级 | DOC-GOV-V1.0 §2.4 权威分级与锚点 | 本规范在通用四级权威分级基础上，增加6层文档分层模型（L1~L6）和元信息块模板；权威链规则细化专家联盟域的裁决优先级 |
 | 第4章 引用规则 | DOC-GOV-V1.0 §2.3 引用规则 | 本规范在通用仓根相对路径规则基础上，增加锚点生成规则、跨目录引用格式、引用审计触发条件和审计内容；禁止形式与 DOC-GOV-V1.0 一致 |
-| 第5章 术语单源管理 | DOC-GOV-V1.0 §2.4（术语须配 glossary）、FIX-14 | 本规范细化术语登记要求（5字段）、使用规则（首次链接、后续一致）、变更流程（6步）；术语唯一事实源与 DOC-GOV-V1.0 一致为 `docs/GLOSSARY.md` |
+| 第5章 术语单源管理 | DOC-GOV-V1.0 §2.4（术语须配 glossary）、FIX-14 | 本规范细化术语登记要求（5字段）、使用规则（首次链接、后续一致）、变更流程（6步）；术语唯一事实源与 DOC-GOV-V1.0 一致为 `docs/enterprise/GLOSSARY.md` |
 | 第6章 文档-代码对齐要求 | DOC-GOV-V1.0 F2（索引路径与物理位置错位）、28号报告 §2.3（三重分裂） | **本规范新增核心章节**：DOC-GOV-V1.0 仅识别文档-代码分裂问题，本规范定义具体的对齐原则、alliance 域13 crate权威描述、服务端点/专家/融合策略规范、对齐校验清单、错位分级与修复时限 |
 | 第7章 归一化处理流程 | mox-expert-alliance-processing-mode.md 5步法 | 本规范将代码开发5步法（Locate→Audit→Compare&Decide→Implement→Verify）升级为文档归一化专用流程，每步定义输入/输出/检查点/验收标准 |
 | 第8章 反模式清单 | mox-expert-alliance-processing-mode.md §三 反模式清单 | 本规范将代码开发反模式升级为文档归一化反模式，新增10条文档治理专项反模式（多版本并存、索引不符、过时架构、引用不合规等） |

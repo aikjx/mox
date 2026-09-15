@@ -271,7 +271,7 @@ info-graph sync --old baseline.json --new graph.json
 
 ## 术语表 (Glossary)
 
-> 本文术语以 [docs/GLOSSARY.md](../GLOSSARY.md) 为**唯一基准（Single Source of Truth）**；完整术语见该规范表，以下为高频术语速查。
+> 本文术语以 [docs/enterprise/GLOSSARY.md](../enterprise/GLOSSARY.md) 为**唯一基准（Single Source of Truth）**；完整术语见该规范表，以下为高频术语速查。
 
 | 术语 | 含义 |
 |------|------|
