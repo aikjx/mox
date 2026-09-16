@@ -3,11 +3,13 @@
 
 //! HTTP 路由定义
 
-use axum::extract::{Path, State};
+use axum::extract::{Path, Request, State};
 use axum::http::{HeaderMap, StatusCode};
-use axum::response::{IntoResponse, Json};
+use axum::middleware::{self, Next};
+use axum::response::{IntoResponse, Json, Response};
 use axum::routing::{get, post};
 use axum::Router;
+use tracing::Instrument;
 use uuid::Uuid;
 
 use mox_alliance_api::dto::*;
@@ -25,7 +27,28 @@ pub fn build_router(state: SchedulerAppState) -> Router {
         .route("/tasks/:task_id/nodes", get(proxy_task_nodes))
         .route("/tasks/:task_id/result", get(proxy_task_result))
         .route("/experts/search", post(search_experts))
+        // P1-③：把 x-request-id 读入 tracing span，使请求 id 贯穿 gateway→scheduler→executor 日志。
+        .layer(middleware::from_fn(request_tracing_layer))
         .with_state(state)
+}
+
+/// P1-③ 请求可观测层：从 `x-request-id` 读 ID 并写入 tracing span 字段。
+///
+/// 上游（gateway 3080）已生成/透传 `x-request-id`；本层在 scheduler 进程内把它绑到
+/// `info_span!` 上，后续所有 `tracing::info!` 自动携带 `rid=...`，与 gateway/executor 日志对齐。
+/// 缺省时生成新 UUID，保证链路不中断。
+async fn request_tracing_layer(req: Request, next: Next) -> Response {
+    let rid = req
+        .headers()
+        .get("x-request-id")
+        .and_then(|v| v.to_str().ok())
+        .filter(|s| !s.trim().is_empty() && s.len() <= 64)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| Uuid::new_v4().simple().to_string());
+    let method = req.method().clone();
+    let path = req.uri().path().to_string();
+    let span = tracing::info_span!("http.scheduler", rid = %rid, method = %method.as_str(), path = %path);
+    async move { next.run(req).await }.instrument(span).await
 }
 
 /// 从请求头解析租户 ID（X-Tenant-Id），缺省为 nil
@@ -272,9 +295,11 @@ async fn proxy_task_result(
     proxy_to_executor(&state, &headers, &format!("/tasks/{}/result", task_id)).await
 }
 
-/// 通用代理：将 GET 请求转发到 executor 服务，透传 X-Tenant-Id
+/// 通用代理：将 GET 请求转发到 executor 服务，透传 X-Tenant-Id / x-request-id
 ///
-/// - executor 不可达 → 503 Service Unavailable
+/// - P1-②：仅幂等 GET，最多额外 2 次重试，指数退避 200ms→400ms；
+///   仅对连接错误 / 超时 / 5xx 重试。（本端点本身即 GET，无写操作风险。）
+/// - 显式 connect_timeout(2s)：executor 不可达时快速返回 503，不每次等满 10s 总超时。
 /// - executor 返回错误 → 透传状态码与 body
 async fn proxy_to_executor(
     state: &SchedulerAppState,
@@ -285,57 +310,89 @@ async fn proxy_to_executor(
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
+        .connect_timeout(std::time::Duration::from_millis(2000))
         .build()
         .expect("reqwest client build failed");
 
-    let mut req = client.get(&url);
-    if let Some(tenant) = headers.get("X-Tenant-Id") {
-        req = req.header("X-Tenant-Id", tenant);
-    }
+    let max_extra_retries: u32 = 2;
+    let mut attempt: u32 = 0;
+    loop {
+        let mut req = client.get(&url);
+        if let Some(tenant) = headers.get("X-Tenant-Id") {
+            req = req.header("X-Tenant-Id", tenant);
+        }
+        // P1-③：出向把入站 x-request-id 透传给 executor，贯穿四进程日志
+        if let Some(rid) = headers.get("x-request-id") {
+            req = req.header("x-request-id", rid);
+        }
 
-    match req.send().await {
-        Ok(resp) => {
-            let status = resp.status();
-            match resp.text().await {
-                Ok(body) => {
-                    // 尝试解析为 JSON 透传；解析失败则原样返回文本
-                    match serde_json::from_str::<serde_json::Value>(&body) {
-                        Ok(json) => (
-                            StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK),
-                            Json(json),
-                        )
-                            .into_response(),
-                        Err(_) => (
-                            StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK),
-                            body,
-                        )
-                            .into_response(),
-                    }
+        match req.send().await {
+            Ok(resp) => {
+                let status = resp.status();
+                // 仅 5xx 且未超重试次数 → 退避后重试；4xx/2xx 直接返回
+                if status.is_server_error() && attempt < max_extra_retries {
+                    attempt += 1;
+                    let delay_ms = 200u64 * (1 << (attempt - 1)); // 200ms → 400ms
+                    tracing::warn!(
+                        "Executor proxy {} returned {}, retrying (attempt {}/{})",
+                        path, status, attempt, max_extra_retries
+                    );
+                    tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                    continue;
                 }
-                Err(_) => (
-                    StatusCode::BAD_GATEWAY,
+                return match resp.text().await {
+                    Ok(body) => {
+                        // 尝试解析为 JSON 透传；解析失败则原样返回文本
+                        match serde_json::from_str::<serde_json::Value>(&body) {
+                            Ok(json) => (
+                                StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK),
+                                Json(json),
+                            )
+                                .into_response(),
+                            Err(_) => (
+                                StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK),
+                                body,
+                            )
+                                .into_response(),
+                        }
+                    }
+                    Err(_) => (
+                        StatusCode::BAD_GATEWAY,
+                        Json(serde_json::json!({
+                            "error": "Failed to read executor response body"
+                        })),
+                    )
+                        .into_response(),
+                };
+            }
+            Err(e) => {
+                // 仅连接错误 / 超时 才重试
+                let retryable = e.is_connect() || e.is_timeout();
+                if retryable && attempt < max_extra_retries {
+                    attempt += 1;
+                    let delay_ms = 200u64 * (1 << (attempt - 1));
+                    tracing::warn!(
+                        "Executor proxy {} connect/timeout error ({}), retrying (attempt {}/{})",
+                        path, e, attempt, max_extra_retries
+                    );
+                    tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                    continue;
+                }
+                tracing::warn!(
+                    "Executor proxy failed for {}: {} (executor_base_url={})",
+                    path,
+                    e,
+                    state.executor_base_url
+                );
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
                     Json(serde_json::json!({
-                        "error": "Failed to read executor response body"
+                        "error": "Executor service unavailable",
+                        "detail": e.to_string()
                     })),
                 )
-                    .into_response(),
+                    .into_response();
             }
-        }
-        Err(e) => {
-            tracing::warn!(
-                "Executor proxy failed for {}: {} (executor_base_url={})",
-                path,
-                e,
-                state.executor_base_url
-            );
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(serde_json::json!({
-                    "error": "Executor service unavailable",
-                    "detail": e.to_string()
-                })),
-            )
-                .into_response()
         }
     }
 }

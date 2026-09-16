@@ -87,6 +87,9 @@ impl HttpExecutorBridge {
     pub fn new(config: HttpExecutorBridgeConfig) -> AllianceResult<Self> {
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_millis(config.timeout_ms))
+            // P1-②：连接超时单独收紧（2s），executor 不可达时快速失败，
+            // 不让每次出向调用都等满 30s 总超时。
+            .connect_timeout(std::time::Duration::from_millis(2000))
             .build()
             .map_err(|e| AllianceError::internal(format!("Failed to create HTTP client: {}", e)))?;
 
@@ -231,18 +234,51 @@ impl ExecutorBridge for HttpExecutorBridge {
             task_id
         );
 
-        let response = self
-            .client
-            .get(&url)
-            .header("X-Tenant-Id", tenant_id.to_string())
-            .send()
-            .await
-            .map_err(|e| {
-                AllianceError::new(
-                    AllianceErrorCode::ExecutorUnavailable,
-                    format!("Failed to connect to executor: {}", e),
-                )
-            })?;
+        // P1-②：get_status 是幂等 GET，允许最多额外 2 次重试（200ms→400ms），
+        // 仅对连接错误/超时/5xx 重试。POST 写操作（submit/cancel/pause/resume）绝不重试。
+        let max_extra_retries: u32 = 2;
+        let mut attempt: u32 = 0;
+        let response = loop {
+            match self
+                .client
+                .get(&url)
+                .header("X-Tenant-Id", tenant_id.to_string())
+                .send()
+                .await
+            {
+                Ok(resp) => {
+                    let status = resp.status();
+                    if status.is_server_error() && attempt < max_extra_retries {
+                        attempt += 1;
+                        let delay_ms = 200u64 * (1 << (attempt - 1));
+                        warn!(
+                            "get_status got {} from executor, retrying (attempt {}/{})",
+                            status, attempt, max_extra_retries
+                        );
+                        tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
+                        continue;
+                    }
+                    break resp;
+                }
+                Err(e) => {
+                    let retryable = e.is_connect() || e.is_timeout();
+                    if retryable && attempt < max_extra_retries {
+                        attempt += 1;
+                        let delay_ms = 200u64 * (1 << (attempt - 1));
+                        warn!(
+                            "get_status connect/timeout error ({}), retrying (attempt {}/{})",
+                            e, attempt, max_extra_retries
+                        );
+                        tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
+                        continue;
+                    }
+                    return Err(AllianceError::new(
+                        AllianceErrorCode::ExecutorUnavailable,
+                        format!("Failed to connect to executor: {}", e),
+                    ));
+                }
+            }
+        };
 
         let status_resp: ExecutionStatusResponse = self.parse_response(response).await?;
 

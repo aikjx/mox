@@ -7,11 +7,13 @@
 //! - 公共 API（/tasks/*）：供用户/前端调用
 //! - 内部 API（/internal/*）：供调度器服务调用
 
-use axum::extract::{Path, State};
+use axum::extract::{Path, Request, State};
 use axum::http::{HeaderMap, StatusCode};
-use axum::response::{IntoResponse, Json};
+use axum::middleware::{self, Next};
+use axum::response::{IntoResponse, Json, Response};
 use axum::routing::{get, post};
 use axum::Router;
+use tracing::Instrument;
 use uuid::Uuid;
 
 use mox_alliance_api::dto::*;
@@ -85,7 +87,28 @@ pub fn build_router(state: ExecutorAppState) -> Router {
         .route("/tasks/:task_id/cancel", post(cancel_execution))
         .route("/tasks/:task_id/pause", post(pause_execution))
         .route("/tasks/:task_id/resume", post(resume_execution))
+        // P1-③：把 x-request-id 读入 tracing span，与 gateway/scheduler 日志对齐。
+        .layer(middleware::from_fn(request_tracing_layer))
         .with_state(state)
+}
+
+/// P1-③ 请求可观测层：从 `x-request-id` 读 ID 并写入 tracing span 字段。
+///
+/// 上游 scheduler 在 proxy_to_executor 中已透传 `x-request-id`；本层在 executor 进程内
+/// 把它绑到 `info_span!`，使一个请求 id 贯穿 gateway→scheduler→executor 四进程日志。
+/// 缺省生成新 UUID。
+async fn request_tracing_layer(req: Request, next: Next) -> Response {
+    let rid = req
+        .headers()
+        .get("x-request-id")
+        .and_then(|v| v.to_str().ok())
+        .filter(|s| !s.trim().is_empty() && s.len() <= 64)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| Uuid::new_v4().simple().to_string());
+    let method = req.method().clone();
+    let path = req.uri().path().to_string();
+    let span = tracing::info_span!("http.executor", rid = %rid, method = %method.as_str(), path = %path);
+    async move { next.run(req).await }.instrument(span).await
 }
 
 /// 健康检查
