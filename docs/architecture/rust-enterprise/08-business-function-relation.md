@@ -5,7 +5,7 @@
 
 ---
 
-## 一、8 域功能关联总图
+## 一、12 域功能关联总图
 
 ### 1.1 域间依赖关系图
 
@@ -101,7 +101,7 @@ graph TD
 
 | 源域 | 目标域 | 调用场景 | 关键 API |
 |---|---|---|---|
-| Gateway | 全部 8 域 | 路由分发 | `/kg/v1/*`, `/ai/engine/*`, ... |
+| Gateway | 全部 12 域 | 路由分发 | `/kg/v1/*`, `/ai/engine/*`, ... |
 | Enterprise | AI | 需求分析辅助 | `POST /ai/engine/analyze` |
 | Enterprise | KG | 设计图谱/复盘知识 | `POST /kg/v1/ingest`, `GET /kg/v1/neighborhood` |
 | Enterprise | Cloud | 部署产物存储 | `POST /cloud/v1/objects` |

@@ -27,7 +27,7 @@ foundation（横切基座）
     → proto（gRPC 契约层）
       → core（纯计算，无 IO）
         → svc（服务实现）
-          → gateway（唯一入口 :8080）
+          → gateway（唯一入口 :3080）
 ```
 
 依赖方向严格单向，核心层无 IO 副作用，可独立测试。
@@ -64,7 +64,7 @@ actuator ROUTES 为单一权威源，`scripts/gen-api-registry.py` 自动生成 
 | **知识图谱** | ready | 内存图引擎 + 算法（密度/平均度/聚类系数/SCC/CNM 社区检测），KG 与 Graph 同源 |
 | **专家联盟** | ready | 48 接口：注册中心/协作/图谱算法/编排/调度/会话；goal→需求规则提取 + 加权集合覆盖组队 |
 | **联盟调度** | ready | 20 接口：scheduler:3100 + executor:3200，DAG 编排，任务仓储可插拔（file 快照默认持久化） |
-| **知识库** | ready | mox-kb-server:8104 独立进程，文档 CRUD/分析/挂图/检索，100% 自研 |
+| **知识库** | ready | 默认内嵌网关（/api/kb/*），文档 CRUD/分析/挂图/检索，100% 自研；可选独立进程 `mox-kb-server` :3414 |
 | **AI 引擎** | ready | 统一编排 4 接口 |
 | **云存储** | ready | 6 接口：本地磁盘对象存储，S3 兼容语义，路径穿越防护，空桶删除 |
 | **语音转谱** | ready | 10 接口：桥接 melody2score:8012，音频识别/简谱/歌谱/下载 |
@@ -74,15 +74,14 @@ actuator ROUTES 为单一权威源，`scripts/gen-api-registry.py` 自动生成 
 
 ---
 
-## 4. 运行架构（五进程企业级部署）
+## 4. 运行架构（四进程企业级部署）
 
 | 进程 | 端口 | 职责 |
 | --- | --- | --- |
-| **mox-server** | :8080 | 网关唯一入口，21 路由单元装配，中间件链（可观测→CORS→限流→鉴权） |
-| **operator-server** | :3001 | OUS 编排器，全业务域路由分发 |
-| **mox-kb-server** | :8104 | 知识库独立进程 |
+| **mox-server** | :3080 | 网关唯一入口，进程内内嵌 KG/KB/Cloud/IAM/RBAC/联盟任务域；中间件链（可观测→CORS→限流→鉴权） |
+| **operator-server** | :3001 | OUS 编排器/业务域宿主，未被网关原生命中的 /api/* 反代至此 |
 | **mox-alliance-scheduler** | :3100 | 联盟任务调度（DAG 构建/节点调度） |
-| **mox-alliance-executor** | :3200 | 联盟任务执行（mock/expert 模式） |
+| **mox-alliance-executor** | :3200 | 联盟任务执行（expert 模式，内嵌专家服务） |
 
 **一键启停**：`scripts/start-mox-enterprise.ps1` / `stop-mox-enterprise.ps1`（幂等，不动独立服务）。
 

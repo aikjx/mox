@@ -18,11 +18,12 @@
 
 use axum::{
     body::Body,
-    extract::{OriginalUri, State},
-    http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode},
+    extract::{FromRequestParts, OriginalUri, State},
+    http::{request::Parts, HeaderMap, HeaderName, HeaderValue, Method, StatusCode},
     response::Response,
     Router,
 };
+use mox_platform_api::UserInfo;
 use std::time::Duration;
 
 /// 代理共享状态：持有 reqwest 客户端 + 编排器目标地址
@@ -67,6 +68,40 @@ impl ProxyState {
 impl Default for ProxyState {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// 可选的已认证用户身份提取器（P1-① 身份降级修复）。
+///
+/// 仅当请求经过 `auth_middleware` 且用户已认证时，`UserInfo` 才会被注入请求扩展；
+/// 公开路径 / 健康探针等未认证请求返回 `None`，此时反代**不写入**任何身份头，
+/// 仅保留出站服务令牌 `OUS_API_TOKEN` 做网关→下游的服务认证。
+///
+/// 与 `crate::auth::ApiAuth` 区别：本提取器对缺失身份不报错（返回 None），
+/// 因为反代必须能转发 dev 公开路径/探针这类无身份请求。
+pub struct OptionalUserInfo(pub Option<UserInfo>);
+
+impl<S> FromRequestParts<S> for OptionalUserInfo
+where
+    S: Send + Sync + 'static,
+{
+    type Rejection = std::convert::Infallible;
+
+    // 手写 async_trait 展开签名（与 auth.rs `ApiAuth` 同策略，避免引入 async_trait 依赖）。
+    fn from_request_parts<'life0, 'life1, 'async_trait>(
+        parts: &'life0 mut Parts,
+        _state: &'life1 S,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self, Self::Rejection>> + Send + 'async_trait>,
+    >
+    where
+        'life0: 'async_trait,
+        'life1: 'async_trait,
+        S: 'async_trait,
+    {
+        Box::pin(async move {
+            Ok(OptionalUserInfo(parts.extensions.get::<UserInfo>().cloned()))
+        })
     }
 }
 

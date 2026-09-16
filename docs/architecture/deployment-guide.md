@@ -1,5 +1,7 @@
 # MOX 一体化部署指南
 
+> ⚠️ **历史参考**：本文为旧 Python 栈部署（Docker/systemd 指向 :8600）；当前部署见 `docker-compose.yml` 与 `docs/api/PORT-REGISTRY.md`。
+
 > 版本: 1.0 | 日期: 2026-08-28
 
 ---

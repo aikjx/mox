@@ -74,6 +74,7 @@ mod lifecycle_tests {
 pub fn build_router(state: ExecutorAppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
+        .route("/metrics", get(metrics_handler))
         // === 公共 API ===
         .route("/tasks/:task_id/status", get(get_execution_status))
         .route("/tasks/:task_id/nodes", get(list_nodes))
@@ -96,6 +97,11 @@ async fn health_check(State(state): State<ExecutorAppState>) -> impl IntoRespons
         "execution_mode": state.execution_mode,
         "message": if state.execution_ready { "模型已配置，调用结果以实际执行为准" } else { "尚未配置真实模型，不能执行专家分析。请配置模型后重启执行器。" }
     }))
+}
+
+/// 运行指标快照（纯原子计数 JSON，与调度器 /metrics 同模式）
+async fn metrics_handler(State(state): State<ExecutorAppState>) -> impl IntoResponse {
+    Json(state.metrics.snapshot())
 }
 
 // ─── 公共 API ──────────────────────────────────────────────────────────────
@@ -245,6 +251,7 @@ async fn submit_execution(
 ) -> impl IntoResponse {
     let node_count = req.plan.nodes.len();
     if !state.execution_ready && state.execution_mode != "mock" {
+        state.metrics.record_error();
         return (StatusCode::SERVICE_UNAVAILABLE, Json(serde_json::json!({
             "code": "MODEL_NOT_CONFIGURED", "message": "尚未配置真实模型，无法执行专家分析"
         }))).into_response();
@@ -257,6 +264,7 @@ async fn submit_execution(
         .await
     {
         Ok(_) => {
+            state.metrics.record_submit();
             tracing::info!(
                 "Execution submitted: task_id={}, nodes={}",
                 task_id,
@@ -264,7 +272,10 @@ async fn submit_execution(
             );
             (StatusCode::OK, Json(SuccessResponse::default())).into_response()
         }
-        Err(e) => error_response(e).into_response(),
+        Err(e) => {
+            state.metrics.record_error();
+            error_response(e).into_response()
+        }
     }
 }
 
@@ -281,8 +292,14 @@ async fn cancel_execution(
         .cancel_execution(task_id, tenant_id, req.reason)
         .await
     {
-        Ok(_) => (StatusCode::OK, Json(SuccessResponse::default())).into_response(),
-        Err(e) => error_response(e).into_response(),
+        Ok(_) => {
+            state.metrics.record_cancel();
+            (StatusCode::OK, Json(SuccessResponse::default())).into_response()
+        }
+        Err(e) => {
+            state.metrics.record_error();
+            error_response(e).into_response()
+        }
     }
 }
 

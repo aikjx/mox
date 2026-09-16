@@ -12,7 +12,7 @@
 |--------|------|------|
 | `meta/` | COSMIC 元架构（9 大能力域 / 5 级扩展点） | [meta/README.md](./meta/README.md) |
 | `microservices/` | 微服务独立部署架构（12 铁律 / 36 服务边界） | [microservices/README.md](./microservices/README.md) |
-| `rust-enterprise/` | Rust 企业级开发指南（6 层 / 8 域） | [rust-enterprise/README.md](./rust-enterprise/README.md) |
+| `rust-enterprise/` | Rust 企业级开发指南（6 层 / 12 域） | [rust-enterprise/README.md](./rust-enterprise/README.md) |
 | `ai/` | AI 统一智能系统架构 | [ai/ai-unified-intelligent-system-architecture.html](./ai/ai-unified-intelligent-system-architecture.html) 🌐 |
 | `graph/` | 信息关联关系图（关图）产物与需求基线 | [graph/requests/README.md](./graph/requests/README.md) |
 | `full-dimensional/` | 全维 TraceMatrix 与需求基线 | [full-dimensional/00-README.md](./full-dimensional/00-README.md) |
@@ -29,7 +29,7 @@
 |------|------|------|
 | 架构总览 v3.0 | [`architecture.md`](./architecture.md) | **权威入口**：AI 驱动平台架构总览（对话中心 + 四向弹框 + Agent 运行时 + 技术底座） |
 | 操作说明手册 v2.0 | [`operations-manual.md`](./operations-manual.md) | 快速开始 / 平台使用 / 数据导入导出 / 应用发布 / 运维监控 |
-| 归一化架构 | [`NORMALIZED_ARCHITECTURE.md`](./NORMALIZED_ARCHITECTURE.md) | 标准分层模型与模块组织 |
+| 归一化架构 🟢 | [`NORMALIZED_ARCHITECTURE.md`](./NORMALIZED_ARCHITECTURE.md) | **归一化唯一权威**（v2.0，2026-09-16）：143 crate / 12 域 / 六层 / 四进程 / 网关 :3080；含域矩阵、请求闭环、完成度矩阵 |
 | 最优架构方案 | [`OPTIMAL_ARCHITECTURE.md`](./OPTIMAL_ARCHITECTURE.md) | 性能 / 可维护性 / 扩展性平衡选型 |
 | 领域优先布局 | [`DOMAIN_FIRST_LAYOUT.md`](./DOMAIN_FIRST_LAYOUT.md) | 领域优先目录布局设计 |
 | 仓库全地图 | [`14-REPOSITORY-FULL-MAP.md`](./14-REPOSITORY-FULL-MAP.md) | 代码仓库全景地图 |
@@ -81,7 +81,7 @@
 | 文档 | 说明 |
 |------|------|
 | [`rust-enterprise/README.md`](./rust-enterprise/README.md) | **入口**：纯 Rust 企业级模块化架构总览 |
-| [`rust-enterprise/01-architecture-overview.md`](./rust-enterprise/01-architecture-overview.md) | 6 层架构、8 业务域详解 |
+| [`rust-enterprise/01-architecture-overview.md`](./rust-enterprise/01-architecture-overview.md) | 6 层架构、12 业务域详解 |
 | [`rust-enterprise/03-module-inventory.md`](./rust-enterprise/03-module-inventory.md) | 模块清单与职责划分 |
 | [`rust-enterprise/07-build-and-test.md`](./rust-enterprise/07-build-and-test.md) | 构建与测试指南 |
 
@@ -201,12 +201,10 @@
 ## 九、速查卡
 
 ```
-L6 接入层     → Gateway + API
-L5 集成层     → mox-platform-integration-core (核心枢纽)
-L4 对接能力层 → AI / Plugin / Enterprise / Connector
-L3 领域服务层 → 8域 (kg/ai/flow/data/cloud/voice/market/platform)
-L2 平台核心层 → iam/system/meta/orchestrator/datastore/operator
-L1 基础框架层 → framework/foundation/observability
+六层单向依赖（归一化权威，见 NORMALIZED_ARCHITECTURE.md v2.0）：
+foundation → api → proto(gRPC契约) → core(纯计算) → svc(服务) → gateway(:3080 唯一入口)
+12 业务域：kg / ai / flow / data / cloud / voice / market / alliance / kb / base / project / platform
+企业四进程：gateway:3080 / operator-server:3001 / alliance-scheduler:3100 / alliance-executor:3200
 ```
 
 ```

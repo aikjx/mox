@@ -14,7 +14,7 @@
 
 | 模块 | 职责 | 关键代码锚点 |
 |---|---|---|
-| 前端 SPA (Vue3 + Vite `:3020`) | 主 UI、对话、图谱可视化、TTS 三层回退、业务面板 | [MessageBubble.vue](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/components/MessageBubble.vue#L836-L937)（TTS 三层回退 + 豆包级拟人音参数） · [ChatView.vue](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/ChatView.vue) · [vite.config.js](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/vite.config.js)（Vite `/voice` 代理 → `:8080`（网关 /voice/** → 编排器 voice_proxy → :30010）） |
+| 前端 SPA (Vue3 + Vite `:3020`) | 主 UI、对话、图谱可视化、TTS 三层回退、业务面板 | [MessageBubble.vue](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/components/MessageBubble.vue#L836-L937)（TTS 三层回退 + 豆包级拟人音参数） · [ChatView.vue](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/ChatView.vue) · [vite.config.js](file:///d:/a10/aikjx/gitcode/infotopograph/frontend-ui/vite.config.js)（Vite `/voice` 代理 → `:3080`（网关 /voice/** → 编排器 voice_proxy → :30010）） |
 | 桌面壳 (xiaobai-desktop) | 桌面端打包、离线文件关联、单实例启动 | [xiaobai-desktop/lib.rs](file:///d:/a10/aikjx/gitcode/infotopograph/platform/crates/xiaobai-desktop/src/lib.rs) |
 | App / H5 / 小程序容器 | 移动端入口、弱网下缓存队列、扫码登录 | `platform/sdk/{nodejs,python,rust}/`（`mox-sdk-cloud`、`mox-sdk-graph`） |
 

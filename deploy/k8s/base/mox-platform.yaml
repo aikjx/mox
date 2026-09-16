@@ -1,3 +1,4 @@
+# ⚠ 本文件为 gateway-only 精简拓扑；企业四进程（gateway:3080 / operator:3001 / alliance-scheduler:3100 / alliance-executor:3200）见 scripts/start-mox-enterprise.ps1 与 docs/architecture/NORMALIZED_ARCHITECTURE.md。
 # MOX Kubernetes 默认部署：模块化网关单入口。
 # KG、KB、Cloud、IAM 已编译进 mox-server；独立域服务仅用于可选扩展验证。
 

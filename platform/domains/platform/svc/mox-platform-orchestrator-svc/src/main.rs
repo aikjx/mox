@@ -42,6 +42,7 @@ use mox_data_catalog_svc::spiral::{analyze_spiral, SpiralParams};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
@@ -105,6 +106,8 @@ struct AppState {
     audit: Arc<rbac_middleware::MemoryAuditSink>,
     // 审计签名密钥（供 /api/audit 验签查询）
     audit_key: Vec<u8>,
+    // 进程内最小请求计数（纯原子，供 GET /metrics 导出）
+    metrics: Arc<OrcMetrics>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -436,12 +439,20 @@ async fn main() -> anyhow::Result<()> {
         hitl: hitl_state,
         audit: audit_sink,
         audit_key,
+        metrics: OrcMetrics::new(),
     });
+
+    // 克隆请求计数句柄：供最外层中间件与 AppState 共用同一原子实例
+    let request_metrics = state.metrics.clone();
 
     // 创建路由 - mox 模块化系统架构API
     let app = Router::new()
         // ========== 基础系统API ==========
         .route("/api/health", get(health))
+        // 根级探针（k8s liveness）：进程存活即 200 {"ok":true}；不影响既有 /api/health
+        .route("/health", get(root_health))
+        // 进程内最小请求计数快照（纯原子 JSON）
+        .route("/metrics", get(metrics_handler))
         .route("/api/operators", get(list_operators))
         .route("/api/operators/register", post(register_operator))
         .route("/api/execute", post(execute_workflow))
@@ -634,7 +645,12 @@ async fn main() -> anyhow::Result<()> {
             voice_state,
             voice_proxy_short_circuit,
         ))
-        .layer(build_cors()?);
+        .layer(build_cors()?)
+        // 进程内最小请求计数（最外层，透明累加 requests_total/active_requests，不改鉴权与路由）
+        .layer(middleware::from_fn_with_state(
+            request_metrics,
+            request_metrics_layer,
+        ));
 
     // 解析命令行参数：支持 `--port <NUM>`（默认 3001，Node 边缘入口占 3000）
     // 环境变量兜底（MOX_ORCHESTRATOR_HOST / MOX_ORCHESTRATOR_PORT），CLI --port 优先覆盖
@@ -1100,6 +1116,63 @@ async fn health() -> &'static str {
 }
 
 // ========== 璇玑mox 模块化系统架构治理 API ==========
+// ========== 进程内最小请求计数（纯 std::sync::atomic，GET /metrics 导出）==========
+
+/// 最小请求计数器：requests_total 累计总请求；active_requests 当前在途请求（gauge）。
+/// 与联盟域指标同一「纯原子 + JSON 快照」模式，不引入 prometheus 等外部依赖。
+#[derive(Debug, Default)]
+pub struct OrcMetrics {
+    requests_total: AtomicU64,
+    active_requests: AtomicU64,
+}
+
+impl OrcMetrics {
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self::default())
+    }
+
+    /// 进入请求：total++，active++
+    fn on_enter(&self) {
+        self.requests_total.fetch_add(1, Ordering::Relaxed);
+        self.active_requests.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// 离开请求：active--
+    fn on_exit(&self) {
+        self.active_requests.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    /// 导出一致性 JSON 快照
+    fn snapshot(&self) -> serde_json::Value {
+        serde_json::json!({
+            "requests_total": self.requests_total.load(Ordering::Relaxed),
+            "active_requests": self.active_requests.load(Ordering::Relaxed),
+        })
+    }
+}
+
+/// 根级健康探针（k8s liveness）：进程存活即 200 {"ok":true}
+async fn root_health() -> Json<serde_json::Value> {
+    Json(json!({ "ok": true }))
+}
+
+/// GET /metrics：进程内最小请求计数快照（纯原子 JSON）
+async fn metrics_handler(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+    Json(state.metrics.snapshot())
+}
+
+/// 请求计数中间件（挂在最外层）：透明累加 total/active，不改路由、不改鉴权顺序。
+async fn request_metrics_layer(
+    State(metrics): State<Arc<OrcMetrics>>,
+    request: Request,
+    next: Next,
+) -> Response {
+    metrics.on_enter();
+    let resp = next.run(request).await;
+    metrics.on_exit();
+    resp
+}
+
 // 把后端双璇玑十四维决策内核暴露给前端设计器：传入流程蓝图即可拿到
 // 各维度健康分、治理闸门、璇玑校验、采纳建议，驱动"可视化治理闭环"。
 

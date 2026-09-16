@@ -1,4 +1,4 @@
-# 03 · 60+ Crates 模块清单
+# 03 · 143 Crates 模块清单
 
 > **版本**: v1.0 · **日期**: 2026-08-27
 > **数据来源**: `Cargo.toml` workspace members（共 55 个正式成员 + framework）
@@ -9,8 +9,8 @@
 |---|---|---|
 | L5 Framework | 1 | mox-framework（10 子模块） |
 | L5 Foundation | 3 | cloud-foundation / platform-foundation / observability |
-| L4 Core（算法内核） | 16 | 8 域核心算法库 |
-| L3 Service（业务服务） | 28 | 8 域服务层 |
+| L4 Core（算法内核） | 16 | 12 域核心算法库 |
+| L3 Service（业务服务） | 28 | 12 域服务层 |
 | L2 Application（应用编排） | 3 | enterprise / orchestrator / gateway |
 | L1 Gateway | 1 | mox-platform-gateway-svc |
 | SDK | 5 | cloud / kg / data-formula / data-norm-intent / voice-dsp |
@@ -198,7 +198,7 @@
 | ⚠️ 部分通过（历史API漂移） | 1 | mox-platform-gateway-svc（默认 feature 有 50+ 历史错误，axum-gateway feature 的 routes.rs 新增模块通过） |
 | ❌ 未验证 | ~9 | FFI 绑定 / desktop app / 部分 sdk |
 
-**全 workspace**: `cargo check --workspace` 退出码 0（60+ crates 编译零错误，2026-08-27 验证）
+**全 workspace**: `cargo check --workspace` 退出码 0（143 crates 编译零错误，2026-08-27 验证）
 
 ---
 

@@ -1,5 +1,7 @@
 # MOX 统一企业级架构基线 v1.0
 
+> ⚠️ **基线参考**：域列表仅含 6 域，未含 kb/base/project/platform/market/voice；当前 12 业务域权威见 `docs/architecture/NORMALIZED_ARCHITECTURE.md`（v2.0）。
+
 状态：已落地基线，作为新系统开发的唯一扩展入口。
 
 ## 1. 目标和边界

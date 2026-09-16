@@ -1,5 +1,7 @@
 # 仓库mox 模块化系统架构全景图 · 模块化分层导航（最详细版）
 
+> ⚠️ **地图提示**：文中旧 Python `mox-server:8600` / `mox-store:8601` 已归档（`platform/legacy/`）；当前 Rust 网关唯一入口为 :3080。
+
 > **文档编号**: 14-REPOSITORY-FULL-MAP
 > **适用范围**: 仓库根目录全部内容（含隐藏目录）
 > **依据**: 实测目录结构 + 根 `Cargo.toml` / `README.md` / `CLAUDE.md` / `ARCHITECTURE.md` + `docs/enterprise/00-INDEX.md` + 各子项目 README/Cargo/package.json
@@ -17,7 +19,7 @@
 
 | 侧 | 技术栈 | 说明 |
 |----|--------|------|
-| 后端 | Rust edition 2021 · Axum + Tokio · Serde · thiserror/anyhow | 73 crate workspace · 6层8域DDD矩阵 · 模块化单体 |
+| 后端 | Rust edition 2021 · Axum + Tokio · Serde · thiserror/anyhow | 143 crate workspace · 6层12域DDD矩阵 · 模块化单体 |
 | 中台 | Python · FastAPI + uvicorn · SQLite | mox-server（发布中台 8600）+ mox-store（应用商店 8601） |
 | 前端 | Vue 3.4 · Vite 5 · Element Plus 2.4 · vue-router 4.3 · Axios 1.6 · ECharts 5.4 · three/3d-force-graph · mermaid · VexFlow | 用户端 + /admin 系统管理区 |
 | 部署 | Docker · Helm · systemd · nginx · Istio | 边缘入口 Node :3000 → Rust 网关 :3001 |
@@ -33,7 +35,7 @@
                 │
                 ▼
         mox-platform-gateway-svc (:3001, Rust 聚合网关, 31域路由)
-                ├── 8 域 api → 各域 svc → core
+                ├── 12 域 api → 各域 svc → core
                 ├── Python mox-server (:8600) / mox-store (:8601)
                 └── 治理 8 闸门 + ⛨验证网关（出码/发布必经）
 ```
@@ -65,11 +67,11 @@
 
 **结构**：`arch-test`（架构合规检查官）· `backend-rust`（早期独立 Rust 后端，含 aiops/zero_trust/data_quality）· `crates/bindings`（预留 FFI 绑定，空）· `domains/`（9 域五层：ai/cloud/data/flow/kg/market/platform/project/voice，每域 api/core/sdk/svc/svcapi）· `foundation/`（5 底座 crate）· `framework/`（mox-framework 横切框架）· `gateway/mox-platform-gateway-svc`（L1 网关 8080）· `mox-server/`（Python 发布中台 8600）· `mox-store/`（Python 应用商店 8601）· `scripts/`（空）· `shared/`（config/constants/schemas）
 
-**8 域 DDD 矩阵核心**（来自 CLAUDE.md 权威）：
+**12 域 DDD 矩阵核心**（来自 CLAUDE.md 权威）：
 - **core（L2）**：ai-core（LLM 抽象）/ ai-intent-core（意图识别）/ kg-algo-core（八大算法 A1~A8：CNM·Brandes·Harmonic·PageRank·激活扩散·RRF·CEM·CPM）/ kg-meta-core（14 节点族×19 边族）/ flow-operator-core（算子代数·守恒律·范畴论）/ flow-optimizer-core（CPM·RCPSP·CEM）/ data-formula-core（高精度公式引擎）/ data-norm-core（归一化 IR）/ data-standards-core（数据标准）/ platform-system-core（成员·任务·权限·RBAC·EventBus）/ platform-iam-core（身份·令牌·访问控制）/ platform-meta-core（AisLayer·CrateMeta·all_crate_metas）/ platform-datastore-core（多后端 SQLite/PG/MySQL 方言归一化）/ platform-orchestrator-core（DAG 编排·事件反应器·鉴权闸门）/ voice-dsp-core（响度·软限幅·Aho-Corasick 热词·SIMD）
 - **svc（L3）**：ai-agent-svc（对话·浏览器自动化·MultiAgent·ProviderRegistry）/ ai-expert-svc（⛨璇玑 14 专家·归一化 IR·裁决·验证 5 项·审计三汇·RBAC·租户分层）/ ai-flow-svc（流程 AI 9 模块·代码生成）/ kg-storage/service/streams/spark/hub/fusion-svc（混合索引+URN+8 段 5 连接器·RRF 融合）/ flow-operator-wasm-svc（WASM 沙箱·wasmer·热加载）/ flow-primiflow-svc（解析·代码生成·8 类骨架）/ flow-fusion-svc（六维融合·守恒闸门·Registry）/ flow-bridge-svc（Hermes 桥接）/ data-plane/etl/compliance/catalog-svc（PII 检测·脱敏·6 预置 FlowGraph）/ platform-enterprise-svc / platform-orchestrator-svc / cloud-master/volume/s3/filer-svc / market-template-svc（发布·评分·Fork·2 种子）/ voice-core/asr/intent/operator/desktop-app-svc（**voice-desktop-app = 独立产品形态·全局热键·BallWidget·键鼠自动化**）
 - **sdk（L4）**：kg-sdk / cloud-sdk / platform-test-harness / data-formula-native（napi-rs Node FFI）/ data-norm-intent-native（napi-rs）/ voice-dsp-py（PyO3 abi3-py39）
-- **api（L5）**：8 域 api/svcapi 已建目录，Phase 3 填充（规划中）
+- **api（L5）**：12 域 api/svcapi 已建目录，Phase 3 填充（规划中）
 
 ### 2.2 `frontend-ui/` — 前端工程
 
@@ -265,9 +267,9 @@
 
 | 文件 | 说明 |
 |------|------|
-| `Cargo.toml` / `Cargo.lock` | **根 workspace（73 crate）**：default-members 只构建核心；含 deny.toml（依赖许可）、tarpaulin.toml（覆盖率） |
+| `Cargo.toml` / `Cargo.lock` | **根 workspace（143 crate）**：default-members 只构建核心；含 deny.toml（依赖许可）、tarpaulin.toml（覆盖率） |
 | `README.md` | 快速开始（启动后端→开前端→docker 部署→数据导入导出） |
-| `CLAUDE.md` | **AI 编码上下文规范**：6层8域 DDD 矩阵 · 分层约束 · 编码规范 · 禁止清单（Do NOT）· 测试规范 · 常用命令 |
+| `CLAUDE.md` | **AI 编码上下文规范**：6层12域 DDD 矩阵 · 分层约束 · 编码规范 · 禁止清单（Do NOT）· 测试规范 · 常用命令 |
 | `ARCHITECTURE.md` | 架构文档 v3.0.0-ai-powered：6 层架构 / 模块清单 / 命名规范 / 零改动扩展 / 错误码 / 配置参考 |
 | `docker-compose.yml` | Docker 一体化部署 |
 | `start.sh` | 启动脚本 |

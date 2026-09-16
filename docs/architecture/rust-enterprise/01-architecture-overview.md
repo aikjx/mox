@@ -5,7 +5,7 @@
 ## 一、架构设计原则
 
 1. **分层明确**：L0-L5 六层，依赖方向严格自上而下，禁止反向依赖
-2. **域隔离**：8 个业务域（AI/KG/Flow/Cloud/Data/Voice/Market/Streams）独立 crate，域间通过 trait 接口通信
+2. **域隔离**：12 个业务域（kg/ai/flow/data/cloud/voice/market/alliance/kb/base/project/platform）独立 crate，域间通过 trait 接口通信
 3. **模块化单体**：单二进制部署，可按域拆分为微服务（ADR-16）
 4. **企业级红线**：
    - 社区检测仅允许 CNM（模块度贪心凝聚），禁用 LPA
@@ -86,7 +86,7 @@ pub fn build_gateway_router() -> Router {
 
 ---
 
-### L3 · 业务服务层（Service Layer · 8域）
+### L3 · 业务服务层（Service Layer · 12域）
 
 #### 域 1: AI（人工智能）
 | crate | 职责 |
@@ -197,7 +197,7 @@ L1 网关层 ──── mox-framework (L5)
     ↓ (trait 接口)
 L2 应用编排层 ──── mox-framework (L5)
     ↓ (域间 trait)
-L3 业务服务层 (8域独立 crate)
+L3 业务服务层 (12域独立 crate)
     ↓ (算法 trait)
 L4 算法内核层
     ↓ (基础库)
@@ -215,7 +215,7 @@ L5 基础层 (Framework + Foundation)
 
 ```
 infotopograph/
-├── Cargo.toml              # workspace 根（60+ members）
+├── Cargo.toml              # workspace 根（143 members）
 ├── platform/
 │   ├── framework/          # L5: mox-framework
 │   ├── foundation/         # L5: cloud/platform/observability
@@ -235,4 +235,4 @@ infotopograph/
 
 ---
 
-*详见 [03-module-inventory.md](./03-module-inventory.md) 获取完整 60+ crates 清单。*
+*详见 [03-module-inventory.md](./03-module-inventory.md) 获取完整 143 crates 清单。*

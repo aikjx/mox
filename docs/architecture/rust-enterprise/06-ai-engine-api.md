@@ -437,15 +437,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```bash
 # 意图处理
-curl -X POST http://localhost:8080/ai/engine/process \
+curl -X POST http://localhost:3080/ai/engine/process \
   -H "Content-Type: application/json" \
   -d '{"input":"分析架构","options":{"auto_route":true}}'
 
 # 能力矩阵
-curl http://localhost:8080/ai/engine/capabilities
+curl http://localhost:3080/ai/engine/capabilities
 
 # 引擎指标
-curl http://localhost:8080/ai/engine/metrics
+curl http://localhost:3080/ai/engine/metrics
 ```
 
 ---

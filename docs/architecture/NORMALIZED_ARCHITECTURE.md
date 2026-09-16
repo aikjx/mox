@@ -1,256 +1,299 @@
-# infotopograph 归一化架构规范 v1.0
+# MOX / 璇玑 归一化全系统架构设计（Normalized Full-System Architecture）
 
-> 基于算法验证结果（48 crate / 107 依赖边 / 0 循环 / 1 God Module / 1 层违规 / 24 跨域依赖）
+> 版本：v2.0（归一化重写版）　·　数据基准日：**2026-09-16**　·　权威等级：🟢 本层归一化架构唯一权威
+> 本稿以**当前代码**为准重写，取代旧 v1.0 中"48 crate / 8 域"的迁移态基线。
+> 硬事实（全部经代码核对，禁止再沿用旧值）：
+> - workspace **143 个 crate**，**12 个业务域**；
+> - 唯一 HTTP 入口网关 **mox-server :3080**（crate `mox-platform-gateway-svc`）；
+> - 企业默认**四进程**：gateway:3080 / operator-server:3001 / alliance-scheduler:3100 / alliance-executor:3200；
+> - 六层单向依赖：`foundation → api → proto → core → svc → gateway:3080`。
 >
-> 目标：所有模块与功能明确、独立、关联明确、归一化、企业级
+> 权威引用：结构治理 `docs/ARCHITECTURE-OF-DOCS.md`（DOC-GOV-ARC-V1.0）；端口唯一权威 `docs/api/PORT-REGISTRY.md`；接口唯一权威 `docs/API-REGISTRY.md`（223 路由，由 `scripts/gen-api-registry.py` 从 `actuator.rs ROUTES` 生成）。
 
 ---
 
-## 一、归一化命名规范
+## 0. 一句话定位
 
-### 1.1 crate 命名公式
+MOX 是 **Rust 原生的企业级 AI 服务平台**：把知识图谱、专家联盟多智能体编排、知识库、AI 引擎、云存储、语音、权限治理统一收敛到**单网关入口 :3080**下的模块化单体，并保留把任一业务域拆成独立进程（3411–3414）的演进能力。
+
+设计三原则：**企业级、先设计后开发、归一化**——一个主题一个目录、一个事实一个权威源、路径即契约。
+
+---
+
+## 1. 全局规模与组成（事实基准）
+
+### 1.1 总量
+
+| 项 | 数值 | 来源 |
+|---|---|---|
+| workspace crate 总数 | **143** | 根 `Cargo.toml` `[workspace].members` |
+| 业务域 | **12** | `platform/domains/*` |
+| 企业默认进程 | **4** | `scripts/start-mox-enterprise.ps1` |
+| 已登记 API 路由 | **223** | `docs/API-REGISTRY.md`（ROUTES 生成） |
+
+### 1.2 构成分解（143 去向）
+
+| 分组 | crate 数 | 说明 |
+|---|---:|---|
+| 12 业务域合计 | **121** | 见 §2 域矩阵 |
+| `platform/foundation/` 横切基座 | 8 | foundation / cloud-foundation / observability / paths / error / audit / api-protocol / framework |
+| `platform/domains/foundation/` | 2 | rbac-engine / pipeline-framework |
+| `platform/shared/` 统一契约与运行时 | 10 | unified-contract / unified-algo-core / config / auth / observability / cache / server-runtime / resilience / event / lock |
+| `platform/gateway/` | 1 | `mox-platform-gateway-svc`（唯一入口） |
+| `platform/arch-test/` | 1 | 架构约束测试 |
+| **合计** | **143** | |
+
+> 业务域与"基座层"严格区分：`foundation / shared / gateway` 是横切基础设施，不参与业务域计数，也不被算作第 13 个业务域。
+
+---
+
+## 2. 十二域划分与职责矩阵
+
+### 2.1 域总表（crate 数按 api/proto/core/svc/sdk 分层）
+
+| 域 | crate 数 | 层构成 | 职责定位 | 完成度 |
+|---|---:|---|---|:--:|
+| **platform** | 22 | api1 / core15 / svc4 / sdk2 | 平台内核：IAM、DSQL、元数据、编排、模块、插件、连接器、集成、企业治理、算子运行时宿主 | 🟢 |
+| **flow** | 18 | api1 / core12 / svc5 | 工作流平台：12 个 unified-* 内核 + WASM 算子 / PrimiFlow / 融合 / 桥接 / EA 工作区 | 🟢 |
+| **alliance** | 13 | api1 / proto3 / core5 / svc2 / sdk2 | 专家联盟：10 领域专家 + 6 融合策略 + 调度/执行 | 🟢 |
+| **cloud** | 13 | api1 / core4 / svc6 / sdk2 | 云存储：master/volume/s3/filer/rebalance + 纠删码内核 | 🟢 |
+| **ai** | 12 | api1 / proto1 / core5 / svc4 / sdk1 | AI 能力：意图识别 / 专家调度 / Flow 编排 / Agent 运行时 | 🟢 |
+| **kg** | 12 | api1 / core2 / svc8 / sdk1 | 知识图谱：算法/元数据/SDK + 8 svc（storage/service/streams/spark/hub/fusion/kb） | 🟢 |
+| **data** | 10 | api1 / core3 / svc4 / sdk2 | 数据治理：公式/归一化/标准 + ETL/合规/目录/数据面 | 🟢 |
+| **voice** | 8 | api1 / core1 / svc5 / sdk1 | 语音：ASR/意图/核心/算子 + DSP + Python 绑定 + 桌面端 | 🟢 |
+| **base** | 7 | core7 | 统一基座纯内核抽象：model/store/index/graph/query/perm/lifecycle | 🟢 |
+| **kb** | 2 | core1 / svc1 | 知识库内核 + server（默认内嵌网关） | 🟢 |
+| **project** | 2 | core1 / svc1 | 项目图内核 + 服务 | 🟢 |
+| **market** | 2 | api1 / svc1 | 系统模板市场（发布/浏览/加载/fork/反馈） | 🟢 |
+| **合计** | **121** | | | **全 ready** |
+
+> 完成度判定依据：逐 crate 统计 `src/` 行数、`tests/` 目录、生产 `src/` 中 `todo!()/unimplemented!()` 计数。12 域生产代码中 `todo!()/unimplemented!()` 基本为零；仅约 11 处 `unreachable!()`，全部是 match 防御兜底（如 `ParseError(_) => unreachable!()`），非功能占位。详见 L7 过程证据 `docs/working-reports/_norm_research/domain-matrix.md`。
+
+### 2.2 域间职责边界（不重叠原则）
+
+| 能力 | 负责域/核心 crate | 不负责 |
+|---|---|---|
+| 图存储/查询/算法 | kg（`mox-kg-storage-svc` / `mox-kg-service-svc` / `mox-kg-algo-core`） | 云对象存储、业务编排 |
+| 知识库 | kb（`mox-kb-core`）+ kg 域 `mox-kb-svc` | 图算法、LLM 调度 |
+| 多专家协作/融合 | alliance（`mox-alliance-core/fusion`） | 单 Agent 运行时（归 ai） |
+| 单 Agent 运行时 / 意图 | ai（`mox-ai-agent-svc` / `mox-ai-intent-core`） | 多专家组队调度 |
+| 工作流/算子执行 | flow（`mox-flow-*-core` / `mox-flow-operator-wasm-svc`） | 知识图谱算法 |
+| 公式/归一化/ETL/合规 | data | 业务展示 |
+| 对象/块/文件存储 | cloud（master/volume/s3/filer + Reed-Solomon） | 图存储 |
+| 语音 ASR/TTS/桌面 | voice | 音乐转谱（外部 8012 桥接） |
+| IAM/RBAC/元数据/编排宿主 | platform（`mox-platform-iam-core` / `mox-rbac-engine` / `mox-platform-orchestrator-svc`） | 业务算法 |
+| 模板上架/分发 | market | 模板内容生成 |
+| 纯内核抽象 | base | 任何 IO / 对外服务 |
+
+---
+
+## 3. 六层单向依赖（清洁架构变体）
 
 ```
-mox-<domain>-<layer>-<role>
+L0 foundation  横切基座（platform/foundation + platform/shared + domains/foundation）
+                 错误 / 审计 / 鉴权内核 / 配置 / 可观测 / 缓存 / 韧性 / 事件 / 锁 / 路径
+   ↓
+L1 api          各域对外契约 DTO（mox-<域>-api），零内部业务依赖
+   ↓
+L2 proto        gRPC / 服务间契约（mox-<域>-<subj>-proto），仅依赖 api
+   ↓
+L3 core         纯计算 / 算法引擎，无 IO（mox-<域>-<能力>-core），仅依赖 foundation
+   ↓
+L4 svc          服务实现（mox-<域>-<能力>-svc），依赖 api + proto + core
+   ↓
+L5 gateway      唯一入口 mox-server :3080（mox-platform-gateway-svc），装配路由 + 鉴权 + 反代
 ```
 
-| 段 | 取值 | 说明 |
-|----|------|------|
-| `<domain>` | `kg` / `ai` / `flow` / `data` / `cloud` / `voice` / `platform` / `market` | 业务域 |
-| `<layer>` | `api` / `svcapi` / `core` / `svc` / `sdk` | 架构层 |
-| `<role>` | `storage` / `service` / `engine` / `hub` / `agent` / `registry` | 角色 |
+依赖规则：
+1. **严格单向**，禁止底层反向依赖顶层；核心层（core）保持无 IO、可独立单测。
+2. **跨域不直连**：业务域之间不互相 `use`，通过 platform 层编排、SDK 层或事件（`mox-event-core`）中转。
+3. **扩展点闭环**：实现 Trait → 实现 Factory → 注册 Registry → 加配置 → 自动组装，核心代码零改动。
+4. 命名公式：`mox-<domain>-<layer>-<role>`（layer ∈ api / proto / core / svc / sdk）。
 
-### 1.2 层级定义
-
-| 层级 | 后缀 | 职责 | 依赖方向 |
-|------|------|------|----------|
-| `api` | `-api` | 对外 DTO + REST/JSON-RPC 接口契约 | 零内部依赖 |
-| `svcapi` | `-svcapi` | 服务间 gRPC 契约（.proto + stub） | 仅依赖 api |
-| `core` | `-core` | 核心计算/算法引擎，无 IO | 仅依赖 foundation |
-| `svc` | `-svc` | 业务服务实现 | 依赖 api + svcapi + core |
-| `sdk` | `-sdk` | 客户端 SDK / FFI 绑定 | 依赖 api |
-
-### 1.3 业务域定义
-
-| 域代码 | 域名 | 包含能力 |
-|--------|------|----------|
-| `kg` | 知识图谱 | 图存储/图服务/图谱Hub/图算法/图流/图元数据 |
-| `ai` | AI智能 | AI Agent/AI核心/专家/流程AI/意图 |
-| `flow` | 流程自动化 | 算子核心/算子WASM/优化器/PrimiFlow核心/融合 |
-| `data` | 数据治理 | 数据平面/ETL/合规/标准/归一化/公式/业务目录 |
-| `cloud` | 云存储 | 云盘主/卷/S3/文件器/域抽象 |
-| `voice` | 语音 | 小白核心/ASR/意图/算子/桌面/DSP |
-| `platform` | 平台基础 | 公共元数据/系统/服务器/runtime/测试框架 |
-| `market` | 市场 | 模板市场 |
+> 与旧稿差异：旧稿"L6/L5/L4/L3/L2/L1/L0 七层 + 8 域"为迁移态描述；现归一为上述 **6 层、12 域**。
 
 ---
 
-## 二、48 Crate 归一化映射表
+## 4. 部署进程拓扑
 
-### 2.1 平台基础域 (platform)
+### 4.1 企业默认四进程（`scripts/start-mox-enterprise.ps1` 实测接线）
 
-| 当前名 | 归一化名 | 层 | 职责 | 状态 |
-|--------|----------|----|------|------|
-| `mox-common-meta` | `mox-platform-foundation` | foundation | 公共元数据/类型定义 | 保留(重命名) |
-| `mox-domain-abstractions` | `mox-cloud-foundation` | foundation | 云存储域抽象 | 保留(重命名+移域) |
-| `mox-system` | `mox-platform-system-svc` | svc | 用户/角色/权限/菜单/审计 | 保留(重命名) |
-| `mox-server` | `mox-platform-gateway-svc` | svc | 单体服务器/网关入口 | 拆分 |
-| `runtime` | `mox-platform-runtime-svc` | application | 运行时编排 | God Module 拆分 |
-| `mox-t21-harness` | `mox-platform-test-harness` | sdk | 测试框架 | 保留(重命名) |
+| 进程名 | 二进制 | crate | 端口 | 职责 |
+|---|---|---|---:|---|
+| **mox-server** | `mox-server.exe` | `platform/gateway/mox-platform-gateway-svc` | **3080** | 唯一 HTTP 入口；进程内内嵌 KG/KB/Cloud/IAM/RBAC/联盟任务域；中间件链（可观测→CORS→限流→鉴权 HS256）；反代业务域、后连联盟 |
+| **operator-server** | `operator-server.exe` | `…/platform/svc/mox-platform-orchestrator-svc` | **3001** | 算子运行时 / 业务域宿主：聚合 primiflow / fusion / ai-agent / data-catalog / kg-algo，承载 `/api/graph/*` `/api/ai/*` `/api/market/*` 等未被网关原生命中的业务域 |
+| **mox-alliance-scheduler** | `mox-alliance-scheduler.exe` | `…/alliance/svc/mox-alliance-scheduler-svc` | **3100** | 任务调度 + 专家匹配（RuleBasedExpertMatcher）+ 计划生成，HTTP 桥接执行器 |
+| **mox-alliance-executor** | `mox-alliance-executor.exe` | `…/alliance/svc/mox-alliance-executor-svc` | **3200** | DAG 执行 + 节点调度 + 状态；进程内调 `mox-ai-expert-svc` 跑专家节点 |
 
-### 2.2 知识图谱域 (kg)
+启动接线：网关通过环境变量 `MOX_ALLIANCE_SCHEDULER_URL=http://127.0.0.1:3100`、`MOX_ALLIANCE_EXECUTOR_URL=http://127.0.0.1:3200` 后连联盟；`operator-server` 注入 `OUS_API_TOKEN`。
 
-| 当前名 | 归一化名 | 层 | 职责 | 状态 |
-|--------|----------|----|------|------|
-| `mox-graph-meta` | `mox-kg-meta-core` | core | 图元数据/类型系统 | 保留 |
-| `mox-graph-storage` | `mox-kg-storage-svc` | svc | 自研分布式图存储(RocksDB+Raft) | 保留(核心资产) |
-| `mox-graph-service` | `mox-kg-service-svc` | svc | 图查询/遍历/CRUD服务 | 保留 |
-| `mox-graph-streams` | `mox-kg-streams-svc` | svc | 图变更流/CDC | 保留 |
-| `mox-graph-spark` | `mox-kg-spark-svc` | svc | 图Spark计算 | 评估(是否需要) |
-| `graph-algorithms` | `mox-kg-algo-core` | core | 图算法(PageRank/最短路径/社区) | 保留(移core层) |
-| `kg-hub` | `mox-kg-hub-svc` | svc | 图谱Hub(本体/推理/摄入/索引/治理) | 保留 |
-| `mox-fusion` | `mox-kg-fusion-svc` | svc | 知识融合/实体对齐 | 保留(移kg域) |
+### 4.2 网关进程内内嵌 vs 后连（按 `modules.rs` / `proxy.rs` 源码核对）
 
-### 2.3 AI智能域 (ai)
+- **进程内内嵌（全部跑在 3080 单进程）**：KG（`/kg/v1/*`，`mox-kg-service-svc`）、KB（`/api/kb/*`）、Cloud（`/cloud/v1/*`）、IAM（`/api/system|security/*`）、RBAC（`/rbac/v1/*`）、专家联盟任务域（`/api/alliance/*`）及专家广场，共 7 模块由 `build_module_routers` 统一 merge + 统一鉴权层。
+- **HTTP 后连外部进程**：
+  - operator-server **3001**：网关 `proxy.rs` 对未命中的 `/api/*` 做 catch-all 反向代理（注入 `OUS_API_TOKEN`）；
+  - PrimiFlow **8000**：仅 `/api/projects/*`；
+  - alliance scheduler **3100** / executor **3200**：`mox-alliance-http-sdk` 用 reqwest 远程调用，可用环境变量开关切本地/远程。
 
-| 当前名 | 归一化名 | 层 | 职责 | 状态 |
-|--------|----------|----|------|------|
-| `mox-ai-core` | `mox-ai-core` | core | AI核心类型/接口 | 保留 |
-| `mox-intent-core` | `mox-ai-intent-core` | core | 意图识别核心 | 保留(移ai域) |
-| `flow-ai` | `mox-ai-flow-svc` | svc | AI流程编排 | 保留(移ai域) |
-| `mox-expert` | `mox-ai-expert-svc` | svc | 专家服务/专家注册 | 保留(移ai域) |
-| `ai-agent` | `mox-ai-agent-svc` | svc | AI Agent运行时/ReAct循环 | 保留(移ai域) |
+### 4.3 可选独立扩展（默认不开）
 
-### 2.4 流程自动化域 (flow)
+同一 `mox-server` 二进制 + `MOX_HOST_ROLE`，`deployment.rs::domain_router` 只装载该域：
 
-| 当前名 | 归一化名 | 层 | 职责 | 状态 |
-|--------|----------|----|------|------|
-| `operator-core` | `mox-flow-operator-core` | core | 算子核心/算子接口 | 保留(移core层) |
-| `operator-wasm` | `mox-flow-operator-wasm-svc` | svc | WASM算子运行时 | 保留 |
-| `optimizer` | `mox-flow-optimizer-core` | core | 流程优化器/DAG优化 | 保留(移core层) |
-| `primiflow-core` | `mox-flow-primiflow-svc` | svc | PrimiFlow核心引擎 | 保留 |
-| `primiflow-fusion` | `mox-flow-fusion-svc` | svc | 流程融合/数据流融合 | 保留 |
-| `hermes-flow-bridge` | `mox-flow-bridge-svc` | svc | 流程桥接/外部系统对接 | 保留 |
+| 宿主角色 | 容器端口 | 独立二进制 | 启用场景 |
+|---|---:|---|---|
+| `MOX_HOST_ROLE=kg` | **3411** | `mox-kg-server` | 图谱域需独立扩缩/隔离时 |
+| `MOX_HOST_ROLE=cloud` | **3412** | `mox-cloud-server` | 云存储域独立部署 |
+| `MOX_HOST_ROLE=iam` | **3413** | `mox-iam-server` | 统一 IAM 独立面 |
+| `MOX_HOST_ROLE=kb` | **3414** | `mox-kb-server` | 知识库独立进程 |
 
-### 2.5 数据治理域 (data)
+默认 fused = `MOX_HOST_ROLE=all`（全内嵌、单二进制、SQLite 单副本 PVC），故不另起进程；split 形态见 `docker-compose.domains.yml`，nginx 统一入口，K8s Ingress 只转发至网关，避免绕过统一鉴权。
 
-| 当前名 | 归一化名 | 层 | 职责 | 状态 |
-|--------|----------|----|------|------|
-| `mox-formulas-core` | `mox-data-formula-core` | core | 公式引擎核心 | 保留(移core层) |
-| `mox-norm-core` | `mox-data-norm-core` | core | 数据归一化核心 | 保留(移core层) |
-| `mox-standards` | `mox-data-standards-svc` | svc | 数据标准/规范 | 保留(移data域) |
-| `mox-data-plane` | `mox-data-plane-svc` | svc | 数据平面/数据接入 | 保留 |
-| `mox-etl-wasm` | `mox-data-etl-svc` | svc | ETL WASM运行时 | 保留 |
-| `mox-compliance` | `mox-data-compliance-svc` | svc | 合规/审计/数据治理 | 保留 |
-| `business-catalog` | `mox-data-catalog-svc` | svc | 业务目录/数据目录 | 保留(移data域) |
-
-### 2.6 云存储域 (cloud)
-
-| 当前名 | 归一化名 | 层 | 职责 | 状态 |
-|--------|----------|----|------|------|
-| `mox-cloud-drive-master` | `mox-cloud-master-svc` | svc | 云盘主控/元数据管理 | 保留 |
-| `mox-cloud-drive-volume` | `mox-cloud-volume-svc` | svc | 云盘卷/块存储 | 保留 |
-| `mox-cloud-drive-s3` | `mox-cloud-s3-svc` | svc | S3兼容对象存储 | 保留 |
-| `mox-cloud-drive-filer` | `mox-cloud-filer-svc` | svc | 文件器/文件管理 | 保留 |
-
-### 2.7 语音域 (voice)
-
-| 当前名 | 归一化名 | 层 | 职责 | 状态 |
-|--------|----------|----|------|------|
-| `xiaobai-dsp` | `mox-voice-dsp-core` | core | 数字信号处理核心 | 保留(移core层) |
-| `xiaobai-core` | `mox-voice-core-svc` | svc | 语音核心/会话管理 | 保留 |
-| `xiaobai-asr` | `mox-voice-asr-svc` | svc | 语音识别 | 保留 |
-| `xiaobai-intent` | `mox-voice-intent-svc` | svc | 语音意图理解 | 保留 |
-| `xiaobai-operators` | `mox-voice-operator-svc` | svc | 语音算子/桌面操作 | 保留 |
-| `xiaobai-desktop` | `mox-voice-desktop-app` | application | 桌面客户端 | 保留 |
-| `xiaobai-dsp-py` | `mox-voice-dsp-py` | sdk | Python DSP绑定 | 保留 |
-
-### 2.8 市场域 + SDK域
-
-| 当前名 | 归一化名 | 域 | 层 | 状态 |
-|--------|----------|----|----|------|
-| `template-market` | `mox-market-template-svc` | market | svc | 保留 |
-| `mox-sdk-cloud` | `mox-cloud-sdk` | cloud | sdk | 保留 |
-| `mox-sdk-graph` | `mox-kg-sdk` | kg | sdk | 保留 |
-| `mox-formulas-native` | `mox-data-formula-native` | data | sdk | 保留 |
-| `mox-norm-intent-native` | `mox-data-norm-intent-native` | data | sdk | 保留 |
-
-### 2.9 待拆分 God Module
-
-| 当前名 | 问题 | 拆分方案 |
-|--------|------|----------|
-| `runtime` | 扇出15，God Module | 拆为 `mox-platform-orchestrator-svc`(编排) + 各业务域自行启动 |
-| `mox-server` | 扇出7，单体入口 | 拆为 `mox-platform-gateway-svc`(网关) + 各服务独立部署 |
+> 注意二进制同名歧义：遗留 Python `mox-server` 在 :8600（LEGACY，勿用），与本设计的 Rust 网关 `mox-server` :3080 同名不同物。
 
 ---
 
-## 三、功能边界归一化
+## 5. 跨域关联流程（请求闭环）
 
-### 3.1 核心原则
+### 5.1 专家联盟编排闭环（主链路）
 
-1. **单一职责**：每个crate只负责一个明确的功能域
-2. **零循环依赖**：已验证，保持
-3. **层依赖单向**：foundation ← core ← engine ← svc ← application
-4. **跨域通过平台层**：业务域之间不直接依赖，通过 platform 层的事件/接口中转
-5. **接口先行**：每个svc必须有对应的api + svcapi层
-
-### 3.2 功能边界矩阵（核心服务）
-
-| 功能 | 负责crate(归一化) | 不负责 | 依赖 |
-|------|-------------------|--------|------|
-| 图存储 | `mox-kg-storage-svc` | 图查询/图算法 | foundation |
-| 图查询 | `mox-kg-service-svc` | 图存储/图算法 | storage-svc + algo-core |
-| 图算法 | `mox-kg-algo-core` | 图存储/图查询 | foundation (纯计算) |
-| 图谱Hub | `mox-kg-hub-svc` | 图存储/图算法 | storage-svc + service-svc |
-| AI Agent | `mox-ai-agent-svc` | 专家注册/图存储 | expert-svc + kg-sdk + flow-sdk |
-| 专家服务 | `mox-ai-expert-svc` | Agent运行时 | foundation |
-| 算子核心 | `mox-flow-operator-core` | WASM运行时 | foundation (纯计算) |
-| 流程优化 | `mox-flow-optimizer-core` | 流程执行 | operator-core + algo-core |
-| 公式引擎 | `mox-data-formula-core` | 数据归一化 | foundation (纯计算) |
-| 数据归一化 | `mox-data-norm-core` | 公式计算 | foundation (纯计算) |
-| 云盘主控 | `mox-cloud-master-svc` | 块存储/S3 | volume-svc + foundation |
-| 语音核心 | `mox-voice-core-svc` | ASR/意图/DSP | asr-svc + intent-svc + dsp-core |
-
----
-
-## 四、关联关系归一化
-
-### 4.1 允许的依赖方向
+> 关键事实（源码核对）：联盟任务闭环**不经过** operator-server:3001，网关 :3080 直接后连 3100→3200。
 
 ```
-application → svc → core → foundation
-     ↓          ↓
-   sdk       svcapi → api
+外部
+ │  POST /api/alliance/tasks
+ ▼
+[网关 :3080] mox-platform-gateway-svc
+ │  中间件：可观测 → CORS → 限流 → 鉴权（auth.rs，HS256 真验签；IAM 数据 mox-platform-iam-core / SQLite）
+ │  命中联盟路由 → mox-alliance-http-sdk
+ ▼  (1) HTTP reqwest 出站
+[scheduler :3100] mox-alliance-scheduler-core
+ │  落库 + RuleBasedExpertMatcher 专家匹配 + 计划生成
+ ▼  (2) HTTP 桥接 with_executor_url
+[executor :3200] mox-alliance-executor-core
+ │  按 DAG 逐节点执行，进程内调 mox-ai-expert-svc（Expert 节点）
+ │  融合节点汇总（§6 六大策略之一）
+ ▼  (3) /tasks/:id/result、/tasks/:id/status
+[网关 :3080] remote_status_poll / remote_fusion_result 取数并归一化
+ ▼
+外部（归一化结果原路返回）
 ```
 
-### 4.2 禁止的依赖
+### 5.2 普通业务请求闭环（对照链路）
 
-| 禁止类型 | 说明 | 当前违规 |
-|----------|------|----------|
-| 循环依赖 | A→B→A | 无 |
-| 层违规 | 底层依赖顶层 | ai-agent→template-market |
-| 跨域直连 | 业务域A直接依赖业务域B | 24个(需通过platform中转) |
-| God Module | 单模块依赖>10 | runtime(15) |
+```
+外部 → 网关 :3080 → 同一鉴权
+   ├─ 命中原生路由（如 /kg/v1/*、/api/kb/*、/cloud/v1/*、/rbac/v1/*）：
+   │     进程内由对应内嵌 svc 直接计算，不离开 3080。
+   └─ 未命中原生路由（catch-all /api/*）：
+         proxy.rs 注入 OUS_API_TOKEN，HTTP 反代 → operator-server :3001
+              → 业务域计算（如 mox-kg-algo-core / primiflow / ai-agent）→ 透传返回
+         /api/projects/* 单独反代 → PrimiFlow :8000
+```
 
-### 4.3 跨域依赖治理方案
+### 5.3 闭环要点
 
-当前24个跨域依赖，治理为3类：
-
-**A类：合理跨域（保留）** — 平台型服务依赖多域
-- `mox-platform-runtime-svc` → 各域（编排器天然依赖多域）
-- `mox-platform-gateway-svc` → 各域（网关天然路由多域）
-
-**B类：通过SDK解耦（改造）** — 改为依赖对方的SDK层
-- `ai-agent` → `kg-hub` → 改为 `ai-agent` → `mox-kg-sdk`
-- `ai-agent` → `graph-algorithms` → 改为 `ai-agent` → `mox-kg-sdk`
-- `xiaobai-core` → `mox-expert` → 改为 `xiaobai-core` → `mox-ai-sdk`
-- `kg-hub` → `primiflow-fusion` → 改为事件驱动(NATS)
-
-**C类：通过事件解耦（改造）** — 改为异步事件
-- `business-catalog` → `flow-ai` / `mox-expert` → 事件驱动
-- `hermes-flow-bridge` → `flow-ai` / `mox-expert` → 事件驱动
+- **鉴权只在网关做一次**（HS256），下游进程靠 `OUS_API_TOKEN` 信任网关，K8s 层禁止绕过网关直连。
+- **编排分层**：平台算子编排走 operator-server:3001；专家联盟多智能体编排走 scheduler:3100→executor:3200。两条编排链并行，不混用。
+- **可替换/可拆分**：上游 URL 可用环境变量覆盖（VOICE/PRIMIFLOW/ORCHESTRATOR/ALLIANCE），任务仓储可插拔（file 快照默认 / memory），远程开关即"模块化单体 → 微服务"的拆分预演。
 
 ---
 
-## 五、最优架构目标态
+## 6. 核心子系统：专家联盟（alliance）
 
-### 5.1 目标架构（6层 + 8域）
+### 6.1 六大融合策略（全部真实现，零占位）
 
-```
-L6 Application:  voice-desktop-app / platform-gateway-svc / platform-runtime-svc
-L5 Service:      kg(8) ai(5) flow(6) data(7) cloud(5) voice(7) market(1) platform(3)
-L4 SDK:          kg-sdk / cloud-sdk / ai-sdk / flow-sdk / native绑定
-L3 Core:         kg-algo / ai-intent / flow-operator / flow-optimizer / data-formula / data-norm / voice-dsp / ai-core
-L2 Service API:  每个svc对应一个 -svcapi crate (gRPC .proto + stub)
-L1 API:          每个svc对应一个 -api crate (DTO + REST/JSON-RPC)
-L0 Foundation:   platform-foundation / cloud-foundation
-```
+权威位置：`platform/domains/alliance/core/mox-alliance-core/src/fusion/strategies/`
 
-### 5.2 目标指标
+| 策略 | 文件 | 规模 | 单测 | 导出类型 |
+|---|---|---|---:|---|
+| weighted_voting | `weighted_voting.rs` | 238 行 | 文档断言 | `WeightedVotingFusion` |
+| confidence_weighting | `confidence_weighting.rs` | 281 行 | 27 | `ConfidenceWeightingFusion` |
+| stacking | `stacking.rs` | 451 行 | 23 | `StackingFusion` |
+| debate | `debate.rs` | 383 行 | 25 | `DebateFusion` |
+| map_reduce | `map_reduce.rs` | 389 行 | 27 | `MapReduceFusion` |
+| iterative_refinement | `iterative_refinement.rs` | 357 行 | 31 | `IterativeRefinementFusion` |
 
-| 指标 | 当前 | 目标 |
-|------|------|------|
-| 循环依赖 | 0 | 0 |
-| God Module(扇出>10) | 1 | 0 |
-| 层违规 | 1 | 0 |
-| 跨域直连 | 24 | <5(仅平台层) |
-| 三层分离覆盖率 | 0% | 100% |
-| 模块独立性均分 | ~75 | >85 |
-| core层纯计算率 | ~60% | 100% |
+`strategies/mod.rs` 显式导出全部 6 个 struct，被 executor-core/scheduler-core 引用，并有 `tests/bench_alliance.rs` 基准。
 
----
+### 6.2 十大领域专家（全部真实存在并已接线）
 
-## 六、迁移路径（渐进式，不破坏现有功能）
+权威定义：`…/alliance/core/mox-alliance-config-core/src/examples/domain_experts.rs` 的 `build_domain_experts()`（虽在 `examples/`，但被生产加载，非示例）。`mox-alliance-scheduler-svc/src/server.rs:238` 启动时 `let builtin_modules = build_domain_experts();`；`boot-config` 提供 yml overlay 覆盖。
 
-| 阶段 | 周期 | 内容 |
-|------|------|------|
-| 1 归一化命名 | 1周 | 所有crate重命名为规范格式，保持功能不变 |
-| 2 拆分God Module | 2周 | 拆分runtime/mox-server，引入mox-dualrpc通信底座 |
-| 3 三层分离 | 4周 | 每个svc拆为-api + -svcapi + -svc，优先核心服务 |
-| 4 跨域解耦 | 3周 | B类改SDK依赖，C类改NATS事件驱动 |
-| 5 core层纯化 | 2周 | core层移除IO依赖，纯计算可独立测试 |
-| 6 企业级加固 | 持续 | mox-framework基础框架 + 架构约束CI测试 + 99.95% SLA |
+| # | module_id | 定位 | 主模型 |
+|---|---|---|---|
+| 1 | `expert-code` | 代码编程 | deepseek-coder-v2 |
+| 2 | `expert-math` | 数学推理 | openai-o1 |
+| 3 | `expert-medical` | 医学咨询 | claude-3-opus |
+| 4 | `expert-law` | 法律咨询 | qwen-law-72b |
+| 5 | `expert-finance` | 金融分析 | claude-3-5-sonnet |
+| 6 | `expert-creative` | 创意写作 | claude-3-opus |
+| 7 | `expert-vision` | 图像理解 | gpt-4o |
+| 8 | `expert-translation` | 多语翻译 | deepseek-chat |
+| 9 | `expert-research` | 学术研究 | gpt-4o |
+| 10 | `expert-arch` | 架构设计 | gpt-4o |
 
 ---
 
-*关联文档：[架构审计报告](../working-reports/architecture-audit-report.txt) | [算法指标数据](./assets/architecture-metrics.json)*
+## 7. 功能完成度矩阵（2026-09-16 代码核对）
+
+| 域 | 完成度 | 关键证据（src 规模 / 测试） |
+|---|:--:|---|
+| platform | 🟢 ready | `mox-dsql-core` 704、`orchestrator-core` 435、`operator-core` 1724、`graph-core` 1696 行；均带 tests |
+| flow | 🟢 ready | `lowcode-core` 4112、`unified-perm-core` 3659、`unified-process-core` 2308、`unified-meta-core` 2113 行 |
+| alliance | 🟢 ready | 6 策略合计 2099 行、157 单测；10 专家配置完整且已接线 |
+| cloud | 🟢 ready | `rebalance-svc` 2345 行；`cloud-kernel` Reed-Solomon 纠删码 |
+| ai | 🟢 ready | `agent-svc` lib 945、`intent-core` 455、`intent-svc` 704 行 |
+| kg | 🟢 ready | `kg-sdk` 663、`storage-svc` 492、`fusion-svc` 306 行 |
+| data | 🟢 ready | `compliance-svc` 361、`etl-svc` 383、`formula-native` 306 行 |
+| voice | 🟢 ready | `desktop-app` 1117、`intent-svc` 471、`dsp-core` 429 行；各 svc 带 tests |
+| base | 🟢 ready | 7 个 `mox-base-*-core` 各 176–311 行，纯内核零 todo |
+| kb | 🟢 ready | `mox-kb-core` 231 行；`mox-kb-server` main 166 行 |
+| project | 🟢 ready | `project-graph-svc` 总 src 1163 行 |
+| market | 🟢 ready | `template-svc` 539 行，`TemplateMarket/SystemTemplate/Domain` 类型齐全 |
+
+**结论**：12 业务域整体 ready，无 stub/空壳域。剩余"缺口"不在功能实现，而在**文档-代码漂移收敛**（见 §8）与**跨域直连治理**（旧稿统计 24 处跨域直连，持续收敛到仅平台层编排）。
+
+---
+
+## 8. 归一化遗留项与收敛计划（本次设计的后续动作）
+
+### 8.1 文档-代码漂移（已盘点 49 处，详见 L7 证据 `doc-landscape.md`）
+
+| 类别 | 待修 | 处置 |
+|---|---:|---|
+| 网关 `:8080` → `:3080` | 10 处 | 全改 3080（历史对照表里的除外） |
+| `五进程` → `四进程` | 1 处（SYSTEM-OVERVIEW.md:77） | 改四进程表 |
+| `48/60+/73 crate` → `143` | 13 处 | 改 143 |
+| `8 域/八大域` → `12 域` | 25 处 | 改 12 域 |
+| KB 独立进程 `:8104` | SYSTEM-OVERVIEW.md:67/83 | 改为"默认内嵌网关，可选 3414" |
+| 旧 Python 栈 `:8600/:8601` | 4 篇整篇过期 | 头部标注 LEGACY |
+
+### 8.2 权威收敛
+
+- 本稿 `NORMALIZED_ARCHITECTURE.md`（v2.0）为 **L2 归一化架构唯一权威**；`SYSTEM-OVERVIEW.md` 作快速顶层总览（数值已与本稿对齐）。
+- 多版并行稿（`ARCHITECTURE_DESIGN_v3.1.md` / `OPTIMAL_ARCHITECTURE.md` / `MOX-UNIFIED-ENTERPRISE-BASELINE-v1.0.md` / `architecture.md` 旧 Python 栈等）应在头部标注"已被本稿取代/历史参考"，不删除（保留 git 历史）。
+- 变更后须跑门禁：`python scripts/check-doc-links.py`、`python scripts/verify-ports.py`、`python scripts/gen-api-registry.py` 对比。
+
+### 8.3 演进方向（企业级加固，持续）
+
+1. 跨域直连持续收敛：业务域间一律走 SDK / 事件（`mox-event-core`）/ 平台编排，禁止直连。
+2. core 层纯计算率维持 100%（无 IO）。
+3. 模块化单体 → 微服务按 `MOX_HOST_ROLE` 渐进拆分，网关始终为唯一鉴权入口。
+4. 可观测/韧性/限流/审计已在 `platform/shared`（observability/resilience/audit）就绪，接入所有 svc。
+
+---
+
+## 9. 关联文档与证据
+
+- 文档治理权威：`docs/ARCHITECTURE-OF-DOCS.md`（DOC-GOV-ARC-V1.0）
+- 端口唯一权威：`docs/api/PORT-REGISTRY.md`（3080 / 3001 / 3100 / 3200 / 3411–3414）
+- 接口唯一权威：`docs/API-REGISTRY.md`（223 路由）
+- 顶层总览：`docs/architecture/SYSTEM-OVERVIEW.md`；业务流程：`docs/architecture/BUSINESS-FLOWS.md`
+- 本次归一化 L7 过程证据：
+  - `docs/working-reports/_norm_research/domain-matrix.md`（12 域逐 crate 完成度）
+  - `docs/working-reports/_norm_research/topology-flow.md`（部署拓扑与请求闭环源码实证）
+  - `docs/working-reports/_norm_research/doc-landscape.md`（文档权威分级与 49 处漂移清单）
+
+---
+
+*v2.0 · 2026-09-16 · 以当前代码为唯一事实基准：143 crate / 12 域 / 六层 / 四进程 / 网关 :3080。*

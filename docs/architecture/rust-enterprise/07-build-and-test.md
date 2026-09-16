@@ -38,7 +38,7 @@ infotopograph/
 │   ├── framework/          # mox-framework (L5)
 │   ├── foundation/         # 3 个 foundation crates (L5)
 │   ├── gateway/            # mox-platform-gateway-svc (L1)
-│   └── domains/            # 8 域 (L3+L4)
+│   └── domains/            # 12 域 (L3+L4)
 │       ├── ai/
 │       ├── kg/
 │       ├── flow/
@@ -64,7 +64,7 @@ cargo check --workspace
 cargo check --workspace --all-targets
 ```
 
-**预期结果**: 退出码 0，60+ crates 编译零错误（2026-08-27 验证通过）
+**预期结果**: 退出码 0，143 crates 编译零错误（2026-08-27 验证通过）
 
 ---
 

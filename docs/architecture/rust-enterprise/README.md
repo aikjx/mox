@@ -1,10 +1,12 @@
 # 纯 Rust 企业级模块化架构 · 文档总览
 
+> ⚠️ **历史快照（2026-08-27 迁移期）**：本子目录为 6 层 / 8 域 / 60+ crate 迁移期描述；当前权威为 **143 crate / 12 业务域 / 网关 :3080 / 四进程**，见 `docs/architecture/NORMALIZED_ARCHITECTURE.md`（v2.0）。
+
 > **版本**: v1.0 · **日期**: 2026-08-27 · **状态**: 已交付（R1-R6 全链路通过）
 
 ## 一、项目定位
 
-本项目将原 Node.js 后端全面迁移至 **纯 Rust 企业级模块化架构**，采用 **6 层归一化 + 8 业务域** 设计，覆盖 60+ Rust crates，实现从接入层到算法内核的全栈 Rust 化。
+本项目将原 Node.js 后端全面迁移至 **纯 Rust 企业级模块化架构**，采用 **6 层归一化 + 12 业务域** 设计，覆盖 143 Rust crates，实现从接入层到算法内核的全栈 Rust 化。
 
 **核心目标**：
 - 零 Node.js 依赖，单二进制部署
@@ -18,14 +20,14 @@
 
 | 编号 | 文档 | 内容摘要 |
 |---|---|---|
-| 01 | [6层架构总览](./01-architecture-overview.md) | L0-L5 分层设计、8域划分、依赖方向、技术栈 |
+| 01 | [6层架构总览](./01-architecture-overview.md) | L0-L5 分层设计、12域划分、依赖方向、技术栈 |
 | 02 | [P0-P12 业务流程图](./02-business-flow.md) | 13阶段端到端业务流程、关键产物、API入口 |
-| 03 | [60+ Crates 模块清单](./03-module-inventory.md) | 按层/域分类的完整 crate 清单、状态、代码量 |
+| 03 | [143 Crates 模块清单](./03-module-inventory.md) | 按层/域分类的完整 crate 清单、状态、代码量 |
 | 04 | [31域路由 API 规范](./04-api-gateway-routes.md) | Gateway 模块化路由注册中心、各域端点定义 |
 | 05 | [KG 算法核心接口](./05-kg-algorithm-core.md) | 6大算法、CSR优化、公式文档、密度解读、路径查找 |
 | 06 | [AI 引擎接口规范](./06-ai-engine-api.md) | 意图识别、能力路由、能力矩阵、CEM指标 |
 | 07 | [编译与测试指南](./07-build-and-test.md) | cargo check/test 命令、feature 开关、冒烟验证 |
-| 08 | [业务功能关联关系图](./08-business-function-relation.md) | 8域关联总图、ER实体图、跨域调用链路、数据流向、依赖矩阵 |
+| 08 | [业务功能关联关系图](./08-business-function-relation.md) | 12域关联总图、ER实体图、跨域调用链路、数据流向、依赖矩阵 |
 
 ---
 
@@ -40,8 +42,8 @@
 ├─────────────────────────────────────────────────────────────┤
 │  L2 应用编排  Orchestrator / Enterprise Scheduler / Test      │
 ├─────────────────────────────────────────────────────────────┤
-│  L3 业务服务  8域 Service: AI · KG · Flow · Cloud · Data     │
-│              · Voice · Market · Streams                       │
+│  L3 业务服务  12域 Service: kg·ai·flow·data·cloud·voice·     │
+│              market·alliance·kb·base·project·platform        │
 ├─────────────────────────────────────────────────────────────┤
 │  L4 算法内核  kg-algo-core · ai-intent-core · flow-op-core   │
 │              · data-norm-core · dsp-core                      │
@@ -57,7 +59,7 @@
 
 | 阶段 | 任务 | 状态 | 验证命令 |
 |---|---|---|---|
-| R1 | 盘点 60+ crates 现状 | ✅ | `cargo check --workspace` |
+| R1 | 盘点 143 crates 现状 | ✅ | `cargo check --workspace` |
 | R2 | 设计 6层架构 + P0-P12 流程图 | ✅ | 本文档集 |
 | R3 | 补齐 Framework 层（error→HTTP） | ✅ | `cargo check -p mox-framework` |
 | R4 | Gateway 31域模块化路由桩 | ✅ | `cargo check -p mox-platform-gateway-svc --features axum-gateway` |

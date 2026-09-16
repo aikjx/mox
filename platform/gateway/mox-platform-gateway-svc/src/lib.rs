@@ -343,13 +343,60 @@ pub fn build_host_router(state: GatewayState, role: deployment::HostRole) -> Rou
 }
 
 /// 健康检查端点
+///
+/// 不再恒真：对 orchestrator:3001 / alliance-scheduler:3100 / alliance-executor:3200
+/// 各做一次 1.5s 超时探活（GET {base}/health），结果写入 body.dependencies。
+/// HTTP 状态恒为 200，靠 body 中依赖状态摘流（与 scheduler 健康检查同模式）。
+/// 下游地址读取既有 env：ORCHESTRATOR_URL（默认 :3001）、
+/// MOX_ALLIANCE_SCHEDULER_URL、MOX_ALLIANCE_EXECUTOR_URL；未配置者记
+/// "down|unknown"，绝不 panic。
 async fn health_handler() -> Json<serde_json::Value> {
+    // 并发探活三个下游，总耗时≈单次超时（而非三者之和）
+    let (orchestrator, scheduler, executor) = tokio::join!(
+        probe_downstream("ORCHESTRATOR_URL", Some("http://127.0.0.1:3001")),
+        probe_downstream("MOX_ALLIANCE_SCHEDULER_URL", None),
+        probe_downstream("MOX_ALLIANCE_EXECUTOR_URL", None),
+    );
     Json(json!({
         "ok": true,
         "gateway": "rust-axum",
         "version": env!("CARGO_PKG_VERSION"),
         "ts": chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        "dependencies": {
+            "orchestrator": orchestrator,
+            "scheduler": scheduler,
+            "executor": executor,
+        }
     }))
+}
+
+/// 带 1.5s 超时探活下游 `/health`。
+///
+/// - 显式配置了 env（且非空）→ 探测该地址，成功 `up` / 失败 `down`；
+/// - 未配置且无内置默认 → `down|unknown`；
+/// - reqwest client 构造失败 → `down`（不 panic）。
+async fn probe_downstream(env_key: &str, default_url: Option<&str>) -> String {
+    let base = match std::env::var(env_key) {
+        Ok(v) if !v.trim().is_empty() => v.trim().trim_end_matches('/').to_string(),
+        _ => match default_url {
+            Some(d) => d.trim_end_matches('/').to_string(),
+            None => return "down|unknown".to_string(),
+        },
+    };
+
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_millis(1500))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return "down".to_string(),
+    };
+
+    let url = format!("{base}/health");
+    match client.get(&url).send().await {
+        Ok(resp) if resp.status().is_success() => "up".to_string(),
+        _ => "down".to_string(),
+    }
 }
 
 /// 状态端点

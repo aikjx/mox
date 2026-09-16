@@ -12,7 +12,7 @@
 | **Crate 层** | 6 层分层 | `foundation`（横切）→ 域内 `api`（契约）→ `proto`（gRPC）→ `core`（纯计算）→ `svc`（服务）→ `gateway`（唯一入口）；workspace 143 crates |
 | **域切分** | 12 域驱动 | kg/ai/flow/data/cloud/voice/market/alliance/kb/base/project/platform（按业务能力切分） |
 | **接口面** | 43 域描述符 | 前缀 + 层（L0-L10）+ 状态（ready/beta/stub）；223 条路由注册表（actuator 单一权威源） |
-| **进程面** | 模块化单体 + 可拆分 | 网关 :8080 进程内装配 21 个路由单元；独立进程 KB:8104 / Scheduler:3100 / Executor:3200 / 编排器:3001；用户服务 :8012/:8000/:3020 |
+| **进程面** | 模块化单体 + 可拆分 | 网关 :3080 进程内装配 21 个路由单元；独立进程 KB:8104 / Scheduler:3100 / Executor:3200 / 编排器:3001；用户服务 :8012/:8000/:3020 |
 | **状态面** | 注册中心单例 | `ModuleStates` 统一构造一次注入（防数据分裂）；跨进程走环境变量 + HTTP |
 | **治理面** | 声明↔实现门禁 | gen-api-registry 自动生成；端口注册表 + verify-ports；一键启停；AGENTS.md |
 

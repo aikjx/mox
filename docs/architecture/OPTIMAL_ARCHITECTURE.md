@@ -1,5 +1,7 @@
 # infotopograph 企业级最优架构总纲 v2.0
 
+> ⚠️ **历史参考**：6 层 8 域 / 48 crate 为早期规划，已演进为 12 域 / 143 crate；当前权威见 `docs/architecture/NORMALIZED_ARCHITECTURE.md`（v2.0）。
+
 > mox 模块化系统架构维度全链路归一化 | 多协议零修改联调 | 模块独立升级 | 契约驱动开发
 
 ---
@@ -26,7 +28,7 @@
 
 ---
 
-## 二、目录结构（6层8域，最优布局）
+## 二、目录结构（6层12域，最优布局）
 
 ```
 infotopograph/
@@ -311,7 +313,7 @@ flowchart TD
     Auth -->|拒绝| Reject[401/403]
 
     Route -->|gRPC内部| GRPCPort[:50051]
-    Route -->|JSON-RPC| JSONPort[:8080]
+    Route -->|JSON-RPC| JSONPort[:3080]
     Route -->|Dubbo-Triple| DubboPort[:50052]
 
     GRPCPort -->|tonic| SvcA[业务服务A]
@@ -383,7 +385,7 @@ flowchart LR
 
 | 项目 | 状态 |
 |------|------|
-| 48 crate 归一化迁移（目录+重命名） | ✅ 完成 |
+| 48 crate 归一化迁移（目录+重命名） | ✅ 完成（已演进至 143 crates） |
 | workspace.dependencies 全量更新 | ✅ 完成 |
 | 直接路径依赖→workspace=true | ✅ 完成 |
 | mox-framework 基础框架（10模块） | ✅ 代码完成 |

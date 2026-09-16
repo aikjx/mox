@@ -3,12 +3,26 @@
 // ====================================================================
 
 use crate::GatewayState;
+use crate::auth::ApiAuth;
 use crate::system::{DEFAULT_TENANT, DEFAULT_USER, ok, err, q_str, resolve_tenant, now_iso, api_key_json};
 use axum::extract::{Path, Query, State};
 use axum::Json;
-use mox_api_protocol::ApiResponse;
+use mox_api_protocol::{ApiResponse, api_error};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+
+/// 管理面鉴权闸门（堵垂直越权）：仅当已认证身份的 roles 含 `admin` 才放行。
+///
+/// dev 后门令牌（dev_mode 且 token=dev-secret-token）已由认证中间件注入
+/// `roles=["admin"]`，故此处对 `admin` 的判定自然覆盖该后门场景。
+/// 非 admin → 返回 403 响应（handler 应提前返回）；放行返回 `None`。
+fn require_admin(user: &mox_platform_api::UserInfo) -> Option<ApiResponse<Value>> {
+    if user.roles.iter().any(|r| r == "admin") {
+        None
+    } else {
+        Some(api_error(403, "需要 admin 角色才能访问管理面端点"))
+    }
+}
 
 pub(crate) async fn security_status(State(s): State<GatewayState>) -> ApiResponse<Value> {
     ok(json!({
@@ -23,7 +37,13 @@ pub(crate) async fn security_status(State(s): State<GatewayState>) -> ApiRespons
 
 /// GET /api/security/api-keys —— 凭证列表（SQLite 持久化，api_key 脱敏）
 
-pub(crate) async fn list_api_keys(State(s): State<GatewayState>) -> ApiResponse<Value> {
+pub(crate) async fn list_api_keys(
+    ApiAuth(user): ApiAuth,
+    State(s): State<GatewayState>,
+) -> ApiResponse<Value> {
+    if let Some(resp) = require_admin(&user) {
+        return resp;
+    }
     match s.iam.list_api_keys(DEFAULT_TENANT) {
         Ok(list) => ok(json!(list
             .iter()
@@ -36,9 +56,13 @@ pub(crate) async fn list_api_keys(State(s): State<GatewayState>) -> ApiResponse<
 /// POST /api/security/api-keys —— 创建凭证（生成明文 key，注册 auth 中间件 + 持久化 SQLite）
 
 pub(crate) async fn create_api_key(
+    ApiAuth(user): ApiAuth,
     State(s): State<GatewayState>,
     Json(body): Json<Value>,
 ) -> ApiResponse<Value> {
+    if let Some(resp) = require_admin(&user) {
+        return resp;
+    }
     let name = body
         .get("name")
         .and_then(|v| v.as_str())
@@ -61,9 +85,13 @@ pub(crate) async fn create_api_key(
 /// DELETE /api/security/api-keys/:id —— 吊销凭证（DB 吊销 + auth 中间件移除）
 
 pub(crate) async fn revoke_api_key(
+    ApiAuth(user): ApiAuth,
     State(s): State<GatewayState>,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
+    if let Some(resp) = require_admin(&user) {
+        return resp;
+    }
     // 先从 DB 取出原始 key，用于从 auth 中间件内存表中移除
     if let Ok(Some(k)) = s.iam.get_api_key(&id) {
         s.auth.revoke_api_key(&k.api_key);
@@ -95,9 +123,13 @@ pub(crate) async fn validate_api_key(
 /// GET /api/security/audit-log —— 审计日志（SQLite 读取）
 
 pub(crate) async fn audit_log(
+    ApiAuth(user): ApiAuth,
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
 ) -> ApiResponse<Value> {
+    if let Some(resp) = require_admin(&user) {
+        return resp;
+    }
     let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),

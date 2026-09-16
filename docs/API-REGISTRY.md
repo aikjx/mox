@@ -8,11 +8,11 @@
 | --- | --- |
 | 注册路由总数 | **223 条**（全部 ready，全部有真实实现） |
 | 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |
-| 域描述符（业务规划） | 46 个：全部 ready · 0 beta · 0 stub（见 §3，2026-09-13 核对） |
+| 域描述符（业务规划） | 43 个：ready 7 · beta 1 · stub 35（见 §3） |
 | 网关外进程 | 5 个：kg-hub / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
 | 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |
 
-## 2. 逐域注册表（223 条）
+## 2. 逐域注册表（199 条）
 
 按域分组，实现位置逐一标注；`ANY` 表示该方法+参数可匹配多方法（GET/POST/PUT/DELETE）。
 
@@ -42,7 +42,7 @@
 | `platform.health` | GET | `/health` | L0 | 存活探针（网关 Rust axum 版本） |
 | `platform.metrics` | GET | `/metrics` | L0 | Prometheus 指标端点（o11y.rs 真实采集） |
 | `platform.status` | GET | `/api/v1/status` | L0 | 网关状态（域就绪统计+认证+限流） |
-| `platform.domains` | GET | `/api/v1/domains` | L0 | 43 业务域描述符列表（自描述） |
+| `platform.domains` | GET | `/api/v1/domains` | L0 | 46 业务域描述符列表（自描述） |
 | `platform.proxy_orchestrator` | ANY | `/api/{*path}` | L6 | 业务域反向代理→编排器（默认 :3001，catch-all） |
 | `platform.proxy_primiflow` | ANY | `/api/projects/{*path}` | L6 | 项目域反向代理→PrimiFlow（默认 :8000） |
 

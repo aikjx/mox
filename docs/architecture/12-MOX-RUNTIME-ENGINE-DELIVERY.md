@@ -1,5 +1,7 @@
 # 12 · mox 无限发布系统管理中心中台交付清单（v2.1 全链路闭环）
 
+> ⚠️ **历史参考**：文中 `python run.py 8600` 为旧 Python 栈；当前 Rust 网关为 :3080，见 `docs/architecture/NORMALIZED_ARCHITECTURE.md`（v2.0）。
+
 > 归属：docs/architecture · 状态：已交付 · 版本：v2.1.0 · 日期：2026-08-28
 > 关联：07-KG-DYNAMIC-SQL-ARCHITECTURE / 08-FULL-DIMENSION-LOWCODE-ARCHITECTURE / 11-ENTERPRISE-WEBSITE-LOWCODE-IMPLEMENTATION
 
