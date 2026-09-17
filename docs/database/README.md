@@ -4,6 +4,8 @@
 
 ## 交付物
 
+- [**`DATABASE-ARCHITECTURE.md`**](DATABASE-ARCHITECTURE.md)：**以代码为准的实际运行态持久化架构权威源（as-built）**——SQLite 分库现状、域→引擎→物理库总表、SQLite→Postgres 路线、迁移治理与技术债。本文件（下方母版）是 MySQL 8.3 目标模型（target），二者分工明确。
+- [`STORAGE-OPTIMAL-DESIGN.md`](STORAGE-OPTIMAL-DESIGN.md)：**企业级目标态（target）存储设计稿**——按数据特征选引擎（KB/FTS5、联盟 DAG checkpoint、KG 邻接表收敛、cloud inode、审计分区），写/读/恢复/GC 流程、RPO/RTO 指标、P0/P1/P2 落地路线。
 - [**`mox 模块化系统架构企业级数据库模板.md`**](mox 模块化系统架构企业级数据库模板.md)：mox 模块化系统架构分析 + 归一化规范（BCNF）+ 19 维度包地图 + 可扩展模型。**本目录的总纲与企业级母版说明。**
 - [`mox_sys/mox_sys-universal-template.sql`](mox_sys/mox_sys-universal-template.sql)：**唯一权威归一化母版 DDL**（56 张标准化表：19 维度包系统内核 + P17 模块注册与知识图谱）。自带 `CREATE DATABASE IF NOT EXISTS mox_v3`，**一键安装**即全量落库，全目录无第二份并行定义。
 - [`mox_sys/install.ps1`](mox_sys/install.ps1) / [`mox_sys/install.sh`](mox_sys/install.sh)：一键安装脚本（Windows / Linux·macOS），把上面单一母版灌入 MySQL。

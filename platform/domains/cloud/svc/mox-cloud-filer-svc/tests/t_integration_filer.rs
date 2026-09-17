@@ -25,8 +25,16 @@ use mox_cloud_filer_svc::{
 };
 use std::sync::Arc;
 
+/// 每个 case 用独立临时 DB 文件，避免跨测试共享持久化状态。
+fn sqlite_meta() -> Arc<SqliteMeta> {
+    let tmp = tempfile::tempdir().unwrap();
+    let db = tmp.path().join("if.db");
+    std::mem::forget(tmp); // 进程退出时 OS 回收
+    Arc::new(SqliteMeta::with_path(&db).unwrap())
+}
+
 fn sqlite_filer() -> Filer {
-    Filer::new(Arc::new(SqliteMeta::new()))
+    Filer::new(sqlite_meta())
 }
 
 
@@ -817,7 +825,7 @@ fn if06_06_shared_snapshot_manager() {
 #[tokio::test]
 async fn if07_01_three_backends_mkdir_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
-        ("sqlite", Arc::new(SqliteMeta::new())),
+        ("sqlite", sqlite_meta()),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
         ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
@@ -838,7 +846,7 @@ async fn if07_02_three_backends_write_read_consistency() {
     let test_data = b"consistency test data across backends";
 
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
-        ("sqlite", Arc::new(SqliteMeta::new())),
+        ("sqlite", sqlite_meta()),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
         ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
@@ -856,7 +864,7 @@ async fn if07_02_three_backends_write_read_consistency() {
 #[tokio::test]
 async fn if07_03_three_backends_delete_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
-        ("sqlite", Arc::new(SqliteMeta::new())),
+        ("sqlite", sqlite_meta()),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
         ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
@@ -875,7 +883,7 @@ async fn if07_03_three_backends_delete_consistency() {
 #[tokio::test]
 async fn if07_04_three_backends_listdir_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
-        ("sqlite", Arc::new(SqliteMeta::new())),
+        ("sqlite", sqlite_meta()),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
         ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];
@@ -896,7 +904,7 @@ async fn if07_04_three_backends_listdir_consistency() {
 #[tokio::test]
 async fn if07_05_three_backends_rename_consistency() {
     let backends: Vec<(&str, Arc<dyn mox_cloud_filer_svc::MetaStorageProvider>)> = vec![
-        ("sqlite", Arc::new(SqliteMeta::new())),
+        ("sqlite", sqlite_meta()),
         ("pg_citus", Arc::new(PgCitusMeta::new())),
         ("redis", Arc::new(RedisMeta::new_in_memory())),
     ];

@@ -6,7 +6,7 @@
 //! Mox Cloud Drive M3: POSIX Filer crate.
 //!
 //! 三个元数据后端：
-//! - SQLite（内存：`rusqlite`）
+//! - SQLite（持久文件：`data/cloud-filer.db`，WAL；env `CLOUD_FILER_DB_PATH` 可覆盖）
 //! - Postgres+Citus（内存 BTreeMap，模拟 shard_id = id % 16）
 //! - Redis（内存 HashMap + 假 TTL）
 //!

@@ -37,7 +37,7 @@ pub mod cdc_publisher;
 use petgraph::graph::{DiGraph, NodeIndex, EdgeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -320,6 +320,17 @@ impl Default for GraphStore {
     fn default() -> Self { Self::new() }
 }
 
+/// Returns true if a user table with the given name exists in the attached DB.
+fn table_exists(conn: &rusqlite::Connection, name: &str) -> bool {
+    conn.query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
+        rusqlite::params![name],
+        |r| r.get::<_, i64>(0),
+    )
+    .unwrap_or(0)
+        > 0
+}
+
 /// Persistent graph store backed by SQLite.
 #[derive(Clone)]
 pub struct PersistentGraphStore {
@@ -341,23 +352,75 @@ impl PersistentGraphStore {
 
     fn init_db(&self) -> Result<(), StorageError> {
         let Some(path) = &self.db_path else { return Ok(()); };
-        let conn = rusqlite::Connection::open(path).map_err(|e| StorageError::Persistence(e.to_string()))?;
-        conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS kg_nodes (
-                id TEXT PRIMARY KEY, node_type TEXT NOT NULL, label TEXT NOT NULL,
-                properties TEXT NOT NULL DEFAULT '{}', created_at TEXT, updated_at TEXT
+        let mut conn = rusqlite::Connection::open(path).map_err(|e| StorageError::Persistence(e.to_string()))?;
+        let tx = conn.transaction().map_err(|e| StorageError::Persistence(e.to_string()))?;
+
+        // Authoritative schema aligned with mox-kg-core: kg_vertex / kg_edge.
+        // storage-svc keeps its own additive columns (vertex.label, edge.weight) so
+        // no pre-existing node/edge data is lost. We deliberately do NOT create core's
+        // unique index on (edge_type, source, target): storage-svc allows multiple
+        // parallel edges between the same pair distinguished by edge id.
+        tx.execute_batch(
+            "CREATE TABLE IF NOT EXISTS kg_vertex (
+                id TEXT PRIMARY KEY,
+                vertex_type TEXT NOT NULL,
+                label TEXT NOT NULL DEFAULT '',
+                properties TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT,
+                updated_at TEXT
              );
-             CREATE TABLE IF NOT EXISTS kg_edges (
-                id TEXT PRIMARY KEY, source TEXT NOT NULL, target TEXT NOT NULL,
-                edge_type TEXT NOT NULL, weight REAL NOT NULL DEFAULT 1.0,
-                properties TEXT NOT NULL DEFAULT '{}', created_at TEXT,
-                FOREIGN KEY(source) REFERENCES kg_nodes(id),
-                FOREIGN KEY(target) REFERENCES kg_nodes(id)
+             CREATE INDEX IF NOT EXISTS idx_vertex_type ON kg_vertex(vertex_type);
+             CREATE TABLE IF NOT EXISTS kg_edge (
+                id TEXT PRIMARY KEY,
+                edge_type TEXT NOT NULL,
+                source TEXT NOT NULL,
+                target TEXT NOT NULL,
+                weight REAL NOT NULL DEFAULT 1.0,
+                properties TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT
              );
-             CREATE INDEX IF NOT EXISTS idx_nodes_type ON kg_nodes(node_type);
-             CREATE INDEX IF NOT EXISTS idx_edges_source ON kg_edges(source);
-             CREATE INDEX IF NOT EXISTS idx_edges_target ON kg_edges(target);"
+             CREATE INDEX IF NOT EXISTS idx_edge_source ON kg_edge(source);
+             CREATE INDEX IF NOT EXISTS idx_edge_target ON kg_edge(target);
+             CREATE INDEX IF NOT EXISTS idx_edge_type ON kg_edge(edge_type);"
         ).map_err(|e| StorageError::Persistence(e.to_string()))?;
+
+        // One-time, NON-DESTRUCTIVE migration from the legacy kg_nodes/kg_edges tables.
+        // Old tables are never dropped; they stay on disk as a backup. Migration runs
+        // inside the same transaction (atomic) and is idempotent: it is skipped once the
+        // new tables already hold data, so repeated opens are safe.
+        if table_exists(&tx, "kg_nodes") && table_exists(&tx, "kg_edges") {
+            let legacy_nodes: i64 = tx
+                .query_row("SELECT COUNT(*) FROM kg_nodes", [], |r| r.get(0))
+                .unwrap_or(0);
+            let legacy_edges: i64 = tx
+                .query_row("SELECT COUNT(*) FROM kg_edges", [], |r| r.get(0))
+                .unwrap_or(0);
+            if legacy_nodes > 0 || legacy_edges > 0 {
+                let new_vertices: i64 = tx
+                    .query_row("SELECT COUNT(*) FROM kg_vertex", [], |r| r.get(0))
+                    .unwrap_or(0);
+                let new_edges: i64 = tx
+                    .query_row("SELECT COUNT(*) FROM kg_edge", [], |r| r.get(0))
+                    .unwrap_or(0);
+                // Column mapping: kg_nodes.node_type -> kg_vertex.vertex_type.
+                if new_vertices == 0 {
+                    tx.execute(
+                        "INSERT OR IGNORE INTO kg_vertex (id, vertex_type, label, properties, created_at, updated_at)
+                         SELECT id, node_type, label, properties, created_at, updated_at FROM kg_nodes",
+                        [],
+                    ).map_err(|e| StorageError::Persistence(e.to_string()))?;
+                }
+                if new_edges == 0 {
+                    tx.execute(
+                        "INSERT OR IGNORE INTO kg_edge (id, edge_type, source, target, weight, properties, created_at)
+                         SELECT id, edge_type, source, target, weight, properties, created_at FROM kg_edges",
+                        [],
+                    ).map_err(|e| StorageError::Persistence(e.to_string()))?;
+                }
+            }
+        }
+
+        tx.commit().map_err(|e| StorageError::Persistence(e.to_string()))?;
         Ok(())
     }
 
@@ -365,20 +428,52 @@ impl PersistentGraphStore {
         let Some(path) = &self.db_path else { return Ok(()); };
         let mut conn = rusqlite::Connection::open(path).map_err(|e| StorageError::Persistence(e.to_string()))?;
         let tx = conn.transaction().map_err(|e| StorageError::Persistence(e.to_string()))?;
-        tx.execute("DELETE FROM kg_edges", []).map_err(|e| StorageError::Persistence(e.to_string()))?;
-        tx.execute("DELETE FROM kg_nodes", []).map_err(|e| StorageError::Persistence(e.to_string()))?;
-        for node in self.memory.list_nodes() {
+
+        let nodes = self.memory.list_nodes();
+        let edges = self.memory.list_edges();
+
+        // Incremental upsert: every in-memory node/edge is INSERT OR REPLACE'd.
+        // The old "DELETE FROM <whole table> then reinsert" wipe is gone.
+        for node in &nodes {
             tx.execute(
-                "INSERT OR REPLACE INTO kg_nodes (id, node_type, label, properties, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6)",
+                "INSERT OR REPLACE INTO kg_vertex (id, vertex_type, label, properties, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6)",
                 rusqlite::params![node.id, node.node_type, node.label, serde_json::to_string(&node.properties).unwrap(), node.created_at, node.updated_at],
             ).map_err(|e| StorageError::Persistence(e.to_string()))?;
         }
-        for edge in self.memory.list_edges() {
+        for edge in &edges {
             tx.execute(
-                "INSERT OR REPLACE INTO kg_edges (id, source, target, edge_type, weight, properties, created_at) VALUES (?1,?2,?3,?4,?5,?6,?7)",
-                rusqlite::params![edge.id, edge.source, edge.target, edge.edge_type, edge.weight, serde_json::to_string(&edge.properties).unwrap(), edge.created_at],
+                "INSERT OR REPLACE INTO kg_edge (id, edge_type, source, target, weight, properties, created_at) VALUES (?1,?2,?3,?4,?5,?6,?7)",
+                rusqlite::params![edge.id, edge.edge_type, edge.source, edge.target, edge.weight, serde_json::to_string(&edge.properties).unwrap(), edge.created_at],
             ).map_err(|e| StorageError::Persistence(e.to_string()))?;
         }
+
+        // Incremental removal: drop DB rows that are no longer present in memory.
+        // Edges first, then vertices. No dirty-tracking yet — this reconciles the DB
+        // against the full in-memory snapshot at persist time, but without the
+        // destructive whole-table DELETE of the old implementation.
+        let mem_edge_ids: HashSet<&str> = edges.iter().map(|e| e.id.as_str()).collect();
+        let db_edge_ids: Vec<String> = {
+            let mut stmt = tx.prepare("SELECT id FROM kg_edge").map_err(|e| StorageError::Persistence(e.to_string()))?;
+            let rows = stmt.query_map([], |r| r.get::<_, String>(0)).map_err(|e| StorageError::Persistence(e.to_string()))?;
+            rows.filter_map(|r| r.ok()).collect()
+        };
+        for id in db_edge_ids {
+            if !mem_edge_ids.contains(id.as_str()) {
+                tx.execute("DELETE FROM kg_edge WHERE id = ?1", rusqlite::params![id]).map_err(|e| StorageError::Persistence(e.to_string()))?;
+            }
+        }
+        let mem_node_ids: HashSet<&str> = nodes.iter().map(|n| n.id.as_str()).collect();
+        let db_node_ids: Vec<String> = {
+            let mut stmt = tx.prepare("SELECT id FROM kg_vertex").map_err(|e| StorageError::Persistence(e.to_string()))?;
+            let rows = stmt.query_map([], |r| r.get::<_, String>(0)).map_err(|e| StorageError::Persistence(e.to_string()))?;
+            rows.filter_map(|r| r.ok()).collect()
+        };
+        for id in db_node_ids {
+            if !mem_node_ids.contains(id.as_str()) {
+                tx.execute("DELETE FROM kg_vertex WHERE id = ?1", rusqlite::params![id]).map_err(|e| StorageError::Persistence(e.to_string()))?;
+            }
+        }
+
         tx.commit().map_err(|e| StorageError::Persistence(e.to_string()))?;
         Ok(())
     }
@@ -386,7 +481,7 @@ impl PersistentGraphStore {
     pub fn load(&self) -> Result<(), StorageError> {
         let Some(path) = &self.db_path else { return Ok(()); };
         let conn = rusqlite::Connection::open(path).map_err(|e| StorageError::Persistence(e.to_string()))?;
-        let nodes: Vec<GraphNode> = conn.prepare("SELECT id, node_type, label, properties, created_at, updated_at FROM kg_nodes")
+        let nodes: Vec<GraphNode> = conn.prepare("SELECT id, vertex_type, label, properties, created_at, updated_at FROM kg_vertex")
             .map_err(|e| StorageError::Persistence(e.to_string()))?
             .query_map([], |row| Ok(GraphNode {
                 id: row.get(0)?, node_type: row.get(1)?, label: row.get(2)?,
@@ -395,10 +490,10 @@ impl PersistentGraphStore {
             }))
             .map_err(|e| StorageError::Persistence(e.to_string()))?
             .filter_map(|r| r.ok()).collect();
-        let edges: Vec<GraphEdge> = conn.prepare("SELECT id, source, target, edge_type, weight, properties, created_at FROM kg_edges")
+        let edges: Vec<GraphEdge> = conn.prepare("SELECT id, edge_type, source, target, weight, properties, created_at FROM kg_edge")
             .map_err(|e| StorageError::Persistence(e.to_string()))?
             .query_map([], |row| Ok(GraphEdge {
-                id: row.get(0)?, source: row.get(1)?, target: row.get(2)?, edge_type: row.get(3)?,
+                id: row.get(0)?, edge_type: row.get(1)?, source: row.get(2)?, target: row.get(3)?,
                 weight: row.get(4)?,
                 properties: serde_json::from_str(&row.get::<_, String>(5)?).unwrap_or(serde_json::json!({})),
                 created_at: row.get(6)?,
@@ -553,5 +648,128 @@ mod tests {
         store.delete_node("a").unwrap();
         assert_eq!(store.node_count(), 1);
         assert_eq!(store.edge_count(), 0);
+    }
+
+    /// 顺序无关的邻接快照：source -> 排序后的邻居 id 集合。
+    fn adjacency_sorted(store: &GraphStore) -> std::collections::BTreeMap<String, Vec<String>> {
+        let adj = store.adjacency_list();
+        let mut out = std::collections::BTreeMap::new();
+        for (src, mut nbrs) in adj {
+            nbrs.sort_by(|a, b| a.0.cmp(&b.0));
+            out.insert(src, nbrs.into_iter().map(|(id, _w)| id).collect());
+        }
+        out
+    }
+
+    #[test]
+    fn persist_then_restart_adjacency_consistent() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("kg_restart.db");
+        let db_str = db.to_str().unwrap().to_string();
+
+        // Session 1: build a graph, persist, capture adjacency.
+        let s1 = PersistentGraphStore::with_persistence(&db_str).unwrap();
+        s1.memory.add_node(GraphNode::new("a", "Person", "Alice")).unwrap();
+        s1.memory.add_node(GraphNode::new("b", "Person", "Bob")).unwrap();
+        s1.memory.add_node(GraphNode::new("c", "Thing", "Car")).unwrap();
+        s1.memory.add_edge(GraphEdge::new("e1", "a", "b", "knows")).unwrap();
+        s1.memory.add_edge(GraphEdge::new("e2", "a", "c", "owns")).unwrap();
+        s1.persist().unwrap();
+        let adj_before = adjacency_sorted(&s1.memory);
+
+        // "Restart": brand-new store over the same db file (runs init_db + load).
+        let s2 = PersistentGraphStore::with_persistence(&db_str).unwrap();
+        let adj_after = adjacency_sorted(&s2.memory);
+
+        assert_eq!(s2.memory.node_count(), 3);
+        assert_eq!(s2.memory.edge_count(), 2);
+        assert_eq!(adj_before, adj_after, "adjacency must match across a restart");
+
+        let mut n: Vec<String> = s2.memory.neighbors("a").into_iter().map(|n| n.id).collect();
+        n.sort();
+        assert_eq!(n, vec!["b".to_string(), "c".to_string()]);
+    }
+
+    #[test]
+    fn incremental_persist_drops_deleted_edges() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("kg_incr.db");
+        let db_str = db.to_str().unwrap().to_string();
+
+        let s = PersistentGraphStore::with_persistence(&db_str).unwrap();
+        s.memory.add_node(GraphNode::new("a", "T", "A")).unwrap();
+        s.memory.add_node(GraphNode::new("b", "T", "B")).unwrap();
+        s.memory.add_node(GraphNode::new("c", "T", "C")).unwrap();
+        s.memory.add_edge(GraphEdge::new("e1", "a", "b", "r")).unwrap();
+        s.memory.add_edge(GraphEdge::new("e2", "b", "c", "r")).unwrap();
+        s.persist().unwrap();
+
+        // Delete one edge and one node from memory, persist again.
+        s.memory.delete_edge("e2").unwrap();
+        s.persist().unwrap();
+
+        // Restart and confirm the removed edge is gone, the kept edge survives.
+        let s2 = PersistentGraphStore::with_persistence(&db_str).unwrap();
+        assert_eq!(s2.memory.edge_count(), 1);
+        assert!(s2.memory.get_edge("e1").is_some());
+        assert!(s2.memory.get_edge("e2").is_none());
+    }
+
+    #[test]
+    fn migrates_legacy_nodes_edges_tables() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("kg_legacy.db");
+        let db_str = db.to_str().unwrap().to_string();
+
+        // Stage a legacy-schema DB exactly as the old storage-svc used to write it.
+        {
+            let conn = rusqlite::Connection::open(&db_str).unwrap();
+            conn.execute_batch(
+                "CREATE TABLE kg_nodes (
+                    id TEXT PRIMARY KEY, node_type TEXT NOT NULL, label TEXT NOT NULL,
+                    properties TEXT NOT NULL DEFAULT '{}', created_at TEXT, updated_at TEXT
+                 );
+                 CREATE TABLE kg_edges (
+                    id TEXT PRIMARY KEY, source TEXT NOT NULL, target TEXT NOT NULL,
+                    edge_type TEXT NOT NULL, weight REAL NOT NULL DEFAULT 1.0,
+                    properties TEXT NOT NULL DEFAULT '{}', created_at TEXT
+                 );",
+            ).unwrap();
+            conn.execute(
+                "INSERT INTO kg_nodes (id,node_type,label,properties,created_at,updated_at) VALUES ('a','Person','Alice','{}','t0','t0')",
+                [],
+            ).unwrap();
+            conn.execute(
+                "INSERT INTO kg_nodes (id,node_type,label,properties,created_at,updated_at) VALUES ('b','Person','Bob','{}','t0','t0')",
+                [],
+            ).unwrap();
+            conn.execute(
+                "INSERT INTO kg_edges (id,source,target,edge_type,weight,properties,created_at) VALUES ('e1','a','b','knows',1.0,'{}','t0')",
+                [],
+            ).unwrap();
+        }
+
+        // Open via new code: should auto-migrate into kg_vertex/kg_edge.
+        let s = PersistentGraphStore::with_persistence(&db_str).unwrap();
+        assert_eq!(s.memory.node_count(), 2);
+        assert_eq!(s.memory.edge_count(), 1);
+        // node_type -> vertex_type column mapping survived.
+        assert_eq!(s.memory.get_node("a").unwrap().node_type, "Person");
+        assert_eq!(s.memory.get_node("a").unwrap().label, "Alice");
+        let mut n: Vec<String> = s.memory.neighbors("a").into_iter().map(|n| n.id).collect();
+        n.sort();
+        assert_eq!(n, vec!["b".to_string()]);
+
+        // Idempotency: second open must not re-migrate or lose data.
+        let s2 = PersistentGraphStore::with_persistence(&db_str).unwrap();
+        assert_eq!(s2.memory.node_count(), 2);
+        assert_eq!(s2.memory.edge_count(), 1);
+
+        // Legacy tables retained as a backup (never dropped).
+        let conn = rusqlite::Connection::open(&db_str).unwrap();
+        let legacy_nodes: i64 = conn.query_row("SELECT COUNT(*) FROM kg_nodes", [], |r| r.get(0)).unwrap();
+        let new_vertices: i64 = conn.query_row("SELECT COUNT(*) FROM kg_vertex", [], |r| r.get(0)).unwrap();
+        assert_eq!(legacy_nodes, 2);
+        assert_eq!(new_vertices, 2);
     }
 }

@@ -106,6 +106,7 @@ impl SchedulerServer {
     /// 解析任务仓库：显式注入优先，否则按环境变量 MOX_ALLIANCE_STORAGE_MODE
     /// - "file"（或未设置时默认 "file"）：文件快照持久化到 ./data/alliance_tasks.json
     /// - "memory"：纯内存
+    /// - "sqlite"：SQLite 增量落盘（WAL）到 ./data/alliance_tasks.db
     /// - 旧环境变量 `ALLIANCE_TASK_STORE` 保留兼容（deprecated，命中即告警）
     fn resolve_task_repository(
         &self,
@@ -131,6 +132,12 @@ impl SchedulerServer {
                 Ok(Arc::new(
                     mox_alliance_scheduler_core::InMemoryTaskRepository::new(),
                 ))
+            }
+            "sqlite" => {
+                let path = std::path::Path::new("data").join("alliance_tasks.db");
+                let repo = mox_alliance_scheduler_core::SqliteTaskRepository::new(&path)?;
+                info!("Using sqlite task repository (WAL) at {}", path.display());
+                Ok(Arc::new(repo))
             }
             _ => {
                 let path = std::path::Path::new("data").join("alliance_tasks.json");

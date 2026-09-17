@@ -74,8 +74,16 @@ fn tr8_1_cargo_check_success_subprocess() {
 // TR8.2 pjd_fstest_style (10 tests)
 // =========================================================================
 
+/// 每个 case 用独立临时 DB 文件，避免跨测试共享持久化状态。
+fn sqlite_meta() -> Arc<SqliteMeta> {
+    let tmp = tempfile::tempdir().unwrap();
+    let db = tmp.path().join("t8.db");
+    std::mem::forget(tmp); // 进程退出时 OS 回收
+    Arc::new(SqliteMeta::with_path(&db).unwrap())
+}
+
 fn sqlite_filer() -> Filer {
-    Filer::new(Arc::new(SqliteMeta::new()))
+    Filer::new(sqlite_meta())
 }
 
 #[tokio::test]
@@ -202,25 +210,25 @@ fn tr8_3_meta_backends_constants_sanity() {
 }
 #[tokio::test]
 async fn tr8_3_backend_sqlite_mkdir() {
-    backend_round(|| Filer::new(Arc::new(SqliteMeta::new()))).await;
+    backend_round(|| Filer::new(sqlite_meta())).await;
 }
 #[tokio::test]
 async fn tr8_3_backend_sqlite_write() {
-    let f = Filer::new(Arc::new(SqliteMeta::new()));
+    let f = Filer::new(sqlite_meta());
     f.mkdir("/s", 0o755).await.unwrap();
     f.write("/s/w.bin", 0, b"data").await.unwrap();
     assert_eq!(f.read_all("/s/w.bin").await.unwrap(), b"data");
 }
 #[tokio::test]
 async fn tr8_3_backend_sqlite_stat() {
-    let f = Filer::new(Arc::new(SqliteMeta::new()));
+    let f = Filer::new(sqlite_meta());
     f.write("/s2.bin", 0, b"zzz").await.unwrap();
     let a = f.stat("/s2.bin").await.unwrap();
     assert_eq!(a.size, 3);
 }
 #[tokio::test]
 async fn tr8_3_backend_sqlite_delete() {
-    let f = Filer::new(Arc::new(SqliteMeta::new()));
+    let f = Filer::new(sqlite_meta());
     f.write("/sd.bin", 0, b"x").await.unwrap();
     f.unlink("/sd.bin").await.unwrap();
     assert!(f.stat("/sd.bin").await.is_err());
@@ -290,7 +298,7 @@ const FIO_BLOCK: usize = 4096;
 
 #[tokio::test]
 async fn tr8_4_fio_seq_write() {
-    let f = Filer::new(Arc::new(SqliteMeta::new()));
+    let f = Filer::new(sqlite_meta());
     let block = vec![0xABu8; FIO_BLOCK];
     let mut ops = 0usize;
     let start = Instant::now();
@@ -309,7 +317,7 @@ async fn tr8_4_fio_seq_write() {
 }
 #[tokio::test]
 async fn tr8_4_fio_seq_read() {
-    let f = Filer::new(Arc::new(SqliteMeta::new()));
+    let f = Filer::new(sqlite_meta());
     let data = vec![0xCDu8; FIO_SIZE];
     f.write("/seqr.bin", 0, &data).await.unwrap();
     let mut buf = vec![0u8; FIO_BLOCK];
@@ -331,7 +339,7 @@ async fn tr8_4_fio_seq_read() {
 }
 #[tokio::test]
 async fn tr8_4_fio_rand_write() {
-    let f = Filer::new(Arc::new(SqliteMeta::new()));
+    let f = Filer::new(sqlite_meta());
     // Pre-expand file.
     f.write("/rw.bin", (FIO_SIZE - FIO_BLOCK) as u64, &[0u8; FIO_BLOCK])
         .await
@@ -355,7 +363,7 @@ async fn tr8_4_fio_rand_write() {
 }
 #[tokio::test]
 async fn tr8_4_fio_rand_read() {
-    let f = Filer::new(Arc::new(SqliteMeta::new()));
+    let f = Filer::new(sqlite_meta());
     let data = vec![0x42u8; FIO_SIZE];
     f.write("/rr.bin", 0, &data).await.unwrap();
     let mut buf = vec![0u8; FIO_BLOCK];

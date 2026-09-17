@@ -52,7 +52,7 @@ mox 的模块化结构优于 LangChain/CrewAI 的库模式，与其"平台级"�
 | 2 | 声明诚实 | 联盟任务仓储描述修正：InMemoryTaskRepository → 可插拔（MOX_ALLIANCE_STORAGE_MODE=file 默认快照持久化，data/alliance_tasks.json） | ✅ 已落地 |
 | 3 | 域粒度 | 43 域描述符加 group 字段，归并为 9 能力组（platform/knowledge/ai/orchestration/storage/data/media/commerce/streaming），/api/v1/domains 输出带 group | ✅ 已落地 |
 | 4 | 跨进程追踪 | proxy 反代透传 `x-request-id` 到 :3001/:8000（middleware 写回请求头，全量转发天然携带） | ✅ 已落地 |
-| 5 | 配置统一 | 环境变量入口收敛到 platform_config.json 单一登记（当前已登记 9 服务） | ⏳ 建议 |
+| 5 | 配置统一 | 环境变量入口收敛到 platform_config.json 单一登记（当前已登记 8 服务：api/frontend/xiaobai_voice/melody2score/primiflow/operator-server/mox-alliance-scheduler/mox-alliance-executor） | ⏳ 建议 |
 | 6 | 测试门禁 | 域归并集成测试 7 条（5 单元 + 2 HTTP 集成）进 CI，验证域数量/能力组/映射/端点输出 | ✅ 已落地 |
 | 7 | 契约版本化 | proto 层 gRPC 契约语义化版本（当前内部未公开承诺） | ⏳ 建议 |
 

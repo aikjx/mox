@@ -13,52 +13,11 @@
 use async_trait::async_trait;
 use axum::{extract::Extension, routing::{get, post}, Json, Router};
 use clap::Parser;
-use mox_kb_core::{Document, KbManager, KbStore, KbResult, SearchQuery};
+use mox_kb_core::{Document, KbManager, SearchQuery, SqliteKbStore};
 use mox_server_runtime::{Server, ServerConfig, ServiceModule};
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::Arc;
-
-/// 内存存储实现（用于开发/测试，生产环境接入 SQLite/PostgreSQL）
-struct InMemoryKbStore {
-    docs: parking_lot::RwLock<std::collections::HashMap<String, Document>>,
-}
-
-impl InMemoryKbStore {
-    fn new() -> Self {
-        Self { docs: parking_lot::RwLock::new(std::collections::HashMap::new()) }
-    }
-}
-
-#[async_trait]
-impl KbStore for InMemoryKbStore {
-    async fn save_document(&self, doc: &Document) -> KbResult<()> {
-        self.docs.write().insert(doc.id.clone(), doc.clone());
-        Ok(())
-    }
-    async fn get_document(&self, doc_id: &str) -> KbResult<Option<Document>> {
-        Ok(self.docs.read().get(doc_id).cloned())
-    }
-    async fn search_documents(&self, query: &SearchQuery) -> KbResult<mox_kb_core::SearchResult> {
-        let docs = self.docs.read();
-        let filtered: Vec<Document> = docs.values()
-            .filter(|d| query.keyword.is_empty() || d.title.contains(&query.keyword) || d.content.contains(&query.keyword))
-            .filter(|d| query.doc_type.as_ref().map_or(true, |t| d.doc_type == *t))
-            .cloned()
-            .collect();
-        let total = filtered.len() as u64;
-        let start = ((query.page - 1) * query.page_size) as usize;
-        let items: Vec<Document> = filtered.into_iter().skip(start).take(query.page_size as usize).collect();
-        Ok(mox_kb_core::SearchResult { items, total, page: query.page, page_size: query.page_size, duration_ms: 0 })
-    }
-    async fn delete_document(&self, doc_id: &str) -> KbResult<()> {
-        self.docs.write().remove(doc_id);
-        Ok(())
-    }
-    async fn list_versions(&self, _doc_id: &str) -> KbResult<Vec<mox_kb_core::DocumentVersion>> {
-        Ok(vec![])
-    }
-}
 
 struct KbModule {
     manager: Arc<KbManager>,
@@ -66,7 +25,10 @@ struct KbModule {
 
 impl KbModule {
     fn new() -> Self {
-        let store = Box::new(InMemoryKbStore::new());
+        // SQLite + FTS5 持久化：data/kb.db（可用 KB_DB_PATH 环境变量覆盖路径）
+        let store = Box::new(
+            SqliteKbStore::open_default().expect("打开知识库 SQLite 失败"),
+        );
         Self { manager: Arc::new(KbManager::new(store)) }
     }
 }

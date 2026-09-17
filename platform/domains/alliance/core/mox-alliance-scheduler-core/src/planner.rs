@@ -19,7 +19,7 @@ use mox_alliance_common_proto::{
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use mox_alliance_scheduler_proto::{MatchedExpert, PlanGenerationRequest};
+use mox_alliance_scheduler_proto::{MatchScoreBreakdown, MatchedExpert, PlanGenerationRequest};
 
 /// 简单计划生成器
 pub struct SimplePlanGenerator {
@@ -46,6 +46,21 @@ impl SimplePlanGenerator {
     ) -> AllianceResult<CollaborationPlan> {
         let mode = request.preferred_mode.unwrap_or(AllianceMode::Parallel);
 
+        // 0 匹配兜底：入选专家为空时不静默产出 0 节点「假成功」计划，
+        // 退化为单个通用专家单跑（单跑场景天然融合策略为 BestOf，见 scheduler 自动选型）。
+        let effective: Vec<MatchedExpert> = if matched_experts.is_empty() {
+            vec![Self::generic_fallback_expert()]
+        } else {
+            matched_experts.to_vec()
+        };
+        // 影子绑定：后续节点生成逻辑继续引用 matched_experts，此时指向兜底后的有效列表。
+        let matched_experts: &[MatchedExpert] = &effective;
+        // 匹配分 → 尾部融合真权重（expert_id -> score），替换原先恒空 HashMap 的等权行为。
+        let expert_weights: HashMap<String, f64> = effective
+            .iter()
+            .map(|me| (me.expert.expert_id.clone(), me.score))
+            .collect();
+
         let nodes = match mode {
             AllianceMode::Parallel => self.generate_parallel_plan(request, matched_experts),
             AllianceMode::Sequential => self.generate_sequential_plan(request, matched_experts),
@@ -60,6 +75,7 @@ impl SimplePlanGenerator {
             mode,
             fusion_strategy: request.fusion_strategy,
             nodes,
+            expert_weights,
             version: 1,
             created_at: chrono::Utc::now(),
         };
@@ -248,6 +264,31 @@ impl SimplePlanGenerator {
         }
 
         nodes
+    }
+
+    /// 0 匹配兜底专家：无法路由到任何领域时退化为单个通用专家单跑。
+    ///
+    /// 这是「不静默出空计划」与「不破坏既有成功用例」之间的取舍：
+    /// 既有单测用空 matcher 提交任务并期望成功，故选择兜底而非硬报错。
+    fn generic_fallback_expert() -> MatchedExpert {
+        let mut expert = Expert::new_system(
+            "通用专家".to_string(),
+            "无法自动路由领域时的兜底通用专家，单跑处理通用任务。".to_string(),
+        );
+        expert.expert_id = "generic-fallback".to_string();
+        expert.domains = vec!["general".to_string()];
+        MatchedExpert {
+            expert,
+            score: 1.0,
+            match_reason: "0 匹配兜底：退化到单个通用专家".to_string(),
+            score_breakdown: MatchScoreBreakdown {
+                domain_match: 1.0,
+                capability_match: 0.5,
+                health_score: 1.0,
+                priority_score: 0.5,
+                performance_score: 1.0,
+            },
+        }
     }
 
     /// 创建一个节点
@@ -459,5 +500,57 @@ mod tests {
         assert_eq!(plan.nodes.len(), 3);
         assert_eq!(plan.nodes[2].dependencies.len(), 2); // 裁判依赖正反方
         assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_expert_weights_carry_match_scores() {
+        // 优化1：尾部融合权重应来自匹配分，而非恒等权 1.0
+        let gen = SimplePlanGenerator::new();
+        let mut e1 = make_matched_expert("e1", "Expert 1", vec!["code"]);
+        e1.score = 0.95;
+        let mut e2 = make_matched_expert("e2", "Expert 2", vec!["code"]);
+        e2.score = 0.55;
+        let request = PlanGenerationRequest {
+            task_id: Uuid::new_v4(),
+            tenant_id: Uuid::new_v4(),
+            task_description: "test".to_string(),
+            preferred_mode: Some(AllianceMode::Parallel),
+            preferred_experts: vec![],
+            constraints: serde_json::json!({}),
+            fusion_strategy: FusionStrategy::Weighted,
+        };
+
+        let plan = gen.generate(&request, &[e1, e2]).unwrap();
+        assert_eq!(plan.expert_weights.get("e1"), Some(&0.95));
+        assert_eq!(plan.expert_weights.get("e2"), Some(&0.55));
+        assert_ne!(
+            plan.expert_weights.get("e1"),
+            plan.expert_weights.get("e2"),
+            "权重应反映不同匹配分，而非全 1.0"
+        );
+    }
+
+    #[test]
+    fn test_empty_matches_falls_back_to_generic_expert() {
+        // 优化2：0 匹配不应静默产出 0 节点空计划，应退化为单个通用专家
+        let gen = SimplePlanGenerator::new();
+        let request = PlanGenerationRequest {
+            task_id: Uuid::new_v4(),
+            tenant_id: Uuid::new_v4(),
+            task_description: "test".to_string(),
+            preferred_mode: Some(AllianceMode::Parallel),
+            preferred_experts: vec![],
+            constraints: serde_json::json!({}),
+            fusion_strategy: FusionStrategy::Weighted,
+        };
+
+        let plan = gen.generate(&request, &[]).unwrap();
+        assert_eq!(
+            plan.nodes.len(),
+            1,
+            "空匹配应兜底为 1 个通用专家，而非 0 节点假成功"
+        );
+        assert_eq!(plan.nodes[0].expert_id, "generic-fallback");
+        assert_eq!(plan.expert_weights.get("generic-fallback"), Some(&1.0));
     }
 }

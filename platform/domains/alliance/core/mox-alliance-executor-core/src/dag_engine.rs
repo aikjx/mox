@@ -393,7 +393,7 @@ impl DagEngineImpl {
 
         let input = FusionInput {
             items,
-            expert_weights: HashMap::new(),
+            expert_weights: state.plan.expert_weights.clone(),
             strategy,
             task_description: state.task.description.clone(),
         };

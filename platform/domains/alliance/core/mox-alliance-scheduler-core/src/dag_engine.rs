@@ -784,6 +784,7 @@ mod tests {
             mode: AllianceMode::Sequential,
             fusion_strategy: FusionStrategy::Weighted,
             nodes,
+            expert_weights: HashMap::new(),
             version: 1,
             created_at: Utc::now(),
         }
@@ -815,6 +816,7 @@ mod tests {
             mode: AllianceMode::Parallel,
             fusion_strategy: FusionStrategy::Weighted,
             nodes,
+            expert_weights: HashMap::new(),
             version: 1,
             created_at: Utc::now(),
         }

@@ -23,4 +23,3 @@ chrono = { workspace = true }
 mox-server-runtime = { path = "../../../../shared/mox-server-runtime" }
 mox-kb-core = { path = "../../core/mox-kb-core" }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
-parking_lot = { workspace = true }

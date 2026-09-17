@@ -150,6 +150,24 @@ L5 gateway      唯一入口 mox-server :3080（mox-platform-gateway-svc），�
 
 > 注意二进制同名歧义：遗留 Python `mox-server` 在 :8600（LEGACY，勿用），与本设计的 Rust 网关 `mox-server` :3080 同名不同物。
 
+### 4.4 cloud 域：数据面 / 控制面边界声明（2026-09-17 新增）
+
+> 对标 RustFS `storage-control-data-plane.md` 落地；证据：`docs/working-reports/_norm_research/cloud-split-assessment.md`。
+
+| 面 | crate | 职责 | 边界规则 |
+|---|---|---|---|
+| **控制面** | `mox-cloud-master-svc`（raft/scheduler/volume_allocator/volume_replica） | 集群元数据、卷分配、副本布局、存储池拓扑 | 只读快照起步；不承载对象读写热路径；元数据变更必须显式经 master |
+| **数据面** | `mox-cloud-s3-svc`（S3 语义）+ `mox-cloud-volume-svc`（卷/EC 落盘）+ `mox-cloud-filer-svc`（POSIX）+ `mox-cloud-rebalance-svc`（数据搬迁） | 对象读写、纠删码、文件服务、再均衡 | 热路径行为红线：**对象-卷放置、EC 配置、写 quorum 不得漂移** |
+| **契约面** | `mox-cloud-domain-traits` + `mox-cloud-api` | StorageBackend/ChunkId/BackendCapabilities 等 trait 与 DTO | 契约不得 import 实现模块；svc 访问底层存储只能经 trait/边界 |
+
+**热路径不漂移红线**（新增功能/重构时禁止触碰）：
+1. 对象到卷/集的映射（放置）语义；
+2. EC 纠删码分块与重建规则（`mox-cloud-kernel` 为唯一内核实现）；
+3. 读写 quorum 与一致性模型（`ConsistencyModel::Strong`）；
+4. 数据面变更必须带聚焦测试（kernel/rebalance 公共 API 集成测试已补 2026-09-17：内联 222/62 + 集成 28/25 全绿，见 cloud-split-assessment C1/C2）。
+
+**可选独立进程**：`MOX_HOST_ROLE=cloud`（:3412，`mox-cloud-server`）即控制面+数据面合并独立部署形态；默认 fused 内嵌网关 3080。
+
 ---
 
 ## 5. 跨域关联流程（请求闭环）

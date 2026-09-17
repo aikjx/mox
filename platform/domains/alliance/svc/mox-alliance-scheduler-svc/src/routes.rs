@@ -131,16 +131,20 @@ async fn create_task(
     };
 
     match state.scheduler.submit_task(submit_req).await {
-        Ok(response) => (
-            StatusCode::OK,
-            Json(CreateTaskResponse {
-                task_id: response.task.task_id,
-                title: response.task.title,
-                status: response.task.status,
-                created_at: response.task.created_at,
-            }),
-        )
-            .into_response(),
+        Ok(response) => {
+            // 一次提交即一次 DAG 执行：此处计执行次数；节点粒度由 executor 侧指标负责
+            state.metrics.record_dag_execution(0);
+            (
+                StatusCode::OK,
+                Json(CreateTaskResponse {
+                    task_id: response.task.task_id,
+                    title: response.task.title,
+                    status: response.task.status,
+                    created_at: response.task.created_at,
+                }),
+            )
+                .into_response()
+        }
         Err(e) => error_response(e).into_response(),
     }
 }

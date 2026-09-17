@@ -23,6 +23,7 @@ use mox_alliance_scheduler_core::matching::{
     description_overlap, tokenize, ExpertTokenCache,
 };
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -359,6 +360,7 @@ async fn run_e2e_bench(node_count: usize, iterations: usize) -> E2EResult {
             mode: AllianceMode::Parallel,
             fusion_strategy: FusionStrategy::Weighted,
             nodes: nodes.clone(),
+            expert_weights: HashMap::new(),
             version: 1,
             created_at: chrono::Utc::now(),
         };

@@ -117,6 +117,10 @@ const DOMAIN_KEYWORDS: &[(&str, &str)] = &[
     ("画面", "vision"), ("照片", "vision"), ("图表解读", "vision"), ("ocr", "vision"),
     ("image", "vision"), ("vision", "vision"), ("photo", "vision"),
     ("picture", "vision"), ("visual", "vision"), ("detect", "vision"),
+    ("布局", "vision"), ("版面", "vision"), ("排版", "vision"),
+    ("文档分析", "vision"), ("文档版面", "vision"),
+    ("layout", "vision"), ("typesetting", "vision"),
+    ("document layout", "vision"), ("document analysis", "vision"),
     // 多语言翻译
     ("翻译", "translation"), ("译", "translation"), ("本地化", "translation"),
     ("术语", "translation"), ("审校", "translation"), ("语言", "translation"),
@@ -669,5 +673,32 @@ mod tests {
         // 弱信号：只有 1 个证据，不应推断（保守）
         let domains = infer_domains("请帮我分析一下", &experts, None);
         assert!(domains.is_empty(), "{:?}", domains);
+    }
+
+    #[test]
+    fn infer_vision_domain_from_document_layout_query() {
+        // 优化3：含「版面分析/布局/排版」的文档类 query 应路由到 vision 域
+        let experts = vec![
+            make_expert(
+                "vision",
+                "图像视觉专家",
+                "擅长图像理解、OCR、视觉识别、图表解读。",
+                &["vision"],
+                &["图像识别"],
+            ),
+            make_expert(
+                "code",
+                "代码编程专家",
+                "擅长 Python/Rust 代码开发。",
+                &["code"],
+                &["代码生成"],
+            ),
+        ];
+        let domains = infer_domains("对这份 PDF 做版面分析与文档布局解析", &experts, None);
+        assert!(
+            domains.contains(&"vision".to_string()),
+            "版面分析类 query 应命中 vision: {:?}",
+            domains
+        );
     }
 }

@@ -19,7 +19,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use mox_alliance_common_proto::{
-    AllianceError, AllianceErrorCode, AllianceResult, Task, TaskStatus,
+    AllianceError, AllianceErrorCode, AllianceResult, FusionStrategy, Task, TaskStatus,
 };
 use mox_alliance_scheduler_proto::{
     ExpertMatcher, PlanGenerationRequest, TaskScheduler, TaskSubmitRequest, TaskSubmitResponse,
@@ -32,6 +32,19 @@ use crate::planner::SimplePlanGenerator;
 use crate::executor_bridge::{ExecutorBridge, NoopExecutorBridge};
 use crate::storage::{InMemoryTaskRepository, TaskRepository};
 use mox_alliance_scheduler_proto::types::SchedulerConfig;
+
+/// 未显式指定融合策略时，按入选专家数自动选最优策略。
+///
+/// - 0/1 个入选专家 → [`FusionStrategy::BestOf`]（单专家直接择优即可，无需加权）；
+/// - ≥2 个入选专家 → [`FusionStrategy::ConfidenceWeighted`]（多专家按置信度加权）。
+///
+/// 注意：这是兜底缺省值；请求显式传入 `fusion_strategy` 时由调用方原样尊重、不覆盖。
+fn auto_select_fusion_strategy(matched_expert_count: usize) -> FusionStrategy {
+    match matched_expert_count {
+        0 | 1 => FusionStrategy::BestOf,
+        _ => FusionStrategy::ConfidenceWeighted,
+    }
+}
 
 /// 任务调度器实现
 ///
@@ -234,8 +247,9 @@ impl TaskScheduler for TaskSchedulerImpl {
         task.task_type = request.task_type.unwrap_or_else(|| "custom".to_string());
         task.priority = request.priority.unwrap_or(self.config.default_priority);
         task.mode = request.mode.unwrap_or(self.config.default_mode);
-        task.fusion_strategy = request
-            .fusion_strategy
+        // 捕获请求是否显式指定融合策略；未指定时在匹配专家后按入选专家数自动选型。
+        let requested_fusion = request.fusion_strategy;
+        task.fusion_strategy = requested_fusion
             .unwrap_or(self.config.default_fusion_strategy);
 
         let task_id = task.task_id;
@@ -253,7 +267,7 @@ impl TaskScheduler for TaskSchedulerImpl {
         self.update_task_status(task_id, TaskStatus::Planning)?;
 
         // 生成协作计划
-        let plan_request = PlanGenerationRequest {
+        let mut plan_request = PlanGenerationRequest {
             task_id,
             tenant_id,
             task_description: task.description.clone(),
@@ -269,13 +283,14 @@ impl TaskScheduler for TaskSchedulerImpl {
             "Inferred domains for task {}: {:?}",
             task_id, inferred_domains
         );
+        let max_results = if inferred_domains.is_empty() { 1 } else { 5 };
         let match_query = mox_alliance_scheduler_proto::ExpertMatchQuery {
             tenant_id: tenant_id.to_string(),
             task_description: task.description.clone(),
             required_domains: inferred_domains,
             required_capabilities: vec![],
             min_priority: 1,
-            max_results: 5,
+            max_results,
         };
 
         let match_result = self.matcher.match_experts(match_query).await?;
@@ -284,6 +299,17 @@ impl TaskScheduler for TaskSchedulerImpl {
             match_result.matches.len(),
             task_id
         );
+
+        // 自动选型：仅当请求未显式指定融合策略时，按入选专家数选最优。
+        // 1 个入选专家 → BestOf；≥2 个 → ConfidenceWeighted；显式请求原样尊重，不覆盖。
+        if requested_fusion.is_none() {
+            let auto = auto_select_fusion_strategy(match_result.matches.len());
+            if auto != task.fusion_strategy {
+                task.fusion_strategy = auto;
+                self.tasks.save(&task)?;
+            }
+            plan_request.fusion_strategy = auto;
+        }
 
         // 生成计划
         let plan = self.planner.generate(&plan_request, &match_result.matches)?;
@@ -454,13 +480,14 @@ impl TaskScheduler for TaskSchedulerImpl {
             "Inferred domains for plan generation: {:?}",
             inferred_domains
         );
+        let max_results = if inferred_domains.is_empty() { 1 } else { 5 };
         let match_query = mox_alliance_scheduler_proto::ExpertMatchQuery {
             tenant_id: request.tenant_id.to_string(),
             task_description: request.task_description.clone(),
             required_domains: inferred_domains,
             required_capabilities: vec![],
             min_priority: 1,
-            max_results: 5,
+            max_results,
         };
 
         let match_result = self.matcher.match_experts(match_query).await?;
@@ -504,9 +531,20 @@ mod tests {
     use crate::executor_bridge::MockExecutorBridge;
     use crate::matcher::RuleBasedExpertMatcher;
     use mox_alliance_common_proto::{
-        AllianceMode, FusionStrategy, TaskPriority,
+        AllianceMode, Expert, FusionStrategy, TaskPriority,
     };
     use mox_alliance_executor_proto::ExecutionStatus;
+
+    /// 构造一个 code 领域的系统专家（租户 system，供匹配）
+    fn code_expert(id: &str) -> Expert {
+        let mut e = Expert::new_system(
+            format!("代码专家 {id}"),
+            "擅长 Rust/Python 代码开发、接口设计、调试排错。".to_string(),
+        );
+        e.expert_id = id.to_string();
+        e.domains = vec!["code".to_string()];
+        e
+    }
 
     fn create_test_config() -> SchedulerConfig {
         SchedulerConfig {
@@ -734,5 +772,121 @@ mod tests {
         // 获取任务时应该同步执行器状态
         let task = scheduler.get_task(task_id, tenant_id).await.unwrap();
         assert_eq!(task.progress, 0.4);
+    }
+
+    #[tokio::test]
+    async fn test_auto_select_strategy_multi_expert_confidence_weighted() {
+        // 优化1：未显式指定策略且多专家入选 → 自动选 ConfidenceWeighted
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        matcher.register_expert(code_expert("e1"));
+        matcher.register_expert(code_expert("e2"));
+        let bridge = Arc::new(MockExecutorBridge::new());
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge);
+
+        let request = TaskSubmitRequest {
+            tenant_id: Uuid::new_v4(),
+            user_id: Uuid::new_v4(),
+            title: "t".to_string(),
+            description: "用Rust开发一个登录接口并做代码审查".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+        };
+        let resp = scheduler.submit_task(request).await.unwrap();
+        assert_eq!(
+            resp.task.fusion_strategy,
+            FusionStrategy::ConfidenceWeighted,
+            "多专家未指定策略应自动选 ConfidenceWeighted，实际 {:?}",
+            resp.task.fusion_strategy
+        );
+    }
+
+    #[tokio::test]
+    async fn test_auto_select_respects_explicit_strategy() {
+        // 优化1：请求显式指定 → 原样尊重，不被自动选型覆盖
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        matcher.register_expert(code_expert("e1"));
+        matcher.register_expert(code_expert("e2"));
+        let bridge = Arc::new(MockExecutorBridge::new());
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge);
+
+        let request = TaskSubmitRequest {
+            tenant_id: Uuid::new_v4(),
+            user_id: Uuid::new_v4(),
+            title: "t".to_string(),
+            description: "用Rust开发一个登录接口并做代码审查".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: Some(FusionStrategy::BestOf),
+        };
+        let resp = scheduler.submit_task(request).await.unwrap();
+        assert_eq!(
+            resp.task.fusion_strategy,
+            FusionStrategy::BestOf,
+            "显式指定 BestOf 不应被自动选型覆盖"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_auto_select_single_expert_best_of() {
+        // 优化1：未指定策略且仅 1 个专家入选 → BestOf
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        matcher.register_expert(code_expert("e1"));
+        let bridge = Arc::new(MockExecutorBridge::new());
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge);
+
+        let request = TaskSubmitRequest {
+            tenant_id: Uuid::new_v4(),
+            user_id: Uuid::new_v4(),
+            title: "t".to_string(),
+            description: "用Rust开发一个登录接口并做代码审查".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+        };
+        let resp = scheduler.submit_task(request).await.unwrap();
+        assert_eq!(
+            resp.task.fusion_strategy,
+            FusionStrategy::BestOf,
+            "单专家未指定策略应自动选 BestOf，实际 {:?}",
+            resp.task.fusion_strategy
+        );
+    }
+
+    #[tokio::test]
+    async fn test_weak_query_does_not_team_random_five() {
+        // 优化2：空/弱 query（推断不到领域）不应随机组 5 人，而是选 1 个专家
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        for i in 0..3 {
+            matcher.register_expert(code_expert(&format!("e{i}")));
+        }
+        let bridge = Arc::new(MockExecutorBridge::new());
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge);
+
+        let tenant_id = Uuid::new_v4();
+        let plan = scheduler
+            .generate_plan(PlanGenerationRequest {
+                task_id: Uuid::new_v4(),
+                tenant_id,
+                task_description: "请帮我看看这个".to_string(),
+                preferred_mode: Some(AllianceMode::Parallel),
+                preferred_experts: vec![],
+                constraints: serde_json::json!({}),
+                fusion_strategy: FusionStrategy::Weighted,
+            })
+            .await
+            .unwrap();
+        assert!(
+            plan.nodes.len() <= 1,
+            "弱 query 应只选 1 个专家单跑，而非随机组 5 人，实际 {} 节点",
+            plan.nodes.len()
+        );
     }
 }

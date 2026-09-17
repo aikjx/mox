@@ -15,7 +15,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
-use mox_alliance_common_proto::{AllianceError, AllianceResult, Task};
+use mox_alliance_common_proto::{AllianceError, AllianceResult, Task, TaskStatus};
+use rusqlite::{params, Connection};
 use uuid::Uuid;
 
 /// 任务仓库抽象
@@ -335,6 +336,300 @@ impl TaskRepository for BatchedFileTaskRepository {
     }
 }
 
+// ─── SQLite 增量落盘任务仓库 ────────────────────────────────────────────────
+
+/// 把 [`TaskStatus`] 映射为 snake_case 落盘字符串（与 serde 配置保持一致）。
+fn task_status_to_str(s: TaskStatus) -> &'static str {
+    match s {
+        TaskStatus::Pending => "pending",
+        TaskStatus::Planning => "planning",
+        TaskStatus::Running => "running",
+        TaskStatus::Paused => "paused",
+        TaskStatus::Completed => "completed",
+        TaskStatus::Failed => "failed",
+        TaskStatus::Cancelled => "cancelled",
+    }
+}
+
+/// 把落盘的 snake_case 状态字符串解析回 [`TaskStatus`]。
+///
+/// 恢复期产生的 `"interrupted"` 标记（崩溃前为 running）映射为 [`TaskStatus::Pending`]，
+/// 表示该任务可被调度器重新认领；已完成节点的结果仍由节点表保留，不会被强行重跑。
+fn parse_task_status(s: &str) -> TaskStatus {
+    match s {
+        "pending" => TaskStatus::Pending,
+        "planning" => TaskStatus::Planning,
+        "running" => TaskStatus::Running,
+        "paused" => TaskStatus::Paused,
+        "completed" => TaskStatus::Completed,
+        "failed" => TaskStatus::Failed,
+        "cancelled" => TaskStatus::Cancelled,
+        // 恢复标记：崩溃前正在运行，现已挂起待认领
+        _ => TaskStatus::Pending,
+    }
+}
+
+/// SQLite 增量落盘任务仓库
+///
+/// 与 [`FileTaskRepository`]（全量 JSON 快照）不同，本实现把任务与 DAG 节点分别落到
+/// SQLite 的两张表：
+/// - `alliance_task(id, tenant_id, description, status, payload_json, updated_at)`
+/// - `alliance_task_node(task_id, node_id, status, result_json, updated_at)`
+///
+/// 写路径为**增量 upsert**（`INSERT ... ON CONFLICT DO UPDATE`），每次只更新受影响的
+/// 那一行，不再把全量任务集序列化成一个 JSON 文件重写。连接开启 WAL 以提升并发读写。
+///
+/// 节点状态没有进 [`TaskRepository`] trait（trait 只以整条 [`Task`] 为单位），因此节点
+/// 的增量写入通过本类型自身的方法 [`SqliteTaskRepository::upsert_node`] 暴露；trait
+/// 方法签名与现有 InMemory / File 实现保持不变。
+///
+/// 启动恢复：打开库后把 `running` 的任务与节点批量标记为 `interrupted`，再把全部任务
+/// 读回内存缓存；`done` 节点的 `result_json` 原样保留，不重跑。
+pub struct SqliteTaskRepository {
+    conn: Arc<Mutex<Connection>>,
+    /// 读穿缓存：构造时从两表加载，save/remove 时同步维护
+    cache: RwLock<HashMap<Uuid, Task>>,
+}
+
+/// 节点持久化行的只读视图（用于恢复校验 / 测试）
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StoredNode {
+    pub status: String,
+    pub result: Option<serde_json::Value>,
+}
+
+impl SqliteTaskRepository {
+    /// 打开（或创建）SQLite 仓库，建表 + WAL + 恢复标记
+    pub fn new(path: impl Into<PathBuf>) -> AllianceResult<Self> {
+        let path = path.into();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| {
+                AllianceError::internal(format!(
+                    "Failed to create sqlite dir {}: {}",
+                    parent.display(),
+                    e
+                ))
+            })?;
+        }
+
+        let conn = Connection::open(&path).map_err(|e| {
+            AllianceError::internal(format!("Failed to open sqlite {}: {}", path.display(), e))
+        })?;
+        conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")
+            .map_err(|e| {
+                AllianceError::internal(format!("Failed to set WAL on {}: {}", path.display(), e))
+            })?;
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS alliance_task (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                description TEXT NOT NULL,
+                status TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS alliance_task_node (
+                task_id TEXT NOT NULL,
+                node_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                result_json TEXT,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (task_id, node_id)
+            );",
+        )
+        .map_err(|e| {
+            AllianceError::internal(format!("Failed to init schema in {}: {}", path.display(), e))
+        })?;
+
+        let repo = Self {
+            conn: Arc::new(Mutex::new(conn)),
+            cache: RwLock::new(HashMap::new()),
+        };
+
+        // 崩溃恢复：把上次进程退出时仍在 running 的任务/节点标记为 interrupted。
+        // done 节点不动（保留 result），仅 running 被挂起，等待调度器重新认领。
+        {
+            let c = repo.conn.lock().unwrap();
+            c.execute(
+                "UPDATE alliance_task SET status='interrupted' WHERE status='running'",
+                [],
+            )
+            .map_err(|e| {
+                AllianceError::internal(format!("Failed to mark interrupted tasks: {}", e))
+            })?;
+            c.execute(
+                "UPDATE alliance_task_node SET status='interrupted' WHERE status='running'",
+                [],
+            )
+            .map_err(|e| {
+                AllianceError::internal(format!("Failed to mark interrupted nodes: {}", e))
+            })?;
+        }
+
+        repo.load_into_cache()?;
+        Ok(repo)
+    }
+
+    /// 从 alliance_task 全量读回任务到内存缓存（恢复完成后服务期内读走缓存）。
+    fn load_into_cache(&self) -> AllianceResult<()> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT status, payload_json FROM alliance_task")
+            .map_err(|e| AllianceError::internal(format!("prepare load tasks: {}", e)))?;
+        let rows = stmt
+            .query_map([], |row| {
+                let status: String = row.get(0)?;
+                let payload: String = row.get(1)?;
+                Ok((status, payload))
+            })
+            .map_err(|e| AllianceError::internal(format!("query load tasks: {}", e)))?;
+
+        let mut cache = self.cache.write().unwrap();
+        for row in rows {
+            let (status, payload) = row
+                .map_err(|e| AllianceError::internal(format!("step load tasks: {}", e)))?;
+            let mut task: Task = serde_json::from_str(&payload).map_err(|e| {
+                AllianceError::internal(format!("parse task payload: {}", e))
+            })?;
+            // 以 status 列为准（恢复期已把 running 改写为 interrupted）
+            task.status = parse_task_status(&status);
+            cache.insert(task.task_id, task);
+        }
+        Ok(())
+    }
+
+    /// 增量写入单个 DAG 节点（`ON CONFLICT(task_id, node_id) DO UPDATE`）。
+    ///
+    /// 只更新该行的 status / result，不影响其他节点，也不重写任务行的 payload。
+    pub fn upsert_node(
+        &self,
+        task_id: Uuid,
+        node_id: &str,
+        status: &str,
+        result: Option<&serde_json::Value>,
+    ) -> AllianceResult<()> {
+        let result_json = match result {
+            Some(v) => Some(serde_json::to_string(v).map_err(|e| {
+                AllianceError::internal(format!("serialize node result: {}", e))
+            })?),
+            None => None,
+        };
+        let updated_at = chrono::Utc::now().to_rfc3339();
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO alliance_task_node (task_id, node_id, status, result_json, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(task_id, node_id) DO UPDATE SET
+                status = excluded.status,
+                result_json = excluded.result_json,
+                updated_at = excluded.updated_at",
+            params![task_id.to_string(), node_id, status, result_json, updated_at],
+        )
+        .map_err(|e| {
+            AllianceError::internal(format!("sqlite upsert node {}/{}: {}", task_id, node_id, e))
+        })?;
+        Ok(())
+    }
+
+    /// 读取单个节点的持久化行（恢复校验 / 测试用）。
+    pub fn get_node(&self, task_id: Uuid, node_id: &str) -> AllianceResult<Option<StoredNode>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT status, result_json FROM alliance_task_node WHERE task_id = ?1 AND node_id = ?2",
+            )
+            .map_err(|e| AllianceError::internal(format!("prepare get_node: {}", e)))?;
+        let mut rows = stmt
+            .query(params![task_id.to_string(), node_id])
+            .map_err(|e| AllianceError::internal(format!("query get_node: {}", e)))?;
+        if let Some(row) = rows
+            .next()
+            .map_err(|e| AllianceError::internal(format!("step get_node: {}", e)))?
+        {
+            let status: String = row
+                .get(0)
+                .map_err(|e| AllianceError::internal(format!("read node status: {}", e)))?;
+            let result_json: Option<String> = row
+                .get(1)
+                .map_err(|e| AllianceError::internal(format!("read node result: {}", e)))?;
+            let result = match result_json {
+                Some(s) => Some(serde_json::from_str(&s).map_err(|e| {
+                    AllianceError::internal(format!("parse node result: {}", e))
+                })?),
+                None => None,
+            };
+            Ok(Some(StoredNode { status, result }))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+impl TaskRepository for SqliteTaskRepository {
+    fn save(&self, task: &Task) -> AllianceResult<()> {
+        let payload = serde_json::to_string(task)
+            .map_err(|e| AllianceError::internal(format!("serialize task: {}", e)))?;
+        let status = task_status_to_str(task.status);
+        let updated_at = chrono::Utc::now().to_rfc3339();
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO alliance_task (id, tenant_id, description, status, payload_json, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(id) DO UPDATE SET
+                tenant_id = excluded.tenant_id,
+                description = excluded.description,
+                status = excluded.status,
+                payload_json = excluded.payload_json,
+                updated_at = excluded.updated_at",
+            params![
+                task.task_id.to_string(),
+                task.tenant_id.to_string(),
+                task.description,
+                status,
+                payload,
+                updated_at,
+            ],
+        )
+        .map_err(|e| {
+            AllianceError::internal(format!("sqlite upsert task {}: {}", task.task_id, e))
+        })?;
+        drop(conn);
+        self.cache.write().unwrap().insert(task.task_id, task.clone());
+        Ok(())
+    }
+
+    fn get(&self, task_id: Uuid) -> AllianceResult<Option<Task>> {
+        Ok(self.cache.read().unwrap().get(&task_id).cloned())
+    }
+
+    fn all(&self) -> AllianceResult<Vec<Task>> {
+        Ok(self.cache.read().unwrap().values().cloned().collect())
+    }
+
+    fn remove(&self, task_id: Uuid) -> AllianceResult<Option<Task>> {
+        let removed = self.cache.write().unwrap().remove(&task_id);
+        if removed.is_some() {
+            let conn = self.conn.lock().unwrap();
+            conn.execute(
+                "DELETE FROM alliance_task WHERE id = ?1",
+                params![task_id.to_string()],
+            )
+            .map_err(|e| {
+                AllianceError::internal(format!("sqlite delete task {}: {}", task_id, e))
+            })?;
+            // 级联清理该任务的节点行
+            conn.execute(
+                "DELETE FROM alliance_task_node WHERE task_id = ?1",
+                params![task_id.to_string()],
+            )
+            .map_err(|e| {
+                AllianceError::internal(format!("sqlite delete nodes of {}: {}", task_id, e))
+            })?;
+        }
+        Ok(removed)
+    }
+}
+
 /// 便捷函数：创建一个临时文件仓库（用于测试 / 演示）
 pub fn temp_file_repository(dir: impl AsRef<Path>) -> AllianceResult<Arc<dyn TaskRepository>> {
     let repo = FileTaskRepository::new(dir.as_ref().join("alliance_tasks.json"))?;
@@ -495,6 +790,99 @@ mod tests {
         // 间隔未到，仍为 dirty（但内存中有 task2）
         assert!(repo.is_dirty());
         assert_eq!(repo.get(task2.task_id).unwrap().unwrap().task_id, task2.task_id);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn sqlite_save_get_roundtrip() {
+        let dir = std::env::temp_dir().join(format!("sqlite_roundtrip_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        let task = make_task(Uuid::new_v4());
+        let repo = SqliteTaskRepository::new(&db).unwrap();
+        repo.save(&task).unwrap();
+        assert_eq!(repo.get(task.task_id).unwrap().unwrap().task_id, task.task_id);
+        assert_eq!(repo.all().unwrap().len(), 1);
+
+        let removed = repo.remove(task.task_id).unwrap();
+        assert!(removed.is_some());
+        assert!(repo.get(task.task_id).unwrap().is_none());
+        assert!(repo.all().unwrap().is_empty());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn sqlite_incremental_upsert_does_not_lose_other_nodes() {
+        let dir = std::env::temp_dir().join(format!("sqlite_incr_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        let task = make_task(Uuid::new_v4());
+        let repo = SqliteTaskRepository::new(&db).unwrap();
+        repo.save(&task).unwrap();
+
+        let a = serde_json::json!({"v": 1});
+        let b = serde_json::json!({"v": 2});
+        repo.upsert_node(task.task_id, "n-a", "completed", Some(&a)).unwrap();
+        repo.upsert_node(task.task_id, "n-b", "completed", Some(&b)).unwrap();
+
+        // 单独更新 n-b 的 result，n-a 不应被影响
+        let b2 = serde_json::json!({"v": 22});
+        repo.upsert_node(task.task_id, "n-b", "completed", Some(&b2)).unwrap();
+
+        let na = repo.get_node(task.task_id, "n-a").unwrap().unwrap();
+        assert_eq!(na.status, "completed");
+        assert_eq!(na.result, Some(a));
+        let nb = repo.get_node(task.task_id, "n-b").unwrap().unwrap();
+        assert_eq!(nb.result, Some(b2));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn sqlite_recovers_task_and_nodes_marks_running_as_interrupted() {
+        let dir = std::env::temp_dir().join(format!("sqlite_recover_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        // 阶段一：构造一个 running 任务 + 两个完成节点 + 一个 running 节点，持久化后 drop
+        let mut task = make_task(Uuid::new_v4());
+        task.status = TaskStatus::Running;
+        {
+            let repo = SqliteTaskRepository::new(&db).unwrap();
+            repo.save(&task).unwrap();
+
+            let r_a = serde_json::json!({"output": "node-A done"});
+            let r_b = serde_json::json!({"output": "node-B done"});
+            repo.upsert_node(task.task_id, "node-A", "completed", Some(&r_a)).unwrap();
+            repo.upsert_node(task.task_id, "node-B", "completed", Some(&r_b)).unwrap();
+            // 这个节点崩溃前还在跑，重开后应被标记为 interrupted
+            repo.upsert_node(task.task_id, "node-C", "running", None).unwrap();
+        }
+
+        // 阶段二：同路径重开，验证恢复
+        let repo = SqliteTaskRepository::new(&db).unwrap();
+
+        // 任务仍在；原来 running 的任务被恢复为 Pending（interrupted 标记映射）
+        let loaded = repo.get(task.task_id).unwrap().unwrap();
+        assert_eq!(loaded.task_id, task.task_id);
+        assert_eq!(loaded.status, TaskStatus::Pending);
+
+        // 已完成节点的 result 仍在
+        let na = repo.get_node(task.task_id, "node-A").unwrap().unwrap();
+        assert_eq!(na.status, "completed");
+        assert_eq!(na.result, Some(serde_json::json!({"output": "node-A done"})));
+        let nb = repo.get_node(task.task_id, "node-B").unwrap().unwrap();
+        assert_eq!(nb.status, "completed");
+        assert_eq!(nb.result, Some(serde_json::json!({"output": "node-B done"})));
+
+        // running 节点变为 interrupted，且未强行重跑（result 仍为 None，状态被改写）
+        let nc = repo.get_node(task.task_id, "node-C").unwrap().unwrap();
+        assert_eq!(nc.status, "interrupted");
+        assert!(nc.result.is_none());
 
         let _ = std::fs::remove_dir_all(&dir);
     }

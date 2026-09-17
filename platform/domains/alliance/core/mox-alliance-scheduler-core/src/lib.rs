@@ -88,7 +88,7 @@ pub use synchronizer::{
 pub use config_sync::ConfigSynchronizer;
 
 // 存储抽象重导出
-pub use storage::{FileTaskRepository, InMemoryTaskRepository, TaskRepository, temp_file_repository};
+pub use storage::{FileTaskRepository, InMemoryTaskRepository, SqliteTaskRepository, StoredNode, TaskRepository, temp_file_repository};
 
 // 可观测性指标重导出
 pub use metrics::{AllianceMetrics, MetricsSnapshot};

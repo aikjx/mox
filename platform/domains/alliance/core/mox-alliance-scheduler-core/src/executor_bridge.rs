@@ -566,6 +566,7 @@ pub mod tests {
     use mox_alliance_common_proto::{
         AllianceMode, FusionStrategy, Node, NodeStatus,
     };
+    use std::collections::HashMap;
 
     // ─── Mock 实现 ────────────────────────────────────────────────────────
 
@@ -723,6 +724,7 @@ pub mod tests {
                 duration_ms: None,
                 error_message: None,
             }],
+            expert_weights: HashMap::new(),
             version: 1,
             created_at: chrono::Utc::now(),
         }

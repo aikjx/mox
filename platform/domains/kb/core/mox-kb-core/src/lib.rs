@@ -18,9 +18,11 @@ pub mod analyze;
 pub mod link;
 pub mod model;
 pub mod error;
+pub mod sqlite_store;
 
 pub use error::{KbError, KbResult};
 pub use model::*;
+pub use sqlite_store::SqliteKbStore;
 
 pub const CRATE_ID: &str = "mox-kb-core";
 pub const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");

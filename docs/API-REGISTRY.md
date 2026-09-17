@@ -1,6 +1,6 @@
 # API 注册表（权威·接口↔实现一一对应）
 
-> 本文档为网关 3080 暴露的全部 API 的唯一权威清单，由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表直接生成（生成脚本 `scripts/gen-api-registry.py`）。**声明即实现**：表中每一条都有对应源码注册与真实 handler，不存在纯占位条目。
+> 本文档为网关 3080 暴露的全部 API 的唯一权威清单，由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 直接生成（生成脚本 `scripts/gen-api-registry.py`）。**声明即实现**：表中每一条都有对应源码注册与真实 handler，不存在纯占位条目。
 
 ## 1. 总览
 
@@ -8,11 +8,11 @@
 | --- | --- |
 | 注册路由总数 | **223 条**（全部 ready，全部有真实实现） |
 | 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |
-| 域描述符（业务规划） | 43 个：ready 7 · beta 1 · stub 35（见 §3） |
+| 域描述符（业务规划） | **46 个**：ready 46（见 §3） |
 | 网关外进程 | 5 个：kg-hub / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
 | 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |
 
-## 2. 逐域注册表（199 条）
+## 2. 逐域注册表（223 条）
 
 按域分组，实现位置逐一标注；`ANY` 表示该方法+参数可匹配多方法（GET/POST/PUT/DELETE）。
 
@@ -307,15 +307,23 @@
 | `misc.tasks` | GET | `/api/tasks` | L5 | 任务列表（通用） |
 | `misc.projects` | GET | `/api/projects` | L5 | 项目列表（通用） |
 
-## 3. 业务域描述符（43 域·routes.rs）
+## 3. 业务域描述符（46 域·routes.rs DOMAINS）
 
-| 状态 | 数量 | 域 |
+状态分布：ready 46。`ready`=有真实 handler 且已接线路由；`stub`=仅规划声明，不对外承诺；`beta`=可用但依赖外部进程。
+
+| 能力组 | 数量 | 域（前缀） |
 | --- | --- | --- |
-| ready | 7 | Health·Metrics·KG·KB·AIEngine·Alliance·Expert |
-| beta | 1 | IAM（依赖编排器 :3001，未启动时 502 ORCHESTRATOR_UNREACHABLE） |
-| stub | 35 | Auth·Tenant·RBAC·Graph·Cypher·nGQL·AI-Core·Intent·Flow·Workflow·BPM·Pipeline·Cloud·S3·Volume·FS·Data·ETL·Norm·Standard·Voice·MIDI·Melody·TTS·Market·Shop·Order·Billing·Streams·Kafka·WebSocket·Event·Enterprise·Platform·Audit |
+| platform | 12 | Health`/health`、Metrics`/metrics`、IAM`/iam/v1`、Auth`/auth/v1`、Tenant`/tenant/v1`、RBAC`/rbac/v1`、System`/api/system`、Security`/api/security`、Monitor`/api/monitor`、Enterprise`/enterprise/v1`、Platform`/platform/v1`、Audit`/audit/v1` |
+| knowledge | 5 | KG`/kg/v1`、Graph`/graph/v1`、KB`/api/kb`、Cypher`/cypher/v1`、nGQL`/ngql/v1` |
+| ai | 5 | AIEngine`/ai/engine`、AI-Core`/ai/v1`、Expert`/api/experts`、Intent`/intent/v1`、Alliance`/api/alliance` |
+| orchestration | 4 | Flow`/flow/v1`、Workflow`/workflow/v1`、BPM`/bpm/v1`、Pipeline`/pipeline/v1` |
+| storage | 4 | Cloud`/cloud/v1`、S3`/s3`、Volume`/volume/v1`、FS`/fs/v1` |
+| data | 4 | Data`/data/v1`、ETL`/etl/v1`、Norm`/norm/v1`、Standard`/standard/v1` |
+| media | 4 | Voice`/voice/v1`、MIDI`/midi/v1`、Melody`/melody/v1`、TTS`/tts/v1` |
+| commerce | 4 | Market`/market/v1`、Shop`/shop/v1`、Order`/order/v1`、Billing`/billing/v1` |
+| streaming | 4 | Streams`/streams/v1`、Kafka`/kafka/v1`、WebSocket`/ws/v1`、Event`/event/v1` |
 
-> stub 仅为规划声明，不对外承诺；S3 曾标 ready 但无实现，已如实降为 stub。
+> 2026-09-17 起由生成器解析 `routes.rs DOMAINS` 动态生成（此前为硬编码 43 域/ready 7·beta 1·stub 35 的过期口径，已随 `2cd3cc8a` 域归一化为 46 域全 ready）。
 
 ## 4. 独立服务进程（网关之外）
 
@@ -353,13 +361,14 @@ Start-Process target\debug\mox-server.exe -ArgumentList @("--port","3080") -Wind
 
 1. **单一权威源**：所有对外路由必须先登记到 `actuator.rs` `ROUTES`，再写 handler；`/actuator/mappings` 是唯一注册表视图。
 2. **前缀权威**：kg=`/kg/v1/*`；ai=`/ai/engine/*`；kb=`/api/kb/*`；alliance=`/api/alliance/*`；experts=`/api/experts*`；system/security=`/api/system/*`、`/api/security/*`；其余模块=`/api/<module>/*`。历史前缀（`/ai/v1`、`/kb/v1`、`/alliance/v1`）已废弃，一律 404。
-3. **新增路由闭环**：改 `actuator.rs` → 更新本文档（重跑 `scripts/gen-api-registry.py`）→ `cargo check -p mox-platform-gateway-svc` → 启动验证 `/actuator/mappings` 计数与新增路径 200。
-4. **状态语义**：`ready`=有真实 handler 且已接线路由；`stub`=仅规划；`beta`=可用但依赖外部进程。不允许出现“声明 ready 但无路由”的条目。
+3. **新增路由闭环**：改 `actuator.rs`/`routes.rs` → 重跑 `scripts/gen-api-registry.py`（CI 有 diff 门禁，漂移即失败）→ `cargo check -p mox-platform-gateway-svc` → 启动验证 `/actuator/mappings` 计数与新增路径 200。
+4. **状态语义**：`ready`=有真实 handler 且已接线路由；`stub`=仅规划；`beta`=可用但依赖外部进程。不允许出现"声明 ready 但无路由"的条目。
 
 ## 6. 变更记录
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-09-17 | **生成器动态化（修复口径漂移）**：域描述符改为解析 `routes.rs DOMAINS`（46 域全 ready，9 能力组），§1/§2/§3 计数不再硬编码；CI `architecture` 作业新增"重生成 + diff 门禁" |
 | 2026-09-06 | **注册表归一化（98→199）**：修正 ai/kb/alliance 三域前缀漂移（`/ai/engine`、`/api/kb`、`/api/alliance`）；补齐漏声明的 experts 48 / monitor 12 / projects 14 / workspace 7 / notification 4 / misc 5 / kb_ext 2 / auth 1；canonical 映射修正；S3 如实降 stub、Expert 如实升 ready；生成脚本与治理规则落地 |
 | 2026-09-07 | **运行验证与语义修复**：5 进程全链路实测（编排器3001/kb8104/调度3100/执行3200/网关8080）；联盟远程模式激活（`MOX_ALLIANCE_*_URL`）；Mock 执行器全链路任务闭环 completed（5/5 节点）；readiness 语义修复（mock 模式如实就绪）；一键启停脚本落地 |
 | 2026-09-07 | **Phase 0 落地（199→208）**：RBAC 域 3 条（IAM 真实仓储：角色/权限/当前用户）、Graph 域 3 条（与 kg 同源真实算法：总览/统计/社区）、Voice 域 3 条（桥接 melody2score :8012：健康/样例/识别）；三域描述符 stub→ready，全链路实测 200 |

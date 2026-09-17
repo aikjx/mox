@@ -8,6 +8,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 // ─── Task（任务） ───────────────────────────────────────────────────────────
@@ -280,6 +281,10 @@ pub struct CollaborationPlan {
     pub mode: AllianceMode,
     pub fusion_strategy: FusionStrategy,
     pub nodes: Vec<Node>,
+    /// 尾部融合权重（expert_id -> 匹配分）。为空时所有专家等权 1.0。
+    /// 由计划生成器从匹配分填充，跨进程随 plan 传递给执行器做真加权。
+    #[serde(default)]
+    pub expert_weights: HashMap<String, f64>,
     pub version: u32,
     pub created_at: DateTime<Utc>,
 }
@@ -287,7 +292,7 @@ pub struct CollaborationPlan {
 impl CollaborationPlan {
     /// 检查计划是否有效（无环 + 所有依赖存在）
     pub fn validate(&self) -> Result<(), String> {
-        use std::collections::{HashMap, HashSet};
+        use std::collections::HashSet;
 
         let node_ids: HashSet<&str> = self.nodes.iter().map(|n| n.node_id.as_str()).collect();
 
