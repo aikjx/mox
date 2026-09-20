@@ -229,7 +229,7 @@ mod tests {
         assert_eq!(agg.total_bytes, 100);
         assert_eq!(agg.crc64_ecma, crc2);
         // etag in agg for 1 part should reference the last-won etag
-        let agg_etag_prefix = format!("1-");
+        let agg_etag_prefix = "1-".to_string();
         assert!(agg.etag.starts_with(&agg_etag_prefix));
         let _ = etag2; // used as sanity check value
     }

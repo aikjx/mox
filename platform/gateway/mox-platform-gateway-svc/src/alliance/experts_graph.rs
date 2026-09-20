@@ -973,7 +973,7 @@ mod tests {
         let density = stats["density"].as_f64().unwrap();
         assert!(density > 0.0 && density <= 1.0);
         let avg_cc = stats["avg_clustering_coefficient"].as_f64().unwrap();
-        assert!(avg_cc >= 0.0 && avg_cc <= 1.0);
+        assert!((0.0..=1.0).contains(&avg_cc));
         let top = stats["top_centrality_experts"].as_array().unwrap();
         assert!(!top.is_empty());
     }
@@ -1029,8 +1029,8 @@ mod tests {
         let total_members: usize = communities.iter().map(|c| c.len()).sum();
         assert_eq!(total_members, graph.nodes.len());
         // 模块度在合理范围
-        assert!(modularity >= -0.5 && modularity <= 1.0);
-        assert!(iterations >= 1 && iterations <= 50);
+        assert!((-0.5..=1.0).contains(&modularity));
+        assert!((1..=50).contains(&iterations));
         // 测试图是连通的，标签传播应收敛
         assert!(converged);
     }

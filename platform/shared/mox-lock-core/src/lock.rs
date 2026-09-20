@@ -13,7 +13,7 @@
 // =============================================================================
 
 use crate::config::LockConfig;
-use crate::{LockError, LockOwnerId, Result};
+use crate::{LockOwnerId, Result};
 use async_trait::async_trait;
 use std::time::Duration;
 

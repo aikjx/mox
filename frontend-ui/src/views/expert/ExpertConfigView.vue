@@ -8,7 +8,7 @@
         </div>
         <div class="header-titles">
           <h1 class="header-title">专家能力动态配置引擎</h1>
-          <p class="header-subtitle">mox 模块化系统架构可配置 · 企业级低代码 · 实时预览 · 一键发布</p>
+          <p class="header-subtitle">架构可配置 · 企业级低代码 · 实时预览 · 一键发布</p>
         </div>
       </div>
       <div class="header-right">

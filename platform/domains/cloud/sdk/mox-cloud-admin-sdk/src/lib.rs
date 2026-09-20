@@ -77,7 +77,7 @@ fn s3_config_from_env() -> Option<S3ClientConfig> {
 /// 依据环境装配后端：`FILE_BACKEND`（fs|s3|minio|oss）+ `MOX_STORE_DATA_DIR`。
 pub fn assemble_backend() -> CloudApiResult<StoreBackend> {
     let kind = std::env::var("FILE_BACKEND").unwrap_or_else(|_| "fs".into());
-    let data_dir = std::env::var("MOX_STORE_DATA_DIR").unwrap_or_else(|_| "./data/store".into());
+    let data_dir = std::env::var("MOX_STORE_DATA_DIR").unwrap_or_else(|_| "./data/store".into());  // allow: env-MOX_STORE_DATA_DIR-overrides
     let cfg = StoreConfig {
         kind: BackendKind::from_str_ci(&kind).map_err(store_err)?,
         data_dir: PathBuf::from(data_dir),

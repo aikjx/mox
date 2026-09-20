@@ -1934,7 +1934,7 @@ mod tests {
         assert!(fused.get("confidence").is_some());
 
         let consensus = fused["consensus_score"].as_f64().unwrap();
-        assert!(consensus >= 0.0 && consensus <= 1.0, "共识度应在 0-1 之间");
+        assert!((0.0..=1.0).contains(&consensus), "共识度应在 0-1 之间");
 
         let dominant = fused["dominant_view"].as_str().unwrap();
         assert!(dominant.contains("专家甲"), "最高分专家应为主导观点（match_score 0.9 最高）");
@@ -2044,7 +2044,7 @@ mod tests {
         assert_eq!(r6["time_complexity"], "O(log n)");
 
         // 验证所有结果包含必要字段
-        for r in vec![&r1, &r2, &r3, &r4, &r5, &r6] {
+        for r in [&r1, &r2, &r3, &r4, &r5, &r6] {
             assert!(r.get("space_complexity").is_some());
             assert!(r.get("big_o_notation").is_some());
             assert!(r.get("explanation").is_some());

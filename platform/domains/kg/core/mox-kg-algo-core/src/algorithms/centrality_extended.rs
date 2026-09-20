@@ -886,7 +886,7 @@ mod tests {
 
         // 所有值应在 [0, 1] 范围内
         for &v in result.values() {
-            assert!(v >= 0.0 && v <= 1.0 + 1e-9);
+            assert!((0.0..=1.0 + 1e-9).contains(&v));
         }
     }
 

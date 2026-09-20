@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "璇玑 · 专家联盟mox 模块化系统架构分析引擎（P2 架构解耦阶段 5）：意图分类 → 专家组队 → 并行辩论 → 归一合成 → 质量门禁 → 知识沉淀，6 阶段管线独立 crate"
+description = "璇玑 · 专家联盟架构分析引擎（P2 架构解耦阶段 5）：意图分类 → 专家组队 → 并行辩论 → 归一合成 → 质量门禁 → 知识沉淀，6 阶段管线独立 crate"
 
 [dependencies]
 # L5 领域协议层（DIP：engine 依赖 proto，proto 不依赖 engine）

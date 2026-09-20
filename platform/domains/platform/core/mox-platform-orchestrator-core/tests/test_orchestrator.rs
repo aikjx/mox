@@ -224,7 +224,7 @@ async fn test_orchestrator_async_execute_with_tokio() {
     .await
     .unwrap();
     assert!(r.success, "async create ok");
-    assert!(r.biz_id.clone().unwrap().len() > 0);
+    assert!(!r.biz_id.clone().unwrap().is_empty());
 }
 
 #[test]

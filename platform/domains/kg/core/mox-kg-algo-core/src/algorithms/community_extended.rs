@@ -1589,7 +1589,7 @@ mod tests {
         // 社区 1 的电导
         let community1 = vec![0, 1, 2]; // a1, a2, a3
         let cond = compute_conductance(&csr, &community1);
-        assert!(cond >= 0.0 && cond <= 1.0);
+        assert!((0.0..=1.0).contains(&cond));
     }
 
     #[test]

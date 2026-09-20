@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! # 算子统一系统运行时 v3.0 - AI驱动mox 模块化系统架构突破平台
+//! # 算子统一系统运行时 v3.0 - AI驱动架构突破平台
 //!
 //! 集成五大核心能力：
 //! 1. AI智能对话 - 自然语言交互、意图识别、算子推荐
@@ -26,7 +26,7 @@ use mox_kg_algo_core::{
     KnowledgeNode, NodeRecommendation, PathResult,
 };
 use mox_flow_operator_wasm_svc::WasmPluginManager;
-// 璇玑mox 模块化系统架构治理内核：双璇玑十四维 → 治理报告
+// 璇玑架构治理内核：双璇玑十四维 → 治理报告
 use mox_ai_expert_svc::context::GovernContext;
 use mox_ai_expert_svc::pipeline::mox_optimize;
 // OUS 前端治理台状态
@@ -81,7 +81,7 @@ mod sidecar;
 /// 以库方式挂载，由 mox_platform_orchestrator_svc 唯一对外暴露
 mod subservers;
 
-/// 应用状态 - AImox 模块化系统架构系统核心
+/// 应用状态 - AI架构系统核心
 #[derive(Clone)]
 struct AppState {
     // 原有组件
@@ -297,7 +297,7 @@ async fn main() -> anyhow::Result<()> {
     // T8 FR-GW-05：启动时打印"已注册的子服务清单"到 stderr
     subservers::print_subserver_registry();
 
-    tracing::info!("🚀 启动算子统一系统 v3.0 - AI驱动mox 模块化系统架构突破平台...");
+    tracing::info!("🚀 启动算子统一系统 v3.0 - AI驱动架构突破平台...");
 
     // 生产级安全配置：API 访问令牌（缺失则仅开放只读/健康检查接口）
     let api_token = std::env::var("OUS_API_TOKEN").ok();
@@ -445,7 +445,7 @@ async fn main() -> anyhow::Result<()> {
     // 克隆请求计数句柄：供最外层中间件与 AppState 共用同一原子实例
     let request_metrics = state.metrics.clone();
 
-    // 创建路由 - mox 模块化系统架构API
+    // 创建路由 - 架构API
     let app = Router::new()
         // ========== 基础系统API ==========
         .route("/api/health", get(health))
@@ -575,13 +575,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/audit", get(get_access_audit))
         .route("/api/status", get(get_status))
         .route("/api/status/full", get(get_full_status))
-        // ========== 璇玑mox 模块化系统架构治理 API ==========
+        // ========== 璇玑架构治理 API ==========
         .route("/api/mox/health", get(mox_health))
         .route("/api/mox/optimize", post(mox_optimize_handler))
         .route("/api/mox/publish", post(mox_publish_handler))
         .route("/api/mox/codegen-publish", post(mox_codegen_publish_handler))
         // ========== OUS 前端治理台 API（/api/governance/*）==========
-        // mox 模块化系统架构治理：Dashboard / 专家状态 / 否决事件 / 审计日志 / RBAC 配置 / 专家配置 / WS 实时推送 / 治理评估。
+        // 架构治理：Dashboard / 专家状态 / 否决事件 / 审计日志 / RBAC 配置 / 专家配置 / WS 实时推送 / 治理评估。
         // 状态自包含于 GovernanceState（handlers/governance.rs），已适配 mox-expert 当前 API。
         .nest("/api/governance", {
             let gov_state = state.governance.clone();
@@ -670,7 +670,7 @@ async fn main() -> anyhow::Result<()> {
     let addr = format!("{host}:{port}");
     tracing::info!("📡 服务器监听在 http://{}", addr);
     tracing::info!("══════════════════════════════════════════════════════════");
-    tracing::info!("  🚀 算子统一系统 v3.0 - AI驱动mox 模块化系统架构突破平台");
+    tracing::info!("  🚀 算子统一系统 v3.0 - AI驱动架构突破平台");
     tracing::info!("  🧠 AI智能对话 · 算法归一化 · 全资源管理 · 插件互通 · 流程自动化");
     tracing::info!("  🤖 真实AI对接(OpenAI兼容) · 浏览器自动化 · 知识图谱(34+节点)");
     tracing::info!("  🌐 访问地址: http://localhost:{}", port);
@@ -901,7 +901,7 @@ async fn voice_proxy_short_circuit(
         // 中间件里直接从 Request 拆出所需信息再调用 handler。
         use crate::routes::voice_proxy::voice_proxy_handler;
         use axum::{
-            body::Body, extract::OriginalUri, http::HeaderMap, http::Method,
+            extract::OriginalUri, http::HeaderMap, http::Method,
         };
         let (parts, body) = req.into_parts();
         let method: Method = parts.method.clone();
@@ -915,7 +915,7 @@ async fn voice_proxy_short_circuit(
             method,
             headers,
             uri,
-            Body::from(body),
+            body,
         )
         .await
     } else {
@@ -1115,7 +1115,7 @@ async fn health() -> &'static str {
     "OK - AI Operator System v3.0 Running - Full-Dimensional Breakthrough"
 }
 
-// ========== 璇玑mox 模块化系统架构治理 API ==========
+// ========== 璇玑架构治理 API ==========
 // ========== 进程内最小请求计数（纯 std::sync::atomic，GET /metrics 导出）==========
 
 /// 最小请求计数器：requests_total 累计总请求；active_requests 当前在途请求（gauge）。
@@ -1186,7 +1186,7 @@ struct MoxOptimizeRequest {
     tenant: Option<String>,
 }
 
-/// mox 模块化系统架构治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
+/// 架构治理：返回 GovernanceReport（专家评分 + 优化 + 璇玑验证 + 闸门 + 审计 + 采纳建议）
 async fn mox_optimize_handler(
     Json(req): Json<MoxOptimizeRequest>,
 ) -> ApiResponse<serde_json::Value> {
@@ -1256,7 +1256,7 @@ async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> ApiResponse<
     } else {
         report.expert_scores.iter().map(|(_, s)| s).sum::<f64>() / report.expert_scores.len() as f64
     };
-    let name = req.name.clone().unwrap_or_else(|| "mox 模块化系统架构融合算子".into());
+    let name = req.name.clone().unwrap_or_else(|| "架构融合算子".into());
     let description = req
         .description
         .clone()
@@ -1265,7 +1265,7 @@ async fn mox_publish_handler(Json(req): Json<MoxPublishRequest>) -> ApiResponse<
     let tags = req
         .tags
         .clone()
-        .unwrap_or_else(|| vec!["mox 模块化系统架构融合".into(), "璇玑".into(), "业务流程图".into()]);
+        .unwrap_or_else(|| vec!["架构融合".into(), "璇玑".into(), "业务流程图".into()]);
 
     // ===== I-05 双验收联动门禁 =====
     // 需求侧任务 Done（req.task_done=true） ∧ 融合侧璇玑验证通过（algo 未否决且 gate 放行）

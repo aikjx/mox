@@ -339,7 +339,7 @@ mod tests {
         };
         let tag_uri = "tag://k:v";
         b.upsert_tag_vertex("k", "v", 1);
-        b.add_has_tag_edge(uri_a, &tag_uri, "HAS_TAG");
+        b.add_has_tag_edge(uri_a, tag_uri, "HAS_TAG");
         assert!(b.graph.vertices.contains_key(&id_first));
         assert!(b.graph.fwd.contains_key(&id_first));
 

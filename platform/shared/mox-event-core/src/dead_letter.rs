@@ -11,7 +11,7 @@
 // =============================================================================
 
 use crate::event::{EventPayload, EventType};
-use crate::metadata::{EventId, EventMetadata, EventSource};
+use crate::metadata::{EventId, EventMetadata};
 use crate::subscriber::SubscriberId;
 use parking_lot::Mutex;
 use std::collections::VecDeque;
@@ -420,6 +420,7 @@ pub struct DeadLetterStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::EventSource;
 
     #[test]
     fn test_retry_policy_default() {

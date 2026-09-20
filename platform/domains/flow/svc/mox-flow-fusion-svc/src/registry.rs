@@ -310,7 +310,7 @@ fn crate_caps(name: &str) -> (Layer, Vec<Cap>) {
             Layer::Governance,
             vec![cap(
                 "cap:ea-govern",
-                "mox 模块化系统架构治理校验",
+                "架构治理校验",
                 EntityKind::Function,
                 Layer::Governance,
             )],

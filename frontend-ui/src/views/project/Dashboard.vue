@@ -146,7 +146,7 @@
     <!-- 主图表区 -->
     <div class="grid grid-3 chart-row">
       <div class="panel card-pad span2">
-        <h3 class="section-title">mox 模块化系统架构维度实时态势</h3>
+        <h3 class="section-title">架构维度实时态势</h3>
         <div ref="trendEl" class="chart trend"></div>
       </div>
       <div class="panel card-pad">
@@ -158,7 +158,7 @@
     <!-- 模块入口 + 动态 -->
     <div class="grid grid-2 bottom-row">
       <div class="panel card-pad">
-        <h3 class="section-title">mox 模块化系统架构维度模块</h3>
+        <h3 class="section-title">架构维度模块</h3>
         <div class="modules">
           <div class="mod" v-for="m in NAV_MODULES" :key="m.key" @click="go(m.path)">
             <div class="mod-icon" :style="{ background: m.bg, color: m.color }">
@@ -213,7 +213,7 @@ const projectEyebrow = computed(() => {
 })
 const projectDesc = computed(() => {
   if (currentProject.value?.description) return currentProject.value.description
-  return '以项目为根，AI 驱动的知识图谱与mox 模块化系统架构业务处理平台 — 需求 → 架构 → 开发 → 发布 全流程贯通'
+  return '以项目为根，AI 驱动的知识图谱与架构业务处理平台 — 需求 → 架构 → 开发 → 发布 全流程贯通'
 })
 
 // 项目阶段进度由后端加载

@@ -27,7 +27,7 @@ async fn test_full_pipeline_local_rule_mode() {
         },
     };
 
-    let events = engine.run_full_analysis(request).await.expect("mox 模块化系统架构分析应成功");
+    let events = engine.run_full_analysis(request).await.expect("架构分析应成功");
 
     assert!(!events.is_empty(), "应产生至少一个事件");
 

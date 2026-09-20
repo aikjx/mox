@@ -794,9 +794,9 @@ fn transaction_idempotency_delete() {
     // 第一次删除返回 true
     assert!(srv.remove_vertex("v").unwrap());
     // 第二次删除返回 false（幂等）
-    assert_eq!(srv.remove_vertex("v").unwrap(), false);
+    assert!(!srv.remove_vertex("v").unwrap());
     // 第三次仍然返回 false
-    assert_eq!(srv.remove_vertex("v").unwrap(), false);
+    assert!(!srv.remove_vertex("v").unwrap());
 }
 
 /// 测试场景：顺序一致性
@@ -1243,7 +1243,7 @@ fn error_remove_nonexistent_vertex() {
 
     let result = srv.remove_vertex("ghost");
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), false);
+    assert!(!result.unwrap());
 }
 
 /// 测试场景：删除不存在的边
@@ -1254,7 +1254,7 @@ fn error_remove_nonexistent_edge() {
 
     let result = srv.remove_edge("a", "b", "e", 0);
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), false);
+    assert!(!result.unwrap());
 }
 
 /// 测试场景：空字符串参数校验

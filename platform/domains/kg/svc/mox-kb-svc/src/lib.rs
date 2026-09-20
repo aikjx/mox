@@ -68,7 +68,7 @@ impl KbState {
     /// 从环境装配存储后端（`FILE_BACKEND` + `MOX_STORE_DATA_DIR`，与 cloud-api 同约定）
     pub fn from_env() -> Self {
         let kind = std::env::var("FILE_BACKEND").unwrap_or_else(|_| "fs".into());
-        let data_dir = std::env::var("MOX_STORE_DATA_DIR").unwrap_or_else(|_| "./data/store".into());
+        let data_dir = std::env::var("MOX_STORE_DATA_DIR").unwrap_or_else(|_| "./data/store".into());  // allow: env-MOX_STORE_DATA_DIR-overrides
         let cfg = StoreConfig {
             kind: BackendKind::from_str_ci(&kind).unwrap_or(BackendKind::Fs),
             data_dir: data_dir.into(),
@@ -78,7 +78,7 @@ impl KbState {
         let backend = Arc::new(create_backend(&cfg).unwrap_or_else(|e| {
             tracing::warn!("store backend 装配失败({e})，回退默认路径");
             create_backend(&StoreConfig {
-                data_dir: "./data/store".into(),
+                data_dir: "./data/store".into(),  // allow: env-fallback-default
                 ..cfg
             })
             .expect("默认后端必须可装配")

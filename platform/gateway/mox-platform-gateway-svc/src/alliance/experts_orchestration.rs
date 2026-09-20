@@ -1226,7 +1226,7 @@ mod tests {
                 "融合策略输入 {input} 应解析为 {expected_label}"
             );
             assert!(
-                fused["key_findings"].as_array().unwrap().len() >= 1,
+                !fused["key_findings"].as_array().unwrap().is_empty(),
                 "融合策略 {input} 应产出非空 key_findings"
             );
         }

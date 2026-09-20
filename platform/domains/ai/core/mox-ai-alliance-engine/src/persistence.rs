@@ -12,6 +12,9 @@
 // 5. 租户隔离：所有查询都带 tenant_id 过滤
 // =============================================================================
 
+// 再导出（而非私有导入）：既有调用方以 `persistence::*` 方式取用 TaskStatus，
+// re-export 可保持该路径可用，同时保证类型与 orchestration 的定义是同一个。
+pub use crate::orchestration::TaskStatus;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -22,50 +25,9 @@ use uuid::Uuid;
 // =============================================================================
 // 任务状态枚举
 // =============================================================================
-
-/// 任务状态
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TaskStatus {
-    /// 等待中
-    Pending,
-    /// 运行中
-    Running,
-    /// 已完成
-    Completed,
-    /// 失败
-    Failed,
-    /// 已取消
-    Cancelled,
-}
-
-impl TaskStatus {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            TaskStatus::Pending => "pending",
-            TaskStatus::Running => "running",
-            TaskStatus::Completed => "completed",
-            TaskStatus::Failed => "failed",
-            TaskStatus::Cancelled => "cancelled",
-        }
-    }
-
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "running" => TaskStatus::Running,
-            "completed" => TaskStatus::Completed,
-            "failed" => TaskStatus::Failed,
-            "cancelled" => TaskStatus::Cancelled,
-            _ => TaskStatus::Pending,
-        }
-    }
-}
-
-impl Default for TaskStatus {
-    fn default() -> Self {
-        TaskStatus::Pending
-    }
-}
+// 归一化说明：`TaskStatus` 由 `orchestration` 模块统一定义（全 crate 唯一真源），
+// 本模块仅复用，不再各自维护一份枚举，避免状态串与 serde 约定漂移。
+// =============================================================================
 
 // =============================================================================
 // 任务实体（数据库行映射）

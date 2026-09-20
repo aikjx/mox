@@ -370,7 +370,7 @@ mod tests {
 
     #[test]
     fn list_actions_6_covered() {
-        let op = NetworkOperator::default();
+        let op = NetworkOperator;
         let acts = op.list_actions();
         assert_eq!(acts.len(), 6);
         let names: Vec<_> = acts.iter().map(|a| a.name).collect();

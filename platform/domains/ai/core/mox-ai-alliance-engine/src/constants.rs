@@ -20,12 +20,16 @@ pub const RRF_K: u32 = 60;
 /// 激活扩散在 RRF 融合中的权重（HC-8 家族固定）：最终分数 = (1-sw)*RRF_keyword + sw*RRF_spread
 pub const SPREAD_WEIGHT: f64 = 0.7;
 
+// ── 质量门禁阈值（ADR-SSOT-3）──────────────────────────────────────────
+// 真源：mox-unified-contract 的 GATE_THRESHOLDS（HC-8 硬约束 0.90 / 0.80 / 0.70）。
+// 本处只做引用，禁止改回字面量；跨端（Rust / 前端 GRADE_META.min）共用同一组数值，
+// 由 unified-contract 的 gate_thresholds_match_ai_engine_hc8 锁值测试守护。
 /// 质量门禁 A 级阈值：综合分 ≥ 0.90
-pub const GATE_THRESHOLD_A: f64 = 0.90;
+pub const GATE_THRESHOLD_A: f64 = mox_unified_contract::GATE_THRESHOLDS.a;
 /// 质量门禁 B 级阈值：综合分 ≥ 0.80
-pub const GATE_THRESHOLD_B: f64 = 0.80;
+pub const GATE_THRESHOLD_B: f64 = mox_unified_contract::GATE_THRESHOLDS.b;
 /// 质量门禁 C 级阈值：综合分 ≥ 0.70（< 0.70 = D）
-pub const GATE_THRESHOLD_C: f64 = 0.70;
+pub const GATE_THRESHOLD_C: f64 = mox_unified_contract::GATE_THRESHOLDS.c;
 
 /// 单轮辩论最大 token 数（EAF-STD 4.3）：不得超过
 pub const DEBATE_MAX_TOKENS_PER_ROUND: usize = 900;

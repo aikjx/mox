@@ -650,7 +650,7 @@ mod tests {
         let text = "Hello 世界";
         let tokens = estimate_tokens(text);
         // Hello = 5 ascii chars ≈ 1.25 tokens, 世界 = 2 cjk ≈ 1.33 tokens
-        assert!(tokens >= 1 && tokens <= 5);
+        assert!((1..=5).contains(&tokens));
     }
 
     #[test]

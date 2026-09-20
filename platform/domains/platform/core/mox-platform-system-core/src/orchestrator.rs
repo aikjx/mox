@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -472,15 +472,14 @@ impl Reactor {
                             .await;
                     }
                     let name = self.name_of(by).await;
-                    self.comm
+                    let _ = self.comm
                         .send_message(
                             &ch.id,
                             "system",
                             &format!("{name} 将任务分派给 {} 位专家", assignees.len()),
                             MessageKind::System,
                         )
-                        .await
-                        .ok();
+                        .await;
                 }
             }
             DomainEvent::TaskStatusChanged {
@@ -493,7 +492,7 @@ impl Reactor {
                 if let Some(t) = &t {
                     let ch = self.store.task_channel(&t.mox_id, task_id).await;
                     let name = self.name_of(by).await;
-                    self.comm
+                    let _ = self.comm
                         .send_message(
                             &ch.id,
                             "system",
@@ -505,8 +504,7 @@ impl Reactor {
                             ),
                             MessageKind::System,
                         )
-                        .await
-                        .ok();
+                        .await;
                     for a in t.assignees.iter().chain(t.watchers.iter()) {
                         self.comm
                             .notify(
@@ -546,9 +544,8 @@ impl Reactor {
 
     async fn sys_msg(&self, mox_id: &str, body: &str) {
         let ch = self.store.ensure_mox_channel(mox_id).await;
-        self.comm
+        let _ = self.comm
             .send_message(&ch.id, "system", body, MessageKind::System)
-            .await
-            .ok();
+            .await;
     }
 }

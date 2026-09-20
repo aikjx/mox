@@ -72,7 +72,7 @@ pub struct XiaobaiVoiceService {
     pub config: VoiceServiceConfig,
     #[cfg(feature = "voice-engine")]
     pub voice: parking_lot::RwLock<Option<Arc<crate::voice_engine::VoiceEngine>>>,
-    /// 形象模型注册表（mox 模块化系统架构：视觉/语音/性格）
+    /// 形象模型注册表（架构：视觉/语音/性格）
     pub avatars: Arc<crate::avatar::AvatarRegistry>,
 }
 
@@ -133,7 +133,7 @@ impl XiaobaiVoiceService {
             .unwrap_or_else(|_| (text.to_string(), Vec::new()));
         let identity = identity.unwrap_or_else(|| self.config.default_identity.clone());
         // 注意：EngineConfig 的 mode 在构造时已设定；这里 mode 参数传入仅用于审计/统计
-        let _mode = mode.unwrap_or_else(|| self.config.default_mode);
+        let _mode = mode.unwrap_or(self.config.default_mode);
         let result = self.engine.dispatch_intent(&corrected, &identity).await?;
         Ok(json!({
             "intent": {

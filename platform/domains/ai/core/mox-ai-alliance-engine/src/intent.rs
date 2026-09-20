@@ -568,7 +568,7 @@ mod tests {
         let r = rrf_scores(&m, 60.0);
         assert!(r["a"] > r["b"]);
         assert_eq!(r["c"], 0.0);
-        for (_, v) in &r {
+        for v in r.values() {
             assert!(*v >= 0.0 && *v <= 1.0);
         }
     }

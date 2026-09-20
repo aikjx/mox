@@ -111,16 +111,14 @@ mod tests {
 
     #[test]
     fn core_error_codes_are_distinct() {
-        let errors = vec![
-            CoreError::Registry("test".into()),
+        let errors = [CoreError::Registry("test".into()),
             CoreError::ExpertNotFound("e1".into()),
             CoreError::ReconcileConflict("c1".into()),
             CoreError::GovernanceBlocked("g1".into()),
             CoreError::AlgorithmVeto("v1".into()),
             CoreError::NormalizationFailed("n1".into()),
             CoreError::InvalidInput("i1".into()),
-            CoreError::Internal("x1".into()),
-        ];
+            CoreError::Internal("x1".into())];
         let codes: std::collections::HashSet<&str> =
             errors.iter().map(|e| e.code()).collect();
         assert_eq!(codes.len(), errors.len(), "每个错误应有唯一 code");

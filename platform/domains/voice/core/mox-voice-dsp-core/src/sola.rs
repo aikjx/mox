@@ -123,7 +123,7 @@ mod tests {
         let out = time_stretch_sola(&sig, n, &opts);
         assert_eq!(out.len(), n);
         // 前 4096 点误差 < 0.05（SOLA 每帧 20ms 有轻微相位，要求不能太严）
-        let err: f32 = sig[..4096.min(n)].iter().zip(out.iter()).map(|(a, b)| (a - b).abs()).sum::<f32>() / 4096.0 as f32;
+        let err: f32 = sig[..4096.min(n)].iter().zip(out.iter()).map(|(a, b)| (a - b).abs()).sum::<f32>() / 4096.0_f32;
         assert!(err < 0.05, "mean abs err = {err}");
     }
 

@@ -320,7 +320,7 @@ mod tests {
         }).unwrap();
         assert!(result.success);
         assert_eq!(result.context["matches"].as_array().unwrap().len(), 1);
-        assert_eq!(result.steps[0].executed, true);
+        assert!(result.steps[0].executed);
     }
 
     #[test]

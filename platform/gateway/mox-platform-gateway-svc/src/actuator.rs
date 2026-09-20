@@ -944,7 +944,7 @@ async fn actuator_info() -> ApiResponse<Value> {
     api_ok(json!({
         "app": {
             "name": "mox-gateway",
-            "description": "MOX mox 模块化系统架构低代码平台 · 企业级网关",
+            "description": "MOX 架构低代码平台 · 企业级网关",
             "version": env!("CARGO_PKG_VERSION"),
             "framework": "Rust / axum 0.7",
             "build_time": option_env!("BUILD_TIME_UTC").unwrap_or("unknown"),

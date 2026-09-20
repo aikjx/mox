@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -91,7 +91,7 @@ pub fn legacy_market_dir() -> PathBuf {
             return PathBuf::from(v.trim());
         }
     }
-    PathBuf::from("./data/market")
+    PathBuf::from("./data/market")  // allow: legacy-migration-detector
 }
 
 /// 历史版本保留数：`OUS_MARKET_KEEP_VERSIONS`（默认 5；0 = 不限制）

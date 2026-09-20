@@ -9,7 +9,7 @@
  *
  * 与 ai.store 的区别：
  * - ai.store: 通用 AI 对话，单助手/多助手聊天
- * - alliance.store: 专家联盟mox 模块化系统架构分析，6阶段管线，多专家辩论
+ * - alliance.store: 专家联盟架构分析，6阶段管线，多专家辩论
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
@@ -57,10 +57,12 @@ export const GateGrade = {
 /**
  * 质量等级元数据
  */
+// ADR-SSOT-3：min 必须与后端 mox-unified-contract 的 GATE_THRESHOLDS 一致
+// （HC-8 硬约束：A=0.90 / B=0.80 / C=0.70），跨端不得各写一套。
 export const GRADE_META = {
-  [GateGrade.A]: { label: '优秀', color: '#10b981', min: 0.85, description: '通过，优质交付' },
-  [GateGrade.B]: { label: '良好', color: '#06b6d4', min: 0.70, description: '通过，标准交付' },
-  [GateGrade.C]: { label: '合格', color: '#f59e0b', min: 0.50, description: '有条件通过，可重试优化' },
+  [GateGrade.A]: { label: '优秀', color: '#10b981', min: 0.90, description: '通过，优质交付' },
+  [GateGrade.B]: { label: '良好', color: '#06b6d4', min: 0.80, description: '通过，标准交付' },
+  [GateGrade.C]: { label: '合格', color: '#f59e0b', min: 0.70, description: '有条件通过，可重试优化' },
   [GateGrade.D]: { label: '不合格', color: '#ef4444', min: 0, description: '阻断，必须修复后重新提交' },
 }
 

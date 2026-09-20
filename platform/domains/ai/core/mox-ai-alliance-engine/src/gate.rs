@@ -271,7 +271,8 @@ pub fn evaluate_gate(intent: &IntentResult, team: &TeamResult, debate: &DebateRe
     }
 }
 
-fn grade_from_total(total: f64) -> GateGrade {
+/// 综合分 → 等级：全 crate 唯一实现（阈值取自 constants，调用方不得另行硬编码）
+pub fn grade_from_total(total: f64) -> GateGrade {
     if total >= GATE_THRESHOLD_A { GateGrade::A }
     else if total >= GATE_THRESHOLD_B { GateGrade::B }
     else if total >= GATE_THRESHOLD_C { GateGrade::C }
@@ -382,7 +383,7 @@ mod tests {
     // TDD 1: 7 审计事件齐全（FR-CORE-07）
     #[tokio::test]
     async fn tdd1_seven_audit_events_complete() {
-        let req = fake_req("mox 模块化系统架构分析：Rust 网关路由性能与安全");
+        let req = fake_req("架构分析：Rust 网关路由性能与安全");
         let intent = classify_intent(&req.query, None::<fn(&[String], f64, u32) -> Result<BTreeMap<String, f64>, String>>);
         let reg = build_expert_registry();
         let team = optimize_team(&intent, &reg, req.options.team_size, false);

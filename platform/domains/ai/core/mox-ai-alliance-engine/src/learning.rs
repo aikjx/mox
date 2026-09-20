@@ -261,21 +261,16 @@ impl KnowledgeLearner {
 mod tests {
     use super::*;
     use crate::debate::ExpertOpinion;
-    use crate::gate::GateGrade;
     use std::collections::BTreeMap;
 
     fn make_gate_score(total: f64) -> GateScore {
-        let grade = if total >= 0.90 { GateGrade::A }
-        else if total >= 0.80 { GateGrade::B }
-        else if total >= 0.70 { GateGrade::C }
-        else { GateGrade::D };
         GateScore {
             quality: 0.85,
             speed: 0.85,
             token_efficiency: 0.85,
             stability: 0.85,
             total,
-            grade,
+            grade: crate::gate::grade_from_total(total),
             formula: crate::constants::QUALITY_FORMULA.to_string(),
         }
     }

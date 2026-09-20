@@ -516,7 +516,11 @@ fn build_dag_for_task(title: &str, _description: &str, mode: AllianceMode) -> Ve
             vec![a, b, c, d, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (850, 200))]
         }
         AllianceMode::Dynamic => {
-            // 动态模式：先分析，再根据中间结果动态选择后续专家（暂用并行拓扑占位）
+            // 动态模式：需求分析 → 动态路由 → 深度执行 → 融合输出。
+            // 说明：网关 DAG 是展示态拓扑（受前端契约约束：首节点需求分析恒 Completed、
+            // 末节点恒「融合输出」），故用「动态路由」节点表达语义；真实的动态选型由
+            // mox-alliance-scheduler-core 的 SimplePlanGenerator 在规划期完成
+            // （见 planner.rs::generate_dynamic_plan），两者语义一致、职责分层。
             let a = n("需求分析", "expert-requirement", NodeExecStatus::Completed, vec![], Some(format!("需求分析完成：{}", title)), (100, 200));
             let b = n("动态路由", "expert-router", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 200));
             let c = n("深度执行", "expert-deep", NodeExecStatus::Pending, vec![b.node_id.clone()], None, (600, 200));
@@ -1824,13 +1828,14 @@ mod tests {
     /// 枚举 → 展示串映射全变体（防止 AllianceMode / FusionStrategy 新增变体时遗漏）
     #[test]
     fn test_mode_and_fusion_str_covers_all_variants() {
-        // AllianceMode：6 种
+        // AllianceMode：7 种（含 Dynamic，防止新增变体时遗漏映射）
         assert_eq!(mode_str(AllianceMode::Sequential), "single_expert");
         assert_eq!(mode_str(AllianceMode::Parallel), "expert_alliance");
         assert_eq!(mode_str(AllianceMode::Iterative), "human_in_loop");
         assert_eq!(mode_str(AllianceMode::Hierarchical), "autonomous");
         assert_eq!(mode_str(AllianceMode::Debate), "debate");
         assert_eq!(mode_str(AllianceMode::Voting), "voting");
+        assert_eq!(mode_str(AllianceMode::Dynamic), "dynamic");
 
         // FusionStrategy：9 种
         assert_eq!(fusion_strategy_str(FusionStrategy::BestOf), "first_wins");
@@ -1844,7 +1849,7 @@ mod tests {
         assert_eq!(fusion_strategy_str(FusionStrategy::Iterative), "iterative");
     }
 
-    /// 六种协作模式各自生成差异化 DAG，且依赖引用必须有效（算法处理模式拓扑契约）
+    /// 七种协作模式各自生成差异化 DAG，且依赖引用必须有效（算法处理模式拓扑契约）
     #[test]
     fn test_build_dag_per_mode() {
         let modes = [
@@ -1854,6 +1859,7 @@ mod tests {
             AllianceMode::Hierarchical,
             AllianceMode::Voting,
             AllianceMode::Debate,
+            AllianceMode::Dynamic,
         ];
         for mode in modes {
             let dag = build_dag_for_task("测试任务", "描述", mode);
@@ -1910,5 +1916,13 @@ mod tests {
         assert!(dag.iter().any(|n| n.name == "反方陈述"));
         let arbiter = dag.iter().find(|n| n.name == "仲裁裁决").expect("应有仲裁裁决节点");
         assert_eq!(arbiter.dependencies.len(), 2);
+
+        // Dynamic：显式「动态路由」节点表达运行时选型语义（真实选型在调度器规划期）
+        let dag = build_dag_for_task("t", "d", AllianceMode::Dynamic);
+        assert!(
+            dag.iter().any(|n| n.name == "动态路由"),
+            "动态模式应包含动态路由节点，实际: {:?}",
+            dag.iter().map(|n| n.name.as_str()).collect::<Vec<_>>()
+        );
     }
 }

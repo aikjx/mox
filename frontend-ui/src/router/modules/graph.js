@@ -20,7 +20,7 @@ export default [  // ===== 图谱域 =====
     name: 'MoxFusion',
     component: () => import('@/views/graph/MoxFusionView.vue'),
     meta: {
-      title: 'mox 模块化系统架构融合',
+      title: '架构融合',
       requiresAuth: true,
       backTo: { path: '/expert-workspace', label: '返回工作台' }
     }

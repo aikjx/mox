@@ -363,7 +363,7 @@ mod tests {
         // Start seed=2: out edges 2→?  Edge (100-i, i, reports_to for i=2 → (98,2,reports_to) is bwd; fwd 98→2. so 2's out edges from fwd... add_vertex_and_edge: id==1 is hub →1→2..30 fwd, also p→100+p for p=1..90,  o ring, reports_to edges fwd 98→2 for i=2 etc.
         // We'll just ensure the subgraph size > 1.
         let r = run(2, proj_community_out_1, "3");
-        assert!(r.vertices.len() >= 1); // at least seed itself
+        assert!(!r.vertices.is_empty()); // at least seed itself
     }
 
     #[test] fn b4_06_community_out_2() {
@@ -403,7 +403,7 @@ mod tests {
     #[test] fn b4_14_degree_out_2_ge_1() {
         let r = run(1, proj_degree_out_2, "1");
         // Seed itself + neighbors with degree >= 1; seed has degree 29 out already (>= 1).
-        assert!(r.vertices.len() >= 1, "size={}", r.vertices.len());
+        assert!(!r.vertices.is_empty(), "size={}", r.vertices.len());
     }
     #[test] fn b4_15_degree_in_1_ge_1() {
         let r = run(101, proj_degree_in_1, "1");

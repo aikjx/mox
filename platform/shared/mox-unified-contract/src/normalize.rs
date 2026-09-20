@@ -179,15 +179,20 @@ pub fn synthesis_weight(score: f64, confidence: f64, priority: i32, max_priority
 // 质量门禁评分
 // =============================================================================
 
-/// 质量门禁综合评分
+/// 交付门禁综合评分（与「质量门禁」异轨，禁止混用）
 ///
 /// 总分 = 0.55 * 质量分 + 0.25 * 覆盖度 + 0.20 * 时效分
+///
+/// 归一化 ADR-SSOT-3：本函数的维度是 覆盖度 / 时效，与 AI 联盟引擎 HC-8 的质量门禁
+/// 公式（质量 / 速度 / token 效率 / 稳定性）不是同一业务对象，故由 `gate_score`
+/// 更名为 `delivery_gate_score` 以示区分，避免与质量门禁同名造成口径混淆。
+/// 两者共用同一套 A/B/C/D 等级阈值（`quality::GATE_THRESHOLDS`）。
 ///
 /// # 参数
 /// - `quality`: 质量分（0.0-1.0）
 /// - `coverage`: 覆盖度（0.0-1.0）
 /// - `timeliness`: 时效分（0.0-1.0）
-pub fn gate_score(quality: f64, coverage: f64, timeliness: f64) -> f64 {
+pub fn delivery_gate_score(quality: f64, coverage: f64, timeliness: f64) -> f64 {
     let score = 0.55 * clamp_score(quality) + 0.25 * clamp_score(coverage) + 0.20 * clamp_score(timeliness);
     clamp_score(score)
 }
@@ -409,8 +414,8 @@ mod tests {
     }
 
     #[test]
-    fn gate_score_basic() {
-        let score = gate_score(0.8, 0.9, 0.7);
+    fn delivery_gate_score_basic() {
+        let score = delivery_gate_score(0.8, 0.9, 0.7);
         assert!(score > 0.0 && score <= 1.0);
         // 0.55*0.8 + 0.25*0.9 + 0.20*0.7 = 0.44 + 0.225 + 0.14 = 0.805
         assert!((score - 0.805).abs() < 1e-10);

@@ -910,7 +910,7 @@ mod tests {
     fn test_compute_match_score() {
         let exp = ExpertDescriptor::minimal("exp-1".into(), "架构师".into());
         let score = compute_match_score("架构 后端 Rust", &exp);
-        assert!(score >= 0.0 && score <= 1.0);
+        assert!((0.0..=1.0).contains(&score));
     }
 
     #[test]
@@ -918,7 +918,7 @@ mod tests {
         let s1 = text_similarity("如何设计微服务架构", "微服务架构设计方法");
         let s2 = text_similarity("如何设计微服务架构", "今天天气很好");
         assert!(s1 > s2);
-        assert!(s1 >= 0.0 && s1 <= 1.0);
+        assert!((0.0..=1.0).contains(&s1));
     }
 
     #[test]

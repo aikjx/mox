@@ -12,7 +12,7 @@
 //! - Parallel processing with rayon
 
 use petgraph::graph::{DiGraph, NodeIndex};
-use petgraph::visit::{EdgeRef, NodeIndexable};
+use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
@@ -194,7 +194,7 @@ pub fn shortest_path<N, E>(graph: &DiGraph<N, E>, source: NodeIndex, target: Nod
 
 /// Community detection using label propagation.
 pub fn label_propagation<N, E>(graph: &DiGraph<N, E>, max_iterations: usize) -> HashMap<usize, usize> {
-    let n = graph.node_count();
+    let _n = graph.node_count();
     let mut labels: HashMap<usize, usize> = graph.node_indices().map(|ni| (ni.index(), ni.index())).collect();
     let node_indices: Vec<NodeIndex> = graph.node_indices().collect();
 

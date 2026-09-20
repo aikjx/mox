@@ -40,49 +40,49 @@ fn platform_tag_returns_non_empty() {
 
 #[test]
 fn app_operator_default_construction() {
-    let op = AppOperator::default();
+    let op = AppOperator;
     let _ = op; // 编译通过即可验证构造成功
 }
 
 #[test]
 fn file_operator_default_construction() {
-    let op = FileOperator::default();
+    let op = FileOperator;
     let _ = op;
 }
 
 #[test]
 fn volume_operator_default_construction() {
-    let op = VolumeOperator::default();
+    let op = VolumeOperator;
     let _ = op;
 }
 
 #[test]
 fn input_operator_default_construction() {
-    let op = InputOperator::default();
+    let op = InputOperator;
     let _ = op;
 }
 
 #[test]
 fn network_operator_default_construction() {
-    let op = NetworkOperator::default();
+    let op = NetworkOperator;
     let _ = op;
 }
 
 #[test]
 fn display_operator_default_construction() {
-    let op = DisplayOperator::default();
+    let op = DisplayOperator;
     let _ = op;
 }
 
 #[test]
 fn browser_operator_default_construction() {
-    let op = BrowserOperator::default();
+    let op = BrowserOperator;
     let _ = op;
 }
 
 #[test]
 fn notify_operator_default_construction() {
-    let op = NotifyOperator::default();
+    let op = NotifyOperator;
     let _ = op;
 }
 
@@ -90,14 +90,14 @@ fn notify_operator_default_construction() {
 
 #[test]
 fn app_operator_debug_fmt() {
-    let op = AppOperator::default();
+    let op = AppOperator;
     let dbg = format!("{:?}", op);
     assert!(!dbg.is_empty(), "Debug 输出不应为空");
 }
 
 #[test]
 fn volume_operator_debug_fmt() {
-    let op = VolumeOperator::default();
+    let op = VolumeOperator;
     let dbg = format!("{:?}", op);
     assert!(!dbg.is_empty());
 }
@@ -116,7 +116,7 @@ fn register_all_defaults_registers_all_8_categories() {
     // 验证至少有 8 个不同 category 的动作
     use std::collections::HashSet;
     let categories: HashSet<_> = actions.iter().map(|(_, cat, _)| *cat).collect();
-    assert!(categories.len() >= 1, "至少应有 1 类动作被注册");
+    assert!(!categories.is_empty(), "至少应有 1 类动作被注册");
 }
 
 // ─── OperatorCategory 一致性验证 ───
@@ -124,19 +124,19 @@ fn register_all_defaults_registers_all_8_categories() {
 #[test]
 fn eight_operators_match_eight_categories() {
     use OperatorCategory::*;
-    let categories = vec![App, File, Volume, Input, Network, Display, Browser, Notify];
+    let categories = [App, File, Volume, Input, Network, Display, Browser, Notify];
     assert_eq!(categories.len(), 8);
 
     // 验证 8 个 operator 对应 8 个 category
     let ops: Vec<Box<dyn std::any::Any>> = vec![
-        Box::new(AppOperator::default()),
-        Box::new(FileOperator::default()),
-        Box::new(VolumeOperator::default()),
-        Box::new(InputOperator::default()),
-        Box::new(NetworkOperator::default()),
-        Box::new(DisplayOperator::default()),
-        Box::new(BrowserOperator::default()),
-        Box::new(NotifyOperator::default()),
+        Box::new(AppOperator),
+        Box::new(FileOperator),
+        Box::new(VolumeOperator),
+        Box::new(InputOperator),
+        Box::new(NetworkOperator),
+        Box::new(DisplayOperator),
+        Box::new(BrowserOperator),
+        Box::new(NotifyOperator),
     ];
     assert_eq!(ops.len(), 8);
 }
@@ -150,28 +150,28 @@ fn all_operators_implement_system_operator() {
 
     fn assert_is_operator<T: SystemOperator + 'static>(_: &T) {}
 
-    let app = AppOperator::default();
+    let app = AppOperator;
     assert_is_operator(&app);
 
-    let file = FileOperator::default();
+    let file = FileOperator;
     assert_is_operator(&file);
 
-    let vol = VolumeOperator::default();
+    let vol = VolumeOperator;
     assert_is_operator(&vol);
 
-    let input = InputOperator::default();
+    let input = InputOperator;
     assert_is_operator(&input);
 
-    let net = NetworkOperator::default();
+    let net = NetworkOperator;
     assert_is_operator(&net);
 
-    let disp = DisplayOperator::default();
+    let disp = DisplayOperator;
     assert_is_operator(&disp);
 
-    let browser = BrowserOperator::default();
+    let browser = BrowserOperator;
     assert_is_operator(&browser);
 
-    let notify = NotifyOperator::default();
+    let notify = NotifyOperator;
     assert_is_operator(&notify);
 
     // 验证可以放入 Arc 并注册到 engine
@@ -188,7 +188,7 @@ fn all_operators_implement_system_operator() {
 #[test]
 fn app_operator_has_actions() {
     use mox_voice_core_svc::operator::SystemOperator;
-    let op = AppOperator::default();
+    let op = AppOperator;
     let actions = op.list_actions();
     assert!(!actions.is_empty(), "AppOperator 应有动作定义");
     // 验证 category 正确
@@ -202,7 +202,7 @@ fn app_operator_has_actions() {
 #[test]
 fn volume_operator_has_actions() {
     use mox_voice_core_svc::operator::SystemOperator;
-    let op = VolumeOperator::default();
+    let op = VolumeOperator;
     let actions = op.list_actions();
     assert!(!actions.is_empty(), "VolumeOperator 应有动作定义");
     for sig in &actions {

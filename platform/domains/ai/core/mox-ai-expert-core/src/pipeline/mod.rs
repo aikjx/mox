@@ -3,7 +3,7 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
-//! mox 模块化系统架构处理管线（骨架 · TODO：后续迭代补全完整实现）
+//! 架构处理管线（骨架 · TODO：后续迭代补全完整实现）
 //!
 //! normalize → 并行派发专家 → 裁决 → flow-ai 求解 → 治理闸门 → 出码
 //!
@@ -23,7 +23,7 @@ use mox_ai_flow_core::model::FlowGraph;
 use mox_ai_flow_core::pipeline::optimize;
 use serde::{Deserialize, Serialize};
 
-/// mox 模块化系统架构治理报告：专家评分 + 裁决冲突 + 优化报告 + 治理闸门
+/// 架构治理报告：专家评分 + 裁决冲突 + 优化报告 + 治理闸门
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GovernanceReport {
     pub flow_id: String,
@@ -42,7 +42,7 @@ pub struct GovernanceReport {
     pub adopted_suggestions: Vec<mox_ai_expert_proto::Suggestion>,
 }
 
-/// mox 模块化系统架构优化入口（骨架实现）
+/// 架构优化入口（骨架实现）
 ///
 /// TODO(P2 阶段 4 后续迭代)：
 /// - 接入插件化运行时（Harness）

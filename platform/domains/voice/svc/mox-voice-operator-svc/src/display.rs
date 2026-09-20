@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn list_actions_5_covered() {
-        let op = DisplayOperator::default();
+        let op = DisplayOperator;
         let acts = op.list_actions();
         assert_eq!(acts.len(), 5);
         let names: Vec<_> = acts.iter().map(|a| a.name).collect();

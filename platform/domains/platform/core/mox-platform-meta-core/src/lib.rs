@@ -96,7 +96,7 @@ mod tests {
         let merged: HashMap<String, String> = fetched
             .slot_map
             .into_iter()
-            .chain(slot_map.into_iter())
+            .chain(slot_map)
             .collect();
 
         let code_slot = merged.get("project_code").expect("slot for project_code");

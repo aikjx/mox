@@ -2416,9 +2416,9 @@ mod tests {
             FilterCondition::Lt("age".into(), PropValue::Int(30)),
         ]);
         let columns = vec!["age".into()];
-        assert!(cond.evaluate(&columns, &vec![PropValue::Int(25)]));
-        assert!(!cond.evaluate(&columns, &vec![PropValue::Int(15)]));
-        assert!(!cond.evaluate(&columns, &vec![PropValue::Int(35)]));
+        assert!(cond.evaluate(&columns, &[PropValue::Int(25)]));
+        assert!(!cond.evaluate(&columns, &[PropValue::Int(15)]));
+        assert!(!cond.evaluate(&columns, &[PropValue::Int(35)]));
     }
 
     #[test]
@@ -2428,8 +2428,8 @@ mod tests {
             PropValue::Str("pending".into()),
         ]);
         let columns = vec!["status".into()];
-        assert!(cond.evaluate(&columns, &vec![PropValue::Str("active".into())]));
-        assert!(!cond.evaluate(&columns, &vec![PropValue::Str("inactive".into())]));
+        assert!(cond.evaluate(&columns, &[PropValue::Str("active".into())]));
+        assert!(!cond.evaluate(&columns, &[PropValue::Str("inactive".into())]));
     }
 
     #[test]

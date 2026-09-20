@@ -72,7 +72,7 @@ fn hotword_validate_empty_category() {
 
 #[test]
 fn hotword_validate_long_word() {
-    let long_word: String = std::iter::repeat("字").take(41).collect();
+    let long_word: String = std::iter::repeat_n("字", 41).collect();
     let hw = Hotword::new(long_word);
     assert!(hw.validate(1).is_err());
 }
@@ -137,11 +137,9 @@ fn dispatch_mode_default_is_local_first() {
 
 #[test]
 fn dispatch_mode_variants() {
-    let modes = vec![
-        DispatchMode::LocalFirst,
+    let modes = [DispatchMode::LocalFirst,
         DispatchMode::CloudFallback,
-        DispatchMode::CloudOnly,
-    ];
+        DispatchMode::CloudOnly];
     assert_eq!(modes.len(), 3);
 }
 
@@ -223,7 +221,7 @@ fn check_clearance_owner_bonus_lifts_level() {
 #[test]
 fn operator_category_all_eight() {
     use OperatorCategory::*;
-    let all = vec![App, File, Volume, Input, Network, Display, Browser, Notify];
+    let all = [App, File, Volume, Input, Network, Display, Browser, Notify];
     assert_eq!(all.len(), 8);
 }
 
@@ -375,7 +373,7 @@ fn xiaobai_error_permission_denied_format() {
 #[test]
 fn envelope_kind_all_variants() {
     use EnvelopeKind::*;
-    let kinds = vec![Intent, Exec, Audit, Ack, Ping, Error];
+    let kinds = [Intent, Exec, Audit, Ack, Ping, Error];
     assert_eq!(kinds.len(), 6);
 }
 

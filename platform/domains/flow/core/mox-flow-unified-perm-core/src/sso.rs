@@ -590,7 +590,7 @@ mod tests {
         let tenant = mgr.tenant_mgr.get_tenant_by_code("test").unwrap();
 
         let token = mgr
-            .issue_token(&"user-1", &tenant.id, TokenType::Access, 3600_000)
+            .issue_token("user-1", &tenant.id, TokenType::Access, 3600_000)
             .unwrap();
 
         assert!(!token.is_expired());
@@ -606,7 +606,7 @@ mod tests {
         let tenant = mgr.tenant_mgr.get_tenant_by_code("test").unwrap();
 
         let token = mgr
-            .issue_token(&"user-1", &tenant.id, TokenType::Access, 1) // 1ms 即过期
+            .issue_token("user-1", &tenant.id, TokenType::Access, 1) // 1ms 即过期
             .unwrap();
 
         // 等待过期
@@ -626,7 +626,7 @@ mod tests {
         let tenant = mgr.tenant_mgr.get_tenant_by_code("test").unwrap();
 
         let token = mgr
-            .issue_token(&"user-1", &tenant.id, TokenType::Access, 3600_000)
+            .issue_token("user-1", &tenant.id, TokenType::Access, 3600_000)
             .unwrap();
 
         assert!(mgr.revoke_token(&token.token_id));
@@ -693,7 +693,7 @@ mod tests {
         let tenant = mgr.tenant_mgr.get_tenant_by_code("test").unwrap();
 
         let token = mgr
-            .issue_token(&"user-1", &tenant.id, TokenType::Access, 3600_000)
+            .issue_token("user-1", &tenant.id, TokenType::Access, 3600_000)
             .unwrap();
 
         assert!(token.remaining_ms() > 3500_000);
@@ -705,9 +705,9 @@ mod tests {
         let tenant = mgr.tenant_mgr.get_tenant_by_code("test").unwrap();
 
         // 签发一个很快过期的 token
-        mgr.issue_token(&"u1", &tenant.id, TokenType::Access, 1)
+        mgr.issue_token("u1", &tenant.id, TokenType::Access, 1)
             .unwrap();
-        mgr.issue_token(&"u2", &tenant.id, TokenType::Access, 3600_000)
+        mgr.issue_token("u2", &tenant.id, TokenType::Access, 3600_000)
             .unwrap();
 
         std::thread::sleep(std::time::Duration::from_millis(10));

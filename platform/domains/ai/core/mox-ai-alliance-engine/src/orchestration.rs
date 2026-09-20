@@ -7,7 +7,7 @@
 //!   支持三种编排策略：
 //!   - sequential：按优先级顺序逐个执行专家（低资源场景）
 //!   - parallel：所有专家并行执行（高性能场景，默认）
-//!   - pipeline：意图→组队→辩论→合成→门禁 完整管线（mox 模块化系统架构分析场景）
+//!   - pipeline：意图→组队→辩论→合成→门禁 完整管线（架构分析场景）
 //!
 //! # 设计
 //! - `OrchestrationEngine` — 编排引擎
@@ -82,6 +82,7 @@ pub enum TaskStatus {
 }
 
 impl TaskStatus {
+    /// 状态标识串：全 crate 唯一真源，持久化与序列化共用
     pub fn label(&self) -> &'static str {
         match self {
             Self::Pending => "pending",
@@ -90,6 +91,32 @@ impl TaskStatus {
             Self::Failed => "failed",
             Self::Cancelled => "cancelled",
         }
+    }
+
+    /// `label()` 的同义入口，委托实现以避免出现第二份状态串真源
+    pub fn as_str(&self) -> &'static str {
+        self.label()
+    }
+
+    /// 由状态串解析；未识别值回退 `Pending`（保持持久化层既有口径）
+    ///
+    /// 命名沿用历史 API（`from_str`），此处刻意不实现 `FromStr`：
+    /// 语义是「宽容解析」而非「可失败解析」，解析失败不产生错误值。
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "running" => Self::Running,
+            "completed" => Self::Completed,
+            "failed" => Self::Failed,
+            "cancelled" => Self::Cancelled,
+            _ => Self::Pending,
+        }
+    }
+}
+
+impl Default for TaskStatus {
+    fn default() -> Self {
+        Self::Pending
     }
 }
 

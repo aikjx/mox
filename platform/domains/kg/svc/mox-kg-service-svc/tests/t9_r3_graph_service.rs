@@ -981,7 +981,7 @@ fn tr9_6_algo_ppr_ds06_cycle7() {
             (a, b)
         })
         .collect();
-    let n_slice: Vec<&str> = nodes.iter().cloned().collect();
+    let n_slice: Vec<&str> = nodes.to_vec();
     ppr_case(&n_slice, &edges, "0");
 }
 #[test]
@@ -1802,7 +1802,7 @@ fn tr9_8_boundary_no_external_graph_db_strings() {
         'outer: for i in 0..chars.len().saturating_sub(needle.len()) {
             for j in 0..needle.len() {
                 // 不区分大小写
-                if chars[i + j].to_ascii_lowercase() != needle[j].to_ascii_lowercase() {
+                if !chars[i + j].eq_ignore_ascii_case(&needle[j]) {
                     continue 'outer;
                 }
             }

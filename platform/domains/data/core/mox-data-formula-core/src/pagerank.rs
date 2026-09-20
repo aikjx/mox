@@ -214,7 +214,7 @@ mod tests {
     use crate::{EdgeInput, NodeInput};
 
     fn simple_graph() -> (Vec<NodeInput>, Vec<EdgeInput>) {
-        let nodes: Vec<NodeInput> = vec!["A", "B", "C", "D"]
+        let nodes: Vec<NodeInput> = ["A", "B", "C", "D"]
             .iter()
             .map(|s| NodeInput { id: (*s).to_string(), label: None, properties: None })
             .collect();

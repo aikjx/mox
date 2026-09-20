@@ -69,7 +69,7 @@ export default [  // ===== 专家联盟统一工作台（主入口）=====
       }
     ]
   },
-  // 专家配置引擎（mox 模块化系统架构可配置）
+  // 专家配置引擎（架构可配置）
   {
     path: '/expert-config',
     name: 'ExpertConfig',

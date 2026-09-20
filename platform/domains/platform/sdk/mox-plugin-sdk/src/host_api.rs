@@ -3,7 +3,7 @@
 //! 插件通过PluginContext调用宿主平台提供的能力。
 //! 在WASM运行时中，这些调用通过wasmer的host function实现。
 
-use crate::error::{PluginError, PluginResult};
+use crate::error::PluginResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

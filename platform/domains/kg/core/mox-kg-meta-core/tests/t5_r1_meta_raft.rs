@@ -52,7 +52,7 @@ fn bootstrap_3node_admin() -> (tokio::runtime::Runtime, MetaServer, String) {
     let _snap_single = tmp
         .cluster()
         .is_none()
-        .then(|| {
+        .then_some({
             // 通过读所有用户得到 admin_def
             admin_def
         })

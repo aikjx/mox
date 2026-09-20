@@ -6,7 +6,7 @@
 //! MOX AI Intent Core — AI 对话意图核心引擎
 //!
 //! ## 概述
-//! mox 模块化系统架构低代码平台的 AI 意图理解中枢。用户输入一句自然语言，
+//! 架构低代码平台的 AI 意图理解中枢。用户输入一句自然语言，
 //! 本 crate 负责：**分类意图 → 抽取实体 → 拆解任务 → 匹配 Agent → 输出结构化结果**。
 //!
 //! ## 模块结构
@@ -493,7 +493,7 @@ mod tests {
         // 应有任务计划
         assert!(!result.task_plan.steps.is_empty());
         // 应有人机协同建议
-        assert!(result.collaboration.max_risk.len() > 0);
+        assert!(!result.collaboration.max_risk.is_empty());
         // 耗时应合理
         assert!(result.timing.total_ms < 1000);
     }

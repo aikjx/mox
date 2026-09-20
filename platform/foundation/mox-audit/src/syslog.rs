@@ -151,7 +151,7 @@ impl SyslogSink {
                             stream
                                 .write_all(frame.as_bytes())
                                 .map_err(|e| AuditError::WriteFailed(e.to_string()))?;
-                            stream.write_all(b"\n").ok();
+                            let _ = stream.write_all(b"\n");
                             return Ok(());
                         }
                         Err(_e) if retry < 3 => {

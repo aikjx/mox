@@ -41,27 +41,6 @@ impl Default for SsoState {
     }
 }
 
-#[cfg(test)]
-mod callback_tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn external_callback_never_creates_a_mock_session() {
-        let state = Arc::new(SsoState::new());
-        let provider_id = {
-            let mut providers = state.providers.write().await;
-            let provider = providers.values_mut().next().expect("builtin provider template");
-            provider.status = "enabled".into();
-            provider.provider_id.clone()
-        };
-        let response = callback_handler(State(state.clone()), Json(SsoCallbackRequest {
-            provider_id, code: "unverified-code".into(), state: "unverified-state".into(),
-        })).await;
-        assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
-        assert!(state.sessions.read().await.is_empty());
-    }
-}
-
 /// GET /api/enterprise/sso/protocols —— 获取支持的协议列表
 pub async fn list_protocols_handler() -> Response {
     let protocols = supported_protocols();
@@ -248,4 +227,25 @@ where
         .route("/login", post(login_handler))
         .route("/callback", post(callback_handler))
         .route("/logout", post(logout_handler))
+}
+
+#[cfg(test)]
+mod callback_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn external_callback_never_creates_a_mock_session() {
+        let state = Arc::new(SsoState::new());
+        let provider_id = {
+            let mut providers = state.providers.write().await;
+            let provider = providers.values_mut().next().expect("builtin provider template");
+            provider.status = "enabled".into();
+            provider.provider_id.clone()
+        };
+        let response = callback_handler(State(state.clone()), Json(SsoCallbackRequest {
+            provider_id, code: "unverified-code".into(), state: "unverified-state".into(),
+        })).await;
+        assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
+        assert!(state.sessions.read().await.is_empty());
+    }
 }

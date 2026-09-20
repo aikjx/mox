@@ -52,6 +52,9 @@ pub use pagination::{PaginationRequest, SortOrder, FilterCondition, QueryRequest
 // 归一化工具
 pub use normalize::{clamp_score, normalize_weights, compute_consensus, weighted_average};
 
+// 交付门禁评分（与质量门禁异轨，见 ADR-SSOT-3）
+pub use normalize::delivery_gate_score;
+
 // ── Crate 元数据 ──────────────────────────────────────────────────────────
 
 /// Crate 唯一标识（用于注册表和审计）

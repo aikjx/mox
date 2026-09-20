@@ -158,7 +158,7 @@ impl VolumeOperator {
            } else {
                (vec!["set-sink-mute", "@DEFAULT_SINK@", "0"], "unmute")
            };
-           let r = run_command("pactl", &cmd_arg.iter().copied().collect::<Vec<_>>());
+           let r = run_command("pactl", &cmd_arg.to_vec());
            fb.push("pactl_set-sink-mute_DEFAULT");
            if matches!(r, Ok((_, _, 0))) {
                return Ok((fb, format!("pactl mute action={action_label} 成功")));
@@ -170,7 +170,7 @@ impl VolumeOperator {
            } else {
                vec!["sset", "Master", "unmute"]
            };
-           let r2 = run_command("amixer", &amixer_arg.iter().copied().collect::<Vec<_>>());
+           let r2 = run_command("amixer", &amixer_arg.to_vec());
            fb.push("amixer_sset_Master_mute");
            if matches!(r2, Ok((_, _, 0))) {
                return Ok((fb, format!("amixer mute action={action_label} 成功")));

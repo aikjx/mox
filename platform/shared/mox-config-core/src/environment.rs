@@ -113,7 +113,7 @@ impl EnvironmentConfig {
             log_level: if environment.is_prod() { "info" } else { "debug" }.to_string(),
             debug: !environment.is_prod(),
             verbose: environment.is_dev(),
-            data_dir: format!("./data/{}", environment.as_str()),
+            data_dir: format!("./data/{}", environment.as_str()),  // allow: config-core-default
             temp_dir: "./temp".to_string(),
         }
     }
@@ -211,7 +211,7 @@ mod tests {
         assert_eq!(config.environment, Environment::Prod);
         assert_eq!(config.log_level, "info");
         assert!(!config.debug);
-        assert_eq!(config.data_dir, "./data/prod");
+        assert_eq!(config.data_dir, "./data/prod");  // allow: test-assertion
     }
 
     #[test]

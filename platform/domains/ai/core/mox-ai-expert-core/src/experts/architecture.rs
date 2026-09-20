@@ -297,11 +297,11 @@ mod tests {
         let last = "s";
         for i in 1..10 {
             let id = format!("n{i}");
-            g.add_node(FlowNode::new(&id, &format!("N{i}"), NodeKind::Task));
+            g.add_node(FlowNode::new(&id, format!("N{i}"), NodeKind::Task));
             g.add_edge(FlowEdge::seq(last, &id));
         }
         g.add_node(FlowNode::new("e", "End", NodeKind::End));
-        g.add_edge(FlowEdge::seq(&format!("n9"), "e"));
+        g.add_edge(FlowEdge::seq("n9".to_string(), "e"));
         let ectx = make_ctx(&g);
         let _o = ArchitectureExpert.analyze(&ectx);
         // 等等——扇出最大是 n9 → e，扇出 1。这是一条链

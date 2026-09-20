@@ -29,7 +29,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             bind_addr: "0.0.0.0:3400".to_string(),
-            database_path: "./data/registry.db".to_string(),
+            database_path: "./data/registry.db".to_string(),  // allow: dev-default-prod-overridden
         }
     }
 }

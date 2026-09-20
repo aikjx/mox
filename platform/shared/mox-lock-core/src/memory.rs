@@ -148,7 +148,7 @@ impl Lock for MemoryLock {
                             let mut queues = self.wait_queues.lock();
                             queues
                                 .entry(key.to_string())
-                                .or_insert_with(VecDeque::new)
+                                .or_default()
                                 .push_back(notify.clone());
                             notify
                         }

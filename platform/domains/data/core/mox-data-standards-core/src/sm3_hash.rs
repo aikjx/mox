@@ -514,7 +514,7 @@ fn t24_sample2_standard() {
 #[test]
 fn t24_1ma_sanity_check_blocks() {
     let n = 1_000_000;
-    let data: Vec<u8> = std::iter::repeat(b'a').take(n).collect();
+    let data: Vec<u8> = std::iter::repeat_n(b'a', n).collect();
     let got = sm3_hex(&data);
     let exp = "c8aaf89429554029e231941a2acc0ad61ff2a5acd8fadd25847a3a732b3b02c3";
     eprintln!("1ma got first 24: {}", &got[..24]);
@@ -526,7 +526,7 @@ fn t24_1ma_sanity_check_blocks() {
 fn t24_short_multi_65_a() {
     // 65 a's: first block = 64 a's fully processed; second block = 1 'a' + padding.
     // Compute and output, but also compute manually using cf exposed.
-    let data65: Vec<u8> = std::iter::repeat(b'a').take(65).collect();
+    let data65: Vec<u8> = std::iter::repeat_n(b'a', 65).collect();
     let got = sm3_hex(&data65);
     eprintln!("65a result: {}", got);
 
@@ -551,7 +551,7 @@ fn t24_short_multi_65_a() {
 #[test]
 fn t24_debug_1ma_api_vs_manual_cf() {
     let n = 1_000_000usize;
-    let data: Vec<u8> = std::iter::repeat(b'a').take(n).collect();
+    let data: Vec<u8> = std::iter::repeat_n(b'a', n).collect();
 
     // (1) Via public sm3() API.
     let api_hex = sm3_hex(&data);

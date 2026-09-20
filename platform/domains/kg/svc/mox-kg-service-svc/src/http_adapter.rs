@@ -868,7 +868,7 @@ mod tests {
     /// 获取图谱中第一条有向边的 (source, target) 对（保证存在有向路径）
     fn connected_node_pair() -> Option<(String, String)> {
         let kg = crate::kg_graph::global();
-        for (src, tgt, _w, _rel) in kg.edge_meta.values() {
+        if let Some((src, tgt, _w, _rel)) = kg.edge_meta.values().next() {
             return Some((src.clone(), tgt.clone()));
         }
         None
@@ -889,7 +889,7 @@ mod tests {
         let resp = data.unwrap();
 
         assert!(resp["cytoscape"]["nodes"].is_array());
-        assert!(resp["cytoscape"]["nodes"].as_array().unwrap().len() > 0);
+        assert!(!resp["cytoscape"]["nodes"].as_array().unwrap().is_empty());
         assert_eq!(resp["meta"]["center"], json!(center));
         assert!(resp["meta"]["node_count"].as_u64().unwrap() > 0);
     }
@@ -943,11 +943,11 @@ mod tests {
         // 验证分数在 0-1 之间
         for entry in degree_top {
             let score = entry[1].as_f64().unwrap();
-            assert!(score >= 0.0 && score <= 1.0, "degree score out of range: {}", score);
+            assert!((0.0..=1.0).contains(&score), "degree score out of range: {}", score);
         }
-        assert!(resp["summary"]["betweenness_top"].as_array().unwrap().len() > 0);
-        assert!(resp["summary"]["pagerank_top"].as_array().unwrap().len() > 0);
-        assert!(resp["summary"]["closeness_top"].as_array().unwrap().len() > 0);
+        assert!(!resp["summary"]["betweenness_top"].as_array().unwrap().is_empty());
+        assert!(!resp["summary"]["pagerank_top"].as_array().unwrap().is_empty());
+        assert!(!resp["summary"]["closeness_top"].as_array().unwrap().is_empty());
     }
 
     #[tokio::test]
@@ -963,7 +963,7 @@ mod tests {
         assert!(resp["community_count"].as_u64().unwrap() > 0);
         // 验证每个社区有成员
         for c in comms {
-            assert!(c["members"].as_array().unwrap().len() > 0);
+            assert!(!c["members"].as_array().unwrap().is_empty());
             assert!(c["size"].as_u64().unwrap() > 0);
         }
     }
@@ -1006,7 +1006,7 @@ mod tests {
             assert!(!paths.is_empty(), "paths should not be empty for connected nodes");
             assert!(paths.len() <= 3);
             for p in paths {
-                assert!(p["nodes"].as_array().unwrap().len() > 0);
+                assert!(!p["nodes"].as_array().unwrap().is_empty());
                 assert!(p["label"].is_string());
             }
         }
@@ -1045,7 +1045,7 @@ mod tests {
         let resp = data.unwrap();
 
         // 空输入应退化为全图 PageRank，top_entities 非空
-        assert!(resp["top_entities"].as_array().unwrap().len() > 0);
+        assert!(!resp["top_entities"].as_array().unwrap().is_empty());
     }
 
     #[tokio::test]
@@ -1110,7 +1110,7 @@ mod tests {
 
         assert_eq!(resp["window"], json!("30d"));
         let cem = resp["cem_score"].as_f64().unwrap();
-        assert!(cem >= 0.0 && cem <= 100.0, "cem_score out of range: {}", cem);
+        assert!((0.0..=100.0).contains(&cem), "cem_score out of range: {}", cem);
         assert!(resp["breakdown"]["task_success_rate"]["value"].is_number());
         assert!(resp["breakdown"]["avg_latency_p50_ms"]["value"].is_number());
         assert!(resp["breakdown"]["governance_score"]["value"].is_number());

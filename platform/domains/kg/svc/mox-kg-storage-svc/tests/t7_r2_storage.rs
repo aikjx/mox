@@ -150,7 +150,7 @@ fn api_remove_vertex_returns_true_when_exists() {
 #[test]
 fn api_remove_vertex_returns_false_when_absent() {
     let srv = new_srv(16);
-    assert_eq!(srv.remove_vertex("missing").unwrap(), false);
+    assert!(!srv.remove_vertex("missing").unwrap());
 }
 
 #[test]
@@ -277,7 +277,7 @@ fn api_remove_edge_exists() {
 #[test]
 fn api_remove_edge_absent_returns_false() {
     let srv = new_srv(16);
-    assert_eq!(srv.remove_edge("a", "b", "e", 1).unwrap(), false);
+    assert!(!srv.remove_edge("a", "b", "e", 1).unwrap());
 }
 
 #[test]

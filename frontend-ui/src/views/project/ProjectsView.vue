@@ -334,7 +334,7 @@
 
         <!-- 未选中项目时的空状态 -->
         <div v-else class="empty-detail">
-          <el-empty description="选择或新建一个项目，开始mox 模块化系统架构归类" :image-size="100" />
+          <el-empty description="选择或新建一个项目，开始架构归类" :image-size="100" />
         </div>
       </div>
     </div>
@@ -410,8 +410,8 @@
       </template>
     </el-dialog>
 
-    <!-- ===== mox 模块化系统架构目录归档 Drawer（保留） ===== -->
-    <el-drawer v-model="binder.visible" title="mox 模块化系统架构资源目录 · 归类到项目" size="620px">
+    <!-- ===== 架构目录归档 Drawer（保留） ===== -->
+    <el-drawer v-model="binder.visible" title="架构资源目录 · 归类到项目" size="620px">
       <div class="binder-head">
         <el-input v-model="binder.keyword" placeholder="搜索全部资源…" clearable>
           <template #prefix><el-icon><Search /></el-icon></template>

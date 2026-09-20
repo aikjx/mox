@@ -502,7 +502,7 @@ fn simulation_avg_path_length_estimation() {
             }
         }
 
-        for (_, &dist) in &visited {
+        for &dist in visited.values() {
             if dist > 0 {
                 total_distance += dist as u64;
                 total_pairs += 1;

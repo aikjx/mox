@@ -597,7 +597,7 @@ mod tests {
         let ctx = pipeline.run(make_ctx()).unwrap();
 
         // 每个阶段有 start + end 两个审计事件
-        assert!(ctx.audit.len() > 0);
+        assert!(!ctx.audit.is_empty());
         assert!(ctx.audit.verify());
     }
 

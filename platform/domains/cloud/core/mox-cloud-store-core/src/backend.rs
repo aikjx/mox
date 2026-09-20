@@ -86,7 +86,7 @@ impl Default for StoreConfig {
     fn default() -> Self {
         Self {
             kind: BackendKind::Fs,
-            data_dir: PathBuf::from("./data/store"),
+            data_dir: PathBuf::from("./data/store"),  // allow: dev-default-prod-overridden
             verify_checksum: true,
             s3: None,
         }

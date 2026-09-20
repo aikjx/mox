@@ -3,7 +3,6 @@
 //! 用于在构建时或运行时生成插件描述符（manifest.json）。
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// 插件权限（与mox-plugin-core中的PluginPermission保持一致）
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]

@@ -230,7 +230,7 @@ mod tests {
             audit_enabled: false,
         };
         let engine = ExpertEngine::with_config(config);
-        assert_eq!(engine.config().parallel, false);
+        assert!(!engine.config().parallel);
         assert_eq!(engine.config().default_quota.max_parallel, 4);
         assert_eq!(engine.expert_count(), 14);
     }
@@ -239,7 +239,7 @@ mod tests {
     fn engine_has_all_core_components() {
         let engine = ExpertEngine::new();
         // 三大组件都可用
-        assert!(engine.registry().len() > 0);
+        assert!(!engine.registry().is_empty());
         assert_eq!(engine.registry().len(), 14);
     }
 

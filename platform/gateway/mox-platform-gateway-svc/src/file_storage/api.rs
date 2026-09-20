@@ -26,7 +26,7 @@ impl FileStorageState {
             files.insert(f.file_id.clone(), f);
         }
         let upload_dir = std::env::var("MOX_UPLOAD_DIR")
-            .unwrap_or_else(|_| "./data/uploads".to_string());
+            .unwrap_or_else(|_| "./data/uploads".to_string());  // allow: env-MOX_UPLOAD_DIR-overrides
         // 确保目录存在
         let _ = std::fs::create_dir_all(&upload_dir);
         Self {

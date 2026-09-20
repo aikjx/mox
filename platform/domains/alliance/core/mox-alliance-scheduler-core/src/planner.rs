@@ -21,6 +21,21 @@ use uuid::Uuid;
 
 use mox_alliance_scheduler_proto::{MatchScoreBreakdown, MatchedExpert, PlanGenerationRequest};
 
+/// 动态模式（Dynamic）的规划期路由决策
+///
+/// 协议层语义：「根据中间结果动态决定下一步」。
+/// 当前实现为**规划期动态选型**：依据任务意图与专家结构特征，在既有拓扑中选定最适配的一种。
+///
+/// 诚实边界：这是确定性启发式规则，非学习得到；执行器侧「按中间结果实时改写拓扑」
+/// 尚未实现，故本决策在计划生成时一次性完成并留痕。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DynamicRoutingDecision {
+    /// 选定的协作拓扑
+    pub mode: AllianceMode,
+    /// 决策理由（写入首节点描述与日志，便于审计）
+    pub reason: String,
+}
+
 /// 简单计划生成器
 pub struct SimplePlanGenerator {
     /// 专家 ID → 模块配置 ID 的可选映射（用于为节点填充 module_id）
@@ -68,7 +83,7 @@ impl SimplePlanGenerator {
             AllianceMode::Hierarchical => self.generate_hierarchical_plan(request, matched_experts),
             AllianceMode::Debate => self.generate_debate_plan(request, matched_experts),
             AllianceMode::Iterative => self.generate_iterative_plan(request, matched_experts),
-            AllianceMode::Dynamic => self.generate_parallel_plan(request, matched_experts), // 动态模式暂退化为并行，运行时决策在执行器侧实现
+            AllianceMode::Dynamic => self.generate_dynamic_plan(request, matched_experts),
         };
 
         let plan = CollaborationPlan {
@@ -289,6 +304,141 @@ impl SimplePlanGenerator {
         nodes
     }
 
+    // ── 动态模式（Dynamic）──────────────────────────────────────────────
+    // 动态模式不新增第七套拓扑，而是在既有六种拓扑中按特征选型，避免「多一种模式
+    // 多一套不可测分支」。以下阈值为显式常量，便于单测锁定与后续调优。
+
+    /// 匹配分极差 ≥ 此值：强弱分明 → 分层（高分者领衔）
+    const DYNAMIC_SPREAD_HIERARCHICAL: f64 = 0.25;
+    /// 匹配分极差 < 此值 且专家数 ≥ 3：实力接近 → 投票裁决
+    const DYNAMIC_SPREAD_VOTING: f64 = 0.10;
+    /// 领域去重数 ≥ 此值：跨域协作 → 分层协同
+    const DYNAMIC_DOMAIN_DIVERSITY_MIN: usize = 3;
+
+    /// 动态模式：规划期选定拓扑并生成对应计划，决策理由写入首节点描述
+    fn generate_dynamic_plan(
+        &self,
+        request: &PlanGenerationRequest,
+        matched_experts: &[MatchedExpert],
+    ) -> Vec<Node> {
+        let decision = self.decide_dynamic_mode(request, matched_experts);
+        tracing::info!(
+            task_id = %request.task_id,
+            selected = ?decision.mode,
+            reason = %decision.reason,
+            "dynamic routing: collaboration topology selected"
+        );
+
+        let mut nodes = match decision.mode {
+            AllianceMode::Sequential => self.generate_sequential_plan(request, matched_experts),
+            AllianceMode::Hierarchical => self.generate_hierarchical_plan(request, matched_experts),
+            AllianceMode::Debate => self.generate_debate_plan(request, matched_experts),
+            AllianceMode::Voting => self.generate_voting_plan(request, matched_experts),
+            AllianceMode::Iterative => self.generate_iterative_plan(request, matched_experts),
+            _ => self.generate_parallel_plan(request, matched_experts),
+        };
+
+        // 决策留痕：前端 DAG 与审计日志可见「为何选这个拓扑」
+        if let Some(first) = nodes.first_mut() {
+            let cur = first.description.clone().unwrap_or_default();
+            first.description = Some(format!(
+                "[动态路由→{}] {}。{}",
+                Self::dynamic_mode_label(decision.mode),
+                decision.reason,
+                cur
+            ));
+        }
+        nodes
+    }
+
+    /// 动态模式决策规则（确定性，优先级自上而下短路）
+    fn decide_dynamic_mode(
+        &self,
+        request: &PlanGenerationRequest,
+        experts: &[MatchedExpert],
+    ) -> DynamicRoutingDecision {
+        let desc = request.task_description.to_lowercase();
+
+        // 1) 任务文本中的显式意图优先（用户说了算）
+        if ["迭代", "优化", "反复", "改进", "refine", "iterate"]
+            .iter()
+            .any(|k| desc.contains(k))
+        {
+            return DynamicRoutingDecision {
+                mode: AllianceMode::Iterative,
+                reason: "任务描述含迭代/优化意图".to_string(),
+            };
+        }
+        if ["评审", "审核", "复核", "review"].iter().any(|k| desc.contains(k)) {
+            return DynamicRoutingDecision {
+                mode: AllianceMode::Sequential,
+                reason: "任务描述含评审意图，先产出后复核".to_string(),
+            };
+        }
+
+        // 2) 单专家无需并行/辩论
+        if experts.len() <= 1 {
+            return DynamicRoutingDecision {
+                mode: AllianceMode::Sequential,
+                reason: format!("仅 {} 位专家，采用串行单链", experts.len()),
+            };
+        }
+
+        // 3) 领域广度：跨域并行易失焦，分层协同更稳
+        let mut domains: Vec<&str> = experts
+            .iter()
+            .filter_map(|me| me.expert.domains.first().map(|s| s.as_str()))
+            .collect();
+        domains.sort_unstable();
+        domains.dedup();
+        if domains.len() >= Self::DYNAMIC_DOMAIN_DIVERSITY_MIN {
+            return DynamicRoutingDecision {
+                mode: AllianceMode::Hierarchical,
+                reason: format!("覆盖 {} 个领域，采用分层协同", domains.len()),
+            };
+        }
+
+        // 4) 能力分布：极差大 → 分层领衔；极差小且人数多 → 投票；其余 → 辩论仲裁
+        let scores: Vec<f64> = experts.iter().map(|me| me.score).collect();
+        let max = scores.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+        let min = scores.iter().copied().fold(f64::INFINITY, f64::min);
+        let spread = max - min;
+
+        if spread >= Self::DYNAMIC_SPREAD_HIERARCHICAL {
+            return DynamicRoutingDecision {
+                mode: AllianceMode::Hierarchical,
+                reason: format!("专家匹配分极差 {:.2}，强弱分明，采用分层", spread),
+            };
+        }
+        if spread < Self::DYNAMIC_SPREAD_VOTING && experts.len() >= 3 {
+            return DynamicRoutingDecision {
+                mode: AllianceMode::Voting,
+                reason: format!(
+                    "{} 位专家匹配分接近（极差 {:.2}），采用投票裁决",
+                    experts.len(),
+                    spread
+                ),
+            };
+        }
+        DynamicRoutingDecision {
+            mode: AllianceMode::Debate,
+            reason: format!("{} 位专家存在分歧（极差 {:.2}），采用辩论仲裁", experts.len(), spread),
+        }
+    }
+
+    /// 动态决策的中文标签（用于留痕文案）
+    fn dynamic_mode_label(mode: AllianceMode) -> &'static str {
+        match mode {
+            AllianceMode::Sequential => "串行",
+            AllianceMode::Parallel => "并行",
+            AllianceMode::Hierarchical => "分层",
+            AllianceMode::Debate => "辩论",
+            AllianceMode::Voting => "投票",
+            AllianceMode::Iterative => "迭代",
+            AllianceMode::Dynamic => "动态",
+        }
+    }
+
     /// 0 匹配兜底专家：无法路由到任何领域时退化为单个通用专家单跑。
     ///
     /// 这是「不静默出空计划」与「不破坏既有成功用例」之间的取舍：
@@ -392,6 +542,140 @@ mod tests {
                 performance_score: 0.9,
             },
         }
+    }
+
+    fn make_matched_expert_with_score(
+        id: &str,
+        name: &str,
+        domains: Vec<&str>,
+        score: f64,
+    ) -> MatchedExpert {
+        let mut me = make_matched_expert(id, name, domains);
+        me.score = score;
+        me
+    }
+
+    fn dynamic_request(task_description: &str) -> PlanGenerationRequest {
+        PlanGenerationRequest {
+            task_id: Uuid::new_v4(),
+            tenant_id: Uuid::new_v4(),
+            task_description: task_description.to_string(),
+            preferred_mode: Some(AllianceMode::Dynamic),
+            preferred_experts: vec![],
+            constraints: serde_json::json!({}),
+            fusion_strategy: FusionStrategy::Weighted,
+        }
+    }
+
+    fn first_node_desc(plan: &CollaborationPlan) -> String {
+        plan.nodes
+            .first()
+            .and_then(|n| n.description.clone())
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn test_dynamic_single_expert_uses_sequential() {
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![make_matched_expert("e1", "E1", vec!["code"])];
+        let plan = gen.generate(&dynamic_request("分析代码"), &experts).unwrap();
+        // 契约保持：计划 mode 仍为 Dynamic，只是内部拓扑按特征选定
+        assert_eq!(plan.mode, AllianceMode::Dynamic);
+        assert_eq!(plan.nodes.len(), 1);
+        assert!(first_node_desc(&plan).contains("动态路由→串行"));
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dynamic_cross_domain_uses_hierarchical() {
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert("e1", "E1", vec!["code"]),
+            make_matched_expert("e2", "E2", vec!["security"]),
+            make_matched_expert("e3", "E3", vec!["data"]),
+        ];
+        let plan = gen.generate(&dynamic_request("设计一个系统"), &experts).unwrap();
+        assert!(first_node_desc(&plan).contains("动态路由→分层"));
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dynamic_skewed_scores_uses_hierarchical() {
+        // 同领域但匹配分极差 0.40（≥0.25）→ 分层领衔
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert_with_score("e1", "E1", vec!["code"], 0.9),
+            make_matched_expert_with_score("e2", "E2", vec!["code"], 0.5),
+        ];
+        let plan = gen.generate(&dynamic_request("实现一个功能"), &experts).unwrap();
+        assert!(first_node_desc(&plan).contains("动态路由→分层"));
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dynamic_close_scores_uses_voting() {
+        // 3 位专家分数极差 0.02（<0.10）→ 投票裁决
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert_with_score("e1", "E1", vec!["code"], 0.80),
+            make_matched_expert_with_score("e2", "E2", vec!["code"], 0.81),
+            make_matched_expert_with_score("e3", "E3", vec!["code"], 0.82),
+        ];
+        let plan = gen.generate(&dynamic_request("评估方案优劣"), &experts).unwrap();
+        assert!(first_node_desc(&plan).contains("动态路由→投票"));
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dynamic_default_uses_debate() {
+        // 2 位专家、极差 0.15（介于两阈值之间）→ 辩论仲裁
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert_with_score("e1", "E1", vec!["code"], 0.90),
+            make_matched_expert_with_score("e2", "E2", vec!["code"], 0.75),
+        ];
+        let plan = gen.generate(&dynamic_request("权衡两种架构"), &experts).unwrap();
+        assert!(first_node_desc(&plan).contains("动态路由→辩论"));
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dynamic_iterative_by_keyword() {
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert("e1", "E1", vec!["code"]),
+            make_matched_expert("e2", "E2", vec!["code"]),
+        ];
+        let plan = gen.generate(&dynamic_request("持续迭代优化该方案"), &experts).unwrap();
+        assert!(first_node_desc(&plan).contains("动态路由→迭代"));
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dynamic_review_keyword_uses_sequential() {
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert("e1", "E1", vec!["code"]),
+            make_matched_expert("e2", "E2", vec!["security"]),
+        ];
+        let plan = gen.generate(&dynamic_request("完成后需要评审"), &experts).unwrap();
+        assert!(first_node_desc(&plan).contains("动态路由→串行"));
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dynamic_decision_reason_is_auditable() {
+        // 决策理由必须进入节点描述，保证前端 DAG 与审计可见选型依据
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert("e1", "E1", vec!["code"]),
+            make_matched_expert("e2", "E2", vec!["security"]),
+            make_matched_expert("e3", "E3", vec!["data"]),
+        ];
+        let plan = gen.generate(&dynamic_request("设计一个系统"), &experts).unwrap();
+        let desc = first_node_desc(&plan);
+        assert!(desc.contains("[动态路由→"), "缺少动态路由标记: {}", desc);
+        assert!(desc.contains("覆盖 3 个领域"), "缺少决策理由: {}", desc);
     }
 
     #[test]

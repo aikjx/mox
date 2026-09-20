@@ -83,10 +83,15 @@ pub struct GateThresholds {
 }
 
 /// 默认等级阈值（SSOT，跨端必须一致）
+///
+/// 归一化 ADR-SSOT-3：本阈值是全仓库「A/B/C/D 四级门禁」的唯一真源，
+/// 取 AI 联盟引擎 HC-8 硬约束值（0.90 / 0.80 / 0.70）。
+/// AI 引擎侧 `GATE_THRESHOLD_A/B/C` 已改为引用本常量，不再各自硬编码；
+/// 前端 `alliance.store.js` 的 GRADE_META.min 同步使用本组数值。
 pub const GATE_THRESHOLDS: GateThresholds = GateThresholds {
-    a: 0.85,
-    b: 0.70,
-    c: 0.50,
+    a: 0.90,
+    b: 0.80,
+    c: 0.70,
 };
 
 impl Default for GateThresholds {
@@ -242,14 +247,23 @@ mod tests {
 
     #[test]
     fn grade_thresholds_boundary() {
-        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.85), QualityGrade::A);
-        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.84), QualityGrade::B);
-        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.70), QualityGrade::B);
-        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.69), QualityGrade::C);
-        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.50), QualityGrade::C);
-        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.49), QualityGrade::D);
+        // 阈值锁值：对齐 HC-8（0.90 / 0.80 / 0.70），改动须走 ADR
+        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.90), QualityGrade::A);
+        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.89), QualityGrade::B);
+        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.80), QualityGrade::B);
+        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.79), QualityGrade::C);
+        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.70), QualityGrade::C);
+        assert_eq!(GATE_THRESHOLDS.grade_from_score(0.69), QualityGrade::D);
         assert_eq!(GATE_THRESHOLDS.grade_from_score(0.0), QualityGrade::D);
         assert_eq!(GATE_THRESHOLDS.grade_from_score(1.0), QualityGrade::A);
+    }
+
+    /// ADR-SSOT-3 守护：AI 引擎侧常量必须引用本常量，禁止再次硬编码
+    #[test]
+    fn gate_thresholds_match_ai_engine_hc8() {
+        assert_eq!(GATE_THRESHOLDS.a, 0.90);
+        assert_eq!(GATE_THRESHOLDS.b, 0.80);
+        assert_eq!(GATE_THRESHOLDS.c, 0.70);
     }
 
     #[test]
@@ -278,10 +292,10 @@ mod tests {
 
     #[test]
     fn gate_result_block() {
-        let result = GateResult::block(0.30, "安mox 模块化系统架构维度不达标");
+        let result = GateResult::block(0.30, "安全维度不达标");
         assert_eq!(result.grade, QualityGrade::D);
         assert!(!result.passed);
-        assert_eq!(result.block_reason, Some("安mox 模块化系统架构维度不达标".to_string()));
+        assert_eq!(result.block_reason, Some("安全维度不达标".to_string()));
     }
 
     #[test]

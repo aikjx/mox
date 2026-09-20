@@ -473,6 +473,6 @@ mod tests {
         let manager = ConfigManager::new("test");
         assert_eq!(manager.get_string_or("missing", "default"), "default");
         assert_eq!(manager.get_i64_or("missing", 42), 42);
-        assert_eq!(manager.get_bool_or("missing", true), true);
+        assert!(manager.get_bool_or("missing", true));
     }
 }

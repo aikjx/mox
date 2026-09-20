@@ -42,7 +42,7 @@ pub(crate) async fn create_user_handler(
         .unwrap_or_else(|| format!("U{}", chrono::Utc::now().timestamp()));
     let real_name = opt_str(&body, "realName");
     // 密码统一 SHA-256 落库（历史明文存量经登录校验兜底兼容）
-    let password_hash = opt_str(&body, "password").map(|p| hash_password(p));
+    let password_hash = opt_str(&body, "password").map(hash_password);
     let dept_id = opt_str(&body, "deptId");
     let created = match s.iam.create_user(
         &tenant,

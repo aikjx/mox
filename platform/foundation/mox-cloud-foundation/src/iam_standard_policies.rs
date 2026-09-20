@@ -259,7 +259,7 @@ mod tests {
                 resource: "x".into(),
                 ..Default::default()
             };
-            assert!(evaluate_policies(&[p.clone()], &ctx), "fail: {a}");
+            assert!(evaluate_policies(std::slice::from_ref(&p), &ctx), "fail: {a}");
         }
     }
 
@@ -277,7 +277,7 @@ mod tests {
             resource: "arn:cloud:::bucket/shared/docs/readme.md".into(),
             ..Default::default()
         };
-        assert!(evaluate_policies(&[p.clone()], &ctx1));
+        assert!(evaluate_policies(std::slice::from_ref(&p), &ctx1));
         let ctx2 = EvalContext {
             principal: "u".into(),
             action: "a".into(),

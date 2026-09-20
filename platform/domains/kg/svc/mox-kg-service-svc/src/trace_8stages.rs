@@ -455,7 +455,7 @@ mod tests {
                 json.contains(&needle),
                 "JSON missing stage={}: {}",
                 stage,
-                &json
+                json
             );
         }
 

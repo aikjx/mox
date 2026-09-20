@@ -60,7 +60,7 @@ impl EventType {
 
     /// 获取事件的动作（最后一段）
     pub fn action(&self) -> &str {
-        self.0.split('.').last().unwrap_or("")
+        self.0.split('.').next_back().unwrap_or("")
     }
 }
 
