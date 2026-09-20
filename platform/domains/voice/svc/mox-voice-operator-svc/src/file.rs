@@ -215,7 +215,7 @@ impl SystemOperator for FileOperator {
            }
            "open_file_with_app" => {
                let p = require_path(&param, action)?;
-               let app = crate::app::AppOperator::default();
+               let app = crate::app::AppOperator;
                let r = app.open_app_impl(&p).map_err(|_e| XiaobaiError::OperatorUnsupported {
                    category: OperatorCategory::File.as_str().to_string(),
                    action: "open_file_with_app".into(),

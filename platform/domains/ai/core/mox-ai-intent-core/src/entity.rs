@@ -257,7 +257,7 @@ impl EntityExtractor {
                 // 提取 trigger 后到标点或空格前的内容
                 let rest = &text[trigger_end..];
                 let end_offset = rest
-                    .find(|c: char| c == '，' || c == '。' || c == '、' || c == '；' || c == ' ' || c == '\n' || c == ',')
+                    .find(['，', '。', '、', '；', ' ', '\n', ','])
                     .unwrap_or(rest.len().min(12));
                 if end_offset > 0 {
                     let name = rest[..end_offset].trim().to_string();

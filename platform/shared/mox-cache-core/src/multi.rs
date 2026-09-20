@@ -7,7 +7,7 @@
 // 失效：同时失效 L1 + L2。
 // =============================================================================
 
-use crate::{Cache, CacheError, CacheResult, CacheStats, CacheValue};
+use crate::{Cache, CacheResult, CacheStats, CacheValue};
 use async_trait::async_trait;
 use std::sync::Arc;
 
@@ -105,7 +105,7 @@ impl Cache for MultiCache {
 mod tests {
     use super::*;
     use crate::MemoryCache;
-    use std::time::Duration;
+    
 
     #[tokio::test]
     async fn test_l1_only() {

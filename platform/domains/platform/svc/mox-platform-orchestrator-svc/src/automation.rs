@@ -24,7 +24,6 @@ use crate::AppState;
 use mox_ai_agent_svc::requirement_compiler::SystemBlueprint;
 use axum::{
     extract::{Extension, Path, State},
-    http::StatusCode,
     routing::{get, post, put},
     Json, Router,
 };
@@ -37,7 +36,7 @@ use serde_json::Value;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::process::Command;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // ============================================================================
 // 请求/响应结构

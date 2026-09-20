@@ -37,7 +37,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok};
 
 pub fn ai_engine_routes(state: Arc<AiEngineState>) -> Router {
     Router::new()

@@ -24,7 +24,7 @@ pub fn platform_tag() -> &'static str {
 }
 
 /// 小工具：成功输出 JSON 数组 + 返回 OperatorOutput（所有 list_xxx 动作共用）
-pub fn array_output<T: serde::Serialize>(message: &str, items: &[T]) -> Value {
+pub fn array_output<T: serde::Serialize>(_message: &str, items: &[T]) -> Value {
     json!(items)
 }
 

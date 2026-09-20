@@ -4,7 +4,6 @@
 
 use crate::{ObservabilityError, ObservabilityResult};
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 // =============================================================================
@@ -340,6 +339,7 @@ impl Span {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn test_trace_id_new_and_parse() {

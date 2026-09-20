@@ -5,12 +5,10 @@
 //!
 //! 调度器的核心业务逻辑实现：
 //! - 任务排队与调度
-//! - 专家匹配（基于规则的简单匹配）
+//! - 专家匹配（模块化权重匹配 + 规则 fallback）
 //! - 协作计划生成
 //! - LLM 路由选择（多 Provider 智能路由 + 熔断降级）
-//! - DAG 执行引擎
-//! - 结果融合引擎
-//! - 执行器桥接
+//! - 执行器桥接（DAG 执行委派给 executor-svc）
 //! - 专家注册桥接（与 AI 专家服务同步）
 //!
 //! ## 设计原则
@@ -24,22 +22,16 @@
 //! - [`planner`] — 协作计划生成器
 //! - [`scheduler`] — 任务调度器实现
 //! - [`llm_router`] — LLM 路由选择器（多 Provider 智能路由）
-//! - [`dag_engine`] — DAG 执行引擎（**历史遗留，未被接线**：见模块文档）
-//! - [`fusion`] — 结果融合引擎（**历史遗留，未被接线**：见模块文档）
 //! - [`executor_bridge`] — 执行器桥接层
 //! - [`registry`] — 专家注册桥接层（trait + 内存/HTTP 实现）
 //! - [`synchronizer`] — 专家同步器（定时从外部源同步）
 //! - [`config_sync`] — 配置同步器
 //!
-//! ## 关于 `dag_engine` / `fusion` 的状态说明
+//! ## 执行与融合的归属
 //!
-//! 本 crate 的 [`dag_engine`]、[`fusion`] 是一套**完整但未被接线**的早期实现，
-//! 与 `mox-alliance-executor-core` 的同名能力功能重叠。生产链路中，调度器一律通过
-//! [`ExecutorBridge`](executor_bridge::ExecutorBridge) 把执行委派给
-//! `mox-alliance-executor-svc`，**不会**实例化本模块的 `DagExecutionEngine`。
-//!
-//! 因此这两个模块目前只有自测覆盖、无服务层调用方。保留原因为历史资产，待确认后
-//! 按"删除"或"启用"二选一收敛；在此之前请勿新增对它们的生产依赖。
+//! DAG 执行引擎和结果融合的生产实现在 `mox-alliance-executor-core`。
+//! 本 crate 通过 [`ExecutorBridge`](executor_bridge::ExecutorBridge) 把执行委派给
+//! `mox-alliance-executor-svc`，不在进程内实例化执行引擎。
 
 pub mod matcher;
 pub mod matching;
@@ -47,8 +39,6 @@ pub mod modular_matcher;
 pub mod planner;
 pub mod scheduler;
 pub mod llm_router;
-pub mod dag_engine;
-pub mod fusion;
 pub mod executor_bridge;
 pub mod registry;
 pub mod synchronizer;
@@ -56,13 +46,13 @@ pub mod config_sync;
 pub mod storage;
 pub mod metrics;
 
+// 专家匹配器：ModularWeightMatcher 为生产主路径（支持模块化权重配置），
+// RuleBasedExpertMatcher 为基础 fallback / 测试 demo。
 pub use matcher::RuleBasedExpertMatcher;
 pub use modular_matcher::ModularWeightMatcher;
 pub use planner::SimplePlanGenerator;
 pub use scheduler::TaskSchedulerImpl;
 pub use llm_router::{LlmRouter, RouterSelection, ProviderHealth, ProviderRuntimeState};
-pub use dag_engine::{DagExecutionEngine, NodeExecutor, MockNodeExecutor, ExecutionStatusView, NodeExecutionContext, NodeExecutionResult};
-pub use fusion::{FusionEngine, FusionInput, FusionOutput};
 
 // 执行器桥接重导出
 pub use executor_bridge::{

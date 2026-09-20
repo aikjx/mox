@@ -64,7 +64,7 @@ impl NavItem {
     /// 添加子导航
     pub fn add_child(&mut self, child: NavItem) {
         self.children.push(child);
-        self.children.sort_by(|a, b| a.order.cmp(&b.order));
+        self.children.sort_by_key(|a| a.order);
     }
 }
 
@@ -103,7 +103,7 @@ impl NavGroup {
     /// 添加导航项
     pub fn add_item(&mut self, item: NavItem) {
         self.items.push(item);
-        self.items.sort_by(|a, b| a.order.cmp(&b.order));
+        self.items.sort_by_key(|a| a.order);
     }
 }
 
@@ -148,7 +148,7 @@ impl LayoutSystem {
     /// 添加导航分组
     pub fn add_nav_group(&mut self, group: NavGroup) {
         self.nav_groups.push(group);
-        self.nav_groups.sort_by(|a, b| a.order.cmp(&b.order));
+        self.nav_groups.sort_by_key(|a| a.order);
     }
 
     /// 获取所有导航分组

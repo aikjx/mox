@@ -5,7 +5,6 @@ use crate::enterprise::api_response::*;
 use axum::{
     extract::{Path, Query, State, Multipart},
     response::{Response, IntoResponse},
-    Json,
     http::{HeaderMap, header::CONTENT_DISPOSITION},
 };
 use chrono::Datelike;
@@ -341,7 +340,7 @@ where
     S: Clone + Send + Sync + 'static,
     Arc<FileStorageState>: axum::extract::FromRef<S>,
 {
-    use axum::routing::{get, post, delete};
+    use axum::routing::{get, post};
 
     axum::Router::new()
         .route("/", get(list_files_handler))

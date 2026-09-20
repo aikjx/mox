@@ -11,7 +11,7 @@ use axum::{
     response::Response,
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -120,7 +120,7 @@ pub async fn list_departments_handler(
     if let Some(tenant_id) = params.get("tenant_id") {
         list.retain(|d| d.tenant_id == *tenant_id);
     }
-    list.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+    list.sort_by_key(|a| a.sort_order);
     success_with_message("success", json!(list))
 }
 
@@ -234,7 +234,7 @@ pub async fn assign_user_roles_handler(
     Path(user_id): Path<String>,
     Json(req): Json<AssignRolesRequest>,
 ) -> Response {
-    let count = match assign_roles_to_users(&state.permission, &[user_id.clone()], &req.role_codes).await {
+    let count = match assign_roles_to_users(&state.permission, std::slice::from_ref(&user_id), &req.role_codes).await {
         Ok(c) => c,
         Err(e) => return internal_error(&e),
     };

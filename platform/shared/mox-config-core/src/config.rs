@@ -2,7 +2,6 @@
 // 配置模型（Config Model）
 // =============================================================================
 
-use crate::ConfigError;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -239,7 +238,7 @@ impl ConfigSnapshot {
     /// 获取配置或默认值
     pub fn get_or<T: From<ConfigValue>>(&self, key: &str, default: T) -> T {
         self.get(key)
-            .and_then(|v| {
+            .and_then(|_v| {
                 // 尝试转换
                 None
             })

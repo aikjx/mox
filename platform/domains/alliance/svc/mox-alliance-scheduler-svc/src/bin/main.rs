@@ -114,6 +114,7 @@ fn parse_mode(s: &str) -> AllianceMode {
         "hierarchical" => AllianceMode::Hierarchical,
         "iterative" => AllianceMode::Iterative,
         "voting" => AllianceMode::Voting,
+        "dynamic" => AllianceMode::Dynamic,
         _ => AllianceMode::Parallel,
     }
 }

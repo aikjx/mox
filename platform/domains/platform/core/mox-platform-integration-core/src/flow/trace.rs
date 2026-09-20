@@ -75,7 +75,7 @@ impl TraceContext {
 
 /// 线程局部TraceContext存储
 thread_local! {
-    static CURRENT_TRACE: RwLock<Option<TraceContext>> = RwLock::new(None);
+    static CURRENT_TRACE: RwLock<Option<TraceContext>> = const { RwLock::new(None) };
 }
 
 /// 获取当前线程的trace_id

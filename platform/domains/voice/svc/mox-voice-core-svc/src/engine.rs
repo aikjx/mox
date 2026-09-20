@@ -205,7 +205,7 @@ impl OperatorEngine {
             }
             (DispatchMode::LocalFirst, true, None) => ("local_first_no_alliance_client".to_string(), Vec::new()),
             (DispatchMode::CloudFallback, false, _) => ("cloud_fallback_clear_highscore".to_string(), Vec::new()),
-            (mode @ _, _need, Some(a)) => {
+            (mode, _need, Some(a)) => {
                 let env = Envelope::new_intent("xiaobai-engine-rust", text, identity, mode);
                 let deadline = self.config.cloud_deadline;
                 let timed = tokio::time::timeout(deadline, a.ask_verdict(&env, &candidates)).await;
@@ -234,7 +234,7 @@ impl OperatorEngine {
                     }
                 }
             }
-            (mode @ _, true, None) => {
+            (mode, true, None) => {
                 if mode == DispatchMode::CloudOnly {
                     return Err(XiaobaiError::BridgeDisconnected {
                         mode: mode.as_str(),

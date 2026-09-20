@@ -15,7 +15,7 @@ use crate::cross_orchestrator::{
 };
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, RateLimitManager};
 use crate::error::{PlatformError, PlatformResult};
-use crate::event_bus::{EventBus, EventType, PlatformEvent};
+use crate::event_bus::{EventBus, PlatformEvent};
 use crate::platform_lifecycle::PlatformLifecycle;
 use crate::platform_status::PlatformStatusMonitor;
 use crate::types::*;
@@ -238,6 +238,7 @@ impl Default for PlatformFacade {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::event_bus::EventType;
 
     #[test]
     fn test_bootstrap_and_shutdown() {

@@ -249,7 +249,7 @@ impl GraphStorage {
         };
 
         for dir in directions {
-            let (col, param_col) = match dir {
+            let (col, _param_col) = match dir {
                 TraverseDirection::Out => ("source", "source"),
                 TraverseDirection::In => ("target", "target"),
                 _ => continue,
@@ -289,10 +289,8 @@ impl GraphStorage {
                 .query_map(rusqlite::params_from_iter(params.iter()), Self::row_to_edge)
                 .map_err(|e| KgError::StorageError(e.to_string()))?;
 
-            for row in rows {
-                if let Ok(edge) = row {
-                    edges.push(edge);
-                }
+            for edge in rows.flatten() {
+                edges.push(edge);
             }
         }
 
@@ -443,10 +441,8 @@ impl GraphStorage {
                 Ok((vertex_type, cnt))
             })
             .map_err(|e| KgError::StorageError(e.to_string()))?;
-        for row in rows {
-            if let Ok((vt, cnt)) = row {
-                type_counts.insert(vt, serde_json::json!(cnt));
-            }
+        for (vt, cnt) in rows.flatten() {
+            type_counts.insert(vt, serde_json::json!(cnt));
         }
 
         Ok(serde_json::json!({

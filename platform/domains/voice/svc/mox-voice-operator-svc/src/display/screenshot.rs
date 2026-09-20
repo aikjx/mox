@@ -62,8 +62,8 @@ impl DisplayOperator {
         })?;
         fbs.push("screenshots_capture_crop");
         // 计算相对屏幕坐标
-        let rel_x = (x - sx as i64).clamp(0, shot.width() as i64 - 1) as u32;
-        let rel_y = (y - sy as i64).clamp(0, shot.height() as i64 - 1) as u32;
+        let rel_x = (x - sx).clamp(0, shot.width() as i64 - 1) as u32;
+        let rel_y = (y - sy).clamp(0, shot.height() as i64 - 1) as u32;
         let cw = (w as u32).min(shot.width().saturating_sub(rel_x));
         let ch = (h as u32).min(shot.height().saturating_sub(rel_y));
         if cw == 0 || ch == 0 {

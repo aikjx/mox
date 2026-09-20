@@ -71,7 +71,7 @@ fn ball_widget_state_clone_copy_eq() {
     let s = Listen;
     let copied = s; // Copy
     assert_eq!(copied, Listen);
-    let cloned = s.clone();
+    let cloned = s;
     assert_eq!(cloned, s);
 }
 
@@ -99,7 +99,7 @@ fn widget_mode_default_is_floating_ball() {
 #[test]
 fn widget_mode_variants() {
     use WidgetMode::*;
-    let modes = vec![FloatingBall, TrayOnly, Sidebar];
+    let modes = [FloatingBall, TrayOnly, Sidebar];
     assert_eq!(modes.len(), 3);
 }
 
@@ -117,7 +117,7 @@ fn widget_mode_clone_copy_eq_debug() {
     let m = TrayOnly;
     let copied = m; // Copy
     assert_eq!(copied, TrayOnly);
-    let cloned = m.clone();
+    let cloned = m;
     assert_eq!(cloned, m);
     let dbg = format!("{:?}", Sidebar);
     assert!(dbg.contains("Sidebar"));

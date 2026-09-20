@@ -223,7 +223,7 @@ fn ngql_result_for(node: &PlanNode) -> ResultSet {
         GoSteps(n) => (
             vec!["steps".into(), "dst".into()],
             vec![
-                PropValue::Int(*n as i64),
+                PropValue::Int(*n),
                 PropValue::Str(format!("sink_{n}")),
             ],
             "GO STEP",

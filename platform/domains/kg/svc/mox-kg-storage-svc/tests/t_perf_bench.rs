@@ -24,11 +24,10 @@
 //! - cargo test -p mox-kg-storage-svc --release --test t_perf_bench -- --nocapture
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use mox_kg_storage_svc::graph_codec::{self, PropValue};
-use mox_kg_storage_svc::storage_api::{Direction, LruCache};
+use mox_kg_storage_svc::storage_api::Direction;
 use mox_kg_storage_svc::storage_server::StorageServer;
 
 // ============================================================================
@@ -710,7 +709,7 @@ fn bench_traversal_3hop_performance() {
 #[test]
 fn bench_graph_algorithm_pagerank() {
     use petgraph::graph::{DiGraph, NodeIndex};
-    use std::collections::HashMap;
+    
 
     // 构建图：1000 节点，5000 边
     const NODES: usize = 1000;

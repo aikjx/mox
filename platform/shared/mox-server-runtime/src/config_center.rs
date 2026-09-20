@@ -283,7 +283,7 @@ impl FileConfigProvider {
     }
 
     /// 启动文件热更新监听（轮询模式）
-    pub fn start_watch(&self, interval: Duration) -> u64 {
+    pub fn start_watch(&self, _interval: Duration) -> u64 {
         // 简化实现：返回 watch_id，实际热更新需要文件系统事件或轮询
         self.inner.watch(Arc::new(|_event| {
             // 默认回调，实际使用时注册自己的回调

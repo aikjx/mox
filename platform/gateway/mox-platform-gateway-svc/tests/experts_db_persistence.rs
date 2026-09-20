@@ -11,8 +11,8 @@
 //! 覆盖：注册表/会话（含消息投影）/图谱/预约 往返一致性、WAL、完整性检查、
 //! JSON→SQLite 迁移（导入+归档+幂等+DB已有跳过）、并发写安全。
 
-use mox_platform_gateway_svc::experts_common::{ExpertDescriptor, ExpertGraph, ExpertSession};
-use mox_platform_gateway_svc::experts_db;
+use mox_platform_gateway_svc::alliance::experts_common::{ExpertDescriptor, ExpertGraph, ExpertSession};
+use mox_platform_gateway_svc::alliance::experts_db;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard, OnceLock};
@@ -59,7 +59,7 @@ fn test_registry_roundtrip_with_projection() {
     let mut e1 = ExpertDescriptor::minimal("exp-it-001".into(), "持久化测试专家·甲".into());
     e1.domains = vec!["backend".into(), "sqlite".into()];
     e1.skills = vec!["Rust".into(), "rusqlite".into()];
-    e1.capabilities = vec![mox_platform_gateway_svc::experts_common::ExpertCapability {
+    e1.capabilities = vec![mox_platform_gateway_svc::alliance::experts_common::ExpertCapability {
         id: "cap-rust".into(),
         name: "Rust".into(),
         domain: "backend".into(),

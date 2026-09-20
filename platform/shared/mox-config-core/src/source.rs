@@ -5,7 +5,6 @@
 use crate::config::{Config, ConfigValue};
 use crate::ConfigError;
 use async_trait::async_trait;
-use std::collections::BTreeMap;
 
 // =============================================================================
 // 配置源 trait

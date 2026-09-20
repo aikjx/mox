@@ -43,3 +43,6 @@ glacier = []
 # Enables the RustFS ecstore storage backend skeleton (trait 接入点已定义，
 # 实际 RustFS 进程/FFI 对接待后续阶段).
 rustfs_ecstore_backend = []
+
+[lints]
+workspace = true

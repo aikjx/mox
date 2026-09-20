@@ -86,7 +86,7 @@ pub fn time_stretch_sola(input: &[f32], target_len: usize, opts: &SolaOptions) -
         // write_pos 已在循环中通过 np<0 分支钳制为 0；此处无需重复 usize 无意义比较
         if write_pos + frame > out.len() {
             let grow = write_pos + frame - out.len() + 16;
-            out.extend(std::iter::repeat(0.0f32).take(grow));
+            out.extend(std::iter::repeat_n(0.0f32, grow));
         }
         for k in 0..frame { out[write_pos + k] += chunk[k]; }
         write_pos += hop_synthesis;
@@ -94,7 +94,7 @@ pub fn time_stretch_sola(input: &[f32], target_len: usize, opts: &SolaOptions) -
 
     if write_pos < target_len {
         if out.len() < target_len {
-            out.extend(std::iter::repeat(0.0f32).take(target_len - out.len()));
+            out.extend(std::iter::repeat_n(0.0f32, target_len - out.len()));
         }
         out.truncate(target_len);
     } else {

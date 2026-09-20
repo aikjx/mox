@@ -125,7 +125,7 @@ impl Default for DsqlCache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{ExecuteResult, OperationType, ResultType};
+    use crate::model::ExecuteResult;
 
     fn make_result(sql_code: &str) -> ExecuteResult {
         ExecuteResult {

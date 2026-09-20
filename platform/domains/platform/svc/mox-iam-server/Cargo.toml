@@ -25,3 +25,6 @@ mox-platform-iam-core = { path = "../../core/mox-platform-iam-core" }
 mox-auth-core = { path = "../../../../shared/mox-auth-core" }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
 parking_lot = { workspace = true }
+
+[lints]
+workspace = true

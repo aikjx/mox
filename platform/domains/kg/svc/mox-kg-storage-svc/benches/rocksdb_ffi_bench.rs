@@ -1,3 +1,4 @@
+#![cfg(feature = "persist-rocksdb")]
 // rust-rocksdb FFI benchmark
 // cargo bench -p mox-kg-storage-svc --features persist-rocksdb
 

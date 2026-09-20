@@ -518,7 +518,7 @@ fn biased_random_walk(
         for &next_node in &neighbors {
             let prob = if next_node == prev {
                 1.0 / p
-            } else if prev_neighbors.as_ref().map_or(false, |s| s.contains(&next_node)) {
+            } else if prev_neighbors.as_ref().is_some_and(|s| s.contains(&next_node)) {
                 1.0
             } else {
                 1.0 / q

@@ -48,3 +48,6 @@ required-features = ["server"]
 [[test]]
 name = "api_server"
 required-features = ["server"]
+
+[lints]
+workspace = true

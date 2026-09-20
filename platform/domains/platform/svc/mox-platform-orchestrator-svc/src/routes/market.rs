@@ -20,7 +20,6 @@ use axum::{
     body::Bytes,
     extract::{DefaultBodyLimit, Path, Query, State},
     http::{header, HeaderMap, StatusCode},
-    response::Json,
     routing::{get, post},
     Router,
 };
@@ -34,7 +33,7 @@ use crate::market_migration::{
     audit, now_rfc3339, packages_dir, sign_doc, verify_doc, zip_read, zip_write,
 };
 use crate::market_version::{actor_from_headers, append_changelog, snapshot_package};
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 /// 冲突处理策略
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]

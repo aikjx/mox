@@ -36,7 +36,6 @@
 
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
     response::Json,
     routing::{delete, get, post},
     Router,
@@ -48,7 +47,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::market_migration::{audit, find_package_file, now_rfc3339, packages_dir};
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 /// 商城应用状态
 #[derive(Clone)]

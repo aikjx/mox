@@ -250,7 +250,7 @@ async fn kg_find_paths(
             .into_iter()
             .enumerate()
             .map(|(i, p)| {
-                let hops = if p.path.len() > 0 { p.path.len() - 1 } else { 0 };
+                let hops = if !p.path.is_empty() { p.path.len() - 1 } else { 0 };
                 json!({
                     "nodes": p.path,
                     "total_weight": round4(p.total_weight),
@@ -292,7 +292,7 @@ async fn kg_shortest_path(
 
     let (path, hops, total_weight, has_path) = match result {
         Ok(Some(p)) => {
-            let h = if p.path.len() > 0 { p.path.len() - 1 } else { 0 };
+            let h = if !p.path.is_empty() { p.path.len() - 1 } else { 0 };
             (p.path, h, round4(p.total_weight), true)
         }
         _ => (Vec::new(), 0, 0.0, false),
@@ -491,12 +491,12 @@ async fn graph_overview(State(s): State<Arc<KgAiState>>) -> ApiResponse<Value> {
     // 标签 / 类型 / 关系分布（node_meta / edge_meta 快查表聚合）
     let mut label_count: HashMap<String, usize> = HashMap::new();
     let mut type_count: HashMap<String, usize> = HashMap::new();
-    for (_id, (label, ntype)) in &kg.node_meta {
+    for (label, ntype) in kg.node_meta.values() {
         *label_count.entry(label.clone()).or_insert(0) += 1;
         *type_count.entry(ntype.clone()).or_insert(0) += 1;
     }
     let mut rel_count: HashMap<String, usize> = HashMap::new();
-    for (_eid, (_src, _tgt, _w, rel)) in &kg.edge_meta {
+    for (_src, _tgt, _w, rel) in kg.edge_meta.values() {
         *rel_count.entry(rel.clone()).or_insert(0) += 1;
     }
 

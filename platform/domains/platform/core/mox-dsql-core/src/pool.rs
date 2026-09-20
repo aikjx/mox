@@ -215,7 +215,7 @@ impl SqlitePool {
                             pool: self.inner.clone(),
                         });
                     }
-                    Err(e) => {
+                    Err(_e) => {
                         // 创建失败，等待后重试
                         if !waited {
                             self.inner.wait_count.fetch_add(1, Ordering::Relaxed);
@@ -384,8 +384,8 @@ mod tests {
     fn test_pool_creation_when_empty() {
         let pool = SqlitePool::memory(2).unwrap();
         // min_idle = 2，获取2个连接后池为空
-        let conn1 = pool.get_default().unwrap();
-        let conn2 = pool.get_default().unwrap();
+        let _conn1 = pool.get_default().unwrap();
+        let _conn2 = pool.get_default().unwrap();
         assert_eq!(pool.idle_count(), 0);
         assert_eq!(pool.active_count(), 2);
 

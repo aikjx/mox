@@ -126,7 +126,7 @@ impl Connector for WebhookConnector {
             .await?;
 
         let latency_ms = start.elapsed().as_millis() as u64;
-        let success = status >= 200 && status < 300;
+        let success = (200..300).contains(&status);
 
         Ok(ConnectorResponse {
             success,
@@ -143,7 +143,7 @@ impl Connector for WebhookConnector {
         // 发送一个简单的GET请求到endpoint
         let result = self.adapter.request(HttpMethod::Get, "", None, &HashMap::new()).await;
         match result {
-            Ok((status, _, _)) => Ok(status >= 200 && status < 500),
+            Ok((status, _, _)) => Ok((200..500).contains(&status)),
             Err(_) => Ok(false),
         }
     }

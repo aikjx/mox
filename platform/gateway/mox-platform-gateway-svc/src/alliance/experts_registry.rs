@@ -869,7 +869,7 @@ mod tests {
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
-            audit: crate::experts_common::build_audit_context(),
+            audit: crate::alliance::experts_common::build_audit_context(),
         })
     }
 
@@ -958,7 +958,7 @@ mod tests {
 
         // 验证列表中不再出现
         drop(reg);
-        let mut params = HashMap::new();
+        let params = HashMap::new();
         let list_resp = list_experts(State(state), Query(params)).await;
         let list_data = list_resp.data.unwrap();
         let experts = list_data["experts"].as_array().unwrap();

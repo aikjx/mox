@@ -42,7 +42,7 @@ pub(crate) async fn create_user_handler(
         .unwrap_or_else(|| format!("U{}", chrono::Utc::now().timestamp()));
     let real_name = opt_str(&body, "realName");
     // 密码统一 SHA-256 落库（历史明文存量经登录校验兜底兼容）
-    let password_hash = opt_str(&body, "password").map(|p| hash_password(&p));
+    let password_hash = opt_str(&body, "password").map(|p| hash_password(p));
     let dept_id = opt_str(&body, "deptId");
     let created = match s.iam.create_user(
         &tenant,
@@ -50,7 +50,7 @@ pub(crate) async fn create_user_handler(
         username,
         real_name,
         password_hash.as_deref(),
-        dept_id.as_deref(),
+        dept_id,
         false,
     ) {
         Ok(u) => u,
@@ -105,7 +105,7 @@ pub(crate) async fn update_user_handler(
         real_name,
         email,
         phone,
-        dept_id.as_deref(),
+        dept_id,
         position,
         user_status,
     ) {
@@ -206,7 +206,7 @@ pub(crate) async fn reset_user_pwd_handler(
     if password.is_empty() {
         return err("密码不能为空");
     }
-    match s.iam.reset_password(&id, &hash_password(&password)) {
+    match s.iam.reset_password(&id, &hash_password(password)) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("reset password: {e}")),
     }

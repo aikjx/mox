@@ -11,7 +11,7 @@
 // =============================================================================
 
 use async_trait::async_trait;
-use axum::{extract::Extension, routing::{get, post}, Json, Router};
+use axum::{extract::Extension, routing::get, Json, Router};
 use clap::Parser;
 use mox_kb_core::{Document, KbManager, SearchQuery, SqliteKbStore};
 use mox_server_runtime::{Server, ServerConfig, ServiceModule};

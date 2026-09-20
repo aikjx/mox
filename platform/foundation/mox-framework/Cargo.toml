@@ -48,3 +48,6 @@ parking_lot = "0.12"
 
 [dev-dependencies]
 tokio-test = "0.4"
+
+[lints]
+workspace = true

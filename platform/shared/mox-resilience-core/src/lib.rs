@@ -21,7 +21,7 @@ pub use fallback::{
 pub use retry::{BackoffStrategy, RetryPolicy, Retryable};
 pub use metrics::{ResilienceMetrics, SharedMetrics};
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// 弹性执行器：组合重试 + 熔断 + 降级
 pub struct ResilienceExecutor<T: Clone + Send + Sync + 'static> {
@@ -160,6 +160,7 @@ impl<T: Clone + Send + Sync + 'static> ResilienceExecutorBuilder<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[tokio::test]
     async fn test_resilience_executor_success() {

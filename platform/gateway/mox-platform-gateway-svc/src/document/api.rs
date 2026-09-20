@@ -291,7 +291,7 @@ where
     S: Clone + Send + Sync + 'static,
     Arc<DocumentState>: axum::extract::FromRef<S>,
 {
-    use axum::routing::{get, post, put, delete};
+    use axum::routing::{get, post};
 
     axum::Router::new()
         .route("/types", get(list_document_types_handler))

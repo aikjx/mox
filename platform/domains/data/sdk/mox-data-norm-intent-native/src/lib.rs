@@ -198,7 +198,7 @@ fn majority_fn(_k: &str, vs: &[serde_json::Value], _s: &str) -> serde_json::Valu
         .map(|(s, _)| s);
     if let Some(target) = best {
         for v in vs {
-            if v.to_string() == target {
+            if *v == target {
                 return v.clone();
             }
         }

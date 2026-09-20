@@ -10,7 +10,7 @@
 
 use crate::config::IntegrationConfig;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use parking_lot::RwLock;
@@ -90,7 +90,7 @@ impl ConfigHotReloader {
     }
 
     /// 设置轮询间隔
-    pub fn set_poll_interval(&self, interval: Duration) {
+    pub fn set_poll_interval(&self, _interval: Duration) {
         // 注意：需要内部可变性，这里简化
     }
 
@@ -122,7 +122,7 @@ impl ConfigHotReloader {
         let modified = metadata.modified().ok()?;
 
         let last = *self.last_modified.read();
-        if last.map_or(true, |last| modified > last) {
+        if last.is_none_or(|last| modified > last) {
             // 文件有更新
             *self.last_modified.write() = Some(modified);
 

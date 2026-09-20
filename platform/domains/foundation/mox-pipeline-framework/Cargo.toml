@@ -29,3 +29,6 @@ mox-error = ["dep:mox-error"]
 audit = ["dep:mox-audit"]
 # 异步管线支持（默认同步，启用后可用 AsyncPipeline）
 async = ["dep:async-trait"]
+
+[lints]
+workspace = true

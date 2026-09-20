@@ -145,7 +145,7 @@ async fn handle_understand(
 }
 
 async fn handle_extract_entities(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Json(req): Json<ExtractEntitiesRequest>,
 ) -> impl IntoResponse {
     let entities = mox_ai_intent_core::extract_entities(&req.text);
@@ -156,7 +156,7 @@ async fn handle_extract_entities(
 }
 
 async fn handle_decompose(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Json(req): Json<DecomposeRequest>,
 ) -> impl IntoResponse {
     // 将 DTO 实体转回核心实体类型
@@ -270,8 +270,8 @@ async fn handle_list_sessions(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     // P1: 返回全部会话（P2 按用户分页）
-    let mgr = state.sessions.read().await;
-    let mut sessions: Vec<SessionInfo> = Vec::new();
+    let _mgr = state.sessions.read().await;
+    let sessions: Vec<SessionInfo> = Vec::new();
     // 简化：收集所有
     // P2 可加按 user_id 过滤的 query param
     let all: Vec<_> = (0..1).collect(); // placeholder

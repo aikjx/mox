@@ -47,6 +47,8 @@ pub(crate) struct TaskExecutionState {
     outputs: HashMap<String, NodeExecutionResult>,
     /// DAG 尾部融合结论（全部节点成功完成后生成）
     fusion_output: Option<FusionOutput>,
+    /// 动态路由表（决策节点 -> 路由规则），Dynamic 模式专用
+    dynamic_routes: Option<HashMap<String, DynamicRouteRule>>,
 }
 
 /// DAG 执行引擎实现
@@ -170,6 +172,7 @@ impl DagEngineImpl {
                     options,
                     outputs: HashMap::new(),
                     fusion_output: None,
+                    dynamic_routes: None, // Dynamic 模式专用，框架占位
                 };
 
                 let mut states = states.write();
@@ -326,6 +329,9 @@ impl DagEngineImpl {
                         }
                     }
 
+                    // Dynamic 模式：决策节点完成后执行动态路由
+                    Self::apply_dynamic_routes(state, &node_id);
+
                     // 检查任务是否完成
                     Self::check_task_completion(state);
                 }
@@ -340,6 +346,39 @@ impl DagEngineImpl {
         }
     }
 
+    /// 应用动态路由规则（Dynamic 模式）
+    ///
+    /// 当决策节点完成后，根据其输出结果选择激活 true_branch 或 false_branch 节点，
+    /// 未选择分支的节点标记为 Skipped。
+    fn apply_dynamic_routes(state: &mut TaskExecutionState, completed_node_id: &str) {
+        let Some(routes) = &state.dynamic_routes else { return };
+        let Some(rule) = routes.get(completed_node_id) else { return };
+
+        // 读取决策节点输出，用条件表达式引擎评估
+        let output = state.outputs.get(completed_node_id);
+        let context = serde_json::json!({
+            "success": output.map(|o| o.success).unwrap_or(false),
+            "output": output.and_then(|o| o.output.clone()),
+        });
+        let decision = rule.condition.evaluate(&context);
+
+        let chosen: &Vec<String> = if decision { &rule.true_branch } else { &rule.false_branch };
+        let skipped: Vec<String> = (if decision { &rule.false_branch } else { &rule.true_branch }).to_vec();
+
+        // 标记未选择分支的节点为 Skipped
+        for node_id in &skipped {
+            if let Some(n) = state.nodes.get_mut(node_id) {
+                if n.status == NodeStatus::Pending {
+                    n.status = NodeStatus::Skipped;
+                }
+            }
+        }
+
+        debug!(
+            "Dynamic route applied: node={}, decision={}, chosen={}, skipped={}",
+            completed_node_id, decision, chosen.len(), skipped.len()
+        );
+    }
     /// 检查任务是否完成
     fn check_task_completion(state: &mut TaskExecutionState) {        let all_terminal = state.nodes.values().all(|n| n.status.is_terminal());
         let any_failed = state
@@ -667,3 +706,20 @@ impl DagEngine for DagEngineImpl {
 }
 
 
+
+
+/// 动态路由规则（Dynamic 模式专用）
+///
+/// 描述一个决策节点如何根据中间结果选择后续路径。
+/// 当前为框架定义，具体路由逻辑由执行器侧实现。
+#[derive(Debug, Clone)]
+pub struct DynamicRouteRule {
+    /// 决策节点 ID
+    pub decision_node: String,
+    /// 路由条件表达式（预留：当前未实现）
+    pub condition: crate::condition::Condition,
+    /// 条件为真时激活的节点列表
+    pub true_branch: Vec<String>,
+    /// 条件为假时激活的节点列表
+    pub false_branch: Vec<String>,
+}

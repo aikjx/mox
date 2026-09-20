@@ -127,7 +127,7 @@ async fn cloud_create_bucket(
     match s.bucket_path(name) {
         Some(p) => match fs::create_dir_all(&p) {
             Ok(_) => api_ok(json!({ "bucket": name, "created": true })),
-            Err(e) => api_error(500, &format!("创建 bucket 失败: {}", e)),
+            Err(e) => api_error(500, format!("创建 bucket 失败: {}", e)),
         },
         None => api_error(400, "非法 bucket 名称（仅字母/数字/_/-/.，≤128，不含路径分隔符）"),
     }
@@ -155,7 +155,7 @@ async fn cloud_list_objects(
             objects.sort_by(|a, b| a["key"].as_str().cmp(&b["key"].as_str()));
             api_ok(json!({ "bucket": bucket, "objects": objects }))
         }
-        Some(_) => api_error(404, &format!("bucket 不存在: {}", bucket)),
+        Some(_) => api_error(404, format!("bucket 不存在: {}", bucket)),
         None => api_error(400, "非法 bucket 名称"),
     }
 }
@@ -170,12 +170,12 @@ async fn cloud_put_object(
         Some(p) => {
             if let Some(parent) = p.parent() {
                 if let Err(e) = fs::create_dir_all(parent) {
-                    return api_error(500, &format!("创建对象目录失败: {}", e));
+                    return api_error(500, format!("创建对象目录失败: {}", e));
                 }
             }
             match fs::write(&p, &body) {
                 Ok(_) => api_ok(json!({ "bucket": bucket, "key": key, "size": body.len() })),
-                Err(e) => api_error(500, &format!("写入对象失败: {}", e)),
+                Err(e) => api_error(500, format!("写入对象失败: {}", e)),
             }
         }
         None => api_error(400, "非法 bucket/key（仅字母/数字/_/-/.，≤128，不含路径分隔符）"),
@@ -218,9 +218,9 @@ async fn cloud_delete_object(
     match s.object_path(&bucket, &key) {
         Some(p) if p.is_file() => match fs::remove_file(&p) {
             Ok(_) => api_ok(json!({ "bucket": bucket, "key": key, "deleted": true })),
-            Err(e) => api_error(500, &format!("删除对象失败: {}", e)),
+            Err(e) => api_error(500, format!("删除对象失败: {}", e)),
         },
-        Some(_) => api_error(404, &format!("对象不存在: {}/{}", bucket, key)),
+        Some(_) => api_error(404, format!("对象不存在: {}/{}", bucket, key)),
         None => api_error(400, "非法 bucket/key"),
     }
 }
@@ -237,14 +237,14 @@ async fn cloud_delete_bucket(
                 .map(|it| it.flatten().next().is_some())
                 .unwrap_or(true);
             if has_objects {
-                return api_error(409, &format!("bucket 非空，无法删除（先删除对象）: {}", bucket));
+                return api_error(409, format!("bucket 非空，无法删除（先删除对象）: {}", bucket));
             }
             match fs::remove_dir(&p) {
                 Ok(_) => api_ok(json!({ "bucket": bucket, "deleted": true })),
-                Err(e) => api_error(500, &format!("删除 bucket 失败: {}", e)),
+                Err(e) => api_error(500, format!("删除 bucket 失败: {}", e)),
             }
         }
-        Some(_) => api_error(404, &format!("bucket 不存在: {}", bucket)),
+        Some(_) => api_error(404, format!("bucket 不存在: {}", bucket)),
         None => api_error(400, "非法 bucket 名称"),
     }
 }

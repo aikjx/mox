@@ -5,7 +5,6 @@
 pub mod api;
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// 公司
 #[derive(Debug, Clone, Serialize, Deserialize)]

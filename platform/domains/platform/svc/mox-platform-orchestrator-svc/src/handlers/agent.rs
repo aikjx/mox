@@ -11,10 +11,10 @@
 
 use mox_ai_agent_svc::engine::EngineResult;
 use mox_ai_agent_svc::AIAgent;
-use axum::{extract::State, http::StatusCode, response::Json};
+use axum::{extract::State, response::Json};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 #[derive(Debug, Deserialize)]
 pub struct AgentRunRequest {

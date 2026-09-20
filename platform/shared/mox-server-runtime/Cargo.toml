@@ -30,3 +30,6 @@ mox-cache-core = { path = "../mox-cache-core" }
 mox-resilience-core = { path = "../mox-resilience-core" }
 mox-error = { path = "../../foundation/mox-error" }
 parking_lot = { workspace = true }
+
+[lints]
+workspace = true

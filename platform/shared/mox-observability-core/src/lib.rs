@@ -33,7 +33,6 @@ pub use health::{HealthChecker, HealthStatus, ComponentHealth, HealthReport};
 pub const CRATE_ID: &str = "mox-observability-core";
 pub const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-use serde::{Deserialize, Serialize};
 
 /// 可观测性错误
 #[derive(Debug, thiserror::Error)]

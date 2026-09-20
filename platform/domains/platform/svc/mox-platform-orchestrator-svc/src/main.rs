@@ -48,7 +48,7 @@ use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tracing_subscriber::{prelude::*, EnvFilter};
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // ========== 标准接口契约模块 ==========
 // api_standard: RFC 9457 Problem+JSON 统一错误契约 + 响应标准化中间件
@@ -1872,7 +1872,7 @@ async fn analyze_spiral_handler(Json(req): Json<SpiralAnalysisRequest>) -> ApiRe
         step_h: req.step_h,
         radius: req.radius,
     };
-    let report = analyze_spiral(&params, speed, &consts);
+    let _report = analyze_spiral(&params, speed, &consts);
     api_error(500, "序列化失败")
 }
 
@@ -1896,7 +1896,7 @@ async fn analyze_algorithm(
     };
 
     match state.ai_agent.analyze_algorithm(&req.code, algo_type).await {
-        Ok(flow) => {
+        Ok(_flow) => {
             api_error(500, "序列化失败")
         }
         Err(e) => api_error(500, e.to_string()),

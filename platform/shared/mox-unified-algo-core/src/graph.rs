@@ -7,7 +7,6 @@
 //! 作为 KG 域图算法和 EA 域专家关系图的共享实现。
 
 use crate::traits::*;
-use crate::types::*;
 use petgraph::graph::{Graph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use std::collections::HashMap;

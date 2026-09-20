@@ -33,3 +33,6 @@ parking_lot = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
 tempfile = "3"
+
+[lints]
+workspace = true

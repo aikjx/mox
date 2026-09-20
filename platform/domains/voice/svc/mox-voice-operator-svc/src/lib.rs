@@ -59,12 +59,12 @@ use mox_voice_core_svc::engine::OperatorEngine;
 
 /// 把 FR-13 全量 8 大类算子注册到 OperatorEngine（1 行搞定默认算子矩阵）
 pub fn register_all_defaults(engine: &OperatorEngine) {
-    engine.register(Arc::new(AppOperator::default()));
-    engine.register(Arc::new(FileOperator::default()));
-    engine.register(Arc::new(VolumeOperator::default()));
-    engine.register(Arc::new(InputOperator::default()));
-    engine.register(Arc::new(NetworkOperator::default()));
-    engine.register(Arc::new(DisplayOperator::default()));
-    engine.register(Arc::new(BrowserOperator::default()));
-    engine.register(Arc::new(NotifyOperator::default()));
+    engine.register(Arc::new(AppOperator));
+    engine.register(Arc::new(FileOperator));
+    engine.register(Arc::new(VolumeOperator));
+    engine.register(Arc::new(InputOperator));
+    engine.register(Arc::new(NetworkOperator));
+    engine.register(Arc::new(DisplayOperator));
+    engine.register(Arc::new(BrowserOperator));
+    engine.register(Arc::new(NotifyOperator));
 }

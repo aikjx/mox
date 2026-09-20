@@ -154,7 +154,7 @@ impl UnifiedApiGateway {
                 "ROUTE_NOT_FOUND",
                 &format!(
                     "no route for {}/{}",
-                    &request.resource_type, &request.operation
+                    request.resource_type, request.operation
                 ),
             ),
         };

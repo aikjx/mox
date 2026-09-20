@@ -27,7 +27,7 @@ impl Default for FshcScanner {
     fn default() -> Self {
         Self {
             threshold_failures: 3,
-            read_probe_size: 1 * 1024 * 1024, // 1 MB
+            read_probe_size: 1024 * 1024, // 1 MB
             write_probe_size: 128 * 1024,      // 128 KB
             events: Arc::new(Mutex::new(Vec::new())),
         }

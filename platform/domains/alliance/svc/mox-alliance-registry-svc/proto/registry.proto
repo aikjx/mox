@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package mox.alliance.registry.v1;
+
+import "google/protobuf/empty.proto";
+
+// 专家注册中心 gRPC 接口
+service ExpertRegistry {
+    // 专家 CRUD
+    rpc ListExperts(ListExpertsRequest) returns (ListExpertsResponse);
+    rpc GetExpert(GetExpertRequest) returns (Expert);
+    rpc CreateExpert(CreateExpertRequest) returns (Expert);
+    rpc UpdateExpert(UpdateExpertRequest) returns (Expert);
+    rpc DeleteExpert(DeleteExpertRequest) returns (google.protobuf.Empty);
+
+    // 指标与概览
+    rpc GetExpertMetrics(GetExpertRequest) returns (ExpertMetrics);
+    rpc GetPlatformOverview(google.protobuf.Empty) returns (PlatformOverview);
+}
+
+// 专家
+message Expert {
+    string id = 1;
+    string name = 2;
+    string title = 3;
+    string organization = 4;
+    repeated string domains = 5;
+    repeated string skills = 6;
+    string bio = 7;
+    bool enabled = 8;
+    double rating = 9;
+    int32 total_consultations = 10;
+}
+
+// 列表请求
+message ListExpertsRequest {
+    string domain = 1;
+    string search = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+}
+
+// 列表响应
+message ListExpertsResponse {
+    repeated Expert experts = 1;
+    int32 total = 2;
+}
+
+// 详情请求
+message GetExpertRequest {
+    string id = 1;
+}
+
+// 创建请求
+message CreateExpertRequest {
+    string name = 1;
+    optional string title = 2;
+    optional string organization = 3;
+    repeated string domains = 4;
+    repeated string skills = 5;
+    optional string bio = 6;
+}
+
+// 更新请求
+message UpdateExpertRequest {
+    string id = 1;
+    optional string name = 2;
+    optional string title = 3;
+    optional string organization = 4;
+    repeated string domains = 5;
+    repeated string skills = 6;
+    optional string bio = 7;
+    optional bool enabled = 8;
+}
+
+// 删除请求
+message DeleteExpertRequest {
+    string id = 1;
+}
+
+// 专家指标
+message ExpertMetrics {
+    string expert_id = 1;
+    double avg_rating = 2;
+    int32 total_consultations = 3;
+    double success_rate = 4;
+    double avg_latency_ms = 5;
+}
+
+// 平台概览
+message PlatformOverview {
+    int32 total_experts = 1;
+    int32 active_experts = 2;
+    int32 total_domains = 3;
+    int32 total_consultations = 4;
+}

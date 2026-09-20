@@ -136,15 +136,13 @@ fn try_switch_avatar(
     }
     // 精确 / 包含匹配 id 或 name
     for meta in avatars.list() {
-        if meta.id == target
+        if (meta.id == target
             || meta.name == target
             || meta.name.contains(&target)
-            || target.contains(&meta.id)
-        {
-            if avatars.switch(&meta.id).is_ok() {
+            || target.contains(&meta.id))
+            && avatars.switch(&meta.id).is_ok() {
                 return Some(avatars.current().clone());
             }
-        }
     }
     None
 }
@@ -502,7 +500,7 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                     .build()
                     .expect("tokio runtime 创建失败");
                 rt.block_on(async move {
-                    use mox_voice_operator_svc::voice_server::{build_router, VoiceServiceConfig, XiaobaiVoiceService};
+                    use mox_voice_operator_svc::voice_server::{build_router, XiaobaiVoiceService};
                     let svc = Arc::new(XiaobaiVoiceService::new(cfg.clone()).expect("XiaobaiVoiceService 初始化失败"));
                     if let Some(ve) = &engine_for_voice {
                         svc.attach_voice(ve.clone());
@@ -604,10 +602,10 @@ fn run_gui(args: Args) -> anyhow::Result<()> {
                     } else {
                         match msg.as_str() {
                             "open-panel" => {
-                                let _ = window.set_inner_size(LogicalSize::new(PANEL_W, PANEL_H));
+                                window.set_inner_size(LogicalSize::new(PANEL_W, PANEL_H));
                             }
                             "close-panel" => {
-                                let _ = window.set_inner_size(LogicalSize::new(BALL_W, BALL_H));
+                                window.set_inner_size(LogicalSize::new(BALL_W, BALL_H));
                             }
                             "drag" => {
                                 let _ = window.drag_window();

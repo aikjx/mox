@@ -88,16 +88,14 @@ pub async fn list_config_groups_handler(
 ) -> Response {
     let groups = state.groups.read().await;
     let mut list: Vec<&ConfigGroup> = groups.values().collect();
-    list.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+    list.sort_by_key(|a| a.sort_order);
     success(list)
 }
 
 /// GET /api/enterprise/config/config-types —— 获取配置类型列表
 pub async fn list_config_types_handler() -> Response {
-    let types = vec![
-        ConfigType::String, ConfigType::Number, ConfigType::Boolean,
-        ConfigType::Json, ConfigType::Password, ConfigType::Select, ConfigType::MultiSelect,
-    ];
+    let types = [ConfigType::String, ConfigType::Number, ConfigType::Boolean,
+        ConfigType::Json, ConfigType::Password, ConfigType::Select, ConfigType::MultiSelect];
     let result: Vec<serde_json::Value> = types.iter().map(|t| {
         json!({ "code": t.as_str(), "name": t.display_name() })
     }).collect();
@@ -495,7 +493,7 @@ where
     S: Clone + Send + Sync + 'static,
     Arc<ConfigState>: axum::extract::FromRef<S>,
 {
-    use axum::routing::{get, post, put, delete};
+    use axum::routing::{get, post};
 
     axum::Router::new()
         // 配置分组和类型

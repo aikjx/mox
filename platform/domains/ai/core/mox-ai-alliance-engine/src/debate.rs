@@ -19,7 +19,7 @@ use crate::team::{ExpertMeta, ExpertId, TeamResult};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use uuid::Uuid;
 
 // 观点：单专家对 query 的输出
@@ -224,14 +224,14 @@ fn local_rule_opinion(query: &str, meta: &ExpertMeta) -> ExpertOpinion {
     let q_lower = query.to_lowercase();
     let best_class_match = INTENT_CLASSES.iter().fold(0_f64, |acc, c| {
         let in_class = meta.supported_classes.contains(*c);
-        let in_query = q_lower.contains(c) || match c {
-            &"math" => q_lower.contains("计算") || q_lower.contains("公式") || q_lower.contains("方程"),
-            &"code" => q_lower.contains("代码") || q_lower.contains("rust") || q_lower.contains("函数") || q_lower.contains("bug"),
-            &"logic" => q_lower.contains("逻辑") || q_lower.contains("证明"),
-            &"knowledge" => q_lower.contains("介绍") || q_lower.contains("什么是"),
-            &"chinese" => q_lower.contains("中文") || q_lower.contains("翻译"),
-            &"timeliness" => q_lower.contains("最新") || q_lower.contains("今天"),
-            &"instruction" => q_lower.contains("请帮") || q_lower.contains("如何") || q_lower.contains("怎么"),
+        let in_query = q_lower.contains(c) || match *c {
+            "math" => q_lower.contains("计算") || q_lower.contains("公式") || q_lower.contains("方程"),
+            "code" => q_lower.contains("代码") || q_lower.contains("rust") || q_lower.contains("函数") || q_lower.contains("bug"),
+            "logic" => q_lower.contains("逻辑") || q_lower.contains("证明"),
+            "knowledge" => q_lower.contains("介绍") || q_lower.contains("什么是"),
+            "chinese" => q_lower.contains("中文") || q_lower.contains("翻译"),
+            "timeliness" => q_lower.contains("最新") || q_lower.contains("今天"),
+            "instruction" => q_lower.contains("请帮") || q_lower.contains("如何") || q_lower.contains("怎么"),
             _ => false,
         };
         let bonus = if in_class && in_query { 0.25 } else if in_class { 0.10 } else { 0.0 };
@@ -373,7 +373,7 @@ fn clamp_to_approx_tokens(s: &str, limit: usize) -> (String, usize) {
         let cjk_count = buf.chars().filter(|c| !c.is_ascii() && !c.is_ascii_whitespace()).count() as f64;
         tokens = ((ascii_count / 4.0) + (cjk_count / 1.5)) as usize;
         if tokens >= limit {
-            while buf.len() > 0 && buf.chars().last().map_or(false, |c| c != '\n' && c != ' ') {
+            while !buf.is_empty() && buf.chars().last().is_some_and(|c| c != '\n' && c != ' ') {
                 buf.pop();
             }
             buf.push_str("…\n");

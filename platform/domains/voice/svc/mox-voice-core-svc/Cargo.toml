@@ -25,3 +25,6 @@ parking_lot = { workspace = true }
 indexmap = { workspace = true }
 ahash = { workspace = true }
 strsim = { workspace = true }
+
+[lints]
+workspace = true

@@ -34,8 +34,9 @@ use axum::{
 use crate::{
     GatewayState,
     actuator::{LogStore, RuntimeMetrics},
-    alliance, experts_collaboration, experts_common, experts_dispatcher, experts_ext,
-    experts_graph, experts_orchestration, experts_registry, experts_session, kb_ext, misc,
+    alliance::{self, experts_collaboration, experts_common, experts_dispatcher, experts_ext,
+        experts_graph, experts_orchestration, experts_registry, experts_session},
+    kb_ext, misc,
     monitor, notification, projects_ext, proxy, system, workspace,
 };
 use crate::auth::{AuthMiddleware, auth_middleware};

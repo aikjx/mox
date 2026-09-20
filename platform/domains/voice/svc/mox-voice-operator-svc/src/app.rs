@@ -243,7 +243,7 @@ impl SystemOperator for AppOperator {
                    action: "shell_exec".into(),
                    detail: format!("{cmd} {args_refs:?} failed: {e}"),
                })?;
-               let fb = vec!["std_process_command"];
+               let fb = ["std_process_command"];
                Ok(OperatorOutput::quick(format!("shell 执行完毕，exit_code={code}"))
                    .with_payload(json!({"stdout": stdout, "stderr": stderr, "exit_code": code}))
                    .with_fallbacks(fb.iter().map(|s| s.to_string()).collect())

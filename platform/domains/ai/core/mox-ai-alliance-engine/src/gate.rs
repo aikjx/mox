@@ -430,7 +430,7 @@ mod tests {
     // TDD 3: C 级重试逻辑
     #[test]
     fn tdd3_c_grade_retry_logic() {
-        let mut score = GateScore {
+        let score = GateScore {
             quality: 0.75, speed: 0.70, token_efficiency: 0.70, stability: 0.75,
             total: 0.73, grade: GateGrade::C, formula: QUALITY_FORMULA.to_string(),
         };

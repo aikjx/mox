@@ -478,7 +478,7 @@ impl ExpertsSharedState {
     pub fn new() -> Self {
         // 启动期一次性迁移：历史 JSON（data/experts_*.json）→ SQLite（data/experts.db）
         // 幂等：SQLite 已有数据则跳过导入；JSON 解析失败则保留原文件不归档
-        crate::experts_db::migrate_json_to_sqlite();
+        crate::alliance::experts_db::migrate_json_to_sqlite();
         let registry = Arc::new(Mutex::new(load_registry()));
         let sessions = Arc::new(Mutex::new(load_sessions()));
         let graph = Arc::new(Mutex::new(load_graph()));
@@ -615,27 +615,27 @@ pub fn emit_audit(
 // 详细设计见 `experts_db` 模块文档。
 
 pub fn load_registry() -> HashMap<String, ExpertDescriptor> {
-    crate::experts_db::load_registry()
+    crate::alliance::experts_db::load_registry()
 }
 
 pub fn save_registry(registry: &HashMap<String, ExpertDescriptor>) {
-    crate::experts_db::save_registry(registry)
+    crate::alliance::experts_db::save_registry(registry)
 }
 
 pub fn load_sessions() -> HashMap<String, ExpertSession> {
-    crate::experts_db::load_sessions()
+    crate::alliance::experts_db::load_sessions()
 }
 
 pub fn save_sessions(sessions: &HashMap<String, ExpertSession>) {
-    crate::experts_db::save_sessions(sessions)
+    crate::alliance::experts_db::save_sessions(sessions)
 }
 
 pub fn load_graph() -> ExpertGraph {
-    crate::experts_db::load_graph()
+    crate::alliance::experts_db::load_graph()
 }
 
 pub fn save_graph(graph: &ExpertGraph) {
-    crate::experts_db::save_graph(graph)
+    crate::alliance::experts_db::save_graph(graph)
 }
 
 // =====================================================================

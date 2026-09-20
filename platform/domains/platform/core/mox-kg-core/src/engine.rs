@@ -2,7 +2,7 @@
 
 use crate::dsl::{DslParser, DslQuery, DslQueryType};
 use crate::error::{KgError, KgResult};
-use crate::model::{Edge, PathResult, QueryResult, TraverseDirection, Vertex};
+use crate::model::{PathResult, QueryResult, TraverseDirection, Vertex};
 use crate::storage::GraphStorage;
 use std::time::Instant;
 
@@ -137,11 +137,10 @@ impl QueryEngine {
         let mut seen = std::collections::HashSet::new();
 
         for start in &start_vertices {
-            if self.has_valid_path(start, &query.path_segments, &typed_conditions) {
-                if seen.insert(start.id.clone()) {
+            if self.has_valid_path(start, &query.path_segments, &typed_conditions)
+                && seen.insert(start.id.clone()) {
                     result_vertices.push(start.clone());
                 }
-            }
         }
 
         // 分页
@@ -404,7 +403,7 @@ impl QueryEngine {
         for cond in conditions {
             // 支持 field.subfield 格式（如 product.id）
             let field = if cond.field.contains('.') {
-                cond.field.split('.').last().unwrap().to_string()
+                cond.field.split('.').next_back().unwrap().to_string()
             } else {
                 cond.field.clone()
             };

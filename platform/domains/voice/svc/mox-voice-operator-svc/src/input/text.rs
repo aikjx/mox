@@ -44,8 +44,8 @@ pub(crate) fn type_text(param: &ActionParam, fbs_init: &[&'static str]) -> Resul
     }
     // 中文：写入剪贴板 → Ctrl+V 粘贴（需要 L2 权限）
     fbs.push("chinese_clipboard_paste_backoff");
-    let copy_op = crate::file::FileOperator::default();
-    let fb_copy = copy_op.copy_impl(&text).map_err(|e| XiaobaiError::OperatorUnsupported {
+    let copy_op = crate::file::FileOperator;
+    let fb_copy = copy_op.copy_impl(&text).map_err(|_e| XiaobaiError::OperatorUnsupported {
         category: OperatorCategory::Input.as_str().to_string(),
         action: "type_text(chinese)".into(),
         platform: platform_tag(),

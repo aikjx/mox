@@ -378,7 +378,7 @@ impl AccessControl {
     /// 删除策略
     pub fn remove_policy(&self, id: &str) -> AuthResult<()> {
         let mut policies = self.policies.write();
-        if let Some(p) = policies.get(id) {
+        if let Some(_p) = policies.get(id) {
             // 检查是否有角色引用
             let roles = self.roles.read();
             for role in roles.values() {

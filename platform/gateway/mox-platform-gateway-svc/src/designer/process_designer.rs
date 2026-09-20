@@ -3,7 +3,6 @@
 //! 支持可视化拖拽设计审批流程，包含节点、连线、条件分支等
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// 流程定义（设计器保存的完整流程）
 #[derive(Debug, Clone, Serialize, Deserialize)]

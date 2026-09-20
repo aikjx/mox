@@ -1,5 +1,9 @@
 # Mox 专家联盟 — 智能自动化信息知识图谱关联关系系统
 
+> ⚠️ **本文档为 v1.0 历史设计稿，已被 v3 取代。当前实现请参考 [CURRENT-ARCHITECTURE.md](CURRENT-ARCHITECTURE.md)。**
+
+> 版本：v1.0 | 日期：2026-08-26 | 状态：历史设计（已归档）
+
 > 版本：v1.0 | 日期：2026-08-26 | 状态：设计草案
 >
 > 基于：[微服务架构设计](docs/architecture/microservices/README.md)

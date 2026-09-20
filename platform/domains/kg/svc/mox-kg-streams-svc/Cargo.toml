@@ -23,3 +23,6 @@ chrono = { workspace = true }
 # path = "src/bin/cdc_100k_harness.rs"
 # 注意：此 harness 依赖 FlinkCdcSource/IdempotentWriter/cdc_source 等待实现类型，
 # 暂不编译，待相关模块实现后启用。
+
+[lints]
+workspace = true

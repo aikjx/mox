@@ -137,7 +137,7 @@ impl AuditChain {
             .blocks
             .last()
             .map(|b| b.hash.clone())
-            .unwrap_or_else(|| String::from("0".repeat(64)));
+            .unwrap_or_else(|| "0".repeat(64));
         let ts_ms = event.ts_ms;
         let mut block = AuditBlock {
             index,
@@ -168,7 +168,7 @@ impl AuditChain {
                 return false;
             }
             let expected_prev = if i == 0 {
-                String::from("0".repeat(64))
+                "0".repeat(64)
             } else {
                 self.blocks[i - 1].hash.clone()
             };

@@ -249,7 +249,7 @@ where
     S: Clone + Send + Sync + 'static,
     Arc<MailerState>: axum::extract::FromRef<S>,
 {
-    use axum::routing::{get, post, put};
+    use axum::routing::{get, post};
 
     axum::Router::new()
         .route("/send", post(send_email_handler))

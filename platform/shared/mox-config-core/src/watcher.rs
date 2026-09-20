@@ -2,9 +2,8 @@
 // 配置热更新（Config Watcher）
 // =============================================================================
 
-use crate::config::{Config, ConfigManager};
+use crate::config::ConfigManager;
 use crate::source::ConfigSource;
-use async_trait::async_trait;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::broadcast;

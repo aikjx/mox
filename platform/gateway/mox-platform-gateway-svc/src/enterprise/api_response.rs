@@ -67,7 +67,7 @@ impl Pagination {
     pub fn new(page: usize, page_size: usize, total: usize) -> Self {
         let page = if page == 0 { 1 } else { page };
         let page_size = if page_size == 0 { 20 } else { page_size.min(100) };
-        let total_pages = if total == 0 { 1 } else { (total + page_size - 1) / page_size };
+        let total_pages = if total == 0 { 1 } else { total.div_ceil(page_size) };
         Self {
             page,
             page_size,

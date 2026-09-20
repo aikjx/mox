@@ -303,8 +303,8 @@ impl VoiceEngine {
         } else {
             // 重采样：先转回 f32 比例
             let f: Vec<f32> = pcm.iter().map(|v| *v as f32 / 32768.0).collect();
-            let rs = resample_to_i16(&f, sr as u32, 16000);
-            rs
+            
+            resample_to_i16(&f, sr as u32, 16000)
         };
         Ok(self.recognize(&pcm16))
     }

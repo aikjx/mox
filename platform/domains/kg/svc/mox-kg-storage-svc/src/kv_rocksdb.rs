@@ -1042,7 +1042,7 @@ impl RocksDBStore {
             target_vid: edge.dst_vid.clone(),
             rank: edge.rank,
         });
-        out_entry.entries.sort_by(|a, b| a.rank.cmp(&b.rank));
+        out_entry.entries.sort_by_key(|a| a.rank);
         let out_data = serde_json::to_vec(&out_entry)
             .map_err(|e| StorageError::Internal(format!("out index serialize: {e}")))?;
         batch.put(CF_EDGE_INDEX, out_idx_key.as_bytes(), &out_data);
@@ -1058,7 +1058,7 @@ impl RocksDBStore {
             target_vid: edge.src_vid.clone(),
             rank: edge.rank,
         });
-        in_entry.entries.sort_by(|a, b| a.rank.cmp(&b.rank));
+        in_entry.entries.sort_by_key(|a| a.rank);
         let in_data = serde_json::to_vec(&in_entry)
             .map_err(|e| StorageError::Internal(format!("in index serialize: {e}")))?;
         batch.put(CF_EDGE_INDEX, in_idx_key.as_bytes(), &in_data);

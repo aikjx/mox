@@ -493,10 +493,7 @@ impl IamRepository {
 
         let mut result = Vec::new();
         for (tenant_id, role) in roles_with_tenant {
-            let perms = match self.get_user_permissions(&tenant_id, user_id) {
-                Ok(p) => p,
-                Err(_) => vec![],
-            };
+            let perms = self.get_user_permissions(&tenant_id, user_id).unwrap_or_default();
             result.push(UserRole {
                 id: role.role_id,
                 code: role.role_code,

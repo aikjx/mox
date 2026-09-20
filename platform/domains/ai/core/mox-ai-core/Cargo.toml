@@ -27,3 +27,6 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 # 时间
 chrono = { workspace = true }
+
+[lints]
+workspace = true

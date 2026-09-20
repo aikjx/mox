@@ -32,3 +32,6 @@ tempfile = "3"
 
 [features]
 simd = []
+
+[lints]
+workspace = true

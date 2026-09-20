@@ -374,7 +374,7 @@ impl TaskRepository for InMemoryTaskRepository {
         let filtered: Vec<TaskEntity> = tasks
             .values()
             .filter(|t| t.tenant_id == tenant_id)
-            .filter(|t| status.map_or(true, |s| t.status == s))
+            .filter(|t| status.is_none_or(|s| t.status == s))
             .cloned()
             .collect();
         let total = filtered.len() as u64;

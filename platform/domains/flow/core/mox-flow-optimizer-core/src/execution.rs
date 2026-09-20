@@ -86,7 +86,7 @@ pub fn execute(req: ExecuteRequest, limits: &ExecutionLimits) -> ExecuteResponse
         .checked_mul(req.input.len())
         .and_then(|n| n.checked_mul(8))
         .and_then(|n| n.checked_mul(linear_count));
-    if allocation.map_or(true, |bytes| {
+    if allocation.is_none_or(|bytes| {
         bytes > limits.max_allocation_bytes || bytes as u64 > limits.max_memory
     }) {
         return rejected("线性算子矩阵分配超过内存预算".into(), start);

@@ -19,7 +19,7 @@
 //! - 验证 rebalance 操作前后的数据完整性
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use mox_kg_storage_svc::graph_codec::{self, PropValue};
 use mox_kg_storage_svc::storage_api::Direction;
@@ -249,7 +249,7 @@ fn shard_routing_avalanche_effect() {
     // 雪崩效应：输入变化 1 位，输出约 50% 的位翻转
     // 对于分片路由，意味着相似 VID 应分布到不同分片
 
-    let base = "user_1000";
+    let _base = "user_1000";
     let mut shards = BTreeSet::new();
 
     // 变化最后一位
@@ -439,7 +439,7 @@ fn cross_shard_edge_query() {
 }
 
 /// 找到两个路由到不同分片的 VID
-fn find_cross_shard_vids(srv: &StorageServer, shard_count: u16) -> (String, String) {
+fn find_cross_shard_vids(srv: &StorageServer, _shard_count: u16) -> (String, String) {
     let mut shards = HashMap::new();
     for i in 0..1000 {
         let vid = format!("cross_{}", i);

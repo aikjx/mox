@@ -54,7 +54,7 @@ impl VolumeOperator {
            fb.push("pactl_get_sink_volume_default");
            let vol = r2.ok().and_then(|(out, _, _)| {
                // "Volume: front-left: 26163 /  40% / -24.10 dB,   front-right: 26163 /  40% / ..."
-               out.split('%').next().and_then(|s| s.rsplit(' ').last())?.trim().parse::<i32>().ok()
+               out.split('%').next().and_then(|s| s.rsplit(' ').next_back())?.trim().parse::<i32>().ok()
            });
            if vol.is_some() || !devices.is_empty() {
                return Ok((fb, vol, devices));
@@ -66,7 +66,7 @@ impl VolumeOperator {
                let n: Option<i32> = out
                    .lines()
                    .find(|l| l.contains("Playback") && l.contains('%'))
-                   .and_then(|l| l.split('%').next()?.rsplit('[').last()?.parse::<i32>().ok());
+                   .and_then(|l| l.split('%').next()?.rsplit('[').next_back()?.parse::<i32>().ok());
                return Ok((fb, n, vec!["Master (amixer)".into()]));
            }
        }
@@ -158,7 +158,7 @@ impl VolumeOperator {
            } else {
                (vec!["set-sink-mute", "@DEFAULT_SINK@", "0"], "unmute")
            };
-           let r = run_command("pactl", &cmd_arg.iter().map(|s| *s).collect::<Vec<_>>());
+           let r = run_command("pactl", &cmd_arg.iter().copied().collect::<Vec<_>>());
            fb.push("pactl_set-sink-mute_DEFAULT");
            if matches!(r, Ok((_, _, 0))) {
                return Ok((fb, format!("pactl mute action={action_label} 成功")));
@@ -170,7 +170,7 @@ impl VolumeOperator {
            } else {
                vec!["sset", "Master", "unmute"]
            };
-           let r2 = run_command("amixer", &amixer_arg.iter().map(|s| *s).collect::<Vec<_>>());
+           let r2 = run_command("amixer", &amixer_arg.iter().copied().collect::<Vec<_>>());
            fb.push("amixer_sset_Master_mute");
            if matches!(r2, Ok((_, _, 0))) {
                return Ok((fb, format!("amixer mute action={action_label} 成功")));

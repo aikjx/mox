@@ -159,7 +159,7 @@ impl DslParser {
 
     fn parse_search(rest: &str, query: &mut DslQuery) -> KgResult<String> {
         // SEARCH product WHERE name CONTAINS 'iPhone'
-        let parts: Vec<&str> = rest.splitn(2, |c| c == ' ' || c == '\t').collect();
+        let parts: Vec<&str> = rest.splitn(2, [' ', '\t']).collect();
         query.target_type = parts[0].trim().to_string();
 
         if parts.len() > 1 {
@@ -205,7 +205,7 @@ impl DslParser {
                     (remaining.find("<-[").is_some() &&
                      remaining.find("<-[").unwrap() < remaining.find("-[").unwrap_or(usize::MAX));
 
-                let (arrow_start, arrow_end, edge_def, before_arrow) = if is_inbound {
+                let (_arrow_start, arrow_end, edge_def, before_arrow) = if is_inbound {
                     // 入边格式: <-[type]-
                     let start = remaining.find("<-[").unwrap();
                     let end_marker = remaining[start..].find("]-").unwrap() + start + 2;
@@ -270,7 +270,7 @@ impl DslParser {
             Ok(remaining.trim().to_string())
         } else {
             // 简单查询：GET product WHERE ...
-            let parts: Vec<&str> = rest.splitn(2, |c| c == ' ' || c == '\t').collect();
+            let parts: Vec<&str> = rest.splitn(2, [' ', '\t']).collect();
             query.target_type = parts[0].trim().to_string();
             if parts.len() > 1 {
                 Ok(parts[1].trim().to_string())

@@ -252,7 +252,7 @@ fn merge_majority(group: &[&NormRecord]) -> NormRecord {
         if let Some(target_str) = best {
             for r in group {
                 if let Some(v) = r.attributes.get(&k) {
-                    if v.to_string() == target_str {
+                    if *v == target_str {
                         out.attributes.insert(k.clone(), v.clone());
                         break;
                     }

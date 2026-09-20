@@ -26,3 +26,6 @@ mox-kg-algo-core = { path = "../../core/mox-kg-algo-core" }
 mox-kg-meta-core = { path = "../../core/mox-kg-meta-core" }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
 mox-kg-service-svc = { path = "../mox-kg-service-svc", features = ["http-adapter"] }
+
+[lints]
+workspace = true

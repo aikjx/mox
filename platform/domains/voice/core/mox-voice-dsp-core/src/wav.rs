@@ -39,9 +39,9 @@ pub fn encode_wav_pcm16(samples: &[f32], spec: &WavSpec) -> Vec<u8> {
     out.extend_from_slice(&1u16.to_le_bytes()); // audio format (1 = PCM)
     out.extend_from_slice(&ch.to_le_bytes());
     out.extend_from_slice(&sr.to_le_bytes());
-    let byte_rate = sr as u32 * ch as u32 * 2;
+    let byte_rate = sr * ch as u32 * 2;
     out.extend_from_slice(&byte_rate.to_le_bytes());
-    let block_align = ch as u16 * 2;
+    let block_align = ch * 2;
     out.extend_from_slice(&block_align.to_le_bytes());
     out.extend_from_slice(&16u16.to_le_bytes()); // bits per sample
     // data chunk

@@ -1,6 +1,5 @@
 // 集成测试：统一算法核心库跨域一致性验证
 
-use mox_unified_algo_core::*;
 use mox_unified_algo_core::similarity::*;
 use mox_unified_algo_core::ranking::*;
 use mox_unified_algo_core::graph::*;

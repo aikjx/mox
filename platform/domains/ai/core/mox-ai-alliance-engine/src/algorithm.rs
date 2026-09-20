@@ -543,7 +543,7 @@ fn check_injection_risk(code: &str, query: &str) -> (String, bool) {
     if found.is_empty() {
         ("未检测到明显的 SQL 注入模式".into(), true)
     } else {
-        (format!("检测到潜在 SQL 注入风险：使用字符串拼接构建 SQL 语句。请改用参数化查询"), false)
+        ("检测到潜在 SQL 注入风险：使用字符串拼接构建 SQL 语句。请改用参数化查询".to_string(), false)
     }
 }
 

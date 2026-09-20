@@ -18,7 +18,6 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tracing::{info, warn};
 
 /// WidgetMode：BallWidget 悬浮球 或 托盘模式

@@ -27,3 +27,6 @@ tower = { workspace = true, features = ["util"] }
 [[bench]]
 name = "development_experts"
 harness = false
+
+[lints]
+workspace = true

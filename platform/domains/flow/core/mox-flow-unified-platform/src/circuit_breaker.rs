@@ -14,7 +14,6 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
-use crate::error::{PlatformError, PlatformResult};
 
 /// 限流结果
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

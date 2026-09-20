@@ -51,7 +51,7 @@ pub(crate) struct RefreshReq {
 pub(crate) fn hash_password(pwd: &str) -> String {
     let mut h = Sha256::new();
     h.update(pwd.as_bytes());
-    hex_lower(&h.finalize().to_vec())
+    hex_lower(&h.finalize())
 }
 
 fn hex_lower(bytes: &[u8]) -> String {
@@ -301,7 +301,7 @@ pub(crate) async fn register_handler(
         false,
     ) {
         Ok(u) => u,
-        Err(e) => return api_error(500, &format!("创建用户失败: {e}")),
+        Err(e) => return api_error(500, format!("创建用户失败: {e}")),
     };
 
     // 分配默认角色 tenant_user（找不到角色时不阻断注册）

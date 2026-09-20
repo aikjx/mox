@@ -84,7 +84,7 @@ pub async fn list_providers_handler(
     if let Some(proto) = params.get("protocol") {
         list.retain(|p| p.protocol == *proto);
     }
-    list.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+    list.sort_by_key(|a| a.sort_order);
     Json(json!({ "code": 0, "data": list, "total": list.len() })).into_response()
 }
 
@@ -239,7 +239,7 @@ where
     S: Clone + Send + Sync + 'static,
     Arc<SsoState>: axum::extract::FromRef<S>,
 {
-    use axum::routing::{get, post, delete};
+    use axum::routing::{get, post};
 
     axum::Router::new()
         .route("/protocols", get(list_protocols_handler))

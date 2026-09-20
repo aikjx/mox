@@ -164,22 +164,11 @@ impl ModularWeightMatcher {
     }
 
     /// 计算健康状态分 (0.0 - 1.0)
+    ///
+    /// 只看健康状态布尔值：在线健康=1.0，不健康=0.2。
+    /// 性能指标（成功率/延迟）由 performance_score 单独计算，避免维度重叠。
     fn calculate_health_score(expert: &Expert) -> f64 {
-        if !expert.health.is_healthy {
-            return 0.2;
-        }
-        // 成功率和延迟综合评估
-        let health_score = expert.health.success_rate * 0.7
-            + if expert.health.avg_latency_ms < 1000.0 {
-                0.3
-            } else if expert.health.avg_latency_ms < 3000.0 {
-                0.2
-            } else if expert.health.avg_latency_ms < 5000.0 {
-                0.1
-            } else {
-                0.0
-            };
-        health_score.clamp(0.0, 1.0)
+        if expert.health.is_healthy { 1.0 } else { 0.2 }
     }
 
     /// 计算优先级分 (0.0 - 1.0)

@@ -16,7 +16,6 @@ use axum::{
     extract::{OriginalUri, State},
     http::{HeaderMap, Method, StatusCode},
     response::{IntoResponse, Json, Response},
-    routing::any,
     Router,
 };
 use serde::Serialize;

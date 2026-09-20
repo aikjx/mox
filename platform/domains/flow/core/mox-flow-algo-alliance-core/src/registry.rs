@@ -181,7 +181,7 @@ impl Default for AlgorithmRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{ComputeModel, DataShape, ParamSpec, ParamValue};
+    use crate::types::{DataShape, ParamSpec, ParamValue};
     use crate::unified_model::UnifiedData;
     use async_trait::async_trait;
     use indexmap::IndexMap;

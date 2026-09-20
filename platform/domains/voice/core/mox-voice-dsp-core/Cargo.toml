@@ -21,3 +21,6 @@ ahash = { workspace = true }
 [dev-dependencies]
 criterion = { workspace = true }
 approx = { workspace = true }
+
+[lints]
+workspace = true

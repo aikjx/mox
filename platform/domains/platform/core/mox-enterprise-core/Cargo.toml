@@ -28,3 +28,6 @@ serde_urlencoded = "0.7"
 regex = "1.10"
 # 框架依赖
 mox-framework = { workspace = true }
+
+[lints]
+workspace = true

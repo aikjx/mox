@@ -272,7 +272,7 @@ mod tests {
     fn fuzzy_apply_long_string_low_ratio_still_works() {
         // Python selftest fr5_hotwords_inject_and_posthoc 里的案例："小百语音住收" vs "小白语音助手"
         let ranked = validate_and_rank(&[Hotword::new("小白语音助手").with_score(100.0)]).unwrap();
-        let r = apply_fuzzy("你好，小百语音住收演示一下", &ranked);
+        let _r = apply_fuzzy("你好，小百语音住收演示一下", &ranked);
         // 差异率 2/6 = 33%？实际 6 字：小/百/语/音/住/收 vs 小/白/语/音/助/手 → lev=3 > (6*0.25=1.5) 不命中
         // 因此这里用更接近的案例：差异 2 字 → 命中
         let r2 = apply_fuzzy("你好，小白语音住收演示一下", &ranked);

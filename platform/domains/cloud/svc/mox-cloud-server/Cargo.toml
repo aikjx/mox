@@ -26,3 +26,6 @@ mox-cloud-store-core = { path = "../../core/mox-cloud-store-core" }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
 mox-cloud-master-svc = { path = "../mox-cloud-master-svc" }
 parking_lot = { workspace = true }
+
+[lints]
+workspace = true

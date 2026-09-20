@@ -37,7 +37,7 @@ impl<'a> ProcessEngine<'a> {
         // 记录已成功执行且有补偿SQL的步骤，用于事务回滚
         let mut completed_steps: Vec<(usize, &ProcessStep)> = Vec::new();
 
-        for (_idx, step) in process.steps.iter().enumerate() {
+        for step in process.steps.iter() {
             if !evaluate_condition(step.when.as_deref(), &context)? {
                 step_results.push(ProcessStepResult {
                     step_code: step.step_code.clone(),

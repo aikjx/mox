@@ -20,7 +20,7 @@ use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
 use mox_platform_iam_core::IamRepository;
 use crate::actuator::{LogStore, RuntimeMetrics};
-use crate::experts_common::ExpertsSharedState;
+use crate::alliance::experts_common::ExpertsSharedState;
 
 // =====================================================================
 // 告警规则 JSON 持久化

@@ -26,3 +26,6 @@ mox-platform-system-core = { workspace = true }
 [dev-dependencies]
 mox-market-template-svc = { workspace = true }
 mox-ai-flow-svc = { workspace = true }
+
+[lints]
+workspace = true

@@ -29,3 +29,6 @@ gm-sm = ["dep:rand"]
 dual_chain = ["gm-sm"]
 
 [dev-dependencies]
+
+[lints]
+workspace = true

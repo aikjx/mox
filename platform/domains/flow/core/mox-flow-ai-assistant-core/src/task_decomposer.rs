@@ -280,7 +280,7 @@ impl TaskDecomposer {
 
         let mut subtasks: Vec<SubTask> = Vec::new();
 
-        for (_idx, st_template) in template.subtasks.iter().enumerate() {
+        for st_template in template.subtasks.iter() {
             let mut subtask = SubTask::new(
                 &st_template.name,
                 st_template.agent_role,

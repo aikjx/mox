@@ -254,7 +254,7 @@ impl WebSocketManager {
     }
 
     /// 广播消息到所有连接
-    pub async fn broadcast(&self, message: &WebSocketMessage) -> usize {
+    pub async fn broadcast(&self, _message: &WebSocketMessage) -> usize {
         let connections = self.list_connections();
         let mut sent = 0;
         for conn in connections {
@@ -267,7 +267,7 @@ impl WebSocketManager {
     }
 
     /// 广播消息到订阅指定主题的连接
-    pub async fn broadcast_to_topic(&self, topic: &str, message: &WebSocketMessage) -> usize {
+    pub async fn broadcast_to_topic(&self, topic: &str, _message: &WebSocketMessage) -> usize {
         let connections = self.list_by_subscription(topic);
         connections.len()
     }

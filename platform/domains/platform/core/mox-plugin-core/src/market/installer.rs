@@ -10,7 +10,7 @@ use super::remote_registry::RemotePluginVersion;
 use super::version::VersionManager;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use parking_lot::RwLock;
 
@@ -85,7 +85,7 @@ impl PluginInstaller {
         // 1. 获取版本信息（含下载URL和SHA-256）
         let version_info = self.client.get(&format!("/plugins/{}/versions/{}", plugin_id, version), None)
             .await
-            .map_err(|e| InstallerError::MarketError(e))?;
+            .map_err(InstallerError::MarketError)?;
         let version_info: RemotePluginVersion = serde_json::from_value(version_info)
             .map_err(|e| InstallerError::ParseError(e.to_string()))?;
 
@@ -143,7 +143,7 @@ impl PluginInstaller {
     pub async fn install_latest(&self, plugin_id: &str, include_pre_release: bool) -> Result<InstallResult, InstallerError> {
         let version_info = self.client.get(&format!("/plugins/{}/latest", plugin_id), None)
             .await
-            .map_err(|e| InstallerError::MarketError(e))?;
+            .map_err(InstallerError::MarketError)?;
         let version: RemotePluginVersion = serde_json::from_value(version_info)
             .map_err(|e| InstallerError::ParseError(e.to_string()))?;
         if !include_pre_release && version.pre_release {
@@ -190,7 +190,7 @@ impl PluginInstaller {
         // 获取最新版本
         let latest = self.client.get(&format!("/plugins/{}/latest", plugin_id), None)
             .await
-            .map_err(|e| InstallerError::MarketError(e))?;
+            .map_err(InstallerError::MarketError)?;
         let latest_version: RemotePluginVersion = serde_json::from_value(latest)
             .map_err(|e| InstallerError::ParseError(e.to_string()))?;
 
@@ -213,7 +213,7 @@ impl PluginInstaller {
 
         // 备份当前版本
         self.version_manager.backup_version(plugin_id, &current).await
-            .map_err(|e| InstallerError::Other(e))?;
+            .map_err(InstallerError::Other)?;
 
         // 安装新版本
         self.install(plugin_id, &latest_version.version).await

@@ -299,8 +299,8 @@ pub mod builtin_hooks {
                             ctx.audit.record_phase_start(phase, ctx.trace_id);
                         }
                     }
-                    HookEvent::PostPhase(_) => {
-                        if ctx.options.audit_enabled {
+                    HookEvent::PostPhase(_)
+                        if ctx.options.audit_enabled => {
                             if let Some(exec) = ctx.get_execution(phase) {
                                 ctx.audit.record_phase_end(
                                     phase,
@@ -310,7 +310,6 @@ pub mod builtin_hooks {
                                 );
                             }
                         }
-                    }
                     _ => {}
                 }
             }

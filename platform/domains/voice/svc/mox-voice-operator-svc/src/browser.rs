@@ -165,12 +165,12 @@ impl BrowserOperator {
             if cfg!(windows) {
                 // CSV："Image Name","PID",...,"Window Title"
                 let cols: Vec<&str> = l.split("\",\"").collect();
-                r.insert("process".into(), cols.get(0).map(|s| s.trim_matches('"').to_string()).unwrap_or_default());
+                r.insert("process".into(), cols.first().map(|s| s.trim_matches('"').to_string()).unwrap_or_default());
                 r.insert("pid".into(), cols.get(1).map(|s| s.trim_matches('"').to_string()).unwrap_or_default());
                 r.insert("window_title".into(), cols.last().map(|s| s.trim_matches('"').to_string()).unwrap_or_default());
             } else {
                 let parts: Vec<&str> = l.splitn(3, char::is_whitespace).collect();
-                r.insert("pid".into(), parts.get(0).copied().unwrap_or("").to_string());
+                r.insert("pid".into(), parts.first().copied().unwrap_or("").to_string());
                 r.insert("comm".into(), parts.get(1).copied().unwrap_or("").to_string());
                 r.insert("args".into(), parts.get(2).copied().unwrap_or("").to_string());
             }

@@ -24,3 +24,6 @@ reqwest = { workspace = true, features = ["blocking"], optional = true }
 [features]
 default = ["s3-sink"]
 s3-sink = ["dep:reqwest"]
+
+[lints]
+workspace = true

@@ -28,3 +28,6 @@ mox-connector-core = { workspace = true }
 
 # 框架
 mox-framework = { workspace = true }
+
+[lints]
+workspace = true

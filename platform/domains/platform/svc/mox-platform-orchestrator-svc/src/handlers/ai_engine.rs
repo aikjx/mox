@@ -17,14 +17,13 @@ use crate::sidecar::node_sidecar::{GraphAlgoReq, IntentReq, IntentResp, NodeSide
 use mox_ai_agent_svc::AIAgent;
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
     response::{IntoResponse, Json},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok};
 
 // ================== 协议：请求 / 响应 ==================
 

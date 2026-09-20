@@ -132,7 +132,7 @@ async fn benchmark_kb_retrieval_100_docs() {
         let doc = Document::new(
             "bench",
             format!("文档 {}", i),
-            &format!("这是第 {} 篇测试文档，包含关于 Rust、Python、微服务、机器学习、Kubernetes 等主题的内容。文档编号 {} 用于性能基准测试。", i, i),
+            format!("这是第 {} 篇测试文档，包含关于 Rust、Python、微服务、机器学习、Kubernetes 等主题的内容。文档编号 {} 用于性能基准测试。", i, i),
         );
         let chunks = chunker.chunk(&doc);
         for chunk in &chunks {

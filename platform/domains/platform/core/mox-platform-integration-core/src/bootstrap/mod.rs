@@ -201,7 +201,7 @@ impl IntegrationRuntimeBuilder {
             coordinator.register_capability(
                 CapabilityHandle::new(CapabilityType::Plugin, "Plugin System", "1.0.0")
                     .with_metadata("plugin_dir", &config.plugin.plugin_dir)
-                    .with_metadata("hot_reload", &config.plugin.hot_reload.to_string())
+                    .with_metadata("hot_reload", config.plugin.hot_reload.to_string())
             );
             let _ = extensions.register(crate::extension::ExtensionPoint::new(
                 "integration.plugin.system", "Plugin System", crate::extension::ExtensionPointType::Plugin, "1.0.0"
@@ -211,8 +211,8 @@ impl IntegrationRuntimeBuilder {
         if self.enable_enterprise && config.enterprise.enabled {
             coordinator.register_capability(
                 CapabilityHandle::new(CapabilityType::Enterprise, "Enterprise Adapter", "1.0.0")
-                    .with_metadata("sso_enabled", &config.enterprise.sso.enabled.to_string())
-                    .with_metadata("audit_enabled", &config.enterprise.compliance.audit_log_enabled.to_string())
+                    .with_metadata("sso_enabled", config.enterprise.sso.enabled.to_string())
+                    .with_metadata("audit_enabled", config.enterprise.compliance.audit_log_enabled.to_string())
             );
             let _ = extensions.register(crate::extension::ExtensionPoint::new(
                 "integration.enterprise.adapter", "Enterprise Adapter", crate::extension::ExtensionPointType::SsoProvider, "1.0.0"
@@ -222,7 +222,7 @@ impl IntegrationRuntimeBuilder {
         if self.enable_connector && config.connector.enabled {
             coordinator.register_capability(
                 CapabilityHandle::new(CapabilityType::Connector, "Connector Framework", "1.0.0")
-                    .with_metadata("connector_count", &config.connector.connectors.len().to_string())
+                    .with_metadata("connector_count", config.connector.connectors.len().to_string())
             );
             let _ = extensions.register(crate::extension::ExtensionPoint::new(
                 "integration.connector.framework", "Connector Framework", crate::extension::ExtensionPointType::Connector, "1.0.0"

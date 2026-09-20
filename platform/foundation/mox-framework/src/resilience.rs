@@ -202,7 +202,7 @@ impl RetryPolicy {
     pub fn delay_for(&self, attempt: u32) -> Duration {
         let base = self.base_delay.as_millis() as f64;
         let delay = base * self.multiplier.powi(attempt as i32);
-        let jitter = delay * 0.1 * (rand_like() as f64);
+        let jitter = delay * 0.1 * rand_like();
         Duration::from_millis((delay + jitter).min(self.max_delay.as_millis() as f64) as u64)
     }
 }

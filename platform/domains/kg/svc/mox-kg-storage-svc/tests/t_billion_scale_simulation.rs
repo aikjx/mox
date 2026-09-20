@@ -102,7 +102,7 @@ impl DegreeDistribution {
         }
 
         let x_min = 1.0;
-        let n = non_zero.len() as f64;
+        let _n = non_zero.len() as f64;
         let sum_log: f64 = non_zero.iter().filter(|&&x| x >= x_min).map(|x| (x / x_min).ln()).sum();
         let count_above = non_zero.iter().filter(|&&x| x >= x_min).count() as f64;
 

@@ -15,7 +15,7 @@ pub fn resample_linear(input: &[f32], sr_in: u32, sr_out: u32) -> Vec<f32> {
     let len = input.len();
     if len == 0 { return Vec::new(); }
     let n = (len as f64 * sr_out as f64 / sr_in as f64).round() as usize;
-    if n <= 0 { return Vec::new(); }
+    if n == 0 { return Vec::new(); }
     if len == 1 { return vec![input[0]; n]; }
     let scale = (len - 1) as f64 / (n - 1).max(1) as f64;
     let mut out = vec![0.0f32; n];

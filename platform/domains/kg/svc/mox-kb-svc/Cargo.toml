@@ -37,3 +37,6 @@ tower = { workspace = true, features = ["util"] }
 default = []
 
 
+
+[lints]
+workspace = true

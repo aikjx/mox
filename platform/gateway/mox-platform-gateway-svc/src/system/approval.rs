@@ -336,8 +336,7 @@ pub async fn approval_definitions_handler(
     State(state): State<GatewayState>,
 ) -> ApiResponse<Value> {
     let defs = state.process_engine.process_defs.read();
-    let rows: Vec<Value> = defs.iter()
-        .map(|(_, def)| json!({
+    let rows: Vec<Value> = defs.values().map(|def| json!({
             "id": def.id,
             "name": def.name,
             "version": def.version,

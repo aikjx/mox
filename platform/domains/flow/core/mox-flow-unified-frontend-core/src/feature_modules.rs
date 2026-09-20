@@ -195,7 +195,7 @@ impl FeatureModuleRegistry {
             .iter()
             .filter_map(|id| modules.get(id).cloned())
             .collect();
-        result.sort_by(|a, b| a.order.cmp(&b.order));
+        result.sort_by_key(|a| a.order);
         result
     }
 
@@ -204,7 +204,7 @@ impl FeatureModuleRegistry {
         let modules = self.modules.read();
         let mut result: Vec<FeatureModule> =
             modules.values().filter(|m| m.enabled).cloned().collect();
-        result.sort_by(|a, b| a.order.cmp(&b.order));
+        result.sort_by_key(|a| a.order);
         result
     }
 
@@ -212,7 +212,7 @@ impl FeatureModuleRegistry {
     pub fn list_all(&self) -> Vec<FeatureModule> {
         let modules = self.modules.read();
         let mut result: Vec<FeatureModule> = modules.values().cloned().collect();
-        result.sort_by(|a, b| a.order.cmp(&b.order));
+        result.sort_by_key(|a| a.order);
         result
     }
 
@@ -243,7 +243,7 @@ impl FeatureModuleRegistry {
 
         // 每个分类内按 order 排序
         for items in result.values_mut() {
-            items.sort_by(|a, b| a.order.cmp(&b.order));
+            items.sort_by_key(|a| a.order);
         }
 
         result

@@ -224,7 +224,7 @@ mod tests {
     #[test]
     fn test_register_and_get() {
         let registry = PluginRegistry::new();
-        let instance = registry.register(test_manifest("test.plugin")).unwrap();
+        let _instance = registry.register(test_manifest("test.plugin")).unwrap();
         assert_eq!(registry.len(), 1);
         assert!(registry.get("test.plugin").is_ok());
         let got = registry.get("test.plugin").unwrap();

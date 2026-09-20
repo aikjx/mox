@@ -19,7 +19,7 @@ use axum::{
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tower::{Layer, Service};
 
 /// 令牌桶限流器
@@ -212,6 +212,7 @@ impl RateLimitConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn test_rate_limiter_acquire() {

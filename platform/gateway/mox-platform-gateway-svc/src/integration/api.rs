@@ -315,7 +315,7 @@ where
     S: Clone + Send + Sync + 'static,
     Arc<IntegrationState>: axum::extract::FromRef<S>,
 {
-    use axum::routing::{get, post, put, delete};
+    use axum::routing::{get, post};
 
     axum::Router::new()
         .route("/connector-types", get(list_connector_types_handler))

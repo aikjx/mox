@@ -17,7 +17,6 @@ use anyhow::Result;
 use async_trait::async_trait;
 use mox_ai_expert_proto::{ConsultQuery, ConsultReport, ExpertConsultant};
 use mox_ai_flow_core::model::FlowGraph;
-use std::collections::HashMap;
 
 /// 专家咨询器（实现 proto::ExpertConsultant trait）
 ///
@@ -199,6 +198,7 @@ impl ExpertConsultant for ExpertConsultantImpl {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
     use mox_ai_expert_proto::ExpertConsultant;
 
     #[test]

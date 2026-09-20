@@ -250,7 +250,7 @@ where
     S: Clone + Send + Sync + 'static,
     Arc<TemplateState>: axum::extract::FromRef<S>,
 {
-    use axum::routing::{get, post, put, delete};
+    use axum::routing::{get, post};
 
     axum::Router::new()
         // 模板管理

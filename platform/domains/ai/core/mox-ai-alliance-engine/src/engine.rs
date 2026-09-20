@@ -16,19 +16,18 @@
 //! - 基于 mox-pipeline-framework 的管线抽象（PhaseId + PhaseHandler）
 
 use crate::algorithm::AlgorithmAnalyzer;
-use crate::constants::{PHASE_NAMES, QUALITY_FORMULA};
-use crate::debate::{DebateEngine, DebateResult};
+use crate::constants::QUALITY_FORMULA;
+use crate::debate::DebateEngine;
 use crate::error::AllianceError;
 use crate::events::{AllianceEvent, AlliancePhase, AllianceRequest, StreamEvent};
-use crate::gate::{audit_events_for_full_pipeline, AuditEvent, GateResult, QualityGate};
-use crate::intent::{IntentClassifier, IntentResult};
+use crate::gate::{audit_events_for_full_pipeline, AuditEvent, QualityGate};
+use crate::intent::IntentClassifier;
 use crate::learning::KnowledgeLearner;
-use crate::router::{IntelligentRouter, RouteDecision};
-use crate::team::{build_expert_registry, TeamAssembler, TeamResult};
+use crate::router::IntelligentRouter;
+use crate::team::{build_expert_registry, TeamAssembler};
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
@@ -145,7 +144,7 @@ impl AllianceEngine {
             .await;
 
         // C 级重试逻辑
-        let mut gate = self.quality_gate.evaluate(&intent, &team, &debate);
+        let gate = self.quality_gate.evaluate(&intent, &team, &debate);
 
         events.push(AllianceEvent {
             phase: AlliancePhase::Debate,
@@ -490,7 +489,7 @@ mod tests {
     /// TDD 4: D 级触发 GateBlocked 错误
     #[tokio::test]
     async fn d_grade_triggers_gateblocked_error() {
-        let eng = AllianceEngine::new();
+        let _eng = AllianceEngine::new();
         // 用非常短的无意义 query，可能分数很低
         let req = AllianceRequest {
             query: "x".to_string(),

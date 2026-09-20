@@ -257,7 +257,7 @@ pub struct ConnectorRegistry {
 
 impl ConnectorRegistry {
     pub fn new() -> Self {
-        let mut registry = Self {
+        let registry = Self {
             connectors: RwLock::new(HashMap::new()),
         };
         registry.register(Arc::new(GenericRestConnector::new()));

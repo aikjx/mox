@@ -317,7 +317,7 @@ impl EncodingAlgoAdapter {
                 // 简化版：返回原始数据 + 模拟的校验分片
                 // 实际实现需要真正的 RS 编码
                 let total_shards = data_shards + parity_shards;
-                let shard_size = (data.len() + data_shards - 1) / data_shards;
+                let shard_size = data.len().div_ceil(data_shards);
 
                 let mut shards = std::collections::HashMap::new();
                 for i in 0..data_shards {

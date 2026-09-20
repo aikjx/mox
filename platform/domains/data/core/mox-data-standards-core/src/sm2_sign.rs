@@ -19,7 +19,6 @@
 
 use num_bigint::BigUint;
 use num_traits::{One, Zero};
-use core::convert::TryFrom;
 
 // ---------------------------------------------------------------------------
 // 256-bit big integer helpers: thin `[u32; 8]` (little-endian limbs) façade
@@ -112,9 +111,9 @@ mod big256 {
     pub fn add_mod(x: &U256, y: &U256, m: &U256) -> U256 {
         let sum = to_big(x) + to_big(y);
         let mm = to_big(m);
-        let r = if &sum >= &mm { sum - &mm } else { sum };
+        let r = if sum >= mm { sum - &mm } else { sum };
         // Wrap to [0, m) explicitly (no-op for <2*m additions).
-        let r2 = if &r >= &mm { &r - &mm } else { r };
+        let r2 = if r >= mm { &r - &mm } else { r };
         from_big(&r2)
     }
 

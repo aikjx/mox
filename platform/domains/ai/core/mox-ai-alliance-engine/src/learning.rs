@@ -206,7 +206,7 @@ impl KnowledgeLearner {
 
         // 根据反馈调整类权重（正向反馈增强，负向反馈减弱）
         // 这里简化处理：整体调整所有维度的增益
-        for (_dim, gain) in self.knowledge.dimension_gains.iter_mut() {
+        for gain in self.knowledge.dimension_gains.values_mut() {
             *gain = (*gain + factor * 0.1).clamp(0.0, 1.0);
         }
 

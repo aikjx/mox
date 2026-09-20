@@ -61,3 +61,6 @@ tokio = { workspace = true, features = ["full"] }
 default = ["rayon"]
 # 并行咨询（真并行）：关闭则退化为顺序单线程，API 不变
 rayon = []
+
+[lints]
+workspace = true

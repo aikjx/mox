@@ -118,7 +118,7 @@ fn wav_spec_copy_and_clone() {
     let spec = WavSpec { sample_rate: 44100, channels: 2 };
     let copied = spec; // Copy
     assert_eq!(copied.sample_rate, 44100);
-    let cloned = spec.clone();
+    let cloned = spec;
     assert_eq!(cloned.channels, 2);
     let dbg = format!("{:?}", spec);
     assert!(dbg.contains("WavSpec"));

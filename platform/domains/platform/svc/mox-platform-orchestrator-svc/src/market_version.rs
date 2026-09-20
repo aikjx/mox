@@ -19,8 +19,6 @@
 
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::Json,
     routing::get,
     Router,
 };
@@ -30,7 +28,7 @@ use std::collections::HashMap;
 
 use crate::market::{load_package, reload_index_sync, save_package, MarketState, OperatorPackage};
 use crate::market_migration::{audit, changelogs_dir, now_rfc3339, versions_dir};
-use mox_api_protocol::{ApiResponse, api_ok, api_error, api_ok_empty};
+use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 // ========== 语义化版本 ==========
 

@@ -28,7 +28,7 @@ impl DictionaryState {
 
         let mut dict_items: HashMap<String, Vec<DictItem>> = HashMap::new();
         for item in builtin_dict_items() {
-            dict_items.entry(item.dict_type.clone()).or_insert_with(Vec::new).push(item);
+            dict_items.entry(item.dict_type.clone()).or_default().push(item);
         }
 
         Self {
@@ -130,7 +130,7 @@ pub async fn list_dict_items_handler(
     match items.get(&dict_type) {
         Some(list) => {
             let mut sorted = list.clone();
-            sorted.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+            sorted.sort_by_key(|a| a.sort_order);
             success_with_message("success", json!(sorted))
         }
         None => success_with_message("success", json!([])),
@@ -200,7 +200,7 @@ pub async fn get_all_dicts_handler(
     let mut result = HashMap::new();
     for (k, v) in items.iter() {
         let mut sorted = v.clone();
-        sorted.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+        sorted.sort_by_key(|a| a.sort_order);
         result.insert(k, sorted);
     }
     success(result)

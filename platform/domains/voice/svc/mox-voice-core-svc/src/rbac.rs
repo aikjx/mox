@@ -149,7 +149,7 @@ pub fn check_clearance(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::identity::{OperatorIdentity, RoleTag};
+    use crate::identity::OperatorIdentity;
 
     /// 4 × 5 级 RBAC 矩阵（与 Python selftest fr13_rbac_4level_auth_matrix 对齐）
     #[test]

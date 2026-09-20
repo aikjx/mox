@@ -21,7 +21,7 @@
 //! - 正常路径 + 边界条件 + 错误路径三维度覆盖
 //! - 使用 assert! / assert_eq! 进行精确断言
 
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::time::{Duration, Instant};
 
 use mox_kg_storage_svc::cdc_source::CdcSource;
@@ -829,7 +829,7 @@ fn transaction_ordering_monotonic_index() {
 /// 验证：创建快照后，从快照导入的图与原图一致
 #[test]
 fn snapshot_create_and_restore() {
-    use mox_kg_storage_svc::{GraphNode, GraphEdge, GraphStore, GraphSnapshot};
+    use mox_kg_storage_svc::{GraphNode, GraphEdge, GraphStore};
 
     let store = GraphStore::new();
 
@@ -882,7 +882,7 @@ fn snapshot_create_and_restore() {
 /// 验证：空图的快照也是空的，恢复后仍为空
 #[test]
 fn snapshot_empty_graph() {
-    use mox_kg_storage_svc::{GraphStore, GraphSnapshot};
+    use mox_kg_storage_svc::GraphStore;
 
     let store = GraphStore::new();
     let snap = store.snapshot();

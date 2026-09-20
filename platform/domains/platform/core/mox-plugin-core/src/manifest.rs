@@ -664,7 +664,7 @@ impl VsCodeManifest {
             });
         }
 
-        for (_container_id, views) in &self.contributes.views {
+        for views in self.contributes.views.values() {
             for view in views {
                 capabilities.push(PluginCapability {
                     id: format!("view.{}", view.id),
@@ -713,11 +713,7 @@ impl VsCodeManifest {
             repository: self.repository.as_ref().and_then(|r| {
                 if let Some(url) = r.get("url").and_then(|u| u.as_str()) {
                     Some(url.to_string())
-                } else if let Some(s) = r.as_str() {
-                    Some(s.to_string())
-                } else {
-                    None
-                }
+                } else { r.as_str().map(|s| s.to_string()) }
             }),
             license: self.license.clone(),
             min_platform_version: "3.0.0".to_string(),

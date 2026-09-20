@@ -1466,7 +1466,7 @@ impl DetailedPlanOutput {
             "Cost Reduction: {:.2}%\n",
             self.cost_reduction * 100.0
         ));
-        s.push_str("\n");
+        s.push('\n');
         s.push_str("--- Cost Breakdown ---\n");
         s.push_str(&format!(
             "  Original: IO={:.4} CPU={:.4} Network={:.4} Total={:.4}\n",
@@ -1482,7 +1482,7 @@ impl DetailedPlanOutput {
             self.optimized_cost.network_cost,
             self.optimized_cost.total_cost
         ));
-        s.push_str("\n");
+        s.push('\n');
         s.push_str("--- Rules Applied ---\n");
         if self.rules_applied.is_empty() {
             s.push_str("  (none)\n");
@@ -1497,7 +1497,7 @@ impl DetailedPlanOutput {
                 ));
             }
         }
-        s.push_str("\n");
+        s.push('\n');
         s.push_str("--- Optimized Plan ---\n");
         s.push_str(&format!("  {}\n", self.optimized_plan));
         s
@@ -1576,7 +1576,7 @@ impl PlanCache {
             if in_string {
                 if c == string_char {
                     in_string = false;
-                    result.push_str("?"); // 参数化字符串
+                    result.push('?'); // 参数化字符串
                 }
                 continue;
             }
@@ -1789,14 +1789,11 @@ impl Optimizer {
                 }
             }
             // 5-hop MATCH 特征
-            PlanNode::MatchN1 | PlanNode::MatchN2 | PlanNode::MatchN3 | PlanNode::MatchN4 => {
-                if rows >= 5 {
+            PlanNode::MatchN1 | PlanNode::MatchN2 | PlanNode::MatchN3 | PlanNode::MatchN4
+                if rows >= 5 => {
                     rows = rows.saturating_div(5).max(1);
                     true
-                } else {
-                    false
                 }
-            }
             _ => false,
         };
         let plan = Self::reorder(plan);

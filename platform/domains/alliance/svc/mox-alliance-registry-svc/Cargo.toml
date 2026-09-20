@@ -1,0 +1,35 @@
+[package]
+name = "mox-alliance-registry-svc"
+version = "0.1.0"
+edition = "2021"
+description = "专家注册中心服务（v3 拆分）"
+
+[dependencies]
+# 共享协议
+mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
+
+# Web 框架
+axum = "0.7"
+tokio = { version = "1.0", features = ["full"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# 工具
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+parking_lot = "0.12"
+rusqlite = { version = "0.31", features = ["bundled"] }
+tonic = "0.11"
+prost = "0.12"
+
+[build-dependencies]
+tonic-build = "0.11"
+
+[dev-dependencies]
+# 测试用依赖
+
+[lints]
+workspace = true

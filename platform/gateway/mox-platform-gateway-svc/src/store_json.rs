@@ -5,7 +5,7 @@
 //!
 //! 替代 monitor / notification / workspace / kb_ext / misc / projects_ext
 //! 各模块散落的 `data/*.json` 文件读写，统一收敛到 `data/store.db`，
-//! 与专家联盟域 [`crate::experts_db`] 的持久化风格保持一致：
+//! 与专家联盟域 [`crate::alliance::experts_db`] 的持久化风格保持一致：
 //!
 //! - **WAL 模式** + **busy_timeout(5s)** + **synchronous=NORMAL**：读写并发、
 //!   跨连接写竞争自动等待、崩溃原子（事务内全量同步）。

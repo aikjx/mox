@@ -16,9 +16,8 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 use mox_kg_meta_core::{
-    vid_hash_partition, AuthStore, CreateEdgeTypeArgs, EdgeDef, FieldDef, FieldType, IndexKind,
-    MetaCluster, MetaError, MetaServer, PartitionStore, Resource, Role, SchemaStore, SpaceDef,
-    TagDef, UserDef,
+    vid_hash_partition, AuthStore, CreateEdgeTypeArgs, FieldDef, FieldType, IndexKind,
+    MetaCluster, MetaError, MetaServer, PartitionStore, Resource, Role, SchemaStore, SpaceDef, UserDef,
 };
 
 // ---------- 简易 RED 相位开关：运行 `cargo test --test t5_r1_meta_raft --cfg red_phase` 会让以下全部失败 ----------
@@ -50,7 +49,7 @@ fn bootstrap_3node_admin() -> (tokio::runtime::Runtime, MetaServer, String) {
         .create_user("admin", "adminpw", Role::Admin, None)
         .unwrap();
     // 获得 tmp 的 snapshot 并 merge 到 srv 全部 store 的 AuthStore
-    let snap_single = tmp
+    let _snap_single = tmp
         .cluster()
         .is_none()
         .then(|| {
@@ -423,7 +422,7 @@ fn tr5_4_grant_spaceadmin_allows_tag_create() {
     force_red();
     let srv = MetaServer::standalone();
     let admin = srv.create_user("admin", "pw", Role::Admin, None).unwrap();
-    let alice = srv
+    let _alice = srv
         .create_user("alice", "pw123", Role::User, Some(&admin.username))
         .unwrap();
     srv.create_space("s1", 16, 3, Some(&admin.username))
@@ -452,7 +451,7 @@ fn tr5_4_revoke_spaceadmin_denies_tag_create() {
     force_red();
     let srv = MetaServer::standalone();
     let admin = srv.create_user("admin", "pw", Role::Admin, None).unwrap();
-    let alice = srv
+    let _alice = srv
         .create_user("alice", "pw123", Role::User, Some(&admin.username))
         .unwrap();
     srv.create_space("s1", 16, 3, Some(&admin.username))

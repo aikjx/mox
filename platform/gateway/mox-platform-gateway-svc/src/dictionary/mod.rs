@@ -5,7 +5,6 @@
 pub mod api;
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// 字典类型
 #[derive(Debug, Clone, Serialize, Deserialize)]

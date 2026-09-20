@@ -71,3 +71,6 @@ reqwest = { workspace = true }
 # 默认启用，使治理台随运行时二进制一同编译与暴露。
 default = ["governance"]
 governance = []
+
+[lints]
+workspace = true

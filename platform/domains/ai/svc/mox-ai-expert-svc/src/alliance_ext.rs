@@ -37,7 +37,7 @@ impl ExpertMetric {
         if self.consultations == 0 {
             0
         } else {
-            self.latency_sum / self.consultations as u64
+            self.latency_sum / self.consultations
         }
     }
 }

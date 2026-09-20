@@ -119,7 +119,7 @@ impl fmt::Display for ResultSet {
             self.rows.len()
         )?;
         if !self.columns.is_empty() {
-            let head: Vec<String> = self.columns.iter().cloned().collect();
+            let head: Vec<String> = self.columns.to_vec();
             writeln!(f, "| {} |", head.join(" | "))?;
         }
         for r in &self.rows {

@@ -20,7 +20,7 @@ use std::sync::Arc;
 
 use super::experts_common::*;
 use mox_api_protocol::ApiResponse;
-use mox_ai_expert_svc::expert_traits::{llm_consultant, ExpertConsultant};
+use mox_ai_expert_svc::expert_traits::llm_consultant;
 use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport};
 
 // =====================================================================
@@ -480,7 +480,7 @@ pub fn run_debate(topic: &str, experts: &[ExpertDescriptor], rounds: u32) -> Val
     let participants: Vec<&ExpertDescriptor> = experts.iter().take(n).collect();
 
     // 分配正反方：偶数平分，奇数时正方多一人
-    let pro_count = (n + 1) / 2;
+    let pro_count = n.div_ceil(2);
     let con_count = n - pro_count;
 
     let pro_experts: Vec<&ExpertDescriptor> = participants.iter().take(pro_count).copied().collect();

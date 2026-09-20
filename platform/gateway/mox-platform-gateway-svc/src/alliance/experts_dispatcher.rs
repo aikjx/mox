@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 
 //! # 专家联盟调度策略引擎域（Experts Dispatcher）HTTP 路由
@@ -577,7 +577,7 @@ async fn dispatch(
     };
     state.dispatch_records.lock().push(record);
 
-    crate::experts_common::emit_audit(&state, AuditAction::ExpertDispatch, "dispatch", &dispatch_id, AuditOutcome::Success, Some(&format!("task_type={}, assigned={:?}", body.task_type, assigned_ids)));
+    crate::alliance::experts_common::emit_audit(&state, AuditAction::ExpertDispatch, "dispatch", &dispatch_id, AuditOutcome::Success, Some(&format!("task_type={}, assigned={:?}", body.task_type, assigned_ids)));
 
     // 构造 assigned_experts 详情
     let registry = state.registry.lock();
@@ -648,7 +648,7 @@ async fn consult(
     };
     state.dispatch_records.lock().push(record);
 
-    crate::experts_common::emit_audit(&state, AuditAction::Unknown("expert.consult".into()), "consult", &dispatch_id, AuditOutcome::Success, Some(&format!("expert_id={}", expert.id)));
+    crate::alliance::experts_common::emit_audit(&state, AuditAction::Unknown("expert.consult".into()), "consult", &dispatch_id, AuditOutcome::Success, Some(&format!("expert_id={}", expert.id)));
 
     ok(json!({
         "dispatch_id": dispatch_id,
@@ -746,7 +746,7 @@ async fn multi_consult(
     };
     state.dispatch_records.lock().push(record);
 
-    crate::experts_common::emit_audit(&state, AuditAction::Unknown("expert.multi_consult".into()), "consult", &dispatch_id, AuditOutcome::Success, Some(&format!("experts={:?}", assigned_ids)));
+    crate::alliance::experts_common::emit_audit(&state, AuditAction::Unknown("expert.multi_consult".into()), "consult", &dispatch_id, AuditOutcome::Success, Some(&format!("experts={:?}", assigned_ids)));
 
     ok(json!({
         "dispatch_id": dispatch_id,
@@ -914,7 +914,7 @@ mod tests {
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
-            audit: crate::experts_common::build_audit_context(),
+            audit: crate::alliance::experts_common::build_audit_context(),
         })
     }
 

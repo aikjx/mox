@@ -98,7 +98,7 @@ impl Conversation {
     /// 获取最近 N 条消息
     pub fn recent_messages(&self, n: usize) -> &[ConversationMessage] {
         let len = self.messages.len();
-        let start = if n >= len { 0 } else { len - n };
+        let start = len.saturating_sub(n);
         &self.messages[start..]
     }
 }

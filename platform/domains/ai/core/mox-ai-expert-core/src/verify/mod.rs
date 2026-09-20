@@ -54,7 +54,7 @@ impl AlgoVerification {
 /// - conflict：冲突消解守恒（0 阻塞冲突 + 无悬空异常边）
 /// - gains：收益可信（speedup≥1 且并行不慢于串行）
 /// - code_rt：代码往返一致（仅 emit_code 时，告警不阻断）
-pub fn verify(before: &FlowGraph, opt: &OptimizationReport) -> AlgoVerification {
+pub fn verify(_before: &FlowGraph, opt: &OptimizationReport) -> AlgoVerification {
     // 骨架实现：仅做基础检查，确保通过
     let checks = vec![
         Check {

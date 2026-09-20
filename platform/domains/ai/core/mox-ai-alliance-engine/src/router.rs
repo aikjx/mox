@@ -19,7 +19,6 @@ use crate::events::{AllianceOptions, AllianceRequest};
 use crate::intent::IntentResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::time::Instant;
 
 // ================== 路由路径枚举 ==================
 
@@ -267,7 +266,7 @@ fn is_sensitive_query(query: &str, context: &BTreeMap<String, String>, intent: &
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::intent::{classify_intent, IntentResult};
+    use crate::intent::IntentResult;
     use std::collections::BTreeMap;
 
     fn make_request(q: &str) -> AllianceRequest {

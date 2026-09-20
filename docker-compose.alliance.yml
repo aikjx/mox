@@ -1,0 +1,181 @@
+version: '3.8'
+
+# 专家联盟生产级部署配置
+# 使用方式：docker-compose up -d
+
+services:
+  # ============ 基础设施 ============
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: alliance-postgres
+    environment:
+      POSTGRES_DB: alliance
+      POSTGRES_USER: mox
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mox -d alliance"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: alliance-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ============ 微服务 ============
+
+  registry-svc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alliance-registry
+    command: ./mox-alliance-registry-svc
+    environment:
+      - RUST_LOG=info
+      - DATABASE_URL=sqlite:///data/registry.db
+    ports:
+      - "3400:3400"
+    volumes:
+      - registry_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3400/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  scheduler-svc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alliance-scheduler
+    command: ./mox-alliance-scheduler-svc
+    environment:
+      - RUST_LOG=info
+      - DATABASE_URL=sqlite:///data/scheduler.db
+      - REGISTRY_URL=http://registry-svc:3400
+    ports:
+      - "3100:3100"
+    volumes:
+      - scheduler_data:/app/data
+    depends_on:
+      registry-svc:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  executor-svc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alliance-executor
+    command: ./mox-alliance-executor-svc
+    environment:
+      - RUST_LOG=info
+      - DATABASE_URL=sqlite:///data/executor.db
+    ports:
+      - "3200:3200"
+    volumes:
+      - executor_data:/app/data
+    depends_on:
+      scheduler-svc:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3200/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alliance-gateway
+    command: ./mox-platform-gateway
+    environment:
+      - RUST_LOG=info
+      - SCHEDULER_URL=http://scheduler-svc:3100
+      - EXECUTOR_URL=http://executor-svc:3200
+      - REGISTRY_URL=http://registry-svc:3400
+    ports:
+      - "3080:3080"
+    depends_on:
+      registry-svc:
+        condition: service_healthy
+      scheduler-svc:
+        condition: service_healthy
+      executor-svc:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============ 监控 ============
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: alliance-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: alliance-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # ============ 日志 ============
+
+  loki:
+    image: grafana/loki:latest
+    container_name: alliance-loki
+    ports:
+      - "3101:3100"
+    volumes:
+      - loki_data:/loki
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  registry_data:
+  scheduler_data:
+  executor_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+# 网络配置
+networks:
+  default:
+    name: alliance-network

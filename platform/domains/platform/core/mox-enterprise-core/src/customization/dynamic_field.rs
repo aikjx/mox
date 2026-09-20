@@ -277,11 +277,10 @@ impl DynamicFieldManager {
                     return Err(format!("field {} must be number", key));
                 }
             }
-            DynamicFieldType::Boolean => {
-                if !value.is_null() && !value.is_boolean() {
+            DynamicFieldType::Boolean
+                if !value.is_null() && !value.is_boolean() => {
                     return Err(format!("field {} must be boolean", key));
                 }
-            }
             _ => {} // 其他类型简化处理
         }
 

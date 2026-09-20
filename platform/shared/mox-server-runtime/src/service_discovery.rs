@@ -19,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
 
 /// 服务实例状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -153,7 +152,7 @@ impl ServiceRegistry for MemoryRegistry {
         let mut instances = self.instances.lock().unwrap();
         instances
             .entry(instance.service_name.clone())
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(instance.instance_id.clone(), instance);
         Ok(())
     }

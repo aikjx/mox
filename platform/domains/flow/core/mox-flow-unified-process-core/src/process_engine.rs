@@ -182,7 +182,7 @@ impl ProcessEngine {
                     ProcessError::NotFound(format!("instance '{}' not found", instance_id))
                 })?;
             self.get_process_def(&instance.process_id).ok_or_else(|| {
-                ProcessError::NotFound(format!("process def not found"))
+                ProcessError::NotFound("process def not found".to_string())
             })?
         };
 
@@ -697,7 +697,7 @@ impl ProcessEngine {
                 Some(pd) => pd,
                 None => continue,
             };
-            for (_, step) in process_def.steps.iter() {
+            for step in process_def.steps.values() {
                 if step.step_type != StepType::Approval {
                     continue;
                 }

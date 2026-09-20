@@ -15,6 +15,10 @@ source_of_truth: 参考（导航页）
 
 ---
 
+> 📌 **本文档为 v3 架构演进路线图（目标态）。当前代码实现请以 [../CURRENT-ARCHITECTURE.md](../CURRENT-ARCHITECTURE.md) 为唯一权威。**
+
+---
+
 ## v3 核心优化
 
 v2 → v3 的关键改进：
@@ -148,12 +152,12 @@ v3 保持 v2 的核心设计不变：
 
 | 维度 | v3 设计目标态 | 当前落地（代码事实） |
 |------|--------------|---------------------|
-| 服务拆分 | 7 服务：scheduler / executor / fusion / registry / agent / memory / gateway | **2 独立服务**：scheduler-svc:3100、executor-svc:3200；fusion/registry/agent/memory 内联在网关 experts_*.rs 7 模块，共享 ExpertsSharedState |
+| 服务拆分 | 7 服务：scheduler / executor / fusion / registry / agent / memory / gateway | **2 独立服务**：scheduler-svc:3100、executor-svc:3200；fusion/registry/agent/memory 内联在网关 src/alliance/ 9 模块，共享 ExpertsSharedState |
 | 对外 REST 前缀 | /api/v1/expert/tasks、/ws/v1/expert/tasks/... | 实际为 **/api/experts/*（49 接口）+ /api/alliance/*（20 接口）**；WebSocket 走 /ws/v1/* |
 | 内部通信 | gRPC :50051（gateway-grpc） | 网关进程内直调；gRPC :50051 仅 framework/dualrpc 基础设施保留 |
 | 存储 | PostgreSQL + Redis + pgvector | **SQLite（IamRepository）+ JSON 文件持久化**；图谱/记忆为进程内结构 |
 | 协议 | gRPC / JSON-RPC / MCP / REST / WebSocket 五协议 | REST + SSE/WebSocket 为主；JSON-RPC/MCP 转码未单独落地 |
-| 已落地核心能力 | 见 §FR-001~042 | 多轮辩论引擎、协作计划/DAG 执行、专家匹配评分、失败重试/降级、任务智能问答、WebSocket 进度推送均已在网关侧实现并随 experts_* 路由可测 |
+| 已落地核心能力 | 见 §FR-001~042 | 多轮辩论引擎、协作计划/DAG 执行、专家匹配评分、失败重试/降级、任务智能问答、WebSocket 进度推送均已在网关侧实现并随 alliance/ 路由可测 |
 
 > 结论：v3 是演进目标，**不是当前交付清单**。当前可工作接口以 GET /actuator/mappings（223 条全量 ready）与 docs/API-REGISTRY.md 为准。
 
@@ -165,17 +169,17 @@ v3 保持 v2 的核心设计不变：
 
 ```bash
 # 创建任务
-curl -X POST http://localhost:8080/api/v1/expert/tasks \
+curl -X POST http://localhost:3080/api/experts/tasks \
   -H "Authorization: Bearer <jwt>" \
   -H "Content-Type: application/json" \
   -d '{"title":"图谱构建","description":"把data.csv构建成知识图谱","preference":{"mode":"AUTO"}}'
 
 # 查询任务
-curl http://localhost:8080/api/v1/expert/tasks/<task_id> \
+curl http://localhost:3080/api/experts/tasks/<task_id> \
   -H "Authorization: Bearer <jwt>"
 
 # WebSocket实时进度
-ws://localhost:8080/ws/v1/expert/tasks/<task_id>/progress?token=<jwt>
+ws://localhost:3080/ws/v1/experts/tasks/<task_id>/progress?token=<jwt>
 ```
 
 ### gRPC（内部服务间）
@@ -191,7 +195,7 @@ grpcurl -plaintext localhost:50051 mox.expert.alliance.v1.ExpertAllianceService/
 {
   "mcpServers": {
     "mox-expert": {
-      "url": "http://localhost:8080/mcp",
+      "url": "http://localhost:3080/mcp",
       "headers": { "Authorization": "Bearer <jwt>" }
     }
   }

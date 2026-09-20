@@ -57,7 +57,7 @@
 //! - 高安全场景应在前置 prompt 强制要求 LLM 给出**结构化动作清单**
 //!   （后续可演进为 `mox_consult_v1` JSON Schema 协议）
 
-use crate::experts_common::ExpertDescriptor;
+use crate::alliance::experts_common::ExpertDescriptor;
 use mox_ai_expert_svc::mox_optimize;
 use mox_ai_expert_svc::{GovernContext, Principal, Tenant};
 use mox_ai_expert_svc::sensitivity::{is_production_or_sensitive_write, is_sensitive_domain};
@@ -327,7 +327,7 @@ fn parse_step(text: &str, seq: usize, node_idx: &mut usize) -> Option<InferredAc
             .iter()
             .map(|r| Access {
                 resource: r.clone(),
-                mode: mode,
+                mode,
             })
             .collect()
     };
@@ -430,7 +430,7 @@ fn truncate_chars(s: &str, max_chars: usize) -> String {
 /// 拓扑：Start → [task nodes in sequence] → End
 /// 每节点保留 access 声明与 estimated duration（启发式：写=300ms, 读=200ms, 浏览器=500ms）
 fn build_flow_graph(actions: &[InferredAction], question: &str) -> FlowGraph {
-    let mut graph = FlowGraph::new("llm-llm-derive", &truncate_chars(question, 60));
+    let mut graph = FlowGraph::new("llm-llm-derive", truncate_chars(question, 60));
 
     graph.add_node(FlowNode::new("start", "开始", NodeKind::Start));
     graph.add_node(FlowNode::new("end", "结束", NodeKind::End));

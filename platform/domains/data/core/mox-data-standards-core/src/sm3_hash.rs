@@ -532,7 +532,7 @@ fn t24_short_multi_65_a() {
 
     // Manual: v0 = IV. cf(v0, block=64 a's). v1 = new state. pad final block (a + 0x80 + zeros + length).
     let mut v = SM3_IV;
-    let mut blk1 = [b'a'; 64];
+    let blk1 = [b'a'; 64];
     cf(&mut v, &blk1);
     let mut fb = [0u8; 64];
     fb[0] = b'a';

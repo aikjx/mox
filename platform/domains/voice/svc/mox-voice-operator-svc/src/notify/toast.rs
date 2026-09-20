@@ -103,7 +103,7 @@ impl NotifyOperator {
             let ps = format!(
                 "Add-Type -AssemblyName System.Windows.Forms; $n=New-Object System.Windows.Forms.NotifyIcon; $n.Icon=[System.Drawing.SystemIcons]::Information; $n.Visible=$true; $n.ShowBalloonTip({},'{t}','{b}',[System.Windows.Forms.ToolTipIcon]::Info); Start-Sleep -Milliseconds {}; $n.Dispose()",
                 tm,
-                (timeout_ms.unwrap_or(3000) + 500).to_string(),
+                (timeout_ms.unwrap_or(3000) + 500),
                 t = escape_ps(title),
                 b = escape_ps(body),
             );

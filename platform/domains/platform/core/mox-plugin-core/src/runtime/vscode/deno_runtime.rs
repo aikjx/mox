@@ -576,7 +576,7 @@ mod tests {
         .expect("failed to register command");
 
         // 通过 vscode.commands.executeCommand 执行
-        let result = rt
+        let _result = rt
             .execute_script_with_result(
                 "[exec-cmd]",
                 "vscode.commands.executeCommand('test.hello', 'World')",

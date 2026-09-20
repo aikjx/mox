@@ -552,7 +552,7 @@ impl StorageEngine for DistributedStorageEngine {
                 self.get_in_neighbors_internal(space_id, vid, edge_types, limit)
             }
             Direction::Both => {
-                let per_limit = (limit + 1) / 2; // 均分 limit
+                let per_limit = limit.div_ceil(2); // 均分 limit
                 let mut out =
                     self.get_out_neighbors_internal(space_id, vid, edge_types, per_limit)?;
                 let mut inn =

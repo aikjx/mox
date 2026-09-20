@@ -39,11 +39,11 @@ async fn proxy_post(state: &VoiceState, path: &str, headers: HeaderMap, body: Va
             let status = resp.status();
             match resp.json::<Value>().await {
                 Ok(v) if status.is_success() => api_ok(v),
-                Ok(v) => api_error(502, &format!("upstream {} -> {}: {}", url, status, v)),
-                Err(e) => api_error(502, &format!("upstream {} 响应解析失败: {}", url, e)),
+                Ok(v) => api_error(502, format!("upstream {} -> {}: {}", url, status, v)),
+                Err(e) => api_error(502, format!("upstream {} 响应解析失败: {}", url, e)),
             }
         }
-        Err(e) => api_error(502, &format!("上游 melody2score 不可达（{}）：{}", url, e)),
+        Err(e) => api_error(502, format!("上游 melody2score 不可达（{}）：{}", url, e)),
     }
 }
 

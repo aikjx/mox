@@ -146,7 +146,7 @@ fn voice_intent_result_construction() {
 #[test]
 fn dsp_filter_type_variants() {
     use DspFilterType::*;
-    let types = vec![LowPass, HighPass, BandPass, BandStop];
+    let types = [LowPass, HighPass, BandPass, BandStop];
     assert_eq!(types.len(), 4);
     // Copy + PartialEq
     let a = LowPass;

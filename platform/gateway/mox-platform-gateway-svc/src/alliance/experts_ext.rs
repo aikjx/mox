@@ -28,7 +28,7 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
-use crate::experts_common::ExpertsSharedState;
+use crate::alliance::experts_common::ExpertsSharedState;
 
 // =====================================================================
 // 领域模型 + 持久化
@@ -49,7 +49,7 @@ struct Booking {
 
 /// 预约读取：经 experts_db 从 SQLite 载入
 fn load_experts_bookings() -> Vec<Booking> {
-    crate::experts_db::load_bookings()
+    crate::alliance::experts_db::load_bookings()
         .into_iter()
         .filter_map(|v| serde_json::from_value(v).ok())
         .collect()
@@ -61,7 +61,7 @@ fn save_experts_bookings(bookings: &[Booking]) {
         .iter()
         .filter_map(|b| serde_json::to_value(b).ok())
         .collect();
-    crate::experts_db::save_bookings(&rows);
+    crate::alliance::experts_db::save_bookings(&rows);
 }
 
 // =====================================================================
@@ -297,7 +297,7 @@ pub fn build_experts_ext_router(shared: Arc<ExpertsSharedState>) -> Router {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::experts_common::*;
+    use crate::alliance::experts_common::*;
     use mox_audit::{AuditContext, MultiSink, NoopSink};
     use std::collections::{HashMap, HashSet};
 

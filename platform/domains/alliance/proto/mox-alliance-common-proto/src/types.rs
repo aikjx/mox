@@ -76,6 +76,8 @@ pub enum AllianceMode {
     Iterative,
     /// 投票裁决（多专家投票，多数决）
     Voting,
+    /// 动态协作（根据中间结果动态决定下一步）
+    Dynamic,
 }
 
 impl Default for AllianceMode {

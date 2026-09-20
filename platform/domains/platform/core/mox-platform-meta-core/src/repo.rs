@@ -305,7 +305,6 @@ impl MetaRepository {
             .iter()
             .cloned()
             .enumerate()
-            .map(|(i, f)| (i, f))
             .collect();
         ordered_fields.sort_by(|a, b| {
             let wb = field_weight_def(&b.1);

@@ -64,10 +64,11 @@ impl SimplePlanGenerator {
         let nodes = match mode {
             AllianceMode::Parallel => self.generate_parallel_plan(request, matched_experts),
             AllianceMode::Sequential => self.generate_sequential_plan(request, matched_experts),
-            AllianceMode::Voting => self.generate_parallel_plan(request, matched_experts), // 投票也是并行
+            AllianceMode::Voting => self.generate_voting_plan(request, matched_experts), // 投票模式：同题多解
             AllianceMode::Hierarchical => self.generate_hierarchical_plan(request, matched_experts),
             AllianceMode::Debate => self.generate_debate_plan(request, matched_experts),
             AllianceMode::Iterative => self.generate_iterative_plan(request, matched_experts),
+            AllianceMode::Dynamic => self.generate_parallel_plan(request, matched_experts), // 动态模式暂退化为并行，运行时决策在执行器侧实现
         };
 
         let plan = CollaborationPlan {
@@ -104,6 +105,28 @@ impl SimplePlanGenerator {
                     &me.expert,
                     vec![], // 无依赖
                     &format!("{} (并行)", me.expert.name),
+                    &request.task_description,
+                )
+            })
+            .collect()
+    }
+
+    /// 投票计划：所有专家对同一问题独立作答，结果投票融合
+    fn generate_voting_plan(
+        &self,
+        request: &PlanGenerationRequest,
+        matched_experts: &[MatchedExpert],
+    ) -> Vec<Node> {
+        matched_experts
+            .iter()
+            .enumerate()
+            .map(|(i, me)| {
+                self.make_node(
+                    request.task_id,
+                    &format!("node-{}", i + 1),
+                    &me.expert,
+                    vec![], // 无依赖
+                    &format!("{} (投票)", me.expert.name),
                     &request.task_description,
                 )
             })

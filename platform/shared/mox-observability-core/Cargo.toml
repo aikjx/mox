@@ -42,3 +42,6 @@ metrics-exporter-prometheus = "0.15"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
+
+[lints]
+workspace = true

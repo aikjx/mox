@@ -16,3 +16,6 @@ sha2 = "0.10"
 hex = "0.4"
 jsonwebtoken = "9"
 regex = "1"
+
+[lints]
+workspace = true

@@ -50,7 +50,7 @@ pub trait AiProvider: Send + Sync {
     /// 估算token数（粗略）
     fn estimate_tokens(&self, text: &str) -> usize {
         let chinese = text.chars().filter(|c| !c.is_ascii()).count();
-        let english_words = text.split_whitespace().filter(|w| w.chars().all(|c| c.is_ascii())).count();
+        let english_words = text.split_whitespace().filter(|w| w.is_ascii()).count();
         chinese * 2 + english_words / 4
     }
 }

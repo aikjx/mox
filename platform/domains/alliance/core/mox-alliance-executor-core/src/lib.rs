@@ -12,11 +12,13 @@
 //! - 核心逻辑无状态，状态通过外部存储管理
 //! - 可测试：所有核心算法都有对应的单测
 
+pub mod condition;
 pub mod dag_engine;
 pub mod expert_executor;
 pub mod fusion;
 pub mod mock_executor;
 
+pub use condition::{Condition, CompareOp, Operator, Operand};
 pub use dag_engine::DagEngineImpl;
 pub use expert_executor::{
     ExecutorStatsView, ExpertExecutorConfig, ExpertNodeExecutor,

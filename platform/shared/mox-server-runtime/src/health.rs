@@ -6,10 +6,8 @@
 // 每个服务模块可注册自定义检查项（数据库连通性、缓存连通性等）。
 // =============================================================================
 
-use crate::config::ServerConfig;
-use async_trait::async_trait;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 use std::time::Instant;
 
 /// 单个健康检查项

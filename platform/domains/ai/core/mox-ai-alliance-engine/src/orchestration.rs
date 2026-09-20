@@ -14,10 +14,10 @@
 //! - `OrchestrationStrategy` — 三种策略枚举
 //! - 编排器内部复用 IntentClassifier / TeamAssembler / DebateEngine / QualityGate
 
-use crate::debate::{DebateEngine, DebateResult};
-use crate::gate::{GateScore, QualityGate};
-use crate::intent::{IntentClassifier, IntentResult};
-use crate::team::{TeamAssembler, TeamResult};
+use crate::debate::DebateEngine;
+use crate::gate::QualityGate;
+use crate::intent::IntentClassifier;
+use crate::team::TeamAssembler;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -237,7 +237,7 @@ impl OrchestrationEngine {
         let team = self.team_assembler.assemble(&intent, req.team_size, is_sensitive);
 
         // 3. 辩论
-        use crate::team::{build_expert_registry, ExpertRegistry};
+        use crate::team::build_expert_registry;
         let reg = build_expert_registry();
         let debate = self.debate_engine.run(&req.query, &team, &reg).await;
 

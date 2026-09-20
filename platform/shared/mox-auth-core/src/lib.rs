@@ -37,7 +37,6 @@ pub use middleware::{AuthMiddleware, AuthContext, RequirePermission};
 pub const CRATE_ID: &str = "mox-auth-core";
 pub const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-use serde::{Deserialize, Serialize};
 
 /// 认证错误
 #[derive(Debug, thiserror::Error)]

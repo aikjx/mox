@@ -167,7 +167,7 @@ impl BordaFusion {
                     0.0
                 },
                 rank: 0,
-                confidence: n_rankings as f64,
+                confidence: n_rankings,
                 score_breakdown: None,
             })
             .collect();

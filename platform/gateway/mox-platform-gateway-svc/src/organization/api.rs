@@ -5,7 +5,6 @@ use crate::enterprise::api_response::*;
 use axum::{
     extract::{Path, Query, State},
     response::Response,
-    Json,
 };
 use serde_json::json;
 use std::collections::HashMap;
@@ -57,7 +56,7 @@ pub async fn list_companies_handler(
 ) -> Response {
     let companies = state.companies.read().await;
     let mut list: Vec<&Company> = companies.values().collect();
-    list.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+    list.sort_by_key(|a| a.sort_order);
     success(list)
 }
 
@@ -90,7 +89,7 @@ pub async fn list_departments_handler(
         list.retain(|d| d.parent_dept_id.as_deref() == Some(parent_id.as_str()));
     }
 
-    list.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+    list.sort_by_key(|a| a.sort_order);
     success(list)
 }
 
@@ -117,7 +116,7 @@ pub async fn get_department_tree_handler(
             children: Vec::new(),
         };
         match &d.parent_dept_id {
-            Some(pid) => children_map.entry(pid.clone()).or_insert_with(Vec::new).push(node),
+            Some(pid) => children_map.entry(pid.clone()).or_default().push(node),
             None => roots.push(node),
         }
     }
@@ -168,7 +167,7 @@ pub async fn list_positions_handler(
         list.retain(|p| p.job_family.as_deref() == Some(job_family.as_str()));
     }
 
-    list.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+    list.sort_by_key(|a| a.sort_order);
     success(list)
 }
 

@@ -135,7 +135,7 @@ impl HostApi for AiChatHostApi {
             .ok_or_else(|| HostApiError::NotImplemented("ai router not configured".into()))?;
 
         let result = delegate.chat(messages, model).await
-            .map_err(|e| HostApiError::Internal(e))?;
+            .map_err(HostApiError::Internal)?;
 
         Ok(serde_json::json!({ "content": result }))
     }

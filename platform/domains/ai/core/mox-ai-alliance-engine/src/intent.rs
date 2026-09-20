@@ -18,7 +18,7 @@
 
 use crate::constants::{INTENT_CLASSES, RRF_K, SPREAD_DAMPING, SPREAD_METHOD, SPREAD_ROUNDS, SPREAD_WEIGHT};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 // 可扩展：意图分类 id（String 形式，便于 JSON）
@@ -127,7 +127,7 @@ impl IntentClassifier {
         let rrf_final = rrf_fusion(&keyword_raw, &spread_raw);
 
         // 最终胜出
-        let (winner, best_rrf) = find_winner(&rrf_final);
+        let (winner, _best_rrf) = find_winner(&rrf_final);
 
         // 置信度
         let conf = compute_confidence(&winner, &keyword_raw, &spread_raw);
@@ -495,6 +495,7 @@ fn default_patterns() -> Vec<(String, IntentId, f64)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeSet;
 
     /// TDD 1: 代码类 query → intent=code 且 conf≥0.3
     #[test]

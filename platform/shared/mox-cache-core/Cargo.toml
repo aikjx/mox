@@ -24,3 +24,6 @@ redis-backend = ["dep:redis"]
 
 [dev-dependencies]
 tokio = { workspace = true }
+
+[lints]
+workspace = true

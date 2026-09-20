@@ -132,7 +132,7 @@ impl CsrGraph {
 
         // 为了稳定性：按 (s, t) 字典序填（与 Node 层对账不敏感，仅保证内部确定性）
         let mut entries: Vec<((usize, usize), f64)> = edge_weights.into_iter().collect();
-        entries.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+        entries.sort_unstable_by_key(|a| a.0);
         for ((s, t), w) in entries {
             let p1 = curs_out[s];
             out_nbr[p1] = t;

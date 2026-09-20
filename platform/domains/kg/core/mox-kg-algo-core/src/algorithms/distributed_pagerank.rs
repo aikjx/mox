@@ -656,7 +656,7 @@ pub(crate) fn resume_from_checkpoint(
             final_iter = global_iter;
             final_residual = residual;
 
-            if config.checkpoint_interval > 0 && (global_iter) % config.checkpoint_interval == 0 {
+            if config.checkpoint_interval > 0 && (global_iter).is_multiple_of(config.checkpoint_interval) {
                 checkpoints.push(PageRankCheckpoint {
                     iteration: global_iter,
                     ranks: rank.clone(),

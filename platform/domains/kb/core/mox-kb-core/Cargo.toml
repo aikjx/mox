@@ -21,3 +21,6 @@ mox-base-query-core = { path = "../../../base/mox-base-query-core" }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
 # 知识库 SQLite + FTS5 持久化（bundled，免系统依赖；FTS5 为 SQLite 内置扩展）
 rusqlite = { workspace = true }
+
+[lints]
+workspace = true

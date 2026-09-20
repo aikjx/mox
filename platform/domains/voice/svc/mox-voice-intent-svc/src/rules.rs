@@ -6,7 +6,6 @@
 //! 中文意图规则定义（Python router.py 规则 Rust 版 + 40 应用别名常量）
 
 use serde_json::json;
-use std::collections::BTreeMap;
 
 /// 单条规则：正则 → (action, score, 从 regex captures 提取参数的闭包)
 ///
@@ -202,10 +201,10 @@ fn rule_input() -> Vec<Rule> {
             let raw = c.name("k").map(|m| m.as_str()).unwrap_or("enter");
             // Ctrl+C / Alt+Tab 之类的组合
             if raw.contains('+') {
-                let parts: Vec<String> = raw.split('+').map(|p| key_norm(p)).collect();
+                let parts: Vec<String> = raw.split('+').map(&key_norm).collect();
                 let default_enter = "enter".to_string();
                 let (last, mods) = parts.split_last().unwrap_or((&default_enter, &[]));
-                let modifiers: Vec<String> = mods.iter().cloned().collect();
+                let modifiers: Vec<String> = mods.to_vec();
                 ("hotkey".into(), json!({"modifiers": modifiers, "key": last}))
             } else {
                 let k = key_norm(raw);

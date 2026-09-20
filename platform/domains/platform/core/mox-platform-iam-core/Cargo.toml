@@ -19,3 +19,6 @@ hmac.workspace = true
 sha2.workspace = true
 hex.workspace = true
 parking_lot = "0.12"
+
+[lints]
+workspace = true

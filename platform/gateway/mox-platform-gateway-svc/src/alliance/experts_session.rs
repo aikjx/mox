@@ -243,7 +243,7 @@ async fn list_sessions(
         .into_iter()
         .skip(offset)
         .take(page_size)
-        .map(|s| session_to_list_view(s))
+        .map(session_to_list_view)
         .collect();
 
     let page = if page_size > 0 { offset / page_size + 1 } else { 1 };
@@ -674,7 +674,7 @@ mod tests {
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
-            audit: crate::experts_common::build_audit_context(),
+            audit: crate::alliance::experts_common::build_audit_context(),
         })
     }
 

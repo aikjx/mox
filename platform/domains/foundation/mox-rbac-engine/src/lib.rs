@@ -181,7 +181,7 @@ pub static POLICY: std::sync::LazyLock<std::sync::RwLock<hierarchy::RoleHierarch
 pub fn check(ctx: &types::EvaluationContext) -> types::EvaluationResult {
     use std::sync::OnceLock;
     static ENGINE: OnceLock<RbacEngine> = OnceLock::new();
-    let engine = ENGINE.get_or_init(|| RbacEngine::with_builtin_roles());
+    let engine = ENGINE.get_or_init(RbacEngine::with_builtin_roles);
     engine.evaluate(ctx)
 }
 

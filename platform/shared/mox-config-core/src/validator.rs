@@ -4,7 +4,6 @@
 
 use crate::config::{Config, ConfigValue};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
 // =============================================================================
 // 验证结果

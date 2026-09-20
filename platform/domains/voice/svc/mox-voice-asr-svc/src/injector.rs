@@ -5,8 +5,7 @@
 
 //! FR-5 热词注入三层实现：S1/S2/S3 + HotwordInjector 状态机
 
-use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
@@ -98,11 +97,8 @@ impl HotwordInjector {
         g.hotwords = cleaned.clone();
         // 写 S2 临时文件
         let (tmp_path, report_s2) = Self::write_hotword_tempfile(&g.hotwords);
-        match (tmp_path, &report_s2) {
-            (Some(p), LayerStatus::Applied { .. }) => {
-                g.last_tempfile = Some(p);
-            }
-            _ => {}
+        if let (Some(p), LayerStatus::Applied { .. }) = (tmp_path, &report_s2) {
+            g.last_tempfile = Some(p);
         }
         let hw_path = g.last_tempfile.as_ref().map(|f| f.path().to_path_buf());
         // S1 探测
@@ -191,7 +187,7 @@ impl Default for HotwordInjector {
 #[cfg(test)]
 mod smoke {
     use super::*;
-    use serde_json::json;
+    
 
     fn hw(word: &str, score: f32) -> Hotword {
         Hotword::new(word).with_score(score)

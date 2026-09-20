@@ -503,11 +503,7 @@ impl CdcPublisher {
             }
         }
 
-        let lag_ms = if latest_ts > oldest_event_ts {
-            latest_ts - oldest_event_ts
-        } else {
-            0
-        };
+        let lag_ms = latest_ts.saturating_sub(oldest_event_ts);
 
         Ok(Duration::from_millis(lag_ms))
     }

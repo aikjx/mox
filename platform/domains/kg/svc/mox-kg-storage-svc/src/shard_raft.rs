@@ -154,7 +154,7 @@ impl Clone for RaftGroup {
     fn clone(&self) -> Self {
         Self {
             shard_id: self.shard_id,
-            role: self.role.clone(),
+            role: self.role,
             applied_index: AtomicU64::new(self.applied_index.load(Ordering::SeqCst)),
             committed_index: AtomicU64::new(self.committed_index.load(Ordering::SeqCst)),
             current_term: AtomicU64::new(self.current_term.load(Ordering::SeqCst)),
@@ -232,7 +232,7 @@ impl ShardRaft {
 
         for shard_id in 0..shard_count {
             // 简单分配：第 shard_id % n 个节点为 Leader
-            let role = if (shard_id as usize) % n == 0 {
+            let role = if (shard_id as usize).is_multiple_of(n) {
                 NodeRole::Leader
             } else {
                 NodeRole::Follower
@@ -293,17 +293,12 @@ impl ShardRaft {
         let has_shard = self.groups.lock().contains_key(&shard_id);
         if !has_shard {
             let mut groups = self.groups.lock();
-            if !groups.contains_key(&shard_id) {
-                groups.insert(
-                    shard_id,
-                    RaftGroup::new(shard_id, NodeRole::Follower, Vec::new()),
-                );
-            }
+            groups.entry(shard_id).or_insert_with(|| RaftGroup::new(shard_id, NodeRole::Follower, Vec::new()));
             drop(groups);
             self.shard_stats
                 .lock()
                 .entry(shard_id)
-                .or_insert_with(ShardStats::default);
+                .or_default();
         }
         Ok(())
     }
@@ -494,7 +489,7 @@ impl ShardRaft {
 
     fn update_stats_after_apply(&self, shard_id: u16, entry: &RaftLogEntry) {
         let mut stats = self.shard_stats.lock();
-        let stat = stats.entry(shard_id).or_insert_with(ShardStats::default);
+        let stat = stats.entry(shard_id).or_default();
         stat.applied_index += 1;
         stat.last_apply_ts = chrono::Utc::now().timestamp_millis() as u64;
 
@@ -617,7 +612,7 @@ impl ShardRaft {
                 .approx_count(CF_NODES)
                 .unwrap_or(0)
                 .min(u64::MAX / up_to as u64);
-            let stat = stats.entry(shard_id).or_insert_with(ShardStats::default);
+            let stat = stats.entry(shard_id).or_default();
             stat.vertex_count = count;
         }
     }

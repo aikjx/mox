@@ -65,7 +65,7 @@ fn mox_voice_dsp_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
         signal: &Bound<'py, PyAny>,
         orig_sr: u32,
         target_sr: u32,
-    ) -> PyResult<Py<PyAny>> {
+    ) -> PyResult<Py<PyAny>>{
         let sig = to_vec_f32(signal)?;
         if orig_sr == 0 || target_sr == 0 {
             return Err(PyValueError::new_err("sample_rate must be > 0"));
@@ -82,7 +82,7 @@ fn mox_voice_dsp_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
         signal: &Bound<'py, PyAny>,
         sample_rate: u32,
         speed: f32,
-    ) -> PyResult<Py<PyAny>> {
+    ) -> PyResult<Py<PyAny>>{
         let sig = to_vec_f32(signal)?;
         if sample_rate == 0 {
             return Err(PyValueError::new_err("sample_rate must be > 0"));
@@ -106,7 +106,7 @@ fn mox_voice_dsp_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
         signal: &Bound<'py, PyAny>,
         target_dbfs: f32,
         enable_loudness: bool,
-    ) -> PyResult<Py<PyAny>> {
+    ) -> PyResult<Py<PyAny>>{
         let sig = to_vec_f32(signal)?;
         let opts = LimiterOptions { target_dbfs, enable_loudness };
         let out = apply_limiter_and_loudness(&sig, &opts);
@@ -121,7 +121,7 @@ fn mox_voice_dsp_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
         signal: &Bound<'py, PyAny>,
         sample_rate: u32,
         channels: u16,
-    ) -> PyResult<Py<PyBytes>> {
+    ) -> PyResult<Py<PyBytes>>{
         let sig = to_vec_f32(signal)?;
         if sample_rate == 0 || sample_rate > 192_000 {
             return Err(PyValueError::new_err(
@@ -181,7 +181,7 @@ fn mox_voice_dsp_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
         enable_loudness: Option<bool>,
         encode_wav: Option<bool>,
         channels: Option<u16>,
-    ) -> PyResult<Py<PyAny>> {
+    ) -> PyResult<Py<PyAny>>{
         // opts dict/mapping 合并优先级：显式关键字 > opts 对象
         let mut o_orig_sr = orig_sr;
         let mut o_target_sr = target_sr;

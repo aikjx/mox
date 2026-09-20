@@ -26,3 +26,6 @@ mox-flow-ai-assistant-core = { path = "../mox-flow-ai-assistant-core" }
 mox-flow-algo-alliance-core = { path = "../mox-flow-algo-alliance-core" }
 mox-flow-unified-storage-core = { path = "../mox-flow-unified-storage-core" }
 mox-flow-unified-meta-core = { path = "../mox-flow-unified-meta-core" }
+
+[lints]
+workspace = true

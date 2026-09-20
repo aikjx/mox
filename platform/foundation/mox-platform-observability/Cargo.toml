@@ -19,3 +19,6 @@ prometheus = { workspace = true }
 http = { workspace = true }
 axum = { workspace = true }
 bytes = { workspace = true }
+
+[lints]
+workspace = true

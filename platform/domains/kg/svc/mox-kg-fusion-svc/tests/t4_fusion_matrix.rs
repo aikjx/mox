@@ -542,7 +542,7 @@ fn tr9_normalize_and_filter() {
     // Build (k, v) map from result.
     let by_k: BTreeMap<String, String> = ts.0.into_iter().map(|t| (t.k, t.v)).collect();
 
-    for (rk, rv, expected_k, expected_v) in cases.iter() {
+    for (rk, _rv, expected_k, expected_v) in cases.iter() {
         if expected_k.is_empty() {
             assert!(
                 !by_k.values().any(|v| v == "drop_me"),

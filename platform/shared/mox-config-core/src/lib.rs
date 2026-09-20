@@ -36,7 +36,6 @@ pub use environment::{Environment, EnvironmentConfig};
 pub const CRATE_ID: &str = "mox-config-core";
 pub const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-use serde::{Deserialize, Serialize};
 
 /// 配置中心错误
 #[derive(Debug, thiserror::Error)]

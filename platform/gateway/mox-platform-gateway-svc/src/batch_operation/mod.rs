@@ -190,7 +190,7 @@ pub fn parse_csv(csv_text: &str, skip_header: bool) -> Result<Vec<HashMap<String
     };
 
     let mut result = Vec::new();
-    for (i, line) in lines.iter().enumerate().skip(start_idx) {
+    for (_i, line) in lines.iter().enumerate().skip(start_idx) {
         if line.trim().is_empty() {
             continue;
         }

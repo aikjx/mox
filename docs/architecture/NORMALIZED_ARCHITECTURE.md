@@ -311,6 +311,7 @@ L5 gateway      唯一入口 mox-server :3080（mox-platform-gateway-svc），�
   - `docs/working-reports/_norm_research/domain-matrix.md`（12 域逐 crate 完成度）
   - `docs/working-reports/_norm_research/topology-flow.md`（部署拓扑与请求闭环源码实证）
   - `docs/working-reports/_norm_research/doc-landscape.md`（文档权威分级与 49 处漂移清单）
+  - `docs/working-reports/_norm_research/runtime-e2e-acceptance.md`（四进程真跑端到端验收：健康/鉴权/专家匹配/任务拆 DAG 闭环/三路指标实测增长）
 
 ---
 

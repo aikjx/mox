@@ -161,11 +161,10 @@ impl SqlEngine {
                     return Err(DsqlError::InvalidParam(format!("{} must be boolean", def.name)));
                 }
             }
-            "DATETIME" | "DATE" => {
-                if !value.is_string() {
+            "DATETIME" | "DATE"
+                if !value.is_string() => {
                     return Err(DsqlError::InvalidParam(format!("{} must be datetime string", def.name)));
                 }
-            }
             _ => {} // 未知类型跳过校验
         }
         Ok(())

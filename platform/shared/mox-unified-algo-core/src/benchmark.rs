@@ -5,7 +5,7 @@
 //!
 //! 提供统一的性能测量接口，用于跨算法、跨版本的性能对比。
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// 基准测试结果
 #[derive(Debug, Clone)]

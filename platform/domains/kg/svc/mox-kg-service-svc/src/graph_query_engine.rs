@@ -1775,7 +1775,7 @@ impl PhysicalOperator for LimitOperator {
     fn estimated_rows(&self) -> u64 {
         let input = self.child.estimated_rows();
         let after_offset = input.saturating_sub(self.offset as u64);
-        after_offset.min(self.limit as u64).max(0)
+        after_offset.min(self.limit as u64)
     }
 
     fn children(&self) -> Vec<&dyn PhysicalOperator> {

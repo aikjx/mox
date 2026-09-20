@@ -22,7 +22,7 @@
 //! 容错策略：与原 JSON 持久化一致——持久化失败仅记录 stderr 不阻断业务
 //! （内存态 `ExpertsSharedState` 仍是权威数据源，SQLite 为持久投影）。
 
-use crate::experts_common::{ExpertDescriptor, ExpertGraph, ExpertSession, GraphEdge, GraphNode};
+use crate::alliance::experts_common::{ExpertDescriptor, ExpertGraph, ExpertSession, GraphEdge, GraphNode};
 use rusqlite::{Connection, params};
 use serde_json::Value;
 use std::collections::HashMap;

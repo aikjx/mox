@@ -77,7 +77,7 @@ impl AlgoMetrics {
         let mut by_algo = self.by_algorithm.lock();
         by_algo
             .entry(algo_id.to_string())
-            .or_insert_with(AlgorithmMetrics::default)
+            .or_default()
             .executions += 1;
     }
 

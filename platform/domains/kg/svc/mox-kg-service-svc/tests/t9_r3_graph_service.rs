@@ -22,11 +22,10 @@
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Instant;
 
 use mox_kg_service_svc::{
     algo_bridge::{PPR_D, PPR_MAX_ITER},
-    AlgoBridge, AlgoGraph, Communities, CypherParser, GraphError, GraphResult, GraphServer,
+    AlgoBridge, AlgoGraph, Communities, CypherParser, GraphResult, GraphServer,
     NgqlParser, Optimizer, PlanOutput, PropValue, ResultSet, StorageEngine,
 };
 

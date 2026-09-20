@@ -145,7 +145,7 @@ impl TenantPolicy {
 /// TODO(P2 阶段 4 后续迭代)：迁移完整的 8 闸门评估逻辑
 pub fn evaluate_gates(
     ctx: &crate::context::GovernContext,
-    opt: &mox_ai_flow_core::pipeline::OptimizationReport,
+    _opt: &mox_ai_flow_core::pipeline::OptimizationReport,
     status: crate::govern::FlowStatus,
     _algo_veto: bool,
     sla_ok: bool,

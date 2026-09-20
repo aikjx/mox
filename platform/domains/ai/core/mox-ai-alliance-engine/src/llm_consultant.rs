@@ -672,7 +672,7 @@ mod tests {
 
     #[test]
     fn build_system_prompt_contains_expert_info() {
-        use crate::team::{build_expert_registry, ExpertMeta};
+        use crate::team::build_expert_registry;
         let consultant = HttpLLMConsultant::new(LLMConfig {
             api_key: "test".to_string(),
             ..Default::default()

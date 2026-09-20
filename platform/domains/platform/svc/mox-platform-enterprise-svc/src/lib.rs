@@ -133,8 +133,8 @@ impl AuditLog {
     pub fn query(&self, actor: Option<&str>, action: Option<&str>, limit: usize) -> Vec<AuditEntry> {
         let entries = self.entries.read();
         entries.iter().rev()
-            .filter(|e| actor.map_or(true, |a| e.actor == a))
-            .filter(|e| action.map_or(true, |a| e.action == a))
+            .filter(|e| actor.is_none_or(|a| e.actor == a))
+            .filter(|e| action.is_none_or(|a| e.action == a))
             .take(limit)
             .cloned()
             .collect()

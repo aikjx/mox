@@ -112,7 +112,7 @@ impl MultipartManager {
         let mut agg_crc = 0u64;
         let mut total = 0u64;
         let mut etag_parts = Vec::new();
-        for (_, p) in &up.parts {
+        for p in up.parts.values() {
             agg_crc = crc64_update(agg_crc, &p.bytes);
             total += p.bytes.len() as u64;
             etag_parts.push(format!("{:08x}-{:016x}", p.number, p.crc64_ecma));
@@ -120,7 +120,7 @@ impl MultipartManager {
         let etag = format!("{}-{}", up.parts.len(), {
             use sha2::{Digest, Sha256};
             let mut h = Sha256::new();
-            h.update(&etag_parts.join("|"));
+            h.update(etag_parts.join("|"));
             let d = h.finalize();
             hex::encode(&d[..12])
         });

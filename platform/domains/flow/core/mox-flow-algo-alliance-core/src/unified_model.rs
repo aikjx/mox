@@ -284,9 +284,9 @@ impl UnifiedData {
             UnifiedData::List(list) => {
                 let mut vec = Vec::with_capacity(list.len());
                 for item in list {
-                    match item.as_float() {
-                        Some(f) => vec.push(f),
-                        None => return None,
+                    {
+                        let f = item.as_float()?;
+                        vec.push(f)
                     }
                 }
                 Some(UnifiedData::Vector(vec))

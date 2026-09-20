@@ -1,4 +1,4 @@
-﻿[workspace]
+[workspace]
 # default-members锛歚cargo check / cargo build / cargo test` 榛樿鍙Е鍙戣繖浜?crate
 #   - 4 涓?MOX 璁＄畻鏍稿績
 #   - 3 涓?FFI 缁戝畾锛坣api/PyO3锛変笉鏀鹃粯璁わ紝閬垮厤锛?
@@ -153,6 +153,7 @@ members = [
     "platform/domains/alliance/core/mox-alliance-config-core",
     "platform/domains/alliance/core/mox-alliance-boot-config",
     "platform/domains/alliance/svc/mox-alliance-scheduler-svc",
+    "platform/domains/alliance/svc/mox-alliance-registry-svc",
     "platform/domains/alliance/svc/mox-alliance-executor-svc",
     "platform/domains/alliance/sdk/mox-alliance-sdk",
     # === 统一基座域 (base) ===
@@ -292,7 +293,7 @@ mox-cloud-foundation = { path = "platform/foundation/mox-cloud-foundation" }
 mox-platform-observability = { path = "platform/foundation/mox-platform-observability" }
 mox-platform-paths = { path = "platform/foundation/mox-platform-paths" }
 mox-error = { path = "platform/foundation/mox-error" }
-mox-audit = { path = "platform/foundation/mox-audit" }
+mox-audit = { path = "platform/foundation/mox-audit", default-features = false }
 mox-api-protocol = { path = "platform/foundation/mox-api-protocol" }
 mox-rbac-engine = { path = "platform/domains/foundation/mox-rbac-engine" }
 mox-pipeline-framework = { path = "platform/domains/foundation/mox-pipeline-framework" }
@@ -541,8 +542,4 @@ opt-level = 3
 lto = "fat"
 codegen-units = 1
 debug = true
-
-# 统一构建输出目录：避免各 crate target/ 散落（已清理 1.8GB 废弃产物），集中到仓库根 target/
-[build]
-target-dir = "target"
 

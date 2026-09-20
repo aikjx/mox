@@ -44,7 +44,7 @@ pub fn dispatch_dimensions(
     experts: &[Box<dyn Expert>],
     dimensions: &[Dimension],
 ) -> Vec<ExpertOpinion> {
-    let filtered: Vec<&Box<dyn Expert>> = experts
+    let _filtered: Vec<&Box<dyn Expert>> = experts
         .iter()
         .filter(|e| dimensions.contains(&e.dimension()))
         .collect();

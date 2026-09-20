@@ -147,12 +147,10 @@ fn reconstruct_path(prev: &[Option<usize>], source: usize, target: usize) -> Opt
 
     path.push(current);
     while current != source {
-        match prev[current] {
-            Some(p) => {
-                current = p;
-                path.push(current);
-            }
-            None => return None,
+        {
+            let p = prev[current]?;
+            current = p;
+            path.push(current);
         }
     }
     path.reverse();

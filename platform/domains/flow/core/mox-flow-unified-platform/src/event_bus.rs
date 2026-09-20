@@ -18,7 +18,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::error::{PlatformError, PlatformResult};
 use crate::types::NormalizationSystem;
 
 /// 事件类型
@@ -228,7 +227,7 @@ impl EventBus {
 
         let mut subs = self.subscribers.write();
         subs.entry(event_type)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(subscriber);
     }
 
@@ -648,7 +647,7 @@ mod tests {
 
     #[test]
     fn test_custom_event_type() {
-        let bus = EventBus::new();
+        let _bus = EventBus::new();
         let event = PlatformEvent::new(
             EventType::Custom("my_event".to_string()),
             NormalizationSystem::AiAssistant,

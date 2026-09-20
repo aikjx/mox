@@ -23,7 +23,7 @@ pub struct ArchitectureExpert;
 impl ArchitectureExpert {
     /// 检测图中是否有环（DFS 三色）
     fn has_cycle(graph: &mox_ai_flow_core::model::FlowGraph) -> bool {
-        use std::collections::{HashMap, HashSet};
+        use std::collections::HashMap;
         let mut color: HashMap<String, u8> = HashMap::new(); // 0=白 1=灰 2=黑
         let mut adj: HashMap<String, Vec<String>> = HashMap::new();
         for e in &graph.edges {
@@ -48,11 +48,10 @@ impl ArchitectureExpert {
             false
         }
         for n in graph.nodes.iter().map(|n| n.id.clone()) {
-            if color.get(&n).copied().unwrap_or(0) == 0 {
-                if dfs(&n, &mut color, &adj) {
+            if color.get(&n).copied().unwrap_or(0) == 0
+                && dfs(&n, &mut color, &adj) {
                     return true;
                 }
-            }
         }
         false
     }
@@ -304,7 +303,7 @@ mod tests {
         g.add_node(FlowNode::new("e", "End", NodeKind::End));
         g.add_edge(FlowEdge::seq(&format!("n9"), "e"));
         let ectx = make_ctx(&g);
-        let o = ArchitectureExpert.analyze(&ectx);
+        let _o = ArchitectureExpert.analyze(&ectx);
         // 等等——扇出最大是 n9 → e，扇出 1。这是一条链
         // 让我们换个图：Start 直接连 10 个 Task → 全部连 End
     }

@@ -2,7 +2,7 @@
 // 健康检查模块
 // =============================================================================
 
-use crate::{ObservabilityError, ObservabilityResult};
+use crate::ObservabilityResult;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

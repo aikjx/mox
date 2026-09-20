@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -352,6 +352,7 @@ pub(crate) fn mode_str(m: AllianceMode) -> &'static str {
         AllianceMode::Hierarchical => "autonomous",
         AllianceMode::Debate => "debate",
         AllianceMode::Voting => "voting",
+        AllianceMode::Dynamic => "dynamic",
     }
 }
 
@@ -513,6 +514,14 @@ fn build_dag_for_task(title: &str, _description: &str, mode: AllianceMode) -> Ve
             let d = n("仲裁裁决", "expert-arbiter", NodeExecStatus::Pending, vec![b.node_id.clone(), c.node_id.clone()], None, (600, 200));
             let end_deps = vec![d.node_id.clone()];
             vec![a, b, c, d, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (850, 200))]
+        }
+        AllianceMode::Dynamic => {
+            // 动态模式：先分析，再根据中间结果动态选择后续专家（暂用并行拓扑占位）
+            let a = n("需求分析", "expert-requirement", NodeExecStatus::Completed, vec![], Some(format!("需求分析完成：{}", title)), (100, 200));
+            let b = n("动态路由", "expert-router", NodeExecStatus::Running, vec![a.node_id.clone()], None, (350, 200));
+            let c = n("深度执行", "expert-deep", NodeExecStatus::Pending, vec![b.node_id.clone()], None, (600, 200));
+            let end_deps = vec![c.node_id.clone()];
+            vec![a, b, c, n("融合输出", "expert-fusion", NodeExecStatus::Pending, end_deps, None, (850, 200))]
         }
     }
 }
@@ -934,11 +943,8 @@ async fn list_nodes(
     }
     let t0 = now_ms();
 
-    match s.tasks.get(task_id) {
-        Ok(None) => {
-            return api_error(404, format!("任务 {} 不存在", task_id),);
-        }
-        _ => {}
+    if let Ok(None) = s.tasks.get(task_id) {
+        return api_error(404, format!("任务 {} 不存在", task_id),);
     }
 
     let exec = s.ensure_execution(task_id);
@@ -1455,7 +1461,7 @@ async fn task_qa(
 }
 
 /// 状态 → 中文展示名
-fn status_display<'a>(status: &'a str) -> &'a str {
+fn status_display(status: &str) -> &str {
     match status {
         "pending" => "待处理",
         "planning" => "规划中",

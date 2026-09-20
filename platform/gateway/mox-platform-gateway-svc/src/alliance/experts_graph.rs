@@ -762,7 +762,7 @@ async fn get_path(
                     "node_type": node.map(|n| n.node_type.clone()).unwrap_or_default(),
                 })
             }).collect();
-            let path_length = if path_ids.len() > 0 { path_ids.len() - 1 } else { 0 };
+            let path_length = if !path_ids.is_empty() { path_ids.len() - 1 } else { 0 };
             // 计算总权重
             let mut total_weight = 0.0f64;
             for w in path_ids.windows(2) {
@@ -825,7 +825,7 @@ async fn get_communities(State(state): State<Arc<ExpertsSharedState>>) -> ApiRes
             "member_labels": member_labels,
             "internal_edges": internal_edges,
             "external_edges": external_edges,
-            "modularity_contribution": if communities.len() > 0 { modularity / communities.len() as f64 } else { 0.0 },
+            "modularity_contribution": if !communities.is_empty() { modularity / communities.len() as f64 } else { 0.0 },
         })
     }).collect();
 

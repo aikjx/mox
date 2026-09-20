@@ -185,7 +185,7 @@ impl FaultInjector {
 
     pub fn reset(&self) {
         let mut a = self.armed.lock();
-        for (_, v) in a.iter_mut() { *v = false; }
+        for v in a.values_mut() { *v = false; }
         drop(a);
         self.total_events.store(0, Ordering::SeqCst);
         self.dropped.store(0, Ordering::SeqCst);
@@ -241,15 +241,15 @@ impl FaultInjector {
     /// `Ok(true)` if write was partial (F6 caller must apply 0-half semantics).
     /// `Ok(false)` if normal write. Adds latency for F12.
     pub fn on_write(&self, seq: u64) -> Result<bool, String> {
-        if self.is_armed(Ac15Fault::F7DiskFull10Pct) && seq % 10 == 0 {
+        if self.is_armed(Ac15Fault::F7DiskFull10Pct) && seq.is_multiple_of(10) {
             return Err("DiskFull: write refused".into());
         }
-        if self.is_armed(Ac15Fault::F6HalfWriteFail) && seq % 53 == 0 {
+        if self.is_armed(Ac15Fault::F6HalfWriteFail) && seq.is_multiple_of(53) {
             // Induce half-write: mark partial (tests should rollback).
             self.halfwrite_partial.fetch_add(1, Ordering::SeqCst);
             return Err("HalfWriteFailure: aborted before row N+1".into());
         }
-        if self.is_armed(Ac15Fault::F12TimeoutThenOK) && seq % 137 == 0 {
+        if self.is_armed(Ac15Fault::F12TimeoutThenOK) && seq.is_multiple_of(137) {
             // Simulate a transient timeout → caller retries and dedup keeps it idempotent.
             // Rate is low (< 1%) so duplicates_leq_1pct gate remains satisfied.
             self.duplicates_seen.fetch_add(1, Ordering::SeqCst);
@@ -270,13 +270,12 @@ impl FaultInjector {
         }
         let fp = self.is_armed(Ac15Fault::F10FalsePositiveSet);
         // F14: simulate audit-triggered circuit breaker on a lag threshold.
-        if self.is_armed(Ac15Fault::F14CircuitBreaker) && self.lag_ms.load(Ordering::SeqCst) >= 10_000 {
-            if !self.circuit_breaker_open.load(Ordering::SeqCst) {
+        if self.is_armed(Ac15Fault::F14CircuitBreaker) && self.lag_ms.load(Ordering::SeqCst) >= 10_000
+            && !self.circuit_breaker_open.load(Ordering::SeqCst) {
                 self.circuit_breaker_open.store(true, Ordering::SeqCst);
                 self.circuit_breaker_ever.store(true, Ordering::SeqCst);
                 self.audit_chain_len.fetch_add(1, Ordering::SeqCst);
             }
-        }
         (stall, oom, fp)
     }
 

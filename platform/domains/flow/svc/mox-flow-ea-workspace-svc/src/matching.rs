@@ -198,7 +198,7 @@ mod tests {
     use super::*;
 
     fn mock_experts() -> Vec<ExpertProfile> {
-        use chrono::Utc;
+        
         vec![
             ExpertProfile {
                 id: "e1".into(),

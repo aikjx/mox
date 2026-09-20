@@ -9,3 +9,6 @@ description = "Host-independent module composition contracts, dependency validat
 [dependencies]
 serde = { workspace = true }
 thiserror = { workspace = true }
+
+[lints]
+workspace = true

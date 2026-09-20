@@ -168,7 +168,7 @@ pub async fn list_roles_handler(
         list.retain(|r| r.tenant_id.as_deref() == Some(tenant_id.as_str()));
     }
 
-    list.sort_by(|a, b| a.sort_order.cmp(&b.sort_order));
+    list.sort_by_key(|a| a.sort_order);
     success(list)
 }
 

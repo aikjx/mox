@@ -36,3 +36,6 @@ http-adapter = ["dep:chrono", "dep:axum", "dep:mox-framework", "dep:serde_qs", "
 [dev-dependencies]
 tempfile = "3"
 criterion = { workspace = true }
+
+[lints]
+workspace = true

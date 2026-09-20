@@ -25,14 +25,12 @@ use axum::routing::{get, post};
 use axum::Router;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use tracing::{info, warn};
+use tracing::info;
 
 use mox_voice_asr_svc::HotwordInjector;
-use mox_voice_core_svc::constants::AMBIGUITY_THRESHOLD;
 use mox_voice_core_svc::engine::{AuditFn, EngineConfig, OperatorEngine, XiaobaiResult};
 use mox_voice_core_svc::errors::XiaobaiError;
 use mox_voice_core_svc::identity::{OperatorIdentity, RoleTag};
-use mox_voice_core_svc::protocol::Envelope;
 use mox_voice_core_svc::rbac::DispatchMode;
 use mox_voice_intent_svc::DefaultRouter;
 
@@ -86,7 +84,7 @@ impl XiaobaiVoiceService {
             Ok(())
         });
         let mut engine_config = EngineConfig::default();
-        engine_config.mode = config.default_mode.clone();
+        engine_config.mode = config.default_mode;
         engine_config.audit_fn = log_audit;
         let engine = Arc::new(OperatorEngine::new(engine_config, router));
         register_all_defaults(&engine);
@@ -135,7 +133,7 @@ impl XiaobaiVoiceService {
             .unwrap_or_else(|_| (text.to_string(), Vec::new()));
         let identity = identity.unwrap_or_else(|| self.config.default_identity.clone());
         // 注意：EngineConfig 的 mode 在构造时已设定；这里 mode 参数传入仅用于审计/统计
-        let _mode = mode.unwrap_or_else(|| self.config.default_mode.clone());
+        let _mode = mode.unwrap_or_else(|| self.config.default_mode);
         let result = self.engine.dispatch_intent(&corrected, &identity).await?;
         Ok(json!({
             "intent": {
@@ -181,7 +179,7 @@ fn make_mode(mode: Option<&str>, default: &DispatchMode) -> DispatchMode {
         Some("local") | Some("LocalFirst") => DispatchMode::LocalFirst,
         Some("cloud") | Some("CloudFallback") => DispatchMode::CloudFallback,
         Some("cloud_only") | Some("CloudOnly") => DispatchMode::CloudOnly,
-        _ => default.clone(),
+        _ => *default,
     }
 }
 
@@ -296,12 +294,12 @@ async fn set_hotwords(State(svc): State<AppState>, AxumJson(req): AxumJson<SetHo
                 let score = v.get("score").and_then(|s| s.as_f64()).unwrap_or(0.5) as f32;
                 if word.is_empty() {
                     return XiErr::from(XiaobaiError::InvalidArgument {
-                        action: "set_hotwords".into(), param: format!("hotwords[{i}]").into(),
+                        action: "set_hotwords".into(), param: format!("hotwords[{i}]"),
                         value: v.to_string(), hint: "缺少 word 字段".into(),
                     }).into_response();
                 }
-                let h = Hotword::new(&word).with_score(score);
-                h
+                
+                Hotword::new(&word).with_score(score)
             }
         };
         hws.push(hw);

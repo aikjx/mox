@@ -190,8 +190,8 @@ pub(crate) fn louvain_csr(csr: &CsrAdj, config: &LouvainConfig) -> CommunityPart
         let mut new_id = 0;
         for i in 0..n {
             let old = node_comm[i];
-            if !comm_map.contains_key(&old) {
-                comm_map.insert(old, new_id);
+            if let std::collections::hash_map::Entry::Vacant(e) = comm_map.entry(old) {
+                e.insert(new_id);
                 new_id += 1;
             }
             node_comm[i] = comm_map[&old];
@@ -420,8 +420,8 @@ pub(crate) fn label_propagation_csr(
     let mut new_id = 0;
     for i in 0..n {
         let old = labels[i];
-        if !label_map.contains_key(&old) {
-            label_map.insert(old, new_id);
+        if let std::collections::hash_map::Entry::Vacant(e) = label_map.entry(old) {
+            e.insert(new_id);
             new_id += 1;
         }
         labels[i] = label_map[&old];
@@ -918,7 +918,7 @@ fn compute_edge_betweenness(adj: &[HashMap<usize, f64>], n: usize) -> HashMap<(u
 
         while let Some(v) = queue.pop_front() {
             order.push(v);
-            for (&w, _) in &adj[v] {
+            for &w in adj[v].keys() {
                 if dist[w] < 0 {
                     dist[w] = dist[v] + 1;
                     queue.push_back(w);
@@ -943,7 +943,7 @@ fn compute_edge_betweenness(adj: &[HashMap<usize, f64>], n: usize) -> HashMap<(u
     }
 
     // 无向图边介数除以 2
-    for (_, v) in edge_bc.iter_mut() {
+    for v in edge_bc.values_mut() {
         *v /= 2.0;
     }
 
@@ -967,7 +967,7 @@ fn connected_components(adj: &[HashMap<usize, f64>], n: usize) -> Vec<Vec<usize>
 
         while let Some(u) = queue.pop_front() {
             component.push(u);
-            for (&v, _) in &adj[u] {
+            for &v in adj[u].keys() {
                 if !visited[v] {
                     visited[v] = true;
                     queue.push_back(v);

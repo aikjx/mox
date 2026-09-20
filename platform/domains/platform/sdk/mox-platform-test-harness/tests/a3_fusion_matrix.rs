@@ -298,7 +298,7 @@ qbt_case!(a3_q_n70_s10, 70, 10);
     let gw = GraphWriter::new();
     let tag = Tag::new("k","v");
     for i in 0..10 {
-        gw.upsert_obj_and_tags(&format!("u{i}"),"b",1,&format!("e{i}"),&[tag.clone()],None).unwrap();
+        gw.upsert_obj_and_tags(&format!("u{i}"),"b",1,&format!("e{i}"),std::slice::from_ref(&tag),None).unwrap();
     }
     let r = gw.query_objects_by_tag("k","v",3);
     assert_eq!(r.len(), 3, "limit=3, got {}", r.len());

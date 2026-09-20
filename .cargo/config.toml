@@ -1,0 +1,7 @@
+# Workspace build configuration (project-shared).
+# Note: `build.target-dir` is only valid in .cargo/config.toml, NOT in Cargo.toml.
+# Centralize all build output at the repo root target/ so per-crate target/ dirs
+# do not scatter (this was previously declared as an invalid [build] table in
+# Cargo.toml, where cargo silently ignored it).
+[build]
+target-dir = "target"

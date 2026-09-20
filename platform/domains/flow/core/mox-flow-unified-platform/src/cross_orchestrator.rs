@@ -500,7 +500,7 @@ impl CrossOrchestrator {
     fn execute_step(
         &self,
         step: &OrchestrationStep,
-        template_step: &TemplateStep,
+        _template_step: &TemplateStep,
         context: &OrchestrationContext,
     ) -> PlatformResult<serde_json::Value> {
         match step.step_type {

@@ -131,7 +131,7 @@ fn ok(data: Value) -> ApiResponse<Value> {
 // =====================================================================
 async fn upload_avatar(Path(id): Path<String>, mut multipart: Multipart) -> ApiResponse<Value> {
     let upload_dir = std::path::Path::new("data/uploads/avatars");
-    if let Err(e) = std::fs::create_dir_all(&upload_dir) {
+    if let Err(e) = std::fs::create_dir_all(upload_dir) {
         eprintln!("[misc] 创建头像目录失败: {}", e);
     }
 
@@ -341,7 +341,7 @@ async fn list_tasks_paginated(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "total_pages": (total + page_size - 1) / page_size,
+        "total_pages": total.div_ceil(page_size),
         "has_next": start + page_size < total,
         "has_prev": page > 1,
         "filters": {
@@ -398,7 +398,7 @@ async fn list_projects_paginated(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "total_pages": (total + page_size - 1) / page_size,
+        "total_pages": total.div_ceil(page_size),
         "has_next": start + page_size < total,
         "has_prev": page > 1,
         "filters": {
