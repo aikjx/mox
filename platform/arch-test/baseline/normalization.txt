@@ -77,7 +77,6 @@ enum::IndexType|mox-cloud-kb-core,mox-flow-unified-meta-core,mox-kg-service-svc
 enum::LayoutType|mox-flow-lowcode-core,mox-flow-unified-frontend-core
 enum::LifecycleError|mox-base-lifecycle-core,mox-plugin-core
 enum::LogLevel|mox-flow-unified-process-core,mox-observability-core
-enum::LoopPolicy|mox-ai-expert-core,mox-ai-expert-svc
 enum::MergeStrategy|api,mox-ai-agent-svc,mox-data-norm-core
 enum::MessageType|mox-flow-ai-assistant-core,mox-platform-gateway-svc
 enum::MetaError|mox-cloud-domain-traits,mox-flow-unified-meta-core,mox-kg-meta-core
@@ -145,7 +144,6 @@ struct::AlgoVerification|mox-ai-expert-core,mox-ai-expert-svc
 struct::AlgorithmAnalysisRequest|mox-ai-alliance-engine,mox-ai-expert-svc
 struct::AlgorithmAnalysisResponse|mox-ai-alliance-engine,mox-ai-expert-svc
 struct::AlgorithmAnalyzer|mox-ai-agent-svc,mox-ai-alliance-engine,mox-ai-expert-svc
-struct::AlgorithmExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::AllianceEngine|mox-ai-alliance-engine,mox-ai-expert-svc
 struct::AllianceEvent|mox-ai-alliance-engine,mox-ai-expert-svc
 struct::AllianceMetrics|mox-alliance-scheduler-core,mox-platform-orchestrator-svc
@@ -153,7 +151,6 @@ struct::AllianceOptions|mox-ai-alliance-engine,mox-ai-expert-svc
 struct::AllianceRequest|mox-ai-alliance-engine,mox-ai-expert-svc
 struct::ApiResponse|mox-ai-intent-svc,mox-api-protocol,mox-flow-unified-arch-core,mox-project-graph-svc,mox-unified-contract
 struct::AppState|mox-ai-expert-svc,mox-ai-intent-svc,mox-alliance-registry-svc,mox-flow-fusion-svc,mox-flow-primiflow-svc,mox-platform-enterprise-svc,mox-project-graph-svc,mox-server-runtime
-struct::ArchitectureExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::AsrResult|api,mox-flow-primiflow-svc
 struct::AsyncPipeline|mox-ai-expert-svc,mox-pipeline-framework
 struct::AuditActor|mox-ai-expert-svc,mox-audit,mox-pipeline-framework
@@ -172,7 +169,6 @@ struct::AuthConfig|mox-framework,mox-platform-gateway-svc,mox-server-runtime
 struct::AuthMiddleware|mox-auth-core,mox-platform-gateway-svc
 struct::AuthState|mox-framework,mox-platform-enterprise-svc
 struct::BuiltinRoles|mox-ai-expert-svc,mox-rbac-engine
-struct::BusinessExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::CacheConfig|mox-cloud-store-core,mox-platform-gateway-svc,mox-server-runtime
 struct::CacheStats|mox-cache-core,mox-cloud-filer-svc,mox-rbac-engine
 struct::Capability|mox-ai-intent-core,mox-alliance-common-proto,mox-platform-orchestrator-svc
@@ -181,14 +177,11 @@ struct::ChatMessage|mox-ai-agent-svc,mox-ai-alliance-engine,mox-ai-expert-svc,mo
 struct::ChatRequest|mox-ai-agent-svc,mox-ai-intent-svc,mox-platform-model-core
 struct::ChatResponse|mox-ai-agent-svc,mox-ai-intent-svc,mox-platform-model-core
 struct::ChatSession|mox-ai-agent-svc,mox-ai-core
-struct::Check|mox-ai-expert-core,mox-ai-expert-svc
 struct::CircuitBreakerConfig|mox-flow-unified-platform,mox-resilience-core,mox-server-runtime
 struct::CircuitBreaker|mox-flow-unified-platform,mox-framework,mox-resilience-core
 struct::Claims|mox-auth-core,mox-framework,mox-platform-enterprise-svc
 struct::CnmResult|mox-data-formula-core,mox-kg-service-svc
 struct::CodeIR|mox-ai-expert-core,mox-ai-expert-svc
-struct::CodeQualityExpert|mox-ai-expert-core,mox-ai-expert-svc
-struct::CodeUnit|mox-ai-expert-core,mox-ai-expert-svc
 struct::CollaborationPlan|mox-alliance-common-proto,mox-platform-gateway-svc
 struct::ColorPalette|mox-enterprise-core,mox-flow-unified-frontend-core
 struct::CompatibilityRegistry|mox-ai-expert-core,mox-ai-expert-svc
@@ -207,7 +200,6 @@ struct::CostEstimate|mox-cloud-s3-svc,mox-flow-algo-alliance-core,mox-kg-service
 struct::CostModel|mox-flow-algo-alliance-core,mox-kg-service-svc
 struct::CreateDocumentRequest|mox-platform-gateway-svc,mox-project-graph-svc
 struct::CreateTaskRequest|api,mox-project-graph-svc
-struct::DataExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::DataRecord|api,mox-data-plane-svc
 struct::DeadLetterEntry|mox-cloud-s3-svc,mox-event-core
 struct::DebateResult|mox-ai-alliance-engine,mox-ai-expert-svc
@@ -216,7 +208,6 @@ struct::DimensionedFlow|mox-ai-expert-core,mox-ai-expert-svc
 struct::DirEntry|mox-cloud-domain-traits,mox-cloud-filer-svc
 struct::DirListPage|mox-cloud-domain-traits,mox-cloud-filer-svc
 struct::DocumentVersion|mox-kb-core,mox-platform-gateway-svc
-struct::DocumentationExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::Document|mox-cloud-kb-core,mox-kb-core,mox-platform-gateway-svc
 struct::EdgeDef|mox-ai-expert-svc,mox-kg-meta-core
 struct::EdgeRow|mox-kg-service-svc,mox-kg-spark-svc
@@ -289,9 +280,6 @@ struct::LlmConfig|mox-ai-expert-svc,mox-platform-orchestrator-svc
 struct::LlmRouter|mox-ai-agent-svc,mox-ai-expert-svc,mox-alliance-scheduler-core
 struct::LockStats|mox-cloud-filer-svc,mox-lock-core
 struct::LogEntry|mox-alliance-http-sdk,mox-kg-meta-core,mox-observability-core,mox-platform-gateway-svc
-struct::LoopGuard|mox-ai-expert-core,mox-ai-expert-svc
-struct::MaintainabilityExpert|mox-ai-expert-core,mox-ai-expert-svc
-struct::McpTool|mox-ai-expert-core,mox-ai-expert-svc
 struct::MemoryConfigStore|mox-alliance-boot-config,mox-alliance-config-core
 struct::Message|mox-ai-core,mox-platform-gateway-svc,mox-platform-system-core
 struct::MetricsCollector|mox-framework,mox-observability-core,mox-platform-gateway-svc
@@ -316,7 +304,6 @@ struct::NoopSink|mox-ai-expert-svc,mox-audit
 struct::NormRecord|api,mox-data-norm-core
 struct::ObjectMeta|mox-cloud-store-core,mox-flow-unified-storage-core,mox-kg-fusion-svc
 struct::ObservabilityConfig|mox-framework,mox-platform-gateway-svc,mox-server-runtime
-struct::ObservabilityExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::OperatorRegistry|mox-flow-operator-core,mox-platform-orchestrator-svc
 struct::OrchestrationEngine|mox-ai-alliance-engine,mox-ai-expert-svc
 struct::OrchestrationRequest|mox-ai-alliance-engine,mox-ai-expert-svc
@@ -328,8 +315,6 @@ struct::Orchestrator|mox-flow-primiflow-svc,mox-platform-orchestrator-core
 struct::PageQuery|mox-api-protocol,mox-dsql-core
 struct::PaginatedResponse|mox-api-protocol,mox-plugin-core
 struct::PathResult|mox-kg-algo-core,mox-kg-core,mox-unified-algo-core
-struct::PerformanceExpert|mox-ai-expert-core,mox-ai-expert-svc
-struct::PermissionExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::Permission|mox-ai-expert-svc,mox-auth-core,mox-flow-unified-perm-core,mox-platform-gateway-svc,mox-rbac-engine
 struct::PhaseExecution|mox-ai-expert-svc,mox-pipeline-framework
 struct::PiiMatch|api,mox-data-compliance-svc
@@ -365,7 +350,6 @@ struct::ReconciledPlan|mox-ai-expert-core,mox-ai-expert-svc
 struct::Recorder|mox-flow-bridge-svc,mox-voice-operator-svc
 struct::RegistryImpl|mox-ai-expert-core,mox-ai-expert-svc
 struct::ResilienceConfig|mox-framework,mox-server-runtime
-struct::ResourceExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::ResourcePool|mox-ai-flow-core,mox-platform-orchestrator-core
 struct::ResourceQuota|api,mox-ai-expert-core,mox-ai-expert-svc
 struct::Resource|mox-ai-expert-svc,mox-auth-core,mox-kg-meta-core,mox-rbac-engine
@@ -383,10 +367,7 @@ struct::Schedule|mox-ai-flow-core,mox-flow-primiflow-svc
 struct::ScoreBreakdown|mox-ai-alliance-engine,mox-ai-expert-svc,mox-ai-intent-core,mox-cloud-rebalance-svc
 struct::SearchHit|mox-ai-agent-svc,mox-flow-primiflow-svc,mox-kb-svc,mox-kg-hub-svc
 struct::SearchResult|mox-ai-agent-svc,mox-cloud-kb-core,mox-kb-core
-struct::SecurityCodeExpert|mox-ai-expert-core,mox-ai-expert-svc
-struct::SecurityExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::SemVer|mox-platform-orchestrator-svc,mox-plugin-core
-struct::SkillRef|mox-ai-expert-core,mox-ai-expert-svc
 struct::SnapshotInfo|mox-cloud-filer-svc,mox-cloud-store-core
 struct::SnapshotManager|mox-cloud-filer-svc,mox-cloud-master-svc,mox-cloud-store-core
 struct::SpanId|mox-observability-core,mox-unified-contract
@@ -409,7 +390,6 @@ struct::TeamResult|mox-ai-alliance-engine,mox-ai-expert-svc
 struct::TenantManager|mox-flow-unified-perm-core,mox-platform-enterprise-svc
 struct::TenantPolicy|mox-ai-expert-core,mox-ai-expert-svc
 struct::Tenant|mox-ai-expert-core,mox-ai-expert-svc,mox-auth-core,mox-flow-unified-perm-core,mox-platform-enterprise-svc,mox-platform-gateway-svc
-struct::TestingExpert|mox-ai-expert-core,mox-ai-expert-svc
 struct::ToolRegistry|mox-ai-agent-svc,mox-ai-expert-svc,mox-flow-ai-assistant-core
 struct::ToolResult|mox-ai-agent-svc,mox-ai-expert-svc,mox-flow-ai-assistant-core,mox-flow-bridge-svc
 struct::TraceContext|mox-framework,mox-observability-core,mox-platform-integration-core,mox-platform-observability,mox-unified-contract

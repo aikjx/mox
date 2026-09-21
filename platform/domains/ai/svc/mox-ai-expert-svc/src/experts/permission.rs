@@ -11,7 +11,8 @@ use crate::ir::Dimension;
 use crate::sensitivity::{is_production_or_sensitive_write, is_sensitive_leak};
 use mox_ai_flow_svc::model::{AccessMode, NodeKind, ToolKind};
 
-pub struct PermissionExpert;
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次1，2026-09-21），本模块仅重导出；本地 Expert trait 实现保持不变。
+pub use mox_ai_expert_core::experts::permission::PermissionExpert;
 
 /// 节点 tag 形如 `desensitize:<resource>` 时，判断该资源是否已脱敏
 fn is_desensitized_by_tag(tag: &str) -> bool {

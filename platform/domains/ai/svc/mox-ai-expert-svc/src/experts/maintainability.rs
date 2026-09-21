@@ -14,7 +14,8 @@ use crate::ir::{Dimension, ExpertId};
 use mox_ai_flow_svc::model::Severity;
 
 /// 可维护性专家：审查代码可维护性
-pub struct MaintainabilityExpert;
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次1，2026-09-21），本模块仅重导出；本地 Expert trait 实现保持不变。
+pub use mox_ai_expert_core::experts::maintainability::MaintainabilityExpert;
 
 impl Expert for MaintainabilityExpert {
     fn id(&self) -> ExpertId {

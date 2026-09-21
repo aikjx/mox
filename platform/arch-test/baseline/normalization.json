@@ -973,19 +973,6 @@
       ]
     },
     {
-      "name": "LoopPolicy",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/context/mod.rs:134",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:127"
-      ]
-    },
-    {
       "name": "MaskLevel",
       "count": 2,
       "crates": [
@@ -3226,7 +3213,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/ai/core/mox-ai-expert-core/src/verify/mod.rs:34",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/verify/mod.rs:59"
+        "platform/domains/ai/svc/mox-ai-expert-svc/src/verify/mod.rs:50"
       ]
     },
     {
@@ -3253,19 +3240,6 @@
       "locations": [
         "platform/domains/ai/core/mox-ai-alliance-engine/src/algorithm.rs:107",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/types.rs:263"
-      ]
-    },
-    {
-      "name": "AlgorithmExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/algorithm.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/algorithm.rs:13"
       ]
     },
     {
@@ -3331,19 +3305,6 @@
       "locations": [
         "platform/domains/ai/core/mox-ai-alliance-engine/src/events.rs:229",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/alliance/mod.rs:85"
-      ]
-    },
-    {
-      "name": "ArchitectureExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/architecture.rs:21",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/architecture.rs:18"
       ]
     },
     {
@@ -3503,19 +3464,6 @@
       ]
     },
     {
-      "name": "BusinessExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/business.rs:19",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/business.rs:13"
-      ]
-    },
-    {
       "name": "ChatSession",
       "count": 2,
       "crates": [
@@ -3526,19 +3474,6 @@
       "locations": [
         "platform/domains/ai/core/mox-ai-core/src/chat.rs:157",
         "platform/domains/ai/svc/mox-ai-agent-svc/src/types.rs:73"
-      ]
-    },
-    {
-      "name": "Check",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/verify/mod.rs:21",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/verify/mod.rs:46"
       ]
     },
     {
@@ -3565,32 +3500,6 @@
       "locations": [
         "platform/domains/ai/core/mox-ai-expert-core/src/ir/mod.rs:31",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/ir.rs:34"
-      ]
-    },
-    {
-      "name": "CodeQualityExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/code_quality.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/code_quality.rs:17"
-      ]
-    },
-    {
-      "name": "CodeUnit",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/ir/mod.rs:38",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/ir.rs:41"
       ]
     },
     {
@@ -3629,7 +3538,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/ai/core/mox-ai-expert-core/src/context/mod.rs:151",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:144"
+        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:122"
       ]
     },
     {
@@ -3750,19 +3659,6 @@
       ]
     },
     {
-      "name": "DataExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/data.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/data.rs:13"
-      ]
-    },
-    {
       "name": "DataRecord",
       "count": 2,
       "crates": [
@@ -3835,7 +3731,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/ai/core/mox-ai-expert-core/src/ir/mod.rs:100",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/ir.rs:103"
+        "platform/domains/ai/svc/mox-ai-expert-svc/src/ir.rs:54"
       ]
     },
     {
@@ -3875,19 +3771,6 @@
       "locations": [
         "platform/domains/kb/core/mox-kb-core/src/model.rs:66",
         "platform/gateway/mox-platform-gateway-svc/src/document/mod.rs:111"
-      ]
-    },
-    {
-      "name": "DocumentationExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/documentation.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/documentation.rs:17"
       ]
     },
     {
@@ -4016,7 +3899,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/ai/core/mox-ai-expert-core/src/context/mod.rs:270",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:236"
+        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:214"
       ]
     },
     {
@@ -4236,7 +4119,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/ai/core/mox-ai-expert-core/src/context/mod.rs:187",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:180"
+        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:158"
       ]
     },
     {
@@ -4563,45 +4446,6 @@
       ]
     },
     {
-      "name": "LoopGuard",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/context/mod.rs:144",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:137"
-      ]
-    },
-    {
-      "name": "MaintainabilityExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/maintainability.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/maintainability.rs:17"
-      ]
-    },
-    {
-      "name": "McpTool",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/context/mod.rs:114",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:107"
-      ]
-    },
-    {
       "name": "MemoryConfigStore",
       "count": 2,
       "crates": [
@@ -4797,19 +4641,6 @@
       ]
     },
     {
-      "name": "ObservabilityExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/observability.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/observability.rs:13"
-      ]
-    },
-    {
       "name": "OperatorRegistry",
       "count": 2,
       "crates": [
@@ -4924,32 +4755,6 @@
       "locations": [
         "platform/domains/platform/core/mox-plugin-core/src/market/client.rs:194",
         "platform/foundation/mox-api-protocol/src/lib.rs:123"
-      ]
-    },
-    {
-      "name": "PerformanceExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/performance.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/performance.rs:17"
-      ]
-    },
-    {
-      "name": "PermissionExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/permission.rs:22",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/permission.rs:14"
       ]
     },
     {
@@ -5277,19 +5082,6 @@
       ]
     },
     {
-      "name": "ResourceExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/resource.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/resource.rs:13"
-      ]
-    },
-    {
       "name": "ResourcePool",
       "count": 2,
       "crates": [
@@ -5407,32 +5199,6 @@
       ]
     },
     {
-      "name": "SecurityCodeExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/security_code.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/security_code.rs:18"
-      ]
-    },
-    {
-      "name": "SecurityExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/security.rs:21",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/security.rs:14"
-      ]
-    },
-    {
       "name": "SemVer",
       "count": 2,
       "crates": [
@@ -5455,19 +5221,6 @@
       "locations": [
         "platform/domains/kg/svc/mox-kg-storage-svc/src/partition_raft.rs:85",
         "platform/domains/kg/svc/mox-kg-storage-svc/src/shard_raft.rs:202"
-      ]
-    },
-    {
-      "name": "SkillRef",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/context/mod.rs:125",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/context.rs:118"
       ]
     },
     {
@@ -5689,19 +5442,6 @@
       "locations": [
         "platform/domains/ai/core/mox-ai-expert-core/src/tenant_policy.rs:89",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/tenant_policy.rs:96"
-      ]
-    },
-    {
-      "name": "TestingExpert",
-      "count": 2,
-      "crates": [
-        "mox-ai-expert-core",
-        "mox-ai-expert-svc"
-      ],
-      "cross_crate": true,
-      "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/experts/testing.rs:10",
-        "platform/domains/ai/svc/mox-ai-expert-svc/src/experts/testing.rs:17"
       ]
     },
     {

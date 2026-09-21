@@ -74,6 +74,14 @@ pub(crate) enum ControlCommand {
         plan: Box<CollaborationPlan>,
         options: Box<ExecutionOptions>,
     },
+    /// 启动恢复：重建执行状态，`completed` 中的节点直接置 Completed（不重复执行）
+    Restore {
+        task: Box<Task>,
+        plan: Box<CollaborationPlan>,
+        options: Box<ExecutionOptions>,
+        /// 已完成节点（node_id, result）
+        completed: Vec<(String, Option<serde_json::Value>)>,
+    },
     Pause {
         task_id: Uuid,
     },
@@ -167,6 +175,39 @@ impl DagEngineImpl {
         }
     }
 
+    /// 启动恢复扫描（场景②）：从持久化端口读出未完成任务，重建执行状态并继续派发。
+    ///
+    /// - 已完成节点直接置 Completed（**跳过**：不重复执行、不重复外部副作用）；
+    /// - 已在执行中的任务跳过（防重复注入）；
+    /// - 未注入 sink，或 file 底座（无 plan / 节点表）→ 返回空列表。
+    pub fn restore(&self, sink: &Arc<dyn ExecutionStateSink>) -> AllianceResult<Vec<Uuid>> {
+        let restorable = sink.restore_pending()?;
+        let mut restored = Vec::new();
+        for r in restorable {
+            let task_id = r.task.task_id;
+            if self.states.read().contains_key(&task_id) {
+                debug!("Task {} 已在执行中，跳过恢复", task_id);
+                continue;
+            }
+            let cmd = ControlCommand::Restore {
+                task: Box::new(r.task),
+                plan: Box::new(r.plan),
+                options: Box::new(ExecutionOptions {
+                    max_retries: self.config.default_max_retries,
+                    node_timeout_ms: self.config.default_node_timeout_ms,
+                    fail_fast: false,
+                }),
+                completed: r.completed_nodes,
+            };
+            if self.control_tx.send(cmd).is_err() {
+                warn!("恢复任务 {}：控制通道已不可用", task_id);
+                continue;
+            }
+            restored.push(task_id);
+        }
+        Ok(restored)
+    }
+
     /// 持久化任务状态（失败仅告警，不阻断执行——可用性优先，见 state_sink 模块文档）
     fn persist_task_state(
         sink: Option<&Arc<dyn ExecutionStateSink>>,
@@ -224,6 +265,76 @@ impl DagEngineImpl {
                     node_count
                 );
                 // 场景②出口：任务进入执行期即落库，崩溃后恢复扫描可见
+                if let Some(st) = states.get(&task_id) {
+                    Self::persist_task_state(state_sink, &st.task);
+                    // 计划同样落库：恢复期需要原始 DAG 才能重建执行状态（场景②前提）
+                    if let Some(s) = state_sink {
+                        if let Err(e) = s.persist_plan(task_id, &st.plan) {
+                            warn!("持久化协作计划失败 {}: {}", task_id, e);
+                        }
+                    }
+                }
+            }
+            ControlCommand::Restore {
+                task,
+                plan,
+                options,
+                completed,
+            } => {
+                let mut task = *task;
+                let plan = *plan;
+                let options = *options;
+
+                let mut nodes_map = HashMap::new();
+                for node in &plan.nodes {
+                    nodes_map.insert(node.node_id.clone(), node.clone());
+                }
+                let task_id = task.task_id;
+                let dynamic_routes = Self::build_dynamic_routes(&plan);
+
+                // 已完成节点：置 Completed 并回填输出，避免重复执行与重复副作用
+                let mut outputs: HashMap<String, NodeExecutionResult> = HashMap::new();
+                for (node_id, result) in &completed {
+                    if let Some(n) = nodes_map.get_mut(node_id) {
+                        n.status = NodeStatus::Completed;
+                        n.completed_at = Some(chrono::Utc::now());
+                        n.output_ref = Some(format!("output-{}", node_id));
+                        outputs.insert(
+                            node_id.clone(),
+                            NodeExecutionResult {
+                                node_id: node_id.clone(),
+                                task_id,
+                                success: true,
+                                output: result.clone(),
+                                error_message: None,
+                                duration_ms: 0,
+                                retry_count: 0,
+                            },
+                        );
+                    }
+                }
+                // 其余节点保持 Pending（存储层已把 interrupted 解析为 pending），等待调度器继续派发
+                task.status = TaskStatus::Running;
+                if task.started_at.is_none() {
+                    task.started_at = Some(chrono::Utc::now());
+                }
+
+                let state = TaskExecutionState {
+                    task,
+                    plan,
+                    nodes: nodes_map,
+                    options,
+                    outputs,
+                    fusion_output: None,
+                    dynamic_routes,
+                };
+                let mut states = states.write();
+                states.insert(task_id, state);
+                info!(
+                    "Task execution restored: {} ({} completed node(s) skipped)",
+                    task_id,
+                    completed.len()
+                );
                 if let Some(st) = states.get(&task_id) {
                     Self::persist_task_state(state_sink, &st.task);
                 }

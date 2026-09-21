@@ -14,7 +14,8 @@ use crate::ir::{Dimension, ExpertId};
 use mox_ai_flow_svc::model::Severity;
 
 /// 测试专家：审查代码测试
-pub struct TestingExpert;
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次1，2026-09-21），本模块仅重导出；本地 Expert trait 实现保持不变。
+pub use mox_ai_expert_core::experts::testing::TestingExpert;
 
 impl Expert for TestingExpert {
     fn id(&self) -> ExpertId {

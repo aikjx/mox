@@ -18,13 +18,34 @@
 //! 持久化失败**不阻断执行**（引擎照常推进内存态），仅由调用方记录告警——
 //! 可用性优先于持久化完整性；对账由存储层恢复标记（running→interrupted）兜底。
 
-use mox_alliance_common_proto::{AllianceResult, Task};
+use mox_alliance_common_proto::{AllianceResult, CollaborationPlan, Task};
 use uuid::Uuid;
+
+/// 恢复期可重建的任务（由适配器从存储层读出）
+pub struct RestorableTask {
+    /// 任务行（状态为存储层恢复解析后的值：running→interrupted→pending）
+    pub task: Task,
+    /// 协作计划（DAG），恢复执行的依据
+    pub plan: CollaborationPlan,
+    /// 已完成节点（node_id, result），恢复后直接置 Completed，不再重复执行
+    pub completed_nodes: Vec<(String, Option<serde_json::Value>)>,
+}
 
 /// 执行状态持久化端口
 pub trait ExecutionStateSink: Send + Sync {
     /// 持久化任务整行（状态机推进 / 进度更新时调用）
     fn persist_task(&self, task: &Task) -> AllianceResult<()>;
+
+    /// 持久化协作计划（DAG）——恢复期重建执行状态的必要输入
+    fn persist_plan(&self, task_id: Uuid, plan: &CollaborationPlan) -> AllianceResult<()>;
+
+    /// 启动时恢复扫描：读取「有计划且任务未达终态」的任务及其已完成节点。
+    ///
+    /// 语义约定（场景②/③）：
+    /// - 仅返回**有持久化计划**的任务（无计划无法重建 DAG，交由人工/对账处理）；
+    /// - `completed_nodes` 用于跳过已成功节点，避免重复执行与重复副作用；
+    /// - 文件底座无 plan / 节点表 → 返回空列表（升级 sqlite 即得完整恢复能力）。
+    fn restore_pending(&self) -> AllianceResult<Vec<RestorableTask>>;
 
     /// 持久化单个 DAG 节点行（增量 upsert：status / result）
     ///

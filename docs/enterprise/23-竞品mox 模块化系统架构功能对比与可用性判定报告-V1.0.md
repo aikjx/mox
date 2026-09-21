@@ -1,4 +1,4 @@
-﻿# 23 · 璇玑 RelGraph · 竞品mox 模块化系统架构功能对比 × 可用性判定报告（DOC-COMPETITIVE-ANALYSIS-V1.0）
+﻿﻿# 23 · 璇玑 RelGraph · 竞品MOX功能对比 × 可用性判定报告（DOC-COMPETITIVE-ANALYSIS-V1.0）
 
 > **版本**：v1.0 ENT · 编制日期：2026-08-23
 > **权威链**：`18` TOP-MASTER（L0）> `21` Aura 对外 SRS（L2）> `02` 架构 > `11/12/13/16/09` 验收棘轮 > 本文档（L3 · 执行级·竞品对标&就绪判定）
@@ -156,12 +156,12 @@
 | SE-03 | 审计链（可查询 hash-chain）| ✅ EE Query Log | ✅ | ✅ Audit Log | ✅ | ✅ CloudTrail | ✅ | mox-expert audit 3 sink（File/Syslog/S3）+ `GET /api/audit` + T14.4 hash_chain 180 天 TTI verify_ok=true |
 | SE-04 | 敏感字段识别（PII/SSN/手机号）| ✅ + Bloom 分类 | ✅ 规则 | ❌ 需自研 | ✅ 分类标签 | ✅ + Macie | ✅ | kg-hub sensitivity.rs SSOT const 3 套（fields/patterns/kw） |
 | SE-05 | STRIDE 威胁建模 + 安全专家 | ❌ 需客户自己做 | ❌ | ❌ | ❌ | ✅ + AWS Security Hub | ✅ | mox-expert security.rs STRIDE 6 类 + 14 专家 Security 维度 |
-| SE-06 | 数据血缘 Lineage | ❌ 需 Neo4j 自建 | ❌ | ❌ | ✅ 内置 | ✅ 用 Glue 补 | ✅ | experts/data.rs `data lineage` mox 模块化系统架构分析 + 图谱 L5 血缘层 |
+| SE-06 | 数据血缘 Lineage | ❌ 需 Neo4j 自建 | ❌ | ❌ | ✅ 内置 | ✅ 用 Glue 补 | ✅ | experts/data.rs `data lineage` MOX分析 + 图谱 L5 血缘层 |
 | SE-07 | P9 判重闸门（先判重后立项）| ❌（DBA 自己约束）| ❌ | ❌ | ❌ | ❌ | ✅ | `info-graph dedup --strict` + `guantu_gate.py --strict` + 验收棘轮 16 |
 | SE-08 | 三联盟 RACI（产品/算法/开发）签字 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | 06 §3 18 行三联盟矩阵 + 19/20/21 文档强签流程 + CI 模板 |
 | SE-09 | 治理闸门 8 条（守恒/孤儿/合规/…）| ❌（仅 Neo4j Semarchy 数据治理）| ❌ | ❌ | ❌ | ❌ | ✅ | primiflow-fusion `full_gate_with_baseline` G1-G8 全部；mox-expert `govern` 14 专家校验器 |
 | SE-10 | 代码质量治理（死代码/clippy 0 警告）| ❌（非图库职责）| ❌ | ❌ | ❌ | ❌ | ✅ | 验收棘轮 13 `allow(dead_code) ≤ 8` + 验收 11 clippy 0 warning workspace |
-| SE-11 | mox 模块化系统架构双验收联动门禁（任务 Done ∧ 璇玑 Pass）| ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | `/mox/publish` 强制双验收 AND 闭合；对应 Plan D 已交付 |
+| SE-11 | MOX双验收联动门禁（任务 Done ∧ 璇玑 Pass）| ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | `/mox/publish` 强制双验收 AND 闭合；对应 Plan D 已交付 |
 | SE-12 | 四权分离（设计/开发/审计/运维）| ❌ 客户自己做 | ❌ | ❌ | ❌ | ✅ IAM + AWS Config | ✅ | 六角色矩阵中 Expert(开发) / Coordinator(设计) / Auditor(审计) / Admin(运维) 四权分离 |
 | SE-13 | 令牌认证 + RBAC 双写审计（拒+放均留痕）| ✅ 企业版 | ✅ | ✅ JWT | ✅ | ✅ SigV4 | ✅ | rbac_audit_middleware 三层；T14.1~14.4 28/28 PASS |
 | SE-14 | 产物来源追溯 ProvenanceMetrics（溯源加速比）| ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | mox-expert `ProvenanceMetrics(source_flow_id, dual_acceptance, speedup_ratio, conflict_count, expert_avg)` |

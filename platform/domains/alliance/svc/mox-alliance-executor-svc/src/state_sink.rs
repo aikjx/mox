@@ -19,11 +19,16 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use mox_alliance_common_proto::{AllianceResult, Task};
-use mox_alliance_executor_core::ExecutionStateSink;
+use mox_alliance_common_proto::{AllianceResult, CollaborationPlan, Task};
+use mox_alliance_executor_core::{ExecutionStateSink, RestorableTask};
 use mox_alliance_scheduler_core::{FileTaskRepository, SqliteTaskRepository, TaskRepository};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
+
+/// 视为「未终结、需恢复」的任务状态集
+fn is_resumable(status: mox_alliance_common_proto::TaskStatus) -> bool {
+    !status.is_terminal()
+}
 
 /// SQLite 底座适配器：任务级 + 节点级完整持久化（场景③恢复能力）
 pub struct SqliteExecutionStateSink {
@@ -49,6 +54,37 @@ impl ExecutionStateSink for SqliteExecutionStateSink {
         result: Option<&serde_json::Value>,
     ) -> AllianceResult<()> {
         self.repo.upsert_node(task_id, node_id, status, result)
+    }
+
+    fn persist_plan(&self, task_id: Uuid, plan: &CollaborationPlan) -> AllianceResult<()> {
+        self.repo.upsert_plan(task_id, plan)
+    }
+
+    fn restore_pending(&self) -> AllianceResult<Vec<RestorableTask>> {
+        let mut out = Vec::new();
+        for task in self.repo.all()? {
+            if !is_resumable(task.status) {
+                continue;
+            }
+            // 无持久化计划 → 无法重建 DAG，跳过（交由人工/对账处理）
+            let Some(plan) = self.repo.load_plan(task.task_id)? else {
+                debug!("任务 {} 无计划，跳过恢复", task.task_id);
+                continue;
+            };
+            let completed = self
+                .repo
+                .node_rows(task.task_id)?
+                .into_iter()
+                .filter(|(_, status, _)| status == "completed" || status == "skipped")
+                .map(|(node_id, _status, result)| (node_id, result))
+                .collect();
+            out.push(RestorableTask {
+                task,
+                plan,
+                completed_nodes: completed,
+            });
+        }
+        Ok(out)
     }
 }
 
@@ -81,6 +117,16 @@ impl ExecutionStateSink for FileExecutionStateSink {
             task_id, node_id, status
         );
         Ok(())
+    }
+
+    fn persist_plan(&self, _task_id: Uuid, _plan: &CollaborationPlan) -> AllianceResult<()> {
+        // 文件底座不存计划（升级 sqlite 即得完整恢复能力）
+        Ok(())
+    }
+
+    fn restore_pending(&self) -> AllianceResult<Vec<RestorableTask>> {
+        // 文件底座无 plan / 节点表，不具备恢复能力（语义显式，不假装有）
+        Ok(Vec::new())
     }
 }
 

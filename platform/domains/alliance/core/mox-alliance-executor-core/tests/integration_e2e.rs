@@ -10,7 +10,7 @@ use mox_alliance_common_proto::{
     AllianceMode, AllianceResult, Expert, FusionStrategy, NodeStatus, TaskPriority,
     TaskStatus,
 };
-use mox_alliance_executor_core::{DagEngineImpl, MockNodeExecutor, MockExecutorConfig};
+use mox_alliance_executor_core::{DagEngineImpl, mock_executor::{MockExecutorConfig, MockNodeExecutor}};
 use mox_alliance_executor_proto::{DagEngine, ExecutionOptions, NodeExecutor};
 use mox_alliance_scheduler_core::{RuleBasedExpertMatcher, SimplePlanGenerator, TaskSchedulerImpl};
 use mox_alliance_scheduler_proto::{
@@ -142,12 +142,12 @@ async fn test_e2e_plan_generation() -> AllianceResult<()> {
 /// 测试4：DAG 执行引擎（2节点串行）
 #[tokio::test]
 async fn test_e2e_dag_execution_sequential() -> AllianceResult<()> {
-    let mock_config = MockExecutorConfig {
+    let mock_config = mox_alliance_executor_core::mock_executor::MockExecutorConfig {
         delay_ms: 10,
         success_rate: 1.0,
         generate_output: true,
     };
-    let node_executor: Arc<dyn NodeExecutor> = Arc::new(MockNodeExecutor::new(mock_config));
+    let node_executor: Arc<dyn NodeExecutor> = Arc::new(mox_alliance_executor_core::mock_executor::MockNodeExecutor::new(mock_config));
     let exec_config = mox_alliance_executor_proto::types::ExecutorConfig::default();
     let engine = DagEngineImpl::spawn(exec_config, node_executor);
 
@@ -245,12 +245,12 @@ async fn test_e2e_full_pipeline() -> AllianceResult<()> {
         dispatch_tx,
     ));
 
-    let mock_config = MockExecutorConfig {
+    let mock_config = mox_alliance_executor_core::mock_executor::MockExecutorConfig {
         delay_ms: 10,
         success_rate: 1.0,
         generate_output: true,
     };
-    let node_executor: Arc<dyn NodeExecutor> = Arc::new(MockNodeExecutor::new(mock_config));
+    let node_executor: Arc<dyn NodeExecutor> = Arc::new(mox_alliance_executor_core::mock_executor::MockNodeExecutor::new(mock_config));
     let exec_config = mox_alliance_executor_proto::types::ExecutorConfig::default();
     let engine = DagEngineImpl::spawn(exec_config, node_executor);
 

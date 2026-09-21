@@ -12,6 +12,8 @@
 #   decision 取值：
 #     merge-pending-diff  抽取残渣候选：权威=目标 crate，合并前须逐字段核对
 #                         （字段/默认值/序列化/生命周期全一致才可合并）
+#     impl-reconciliation 固有 impl 方法面重叠：core 与 svc 各自实现同名方法（平行演化），
+#                         须逐方法裁决权威实现后迁移（机械合并止步）
 #     keep-distinct       语义已分叉（同名≠同义），保留各自模型 + 显式转换，禁止合并
 #     triage-pending      尚未甄别（跨域组合，需人工语义核对）
 #
@@ -67,6 +69,32 @@ SEED = {
         "各自拥有", "keep-distinct",
         "已核验(2026-09-21):语义已分叉禁止合并——engine=LLM传输消息(3变体+serde小写);"
         "expert-svc=agent会话消息(4变体含Tool,无serde);跨边界用显式转换",
+    ),
+    # 批次3 取证（2026-09-21）：固有 impl 方法面重叠（core 与 svc 各自实现同名方法，
+    # 属平行演化行为）——机械合并止步，逐方法裁决权威实现后迁移（P2 阶段4 实质工作）
+    "struct::CodeIR": (
+        "mox-ai-expert-svc(行为权威)", "impl-reconciliation",
+        "已核验(2026-09-21):方法面重叠[is_empty,new]——core 与 svc 各有实现体,需逐方法裁决",
+    ),
+    "struct::DimensionedFlow": (
+        "mox-ai-expert-svc(行为权威)", "impl-reconciliation",
+        "已核验(2026-09-21):方法面重叠[dimensions_of,from_base,tag]",
+    ),
+    "struct::CompatibilityRegistry": (
+        "mox-ai-expert-svc(行为权威)", "impl-reconciliation",
+        "已核验(2026-09-21):方法面重叠[apply_to_pools,new,register_loop,register_mcp,register_skill]",
+    ),
+    "struct::ReconcileConflict": (
+        "mox-ai-expert-svc(行为权威)", "impl-reconciliation",
+        "已核验(2026-09-21):方法面重叠[escalated_same_priority,semantic]",
+    ),
+    "struct::AlgoVerification": (
+        "mox-ai-expert-svc(行为权威)", "impl-reconciliation",
+        "已核验(2026-09-21):方法面重叠[check]——验证逻辑两套实现,裁决后迁移",
+    ),
+    "struct::TenantPolicy": (
+        "mox-ai-expert-svc(行为权威)", "impl-reconciliation",
+        "已核验(2026-09-21):方法面重叠[from_tenant,strength_of]",
     ),
 }
 

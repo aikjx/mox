@@ -16,9 +16,9 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
 use mox_alliance_common_proto::{AllianceError, AllianceResult, Task};
-// TaskStatus 仅被 SQLite 适配器的状态映射使用（启用 `sqlite` feature 时编译）
+// TaskStatus / CollaborationPlan 仅被 SQLite 适配器使用（启用 `sqlite` feature 时编译）
 #[cfg(feature = "sqlite")]
-use mox_alliance_common_proto::TaskStatus;
+use mox_alliance_common_proto::{CollaborationPlan, TaskStatus};
 #[cfg(feature = "sqlite")]
 use rusqlite::{params, Connection};
 use uuid::Uuid;
@@ -444,6 +444,12 @@ impl SqliteTaskRepository {
                 result_json TEXT,
                 updated_at TEXT NOT NULL,
                 PRIMARY KEY (task_id, node_id)
+            );
+            -- 协作计划（DAG）持久化：恢复期需用它重建执行状态（场景②）
+            CREATE TABLE IF NOT EXISTS alliance_task_plan (
+                task_id TEXT PRIMARY KEY,
+                plan_json TEXT NOT NULL,
+                updated_at TEXT NOT NULL
             );",
         )
         .map_err(|e| {
@@ -571,6 +577,86 @@ impl SqliteTaskRepository {
         } else {
             Ok(None)
         }
+    }
+
+    /// 写入（增量 upsert）协作计划 JSON。
+    ///
+    /// 场景②前提：仅持久化任务行不足以重启后续跑——恢复期需要原始 DAG
+    /// （节点集合与依赖）才能重建执行状态，故计划单独落表。
+    pub fn upsert_plan(&self, task_id: Uuid, plan: &CollaborationPlan) -> AllianceResult<()> {
+        let json = serde_json::to_string(plan)
+            .map_err(|e| AllianceError::internal(format!("serialize plan {}: {}", task_id, e)))?;
+        let updated_at = chrono::Utc::now().to_rfc3339();
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO alliance_task_plan (task_id, plan_json, updated_at)
+             VALUES (?1, ?2, ?3)
+             ON CONFLICT(task_id) DO UPDATE SET
+                plan_json = excluded.plan_json,
+                updated_at = excluded.updated_at",
+            params![task_id.to_string(), json, updated_at],
+        )
+        .map_err(|e| AllianceError::internal(format!("sqlite upsert plan {}: {}", task_id, e)))?;
+        Ok(())
+    }
+
+    /// 读取协作计划（恢复期重建 DAG 用）。
+    pub fn load_plan(&self, task_id: Uuid) -> AllianceResult<Option<CollaborationPlan>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT plan_json FROM alliance_task_plan WHERE task_id = ?1")
+            .map_err(|e| AllianceError::internal(format!("prepare load plan: {}", e)))?;
+        let mut rows = stmt
+            .query(params![task_id.to_string()])
+            .map_err(|e| AllianceError::internal(format!("query load plan: {}", e)))?;
+        if let Some(row) = rows
+            .next()
+            .map_err(|e| AllianceError::internal(format!("step load plan: {}", e)))?
+        {
+            let json: String = row
+                .get(0)
+                .map_err(|e| AllianceError::internal(format!("read plan json: {}", e)))?;
+            let plan: CollaborationPlan = serde_json::from_str(&json).map_err(|e| {
+                AllianceError::internal(format!("parse plan {}: {}", task_id, e))
+            })?;
+            Ok(Some(plan))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// 读取某任务的全部节点行（node_id, status, result），供恢复期还原已完成节点。
+    pub fn node_rows(
+        &self,
+        task_id: Uuid,
+    ) -> AllianceResult<Vec<(String, String, Option<serde_json::Value>)>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT node_id, status, result_json FROM alliance_task_node WHERE task_id = ?1",
+            )
+            .map_err(|e| AllianceError::internal(format!("prepare node rows: {}", e)))?;
+        let rows = stmt
+            .query_map(params![task_id.to_string()], |row| {
+                let node_id: String = row.get(0)?;
+                let status: String = row.get(1)?;
+                let result_json: Option<String> = row.get(2)?;
+                Ok((node_id, status, result_json))
+            })
+            .map_err(|e| AllianceError::internal(format!("query node rows: {}", e)))?;
+        let mut out = Vec::new();
+        for r in rows {
+            let (node_id, status, result_json) =
+                r.map_err(|e| AllianceError::internal(format!("step node rows: {}", e)))?;
+            let result = match result_json {
+                Some(s) => Some(serde_json::from_str(&s).map_err(|e| {
+                    AllianceError::internal(format!("parse node result {}: {}", node_id, e))
+                })?),
+                None => None,
+            };
+            out.push((node_id, status, result));
+        }
+        Ok(out)
     }
 }
 

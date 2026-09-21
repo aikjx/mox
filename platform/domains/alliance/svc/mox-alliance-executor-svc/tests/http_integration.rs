@@ -15,20 +15,21 @@ use uuid::Uuid;
 
 use mox_alliance_api::dto::SuccessResponse;
 use mox_alliance_executor_proto::types::ExecutorConfig;
-use mox_alliance_executor_svc::{ExecutorMode, ExecutorServer};
+use mox_alliance_executor_svc::ExecutorServer;
 
 async fn build_test_app() -> axum::Router {
     let server = ExecutorServer::new(
         ExecutorConfig::default(),
         "127.0.0.1:3200".parse().unwrap(),
     )
-    .with_mode(ExecutorMode::Mock);
+    ;
     server.build_app().await.expect("build_app 应成功")
 }
 
 #[tokio::test]
 async fn unconfigured_model_rejects_execution_without_creating_state() {
-    use mox_alliance_executor_core::{DagEngineImpl, MockExecutorConfig, MockNodeExecutor};
+    use mox_alliance_executor_core::DagEngineImpl;
+use mox_alliance_executor_core::mock_executor::{MockExecutorConfig, MockNodeExecutor};
     use mox_alliance_executor_svc::{app_state::ExecutorAppState, routes::build_router};
     let config = ExecutorConfig::default();
     let engine = DagEngineImpl::spawn(config.clone(), std::sync::Arc::new(MockNodeExecutor::new(MockExecutorConfig::default())));

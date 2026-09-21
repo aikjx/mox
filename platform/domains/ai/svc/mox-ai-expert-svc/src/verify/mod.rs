@@ -42,17 +42,8 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// 单条验证结论
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Check {
-    /// 检查名：topology / data_dep / conflict / gains / code_rt
-    pub name: String,
-    /// 是否通过
-    pub passed: bool,
-    /// 是否阻断级（失败则整体否决）
-    pub blocking: bool,
-    /// 人类可读说明；失败时为反例
-    pub detail: String,
-}
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次2，2026-09-21）。
+pub use mox_ai_expert_core::verify::Check;
 
 /// 璇玑验证报告
 #[derive(Debug, Clone, Serialize, Deserialize)]

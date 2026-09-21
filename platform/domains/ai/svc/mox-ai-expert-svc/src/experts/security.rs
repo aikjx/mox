@@ -11,7 +11,8 @@ use crate::ir::Dimension;
 use crate::sensitivity::is_sensitive_leak;
 use mox_ai_flow_svc::model::{NodeKind, ToolKind};
 
-pub struct SecurityExpert;
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次1，2026-09-21），本模块仅重导出；本地 Expert trait 实现保持不变。
+pub use mox_ai_expert_core::experts::security::SecurityExpert;
 
 impl Expert for SecurityExpert {
     fn id(&self) -> String {

@@ -37,57 +37,8 @@ pub struct CodeIR {
 }
 
 /// 单个代码单元的可分析属性（属性模型见《时间业务流程关系图元模型规范》）
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct CodeUnit {
-    /// 唯一标识，如 `crate::module::fn_name`
-    pub id: String,
-    /// 函数/模块名称
-    pub name: String,
-    /// 语言：`rust` / `python` / ...
-    pub language: String,
-    /// 代码行数
-    pub lines_of_code: usize,
-    /// 源代码（用于模式分析）
-    pub source_code: String,
-    /// 圈复杂度
-    pub cyclomatic_complexity: u32,
-    /// 依赖列表
-    pub dependencies: Vec<String>,
-    /// 是否公共API
-    pub is_public: bool,
-    /// 是否入口模块
-    pub is_entry_point: bool,
-    /// 测试覆盖率 0..1
-    pub test_coverage: f64,
-    /// 测试用例列表
-    pub test_cases: Vec<String>,
-    /// 是否有集成测试
-    pub has_integration_tests: bool,
-    /// 注释行数
-    pub comment_lines: usize,
-    /// 是否有README
-    pub has_readme: bool,
-    /// 代码重复率 0..1
-    pub duplication_score: f64,
-    /// 是否有过去依赖
-    pub has_outdated_deps: bool,
-    /// 是否硬编码密钥/令牌
-    pub hardcoded_secret: bool,
-    /// 是否存在 SQL 注入风险（拼接 SQL）
-    pub sql_injection_risk: bool,
-    /// 是否使用弱哈希（md5/sha1 做密码）
-    pub weak_hash: bool,
-    /// 是否存在 N+1 查询
-    pub n_plus_one: bool,
-    /// 是否无测试覆盖
-    pub uncovered: bool,
-    /// 耦合度 0..1（入/出耦合失衡）
-    pub coupling: f64,
-    /// 是否缺少文档注释（公开 API）
-    pub has_doc: bool,
-    /// 创建/更新时间（ISO-8601，时间记录支柱）
-    pub updated_at: Option<String>,
-}
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次2，2026-09-21）。
+pub use mox_ai_expert_core::ir::CodeUnit;
 
 impl CodeIR {
     pub fn new(units: Vec<CodeUnit>) -> Self {

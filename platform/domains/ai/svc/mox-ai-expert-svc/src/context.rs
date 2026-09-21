@@ -103,41 +103,19 @@ impl Default for ResourceQuota {
 // ===================== 兼容性注册表 =====================
 
 /// MCP 工具描述（兼容 Model Context Protocol）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct McpTool {
-    pub server: String,
-    pub name: String,
-    /// JSON-Schema 字符串（入参）
-    pub input_schema: String,
-    /// 该工具对应的目标池（用于资源/冲突分析）
-    pub pool: String,
-}
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次2，2026-09-21）。
+pub use mox_ai_expert_core::context::McpTool;
 
 /// Skill 引用（兼容 Skills 体系，与 flow-ai topology 关系网打通）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SkillRef {
-    pub id: String,
-    pub keywords: Vec<String>,
-    /// 可选：Skill 自带的流程模板，命中后可跳过完整推理
-    pub flow_template: Option<FlowGraph>,
-}
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次2，2026-09-21）。
+pub use mox_ai_expert_core::context::SkillRef;
 
 /// 循环/自省策略（兼容 Loops）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LoopPolicy {
-    /// 有界循环
-    Bounded { max_iter: u32 },
-    /// 人在环
-    HumanInLoop,
-    /// 无界（需安全专家严格审批）
-    Unbounded,
-}
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次2，2026-09-21）。
+pub use mox_ai_expert_core::context::LoopPolicy;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LoopGuard {
-    pub node: String,
-    pub policy: LoopPolicy,
-}
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次2，2026-09-21）。
+pub use mox_ai_expert_core::context::LoopGuard;
 
 /// 外部能力注册表：把 MCP/Skills/Loops/LLM 归一化接入同一张图
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

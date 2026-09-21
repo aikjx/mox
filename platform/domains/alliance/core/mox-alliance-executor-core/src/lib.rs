@@ -3,9 +3,9 @@
 
 //! # Mox Alliance Executor Core — 执行器核心
 //!
-//! 执行器的核心业务逻辑实现：
+//! 执行器的核心业务逻辑实现（纯真实执行）：
 //! - DAG 执行引擎（节点调度、依赖管理、状态追踪）
-//! - Mock 节点执行器（用于测试）
+//! - 真实专家执行器
 //!
 //! ## 设计原则
 //! - 依赖 proto 层的 trait 抽象（DIP）
@@ -25,8 +25,7 @@ pub use expert_executor::{
     ExecutorStatsView, ExpertExecutorConfig, ExpertNodeExecutor,
 };
 pub use fusion::{FusionEngine, FusionInput, FusionItem};
-pub use mock_executor::{MockExecutorConfig, MockNodeExecutor};
-pub use state_sink::ExecutionStateSink;
+pub use state_sink::{ExecutionStateSink, RestorableTask};
 
 // 融合产出类型的权威定义在协议层（它是 `DagEngine` 契约的返回类型），此处仅转出
 pub use mox_alliance_executor_proto::FusionOutput;

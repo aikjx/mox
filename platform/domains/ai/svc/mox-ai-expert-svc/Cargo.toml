@@ -9,6 +9,8 @@ description = "璇玑 · 架构处理工具流程图：七位专家并行诊断 
 [dependencies]
 mox-platform-foundation = { workspace = true }
 mox-ai-expert-proto = { workspace = true }
+# 专家实现权威类型源（A 批次1 归一化：14 个专家结构体定义收敛至 core，svc 仅重导出）
+mox-ai-expert-core = { workspace = true }
 # 统一归一化契约（SSOT-5 阶段名 / 审计事件名等跨端常量）
 mox-unified-contract = { workspace = true }
 mox-ai-flow-svc = { workspace = true }

@@ -10,7 +10,8 @@ use crate::expert::{Constraint, Expert, ExpertOpinion};
 use crate::ir::Dimension;
 use mox_ai_flow_svc::model::{AccessMode, ToolKind};
 
-pub struct DataExpert;
+// 归一化（SSOT）：权威定义已收敛至 mox-ai-expert-core（A 批次1，2026-09-21），本模块仅重导出；本地 Expert trait 实现保持不变。
+pub use mox_ai_expert_core::experts::data::DataExpert;
 
 impl Expert for DataExpert {
     fn id(&self) -> String {
