@@ -564,10 +564,12 @@ fn build_fusion_result(nodes: &[ExecNode], strategy: &str) -> FusionResultData {
 /// POST /alliance/v1/tasks — 创建任务（真实存储到 InMemoryTaskRepository）
 async fn create_task(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<CreateTaskRequest>,
 ) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
     // 远程优先：scheduler-svc 已配置且可达 → 归一化返回；不可达/未配置 → 本地降级
-    if let Some(r) = alliance_remote::remote_create_task(&s, &req).await {
+    if let Some(r) = alliance_remote::remote_create_task(&s, &req, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -637,8 +639,12 @@ async fn create_task(
 }
 
 /// GET /alliance/v1/tasks — 任务列表（真实从 InMemoryTaskRepository 读取）
-async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> ApiResponse<Value> {
-    if let Some(r) = alliance_remote::remote_list_tasks(&s).await {
+async fn list_tasks(
+    State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
+) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    if let Some(r) = alliance_remote::remote_list_tasks(&s, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -681,9 +687,11 @@ async fn list_tasks(State(s): State<Arc<AllianceGatewayState>>) -> ApiResponse<V
 /// GET /alliance/v1/tasks/:task_id — 任务详情（真实从仓库读取）
 async fn get_task(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
-    if let Some(r) = alliance_remote::remote_get_task(&s, task_id).await {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    if let Some(r) = alliance_remote::remote_get_task(&s, task_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -716,25 +724,47 @@ async fn get_task(
 /// POST /api/alliance/tasks/:id — 任务操作（暂停/恢复/取消，真实状态流转）
 async fn handle_task_action(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
     Json(req): Json<TaskActionRequest>,
 ) -> ApiResponse<Value> {
-    do_task_action(s, task_id, req).await
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    do_task_action(s, task_id, req, &ctx).await
 }
 
 /// 路径驱动的任务操作包装器（前端调用 /pause /resume /cancel /retry 时无 body）
-async fn pause_task(State(s): State<Arc<AllianceGatewayState>>, Path(task_id): Path<Uuid>) -> ApiResponse<Value> {
-    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Pause, reason: None }).await
+async fn pause_task(
+    State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Pause, reason: None }, &ctx).await
 }
-async fn resume_task(State(s): State<Arc<AllianceGatewayState>>, Path(task_id): Path<Uuid>) -> ApiResponse<Value> {
-    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Resume, reason: None }).await
+async fn resume_task(
+    State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Resume, reason: None }, &ctx).await
 }
-async fn cancel_task(State(s): State<Arc<AllianceGatewayState>>, Path(task_id): Path<Uuid>) -> ApiResponse<Value> {
-    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Cancel, reason: None }).await
+async fn cancel_task(
+    State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Cancel, reason: None }, &ctx).await
 }
 /// retry 映射为 resume（重新进入运行态）
-async fn retry_task(State(s): State<Arc<AllianceGatewayState>>, Path(task_id): Path<Uuid>) -> ApiResponse<Value> {
-    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Resume, reason: None }).await
+async fn retry_task(
+    State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
+    Path(task_id): Path<Uuid>,
+) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    do_task_action(s, task_id, TaskActionRequest { action: TaskAction::Resume, reason: None }, &ctx).await
 }
 
 /// 任务操作核心逻辑（真实状态流转 + 持久化）
@@ -742,12 +772,13 @@ async fn do_task_action(
     s: Arc<AllianceGatewayState>,
     task_id: Uuid,
     req: TaskActionRequest,
+    ctx: &alliance_remote::RequestContext,
 ) -> ApiResponse<Value> {
     let t0 = now_ms();
     let action_str = format!("{:?}", req.action);
 
     // 远程优先：scheduler-svc 已配置且可达 → 归一化返回；不可达/未配置 → 本地降级
-    if let Some(r) = alliance_remote::remote_task_action(&s, task_id, &req).await {
+    if let Some(r) = alliance_remote::remote_task_action(&s, task_id, &req, Some(ctx)).await {
         return r;
     }
 
@@ -823,12 +854,14 @@ async fn do_task_action(
 /// POST /alliance/v1/experts/search — 搜索专家（真实匹配器）
 async fn search_experts(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<ExpertSearchRequest>,
 ) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
     let t0 = now_ms();
 
     // 远程优先：scheduler-svc 已配置且可达 → 归一化返回；不可达/未配置 → 本地降级
-    if let Some(r) = alliance_remote::remote_search_experts(&s, &req).await {
+    if let Some(r) = alliance_remote::remote_search_experts(&s, &req, Some(&ctx)).await {
         return r;
     }
 
@@ -882,10 +915,12 @@ async fn search_experts(
 /// GET /alliance/v1/tasks/:task_id/status — 执行状态查询（真实节点统计）
 async fn get_execution_status(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
     // 远程优先：executor-svc 已配置且可达 → 归一化返回；不可达/未配置 → 本地降级
-    if let Some(r) = alliance_remote::remote_execution_status(&s, task_id).await {
+    if let Some(r) = alliance_remote::remote_execution_status(&s, task_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -924,9 +959,11 @@ async fn get_execution_status(
 /// GET /alliance/v1/tasks/:task_id/nodes — 节点列表（真实存储的节点）
 async fn list_nodes(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
-    if let Some(r) = alliance_remote::remote_list_nodes(&s, task_id).await {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    if let Some(r) = alliance_remote::remote_list_nodes(&s, task_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -969,9 +1006,11 @@ async fn list_nodes(
 /// GET /alliance/v1/tasks/:task_id/nodes/:node_id — 节点详情（真实读取）
 async fn get_node(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path((task_id, node_id)): Path<(Uuid, String)>,
 ) -> ApiResponse<Value> {
-    if let Some(r) = alliance_remote::remote_get_node(&s, task_id, &node_id).await {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    if let Some(r) = alliance_remote::remote_get_node(&s, task_id, &node_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -1011,9 +1050,11 @@ async fn get_node(
 /// POST /alliance/v1/tasks/:task_id/nodes/:node_id — 跳过节点（真实人工干预）
 async fn skip_node(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path((task_id, node_id)): Path<(Uuid, String)>,
 ) -> ApiResponse<Value> {
-    if let Some(r) = alliance_remote::remote_skip_node(&s, task_id, &node_id).await {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    if let Some(r) = alliance_remote::remote_skip_node(&s, task_id, &node_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -1075,10 +1116,12 @@ async fn get_alliance_stats() -> ApiResponse<Value> {
 /// GET /alliance/tasks/:id/plan — 协作计划（远程 DAG 推导；不可达/本地任务降级本地节点）
 async fn get_collaboration_plan(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
     // 远程优先：executor 真实 DAG 节点 → 阶段列表
-    if let Some(r) = alliance_remote::remote_task_plan(&s, task_id).await {
+    if let Some(r) = alliance_remote::remote_task_plan(&s, task_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -1125,9 +1168,11 @@ async fn get_collaboration_plan(
 /// GET /alliance/tasks/:id/logs — 任务执行日志（真实存储的日志）
 async fn get_task_logs(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
-    if let Some(result) = alliance_remote::remote_task_logs(&s, task_id).await {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    if let Some(result) = alliance_remote::remote_task_logs(&s, task_id, Some(&ctx)).await {
         return result;
     }
     let t0 = now_ms();
@@ -1160,10 +1205,12 @@ async fn get_task_logs(
 /// GET /alliance/tasks/:id/fusion-result — 融合结果（真实从节点输出融合）
 async fn get_fusion_result(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
     // 远程优先：executor-svc 真实融合结果；不可达/未配置 → 本地降级
-    if let Some(r) = alliance_remote::remote_fusion_result(&s, task_id).await {
+    if let Some(r) = alliance_remote::remote_fusion_result(&s, task_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -1234,9 +1281,11 @@ pub struct TaskQaBody {
 
 async fn task_qa(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
     Json(body): Json<TaskQaBody>,
 ) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
     let question = body.question.trim().to_string();
     if question.is_empty() {
         return api_error(400, "缺少问题内容（question）");
@@ -1245,7 +1294,7 @@ async fn task_qa(
     let t0 = now_ms();
 
     // 1. 任务基础信息（远程优先 → 本地降级）
-    let task_value = match alliance_remote::remote_get_task(&s, task_id).await {
+    let task_value = match alliance_remote::remote_get_task(&s, task_id, Some(&ctx)).await {
         Some(resp) => resp.data.as_ref().and_then(|d| d.get("data")).cloned().unwrap_or_default(),
         None => match s.tasks.get(task_id) {
             Ok(Some(t)) => json!({
@@ -1267,7 +1316,7 @@ async fn task_qa(
     }
 
     // 2. 最近执行记录（远程优先 → 本地降级）
-    let mut logs: Vec<Value> = match alliance_remote::remote_task_logs(&s, task_id).await {
+    let mut logs: Vec<Value> = match alliance_remote::remote_task_logs(&s, task_id, Some(&ctx)).await {
         Some(resp) => resp
             .data
             .as_ref()
@@ -1293,7 +1342,7 @@ async fn task_qa(
     }
 
     // 3. 融合结果（远程优先 → 本地降级）
-    let fusion = match alliance_remote::remote_fusion_result(&s, task_id).await {
+    let fusion = match alliance_remote::remote_fusion_result(&s, task_id, Some(&ctx)).await {
         Some(resp) => resp
             .data
             .as_ref()
@@ -1466,10 +1515,12 @@ fn status_display(status: &str) -> &str {
 /// GET /alliance/tasks/:id/dag — DAG 节点（真实存储的 DAG）
 async fn get_task_dag(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
     // 远程优先：executor-svc 真实 DAG 节点（位置按序生成）；不可达/未配置 → 本地降级
-    if let Some(r) = alliance_remote::remote_dag(&s, task_id).await {
+    if let Some(r) = alliance_remote::remote_dag(&s, task_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
@@ -1609,10 +1660,12 @@ async fn toggle_task_done(
 /// GET /alliance/tasks/:id/status — 任务状态（供轮询，真实数据）
 async fn get_task_status_poll(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
     // 远程优先：调度器详情 + 执行器状态合并；不可达/未配置 → 本地降级
-    if let Some(r) = alliance_remote::remote_status_poll(&s, task_id).await {
+    if let Some(r) = alliance_remote::remote_status_poll(&s, task_id, Some(&ctx)).await {
         return r;
     }
     let t0 = now_ms();
