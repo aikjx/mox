@@ -47,6 +47,40 @@ use uuid::Uuid;
 /// 远程调用超时（秒）
 const REMOTE_TIMEOUT_SECS: u64 = 10;
 
+/// 请求级认证上下文（从网关入站请求提取，透传到下游联盟服务）
+///
+/// 网关完成认证后，必须把租户/用户/请求 ID 注入出站请求头，否则
+/// 调度器/执行器收到 nil 租户，租户隔离与审计失效。
+#[derive(Clone, Debug, Default)]
+pub struct RequestContext {
+    pub tenant_id: Option<String>,
+    pub user_id: Option<String>,
+    pub request_id: Option<String>,
+}
+
+impl RequestContext {
+    /// 从 axum HeaderMap 提取认证上下文（缺失字段为 None，不报错）
+    pub fn from_headers(headers: &axum::http::HeaderMap) -> Self {
+        let get = |name: &str| {
+            headers
+                .get(name)
+                .and_then(|v| v.to_str().ok())
+                .filter(|s| !s.is_empty())
+                .map(str::to_string)
+        };
+        Self {
+            tenant_id: get("x-tenant-id"),
+            user_id: get("x-user-id"),
+            request_id: get("x-request-id"),
+        }
+    }
+
+    /// 是否有任何需要透传的字段
+    pub fn is_empty(&self) -> bool {
+        self.tenant_id.is_none() && self.user_id.is_none() && self.request_id.is_none()
+    }
+}
+
 // ====================================================================
 // 远程客户端
 // ====================================================================
@@ -96,6 +130,7 @@ impl RemoteAllianceClient {
         method: reqwest::Method,
         path: &str,
         body: Option<&Value>,
+        ctx: Option<&RequestContext>,
     ) -> Option<Result<(u16, Value), String>> {
         let base = match base {
             Some(base) => base,
@@ -103,6 +138,20 @@ impl RemoteAllianceClient {
         };
         let url = format!("{}{}", base.trim_end_matches('/'), path);
         let mut req = self.http.request(method, &url);
+        // 注入认证上下文头（网关→调度器/执行器租户身份贯穿）
+        if let Some(ctx) = ctx {
+            if !ctx.is_empty() {
+                if let Some(t) = &ctx.tenant_id {
+                    req = req.header("X-Tenant-Id", t);
+                }
+                if let Some(u) = &ctx.user_id {
+                    req = req.header("X-User-Id", u);
+                }
+                if let Some(r) = &ctx.request_id {
+                    req = req.header("x-request-id", r);
+                }
+            }
+        }
         if let Some(b) = body {
             req = req.json(b);
         }
@@ -118,9 +167,9 @@ impl RemoteAllianceClient {
     }
 
     /// 调度器 GET（未配置 → None 走本地）
-    pub async fn scheduler_get(&self, path: &str) -> Option<Result<(u16, Value), String>> {
+    pub async fn scheduler_get(&self, path: &str, ctx: Option<&RequestContext>) -> Option<Result<(u16, Value), String>> {
         let base = self.scheduler_url.clone();
-        self.call(base.as_ref(), reqwest::Method::GET, path, None)
+        self.call(base.as_ref(), reqwest::Method::GET, path, None, ctx)
             .await
     }
 
@@ -129,23 +178,24 @@ impl RemoteAllianceClient {
         &self,
         path: &str,
         body: &Value,
+        ctx: Option<&RequestContext>,
     ) -> Option<Result<(u16, Value), String>> {
         let base = self.scheduler_url.clone();
-        self.call(base.as_ref(), reqwest::Method::POST, path, Some(body))
+        self.call(base.as_ref(), reqwest::Method::POST, path, Some(body), ctx)
             .await
     }
 
     /// 执行器 GET（未配置 → None 走本地）
-    pub async fn executor_get(&self, path: &str) -> Option<Result<(u16, Value), String>> {
+    pub async fn executor_get(&self, path: &str, ctx: Option<&RequestContext>) -> Option<Result<(u16, Value), String>> {
         let base = self.executor_url.clone();
-        self.call(base.as_ref(), reqwest::Method::GET, path, None)
+        self.call(base.as_ref(), reqwest::Method::GET, path, None, ctx)
             .await
     }
 
     /// 执行器 POST（无请求体）
-    pub async fn executor_post_raw(&self, path: &str) -> Option<Result<(u16, Value), String>> {
+    pub async fn executor_post_raw(&self, path: &str, ctx: Option<&RequestContext>) -> Option<Result<(u16, Value), String>> {
         let base = self.executor_url.clone();
-        self.call(base.as_ref(), reqwest::Method::POST, path, None)
+        self.call(base.as_ref(), reqwest::Method::POST, path, None, ctx)
             .await
     }
 }
@@ -162,7 +212,7 @@ pub async fn runtime_readiness(
         return api_ok(json!({"execution_ready":false,"mode":"local_preview",
             "message":"任务执行服务尚未连接。请启动联盟调度器和执行器后刷新。"}));
     };
-    let (scheduler, executor) = tokio::join!(client.scheduler_get("/health"), client.executor_get("/health"));
+    let (scheduler, executor) = tokio::join!(client.scheduler_get("/health", None), client.executor_get("/health", None));
     let healthy = |result: &Option<Result<(u16, Value), String>>| {
         matches!(result, Some(Ok((200, body))) if body["status"] == "healthy")
     };
@@ -193,8 +243,9 @@ pub async fn runtime_readiness(
 /// those real snapshots explicitly instead of manufacturing local task logs.
 pub async fn remote_task_logs(
     state: &crate::alliance::AllianceGatewayState, task_id: Uuid,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
-    let response = state.remote.as_ref()?.executor_get(&format!("/tasks/{task_id}/nodes")).await?;
+    let response = state.remote.as_ref()?.executor_get(&format!("/tasks/{task_id}/nodes"), ctx).await?;
     let body = match response {
         Ok((status, body)) if (200..300).contains(&status) => body,
         Ok((status, body)) => return Some(http_err(status, &body, "执行记录读取失败".into())),
@@ -367,13 +418,14 @@ fn http_err(status: u16, body: &Value, fallback_msg: String) -> ApiResponse<Valu
 pub async fn remote_create_task(
     s: &crate::alliance::AllianceGatewayState,
     req: &mox_alliance_api::dto::CreateTaskRequest,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let body = serde_json::to_value(req).ok()?;
     let (status, v) = match s
         .remote
         .as_ref()?
-        .scheduler_post("/tasks", &body)
+        .scheduler_post("/tasks", &body, ctx)
         .await?
     {
         Ok(r) if (200..300).contains(&r.0) => r,
@@ -402,9 +454,10 @@ pub async fn remote_create_task(
 /// GET /api/alliance/tasks → 远程 GET {scheduler}/tasks
 pub async fn remote_list_tasks(
     s: &crate::alliance::AllianceGatewayState,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
-    let (_, v) = match s.remote.as_ref()?.scheduler_get("/tasks").await? {
+    let (_, v) = match s.remote.as_ref()?.scheduler_get("/tasks", ctx).await? {
         Ok(r) if (200..300).contains(&r.0) => r,
         Ok((st, v)) => return Some(http_err(st, &v, "任务列表读取失败（远程调度器）".into())),
         Err(e) => return transport_fallback("list_tasks", e),
@@ -429,12 +482,13 @@ pub async fn remote_list_tasks(
 pub async fn remote_get_task(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let (_, v) = match s
         .remote
         .as_ref()?
-        .scheduler_get(&format!("/tasks/{}", task_id))
+        .scheduler_get(&format!("/tasks/{}", task_id), ctx)
         .await?
     {
         Ok(r) if (200..300).contains(&r.0) => r,
@@ -454,13 +508,14 @@ pub async fn remote_task_action(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
     req: &mox_alliance_api::dto::TaskActionRequest,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let body = serde_json::to_value(req).ok()?;
     match s
         .remote
         .as_ref()?
-        .scheduler_post(&format!("/tasks/{}", task_id), &body)
+        .scheduler_post(&format!("/tasks/{}", task_id), &body, ctx)
         .await?
     {
         Ok((st, _v)) if (200..300).contains(&st) => {
@@ -492,13 +547,14 @@ pub async fn remote_task_action(
 pub async fn remote_search_experts(
     s: &crate::alliance::AllianceGatewayState,
     req: &mox_alliance_api::dto::ExpertSearchRequest,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let body = serde_json::to_value(req).ok()?;
     let (_, v) = match s
         .remote
         .as_ref()?
-        .scheduler_post("/experts/search", &body)
+        .scheduler_post("/experts/search", &body, ctx)
         .await?
     {
         Ok(r) if (200..300).contains(&r.0) => r,
@@ -544,12 +600,13 @@ pub async fn remote_search_experts(
 pub async fn remote_execution_status(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let (_, v) = match s
         .remote
         .as_ref()?
-        .executor_get(&format!("/tasks/{}/status", task_id))
+        .executor_get(&format!("/tasks/{}/status", task_id), ctx)
         .await?
     {
         Ok(r) if (200..300).contains(&r.0) => r,
@@ -577,12 +634,13 @@ pub async fn remote_execution_status(
 pub async fn remote_list_nodes(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let (_, v) = match s
         .remote
         .as_ref()?
-        .executor_get(&format!("/tasks/{}/nodes", task_id))
+        .executor_get(&format!("/tasks/{}/nodes", task_id), ctx)
         .await?
     {
         Ok(r) if (200..300).contains(&r.0) => r,
@@ -608,12 +666,13 @@ pub async fn remote_get_node(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
     node_id: &str,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let (_, v) = match s
         .remote
         .as_ref()?
-        .executor_get(&format!("/tasks/{}/nodes/{}", task_id, node_id))
+        .executor_get(&format!("/tasks/{}/nodes/{}", task_id, node_id), ctx)
         .await?
     {
         Ok(r) if (200..300).contains(&r.0) => r,
@@ -639,12 +698,13 @@ pub async fn remote_skip_node(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
     node_id: &str,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     match s
         .remote
         .as_ref()?
-        .executor_post_raw(&format!("/tasks/{}/nodes/{}", task_id, node_id))
+        .executor_post_raw(&format!("/tasks/{}/nodes/{}", task_id, node_id), ctx)
         .await?
     {
         Ok((st, _v)) if (200..300).contains(&st) => {
@@ -667,12 +727,13 @@ pub async fn remote_skip_node(
 pub async fn remote_dag(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let (_, v) = match s
         .remote
         .as_ref()?
-        .executor_get(&format!("/tasks/{}/nodes", task_id))
+        .executor_get(&format!("/tasks/{}/nodes", task_id), ctx)
         .await?
     {
         Ok(r) if (200..300).contains(&r.0) => r,
@@ -762,12 +823,13 @@ pub async fn remote_dag(
 pub async fn remote_task_plan(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let (_, v) = match s
         .remote
         .as_ref()?
-        .executor_get(&format!("/tasks/{}/nodes", task_id))
+        .executor_get(&format!("/tasks/{}/nodes", task_id), ctx)
         .await?
     {
         Ok(r) if (200..300).contains(&r.0) => r,
@@ -811,12 +873,13 @@ pub async fn remote_task_plan(
 pub async fn remote_fusion_result(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     match s
         .remote
         .as_ref()?
-        .executor_get(&format!("/tasks/{}/result", task_id))
+        .executor_get(&format!("/tasks/{}/result", task_id), ctx)
         .await?
     {
         Ok((st, body)) if (200..300).contains(&st) => {
@@ -873,11 +936,12 @@ pub async fn remote_fusion_result(
 pub async fn remote_status_poll(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
+    ctx: Option<&RequestContext>,
 ) -> Option<ApiResponse<Value>> {
     let t0 = now_ms();
     let client = s.remote.as_ref()?;
     let task = match client
-        .scheduler_get(&format!("/tasks/{}", task_id))
+        .scheduler_get(&format!("/tasks/{}", task_id), ctx)
         .await?
     {
         Ok((st, v)) if (200..300).contains(&st) => v,
@@ -885,7 +949,7 @@ pub async fn remote_status_poll(
         Err(e) => return transport_fallback("status_poll", e),
     };
     let exec = match client
-        .executor_get(&format!("/tasks/{}/status", task_id))
+        .executor_get(&format!("/tasks/{}/status", task_id), ctx)
         .await?
     {
         Ok((st, v)) if (200..300).contains(&st) => v,
@@ -937,6 +1001,41 @@ fn effective_task_status(task: &Value, execution: &Value) -> Value {
 #[cfg(test)]
 mod lifecycle_tests {
     use super::*;
+
+    /// RequestContext::from_headers 正确提取 X-Tenant-Id / X-User-Id / x-request-id
+    #[test]
+    fn request_context_from_headers_extracts_all_three() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert("x-tenant-id", "tenant-123".parse().unwrap());
+        headers.insert("x-user-id", "user-456".parse().unwrap());
+        headers.insert("x-request-id", "req-789".parse().unwrap());
+        let ctx = RequestContext::from_headers(&headers);
+        assert_eq!(ctx.tenant_id.as_deref(), Some("tenant-123"));
+        assert_eq!(ctx.user_id.as_deref(), Some("user-456"));
+        assert_eq!(ctx.request_id.as_deref(), Some("req-789"));
+        assert!(!ctx.is_empty());
+    }
+
+    /// 缺失头时对应字段为 None，is_empty 为 true
+    #[test]
+    fn request_context_empty_when_no_headers() {
+        let headers = axum::http::HeaderMap::new();
+        let ctx = RequestContext::from_headers(&headers);
+        assert!(ctx.tenant_id.is_none());
+        assert!(ctx.user_id.is_none());
+        assert!(ctx.request_id.is_none());
+        assert!(ctx.is_empty());
+    }
+
+    /// 空字符串头视为缺失（不注入空值头）
+    #[test]
+    fn request_context_ignores_empty_values() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert("x-tenant-id", "".parse().unwrap());
+        let ctx = RequestContext::from_headers(&headers);
+        assert!(ctx.tenant_id.is_none());
+        assert!(ctx.is_empty());
+    }
     #[test]
     fn terminal_execution_is_not_hidden_by_stale_scheduler() {
         for status in ["completed", "failed", "cancelled"] {
