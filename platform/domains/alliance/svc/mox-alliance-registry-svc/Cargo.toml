@@ -29,7 +29,9 @@ prost = "0.12"
 tonic-build = "0.11"
 
 [dev-dependencies]
-# 测试用依赖
+# 测试用依赖（HTTP 端到端：axum Router + oneshot）
+tower = { version = "0.4", features = ["util"] }
+http-body-util = "0.1"
 
 [lints]
 workspace = true
