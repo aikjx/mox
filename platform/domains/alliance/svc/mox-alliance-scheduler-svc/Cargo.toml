@@ -16,7 +16,6 @@ mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config", featu
 mox-alliance-api = { path = "../../api" }
 serde = { workspace = true }
 serde_json = { workspace = true }
-thiserror = { workspace = true }
 anyhow = { workspace = true }
 uuid = { workspace = true, features = ["serde", "v4"] }
 chrono = { workspace = true, features = ["serde"] }
@@ -24,10 +23,7 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 async-trait = { workspace = true }
-parking_lot = { workspace = true }
 axum = { workspace = true }
-tower-http = { workspace = true }
-http = { workspace = true }
 reqwest = { workspace = true }
 
 [[bin]]

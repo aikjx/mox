@@ -19,23 +19,20 @@ mox-ai-expert-proto = { path = "../../../ai/proto/mox-ai-expert-proto" }
 mox-ai-expert-svc = { path = "../../../ai/svc/mox-ai-expert-svc" }
 serde = { workspace = true }
 serde_json = { workspace = true }
-thiserror = { workspace = true }
 anyhow = { workspace = true }
 uuid = { workspace = true, features = ["serde", "v4"] }
 chrono = { workspace = true, features = ["serde"] }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-async-trait = { workspace = true }
-parking_lot = { workspace = true }
 axum = { workspace = true }
-tower-http = { workspace = true }
-http = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
 tower = { workspace = true, features = ["util"] }
 http-body-util = { workspace = true }
+# 集成测试需要 executor-core 的 Mock 节点执行器；仅测试构建启用 mock feature（生产路径不开启）
+mox-alliance-executor-core = { path = "../../core/mox-alliance-executor-core", features = ["mock"] }
 
 [[bin]]
 name = "mox-alliance-executor"

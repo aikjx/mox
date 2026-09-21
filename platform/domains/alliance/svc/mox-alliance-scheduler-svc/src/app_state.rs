@@ -23,7 +23,8 @@ pub struct SchedulerAppState {
     pub executor_bridge: Arc<dyn ExecutorBridge>,
     /// 任务派发通道（保留，向后兼容）
     pub dispatch_tx: mpsc::UnboundedSender<Task>,
-    /// 执行器服务基础 URL（用于代理 /tasks/:id/nodes 和 /tasks/:id/result）
+    /// 执行器服务基础 URL（仅用于 /health 对 executor 依赖的存活探测；
+    /// 读路径不经调度器代理，由网关直连执行器）
     pub executor_base_url: String,
     /// 联盟运行指标（匹配/LLM/融合/DAG 计数器，经 /metrics 暴露）
     pub metrics: Arc<AllianceMetrics>,

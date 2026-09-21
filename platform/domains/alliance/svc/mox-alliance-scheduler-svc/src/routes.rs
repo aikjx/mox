@@ -24,8 +24,10 @@ pub fn build_router(state: SchedulerAppState) -> Router {
         .route("/metrics", get(metrics_handler))
         .route("/tasks", post(create_task).get(list_tasks))
         .route("/tasks/:task_id", get(get_task).post(handle_task_action))
-        .route("/tasks/:task_id/nodes", get(proxy_task_nodes))
-        .route("/tasks/:task_id/result", get(proxy_task_result))
+        // 边界归一化（2026-09）：原 /tasks/:id/nodes、/tasks/:id/result 的执行器读代理端点已移除。
+        // 调度器只负责任务排队/计划/匹配/执行器桥接（写路径经 core 的 ExecutorBridge）；
+        // 执行状态/节点/融合结果等读路径由网关(:3080)直连执行器(:3200)，
+        // 调度器不再做 HTTP 读代理（此前与网关直连执行器重复，且内含逐请求 .expect() 恐慌点）。
         .route("/experts/search", post(search_experts))
         // P1-③：把 x-request-id 读入 tracing span，使请求 id 贯穿 gateway→scheduler→executor 日志。
         .layer(middleware::from_fn(request_tracing_layer))
@@ -280,127 +282,11 @@ async fn search_experts(
     }
 }
 
-// ─── 执行器代理端点 ────────────────────────────────────────────────────────
-
-/// 代理：获取任务节点列表（转发到 executor 服务）
-async fn proxy_task_nodes(
-    State(state): State<SchedulerAppState>,
-    headers: HeaderMap,
-    Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
-    proxy_to_executor(&state, &headers, &format!("/tasks/{}/nodes", task_id)).await
-}
-
-/// 代理：获取任务融合结果（转发到 executor 服务）
-async fn proxy_task_result(
-    State(state): State<SchedulerAppState>,
-    headers: HeaderMap,
-    Path(task_id): Path<Uuid>,
-) -> impl IntoResponse {
-    proxy_to_executor(&state, &headers, &format!("/tasks/{}/result", task_id)).await
-}
-
-/// 通用代理：将 GET 请求转发到 executor 服务，透传 X-Tenant-Id / x-request-id
-///
-/// - P1-②：仅幂等 GET，最多额外 2 次重试，指数退避 200ms→400ms；
-///   仅对连接错误 / 超时 / 5xx 重试。（本端点本身即 GET，无写操作风险。）
-/// - 显式 connect_timeout(2s)：executor 不可达时快速返回 503，不每次等满 10s 总超时。
-/// - executor 返回错误 → 透传状态码与 body
-async fn proxy_to_executor(
-    state: &SchedulerAppState,
-    headers: &HeaderMap,
-    path: &str,
-) -> impl IntoResponse {
-    let url = format!("{}{}", state.executor_base_url.trim_end_matches('/'), path);
-
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .connect_timeout(std::time::Duration::from_millis(2000))
-        .build()
-        .expect("reqwest client build failed");
-
-    let max_extra_retries: u32 = 2;
-    let mut attempt: u32 = 0;
-    loop {
-        let mut req = client.get(&url);
-        if let Some(tenant) = headers.get("X-Tenant-Id") {
-            req = req.header("X-Tenant-Id", tenant);
-        }
-        // P1-③：出向把入站 x-request-id 透传给 executor，贯穿四进程日志
-        if let Some(rid) = headers.get("x-request-id") {
-            req = req.header("x-request-id", rid);
-        }
-
-        match req.send().await {
-            Ok(resp) => {
-                let status = resp.status();
-                // 仅 5xx 且未超重试次数 → 退避后重试；4xx/2xx 直接返回
-                if status.is_server_error() && attempt < max_extra_retries {
-                    attempt += 1;
-                    let delay_ms = 200u64 * (1 << (attempt - 1)); // 200ms → 400ms
-                    tracing::warn!(
-                        "Executor proxy {} returned {}, retrying (attempt {}/{})",
-                        path, status, attempt, max_extra_retries
-                    );
-                    tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
-                    continue;
-                }
-                return match resp.text().await {
-                    Ok(body) => {
-                        // 尝试解析为 JSON 透传；解析失败则原样返回文本
-                        match serde_json::from_str::<serde_json::Value>(&body) {
-                            Ok(json) => (
-                                StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK),
-                                Json(json),
-                            )
-                                .into_response(),
-                            Err(_) => (
-                                StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK),
-                                body,
-                            )
-                                .into_response(),
-                        }
-                    }
-                    Err(_) => (
-                        StatusCode::BAD_GATEWAY,
-                        Json(serde_json::json!({
-                            "error": "Failed to read executor response body"
-                        })),
-                    )
-                        .into_response(),
-                };
-            }
-            Err(e) => {
-                // 仅连接错误 / 超时 才重试
-                let retryable = e.is_connect() || e.is_timeout();
-                if retryable && attempt < max_extra_retries {
-                    attempt += 1;
-                    let delay_ms = 200u64 * (1 << (attempt - 1));
-                    tracing::warn!(
-                        "Executor proxy {} connect/timeout error ({}), retrying (attempt {}/{})",
-                        path, e, attempt, max_extra_retries
-                    );
-                    tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
-                    continue;
-                }
-                tracing::warn!(
-                    "Executor proxy failed for {}: {} (executor_base_url={})",
-                    path,
-                    e,
-                    state.executor_base_url
-                );
-                return (
-                    StatusCode::SERVICE_UNAVAILABLE,
-                    Json(serde_json::json!({
-                        "error": "Executor service unavailable",
-                        "detail": e.to_string()
-                    })),
-                )
-                    .into_response();
-            }
-        }
-    }
-}
+// ─── 执行器桥接说明 ──────────────────────────────────────────────────────────
+//
+// 调度器→执行器的写路径（提交执行/暂停/恢复/取消）由 core 的 `ExecutorBridge`
+// （HttpExecutorBridge）承担，在 `TaskSchedulerImpl` 内部调用；本 HTTP 层不再
+// 暴露任何转发到执行器的读代理端点（读路径由网关直连执行器）。
 
 /// Task → TaskDetailResponse
 fn task_detail_response(task: &Task) -> TaskDetailResponse {

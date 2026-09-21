@@ -275,9 +275,15 @@ async fn submit_execution(
     let node_count = req.plan.nodes.len();
     if !state.execution_ready && state.execution_mode != "mock" {
         state.metrics.record_error();
-        return (StatusCode::SERVICE_UNAVAILABLE, Json(serde_json::json!({
-            "code": "MODEL_NOT_CONFIGURED", "message": "尚未配置真实模型，无法执行专家分析"
-        }))).into_response();
+        // 统一错误信封（与 error_response / ErrorResponse 一致）：模型未配置视为执行器不可用
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new(
+                AllianceErrorCode::ExecutorUnavailable as u32,
+                "尚未配置真实模型，无法执行专家分析".to_string(),
+            )),
+        )
+            .into_response();
     }
     let task_id = req.task.task_id;
 
@@ -387,9 +393,15 @@ fn error_response(err: AllianceError) -> (StatusCode, Json<ErrorResponse>) {
                 AllianceErrorCode::InvalidArgument => StatusCode::BAD_REQUEST,
                 AllianceErrorCode::PermissionDenied => StatusCode::FORBIDDEN,
                 AllianceErrorCode::TenantMismatch => StatusCode::FORBIDDEN,
+                AllianceErrorCode::TaskNotFound => StatusCode::NOT_FOUND,
+                AllianceErrorCode::ExpertNotFound => StatusCode::NOT_FOUND,
+                AllianceErrorCode::NodeNotFound => StatusCode::NOT_FOUND,
                 AllianceErrorCode::TaskAlreadyTerminal => StatusCode::CONFLICT,
                 AllianceErrorCode::InvalidTaskStatus => StatusCode::CONFLICT,
                 AllianceErrorCode::InvalidPlan => StatusCode::BAD_REQUEST,
+                AllianceErrorCode::SchedulerFull => StatusCode::SERVICE_UNAVAILABLE,
+                AllianceErrorCode::ExecutorUnavailable => StatusCode::SERVICE_UNAVAILABLE,
+                AllianceErrorCode::ExpertUnavailable => StatusCode::SERVICE_UNAVAILABLE,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
         ),

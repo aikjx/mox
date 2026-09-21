@@ -41,7 +41,10 @@ use mox_alliance_executor_core::mock_executor::{MockExecutorConfig, MockNodeExec
     let task_id = body["task"]["task_id"].as_str().unwrap().to_owned();
     let (status, bytes) = send(&app, "POST", "/internal/executions", Some(body), None).await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
-    assert_eq!(serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["code"], "MODEL_NOT_CONFIGURED");
+    // 归一化错误信封：模型未配置 → ErrorResponse{error_code: ExecutorUnavailable=4002}
+    let err: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(err["error_code"], 4002, "模型未配置应映射为 ExecutorUnavailable(4002)");
+    assert_eq!(err["success"], false);
     assert_eq!(send(&app, "GET", &format!("/tasks/{task_id}/status"), None, None).await.0, StatusCode::NOT_FOUND);
     let (_, bytes) = send(&app, "GET", "/health", None, None).await;
     assert_eq!(serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["execution_ready"], false);
