@@ -3,11 +3,11 @@
 
 
 > **标题**：开发专家联盟·权威集成索引
-> **版本**：V2.7
+> **版本**：V2.8
 > **权威等级**：🟢权威
 > **编号**：EA-DOC-001
 > **文档层级**：L1权威规范层
-> **最后更新日期**：2026-09-03
+> **最后更新日期**：2026-09-22
 > **主责联盟**：开发联盟 R（架构·代码·文档治理）
 > **单源声明**：本文档是"开发专家联盟"主题文档的唯一权威入口与登记枢纽。所有专家联盟主题文档的目录、版本、权威等级、状态、代码对齐均以本索引为准。本索引冲突时以 `docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`（TOP-MASTER）为准。
 > **索引声明 = 物理事实**：本索引中登记的每一份文档均已验证物理存在；物理目录中每一份专家联盟主题文档均已在本索引登记。
@@ -20,7 +20,7 @@
 
 1. **文档全景登记**：登记所有专家联盟主题文档的路径、标题、版本、权威等级、状态。
 2. **权威链维护**：定义 L0→L1→L2→L3 权威链，明确文档间裁决优先级。
-3. **代码-文档对齐**：声明当前实际代码实现（11 crate / 2 svc / 10专家 / 6融合策略），作为所有架构描述的事实基准。
+3. **代码-文档对齐**：声明当前实际代码实现（14 crate / 3 svc / 10专家 / 6融合策略），作为所有架构描述的事实基准。
 4. **子系统与API映射**：建立子系统→专家数量→代码路径→权威文档映射，以及5套API路径映射表。
 5. **引用规则强制执行**：所有文档间引用统一使用仓根相对路径 `docs/<rel>`，禁止 `../`、裸文件名、`file:///`。
 
@@ -89,7 +89,7 @@
 | # | doc_id | 文档路径 | 标题 | 版本 | 单源声明 |
 |---|--------|---------|------|------|---------|
 | 1 | EA-DOC-001 | `docs/expert-alliance/00-INTEGRATED-INDEX.md` | 权威集成索引 | V2.0 | 专家联盟文档唯一权威入口 |
-| 2 | EA-NORM-001 | `docs/standards/expert-alliance-normalization-mode.md` | 归一化处理模式规范 | V1.0 | 专家联盟归一化唯一权威规范 |
+| 2 | EA-NORM-001 | `docs/standards/expert-alliance-normalization-mode.md` | 归一化处理模式规范 | V1.1 | 专家联盟归一化唯一权威规范 |
 | 3 | EA-DOC-002 | `docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md` | 双平台架构关系说明 | V1.0 | Node.js层与Rust alliance域关系唯一权威说明 |
 | 4 | EA-DOC-003 | `docs/expert-alliance/03-GLOSSARY.md` | 专家联盟术语表 | V1.0 | 专家联盟领域术语唯一事实源 |
 | 5 | EA-DOC-010 | `docs/expert-alliance/v2/00-requirements.md` | V2.0需求规格 | V2.0 | v2系列需求唯一权威（⚠️目标设计未落地） |
@@ -111,6 +111,7 @@
 | 21 | EA-DOC-066 | `docs/modules/专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md` | mox 模块化系统架构业务流程归一化手册 | V1.0 | 专家联盟业务流程归一化唯一真相源 |
 | 22 | EA-DOC-058 | `docs/modules/business-process-flows.md` | 企业级业务处理流程 | — | 业务流程规范主文档 |
 | 23 | EA-NORM-002 | `docs/standards/expert-alliance-port-norm.md` | 核心服务端口规划规范 PORT-NORM-001 | V1.0 | 核心服务 3000-3999 / 插件小服务 30000+ 唯一权威 |
+| 24 | EA-DOC-CURRENT | `docs/expert-alliance/CURRENT-ARCHITECTURE.md` | 专家联盟当前实现架构 | V1.0 | 当前实现态唯一权威（与代码核对，v1/v2/v3 设计稿以其为准） |
 
 ---
 
@@ -124,6 +125,8 @@
 | EA-DOC-003(旧) | `docs/expert-alliance/README.md` | 文档目录导航 | 设计草案状态，导航页 |
 | EA-DOC-004 | `docs/expert-alliance/expert-registry-and-protocol.md` | 专家注册与协议规范 | 定义ExpertDescriptor Schema |
 | EA-DOC-005 | `docs/expert-alliance/knowledge-graph-schema.md` | 知识图谱Schema | 8类实体、12类关系定义 |
+| EA-DOC-DESIGN-DAG | `docs/expert-alliance/DAG-VISUALIZATION-DESIGN.md` | DAG执行状态实时可视化设计 | 🟡前端可视化设计方案，未落地 |
+| EA-DOC-DESIGN-DEPLOY | `docs/expert-alliance/DEPLOYMENT-DESIGN.md` | 生产级部署方案 | 🟡docker-compose/监控/高可用参考 |
 
 ### 4.2 docs/expert-alliance/v2/
 
@@ -213,7 +216,7 @@
 
 | # | 路径 | doc_id | 权威等级 | 版本 | 核心内容 | 编制依据 |
 |---|------|--------|---------|------|---------|---------|
-| 1 | `docs/standards/expert-alliance-normalization-mode.md` | EA-NORM-001 | 🟢权威 | V1.0 | 10章完整规范：总则/目录/分层/引用/术语/代码对齐/5步法/反模式/验收/附录 | 7份基线文档 + alliance域11crate代码事实 |
+| 1 | `docs/standards/expert-alliance-normalization-mode.md` | EA-NORM-001 | 🟢权威 | V1.1 | 10章完整规范：总则/目录/分层/引用/术语/代码对齐/5步法/反模式/验收/附录 | 7份基线文档 + alliance域14crate代码事实 |
 | 2 | `docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md` | EA-DOC-002 | 🟢权威 | V1.0 | 双平台定位对照、11项功能映射、API端点对照、5阶段迁移策略 | 盘点报告裁决C3、代码对齐报告 |
 | 3 | `docs/expert-alliance/03-GLOSSARY.md` | EA-DOC-003 | 🟢权威 | V1.0 | 专家匹配器8种称谓统一、六阶段5种命名对照、融合5种含义消歧、璇玑/Mox统一说明 | 盘点报告§3.6术语不一致、EA-NORM-001§5 |
 | 4 | `docs/_archive/expert-alliance/README.md` | — | ⚪归档 | V1.0 | 归档区说明、归档规则、归档清单表 | EA-NORM-001§2.4 |
@@ -241,7 +244,7 @@
 
 | 子系统 | 技术栈 | 端口 | 专家数量 | 代码路径 | 权威文档 | 关系说明 |
 |--------|--------|:----:|:--------:|---------|---------|---------|
-| **Rust alliance域** | Rust (Axum) | :3100 / :3200 | **10个**内置领域专家 | `platform/domains/alliance/`（13 crate） | 修复报告、评审报告、EA-NORM-001§6 | 当前活跃开发的新架构，专家联盟核心实现 |
+| **Rust alliance域** | Rust (Axum) | :3100 / :3200 / :3400 | **10个**内置领域专家 | `platform/domains/alliance/`（14 crate） | 修复报告、评审报告、EA-NORM-001§6 | 当前活跃开发的新架构，专家联盟核心实现 |
 | **Rust mox-expert域** | Rust | — | **7位**专家 | `platform/domains/mox-expert/`（或`platform/services/mox-expert/`） | mox-expert-product.md、mox-expert-normalization.md | 融合优化引擎，与alliance域并列，XOPT 8步管线 |
 | **Node.js平台层** | Node.js (Express) | :3010 | **15位**默认专家 | `platform/backend-node/`（23个业务域） | business-process-flowcharts.md第九章、集成对齐报告 | 较早实现，包含专家联盟、AI引擎、知识图谱等，与Rust层并存 |
 
@@ -272,9 +275,9 @@
 
 | 维度 | 实际值 | 说明 |
 |------|--------|------|
-| **crate结构** | 13 crate（proto×3 / core×5 / svc×2 / sdk×2 / api×1） | `platform/domains/alliance/`（2026-09-13 实测：core 含 boot-config 共5个，sdk 含 http-sdk 共2个） |
-| **服务数量** | 2个svc（scheduler-svc / executor-svc） | 非"7服务"或"31微服务" |
-| **端口** | scheduler-svc **:3100** / executor-svc **:3200** | 非8701/8702（代码对齐报告中的错误值已修正） |
+| **crate结构** | 14 crate（proto×3 / core×5 / svc×3 / sdk×2 / api×1） | `platform/domains/alliance/`（2026-09-22 实测：svc 含 registry-svc 共3个，core 含 boot-config 共5个，sdk 含 http-sdk 共2个） |
+| **服务数量** | 3个svc（scheduler-svc / executor-svc / registry-svc） | 非"7服务"或"31微服务" |
+| **端口** | scheduler-svc **:3100** / executor-svc **:3200** / registry-svc **:3400** | 非8701/8702（代码对齐报告中的错误值已修正） |
 | **内置专家** | **10个**（语义化 ID：expert-code / math / medical / law / finance / creative / vision / translation / research / arch） | 非"15+"或"16种"（那些是目标设计/扩展设计）；专家配置已外部化为 `config/alliance-experts.yml`（boot-config 覆盖式合并） |
 | **融合策略** | **6大 trait 策略**（weighted_voting / confidence_weighting / stacking / debate / map_reduce / iterative_refinement）+ 6 个基础函数（rrf / weighted / voting / best_of / concatenate / merge_json） | 代码事实见 `mox-alliance-core/src/fusion/strategies/`；RRF 为基础函数之一；旧清单"weighted-average/voting/rrf/consensus/cascade/debate-convergence"已作废（无 consensus/cascade/debate-convergence 实现） |
 | **数据存储** | 内存 + 文件快照（`data/alliance_tasks.json`） | 非PostgreSQL+Redis+Kafka+MinIO（那些是v2目标设计） |
@@ -328,7 +331,7 @@
 | 裁决ID | 冲突主题 | 裁决结论 | 落地位置 |
 |--------|---------|---------|---------|
 | C1 | 专家数量10 vs 15 vs 16 vs 7 | 三个不同子系统，各有权威数量；alliance域10个为当前实现权威 | §7子系统映射表 |
-| C2 | 服务数量2 vs 7 vs 31 | 实际2svc；v2的7服务/31微服务为未落地目标架构 | §9代码-文档对齐声明 |
+| C2 | 服务数量2 vs 7 vs 31 | 实际3svc（scheduler/executor/registry）；v2的7服务/31微服务为未落地目标架构 | §9代码-文档对齐声明 |
 | C3 | 技术栈Node.js vs Rust | 两套并存，非替代关系；已新建双平台关系说明文档 | `docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md` |
 | C4 | API路径5套并存 | 分属不同子系统，已建立映射表 | §8 API路径映射表 |
 | C5 | 归一化手册代码路径 | 原`mox-expert/src/alliance/`→`platform/domains/alliance/`，已修正9处 | 归一化手册§2/§8 |
@@ -337,7 +340,7 @@
 
 ## 12. 最后验证
 
-- **索引最后验证日期**：2026-09-13
+- **索引最后验证日期**：2026-09-22
 - **验证人**：开发联盟 R（DOC-EP-038 复跑 + alliance 域 cargo test 实测）
 - **验证范围**：全部66份专家联盟主题文档（含归档3份）
 - **验证结果**：
@@ -347,7 +350,7 @@
   - ✅ 索引权威等级与文档头部元信息一致
   - ✅ 引用格式0违规（0处`../`、0处`./`、0处`file:///`）
   - ✅ 归档文档无新增引用
-  - ✅ 代码-文档对齐声明与实际代码一致（11crate/2svc/:3100/:3200/10专家/6融合策略）
+  - ✅ 代码-文档对齐声明与实际代码一致（14crate/3svc/:3100/:3200/:3400/10专家/6融合策略）
   - ✅ 新增moxfs阶段四架构解耦设计文档已登记（ADR-MOXFS-P4-20260903，L1-L6六层架构/kernel抽离/domain-traits/s3解耦/RustFS后端骨架/CloudError，11章节）
   - ✅ 新增moxfs阶段四验证报告已登记（VR-MOXFS-P4-20260903，7项改造验证，1139测试全绿，0失败）
   - ✅ 新增moxfs阶段五mox 模块化系统架构维度测试覆盖率报告已登记（COV-MOXFS-P5-20260903，行覆盖率94.39%，5核心模块≥95%）
@@ -379,8 +382,9 @@
 | V2.5 | 2026-09-03 | 新增登记：moxfs阶段五全部交付物（5份文档）——mox 模块化系统架构维度测试覆盖率报告（COV-MOXFS-P5-20260903，行覆盖率82.99%→94.39%，5核心算法模块全部≥95%）、全链路端到端测试报告（E2E-MOXFS-P5-20260903，24 e2e测试全绿，5条全链路场景）、性能基准与优化报告（PERF-MOXFS-P5-20260903，criterion套件5文件约131基准点编译通过，RustFS对标+Top5瓶颈+6项优化建议，⚠️基线数据因沙箱基础设施崩溃待采集）、企业级质量审计报告（QA-MOXFS-P5-20260903，7 crate clippy 0 warning 0 error，unsafe 27处100%安全注释+测试覆盖，panic 81处0新增，依赖全MIT/Apache-2.0无高危）、阶段五验证报告（VR-MOXFS-P5-20260903，全量回归1188测试全绿0失败，10项关键验证全通过）；文档总数58→63，活跃文档55→60 | 开发联盟 R |
 | V2.6 | 2026-09-03 | 新增登记：moxfs阶段六全部交付物（3份文档）——阶段六验证报告（VR-MOXFS-P6-20260903，全量1024测试1023通过+1 ignored 0失败，clippy 7云盘crate零warning，6项验证全通过）、mox 模块化系统架构性能优化报告（PERF-MOXFS-P6-20260903，4项优化完成：BufferPool分片锁替换parking_lot::Mutex/Backpressure fetch_add+缓存行对齐+thread-local批处理核心场景3.8x-6.0x加速/MultiWriter-HedgedReader消除6处Arc::clone/ReedSolomon矩阵缓存LRU上限1024，Future对象池经评估不建议实施，5criterion基准全可运行数据已采集）、稳定性加固报告（STAB-MOXFS-P6-20260903，3个flaky测试修复：t22 SIMD门控改#[ignore]/filer环境变量竞态加模块级Mutex/backpressure并发压力thread-local计数器残留，连续3轮零flaky确认，multi_writer 23基准点+hedged_reader 19基准点补齐）；文档总数63→66，活跃文档60→63 | 开发联盟 R |
 | V2.7 | 2026-09-13 | 实测复跑：`verify-doc-ep038.py` 20 项全 PASS；alliance 域 `cargo test` 13 crate 约 300 测试 0 失败。修正 §7/§9 代码事实漂移：crate 数 11→13（proto×3/core×5/svc×2/sdk×2/api×1）；融合策略由旧清单（weighted-average/voting/rrf/consensus/cascade/debate-convergence）更正为实际 6 大 trait 策略（weighted_voting/confidence_weighting/stacking/debate/map_reduce/iterative_refinement）+ 6 基础函数；内置专家由 "expert-01~10" 更正为语义化 module_id（code/math/medical/law/finance/creative/vision/translation/research/arch），并登记专家配置 yml 外部化；修正过期单测 build_consult_query_includes_expert_id | 开发联盟 R |
+| V2.8 | 2026-09-22 | 与代码对齐：crate 数 13→14（新增 `mox-alliance-registry-svc` :3400），svc 2→3（scheduler :3100 / executor :3200 / registry :3400）；同步 §1/§7/§9/§11/§12 当前事实声明（历史 2026-09-13 测试记录保留不动）。补登 3 份此前未登记的根目录文档：CURRENT-ARCHITECTURE.md（🟢权威，当前实现唯一权威）、DAG-VISUALIZATION-DESIGN.md（🟡参考）、DEPLOYMENT-DESIGN.md（🟡参考）；EA-NORM-001 版本 V1.0→V1.1。v2/v3 文档头部追加状态标注（v3=愿景参考非契约，v2=已部分落地） | 开发联盟 R |
 
 ---
 
 **版权所有**：© 2026 璇玑 RelGraph · 算子统一系统（OUS）· 三联盟
-**文档版本**：V2.7 ｜ **发布日期**：2026-09-13
+**文档版本**：V2.8 ｜ **发布日期**：2026-09-22

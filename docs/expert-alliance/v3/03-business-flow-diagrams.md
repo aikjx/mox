@@ -12,6 +12,8 @@ source_of_truth: V3.0架构优化业务流程
 >
 > 前置：[01-架构优化分析](docs/expert-alliance/v3/01-architecture-optimization.md) | [02-架构需求矩阵](docs/expert-alliance/v3/02-requirements-matrix.md)
 
+> ⚠️ 本文档为 V3 架构愿景参考，非实现契约。当前实现以代码（platform/domains/alliance/）和 EA-NORM-001 §6 为准。
+
 ---
 
 ## 目录

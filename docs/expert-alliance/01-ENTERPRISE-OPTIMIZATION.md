@@ -14,6 +14,8 @@ source_of_truth: 参考
 > **前序**：`00-INTEGRATED-INDEX.md`（整合总览）· `docs/enterprise/26-*`（V1.0/V1.1 方案）
 > **本版目的**：对 V1.0/V1.1 方案做**真实现状校准**——V1.0/V1.1 基于已删除的 backend-node（Node.js）撰写，而当前专家联盟已在 Rust 侧真实落地（`mox-ai-expert-svc`）。本方案以 2026-08-29 实测代码为准，只针对**真实存在的缺口**给优化路线，不再重复已完成的项。
 
+> 🟡 **权威等级裁决：参考**（2026-09-22）。本文档为企业级优化路线设计，部分任务待执行，非实现契约；正文"状态：权威"以本裁决与 frontmatter `authority: 🟡参考` 为准。当前实现以代码（platform/domains/alliance/）与 EA-NORM-001 §6 为准。
+
 ---
 
 ## 1. 现状校准（V1.0/V1.1 vs 真实现状）

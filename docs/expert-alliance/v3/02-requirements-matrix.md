@@ -13,6 +13,9 @@ source_of_truth: V3.0架构优化需求矩阵
 > 前置：[01-架构优化分析](docs/expert-alliance/v3/01-architecture-optimization.md)
 
 
+> ⚠️ 本文档为 V3 架构愿景参考，非实现契约。当前实现以代码（platform/domains/alliance/）和 EA-NORM-001 §6 为准。
+
+
 > 📌 **文档状态声明**  
 > 本文档为 V3.0 **架构优化方向设计**，在V2.0目标架构基础上提出模块化/插件化优化思路。部分设计（如11个crate模块化）已在Rust实现中落地，具体以代码事实为准。
 

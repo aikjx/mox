@@ -15,6 +15,8 @@ source_of_truth: 参考（导航页）
 
 ---
 
+> ⚠️ 本文档为 V3 架构愿景参考，非实现契约。当前实现以代码（platform/domains/alliance/）和 EA-NORM-001 §6 为准。
+
 > 📌 **本文档为 v3 架构演进路线图（目标态）。当前代码实现请以 [../CURRENT-ARCHITECTURE.md](../CURRENT-ARCHITECTURE.md) 为唯一权威。**
 
 ---

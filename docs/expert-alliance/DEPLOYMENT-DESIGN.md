@@ -1,5 +1,7 @@
 # 专家联盟生产级部署方案
 
+> 🟡 **权威等级：参考**。本文档为生产部署参考方案（docker-compose/监控/高可用），非唯一权威；端口以 [docs/api/PORT-REGISTRY.md](../api/PORT-REGISTRY.md) 与 EA-NORM-001 §6.3 为准。
+
 ## 服务拓扑
 
 ```
