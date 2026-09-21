@@ -36,6 +36,7 @@ use mox_alliance_executor_proto::types::ExecutorConfig;
 
 use crate::condition::{CompareOp, Condition, Operand, Operator};
 use crate::fusion::{FusionEngine, FusionInput, FusionItem};
+use crate::state_sink::ExecutionStateSink;
 
 /// 任务执行状态（内部完整状态）
 pub(crate) struct TaskExecutionState {
@@ -61,6 +62,8 @@ pub struct DagEngineImpl {
     states: Arc<RwLock<HashMap<Uuid, TaskExecutionState>>>,
     /// 执行控制通道（task_id -> ControlCommand）
     control_tx: mpsc::UnboundedSender<ControlCommand>,
+    /// 执行状态持久化端口（None = 纯内存执行，行为与未接线前一致）
+    state_sink: Option<Arc<dyn ExecutionStateSink>>,
 }
 
 /// 控制命令
@@ -89,9 +92,11 @@ pub(crate) enum ControlCommand {
 }
 
 impl DagEngineImpl {
-    pub(crate) fn new(
+    /// 创建引擎并注入执行状态持久化端口（svc 装配 SQLite/DB 适配器时使用）
+    pub(crate) fn with_state_sink(
         config: ExecutorConfig,
         node_executor: Arc<dyn NodeExecutor>,
+        state_sink: Option<Arc<dyn ExecutionStateSink>>,
     ) -> (Self, mpsc::UnboundedReceiver<ControlCommand>) {
         let (control_tx, control_rx) = mpsc::unbounded_channel();
 
@@ -100,6 +105,7 @@ impl DagEngineImpl {
             node_executor,
             states: Arc::new(RwLock::new(HashMap::new())),
             control_tx,
+            state_sink,
         };
 
         (engine, control_rx)
@@ -107,15 +113,32 @@ impl DagEngineImpl {
 
     /// 创建引擎并启动调度循环（便捷方法）
     pub fn spawn(config: ExecutorConfig, node_executor: Arc<dyn NodeExecutor>) -> Arc<Self> {
-        let (engine, control_rx) = Self::new(config.clone(), node_executor.clone());
+        Self::spawn_with_state_sink(config, node_executor, None)
+    }
+
+    /// 创建引擎并启动调度循环（带执行状态持久化端口）
+    pub fn spawn_with_state_sink(
+        config: ExecutorConfig,
+        node_executor: Arc<dyn NodeExecutor>,
+        state_sink: Option<Arc<dyn ExecutionStateSink>>,
+    ) -> Arc<Self> {
+        let (engine, control_rx) = Self::with_state_sink(config.clone(), node_executor.clone(), state_sink);
         let engine = Arc::new(engine);
 
         let states_clone = engine.states.clone();
         let executor_clone = node_executor;
+        let sink_clone = engine.state_sink.clone();
         let poll_interval = config.poll_interval_ms;
 
         tokio::spawn(async move {
-            Self::run_scheduler_loop(states_clone, executor_clone, control_rx, poll_interval).await;
+            Self::run_scheduler_loop(
+                states_clone,
+                executor_clone,
+                control_rx,
+                poll_interval,
+                sink_clone,
+            )
+            .await;
         });
 
         engine
@@ -127,18 +150,31 @@ impl DagEngineImpl {
         node_executor: Arc<dyn NodeExecutor>,
         mut control_rx: mpsc::UnboundedReceiver<ControlCommand>,
         poll_interval_ms: u64,
+        state_sink: Option<Arc<dyn ExecutionStateSink>>,
     ) {
         loop {
             tokio::select! {
                 // 处理控制命令
                 Some(cmd) = control_rx.recv() => {
-                    Self::handle_control_command(&states, cmd);
+                    Self::handle_control_command(&states, cmd, state_sink.as_ref());
                 }
 
                 // 定期调度就绪节点
                 _ = tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms)) => {
-                    Self::schedule_ready_nodes(states.clone(), node_executor.clone()).await;
+                    Self::schedule_ready_nodes(states.clone(), node_executor.clone(), state_sink.clone()).await;
                 }
+            }
+        }
+    }
+
+    /// 持久化任务状态（失败仅告警，不阻断执行——可用性优先，见 state_sink 模块文档）
+    fn persist_task_state(
+        sink: Option<&Arc<dyn ExecutionStateSink>>,
+        task: &Task,
+    ) {
+        if let Some(s) = sink {
+            if let Err(e) = s.persist_task(task) {
+                warn!("持久化任务状态失败 {}: {}", task.task_id, e);
             }
         }
     }
@@ -147,6 +183,7 @@ impl DagEngineImpl {
     fn handle_control_command(
         states: &RwLock<HashMap<Uuid, TaskExecutionState>>,
         cmd: ControlCommand,
+        state_sink: Option<&Arc<dyn ExecutionStateSink>>,
     ) {
         match cmd {
             ControlCommand::Start { task, plan, options } => {
@@ -186,12 +223,17 @@ impl DagEngineImpl {
                     task_id,
                     node_count
                 );
+                // 场景②出口：任务进入执行期即落库，崩溃后恢复扫描可见
+                if let Some(st) = states.get(&task_id) {
+                    Self::persist_task_state(state_sink, &st.task);
+                }
             }
             ControlCommand::Pause { task_id } => {
                 let mut states = states.write();
                 if let Some(state) = states.get_mut(&task_id) {
                     state.task.status = TaskStatus::Paused;
                     info!("Task execution paused: {}", task_id);
+                    Self::persist_task_state(state_sink, &state.task);
                 }
             }
             ControlCommand::Resume { task_id } => {
@@ -199,6 +241,7 @@ impl DagEngineImpl {
                 if let Some(state) = states.get_mut(&task_id) {
                     state.task.status = TaskStatus::Running;
                     info!("Task execution resumed: {}", task_id);
+                    Self::persist_task_state(state_sink, &state.task);
                 }
             }
             ControlCommand::Cancel { task_id, reason } => {
@@ -212,6 +255,8 @@ impl DagEngineImpl {
                         }
                     }
                     info!("Task execution cancelled: {}, reason: {:?}", task_id, reason);
+                    // 场景④出口：终态立即落库（存储层恢复解析与调度器同步都以本状态为准）
+                    Self::persist_task_state(state_sink, &state.task);
                 }
             }
             ControlCommand::SkipNode { task_id, node_id, reason } => {
@@ -226,6 +271,7 @@ impl DagEngineImpl {
                             );
                         }
                     }
+                    Self::persist_task_state(state_sink, &state.task);
                 }
             }
         }
@@ -235,6 +281,7 @@ impl DagEngineImpl {
     async fn schedule_ready_nodes(
         states: Arc<RwLock<HashMap<Uuid, TaskExecutionState>>>,
         node_executor: Arc<dyn NodeExecutor>,
+        state_sink: Option<Arc<dyn ExecutionStateSink>>,
     ) {
         // 收集所有就绪的节点
         let mut ready_nodes: Vec<(Uuid, String, Node, String)> = Vec::new();
@@ -282,6 +329,7 @@ impl DagEngineImpl {
 
             let executor = node_executor.clone();
             let states_clone = states.clone();
+            let sink = state_sink.clone();
 
             let handle = tokio::spawn(async move {
                 let request = NodeExecutionRequest {
@@ -338,6 +386,26 @@ impl DagEngineImpl {
 
                     // 检查任务是否完成
                     Self::check_task_completion(state);
+
+                    // 场景③出口：节点终态增量落库 + 任务进度/终态落库。
+                    // 持久化失败仅告警（见 state_sink 模块文档），内存态仍是执行期权威。
+                    if let Some(s) = sink.as_ref() {
+                        let status_str = node_status_str(
+                            state
+                                .nodes
+                                .get(&node_id)
+                                .map(|n| n.status)
+                                .unwrap_or(NodeStatus::Pending),
+                        );
+                        let result_json =
+                            state.outputs.get(&node_id).and_then(|r| r.output.clone());
+                        if let Err(e) =
+                            s.persist_node(task_id, &node_id, status_str, result_json.as_ref())
+                        {
+                            warn!("持久化节点状态失败 {}/{}: {}", task_id, node_id, e);
+                        }
+                        Self::persist_task_state(Some(s), &state.task);
+                    }
                 }
             });
 
@@ -761,8 +829,19 @@ impl DagEngine for DagEngineImpl {
 
 
 
-/// 动态路由规则（Dynamic 模式专用）
-///
+/// 节点状态 → 存储层 snake_case 字符串（与 TaskStatus serde 口径一致，供恢复解析对齐）
+fn node_status_str(status: NodeStatus) -> &'static str {
+    match status {
+        NodeStatus::Running => "running",
+        NodeStatus::Completed => "completed",
+        NodeStatus::Failed => "failed",
+        NodeStatus::Skipped => "skipped",
+        NodeStatus::Cancelled => "cancelled",
+        _ => "pending",
+    }
+}
+
+/// 动态路由规则（Dynamic 模式专用）///
 /// 描述一个决策节点如何根据中间结果选择后续路径。
 /// 当前为框架定义，具体路由逻辑由执行器侧实现。
 #[derive(Debug, Clone)]
@@ -780,7 +859,7 @@ pub struct DynamicRouteRule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_alliance_common_proto::{AllianceMode, FusionStrategy, PlanDynamicRoute};
+    use mox_alliance_common_proto::{AllianceMode, AllianceResult, FusionStrategy, PlanDynamicRoute};
 
     fn plan_with_routes(routes: Vec<PlanDynamicRoute>) -> CollaborationPlan {
         CollaborationPlan {
@@ -855,5 +934,126 @@ mod tests {
         let rule = routes.get("node-decision").unwrap();
         assert!(rule.condition.evaluate(&serde_json::json!({"output": {"score": 0.9}})));
         assert!(!rule.condition.evaluate(&serde_json::json!({"output": {"score": 0.5}})));
+    }
+
+    // ═══ 执行状态持久化端口（场景②/③/④ 引擎侧出口）═══
+
+    #[derive(Default)]
+    struct RecordingSink {
+        tasks: std::sync::Mutex<Vec<Task>>,
+        nodes: std::sync::Mutex<Vec<(Uuid, String, String)>>,
+    }
+
+    impl ExecutionStateSink for RecordingSink {
+        fn persist_task(&self, task: &Task) -> AllianceResult<()> {
+            self.tasks.lock().unwrap().push(task.clone());
+            Ok(())
+        }
+
+        fn persist_node(
+            &self,
+            task_id: Uuid,
+            node_id: &str,
+            status: &str,
+            _result: Option<&serde_json::Value>,
+        ) -> AllianceResult<()> {
+            self.nodes
+                .lock()
+                .unwrap()
+                .push((task_id, node_id.to_string(), status.to_string()));
+            Ok(())
+        }
+    }
+
+    fn test_options() -> ExecutionOptions {
+        ExecutionOptions {
+            max_retries: 1,
+            node_timeout_ms: 30_000,
+            fail_fast: false,
+        }
+    }
+
+    #[test]
+    fn start_command_persists_running_task_via_sink() {
+        let states: Arc<RwLock<HashMap<Uuid, TaskExecutionState>>> =
+            Arc::new(RwLock::new(HashMap::new()));
+        let sink = Arc::new(RecordingSink::default());
+        let task = Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".to_string(), "d".to_string());
+        let task_id = task.task_id;
+        let sink_dyn: Arc<dyn ExecutionStateSink> = sink.clone();
+
+        DagEngineImpl::handle_control_command(
+            &states,
+            ControlCommand::Start {
+                task: Box::new(task),
+                plan: Box::new(plan_with_routes(vec![])),
+                options: Box::new(test_options()),
+            },
+            Some(&sink_dyn),
+        );
+
+        // 内存态已建立（执行不依赖持久化成败）
+        assert!(states.read().contains_key(&task_id));
+        // 场景②出口：任务进入执行期即以 Running 落库，崩溃后恢复扫描可见
+        let persisted = sink.tasks.lock().unwrap();
+        assert_eq!(persisted.len(), 1);
+        assert_eq!(persisted[0].task_id, task_id);
+        assert_eq!(persisted[0].status, TaskStatus::Running);
+    }
+
+    #[test]
+    fn cancel_command_persists_terminal_state_via_sink() {
+        let states: Arc<RwLock<HashMap<Uuid, TaskExecutionState>>> =
+            Arc::new(RwLock::new(HashMap::new()));
+        let sink = Arc::new(RecordingSink::default());
+        let task = Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".to_string(), "d".to_string());
+        let task_id = task.task_id;
+        let sink_dyn: Arc<dyn ExecutionStateSink> = sink.clone();
+
+        DagEngineImpl::handle_control_command(
+            &states,
+            ControlCommand::Start {
+                task: Box::new(task),
+                plan: Box::new(plan_with_routes(vec![])),
+                options: Box::new(test_options()),
+            },
+            Some(&sink_dyn),
+        );
+        DagEngineImpl::handle_control_command(
+            &states,
+            ControlCommand::Cancel { task_id, reason: None },
+            Some(&sink_dyn),
+        );
+
+        // 场景④出口：终态立即落库（调度器同步与恢复解析都以本状态为准）
+        let persisted = sink.tasks.lock().unwrap();
+        assert_eq!(persisted.len(), 2, "Start 与 Cancel 各落库一次");
+        assert_eq!(persisted[1].status, TaskStatus::Cancelled);
+        // 终态一致性：取消后内存任务状态与落库状态一致
+        assert_eq!(
+            states.read().get(&task_id).unwrap().task.status,
+            TaskStatus::Cancelled
+        );
+    }
+
+    #[test]
+    fn without_sink_execution_stays_pure_in_memory() {
+        // 未注入端口（None）时行为与改动前完全一致：纯内存，无任何持久化调用点
+        let states: Arc<RwLock<HashMap<Uuid, TaskExecutionState>>> =
+            Arc::new(RwLock::new(HashMap::new()));
+        let task = Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".to_string(), "d".to_string());
+        let task_id = task.task_id;
+
+        DagEngineImpl::handle_control_command(
+            &states,
+            ControlCommand::Start {
+                task: Box::new(task),
+                plan: Box::new(plan_with_routes(vec![])),
+                options: Box::new(test_options()),
+            },
+            None,
+        );
+
+        assert!(states.read().contains_key(&task_id));
     }
 }

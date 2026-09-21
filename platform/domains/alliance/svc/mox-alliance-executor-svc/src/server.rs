@@ -38,7 +38,7 @@ impl ExecutorServer {
         Self {
             config,
             listen_addr,
-            mode: ExecutorMode::Mock, // 默认 Mock 模式，保持向后兼容
+            mode: ExecutorMode::Expert, // 默认真实专家执行器（Phase 2 起禁用 Mock 默认）
         }
     }
 
@@ -89,7 +89,11 @@ impl ExecutorServer {
         );
 
         // 创建 DAG 执行引擎并启动调度循环
-        let engine = DagEngineImpl::spawn(self.config.clone(), node_executor);
+        // 执行状态持久化端口：复用 MOX_ALLIANCE_STORAGE_MODE 存储底座（与 scheduler-svc
+        // 同一约定、同一任务真源）。memory 模式解析为 None → 纯内存执行，行为与未接线前一致。
+        let state_sink = crate::state_sink::resolve_state_sink();
+        let engine =
+            DagEngineImpl::spawn_with_state_sink(self.config.clone(), node_executor, state_sink);
 
         // 构建应用状态
         let mut state = ExecutorAppState::new(self.config.clone(), engine);

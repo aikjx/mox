@@ -17,6 +17,7 @@ pub mod dag_engine;
 pub mod expert_executor;
 pub mod fusion;
 pub mod mock_executor;
+pub mod state_sink;
 
 pub use condition::{Condition, CompareOp, Operator, Operand};
 pub use dag_engine::DagEngineImpl;
@@ -25,6 +26,7 @@ pub use expert_executor::{
 };
 pub use fusion::{FusionEngine, FusionInput, FusionItem};
 pub use mock_executor::{MockExecutorConfig, MockNodeExecutor};
+pub use state_sink::ExecutionStateSink;
 
 // 融合产出类型的权威定义在协议层（它是 `DagEngine` 契约的返回类型），此处仅转出
 pub use mox_alliance_executor_proto::FusionOutput;

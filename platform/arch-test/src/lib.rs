@@ -524,6 +524,10 @@ fn scan_public_symbols(root: &Path) -> HashMap<(String, String), HashSet<String>
 ///   （旧格式只记名字检测不到这一点，已升级为集合格式）；
 /// - **语义归属优先**：语义相同 → 收敛到拥有域的权威定义并改为引用；
 ///   语义不同 → 重命名以示区分（显式转换连接），而非强行合并。
+///
+/// 概念归属登记表：`platform/arch-test/baseline/ownership-registry.csv`
+/// （每项记录 权威拥有 crate / 处置决策 merge-pending-diff·keep-distinct·triage-pending / 依据）。
+/// 再生成：`python scripts/normalization-scan.py --baseline-txt ...` + `python scripts/ownership-registry.py`。
 #[test]
 fn test_no_new_cross_crate_duplicate_symbols() {
     let root = workspace_root();

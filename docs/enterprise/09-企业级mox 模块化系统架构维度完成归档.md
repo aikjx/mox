@@ -1,21 +1,21 @@
-﻿# 企业级mox 模块化系统架构维度开发完成归档（Milestone Archive）
+﻿﻿# 企业级MOX维度开发完成归档（Milestone Archive）
 
-> **文档类型**：企业级里程碑归档 / mox 模块化系统架构维度完成声明 + 企业计划收口
+> **文档类型**：企业级里程碑归档 / MOX维度完成声明 + 企业计划收口
 > **文档版本**：v1.0 (ENT) · 归档日期 2026-08-16
-> **配套**：`07-mox 模块化系统架构需求明确书`（需求+铁律）、`08-mox 模块化系统架构自动化处理明确书`（流水线）、`06` 映射、`05` 路线图、`02` 架构
-> **声明性质**：本文是"mox 模块化系统架构维度开发完成"的企业级里程碑收口。所有结论均有**代码与测试事实**支撑（见 §3），非规划愿景。
+> **配套**：`07-MOX需求明确书`（需求+铁律）、`08-MOX自动化处理明确书`（流水线）、`06` 映射、`05` 路线图、`02` 架构
+> **声明性质**：本文是"MOX维度开发完成"的企业级里程碑收口。所有结论均有**代码与测试事实**支撑（见 §3），非规划愿景。
 
 ---
 
 ## 0 · 一句话结论
 
-> **企业级mox 模块化系统架构维度开发已完成**：双璇玑十四维、四道治理闸门、业务流程图归一化、mox 模块化系统架构自动化处理流水线，全部落地并经测试验证。系统进入"可企业级投产"状态。
+> **企业级MOX维度开发已完成**：双璇玑十四维、四道治理闸门、业务流程图归一化、MOX自动化处理流水线，全部落地并经测试验证。系统进入"可企业级投产"状态。
 
 ---
 
-## 1 · "mox 模块化系统架构维度"指什么（明确边界，不模糊）
+## 1 · "MOX维度"指什么（明确边界，不模糊）
 
-依据 `07`/`08` 与代码事实，"mox 模块化系统架构维度" = 下列均已实现且经测试：
+依据 `07`/`08` 与代码事实，"MOX维度" = 下列均已实现且经测试：
 
 | 维度类别 | 内容 | 状态 | 证据 |
 |----------|------|:--:|------|
@@ -23,7 +23,7 @@
 | **开发七维** | Architecture / SecurityCode / CodeQuality / Performance / Testing / Documentation / Maintainability | ✅ | 同上（`expert_scores` 恰为 14 维） |
 | **四道闸门** | G0 归一化 / G1 裁决 / G2 ⛨璇玑否决 / G3 治理闸门 | ✅ | `verify`+`govern`+`primiflow_fusion::full_gate` 全绿 |
 | **流程图归一化** | 唯一 `FlowGraph` + 六维绑定(REQ→…→COD) + 守恒/零孤儿/治理 8 闸门 | ✅ | `primiflow-fusion` 44 passed / 0 failed（2026-08-18 实测） |
-| **mox 模块化系统架构自动化处理** | `mox_optimize` 8 步闭环、无旁路、RBAC 透传 | ✅ | `pipeline.rs` 端到端 + 越权拦截测试 |
+| **MOX自动化处理** | `mox_optimize` 8 步闭环、无旁路、RBAC 透传 | ✅ | `pipeline.rs` 端到端 + 越权拦截测试 |
 | **权限功能归一化** | 权限/安全在 `DIM_PRIORITY` 占最高权重(100)，裁决与闸门均不可被覆盖 | ✅ | `reconcile`+`govern` 代码事实 |
 
 ---
@@ -34,7 +34,7 @@
 
 ### 2.1 企业级需求架构（Plan A — 已达成）
 - 需求（`01`）与架构（`02`）经 `06` 映射表双向绑定，形成"需求→架构→模块→代码"可追溯闭环。
-- mox 模块化系统架构需求经 `07` 大白话明确 + `08` 自动化明确，铁律（双收口、无旁路、不做无用扩展）已写入 `05` DoD。
+- MOX需求经 `07` 大白话明确 + `08` 自动化明确，铁律（双收口、无旁路、不做无用扩展）已写入 `05` DoD。
 - **交付物**：`00`~`09` 九份 enterprise 文档集，统一治理（`00-INDEX`）。
 
 ### 2.2 融合门禁工作流（Plan B — 已达成）
@@ -47,7 +47,7 @@
 - 越权写被自动化安全护栏拦截（`sensitive_write_is_blocked` 测试通过）。
 - **交付物**：`crates/mox-expert` 权限归一化 + RBAC 四权分离 + 审计链。
 
-### 2.4 mox 模块化系统架构自动化处理（Plan D — 已达成）
+### 2.4 MOX自动化处理（Plan D — 已达成）
 - 前端 `MoxFusionView.vue` → `POST /api/optimize` → `mox_optimize` 全自动 8 步闭环。
 - 无旁路参数、未声明角色仅授 `viewer`（修复旧版硬编码 admin 漏洞）。
 - **交付物**：`crates/mox-expert/src/{server,pipeline}.rs` + 端到端测试。
@@ -61,11 +61,11 @@
   - 性能：`n_plus_one` / `has_outdated_deps` / 复杂度
   - 测试：`test_coverage` / `uncovered`
   - 文档：`has_doc` / `is_public`
-- **验证**：`cargo test -p mox-expert` 全绿（含 14 维契约、端到端、越权拦截），全 workspace 编译通过；开发璇玑十四维不再"占位"，真正参与mox 模块化系统架构分析。
+- **验证**：`cargo test -p mox-expert` 全绿（含 14 维契约、端到端、越权拦截），全 workspace 编译通过；开发璇玑十四维不再"占位"，真正参与MOX分析。
 - **交付物**：`crates/mox-expert/src/experts/{architecture,security_code,code_quality,performance,testing,documentation,maintainability}.rs`。
 
 ### 2.6 后端统一到 Rust + 前后端契约打通（Plan F — 已达成，2026-08-17）
-- **问题（"乱"的根因）**：同一套后端（璇玑mox 模块化系统架构治理 + 算子市场 + 自动化 + MCP + 知识图谱）在仓库里被实现了**两遍、两种语言**——
+- **问题（"乱"的根因）**：同一套后端（璇玑MOX治理 + 算子市场 + 自动化 + MCP + 知识图谱）在仓库里被实现了**两遍、两种语言**——
   - `backend/`（Node/JS 早期原型，Express，`mox.js` 还是 `hashStr` 造假分数的玩具级）
   - `crates/runtime`（Rust Axum 企业级后端：RBAC/限流/OpenAPI/WS/MCP/优雅关闭，治理内核为真静态分析）
   - 此外 `crates/mox-expert/src/server.rs` 又是一份**与主后端并行的独立 server**（还 `include_str!` 了已删除的 `frontend/mox.html`，导致整库编译失败）。
@@ -89,14 +89,14 @@
 | 端到端跑通 | `mox_end_to_end_runs` 通过（归一化→专家→裁决→求解→璇玑→闸门→审计→出码） | `pipeline.rs` |
 | 越权自动化拦截 | 公民敏感库越权写被璇玑闸门拦截（`sensitive_write_is_blocked` passed） | `pipeline.rs` |
 | 开发七维真分析 | 7 个开发专家改为消费 `CodeUnit` 真字段（安全/架构/质量/性能/测试/文档/可维护），非字符串占位 | `experts/*.rs`（2026-08-17 升级） |
-| mox 模块化系统架构分析测试总量 | mox-expert **146 passed / 0 failed**（实测 `cargo test -p mox-expert`，含双璇玑契约 + 敏感拦截） | 实测（2026-08-18） |
+| MOX分析测试总量 | mox-expert **146 passed / 0 failed**（实测 `cargo test -p mox-expert`，含双璇玑契约 + 敏感拦截） | 实测（2026-08-18） |
 | 后端统一 Rust | 删除 JS 原型 `backend/`，主后端收敛为 `crates/runtime`（Axum），编译 0 error | `Cargo.toml` members、`crates/runtime/src/main.rs` |
 | 前后端契约打通 | `/api/mox/optimize` 与 `/api/mox/publish` 端到端返回真实治理数据，前端三步闭环打通 | 冒烟测试（2026-08-17） |
 | 融合门禁测试 | primiflow-fusion **44 passed / 0 failed**（实测 `cargo test -p primiflow-fusion`，含 sixdim/ptdoc/platform） | 实测（2026-08-17 夜间） |
 | workspace 整体 | 实测 2026-08-18 `cargo test --workspace --no-fail-fast`：**644 passed / 0 failed / 6 ignored**（58 测试二进制）；原 510/625/642 为历史快照，以本次实测为准 | 本次实测日志 `logs/cargo_test_20260818_rbac.log` |
-| mox 模块化系统架构需求测试报告 | `cargo test -p mox-expert` 实测 **146 passed · 0 failed**（原 142/90 为该报告历史口径，以当前 crate 实测为准） | 本次实测 |
+| MOX需求测试报告 | `cargo test -p mox-expert` 实测 **146 passed · 0 failed**（原 142/90 为该报告历史口径，以当前 crate 实测为准） | 本次实测 |
 
-> **结论**：mox 模块化系统架构维度开发完成，由上述测试事实支撑，可进入企业级投产与对外交付阶段。
+> **结论**：MOX维度开发完成，由上述测试事实支撑，可进入企业级投产与对外交付阶段。
 
 ---
 
@@ -106,7 +106,7 @@
 
 - 治理 8 闸门（GR-STD）**全部落地（G1–G8）**：`unified.rs::full_gate` 实现 G1 非空 / G2 悬空边 / G3 重复 id / G4 evidence / G5 核心孤儿 / G6 隐性依赖 / G7 文档有效，`full_gate_with_baseline` 实现 G8 sync 漂移，任一未过即 `GateResult.approved=false`。2026-08-17 补齐后 8/8 闸门全部生效（详见 `10-企业级交付清单.md` §4）；本段原"仅 5 项"表述已过时，以代码与 `10` 为准。
 - 守恒量 C 为节点自报，闸门查内部自洽，不对照真实代码/需求规模（已在 `07`/`08` 明确为已知约束）。
-- 租户策略分层（I-06）、产物来源追溯（I-07）、灾备（I-12）等为企业演进项，未阻塞"mox 模块化系统架构维度完成"结论。
+- 租户策略分层（I-06）、产物来源追溯（I-07）、灾备（I-12）等为企业演进项，未阻塞"MOX维度完成"结论。
 
 ---
 
@@ -114,12 +114,12 @@
 
 | 文档 | 角色 | 本归档关系 |
 |------|------|------------|
-| `07` mox 模块化系统架构需求明确书 | 需求+铁律 | mox 模块化系统架构维度需求的验收口径 |
-| `08` mox 模块化系统架构自动化处理明确书 | 流水线 | mox 模块化系统架构维度自动执行的形态 |
-| `06` 需求-架构映射 | 映射 | mox 模块化系统架构维度的架构落点 |
-| `05` 路线图 | 迭代/DoD | 本归档 = 路线图"mox 模块化系统架构维度完成"里程碑的正式登记 |
-| `02` 架构 | 七视图 | mox 模块化系统架构维度在各视图的承载 |
+| `07` MOX需求明确书 | 需求+铁律 | MOX维度需求的验收口径 |
+| `08` MOX自动化处理明确书 | 流水线 | MOX维度自动执行的形态 |
+| `06` 需求-架构映射 | 映射 | MOX维度的架构落点 |
+| `05` 路线图 | 迭代/DoD | 本归档 = 路线图"MOX维度完成"里程碑的正式登记 |
+| `02` 架构 | 七视图 | MOX维度在各视图的承载 |
 
 ---
 
-*本文为 enterprise 文档集第 9 份，是企业级mox 模块化系统架构维度开发完成的正式归档。它不引入新功能，仅将既有实现与测试事实收口为企业级里程碑，供对外交付与审计引用。*
+*本文为 enterprise 文档集第 9 份，是企业级MOX维度开发完成的正式归档。它不引入新功能，仅将既有实现与测试事实收口为企业级里程碑，供对外交付与审计引用。*

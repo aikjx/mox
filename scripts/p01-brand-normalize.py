@@ -136,7 +136,19 @@ def apply_fix():
 
 
 if __name__ == "__main__":
+    # 自包含输出到文件，避免终端超时丢失
+    import io
+    buf = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = buf
     if "--apply" in sys.argv:
         apply_fix()
     else:
         dry_run()
+    sys.stdout = old_stdout
+    out = buf.getvalue()
+    print(out, end="")
+    out_path = ROOT / "reports" / "data" / "p01-dryrun.txt"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(out, encoding="utf-8")
+    print(f"\n[报告已写入 {out_path}]")

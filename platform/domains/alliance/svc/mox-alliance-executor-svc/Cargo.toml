@@ -10,6 +10,9 @@ description = "专家联盟 · 执行器服务（DAG执行 + 节点调度 + 状�
 mox-alliance-common-proto = { workspace = true }
 mox-alliance-executor-proto = { workspace = true }
 mox-alliance-executor-core = { path = "../../core/mox-alliance-executor-core" }
+# 执行状态持久化底座：复用 scheduler-core 既有 TaskRepository 实现（不另造存储轮子）。
+# `sqlite` feature 仅在 svc 层启用——executor-core 仍零 IO（只依赖 ExecutionStateSink 端口）。
+mox-alliance-scheduler-core = { path = "../../core/mox-alliance-scheduler-core", features = ["sqlite"] }
 mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config", features = ["nacos", "naming"] }
 mox-alliance-api = { path = "../../api" }
 mox-ai-expert-proto = { path = "../../../ai/proto/mox-ai-expert-proto" }
