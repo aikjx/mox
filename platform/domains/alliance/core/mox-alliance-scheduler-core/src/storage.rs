@@ -21,6 +21,7 @@ use mox_alliance_common_proto::{AllianceError, AllianceResult, Task};
 use mox_alliance_common_proto::{CollaborationPlan, TaskStatus};
 #[cfg(feature = "sqlite")]
 use rusqlite::{params, Connection};
+#[cfg(feature = "sqlite")]
 use tracing::warn;
 use uuid::Uuid;
 
@@ -1076,6 +1077,7 @@ mod tests {
     }
 
     /// 场景④（持久化层）：终态不可被覆盖——先到者为权威，同状态重写仍允许
+    #[cfg(feature = "sqlite")]
     #[test]
     fn save_rejects_overwriting_terminal_task() {
         let dir = std::env::temp_dir().join(format!("terminal_guard_{}", Uuid::new_v4()));

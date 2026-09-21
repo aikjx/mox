@@ -570,7 +570,7 @@ impl TaskScheduler for TaskSchedulerImpl {
 mod tests {
     use super::*;
     use crate::executor_bridge::MockExecutorBridge;
-    use crate::matcher::RuleBasedExpertMatcher;
+    use crate::modular_matcher::ModularWeightMatcher;
     use mox_alliance_common_proto::{
         AllianceMode, Expert, FusionStrategy, TaskPriority,
     };
@@ -601,7 +601,7 @@ mod tests {
     #[tokio::test]
     async fn test_submit_task_with_mock_bridge() {
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         let bridge = Arc::new(MockExecutorBridge::new());
 
         let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge.clone());
@@ -632,7 +632,7 @@ mod tests {
     #[tokio::test]
     async fn test_cancel_task_with_mock_bridge() {
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         let bridge = Arc::new(MockExecutorBridge::new());
 
         let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge.clone());
@@ -671,7 +671,7 @@ mod tests {
     #[tokio::test]
     async fn test_pause_resume_task_with_mock_bridge() {
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         let bridge = Arc::new(MockExecutorBridge::new());
 
         let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge.clone());
@@ -714,7 +714,7 @@ mod tests {
     #[tokio::test]
     async fn test_backward_compatible_new() {
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         let (dispatch_tx, mut dispatch_rx) = mpsc::unbounded_channel::<Task>();
 
         let scheduler = TaskSchedulerImpl::new(config, matcher, dispatch_tx);
@@ -753,7 +753,7 @@ mod tests {
         let repo = Arc::new(SqliteTaskRepository::new(dir.join("tasks.db")).unwrap());
 
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         let bridge = Arc::new(MockExecutorBridge::new());
         let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge)
             .with_task_repository(repo);
@@ -791,7 +791,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_bridge_failure() {
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         let bridge = Arc::new(MockExecutorBridge::new());
         bridge.set_should_fail(true);
 
@@ -824,7 +824,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_task_syncs_executor_status() {
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         let bridge = Arc::new(MockExecutorBridge::new());
 
         let scheduler = TaskSchedulerImpl::new_with_bridge(config.clone(), matcher, bridge.clone());
@@ -871,7 +871,7 @@ mod tests {
     async fn test_auto_select_strategy_multi_expert_confidence_weighted() {
         // 优化1：未显式指定策略且多专家入选 → 自动选 ConfidenceWeighted
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         matcher.register_expert(code_expert("e1"));
         matcher.register_expert(code_expert("e2"));
         let bridge = Arc::new(MockExecutorBridge::new());
@@ -901,7 +901,7 @@ mod tests {
     async fn test_auto_select_respects_explicit_strategy() {
         // 优化1：请求显式指定 → 原样尊重，不被自动选型覆盖
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         matcher.register_expert(code_expert("e1"));
         matcher.register_expert(code_expert("e2"));
         let bridge = Arc::new(MockExecutorBridge::new());
@@ -930,7 +930,7 @@ mod tests {
     async fn test_auto_select_single_expert_best_of() {
         // 优化1：未指定策略且仅 1 个专家入选 → BestOf
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         matcher.register_expert(code_expert("e1"));
         let bridge = Arc::new(MockExecutorBridge::new());
         let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge);
@@ -959,7 +959,7 @@ mod tests {
     async fn test_weak_query_does_not_team_random_five() {
         // 优化2：空/弱 query（推断不到领域）不应随机组 5 人，而是选 1 个专家
         let config = create_test_config();
-        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let matcher = Arc::new(ModularWeightMatcher::new());
         for i in 0..3 {
             matcher.register_expert(code_expert(&format!("e{i}")));
         }

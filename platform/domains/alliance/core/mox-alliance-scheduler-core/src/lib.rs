@@ -5,7 +5,7 @@
 //!
 //! 调度器的核心业务逻辑实现：
 //! - 任务排队与调度
-//! - 专家匹配（模块化权重匹配 + 规则 fallback）
+//! - 专家匹配（生产主路径：模块化权重匹配；另保留规则匹配器供兼容）
 //! - 协作计划生成
 //! - LLM 路由选择（多 Provider 智能路由 + 熔断降级）
 //! - 执行器桥接（DAG 执行委派给 executor-svc）
@@ -17,8 +17,8 @@
 //! - 可测试：所有核心算法都有对应的单测
 //!
 //! ## 模块结构
-//! - [`matcher`] — 基于规则的专家匹配器
-//! - [`modular_matcher`] — 模块化权重匹配器
+//! - [`modular_matcher`] — 模块化权重匹配器（生产主路径）
+//! - [`matcher`] — 规则匹配器（兼容保留，供 http-sdk 网关节点与 svc 旧路径使用）
 //! - [`planner`] — 协作计划生成器
 //! - [`scheduler`] — 任务调度器实现
 //! - [`llm_router`] — LLM 路由选择器（多 Provider 智能路由）
@@ -46,8 +46,10 @@ pub mod config_sync;
 pub mod storage;
 pub mod metrics;
 
-// 专家匹配器：ModularWeightMatcher 为生产主路径（支持模块化权重配置），
-// RuleBasedExpertMatcher 为基础 fallback / 测试 demo。
+// 专家匹配器：
+// - ModularWeightMatcher 为生产主路径（支持按专家独立配置匹配权重）；
+// - RuleBasedExpertMatcher 为固定权重的规则匹配器，保留为公开发面以兼容
+//   http-sdk 网关状态与 scheduler-svc 旧 helper（勿在新代码中新增使用方）。
 pub use matcher::RuleBasedExpertMatcher;
 pub use modular_matcher::ModularWeightMatcher;
 pub use planner::SimplePlanGenerator;
