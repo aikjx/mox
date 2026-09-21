@@ -193,11 +193,27 @@ def _raw_get(url: str, timeout: int = 4) -> Tuple[int, Any]:
         return 0, None
 
 
+def _task_ids(url: str) -> set:
+    """从 `{tasks:[{task_id:...}]}` 形状的响应里取出 task_id 集合。"""
+    status, payload = _raw_get(url)
+    ids = set()
+    if 200 <= status < 300 and isinstance(payload, dict):
+        for t in (payload.get("tasks") or []):
+            if isinstance(t, dict) and t.get("task_id"):
+                ids.add(str(t["task_id"]))
+    return ids
+
+
 def detect_topology(client: GatewayClient) -> Dict[str, Any]:
     """判定网关当前是本地还是远程（企业级 3 层）模式，并探测调度/执行服务健康。
 
-    判据：远程模式下 `GET /api/alliance/tasks` 由 scheduler 代理（列表非空），
-    而网关本地仓库 `/api/alliance/stats.total_tasks` 为 0 —— 二者不一致即远程激活。
+    判据：远程模式下 `GET /api/alliance/tasks` 由调度器代理，其 task_id 集合应覆盖
+    调度器 `GET :3100/tasks` 的集合；本地模式下两者互不相干，不构成覆盖。
+
+    刻意不用 `GET /api/alliance/stats`：该端点当前是**固定空结果桩**（源码注释
+    「真实空结果」，total_tasks 恒为 0），无法区分两种模式。
+    调度器为空时无法在此处判定，返回 unknown —— 真正的判定依据是每个任务创建后
+    是否出现在调度器上（见 run_mode 里的 `_task_on_scheduler`）。
     """
     def sched_health() -> Dict[str, Any]:
         status, payload = _raw_get("http://127.0.0.1:3100/health")
@@ -210,20 +226,21 @@ def detect_topology(client: GatewayClient) -> Dict[str, Any]:
         status, _ = _raw_get("http://127.0.0.1:3200/health")
         return {"up": status != 0, "http": status}
 
-    listed, local_total = 0, -1
+    gateway_ids: set = set()
     try:
-        listed = len(rows_of(client.json_ok("GET", "/api/alliance/tasks")))
+        # 注意：rows_of 的默认键不含 tasks，任务列表必须显式指定键
+        for t in rows_of(client.json_ok("GET", "/api/alliance/tasks"), ("tasks",)):
+            if isinstance(t, dict) and t.get("task_id"):
+                gateway_ids.add(str(t["task_id"]))
     except Exception:  # noqa: BLE001
         pass
-    try:
-        local_total = int(data_of(client.json_ok("GET", "/api/alliance/stats")).get("total_tasks", -1) or -1)
-    except Exception:  # noqa: BLE001
-        pass
-    remote = bool(listed > 0 and local_total == 0)
+    sched_ids = _task_ids("http://127.0.0.1:3100/tasks")
+
+    remote = bool(sched_ids) and sched_ids <= gateway_ids
     return {
-        "mode": "remote" if remote else ("local" if local_total >= 0 else "unknown"),
-        "gateway_listed_tasks": listed,
-        "gateway_local_total_tasks": local_total,
+        "mode": "remote" if remote else "unknown",
+        "gateway_listed_tasks": len(gateway_ids),
+        "scheduler_listed_tasks": len(sched_ids),
         "scheduler": sched_health(),
         "executor": exec_health(),
     }
@@ -245,8 +262,8 @@ def _task_on_scheduler(task_id: str) -> bool:
 # --------------------------------------------------------------------------- #
 # 单模式全流程
 # --------------------------------------------------------------------------- #
-def run_mode(client: GatewayClient, mode: str, fusion: Optional[str], node_wait: int,
-             remote: bool = False) -> Dict[str, Any]:
+def run_mode(client: GatewayClient, mode: str, fusion: Optional[str],
+             node_wait: int) -> Dict[str, Any]:
     """走完一种协作模式的完整链路，返回结构化证据。"""
     steps: List[Dict[str, Any]] = []
 
@@ -583,7 +600,11 @@ def _fusion_text(mode: Dict[str, Any]) -> str:
     fr = mode.get("fusion") or {}
     conf = fr.get("confidence")
     conf_txt = ("%.2f" % float(conf)) if isinstance(conf, (int, float)) else "-"
-    return str(fr.get("fusion_status") or "-") + " @" + conf_txt
+    strat = fr.get("fusion_strategy")
+    nodes = fr.get("participating_nodes")
+    nodes_txt = str(nodes) if isinstance(nodes, int) else "-"
+    return (str(fr.get("fusion_status") or "-") + " @" + conf_txt + " · 策略:" +
+            (str(strat) if strat else "null") + " · 节点:" + nodes_txt)
 
 
 def _steps_text(mode: Dict[str, Any]) -> str:
@@ -639,7 +660,8 @@ def build_compare_markdown(left: Dict[str, Any], right: Dict[str, Any],
     lines.append("| 网关地址 | " + str(lm.get("base_url")) + " | " + str(rm.get("base_url")) + " |")
     lines.append("| Git HEAD | " + str(lm.get("git_head") or "-") + " | " + str(rm.get("git_head") or "-") + " |")
     lines.append("| 运行模式判定 | " + lname + " | " + rname + " |")
-    lines.append("| 网关统计 total_tasks | " + str((left.get("stats") or {}).get("total_tasks")) +
+    lines.append("| 网关统计 total_tasks（该端点为固定空结果桩，不能用于判定模式） | " +
+                 str((left.get("stats") or {}).get("total_tasks")) +
                  " | " + str((right.get("stats") or {}).get("total_tasks")) + " |")
     lines.append("| 调度 :3100 | " + ("UP" if (ltopo.get("scheduler") or {}).get("up") else "DOWN") +
                  " | " + ("UP" if (rtopo.get("scheduler") or {}).get("up") else "DOWN") + " |")
@@ -673,7 +695,7 @@ def build_compare_markdown(left: Dict[str, Any], right: Dict[str, Any],
         ln = int(((lmodes.get(m, {}) or {}).get("dag") or {}).get("nodes") or 0)
         rn = int(((rmodes.get(m, {}) or {}).get("dag") or {}).get("nodes") or 0)
         names = "、".join(((lmodes.get(m, {}) or {}).get("dag") or {}).get("node_names") or []) or "-"
-        lines.append("| " + m + " | " + str(ln) + " | " + str(rn) + " | " + ("+%d" % (ln - rn)) + " | " + names + " |")
+        lines.append("| " + m + " | " + str(ln) + " | " + str(rn) + " | " + ("%+d" % (ln - rn)) + " | " + names + " |")
     lines.append("")
     rich_left = [m for m in order
                  if int(((lmodes.get(m, {}) or {}).get("dag") or {}).get("nodes") or 0)
@@ -698,19 +720,76 @@ def build_compare_markdown(left: Dict[str, Any], right: Dict[str, Any],
                      " | " + ("、".join(lf) or "-") + " | " + ("、".join(rf) or "-") + " |")
     lines.append("")
 
+    l_remote = any(m.get("remote") for m in (left.get("modes") or []))
+    r_remote = any(m.get("remote") for m in (right.get("modes") or []))
+    remote_side, local_side = "", ""
+    if l_remote and not r_remote:
+        remote_side, local_side = lname, rname
+    elif r_remote and not l_remote:
+        remote_side, local_side = rname, lname
+    rich_side = lname if rich_left else (rname if rich_right else "")
+    slim_side = rname if rich_left else (lname if rich_right else "")
+    rich_modes = rich_left or rich_right
+
+    def _fusion_dist(ev: Dict[str, Any]) -> str:
+        dist: Dict[str, int] = {}
+        for m in (ev.get("modes") or []):
+            key = str((m.get("fusion") or {}).get("fusion_status") or "-")
+            dist[key] = dist.get(key, 0) + 1
+        return ", ".join(k + "=" + str(v) for k, v in sorted(dist.items())) or "-"
+
+    def _terminal_dist(ev: Dict[str, Any]) -> str:
+        dist: Dict[str, int] = {}
+        for m in (ev.get("modes") or []):
+            for k, v in (m.get("node_status") or {}).items():
+                dist[str(k)] = dist.get(str(k), 0) + int(v)
+        return ", ".join(k + "=" + str(v) for k, v in sorted(dist.items())) or "-"
+
+    def _node_total(side: Dict[str, Any]) -> int:
+        return sum(int(((side.get(m, {}) or {}).get("dag") or {}).get("nodes") or 0) for m in order)
+
     lines.append("## 5. 结论")
     lines.append("")
-    lines.append("- 网关对外契约一致：两种模式下 `/api/alliance/*` 的响应信封、字段与枚举展示串均由同一层"
-                 "归一化产出，因此同一份演示脚本无需改动即可跑完，仅 `resume` / `toggle-done` 的可用性随数据源不同。")
-    lines.append("- " + lname + " 提供模式差异化 DAG（" + (", ".join(rich_left) if rich_left else "无额外模式") +
-                 " 的节点数高于 " + rname + "），" + rname + " 由远程执行器自动把节点推进到终态，"
-                 "可通过 `GET /tasks` 在调度器 :3100 上直接查到任务（远程直接证据）。")
+    lines.append("- 网关对外契约一致：两种模式下 `/api/alliance/*` 的响应信封、字段与枚举展示串都出自同一层"
+                 "归一化，因此同一份演示脚本无需改动即可跑完两种部署，差异只体现在 `resume` / `toggle-done` "
+                 "是否可用（取决于数据源）。")
+    if rich_side and slim_side:
+        lines.append("- DAG 丰富度：" + rich_side + " 侧更丰富（" + "、".join(rich_modes) +
+                     " 的节点数高于 " + slim_side + " 侧），6 模式节点合计 " + lname + "=" +
+                     str(_node_total(lmodes)) + "、" + rname + "=" + str(_node_total(rmodes)) + "。")
+    lines.append("- 节点终态来源：" + lname + " 侧 " + _terminal_dist(left) +
+                 "；" + rname + " 侧 " + _terminal_dist(right) + "。")
+    lines.append("- 融合结果分布：" + lname + " 侧 " + _fusion_dist(left) +
+                 "；" + rname + " 侧 " + _fusion_dist(right) + "。")
+    if _fusion_dist(left) != _fusion_dist(right):
+        lines.append("  - 说明：节点被人工干预置为 skipped 时，参与融合的节点不足，融合只会停在 partial、"
+                     "置信度偏低；要取得 completed 融合需由真实执行器把节点自动推进到终态。")
+    if remote_side:
+        r_modes_list = (left.get("modes") or []) if remote_side == lname else (right.get("modes") or [])
+        r_n = sum(1 for m in r_modes_list if m.get("remote"))
+        lines.append("- 远程直接证据：" + remote_side + " 侧创建的 " + str(r_n) + "/" + str(len(r_modes_list)) +
+                     " 个任务可在调度器 :3100 的 `GET /tasks` 上直接查到；" + local_side +
+                     " 侧的任务只存在于网关本地仓库。")
+    else:
+        lines.append("- 本次两份证据未呈现单侧远程标志（两侧一致），故未作远程/本地角色归因，"
+                     "以上对比按实测数据原样呈现。")
+    l_null = [m for m in order if not ((lmodes.get(m, {}) or {}).get("fusion") or {}).get("fusion_strategy")]
+    r_null = [m for m in order if not ((rmodes.get(m, {}) or {}).get("fusion") or {}).get("fusion_strategy")]
+    if l_null or r_null:
+        lines.append("- 字段一致性观察：同一端点 `GET /api/alliance/tasks/:id/fusion-result` 的 "
+                     "`fusion_strategy` 在 " + lname + " 侧有 " + str(len(l_null)) + "/" + str(len(order)) +
+                     " 个模式为空（" + ("、".join(l_null) or "无") + "），在 " + rname + " 侧有 " +
+                     str(len(r_null)) + "/" + str(len(order)) + " 个为空（" + ("、".join(r_null) or "无") +
+                     "）。该字段空缺会使消费方无法按策略展示融合说明，属两态契约差异，需按第 2 节并排结果定位。")
     lines.append("- 步骤合计：" + lname + " " + str(lt["steps"]) + " 步（通过 " + str(lt["passed"]) +
                  "、降级 " + str(lt["degraded"]) + "、失败 " + str(lt["failed"]) + "）；" +
                  rname + " " + str(rt["steps"]) + " 步（通过 " + str(rt["passed"]) +
                  "、降级 " + str(rt["degraded"]) + "、失败 " + str(rt["failed"]) + "）。")
-    lines.append("- 两种模式均无失败步骤，差异仅体现在 DAG 丰富度与人工干预 API 的可用性，"
-                 "属于部署形态差异而非缺陷。")
+    total_failed = lt["failed"] + rt["failed"]
+    lines.append("- 失败步骤合计 " + str(total_failed) + " 个；" +
+                 ("差异集中在 DAG 丰富度、节点终态来源（自动执行 vs 人工跳过）与人工干预 API 的可用性，"
+                  "属部署形态差异而非缺陷。" if total_failed == 0 else
+                  "存在失败步骤，需按第 4 节逐项排查。"))
     lines.append("")
     return "\n".join(lines)
 
@@ -751,7 +830,6 @@ def run(args: argparse.Namespace) -> int:
         return 2
 
     topology = detect_topology(client)
-    remote = topology.get("mode") == "remote"
     sys.stdout.write("[拓扑] 网关模式=" + topology.get("mode") +
                      "  调度:3100=" + ("UP" if topology.get("scheduler", {}).get("up") else "DOWN") +
                      "  执行:3200=" + ("UP" if topology.get("executor", {}).get("up") else "DOWN") + "\n")
@@ -761,7 +839,7 @@ def run(args: argparse.Namespace) -> int:
     for mode in modes:
         sys.stdout.write("[演示] mode=" + mode + "\n")
         results.append(run_mode(client, mode, args.fusion or DEFAULT_FUSION.get(mode),
-                                 args.node_wait_seconds, remote))
+                                 args.node_wait_seconds))
 
     stats_payload: Dict[str, Any] = {}
     try:

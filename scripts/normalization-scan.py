@@ -135,7 +135,7 @@ def main() -> int:
     ap.add_argument(
         "--baseline-txt",
         metavar="PATH",
-        help="导出基线文本（每行 kind::name，仅跨 crate 重复项），供 arch-test 门禁比对",
+        help="导出基线文本（每行 kind::name|crate1,crate2，含副本 crate 集合，仅跨 crate 重复项），供 arch-test 门禁做扩散检测",
     )
     ap.add_argument("--cross-crate-only", action="store_true", help="只展示跨 crate 重复")
     args = ap.parse_args()
@@ -183,14 +183,16 @@ def main() -> int:
     if args.baseline_txt:
         out = Path(args.baseline_txt)
         out.parent.mkdir(parents=True, exist_ok=True)
+        # 格式：kind::name|crate1,crate2 —— 副本 crate 集合使 arch-test 能检测
+        # 「重复扩散」（已登记的重复又被第三个 crate 复制时门禁即失败）
         lines = sorted(
-            f"{kind}::{it['name']}"
+            f"{kind}::{it['name']}|{','.join(it['crates'])}"
             for kind in SYMBOL_PATTERNS
             for it in data.get(kind, [])
             if it["cross_crate"]
         )
         out.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        print(f"基线文本已导出：{out}（{len(lines)} 项）")
+        print(f"基线文本已导出：{out}（{len(lines)} 项，含副本 crate 集合）")
 
     return 0
 

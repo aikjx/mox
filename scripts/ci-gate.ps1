@@ -1,4 +1,4 @@
-﻿# ================================================================
+﻿﻿# ================================================================
 # MOX 企业级 CI 质量门禁脚本 (G1-G6)
 # 架构专家联盟 · 企业级架构规范 V5.0 · 璇玑 RelGraph
 #
@@ -323,7 +323,7 @@ function Invoke-G6 {
             $vOut = python $verifyPy --quiet 2>&1
             if ($LASTEXITCODE -ne 0) {
                 $vOut | ForEach-Object { Write-Host "    $_" -ForegroundColor Yellow }
-                Assert-Fail "G6" "DOC-EP-038 文档↔代码核对存在 FAIL (见 38-VERIFY-REPORT.md)"
+                Assert-Fail "G6" "DOC-EP-038 文档↔代码核对存在 FAIL (见 43-DOC-EP-038文档代码事实自动核对报告.md)"
             } else {
                 Write-Host "  [OK] DOC-EP-038 核对: $($vOut | Select-Object -Last 1)" -ForegroundColor DarkGray
                 Assert-Pass "G6" "DOC-EP-038 文档↔代码全项核对 PASS"

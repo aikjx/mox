@@ -125,6 +125,7 @@ impl FusionEngine {
                 content: Value::Null,
                 confidence: 0.0,
                 expert_count: 0,
+                participating_nodes: 0,
                 strategy,
                 contributions: HashMap::new(),
                 summary: "No successful results to fuse".to_string(),
@@ -178,6 +179,7 @@ impl FusionEngine {
             }),
             confidence: if total > 0.0 { (score / total).clamp(0.0, 1.0) } else { 0.0 },
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!(
@@ -215,6 +217,7 @@ impl FusionEngine {
             }),
             confidence: fused.clamp(0.0, 1.0),
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!(
@@ -263,6 +266,7 @@ impl FusionEngine {
             }),
             confidence: fused.clamp(0.0, 1.0),
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!(
@@ -311,6 +315,7 @@ impl FusionEngine {
             }),
             confidence: best.confidence,
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!(
@@ -348,6 +353,7 @@ impl FusionEngine {
             }),
             confidence: fused.clamp(0.0, 1.0),
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!("拼接融合：{} 位专家输出已合并", input.items.len()),
@@ -383,6 +389,7 @@ impl FusionEngine {
             }),
             confidence: meta_conf.clamp(0.0, 1.0),
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!(
@@ -437,6 +444,7 @@ impl FusionEngine {
                 0.0
             },
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!("辩论融合：{} 位辩手，{} 位裁判", debaters.len(), judge.map(|_| 1).unwrap_or(0)),
@@ -468,6 +476,7 @@ impl FusionEngine {
             }),
             confidence: fused.clamp(0.0, 1.0),
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!("Map-Reduce 融合：{} 个 map，{} 个 reduce", map.len(), reduce.len()),
@@ -503,6 +512,7 @@ impl FusionEngine {
             }),
             confidence: fused.clamp(0.0, 1.0),
             expert_count: input.items.len(),
+            participating_nodes: input.items.len(),
             strategy: input.strategy,
             contributions: HashMap::new(),
             summary: format!(
@@ -529,6 +539,74 @@ impl FusionEngine {
             out.insert(it.expert_id.clone(), contribution);
         }
         out
+    }
+}
+
+#[cfg(test)]
+mod participating_nodes_tests {
+    use super::*;
+
+    fn item(node: &str, expert: &str, confidence: f64) -> FusionItem {
+        FusionItem {
+            node_id: node.to_string(),
+            expert_id: expert.to_string(),
+            summary: format!("{} 的执行输出", node),
+            confidence,
+            output: json!({ "score": confidence, "result": "ok" }),
+        }
+    }
+
+    fn input(strategy: FusionStrategy, items: Vec<FusionItem>) -> FusionInput {
+        FusionInput {
+            items,
+            expert_weights: HashMap::new(),
+            strategy,
+            task_description: "参与节点数回归测试".to_string(),
+        }
+    }
+
+    /// 回归：融合输出必须携带参与节点数（网关 `/fusion-result` 的
+    /// `participating_nodes` 数据源）。注意 `expert_count` 为历史口径——
+    /// 当前实现同样按参与条目数填充，并非去重专家数。
+    #[test]
+    fn participating_nodes_counts_fused_items() {
+        let out = FusionEngine::new()
+            .fuse(input(
+                FusionStrategy::Weighted,
+                vec![
+                    item("node-1", "expert-a", 0.9),
+                    item("node-2", "expert-a", 0.8),
+                    item("node-3", "expert-b", 0.7),
+                ],
+            ))
+            .expect("融合应成功");
+        assert_eq!(out.participating_nodes, 3);
+        assert_eq!(out.expert_count, 3);
+    }
+
+    #[test]
+    fn participating_nodes_is_zero_without_items() {
+        let out = FusionEngine::new()
+            .fuse(input(FusionStrategy::Weighted, vec![]))
+            .expect("空输入应返回零值融合结果");
+        assert_eq!(out.participating_nodes, 0);
+        assert_eq!(out.expert_count, 0);
+    }
+
+    /// 旧载荷（无 participating_nodes 字段）反序列化兼容：serde default 兜底 0
+    #[test]
+    fn legacy_payload_without_participating_nodes_deserializes() {
+        let legacy = json!({
+            "content": null,
+            "confidence": 0.5,
+            "expert_count": 1,
+            "strategy": "best_of",
+            "contributions": {},
+            "summary": "旧载荷",
+        });
+        let out: FusionOutput = serde_json::from_value(legacy).expect("旧载荷应可反序列化");
+        assert_eq!(out.participating_nodes, 0);
+        assert_eq!(out.expert_count, 1);
     }
 }
 

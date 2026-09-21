@@ -86,7 +86,7 @@ architecture/
 |------|------|------|
 | 索引/入口 | `README.md` 或 `00-<主题>.md` | `modules/README.md` |
 | 编号系列 | `<两位序号>-<英文短名>.md` | `04-error-code-reference.md` |
-| 企业级文档 | `<两位序号>-<中文主题>-V<版本>.md` | `38-企业级管理系统架构与业务处理流程文档-V2.1.md` |
+| 企业级文档 | `<两位序号>-<中文主题>-V<版本>.md` | `43-DOC-EP-038文档代码事实自动核对报告.md`（原 38-VERIFY-REPORT，因 38 号冲突迁出） |
 | ADR | `<序号>-<主题>-ADR-<编号>.md` | `29-跨域依赖规则与架构一致性治理-ADR-09.md` |
 | 规格任务包 | `tasks/<YYYYMMDD>-<slug>/{spec,tasks,review}.md` | `tasks/20260823-mox-full-enterprise-architecture/spec.md` |
 | 报告 | `<YYYYMMDD>_<slug>_<类型>.md` 或 `<slug>-<YYYYMMDD>.md` | `20260903_moxfs_phase5_e2e_test_report.md` |
@@ -146,6 +146,28 @@ architecture/
 ---
 
 ## 6. 迁移映射（本轮执行）
+
+### 6.0 企业文档编号重映射（P0-2 修复，2026-09-21）
+
+> `enterprise/` 内 29/30/31/38 发生编号冲突（两份文档同号），已按「原编号 + 内容」迁移到 40+ 新编号空间。
+
+| 旧路径 | 新路径 | 说明 |
+|--------|--------|------|
+| `enterprise/29-MOX总任务中心-全AI工具全软件系统统一控制架构-V1.0.md` | `enterprise/40-MOX总任务中心-全AI工具全软件系统统一控制架构-V1.0.md` | 与 ADR-09 重号迁出 |
+| `enterprise/30-MOX商场中心-全AI系统MCP插件统一搜集分类一键下载企业级管理-V1.0.md` | `enterprise/41-MOX商场中心-全AI系统MCP插件统一搜集分类一键下载企业级管理-V1.0.md` | 与 ADR-11 重号迁出 |
+| `enterprise/31-mox 模块化系统架构代码审计与验证报告-V1.0.md` | `enterprise/42-MOX平台代码审计与验证报告-V1.0.md` | 与 ADR-12 重号迁出 |
+| `enterprise/38-VERIFY-REPORT.md` | `enterprise/43-DOC-EP-038文档代码事实自动核对报告.md` | 与企业架构文档重号迁出 |
+
+**同步修正的旧路径引用（全部已处理，0 残留）**：
+- `enterprise/00-INDEX.md` 变更记录：原 `38-VERIFY-REPORT.md` 改为 `43-DOC-EP-038...md`
+- `enterprise/38-企业级管理系统架构与业务处理流程文档-V2.1.md` 内部引用：报告路径同步更新
+- `enterprise/43-DOC-EP-038...md` 元信息：标注「已迁移至 43 号」
+- `docs/ARCHITECTURE-OF-DOCS.md` §2.2 示例：更新为新文件
+- `scripts/verify-doc-ep038.py` 生成路径 + 用法注释：`REPORT` 常量更新
+- `scripts/ci-gate.ps1` §6.3 错误提示：更新报告文件名
+- `reports/data/20260921-171339-alliance-demo-local.json`：target 路径更新
+- `docs/working-reports/server-manage-normalization-20260901.md` §5：引用更新
+- `docs/docs-hub/docs-hub.html`：path + desc 更新
 
 ### 6.1 目录收敛（L2 架构层 / L7 报告层）
 
@@ -220,7 +242,7 @@ $m | Select-String -SimpleMatch 'mox 模块化系统架构' | Measure-Object
   <!-- check-doc-links:ignore-start --> … <!-- check-doc-links:ignore-end -->   豁免区块
   ```
 
-- **基线（2026-09-13）**：断链 **0**；反引号告警 60，全部位于 L7 历史快照（`working-reports/`、`normalization/`、`specifications/tasks/` 任务包、归一化报告），按快照证据保留。
+- **基线（2026-09-21）**：断链 **0**；P0-2/P0-3 迁移引入的死链已清零；反引号告警保留在 L7 历史快照，按快照证据保留。
 - **推进路径**：L0~L6 告警清零后，把 `--strict` 接入 CI G6。
 
 **新增文档自查（5 问）**：①属于哪一层？②同类是否已有目录（禁止新开平级）？③权威等级？④是否与既有 🟢 冲突（冲突先改 22 号总控卡）？⑤是否已在层 `README.md` 登记？
@@ -241,4 +263,5 @@ $m | Select-String -SimpleMatch 'mox 模块化系统架构' | Measure-Object
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-09-21 | v1.1 | P0-2 编号冲突修复（29/30/31/38 → 40/41/42/43，§6.0）；P0-3 新增死链清零（9 处旧路径引用同步，00-INDEX / ARCHITECTURE-OF-DOCS / verify-doc-ep038.py / ci-gate.ps1 / 工作汇报 / docs-hub / JSON 数据）；P0-5 根目录核查通过（仅余合规入口文件） |
 | 2026-09-13 | v1.0 | 首版：确立 L0~L8 分层、命名/权威/引用规范、缺陷登记（7 项）、迁移映射（8 目录 + 6 文件）、门禁与变更流程 |

@@ -51,6 +51,14 @@ pub struct FusionOutput {
     pub contributions: std::collections::HashMap<String, f64>,
     /// 融合摘要说明
     pub summary: String,
+    /// 参与融合的节点数量（成功产出并进入融合的 DAG 节点数）
+    ///
+    /// 与 `expert_count` 语义不同：本字段按「参与融合的 DAG 节点」计数，
+    /// 与网关本地实现 `/fusion-result` 的 `participating_nodes`（完成节点数）同
+    /// 语义；`expert_count` 为历史口径（当前实现同样按参与条目数填充）。
+    /// `#[serde(default)]` 保证旧载荷（无该字段）反序列化兼容。
+    #[serde(default)]
+    pub participating_nodes: usize,
 }
 
 /// DAG 执行引擎 trait

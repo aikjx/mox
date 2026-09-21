@@ -18,10 +18,16 @@ pub mod analyze;
 pub mod link;
 pub mod model;
 pub mod error;
+
+// SQLite + FTS5 持久化适配器（启用 `sqlite` feature 时编译；core 默认零 IO，
+// 生产持久化由 svc 层启用 `sqlite` feature 提供，trait 注入点为 KbStore）
+#[cfg(feature = "sqlite")]
 pub mod sqlite_store;
 
 pub use error::{KbError, KbResult};
 pub use model::*;
+
+#[cfg(feature = "sqlite")]
 pub use sqlite_store::SqliteKbStore;
 
 pub const CRATE_ID: &str = "mox-kb-core";

@@ -116,8 +116,24 @@ fn collect_all_crates(workspace_root: &Path) -> HashMap<String, CrateInfo> {
         "mox-kg-algo-core",          // pre-existing cross-domain dep, pending api refactor
     ].iter().cloned().collect();
 
+    // 目录剪枝：第三方参考代码与运行时目录不参与架构治理
+    // （AGENTS.md：`ais/` `third_party/` 为第三方参考不入库；`target/` 为运行态。
+    //   剪枝而非逐 crate 排除——vendor 树含数百个外部 crate，如 openai-codex 的
+    //   codex-core 曾因路径含 "core" 被误归类为 L3 而误报 IO 违规。）
+    const PRUNED_DIRS: &[&str] = &["ais", "third_party", "target", "node_modules", ".git"];
+    let is_pruned = |p: &Path| -> bool {
+        p.components().any(|c| {
+            let s = c.as_os_str().to_str().unwrap_or("");
+            PRUNED_DIRS.contains(&s)
+        })
+    };
+
     let mut crates = HashMap::new();
-    for entry in WalkDir::new(workspace_root).into_iter().filter_map(|e| e.ok()) {
+    for entry in WalkDir::new(workspace_root)
+        .into_iter()
+        .filter_entry(|e| !is_pruned(e.path()))
+        .filter_map(|e| e.ok())
+    {
         if entry.file_name() == "Cargo.toml" {
             let path = entry.path().to_path_buf();
             if let Some((name, deps)) = parse_cargo_toml(&path) {
@@ -342,8 +358,16 @@ fn test_api_crates_are_pure() {
 #[test]
 fn test_core_layer_has_no_new_io_dependencies() {
     const IO_DEPS: &[&str] = &[
+        // 持久化 / 数据库
         "sqlx", "reqwest", "redis", "mongodb", "tokio-postgres",
         "duckdb", "clickhouse", "elasticsearch",
+        // 嵌入式持久化（2026-09-21 审计补严：rusqlite 曾被 core 层非可选依赖，已清偿为可选）
+        "rusqlite", "rocksdb", "sled", "lmdb", "diesel", "sea-orm",
+        // 原生网络
+        "tokio-tungstenite", "native-tls",
+        // 设备 / 桌面自动化（音频、截屏、键鼠、窗口、剪贴板）
+        "cpal", "rodio", "sherpa-onnx", "screenshots", "enigo", "global-hotkey",
+        "wry", "tao", "arboard",
     ];
 
     /// 已知技术债（crate 名, IO 依赖名）。修复后必须从本表移除。
@@ -353,10 +377,13 @@ fn test_core_layer_has_no_new_io_dependencies() {
 
     // 说明：`mox-alliance-boot-config` 的 reqwest 位于 [dev-dependencies]，
     // 不进入生产编译，故不计入违规（门禁只校验 [dependencies]）。
-    // `mox-ai-alliance-engine` 的两项技术债均已清偿：
-    //   - `sqlx`   → 可选 `pg` feature（core 默认纯计算，生产持久化由 svc 层启用）；
-    //   - `reqwest`→ 可选 `llm-http` feature（HTTP LLM 咨询器下沉到适配层，
-    //     core 默认零 IO，纯领域逻辑 LLMConfig / ChatMessage / ExpertOpinionJSON 始终可用）。
+    // 已清偿的技术债（修复即从 BASELINE 移除，此处留档防止回潮）：
+    //   - `mox-ai-alliance-engine`：`sqlx` → 可选 `pg` feature；`reqwest` → 可选 `llm-http` feature
+    //     （core 默认零 IO，纯领域逻辑 LLMConfig / ChatMessage / ExpertOpinionJSON 始终可用）；
+    //   - `mox-alliance-scheduler-core`：`rusqlite` → 可选 `sqlite` feature
+    //     （SqliteTaskRepository 适配器，生产由 scheduler-svc 启用）；
+    //   - `mox-kb-core`：`rusqlite` → 可选 `sqlite` feature
+    //     （SqliteKbStore + FTS5 适配器，生产由 kb-server 启用）。
 
     let crates = collect_all_crates(&workspace_root());
 
@@ -487,11 +514,16 @@ fn scan_public_symbols(root: &Path) -> HashMap<(String, String), HashSet<String>
     map
 }
 
-/// 跨 crate 重复定义的公开符号不得新增
+/// 跨 crate 重复定义的公开符号：不得新增，也不得扩散
 ///
 /// 基线：`platform/arch-test/baseline/normalization.txt`（由 `scripts/normalization-scan.py
-/// --baseline-txt` 生成）。当前存量是真实技术债（449 项），一刀切禁止不现实，
-/// 因此采用「**不得新增**」策略：新增即失败，逐项清偿后基线同步收缩。
+/// --baseline-txt` 生成），格式为 `kind::Name|crateA,crateB` —— 记录该重复符号当前的
+/// **副本 crate 集合**。同名不等于重复债务（不同业务上下文可有不同模型），因此治理口径是：
+/// - **不得新增**：出现基线之外的新跨 crate 同名符号 → 失败；
+/// - **不得扩散**：已登记的重复又出现新副本 crate（2 份 → 3 份）→ 失败
+///   （旧格式只记名字检测不到这一点，已升级为集合格式）；
+/// - **语义归属优先**：语义相同 → 收敛到拥有域的权威定义并改为引用；
+///   语义不同 → 重命名以示区分（显式转换连接），而非强行合并。
 #[test]
 fn test_no_new_cross_crate_duplicate_symbols() {
     let root = workspace_root();
@@ -506,41 +538,119 @@ fn test_no_new_cross_crate_duplicate_symbols() {
             baseline_path.display()
         )
     });
-    let baseline: HashSet<String> = baseline_content
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
-        .map(|l| l.to_string())
-        .collect();
+    // 基线解析：`kind::Name|crateA,crateB` → (key, 副本 crate 集合)。
+    // 旧格式 `kind::Name`（无 `|`）解析为空集合 ⇒ 任何现存副本都会被判为扩散，
+    // 从而强制重新生成基线（自迁移，不留静默豁免）。
+    let mut baseline: HashMap<String, HashSet<String>> = HashMap::new();
+    for line in baseline_content.lines() {
+        let l = line.trim();
+        if l.is_empty() {
+            continue;
+        }
+        let (key, crates) = match l.split_once('|') {
+            Some((k, s)) => (
+                k.trim().to_string(),
+                s.split(',')
+                    .map(|c| c.trim().to_string())
+                    .filter(|c| !c.is_empty())
+                    .collect::<HashSet<String>>(),
+            ),
+            None => (l.to_string(), HashSet::new()),
+        };
+        baseline.insert(key, crates);
+    }
 
     let symbols = scan_public_symbols(&root);
-    let current: HashSet<String> = symbols
-        .iter()
-        .filter(|(_, crates)| crates.len() > 1)
-        .map(|((kind, name), _)| format!("{}::{}", kind, name))
-        .collect();
+    let mut current: HashMap<String, HashSet<String>> = HashMap::new();
+    for ((kind, name), crates) in &symbols {
+        if crates.len() > 1 {
+            current
+                .entry(format!("{}::{}", kind, name))
+                .or_default()
+                .extend(crates.iter().cloned());
+        }
+    }
 
-    let mut added: Vec<&String> = current.difference(&baseline).collect();
-    added.sort();
+    fn sorted_join(set: &HashSet<String>) -> String {
+        let mut v: Vec<&String> = set.iter().collect();
+        v.sort();
+        v.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(",")
+    }
 
-    if !added.is_empty() {
+    let mut violations: Vec<String> = Vec::new();
+
+    // ① 新增重复：基线中不存在的新跨 crate 同名符号
+    let mut added_keys: Vec<&String> =
+        current.keys().filter(|k| !baseline.contains_key(*k)).collect();
+    added_keys.sort();
+    for k in added_keys {
+        violations.push(format!(
+            "  {}  新增跨 crate 重复（副本: {}）",
+            k,
+            sorted_join(&current[k])
+        ));
+    }
+
+    // ② 重复扩散：已登记的重复又出现基线之外的新副本 crate（2 份 → 3 份）
+    let mut spread: Vec<(&String, Vec<String>)> = Vec::new();
+    for (k, cur) in &current {
+        if let Some(base) = baseline.get(k) {
+            let new_crates: Vec<String> = cur.difference(base).cloned().collect();
+            if !new_crates.is_empty() {
+                spread.push((k, new_crates));
+            }
+        }
+    }
+    spread.sort();
+    for (k, new_crates) in &spread {
+        violations.push(format!(
+            "  {}  重复扩散：新增副本 crate [{}]（同名≠同义：语义不同请重命名区分，\
+             语义相同请收敛到拥有域权威定义）",
+            k,
+            new_crates.join(", ")
+        ));
+    }
+
+    if !violations.is_empty() {
         panic!(
-            "新增跨 crate 重复定义符号（{}）：\n{}\n\n\
-             说明：这些概念缺少单一真源（SSOT）。请收敛到协议层/共享契约层并改为引用，\n\
-             若确属不同语义请重命名以示区分；清偿既有项后请重新生成基线。",
-            added.len(),
-            added.iter().map(|s| format!("  {}", s)).collect::<Vec<_>>().join("\n")
+            "跨 crate 重复符号治理违规（{}）：\n{}\n\n\
+             基线格式：kind::Name|crate1,crate2（副本 crate 集合）。\n\
+             处理后请重新生成基线：python scripts/normalization-scan.py --baseline-txt {}",
+            violations.len(),
+            violations.join("\n"),
+            baseline_path.display()
         );
     }
 
-    // 已清偿项只提示不失败：清偿是好事，不应阻塞 CI；提示用于提醒同步收缩基线
-    let mut removed: Vec<&String> = baseline.difference(&current).collect();
-    removed.sort();
-    if !removed.is_empty() {
+    // 进展提示（不失败）：清偿是好事，不应阻塞 CI；提示用于同步收缩基线
+    let mut shrunk: Vec<String> = Vec::new();
+    let mut resolved: Vec<&String> = Vec::new();
+    for (k, base) in &baseline {
+        match current.get(k) {
+            Some(cur) => {
+                let removed: Vec<&String> = base.difference(cur).collect();
+                if !removed.is_empty() {
+                    let names: Vec<&str> = removed.iter().map(|s| s.as_str()).collect();
+                    shrunk.push(format!("  {}  副本已减少: [{}]", k, names.join(", ")));
+                }
+            }
+            None => resolved.push(k),
+        }
+    }
+    shrunk.sort();
+    if !shrunk.is_empty() {
+        println!(
+            "[归一化进展] 以下 {} 项重复副本已收缩，建议重新生成基线固化成果：\n{}",
+            shrunk.len(),
+            shrunk.join("\n")
+        );
+    }
+    resolved.sort();
+    if !resolved.is_empty() {
         println!(
             "[归一化进展] 以下 {} 项已不再是跨 crate 重复，建议重新生成基线以固化成果：\n{}",
-            removed.len(),
-            removed.iter().map(|s| format!("  {}", s)).collect::<Vec<_>>().join("\n")
+            resolved.len(),
+            resolved.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n")
         );
     }
 }

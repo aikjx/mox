@@ -1,6 +1,12 @@
 # =============================================================================
 # MOX 平台 - Rust 代码格式化配置
 # 统一全项目代码风格，避免 PR 中无谓的格式 diff
+#
+# 2026-09-21 现代化：迁移已弃用/已移除的 nightly 选项，消除每次 fmt 的告警，
+# 避免未来 rustfmt 版本升级时行为漂移（CI 使用浮动 nightly 工具链）：
+#   - fn_args_layout      -> fn_params_layout（官方更名）
+#   - merge_imports       -> imports_granularity = "Crate"（官方替代，语义等价）
+#   - attrs_on_single_line（当前 nightly 已不识别，移除）
 # =============================================================================
 
 # 最大行宽（字符数）
@@ -18,14 +24,14 @@ tab_spaces = 4
 # 大括号换行风格：与同一行
 brace_style = "SameLineWhere"
 
-# 函数参数缩进样式
-fn_args_layout = "Tall"
+# 函数参数缩进样式（原 fn_args_layout，官方已更名）
+fn_params_layout = "Tall"
 
 # 链式调用换行
 chain_width = 80
 
-# 单个表达式 if-let 合并
-merge_imports = true
+# use 语句合并（原 merge_imports，官方替代项，按 crate 粒度合并）
+imports_granularity = "Crate"
 
 # reorder_imports: 按字母顺序重排 use 语句
 reorder_imports = true
@@ -33,7 +39,7 @@ reorder_imports = true
 # reorder_modules: 按字母顺序重排 mod 声明
 reorder_modules = true
 
-# 移除未使用的 import
+# 移除嵌套冗余括号
 remove_nested_parens = true
 
 # match 分支换行
@@ -45,9 +51,6 @@ enum_discrim_align_threshold = 0
 
 # 结构体字段对齐
 struct_field_align_threshold = 0
-
-# 溢出时的属性位置
-attrs_on_single_line = false
 
 # 文档注释格式
 format_code_in_doc_comments = false

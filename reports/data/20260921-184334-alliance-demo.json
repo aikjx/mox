@@ -1,0 +1,1091 @@
+{
+  "meta": {
+    "generated_at": "2026-09-21 18:43:34",
+    "base_url": "http://127.0.0.1:3080",
+    "git_head": "b53afe6a",
+    "python": "3.8.8",
+    "requests": 79,
+    "json_path": "reports\\data\\20260921-184334-alliance-demo.json",
+    "mode": "remote"
+  },
+  "health": {
+    "healthy": true,
+    "probe": "/api/v1/status",
+    "http": 200
+  },
+  "topology": {
+    "mode": "remote",
+    "gateway_listed_tasks": 39,
+    "scheduler_listed_tasks": 39,
+    "scheduler": {
+      "up": true,
+      "service": "mox-alliance-scheduler",
+      "deps": {
+        "executor": "up"
+      }
+    },
+    "executor": {
+      "up": true,
+      "http": 200
+    }
+  },
+  "modes": [
+    {
+      "mode": "sequential",
+      "ok": true,
+      "remote": true,
+      "task_id": "e9f3bf6c-213c-4222-a14b-3439b6b5e772",
+      "title": "端到端演示-sequential-184216",
+      "fusion_strategy_sent": "best_of",
+      "fusion_strategy_display": "first_wins",
+      "mode_display": "single_expert",
+      "dag": {
+        "nodes": 1,
+        "edges": 0,
+        "node_names": [
+          "代码编程专家"
+        ]
+      },
+      "nodes_total": 1,
+      "node_status": {
+        "completed": 1
+      },
+      "execution_status": {
+        "status": "completed",
+        "completed_nodes": 1,
+        "total_nodes": 1,
+        "progress": 1.0
+      },
+      "fusion": {
+        "fusion_status": "completed",
+        "fusion_strategy": "first_wins",
+        "confidence": 0.85,
+        "key_findings": [],
+        "recommendations": [],
+        "participating_nodes": 0
+      },
+      "task_status": "completed",
+      "logs_tail": [
+        "代码编程专家 · completed"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 202
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "resume",
+          "ok": false,
+          "ms": 45,
+          "error": "DemoError: POST /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/resume 返回 HTTP 409: {\"code\": 409, \"msg\": \"InvalidTaskStatus: Can only resume paused task, current status: Running\"}",
+          "degraded": true
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 14
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 24
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 34
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 35
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 93
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 39
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 30
+        },
+        {
+          "name": "toggle_done",
+          "ok": false,
+          "ms": 31,
+          "error": "DemoError: PUT /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/toggle-done 返回 HTTP 404: {\"code\": 404, \"msg\": \"任务 e9f3bf6c-213c-4222-a14b-3439b6b5e772 不存在\"}",
+          "degraded": true
+        }
+      ]
+    },
+    {
+      "mode": "parallel",
+      "ok": true,
+      "remote": true,
+      "task_id": "9e369d77-7a77-4e41-849f-f9058858a82b",
+      "title": "端到端演示-parallel-184220",
+      "fusion_strategy_sent": "weighted",
+      "fusion_strategy_display": "weighted_voting",
+      "mode_display": "expert_alliance",
+      "dag": {
+        "nodes": 1,
+        "edges": 0,
+        "node_names": [
+          "代码编程专家"
+        ]
+      },
+      "nodes_total": 1,
+      "node_status": {
+        "completed": 1
+      },
+      "execution_status": {
+        "status": "completed",
+        "completed_nodes": 1,
+        "total_nodes": 1,
+        "progress": 1.0
+      },
+      "fusion": {
+        "fusion_status": "completed",
+        "fusion_strategy": "weighted_voting",
+        "confidence": 0.85,
+        "key_findings": [],
+        "recommendations": [],
+        "participating_nodes": 0
+      },
+      "task_status": "completed",
+      "logs_tail": [
+        "代码编程专家 · completed"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 140
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 20
+        },
+        {
+          "name": "resume",
+          "ok": false,
+          "ms": 32,
+          "error": "DemoError: POST /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/resume 返回 HTTP 409: {\"code\": 409, \"msg\": \"InvalidTaskStatus: Can only resume paused task, current status: Running\"}",
+          "degraded": true
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 115
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 23
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 24
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 48
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 16
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "toggle_done",
+          "ok": false,
+          "ms": 16,
+          "error": "DemoError: PUT /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/toggle-done 返回 HTTP 404: {\"code\": 404, \"msg\": \"任务 9e369d77-7a77-4e41-849f-f9058858a82b 不存在\"}",
+          "degraded": true
+        }
+      ]
+    },
+    {
+      "mode": "debate",
+      "ok": true,
+      "remote": true,
+      "task_id": "1f913e58-ad96-46e2-821a-27beb512e676",
+      "title": "端到端演示-debate-184224",
+      "fusion_strategy_sent": "debate",
+      "fusion_strategy_display": "debate",
+      "mode_display": "debate",
+      "dag": {
+        "nodes": 1,
+        "edges": 0,
+        "node_names": [
+          "代码编程专家"
+        ]
+      },
+      "nodes_total": 1,
+      "node_status": {
+        "completed": 1
+      },
+      "execution_status": {
+        "status": "completed",
+        "completed_nodes": 1,
+        "total_nodes": 1,
+        "progress": 1.0
+      },
+      "fusion": {
+        "fusion_status": "completed",
+        "fusion_strategy": "debate",
+        "confidence": 1.0,
+        "key_findings": [],
+        "recommendations": [],
+        "participating_nodes": 0
+      },
+      "task_status": "completed",
+      "logs_tail": [
+        "代码编程专家 · completed"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 122
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "resume",
+          "ok": false,
+          "ms": 20,
+          "error": "DemoError: POST /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/resume 返回 HTTP 409: {\"code\": 409, \"msg\": \"InvalidTaskStatus: Can only resume paused task, current status: Running\"}",
+          "degraded": true
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 23
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 33
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 35
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 42
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 34
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "toggle_done",
+          "ok": false,
+          "ms": 18,
+          "error": "DemoError: PUT /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/toggle-done 返回 HTTP 404: {\"code\": 404, \"msg\": \"任务 1f913e58-ad96-46e2-821a-27beb512e676 不存在\"}",
+          "degraded": true
+        }
+      ]
+    },
+    {
+      "mode": "hierarchical",
+      "ok": true,
+      "remote": true,
+      "task_id": "ba047c35-40d8-472c-a00f-4c6b690fdf69",
+      "title": "端到端演示-hierarchical-184227",
+      "fusion_strategy_sent": "stacking",
+      "fusion_strategy_display": "stacking",
+      "mode_display": "autonomous",
+      "dag": {
+        "nodes": 1,
+        "edges": 0,
+        "node_names": [
+          "代码编程专家"
+        ]
+      },
+      "nodes_total": 1,
+      "node_status": {
+        "completed": 1
+      },
+      "execution_status": {
+        "status": "completed",
+        "completed_nodes": 1,
+        "total_nodes": 1,
+        "progress": 1.0
+      },
+      "fusion": {
+        "fusion_status": "completed",
+        "fusion_strategy": "stacking",
+        "confidence": 0.85,
+        "key_findings": [],
+        "recommendations": [],
+        "participating_nodes": 0
+      },
+      "task_status": "completed",
+      "logs_tail": [
+        "代码编程专家 · completed"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 116
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 38
+        },
+        {
+          "name": "resume",
+          "ok": false,
+          "ms": 29,
+          "error": "DemoError: POST /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/resume 返回 HTTP 409: {\"code\": 409, \"msg\": \"InvalidTaskStatus: Can only resume paused task, current status: Running\"}",
+          "degraded": true
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 37
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 22
+        },
+        {
+          "name": "toggle_done",
+          "ok": false,
+          "ms": 13,
+          "error": "DemoError: PUT /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/toggle-done 返回 HTTP 404: {\"code\": 404, \"msg\": \"任务 ba047c35-40d8-472c-a00f-4c6b690fdf69 不存在\"}",
+          "degraded": true
+        }
+      ]
+    },
+    {
+      "mode": "iterative",
+      "ok": true,
+      "remote": true,
+      "task_id": "87bc2636-da03-4323-a6d2-e24001253fc6",
+      "title": "端到端演示-iterative-184228",
+      "fusion_strategy_sent": "iterative",
+      "fusion_strategy_display": "iterative",
+      "mode_display": "human_in_loop",
+      "dag": {
+        "nodes": 3,
+        "edges": 2,
+        "node_names": [
+          "代码编程专家",
+          "代码编程专家",
+          "代码编程专家"
+        ]
+      },
+      "nodes_total": 3,
+      "node_status": {
+        "completed": 3
+      },
+      "execution_status": {
+        "status": "completed",
+        "completed_nodes": 3,
+        "total_nodes": 3,
+        "progress": 1.0
+      },
+      "fusion": {
+        "fusion_status": "completed",
+        "fusion_strategy": "iterative",
+        "confidence": 0.8500000000000001,
+        "key_findings": [],
+        "recommendations": [],
+        "participating_nodes": 0
+      },
+      "task_status": "completed",
+      "logs_tail": [
+        "代码编程专家 · completed",
+        "代码编程专家 · completed",
+        "代码编程专家 · completed"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 88
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 24
+        },
+        {
+          "name": "resume",
+          "ok": false,
+          "ms": 22,
+          "error": "DemoError: POST /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/resume 返回 HTTP 409: {\"code\": 409, \"msg\": \"InvalidTaskStatus: Can only resume paused task, current status: Running\"}",
+          "degraded": true
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 23
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 20
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 14
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 40
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 17
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "toggle_done",
+          "ok": false,
+          "ms": 17,
+          "error": "DemoError: PUT /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/toggle-done 返回 HTTP 404: {\"code\": 404, \"msg\": \"任务 87bc2636-da03-4323-a6d2-e24001253fc6 不存在\"}",
+          "degraded": true
+        }
+      ]
+    },
+    {
+      "mode": "voting",
+      "ok": true,
+      "remote": true,
+      "task_id": "6dd971cb-8fba-4dfc-975d-927e85ed3089",
+      "title": "端到端演示-voting-184231",
+      "fusion_strategy_sent": "voting",
+      "fusion_strategy_display": "rrf",
+      "mode_display": "voting",
+      "dag": {
+        "nodes": 1,
+        "edges": 0,
+        "node_names": [
+          "代码编程专家"
+        ]
+      },
+      "nodes_total": 1,
+      "node_status": {
+        "completed": 1
+      },
+      "execution_status": {
+        "status": "completed",
+        "completed_nodes": 1,
+        "total_nodes": 1,
+        "progress": 1.0
+      },
+      "fusion": {
+        "fusion_status": "completed",
+        "fusion_strategy": "rrf",
+        "confidence": 1.0,
+        "key_findings": [],
+        "recommendations": [],
+        "participating_nodes": 0
+      },
+      "task_status": "completed",
+      "logs_tail": [
+        "代码编程专家 · completed"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 87
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 58
+        },
+        {
+          "name": "resume",
+          "ok": false,
+          "ms": 21,
+          "error": "DemoError: POST /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/resume 返回 HTTP 409: {\"code\": 409, \"msg\": \"InvalidTaskStatus: Can only resume paused task, current status: Running\"}",
+          "degraded": true
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 20
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 30
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 44
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 17
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 38
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "toggle_done",
+          "ok": false,
+          "ms": 16,
+          "error": "DemoError: PUT /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/toggle-done 返回 HTTP 404: {\"code\": 404, \"msg\": \"任务 6dd971cb-8fba-4dfc-975d-927e85ed3089 不存在\"}",
+          "degraded": true
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "active_experts": 0,
+    "avg_completion_minutes": 0.0,
+    "completed_tasks": 0,
+    "failed_tasks": 0,
+    "running_tasks": 0,
+    "success_rate": 0.0,
+    "total_experts": 0,
+    "total_tasks": 0
+  },
+  "latency": [
+    {
+      "endpoint": "GET /api/alliance/stats",
+      "count": 1,
+      "p50_ms": 19,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks",
+      "count": 1,
+      "p50_ms": 53,
+      "max_ms": 53
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676",
+      "count": 1,
+      "p50_ms": 42,
+      "max_ms": 42
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/dag",
+      "count": 1,
+      "p50_ms": 19,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/execution-status",
+      "count": 1,
+      "p50_ms": 33,
+      "max_ms": 33
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/fusion-result",
+      "count": 1,
+      "p50_ms": 35,
+      "max_ms": 35
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/logs",
+      "count": 1,
+      "p50_ms": 34,
+      "max_ms": 34
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/nodes",
+      "count": 4,
+      "p50_ms": 25,
+      "max_ms": 27
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089",
+      "count": 1,
+      "p50_ms": 38,
+      "max_ms": 38
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/dag",
+      "count": 1,
+      "p50_ms": 58,
+      "max_ms": 58
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/execution-status",
+      "count": 1,
+      "p50_ms": 44,
+      "max_ms": 44
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/fusion-result",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/logs",
+      "count": 1,
+      "p50_ms": 19,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/nodes",
+      "count": 3,
+      "p50_ms": 20,
+      "max_ms": 30
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6",
+      "count": 1,
+      "p50_ms": 40,
+      "max_ms": 40
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/dag",
+      "count": 1,
+      "p50_ms": 22,
+      "max_ms": 22
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/execution-status",
+      "count": 1,
+      "p50_ms": 14,
+      "max_ms": 14
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/fusion-result",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/logs",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/nodes",
+      "count": 4,
+      "p50_ms": 20,
+      "max_ms": 23
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b",
+      "count": 1,
+      "p50_ms": 48,
+      "max_ms": 48
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/dag",
+      "count": 1,
+      "p50_ms": 20,
+      "max_ms": 20
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/execution-status",
+      "count": 1,
+      "p50_ms": 23,
+      "max_ms": 23
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/fusion-result",
+      "count": 1,
+      "p50_ms": 24,
+      "max_ms": 24
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/logs",
+      "count": 1,
+      "p50_ms": 16,
+      "max_ms": 16
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/nodes",
+      "count": 4,
+      "p50_ms": 73,
+      "max_ms": 113
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69",
+      "count": 1,
+      "p50_ms": 37,
+      "max_ms": 37
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/dag",
+      "count": 1,
+      "p50_ms": 38,
+      "max_ms": 38
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/execution-status",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/fusion-result",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/logs",
+      "count": 1,
+      "p50_ms": 19,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/nodes",
+      "count": 3,
+      "p50_ms": 21,
+      "max_ms": 27
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772",
+      "count": 1,
+      "p50_ms": 93,
+      "max_ms": 93
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/dag",
+      "count": 1,
+      "p50_ms": 21,
+      "max_ms": 21
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/execution-status",
+      "count": 1,
+      "p50_ms": 34,
+      "max_ms": 34
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/fusion-result",
+      "count": 1,
+      "p50_ms": 35,
+      "max_ms": 35
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/logs",
+      "count": 1,
+      "p50_ms": 39,
+      "max_ms": 39
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/nodes",
+      "count": 4,
+      "p50_ms": 25,
+      "max_ms": 37
+    },
+    {
+      "endpoint": "GET /api/v1/status",
+      "count": 1,
+      "p50_ms": 306,
+      "max_ms": 306
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks",
+      "count": 6,
+      "p50_ms": 122,
+      "max_ms": 202
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/qa",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/resume",
+      "count": 1,
+      "p50_ms": 20,
+      "max_ms": 20
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/qa",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/resume",
+      "count": 1,
+      "p50_ms": 21,
+      "max_ms": 21
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/qa",
+      "count": 1,
+      "p50_ms": 23,
+      "max_ms": 23
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/resume",
+      "count": 1,
+      "p50_ms": 22,
+      "max_ms": 22
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/qa",
+      "count": 1,
+      "p50_ms": 21,
+      "max_ms": 21
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/resume",
+      "count": 1,
+      "p50_ms": 32,
+      "max_ms": 32
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/qa",
+      "count": 1,
+      "p50_ms": 22,
+      "max_ms": 22
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/resume",
+      "count": 1,
+      "p50_ms": 29,
+      "max_ms": 29
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/qa",
+      "count": 1,
+      "p50_ms": 28,
+      "max_ms": 28
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/resume",
+      "count": 1,
+      "p50_ms": 45,
+      "max_ms": 45
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/1f913e58-ad96-46e2-821a-27beb512e676/toggle-done",
+      "count": 1,
+      "p50_ms": 16,
+      "max_ms": 16
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/6dd971cb-8fba-4dfc-975d-927e85ed3089/toggle-done",
+      "count": 1,
+      "p50_ms": 15,
+      "max_ms": 15
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/87bc2636-da03-4323-a6d2-e24001253fc6/toggle-done",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/9e369d77-7a77-4e41-849f-f9058858a82b/toggle-done",
+      "count": 1,
+      "p50_ms": 16,
+      "max_ms": 16
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/ba047c35-40d8-472c-a00f-4c6b690fdf69/toggle-done",
+      "count": 1,
+      "p50_ms": 13,
+      "max_ms": 13
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/e9f3bf6c-213c-4222-a14b-3439b6b5e772/toggle-done",
+      "count": 1,
+      "p50_ms": 30,
+      "max_ms": 30
+    }
+  ],
+  "gate": {
+    "ok": true,
+    "repo": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+    "gates": {
+      "port_registry": {
+        "repo": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+        "passed": true,
+        "exit_code": 0,
+        "error_count": 0,
+        "warn_count": 2,
+        "scanned_ports": 110,
+        "duration_ms": 52884,
+        "returned_issues": 2,
+        "issues": [
+          {
+            "severity": "WARN",
+            "msg": "发现未登记端口 3101（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+            "files": [
+              "docker-compose.alliance.yml"
+            ]
+          },
+          {
+            "severity": "WARN",
+            "msg": "发现未登记端口 3400（3 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+            "files": [
+              "docker-compose.alliance.yml",
+              "docs/expert-alliance/DEPLOYMENT-DESIGN.md",
+              "platform/domains/alliance/svc/mox-alliance-registry-svc/src/app_state.rs"
+            ]
+          }
+        ],
+        "advice": "端口校验通过，可放心提交。"
+      },
+      "doc_links": {
+        "passed": true,
+        "exit_code": 0,
+        "scanned_files": 366,
+        "checked_refs": 2167,
+        "broken_count": 0,
+        "warning_count": 73,
+        "duration_ms": 9336,
+        "top_broken_files": [],
+        "broken": [],
+        "stdout_summary": "[check-doc-links] 扫描文件 366 个，判定引用 2167 条",
+        "advice": "文档链接校验通过。"
+      }
+    },
+    "failures": [],
+    "summary": "治理体检通过：端口无漂移、文档无断链，可以提交/发布。",
+    "skip": false
+  }
+}

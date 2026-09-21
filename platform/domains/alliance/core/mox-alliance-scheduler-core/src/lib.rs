@@ -82,8 +82,14 @@ pub use synchronizer::{
 // 配置同步器重导出
 pub use config_sync::ConfigSynchronizer;
 
-// 存储抽象重导出
-pub use storage::{FileTaskRepository, InMemoryTaskRepository, SqliteTaskRepository, StoredNode, TaskRepository, temp_file_repository};
+// 存储抽象重导出（trait 与内存/文件实现为纯逻辑，默认编译；
+// SQLite 增量落盘实现为持久化适配器，仅在启用 `sqlite` feature 时导出）
+pub use storage::{
+    FileTaskRepository, InMemoryTaskRepository, TaskRepository, temp_file_repository,
+};
+
+#[cfg(feature = "sqlite")]
+pub use storage::{SqliteTaskRepository, StoredNode};
 
 // 可观测性指标重导出
 pub use metrics::{AllianceMetrics, MetricsSnapshot};

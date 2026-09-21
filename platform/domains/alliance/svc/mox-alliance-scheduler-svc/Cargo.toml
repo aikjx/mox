@@ -10,7 +10,7 @@ description = "专家联盟 · 调度器服务（任务调度 + 专家匹配 + �
 mox-alliance-common-proto = { workspace = true }
 mox-alliance-scheduler-proto = { workspace = true }
 mox-alliance-executor-proto = { workspace = true }
-mox-alliance-scheduler-core = { path = "../../core/mox-alliance-scheduler-core", features = ["http-bridge"] }
+mox-alliance-scheduler-core = { path = "../../core/mox-alliance-scheduler-core", features = ["http-bridge", "sqlite"] }
 mox-alliance-config-core = { workspace = true }
 mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config", features = ["nacos", "naming"] }
 mox-alliance-api = { path = "../../api" }

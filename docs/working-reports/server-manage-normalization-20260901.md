@@ -81,6 +81,6 @@
 
 ## 五、边界说明（诚实声明）
 
-- **未动**：历史工作报告类文档（`service_startup_script_optimization_plan.md`、`manage_consolidation_20260823.md`、`31-mox 模块化系统架构代码审计与验证报告`、`01-ENTERPRISE-OPTIMIZATION.md`）——保留历史快照，兼容别名保证其命令仍可执行。
+- **未动**：历史工作报告类文档（`service_startup_script_optimization_plan.md`、`manage_consolidation_20260823.md`、`42-MOX平台代码审计与验证报告`、`01-ENTERPRISE-OPTIMIZATION.md`）——保留历史快照，兼容别名保证其命令仍可执行。
 - **未动**：`verify-ports.py` 的 EXPECTED 端口（与本脚本 DEFAULT_CONFIG 一致：5 服务 + dashboard 3999，无端口变更需求）。
 - **未实际启停服务**：本报告全程仅 dry-run / list / status / 单元级进程测试，未改动用户当前运行中的服务进程状态。

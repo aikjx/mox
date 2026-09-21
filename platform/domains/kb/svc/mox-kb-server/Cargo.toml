@@ -21,7 +21,7 @@ async-trait = { workspace = true }
 clap = { workspace = true }
 chrono = { workspace = true }
 mox-server-runtime = { path = "../../../../shared/mox-server-runtime" }
-mox-kb-core = { path = "../../core/mox-kb-core" }
+mox-kb-core = { path = "../../core/mox-kb-core", features = ["sqlite"] }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
 
 [lints]

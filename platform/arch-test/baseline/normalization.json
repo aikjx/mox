@@ -177,7 +177,7 @@
         "platform/domains/cloud/core/mox-cloud-domain-traits/src/storage_backend.rs:142",
         "platform/domains/flow/core/mox-flow-unified-storage-core/src/error.rs:10",
         "platform/domains/kg/svc/mox-kg-storage-svc/src/error.rs:13",
-        "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs:45"
+        "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs:49"
       ]
     },
     {
@@ -565,7 +565,7 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-alliance-engine/src/llm_consultant.rs:127",
+        "platform/domains/ai/core/mox-ai-alliance-engine/src/llm_consultant.rs:132",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/llm/chat.rs:18"
       ]
     },
@@ -1650,7 +1650,7 @@
         "platform/domains/ai/core/mox-ai-alliance-engine/src/gate.rs:156",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/govern.rs:45",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/alliance/gate.rs:79",
-        "platform/domains/data/core/mox-data-standards-core/src/lib.rs:174",
+        "platform/domains/data/core/mox-data-standards-core/src/lib.rs:178",
         "platform/domains/kg/svc/mox-kg-fusion-svc/src/audit_sync.rs:49",
         "platform/domains/platform/core/mox-enterprise-core/src/traits/audit.rs:36",
         "platform/domains/platform/svc/mox-platform-orchestrator-svc/src/rbac_middleware.rs:311",
@@ -1872,7 +1872,7 @@
         "platform/domains/ai/core/mox-ai-core/src/graph.rs:119",
         "platform/domains/flow/core/mox-flow-unified-storage-core/src/types.rs:243",
         "platform/domains/kg/api/src/lib.rs:40",
-        "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs:81",
+        "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs:85",
         "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_common.rs:369"
       ]
     },
@@ -1891,7 +1891,7 @@
         "platform/domains/ai/core/mox-ai-core/src/graph.rs:96",
         "platform/domains/flow/core/mox-flow-unified-storage-core/src/types.rs:187",
         "platform/domains/kg/api/src/lib.rs:32",
-        "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs:59",
+        "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs:63",
         "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_common.rs:359"
       ]
     },
@@ -2050,7 +2050,7 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-alliance-engine/src/llm_consultant.rs:135",
+        "platform/domains/ai/core/mox-ai-alliance-engine/src/llm_consultant.rs:140",
         "platform/domains/ai/svc/mox-ai-agent-svc/src/types.rs:27",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/llm/chat.rs:43",
         "platform/domains/platform/core/mox-platform-model-core/src/providers/dto.rs:33"
@@ -2360,7 +2360,7 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-intent-core/src/lib.rs:113",
+        "platform/domains/ai/core/mox-ai-intent-core/src/lib.rs:115",
         "platform/domains/alliance/proto/mox-alliance-common-proto/src/types.rs:419",
         "platform/domains/platform/svc/mox-platform-orchestrator-svc/src/handlers/ai_engine.rs:123"
       ]
@@ -4301,7 +4301,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/flow/core/mox-flow-unified-storage-core/src/graph_store.rs:15",
-        "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs:113"
+        "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs:117"
       ]
     },
     {
@@ -4415,8 +4415,8 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-alliance-engine/src/persistence.rs:179",
-        "platform/domains/alliance/core/mox-alliance-scheduler-core/src/storage.rs:39"
+        "platform/domains/ai/core/mox-ai-alliance-engine/src/persistence.rs:180",
+        "platform/domains/alliance/core/mox-alliance-scheduler-core/src/storage.rs:43"
       ]
     },
     {
@@ -4467,7 +4467,7 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-intent-core/src/lib.rs:141",
+        "platform/domains/ai/core/mox-ai-intent-core/src/lib.rs:143",
         "platform/domains/flow/core/mox-flow-ai-assistant-core/src/intent.rs:67"
       ]
     },
@@ -4506,7 +4506,7 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-alliance-engine/src/llm_consultant.rs:33",
+        "platform/domains/ai/core/mox-ai-alliance-engine/src/llm_consultant.rs:38",
         "platform/domains/ai/svc/mox-ai-agent-svc/src/llm_client.rs:19"
       ]
     },
@@ -5299,7 +5299,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/ai/core/mox-ai-flow-core/src/model.rs:342",
-        "platform/domains/platform/core/mox-platform-orchestrator-core/src/lib.rs:284"
+        "platform/domains/platform/core/mox-platform-orchestrator-core/src/lib.rs:286"
       ]
     },
     {
@@ -5557,7 +5557,7 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/alliance/core/mox-alliance-scheduler-core/src/storage.rs:396",
+        "platform/domains/alliance/core/mox-alliance-scheduler-core/src/storage.rs:404",
         "platform/domains/kg/svc/mox-kg-storage-svc/src/kv_rocksdb.rs:142"
       ]
     },
@@ -5856,7 +5856,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/flow/core/mox-flow-operator-core/src/category.rs:74",
-        "platform/domains/platform/core/mox-platform-orchestrator-core/src/lib.rs:118"
+        "platform/domains/platform/core/mox-platform-orchestrator-core/src/lib.rs:120"
       ]
     },
     {
@@ -5869,7 +5869,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/ai/svc/mox-ai-agent-svc/src/types.rs:409",
-        "platform/domains/platform/core/mox-platform-orchestrator-core/src/lib.rs:73"
+        "platform/domains/platform/core/mox-platform-orchestrator-core/src/lib.rs:75"
       ]
     },
     {
@@ -5926,37 +5926,37 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/lib.rs:146",
+        "platform/domains/ai/core/mox-ai-expert-core/src/lib.rs:150",
         "platform/domains/ai/core/mox-ai-flow-core/src/lib.rs:42",
         "platform/domains/ai/proto/mox-ai-expert-proto/src/lib.rs:72",
         "platform/domains/ai/svc/mox-ai-agent-svc/src/lib.rs:18",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/lib.rs:12",
         "platform/domains/ai/svc/mox-ai-flow-svc/src/lib.rs:6",
-        "platform/domains/cloud/core/mox-cloud-kb-core/src/lib.rs:39",
+        "platform/domains/cloud/core/mox-cloud-kb-core/src/lib.rs:40",
         "platform/domains/data/svc/mox-data-catalog-svc/src/constants.rs:6",
-        "platform/domains/flow/core/mox-flow-algo-alliance-core/src/lib.rs:36",
+        "platform/domains/flow/core/mox-flow-algo-alliance-core/src/lib.rs:37",
         "platform/domains/flow/core/mox-flow-operator-core/src/lib.rs:16",
         "platform/domains/flow/core/mox-flow-optimizer-core/src/lib.rs:12",
         "platform/domains/flow/svc/mox-flow-bridge-svc/src/lib.rs:15",
         "platform/domains/flow/svc/mox-flow-fusion-svc/src/lib.rs:18",
         "platform/domains/flow/svc/mox-flow-operator-wasm-svc/src/lib.rs:18",
         "platform/domains/flow/svc/mox-flow-primiflow-svc/src/lib.rs:14",
-        "platform/domains/kb/core/mox-kb-core/src/lib.rs:27",
-        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:12",
+        "platform/domains/kb/core/mox-kb-core/src/lib.rs:33",
+        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:14",
         "platform/domains/kg/svc/mox-kg-hub-svc/src/lib.rs:45",
         "platform/domains/market/svc/mox-market-template-svc/src/constants.rs:6",
         "platform/domains/platform/core/mox-platform-operator-core/src/lib.rs:36",
         "platform/domains/platform/core/mox-platform-system-core/src/lib.rs:15",
-        "platform/domains/platform/svc/mox-platform-orchestrator-svc/src/lib.rs:10",
+        "platform/domains/platform/svc/mox-platform-orchestrator-svc/src/lib.rs:12",
         "platform/foundation/mox-platform-foundation/src/lib.rs:34",
         "platform/shared/mox-auth-core/src/lib.rs:37",
         "platform/shared/mox-cache-core/src/lib.rs:38",
         "platform/shared/mox-config-core/src/lib.rs:36",
-        "platform/shared/mox-event-core/src/lib.rs:37",
-        "platform/shared/mox-lock-core/src/lib.rs:37",
-        "platform/shared/mox-observability-core/src/lib.rs:33",
+        "platform/shared/mox-event-core/src/lib.rs:38",
+        "platform/shared/mox-lock-core/src/lib.rs:38",
+        "platform/shared/mox-observability-core/src/lib.rs:34",
         "platform/shared/mox-server-runtime/src/lib.rs:51",
-        "platform/shared/mox-unified-algo-core/src/lib.rs:29",
+        "platform/shared/mox-unified-algo-core/src/lib.rs:31",
         "platform/shared/mox-unified-contract/src/lib.rs:63"
       ]
     },
@@ -5988,7 +5988,7 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/lib.rs:148",
+        "platform/domains/ai/core/mox-ai-expert-core/src/lib.rs:152",
         "platform/domains/ai/core/mox-ai-flow-core/src/lib.rs:44",
         "platform/domains/ai/proto/mox-ai-expert-proto/src/lib.rs:74",
         "platform/domains/ai/svc/mox-ai-agent-svc/src/lib.rs:20",
@@ -6002,13 +6002,13 @@
         "platform/domains/flow/svc/mox-flow-fusion-svc/src/lib.rs:20",
         "platform/domains/flow/svc/mox-flow-operator-wasm-svc/src/lib.rs:20",
         "platform/domains/flow/svc/mox-flow-primiflow-svc/src/lib.rs:16",
-        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:14",
+        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:16",
         "platform/domains/kg/svc/mox-kg-hub-svc/src/lib.rs:47",
         "platform/domains/market/svc/mox-market-template-svc/src/constants.rs:8",
         "platform/domains/platform/core/mox-platform-system-core/src/lib.rs:17",
-        "platform/domains/platform/svc/mox-platform-orchestrator-svc/src/lib.rs:12",
+        "platform/domains/platform/svc/mox-platform-orchestrator-svc/src/lib.rs:14",
         "platform/foundation/mox-platform-foundation/src/lib.rs:36",
-        "platform/shared/mox-unified-algo-core/src/lib.rs:31"
+        "platform/shared/mox-unified-algo-core/src/lib.rs:33"
       ]
     },
     {
@@ -6039,27 +6039,27 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-expert-core/src/lib.rs:147",
+        "platform/domains/ai/core/mox-ai-expert-core/src/lib.rs:151",
         "platform/domains/ai/core/mox-ai-flow-core/src/lib.rs:43",
         "platform/domains/ai/proto/mox-ai-expert-proto/src/lib.rs:73",
         "platform/domains/ai/svc/mox-ai-agent-svc/src/lib.rs:19",
         "platform/domains/ai/svc/mox-ai-expert-svc/src/lib.rs:13",
         "platform/domains/ai/svc/mox-ai-flow-svc/src/lib.rs:7",
         "platform/domains/data/svc/mox-data-catalog-svc/src/constants.rs:7",
-        "platform/domains/flow/core/mox-flow-algo-alliance-core/src/lib.rs:37",
+        "platform/domains/flow/core/mox-flow-algo-alliance-core/src/lib.rs:38",
         "platform/domains/flow/core/mox-flow-operator-core/src/lib.rs:17",
         "platform/domains/flow/core/mox-flow-optimizer-core/src/lib.rs:13",
         "platform/domains/flow/svc/mox-flow-bridge-svc/src/lib.rs:16",
         "platform/domains/flow/svc/mox-flow-fusion-svc/src/lib.rs:19",
         "platform/domains/flow/svc/mox-flow-operator-wasm-svc/src/lib.rs:19",
         "platform/domains/flow/svc/mox-flow-primiflow-svc/src/lib.rs:15",
-        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:13",
+        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:15",
         "platform/domains/kg/svc/mox-kg-hub-svc/src/lib.rs:46",
         "platform/domains/market/svc/mox-market-template-svc/src/constants.rs:7",
         "platform/domains/platform/core/mox-platform-system-core/src/lib.rs:16",
-        "platform/domains/platform/svc/mox-platform-orchestrator-svc/src/lib.rs:11",
+        "platform/domains/platform/svc/mox-platform-orchestrator-svc/src/lib.rs:13",
         "platform/foundation/mox-platform-foundation/src/lib.rs:35",
-        "platform/shared/mox-unified-algo-core/src/lib.rs:30"
+        "platform/shared/mox-unified-algo-core/src/lib.rs:32"
       ]
     },
     {
@@ -6080,15 +6080,15 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/cloud/core/mox-cloud-kb-core/src/lib.rs:40",
-        "platform/domains/kb/core/mox-kb-core/src/lib.rs:28",
+        "platform/domains/cloud/core/mox-cloud-kb-core/src/lib.rs:41",
+        "platform/domains/kb/core/mox-kb-core/src/lib.rs:34",
         "platform/domains/platform/core/mox-platform-operator-core/src/lib.rs:37",
         "platform/shared/mox-auth-core/src/lib.rs:38",
         "platform/shared/mox-cache-core/src/lib.rs:39",
         "platform/shared/mox-config-core/src/lib.rs:37",
-        "platform/shared/mox-event-core/src/lib.rs:38",
-        "platform/shared/mox-lock-core/src/lib.rs:38",
-        "platform/shared/mox-observability-core/src/lib.rs:34",
+        "platform/shared/mox-event-core/src/lib.rs:39",
+        "platform/shared/mox-lock-core/src/lib.rs:39",
+        "platform/shared/mox-observability-core/src/lib.rs:35",
         "platform/shared/mox-server-runtime/src/lib.rs:52",
         "platform/shared/mox-unified-contract/src/lib.rs:66"
       ]
@@ -6124,9 +6124,9 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/data/core/mox-data-formula-core/src/lib.rs:49",
-        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:30",
+        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:32",
         "platform/domains/kg/svc/mox-kg-service-svc/src/algo_bridge.rs:21",
-        "platform/shared/mox-unified-algo-core/src/lib.rs:48"
+        "platform/shared/mox-unified-algo-core/src/lib.rs:50"
       ]
     },
     {
@@ -6140,7 +6140,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/data/core/mox-data-formula-core/src/lib.rs:47",
-        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:28",
+        "platform/domains/kg/core/mox-kg-algo-core/src/lib.rs:30",
         "platform/domains/kg/svc/mox-kg-service-svc/src/algo_bridge.rs:20"
       ]
     },
@@ -6389,7 +6389,7 @@
       "cross_crate": true,
       "locations": [
         "platform/domains/platform/core/mox-platform-iam-core/src/lib.rs:7",
-        "platform/domains/platform/core/mox-platform-meta-core/src/lib.rs:7"
+        "platform/domains/platform/core/mox-platform-meta-core/src/lib.rs:9"
       ]
     }
   ],
@@ -6416,7 +6416,7 @@
         "platform/domains/kg/svc/mox-kg-fusion-svc/src/graph_writer.rs:27",
         "platform/domains/platform/core/mox-platform-system-core/src/error.rs:30",
         "platform/foundation/mox-platform-foundation/src/operator_error.rs:26",
-        "platform/shared/mox-lock-core/src/lib.rs:71"
+        "platform/shared/mox-lock-core/src/lib.rs:72"
       ]
     },
     {
@@ -6485,7 +6485,7 @@
       ],
       "cross_crate": true,
       "locations": [
-        "platform/domains/ai/core/mox-ai-alliance-engine/src/lib.rs:173",
+        "platform/domains/ai/core/mox-ai-alliance-engine/src/lib.rs:175",
         "platform/domains/alliance/proto/mox-alliance-common-proto/src/error.rs:133"
       ]
     },

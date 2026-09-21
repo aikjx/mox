@@ -20,7 +20,12 @@ mox-base-store-core = { path = "../../../base/mox-base-store-core" }
 mox-base-query-core = { path = "../../../base/mox-base-query-core" }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
 # 知识库 SQLite + FTS5 持久化（bundled，免系统依赖；FTS5 为 SQLite 内置扩展）
-rusqlite = { workspace = true }
+# 可选 feature：core 默认纯计算（零 IO），仅在启用 `sqlite` feature 时才携带 rusqlite 实现
+rusqlite = { workspace = true, optional = true }
+
+[features]
+# 启用 SQLite + FTS5 知识库持久化（SqliteKbStore）
+sqlite = ["rusqlite"]
 
 [lints]
 workspace = true

@@ -6,7 +6,7 @@
 与仓库真实代码逐项比对，输出 PASS/FAIL 报告，任一 FAIL 退出码非 0（可接入 CI 闸门）。
 
 用法:
-    python scripts/verify-doc-ep038.py            # 核对并输出报告（生成 docs/enterprise/38-VERIFY-REPORT.md）
+    python scripts/verify-doc-ep038.py            # 核对并输出报告（生成 docs/enterprise/43-DOC-EP-038文档代码事实自动核对报告.md）
     python scripts/verify-doc-ep038.py --quiet    # 仅输出结论行
 
 事实分级：本文核对项均为【已确认 · 代码核实】事实，任何 FAIL 必须修复文档或代码后重跑。
@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC = ROOT / "docs" / "enterprise" / "38-企业级管理系统架构与业务处理流程文档-V2.1.md"
-REPORT = ROOT / "docs" / "enterprise" / "38-VERIFY-REPORT.md"
+REPORT = ROOT / "docs" / "enterprise" / "43-DOC-EP-038文档代码事实自动核对报告.md"
 
 # ---------------------------------------------------------------- 代码事实（权威源）
 def cargo_members():

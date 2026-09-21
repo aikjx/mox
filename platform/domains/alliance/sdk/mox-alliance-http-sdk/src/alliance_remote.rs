@@ -255,16 +255,37 @@ fn norm_fusion(s: &str) -> Value {
     }
 }
 
-/// 从融合结果 body 中取出 `fusion_strategy` 并归一化为网关展示名。
+/// 从融合结果 body 中取出融合策略并归一化为网关展示名。
 ///
 /// 单独成函数以便回归测试守护：曾出现融合结果出口直接透传 proto 原始名
 /// （`weighted`）而任务详情出口已归一化（`weighted_voting`）的不一致缺陷。
+///
+/// 键名兼容：执行器 `FusionOutput`（mox-alliance-executor-proto，协议层权威 DTO）
+/// 把策略序列化为 `strategy`，而本地 `FusionResultData` 用 `fusion_strategy`——
+/// 两套 DTO 键名不同，故先读 `fusion_strategy` 再回退 `strategy`。实测
+/// （2026-09-21 本地/远程部署对比演示）远程模式因只读 `fusion_strategy`
+/// 导致该字段恒为 `null`，而本地模式正常返回展示名。
 /// 字段缺失或非字符串时返回 `Value::Null`（保持与历史行为一致）。
 fn norm_fusion_field(body: &Value) -> Value {
     body.get("fusion_strategy")
+        .or_else(|| body.get("strategy"))
         .and_then(|v| v.as_str())
         .map(norm_fusion)
         .unwrap_or(Value::Null)
+}
+
+/// 从融合结果 body 中取出参与节点数。
+///
+/// 执行器 `FusionOutput`（协议层 DTO）已携带 `participating_nodes`
+/// （参与融合的 DAG 节点数，与本地实现「完成节点数」同语义）；对未重建的
+/// 旧执行器载荷回退 `expert_count`（专家数，近似值），两者皆缺失时为 0。
+/// 单独成函数以便回归测试守护（曾因执行器无该字段导致远程模式恒为 0）。
+fn participating_nodes_field(body: &Value) -> Value {
+    body.get("participating_nodes")
+        .or_else(|| body.get("expert_count"))
+        .filter(|v| v.is_number())
+        .cloned()
+        .unwrap_or(json!(0))
 }
 
 /// 专家状态：proto serde 名 → 网关展示名
@@ -808,7 +829,7 @@ pub async fn remote_fusion_result(
                     // 归一化 proto serde 名 → 网关展示名，与本地 fusion_strategy_str
                     // 及任务详情的 norm_mode 保持一致（修复远程/本地两态返回不一致）
                     "fusion_strategy": norm_fusion_field(&body),
-                    "participating_nodes": body.get("participating_nodes").cloned().unwrap_or(json!(0)),
+                    "participating_nodes": participating_nodes_field(&body),
                     "fusion_result": body,
                     "result": body,
                     "expert_contributions": body.get("node_contributions").cloned().unwrap_or(json!([])),
@@ -973,9 +994,43 @@ mod lifecycle_tests {
             norm_fusion_field(&json!({"fusion_strategy": "debate"})).as_str(),
             Some("debate")
         );
+        // 执行器 FusionOutput 实际用的键名是 `strategy`（协议层 DTO），同样必须归一化
+        // （回归：远程模式曾因只读 fusion_strategy 导致该字段恒为 null）
+        assert_eq!(
+            norm_fusion_field(&json!({"strategy": "best_of"})).as_str(),
+            Some("first_wins")
+        );
+        assert_eq!(
+            norm_fusion_field(&json!({"strategy": "weighted"})).as_str(),
+            Some("weighted_voting")
+        );
+        // fusion_strategy 优先于 strategy（本地形状不受执行器键名回退影响）
+        assert_eq!(
+            norm_fusion_field(&json!({"fusion_strategy": "debate", "strategy": "best_of"})).as_str(),
+            Some("debate")
+        );
         // 字段缺失 / 非字符串 → Null（保持历史行为，不 panic）
         assert_eq!(norm_fusion_field(&json!({})), Value::Null);
         assert_eq!(norm_fusion_field(&json!({"fusion_strategy": null})), Value::Null);
         assert_eq!(norm_fusion_field(&json!({"fusion_strategy": 42})), Value::Null);
+    }
+
+    /// 回归：执行器 FusionOutput 的 participating_nodes 必须透传；
+    /// 旧执行器载荷无该字段时回退 expert_count（而非恒 0）。
+    /// 曾因执行器不携带该字段导致远程模式 participating_nodes 恒为 0，
+    /// 而本地模式返回真实完成节点数，两态展示不一致。
+    #[test]
+    fn participating_nodes_falls_back_to_expert_count() {
+        assert_eq!(participating_nodes_field(&json!({"participating_nodes": 3})), json!(3));
+        assert_eq!(participating_nodes_field(&json!({"expert_count": 2})), json!(2));
+        assert_eq!(participating_nodes_field(&json!({})), json!(0));
+        // 新旧字段同时存在时优先新字段（新执行器语义优先）
+        assert_eq!(
+            participating_nodes_field(&json!({"participating_nodes": 3, "expert_count": 2})),
+            json!(3)
+        );
+        // 非数值 → 兜底 0（本地契约是 usize，不能透传脏类型）
+        assert_eq!(participating_nodes_field(&json!({"participating_nodes": "x"})), json!(0));
+        assert_eq!(participating_nodes_field(&json!({"participating_nodes": null})), json!(0));
     }
 }

@@ -15,7 +15,11 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
-use mox_alliance_common_proto::{AllianceError, AllianceResult, Task, TaskStatus};
+use mox_alliance_common_proto::{AllianceError, AllianceResult, Task};
+// TaskStatus 仅被 SQLite 适配器的状态映射使用（启用 `sqlite` feature 时编译）
+#[cfg(feature = "sqlite")]
+use mox_alliance_common_proto::TaskStatus;
+#[cfg(feature = "sqlite")]
 use rusqlite::{params, Connection};
 use uuid::Uuid;
 
@@ -336,9 +340,10 @@ impl TaskRepository for BatchedFileTaskRepository {
     }
 }
 
-// ─── SQLite 增量落盘任务仓库 ────────────────────────────────────────────────
+// ─── SQLite 增量落盘任务仓库（启用 `sqlite` feature 时编译）─────────────────
 
 /// 把 [`TaskStatus`] 映射为 snake_case 落盘字符串（与 serde 配置保持一致）。
+#[cfg(feature = "sqlite")]
 fn task_status_to_str(s: TaskStatus) -> &'static str {
     match s {
         TaskStatus::Pending => "pending",
@@ -355,6 +360,7 @@ fn task_status_to_str(s: TaskStatus) -> &'static str {
 ///
 /// 恢复期产生的 `"interrupted"` 标记（崩溃前为 running）映射为 [`TaskStatus::Pending`]，
 /// 表示该任务可被调度器重新认领；已完成节点的结果仍由节点表保留，不会被强行重跑。
+#[cfg(feature = "sqlite")]
 fn parse_task_status(s: &str) -> TaskStatus {
     match s {
         "pending" => TaskStatus::Pending,
@@ -385,6 +391,7 @@ fn parse_task_status(s: &str) -> TaskStatus {
 ///
 /// 启动恢复：打开库后把 `running` 的任务与节点批量标记为 `interrupted`，再把全部任务
 /// 读回内存缓存；`done` 节点的 `result_json` 原样保留，不重跑。
+#[cfg(feature = "sqlite")]
 pub struct SqliteTaskRepository {
     conn: Arc<Mutex<Connection>>,
     /// 读穿缓存：构造时从两表加载，save/remove 时同步维护
@@ -392,12 +399,14 @@ pub struct SqliteTaskRepository {
 }
 
 /// 节点持久化行的只读视图（用于恢复校验 / 测试）
+#[cfg(feature = "sqlite")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredNode {
     pub status: String,
     pub result: Option<serde_json::Value>,
 }
 
+#[cfg(feature = "sqlite")]
 impl SqliteTaskRepository {
     /// 打开（或创建）SQLite 仓库，建表 + WAL + 恢复标记
     pub fn new(path: impl Into<PathBuf>) -> AllianceResult<Self> {
@@ -565,6 +574,7 @@ impl SqliteTaskRepository {
     }
 }
 
+#[cfg(feature = "sqlite")]
 impl TaskRepository for SqliteTaskRepository {
     fn save(&self, task: &Task) -> AllianceResult<()> {
         let payload = serde_json::to_string(task)
@@ -794,6 +804,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    #[cfg(feature = "sqlite")]
     #[test]
     fn sqlite_save_get_roundtrip() {
         let dir = std::env::temp_dir().join(format!("sqlite_roundtrip_{}", Uuid::new_v4()));
@@ -814,6 +825,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    #[cfg(feature = "sqlite")]
     #[test]
     fn sqlite_incremental_upsert_does_not_lose_other_nodes() {
         let dir = std::env::temp_dir().join(format!("sqlite_incr_{}", Uuid::new_v4()));
@@ -842,6 +854,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    #[cfg(feature = "sqlite")]
     #[test]
     fn sqlite_recovers_task_and_nodes_marks_running_as_interrupted() {
         let dir = std::env::temp_dir().join(format!("sqlite_recover_{}", Uuid::new_v4()));
