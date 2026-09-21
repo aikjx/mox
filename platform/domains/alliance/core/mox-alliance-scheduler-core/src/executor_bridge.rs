@@ -14,8 +14,9 @@
 
 use async_trait::async_trait;
 use mox_alliance_common_proto::{AllianceResult, CollaborationPlan, Task};
-// 仅 HTTP 桥接（http-bridge feature）使用，默认纯计算编译不引入
-#[cfg(feature = "http-bridge")]
+// HTTP 桥接（http-bridge feature）与测试期 MockExecutorBridge 使用；
+// 默认纯计算编译（非 test）不引入，避免未使用导入告警
+#[cfg(any(feature = "http-bridge", test))]
 use mox_alliance_common_proto::{AllianceError, AllianceErrorCode, TaskStatus};
 use mox_alliance_executor_proto::{DagEngine, ExecutionOptions, ExecutionStatus};
 use std::sync::Arc;

@@ -41,6 +41,73 @@ impl TaskStatus {
     pub fn is_active(&self) -> bool {
         matches!(self, Self::Planning | Self::Running | Self::Paused)
     }
+
+    /// 状态机转换表（**单一真源**，场景④仲裁依据）。
+    ///
+    /// 调度器与执行引擎是两个独立的写入方（各自演进会互相覆盖终态），
+    /// 因此转换规则收敛在双方共同依赖的协议层，由两处咽喉点强制执行：
+    /// 1. 调度器 `update_task_status`（内存态快速拒绝）；
+    /// 2. 存储层任务行写入（SQLite `save`，持久化终态不可覆盖）。
+    ///
+    /// 规则：
+    /// - **终态不可离开**（Completed / Failed / Cancelled → 一律 `false`）；
+    /// - Pending / Planning 可进入执行期，或失败 / 取消；
+    /// - Running 可暂停、取消或到达终态；Paused 只能恢复或终结。
+    pub fn can_transition_to(&self, next: &TaskStatus) -> bool {
+        use TaskStatus::*;
+        match self {
+            Completed | Failed | Cancelled => false,
+            Pending => matches!(next, Planning | Running | Failed | Cancelled),
+            Planning => matches!(next, Pending | Running | Failed | Cancelled),
+            Running => matches!(next, Paused | Completed | Failed | Cancelled),
+            Paused => matches!(next, Running | Completed | Failed | Cancelled),
+        }
+    }
+}
+
+#[cfg(test)]
+mod transition_tests {
+    use super::TaskStatus;
+
+    #[test]
+    fn terminal_states_are_final() {
+        for from in [TaskStatus::Completed, TaskStatus::Failed, TaskStatus::Cancelled] {
+            for to in [
+                TaskStatus::Pending,
+                TaskStatus::Planning,
+                TaskStatus::Running,
+                TaskStatus::Paused,
+                TaskStatus::Completed,
+                TaskStatus::Failed,
+                TaskStatus::Cancelled,
+            ] {
+                assert!(
+                    !from.can_transition_to(&to),
+                    "终态 {:?} 不可转换到 {:?}",
+                    from,
+                    to
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn happy_path_and_cancels_are_legal() {
+        use TaskStatus::*;
+        assert!(Pending.can_transition_to(&Planning));
+        assert!(Planning.can_transition_to(&Running));
+        assert!(Running.can_transition_to(&Paused));
+        assert!(Paused.can_transition_to(&Running));
+        assert!(Running.can_transition_to(&Completed));
+        assert!(Planning.can_transition_to(&Failed));
+        assert!(Pending.can_transition_to(&Cancelled));
+        assert!(Running.can_transition_to(&Cancelled));
+        // 非法：Pending 直达 Completed（未执行不可完成）；Paused→Planning 回退
+        assert!(!Pending.can_transition_to(&Completed));
+        assert!(!Paused.can_transition_to(&Planning));
+        // 非法：终态复活
+        assert!(!Cancelled.can_transition_to(&Running));
+    }
 }
 
 /// 任务优先级

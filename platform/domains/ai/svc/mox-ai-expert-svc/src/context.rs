@@ -6,7 +6,7 @@
 //! 企业级上下文：租户 / 主体 / 策略 / 配额 / 兼容性注册表
 
 use crate::ir::{CodeIR, Dimension, PolicyId};
-use mox_ai_flow_svc::model::{FlowGraph, ResourcePool};
+use mox_ai_flow_svc::model::ResourcePool;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

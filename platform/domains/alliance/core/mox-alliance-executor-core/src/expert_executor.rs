@@ -321,6 +321,7 @@ impl ExpertNodeExecutor {
     async fn consult_with_retry(
         &self,
         query: &ConsultQuery,
+        max_retries: u32,
     ) -> Result<
         (mox_ai_expert_proto::ConsultReport, u32),
         (String, u32, bool),
@@ -334,7 +335,7 @@ impl ExpertNodeExecutor {
             debug!(
                 "Expert consult attempt {}/{} for query {}",
                 attempt,
-                self.config.max_retries + 1,
+                max_retries + 1,
                 query.id
             );
 
@@ -363,7 +364,7 @@ impl ExpertNodeExecutor {
                         break;
                     }
 
-                    if retry_count >= self.config.max_retries {
+                    if retry_count >= max_retries {
                         break;
                     }
 
@@ -374,7 +375,7 @@ impl ExpertNodeExecutor {
                         query.id,
                         delay,
                         attempt,
-                        self.config.max_retries + 1
+                        max_retries + 1
                     );
                     tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
                     retry_count += 1;
@@ -534,8 +535,11 @@ impl NodeExecutor for ExpertNodeExecutor {
         // 1. 构建咨询查询
         let query = self.build_consult_query(&request);
 
-        // 2. 带重试执行咨询
-        let result = self.consult_with_retry(&query).await;
+        // 2. 带重试执行咨询（场景⑤：任务级预算优先，None 回落执行器配置）
+        let effective_max_retries = request
+            .max_retries
+            .unwrap_or(self.config.max_retries);
+        let result = self.consult_with_retry(&query, effective_max_retries).await;
         let duration_ms = start.elapsed().as_millis() as u64;
 
         match result {
@@ -837,6 +841,7 @@ mod tests {
             },
             input_data: None,
             context: None,
+            max_retries: None,
             tenant_id: "tenant-1".to_string(),
         };
 
@@ -886,6 +891,7 @@ mod tests {
             },
             input_data: None,
             context: None,
+            max_retries: None,
             tenant_id: "tenant-1".to_string(),
         };
 
@@ -938,6 +944,7 @@ mod tests {
             },
             input_data: None,
             context: None,
+            max_retries: None,
             tenant_id: "tenant-1".to_string(),
         };
 
@@ -989,6 +996,7 @@ mod tests {
             },
             input_data: None,
             context: None,
+            max_retries: None,
             tenant_id: "tenant-1".to_string(),
         };
 
@@ -1040,6 +1048,7 @@ mod tests {
             },
             input_data: None,
             context: None,
+            max_retries: None,
             tenant_id: "tenant-1".to_string(),
         };
 
@@ -1091,6 +1100,7 @@ mod tests {
             },
             input_data: None,
             context: None,
+            max_retries: None,
             tenant_id: "tenant-1".to_string(),
         };
 
@@ -1140,6 +1150,7 @@ mod tests {
                 },
                 input_data: None,
                 context: None,
+                max_retries: None,
                 tenant_id: "tenant-1".to_string(),
             };
             executor.execute_node(request).await.unwrap();
@@ -1299,6 +1310,7 @@ mod tests {
             },
             input_data: None,
             context: None,
+            max_retries: None,
             tenant_id: "tenant-1".to_string(),
         };
 
@@ -1356,6 +1368,7 @@ mod tests {
             },
             input_data: None,
             context: None,
+            max_retries: None,
             tenant_id: "tenant-1".to_string(),
         };
 
@@ -1363,5 +1376,73 @@ mod tests {
         assert!(result.success, "普通失败重试后应该成功");
         assert_eq!(result.retry_count, 1, "应该重试 1 次");
         assert_eq!(call_counter.load(Ordering::SeqCst), 2, "应该调用 2 次");
+    }
+
+    /// 场景⑤：任务级重试预算（request.max_retries）封顶执行器配置（SSOT 语义）
+    #[tokio::test]
+    async fn test_task_level_retry_budget_caps_executor_config() {
+        use mox_alliance_common_proto::Node;
+
+        let mk_executor = || {
+            let (mock, counter) = MockConsultant::with_failures(10); // 永远失败（10 次后成功）
+            (
+                ExpertNodeExecutor::new(
+                    Arc::new(mock) as Arc<dyn ExpertConsultant>,
+                    ExpertExecutorConfig {
+                        max_retries: 3,
+                        initial_retry_delay_ms: 1,
+                        max_retry_delay_ms: 10,
+                        ..ExpertExecutorConfig::default()
+                    },
+                ),
+                counter,
+            )
+        };
+        let task_id = uuid::Uuid::new_v4();
+        let mk_request = |max_retries: Option<u32>| NodeExecutionRequest {
+            task_id,
+            node: Node {
+                node_id: "node-budget".to_string(),
+                task_id,
+                expert_id: "security".to_string(),
+                module_id: None,
+                name: "预算封顶测试".to_string(),
+                description: None,
+                status: mox_alliance_common_proto::NodeStatus::Pending,
+                retry_count: 0,
+                dependencies: vec![],
+                input_refs: vec![],
+                output_ref: None,
+                started_at: None,
+                completed_at: None,
+                duration_ms: None,
+                error_message: None,
+            },
+            input_data: None,
+            context: None,
+            max_retries,
+            tenant_id: "tenant-1".to_string(),
+        };
+
+        // 预算 0：配置允许 3 次重试也必须被任务级预算封顶 → 只调用 1 次
+        let (executor, counter) = mk_executor();
+        let result = executor.execute_node(mk_request(Some(0))).await.unwrap();
+        assert!(!result.success);
+        assert_eq!(result.retry_count, 0, "任务级预算 0 应禁止重试");
+        assert_eq!(counter.load(Ordering::SeqCst), 1, "预算 0 应只调用 1 次");
+
+        // 预算 1：恰好重试 1 次（即使配置允许 3 次）
+        let (executor2, counter2) = mk_executor();
+        let result2 = executor2.execute_node(mk_request(Some(1))).await.unwrap();
+        assert!(!result2.success);
+        assert_eq!(result2.retry_count, 1, "任务级预算 1 应恰好重试 1 次");
+        assert_eq!(counter2.load(Ordering::SeqCst), 2, "预算 1 应共调用 2 次");
+
+        // None：回落执行器配置（向后兼容）——配置 3 次 → 恰好重试 3 次
+        let (executor3, counter3) = mk_executor();
+        let result3 = executor3.execute_node(mk_request(None)).await.unwrap();
+        assert!(!result3.success);
+        assert_eq!(result3.retry_count, 3, "None 应回落执行器配置 max_retries=3");
+        assert_eq!(counter3.load(Ordering::SeqCst), 4, "None 回落应共调用 4 次");
     }
 }

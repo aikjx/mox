@@ -64,6 +64,7 @@ async fn test_e2e_task_submission() -> AllianceResult<()> {
             priority: Some(TaskPriority::Normal),
             mode: Some(AllianceMode::Parallel),
             fusion_strategy: Some(FusionStrategy::Weighted),
+            idempotency_key: None,
         })
         .await?;
 
@@ -264,6 +265,7 @@ async fn test_e2e_full_pipeline() -> AllianceResult<()> {
             priority: Some(TaskPriority::High),
             mode: Some(AllianceMode::Parallel),
             fusion_strategy: Some(FusionStrategy::BestOf),
+            idempotency_key: None,
         })
         .await?;
     let task_id = submit_resp.task.task_id;

@@ -216,6 +216,70 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    fn temp_plan(task_id: Uuid) -> CollaborationPlan {
+        use mox_alliance_common_proto::{AllianceMode, FusionStrategy};
+        use std::collections::HashMap;
+        CollaborationPlan {
+            task_id,
+            mode: AllianceMode::Parallel,
+            fusion_strategy: FusionStrategy::Weighted,
+            nodes: vec![],
+            dynamic_routes: vec![],
+            expert_weights: HashMap::new(),
+            version: 1,
+            created_at: chrono::Utc::now(),
+        }
+    }
+
+    #[test]
+    fn sqlite_restore_pending_includes_unfinished_and_skips_terminal_or_planless() {
+        let dir = std::env::temp_dir().join(format!("executor_restore_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+        let sink = SqliteExecutionStateSink::new(Arc::new(SqliteTaskRepository::new(&db).unwrap()));
+
+        let tenant = Uuid::new_v4();
+        // A：未终结 + 有计划 → 应被恢复
+        let mut a = Task::new(tenant, Uuid::new_v4(), "resumable".to_string(), "d".to_string());
+        a.status = TaskStatus::Running;
+        sink.persist_task(&a).unwrap();
+        sink.persist_plan(a.task_id, &temp_plan(a.task_id)).unwrap();
+
+        // B：终态任务 → 不该被恢复
+        let mut b = Task::new(tenant, Uuid::new_v4(), "done".to_string(), "d".to_string());
+        b.status = TaskStatus::Completed;
+        sink.persist_task(&b).unwrap();
+        sink.persist_plan(b.task_id, &temp_plan(b.task_id)).unwrap();
+
+        // C：未终结但无计划 → 无法重建 DAG，跳过
+        let c = Task::new(tenant, Uuid::new_v4(), "planless".to_string(), "d".to_string());
+        sink.persist_task(&c).unwrap();
+
+        let restorable = sink.restore_pending().unwrap();
+        let ids: Vec<Uuid> = restorable.iter().map(|r| r.task.task_id).collect();
+        assert!(ids.contains(&a.task_id), "未终结且有计划的任务应可恢复");
+        assert!(!ids.contains(&b.task_id), "终态任务不应被恢复");
+        assert!(!ids.contains(&c.task_id), "无计划任务无法重建 DAG，应跳过");
+        assert_eq!(restorable.len(), 1);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn file_sink_has_no_restore_capability() {
+        // 文件底座无 plan / 节点表，恢复能力显式为空（不假装有）
+        let dir = std::env::temp_dir().join(format!("executor_file_restore_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let sink = FileExecutionStateSink::new(Arc::new(
+            FileTaskRepository::new(dir.join("tasks.json")).unwrap(),
+        ));
+        let task = Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".to_string(), "d".to_string());
+        sink.persist_task(&task).unwrap();
+        sink.persist_plan(task.task_id, &temp_plan(task.task_id)).unwrap();
+        assert!(sink.restore_pending().unwrap().is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn file_sink_persists_task_across_reopen() {
         let dir = std::env::temp_dir().join(format!("executor_sink_file_{}", Uuid::new_v4()));

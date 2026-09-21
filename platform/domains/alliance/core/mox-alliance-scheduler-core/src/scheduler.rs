@@ -127,11 +127,20 @@ impl TaskSchedulerImpl {
     }
 
     /// 更新任务状态（内部方法）
+    ///
+    /// 场景④仲裁：按协议层转换表拒绝非法转换（含终态离开），保持当前状态。
     fn update_task_status(&self, task_id: Uuid, status: TaskStatus) -> AllianceResult<()> {
         let mut task = self
             .tasks
             .get(task_id)?
             .ok_or_else(|| AllianceError::new(AllianceErrorCode::TaskNotFound, format!("Task {} not found", task_id)))?;
+        if !task.status.can_transition_to(&status) {
+            warn!(
+                "非法状态转换 {} : {:?} -> {:?}（终态不可离开 / 转换表不允许），拒绝并保持当前状态",
+                task_id, task.status, status
+            );
+            return Ok(());
+        }
         task.status = status;
         match status {
             TaskStatus::Running => {
@@ -237,6 +246,20 @@ impl TaskScheduler for TaskSchedulerImpl {
             }
         }
 
+        // 场景①：幂等键命中 → 直接回放既有任务（重试 / 响应丢失时不产生重复任务）
+        if let Some(key) = &request.idempotency_key {
+            if let Some(existing) = self.tasks.find_by_idempotency_key(key)? {
+                info!(
+                    "Idempotent replay: key={} -> task {}",
+                    key, existing.task_id
+                );
+                return Ok(TaskSubmitResponse {
+                    task: existing,
+                    estimated_duration_ms: None,
+                });
+            }
+        }
+
         // 创建任务
         let mut task = Task::new(
             request.tenant_id,
@@ -262,6 +285,24 @@ impl TaskScheduler for TaskSchedulerImpl {
 
         // 存入任务表
         self.tasks.save(&task)?;
+
+        // 场景①续：绑定幂等键（在规划/派发之前）。并发下若另一请求先绑定，
+        // 回放其任务并终止本请求，避免重复派发与重复外部副作用。
+        if let Some(key) = &request.idempotency_key {
+            self.tasks.bind_idempotency_key(key, task_id)?;
+            if let Some(bound) = self.tasks.find_by_idempotency_key(key)? {
+                if bound.task_id != task_id {
+                    warn!(
+                        "Idempotency key 已被并发请求绑定，回放 {}（本任务 {} 不再派发）",
+                        bound.task_id, task_id
+                    );
+                    return Ok(TaskSubmitResponse {
+                        task: bound,
+                        estimated_duration_ms: None,
+                    });
+                }
+            }
+        }
 
         // 更新状态为规划中
         self.update_task_status(task_id, TaskStatus::Planning)?;
@@ -577,6 +618,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: None,
+            idempotency_key: None,
         };
 
         let result = scheduler.submit_task(request).await;
@@ -608,6 +650,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: None,
+            idempotency_key: None,
         };
 
         let response = scheduler.submit_task(request).await.unwrap();
@@ -645,6 +688,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: None,
+            idempotency_key: None,
         };
 
         let response = scheduler.submit_task(request).await.unwrap();
@@ -687,6 +731,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: None,
+            idempotency_key: None,
         };
 
         let result = scheduler.submit_task(request).await;
@@ -695,6 +740,52 @@ mod tests {
         // 旧版 API 中 dispatch_tx 不再用于核心派发
         // 验证 channel 为空（向后兼容但行为已变更）
         assert!(dispatch_rx.try_recv().is_err());
+    }
+
+    /// 场景①：同一幂等键重复提交 → 回放同一任务；不同键 / 无键 → 各自新建
+    #[cfg(feature = "sqlite")]
+    #[tokio::test]
+    async fn test_idempotency_key_replays_same_task() {
+        use crate::storage::SqliteTaskRepository;
+
+        let dir = std::env::temp_dir().join(format!("idem_test_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let repo = Arc::new(SqliteTaskRepository::new(dir.join("tasks.db")).unwrap());
+
+        let config = create_test_config();
+        let matcher = Arc::new(RuleBasedExpertMatcher::new());
+        let bridge = Arc::new(MockExecutorBridge::new());
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge)
+            .with_task_repository(repo);
+
+        let tenant_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+        let mk = |key: Option<String>| TaskSubmitRequest {
+            tenant_id,
+            user_id,
+            title: "幂等测试".to_string(),
+            description: "描述".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+            idempotency_key: key,
+        };
+
+        let r1 = scheduler.submit_task(mk(Some("key-1".to_string()))).await.unwrap();
+        let r2 = scheduler.submit_task(mk(Some("key-1".to_string()))).await.unwrap();
+        assert_eq!(
+            r1.task.task_id, r2.task.task_id,
+            "同一幂等键重复提交应回放同一任务（不产生重复任务）"
+        );
+
+        let r3 = scheduler.submit_task(mk(Some("key-2".to_string()))).await.unwrap();
+        assert_ne!(r1.task.task_id, r3.task.task_id, "不同幂等键应为不同任务");
+
+        let r4 = scheduler.submit_task(mk(None)).await.unwrap();
+        assert_ne!(r4.task.task_id, r3.task.task_id, "未携带幂等键时不启用幂等");
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[tokio::test]
@@ -718,6 +809,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: None,
+            idempotency_key: None,
         };
 
         // 即使执行器失败，submit_task 也应该返回 Ok（任务已创建但执行失败）
@@ -749,6 +841,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: None,
+            idempotency_key: None,
         };
 
         let response = scheduler.submit_task(request).await.unwrap();
@@ -793,6 +886,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: None,
+            idempotency_key: None,
         };
         let resp = scheduler.submit_task(request).await.unwrap();
         assert_eq!(
@@ -822,6 +916,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: Some(FusionStrategy::BestOf),
+            idempotency_key: None,
         };
         let resp = scheduler.submit_task(request).await.unwrap();
         assert_eq!(
@@ -849,6 +944,7 @@ mod tests {
             priority: None,
             mode: None,
             fusion_strategy: None,
+            idempotency_key: None,
         };
         let resp = scheduler.submit_task(request).await.unwrap();
         assert_eq!(

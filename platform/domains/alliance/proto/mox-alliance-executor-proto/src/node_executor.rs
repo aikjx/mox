@@ -15,6 +15,11 @@ pub struct NodeExecutionRequest {
     pub input_data: Option<serde_json::Value>,
     pub context: Option<serde_json::Value>,
     pub tenant_id: String,
+    /// 任务级重试预算（场景⑤ SSOT）：由 DAG 引擎从 `ExecutionOptions.max_retries` 注入，
+    /// 覆盖执行器自身默认值（`ExpertExecutorConfig.max_retries`）。
+    /// `None` → 回落执行器配置（向后兼容）。
+    #[serde(default)]
+    pub max_retries: Option<u32>,
 }
 
 /// 节点执行结果

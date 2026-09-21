@@ -11,7 +11,7 @@ use mox_alliance_executor_core::{
 };
 use mox_alliance_executor_proto::types::ExecutorConfig;
 use mox_ai_expert_svc::expert_traits::llm_consultant;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::app_state::ExecutorAppState;
 use crate::routes::build_router;
@@ -50,8 +50,23 @@ impl ExecutorServer {
         );
 
         let state_sink = crate::state_sink::resolve_state_sink();
-        let engine =
-            DagEngineImpl::spawn_with_state_sink(self.config.clone(), node_executor, state_sink);
+        let engine = DagEngineImpl::spawn_with_state_sink(
+            self.config.clone(),
+            node_executor,
+            state_sink.clone(),
+        );
+
+        // 启动恢复扫描（场景②）：把已落库但未达终态的任务重新注入执行；
+        // 已完成节点直接跳过，不重复执行、不重复外部副作用。失败不阻断启动。
+        if let Some(sink) = state_sink {
+            match engine.restore(&sink) {
+                Ok(ids) => info!(
+                    "executor 恢复扫描完成：重新注入 {} 个未完成任务（已跳过其已完成节点）",
+                    ids.len()
+                ),
+                Err(e) => warn!("executor 恢复扫描失败（不阻断启动）: {}", e),
+            }
+        }
 
         let mut state = ExecutorAppState::new(self.config.clone(), engine);
         state.execution_ready = execution_ready;

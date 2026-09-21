@@ -11,9 +11,6 @@ use tracing_subscriber::EnvFilter;
 /// 默认配置文件路径（可被环境变量 MOX_ALLIANCE_CONFIG_FILE 覆盖）
 const DEFAULT_CONFIG_FILE: &str = "config/alliance-executor.yml";
 
-/// 旧版执行器模式环境变量名（向后兼容；新规范为 MOX_ALLIANCE_EXECUTOR_MODE）
-const LEGACY_EXECUTOR_MODE_ENV: &str = "EXECUTOR_MODE";
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // 初始化日志
@@ -44,8 +41,7 @@ async fn main() -> anyhow::Result<()> {
     // 监听地址：config/alliance-executor.yml → server.host/port（PORT-NORM-001: 3200）
     let addr: SocketAddr = format!("{}:{}", boot.server.host, boot.server.port).parse()?;
 
-    // 解析执行器模式（优先级：旧 EXECUTOR_MODE > yml/MOX_ALLIANCE_EXECUTOR_MODE > 默认 expert）
-    // 默认 expert（生产级），仅显式 mock 才启用 Mock。
+    // 执行器模式：生产级真实 AI 专家执行器（无 Mock 路径）。
     // 严禁"声称生产实际走 Mock"——启动日志必须如实反映实际生效模式。
     tracing::info!("executor：真实 AI 专家执行器（生产模式，无 Mock 路径）。");
     let server = ExecutorServer::new(config, addr);

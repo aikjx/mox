@@ -20,6 +20,11 @@ pub struct TaskSubmitRequest {
     pub priority: Option<mox_alliance_common_proto::TaskPriority>,
     pub mode: Option<mox_alliance_common_proto::AllianceMode>,
     pub fusion_strategy: Option<mox_alliance_common_proto::FusionStrategy>,
+    /// 客户端幂等键（场景①）：同一键重复提交返回同一任务，避免重试产生重复任务。
+    ///
+    /// 语义：由调用方生成（建议 UUID 或业务唯一键）；**为 None 时不启用幂等**，
+    /// 保持既有行为。启用后，成功落库的键与任务绑定，重复提交直接回放原任务。
+    pub idempotency_key: Option<String>,
 }
 
 /// 任务提交响应

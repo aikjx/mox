@@ -43,7 +43,7 @@ pub(crate) struct TaskExecutionState {
     task: Task,
     plan: CollaborationPlan,
     nodes: HashMap<String, Node>,
-    #[allow(dead_code)] // 预留：任务级执行选项，供后续控制逻辑扩展使用
+    /// 任务级执行选项（重试预算 / 超时 / fail-fast，场景⑤ SSOT）
     options: ExecutionOptions,
     /// 节点执行结果（node_id -> result，供融合与结果获取）
     outputs: HashMap<String, NodeExecutionResult>,
@@ -394,8 +394,8 @@ impl DagEngineImpl {
         node_executor: Arc<dyn NodeExecutor>,
         state_sink: Option<Arc<dyn ExecutionStateSink>>,
     ) {
-        // 收集所有就绪的节点
-        let mut ready_nodes: Vec<(Uuid, String, Node, String)> = Vec::new();
+        // 收集所有就绪的节点（附带任务级重试预算，场景⑤ SSOT）
+        let mut ready_nodes: Vec<(Uuid, String, Node, String, u32)> = Vec::new();
 
         {
             let states = states.read();
@@ -414,6 +414,7 @@ impl DagEngineImpl {
                             node_id,
                             node.clone(),
                             state.task.tenant_id.to_string(),
+                            state.options.max_retries,
                         ));
                     }
                 }
@@ -422,7 +423,7 @@ impl DagEngineImpl {
 
         // 并发执行就绪节点
         let mut handles = Vec::new();
-        for (task_id, node_id, node, tenant_id) in ready_nodes {
+        for (task_id, node_id, node, tenant_id, max_retries) in ready_nodes {
             // 标记为 Running
             {
                 let mut states = states.write();
@@ -448,6 +449,8 @@ impl DagEngineImpl {
                     node: node.clone(),
                     input_data: None,
                     context: None,
+                    // 场景⑤ SSOT：任务级重试预算从 ExecutionOptions 注入（覆盖执行器默认）
+                    max_retries: Some(max_retries),
                     tenant_id,
                 };
 
@@ -612,7 +615,17 @@ impl DagEngineImpl {
         );
     }
     /// 检查任务是否完成
-    fn check_task_completion(state: &mut TaskExecutionState) {        let all_terminal = state.nodes.values().all(|n| n.status.is_terminal());
+    fn check_task_completion(state: &mut TaskExecutionState) {
+        // 场景④仲裁：任务已到终态（如取消后残留的 Running 节点晚到完成）→
+        // 终态不可离开，完成度推进与融合一律不执行（否则 Cancelled 会被覆盖成 Completed）
+        if state.task.status.is_terminal() {
+            debug!(
+                "Task {} 已处终态 {:?}，忽略节点完成度推进",
+                state.task.task_id, state.task.status
+            );
+            return;
+        }
+        let all_terminal = state.nodes.values().all(|n| n.status.is_terminal());
         let any_failed = state
             .nodes
             .values()
@@ -970,7 +983,10 @@ pub struct DynamicRouteRule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mox_alliance_common_proto::{AllianceMode, AllianceResult, FusionStrategy, PlanDynamicRoute};
+    use crate::state_sink::RestorableTask;
+    use mox_alliance_common_proto::{
+        AllianceMode, AllianceResult, CollaborationPlan, FusionStrategy, PlanDynamicRoute,
+    };
 
     fn plan_with_routes(routes: Vec<PlanDynamicRoute>) -> CollaborationPlan {
         CollaborationPlan {
@@ -1053,12 +1069,22 @@ mod tests {
     struct RecordingSink {
         tasks: std::sync::Mutex<Vec<Task>>,
         nodes: std::sync::Mutex<Vec<(Uuid, String, String)>>,
+        plans: std::sync::Mutex<Vec<Uuid>>,
     }
 
     impl ExecutionStateSink for RecordingSink {
         fn persist_task(&self, task: &Task) -> AllianceResult<()> {
             self.tasks.lock().unwrap().push(task.clone());
             Ok(())
+        }
+
+        fn persist_plan(&self, task_id: Uuid, _plan: &CollaborationPlan) -> AllianceResult<()> {
+            self.plans.lock().unwrap().push(task_id);
+            Ok(())
+        }
+
+        fn restore_pending(&self) -> AllianceResult<Vec<RestorableTask>> {
+            Ok(Vec::new())
         }
 
         fn persist_node(
@@ -1145,6 +1171,74 @@ mod tests {
             states.read().get(&task_id).unwrap().task.status,
             TaskStatus::Cancelled
         );
+    }
+
+    #[test]
+    fn cancel_wins_over_late_node_completion_scenario4() {
+        // 场景④：取消后，残留 Running 节点晚到完成 → 任务必须保持 Cancelled，
+        // 不得被 check_task_completion 覆盖成 Completed
+        let task = Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".to_string(), "d".to_string());
+        let task_id = task.task_id;
+        let mut state = TaskExecutionState {
+            task,
+            plan: plan_with_routes(vec![]),
+            nodes: HashMap::new(),
+            options: test_options(),
+            outputs: HashMap::new(),
+            fusion_output: None,
+            dynamic_routes: None,
+        };
+        // 模拟取消后：任务 Cancelled，节点全部终态（Cancelled）
+        state.task.status = TaskStatus::Cancelled;
+        let mut node = mox_alliance_common_proto::Node {
+            node_id: "n1".to_string(),
+            task_id,
+            expert_id: "e".to_string(),
+            module_id: None,
+            name: "n".to_string(),
+            description: None,
+            status: NodeStatus::Completed,
+            retry_count: 0,
+            dependencies: vec![],
+            input_refs: vec![],
+            started_at: None,
+            completed_at: Some(chrono::Utc::now()),
+            duration_ms: Some(1),
+            output_ref: None,
+            error_message: None,
+        };
+        state.nodes.insert("n1".to_string(), node.clone());
+        node.status = NodeStatus::Cancelled;
+        let _ = node; // 第二个节点保持 Cancelled（用两个节点模拟竞争）
+        state.nodes.insert(
+            "n2".to_string(),
+            mox_alliance_common_proto::Node {
+                node_id: "n2".to_string(),
+                task_id,
+                expert_id: "e".to_string(),
+                module_id: None,
+                name: "n2".to_string(),
+                description: None,
+                status: NodeStatus::Cancelled,
+                retry_count: 0,
+                dependencies: vec![],
+                input_refs: vec![],
+                started_at: None,
+                completed_at: Some(chrono::Utc::now()),
+                duration_ms: Some(1),
+                output_ref: None,
+                error_message: None,
+            },
+        );
+
+        DagEngineImpl::check_task_completion(&mut state);
+
+        assert_eq!(
+            state.task.status,
+            TaskStatus::Cancelled,
+            "终态不可被晚到的节点完成覆盖（场景④）"
+        );
+        assert!(state.fusion_output.is_none(), "已取消任务不得执行融合");
     }
 
     #[test]

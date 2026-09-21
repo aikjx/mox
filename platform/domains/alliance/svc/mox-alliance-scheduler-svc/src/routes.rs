@@ -128,6 +128,7 @@ async fn create_task(
         priority: req.priority,
         mode: req.mode,
         fusion_strategy: req.fusion_strategy,
+        idempotency_key: None,
     };
 
     match state.scheduler.submit_task(submit_req).await {

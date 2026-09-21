@@ -21,6 +21,7 @@ use mox_alliance_common_proto::{AllianceError, AllianceResult, Task};
 use mox_alliance_common_proto::{CollaborationPlan, TaskStatus};
 #[cfg(feature = "sqlite")]
 use rusqlite::{params, Connection};
+use tracing::warn;
 use uuid::Uuid;
 
 /// 任务仓库抽象
@@ -36,6 +37,21 @@ pub trait TaskRepository: Send + Sync {
     fn all(&self) -> AllianceResult<Vec<Task>>;
     /// 删除任务，返回被删除的任务（若存在）
     fn remove(&self, task_id: Uuid) -> AllianceResult<Option<Task>>;
+
+    /// 按幂等键查找已绑定任务（场景①）。
+    ///
+    /// 默认实现返回 `None`（不启用幂等，保持既有行为）；持久化实现（SQLite）
+    /// 覆盖后提供**原子去重**：同一键重复提交只产出一份任务。
+    fn find_by_idempotency_key(&self, _key: &str) -> AllianceResult<Option<Task>> {
+        Ok(None)
+    }
+
+    /// 绑定幂等键 → 任务。重复绑定**保留首次绑定**（回放语义），不覆盖也不报错。
+    ///
+    /// 默认实现为空操作（不启用幂等）。
+    fn bind_idempotency_key(&self, _key: &str, _task_id: Uuid) -> AllianceResult<()> {
+        Ok(())
+    }
 }
 
 /// 内存任务仓库（默认实现）
@@ -450,6 +466,12 @@ impl SqliteTaskRepository {
                 task_id TEXT PRIMARY KEY,
                 plan_json TEXT NOT NULL,
                 updated_at TEXT NOT NULL
+            );
+            -- 幂等键绑定（场景①）：PRIMARY KEY 保证同一键只绑定首个任务（原子去重）
+            CREATE TABLE IF NOT EXISTS alliance_task_idem (
+                idem_key TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                created_at TEXT NOT NULL
             );",
         )
         .map_err(|e| {
@@ -662,7 +684,74 @@ impl SqliteTaskRepository {
 
 #[cfg(feature = "sqlite")]
 impl TaskRepository for SqliteTaskRepository {
+    fn find_by_idempotency_key(&self, key: &str) -> AllianceResult<Option<Task>> {
+        let task_id: String = {
+            let conn = self.conn.lock().unwrap();
+            let mut stmt = conn
+                .prepare("SELECT task_id FROM alliance_task_idem WHERE idem_key = ?1")
+                .map_err(|e| AllianceError::internal(format!("prepare idem lookup: {}", e)))?;
+            let mut rows = stmt
+                .query(params![key])
+                .map_err(|e| AllianceError::internal(format!("query idem lookup: {}", e)))?;
+            match rows
+                .next()
+                .map_err(|e| AllianceError::internal(format!("step idem lookup: {}", e)))?
+            {
+                Some(row) => row
+                    .get(0)
+                    .map_err(|e| AllianceError::internal(format!("read idem task_id: {}", e)))?,
+                None => return Ok(None),
+            }
+        };
+        let task_id = Uuid::parse_str(&task_id).map_err(|e| {
+            AllianceError::internal(format!("幂等键绑定的任务 ID 非法 {}: {}", task_id, e))
+        })?;
+        self.get(task_id)
+    }
+
+    fn bind_idempotency_key(&self, key: &str, task_id: Uuid) -> AllianceResult<()> {
+        let conn = self.conn.lock().unwrap();
+        // INSERT OR IGNORE + PRIMARY KEY：并发下只有首个绑定生效，后续为回放语义
+        conn.execute(
+            "INSERT OR IGNORE INTO alliance_task_idem (idem_key, task_id, created_at)
+             VALUES (?1, ?2, ?3)",
+            params![key, task_id.to_string(), chrono::Utc::now().to_rfc3339()],
+        )
+        .map_err(|e| {
+            AllianceError::internal(format!("sqlite bind idem key {}: {}", key, e))
+        })?;
+        Ok(())
+    }
+
     fn save(&self, task: &Task) -> AllianceResult<()> {
+        // 场景④仲裁（持久化层）：已落库的终态不可被覆盖——
+        // 调度器取消（Cancelled）与引擎完成（Completed）是两个独立写入方，
+        // 先到者为权威；同状态重写（时间戳/进度刷新）仍允许。
+        {
+            let conn = self.conn.lock().unwrap();
+            let mut stmt = conn
+                .prepare("SELECT status FROM alliance_task WHERE id = ?1")
+                .map_err(|e| AllianceError::internal(format!("prepare status peek: {}", e)))?;
+            let mut rows = stmt
+                .query(params![task.task_id.to_string()])
+                .map_err(|e| AllianceError::internal(format!("query status peek: {}", e)))?;
+            if let Some(row) = rows
+                .next()
+                .map_err(|e| AllianceError::internal(format!("step status peek: {}", e)))?
+            {
+                let stored: String = row
+                    .get(0)
+                    .map_err(|e| AllianceError::internal(format!("read status: {}", e)))?;
+                let stored_status = parse_task_status(&stored);
+                if stored_status.is_terminal() && stored_status != task.status {
+                    warn!(
+                        "拒绝覆盖终态任务 {}：存储层 {:?} vs 写入 {:?}（取消/完成竞争，先到者为权威）",
+                        task.task_id, stored_status, task.status
+                    );
+                    return Ok(());
+                }
+            }
+        }
         let payload = serde_json::to_string(task)
             .map_err(|e| AllianceError::internal(format!("serialize task: {}", e)))?;
         let status = task_status_to_str(task.status);
@@ -982,6 +1071,44 @@ mod tests {
         let nc = repo.get_node(task.task_id, "node-C").unwrap().unwrap();
         assert_eq!(nc.status, "interrupted");
         assert!(nc.result.is_none());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// 场景④（持久化层）：终态不可被覆盖——先到者为权威，同状态重写仍允许
+    #[test]
+    fn save_rejects_overwriting_terminal_task() {
+        let dir = std::env::temp_dir().join(format!("terminal_guard_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        let repo = SqliteTaskRepository::new(&db).unwrap();
+        let mut task = make_task(Uuid::new_v4());
+        repo.save(&task).unwrap(); // Pending → Pending
+
+        task.status = TaskStatus::Cancelled;
+        repo.save(&task).unwrap(); // Pending → Cancelled（合法）
+
+        // 竞争写入方（引擎/调度器另一侧）试图把 Cancelled 改写为 Completed
+        task.status = TaskStatus::Completed;
+        repo.save(&task).unwrap(); // 应被拒绝（终态不可离开）
+
+        // 重开库（全新读穿缓存）验证存储层权威状态仍是 Cancelled
+        let repo2 = SqliteTaskRepository::new(&db).unwrap();
+        let loaded = repo2.get(task.task_id).unwrap().unwrap();
+        assert_eq!(
+            loaded.status,
+            TaskStatus::Cancelled,
+            "终态不可被覆盖（先到者为权威）"
+        );
+
+        // 同状态重写（时间戳/进度刷新）仍允许
+        task.status = TaskStatus::Cancelled;
+        repo2.save(&task).unwrap();
+        assert_eq!(
+            repo2.get(task.task_id).unwrap().unwrap().status,
+            TaskStatus::Cancelled
+        );
 
         let _ = std::fs::remove_dir_all(&dir);
     }
