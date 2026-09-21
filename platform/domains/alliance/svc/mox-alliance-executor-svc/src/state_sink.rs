@@ -20,7 +20,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use mox_alliance_common_proto::{AllianceResult, CollaborationPlan, Task};
-use mox_alliance_executor_core::{ExecutionStateSink, RestorableTask};
+use mox_alliance_executor_core::{ExecutionStateSink, ExecutionView, RestorableTask};
 use mox_alliance_scheduler_core::{FileTaskRepository, SqliteTaskRepository, TaskRepository};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
@@ -85,6 +85,15 @@ impl ExecutionStateSink for SqliteExecutionStateSink {
             });
         }
         Ok(out)
+    }
+
+    fn read_back(&self, task_id: Uuid) -> AllianceResult<Option<ExecutionView>> {
+        let Some(task) = self.repo.get(task_id)? else {
+            return Ok(None);
+        };
+        let plan = self.repo.load_plan(task_id)?;
+        let nodes = self.repo.node_rows(task_id)?;
+        Ok(Some(ExecutionView { task, plan, nodes }))
     }
 }
 
