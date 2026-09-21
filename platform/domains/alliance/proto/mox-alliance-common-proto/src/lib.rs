@@ -22,6 +22,7 @@
 pub mod constants;
 pub mod error;
 pub mod events;
+pub mod naming;
 pub mod traits;
 pub mod types;
 
@@ -34,7 +35,13 @@ pub use types::{
     GlobalLlmConfig, GraphConnectionConfig, GraphEngineType, GraphQueryConfig, GraphSchemaConfig,
     LlmProviderOption, LlmRoutingStrategy,
     MatchingWeights, MergedLlmConfig, ModelConfig, ModuleGraphConfig, ModuleLlmConfig,
-    Node, NodeStatus, Task, TaskPriority, TaskStatus, ToolBinding,
+    Node, NodeStatus, PlanDynamicRoute, Task, TaskPriority, TaskStatus, ToolBinding,
+};
+
+// 命名映射（模式 / 融合策略的 serde 名 ↔ 展示名 ↔ 历史别名 唯一真源）
+pub use naming::{
+    fusion_display, fusion_from_any, fusion_serde, mode_display, mode_from_any, mode_serde,
+    ALL_FUSIONS, ALL_MODES,
 };
 
 // 通用 trait

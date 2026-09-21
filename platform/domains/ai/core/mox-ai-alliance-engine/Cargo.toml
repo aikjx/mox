@@ -42,11 +42,14 @@ tokio = { workspace = true }
 # 流式 SSE 支持
 futures-util = { workspace = true }
 
-# HTTP 客户端（LLM API 调用）
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# HTTP 客户端（LLM API 调用）—— 可选 feature：core 默认纯计算（零 IO 依赖）。
+# 仅在启用 `llm-http` feature 时才携带 reqwest 实现的 HttpLLMConsultant / SwitchableConsultant。
+# 同构于既有 `pg` feature 沙箱 sqlx 的模式（adapter 层职责隔离）。
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
 
-# 数据库持久化（PostgreSQL）
-sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "json", "chrono", "uuid", "macros"] }
+# 数据库持久化（PostgreSQL）—— 可选 feature：core 默认纯计算（无 IO 依赖），
+# 仅在启用 `pg` feature 时才携带 sqlx 实现（adapter 层职责）。见 src/persistence.rs。
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "json", "chrono", "uuid", "macros"], optional = true }
 
 # 统一归一化契约
 mox-unified-contract = { workspace = true }
@@ -61,6 +64,11 @@ tokio = { workspace = true, features = ["full"] }
 default = ["rayon"]
 # 并行咨询（真并行）：关闭则退化为顺序单线程，API 不变
 rayon = []
+# 生产持久化（PostgreSQL 适配层）：启用后 core 才携带 sqlx 实现的 DatabaseTaskRepository
+pg = ["sqlx"]
+# HTTP LLM 咨询器（adapter 层）：启用后 core 才携带 reqwest 实现的 HttpLLMConsultant /
+# SwitchableConsultant。纯领域逻辑（LLMConfig / ChatMessage / ExpertOpinionJSON 等）始终可用。
+llm-http = ["reqwest"]
 
 [lints]
 workspace = true

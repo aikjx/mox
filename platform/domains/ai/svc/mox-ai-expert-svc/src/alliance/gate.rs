@@ -72,15 +72,8 @@ pub struct LearnResult {
 }
 
 // ============== 审计事件 7 类（FR-CORE-07，缺一则基线失败） ==============
-pub const AUDIT_EVENTS_7: [&str; 7] = [
-    "ALLIANCE_START",
-    "INTENT_DONE",
-    "TEAM_DONE",
-    "DEBATE_DONE",
-    "GATE_DONE",
-    "LEARN_DONE",
-    "ALLIANCE_DONE",
-];
+// SSOT-5：审计事件名真源在 mox-unified-contract::event，此处仅再导出
+pub use mox_unified_contract::AUDIT_EVENTS_7;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {

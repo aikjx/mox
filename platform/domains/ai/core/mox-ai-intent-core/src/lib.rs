@@ -1,8 +1,10 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
+// 数据模型/算法参考实现：字段由 serde 填充或对照用。
+#![allow(dead_code)]
 //! MOX AI Intent Core — AI 对话意图核心引擎
 //!
 //! ## 概述

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Copyright (c) 2026 璇玑 RelGraph · 统一存储引擎 (Unified Storage Engine)
 // Licensed under the MIT License.
 

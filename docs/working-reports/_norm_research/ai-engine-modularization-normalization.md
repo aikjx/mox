@@ -397,3 +397,387 @@ tests/exact_scheduling.rs             有理数精确实验（断言 450/250/250
 | clippy | 无新增 |
 
 新增用例：单专家→串行、跨域→分层、分数悬殊→分层、分数接近→投票、默认→辩论、迭代关键词、评审关键词、决策理由可审计。
+
+---
+
+## 十、Dynamic 执行期动态路由（2026-09-20，承接第九节）
+
+第九节只完成**规划期**选型，Dynamic 的协议层语义「根据中间结果动态决定下一步」仍未落地：审计发现执行器的 `dynamic_routes` 恒为 `None`（`dag_engine.rs` 硬编码注释「框架占位」），`apply_dynamic_routes` 从未被触发。
+
+### 10.1 缺口定位
+
+| 已有 | 缺失 |
+|---|---|
+| `TaskExecutionState.dynamic_routes` 字段 | 数据源：恒为 `None` |
+| `DynamicRouteRule`（决策节点 / 条件 / 双分支） | 计划无法携带规则（proto 无字段） |
+| `apply_dynamic_routes()` 分支跳过逻辑 | 永不执行 |
+| `condition` 引擎（Compare / And / Or / Not） | — |
+
+即：框架齐备，**唯独规则没有传递通道**。
+
+### 10.2 实现（三层）
+
+1. **协议层**（`mox-alliance-common-proto`）
+   - 新增 `PlanDynamicRoute`：`decision_node` / `field` / `operator` / `value` / `true_branch` / `false_branch`
+   - 采用「字段路径 + 运算符 + 字面量」扁平表示，**不内嵌执行器的条件表达式树**，协议层不反向依赖执行器内部类型，跨端 JSON 可直接构造
+   - `CollaborationPlan` 新增 `#[serde(default)] dynamic_routes: Vec<PlanDynamicRoute>` —— 旧 JSON 无此字段反序列化为空，**向后兼容**
+   - 同步补 `lib.rs` 显式重导出（该 crate 是列举式导出，不加会编译不过）
+
+2. **计划生成器**（`planner.rs::generate_dynamic_plan`）
+   Dynamic 产出真正的**决策 DAG**：`node-decision`（首位专家研判）→ 主路径（其余专家按第九节选型编排，**入口依赖决策节点**，保证「先研判再决定」而非并行抢跑）+ `node-fallback`（兜底重跑）；规则为 `success == true ? 主路径 : 兜底`。
+
+3. **执行器**（`dag_engine.rs::build_dynamic_routes`）
+   Start 时把计划规则编译为 `HashMap<决策节点, DynamicRouteRule>`；空规则 → `None`（既有模式行为完全不变）；未知运算符 → 告警并跳过该条，不影响其余规则。
+
+### 10.3 顺带修复的真缺陷
+
+`condition.rs::Operand::Field` 原为**简化实现**：`output.score` 被剥离前缀后取 `context["score"]`，与文件头文档声明的 `output.score > 0.8` 语义不符，嵌套路径会**静默取到 Null**（条件恒假，路由永远走 false 分支）。
+
+已改为真正的点路径解析（`context["output"]["score"]`），并在取不到时回退旧的前缀剥离行为以兼容既有规则。
+
+### 10.4 验证
+
+| 项 | 结果 |
+|---|---|
+| `mox-alliance-scheduler-core` | 95 通过 / 0 失败（新增：分支拓扑与规则完整性、非 Dynamic 模式无规则） |
+| `mox-alliance-executor-core` | 30 通过 / 0 失败（新增：空规则→None、合法规则可求值、未知运算符隔离、数值运算符映射） |
+| `mox-alliance-scheduler-svc` / `mox-alliance-http-sdk` | 回归通过 |
+| clippy | 无新增 |
+
+### 10.5 诚实边界
+
+- 规则目前由计划生成器按固定模式生成（`success == true`），**尚不支持用户自定义条件**；协议已支持任意 field/operator/value，接入配置化规则属后续项。
+- 分支只会把未选中分支标记 `Skipped`；**不会**动态新增计划外的节点（受 `plan.validate()` 与执行器拓扑约束）。
+- 端到端（真实执行器跑通分支跳过）由单元测试覆盖规则构建与求值语义，未做真实 LLM 执行链路的集成验证。
+
+---
+
+## 十一、命名映射归一：SSOT-4 落地（2026-09-20）
+
+### 11.1 问题：一套枚举，四处手写映射
+
+系统内流通三套名字：**serde 传输名**（`best_of`）、**网关展示名**（`first_wins`）、**历史别名**（`majority_vote`）。改动前这三层映射散落在四处手写 `match`：
+
+| # | 位置 | 方向 |
+|---|---|---|
+| 1 | `http-sdk/alliance.rs::mode_str` | 枚举 → 展示名 |
+| 2 | `http-sdk/alliance.rs::fusion_strategy_str` | 枚举 → 展示名 |
+| 3 | `http-sdk/alliance_remote.rs::norm_mode` / `norm_fusion` | serde 名 → 展示名 |
+| 4 | `scheduler-svc/main.rs::parse_mode` / `parse_fusion` | 串 → 枚举 |
+| 5 | 网关 `experts_orchestration.rs::parse_fusion_strategy` | 串 → 枚举（三层兼容） |
+
+历史上已因此出过真实故障：融合结果出口透传 proto 原始名（`weighted`）而任务详情出口已归一化（`weighted_voting`）；更早还有旧式串 `majority_vote` 与新式展示串不匹配导致**全部融合落到默认分支**——故障形态是「静默走错算法」，不报错。
+
+### 11.2 方案：协议层单一真源
+
+新增 `mox-alliance-common-proto/src/naming.rs`，提供：
+
+- `mode_display` / `mode_serde` / `mode_from_any`
+- `fusion_display` / `fusion_serde` / `fusion_from_any`
+- `ALL_MODES`（7）/ `ALL_FUSIONS`（9）常量表，供全变体遍历
+
+设计要点：
+
+1. **输入归一**：`trim` + 小写，容忍 `"  PARALLEL "` / `"RRF"` 这类输入；
+2. **未识别返回 `None`**，由调用方决定回退（映射层禁止静默吞掉），四处回退策略保持各自历史语义不变（默认 Parallel / Weighted / 原样透传）；
+3. **解析优先级**：展示名 → serde 名 → 历史别名，避免同名歧义；
+4. **协议层不依赖任何上层类型**，保持 SSOT 方向单向。
+
+### 11.3 收敛结果
+
+五处调用点全部改为委托，`match` 表删除：
+
+| 调用点 | 改后 |
+|---|---|
+| `mode_str` | `mode_display(m)` |
+| `fusion_strategy_str` | `fusion_display(f)` |
+| `norm_mode` / `norm_fusion` | `from_any(s).map(display)`，未识别原样透传 |
+| `parse_mode` | `mode_from_any(s).unwrap_or(Parallel)` |
+| `parse_fusion` | `fusion_from_any(s).unwrap_or(Weighted)` |
+| 网关 `parse_fusion_strategy` | `fusion_from_any(s)`，经 `mox-alliance-http-sdk` 透传 |
+
+> 依赖方向说明：网关**不直接依赖**联盟协议层 crate（其 `FusionStrategy` 本就由 http-sdk 转出）。
+> 为使网关拿到 SSOT 而不新增跨层依赖，由 http-sdk 显式转出命名映射函数，
+> 保持既有依赖图不变，同时消灭第二份映射表。
+
+### 11.4 新增防护（企业级）
+
+`naming.rs` 自带 7 个用例，其中两条是**防线**：
+
+- `display_names_are_unique`：展示名 / serde 名在同一枚举内重复即失败（重复会导致反向解析歧义）。注意按「名空间」分别查重——展示名与 serde 名允许同名（如 `debate`），跨类型无需唯一。
+- `all_variants_are_covered` + 往返用例：新增枚举变体而忘记补映射时，**往返测试必然失败**。
+
+### 11.5 验证
+
+| 项 | 结果 |
+|---|---|
+| `mox-alliance-common-proto` | 7 通过 / 0 失败（命名映射） |
+| `mox-alliance-http-sdk` | 8 通过 / 0 失败 |
+| `mox-alliance-scheduler-svc` | 9 通过 / 0 失败 |
+| 网关 `mox-platform-gateway-svc` | **111 通过 / 0 失败** |
+| clippy | 无新增 |
+
+### 11.6 工程教训（本轮踩坑）
+
+- **变量名不得与同名函数重名**：测试里写 `let mut mode_serde = HashSet::new()` 遮蔽了函数 `mode_serde`，编译报 `E0618 expected function, found HashSet`。已更名为 `mode_serde_set`。
+
+---
+
+## 十二、架构门禁：core 层 IO 依赖（P2 止血，2026-09-20）
+
+### 12.1 现状盘点
+
+扫描 `platform/domains/*/core/*/Cargo.toml`，core 层携带 IO 依赖是**仓库级普遍现象**而非孤例（11 处命中），其中按 `arch-test` 的分层判定（`platform` 域 core 归 L0 平台层），真正的 **L3 业务域 core 违规**为：
+
+| crate | IO 依赖 | 备注 |
+|---|---|---|
+| `mox-ai-alliance-engine` | `sqlx` + `reqwest` | 最严重：core 直连 Postgres |
+| `mox-ai-core` | `reqwest` | |
+| `mox-alliance-scheduler-core` | `reqwest` | |
+| `mox-cloud-store-core` | `reqwest`（`optional = true`） | **正面范例**：按需装配，不算违规 |
+
+`mox-alliance-boot-config` 的 `reqwest` 位于 `[dev-dependencies]`，不进生产编译，不计违规。
+
+### 12.2 决策：先止血，再清偿
+
+全面下沉（11 个 crate 的持久化/HTTP 调用搬到 svc）非一轮之功，且会与并行改动冲突。因此本轮先交付**可执行的门禁**，把「新增违规」这条路堵死：
+
+新增 `mox-arch-test::test_core_layer_has_no_new_io_dependencies`：
+
+1. **IO 依赖清单**：sqlx / reqwest / redis / mongodb / tokio-postgres / duckdb / clickhouse / elasticsearch；
+2. **optional 视为按需装配**——调用方不启用 feature 就不编译，允许存在（鼓励用这种方式渐进解耦）；
+3. **既有违规登记 `BASELINE`（技术债）**，新增即失败；
+4. **基线项消失必须移除**——测试会 panic 提示「基线已过期」，防止基线无限膨胀掩盖治理进展。
+
+### 12.3 门禁有效性验证（负向测试）
+
+门禁通过不等于有效。做了一次**负向验证**：临时从基线摘掉 `("mox-ai-core", "reqwest")`，测试立刻精确报出
+
+```
+mox-ai-core [L3-core] -> reqwest  VIOLATION: 非可选 IO 依赖，未登记在基线中
+```
+
+确认拦截路径真实生效后已恢复基线。
+
+### 12.4 验证
+
+| 项 | 结果 |
+|---|---|
+| `mox-arch-test` | **9 通过 / 0 失败**（含新增门禁） |
+| 负向验证 | 摘除基线项即报 VIOLATION，恢复后转绿 |
+
+### 12.5 后续（P2 清偿）
+
+按「最严重优先」逐个下沉：
+1. `mox-ai-alliance-engine` 的 `sqlx`（`persistence.rs` 直连 Postgres）→ 下沉到 `mox-ai-expert-svc`；
+2. 各 core 的 `reqwest`（LLM/HTTP 咨询）→ 抽为 trait，由 svc 注入实现（DIP）；
+3. 每清偿一项即从 `BASELINE` 移除，门禁强制同步。
+
+**经验**：跨 crate 移动类型前必须排查 glob 导入（见 8.4 的 `persistence::*` 事故），优先用 `pub use` 再导出过渡。
+
+---
+
+## 十三、SSOT-5：事件与审计常量归一（2026-09-20）
+
+### 13.1 盘点：三份阶段名、两份审计事件名、对外契约混用
+
+| 常量 | 定义处 | 备注 |
+|---|---|---|
+| `PHASE_NAMES` | ① `mox-ai-alliance-engine/src/constants.rs` ② `mox-ai-expert-svc/src/alliance/constants.rs` ③ `mox-unified-contract::EventPhase`（枚举，含 name/label/icon/color） | 三处，**互不引用** |
+| `AUDIT_EVENTS_7` | ① `mox-ai-alliance-engine/src/constants.rs` ② `mox-ai-expert-svc/src/alliance/gate.rs` | 两处，互不引用 |
+
+对外契约侧：orchestrator `/ai/engine/alliance/capabilities`（`ai_engine.rs`）的 `phases` 取 `constants::PHASE_NAMES`、`audit_events_7` 取 `gate::AUDIT_EVENTS_7`，两者路径不同但**同属 `mox-ai-expert-svc` 一个 crate**（核对 `use mox_ai_expert_svc::alliance::constants as c`）。
+
+> **更正说明**：初版分析曾据 159/163 两行路径差异误判为「跨 crate 混用」，核对 import 后确认同属一个 crate，此处已更正。真正的风险不是跨 crate，而是**四处同义定义互不引用**（引擎层 + 专家服务两份副本 + 契约层枚举 + 对外契约）。
+
+`mox-ai-expert-svc` 当时**既不依赖** unified-contract，**也不依赖** alliance-engine，两份纯副本。
+
+三份副本当前值恰好相同，但没有任何机制阻止各自漂移。
+
+### 13.2 收敛
+
+以 `mox-unified-contract::event` 为唯一真源（它本就是 SSOT crate，且 `EventPhase` 已带阶段语义）：
+
+1. 契约层新增 `PHASE_NAMES` / `AUDIT_EVENTS_7` 常量并导出；
+2. 两个 crate 的本地字面量副本删除，改为 `pub use` 再导出（保持 `crate::constants::PHASE_NAMES` 等既有路径可用，调用点零改动）；
+3. `mox-ai-expert-svc` 补充 `mox-unified-contract` 依赖（svc 依赖 shared 契约层，符合分层）。
+
+### 13.3 新增守护
+
+契约层新增 2 个用例：
+
+- `phase_names_match_event_phase`：`PHASE_NAMES` 与 `EventPhase::all()` 的 `name()` **逐项一一对应**——阶段枚举加变体而常量没跟上时必然失败；
+- `audit_events_are_unique_and_stable`：审计事件名不得重复（重复会让审计计数与去重失真），且首尾项 `ALLIANCE_START` / `ALLIANCE_DONE` 稳定。
+
+### 13.4 验证
+
+| 项 | 结果 |
+|---|---|
+| `mox-unified-contract` | 通过（含 2 个新增守护） |
+| `mox-ai-alliance-engine` | 通过（95 级用例全绿） |
+| `mox-ai-expert-svc` | 通过 |
+| `cargo check --all-targets` | 通过 |
+
+### 13.5 残留与后续
+
+- orchestrator 的 `ai_engine.rs` 从 `mox-ai-expert-svc` 的 `constants` 与 `gate` 两个模块取值（同一 crate），现已双双引用契约层 SSOT，值必然一致，故未改写其调用路径——该 crate 不直接依赖 unified-contract，改写需新增依赖，收益不抵成本。
+- 时间戳口径：`MoxEvent::new` 用 `chrono::Utc::now().to_rfc3339()`（含纳秒），而网关远程接入层约定秒级 RFC3339；两者**不同精度**但均为合法 RFC3339，前端解析无歧义，故未强行统一——若后续要求严格一致需单独立项（涉及跨端契约变更）。
+
+---
+
+## 十四、全维归一化体检与门禁（2026-09-21）
+
+### 14.1 为什么要先度量
+
+前面几节是「单点归一」：发现一处、修一处。但归一化的真实规模从未被量化过——不知道总共有多少同义定义，就无法判断进度，也无法防止边修边新增。
+
+因此本轮先建立**可复跑的度量工具**，再做门禁。
+
+### 14.2 体检工具
+
+新增 `scripts/normalization-scan.py`（可复跑，零第三方依赖）：
+
+- 扫描 `platform/**/*.rs` 的**行首 `pub enum / struct / const / type`**（跳过注释行）；
+- 按 crate 归属聚合（向上查找最近 `Cargo.toml` 目录名）；
+- 输出「跨 crate 重复」与「同 crate 内重复」两类清单，按重复次数降序；
+- 支持 `--json`（完整报告）与 `--baseline-txt`（供门禁比对的基线）。
+
+### 14.3 体检结果：真实债务规模
+
+```
+重复符号合计：468 项（其中跨 crate：449 项）
+```
+
+典型项（跨 crate 重复次数）：
+
+| 符号 | 次数 | 分布 |
+|---|---|---|
+| `TaskStatus` | 9 | ai / alliance / flow×2 / platform×2 / project-graph / gateway / api |
+| `AuditSeverity` | 5 | expert-svc / audit / enterprise-core / pipeline-framework |
+| `HealthStatus` | 5 | framework / kg-storage / observability / integration / model-core |
+| `ActorSource` / `AuditAction` / `AuditOutcome` | 4 | expert-svc / audit / pipeline-framework / … |
+| `Capability` / `EntityKind` / `Role` / `StorageError` / `TaskPriority` | 4 | 各域各一份 |
+
+这说明：**「同一个概念在每个域各定义一份」是仓库的系统性模式**，而非个别疏漏。单点修复无法收敛，必须靠门禁 + 逐项清偿。
+
+### 14.4 门禁：不得新增
+
+新增 `mox-arch-test::test_no_new_cross_crate_duplicate_symbols`：
+
+- 基线：`platform/arch-test/baseline/normalization.txt`（449 项，由体检工具生成）；
+- **Rust 侧独立实现扫描**（不依赖 Python），规则与脚本一致，避免「工具与门禁口径不同」；
+- **新增跨 crate 重复 → 失败**，并提示收敛到协议层/共享契约层，或重命名以示区分；
+- **已清偿项只打印提示不失败**（清偿是好事，不应阻塞 CI），提示同步收缩基线。
+
+采用「不得新增」而非「一刀切禁止」：449 项存量一刀切会让 CI 长期红，等于形同虚设；先止血才能谈清偿。
+
+### 14.5 门禁有效性验证
+
+在两个 crate 各临时定义 `pub const NORM_GUARD_PROBE`，门禁精确报出：
+
+```
+新增跨 crate 重复定义符号（1）：
+  const::NORM_GUARD_PROBE
+```
+
+验证后已撤销探针，`mox-arch-test` 恢复全绿。
+
+### 14.6 清偿优先级建议（后续）
+
+按「通用概念 + 跨 crate 数量」排序：
+
+1. `TaskStatus`（9 处）— 最典型，但各域语义可能不同（流程/项目/联盟/平台），需逐域确认后再统一，优先做「协议层定义 + 各域引用」；
+2. 审计类 `AuditSeverity` / `ActorSource` / `AuditAction` / `AuditOutcome` —— 已有 `mox-audit` 作为基础设施，应收敛到它；
+3. `HealthStatus` / `Capability` / `EntityKind` / `Role` —— 通用模型概念，候选收敛到 `mox-base-model-core`。
+
+每清偿一项即重新生成基线（`--baseline-txt`），基线单调收缩即进度。
+
+---
+
+## 十五、P2 层违规定居：core 去 sqlx（2026-09-21）
+
+### 15.1 止血已完成，本次做清偿
+
+P2 的「core 层不得引入新 IO 依赖」门禁（`mox-arch-test::test_core_layer_has_no_new_io_dependencies`）早已立起（止血）。但存量里 `mox-ai-alliance-engine`（L3 业务域 core）的 `sqlx` 直连 Postgres 是最刺眼的层违规：其 `persistence.rs` 把 `TaskRepository` trait + `InMemoryTaskRepository`（无 IO）+ `DatabaseTaskRepository`（**sqlx 实现**）全塞在 core 里，导致 core 被迫依赖 sqlx。
+
+### 15.2 关键发现：DatabaseTaskRepository 是死绑孤块
+
+全 workspace 搜索 `DatabaseTaskRepository` 的使用：**只有定义、零引用**——没有任何 crate `new`/`from_pool` 它。它是生产持久化的真正实现，却从未被实例化（或仅由外部二进制使用，workspace 内无调用点）。这使它成为最干净的清偿点：移出 core 不会破坏任何调用方。
+
+### 15.3 方案：可选 feature 隔离（而非跨 crate 移动）
+
+两种清偿路径：
+
+| 方案 | 做法 | 取舍 |
+|---|---|---|
+| A 下沉 svc | 把 `DatabaseTaskRepository` 移到 `mox-ai-expert-svc`，core 留 trait | 最彻底，但跨 crate 移动 ~400 行 sqlx + svc 需新增对 engine 的依赖（引入 reqwest 编译连锁），风险高 |
+| B feature 隔离 | `sqlx` 改 `optional`，新增 `pg` feature；`DatabaseTaskRepository` 整段 `#[cfg(feature = "pg")]` | core 默认纯计算，生产持久化由 svc 启用 `pg` feature 提供；不动依赖图，安全 |
+
+本次选 **B**：core 恢复「默认纯计算」的架构契约，且不引入跨 crate 依赖连锁。`DatabaseTaskRepository` 的实现代码仍留在 core crate，但 `pg` feature 关闭时（默认）完全不编译，等价于 core 无 IO。
+
+改动：
+1. `Cargo.toml`：`sqlx` 加 `optional = true`，`[features]` 增加 `pg = ["sqlx"]`；
+2. `persistence.rs`：顶部 `use sqlx::...` 与 `DatabaseTaskRepository` 的 struct / impl / trait-impl / `row_to_task` / `row_to_event` 共 6 处加 `#[cfg(feature = "pg")]`；
+3. `arch-test` 的 IO 门禁 `BASELINE` 移除 `("mox-ai-alliance-engine", "sqlx")`——因它已变 optional，门禁的「非 optional 才计违规」规则不再命中，基线随清偿收缩。
+
+`TaskRepository` trait、`InMemoryTaskRepository`、`TaskStatus` re-export 全部保留在 core（纯接口/内存，无 IO），`persistence.rs` 末尾的测试 mod（只测 `InMemoryTaskRepository`）默认编译不受影响。
+
+### 15.4 验证
+
+| 项 | 结果 |
+|---|---|
+| `cargo check -p mox-ai-alliance-engine`（默认 feature） | **Finished**，无 sqlx 编译 |
+| `mox-ai-alliance-engine` 测试 | 95 + 6 通过（InMemory 路径，0 失败） |
+| `mox-arch-test` | 10 通过（IO 门禁 + 全维门禁，基线收缩后无 stale） |
+| `cargo clippy` | 本轮新增 0 |
+
+### 15.5 诚实边界与剩余
+
+- **`reqwest` 仍在 engine**（LLM API 调用，与核心算法深度耦合），本次未处理，保留在 `BASELINE`；真解法是把 LLM 客户端抽象为 trait、由 svc 注入，属后续项。
+- `mox-alliance-scheduler-core` 的 `reqwest`（`HttpExecutorBridge` / 远程专家注册表桥接）经核对是 HTTP 适配职责，本就在 adapter 层语义内；本轮已与 engine 的 sqlx 同构完成 **feature 隔离**（见第十六节），core 默认纯计算。
+- 方案 B 让 core **默认**无 IO，但 sqlx 代码仍驻留在 core crate（`pg` feature 关闭不编译）。若要求「core 物理上不含任何 IO 代码」，需走方案 A（建 alliance 域 svc 或扩展 expert-svc 接收 `DatabaseTaskRepository`）——列为 P2 后续清偿项。
+- 启用 `pg` feature 的生产部署路径本次未做集成验证（无 Postgres 实例），属已知缺口。
+
+- 并行读取同一文件时可能拿到**改动前的快照**，据此判断「编辑未生效」会误判；核对编辑结果应在编辑调用返回后单独读取。
+
+---
+
+### 第十六节 · P2 层违规定居（第二步）：scheduler-core 的 reqwest 清偿
+
+#### 16.1 现状
+
+第十五节 12.1 盘点已识别 `mox-alliance-scheduler-core`（L3 调度域 core）的 `reqwest` 为层违规：`HttpExecutorBridge`（`executor_bridge.rs`，通过 HTTP REST 调用远程执行器）与 `HttpExpertRegistryBridge`（`registry.rs`，远程专家注册表桥接）把 IO 引入 core。其中 `registry.rs` 的桥接**此前已**用 `#[cfg(feature = "http-bridge")]` 隔离，但 `executor_bridge.rs` 的 `HttpExecutorBridge` 漏网；且 `Cargo.toml` 中 `reqwest = { workspace = true }` 非 optional，导致 **core 默认编译就引入 reqwest**——这是 P2 第二个真实违例（engine 的 sqlx 为首例，已清偿）。
+
+#### 16.2 方案：可选 feature 隔离（与 engine sqlx 同构，方案 B）
+
+| 项 | 做法 |
+|---|---|
+| `Cargo.toml` | `reqwest` 改 `optional = true`；`http-bridge` feature 由 `[]` 改为 `["reqwest"]` |
+| `executor_bridge.rs` | `HttpExecutorBridge` 整段（config / struct / impl / 辅助类型 `ErrorResponse` / `SubmitPlanRequest` / `ExecutionStatusResponse` / `error_code_from_u32`）共 9 处加 `#[cfg(feature = "http-bridge")]`；仅 HTTP 桥接使用的 `AllianceError` / `AllianceErrorCode` / `TaskStatus` 移入 cfg use 块 |
+| `lib.rs` | `HttpExecutorBridge` / `HttpExecutorBridgeConfig` 的重导出加 `#[cfg(feature = "http-bridge")]`（`InProcessExecutorBridge` / `NoopExecutorBridge` 等纯计算部分无条件保留） |
+| `arch-test` 门禁 | `BASELINE` 移除 `("mox-alliance-scheduler-core", "reqwest")` |
+
+`http-bridge` 是 scheduler-core 既有 feature（registry.rs 已用），语义为「启用 HTTP 桥接适配」。core 默认 feature 为 `[]`，故**默认纯计算、无 reqwest**；生产远程桥接由 svc 层（已 `features = ["http-bridge"]`）启用提供。
+
+#### 16.3 改动清单
+
+- `platform/domains/alliance/core/mox-alliance-scheduler-core/Cargo.toml`
+- `platform/domains/alliance/core/mox-alliance-scheduler-core/src/executor_bridge.rs`
+- `platform/domains/alliance/core/mox-alliance-scheduler-core/src/lib.rs`
+- `platform/arch-test/src/lib.rs`（BASELINE 收缩）
+
+#### 16.4 验证
+
+| 项 | 结果 |
+|---|---|
+| `cargo check -p mox-alliance-scheduler-core`（默认 feature） | **Finished**，0 warning，无 reqwest 编译 |
+| `cargo check -p mox-alliance-scheduler-core --features http-bridge` | **Finished**，0 warning，HTTP 桥接可用 |
+| `cargo check -p mox-alliance-scheduler-svc`（依赖 scheduler-core，启用 http-bridge） | **Finished**，下游 `server.rs` 构造 `HttpExecutorBridge` 正常 |
+| `mox-arch-test::test_core_layer_has_no_new_io_dependencies` | **1 passed**，P2 门禁基线收缩后无 stale |
+
+#### 16.5 诚实边界与剩余
+
+- **`mox-ai-alliance-engine` 的 `reqwest` 仍未清偿**（LLM API 调用，与核心算法深度耦合）。其真解法是把 LLM 客户端抽象为 trait、由 svc 注入，属 P2 第三步后续项（工作量大于 feature 隔离，需重构 `experts_orchestration` 的 LLM 调用点）。
+- 方案 B 让 core **默认**无 IO，但 reqwest 代码仍驻留 core crate（`http-bridge` feature 关闭不编译）。若要求「core 物理上不含任何 IO 代码」，需走方案 A（真下沉到 svc），列为后续。
+- 启用 `http-bridge` 的生产集成验证（无远程执行器实例）本次未做，属已知缺口。
+- P2 层违规现状：scheduler-core（已完成）· engine-sqlx（已完成）· engine-reqwest（待 trait 抽象）。

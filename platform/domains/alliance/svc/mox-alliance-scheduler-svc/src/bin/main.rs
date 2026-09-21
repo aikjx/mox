@@ -108,28 +108,14 @@ fn parse_priority(s: &str) -> TaskPriority {
 
 /// 解析协作模式（parallel | sequential | consult | debate | hierarchical | iterative | voting）
 fn parse_mode(s: &str) -> AllianceMode {
-    match s.to_ascii_lowercase().as_str() {
-        "sequential" => AllianceMode::Sequential,
-        "debate" => AllianceMode::Debate,
-        "hierarchical" => AllianceMode::Hierarchical,
-        "iterative" => AllianceMode::Iterative,
-        "voting" => AllianceMode::Voting,
-        "dynamic" => AllianceMode::Dynamic,
-        _ => AllianceMode::Parallel,
-    }
+    // 委托协议层唯一真源（naming.rs）：兼容展示名 / serde 名 / 历史别名，
+    // 未识别时回退 Parallel（与历史默认行为一致）
+    mox_alliance_common_proto::mode_from_any(s).unwrap_or(AllianceMode::Parallel)
 }
 
 /// 解析融合策略（weighted | voting | confidence_weighted | concatenation | best_of | stacking | debate | map_reduce | iterative）
 fn parse_fusion(s: &str) -> FusionStrategy {
-    match s.to_ascii_lowercase().as_str() {
-        "voting" => FusionStrategy::Voting,
-        "confidence_weighted" => FusionStrategy::ConfidenceWeighted,
-        "concatenation" => FusionStrategy::Concatenation,
-        "best_of" => FusionStrategy::BestOf,
-        "stacking" => FusionStrategy::Stacking,
-        "debate" => FusionStrategy::Debate,
-        "map_reduce" => FusionStrategy::MapReduce,
-        "iterative" => FusionStrategy::Iterative,
-        _ => FusionStrategy::Weighted,
-    }
+    // 委托协议层唯一真源（naming.rs）：兼容展示名 / serde 名 / 历史别名，
+    // 未识别时回退 Weighted（与历史默认行为一致）
+    mox_alliance_common_proto::fusion_from_any(s).unwrap_or(FusionStrategy::Weighted)
 }

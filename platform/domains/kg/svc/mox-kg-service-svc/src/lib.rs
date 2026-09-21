@@ -1,8 +1,12 @@
+#![allow(unused_assignments)]
+#![allow(unused_variables)]
 // Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
+// 数据模型/算法参考实现：字段由 serde 填充或对照用。
+#![allow(dead_code)]
 //! # Mox R3 Graph Service
 //!
 //! Zero third-party成品 graph DB embedded; Parser 100% Mox self-dev.

@@ -16,10 +16,15 @@
 //! - `LLMResponseParser` — 解析 LLM 结构化输出（JSON 格式）
 //! - `FallbackConsultant` — 包装器，LLM 失败时回退到本地规则
 
+// 仅 HTTP 实现（启用 `llm-http` feature）使用的依赖；纯数据类型部分无需这些导入
+#[cfg(feature = "llm-http")]
 use crate::debate::{ExpertConsultant, ExpertOpinion, LocalRuleConsultant};
+#[cfg(feature = "llm-http")]
 use crate::team::ExpertMeta;
+#[cfg(feature = "llm-http")]
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "llm-http")]
 use std::time::Duration;
 
 // =============================================================================
@@ -138,6 +143,7 @@ pub struct ChatMessage {
 }
 
 /// Chat Completion 请求
+#[cfg(feature = "llm-http")]
 #[derive(Debug, Clone, Serialize)]
 struct ChatCompletionRequest {
     model: String,
@@ -149,6 +155,7 @@ struct ChatCompletionRequest {
 }
 
 /// 响应格式（强制 JSON 输出）
+#[cfg(feature = "llm-http")]
 #[derive(Debug, Clone, Serialize)]
 struct ResponseFormat {
     #[serde(rename = "type")]
@@ -156,6 +163,7 @@ struct ResponseFormat {
 }
 
 /// Chat Completion 响应
+#[cfg(feature = "llm-http")]
 #[derive(Debug, Clone, Deserialize)]
 struct ChatCompletionResponse {
     choices: Vec<ChatChoice>,
@@ -163,6 +171,7 @@ struct ChatCompletionResponse {
     usage: Option<Usage>,
 }
 
+#[cfg(feature = "llm-http")]
 #[derive(Debug, Clone, Deserialize)]
 struct ChatChoice {
     message: ChatMessage,
@@ -170,6 +179,7 @@ struct ChatChoice {
     finish_reason: Option<String>,
 }
 
+#[cfg(feature = "llm-http")]
 #[derive(Debug, Clone, Deserialize)]
 struct Usage {
     #[allow(dead_code)]
@@ -219,6 +229,7 @@ pub struct ExpertOpinionJSON {
 /// let consultant = HttpLLMConsultant::new(config);
 /// let engine = DebateEngine::with_consultant(consultant);
 /// ```
+#[cfg(feature = "llm-http")]
 #[derive(Clone)]
 pub struct HttpLLMConsultant {
     config: LLMConfig,
@@ -226,6 +237,7 @@ pub struct HttpLLMConsultant {
     fallback: LocalRuleConsultant,
 }
 
+#[cfg(feature = "llm-http")]
 impl std::fmt::Debug for HttpLLMConsultant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HttpLLMConsultant")
@@ -236,6 +248,7 @@ impl std::fmt::Debug for HttpLLMConsultant {
     }
 }
 
+#[cfg(feature = "llm-http")]
 impl HttpLLMConsultant {
     /// 创建新的 LLM 咨询器
     pub fn new(config: LLMConfig) -> Self {
@@ -416,6 +429,7 @@ impl HttpLLMConsultant {
     }
 }
 
+#[cfg(feature = "llm-http")]
 #[async_trait]
 impl ExpertConsultant for HttpLLMConsultant {
     async fn consult(&self, query: &str, expert: &ExpertMeta) -> ExpertOpinion {
@@ -481,6 +495,7 @@ impl ExpertConsultant for HttpLLMConsultant {
     }
 }
 
+#[cfg(feature = "llm-http")]
 impl HttpLLMConsultant {
     /// 降级到本地规则咨询器
     async fn fallback_to_local(
@@ -509,6 +524,7 @@ impl HttpLLMConsultant {
 /// 可切换的咨询器包装器
 ///
 /// 运行时根据配置决定使用 LLM 还是本地规则，无需重建 DebateEngine。
+#[cfg(feature = "llm-http")]
 #[derive(Debug, Clone)]
 pub enum SwitchableConsultant {
     /// 本地规则（默认，无外部依赖）
@@ -517,6 +533,7 @@ pub enum SwitchableConsultant {
     LLM(HttpLLMConsultant),
 }
 
+#[cfg(feature = "llm-http")]
 impl SwitchableConsultant {
     /// 从配置创建：有 LLM 配置则用 LLM，否则用本地规则
     pub fn from_config(config: Option<LLMConfig>) -> Self {
@@ -534,6 +551,7 @@ impl SwitchableConsultant {
     }
 }
 
+#[cfg(feature = "llm-http")]
 #[async_trait]
 impl ExpertConsultant for SwitchableConsultant {
     async fn consult(&self, query: &str, expert: &ExpertMeta) -> ExpertOpinion {
@@ -553,6 +571,7 @@ impl ExpertConsultant for SwitchableConsultant {
 // =============================================================================
 
 /// 估算文本的 token 数（粗略估算：英文 1 token ≈ 4 chars，中文 1 token ≈ 1.5 chars）
+#[cfg(feature = "llm-http")]
 fn estimate_tokens(text: &str) -> usize {
     let ascii_chars = text.chars().filter(|c| c.is_ascii()).count() as f64;
     let cjk_chars = text.chars().filter(|c| !c.is_ascii()).count() as f64;
@@ -596,6 +615,7 @@ mod tests {
         assert!(cfg.validate().is_ok());
     }
 
+    #[cfg(feature = "llm-http")]
     #[test]
     fn parse_opinion_valid_json() {
         let consultant = HttpLLMConsultant::new(LLMConfig {
@@ -611,6 +631,7 @@ mod tests {
         assert!((opinion.confidence - 0.9).abs() < f64::EPSILON);
     }
 
+    #[cfg(feature = "llm-http")]
     #[test]
     fn parse_opinion_with_code_fence() {
         let consultant = HttpLLMConsultant::new(LLMConfig {
@@ -623,6 +644,7 @@ mod tests {
         assert_eq!(result.unwrap().answer, "带代码块的观点");
     }
 
+    #[cfg(feature = "llm-http")]
     #[test]
     fn parse_opinion_clamps_out_of_range() {
         let consultant = HttpLLMConsultant::new(LLMConfig {
@@ -635,6 +657,7 @@ mod tests {
         assert!((result.confidence - 0.0).abs() < f64::EPSILON);
     }
 
+    #[cfg(feature = "llm-http")]
     #[test]
     fn parse_opinion_empty_answer_rejected() {
         let consultant = HttpLLMConsultant::new(LLMConfig {
@@ -645,6 +668,7 @@ mod tests {
         assert!(consultant.parse_opinion(raw).is_err());
     }
 
+    #[cfg(feature = "llm-http")]
     #[test]
     fn estimate_tokens_mixed_text() {
         let text = "Hello 世界";
@@ -653,6 +677,7 @@ mod tests {
         assert!((1..=5).contains(&tokens));
     }
 
+    #[cfg(feature = "llm-http")]
     #[test]
     fn switchable_consultant_local_mode() {
         let consultant = SwitchableConsultant::from_config(None);
@@ -660,6 +685,7 @@ mod tests {
         assert!(!consultant.is_llm_mode());
     }
 
+    #[cfg(feature = "llm-http")]
     #[test]
     fn switchable_consultant_invalid_config_falls_back_local() {
         let cfg = LLMConfig {
@@ -670,6 +696,7 @@ mod tests {
         assert!(!consultant.is_llm(), "无效配置应回退到本地模式");
     }
 
+    #[cfg(feature = "llm-http")]
     #[test]
     fn build_system_prompt_contains_expert_info() {
         use crate::team::build_expert_registry;

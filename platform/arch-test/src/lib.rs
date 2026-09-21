@@ -12,6 +12,9 @@
 //! - L3 (core): can depend on L0 + L2, NOT L1/L4/L5
 //! - L4 (svc): can depend on L0 + L2 + L3, NOT L1/L5
 //! - L5 (sdk): can depend on anything (FFI bindings)
+//
+// 架构守护测试工具库：辅助函数仅供 #[test] 使用，不参与生产分发。
+#![allow(dead_code)]
 //!
 //! Cross-domain dependencies MUST go through the api/ layer.
 
@@ -317,6 +320,228 @@ fn test_api_crates_are_pure() {
     if !violations.is_empty() {
         panic!("API purity violations found ({}):\n{}",
             violations.len(), violations.join("\n"));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// core 层 IO 依赖门禁（禁止新增，含技术债基线）
+// ═══════════════════════════════════════════════════════════════════
+
+/// core 层（L3）不得引入新的 IO 依赖
+///
+/// # 规则
+/// 数据库 / HTTP 客户端一类的 IO 依赖属于适配层职责。core 层保持纯计算，
+/// 才能保证「算法可脱离外部环境单测」，也避免层违规沿依赖图扩散到各域。
+///
+/// # 治理方式（而非一刀切禁止）
+/// - **optional 依赖允许存在**：调用方不启用 feature 就不编译，视为按需装配
+///   （正面范例：`mox-cloud-store-core` 的 `reqwest = { optional = true }`、
+///   `mox-ai-alliance-engine` 的 `reqwest = { optional = true }` + `llm-http` feature）；
+/// - **既有违规登记在 `BASELINE`**（技术债），新增即失败，先止血再清偿；
+/// - **基线项一旦消失必须移除**：测试会 panic 提示，防止基线无限膨胀、掩盖进展。
+#[test]
+fn test_core_layer_has_no_new_io_dependencies() {
+    const IO_DEPS: &[&str] = &[
+        "sqlx", "reqwest", "redis", "mongodb", "tokio-postgres",
+        "duckdb", "clickhouse", "elasticsearch",
+    ];
+
+    /// 已知技术债（crate 名, IO 依赖名）。修复后必须从本表移除。
+    ///
+    /// 当前为空：core 层已无任何非可选 IO 依赖（技术债已全部清偿）。
+    const BASELINE: &[(&str, &str)] = &[];
+
+    // 说明：`mox-alliance-boot-config` 的 reqwest 位于 [dev-dependencies]，
+    // 不进入生产编译，故不计入违规（门禁只校验 [dependencies]）。
+    // `mox-ai-alliance-engine` 的两项技术债均已清偿：
+    //   - `sqlx`   → 可选 `pg` feature（core 默认纯计算，生产持久化由 svc 层启用）；
+    //   - `reqwest`→ 可选 `llm-http` feature（HTTP LLM 咨询器下沉到适配层，
+    //     core 默认零 IO，纯领域逻辑 LLMConfig / ChatMessage / ExpertOpinionJSON 始终可用）。
+
+    let crates = collect_all_crates(&workspace_root());
+
+    let mut violations = Vec::new();
+    // 用拥有所有权的 String 元组：toml 解析结果是局部变量，不能把其引用带出循环
+    let mut resolved: HashSet<(String, String)> = HashSet::new();
+
+    for (name, info) in &crates {
+        if info.layer != Layer::L3 {
+            continue;
+        }
+        let content = match std::fs::read_to_string(info.path.join("Cargo.toml")) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        let value: toml::Value = match toml::from_str(&content) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let deps = match value.get("dependencies").and_then(|d| d.as_table()) {
+            Some(d) => d,
+            None => continue,
+        };
+
+        for (dep_name, dep_val) in deps {
+            if !IO_DEPS.iter().any(|d| d == dep_name) {
+                continue;
+            }
+            // optional 依赖视为按需装配，允许存在
+            let optional = dep_val.get("optional").and_then(|o| o.as_bool()).unwrap_or(false);
+            if optional {
+                continue;
+            }
+            if BASELINE.contains(&(name.as_str(), dep_name.as_str())) {
+                resolved.insert((name.clone(), dep_name.clone()));
+                continue;
+            }
+            violations.push(format!(
+                "  {} [L3-core] -> {}  VIOLATION: 非可选 IO 依赖，未登记在基线中",
+                name, dep_name
+            ));
+        }
+    }
+
+    if !violations.is_empty() {
+        panic!(
+            "core 层新增 IO 依赖（{}）：\n{}\n\n修复方式：将持久化 / HTTP 调用下沉到 svc 层，\
+             或改为 optional 依赖按需装配。",
+            violations.len(),
+            violations.join("\n")
+        );
+    }
+
+    // 基线清理：已修复的登记项必须移除，防止基线永久膨胀掩盖治理进展
+    let stale: Vec<String> = BASELINE
+        .iter()
+        .filter(|(c, d)| !resolved.contains(&(c.to_string(), d.to_string())))
+        .map(|(c, d)| format!("  ({}, {}) 已不存在，请从 BASELINE 移除以固化成果", c, d))
+        .collect();
+    if !stale.is_empty() {
+        panic!("架构门禁基线已过期（{}）：\n{}", stale.len(), stale.join("\n"));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 全维归一化门禁：跨 crate 重复符号不得新增
+// ═══════════════════════════════════════════════════════════════════
+
+/// 向上查找最近 Cargo.toml 所在目录名，作为 crate 名
+fn crate_of_path(path: &Path) -> String {
+    let mut dir = path.parent();
+    while let Some(d) = dir {
+        if d.join("Cargo.toml").exists() {
+            return d.file_name().and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
+        }
+        dir = d.parent();
+    }
+    "unknown".to_string()
+}
+
+/// 扫描公开符号定义：返回 (kind, name) -> 出现过的 crate 集合
+///
+/// 只统计行首 `pub enum/struct/const/type`（与 `scripts/normalization-scan.py` 规则一致），
+/// 跳过注释行；私有类型不构成跨 crate 契约，不计入。
+fn scan_public_symbols(root: &Path) -> HashMap<(String, String), HashSet<String>> {
+    let mut map: HashMap<(String, String), HashSet<String>> = HashMap::new();
+    let platform = root.join("platform");
+    if !platform.exists() {
+        return map;
+    }
+
+    for entry in WalkDir::new(&platform).into_iter().filter_map(|e| e.ok()) {
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let p = entry.path();
+        if p.extension().and_then(|s| s.to_str()) != Some("rs") {
+            continue;
+        }
+        let content = match std::fs::read_to_string(p) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        let crate_name = crate_of_path(p);
+
+        for line in content.lines() {
+            let t = line.trim_start();
+            if t.starts_with("//") || t.starts_with("*") {
+                continue;
+            }
+            for kind in ["enum", "struct", "const", "type"] {
+                let prefix = ["pub ", kind, " "].concat();
+                if let Some(rest) = t.strip_prefix(prefix.as_str()) {
+                    let name: String = rest
+                        .chars()
+                        .take_while(|c| c.is_alphanumeric() || *c == '_')
+                        .collect();
+                    if !name.is_empty() {
+                        map.entry((kind.to_string(), name))
+                            .or_default()
+                            .insert(crate_name.clone());
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    map
+}
+
+/// 跨 crate 重复定义的公开符号不得新增
+///
+/// 基线：`platform/arch-test/baseline/normalization.txt`（由 `scripts/normalization-scan.py
+/// --baseline-txt` 生成）。当前存量是真实技术债（449 项），一刀切禁止不现实，
+/// 因此采用「**不得新增**」策略：新增即失败，逐项清偿后基线同步收缩。
+#[test]
+fn test_no_new_cross_crate_duplicate_symbols() {
+    let root = workspace_root();
+    let baseline_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("baseline")
+        .join("normalization.txt");
+
+    let baseline_content = std::fs::read_to_string(&baseline_path).unwrap_or_else(|_| {
+        panic!(
+            "缺少归一化基线文件: {}\n请先执行: python scripts/normalization-scan.py --baseline-txt {}",
+            baseline_path.display(),
+            baseline_path.display()
+        )
+    });
+    let baseline: HashSet<String> = baseline_content
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .map(|l| l.to_string())
+        .collect();
+
+    let symbols = scan_public_symbols(&root);
+    let current: HashSet<String> = symbols
+        .iter()
+        .filter(|(_, crates)| crates.len() > 1)
+        .map(|((kind, name), _)| format!("{}::{}", kind, name))
+        .collect();
+
+    let mut added: Vec<&String> = current.difference(&baseline).collect();
+    added.sort();
+
+    if !added.is_empty() {
+        panic!(
+            "新增跨 crate 重复定义符号（{}）：\n{}\n\n\
+             说明：这些概念缺少单一真源（SSOT）。请收敛到协议层/共享契约层并改为引用，\n\
+             若确属不同语义请重命名以示区分；清偿既有项后请重新生成基线。",
+            added.len(),
+            added.iter().map(|s| format!("  {}", s)).collect::<Vec<_>>().join("\n")
+        );
+    }
+
+    // 已清偿项只提示不失败：清偿是好事，不应阻塞 CI；提示用于提醒同步收缩基线
+    let mut removed: Vec<&String> = baseline.difference(&current).collect();
+    removed.sort();
+    if !removed.is_empty() {
+        println!(
+            "[归一化进展] 以下 {} 项已不再是跨 crate 重复，建议重新生成基线以固化成果：\n{}",
+            removed.len(),
+            removed.iter().map(|s| format!("  {}", s)).collect::<Vec<_>>().join("\n")
+        );
     }
 }
 

@@ -7,8 +7,8 @@ authors.workspace = true
 description = "专家联盟 · 执行器服务（DAG执行 + 节点调度 + 状态管理）"
 
 [dependencies]
-mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
-mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto" }
+mox-alliance-common-proto = { workspace = true }
+mox-alliance-executor-proto = { workspace = true }
 mox-alliance-executor-core = { path = "../../core/mox-alliance-executor-core" }
 mox-alliance-boot-config = { path = "../../core/mox-alliance-boot-config", features = ["nacos", "naming"] }
 mox-alliance-api = { path = "../../api" }

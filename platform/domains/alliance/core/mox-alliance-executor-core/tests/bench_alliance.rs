@@ -360,6 +360,7 @@ async fn run_e2e_bench(node_count: usize, iterations: usize) -> E2EResult {
             mode: AllianceMode::Parallel,
             fusion_strategy: FusionStrategy::Weighted,
             nodes: nodes.clone(),
+            dynamic_routes: vec![],
             expert_weights: HashMap::new(),
             version: 1,
             created_at: chrono::Utc::now(),

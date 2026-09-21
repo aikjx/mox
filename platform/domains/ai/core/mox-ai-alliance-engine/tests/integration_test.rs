@@ -118,6 +118,7 @@ async fn test_debate_engine_with_mock_llm_consultant() {
 // 测试 3：LLM 咨询器配置验证 + 输出解析
 // =============================================================================
 
+#[cfg(feature = "llm-http")]
 #[test]
 fn test_llm_consultant_config_and_parsing() {
     use mox_ai_alliance_engine::llm_consultant::{LLMConfig, HttpLLMConsultant};
@@ -164,6 +165,7 @@ fn test_llm_consultant_config_and_parsing() {
 // 测试 4：SwitchableConsultant 模式切换
 // =============================================================================
 
+#[cfg(feature = "llm-http")]
 #[tokio::test]
 async fn test_switchable_consultant_mode() {
     use mox_ai_alliance_engine::llm_consultant::{SwitchableConsultant, LLMConfig};

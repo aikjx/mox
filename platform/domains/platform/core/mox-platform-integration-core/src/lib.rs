@@ -1,8 +1,13 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+#![allow(unused_doc_comments)]
+#![allow(unused_assignments)]
+#![allow(unused_variables)]
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
+// 数据模型/预留字段：serde 填充或 API 预留。
+#![allow(dead_code)]
 //! # Mox Platform Integration Core — 统一集成层
 //!
 //! 企业级架构的核心枢纽，统一管理4大对接能力：

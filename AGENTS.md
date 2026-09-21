@@ -13,6 +13,8 @@ docker-compose up -d --build     # 一键部署
 ./start.sh --dry-run             # 启动前预检
 scripts/start-mox-enterprise.ps1 # 企业级四进程一键启动（编排器3001/联盟调度3100/执行3200/模块化网关3080）
 scripts/stop-mox-enterprise.ps1  # 对应一键停止（不动前端3020/primiflow8000/melody2score8012）
+python tools/mox-governance-mcp/server.py --selftest   # 治理 MCP 自检（端口/文档门禁 + CI 组合）
+python tools/alliance-demo/alliance_demo.py             # 专家联盟端到端链路演示（产出 reports/ 证据 + 治理体检）
 ```
 
 注意：部分 crate（napi/PyO3 绑定）不在 `default-members` 中，需单独 `cargo check -p <crate>`。

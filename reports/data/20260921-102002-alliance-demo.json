@@ -1,0 +1,266 @@
+{
+  "meta": {
+    "generated_at": "2026-09-21 10:20:02",
+    "base_url": "http://127.0.0.1:3080",
+    "git_head": "b53afe6a",
+    "python": "3.8.8",
+    "requests": 33,
+    "json_path": "reports\\data\\20260921-102002-alliance-demo.json"
+  },
+  "health": {
+    "healthy": true,
+    "probe": "/api/v1/status",
+    "http": 200
+  },
+  "modes": [
+    {
+      "mode": "parallel",
+      "ok": true,
+      "task_id": "08b5ee03-5b75-4be1-9a39-9a42d3468222",
+      "title": "端到端演示-parallel-101931",
+      "fusion_strategy_sent": "weighted",
+      "fusion_strategy_display": "weighted_voting",
+      "mode_display": "expert_alliance",
+      "dag": {
+        "nodes": 5,
+        "edges": 5,
+        "node_names": [
+          "需求分析",
+          "架构设计",
+          "数据建模",
+          "方案评审",
+          "融合输出"
+        ]
+      },
+      "nodes_total": 5,
+      "node_status": {
+        "completed": 1,
+        "skipped": 4
+      },
+      "execution_status": {
+        "status": "pending",
+        "completed_nodes": 1,
+        "total_nodes": 5,
+        "progress": 0.20000000298023224
+      },
+      "fusion": {
+        "fusion_status": "partial",
+        "fusion_strategy": "weighted_voting",
+        "confidence": 0.75,
+        "key_findings": [
+          "需求分析完成：端到端演示-parallel-101931"
+        ],
+        "recommendations": [
+          "第一阶段：核心模块落地",
+          "第二阶段：集成测试与优化",
+          "第三阶段：上线部署与监控"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "running",
+      "logs_tail": [
+        "任务 08b5ee03-5b75-4be1-9a39-9a42d3468222 已恢复执行",
+        "节点 node-2 已人工跳过",
+        "节点 node-3 已人工跳过",
+        "节点 node-4 已人工跳过",
+        "节点 node-5 已人工跳过"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 15
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 16
+        },
+        {
+          "name": "resume",
+          "ok": true,
+          "ms": 12
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "skip_node:node-2",
+          "ok": true,
+          "ms": 11
+        },
+        {
+          "name": "skip_node:node-3",
+          "ok": true,
+          "ms": 15
+        },
+        {
+          "name": "skip_node:node-4",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "skip_node:node-5",
+          "ok": true,
+          "ms": 15
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 15
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 15
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 14
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 17
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "toggle_done",
+          "ok": true,
+          "ms": 12
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "total_tasks": 0,
+    "running_tasks": 0,
+    "completed_tasks": 0,
+    "failed_tasks": 0,
+    "total_experts": 0,
+    "active_experts": 0,
+    "avg_completion_minutes": 0.0,
+    "success_rate": 0.0
+  },
+  "latency": [
+    {
+      "endpoint": "GET /api/alliance/stats",
+      "count": 1,
+      "p50_ms": 28,
+      "max_ms": 28
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222",
+      "count": 1,
+      "p50_ms": 21,
+      "max_ms": 21
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/dag",
+      "count": 1,
+      "p50_ms": 16,
+      "max_ms": 16
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/execution-status",
+      "count": 1,
+      "p50_ms": 15,
+      "max_ms": 15
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/fusion-result",
+      "count": 1,
+      "p50_ms": 14,
+      "max_ms": 14
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/logs",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/nodes",
+      "count": 18,
+      "p50_ms": 14,
+      "max_ms": 65
+    },
+    {
+      "endpoint": "GET /api/v1/status",
+      "count": 1,
+      "p50_ms": 30,
+      "max_ms": 30
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks",
+      "count": 1,
+      "p50_ms": 15,
+      "max_ms": 15
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/nodes/node-2",
+      "count": 1,
+      "p50_ms": 11,
+      "max_ms": 11
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/nodes/node-3",
+      "count": 1,
+      "p50_ms": 15,
+      "max_ms": 15
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/nodes/node-4",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/nodes/node-5",
+      "count": 1,
+      "p50_ms": 15,
+      "max_ms": 15
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/qa",
+      "count": 1,
+      "p50_ms": 19,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/resume",
+      "count": 1,
+      "p50_ms": 12,
+      "max_ms": 12
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/08b5ee03-5b75-4be1-9a39-9a42d3468222/toggle-done",
+      "count": 1,
+      "p50_ms": 12,
+      "max_ms": 12
+    }
+  ],
+  "gate": {
+    "skip": true,
+    "reason": "--no-gate 指定跳过"
+  }
+}

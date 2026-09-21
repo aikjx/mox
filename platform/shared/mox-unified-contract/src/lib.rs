@@ -37,8 +37,10 @@ pub use error::{MoxError, MoxResult, ErrorLevel, ErrorDomain, ErrorCode};
 // 质量分
 pub use quality::{QualityGrade, QualityScore, GateResult, GATE_THRESHOLDS};
 
-// 事件
-pub use event::{MoxEvent, EventPhase, EventType, StreamEvent};
+// 事件（含阶段名 / 审计事件名 SSOT）
+pub use event::{
+    AUDIT_EVENTS_7, EventPhase, EventType, MoxEvent, PHASE_NAMES, ProgressEvent, StreamEvent,
+};
 
 // 追踪
 pub use trace::{TraceId, TraceContext, current_trace_id, with_trace_context};

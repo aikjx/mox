@@ -99,6 +99,10 @@ docker run -d \
 
 在 Rust 侧，使用 `HttpLLMConsultant` 连接本服务：
 
+> 注意：`HttpLLMConsultant` 属于 HTTP 适配层，仅在启用 `llm-http` feature 时可用。
+> 在依赖中加入：`mox-ai-alliance-engine = { version = "...", features = ["llm-http"] }`。
+> 纯领域逻辑（`LLMConfig` / `DebateEngine` 等）无需该 feature，core 默认零 IO。
+
 ```rust
 use mox_ai_alliance_engine::{HttpLLMConsultant, LLMConfig, DebateEngine};
 

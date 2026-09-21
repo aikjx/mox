@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Copyright (c) 2026 璇玑 RelGraph · AI对话架构自动化核心 (AI Assistant Core)
 // Licensed under the MIT License.
 

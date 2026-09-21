@@ -7,7 +7,7 @@ authors.workspace = true
 description = "专家联盟 · 执行器协议层（DAG执行 + 节点调度 + 状态管理）"
 
 [dependencies]
-mox-alliance-common-proto = { path = "../mox-alliance-common-proto" }
+mox-alliance-common-proto = { workspace = true }
 mox-platform-foundation = { workspace = true }
 mox-error = { workspace = true }
 serde = { workspace = true }

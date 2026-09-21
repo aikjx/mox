@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Copyright (c) 2026 璇玑 RelGraph · 统一架构核心 (Unified Architecture Core)
 // Licensed under the MIT License.
 

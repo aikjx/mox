@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "generated_at": "2026-09-21 09:55:54",
+    "base_url": "http://127.0.0.1:3080",
+    "git_head": "b53afe6a",
+    "python": "3.8.8",
+    "requests": 4,
+    "json_path": "reports\\data\\20260921-095554-alliance-demo.json"
+  },
+  "health": {
+    "healthy": true,
+    "probe": "/api/v1/status",
+    "http": 200
+  },
+  "modes": [
+    {
+      "mode": "parallel",
+      "ok": false,
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 47
+        }
+      ],
+      "error": "任务创建失败",
+      "task_id": "-",
+      "fusion_strategy_sent": "weighted",
+      "dag": {
+        "nodes": 0,
+        "edges": 0,
+        "node_names": []
+      },
+      "nodes_total": 0,
+      "node_status": {},
+      "execution_status": {},
+      "fusion": {},
+      "task_status": null,
+      "logs_tail": [],
+      "qa_answer_keys": []
+    },
+    {
+      "mode": "debate",
+      "ok": false,
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 35
+        }
+      ],
+      "error": "任务创建失败",
+      "task_id": "-",
+      "fusion_strategy_sent": "debate",
+      "dag": {
+        "nodes": 0,
+        "edges": 0,
+        "node_names": []
+      },
+      "nodes_total": 0,
+      "node_status": {},
+      "execution_status": {},
+      "fusion": {},
+      "task_status": null,
+      "logs_tail": [],
+      "qa_answer_keys": []
+    }
+  ],
+  "stats": {
+    "code": 0,
+    "msg": "ok",
+    "data": {
+      "elapsed_ms": 0,
+      "data": {
+        "total_tasks": 0,
+        "running_tasks": 0,
+        "completed_tasks": 0,
+        "failed_tasks": 0,
+        "total_experts": 0,
+        "active_experts": 0,
+        "avg_completion_minutes": 0.0,
+        "success_rate": 0.0
+      }
+    }
+  },
+  "latency": [
+    {
+      "endpoint": "GET /api/alliance/stats",
+      "count": 1,
+      "p50_ms": 10,
+      "max_ms": 10
+    },
+    {
+      "endpoint": "GET /api/v1/status",
+      "count": 1,
+      "p50_ms": 24,
+      "max_ms": 24
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks",
+      "count": 2,
+      "p50_ms": 47,
+      "max_ms": 47
+    }
+  ],
+  "gate": {
+    "skip": true,
+    "reason": "--no-gate 指定跳过"
+  }
+}

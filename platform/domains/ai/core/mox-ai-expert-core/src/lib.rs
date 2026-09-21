@@ -1,8 +1,12 @@
+#![allow(unused_assignments)]
+#![allow(unused_variables)]
 // Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/mox
 
+// 数据模型/预留字段：serde 填充或 API 预留。
+#![allow(dead_code)]
 //! # Mox AI Expert Core — 璇玑十四维专家引擎核心
 //!
 //! P2 架构解耦 · 阶段 4：将专家引擎核心从 `mox-ai-expert-svc` 独立为 core crate。

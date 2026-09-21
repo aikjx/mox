@@ -1,9 +1,9 @@
-# MOX 平台mox 模块化系统架构代码审计与验证报告
+# MOX 平台代码审计与验证报告
 
 > **报告日期**: 2026-08-27  
 > **审计范围**: 全项目架构 + 功能模块 + 测试 + 企业级处理流程  
 > **审计方法**: 静态代码扫描 + 编译验证 + 测试运行 + 文档完整性检查  
-> **归属**: 开发专家联盟 · mox 模块化系统架构归一化
+> **归属**: 开发专家联盟 · MOX 归一化
 
 ---
 
@@ -235,7 +235,7 @@
 
 | # | 问题 | 影响 | 建议 |
 |---|---|---|---|
-| 1 | market域仅2个crate | 商场中心功能不足 | 按文档30扩展：mox-market-core + mox-market-center-svc + mox-market-security |
+| 1 | market域仅2个crate | 商场中心功能不足 | 按文档41扩展：mox-market-core + mox-market-center-svc + mox-market-security |
 | 2 | 全量构建超时（>5min） | CI效率低 | 启用sccache + 分层构建 + workspace拆分 |
 | 3 | 85个TODO/FIXME | 技术债务 | 分类清理：功能缺失→排期，临时方案→替换，注释→删除 |
 
@@ -275,7 +275,7 @@
 
 ### 8.3 关键改进方向
 
-1. **扩展market域**：按文档30实现商场中心，补齐AI工具/MCP/插件生态
+1. **扩展market域**：按文档41实现商场中心，补齐AI工具/MCP/插件生态
 2. **优化构建效率**：sccache + 分层构建，将CI时间从>5min降至<2min
 3. **完善配置管理**：扩展config/目录，实现12-Factor配置外置
 4. **清理技术债务**：85个TODO/FIXME分类处理，unsafe/unwrap安全审计

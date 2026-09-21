@@ -18,6 +18,7 @@ pub use crate::orchestration::TaskStatus;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "pg")]
 use sqlx::{postgres::PgPoolOptions, PgPool, Row};
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -358,10 +359,12 @@ impl TaskRepository for InMemoryTaskRepository {
 ///
 /// 使用 PostgreSQL + sqlx 实现，支持生产环境部署。
 /// 连接池配置：最大连接数 20，超时 30s。
+#[cfg(feature = "pg")]
 pub struct DatabaseTaskRepository {
     pool: PgPool,
 }
 
+#[cfg(feature = "pg")]
 impl DatabaseTaskRepository {
     /// 创建新的数据库任务仓储
     pub async fn new(database_url: &str) -> Result<Self, String> {
@@ -455,6 +458,7 @@ impl DatabaseTaskRepository {
     }
 }
 
+#[cfg(feature = "pg")]
 #[async_trait]
 impl TaskRepository for DatabaseTaskRepository {
     async fn create_task(&self, task: &TaskEntity) -> Result<TaskEntity, String> {
@@ -754,6 +758,7 @@ impl TaskRepository for DatabaseTaskRepository {
 // 行映射辅助函数
 // =============================================================================
 
+#[cfg(feature = "pg")]
 fn row_to_task(row: &sqlx::postgres::PgRow) -> TaskEntity {
     TaskEntity {
         id: row.get("id"),
@@ -791,6 +796,7 @@ fn row_to_task(row: &sqlx::postgres::PgRow) -> TaskEntity {
     }
 }
 
+#[cfg(feature = "pg")]
 fn row_to_event(row: &sqlx::postgres::PgRow) -> EventEntity {
     EventEntity {
         id: row.get("id"),

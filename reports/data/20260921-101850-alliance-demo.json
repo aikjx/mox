@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "generated_at": "2026-09-21 10:18:50",
+    "base_url": "http://127.0.0.1:3080",
+    "git_head": "b53afe6a",
+    "python": "3.8.8",
+    "requests": 3,
+    "json_path": "reports\\data\\20260921-101850-alliance-demo.json"
+  },
+  "health": {
+    "healthy": true,
+    "probe": "/api/v1/status",
+    "http": 200
+  },
+  "modes": [
+    {
+      "mode": "parallel",
+      "ok": false,
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": false,
+          "ms": 18,
+          "error": "DemoError: POST /api/alliance/tasks 返回 HTTP 401: null"
+        }
+      ],
+      "error": "任务创建失败",
+      "task_id": "-",
+      "fusion_strategy_sent": "weighted",
+      "dag": {
+        "nodes": 0,
+        "edges": 0,
+        "node_names": []
+      },
+      "nodes_total": 0,
+      "node_status": {},
+      "execution_status": {},
+      "fusion": {},
+      "task_status": null,
+      "logs_tail": [],
+      "qa_answer_keys": []
+    }
+  ],
+  "stats": {
+    "error": "GET /api/alliance/stats 返回 HTTP 401: null"
+  },
+  "latency": [
+    {
+      "endpoint": "GET /api/alliance/stats",
+      "count": 1,
+      "p50_ms": 13,
+      "max_ms": 13
+    },
+    {
+      "endpoint": "GET /api/v1/status",
+      "count": 1,
+      "p50_ms": 31,
+      "max_ms": 31
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    }
+  ],
+  "gate": {
+    "skip": true,
+    "reason": "--no-gate 指定跳过"
+  }
+}

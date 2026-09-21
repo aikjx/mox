@@ -7,9 +7,9 @@ authors.workspace = true
 description = "专家联盟 · 执行器核心（DAG执行引擎 + 节点调度）"
 
 [dependencies]
-mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
-mox-alliance-executor-proto = { path = "../../proto/mox-alliance-executor-proto" }
-mox-alliance-core = { path = "../mox-alliance-core" }
+mox-alliance-common-proto = { workspace = true }
+mox-alliance-executor-proto = { workspace = true }
+mox-alliance-core = { workspace = true }
 mox-ai-expert-proto = { path = "../../../ai/proto/mox-ai-expert-proto" }
 mox-platform-foundation = { workspace = true }
 mox-error = { workspace = true }
@@ -26,8 +26,8 @@ parking_lot = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
-mox-alliance-scheduler-proto = { path = "../../proto/mox-alliance-scheduler-proto" }
-mox-alliance-scheduler-core = { path = "../mox-alliance-scheduler-core" }
+mox-alliance-scheduler-proto = { workspace = true }
+mox-alliance-scheduler-core = { workspace = true }
 
 [features]
 default = []

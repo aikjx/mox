@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Copyright (c) 2026 璇玑 RelGraph · 统一元数据层 (Unified Metadata Layer)
 // Licensed under the MIT License.
 

@@ -83,8 +83,22 @@ impl Operand {
     fn resolve(&self, context: &Value) -> Value {
         match self {
             Operand::Field(path) => {
-                // 简化实现：output.score -> context["score"]
-                context.get(path.replace("output.", "")).cloned().unwrap_or(Value::Null)
+                // 真正的点路径解析：output.score -> context["output"]["score"]
+                let mut cur: Option<&Value> = Some(context);
+                for seg in path.split('.') {
+                    cur = cur.and_then(|v| v.get(seg));
+                    if cur.is_none() {
+                        break;
+                    }
+                }
+                // 兼容旧行为：嵌套路径取不到时，回退到剥离 "output." 前缀的顶层取值，
+                // 保证既有规则（写入 "output.score" 但上下文是扁平 {"score": ..}）不失效。
+                cur.cloned().unwrap_or_else(|| {
+                    context
+                        .get(path.replace("output.", ""))
+                        .cloned()
+                        .unwrap_or(Value::Null)
+                })
             }
             Operand::Literal(v) => v.clone(),
         }

@@ -1,3 +1,6 @@
+#![allow(unused_assignments)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 //! Shared provider access, registry and model routing. AI-domain reasoning is separate.
 pub mod providers;
 pub mod registry;

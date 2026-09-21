@@ -280,27 +280,9 @@ fn simulate_step_execution(step: &PlanStep, experts: &[ExpertDescriptor]) -> Val
 /// - 协议层 serde 名：best_of / weighted / voting / confidence_weighted / concatenation / stacking / debate / map_reduce / iterative
 /// - 旧式网关串：majority_vote（多数投票→Voting/RRF） / best_of（→BestOf） / consensus（→Concatenation） / weighted（→Weighted）
 fn parse_fusion_strategy(s: &str) -> Option<FusionStrategy> {
-    Some(match s {
-        // 协议层展示串（fusion_strategy_str 输出）
-        "first_wins" => FusionStrategy::BestOf,
-        "weighted_voting" => FusionStrategy::Weighted,
-        "rrf" => FusionStrategy::Voting,
-        "llm_judge" => FusionStrategy::ConfidenceWeighted,
-        "consensus" => FusionStrategy::Concatenation,
-        "stacking" => FusionStrategy::Stacking,
-        "debate" => FusionStrategy::Debate,
-        "map_reduce" => FusionStrategy::MapReduce,
-        "iterative" => FusionStrategy::Iterative,
-        // 协议层 serde 名（snake_case）
-        "best_of" => FusionStrategy::BestOf,
-        "weighted" => FusionStrategy::Weighted,
-        "voting" => FusionStrategy::Voting,
-        "confidence_weighted" => FusionStrategy::ConfidenceWeighted,
-        "concatenation" => FusionStrategy::Concatenation,
-        // 旧式网关串
-        "majority_vote" => FusionStrategy::Voting,
-        _ => return None,
-    })
+    // 委托协议层唯一真源（naming.rs）：兼容展示串 / serde 名 / 旧式网关串，
+    // 并额外获得 trim + 大小写归一能力。此处不再维护第二份映射表。
+    mox_alliance_http_sdk::fusion_from_any(s)
 }
 
 /// 置信度加权聚合 key_findings：按 (结论, 加权频次) 求和后降序返回。

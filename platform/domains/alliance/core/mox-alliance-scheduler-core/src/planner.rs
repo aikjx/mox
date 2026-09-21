@@ -14,7 +14,7 @@
 
 use mox_alliance_common_proto::{
     AllianceError, AllianceErrorCode, AllianceMode, AllianceResult, CollaborationPlan, Expert,
-    Node, NodeStatus,
+    Node, NodeStatus, PlanDynamicRoute,
 };
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -76,6 +76,8 @@ impl SimplePlanGenerator {
             .map(|me| (me.expert.expert_id.clone(), me.score))
             .collect();
 
+        // Dynamic 模式会产出执行期动态路由规则；其余模式恒为空向量，行为完全不变
+        let mut dynamic_routes: Vec<PlanDynamicRoute> = Vec::new();
         let nodes = match mode {
             AllianceMode::Parallel => self.generate_parallel_plan(request, matched_experts),
             AllianceMode::Sequential => self.generate_sequential_plan(request, matched_experts),
@@ -83,7 +85,9 @@ impl SimplePlanGenerator {
             AllianceMode::Hierarchical => self.generate_hierarchical_plan(request, matched_experts),
             AllianceMode::Debate => self.generate_debate_plan(request, matched_experts),
             AllianceMode::Iterative => self.generate_iterative_plan(request, matched_experts),
-            AllianceMode::Dynamic => self.generate_dynamic_plan(request, matched_experts),
+            AllianceMode::Dynamic => {
+                self.generate_dynamic_plan(request, matched_experts, &mut dynamic_routes)
+            }
         };
 
         let plan = CollaborationPlan {
@@ -91,6 +95,7 @@ impl SimplePlanGenerator {
             mode,
             fusion_strategy: request.fusion_strategy,
             nodes,
+            dynamic_routes,
             expert_weights,
             version: 1,
             created_at: chrono::Utc::now(),
@@ -315,11 +320,20 @@ impl SimplePlanGenerator {
     /// 领域去重数 ≥ 此值：跨域协作 → 分层协同
     const DYNAMIC_DOMAIN_DIVERSITY_MIN: usize = 3;
 
-    /// 动态模式：规划期选定拓扑并生成对应计划，决策理由写入首节点描述
+    /// 动态模式：生成「决策节点 + 互斥分支」计划，并把路由规则写入 `routes`
+    ///
+    /// 拓扑形态：
+    /// - `node-decision`：首位专家做研判（决策节点）
+    /// - 主路径（true_branch）：其余专家按规划期选定拓扑编排，入口依赖决策节点
+    /// - `node-fallback`（false_branch）：决策不成立时的通用专家兜底重跑
+    ///
+    /// 这样 Dynamic 才真正具备「根据中间结果决定下一步」的执行期语义，
+    /// 而不是规划期选完拓扑后就固定不变。
     fn generate_dynamic_plan(
         &self,
         request: &PlanGenerationRequest,
         matched_experts: &[MatchedExpert],
+        routes: &mut Vec<PlanDynamicRoute>,
     ) -> Vec<Node> {
         let decision = self.decide_dynamic_mode(request, matched_experts);
         tracing::info!(
@@ -329,14 +343,59 @@ impl SimplePlanGenerator {
             "dynamic routing: collaboration topology selected"
         );
 
-        let mut nodes = match decision.mode {
-            AllianceMode::Sequential => self.generate_sequential_plan(request, matched_experts),
-            AllianceMode::Hierarchical => self.generate_hierarchical_plan(request, matched_experts),
-            AllianceMode::Debate => self.generate_debate_plan(request, matched_experts),
-            AllianceMode::Voting => self.generate_voting_plan(request, matched_experts),
-            AllianceMode::Iterative => self.generate_iterative_plan(request, matched_experts),
-            _ => self.generate_parallel_plan(request, matched_experts),
+        // 1) 决策节点：首位专家研判，其输出决定分支走向
+        let mut nodes = vec![self.make_node(
+            request.task_id,
+            "node-decision",
+            &matched_experts[0].expert,
+            vec![],
+            "动态研判（决策节点）",
+            &request.task_description,
+        )];
+
+        // 2) 主路径：其余专家按选定拓扑编排（仅 1 位专家时用兜底专家充实主路径）
+        let downstream: Vec<MatchedExpert> = if matched_experts.len() > 1 {
+            matched_experts[1..].to_vec()
+        } else {
+            vec![Self::generic_fallback_expert()]
         };
+        let mut main_nodes = match decision.mode {
+            AllianceMode::Sequential => self.generate_sequential_plan(request, &downstream),
+            AllianceMode::Hierarchical => self.generate_hierarchical_plan(request, &downstream),
+            AllianceMode::Debate => self.generate_debate_plan(request, &downstream),
+            AllianceMode::Voting => self.generate_voting_plan(request, &downstream),
+            AllianceMode::Iterative => self.generate_iterative_plan(request, &downstream),
+            _ => self.generate_parallel_plan(request, &downstream),
+        };
+        // 主路径入口挂到决策节点之后：保证「先研判、再决定」，而非与决策并行执行
+        for n in main_nodes.iter_mut() {
+            if n.dependencies.is_empty() {
+                n.dependencies.push("node-decision".to_string());
+            }
+        }
+        let true_branch: Vec<String> = main_nodes.iter().map(|n| n.node_id.clone()).collect();
+        nodes.extend(main_nodes);
+
+        // 3) 兜底分支：决策不成立时由通用专家重跑
+        let fallback_expert = Self::generic_fallback_expert();
+        nodes.push(self.make_node(
+            request.task_id,
+            "node-fallback",
+            &fallback_expert.expert,
+            vec!["node-decision".to_string()],
+            "动态兜底（决策不成立回退）",
+            &request.task_description,
+        ));
+
+        // 4) 路由规则：决策节点成功 → 走主路径；否则 → 兜底重跑
+        routes.push(PlanDynamicRoute {
+            decision_node: "node-decision".to_string(),
+            field: "success".to_string(),
+            operator: "eq".to_string(),
+            value: serde_json::json!(true),
+            true_branch,
+            false_branch: vec!["node-fallback".to_string()],
+        });
 
         // 决策留痕：前端 DAG 与审计日志可见「为何选这个拓扑」
         if let Some(first) = nodes.first_mut() {
@@ -581,7 +640,9 @@ mod tests {
         let plan = gen.generate(&dynamic_request("分析代码"), &experts).unwrap();
         // 契约保持：计划 mode 仍为 Dynamic，只是内部拓扑按特征选定
         assert_eq!(plan.mode, AllianceMode::Dynamic);
-        assert_eq!(plan.nodes.len(), 1);
+        // Dynamic 拓扑 = 决策节点 + 主路径 + 兜底节点；
+        // 单专家时主路径由兜底通用专家充实，故为 3 个节点
+        assert_eq!(plan.nodes.len(), 3);
         assert!(first_node_desc(&plan).contains("动态路由→串行"));
         assert!(plan.validate().is_ok());
     }
@@ -676,6 +737,73 @@ mod tests {
         let desc = first_node_desc(&plan);
         assert!(desc.contains("[动态路由→"), "缺少动态路由标记: {}", desc);
         assert!(desc.contains("覆盖 3 个领域"), "缺少决策理由: {}", desc);
+    }
+
+    #[test]
+    fn test_dynamic_plan_has_decision_and_fallback_branches() {
+        // Dynamic 必须产出「决策节点 + 互斥分支」真拓扑，且分支节点真实存在
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert("e1", "E1", vec!["code"]),
+            make_matched_expert("e2", "E2", vec!["security"]),
+        ];
+        let plan = gen.generate(&dynamic_request("权衡两种架构"), &experts).unwrap();
+
+        let ids: Vec<&str> = plan.nodes.iter().map(|n| n.node_id.as_str()).collect();
+        assert!(ids.contains(&"node-decision"), "缺少决策节点: {:?}", ids);
+        assert!(ids.contains(&"node-fallback"), "缺少兜底节点: {:?}", ids);
+
+        assert_eq!(plan.dynamic_routes.len(), 1, "Dynamic 计划应携带 1 条路由规则");
+        let rule = &plan.dynamic_routes[0];
+        assert_eq!(rule.decision_node, "node-decision");
+        assert_eq!(rule.field, "success");
+        assert_eq!(rule.operator, "eq");
+        assert_eq!(rule.value, serde_json::json!(true));
+        assert!(!rule.true_branch.is_empty(), "主路径不能为空");
+        assert_eq!(rule.false_branch, vec!["node-fallback".to_string()]);
+
+        // 分支引用的节点必须真实存在，否则路由无意义
+        for id in rule.true_branch.iter().chain(rule.false_branch.iter()) {
+            assert!(ids.contains(&id.as_str()), "路由分支 {} 不在节点列表中: {:?}", id, ids);
+        }
+
+        // 主路径入口必须依赖决策节点：保证「先研判、再决定」而非并行抢跑
+        for id in &rule.true_branch {
+            let n = plan.nodes.iter().find(|n| &n.node_id == id).unwrap();
+            assert!(
+                n.dependencies.contains(&"node-decision".to_string()),
+                "主路径节点 {} 未依赖决策节点: {:?}",
+                id,
+                n.dependencies
+            );
+        }
+        let fb = plan.nodes.iter().find(|n| n.node_id == "node-fallback").unwrap();
+        assert_eq!(fb.dependencies, vec!["node-decision".to_string()]);
+
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn test_non_dynamic_modes_produce_no_routes() {
+        // 非 Dynamic 模式不得产出路由规则：既有行为完全不变
+        let gen = SimplePlanGenerator::new();
+        let experts = vec![
+            make_matched_expert("e1", "E1", vec!["code"]),
+            make_matched_expert("e2", "E2", vec!["security"]),
+        ];
+        for mode in [
+            AllianceMode::Parallel,
+            AllianceMode::Sequential,
+            AllianceMode::Voting,
+            AllianceMode::Debate,
+            AllianceMode::Hierarchical,
+            AllianceMode::Iterative,
+        ] {
+            let mut req = dynamic_request("通用任务");
+            req.preferred_mode = Some(mode);
+            let plan = gen.generate(&req, &experts).unwrap();
+            assert!(plan.dynamic_routes.is_empty(), "{:?} 不应产出动态路由", mode);
+        }
     }
 
     #[test]

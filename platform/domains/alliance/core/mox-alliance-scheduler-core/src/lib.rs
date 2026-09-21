@@ -54,11 +54,16 @@ pub use planner::SimplePlanGenerator;
 pub use scheduler::TaskSchedulerImpl;
 pub use llm_router::{LlmRouter, RouterSelection, ProviderHealth, ProviderRuntimeState};
 
-// 执行器桥接重导出
+// 执行器桥接重导出（纯计算部分，默认编译）
 pub use executor_bridge::{
-    ExecutorBridge, HttpExecutorBridge, HttpExecutorBridgeConfig,
+    ExecutorBridge,
     InProcessExecutorBridge, NoopExecutorBridge,
 };
+
+// HTTP 桥接仅在 http-bridge feature 启用时导出
+// （core 默认纯计算、无 IO；生产远程桥接由 svc 层启用 http-bridge feature 提供）
+#[cfg(feature = "http-bridge")]
+pub use executor_bridge::{HttpExecutorBridge, HttpExecutorBridgeConfig};
 
 // 专家注册桥接层重导出
 // 注：领域专家权威来源为 config-core `examples::domain_experts::build_domain_experts`（10 大专家，

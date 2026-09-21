@@ -345,15 +345,8 @@ pub(crate) fn priority_str(p: TaskPriority) -> &'static str {
 }
 
 pub(crate) fn mode_str(m: AllianceMode) -> &'static str {
-    match m {
-        AllianceMode::Sequential => "single_expert",
-        AllianceMode::Parallel => "expert_alliance",
-        AllianceMode::Iterative => "human_in_loop",
-        AllianceMode::Hierarchical => "autonomous",
-        AllianceMode::Debate => "debate",
-        AllianceMode::Voting => "voting",
-        AllianceMode::Dynamic => "dynamic",
-    }
+    // 委托协议层唯一真源（naming.rs）：禁止在此处另写一套映射，避免命名漂移
+    mox_alliance_common_proto::mode_display(m)
 }
 
 // ── 状态归一化契约（唯一真源） ──────────────────────────────────────
@@ -406,17 +399,8 @@ pub(crate) fn node_status_str(s: NodeExecStatus) -> &'static str {
 }
 
 pub(crate) fn fusion_strategy_str(f: FusionStrategy) -> &'static str {
-    match f {
-        FusionStrategy::BestOf => "first_wins",
-        FusionStrategy::Weighted => "weighted_voting",
-        FusionStrategy::Voting => "rrf",
-        FusionStrategy::ConfidenceWeighted => "llm_judge",
-        FusionStrategy::Concatenation => "consensus",
-        FusionStrategy::Stacking => "stacking",
-        FusionStrategy::Debate => "debate",
-        FusionStrategy::MapReduce => "map_reduce",
-        FusionStrategy::Iterative => "iterative",
-    }
+    // 委托协议层唯一真源（naming.rs）
+    mox_alliance_common_proto::fusion_display(f)
 }
 
 /// 单节点构造（按序自动编号 node-N；Completed 补齐起止时间与耗时语义）

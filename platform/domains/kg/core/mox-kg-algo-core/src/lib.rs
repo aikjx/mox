@@ -3,6 +3,8 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
+// 数据模型/预留字段：serde 填充或 API 预留。
+#![allow(dead_code)]
 //! # 知识图谱模块 - AI驱动关系网引擎
 //!
 //! 实现公理3：关联关系加权有向图

@@ -19,6 +19,8 @@
 //! - L5 系统/安全：/api/system/* · /api/security/*（IAM SQLite 真实数据链路）
 //! - 总计：4 通用 + 6 KG + 4 AI + 系统/安全域 3X 端点（读接口真实现 + 写接口 stub）
 
+// HTTP 请求体 struct 的字段由 serde 反序列化填充，编译器静态分析看不到，故豁免。
+#![allow(dead_code)]
 pub mod config;
 pub mod auth;
 pub mod rate_limit;

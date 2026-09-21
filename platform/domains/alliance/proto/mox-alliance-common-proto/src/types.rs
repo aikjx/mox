@@ -276,6 +276,32 @@ pub struct Node {
 
 // ─── CollaborationPlan（协作计划） ────────────────────────────────────────
 
+/// 计划级动态路由规则（Dynamic 模式专用）
+///
+/// 语义：决策节点执行完成后，取 `field` 路径的值（相对节点结果上下文，如 `success`、
+/// `output.score`）与 `value` 比较；成立则激活 `true_branch`，否则激活 `false_branch`，
+/// 未选中分支的节点标记为 Skipped。
+///
+/// 采用「字段路径 + 运算符 + 字面量」扁平表示而非内嵌表达式树：协议层不依赖执行器的
+/// 内部条件类型，跨端 JSON 可直接构造与阅读。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanDynamicRoute {
+    /// 决策节点 ID（其输出决定分支走向）
+    pub decision_node: String,
+    /// 取值字段路径（相对节点结果上下文）
+    pub field: String,
+    /// 比较运算符：eq / neq / gt / gte / lt / lte
+    pub operator: String,
+    /// 比较基准值（JSON 字面量）
+    pub value: serde_json::Value,
+    /// 条件成立时激活的节点
+    #[serde(default)]
+    pub true_branch: Vec<String>,
+    /// 条件不成立时激活的节点
+    #[serde(default)]
+    pub false_branch: Vec<String>,
+}
+
 /// 协作计划 — 任务的 DAG 执行图
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CollaborationPlan {
@@ -283,6 +309,11 @@ pub struct CollaborationPlan {
     pub mode: AllianceMode,
     pub fusion_strategy: FusionStrategy,
     pub nodes: Vec<Node>,
+    /// 动态路由规则（Dynamic 模式专用，由计划生成器填充）。
+    /// 为空 = 不使用执行期动态路由，既有模式行为完全不变；
+    /// 旧 JSON 无此字段时反序列化为空向量（向后兼容）。
+    #[serde(default)]
+    pub dynamic_routes: Vec<PlanDynamicRoute>,
     /// 尾部融合权重（expert_id -> 匹配分）。为空时所有专家等权 1.0。
     /// 由计划生成器从匹配分填充，跨进程随 plan 传递给执行器做真加权。
     #[serde(default)]

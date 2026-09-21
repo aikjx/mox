@@ -12,8 +12,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
-# HTTP客户端（修复HTTPS致命bug）
-reqwest = { workspace = true }
 parking_lot = { workspace = true }
 # 异步trait
 async-trait = { workspace = true }

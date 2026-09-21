@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -10,9 +10,9 @@
 
 use super::NormRecord;
 use ahash::{AHasher, RandomState};
+use std::hash::Hasher;
 use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
-use std::hash::{BuildHasher, Hasher};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DedupReport {

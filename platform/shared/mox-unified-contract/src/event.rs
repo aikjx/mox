@@ -110,6 +110,41 @@ impl std::fmt::Display for EventPhase {
 }
 
 // =============================================================================
+// 阶段名与审计事件名（SSOT-5）
+// =============================================================================
+//
+// 历史问题：`PHASE_NAMES` 在 AI 引擎与专家服务各有一份常量数组、`AUDIT_EVENTS_7`
+// 同样两份，且对外契约（orchestrator `/ai/engine/alliance/capabilities`）混用两个
+// crate 的同义常量。三份副本值虽相同，但没有任何机制阻止它们各自漂移。
+//
+// 收敛方式：本文件是唯一真源，各域改为引用；一致性由下方用例守护。
+
+/// 7 阶段管线名（稳定字符串，用于事件与审计）
+///
+/// 必须与 `EventPhase::all()` 的 `name()` 严格一一对应
+/// （由 `phase_names_match_event_phase` 用例守护）。
+pub const PHASE_NAMES: [&str; 7] = [
+    "intent",     // 01 意图识别
+    "team",       // 02 组队路由
+    "debate",     // 03 并行咨询 + 辩论
+    "synthesize", // 04 归一合成
+    "gate",       // 05 质量门禁
+    "learn",      // 06 指标学习
+    "done",       // 07 终态
+];
+
+/// 7 类审计事件名（FR-CORE-07，缺任意一项企业基线不过）
+pub const AUDIT_EVENTS_7: [&str; 7] = [
+    "ALLIANCE_START",
+    "INTENT_DONE",
+    "TEAM_DONE",
+    "DEBATE_DONE",
+    "GATE_DONE",
+    "LEARN_DONE",
+    "ALLIANCE_DONE",
+];
+
+// =============================================================================
 // 事件类型
 // =============================================================================
 
@@ -295,6 +330,28 @@ mod tests {
     #[test]
     fn all_phases_count() {
         assert_eq!(EventPhase::all().len(), 7);
+    }
+
+    #[test]
+    fn phase_names_match_event_phase() {
+        // SSOT-5 守护：常量数组与阶段枚举必须严格一一对应，防止两处漂移
+        let all = EventPhase::all();
+        assert_eq!(PHASE_NAMES.len(), all.len());
+        for (i, p) in all.iter().enumerate() {
+            assert_eq!(PHASE_NAMES[i], p.name(), "PHASE_NAMES[{}] 与 EventPhase 不一致", i);
+        }
+    }
+
+    #[test]
+    fn audit_events_are_unique_and_stable() {
+        // 审计事件名不得重复（否则审计计数与去重会失真），且端点顺序稳定
+        let mut seen = std::collections::HashSet::new();
+        for e in AUDIT_EVENTS_7.iter() {
+            assert!(seen.insert(*e), "审计事件名重复: {}", e);
+        }
+        assert_eq!(AUDIT_EVENTS_7.len(), 7);
+        assert_eq!(AUDIT_EVENTS_7[0], "ALLIANCE_START");
+        assert_eq!(AUDIT_EVENTS_7[6], "ALLIANCE_DONE");
     }
 
     #[test]

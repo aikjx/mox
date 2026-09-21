@@ -51,27 +51,10 @@ pub const INTENT_CLASSES: [&str; 7] = [
     "instruction",  // 指令
 ];
 
-/// 6 阶段管线名（用于事件与审计的稳定字符串）
-pub const PHASE_NAMES: [&str; 7] = [
-    "intent",       // 01 意图识别
-    "team",         // 02 组队路由
-    "debate",       // 03 并行咨询 + 辩论
-    "synthesize",   // 04 归一合成
-    "gate",         // 05 质量门禁
-    "learn",        // 06 指标学习
-    "done",         // 07 终态
-];
-
-/// 7 审计事件名（FR-CORE-07，缺任意一项企业基线不过）
-pub const AUDIT_EVENTS_7: [&str; 7] = [
-    "ALLIANCE_START",
-    "INTENT_DONE",
-    "TEAM_DONE",
-    "DEBATE_DONE",
-    "GATE_DONE",
-    "LEARN_DONE",
-    "ALLIANCE_DONE",
-];
+// ── 阶段名与审计事件名（SSOT-5）──────────────────────────────────────────
+// 真源在 mox-unified-contract::event（PHASE_NAMES / AUDIT_EVENTS_7），
+// 此处仅再导出，禁止恢复为本地字面量副本——历史上三份副本各自漂移过。
+pub use mox_unified_contract::{AUDIT_EVENTS_7, PHASE_NAMES};
 
 #[cfg(test)]
 mod tests {

@@ -3,6 +3,8 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
+// 数据模型/预留字段：serde 填充或 API 预留。
+#![allow(dead_code)]
 //! # xiaobai-operators · FR-13 8 大类系统算子 Rust 权威实现
 //!
 //! - 与 Python `operator/{app,file,volume,input,network,display,browser,notify}_operator.py` 1:1 对齐

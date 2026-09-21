@@ -3,8 +3,8 @@
 > **版本**: v1.0  
 > **日期**: 2026-08-27  
 > **状态**: 架构设计  
-> **归属**: 开发专家联盟 · mox 模块化系统架构归一化  
-> **权威级**: L1 治理枢纽（对齐 enterprise/28 mox 模块化系统架构分析）
+> **归属**: 开发专家联盟 · MOX 归一化  
+> **权威级**: L1 治理枢纽（对齐 enterprise/28 MOX 分析）
 
 ---
 
@@ -35,8 +35,8 @@ AI 工具端 (M)                    软件系统端 (N)
 
 | 协议 | 定位 | 类比 | 发起方 | 现状 |
 |---|---|---|---|---|
-| **MCP** (Model Context Protocol) | AI ↔ 工具/数据 标准化连接 | USB-C for AI tools | Anthropic | ✅ Linux Foundation AAIF，OpenAI/Google/微软支持，上万公开服务器 ["https://blog.csdn.net/ljt2724960661/article/details/162816823","https://resources.rework.com/libraries/ai-terms/model-context-protocol"] |
-| **A2A** (Agent-to-Agent Protocol) | Agent ↔ Agent 跨平台协作 | HTTP for AI agents | Google | ✅ v1.0 生产就绪，Linux Foundation，100+ 公司支持 ["https://a2a-protocol.org/latest/announcing-1.0/","https://www.taskade.com/wiki/ai/agent-to-agent-protocol"] |
+| **MCP** (Model Context Protocol) | AI ↔ 工具/数据 标准化连接 | USB-C for AI tools | Anthropic | ✅ Linux Foundation AAIF，OpenAI/Google/微软支持，上万公开服务器 |
+| **A2A** (Agent-to-Agent Protocol) | Agent ↔ Agent 跨平台协作 | HTTP for AI agents | Google | ✅ v1.0 生产就绪，Linux Foundation，100+ 公司支持 |
 
 **解耦效果**：
 ```
@@ -110,7 +110,7 @@ MTC 不破坏现有 6 层 8 域架构，而是作为**横切编排层**复用所
 
 ### 3.1 A2A 协议核心概念
 
-A2A（Agent-to-Agent Protocol）是 Google 主导、Linux Foundation 托管的开放标准，让不同厂商、不同框架的 AI Agent 能够**相互发现、安全协作、共同完成任务** ["https://github.com/google-a2a/A2A","https://a2acn.com/en/docs/introduction/"]。
+A2A（Agent-to-Agent Protocol）是 Google 主导、Linux Foundation 托管的开放标准，让不同厂商、不同框架的 AI Agent 能够**相互发现、安全协作、共同完成任务**。
 
 **四层模型**：
 ```
@@ -140,48 +140,14 @@ pub struct AgentCard {
     pub cost_per_1k_tokens: Option<f64>, // 成本（用于路由优化）
 }
 
-/// A2A 任务请求
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct A2ATaskRequest {
-    pub task_id: Uuid,
-    pub description: String,
-    pub input: serde_json::Value,
-    pub context: TaskContext,
-    pub priority: TaskPriority,
-    pub deadline: Option<DateTime<Utc>>,
-}
-
-/// A2A 任务结果
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct A2ATaskResult {
-    pub task_id: Uuid,
-    pub status: TaskStatus,
-    pub output: serde_json::Value,
-    pub artifacts: Vec<ArtifactRef>,
-    pub token_usage: TokenUsage,
-    pub latency_ms: u64,
-    pub error: Option<String>,
-}
-
 /// A2A Client trait — 统一所有外部 AI 工具的调用接口
 #[async_trait]
 pub trait A2AClient: Send + Sync {
-    /// 获取 Agent 卡片（能力自描述）
     async fn get_agent_card(&self) -> Result<AgentCard>;
-
-    /// 提交任务（异步）
     async fn submit_task(&self, request: A2ATaskRequest) -> Result<TaskHandle>;
-
-    /// 查询任务状态
     async fn get_task_status(&self, task_id: Uuid) -> Result<TaskStatus>;
-
-    /// 获取任务结果（阻塞等待）
     async fn get_task_result(&self, task_id: Uuid, timeout: Duration) -> Result<A2ATaskResult>;
-
-    /// 取消任务
     async fn cancel_task(&self, task_id: Uuid) -> Result<()>;
-
-    /// 流式输出（SSE/WebSocket）
     async fn stream_task(&self, task_id: Uuid) -> Result<BoxStream<'static, Result<TaskStreamEvent>>>;
 }
 ```
@@ -208,7 +174,7 @@ pub trait A2AClient: Send + Sync {
 
 ### 4.1 MCP 协议核心概念
 
-MCP（Model Context Protocol）是 Anthropic 开源的 AI 工具连接标准，核心思路参考 **USB-C 标准化逻辑**：把 M×N 复杂度简化为 M+N ["https://modelcontextprotocol.io/docs/2025-11-25/develop/build-with-agent-skills","https://natoma.ai/blog/model-context-protocol-how-one-standard-eliminates-months-of-ai-integration-work"]。
+MCP（Model Context Protocol）是 Anthropic 开源的 AI 工具连接标准，核心思路参考 **USB-C 标准化逻辑**：把 M×N 复杂度简化为 M+N。
 
 **核心组件**：
 ```
@@ -223,7 +189,7 @@ MCP Client (AI 端)          MCP Server (工具/软件端)
 
 ### 4.2 MOX MCP 服务器设计
 
-MOX 总任务中心作为 **MCP Server 聚合器**，将所有软件系统的控制能力统一暴露为 MCP 工具：
+MOX 总任务中心作为 **MCP Server 聚合器**，将所有软件系统的控制能力统一暴露为 MCP 工具。
 
 ```rust
 // mox-platform-api/src/mcp.rs (L2 API 契约)
@@ -243,61 +209,15 @@ pub struct MCPToolDescriptor {
     pub is_destructive: bool,      // 是否破坏性操作（需 HITL 确认）
 }
 
-/// MCP 工具执行请求
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MCPToolRequest {
-    pub tool_id: String,
-    pub arguments: serde_json::Value,
-    pub context: ExecutionContext,
-    pub idempotency_key: Option<String>,
-}
-
-/// MCP 工具执行结果
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MCPToolResult {
-    pub tool_id: String,
-    pub success: bool,
-    pub output: serde_json::Value,
-    pub artifacts: Vec<ArtifactRef>,
-    pub execution_ms: u64,
-    pub error: Option<ToolError>,
-}
-
 /// MCP 工具执行器 trait — 统一所有软件系统的控制接口
 #[async_trait]
 pub trait MCPToolExecutor: Send + Sync {
-    /// 列出所有可用工具
     async fn list_tools(&self) -> Result<Vec<MCPToolDescriptor>>;
-
-    /// 执行工具
     async fn execute_tool(&self, request: MCPToolRequest) -> Result<MCPToolResult>;
-
-    /// 取消执行
     async fn cancel_execution(&self, execution_id: Uuid) -> Result<()>;
-
-    /// 获取执行状态
     async fn get_execution_status(&self, execution_id: Uuid) -> Result<ExecutionStatus>;
 }
 ```
-
-### 4.3 已支持软件系统清单（MCP 适配）
-
-| 类别 | 软件系统 | 控制方式 | 典型工具 |
-|---|---|---|---|
-| **图像设计** | Photoshop (PS) | COM/UI Automation + MCP | `ps.open`, `ps.apply_filter`, `ps.export`, `ps.text_replace` |
-| **办公套件** | WPS Office | COM API + MCP | `wps.word.edit`, `wps.excel.formula`, `wps.ppt.create` |
-| **办公套件** | Microsoft Office | COM API + MCP | `office.word.*`, `office.excel.*`, `office.powerpoint.*` |
-| **浏览器** | Chrome/Edge | CDP (Chrome DevTools Protocol) + MCP | `browser.navigate`, `browser.click`, `browser.scrape`, `browser.screenshot` |
-| **终端** | Shell/PowerShell | PTY + MCP | `shell.exec`, `shell.run_script`, `shell.kill` |
-| **版本控制** | Git | libgit2 + MCP | `git.commit`, `git.branch`, `git.merge`, `git.diff` |
-| **容器** | Docker/K8s | Docker API + K8s API + MCP | `docker.run`, `k8s.deploy`, `k8s.scale` |
-| **数据库** | PG/MySQL/SQLite | SQLx + MCP | `db.query`, `db.insert`, `db.migrate` |
-| **文件系统** | OS File System | std::fs + MCP | `fs.read`, `fs.write`, `fs.move`, `fs.search` |
-| **邮件** | SMTP/IMAP | lettre + MCP | `mail.send`, `mail.search`, `mail.attach` |
-| **日历** | CalDAV/Google | API + MCP | `calendar.create`, `calendar.query`, `calendar.rsvp` |
-| **消息** | 飞书/钉钉/企微 | Webhook + MCP | `im.send`, `im.reply`, `im.create_group` |
-| **云存储** | S3/OSS/COS | SDK + MCP | `storage.upload`, `storage.download`, `storage.share` |
-| **CI/CD** | Jenkins/GitHub Actions | API + MCP | `ci.trigger`, `ci.status`, `ci.logs` |
 
 ---
 
@@ -321,15 +241,11 @@ pub trait MCPToolExecutor: Send + Sync {
 │    • DAG 生成：将复杂任务拆分为有向无环图                      │
 │    • 节点类型：AI推理节点 / 工具执行节点 / 条件分支 / 并行    │
 │    • 依赖分析：数据依赖 / 资源依赖 / 权限依赖                 │
-│    • 示例："用PS处理图片后发邮件"                             │
-│      → [AI:分析图片] → [PS:应用滤镜] → [AI:生成邮件文案]    │
-│      → [邮件:发送]                                            │
 └──────────────────────────────┬──────────────────────────────┘
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. 能力路由层 (Capability Routing)                            │
 │    • AI 工具选择：基于能力匹配 + 成本 + 延迟 + 可用率         │
-│      例：代码任务→Codex/Claude，中文任务→豆包，长文→Gemini  │
 │    • 软件工具选择：基于 MCP ToolDescriptor 匹配               │
 │    • 负载均衡：多实例轮询 / 最少连接 / 权重                   │
 │    • 降级策略：主工具不可用→自动切换备用工具                   │
@@ -356,27 +272,6 @@ pub trait MCPToolExecutor: Send + Sync {
                           结果返回用户
 ```
 
-### 5.2 典型场景：端到端示例
-
-**用户输入**："帮我把这张截图里的表格数据提取出来，用WPS做成Excel，然后用豆包写一段分析，最后发邮件给团队"
-
-**MTC 处理**：
-```
-[意图理解] 识别为：跨系统多步任务（OCR→Excel→AI分析→邮件）
-[任务分解] 生成 DAG：
-  Node1 [AI:图像OCR]     → 提取表格数据 (路由: Claude/Gemini 视觉)
-  Node2 [WPS:创建Excel]   → 数据写入表格 (依赖: Node1 输出)
-  Node3 [AI:数据分析]     → 生成分析文案 (路由: 豆包, 依赖: Node2)
-  Node4 [邮件:发送]       → 附件+正文发送 (依赖: Node2+Node3, 需HITL确认)
-[编排执行]
-  → Node1 完成: 提取到 25行×6列 数据
-  → Node2 完成: 创建 report.xlsx
-  → Node3 完成: 生成 300字 分析文案
-  → HITL 确认: 用户点击"确认发送"
-  → Node4 完成: 邮件已发送至 team@company.com
-[审计记录] 全链路日志写入 data/logs/mtc-audit-20260827.log
-```
-
 ---
 
 ## 六、开源整合策略：如何完美融入开源生态
@@ -385,54 +280,11 @@ pub trait MCPToolExecutor: Send + Sync {
 
 | 能力 | 采用标准 | 不做什么 | 为什么 |
 |---|---|---|---|
-| AI↔工具连接 | **MCP** | 不自研工具协议 | 行业事实标准，上万服务器生态 ["https://www.marktechpost.com/2025/07/20/model-context-protocol-mcp-for-enterprises-secure-integration-with-aws-azure-and-google-cloud-2025-update/"] |
-| Agent↔Agent | **A2A** | 不自研Agent通信协议 | Google+Linux Foundation，v1.0生产就绪 ["https://a2a-protocol.org/latest/announcing-1.0/"] |
-| Agent 框架 | **复用 + 适配** | 不重写 Agent 运行时 | 适配 Microsoft Agent Framework / OpenManus / LangGraph ["https://devblogs.microsoft.com/foundry/introducing-microsoft-agent-framework-the-open-source-engine-for-agentic-ai-apps/","https://blog.csdn.net/weixin_44262492/article/details/153740636"] |
+| AI↔工具连接 | **MCP** | 不自研工具协议 | 行业事实标准，上万服务器生态 |
+| Agent↔Agent | **A2A** | 不自研Agent通信协议 | Google+Linux Foundation，v1.0生产就绪 |
+| Agent 框架 | **复用 + 适配** | 不重写 Agent 运行时 | 适配 Microsoft Agent Framework / OpenManus / LangGraph |
 | 工具执行 | **WASM 沙箱** | 不直接执行外部代码 | 已有 mox-flow-operator-wasm-svc，安全隔离 |
 | 工作流 | **DAG + 状态机** | 不用笨重的 BPMN引擎 | 已有 mox-platform-orchestrator-core，轻量高性能 |
-
-### 6.2 MOX 作为"协议聚合器"的独特价值
-
-MOX 不与开源框架竞争，而是做**上层聚合与治理**：
-
-```
-开源生态层 (被复用)
-┌─────────────────────────────────────────────────┐
-│ MCP Servers (10000+)  │  A2A Agents (100+)    │
-│ Microsoft Agent FW     │  OpenManus / CrewAI    │
-│ LangGraph / AutoGen    │  Composio / AgencySwarm│
-└──────────────┬──────────────────┬───────────────┘
-               │                  │
-               ▼                  ▼
-┌─────────────────────────────────────────────────┐
-│          MOX 总任务中心 (聚合 + 治理)            │
-│  ┌───────────┐ ┌───────────┐ ┌──────────────┐ │
-│  │ MCP 聚合  │ │ A2A 聚合  │ │ 统一编排引擎 │ │
-│  └───────────┘ └───────────┘ └──────────────┘ │
-│  ┌───────────┐ ┌───────────┐ ┌──────────────┐ │
-│  │ RBAC 权限 │ │ HITL 回环 │ │ 全链路审计   │ │
-│  └───────────┘ └───────────┘ └──────────────┘ │
-│  ┌───────────┐ ┌───────────┐ ┌──────────────┐ │
-│  │ 成本优化  │ │ 负载均衡  │ │ 降级熔断     │ │
-│  └───────────┘ └───────────┘ └──────────────┘ │
-└─────────────────────────────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────────────┐
-│          MOX 8 域内部能力 (已有)                 │
-│  data / ai / kg / cloud / platform / voice /    │
-│  flow / market — 通过 L2 API 契约统一调用        │
-└─────────────────────────────────────────────────┘
-```
-
-### 6.3 开源贡献策略
-
-MOX 不仅消费开源，也**反向贡献**：
-
-1. **MCP Server 开源**：将 MOX 自研的软件适配器（WPS/PS/飞书等）作为 MCP Server 开源
-2. **A2A Agent 开源**：将 MOX 的专业 Agent（数据治理/知识图谱/流程优化）作为 A2A Agent 开源
-3. **规范标准贡献**：参与 MCP/A2A 协议演进，贡献企业级治理需求（RBAC/HITL/审计）
-4. **适配器库开源**：维护 `mox-mcp-adapters` 开源仓库，收录主流软件的 MCP 适配
 
 ---
 
@@ -448,18 +300,6 @@ MOX 不仅消费开源，也**反向贡献**：
 | **M3** | 编排引擎 | DAG 任务分解 + 状态机 + 跨系统事务 + 进度同步 | 3 周 |
 | **M4** | 治理安全 | RBAC 联邦 + HITL 人机回环 + 全链路审计 + 限流熔断 | 2 周 |
 | **M5** | 生态扩展 | 20+ AI 工具 + 30+ 软件系统 + 开源贡献 + 文档 | 持续 |
-
-### 7.2 与现有 MOX 模块的映射
-
-| MTC 组件 | 新增 crate | 复用现有 crate |
-|---|---|---|
-| MCP 框架 | `mox-platform-mcp-core` (L3) | — |
-| A2A 框架 | `mox-ai-a2a-core` (L3) | — |
-| 任务编排 | `mox-platform-mtc-svc` (L4) | `mox-platform-orchestrator-core` |
-| AI 路由 | 扩展 `mox-ai-intent-core` | `mox-ai-intent-core` (A5) |
-| 工具注册 | 扩展 `mox-market-template-svc` | `mox-market-template-svc` |
-| 治理安全 | 扩展 `mox-platform-iam-core` | `mox-platform-iam-core` |
-| 审计 | 扩展 `mox-platform-observability` | `mox-platform-observability` |
 
 ---
 

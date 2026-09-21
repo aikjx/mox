@@ -21,7 +21,7 @@ anyhow = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true }
 async-trait = { workspace = true }
-mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
+mox-alliance-common-proto = { workspace = true }
 
 # Nacos 客户端（官方 nacos-group/nacos-sdk-rust；config=配置中心，naming=注册中心；可选）
 nacos-sdk = { version = "0.8", default-features = false, features = ["config", "naming"], optional = true }

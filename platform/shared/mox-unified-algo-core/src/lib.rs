@@ -3,6 +3,8 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
+// 数据模型/预留字段。
+#![allow(dead_code)]
 //! # 统一算法核心库 · mox-unified-algo-core
 //!
 //! 跨域算法归一化基础设施，为三大业务域提供共享算法能力：

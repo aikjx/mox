@@ -3,6 +3,8 @@
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
+// 数据模型/预留字段：serde 填充或 API 预留。
+#![allow(dead_code)]
 //! 专家联盟架构分析引擎（mox-ai-alliance-engine）
 //!
 //! # 概述
@@ -130,10 +132,10 @@ pub use debate::{
     DebateEngine, DebateResult, ExpertConsultant, ExpertOpinion, LocalRuleConsultant,
 };
 
-// LLM 咨询器
-pub use llm_consultant::{
-    ChatMessage, ChatRole, ExpertOpinionJSON, HttpLLMConsultant, LLMConfig, SwitchableConsultant,
-};
+// LLM 咨询器（纯数据类型始终可用；HTTP 实现需启用 `llm-http` feature）
+pub use llm_consultant::{ChatMessage, ChatRole, ExpertOpinionJSON, LLMConfig};
+#[cfg(feature = "llm-http")]
+pub use llm_consultant::{HttpLLMConsultant, SwitchableConsultant};
 
 // 门禁
 pub use gate::{GateGrade, GateResult, GateScore, MetricsLearner, QualityGate};

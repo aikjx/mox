@@ -34,6 +34,7 @@ use uuid::Uuid;
 
 use mox_alliance_executor_proto::types::ExecutorConfig;
 
+use crate::condition::{CompareOp, Condition, Operand, Operator};
 use crate::fusion::{FusionEngine, FusionInput, FusionItem};
 
 /// 任务执行状态（内部完整状态）
@@ -160,6 +161,8 @@ impl DagEngineImpl {
 
                 let task_id = task.task_id;
                 let node_count = plan.nodes.len();
+                // 先构建路由表再转移 plan 所有权：借用必须发生在 move 之前
+                let dynamic_routes = Self::build_dynamic_routes(&plan);
 
                 // 启动时将任务状态设为 Running
                 task.status = TaskStatus::Running;
@@ -172,7 +175,8 @@ impl DagEngineImpl {
                     options,
                     outputs: HashMap::new(),
                     fusion_output: None,
-                    dynamic_routes: None, // Dynamic 模式专用，框架占位
+                    // 由计划携带的路由规则构建执行期路由表（非 Dynamic 模式为 None）
+                    dynamic_routes,
                 };
 
                 let mut states = states.write();
@@ -343,6 +347,55 @@ impl DagEngineImpl {
         // 等待所有当前批次的节点完成
         for handle in handles {
             let _ = handle.await;
+        }
+    }
+
+    /// 由计划携带的路由规则构建执行期动态路由表
+    ///
+    /// 计划不含规则（非 Dynamic 模式，或旧版本计划序列化而来）时返回 `None`，
+    /// `apply_dynamic_routes` 会直接跳过，与改动前行为完全一致。
+    fn build_dynamic_routes(plan: &CollaborationPlan) -> Option<HashMap<String, DynamicRouteRule>> {
+        if plan.dynamic_routes.is_empty() {
+            return None;
+        }
+
+        let mut map: HashMap<String, DynamicRouteRule> = HashMap::new();
+        for r in &plan.dynamic_routes {
+            let operator = match r.operator.as_str() {
+                "eq" => Operator::Eq,
+                "neq" => Operator::NotEq,
+                "gt" => Operator::GreaterThan,
+                "gte" => Operator::GreaterThanOrEq,
+                "lt" => Operator::LessThan,
+                "lte" => Operator::LessThanOrEq,
+                other => {
+                    warn!(
+                        "忽略未知动态路由运算符: {} (决策节点 {}), 该规则不生效",
+                        other, r.decision_node
+                    );
+                    continue;
+                }
+            };
+            map.insert(
+                r.decision_node.clone(),
+                DynamicRouteRule {
+                    decision_node: r.decision_node.clone(),
+                    condition: Condition::Compare(CompareOp {
+                        left: Operand::Field(r.field.clone()),
+                        operator,
+                        right: Operand::Literal(r.value.clone()),
+                    }),
+                    true_branch: r.true_branch.clone(),
+                    false_branch: r.false_branch.clone(),
+                },
+            );
+        }
+
+        if map.is_empty() {
+            None
+        } else {
+            info!("Dynamic routes loaded: {} rule(s)", map.len());
+            Some(map)
         }
     }
 
@@ -722,4 +775,85 @@ pub struct DynamicRouteRule {
     pub true_branch: Vec<String>,
     /// 条件为假时激活的节点列表
     pub false_branch: Vec<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mox_alliance_common_proto::{AllianceMode, FusionStrategy, PlanDynamicRoute};
+
+    fn plan_with_routes(routes: Vec<PlanDynamicRoute>) -> CollaborationPlan {
+        CollaborationPlan {
+            task_id: Uuid::new_v4(),
+            mode: AllianceMode::Dynamic,
+            fusion_strategy: FusionStrategy::Weighted,
+            nodes: vec![],
+            dynamic_routes: routes,
+            expert_weights: HashMap::new(),
+            version: 1,
+            created_at: chrono::Utc::now(),
+        }
+    }
+
+    fn route(operator: &str) -> PlanDynamicRoute {
+        PlanDynamicRoute {
+            decision_node: "node-decision".to_string(),
+            field: "success".to_string(),
+            operator: operator.to_string(),
+            value: serde_json::Value::Bool(true),
+            true_branch: vec!["node-main".to_string()],
+            false_branch: vec!["node-fallback".to_string()],
+        }
+    }
+
+    #[test]
+    fn empty_routes_yield_none() {
+        // 计划不含规则（非 Dynamic 模式 / 旧版本序列化而来）→ 不启用动态路由，行为同前
+        assert!(DagEngineImpl::build_dynamic_routes(&plan_with_routes(vec![])).is_none());
+    }
+
+    #[test]
+    fn valid_route_is_loaded_and_evaluable() {
+        let routes = DagEngineImpl::build_dynamic_routes(&plan_with_routes(vec![route("eq")]))
+            .expect("合法规则应构建出路由表");
+        let rule = routes.get("node-decision").expect("应按决策节点 ID 索引");
+
+        // 决策成功 → true_branch
+        let ok = serde_json::json!({ "success": true, "output": null });
+        assert!(rule.condition.evaluate(&ok));
+        assert_eq!(rule.true_branch, vec!["node-main".to_string()]);
+
+        // 决策失败 → false_branch
+        let fail = serde_json::json!({ "success": false, "output": null });
+        assert!(!rule.condition.evaluate(&fail));
+        assert_eq!(rule.false_branch, vec!["node-fallback".to_string()]);
+    }
+
+    #[test]
+    fn unknown_operator_is_skipped_without_affecting_others() {
+        // 未知运算符只跳过该条规则并告警，不 panic，也不影响其余规则
+        assert!(DagEngineImpl::build_dynamic_routes(&plan_with_routes(vec![route("bogus")])).is_none());
+
+        let routes = DagEngineImpl::build_dynamic_routes(&plan_with_routes(vec![route("bogus"), route("eq")]))
+            .expect("剩余合法规则应继续生效");
+        assert_eq!(routes.len(), 1);
+    }
+
+    #[test]
+    fn numeric_operator_maps_correctly() {
+        // 分数型条件：output.score >= 0.8
+        let r = PlanDynamicRoute {
+            decision_node: "node-decision".to_string(),
+            field: "output.score".to_string(),
+            operator: "gte".to_string(),
+            value: serde_json::json!(0.8),
+            true_branch: vec!["node-main".to_string()],
+            false_branch: vec![],
+        };
+        let routes = DagEngineImpl::build_dynamic_routes(&plan_with_routes(vec![r]))
+            .expect("gte 应被识别");
+        let rule = routes.get("node-decision").unwrap();
+        assert!(rule.condition.evaluate(&serde_json::json!({"output": {"score": 0.9}})));
+        assert!(!rule.condition.evaluate(&serde_json::json!({"output": {"score": 0.5}})));
+    }
 }

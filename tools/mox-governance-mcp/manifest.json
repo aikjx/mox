@@ -1,0 +1,67 @@
+{
+  "name": "mox-governance-mcp",
+  "version": "1.0.0",
+  "displayName": "璇玑仓库治理门禁（MCP）",
+  "description": "把 infotopograph 仓库的 CI 门禁脚本（端口漂移校验 PORT-REGISTRY-001、文档链接校验 DOC-GOV-ARC-V1.0 §7）包装为标准 MCP 工具与资源，供 AI 编码助手在编码当场调用。零第三方依赖，Python 3.8+ 即用。",
+  "transport": "stdio",
+  "command": "python",
+  "args": ["<仓库绝对路径>/tools/mox-governance-mcp/server.py"],
+  "env": {
+    "MOX_REPO_ROOT": "<仓库绝对路径，可选；不填则自动取脚本上溯两级>"
+  },
+  "protocolVersion": "2024-11-05",
+  "capabilities": ["tools", "resources"],
+  "entrypoint": "server.py",
+  "selftestCommand": ["python", "server.py", "--selftest"],
+  "describeCommand": ["python", "server.py", "--describe"],
+  "tools": [
+    {
+      "name": "mox_port_lookup",
+      "title": "端口注册表查询",
+      "readOnly": true,
+      "destructive": false,
+      "summary": "按端口号精确查或按服务名关键字模糊查权威端口表，返回分类与是否禁止复用。"
+    },
+    {
+      "name": "mox_port_verify",
+      "title": "端口漂移校验",
+      "readOnly": true,
+      "destructive": false,
+      "summary": "执行 scripts/verify-ports.py，检出已退役端口被引用、platform_config.json 与注册表不一致、未登记端口。"
+    },
+    {
+      "name": "mox_doc_links_check",
+      "title": "文档链接校验",
+      "readOnly": true,
+      "destructive": false,
+      "summary": "执行 scripts/check-doc-links.py，检出 Markdown/HTML/反引号路径引用中的断链。"
+    },
+    {
+      "name": "mox_ci_gate",
+      "title": "仓库治理体检",
+      "readOnly": true,
+      "destructive": false,
+      "summary": "自定义多步流程：一次串联端口漂移与文档链接两项门禁，输出统一通过与失败清单。"
+    }
+  ],
+  "resources": [
+    {
+      "uri": "mox://governance/port-registry",
+      "name": "璇玑权威端口注册表",
+      "mimeType": "text/markdown",
+      "summary": "全量端口按 RUNTIME/ALLIANCE/ANCILLARY/LEGACY/DEPRECATED/TEST/THIRD 分类，可作为模型上下文注入。"
+    },
+    {
+      "uri": "mox://governance/gates",
+      "name": "璇玑 CI 门禁脚本清单",
+      "mimeType": "text/markdown",
+      "summary": "本机可调用的门禁脚本、职责与规范出处。"
+    }
+  ],
+  "safetyBoundary": [
+    "仅可执行 scripts 白名单内的两个门禁脚本",
+    "subprocess 恒为 shell=False，参数为受控布尔/枚举",
+    "单次执行超时默认 600 秒，硬上限 900 秒",
+    "仓库根仅接受环境变量显式指定且存在性校验通过的目录"
+  ]
+}

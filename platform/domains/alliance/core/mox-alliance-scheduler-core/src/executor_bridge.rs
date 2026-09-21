@@ -13,9 +13,10 @@
 //! - 向后兼容：保留 dispatch_tx 通道作为 fallback
 
 use async_trait::async_trait;
-use mox_alliance_common_proto::{
-    AllianceError, AllianceErrorCode, AllianceResult, CollaborationPlan, Task, TaskStatus,
-};
+use mox_alliance_common_proto::{AllianceResult, CollaborationPlan, Task};
+// 仅 HTTP 桥接（http-bridge feature）使用，默认纯计算编译不引入
+#[cfg(feature = "http-bridge")]
+use mox_alliance_common_proto::{AllianceError, AllianceErrorCode, TaskStatus};
 use mox_alliance_executor_proto::{DagEngine, ExecutionOptions, ExecutionStatus};
 use std::sync::Arc;
 use tracing::{debug, info, warn};
@@ -56,6 +57,7 @@ pub trait ExecutorBridge: Send + Sync {
 // ─── HttpExecutorBridge ────────────────────────────────────────────────────
 
 /// HTTP 执行器桥接配置
+#[cfg(feature = "http-bridge")]
 #[derive(Debug, Clone)]
 pub struct HttpExecutorBridgeConfig {
     /// 执行器服务基地址（如 http://localhost:3200）
@@ -64,6 +66,7 @@ pub struct HttpExecutorBridgeConfig {
     pub timeout_ms: u64,
 }
 
+#[cfg(feature = "http-bridge")]
 impl Default for HttpExecutorBridgeConfig {
     fn default() -> Self {
         Self {
@@ -77,11 +80,13 @@ impl Default for HttpExecutorBridgeConfig {
 ///
 /// 通过 HTTP REST API 调用远程执行器服务。
 /// 适用于调度器和执行器部署在不同进程/机器的场景。
+#[cfg(feature = "http-bridge")]
 pub struct HttpExecutorBridge {
     config: HttpExecutorBridgeConfig,
     client: reqwest::Client,
 }
 
+#[cfg(feature = "http-bridge")]
 impl HttpExecutorBridge {
     /// 创建新的 HTTP 执行器桥接
     pub fn new(config: HttpExecutorBridgeConfig) -> AllianceResult<Self> {
@@ -136,6 +141,7 @@ impl HttpExecutorBridge {
 
 /// 标准错误响应格式（与执行器服务一致）
 #[derive(Debug, serde::Deserialize)]
+#[cfg(feature = "http-bridge")]
 struct ErrorResponse {
     #[allow(dead_code)]
     success: bool,
@@ -145,12 +151,14 @@ struct ErrorResponse {
 
 /// 提交计划请求体
 #[derive(Debug, serde::Serialize)]
+#[cfg(feature = "http-bridge")]
 struct SubmitPlanRequest<'a> {
     task: &'a Task,
     plan: &'a CollaborationPlan,
     options: ExecutionOptions,
 }
 
+#[cfg(feature = "http-bridge")]
 #[async_trait]
 impl ExecutorBridge for HttpExecutorBridge {
     async fn submit_plan(&self, task: &Task, plan: CollaborationPlan) -> AllianceResult<()> {
@@ -359,6 +367,7 @@ impl ExecutorBridge for HttpExecutorBridge {
 
 /// 执行状态响应（与执行器服务 API 对应）
 #[derive(Debug, serde::Deserialize)]
+#[cfg(feature = "http-bridge")]
 struct ExecutionStatusResponse {
     task_id: Uuid,
     #[allow(dead_code)]
@@ -521,6 +530,7 @@ impl ExecutorBridge for NoopExecutorBridge {
 // ─── 错误码转换辅助函数 ────────────────────────────────────────────────────
 
 /// 将 u32 错误码转换为 AllianceErrorCode
+#[cfg(feature = "http-bridge")]
 fn error_code_from_u32(value: u32) -> AllianceErrorCode {
     match value {
         1000 => AllianceErrorCode::Unknown,
@@ -707,6 +717,7 @@ pub mod tests {
             task_id,
             mode: AllianceMode::Parallel,
             fusion_strategy: FusionStrategy::Weighted,
+            dynamic_routes: vec![],
             nodes: vec![Node {
                 node_id: "node-1".to_string(),
                 task_id,

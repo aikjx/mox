@@ -1,0 +1,1447 @@
+{
+  "meta": {
+    "generated_at": "2026-09-21 15:23:07",
+    "base_url": "http://127.0.0.1:3080",
+    "git_head": "b53afe6a",
+    "python": "3.8.8",
+    "requests": 193,
+    "json_path": "reports\\data\\20260921-152307-alliance-demo.json",
+    "mode": "unknown"
+  },
+  "health": {
+    "healthy": true,
+    "probe": "/api/v1/status",
+    "http": 200
+  },
+  "topology": {
+    "mode": "unknown",
+    "gateway_listed_tasks": 0,
+    "gateway_local_total_tasks": -1,
+    "scheduler": {
+      "up": true,
+      "service": "mox-alliance-scheduler",
+      "deps": {
+        "executor": "up"
+      }
+    },
+    "executor": {
+      "up": true,
+      "http": 200
+    }
+  },
+  "modes": [
+    {
+      "mode": "sequential",
+      "ok": true,
+      "task_id": "77d41e85-c11c-4e7f-9b41-282ee1d680d3",
+      "title": "端到端演示-sequential-151735",
+      "fusion_strategy_sent": "best_of",
+      "fusion_strategy_display": "first_wins",
+      "mode_display": "single_expert",
+      "dag": {
+        "nodes": 4,
+        "edges": 3,
+        "node_names": [
+          "需求分析",
+          "方案设计",
+          "方案评审",
+          "融合输出"
+        ]
+      },
+      "nodes_total": 4,
+      "node_status": {
+        "completed": 1,
+        "skipped": 3
+      },
+      "execution_status": {
+        "status": "pending",
+        "completed_nodes": 1,
+        "total_nodes": 4,
+        "progress": 0.25
+      },
+      "fusion": {
+        "fusion_status": "partial",
+        "fusion_strategy": "first_wins",
+        "confidence": 0.75,
+        "key_findings": [
+          "需求分析完成：端到端演示-sequential-151735"
+        ],
+        "recommendations": [
+          "第一阶段：核心模块落地",
+          "第二阶段：集成测试与优化",
+          "第三阶段：上线部署与监控"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "running",
+      "logs_tail": [
+        "节点 node-1: 需求分析 完成",
+        "任务 77d41e85-c11c-4e7f-9b41-282ee1d680d3 已恢复执行",
+        "节点 node-2 已人工跳过",
+        "节点 node-3 已人工跳过",
+        "节点 node-4 已人工跳过"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 98
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 41
+        },
+        {
+          "name": "resume",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "skip_node:node-2",
+          "ok": true,
+          "ms": 20
+        },
+        {
+          "name": "skip_node:node-3",
+          "ok": true,
+          "ms": 14
+        },
+        {
+          "name": "skip_node:node-4",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 35
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 112
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 20
+        },
+        {
+          "name": "toggle_done",
+          "ok": true,
+          "ms": 27
+        }
+      ]
+    },
+    {
+      "mode": "parallel",
+      "ok": true,
+      "task_id": "8953465a-f686-4f4d-8ace-8c8d06b5cdf3",
+      "title": "端到端演示-parallel-151822",
+      "fusion_strategy_sent": "weighted",
+      "fusion_strategy_display": "weighted_voting",
+      "mode_display": "expert_alliance",
+      "dag": {
+        "nodes": 5,
+        "edges": 5,
+        "node_names": [
+          "需求分析",
+          "架构设计",
+          "数据建模",
+          "方案评审",
+          "融合输出"
+        ]
+      },
+      "nodes_total": 5,
+      "node_status": {
+        "completed": 1,
+        "skipped": 4
+      },
+      "execution_status": {
+        "status": "pending",
+        "completed_nodes": 1,
+        "total_nodes": 5,
+        "progress": 0.20000000298023224
+      },
+      "fusion": {
+        "fusion_status": "partial",
+        "fusion_strategy": "weighted_voting",
+        "confidence": 0.75,
+        "key_findings": [
+          "需求分析完成：端到端演示-parallel-151822"
+        ],
+        "recommendations": [
+          "第一阶段：核心模块落地",
+          "第二阶段：集成测试与优化",
+          "第三阶段：上线部署与监控"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "running",
+      "logs_tail": [
+        "任务 8953465a-f686-4f4d-8ace-8c8d06b5cdf3 已恢复执行",
+        "节点 node-2 已人工跳过",
+        "节点 node-3 已人工跳过",
+        "节点 node-4 已人工跳过",
+        "节点 node-5 已人工跳过"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 28
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 55
+        },
+        {
+          "name": "resume",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 33
+        },
+        {
+          "name": "skip_node:node-2",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "skip_node:node-3",
+          "ok": true,
+          "ms": 29
+        },
+        {
+          "name": "skip_node:node-4",
+          "ok": true,
+          "ms": 28
+        },
+        {
+          "name": "skip_node:node-5",
+          "ok": true,
+          "ms": 33
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 20
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 30
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 36
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 14
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 30
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "toggle_done",
+          "ok": true,
+          "ms": 19
+        }
+      ]
+    },
+    {
+      "mode": "debate",
+      "ok": true,
+      "task_id": "445b7581-f4fa-4e0b-9e62-6a69b0740bcf",
+      "title": "端到端演示-debate-151909",
+      "fusion_strategy_sent": "debate",
+      "fusion_strategy_display": "debate",
+      "mode_display": "debate",
+      "dag": {
+        "nodes": 5,
+        "edges": 5,
+        "node_names": [
+          "需求分析",
+          "正方陈述",
+          "反方陈述",
+          "仲裁裁决",
+          "融合输出"
+        ]
+      },
+      "nodes_total": 5,
+      "node_status": {
+        "completed": 1,
+        "skipped": 4
+      },
+      "execution_status": {
+        "status": "pending",
+        "completed_nodes": 1,
+        "total_nodes": 5,
+        "progress": 0.20000000298023224
+      },
+      "fusion": {
+        "fusion_status": "partial",
+        "fusion_strategy": "debate",
+        "confidence": 0.75,
+        "key_findings": [
+          "需求分析完成：端到端演示-debate-151909"
+        ],
+        "recommendations": [
+          "第一阶段：核心模块落地",
+          "第二阶段：集成测试与优化",
+          "第三阶段：上线部署与监控"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "running",
+      "logs_tail": [
+        "任务 445b7581-f4fa-4e0b-9e62-6a69b0740bcf 已恢复执行",
+        "节点 node-2 已人工跳过",
+        "节点 node-3 已人工跳过",
+        "节点 node-4 已人工跳过",
+        "节点 node-5 已人工跳过"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 22
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "resume",
+          "ok": true,
+          "ms": 17
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "skip_node:node-2",
+          "ok": true,
+          "ms": 29
+        },
+        {
+          "name": "skip_node:node-3",
+          "ok": true,
+          "ms": 24
+        },
+        {
+          "name": "skip_node:node-4",
+          "ok": true,
+          "ms": 32
+        },
+        {
+          "name": "skip_node:node-5",
+          "ok": true,
+          "ms": 36
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 23
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 28
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "toggle_done",
+          "ok": true,
+          "ms": 24
+        }
+      ]
+    },
+    {
+      "mode": "hierarchical",
+      "ok": true,
+      "task_id": "9c7aca40-bce6-45ea-802d-f7bb07649536",
+      "title": "端到端演示-hierarchical-151955",
+      "fusion_strategy_sent": "stacking",
+      "fusion_strategy_display": "stacking",
+      "mode_display": "autonomous",
+      "dag": {
+        "nodes": 7,
+        "edges": 8,
+        "node_names": [
+          "需求分析",
+          "协调规划",
+          "子任务·架构",
+          "子任务·数据",
+          "子任务·实现",
+          "专家汇总",
+          "融合输出"
+        ]
+      },
+      "nodes_total": 7,
+      "node_status": {
+        "completed": 1,
+        "skipped": 6
+      },
+      "execution_status": {
+        "status": "pending",
+        "completed_nodes": 1,
+        "total_nodes": 7,
+        "progress": 0.1428571492433548
+      },
+      "fusion": {
+        "fusion_status": "partial",
+        "fusion_strategy": "stacking",
+        "confidence": 0.75,
+        "key_findings": [
+          "需求分析完成：端到端演示-hierarchical-151955"
+        ],
+        "recommendations": [
+          "第一阶段：核心模块落地",
+          "第二阶段：集成测试与优化",
+          "第三阶段：上线部署与监控"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "running",
+      "logs_tail": [
+        "节点 node-3 已人工跳过",
+        "节点 node-4 已人工跳过",
+        "节点 node-5 已人工跳过",
+        "节点 node-6 已人工跳过",
+        "节点 node-7 已人工跳过"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 27
+        },
+        {
+          "name": "resume",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "skip_node:node-2",
+          "ok": true,
+          "ms": 44
+        },
+        {
+          "name": "skip_node:node-3",
+          "ok": true,
+          "ms": 31
+        },
+        {
+          "name": "skip_node:node-4",
+          "ok": true,
+          "ms": 52
+        },
+        {
+          "name": "skip_node:node-5",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "skip_node:node-6",
+          "ok": true,
+          "ms": 21
+        },
+        {
+          "name": "skip_node:node-7",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 41
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 30
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 31
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 17
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 22
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 38
+        },
+        {
+          "name": "toggle_done",
+          "ok": true,
+          "ms": 18
+        }
+      ]
+    },
+    {
+      "mode": "iterative",
+      "ok": true,
+      "task_id": "d47a519c-2be7-419a-a604-6b895f3f6e5e",
+      "title": "端到端演示-iterative-152042",
+      "fusion_strategy_sent": "iterative",
+      "fusion_strategy_display": "iterative",
+      "mode_display": "human_in_loop",
+      "dag": {
+        "nodes": 6,
+        "edges": 5,
+        "node_names": [
+          "需求分析",
+          "初稿生成",
+          "人工评审",
+          "修订迭代",
+          "二次确认",
+          "融合输出"
+        ]
+      },
+      "nodes_total": 6,
+      "node_status": {
+        "completed": 1,
+        "skipped": 5
+      },
+      "execution_status": {
+        "status": "pending",
+        "completed_nodes": 1,
+        "total_nodes": 6,
+        "progress": 0.1666666716337204
+      },
+      "fusion": {
+        "fusion_status": "partial",
+        "fusion_strategy": "iterative",
+        "confidence": 0.75,
+        "key_findings": [
+          "需求分析完成：端到端演示-iterative-152042"
+        ],
+        "recommendations": [
+          "第一阶段：核心模块落地",
+          "第二阶段：集成测试与优化",
+          "第三阶段：上线部署与监控"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "running",
+      "logs_tail": [
+        "节点 node-2 已人工跳过",
+        "节点 node-3 已人工跳过",
+        "节点 node-4 已人工跳过",
+        "节点 node-5 已人工跳过",
+        "节点 node-6 已人工跳过"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "resume",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 24
+        },
+        {
+          "name": "skip_node:node-2",
+          "ok": true,
+          "ms": 31
+        },
+        {
+          "name": "skip_node:node-3",
+          "ok": true,
+          "ms": 28
+        },
+        {
+          "name": "skip_node:node-4",
+          "ok": true,
+          "ms": 41
+        },
+        {
+          "name": "skip_node:node-5",
+          "ok": true,
+          "ms": 67
+        },
+        {
+          "name": "skip_node:node-6",
+          "ok": true,
+          "ms": 79
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 63
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 40
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 35
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 31
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 27
+        },
+        {
+          "name": "toggle_done",
+          "ok": true,
+          "ms": 25
+        }
+      ]
+    },
+    {
+      "mode": "voting",
+      "ok": true,
+      "task_id": "e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1",
+      "title": "端到端演示-voting-152129",
+      "fusion_strategy_sent": "voting",
+      "fusion_strategy_display": "rrf",
+      "mode_display": "voting",
+      "dag": {
+        "nodes": 6,
+        "edges": 7,
+        "node_names": [
+          "需求分析",
+          "专家意见·甲",
+          "专家意见·乙",
+          "专家意见·丙",
+          "投票裁决",
+          "融合输出"
+        ]
+      },
+      "nodes_total": 6,
+      "node_status": {
+        "completed": 1,
+        "skipped": 5
+      },
+      "execution_status": {
+        "status": "pending",
+        "completed_nodes": 1,
+        "total_nodes": 6,
+        "progress": 0.1666666716337204
+      },
+      "fusion": {
+        "fusion_status": "partial",
+        "fusion_strategy": "rrf",
+        "confidence": 0.75,
+        "key_findings": [
+          "需求分析完成：端到端演示-voting-152129"
+        ],
+        "recommendations": [
+          "第一阶段：核心模块落地",
+          "第二阶段：集成测试与优化",
+          "第三阶段：上线部署与监控"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "running",
+      "logs_tail": [
+        "节点 node-2 已人工跳过",
+        "节点 node-3 已人工跳过",
+        "节点 node-4 已人工跳过",
+        "节点 node-5 已人工跳过",
+        "节点 node-6 已人工跳过"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 29
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 38
+        },
+        {
+          "name": "resume",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "skip_node:node-2",
+          "ok": true,
+          "ms": 17
+        },
+        {
+          "name": "skip_node:node-3",
+          "ok": true,
+          "ms": 29
+        },
+        {
+          "name": "skip_node:node-4",
+          "ok": true,
+          "ms": 39
+        },
+        {
+          "name": "skip_node:node-5",
+          "ok": true,
+          "ms": 45
+        },
+        {
+          "name": "skip_node:node-6",
+          "ok": true,
+          "ms": 42
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 29
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 39
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 58
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 43
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 49
+        },
+        {
+          "name": "toggle_done",
+          "ok": true,
+          "ms": 271
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "total_tasks": 0,
+    "running_tasks": 0,
+    "completed_tasks": 0,
+    "failed_tasks": 0,
+    "total_experts": 0,
+    "active_experts": 0,
+    "avg_completion_minutes": 0.0,
+    "success_rate": 0.0
+  },
+  "latency": [
+    {
+      "endpoint": "GET /api/alliance/stats",
+      "count": 2,
+      "p50_ms": 431,
+      "max_ms": 431
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks",
+      "count": 1,
+      "p50_ms": 24,
+      "max_ms": 24
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/dag",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/execution-status",
+      "count": 1,
+      "p50_ms": 23,
+      "max_ms": 23
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/fusion-result",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/logs",
+      "count": 1,
+      "p50_ms": 28,
+      "max_ms": 28
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/nodes",
+      "count": 18,
+      "p50_ms": 26,
+      "max_ms": 265
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/dag",
+      "count": 1,
+      "p50_ms": 41,
+      "max_ms": 41
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/execution-status",
+      "count": 1,
+      "p50_ms": 35,
+      "max_ms": 35
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/fusion-result",
+      "count": 1,
+      "p50_ms": 111,
+      "max_ms": 111
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/logs",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/nodes",
+      "count": 18,
+      "p50_ms": 36,
+      "max_ms": 200
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3",
+      "count": 1,
+      "p50_ms": 14,
+      "max_ms": 14
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/dag",
+      "count": 1,
+      "p50_ms": 55,
+      "max_ms": 55
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/execution-status",
+      "count": 1,
+      "p50_ms": 30,
+      "max_ms": 30
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/fusion-result",
+      "count": 1,
+      "p50_ms": 36,
+      "max_ms": 36
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/logs",
+      "count": 1,
+      "p50_ms": 30,
+      "max_ms": 30
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/nodes",
+      "count": 18,
+      "p50_ms": 33,
+      "max_ms": 544
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/dag",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/execution-status",
+      "count": 1,
+      "p50_ms": 30,
+      "max_ms": 30
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/fusion-result",
+      "count": 1,
+      "p50_ms": 31,
+      "max_ms": 31
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/logs",
+      "count": 1,
+      "p50_ms": 22,
+      "max_ms": 22
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/nodes",
+      "count": 18,
+      "p50_ms": 58,
+      "max_ms": 123
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e",
+      "count": 1,
+      "p50_ms": 31,
+      "max_ms": 31
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/dag",
+      "count": 1,
+      "p50_ms": 25,
+      "max_ms": 25
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/execution-status",
+      "count": 1,
+      "p50_ms": 40,
+      "max_ms": 40
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/fusion-result",
+      "count": 1,
+      "p50_ms": 35,
+      "max_ms": 35
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/logs",
+      "count": 1,
+      "p50_ms": 25,
+      "max_ms": 25
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/nodes",
+      "count": 18,
+      "p50_ms": 46,
+      "max_ms": 222
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1",
+      "count": 1,
+      "p50_ms": 43,
+      "max_ms": 43
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/dag",
+      "count": 1,
+      "p50_ms": 38,
+      "max_ms": 38
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/execution-status",
+      "count": 1,
+      "p50_ms": 39,
+      "max_ms": 39
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/fusion-result",
+      "count": 1,
+      "p50_ms": 56,
+      "max_ms": 56
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/logs",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/nodes",
+      "count": 18,
+      "p50_ms": 29,
+      "max_ms": 156
+    },
+    {
+      "endpoint": "GET /api/v1/status",
+      "count": 1,
+      "p50_ms": 236,
+      "max_ms": 236
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks",
+      "count": 6,
+      "p50_ms": 28,
+      "max_ms": 97
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/nodes/node-2",
+      "count": 1,
+      "p50_ms": 29,
+      "max_ms": 29
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/nodes/node-3",
+      "count": 1,
+      "p50_ms": 23,
+      "max_ms": 23
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/nodes/node-4",
+      "count": 1,
+      "p50_ms": 32,
+      "max_ms": 32
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/nodes/node-5",
+      "count": 1,
+      "p50_ms": 36,
+      "max_ms": 36
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/qa",
+      "count": 1,
+      "p50_ms": 25,
+      "max_ms": 25
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/resume",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/nodes/node-2",
+      "count": 1,
+      "p50_ms": 20,
+      "max_ms": 20
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/nodes/node-3",
+      "count": 1,
+      "p50_ms": 14,
+      "max_ms": 14
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/nodes/node-4",
+      "count": 1,
+      "p50_ms": 24,
+      "max_ms": 24
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/qa",
+      "count": 1,
+      "p50_ms": 20,
+      "max_ms": 20
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/resume",
+      "count": 1,
+      "p50_ms": 21,
+      "max_ms": 21
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/nodes/node-2",
+      "count": 1,
+      "p50_ms": 25,
+      "max_ms": 25
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/nodes/node-3",
+      "count": 1,
+      "p50_ms": 29,
+      "max_ms": 29
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/nodes/node-4",
+      "count": 1,
+      "p50_ms": 28,
+      "max_ms": 28
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/nodes/node-5",
+      "count": 1,
+      "p50_ms": 33,
+      "max_ms": 33
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/qa",
+      "count": 1,
+      "p50_ms": 19,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/resume",
+      "count": 1,
+      "p50_ms": 25,
+      "max_ms": 25
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/nodes/node-2",
+      "count": 1,
+      "p50_ms": 43,
+      "max_ms": 43
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/nodes/node-3",
+      "count": 1,
+      "p50_ms": 31,
+      "max_ms": 31
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/nodes/node-4",
+      "count": 1,
+      "p50_ms": 52,
+      "max_ms": 52
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/nodes/node-5",
+      "count": 1,
+      "p50_ms": 25,
+      "max_ms": 25
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/nodes/node-6",
+      "count": 1,
+      "p50_ms": 21,
+      "max_ms": 21
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/nodes/node-7",
+      "count": 1,
+      "p50_ms": 19,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/qa",
+      "count": 1,
+      "p50_ms": 37,
+      "max_ms": 37
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/resume",
+      "count": 1,
+      "p50_ms": 20,
+      "max_ms": 20
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/nodes/node-2",
+      "count": 1,
+      "p50_ms": 31,
+      "max_ms": 31
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/nodes/node-3",
+      "count": 1,
+      "p50_ms": 28,
+      "max_ms": 28
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/nodes/node-4",
+      "count": 1,
+      "p50_ms": 41,
+      "max_ms": 41
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/nodes/node-5",
+      "count": 1,
+      "p50_ms": 67,
+      "max_ms": 67
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/nodes/node-6",
+      "count": 1,
+      "p50_ms": 79,
+      "max_ms": 79
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/qa",
+      "count": 1,
+      "p50_ms": 27,
+      "max_ms": 27
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/resume",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/nodes/node-2",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/nodes/node-3",
+      "count": 1,
+      "p50_ms": 29,
+      "max_ms": 29
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/nodes/node-4",
+      "count": 1,
+      "p50_ms": 37,
+      "max_ms": 37
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/nodes/node-5",
+      "count": 1,
+      "p50_ms": 45,
+      "max_ms": 45
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/nodes/node-6",
+      "count": 1,
+      "p50_ms": 42,
+      "max_ms": 42
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/qa",
+      "count": 1,
+      "p50_ms": 49,
+      "max_ms": 49
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/resume",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/445b7581-f4fa-4e0b-9e62-6a69b0740bcf/toggle-done",
+      "count": 1,
+      "p50_ms": 24,
+      "max_ms": 24
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/77d41e85-c11c-4e7f-9b41-282ee1d680d3/toggle-done",
+      "count": 1,
+      "p50_ms": 27,
+      "max_ms": 27
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/8953465a-f686-4f4d-8ace-8c8d06b5cdf3/toggle-done",
+      "count": 1,
+      "p50_ms": 19,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/9c7aca40-bce6-45ea-802d-f7bb07649536/toggle-done",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/d47a519c-2be7-419a-a604-6b895f3f6e5e/toggle-done",
+      "count": 1,
+      "p50_ms": 25,
+      "max_ms": 25
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/e3e76b1e-a80f-4fad-ac57-8f13d72c2ba1/toggle-done",
+      "count": 1,
+      "p50_ms": 271,
+      "max_ms": 271
+    }
+  ],
+  "gate": {
+    "ok": true,
+    "repo": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+    "gates": {
+      "port_registry": {
+        "repo": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+        "passed": true,
+        "exit_code": 0,
+        "error_count": 0,
+        "warn_count": 2,
+        "scanned_ports": 110,
+        "duration_ms": 47878,
+        "returned_issues": 2,
+        "issues": [
+          {
+            "severity": "WARN",
+            "msg": "发现未登记端口 3101（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+            "files": [
+              "docker-compose.alliance.yml"
+            ]
+          },
+          {
+            "severity": "WARN",
+            "msg": "发现未登记端口 3400（3 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+            "files": [
+              "docker-compose.alliance.yml",
+              "docs/expert-alliance/DEPLOYMENT-DESIGN.md",
+              "platform/domains/alliance/svc/mox-alliance-registry-svc/src/app_state.rs"
+            ]
+          }
+        ],
+        "advice": "端口校验通过，可放心提交。"
+      },
+      "doc_links": {
+        "passed": true,
+        "exit_code": 0,
+        "scanned_files": 367,
+        "checked_refs": 2170,
+        "broken_count": 0,
+        "warning_count": 68,
+        "duration_ms": 2819,
+        "top_broken_files": [],
+        "broken": [],
+        "stdout_summary": "[check-doc-links] 扫描文件 367 个，判定引用 2170 条",
+        "advice": "文档链接校验通过。"
+      }
+    },
+    "failures": [],
+    "summary": "治理体检通过：端口无漂移、文档无断链，可以提交/发布。",
+    "skip": false
+  }
+}

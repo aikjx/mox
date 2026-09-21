@@ -240,27 +240,19 @@ fn secs_opt(v: &Value) -> Value {
 
 /// 协作模式：proto serde 名 → 网关展示名（对齐本地 mode_str）
 fn norm_mode(s: &str) -> Value {
-    match s {
-        "sequential" => "single_expert",
-        "parallel" => "expert_alliance",
-        "iterative" => "human_in_loop",
-        "hierarchical" => "autonomous",
-        other => other,
+    // 委托协议层唯一真源：先解析为枚举再输出展示名；未识别则原样透传（保持历史行为）
+    match mox_alliance_common_proto::mode_from_any(s) {
+        Some(m) => mox_alliance_common_proto::mode_display(m).into(),
+        None => s.into(),
     }
-    .into()
 }
 
 /// 融合策略：proto serde 名 → 网关展示名（对齐本地 fusion_strategy_str）
 fn norm_fusion(s: &str) -> Value {
-    match s {
-        "best_of" => "first_wins",
-        "weighted" => "weighted_voting",
-        "voting" => "rrf",
-        "confidence_weighted" => "llm_judge",
-        "concatenation" => "consensus",
-        other => other,
+    match mox_alliance_common_proto::fusion_from_any(s) {
+        Some(f) => mox_alliance_common_proto::fusion_display(f).into(),
+        None => s.into(),
     }
-    .into()
 }
 
 /// 从融合结果 body 中取出 `fusion_strategy` 并归一化为网关展示名。

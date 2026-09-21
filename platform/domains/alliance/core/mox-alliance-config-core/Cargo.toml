@@ -7,7 +7,7 @@ authors.workspace = true
 description = "专家联盟 · 模块化配置引擎（每模块独立LLM+Graph配置 + 热更新 + 版本管理）"
 
 [dependencies]
-mox-alliance-common-proto = { path = "../../proto/mox-alliance-common-proto" }
+mox-alliance-common-proto = { workspace = true }
 mox-platform-foundation = { workspace = true }
 mox-error = { workspace = true }
 serde = { workspace = true }
