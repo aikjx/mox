@@ -3,6 +3,12 @@
 
 //! 端到端集成测试：专家匹配 → 计划生成 → DAG 执行 → 结果验证
 
+// mock_executor 已从生产库中移除（仅 `cfg(test)` / `mock` feature 编译）。
+// 集成测试 crate 链接的是无 test cfg 的库产物，无法直接引用该模块，
+// 故经 #[path] 直接复用源文件（单一事实来源，无代码重复）。
+#[path = "../src/mock_executor.rs"]
+mod mock_executor;
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -10,9 +16,9 @@ use mox_alliance_common_proto::{
     AllianceMode, AllianceResult, Expert, FusionStrategy, NodeStatus, TaskPriority,
     TaskStatus,
 };
-use mox_alliance_executor_core::{DagEngineImpl, mock_executor::{MockExecutorConfig, MockNodeExecutor}};
+use mox_alliance_executor_core::DagEngineImpl;
 use mox_alliance_executor_proto::{DagEngine, ExecutionOptions, NodeExecutor};
-use mox_alliance_scheduler_core::{RuleBasedExpertMatcher, SimplePlanGenerator, TaskSchedulerImpl};
+use mox_alliance_scheduler_core::{ModularWeightMatcher, SimplePlanGenerator, TaskSchedulerImpl};
 use mox_alliance_scheduler_proto::{
     ExpertMatchQuery, ExpertMatcher, PlanGenerationRequest, TaskScheduler, TaskSubmitRequest,
 };
@@ -48,7 +54,7 @@ fn create_test_experts() -> Vec<Expert> {
 /// 测试1：任务提交与查询
 #[tokio::test]
 async fn test_e2e_task_submission() -> AllianceResult<()> {
-    let matcher = Arc::new(RuleBasedExpertMatcher::new());
+    let matcher = Arc::new(ModularWeightMatcher::new());
     let (dispatch_tx, _dispatch_rx) = mpsc::unbounded_channel();
     let config = mox_alliance_scheduler_proto::types::SchedulerConfig::default();
     let scheduler = Arc::new(TaskSchedulerImpl::new(config, matcher.clone(), dispatch_tx));
@@ -81,7 +87,7 @@ async fn test_e2e_task_submission() -> AllianceResult<()> {
 /// 测试2：专家匹配
 #[tokio::test]
 async fn test_e2e_expert_matching() -> AllianceResult<()> {
-    let matcher = RuleBasedExpertMatcher::new();
+    let matcher = ModularWeightMatcher::new();
     matcher.register_experts(create_test_experts());
 
     let result = matcher
@@ -106,7 +112,7 @@ async fn test_e2e_expert_matching() -> AllianceResult<()> {
 /// 测试3：计划生成
 #[tokio::test]
 async fn test_e2e_plan_generation() -> AllianceResult<()> {
-    let matcher = RuleBasedExpertMatcher::new();
+    let matcher = ModularWeightMatcher::new();
     matcher.register_experts(create_test_experts());
     let planner = SimplePlanGenerator::new();
 
@@ -143,16 +149,16 @@ async fn test_e2e_plan_generation() -> AllianceResult<()> {
 /// 测试4：DAG 执行引擎（2节点串行）
 #[tokio::test]
 async fn test_e2e_dag_execution_sequential() -> AllianceResult<()> {
-    let mock_config = mox_alliance_executor_core::mock_executor::MockExecutorConfig {
+    let mock_config = mock_executor::MockExecutorConfig {
         delay_ms: 10,
         success_rate: 1.0,
         generate_output: true,
     };
-    let node_executor: Arc<dyn NodeExecutor> = Arc::new(mox_alliance_executor_core::mock_executor::MockNodeExecutor::new(mock_config));
+    let node_executor: Arc<dyn NodeExecutor> = Arc::new(mock_executor::MockNodeExecutor::new(mock_config));
     let exec_config = mox_alliance_executor_proto::types::ExecutorConfig::default();
     let engine = DagEngineImpl::spawn(exec_config, node_executor);
 
-    let matcher = RuleBasedExpertMatcher::new();
+    let matcher = ModularWeightMatcher::new();
     matcher.register_experts(create_test_experts());
     let planner = SimplePlanGenerator::new();
     let task_id = Uuid::new_v4();
@@ -235,7 +241,7 @@ async fn test_e2e_dag_execution_sequential() -> AllianceResult<()> {
 /// 测试5：完整链路（匹配 → 计划 → 执行 → 验证）
 #[tokio::test]
 async fn test_e2e_full_pipeline() -> AllianceResult<()> {
-    let matcher = Arc::new(RuleBasedExpertMatcher::new());
+    let matcher = Arc::new(ModularWeightMatcher::new());
     matcher.register_experts(create_test_experts());
     let planner = Arc::new(SimplePlanGenerator::new());
     let (dispatch_tx, _dispatch_rx) = mpsc::unbounded_channel();
@@ -246,12 +252,12 @@ async fn test_e2e_full_pipeline() -> AllianceResult<()> {
         dispatch_tx,
     ));
 
-    let mock_config = mox_alliance_executor_core::mock_executor::MockExecutorConfig {
+    let mock_config = mock_executor::MockExecutorConfig {
         delay_ms: 10,
         success_rate: 1.0,
         generate_output: true,
     };
-    let node_executor: Arc<dyn NodeExecutor> = Arc::new(mox_alliance_executor_core::mock_executor::MockNodeExecutor::new(mock_config));
+    let node_executor: Arc<dyn NodeExecutor> = Arc::new(mock_executor::MockNodeExecutor::new(mock_config));
     let exec_config = mox_alliance_executor_proto::types::ExecutorConfig::default();
     let engine = DagEngineImpl::spawn(exec_config, node_executor);
 

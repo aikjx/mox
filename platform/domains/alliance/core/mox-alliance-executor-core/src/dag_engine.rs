@@ -36,7 +36,7 @@ use mox_alliance_executor_proto::types::ExecutorConfig;
 
 use crate::condition::{CompareOp, Condition, Operand, Operator};
 use crate::fusion::{FusionEngine, FusionInput, FusionItem};
-use crate::state_sink::ExecutionStateSink;
+use crate::state_sink::{ExecutionStateSink, ExecutionView, synthesize_nodes};
 
 /// 任务执行状态（内部完整状态）
 pub(crate) struct TaskExecutionState {
@@ -834,38 +834,52 @@ impl DagEngine for DagEngineImpl {
     }
 
     async fn get_execution_status(&self, task_id: Uuid, tenant_id: Uuid) -> AllianceResult<ExecutionStatus> {
-        let states = self.states.read();
-        let state = states
-            .get(&task_id)
-            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
-
-        if state.task.tenant_id != tenant_id {
-            return Err(AllianceError::new(
-                AllianceErrorCode::TenantMismatch,
-                "Task does not belong to this tenant",
-            ));
+        {
+            let states = self.states.read();
+            if let Some(state) = states.get(&task_id) {
+                if state.task.tenant_id != tenant_id {
+                    return Err(AllianceError::new(
+                        AllianceErrorCode::TenantMismatch,
+                        "Task does not belong to this tenant",
+                    ));
+                }
+                return Ok(Self::compute_execution_status(state));
+            }
         }
-
-        Ok(Self::compute_execution_status(state))
+        // 内存 miss：存储层回读（多实例——任务可能在另一实例执行，或本进程重启前完成）
+        if let Some(sink) = self.state_sink.as_ref() {
+            if let Some(view) = sink.read_back(task_id)? {
+                view_tenant_check(&view, tenant_id)?;
+                return Ok(status_from_view(&view));
+            }
+        }
+        Err(AllianceError::not_found("Task", &task_id.to_string()))
     }
 
     async fn get_nodes(&self, task_id: Uuid, tenant_id: Uuid) -> AllianceResult<Vec<Node>> {
-        let states = self.states.read();
-        let state = states
-            .get(&task_id)
-            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
-
-        if state.task.tenant_id != tenant_id {
-            return Err(AllianceError::new(
-                AllianceErrorCode::TenantMismatch,
-                "Task does not belong to this tenant",
-            ));
+        {
+            let states = self.states.read();
+            if let Some(state) = states.get(&task_id) {
+                if state.task.tenant_id != tenant_id {
+                    return Err(AllianceError::new(
+                        AllianceErrorCode::TenantMismatch,
+                        "Task does not belong to this tenant",
+                    ));
+                }
+                let mut nodes: Vec<Node> = state.nodes.values().cloned().collect();
+                nodes.sort_by(|a, b| a.node_id.cmp(&b.node_id));
+                return Ok(nodes);
+            }
         }
-
-        let mut nodes: Vec<Node> = state.nodes.values().cloned().collect();
-        nodes.sort_by(|a, b| a.node_id.cmp(&b.node_id));
-
-        Ok(nodes)
+        if let Some(sink) = self.state_sink.as_ref() {
+            if let Some(view) = sink.read_back(task_id)? {
+                view_tenant_check(&view, tenant_id)?;
+                let mut nodes = nodes_from_view(&view);
+                nodes.sort_by(|a, b| a.node_id.cmp(&b.node_id));
+                return Ok(nodes);
+            }
+        }
+        Err(AllianceError::not_found("Task", &task_id.to_string()))
     }
 
     async fn get_node(
@@ -874,23 +888,32 @@ impl DagEngine for DagEngineImpl {
         node_id: &str,
         tenant_id: Uuid,
     ) -> AllianceResult<Node> {
-        let states = self.states.read();
-        let state = states
-            .get(&task_id)
-            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
-
-        if state.task.tenant_id != tenant_id {
-            return Err(AllianceError::new(
-                AllianceErrorCode::TenantMismatch,
-                "Task does not belong to this tenant",
-            ));
+        {
+            let states = self.states.read();
+            if let Some(state) = states.get(&task_id) {
+                if state.task.tenant_id != tenant_id {
+                    return Err(AllianceError::new(
+                        AllianceErrorCode::TenantMismatch,
+                        "Task does not belong to this tenant",
+                    ));
+                }
+                return state
+                    .nodes
+                    .get(node_id)
+                    .cloned()
+                    .ok_or_else(|| AllianceError::not_found("Node", node_id));
+            }
         }
-
-        state
-            .nodes
-            .get(node_id)
-            .cloned()
-            .ok_or_else(|| AllianceError::not_found("Node", node_id))
+        if let Some(sink) = self.state_sink.as_ref() {
+            if let Some(view) = sink.read_back(task_id)? {
+                view_tenant_check(&view, tenant_id)?;
+                return nodes_from_view(&view)
+                    .into_iter()
+                    .find(|n| n.node_id == node_id)
+                    .ok_or_else(|| AllianceError::not_found("Node", node_id));
+            }
+        }
+        Err(AllianceError::not_found("Task", &task_id.to_string()))
     }
 
     async fn skip_node(
@@ -927,22 +950,35 @@ impl DagEngine for DagEngineImpl {
     }
 
     /// 获取任务的融合结果（DAG 尾部融合产出；未完成/无结果返回 Ok(None)）
+    ///
+    /// 诚实边界：融合输出目前仅存在于执行内存，**未持久化**——重启后或跨实例查询
+    /// 已完成任务时返回 Ok(None)（任务存在性仍可经存储层回读确认）。
     async fn get_fusion_output(
         &self,
         task_id: Uuid,
         tenant_id: Uuid,
     ) -> AllianceResult<Option<FusionOutput>> {
-        let states = self.states.read();
-        let state = states
-            .get(&task_id)
-            .ok_or_else(|| AllianceError::not_found("Task", &task_id.to_string()))?;
-        if state.task.tenant_id != tenant_id {
-            return Err(AllianceError::new(
-                AllianceErrorCode::TenantMismatch,
-                "Task does not belong to this tenant",
-            ));
+        {
+            let states = self.states.read();
+            if let Some(state) = states.get(&task_id) {
+                if state.task.tenant_id != tenant_id {
+                    return Err(AllianceError::new(
+                        AllianceErrorCode::TenantMismatch,
+                        "Task does not belong to this tenant",
+                    ));
+                }
+                return Ok(state.fusion_output.clone());
+            }
         }
-        Ok(state.fusion_output.clone())
+        // 内存 miss：能从存储层确认任务存在 → Ok(None)（融合输出未持久化）；
+        // 存储层也没有 → NotFound
+        if let Some(sink) = self.state_sink.as_ref() {
+            if let Some(view) = sink.read_back(task_id)? {
+                view_tenant_check(&view, tenant_id)?;
+                return Ok(None);
+            }
+        }
+        Err(AllianceError::not_found("Task", &task_id.to_string()))
     }
 
     fn config(&self) -> &ExecutorConfig {
@@ -952,6 +988,72 @@ impl DagEngine for DagEngineImpl {
 
 
 
+
+/// 由回读视图合成执行状态（节点计数与进度，与内存态同口径）
+fn status_from_view(view: &ExecutionView) -> ExecutionStatus {
+    let rows: HashMap<&str, &str> = view
+        .nodes
+        .iter()
+        .map(|(id, s, _)| (id.as_str(), s.as_str()))
+        .collect();
+    let statuses: Vec<&str> = match &view.plan {
+        Some(plan) => plan
+            .nodes
+            .iter()
+            .map(|n| rows.get(n.node_id.as_str()).copied().unwrap_or("pending"))
+            .collect(),
+        None => view.nodes.iter().map(|(_, s, _)| s.as_str()).collect(),
+    };
+    let (mut completed, mut running, mut failed, mut pending, mut skipped, mut cancelled) =
+        (0usize, 0usize, 0usize, 0usize, 0usize, 0usize);
+    for s in &statuses {
+        match *s {
+            "completed" => completed += 1,
+            "running" => running += 1,
+            "failed" => failed += 1,
+            "skipped" => skipped += 1,
+            "cancelled" => cancelled += 1,
+            _ => pending += 1,
+        }
+    }
+    let total = statuses.len();
+    ExecutionStatus {
+        task_id: view.task.task_id,
+        total_nodes: total,
+        completed_nodes: completed,
+        running_nodes: running,
+        failed_nodes: failed,
+        pending_nodes: pending,
+        skipped_nodes: skipped,
+        cancelled_nodes: cancelled,
+        progress: if total > 0 {
+            completed as f32 / total as f32
+        } else {
+            0.0
+        },
+        started_at: view.task.started_at,
+        estimated_remaining_ms: None,
+    }
+}
+
+/// 由回读视图合成节点集合（无计划 → 空集，诚实降级）
+fn nodes_from_view(view: &ExecutionView) -> Vec<Node> {
+    match &view.plan {
+        Some(plan) => synthesize_nodes(plan, &view.nodes),
+        None => Vec::new(),
+    }
+}
+
+/// 回读视图的租户校验
+fn view_tenant_check(view: &ExecutionView, tenant_id: Uuid) -> AllianceResult<()> {
+    if view.task.tenant_id != tenant_id {
+        return Err(AllianceError::new(
+            AllianceErrorCode::TenantMismatch,
+            "Task does not belong to this tenant",
+        ));
+    }
+    Ok(())
+}
 
 /// 节点状态 → 存储层 snake_case 字符串（与 TaskStatus serde 口径一致，供恢复解析对齐）
 fn node_status_str(status: NodeStatus) -> &'static str {

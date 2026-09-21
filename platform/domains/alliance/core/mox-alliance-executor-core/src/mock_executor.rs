@@ -54,6 +54,8 @@ impl MockNodeExecutor {
         }
     }
 
+    /// 已执行次数统计（测试断言用；当前测试未引用，保留以备扩展）
+    #[allow(dead_code)]
     pub fn executed_count(&self) -> u64 {
         self.executed_count.load(Ordering::SeqCst)
     }

@@ -18,7 +18,7 @@
 //! 持久化失败**不阻断执行**（引擎照常推进内存态），仅由调用方记录告警——
 //! 可用性优先于持久化完整性；对账由存储层恢复标记（running→interrupted）兜底。
 
-use mox_alliance_common_proto::{AllianceResult, CollaborationPlan, Task};
+use mox_alliance_common_proto::{AllianceResult, CollaborationPlan, Node, NodeStatus, Task};
 use uuid::Uuid;
 
 /// 恢复期可重建的任务（由适配器从存储层读出）
@@ -47,6 +47,15 @@ pub trait ExecutionStateSink: Send + Sync {
     /// - 文件底座无 plan / 节点表 → 返回空列表（升级 sqlite 即得完整恢复能力）。
     fn restore_pending(&self) -> AllianceResult<Vec<RestorableTask>>;
 
+    /// 引擎内存 miss 时的降级回读（**多实例水平扩展前提**）。
+    ///
+    /// 任务可能正由另一实例执行或已在本实例重启前完成——状态查询不能绑定单进程内存。
+    /// 返回 `None` = 存储层无此任务，或底座不具备回读能力（file，默认实现）。
+    fn read_back(&self, task_id: Uuid) -> AllianceResult<Option<ExecutionView>> {
+        let _ = task_id;
+        Ok(None)
+    }
+
     /// 持久化单个 DAG 节点行（增量 upsert：status / result）
     ///
     /// `status` 使用与 `TaskStatus` serde 一致的 snake_case 小写
@@ -59,4 +68,45 @@ pub trait ExecutionStateSink: Send + Sync {
         status: &str,
         result: Option<&serde_json::Value>,
     ) -> AllianceResult<()>;
+}
+
+/// 引擎内存 miss 时的降级回读视图
+pub struct ExecutionView {
+    /// 任务行（存储层权威状态）
+    pub task: Task,
+    /// 协作计划（重建节点集合与依赖；可能缺失——无计划则无法还原节点明细）
+    pub plan: Option<CollaborationPlan>,
+    /// 节点行（node_id, status, result）
+    pub nodes: Vec<(String, String, Option<serde_json::Value>)>,
+}
+
+/// 存储层状态字符串 → NodeStatus（与引擎落盘口径一致；interrupted 视作可重认领的 Pending）
+pub fn node_status_from_str(s: &str) -> NodeStatus {
+    match s {
+        "running" => NodeStatus::Running,
+        "completed" => NodeStatus::Completed,
+        "failed" => NodeStatus::Failed,
+        "skipped" => NodeStatus::Skipped,
+        "cancelled" => NodeStatus::Cancelled,
+        _ => NodeStatus::Pending,
+    }
+}
+
+/// 由持久化计划 + 节点行合成节点集合（回读视图 → 引擎可计算的状态）
+///
+/// 节点骨架来自计划（DAG 权威），状态以节点行为准；无行的节点视为 Pending。
+pub fn synthesize_nodes(
+    plan: &CollaborationPlan,
+    rows: &[(String, String, Option<serde_json::Value>)],
+) -> Vec<Node> {
+    plan.nodes
+        .iter()
+        .map(|n| {
+            let mut node = n.clone();
+            if let Some((_, status, _)) = rows.iter().find(|(id, _, _)| id == &node.node_id) {
+                node.status = node_status_from_str(status);
+            }
+            node
+        })
+        .collect()
 }

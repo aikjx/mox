@@ -27,6 +27,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
+// mock_executor 已从生产库中移除（仅 `cfg(test)` / `mock` feature 编译），
+// 集成测试经 #[path] 直接复用源文件（单一事实来源）。
+#[path = "../src/mock_executor.rs"]
+mod mock_executor;
+
 // ─── 统计辅助函数 ───────────────────────────────────────────────────────────
 
 fn percentile(sorted: &[f64], p: f64) -> f64 {
@@ -331,19 +336,19 @@ struct E2EResult {
 }
 
 async fn run_e2e_bench(node_count: usize, iterations: usize) -> E2EResult {
-    use mox_alliance_executor_core::{DagEngineImpl, mock_executor::{MockExecutorConfig, MockNodeExecutor}};
+    use mox_alliance_executor_core::DagEngineImpl;
     use mox_alliance_executor_proto::{ExecutionOptions, ExecutorConfig};
 
     let executor_config = ExecutorConfig {
         poll_interval_ms: 1, // 加速测试
         ..Default::default()
     };
-    let mock_config = mox_alliance_executor_core::mock_executor::MockExecutorConfig {
+    let mock_config = mock_executor::MockExecutorConfig {
         delay_ms: 1, // 极小延迟加速测试
         success_rate: 1.0,
         generate_output: true,
     };
-    let executor = Arc::new(mox_alliance_executor_core::mock_executor::MockNodeExecutor::new(mock_config));
+    let executor = Arc::new(mock_executor::MockNodeExecutor::new(mock_config));
     let engine = DagEngineImpl::spawn(executor_config, executor);
 
     let tenant_id = Uuid::new_v4();

@@ -31,6 +31,9 @@ mox-alliance-scheduler-core = { workspace = true }
 
 [features]
 default = []
+# 导出 mock_executor 模块（MockNodeExecutor / MockExecutorConfig），
+# 仅供外部 crate 的测试代码使用；生产路径不开启。
+mock = []
 
 [lints]
 workspace = true
