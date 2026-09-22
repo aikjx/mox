@@ -1,7 +1,7 @@
-# MOX · AI 驱动mox 模块化系统架构平台 — 企业级最伟大产品设计（mox 模块化系统架构分析 v3.0）
+# MOX · AI 驱动MOX平台 — 企业级最伟大产品设计（MOX分析 v3.0）
 
 > **版本**：3.0-ai-powered | **日期**：2026-08-28 | **状态**：权威设计建议稿
-> **定位**：对 `docs/architecture/architecture.md`（v2.0）的**mox 模块化系统架构升级**，落位「一切由 AI 驱动」。
+> **定位**：对 `docs/architecture/architecture.md`（v2.0）的**MOX升级**，落位「一切由 AI 驱动」。
 > **本文档来源**：整合产品顶层设计讨论 + 开源生态调研 + 现有平台代码/文档事实（`architecture.md` v2.0、`app-store-architecture.md` v1.0、`Cargo.toml`）。
 
 ---
@@ -18,13 +18,13 @@ MOX 已具备企业级低代码底座（DSQL / KG / RBAC+ 字段权限 / AI 助�
 | 功能入口 | 菜单 / 路由 / 页面跳转 | **四向弹框浮层**（侧/顶/底/中），AI 按需弹出 |
 | 用户心智 | 用户找功能（人找功能） | AI 送功能（功能找人） |
 | 使用模式 | 点按钮 → 填表单 → 看结果 | 说需求 → AI 调度 Agent → 执行 → 对话式迭代 |
-| 复杂流程 | 用户自己拆步骤、点多次 | AI 自动编排、Agent mox 模块化系统架构封装、一键完成 |
+| 复杂流程 | 用户自己拆步骤、点多次 | AI 自动编排、Agent MOX封装、一键完成 |
 | 产品闭环 | 功能 → 使用 | 对话 → Agent → 执行 → 结果 → 沉淀 → 上架（数据飞轮） |
 
 **三大核心结论**：
 1. **架构布局需优化**：从「三前端三首页」收敛为「一对话中心 + 弹框体系」，前端模块按弹框归属重构。
 2. **业务处理流程需优化**：所有业务流程封装为 Agent（DSL 即商品），用户只出思路，AI 多跑腿；关键节点人机协同。
-3. **技术底座保持 Rust mox 模块化系统架构自研**：现有 workspace 已对齐，新增 `对话编排 / Agent 运行时 / 意图调度` 三个核心域，不引入 Python 运行时。
+3. **技术底座保持 Rust MOX自研**：现有 workspace 已对齐，新增 `对话编排 / Agent 运行时 / 意图调度` 三个核心域，不引入 Python 运行时。
 
 ---
 
@@ -63,7 +63,7 @@ MOX 已具备企业级低代码底座（DSQL / KG / RBAC+ 字段权限 / AI 助�
 | 字段级权限 RBAC+ | §六：角色→菜单→操作→字段四级，可见/可写/脱敏 | 🟢 生产就绪 |
 | AI 智能助手 | §七：NL→SQL、SQL 优化、业务流程生成、双引擎（规则+LLM） | 🟡 已有雏形，需升级为「对话中心大脑」 |
 | 应用商店 | `app-store-architecture.md`：MXAP 包、三发布模式、子系统运行时、签名 | 🟢 生产就绪 |
-| Rust 底座 | `Cargo.toml`：8 大 domain（data/ai/kg/cloud/platform/voice/flow/market），六层结构 | 🟢 mox 模块化系统架构自研 |
+| Rust 底座 | `Cargo.toml`：8 大 domain（data/ai/kg/cloud/platform/voice/flow/market），六层结构 | 🟢 MOX自研 |
 
 ### 2.2 差距分析（距"最伟大产品"）
 
@@ -196,7 +196,7 @@ platform/domains/
 开发者：编排 DSL（mox-flow-operator-core）
    │
    ▼
-封装：输入/输出 Schema + 权限 + 错误处理 + 版本 + 元数据（mox 模块化系统架构封装）
+封装：输入/输出 Schema + 权限 + 错误处理 + 版本 + 元数据（MOX封装）
    │
    ▼
 测试/沙箱 → 灰度 → 审核 → 发布上架（mox-market，MXAP/Agent 包）
@@ -220,7 +220,7 @@ platform/domains/
 
 ---
 
-## 5 · mox 模块化系统架构最优模式
+## 5 · MOX最优模式
 
 ### 5.1 三层调度模型
 
@@ -289,7 +289,7 @@ L3 执行层（mox-flow-operator-core） DSL→节点执行（并行/分支/循�
 | `docs/architecture/architecture.md`（v2.0） | 升级 v3.0：新增「AI 对话中心 + 弹框体系」章节，AI 助手升级为意图中枢 |
 | `docs/architecture/app-store-architecture.md`（v1.0） | 扩展：Agent 商品化（DSL 即商品）与 MXAP 打通，AI 代安装流程 |
 | `docs/architecture/operations-manual.md`（v2.0） | 补充：对话中心操作指引、弹框导航说明、AI 主动推送管理 |
-| `docs/对话开发系统-mox 模块化系统架构分析与业务流程图.md` | 保持（开发态专用），本文档为产品/架构态权威 |
+| `docs/对话开发系统-MOX分析与业务流程图.md` | 保持（开发态专用），本文档为产品/架构态权威 |
 
 ## 9 · P1 落地状态（已实现 · 2026-08-29 验证）
 
@@ -317,4 +317,4 @@ L3 执行层（mox-flow-operator-core） DSL→节点执行（并行/分支/循�
 
 ---
 
-*MOX · AI 驱动mox 模块化系统架构平台 — 用户出思路，AI 多跑腿。*
+*MOX · AI 驱动MOX平台 — 用户出思路，AI 多跑腿。*
