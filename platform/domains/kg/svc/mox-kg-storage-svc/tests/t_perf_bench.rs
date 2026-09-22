@@ -748,6 +748,8 @@ fn bench_graph_algorithm_pagerank() {
 
     for _iter in 0..iterations {
         let mut new_ranks = vec![(1.0 - damping) / NODES as f64; NODES];
+        // 悬挂节点（出度 0）的 rank 质量按标准 PageRank 均匀重分配，否则总和单调流失
+        let mut dangling: f64 = 0.0;
         for ni in graph.node_indices() {
             let idx = ni.index();
             if out_degree[idx] > 0 {
@@ -755,7 +757,13 @@ fn bench_graph_algorithm_pagerank() {
                 for target in graph.neighbors_directed(ni, petgraph::Direction::Outgoing) {
                     new_ranks[target.index()] += contribution;
                 }
+            } else {
+                dangling += ranks[idx];
             }
+        }
+        let share = damping * dangling / NODES as f64;
+        for r in new_ranks.iter_mut() {
+            *r += share;
         }
         ranks = new_ranks;
     }

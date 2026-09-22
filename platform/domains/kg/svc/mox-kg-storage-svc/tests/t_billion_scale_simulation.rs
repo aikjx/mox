@@ -979,23 +979,10 @@ fn simulation_point_lookup_scalability() {
 }
 
 fn read_vertex_props(srv: &StorageServer, vid: &str) -> BTreeMap<String, PropValue> {
-    let sc = srv.raft_nodes.shard_count();
-    let shard = graph_codec::vid_hash_shard(vid, sc);
-    let prefix = shard.to_le_bytes();
-    let rows = srv
-        .rocks_db_handles
-        .seek_prefix(&mox_kg_storage_svc::kv_engine::cf_name_vid_meta(shard), &prefix)
-        .unwrap_or_default();
-    for (k, v) in rows {
-        if let Ok((_, _, vv)) = graph_codec::decode_vertex_key(&k) {
-            if vv == vid {
-                if let Ok((_t, p)) = graph_codec::decode_vertex_value(&v) {
-                    return p;
-                }
-            }
-        }
-    }
-    BTreeMap::new()
+    // 走生产读路径（vid 二级索引，O(log n)），而非测试内私有扫描副本
+    srv.read_vertex(vid)
+        .map(|(_shard, _tag, props)| props)
+        .unwrap_or_default()
 }
 
 /// 测试场景：遍历查询性能随扇出的变化

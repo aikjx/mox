@@ -166,24 +166,26 @@ impl StorageServer {
         o
     }
 
-    /// 内部：读取某 vid 的 (shard, tag, props)。允许多 tag，这里返回第一个匹配。
-    fn read_vertex(&self, vid: &str) -> Option<(u16, String, BTreeMap<String, PropValue>)> {
+    /// 读取某 vid 的 (shard, tag, props)。允许多 tag，这里返回 tag_hash 最小者。
+    /// 经 vid 点查二级索引 O(log n) 定位，不再整分片前缀扫描。
+    pub fn read_vertex(&self, vid: &str) -> Option<(u16, String, BTreeMap<String, PropValue>)> {
         let sc = self.raft_nodes.shard_count();
         let shard = graph_codec::vid_hash_shard(vid, sc);
-        let prefix = shard.to_le_bytes();
-        let Ok(rows) = self
+        let Ok(key) = graph_codec::encode_vid_idx_key(shard, vid) else {
+            return None;
+        };
+        let Ok(Some(raw)) = self
             .rocks_db_handles
-            .seek_prefix(&kv_engine::cf_name_vid_meta(shard), &prefix)
+            .get_cf(&kv_engine::cf_name_vid_idx(shard), &key)
         else {
             return None;
         };
-        for (k, v) in rows {
-            if let Ok((_, _, vv)) = graph_codec::decode_vertex_key(&k) {
-                if vv == vid {
-                    if let Ok((tag, props)) = graph_codec::decode_vertex_value(&v) {
-                        return Some((shard, tag, props));
-                    }
-                }
+        let Ok(entries) = graph_codec::decode_vid_idx_value(&raw) else {
+            return None;
+        };
+        for (_th, val) in entries {
+            if let Ok((tag, props)) = graph_codec::decode_vertex_value(&val) {
+                return Some((shard, tag, props));
             }
         }
         None

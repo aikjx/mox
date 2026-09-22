@@ -50,6 +50,10 @@ pub fn create_router(state: AppState) -> Router {
             "/api/registry/experts/:id/heartbeat",
             post(heartbeat_expert),
         )
+        // 一键传输加密（MOX_API_CRYPTO=sm4）：统一信封 data gzip+SM4-GCM，详见 mox-api-crypto
+        .layer(axum::middleware::from_fn(
+            mox_api_crypto::middleware::crypto_middleware,
+        ))
         .with_state(state)
 }
 

@@ -48,6 +48,7 @@ CANONICAL: dict[int, tuple[str, str]] = {
     3100: ("ALLIANCE", "scheduler-svc（调度编排）"),
     3101: ("ALLIANCE", "scheduler-svc 宿主机映射（docker-compose.alliance.yml 3101:3100）"),
     3400: ("ALLIANCE", "registry-svc（专家注册中心，HTTP，platform_config.json 登记）"),
+    3210: ("ALLIANCE", "codeengine-svc（全自研 AI 代码引擎，开发专家联盟处理模式，HTTP）"),
     3200: ("ALLIANCE", "executor-svc（执行引擎）"),
     3300: ("ALLIANCE", "AI 专家服务桥接（scheduler 内部基址）"),
 33080: ("ALLIANCE", "联盟本地网关（start-alliance-local.ps1 默认，127.0.0.1）"),
@@ -72,6 +73,7 @@ CANONICAL: dict[int, tuple[str, str]] = {
     3412: ("ANCILLARY", "mox-cloud-server（可选独立部署）"),
     3413: ("ANCILLARY", "mox-iam-server（可选独立部署）"),
     3414: ("ANCILLARY", "mox-kb-server（可选独立部署）"),
+    30400: ("ANCILLARY", "browser-rpa 浏览器RPA容器（录制/AI自愈/运维/归一化，FastAPI+Playwright，RPA_PORT 覆盖）"),
     # ---- LEGACY（遗留模块，自洽） ----
     8600: ("LEGACY", "legacy Python mox-server（docker/systemd/nginx）"),
     8601: ("LEGACY", "legacy mox-store（应用商店）"),
@@ -111,6 +113,7 @@ CANONICAL: dict[int, tuple[str, str]] = {
     3199: ("TEST", "alliance Nacos 配置中心 e2e 本地引导端口（tools/alliance_nacos_e2e.py 专用）"),
     12345: ("TEST", "glacier-adapter 测试 endpoint"),
     13130: ("TEST", "xiaobai_voice 语音代理 WS 测试"),
+    30499: ("TEST", "browser-rpa API 集成测试端口（projects/browser-rpa/tests/test_core.py）"),
     19601: ("TEST", "kg-meta-core 集群测试"), 19602: ("TEST", "kg-meta-core 集群测试"),
     19603: ("TEST", "kg-meta-core 集群测试"),
     19876: ("TEST", "mox-dualrpc 测试"),

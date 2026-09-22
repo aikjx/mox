@@ -152,17 +152,27 @@ impl RemoteAllianceClient {
                 }
             }
         }
+        // 一键传输加密（与服务端同源开关 MOX_API_CRYPTO）：带协商头 + 密文上行 + 透明解密响应
+        for (h, v) in mox_api_crypto::client::outbound_headers() {
+            req = req.header(h, v);
+        }
         if let Some(b) = body {
-            req = req.json(b);
+            match mox_api_crypto::client::seal_request(b) {
+                Some(sealed) => req = req.json(&sealed),
+                None => req = req.json(b),
+            }
         }
         let resp = match req.send().await {
             Ok(r) => r,
             Err(e) => return Some(Err(format!("{} 请求失败: {}", url, e))),
         };
         let status = resp.status().as_u16();
-        match resp.json::<Value>().await {
-            Ok(v) => Some(Ok((status, v))),
-            Err(e) => Some(Err(format!("{} 响应解析失败: {}", url, e))),
+        match resp.bytes().await {
+            Ok(bytes) => match mox_api_crypto::client::open_response(&bytes) {
+                Some(v) => Some(Ok((status, v))),
+                None => Some(Err(format!("{} 响应解析/解密失败", url))),
+            },
+            Err(e) => Some(Err(format!("{} 响应读取失败: {}", url, e))),
         }
     }
 

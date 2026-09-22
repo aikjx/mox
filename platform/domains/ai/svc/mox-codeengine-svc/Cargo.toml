@@ -1,0 +1,22 @@
+[package]
+name = "mox-codeengine-svc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "璇玑 · 全自研 AI 代码引擎服务（开发专家联盟处理模式）：HTTP 端点 :3210，需求文本 → 十阶段联盟管线 → 代码包交付"
+
+[[bin]]
+name = "codeengine-server"
+path = "src/main.rs"
+
+[dependencies]
+mox-codeengine-core = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true

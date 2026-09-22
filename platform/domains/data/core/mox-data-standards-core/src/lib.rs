@@ -17,8 +17,9 @@ pub mod fips_hmac;
 pub mod rfc5424;
 pub mod sigv4;
 
+// SM4-GCM 原语已归一化上移至 foundation 层 mox-api-crypto（传输加密共用一份实现）
 #[cfg(feature = "gm-sm")]
-pub mod sm4_gcm;
+pub use mox_api_crypto::sm4_gcm;
 #[cfg(feature = "gm-sm")]
 pub mod sts_sm2;
 

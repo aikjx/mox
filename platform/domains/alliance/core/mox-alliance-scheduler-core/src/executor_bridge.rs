@@ -107,23 +107,46 @@ impl HttpExecutorBridge {
         format!("{}{}", self.config.base_url, path)
     }
 
-    /// 解析 HTTP 响应为 AllianceResult
+    /// 一键传输加密（与服务端同源开关 MOX_API_CRYPTO）：POST 请求带协商头，
+    /// 开关开启时请求体整体密封为 {"crypto":…}，由执行器中间件透明解密
+    fn crypto_post(
+        &self,
+        url: &str,
+        body: &impl serde::Serialize,
+    ) -> AllianceResult<reqwest::RequestBuilder> {
+        let v = serde_json::to_value(body)
+            .map_err(|e| AllianceError::internal(format!("请求体序列化失败: {e}")))?;
+        let mut rb = self.client.post(url);
+        for (h, hv) in mox_api_crypto::client::outbound_headers() {
+            rb = rb.header(h, hv);
+        }
+        Ok(match mox_api_crypto::client::seal_request(&v) {
+            Some(sealed) => rb.json(&sealed),
+            None => rb.json(&v),
+        })
+    }
+
+    /// 解析 HTTP 响应为 AllianceResult（密文应答经 client::open_response 透明解密）
     async fn parse_response<T: serde::de::DeserializeOwned>(
         &self,
         response: reqwest::Response,
     ) -> AllianceResult<T> {
         let status = response.status();
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| AllianceError::internal(format!("读取响应失败: {e}")))?;
+        let decoded = mox_api_crypto::client::open_response(&bytes);
 
         if status.is_success() {
-            response
-                .json::<T>()
-                .await
-                .map_err(|e| AllianceError::internal(format!("Failed to parse response: {}", e)))
+            decoded
+                .and_then(|v| serde_json::from_value::<T>(v).ok())
+                .ok_or_else(|| AllianceError::internal("Failed to parse response"))
         } else {
-            let body = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unable to read response body".to_string());
+            let body = match &decoded {
+                Some(v) => v.to_string(),
+                None => String::from_utf8_lossy(&bytes).to_string(),
+            };
 
             // 尝试解析为标准错误响应
             if let Ok(err_resp) = serde_json::from_str::<ErrorResponse>(&body) {
@@ -177,9 +200,7 @@ impl ExecutorBridge for HttpExecutorBridge {
         );
 
         let response = self
-            .client
-            .post(&url)
-            .json(&request_body)
+            .crypto_post(&url, &request_body)?
             .send()
             .await
             .map_err(|e| {
@@ -216,11 +237,7 @@ impl ExecutorBridge for HttpExecutorBridge {
             "reason": reason,
         });
 
-        let response = self
-            .client
-            .post(&url)
-            .json(&body)
-            .send()
+        let response = self.crypto_post(&url, &body)?.send()
             .await
             .map_err(|e| {
                 AllianceError::new(
@@ -313,11 +330,7 @@ impl ExecutorBridge for HttpExecutorBridge {
             "tenant_id": tenant_id.to_string(),
         });
 
-        let response = self
-            .client
-            .post(&url)
-            .json(&body)
-            .send()
+        let response = self.crypto_post(&url, &body)?.send()
             .await
             .map_err(|e| {
                 AllianceError::new(
@@ -337,11 +350,7 @@ impl ExecutorBridge for HttpExecutorBridge {
             "tenant_id": tenant_id.to_string(),
         });
 
-        let response = self
-            .client
-            .post(&url)
-            .json(&body)
-            .send()
+        let response = self.crypto_post(&url, &body)?.send()
             .await
             .map_err(|e| {
                 AllianceError::new(

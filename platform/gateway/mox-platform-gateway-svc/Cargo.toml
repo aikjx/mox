@@ -11,6 +11,7 @@ name = "mox-server"
 path = "src/main.rs"
 
 [dependencies]
+mox-api-crypto = { workspace = true }
 # 通用工具链
 clap = { workspace = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"] }

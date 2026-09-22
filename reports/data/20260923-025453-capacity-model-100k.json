@@ -1,0 +1,35 @@
+{
+  "generated_at": "2026-09-23 02:54:53",
+  "assumptions": {
+    "baseline": "ha-capacity-tco.md §二 基准S (6节点/100M顶点/500M边), 缩放指数0.9",
+    "per_node_density": "基线密度×水位60% = 50.0M 边/节点",
+    "cell": "1024节点(2^10) 一个Cell, 16机架/Cell, 4096分片/Cell(2^k)",
+    "redundancy": "KG热数据RF3, 冷数据/云盘 EC 8+3"
+  },
+  "cluster": {
+    "target_nodes": 100000,
+    "cells": 98,
+    "provisioned_nodes": 100352,
+    "vertices_total": 999999999999.9998,
+    "edges_total": 4999999999999.999,
+    "naive_formula_nodes_for_this_edges": 23886.430233209838
+  },
+  "resources": {
+    "memory_tb": 3125.0,
+    "disk_tb_naive": 200000.0,
+    "cpu_mcores": 1600.0,
+    "qps_read": 600000000.0,
+    "qps_write": 60000000.0,
+    "hot_store_raw_tb": 4499.999999999999,
+    "cold_oss_ec_tb": 2062.4999999999995,
+    "bulk_import_days": 0.48225308641975295,
+    "bulk_import_days_inmem_upper_bound": 0.00964506172839506
+  },
+  "control_plane": {
+    "heartbeat_pps_at_global_registry": 1000.0,
+    "meta_raft_members_per_cell": 5,
+    "shard_replicas_per_cell": 12288.0,
+    "shard_replicas_per_node": 12.0,
+    "global_routing_entries": 401408
+  }
+}

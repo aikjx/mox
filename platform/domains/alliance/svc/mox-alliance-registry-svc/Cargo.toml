@@ -9,6 +9,7 @@ name = "mox-alliance-registry"
 path = "src/bin/main.rs"
 
 [dependencies]
+mox-api-crypto = { workspace = true }
 # 共享协议
 mox-alliance-common-proto = { workspace = true }
 mox-alliance-registry-proto = { workspace = true }

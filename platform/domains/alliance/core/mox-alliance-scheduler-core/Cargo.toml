@@ -25,6 +25,7 @@ tracing = { workspace = true }
 async-trait = { workspace = true }
 parking_lot = { workspace = true }
 reqwest = { workspace = true, optional = true }
+mox-api-crypto = { workspace = true, optional = true }
 # SQLite 增量落盘持久化（SqliteTaskRepository 适配器）—— 可选 feature：core 默认纯计算（零 IO）。
 # 仅在启用 `sqlite` feature 时才携带 rusqlite 实现（同构于 http-bridge 沙箱 reqwest 的模式）。
 rusqlite = { workspace = true, optional = true }
@@ -35,7 +36,7 @@ tokio = { workspace = true, features = ["full"] }
 [features]
 default = []
 # 启用 HTTP 专家注册桥接（保留向后兼容）
-http-bridge = ["reqwest"]
+http-bridge = ["reqwest", "mox-api-crypto"]
 # 启用 SQLite 增量落盘任务仓库（SqliteTaskRepository / StoredNode）
 sqlite = ["rusqlite"]
 

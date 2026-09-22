@@ -260,6 +260,8 @@ platform/domains/alliance/
 | fusion | executor-core 适配层 | 独立 fusion-svc | P2 |
 | memory | 网关内联 session/db | 独立 memory-svc | P2 |
 | registry | ✅ 已落地：独立 registry-svc(:3400) + proto 契约层 `mox-alliance-registry-proto`（2026-09 归一化） | 独立 registry-svc | 已完成 |
+| 传输加密 | ✅ 已落地：一键开关 `MOX_API_CRYPTO=sm4`，接口 data gzip+SM4-GCM 全链路归一化（网关/调度/执行/注册/桥/SDK，2026-09 证明 6/6，见 [API-CRYPTO-TRANSPORT](../api/API-CRYPTO-TRANSPORT.md)） | 生产密钥注入 + 前端协商 | 已完成(P0) |
+| 海量规模编排 | 方案已定：10 万节点 Cell 分层 + 联盟分片感知调度/分级心跳/批量导入 DAG（见 [十万级规模方案](../architecture/microservices/07-massive-scale-100k-nodes.md)） | 调度器多活 + registry 分级心跳落地 | P1 |
 | 协议 | REST + WS | + JSON-RPC + MCP | P3 |
 
 ---
@@ -274,4 +276,4 @@ platform/domains/alliance/
 
 ---
 
-*相关文档：[v3 架构优化设计](v3/README.md)（演进路线） | [专家注册表协议](expert-registry-and-protocol.md) | [知识图谱Schema](knowledge-graph-schema.md)*
+*相关文档：[v3 架构优化设计](v3/README.md)（演进路线） | [专家注册表协议](expert-registry-and-protocol.md) | [知识图谱Schema](knowledge-graph-schema.md) | [接口传输加密一键开关](../api/API-CRYPTO-TRANSPORT.md)*

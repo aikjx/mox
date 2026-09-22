@@ -4150,6 +4150,7 @@ dependencies = [
  "mox-alliance-executor-core",
  "mox-alliance-executor-proto",
  "mox-alliance-scheduler-core",
+ "mox-api-crypto",
  "serde",
  "serde_json",
  "tokio",
@@ -4170,6 +4171,7 @@ dependencies = [
  "mox-alliance-common-proto",
  "mox-alliance-scheduler-core",
  "mox-alliance-scheduler-proto",
+ "mox-api-crypto",
  "mox-api-protocol",
  "parking_lot",
  "reqwest",
@@ -4199,6 +4201,7 @@ dependencies = [
  "http-body-util",
  "mox-alliance-common-proto",
  "mox-alliance-registry-proto",
+ "mox-api-crypto",
  "parking_lot",
  "rusqlite",
  "serde",
@@ -4223,6 +4226,7 @@ dependencies = [
  "mox-alliance-core",
  "mox-alliance-executor-proto",
  "mox-alliance-scheduler-proto",
+ "mox-api-crypto",
  "mox-error",
  "mox-platform-foundation",
  "parking_lot",
@@ -4269,6 +4273,7 @@ dependencies = [
  "mox-alliance-executor-proto",
  "mox-alliance-scheduler-core",
  "mox-alliance-scheduler-proto",
+ "mox-api-crypto",
  "reqwest",
  "serde",
  "serde_json",
@@ -4299,6 +4304,23 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "mox-api-crypto"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "axum",
+ "base64 0.22.1",
+ "flate2",
+ "hex",
+ "mox-api-protocol",
+ "rand 0.8.7",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower 0.4.13",
+ "tracing",
 ]
 
 [[package]]
@@ -4735,6 +4757,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-codeengine-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "mox-ai-flow-core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "mox-codeengine-svc"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "anyhow",
+ "axum",
+ "mox-codeengine-core",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "mox-config-core"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4938,6 +4981,7 @@ dependencies = [
  "bytes",
  "hex",
  "hmac",
+ "mox-api-crypto",
  "mox-cloud-foundation",
  "num-bigint 0.5.1",
  "num-traits",
@@ -5805,6 +5849,7 @@ dependencies = [
  "mox-ai-expert-svc",
  "mox-ai-flow-svc",
  "mox-alliance-http-sdk",
+ "mox-api-crypto",
  "mox-api-protocol",
  "mox-audit",
  "mox-flow-unified-process-core",

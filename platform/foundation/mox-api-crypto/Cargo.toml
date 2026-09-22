@@ -1,0 +1,25 @@
+[package]
+name = "mox-api-crypto"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MOX API 传输加密归一层：SM4-GCM 国密原语 + 接口 data 压缩(gzip)+加密(一键 env 开关) + axum 中间件与客户端编解码器"
+
+[dependencies]
+mox-api-protocol = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+base64 = { workspace = true }
+flate2 = { workspace = true }
+rand = { workspace = true }
+tracing = { workspace = true }
+axum = { workspace = true }
+
+[dev-dependencies]
+hex = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
+tower = { workspace = true, features = ["util"] }
+
+[lints]
+workspace = true

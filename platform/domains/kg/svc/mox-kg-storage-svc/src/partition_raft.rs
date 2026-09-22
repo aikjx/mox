@@ -289,6 +289,20 @@ impl ShardRaft {
         let mut batch = KvEngine::new_batch();
         kv.batch_put_cf(&mut batch, &kv_engine::cf_name_vid_meta(shard), &vk, &vv)?;
         kv.batch_put_cf(&mut batch, &kv_engine::cf_name_vp(shard), &vk, &vv)?;
+        // vid 点查索引：读出既有 entry 表，替换同 tag 后按 tag_hash 升序写回
+        {
+            let idx_cf = kv_engine::cf_name_vid_idx(shard);
+            let ik = graph_codec::encode_vid_idx_key(shard, vid)?;
+            let mut entries: Vec<(u8, Vec<u8>)> = match kv.get_cf(&idx_cf, &ik)? {
+                Some(raw) => graph_codec::decode_vid_idx_value(&raw)?,
+                None => Vec::new(),
+            };
+            let th = graph_codec::tag_hash(tag);
+            entries.retain(|(t, _)| *t != th);
+            entries.push((th, vv));
+            entries.sort_by_key(|(t, _)| *t);
+            kv.batch_put_cf(&mut batch, &idx_cf, &ik, &graph_codec::encode_vid_idx_value(&entries)?)?;
+        }
         drop(kv);
         if !existed {
             *self.shard_counts.lock().entry(shard).or_insert(0) += 1;
@@ -298,20 +312,20 @@ impl ShardRaft {
     }
 
     fn apply_del_vertex(&self, shard: u16, vid: &str) -> StorageResult<()> {
+        let idx_cf = kv_engine::cf_name_vid_idx(shard);
+        let ik_key = graph_codec::encode_vid_idx_key(shard, vid)?;
         let (vkeys_del, out_del, in_del) = {
             let kv = self.kv.lock();
+            // 经 vid 索引 O(log n) 定位该 vid 的全部 (shard,tag) 行，不再整分片扫描
             let mut vkeys_del: Vec<Vec<u8>> = Vec::new();
-            let mut out_del: Vec<(Vec<u8>, u16, Vec<u8>)> = Vec::new();
-            let mut in_del: Vec<(Vec<u8>, u16, Vec<u8>)> = Vec::new();
-            for (vk, _) in
-                kv.seek_prefix(&kv_engine::cf_name_vid_meta(shard), &shard.to_le_bytes())?
-            {
-                if let Ok((_, _, dec)) = graph_codec::decode_vertex_key(&vk) {
-                    if dec == vid {
-                        vkeys_del.push(vk);
-                    }
+            if let Some(raw) = kv.get_cf(&idx_cf, &ik_key)? {
+                for (_th, val) in graph_codec::decode_vid_idx_value(&raw)? {
+                    let (tag, _) = graph_codec::decode_vertex_value(&val)?;
+                    vkeys_del.push(graph_codec::encode_vertex_key(shard, &tag, vid)?);
                 }
             }
+            let mut out_del: Vec<(Vec<u8>, u16, Vec<u8>)> = Vec::new();
+            let mut in_del: Vec<(Vec<u8>, u16, Vec<u8>)> = Vec::new();
             for (ok, _) in kv.seek_prefix(
                 &kv_engine::cf_name_out(shard),
                 &graph_codec::out_edge_prefix(shard, vid)?,
@@ -350,6 +364,9 @@ impl ShardRaft {
             for vk in &vkeys_del {
                 kv.batch_del_cf(&mut batch, &kv_engine::cf_name_vid_meta(shard), vk)?;
                 kv.batch_del_cf(&mut batch, &kv_engine::cf_name_vp(shard), vk)?;
+            }
+            if !vkeys_del.is_empty() {
+                kv.batch_del_cf(&mut batch, &idx_cf, &ik_key)?;
             }
             for (ok, _, _) in &out_del {
                 kv.batch_del_cf(&mut batch, &kv_engine::cf_name_out(shard), ok)?;
@@ -428,15 +445,18 @@ impl ShardRaft {
         kv.write_batch(batch)
     }
 
-    fn apply_split_shard(&self, old: u16, new_a: u16, new_b: u16) -> StorageResult<()> {
+    fn apply_split_shard(&self, old: u16, _new_a: u16, _new_b: u16) -> StorageResult<()> {
         let current_count = self.shard_count();
-        let new_count = (new_b + 1).max(current_count);
+        // 分裂恒为倍增（2^k → 2^(k+1)）：一切新归属以 hash(vid, 2×current) 为准，
+        // 不能按 new_a/new_b 硬编码跨分片端点归属（否则留在原子片的端点键被写错分片）
+        let doubled = current_count * 2;
         struct Move {
             vk: Vec<u8>,
             vv: Vec<u8>,
             vid: String,
             tag: String,
             target: u16,
+            idx: Option<Vec<u8>>,
             outs: Vec<(Vec<u8>, Vec<u8>, String, i64, String)>,
             ins: Vec<(Vec<u8>, Vec<u8>, String, i64, String)>,
         }
@@ -447,14 +467,7 @@ impl ShardRaft {
             for (vk, vv) in rows {
                 let (_, _, vid) = graph_codec::decode_vertex_key(&vk)?;
                 let (tag, _) = graph_codec::decode_vertex_value(&vv)?;
-                const SPLIT_EXTRA_BIT: u64 = 1u64 << 4;
-                let target = if new_count.is_power_of_two() {
-                    graph_codec::vid_hash_shard(&vid, new_count)
-                } else if (graph_codec::vid_hash_u64(&vid) & SPLIT_EXTRA_BIT) == 0 {
-                    new_a
-                } else {
-                    new_b
-                };
+                let target = graph_codec::vid_hash_shard(&vid, doubled);
                 if target == old {
                     continue;
                 }
@@ -479,6 +492,10 @@ impl ShardRaft {
                 moves.push(Move {
                     vk,
                     vv,
+                    idx: kv.get_cf(
+                        &kv_engine::cf_name_vid_idx(old),
+                        &graph_codec::encode_vid_idx_key(old, &vid)?,
+                    )?,
                     vid,
                     tag,
                     target,
@@ -501,17 +518,27 @@ impl ShardRaft {
             kv.batch_put_cf(&mut batch, &kv_engine::cf_name_vp(m.target), &nk, &m.vv)?;
             kv.batch_del_cf(&mut batch, &kv_engine::cf_name_vid_meta(old), &m.vk)?;
             kv.batch_del_cf(&mut batch, &kv_engine::cf_name_vp(old), &m.vk)?;
+            // vid 索引随顶点迁移到新分片（键含 shard，必须重键）
+            {
+                let old_idx_key = graph_codec::encode_vid_idx_key(old, &m.vid)?;
+                kv.batch_del_cf(
+                    &mut batch,
+                    &kv_engine::cf_name_vid_idx(old),
+                    &old_idx_key,
+                )?;
+                if let Some(raw) = &m.idx {
+                    let new_idx_key = graph_codec::encode_vid_idx_key(m.target, &m.vid)?;
+                    kv.batch_put_cf(
+                        &mut batch,
+                        &kv_engine::cf_name_vid_idx(m.target),
+                        &new_idx_key,
+                        raw,
+                    )?;
+                }
+            }
             for (ok, ev, et, rk, dst) in &m.outs {
-                let new_out_shard = if new_count.is_power_of_two() {
-                    graph_codec::vid_hash_shard(&m.vid, new_count)
-                } else {
-                    m.target
-                };
-                let new_dst_shard = if new_count.is_power_of_two() {
-                    graph_codec::vid_hash_shard(dst, new_count)
-                } else {
-                    new_b
-                };
+                let new_out_shard = m.target;
+                let new_dst_shard = graph_codec::vid_hash_shard(dst, doubled);
                 let nok = graph_codec::encode_out_edge_key(new_out_shard, &m.vid, et, *rk, dst)?;
                 let nik = graph_codec::encode_in_edge_key(new_dst_shard, dst, et, *rk, &m.vid)?;
                 kv.batch_put_cf(&mut batch, &kv_engine::cf_name_out(new_out_shard), &nok, ev)?;
@@ -521,15 +548,14 @@ impl ShardRaft {
                 kv.batch_del_cf(&mut batch, &kv_engine::cf_name_ep(old), ok)?;
                 let dst_old_shard = graph_codec::vid_hash_shard(dst, current_count);
                 let ik_old = graph_codec::encode_in_edge_key(dst_old_shard, dst, et, *rk, &m.vid)?;
-                kv.batch_del_cf(&mut batch, &kv_engine::cf_name_in(dst_old_shard), &ik_old)?;
+                // 端点 dst 分裂后仍留在原子片时，ik_old 与刚写入的 nik 是同一物理键，删除会误删新数据
+                if dst_old_shard != new_dst_shard || ik_old != nik {
+                    kv.batch_del_cf(&mut batch, &kv_engine::cf_name_in(dst_old_shard), &ik_old)?;
+                }
             }
             for (ik, iv, et, rk, src) in &m.ins {
                 let new_dst_shard = m.target;
-                let new_src_shard = if new_count.is_power_of_two() {
-                    graph_codec::vid_hash_shard(src, new_count)
-                } else {
-                    new_a
-                };
+                let new_src_shard = graph_codec::vid_hash_shard(src, doubled);
                 let nik = graph_codec::encode_in_edge_key(new_dst_shard, &m.vid, et, *rk, src)?;
                 let nok = graph_codec::encode_out_edge_key(new_src_shard, src, et, *rk, &m.vid)?;
                 kv.batch_put_cf(&mut batch, &kv_engine::cf_name_in(new_dst_shard), &nik, iv)?;
@@ -538,8 +564,11 @@ impl ShardRaft {
                 kv.batch_del_cf(&mut batch, &kv_engine::cf_name_in(old), ik)?;
                 let src_old_shard = graph_codec::vid_hash_shard(src, current_count);
                 let ok_old = graph_codec::encode_out_edge_key(src_old_shard, src, et, *rk, &m.vid)?;
-                kv.batch_del_cf(&mut batch, &kv_engine::cf_name_out(src_old_shard), &ok_old)?;
-                kv.batch_del_cf(&mut batch, &kv_engine::cf_name_ep(src_old_shard), &ok_old)?;
+                // 同上：src 留在原子片时旧 out/ep 键即新键，不可删除
+                if src_old_shard != new_src_shard || ok_old != nok {
+                    kv.batch_del_cf(&mut batch, &kv_engine::cf_name_out(src_old_shard), &ok_old)?;
+                    kv.batch_del_cf(&mut batch, &kv_engine::cf_name_ep(src_old_shard), &ok_old)?;
+                }
             }
         }
         kv.write_batch(batch)

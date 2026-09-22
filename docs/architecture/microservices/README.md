@@ -15,6 +15,7 @@
 | 04 | [部署架构优化](./04-deployment.md) | K8s 部署规范、HPA、PDB、优雅启停、配置中心、服务发现、CI/CD |
 | 05 | [可观测性·安全·弹性](./05-observability-security-resilience.md) | 三大支柱、零信任、mTLS、熔断降级限流、混沌工程 |
 | 06 | [实施路线图](./06-roadmap.md) | 6 阶段 24 周实施计划、风险矩阵、验收标准 |
+| 07 | [十万节点海量规模方案](./07-massive-scale-100k-nodes.md) | 10 万分布式节点 KG/云盘/OSS 部署与数据管理、容量模型、Cell 分层架构、归一化规范 |
 
 ## 为什么要独立部署
 

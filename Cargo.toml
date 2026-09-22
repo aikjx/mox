@@ -39,6 +39,7 @@ members = [
     "platform/foundation/mox-error",
     "platform/foundation/mox-audit",
     "platform/foundation/mox-api-protocol",
+    "platform/foundation/mox-api-crypto",
     "platform/domains/foundation/mox-rbac-engine",
     "platform/domains/foundation/mox-pipeline-framework",
     "platform/domains/data/api",
@@ -75,6 +76,8 @@ members = [
     "platform/domains/ai/proto/mox-ai-expert-proto",
     "platform/domains/ai/core/mox-ai-expert-core",
     "platform/domains/ai/core/mox-ai-alliance-engine",
+    "platform/domains/ai/core/mox-codeengine-core",
+    "platform/domains/ai/svc/mox-codeengine-svc",
     "platform/domains/kg/svc/mox-kg-storage-svc",
     "platform/domains/kg/svc/mox-kg-service-svc",
     "platform/domains/kg/svc/mox-kg-streams-svc",
@@ -253,6 +256,7 @@ tower = "0.4"
 # HTTP client for AI APIs and browser automation
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
 base64 = "0.22"
+flate2 = "1.1"
 
 # Redis client (cloud-filer-svc real Redis backend)
 redis = { version = "0.26", features = ["tokio-comp"] }
@@ -296,6 +300,7 @@ mox-platform-paths = { path = "platform/foundation/mox-platform-paths" }
 mox-error = { path = "platform/foundation/mox-error" }
 mox-audit = { path = "platform/foundation/mox-audit", default-features = false }
 mox-api-protocol = { path = "platform/foundation/mox-api-protocol" }
+mox-api-crypto = { path = "platform/foundation/mox-api-crypto" }
 mox-rbac-engine = { path = "platform/domains/foundation/mox-rbac-engine" }
 mox-pipeline-framework = { path = "platform/domains/foundation/mox-pipeline-framework" }
 # Alliance proto
@@ -333,6 +338,8 @@ mox-ai-core = { path = "platform/domains/ai/core/mox-ai-core" }
 mox-ai-expert-proto = { path = "platform/domains/ai/proto/mox-ai-expert-proto" }
 mox-ai-expert-core = { path = "platform/domains/ai/core/mox-ai-expert-core" }
 mox-ai-alliance-engine = { path = "platform/domains/ai/core/mox-ai-alliance-engine" }
+mox-codeengine-core = { path = "platform/domains/ai/core/mox-codeengine-core" }
+mox-codeengine-svc = { path = "platform/domains/ai/svc/mox-codeengine-svc" }
 mox-voice-dsp-core = { path = "platform/domains/voice/core/mox-voice-dsp-core" }
 mox-flow-operator-core = { path = "platform/domains/flow/core/mox-flow-operator-core" }
 mox-flow-optimizer-core = { path = "platform/domains/flow/core/mox-flow-optimizer-core" }

@@ -1,0 +1,15 @@
+[package]
+name = "mox-codeengine-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "璇玑 · 全自研 AI 代码引擎核心（开发专家联盟处理模式）：需求归一化 IR → 建图 → 求解 → 四专家联盟诊断 → 加权裁决 → 出码 → 三证闸门 → 经验沉淀，零外部依赖纯自研"
+
+[dependencies]
+mox-ai-flow-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

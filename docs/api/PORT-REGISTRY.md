@@ -16,7 +16,7 @@
 |---|---|---|
 | **RUNTIME** | 由 `scripts/server-manage.py` 统一管理、`platform_config.json` 登记的**当前运行服务** | 3080 / 3020 / 30010 / 8012 / 8000 / 3999 |
 | **ALLIANCE** | 专家联盟核心服务（PORT-NORM-001 强制 3000–3999 段） | 3100 / 3200 / 3300 |
-| **ANCILLARY** | 运行期附属端口（gRPC、内网控制面、OUS 边缘、前端预览等） | 50051 / 50052 / 9080 / 9081 / 4173 / 3998 / 7000 / 3000 / 3001 / 3002 |
+| **ANCILLARY** | 运行期附属端口（gRPC、内网控制面、OUS 边缘、前端预览等） | 50051 / 50052 / 9080 / 9081 / 4173 / 3998 / 7000 / 3000 / 3001 / 3002 / 30400 |
 | **LEGACY** | 遗留模块，自洽但不再纳入统一运维（Python mox-server / mox-store / docker） | 8600 / 8601 / 6379(infra) |
 | **DEPRECATED** | 已退役/历史端口，**禁止新服务复用** | 3010 / 3021 / 3717 / 8101–8104 |
 | **TEST-ONLY** | 仅供测试/内存 mock 的端口，不进入运行链路 | 8001–8003、9000–9003、9101–9103、9201–9203、9301–9303、9333、9401–9403、9501–9503、9669、9779–9781、9998/9999、12345、13130、19601–19603、19876、19999、35432、65528–65530 等 |
@@ -37,6 +37,7 @@
 | **alliance scheduler-svc** | **3100** | HTTP | 0.0.0.0 | `http://localhost:3100/health` | `config/alliance-scheduler.yml` |
 | **alliance executor-svc** | **3200** | HTTP | 0.0.0.0 | `http://localhost:3200/health` | `config/alliance-executor.yml` |
 | **alliance expert 桥接** | **3300** | HTTP（内部基址） | — | scheduler → 3300 | `config/alliance-scheduler.yml` → `expert_service.base_url` |
+| **codeengine-svc**（全自研 AI 代码引擎） | **3210** | HTTP | 0.0.0.0 | `http://localhost:3210/api/codeengine/health` | `mox-codeengine-svc`（`MOX_CODEENGINE_PORT` 覆盖） |
 
 ---
 
@@ -64,6 +65,7 @@
 | 3200 | executor-svc（执行引擎） | `mox-alliance-executor-svc` | HTTP | `config/alliance-executor.yml` | 🟢已启用 |
 | 3300 | AI 专家服务（桥接基址） | scheduler 内部桥接 | HTTP | `config/alliance-scheduler.yml` → `expert_service` | 🟢已启用 |
 | 3400 | registry-svc（专家注册中心） | `mox-alliance-registry-svc` | HTTP | 内置默认配置（`MOX_ALLIANCE_REGISTRY_*` 覆盖）；已注册 platform_config.json | 🟢运行中 |
+| 3210 | codeengine-svc（全自研 AI 代码引擎 · 开发专家联盟处理模式） | `mox-codeengine-svc` | HTTP | `MOX_CODEENGINE_PORT` 环境变量覆盖 | 🟢已启用 |
 | 33080 | 联盟本地网关（start-alliance-local.ps1 默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
 | 33100 | 联盟本地调度器（默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
 | 33200 | 联盟本地执行器（默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
@@ -91,6 +93,7 @@
 | 3412 | CLOUD 独立宿主（`mox-server`，`MOX_HOST_ROLE=cloud`） | 容器 0.0.0.0；宿主机仅 127.0.0.1 | `docker-compose.domains.yml`；旧 `mox-cloud-server` 不可同时占用 |
 | 3413 | IAM 独立宿主（`mox-server`，`MOX_HOST_ROLE=iam`） | 容器 0.0.0.0；宿主机仅 127.0.0.1 | `docker-compose.domains.yml`；旧 `mox-iam-server` 不可同时占用 |
 | 3414 | KB 独立宿主（`mox-server`，`MOX_HOST_ROLE=kb`） | 容器 0.0.0.0；宿主机仅 127.0.0.1 | `docker-compose.domains.yml`；旧 `mox-kb-server` 不可同时占用 |
+| 30400 | browser-rpa 浏览器RPA容器（录制/AI自愈/运维/归一化，FastAPI+Playwright，`RPA_PORT` 覆盖） | 容器/本地 0.0.0.0 | `projects/browser-rpa/rpa/config.py`、`projects/browser-rpa/docker-compose.yml` |
 
 ### 3.4 LEGACY —— 遗留模块（自洽，不纳入统一运维）
 

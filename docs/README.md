@@ -59,7 +59,7 @@
 - **[专家联盟综合索引](expert-alliance/00-INTEGRATED-INDEX.md)** · [企业级优化](expert-alliance/01-ENTERPRISE-OPTIMIZATION.md) · [专家注册与协议](expert-alliance/expert-registry-and-protocol.md) · [知识图谱 Schema](expert-alliance/knowledge-graph-schema.md) · [v2](expert-alliance/v2/README.md) / [v3](expert-alliance/v3/01-architecture-optimization.md)
 
 ### L4 接口与数据层
-- [API 规范](api/API-SPECIFICATION.md) · [端口注册表](api/PORT-REGISTRY.md) · [TCP 规范](api/TCP-SPECIFICATION.md) · [模块清单 Schema](api/mox-module-manifest.schema.json)
+- [API 规范](api/API-SPECIFICATION.md) · [传输加密开关](api/API-CRYPTO-TRANSPORT.md) · [端口注册表](api/PORT-REGISTRY.md) · [TCP 规范](api/TCP-SPECIFICATION.md) · [模块清单 Schema](api/mox-module-manifest.schema.json)
 - [数据库文档](database/README.md) · [数据交换规范 MXDEF](architecture/data-exchange-spec.md) · [应用商店架构 MXAP](architecture/app-store-architecture.md)
 
 ### L5 规范与治理层

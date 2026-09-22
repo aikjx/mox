@@ -1376,34 +1376,25 @@ fn query_bidirectional_bfs_meeting() {
             break;
         }
 
-        // 扩展较小的一边（优化：始终扩展较小的 frontier）
-        if forward_frontier.len() <= backward_frontier.len() {
-            let mut next: HashSet<String> = HashSet::new();
-            for vid in &forward_frontier {
+        // 每步双向各扩一层（真正的双向 BFS；tie 时只扩一侧会退化为单向 7 步）
+        let expand = |frontier: &HashSet<String>,
+                      visited: &mut HashSet<String>|
+         -> HashSet<String> {
+            let mut next = HashSet::new();
+            for vid in frontier {
                 let neighbors = srv
                     .get_neighbors(vid, Direction::Both, &["link"])
                     .unwrap();
                 for n in neighbors {
-                    if forward_visited.insert(n.neighbor_vid.clone()) {
+                    if visited.insert(n.neighbor_vid.clone()) {
                         next.insert(n.neighbor_vid);
                     }
                 }
             }
-            forward_frontier = next;
-        } else {
-            let mut next: HashSet<String> = HashSet::new();
-            for vid in &backward_frontier {
-                let neighbors = srv
-                    .get_neighbors(vid, Direction::Both, &["link"])
-                    .unwrap();
-                for n in neighbors {
-                    if backward_visited.insert(n.neighbor_vid.clone()) {
-                        next.insert(n.neighbor_vid);
-                    }
-                }
-            }
-            backward_frontier = next;
-        }
+            next
+        };
+        forward_frontier = expand(&forward_frontier, &mut forward_visited);
+        backward_frontier = expand(&backward_frontier, &mut backward_visited);
     }
 
     assert!(found, "bidirectional BFS should find path");

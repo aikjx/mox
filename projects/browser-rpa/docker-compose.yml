@@ -1,0 +1,15 @@
+services:
+  browser-rpa:
+    build: .
+    container_name: browser-rpa
+    ports:
+      - "30400:30400"
+    environment:
+      # 配置后 AI 自愈/需求归一化走 LLM，否则离线规则回退
+      RPA_LLM_BASE_URL: ${RPA_LLM_BASE_URL:-}
+      RPA_LLM_API_KEY: ${RPA_LLM_API_KEY:-}
+      RPA_LLM_MODEL: ${RPA_LLM_MODEL:-gpt-4o-mini}
+      RPA_HEADLESS: "1"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

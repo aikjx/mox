@@ -31,6 +31,8 @@ pub fn build_router(state: SchedulerAppState) -> Router {
         .route("/experts/search", post(search_experts))
         // P1-③：把 x-request-id 读入 tracing span，使请求 id 贯穿 gateway→scheduler→executor 日志。
         .layer(middleware::from_fn(request_tracing_layer))
+        // 一键传输加密（MOX_API_CRYPTO=sm4）：统一信封 data gzip+SM4-GCM，详见 mox-api-crypto
+        .layer(middleware::from_fn(mox_api_crypto::middleware::crypto_middleware))
         .with_state(state)
 }
 

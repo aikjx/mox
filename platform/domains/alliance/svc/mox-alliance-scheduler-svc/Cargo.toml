@@ -7,6 +7,7 @@ authors.workspace = true
 description = "专家联盟 · 调度器服务（任务调度 + 专家匹配 + 计划生成）"
 
 [dependencies]
+mox-api-crypto = { workspace = true }
 mox-alliance-common-proto = { workspace = true }
 mox-alliance-scheduler-proto = { workspace = true }
 mox-alliance-executor-proto = { workspace = true }

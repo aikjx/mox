@@ -84,15 +84,15 @@ pub(crate) fn click_or_double(
     }
     let b = parse_button(button);
     if action == "double_click" {
-        en.button(b, enigo::Direction::Press).ok();
-        en.button(b, enigo::Direction::Release).ok();
+        let _ = en.button(b, enigo::Direction::Press);
+        let _ = en.button(b, enigo::Direction::Release);
         std::thread::sleep(Duration::from_millis(50));
-        en.button(b, enigo::Direction::Press).ok();
-        en.button(b, enigo::Direction::Release).ok();
+        let _ = en.button(b, enigo::Direction::Press);
+        let _ = en.button(b, enigo::Direction::Release);
         fbs.push("enigo_double_left_click");
     } else {
-        en.button(b, enigo::Direction::Press).ok();
-        en.button(b, enigo::Direction::Release).ok();
+        let _ = en.button(b, enigo::Direction::Press);
+        let _ = en.button(b, enigo::Direction::Release);
         fbs.push("enigo_single_click");
     }
     Ok(OperatorOutput::quick(format!("{action} done（button={button}）"))
@@ -115,12 +115,12 @@ pub(crate) fn mouse_drag(param: &ActionParam, fbs_init: &[&'static str]) -> Resu
         fallbacks_used: vec!["enigo_new_failed".to_string()],
     })?;
     let b = parse_button(button);
-    en.move_mouse(fx as i32, fy as i32, enigo::Coordinate::Abs).ok();
-    en.button(b, enigo::Direction::Press).ok();
+    let _ = en.move_mouse(fx as i32, fy as i32, enigo::Coordinate::Abs);
+    let _ = en.button(b, enigo::Direction::Press);
     std::thread::sleep(Duration::from_millis(40));
-    en.move_mouse(tx as i32, ty as i32, enigo::Coordinate::Abs).ok();
+    let _ = en.move_mouse(tx as i32, ty as i32, enigo::Coordinate::Abs);
     std::thread::sleep(Duration::from_millis(40));
-    en.button(b, enigo::Direction::Release).ok();
+    let _ = en.button(b, enigo::Direction::Release);
     fbs.push("enigo_press_move_release");
     Ok(OperatorOutput::quick(format!("拖拽 ({fx},{fy}) → ({tx},{ty})"))
         .with_fallbacks(fbs.iter().map(|s| s.to_string()).collect())

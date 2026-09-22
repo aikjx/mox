@@ -29,13 +29,19 @@ pub fn cf_name_vp(shard: u16) -> String {
 pub fn cf_name_ep(shard: u16) -> String {
     format!("edge_props_{shard}")
 }
-pub fn cf_names_for(shard: u16) -> [String; 5] {
+/// vid 点查二级索引：key=[shard][vid] → value=[(tag_hash, vertex_value)]，
+/// 让 read_vertex/apply_del_vertex 免于整分片前缀扫描（O(shard)→O(log n)）
+pub fn cf_name_vid_idx(shard: u16) -> String {
+    format!("vid_idx_{shard}")
+}
+pub fn cf_names_for(shard: u16) -> [String; 6] {
     [
         cf_name_vid_meta(shard),
         cf_name_out(shard),
         cf_name_in(shard),
         cf_name_vp(shard),
         cf_name_ep(shard),
+        cf_name_vid_idx(shard),
     ]
 }
 

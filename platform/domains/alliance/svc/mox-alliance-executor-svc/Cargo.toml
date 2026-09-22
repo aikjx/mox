@@ -7,6 +7,7 @@ authors.workspace = true
 description = "专家联盟 · 执行器服务（DAG执行 + 节点调度 + 状态管理）"
 
 [dependencies]
+mox-api-crypto = { workspace = true }
 mox-alliance-common-proto = { workspace = true }
 mox-alliance-executor-proto = { workspace = true }
 mox-alliance-executor-core = { path = "../../core/mox-alliance-executor-core" }

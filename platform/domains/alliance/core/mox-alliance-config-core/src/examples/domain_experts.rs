@@ -109,6 +109,8 @@ pub fn build_domain_experts() -> Vec<ExpertModuleConfig> {
     vec![
         // 1. 代码编程专家 — DeepSeek Coder 最强
         build_code_expert(),
+        // 1b. 自研 AI 代码引擎专家 — mox-codeengine-core 全链路（开发专家联盟处理模式）
+        build_code_engine_expert(),
         // 2. 数学推理专家 — GPT-4o 严格推理
         build_math_expert(),
         // 3. 医学咨询专家 — Claude Opus（医学知识丰富）
@@ -187,6 +189,89 @@ fn build_code_expert() -> ExpertModuleConfig {
             updated_at: Utc::now(),
         },
         vec!["programming".to_string(), "code".to_string()],
+    )
+}
+
+/// 自研 AI 代码引擎专家（mox-codeengine-core）
+///
+/// 推理全自研（规则专家联盟 + 加权裁决 + 三证闸门），运行时不需要外部大模型；
+/// `mox-selfhosted` provider 指向本地引擎端点，零 token 成本。
+fn build_code_engine_expert() -> ExpertModuleConfig {
+    make_expert_config(
+        "expert-code-engine",
+        "code-engine-001",
+        "自研AI代码引擎",
+        "需求IR归一化 → 建图 → 求解 → 四专家联盟诊断 → 加权裁决 → 出码 → 三证闸门 → 交付 → 经验沉淀",
+        ModuleLlmConfig {
+            module_id: "expert-code-engine".to_string(),
+            primary_provider: "mox-selfhosted".to_string(),
+            primary_model: "mox-codeengine-core".to_string(),
+            fallback_chain: vec!["deepseek".to_string(), "openai-code".to_string()],
+            routing_strategy: LlmRoutingStrategy::Priority,
+            model_config: ModelConfig {
+                temperature: 0.0,
+                top_p: 1.0,
+                max_tokens: 16384,
+                frequency_penalty: 0.0,
+                presence_penalty: 0.0,
+                stop_sequences: vec![],
+            },
+            provider_options: vec![
+                LlmProviderOption {
+                    provider_id: "mox-selfhosted".to_string(),
+                    display_name: Some("自研代码引擎（本地推理）".to_string()),
+                    api_key_source: ApiKeySource::Inherit,
+                    base_url: Some("http://127.0.0.1:3210/api/codeengine".to_string()),
+                    default_model: Some("mox-codeengine-core".to_string()),
+                    supported_models: vec!["mox-codeengine-core".to_string()],
+                    price_per_1k_tokens: Some(0.0),
+                    rpm_limit: Some(100),
+                    tpm_limit: None,
+                    enabled: true,
+                },
+                // 降级链要求 provider_options 中存在同名启用项（见 config validator）
+                LlmProviderOption {
+                    provider_id: "deepseek".to_string(),
+                    display_name: Some("DeepSeek Coder（降级）".to_string()),
+                    api_key_source: ApiKeySource::from_env("DEEPSEEK_API_KEY"),
+                    base_url: Some("https://api.deepseek.com".to_string()),
+                    default_model: Some("deepseek-coder-v2".to_string()),
+                    supported_models: vec!["deepseek-coder-v2".to_string()],
+                    price_per_1k_tokens: Some(0.0014),
+                    rpm_limit: Some(2000),
+                    tpm_limit: Some(200000),
+                    enabled: true,
+                },
+                LlmProviderOption {
+                    provider_id: "openai-code".to_string(),
+                    display_name: Some("OpenAI GPT-4o（降级）".to_string()),
+                    api_key_source: ApiKeySource::Inherit,
+                    base_url: None,
+                    default_model: Some("gpt-4o".to_string()),
+                    supported_models: vec![],
+                    price_per_1k_tokens: None,
+                    rpm_limit: None,
+                    tpm_limit: None,
+                    enabled: true,
+                },
+            ],
+            system_prompt_template: Some(
+                "你是全自研 AI 代码引擎（开发专家联盟处理模式）：\n\
+                 Intent → Build → Solve → Team → Diagnose → Verdict → Generate → Gate → Deliver → Learn。\n\
+                 四角色评审团（analyst/builder/auditor/coordinator）加权裁决，auditor 合规一票否决；\n\
+                 出码必须通过三证守恒闸门（拓扑守恒 / 数据守恒 / 往返守恒），三证不全禁止交付。"
+                    .to_string(),
+            ),
+            use_global_prompt_prefix: false,
+            version: 1,
+            updated_at: Utc::now(),
+        },
+        vec![
+            "code".to_string(),
+            "codegen".to_string(),
+            "self-hosted".to_string(),
+            "programming".to_string(),
+        ],
     )
 }
 
@@ -715,13 +800,26 @@ mod tests {
     #[test]
     fn test_10_domain_experts_created() {
         let experts = build_domain_experts();
-        assert_eq!(experts.len(), 10);
+        // 10 大领域专家 + 1 全自研 AI 代码引擎专家（expert-code-engine）
+        assert_eq!(experts.len(), 11);
 
         // 验证每个专家都有独立的 module_id
         let mut ids: Vec<String> = experts.iter().map(|e| e.module_id.clone()).collect();
         ids.sort();
         ids.dedup();
-        assert_eq!(ids.len(), 10);
+        assert_eq!(ids.len(), 11);
+    }
+
+    #[test]
+    fn test_self_hosted_code_engine_expert_registered() {
+        let experts = build_domain_experts();
+        let engine = experts
+            .iter()
+            .find(|e| e.module_id == "expert-code-engine")
+            .expect("自研 AI 代码引擎专家必须注册在联盟种子配置中");
+        assert_eq!(engine.llm_config.primary_provider, "mox-selfhosted");
+        assert_eq!(engine.llm_config.primary_model, "mox-codeengine-core");
+        assert!(engine.tags.iter().any(|t| t == "codegen"));
     }
 
     #[test]

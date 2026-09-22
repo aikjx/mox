@@ -7,6 +7,7 @@ authors.workspace = true
 description = "Mox V5 10 Standards Matrix Test Crate (SigV4 / CRC32C+ETag / RFC5424 / FIPS HMAC / nGQL / openCypher / ISO GQL / POSIX / AIS / 等保 hash_chain)"
 
 [dependencies]
+mox-api-crypto = { workspace = true }
 mox-cloud-foundation = { workspace = true }
 tokio = { workspace = true }
 sha2 = { workspace = true }

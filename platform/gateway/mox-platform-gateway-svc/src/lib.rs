@@ -316,13 +316,19 @@ pub fn build_host_router(state: GatewayState, role: deployment::HostRole) -> Rou
             axum::http::header::AUTHORIZATION,
             axum::http::HeaderName::from_static("x-api-key"),
             axum::http::HeaderName::from_static("x-requested-with"),
+            axum::http::HeaderName::from_static("x-mox-crypto"),
         ])
+        .expose_headers([axum::http::HeaderName::from_static("x-mox-crypto")])
         .allow_credentials(true);
 
     let app: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(actuator)
         .merge(l0)
         .merge(protected)
+        // 一键传输加密（MOX_API_CRYPTO=sm4）：统一信封 data gzip+SM4-GCM，全维度归一。
+        // 紧接 merges 之后注册=最内层：响应侧最先改写 data（早于 CORS/限流/可观测包装），
+        // 请求侧鉴权/限流完成后才解密，覆盖所有业务路由与 Actuator 管理面。
+        .layer(from_fn(mox_api_crypto::middleware::crypto_middleware))
         .layer(from_fn(move |request: Request, next: Next| {
             let limiter = limiter_state.clone();
             async move { rate_limit_middleware(limiter, request, next).await }

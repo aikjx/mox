@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -41,7 +41,7 @@ const CK: [u32; 32] = {
     let mut arr = [0u32; 32];
     let mut i = 0usize;
     while i < 32 {
-        let j0 = ((4 * i + 0) * 7) as u8;
+        let j0 = (4 * i * 7) as u8;
         let j1 = ((4 * i + 1) * 7) as u8;
         let j2 = ((4 * i + 2) * 7) as u8;
         let j3 = ((4 * i + 3) * 7) as u8;
@@ -135,6 +135,8 @@ fn sm4_encrypt_block(rk: &[u32; 32], pt: [u8; 16]) -> [u8; 16] {
 }
 
 /// SM4 单分组解密: 使用相同 rk 反序 rk[31-i]
+/// SM4 分组解密（仅测试与 ECB 自检向量使用；GCM 模式走 CTR，不需要块解密）
+#[allow(dead_code)]
 fn sm4_decrypt_block(rk: &[u32; 32], ct: [u8; 16]) -> [u8; 16] {
     let mut x = [0u32; 36];
     x[0] = u32::from_be_bytes(ct[0..4].try_into().unwrap());
@@ -266,9 +268,9 @@ pub fn sm4_gcm_seal(
     let pad_c = (16 - (ct.len() % 16)) % 16;
     let mut ghash_input = Vec::with_capacity(aad.len() + pad_a + ct.len() + pad_c + 16);
     ghash_input.extend_from_slice(aad);
-    ghash_input.extend(std::iter::repeat(0u8).take(pad_a));
+    ghash_input.resize(ghash_input.len() + pad_a, 0u8);
     ghash_input.extend_from_slice(&ct);
-    ghash_input.extend(std::iter::repeat(0u8).take(pad_c));
+    ghash_input.resize(ghash_input.len() + pad_c, 0u8);
     ghash_input.extend_from_slice(&len_a.to_be_bytes());
     ghash_input.extend_from_slice(&len_c.to_be_bytes());
 
@@ -299,9 +301,9 @@ pub fn sm4_gcm_open(
     let pad_c = (16 - (ct.len() % 16)) % 16;
     let mut ghash_input = Vec::with_capacity(aad.len() + pad_a + ct.len() + pad_c + 16);
     ghash_input.extend_from_slice(aad);
-    ghash_input.extend(std::iter::repeat(0u8).take(pad_a));
+    ghash_input.resize(ghash_input.len() + pad_a, 0u8);
     ghash_input.extend_from_slice(ct);
-    ghash_input.extend(std::iter::repeat(0u8).take(pad_c));
+    ghash_input.resize(ghash_input.len() + pad_c, 0u8);
     ghash_input.extend_from_slice(&len_a.to_be_bytes());
     ghash_input.extend_from_slice(&len_c.to_be_bytes());
     let s = ghash(&h_block, &ghash_input);
@@ -353,7 +355,7 @@ mod tests {
     /// PT = 01234567 89ABCDEF FEDCBA98 76543210
     /// CT (1 次) = 681EDF34 D206965E 86B3E94F 536E4246
     #[test]
-    fn t24_sm4_ecb_vector_appendixD() {
+    fn t24_sm4_ecb_vector_appendix_d() {
         let key = hex16("0123456789abcdeffedcba9876543210");
         let pt  = hex16("0123456789abcdeffedcba9876543210");
         let expected_ct = hex16("681edf34d206965e86b3e94f536e4246");
@@ -420,8 +422,8 @@ mod tests {
     fn t24_sm4_gcm_tag_corrupt_fails() {
         let mut key = [0u8; 16];
         let mut nonce = [0u8; 12];
-        for i in 0..16 { key[i] = (i+1) as u8; }
-        for i in 0..12 { nonce[i] = (i+10) as u8; }
+        for (i, b) in key.iter_mut().enumerate() { *b = (i + 1) as u8; }
+        for (i, b) in nonce.iter_mut().enumerate() { *b = (i + 10) as u8; }
         let aad = b"associated-data example";
         let pt = b"plaintext message 12345";
         let (ct, tag) = sm4_gcm_seal(key, nonce, aad, pt);
@@ -441,8 +443,8 @@ mod tests {
     fn t24_sm4_gcm_ct_corrupt_fails() {
         let mut key = [0u8; 16];
         let mut nonce = [0u8; 12];
-        for i in 0..16 { key[i] = (i+1) as u8; }
-        for i in 0..12 { nonce[i] = (i+10) as u8; }
+        for (i, b) in key.iter_mut().enumerate() { *b = (i + 1) as u8; }
+        for (i, b) in nonce.iter_mut().enumerate() { *b = (i + 10) as u8; }
         let aad = b"aad";
         let pt = b"0123456789abcdef0123456789abcdef";
         let (ct, tag) = sm4_gcm_seal(key, nonce, aad, pt);
@@ -462,8 +464,8 @@ mod tests {
     fn t24_sm4_gcm_aad_corrupt_fails() {
         let mut key = [0u8; 16];
         let mut nonce = [0u8; 12];
-        for i in 0..16 { key[i] = (i+1) as u8; }
-        for i in 0..12 { nonce[i] = (i+10) as u8; }
+        for (i, b) in key.iter_mut().enumerate() { *b = (i + 1) as u8; }
+        for (i, b) in nonce.iter_mut().enumerate() { *b = (i + 10) as u8; }
         let aad = b"authenticated-but-not-encrypted data";
         let pt = b"payload here";
         let (ct, tag) = sm4_gcm_seal(key, nonce, aad, pt);

@@ -387,7 +387,7 @@ fn write_output(path: &str, value: &Value) -> Result<()> {
     if path == "-" {
         let mut out = std::io::stdout().lock();
         out.write_all(s.as_bytes()).context("写 stdout 失败")?;
-        out.write_all(b"\n").ok();
+        let _ = out.write_all(b"\n");
     } else {
         std::fs::write(path, (s + "\n").as_bytes())
             .with_context(|| format!("写 output 文件失败: {path}"))?;

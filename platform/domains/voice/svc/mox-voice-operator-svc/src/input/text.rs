@@ -60,10 +60,10 @@ pub(crate) fn type_text(param: &ActionParam, fbs_init: &[&'static str]) -> Resul
         fallbacks_used: vec!["enigo_new_failed_for_ctrl_v".to_string()],
     })?;
     let ctrl = if cfg!(target_os = "macos") { enigo::Key::Meta } else { enigo::Key::Control };
-    en.key(ctrl, enigo::Direction::Press).ok();
-    en.key(enigo::Key::Unicode('v'), enigo::Direction::Press).ok();
-    en.key(enigo::Key::Unicode('v'), enigo::Direction::Release).ok();
-    en.key(ctrl, enigo::Direction::Release).ok();
+    let _ = en.key(ctrl, enigo::Direction::Press);
+    let _ = en.key(enigo::Key::Unicode('v'), enigo::Direction::Press);
+    let _ = en.key(enigo::Key::Unicode('v'), enigo::Direction::Release);
+    let _ = en.key(ctrl, enigo::Direction::Release);
     fbs.push("ctrl_v_paste");
     Ok(OperatorOutput::quick(format!("输入文本 {len} 字符（中文剪贴板粘贴回退）", len = text.chars().count()))
         .with_fallbacks(fbs.iter().map(|s| s.to_string()).collect())

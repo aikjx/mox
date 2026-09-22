@@ -6,9 +6,9 @@
 //! 顶点/边的二进制 codec。
 //!
 //! Key 编码：
-//!   Vertex Meta   : \[shard_id 2B][tag_id 1B][vid_len 1B][vid_bytes...]\
-//!   Out Edge Idx  : \[shard_id 2B][b'o'][src_len 1B][src_bytes][etype_len 1B][etype_bytes][rank 8B][dst_len 1B][dst_bytes]\
-//!   In Edge Idx   : \[shard_id 2B][b'i'][dst_len 1B][dst_bytes][etype_len 1B][etype_bytes][rank 8B][src_len 1B][src_bytes]\
+//!   Vertex Meta   : \[shard_id 2B][tag_id 1B][vid_len 2B][vid_bytes...]\
+//!   Out Edge Idx  : \[shard_id 2B][b'o'][src_len 2B][src_bytes][etype_len 1B][etype_bytes][rank 8B][dst_len 2B][dst_bytes]\
+//!   In Edge Idx   : \[shard_id 2B][b'i'][dst_len 2B][dst_bytes][etype_len 1B][etype_bytes][rank 8B][src_len 2B][src_bytes]\
 //!
 //! Value 编码：
 //!   \[crc32c checksum 4B][prop_count 4B][(k_len 2B k_bytes v_len 2B v_bytes)...]\
@@ -203,7 +203,8 @@ pub fn encode_vertex_key(shard: u16, tag: &str, vid: &str) -> StorageResult<Vec<
     // tag_id 1B: FNV-1a mod 255+1 确定性哈希（保证 tag→tag_id 稳定）
     let tag_hash = fnv1a_8(tag.as_bytes());
     buf.push(tag_hash);
-    write_len_bytes(&mut buf, vid.as_bytes(), 1)?;
+    // vid 长度前缀 2B：VID 可达 64KB（URI 型 ID 常见），与 vid_idx key 一致
+    write_len_bytes(&mut buf, vid.as_bytes(), 2)?;
     Ok(buf)
 }
 pub fn decode_vertex_key(key: &[u8]) -> StorageResult<(u16, u8, String)> {
@@ -214,10 +215,49 @@ pub fn decode_vertex_key(key: &[u8]) -> StorageResult<(u16, u8, String)> {
     }
     let tag_hash = key[off];
     off += 1;
-    let vid_bytes = read_len_bytes(key, &mut off, 1)?;
+    let vid_bytes = read_len_bytes(key, &mut off, 2)?;
     let vid = String::from_utf8(vid_bytes.to_vec())
         .map_err(|e| StorageError::CodecError(format!("vid utf8: {e}")))?;
     Ok((shard, tag_hash, vid))
+}
+
+pub fn tag_hash(tag: &str) -> u8 {
+    fnv1a_8(tag.as_bytes())
+}
+
+/// vid 点查二级索引 key：[shard u16][vid len-prefixed]
+pub fn encode_vid_idx_key(shard: u16, vid: &str) -> StorageResult<Vec<u8>> {
+    let mut buf = Vec::with_capacity(8);
+    write_u16(&mut buf, shard);
+    write_len_bytes(&mut buf, vid.as_bytes(), 2)?;
+    Ok(buf)
+}
+
+/// vid 索引 value：按 tag_hash 升序的 [(tag_hash u8, vertex_value ≤64KB)]
+pub fn encode_vid_idx_value(entries: &[(u8, Vec<u8>)]) -> StorageResult<Vec<u8>> {
+    let mut buf = Vec::new();
+    write_u16(&mut buf, entries.len() as u16);
+    for (th, v) in entries {
+        buf.push(*th);
+        write_len_bytes(&mut buf, v, 2)?;
+    }
+    Ok(buf)
+}
+
+pub fn decode_vid_idx_value(buf: &[u8]) -> StorageResult<Vec<(u8, Vec<u8>)>> {
+    let mut off = 0;
+    let n = read_u16(buf, &mut off)? as usize;
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        if off >= buf.len() {
+            return Err(StorageError::CodecError("short idx entry".into()));
+        }
+        let th = buf[off];
+        off += 1;
+        let v = read_len_bytes(buf, &mut off, 2)?;
+        out.push((th, v.to_vec()));
+    }
+    Ok(out)
 }
 
 fn fnv1a_8(data: &[u8]) -> u8 {
@@ -245,10 +285,10 @@ pub fn encode_out_edge_key(
     let mut buf = Vec::with_capacity(64);
     write_u16(&mut buf, shard);
     buf.push(b'o');
-    write_len_bytes(&mut buf, src.as_bytes(), 1)?;
+    write_len_bytes(&mut buf, src.as_bytes(), 2)?;
     write_len_bytes(&mut buf, etype.as_bytes(), 1)?;
     write_i64(&mut buf, rank);
-    write_len_bytes(&mut buf, dst.as_bytes(), 1)?;
+    write_len_bytes(&mut buf, dst.as_bytes(), 2)?;
     Ok(buf)
 }
 pub fn decode_out_edge_key(key: &[u8]) -> StorageResult<(u16, String, String, i64, String)> {
@@ -258,10 +298,10 @@ pub fn decode_out_edge_key(key: &[u8]) -> StorageResult<(u16, String, String, i6
         return Err(StorageError::CodecError("not out key".into()));
     }
     off += 1;
-    let s = read_len_bytes(key, &mut off, 1)?;
+    let s = read_len_bytes(key, &mut off, 2)?;
     let e = read_len_bytes(key, &mut off, 1)?;
     let r = read_i64(key, &mut off)?;
-    let d = read_len_bytes(key, &mut off, 1)?;
+    let d = read_len_bytes(key, &mut off, 2)?;
     Ok((
         shard,
         String::from_utf8_lossy(s).into_owned(),
@@ -281,10 +321,10 @@ pub fn encode_in_edge_key(
     let mut buf = Vec::with_capacity(64);
     write_u16(&mut buf, shard);
     buf.push(b'i');
-    write_len_bytes(&mut buf, dst.as_bytes(), 1)?;
+    write_len_bytes(&mut buf, dst.as_bytes(), 2)?;
     write_len_bytes(&mut buf, etype.as_bytes(), 1)?;
     write_i64(&mut buf, rank);
-    write_len_bytes(&mut buf, src.as_bytes(), 1)?;
+    write_len_bytes(&mut buf, src.as_bytes(), 2)?;
     Ok(buf)
 }
 pub fn decode_in_edge_key(key: &[u8]) -> StorageResult<(u16, String, String, i64, String)> {
@@ -294,10 +334,10 @@ pub fn decode_in_edge_key(key: &[u8]) -> StorageResult<(u16, String, String, i64
         return Err(StorageError::CodecError("not in key".into()));
     }
     off += 1;
-    let d = read_len_bytes(key, &mut off, 1)?;
+    let d = read_len_bytes(key, &mut off, 2)?;
     let e = read_len_bytes(key, &mut off, 1)?;
     let r = read_i64(key, &mut off)?;
-    let s = read_len_bytes(key, &mut off, 1)?;
+    let s = read_len_bytes(key, &mut off, 2)?;
     Ok((
         shard,
         String::from_utf8_lossy(d).into_owned(),
@@ -312,14 +352,14 @@ pub fn out_edge_prefix(shard: u16, src: &str) -> StorageResult<Vec<u8>> {
     let mut buf = Vec::with_capacity(32);
     write_u16(&mut buf, shard);
     buf.push(b'o');
-    write_len_bytes(&mut buf, src.as_bytes(), 1)?;
+    write_len_bytes(&mut buf, src.as_bytes(), 2)?;
     Ok(buf)
 }
 pub fn in_edge_prefix(shard: u16, dst: &str) -> StorageResult<Vec<u8>> {
     let mut buf = Vec::with_capacity(32);
     write_u16(&mut buf, shard);
     buf.push(b'i');
-    write_len_bytes(&mut buf, dst.as_bytes(), 1)?;
+    write_len_bytes(&mut buf, dst.as_bytes(), 2)?;
     Ok(buf)
 }
 

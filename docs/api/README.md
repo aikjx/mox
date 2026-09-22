@@ -10,6 +10,7 @@
 | 文档 | 权威等级 | 说明 | 校验 |
 |------|:--------:|------|------|
 | [`API-SPECIFICATION.md`](./API-SPECIFICATION.md) | 🟢 | REST 接口契约规范（路径/方法/入参/出参/错误码约定） | 与 `../API-REGISTRY.md` 对照 |
+| [`API-CRYPTO-TRANSPORT.md`](./API-CRYPTO-TRANSPORT.md) | 🟢 | 接口 data 压缩+SM4-GCM 加密传输一键开关（协商头/线上格式/全链路证明） | `python tools/alliance-demo/crypto_proof.py` |
 | [`PORT-REGISTRY.md`](./PORT-REGISTRY.md) | 🟢 | **端口分配唯一权威**（服务 → 端口 → 用途） | `python scripts/verify-ports.py` |
 | [`TCP-SPECIFICATION.md`](./TCP-SPECIFICATION.md) | 🟢 | TCP/长连接协议规范（帧格式、心跳、鉴权） | 人工评审 |
 | [`mox-module-manifest.schema.json`](./mox-module-manifest.schema.json) | 🟢 | 模块清单（manifest）JSON Schema | `python tools/module_catalog.py --check` |

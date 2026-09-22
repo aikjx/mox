@@ -75,7 +75,7 @@ pub(crate) fn press_key(param: &ActionParam, fbs_init: &[&'static str]) -> Resul
         action: "press_key".into(),
         detail: format!("enigo press down err: {e:?}"),
     })?;
-    en.key(k, enigo::Direction::Release).ok();
+    let _ = en.key(k, enigo::Direction::Release);
     fbs.push("enigo_press_release");
     Ok(OperatorOutput::quick(format!("按一下 {key}"))
         .with_fallbacks(fbs.iter().map(|s| s.to_string()).collect())
@@ -102,14 +102,14 @@ pub(crate) fn hotkey(param: &ActionParam, fbs_init: &[&'static str]) -> Result<O
     })?;
     for m in modifiers.iter() {
         let k = parse_modifier(m);
-        en.key(k, enigo::Direction::Press).ok();
+        let _ = en.key(k, enigo::Direction::Press);
     }
     let k = parse_key(key);
-    en.key(k, enigo::Direction::Press).ok();
-    en.key(k, enigo::Direction::Release).ok();
+    let _ = en.key(k, enigo::Direction::Press);
+    let _ = en.key(k, enigo::Direction::Release);
     for m in modifiers.iter().rev() {
         let k = parse_modifier(m);
-        en.key(k, enigo::Direction::Release).ok();
+        let _ = en.key(k, enigo::Direction::Release);
     }
     fbs.push("enigo_hotkey_modifiers_sequence");
     Ok(OperatorOutput::quick(format!("hotkey [{modifiers:?}] + {key}"))
@@ -139,8 +139,8 @@ pub(crate) fn key_sequence(param: &ActionParam, fbs_init: &[&'static str]) -> Re
     })?;
     for k in keys.iter() {
         let kk = parse_key(k);
-        en.key(kk, enigo::Direction::Press).ok();
-        en.key(kk, enigo::Direction::Release).ok();
+        let _ = en.key(kk, enigo::Direction::Press);
+        let _ = en.key(kk, enigo::Direction::Release);
     }
     fbs.push("enigo_key_sequence_n");
     Ok(OperatorOutput::quick(format!("按顺序 {n} 个键", n = keys.len()))

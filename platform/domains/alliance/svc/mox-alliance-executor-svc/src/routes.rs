@@ -89,6 +89,8 @@ pub fn build_router(state: ExecutorAppState) -> Router {
         .route("/tasks/:task_id/resume", post(resume_execution))
         // P1-③：把 x-request-id 读入 tracing span，与 gateway/scheduler 日志对齐。
         .layer(middleware::from_fn(request_tracing_layer))
+        // 一键传输加密（MOX_API_CRYPTO=sm4）：统一信封 data gzip+SM4-GCM，详见 mox-api-crypto
+        .layer(middleware::from_fn(mox_api_crypto::middleware::crypto_middleware))
         .with_state(state)
 }
 

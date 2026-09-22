@@ -166,6 +166,35 @@
         "引擎"
       ]
     },
+    "browser-rpa": {
+      "name": "浏览器RPA服务（browser-rpa）",
+      "description": "Playwright+Python 浏览器RPA单容器：codegen 录制产出 Python 脚本、页面变动 AI 自愈改脚本、智能运维调度、需求归一化；端口 30400，可 docker compose 部署",
+      "port": 30400,
+      "health_check": "/health",
+      "cwd": "projects/browser-rpa",
+      "command": "python run.py",
+      "args": [
+        "python",
+        "run.py"
+      ],
+      "binary_requires": [
+        "python"
+      ],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 45,
+      "depends_on": [],
+      "tags": [
+        "RPA",
+        "浏览器自动化",
+        "Playwright",
+        "AI自愈",
+        "FastAPI"
+      ]
+    },
     "operator-server": {
       "name": "编排器（mox-platform-orchestrator）",
       "description": "MOX 编排器：AI 能力/图谱导出/系统用户；依赖外部 token（OUS_API_TOKEN），生产由 start-mox-enterprise.ps1 拉起",
@@ -308,6 +337,13 @@
       "path": "projects/primiflow",
       "description": "低代码拓扑生成引擎（FastAPI + 静态前端）",
       "service_key": "primiflow",
+      "status": "active"
+    },
+    "browser_rpa": {
+      "type": "service",
+      "path": "projects/browser-rpa",
+      "description": "浏览器RPA单容器（Playwright+Python）：录制脚本/AI自愈/智能运维/需求归一化",
+      "service_key": "browser-rpa",
       "status": "active"
     },
     "mox_dualrpc": {
