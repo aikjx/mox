@@ -185,11 +185,14 @@ platform/domains/alliance/
 |---------|---------|------|------|
 | 专家注册表 | SQLite | 网关 experts_db.rs | 专家CRUD、健康状态 |
 | 协作任务 | SQLite + JSON | scheduler-core/storage | 任务状态、节点记录 |
+| 执行状态 + 融合结果 | SQLite（WAL）或 JSON | executor-svc/state_sink.rs → `data/alliance_tasks.db` / `.json` | 任务级 + 节点级增量落盘；融合输出以保留行 `__fusion_output__` 持久化，进程重启后 `/result`、`/fusion-result` 仍可读回 |
 | 专家会话 | 内存 + SQLite备份 | 网关 experts_session.rs | 对话上下文 |
 | 知识图谱关联 | 进程内结构 | 网关 experts_graph.rs | 专家-领域-能力关系 |
 | 协作记忆 | 进程内 | 网关 experts_common.rs | 工作记忆、案例 |
 
 **注意**：当前无外部 Redis/PostgreSQL/pgvector 依赖，全部嵌入式存储。
+
+**生产部署约定**：调度器与执行器共用环境变量 `MOX_ALLIANCE_STORAGE_MODE`（同一任务真源）。设为 `sqlite` 时执行器具备完整持久化 + 重启恢复（未完成任务重注入、running 节点标记 interrupted、融合结果跨重启可读回）；默认 `file` 仅任务级快照、无恢复能力；`memory` 为纯内存。生产环境应显式设置 `MOX_ALLIANCE_STORAGE_MODE=sqlite`。
 
 ---
 

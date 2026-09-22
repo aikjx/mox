@@ -531,7 +531,7 @@ pub static ROUTES: [ApiRoute; 223] = [
     r("alliance.tasks.fusion", "GET", "/api/alliance/tasks/:id/fusion-result", "L4", "alliance", "ready", "融合结果（真实从节点输出融合）"),
     r("alliance.tasks.fusion_alias", "GET", "/api/alliance/tasks/:id/fusion", "L4", "alliance", "ready", "融合结果（兼容别名）"),
     r("alliance.tasks.dag", "GET", "/api/alliance/tasks/:id/dag", "L4", "alliance", "ready", "DAG 节点+边（真实存储的 DAG）"),
-    r("alliance.tasks.toggle_done", "PUT", "/api/alliance/tasks/:id/toggle-done", "L4", "alliance", "ready", "完成状态切换（真实状态流转）"),
+    r("alliance.tasks.toggle_done", "PUT", "/api/alliance/tasks/:id/toggle-done", "L4", "alliance", "ready", "标记任务完成（远程任务单向完成，不支持重开；本地任务可切换）"),
     r("alliance.tasks.status_poll", "GET", "/api/alliance/tasks/:id/status", "L4", "alliance", "ready", "任务状态轮询（供前端轮询）"),
     r("alliance.tasks.plan", "GET", "/api/alliance/tasks/:id/plan", "L4", "alliance", "ready", "协作计划查询"),
     r("alliance.stats", "GET", "/api/alliance/stats", "L4", "alliance", "ready", "联盟统计（专家/任务/成功率）"),

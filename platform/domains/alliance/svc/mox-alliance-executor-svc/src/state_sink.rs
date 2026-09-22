@@ -12,7 +12,7 @@
 //!
 //! | 模式 | 路径 | 任务级 | 节点级 |
 //! |---|---|---|---|
-//! | `sqlite` | `data/alliance_tasks.db`（WAL） | ✓ save | ✓ 增量 upsert（完整恢复能力） |
+//! | `sqlite` | `data/alliance_tasks.db`（WAL） | ✓ save | ✓ 增量 upsert（完整恢复能力；融合输出经保留行 `__fusion_output__` 持久化，重启后 `/result` 仍可读回） |
 //! | `file`（默认，与 scheduler 一致） | `data/alliance_tasks.json` | ✓ save | ✗（无节点表，debug 记录） |
 //! | `memory` | — | ✗ | ✗（`None`：纯内存执行，行为与未接线前一致） |
 
@@ -20,6 +20,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use mox_alliance_common_proto::{AllianceResult, CollaborationPlan, Task};
+use mox_alliance_executor_core::state_sink::FUSION_OUTPUT_NODE_ID;
 use mox_alliance_executor_core::{ExecutionStateSink, ExecutionView, RestorableTask};
 use mox_alliance_scheduler_core::{FileTaskRepository, SqliteTaskRepository, TaskRepository};
 use tracing::{debug, info, warn};
@@ -75,7 +76,10 @@ impl ExecutionStateSink for SqliteExecutionStateSink {
                 .repo
                 .node_rows(task.task_id)?
                 .into_iter()
-                .filter(|(_, status, _)| status == "completed" || status == "skipped")
+                .filter(|(node_id, status, _)| {
+                    node_id != FUSION_OUTPUT_NODE_ID
+                        && (status == "completed" || status == "skipped")
+                })
                 .map(|(node_id, _status, result)| (node_id, result))
                 .collect();
             out.push(RestorableTask {
@@ -92,8 +96,30 @@ impl ExecutionStateSink for SqliteExecutionStateSink {
             return Ok(None);
         };
         let plan = self.repo.load_plan(task_id)?;
-        let nodes = self.repo.node_rows(task_id)?;
+        let nodes = self
+            .repo
+            .node_rows(task_id)?
+            .into_iter()
+            .filter(|(node_id, _, _)| node_id != FUSION_OUTPUT_NODE_ID)
+            .collect();
         Ok(Some(ExecutionView { task, plan, nodes }))
+    }
+
+    /// 融合输出借节点表持久化（保留行 id）；重启后 `/result` 仍可读出已产出结论
+    fn persist_fusion_output(
+        &self,
+        task_id: Uuid,
+        output: &serde_json::Value,
+    ) -> AllianceResult<()> {
+        self.repo
+            .upsert_node(task_id, FUSION_OUTPUT_NODE_ID, "completed", Some(output))
+    }
+
+    fn read_fusion_output(&self, task_id: Uuid) -> AllianceResult<Option<serde_json::Value>> {
+        Ok(self
+            .repo
+            .get_node(task_id, FUSION_OUTPUT_NODE_ID)?
+            .and_then(|n| n.result))
     }
 }
 
@@ -289,9 +315,46 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    /// 融合输出经保留行持久化：重开库可读回，且不污染 read_back / restore_pending 的节点集
     #[test]
-    fn file_sink_persists_task_across_reopen() {
-        let dir = std::env::temp_dir().join(format!("executor_sink_file_{}", Uuid::new_v4()));
+    fn sqlite_fusion_output_roundtrip_and_excluded_from_views() {
+        let dir = std::env::temp_dir().join(format!("executor_fusion_sink_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        let task = Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".to_string(), "d".to_string());
+        let task_id = task.task_id;
+        {
+            let sink = SqliteExecutionStateSink::new(Arc::new(SqliteTaskRepository::new(&db).unwrap()));
+            sink.persist_task(&task).unwrap();
+            sink.persist_node(task_id, "node-1", "completed", Some(&serde_json::json!({"o": 1})))
+                .unwrap();
+            sink.persist_fusion_output(task_id, &serde_json::json!({"confidence": 0.9}))
+                .unwrap();
+
+            // 读回融合输出
+            let out = sink.read_fusion_output(task_id).unwrap();
+            assert_eq!(out, Some(serde_json::json!({"confidence": 0.9})));
+
+            // read_back 的节点集必须不含保留行（防节点计数膨胀）
+            let view = sink.read_back(task_id).unwrap().expect("任务应存在");
+            let ids: Vec<&str> = view.nodes.iter().map(|(id, _, _)| id.as_str()).collect();
+            assert_eq!(ids, vec!["node-1"]);
+        }
+
+        // 模拟进程重启：新库句柄仍可读出融合结论
+        let sink = SqliteExecutionStateSink::new(Arc::new(SqliteTaskRepository::new(&db).unwrap()));
+        assert_eq!(
+            sink.read_fusion_output(task_id).unwrap(),
+            Some(serde_json::json!({"confidence": 0.9}))
+        );
+        assert_eq!(sink.read_fusion_output(Uuid::new_v4()).unwrap(), None);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn file_sink_persists_task_across_reopen() {        let dir = std::env::temp_dir().join(format!("executor_sink_file_{}", Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let json_path = dir.join("tasks.json");
 

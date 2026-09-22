@@ -917,6 +917,7 @@ pub async fn remote_fusion_result(
         .await?
     {
         Ok((st, body)) if (200..300).contains(&st) => {
+            let body = enrich_fusion_body(body);
             Some(api_ok(json!({
                 "elapsed_ms": now_ms() - t0,
                 "data": {
@@ -964,6 +965,55 @@ pub async fn remote_fusion_result(
         Ok((status, body)) => Some(http_err(status, &body, "任务结果读取失败".into())),
         Err(e) => transport_fallback("fusion_result", e),
     }
+}
+
+/// 远程执行器融合结果 → 补齐网关契约字段（对齐本地 build_fusion_result 形状）
+///
+/// 执行器融合载荷不含 key_findings/recommendations；但专家结论真实存在于
+/// `content.outputs[].output.steps[]`（加权/合并）与 `content.votes[].summary`
+/// （投票）中——远程模式按语义提取，避免两态能力不一致。已有字段不覆盖。
+fn enrich_fusion_body(mut body: Value) -> Value {
+    if body.get("key_findings").and_then(|v| v.as_array()).map(|a| a.is_empty()).unwrap_or(true) {
+        let mut findings: Vec<String> = Vec::new();
+        if let Some(arr) = body["content"]["outputs"].as_array() {
+            for o in arr {
+                if let Some(steps) = o["output"]["steps"].as_array() {
+                    for s in steps.iter().filter_map(|v| v.as_str()) {
+                        findings.push(s.to_string());
+                    }
+                }
+            }
+        }
+        if findings.is_empty() {
+            if let Some(votes) = body["content"]["votes"].as_array() {
+                findings.extend(
+                    votes.iter().filter_map(|v| v["summary"].as_str()).map(str::to_string),
+                );
+            }
+        }
+        if findings.is_empty() {
+            if let Some(w) = body["content"]["winner"].as_str() {
+                findings.push(w.to_string());
+            }
+        }
+        if findings.is_empty() {
+            if let Some(s) = body["summary"].as_str() {
+                findings.push(s.to_string());
+            }
+        }
+        findings.truncate(8);
+        body["key_findings"] = json!(findings);
+    }
+    if body.get("recommendations").and_then(|v| v.as_array()).map(|a| a.is_empty()).unwrap_or(true) {
+        if let Some(st) = body["strategy"].as_str().or_else(|| body["content"]["strategy"].as_str()) {
+            body["recommendations"] = json!([format!(
+                "融合策略 {} 由执行器产出，参与专家 {} 位，建议按置信度复核关键结论",
+                st,
+                body["expert_count"].as_u64().unwrap_or(0)
+            )]);
+        }
+    }
+    body
 }
 
 /// GET /api/alliance/tasks/:id/status（轮询）→ 远程调度器详情 + 执行器状态合并
@@ -1059,6 +1109,44 @@ mod lifecycle_tests {
         assert!(ctx.user_id.is_none());
         assert!(ctx.request_id.is_none());
         assert!(ctx.is_empty());
+    }
+
+    /// 加权融合载荷：从 content.outputs[].output.steps[] 提取 key_findings
+    #[test]
+    fn enrich_fusion_body_extracts_steps_findings() {
+        let body = json!({
+            "content": {"outputs": [
+                {"expert": "e1", "output": {"steps": ["结论A", "结论B"]}},
+                {"expert": "e2", "output": {"steps": ["结论C"]}}
+            ]},
+            "confidence": 0.85, "strategy": "weighted", "expert_count": 2
+        });
+        let out = enrich_fusion_body(body);
+        assert_eq!(out["key_findings"].as_array().unwrap().len(), 3);
+        assert_eq!(out["key_findings"][0], "结论A");
+        assert!(!out["recommendations"].as_array().unwrap().is_empty());
+    }
+
+    /// 投票融合载荷：回退到 content.votes[].summary
+    #[test]
+    fn enrich_fusion_body_falls_back_to_votes() {
+        let body = json!({
+            "content": {"votes": [{"expert": "e1", "summary": "胜出摘要"}], "winner": "胜出摘要"},
+            "confidence": 1.0, "strategy": "voting", "expert_count": 1
+        });
+        let out = enrich_fusion_body(body);
+        let kf = out["key_findings"].as_array().unwrap();
+        assert_eq!(kf.len(), 1);
+        assert_eq!(kf[0], "胜出摘要");
+    }
+
+    /// 已有非空 key_findings 不覆盖；空数组补齐
+    #[test]
+    fn enrich_fusion_body_keeps_existing_findings() {
+        let body = json!({"key_findings": ["既有"], "summary": "s"});
+        let out = enrich_fusion_body(body);
+        assert_eq!(out["key_findings"].as_array().unwrap().len(), 1);
+        assert_eq!(out["key_findings"][0], "既有");
     }
 
     /// 空字符串头视为缺失（不注入空值头）

@@ -1,0 +1,458 @@
+{
+  "meta": {
+    "generated_at": "2026-09-23 00:41:25",
+    "base_url": "http://127.0.0.1:3080",
+    "git_head": "031d978d",
+    "python": "3.8.8",
+    "requests": 29,
+    "json_path": "reports\\data\\20260923-004125-alliance-demo-prodcheck4.json",
+    "mode": "remote"
+  },
+  "health": {
+    "healthy": true,
+    "probe": "/api/v1/status",
+    "http": 200
+  },
+  "topology": {
+    "mode": "remote",
+    "gateway_listed_tasks": 57,
+    "scheduler_listed_tasks": 57,
+    "scheduler": {
+      "up": true,
+      "service": "mox-alliance-scheduler",
+      "deps": {
+        "executor": "up"
+      }
+    },
+    "executor": {
+      "up": true,
+      "http": 200
+    }
+  },
+  "modes": [
+    {
+      "mode": "parallel",
+      "ok": true,
+      "remote": true,
+      "task_id": "6afd6735-4665-4026-a997-9c0bf1147485",
+      "title": "端到端演示-parallel-004050",
+      "fusion_strategy_sent": "weighted",
+      "fusion_strategy_display": "weighted_voting",
+      "mode_display": "expert_alliance",
+      "dag": {
+        "nodes": 1,
+        "edges": 0,
+        "node_names": [
+          "代码编程专家"
+        ]
+      },
+      "nodes_total": 1,
+      "node_status": {
+        "completed": 1
+      },
+      "execution_status": {
+        "status": "completed",
+        "completed_nodes": 1,
+        "total_nodes": 1,
+        "progress": 1.0
+      },
+      "fusion": {
+        "fusion_status": "completed",
+        "fusion_strategy": "weighted_voting",
+        "confidence": 0.85,
+        "key_findings": [
+          "分析：作为代码编程专家，针对问题「验证联盟管线在 parallel 模式下的 DAG 构建、执行与融合行为」，从专业领域视角进行分析：该问题涉及技术选型、架构约束与业务目标，关键在于明确需求边界与可量化指标。",
+          "方案：1）围绕代码编程专家专业领域设计解决方案；2）分阶段验证，先建立最小可行原型再迭代优化；3）输出可执行交付物并配套质量保障措施。",
+          "参考：《代码编程专家领域工程实践指南》—— 璇玑 RelGraph 专家联盟知识库"
+        ],
+        "recommendations": [
+          "融合策略 weighted 由执行器产出，参与专家 1 位，建议按置信度复核关键结论"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "completed",
+      "logs_tail": [
+        "代码编程专家 · completed"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 61
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 22
+        },
+        {
+          "name": "resume",
+          "ok": false,
+          "ms": 16,
+          "error": "DemoError: POST /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/resume 返回 HTTP 409: {\"code\": 409, \"msg\": \"InvalidTaskStatus: Can only resume paused task, current status: Running\"}",
+          "degraded": true
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 15
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 14
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 16
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 15
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 23
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 17
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "toggle_done",
+          "ok": false,
+          "ms": 16,
+          "error": "DemoError: PUT /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/toggle-done 返回 HTTP 409: {\"code\": 409, \"msg\": \"任务 6afd6735-4665-4026-a997-9c0bf1147485 已完成，远程任务不支持通过网关重新打开\"}",
+          "degraded": true
+        }
+      ]
+    },
+    {
+      "mode": "voting",
+      "ok": true,
+      "remote": true,
+      "task_id": "e84912ac-e070-4756-ae03-336cd45777b5",
+      "title": "端到端演示-voting-004053",
+      "fusion_strategy_sent": "voting",
+      "fusion_strategy_display": "rrf",
+      "mode_display": "voting",
+      "dag": {
+        "nodes": 1,
+        "edges": 0,
+        "node_names": [
+          "代码编程专家"
+        ]
+      },
+      "nodes_total": 1,
+      "node_status": {
+        "completed": 1
+      },
+      "execution_status": {
+        "status": "completed",
+        "completed_nodes": 1,
+        "total_nodes": 1,
+        "progress": 1.0
+      },
+      "fusion": {
+        "fusion_status": "completed",
+        "fusion_strategy": "rrf",
+        "confidence": 1.0,
+        "key_findings": [
+          "代码编程专家 的执行输出"
+        ],
+        "recommendations": [
+          "融合策略 voting 由执行器产出，参与专家 1 位，建议按置信度复核关键结论"
+        ],
+        "participating_nodes": 1
+      },
+      "task_status": "completed",
+      "logs_tail": [
+        "代码编程专家 · completed"
+      ],
+      "qa_answer_keys": [
+        "content",
+        "context",
+        "mode",
+        "question",
+        "task_id"
+      ],
+      "steps": [
+        {
+          "name": "create_task",
+          "ok": true,
+          "ms": 50
+        },
+        {
+          "name": "get_dag",
+          "ok": true,
+          "ms": 19
+        },
+        {
+          "name": "resume",
+          "ok": false,
+          "ms": 16,
+          "error": "DemoError: POST /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/resume 返回 HTTP 409: {\"code\": 409, \"msg\": \"InvalidTaskStatus: Can only resume paused task, current status: Running\"}",
+          "degraded": true
+        },
+        {
+          "name": "list_nodes",
+          "ok": true,
+          "ms": 15
+        },
+        {
+          "name": "list_nodes_after",
+          "ok": true,
+          "ms": 16
+        },
+        {
+          "name": "execution_status",
+          "ok": true,
+          "ms": 18
+        },
+        {
+          "name": "fusion_result",
+          "ok": true,
+          "ms": 20
+        },
+        {
+          "name": "get_task",
+          "ok": true,
+          "ms": 27
+        },
+        {
+          "name": "get_logs",
+          "ok": true,
+          "ms": 26
+        },
+        {
+          "name": "task_qa",
+          "ok": true,
+          "ms": 25
+        },
+        {
+          "name": "toggle_done",
+          "ok": false,
+          "ms": 15,
+          "error": "DemoError: PUT /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/toggle-done 返回 HTTP 409: {\"code\": 409, \"msg\": \"任务 e84912ac-e070-4756-ae03-336cd45777b5 已完成，远程任务不支持通过网关重新打开\"}",
+          "degraded": true
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "active_experts": 0,
+    "avg_completion_minutes": 0.0,
+    "completed_tasks": 0,
+    "failed_tasks": 0,
+    "running_tasks": 0,
+    "success_rate": 0.0,
+    "total_experts": 0,
+    "total_tasks": 0
+  },
+  "latency": [
+    {
+      "endpoint": "GET /api/alliance/stats",
+      "count": 1,
+      "p50_ms": 11,
+      "max_ms": 11
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks",
+      "count": 1,
+      "p50_ms": 30,
+      "max_ms": 30
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485",
+      "count": 1,
+      "p50_ms": 23,
+      "max_ms": 23
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/dag",
+      "count": 1,
+      "p50_ms": 22,
+      "max_ms": 22
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/execution-status",
+      "count": 1,
+      "p50_ms": 16,
+      "max_ms": 16
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/fusion-result",
+      "count": 1,
+      "p50_ms": 15,
+      "max_ms": 15
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/logs",
+      "count": 1,
+      "p50_ms": 17,
+      "max_ms": 17
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/nodes",
+      "count": 4,
+      "p50_ms": 15,
+      "max_ms": 19
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/dag",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/execution-status",
+      "count": 1,
+      "p50_ms": 18,
+      "max_ms": 18
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/fusion-result",
+      "count": 1,
+      "p50_ms": 20,
+      "max_ms": 20
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/logs",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "GET /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/nodes",
+      "count": 4,
+      "p50_ms": 16,
+      "max_ms": 22
+    },
+    {
+      "endpoint": "GET /api/v1/status",
+      "count": 1,
+      "p50_ms": 150,
+      "max_ms": 150
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks",
+      "count": 2,
+      "p50_ms": 61,
+      "max_ms": 61
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/qa",
+      "count": 1,
+      "p50_ms": 26,
+      "max_ms": 26
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/resume",
+      "count": 1,
+      "p50_ms": 16,
+      "max_ms": 16
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/qa",
+      "count": 1,
+      "p50_ms": 25,
+      "max_ms": 25
+    },
+    {
+      "endpoint": "POST /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/resume",
+      "count": 1,
+      "p50_ms": 16,
+      "max_ms": 16
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/6afd6735-4665-4026-a997-9c0bf1147485/toggle-done",
+      "count": 1,
+      "p50_ms": 16,
+      "max_ms": 16
+    },
+    {
+      "endpoint": "PUT /api/alliance/tasks/e84912ac-e070-4756-ae03-336cd45777b5/toggle-done",
+      "count": 1,
+      "p50_ms": 15,
+      "max_ms": 15
+    }
+  ],
+  "gate": {
+    "ok": true,
+    "repo": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+    "gates": {
+      "port_registry": {
+        "repo": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+        "passed": true,
+        "exit_code": 0,
+        "error_count": 0,
+        "warn_count": 3,
+        "scanned_ports": 113,
+        "duration_ms": 25154,
+        "returned_issues": 3,
+        "issues": [
+          {
+            "severity": "WARN",
+            "msg": "发现未登记端口 9100（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+            "files": [
+              "platform/domains/alliance/svc/mox-alliance-registry-svc/tests/http_registry.rs"
+            ]
+          },
+          {
+            "severity": "WARN",
+            "msg": "发现未登记端口 9200（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+            "files": [
+              "platform/domains/alliance/svc/mox-alliance-registry-svc/tests/http_registry.rs"
+            ]
+          },
+          {
+            "severity": "WARN",
+            "msg": "发现未登记端口 9300（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+            "files": [
+              "platform/domains/alliance/svc/mox-alliance-registry-svc/tests/http_registry.rs"
+            ]
+          }
+        ],
+        "advice": "端口校验通过，可放心提交。"
+      },
+      "doc_links": {
+        "passed": true,
+        "exit_code": 0,
+        "scanned_files": 366,
+        "checked_refs": 2217,
+        "broken_count": 0,
+        "warning_count": 112,
+        "duration_ms": 2584,
+        "top_broken_files": [],
+        "broken": [],
+        "stdout_summary": "[check-doc-links] 扫描文件 366 个，判定引用 2217 条",
+        "advice": "文档链接校验通过。"
+      }
+    },
+    "failures": [],
+    "summary": "治理体检通过：端口无漂移、文档无断链，可以提交/发布。",
+    "skip": false
+  }
+}

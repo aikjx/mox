@@ -220,6 +220,59 @@ impl DagEngineImpl {
         }
     }
 
+    /// 融合输出持久化出口（任务 Completed 且已产出融合结果时写入；sqlite 底座持久化，
+    /// 其余底座默认 no-op——重启后 `/result` 不再丢失已产出结论）
+    fn persist_fusion_output(
+        sink: Option<&Arc<dyn ExecutionStateSink>>,
+        state: &TaskExecutionState,
+    ) {
+        let Some(s) = sink else { return };
+        if state.task.status != TaskStatus::Completed {
+            return;
+        }
+        let Some(output) = state.fusion_output.as_ref() else {
+            return;
+        };
+        match serde_json::to_value(output) {
+            Ok(json) => {
+                if let Err(e) = s.persist_fusion_output(state.task.task_id, &json) {
+                    warn!("持久化融合输出失败 {}: {}", state.task.task_id, e);
+                }
+            }
+            Err(e) => warn!("融合输出序列化失败 {}: {}", state.task.task_id, e),
+        }
+    }
+
+    /// 内存 miss 时的存储层回读（多实例 / 重启后可用）：
+    /// 任务存在性 + 租户校验 + 融合输出读回；底座无能力 → 语义同旧版。
+    fn fusion_from_sink(
+        sink: &Option<Arc<dyn ExecutionStateSink>>,
+        task_id: Uuid,
+        tenant_id: Uuid,
+    ) -> AllianceResult<Option<FusionOutput>> {
+        let not_found =
+            || AllianceError::not_found("Task", &task_id.to_string());
+        let Some(s) = sink.as_ref() else {
+            return Err(not_found());
+        };
+        match s.read_back(task_id)? {
+            Some(view) => {
+                view_tenant_check(&view, tenant_id)?;
+                match s.read_fusion_output(task_id)? {
+                    Some(json) => match serde_json::from_value::<FusionOutput>(json) {
+                        Ok(output) => Ok(Some(output)),
+                        Err(e) => {
+                            warn!("融合输出反序列化失败 {}: {}", task_id, e);
+                            Ok(None)
+                        }
+                    },
+                    None => Ok(None),
+                }
+            }
+            None => Err(not_found()),
+        }
+    }
+
     /// 处理控制命令
     fn handle_control_command(
         states: &RwLock<HashMap<Uuid, TaskExecutionState>>,
@@ -519,6 +572,7 @@ impl DagEngineImpl {
                             warn!("持久化节点状态失败 {}/{}: {}", task_id, node_id, e);
                         }
                         Self::persist_task_state(Some(s), &state.task);
+                        Self::persist_fusion_output(Some(s), state);
                     }
                 }
             });
@@ -970,15 +1024,8 @@ impl DagEngine for DagEngineImpl {
                 return Ok(state.fusion_output.clone());
             }
         }
-        // 内存 miss：能从存储层确认任务存在 → Ok(None)（融合输出未持久化）；
-        // 存储层也没有 → NotFound
-        if let Some(sink) = self.state_sink.as_ref() {
-            if let Some(view) = sink.read_back(task_id)? {
-                view_tenant_check(&view, tenant_id)?;
-                return Ok(None);
-            }
-        }
-        Err(AllianceError::not_found("Task", &task_id.to_string()))
+        // 内存 miss：回落到存储层（任务存在性 + 租户校验 + 融合输出读回）
+        Self::fusion_from_sink(&self.state_sink, task_id, tenant_id)
     }
 
     fn config(&self) -> &ExecutorConfig {
@@ -1172,6 +1219,7 @@ mod tests {
         tasks: std::sync::Mutex<Vec<Task>>,
         nodes: std::sync::Mutex<Vec<(Uuid, String, String)>>,
         plans: std::sync::Mutex<Vec<Uuid>>,
+        fusion: std::sync::Mutex<HashMap<Uuid, serde_json::Value>>,
     }
 
     impl ExecutionStateSink for RecordingSink {
@@ -1201,6 +1249,35 @@ mod tests {
                 .unwrap()
                 .push((task_id, node_id.to_string(), status.to_string()));
             Ok(())
+        }
+
+        fn read_back(&self, task_id: Uuid) -> AllianceResult<Option<ExecutionView>> {
+            let task = self
+                .tasks
+                .lock()
+                .unwrap()
+                .iter()
+                .rev()
+                .find(|t| t.task_id == task_id)
+                .cloned();
+            Ok(task.map(|task| ExecutionView {
+                task,
+                plan: None,
+                nodes: Vec::new(),
+            }))
+        }
+
+        fn persist_fusion_output(
+            &self,
+            task_id: Uuid,
+            output: &serde_json::Value,
+        ) -> AllianceResult<()> {
+            self.fusion.lock().unwrap().insert(task_id, output.clone());
+            Ok(())
+        }
+
+        fn read_fusion_output(&self, task_id: Uuid) -> AllianceResult<Option<serde_json::Value>> {
+            Ok(self.fusion.lock().unwrap().get(&task_id).cloned())
         }
     }
 
@@ -1362,5 +1439,64 @@ mod tests {
         );
 
         assert!(states.read().contains_key(&task_id));
+    }
+
+    #[test]
+    fn fusion_output_persist_and_read_back_via_sink() {
+        let sink = Arc::new(RecordingSink::default());
+        let sink_dyn: Arc<dyn ExecutionStateSink> = sink.clone();
+        let tenant = Uuid::new_v4();
+        let task = Task::new(tenant, Uuid::new_v4(), "f".to_string(), "d".to_string());
+        let task_id = task.task_id;
+
+        let mut state = TaskExecutionState {
+            task,
+            plan: plan_with_routes(vec![]),
+            nodes: HashMap::new(),
+            options: test_options(),
+            outputs: HashMap::new(),
+            fusion_output: Some(FusionOutput {
+                content: serde_json::json!({"winner": "w", "steps": ["a", "b"]}),
+                confidence: 0.9,
+                expert_count: 2,
+                strategy: FusionStrategy::Weighted,
+                contributions: HashMap::new(),
+                summary: "s".to_string(),
+                participating_nodes: 2,
+            }),
+            dynamic_routes: None,
+        };
+
+        // 未达 Completed：不落库（避免中间态/终态前覆盖）
+        state.task.status = TaskStatus::Running;
+        DagEngineImpl::persist_fusion_output(Some(&sink_dyn), &state);
+        assert!(sink.fusion.lock().unwrap().is_empty(), "非完成态不得持久化融合输出");
+
+        // Completed：先落任务行（供 read_back 确认存在）再落融合输出
+        state.task.status = TaskStatus::Completed;
+        sink.persist_task(&state.task).unwrap();
+        DagEngineImpl::persist_fusion_output(Some(&sink_dyn), &state);
+        assert!(sink.fusion.lock().unwrap().contains_key(&task_id));
+
+        // 内存 miss → 经存储层读回完整融合输出
+        let out = DagEngineImpl::fusion_from_sink(&Some(sink_dyn.clone()), task_id, tenant)
+            .unwrap()
+            .expect("应从存储层读回融合输出");
+        assert_eq!(out.confidence, 0.9);
+        assert_eq!(out.content["winner"], "w");
+        assert_eq!(out.participating_nodes, 2);
+
+        // 错误租户 → TenantMismatch
+        let err = DagEngineImpl::fusion_from_sink(&Some(sink_dyn), task_id, Uuid::new_v4())
+            .unwrap_err();
+        assert_eq!(err.code(), Some(AllianceErrorCode::TenantMismatch));
+
+        // 未注入 sink / 存储层无此任务 → NotFound（与改动前一致）
+        assert!(DagEngineImpl::fusion_from_sink(&None, task_id, tenant).is_err());
+        let orphan = Uuid::new_v4();
+        assert!(matches!(
+            DagEngineImpl::fusion_from_sink(&Some(sink.clone() as Arc<dyn ExecutionStateSink>), orphan, tenant),
+            Err(e) if e.code() == Some(AllianceErrorCode::NotFound)
+        ));
     }
 }

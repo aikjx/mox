@@ -68,7 +68,27 @@ pub trait ExecutionStateSink: Send + Sync {
         status: &str,
         result: Option<&serde_json::Value>,
     ) -> AllianceResult<()>;
+
+    /// 持久化融合输出（可选能力：sqlite 底座经保留节点行落盘；默认不持久化）
+    fn persist_fusion_output(
+        &self,
+        _task_id: Uuid,
+        _output: &serde_json::Value,
+    ) -> AllianceResult<()> {
+        Ok(())
+    }
+
+    /// 回读融合输出（与 [`Self::persist_fusion_output`] 配对；默认无能力）
+    fn read_fusion_output(&self, _task_id: Uuid) -> AllianceResult<Option<serde_json::Value>> {
+        Ok(None)
+    }
 }
+
+/// 融合输出的保留节点行 id：sqlite 底座借节点表存储融合 JSON。
+///
+/// 非真实 DAG 节点——`read_back` / `restore_pending` 必须过滤本 id，
+/// 避免污染节点计数与恢复重建。
+pub const FUSION_OUTPUT_NODE_ID: &str = "__fusion_output__";
 
 /// 引擎内存 miss 时的降级回读视图
 pub struct ExecutionView {
