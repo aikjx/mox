@@ -15,9 +15,9 @@
 | 架构 | 架构设计 → 系统架构图 → ER 图 → 技术选型 | ARC 架构规范 + API 契约 | `BP-02`→`ARC/API` | `aiGenerateFlowDiagram` / `aiGenerateErd` |
 | 实现 | 开发测试 → 代码生成 → 制品管理 | 代码/DDL/图谱 + TPL 清单 | `BP-03`→`TPL` | `aiFullComplete` / `primiflow` |
 | 测试 | 测试策略 → 单测/集成/E2E → 缺陷修复 | 验证矩阵 | `BP-04`→`VAL` | `aiDevTestFix` / 功能图谱 §10 |
-| 验收 | 验收标准 → 发布闸门 → 发布 KB → mox 模块化系统架构完成 | 发布回执 + evidence 入图 | `BP-05`→`VAL` | `aiPublishArtifactsToKb` / `aiGenerateProjectGraph` |
+| 验收 | 验收标准 → 发布闸门 → 发布 KB → MOX完成 | 发布回执 + evidence 入图 | `BP-05`→`VAL` | `aiPublishArtifactsToKb` / `aiGenerateProjectGraph` |
 
-**事实来源**：`docs/对话开发系统-端到端流水线.mmd` · `璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md` · 功能图谱 §9。
+**事实来源**：`docs/对话开发系统-端到端流水线.mmd` · `璇玑-MOX需求业务处理流程图-归一化企业级.md` · 功能图谱 §9。
 
 ---
 

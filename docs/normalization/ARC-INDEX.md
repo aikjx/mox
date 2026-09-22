@@ -5,14 +5,14 @@
 
 ---
 
-## 1. 六层架构栈（mox 模块化系统架构 modular stack）
+## 1. 六层架构栈（MOX modular stack）
 
 | 层 | 真实资产 | 职责 | 权威文档 |
 |----|----------|------|----------|
 | L1 母版 | `mox_sys`（module-registry.yml） | 身份/租户/组织/IAM/审计/出盒/幂等/文件/图谱 | `docs/database/mox_sys/README.md` |
 | L2 生成编排 | `meta`(codegen) / `mox-flow-primiflow-svc`(DAG) / verify+闸门 | 代码生成、流程编排、合规门禁 | `docs/database/mox_sys/module-registry.yml` |
 | L3 知识图谱 | `kg`(property_graph/provenance/rebuild) / `relation-model.md` | 语义关系、来源、可重建投影 | `docs/database/mox_sys/relation-model.md` |
-| L4 AI 闭环 | ChatView / InfiniteOptimizerView / `aiOptimize` / `moxOptimize` | 分析→生成→验证→优化→再生成 | `MOX-AI驱动mox 模块化系统架构平台-企业级设计-mox 模块化系统架构分析-v3.0.md` |
+| L4 AI 闭环 | ChatView / InfiniteOptimizerView / `aiOptimize` / `moxOptimize` | 分析→生成→验证→优化→再生成 | `MOX-AI驱动MOX平台-企业级设计-MOX分析-v3.0.md` |
 | L5 模板+插件 | TPL / PluginsView / McpView / MarketView | 业务形态模板、外部能力即插即用 | `docs/normalization/TPL-INDEX.md` |
 | L6 领域包 | iam/meta/ea/kg/ai（可扩展行业包） | 行业专属能力装配 | `docs/database/mox_sys/module-registry.yml` |
 

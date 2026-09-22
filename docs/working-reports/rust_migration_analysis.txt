@@ -1,9 +1,9 @@
 分析怎么融合，企业级，最好的架构，模块化：
-用户要求"mox 模块化系统架构分析，迁移到各个模块的rust!!企业级模块！！！整理好！！最好的架构！！mox 模块化系统架构维度，全链路"。
+用户要求"MOX分析，迁移到各个模块的rust!!企业级模块！！！整理好！！最好的架构！！MOX维度，全链路"。
 
 这是个超大架构迁移任务（Node.js 企业级架构 → Rust）。我需要：
 1. 先盘点现状：Rust 侧已存什么模块 / Crate
-2. 再mox 模块化系统架构分析当前 Node.js 的 10+ 领域模块，哪些该搬去 Rust、哪些保留 JS BFF
+2. 再MOX分析当前 Node.js 的 10+ 领域模块，哪些该搬去 Rust、哪些保留 JS BFF
 3. 设计最终的企业级架构图和分阶段迁移计划
 4. 真的把核心模块写出来（IAM/tenant/auth/biz-pipeline/data-store/rule-engine/workflow-engine/audit/kb-graph...）
 
@@ -3023,7 +3023,7 @@ HTTP DELETE 要求 JSON body，传空 JSON `{}`：
 
 加载动态UI技能，展示架构全景图：
 
-## 🏗️ 企业级 Rust 迁移 · mox 模块化系统架构维度交付报告
+## 🏗️ 企业级 Rust 迁移 · MOX维度交付报告
 
 ### 一、架构总览（5 Crates 分层模型）
 见上方的**架构分层图**，L1→L3→L5→L7 四层：
@@ -3069,4 +3069,4 @@ cargo run -p mox-platform-enterprise-svc
 # POST /api/enterprise/v1/auth/login  body: {"tenant_code":"T001","username":"admin","password":"admin123"}
 ```
 
-企业级 Rust 模块架构至此整理完成：**mox 模块化系统架构维度（IAM/Meta/DataStore/Orchestrator/HTTP）+ 全链路（login→define→create→update→get+audit→delete→list）20 条单元+集成测试+HTTP E2E 100% 全绿通过。**维度Java DubboRust Dubbo服务契约Java interfaceproto IDL → 生成 trait实现implements 接口的类impl 生成 trait 的 struct暴露方式@DubboService 注解自动扫描代码里显式 register_service / provider::register配置注解参数 + properties/yamldubbo.yaml 列服务列表协议dubbo /triple/hessian 等主要 triple（gRPC 兼容）
+企业级 Rust 模块架构至此整理完成：**MOX维度（IAM/Meta/DataStore/Orchestrator/HTTP）+ 全链路（login→define→create→update→get+audit→delete→list）20 条单元+集成测试+HTTP E2E 100% 全绿通过。**维度Java DubboRust Dubbo服务契约Java interfaceproto IDL → 生成 trait实现implements 接口的类impl 生成 trait 的 struct暴露方式@DubboService 注解自动扫描代码里显式 register_service / provider::register配置注解参数 + properties/yamldubbo.yaml 列服务列表协议dubbo /triple/hessian 等主要 triple（gRPC 兼容）

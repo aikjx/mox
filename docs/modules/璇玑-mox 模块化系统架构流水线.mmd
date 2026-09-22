@@ -1,4 +1,4 @@
-﻿%% 璇玑 · mox 模块化系统架构需求业务处理流水线（归一化企业级 · AA-STD-V1.0）
+﻿﻿%% 璇玑 · MOX需求业务处理流水线（归一化企业级 · AA-STD-V1.0）
 %% 单一机读源：可喂给 info-graph / Mermaid 渲染器 / 任意文档画布
 %% 8 阶段 + 4 道闸门；任意闸门拒绝即阻断出码，无降级旁路
 
@@ -41,7 +41,7 @@ flowchart TD
         LP["Loop\nLoopStart/End + 回边"]
         LL["LLM\nModelTier 路由"]
     end
-    EXT -. 参与mox 模块化系统架构约束与求解 .-> S3
+    EXT -. 参与MOX约束与求解 .-> S3
 
     %% ===== 关图承载 =====
     subgraph GUAN["关图六维绑定 (REQ→COD)"]

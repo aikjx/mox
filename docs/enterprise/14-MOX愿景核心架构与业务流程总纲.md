@@ -257,7 +257,7 @@ flowchart TD
     G2{{"G2 ⛨ 璇玑否决（最高）<br/>vetoed → 强制 Blocked"}}
     S7[["S7 治理闸门 Govern<br/>审计哈希链+版本机+SLA+预算+RBAC"]}
     G3{{"G3 治理闸门<br/>五条件任一不满足即拒"}}
-    S8[["S8 出码 / 出图<br/>代码工程+拓扑快路径+可视化+指标"]}
+    S8[["S8 出码 / 出图<br/>代码工程+拓扑快路径+可视化+指标"]]
 
     S1 --> G0 --> S2 --> S3 --> G1 --> S4 --> S5 --> S6 --> G2 --> S7 --> G3 --> S8
     G0 -- 拒绝 --> X1[["阻断：拒绝进入诊断"]]
@@ -371,9 +371,4 @@ flowchart LR
 | 六维绑定 / TraceMatrix | `specs/PT-Primi-架构规范-V1.0-完整版.md` ＋ `crates/primiflow-core/trace_matrix.md` |
 | 双璇玑 / 四闸门 / 主流程 | `璇玑-MOX需求业务处理流程图-归一化企业级.md`（AA-STD-V1.0） |
 | 需求 / 架构 / 设计 / 业务 | `enterprise/01` `02` `03` `04` |
-| 文档治理 | `enterprise/00-INDEX.md` ＋ `docs/README.md` |
-| 质量证据 | `enterprise/09` `10` `11` `12` `13` |
-
----
-
-*本文为活文档（North-Star Charter），随系统演进持续迭代；任何结构变更须在 `00-INDEX` 变更记录留痕。*
+{}

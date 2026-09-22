@@ -43,7 +43,7 @@ source_of_truth: 参考（导航页）
 
 | # | 文档 | 核心内容 |
 |---|------|----------|
-| 00 | [mox 模块化系统架构需求分析](docs/expert-alliance/v2/00-requirements.md) | 业务场景/功能需求/非功能需求/用户故事/约束假设/验收标准 |
+| 00 | [MOX需求分析](docs/expert-alliance/v2/00-requirements.md) | 业务场景/功能需求/非功能需求/用户故事/约束假设/验收标准 |
 | 01 | [企业级架构设计](docs/expert-alliance/v2/01-architecture.md) | 七层架构/5个新服务拆分/多协议网关/部署架构/与现有服务集成 |
 | 02 | [归一化领域模型](docs/expert-alliance/v2/02-domain-model.md) | 统一术语/9个核心实体/状态机/数据契约/领域事件 |
 | 03 | [全路径业务流程](docs/expert-alliance/v2/03-business-flow.md) | 端到端主流程/4个核心子流程/异常处理/MCP调用/时序图 |
@@ -292,7 +292,7 @@ ws://localhost:8080/ws/v1/expert/tasks/task-xxx/progress?token=<jwt>
 | 版本 | 日期 | 说明 |
 |------|------|------|
 | v1.0 | 2026-08-26 | 初始设计：3篇文档（总览/注册协议/图谱Schema） |
-| v2.0 | 2026-08-26 | 企业级mox 模块化系统架构版：8篇文档，mox 模块化系统架构需求/归一化模型/全路径流程/多协议/数据/安全/路线图 |
+| v2.0 | 2026-08-26 | 企业级MOX版：8篇文档，MOX需求/归一化模型/全路径流程/多协议/数据/安全/路线图 |
 
 ---
 

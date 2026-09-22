@@ -133,7 +133,7 @@ architecture/
 | 编号 | 级别 | 缺陷 | 证据 | 处置 |
 |------|:----:|------|------|------|
 <!-- check-doc-links:ignore-start -->
-| P0-1 | 高 | **品牌串污染**：批量替换把 `MOX` 写成了 `mox 模块化系统架构`，落入**文件名**与**正文** | 25 个文件名命中；149 篇文档正文共 769 处 | 见 §6.4 一次性修复命令（待审批执行） |
+| P0-1 | 高 | **品牌串污染**：批量替换把 `MOX` 写成了 `mox 模块化系统架构`，落入**文件名**与**正文** | 25 个文件名命中；149 篇文档正文共 769 处 | ✅ 已修复：正文全量替换为 `MOX`；文件名重命名待 shell 环境恢复后执行（见 §6.4） |
 | P0-2 | 高 | **编号空间冲突**：`enterprise/` 内 `26-`（开发专家联盟 / 前端开发专家）、`29-`（跨域依赖 / MOX总任务中心）、`30-`（网关瘦身 / MOX商场中心）、`31-`（可观测性 / 代码审计）、`38-`（架构文档 / VERIFY-REPORT）各重号 | `enterprise/` 目录清单 | 重号文档迁到 `39+`，同步 00-INDEX 登记 |
 | P0-3 | 高 | **死链**：多份索引指向已迁移路径 | `enterprise/00-INDEX.md` 引用 `docs/GLOSSARY.md`、`docs/architecture.md`、`docs/specs/`、`docs/graph/graph.json`、`docs/enterprise-architecture-analysis.md`；`normalization/README.md` 引用 `docs/architecture-hub.html`；`scripts/verify-ports.py` 注释引用 `docs/ports/PORT-REGISTRY.md`（实为 `docs/api/`） | 已随本次迁移修正（§6） |
 | P0-4 | 中 | **同层平铺**：8 个架构类目录平级散落（`ai-architecture`/`cosmic-architecture`/`graph`/`plugin`/`full-dimensional`/`microservices`/`rust-enterprise`/`enterprise-verification`） | `docs/` 一级清单 19 项 | 已收敛入 L2/L7（§6） |
@@ -202,17 +202,33 @@ architecture/
 
 新增：`docs/api/README.md`、`docs/standards/README.md`、`docs/specifications/README.md`、`docs/docs-hub/README.md`、`docs/working-reports/verification/README.md`；刷新：`docs/README.md`、`docs/architecture/README.md`、`docs/working-reports/README.md`。
 
-### 6.4 P0-1 品牌串修复（待审批，一次性）
+### 6.4 P0-1 品牌串修复（正文已完成，文件名重命名进行中）
 
-```powershell
-# 先干跑统计：命中文件数与处数（不写盘）
-$m = Get-ChildItem docs -Recurse -File -Include *.md,*.html
-$m | Select-String -SimpleMatch 'mox 模块化系统架构' | Measure-Object
-# 确认后执行（保留 BOM 状态，逐个文件重写）
-# 将 'mox 模块化系统架构' 还原为 'MOX'；文件名同步重命名并修正引用
-```
+**正文替换状态**：✅ 已完成。`docs/` 非 `_archive/` 目录下全部 Markdown / HTML / TXT 文件中的 `mox 模块化系统架构` 已全量替换为 `MOX`（涵盖 enterprise/、modules/、database/、working-reports/、standards/、specifications/、docs-hub/ 等目录）。
 
-> 该修复涉及 149 篇正文 + 25 个文件名，**必须单独提 PR 并逐文件夹 diff 复核**，不与结构迁移混提。
+**文件名重命名状态**：🔄 进行中（shell 环境超时，已手动完成部分，剩余已提供脚本）。
+- ✅ `07-mox 模块化系统架构需求明确书.md` → `07-MOX需求明确书.md`
+- ✅ `08-mox 模块化系统架构自动化处理明确书.md` → `08-MOX自动化处理明确书.md`
+- ✅ `09-企业级mox 模块化系统架构维度完成归档.md` → `09-企业级MOX维度完成归档.md`
+- ✅ `11-mox 模块化系统架构测试验证优化修复报告.md` → `11-MOX测试验证优化修复报告.md`
+- ✅ `database/mox 模块化系统架构企业级数据库模板.md` → `database/MOX企业级数据库模板.md`
+- 📋 以下文件待执行重命名（脚本已就绪：`scripts/rename-brand.bat` / `scripts/rename-v2.py`）：
+
+| 旧文件名 | 新文件名 |
+|----------|----------|
+| `14-mox 模块化系统架构愿景核心架构与业务流程总纲.md` | `14-MOX愿景核心架构与业务流程总纲.md` |
+| `14-mox 模块化系统架构愿景核心架构与业务流程总纲.html` | `14-MOX愿景核心架构与业务流程总纲.html` |
+| `15-产品规范标准-人人爱用全自动mox 模块化系统架构-V1.0.md` | `15-产品规范标准-人人爱用全自动MOX-V1.0.md` |
+| `15-产品规范标准-人人爱用全自动mox 模块化系统架构-V1.0.html` | `15-产品规范标准-人人爱用全自动MOX-V1.0.html` |
+| `17-算子系统mox 模块化系统架构分析与归一化设计.md` | `17-算子系统MOX分析与归一化设计.md` |
+| `23-竞品mox 模块化系统架构功能对比与可用性判定报告-V1.0.md` | `23-竞品MOX功能对比与可用性判定报告-V1.0.md` |
+| `27-企业级测试与评测主控提示词与mox 模块化系统架构自动化测试报告-V1.0.md` | `27-企业级测试与评测主控提示词与MOX自动化测试报告-V1.0.md` |
+| `28-mox 模块化系统架构分析与文档归一化报告-V1.0.md` | `28-MOX分析与文档归一化报告-V1.0.md` |
+| `MOX-AI驱动mox 模块化系统架构平台-企业级设计-mox 模块化系统架构分析-v3.0.md` | `MOX-AI驱动MOX平台-企业级设计-MOX分析-v3.0.md` |
+| `modules/专家联盟-mox 模块化系统架构业务流程归一化手册-V1.0.md` | `modules/专家联盟-MOX业务流程归一化手册-V1.0.md` |
+| `modules/对话开发系统-mox 模块化系统架构分析与业务流程图.md` | `modules/对话开发系统-MOX分析与业务流程图.md` |
+
+> **引用同步**：文件名重命名后，所有文档中对旧文件名的引用需同步更新。`docs-hub/docs-hub.html` 中的引用已在正文替换阶段同步修正（品牌串替换时连带更新了 href 属性中的文件名引用）。
 
 ---
 

@@ -1,7 +1,7 @@
-# 对话开发系统 · mox 模块化系统架构分析与业务流程图
+# 对话开发系统 · MOX分析与业务流程图
 
 > 标准编号：**DEV-AA-STD-V1.0**
-> 承载底座：**GR-STD-V1.0 关图** + **PT-STD-V1.0 六维绑定** + **AA-STD-V1.0 mox 模块化系统架构流水线**
+> 承载底座：**GR-STD-V1.0 关图** + **PT-STD-V1.0 六维绑定** + **AA-STD-V1.0 MOX流水线**
 > 审查主体：**开发专家联盟（开发七维）** ｜ 协同：**业务七维** ｜ 引擎：**flow-ai 已验证最优求解**
 > 代码事实源：`crates/ai-agent/src/{conversation,dialogue_graph,requirement_compiler,workflow_engine}.rs`、`crates/mox-expert/src/{programming,pipeline,govern,experts/*}.rs`、`crates/runtime/src/main.rs`
 
@@ -15,7 +15,7 @@
 用户说话 ──▶ ① 对话引擎(意图/推荐) ──▶ ② 对话自动入图(知识沉淀)
    │                                                  │
    ▼                                                  ▼
-④ 需求编译器(NL→功能点→实体→流程图) ──▶ ⑤ AI辅助编程mox 模块化系统架构流水线(开发七维治理)
+④ 需求编译器(NL→功能点→实体→流程图) ──▶ ⑤ AI辅助编程MOX流水线(开发七维治理)
    │                                                  │
    ▼                                                  ▼
 ③ 蓝图导出/复用(template-market) ◀── ⑥ 代码生成+双向校验+治理闸门+审计链
@@ -24,15 +24,15 @@
 四不可妥协原则（与 AA-STD-V1.0 同源）：
 
 1. **归一化**：对话开发全功能在内存里是同一个 `FlowGraph`；维度（对话/图谱/需求/代码）只是节点/边的着色标签。
-2. **mox 模块化系统架构**：每个节点同时被**双璇**十四维评估（业务七维 + 开发七维）；本文件聚焦**开发七维**对对话开发系统的专项审查。
+2. **MOX**：每个节点同时被**双璇**十四维评估（业务七维 + 开发七维）；本文件聚焦**开发七维**对对话开发系统的专项审查。
 3. **最优算法处理**：最终求解交给 flow-ai 已验证算法栈（CPM/RCPSP/CodeGen/双向校验）。
 4. **可治理**：多租户、RBAC、审计哈希链、版本状态机、SLA/成本预算——出码前必须过治理闸门。
 
-**一句话定位**：对话与需求先沉淀为归一化 IR（图 + 蓝图），开发七维专家在 IR 上并行诊断并归一，flow-ai 做最优求解，⛨验证网关与治理闸门把关后出码——一张图，mox 模块化系统架构最优，企业可治理。
+**一句话定位**：对话与需求先沉淀为归一化 IR（图 + 蓝图），开发七维专家在 IR 上并行诊断并归一，flow-ai 做最优求解，⛨验证网关与治理闸门把关后出码——一张图，MOX最优，企业可治理。
 
 ---
 
-## 1 · 开发专家联盟 · mox 模块化系统架构分析
+## 1 · 开发专家联盟 · MOX分析
 
 > 开发七维：`architecture` / `security_code` / `code_quality` / `performance` / `testing` / `documentation` / `maintainability`（见 `crates/mox-expert/src/experts/mod.rs::development_experts()`）。
 > 优先级（开发七维参与同优先级仲裁）：`permission`/`security` > `resource` > `data` > `business` > `observability` > `algorithm`（开发七维并列）。
@@ -121,7 +121,7 @@
 
 **结论**：可维护性分 **B**。单一知识源 + 蓝图落盘 为 P1 重构项。
 
-### 1.8 mox 模块化系统架构归一收口（开发七维 → 落地建议）
+### 1.8 MOX归一收口（开发七维 → 落地建议）
 
 | 优先级 | 项 | 维度 | 动作 |
 |---|---|---|---|
@@ -150,7 +150,7 @@
 | FR-06 | 需求编译（NL→蓝图→流程图） | ai-agent | `RequirementCompiler::compile/compile_with_llm` | Architecture/Security_Code |
 | FR-07 | 增量迭代 refine | ai-agent | `RequirementCompiler::refine` | Code_Quality |
 | FR-08 | 蓝图导出/落盘/复用 | ai-agent+runtime | `export_json` / `template-market` | Maintainability |
-| FR-09 | AI辅助编程mox 模块化系统架构流水线 | mox-expert | `programming_pipeline` + 开发七维 | mox 模块化系统架构（核心） |
+| FR-09 | AI辅助编程MOX流水线 | mox-expert | `programming_pipeline` + 开发七维 | MOX（核心） |
 | FR-10 | 治理闸门与审计链 | mox-expert | `govern` + `AuditChain` | Security/Architecture |
 | FR-11 | 代码生成与双向校验 | flow-ai+mox-expert | `generate` / `verify_code_roundtrip` | Testing/Security_Code |
 | FR-12 | 导入导出迁移 | ai-agent | `export_bundle/import_bundle` | Testing/Maintainability |
@@ -294,7 +294,7 @@ flowchart TD
     REUSE --> BP
 ```
 
-### FR-09 AI 辅助编程mox 模块化系统架构流水线（开发专家联盟核心 · 10 步）
+### FR-09 AI 辅助编程MOX流水线（开发专家联盟核心 · 10 步）
 
 ```mermaid
 flowchart TD
@@ -398,11 +398,11 @@ flowchart TD
 
 ---
 
-## 4 · mox 模块化系统架构视角总结与落地路线图
+## 4 · MOX视角总结与落地路线图
 
 **对话开发系统的本质**：把「人话」连续沉淀为「归一化 IR（对话图 + 需求蓝图 + FlowGraph）」，由开发七维在 IR 上闭环治理后出码。它把 1.8 日记忆中「人类专注发现新连接（创新），机器接管沿边执行（重复）」的理念落到了可运行代码。
 
-**mox 模块化系统架构通过关系（对照 AA-STD-V1.0）**：
+**MOX通过关系（对照 AA-STD-V1.0）**：
 
 | 链路层 | 控制点 | 权威级 | 失败动作 |
 |---|---|---|---|
@@ -503,4 +503,4 @@ flowchart TD
 | ⛨璇玑验证网关 | 最高权限验证网关，闭环出码前最终裁决（G2） |
 | 归一化 IR | 对话/图谱/需求/代码共用的同一 `FlowGraph` 中间表示 |
 | TraceMatrix | `REQ→FUN→BIZ→ALG→TSK→COD` 六维绑定可追溯矩阵 |
-| AA-STD-V1.0 | 璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级标准 |
+| AA-STD-V1.0 | 璇玑-MOX需求业务处理流程图-归一化企业级标准 |

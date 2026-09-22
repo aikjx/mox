@@ -1,8 +1,8 @@
-# server-manage.py mox 模块化系统架构整理·修复·规范标准化报告
+# server-manage.py MOX整理·修复·规范标准化报告
 
 - 日期：2026-09-01
 - 对象：`scripts/server-manage.py`（璇玑系统统一运维脚本，单文件整合版）
-- 类型：mox 模块化系统架构整理 / 修复 / 规范标准化
+- 类型：MOX整理 / 修复 / 规范标准化
 - 前置：脚本 docstring 已归一化为 `server-manage.py`（版本 3.0），内部 `manage.py` 引用已归一化（白名单双签名保留兼容）
 
 ---

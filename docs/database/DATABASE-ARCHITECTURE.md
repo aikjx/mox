@@ -4,7 +4,7 @@
 > 数据日期：2026-09-17。证据逐域来自真实 DDL 与建表调用点，完整证据见
 > `docs/working-reports/_norm_research/db-inventory.md`（含全部 文件:行号）。
 >
-> **与既有母版的分工**：本目录 `mox_sys/` 与 `mox 模块化系统架构企业级数据库模板.md` 是
+> **与既有母版的分工**：本目录 `mox_sys/` 与 `MOX企业级数据库模板.md` 是
 > **MySQL 8.3 目标模型（target）**；本文件是 **Rust 运行时实际落地（as-built）**。
 > 运行时当前以 SQLite 为主，二者不是安装关系，目标态见 §3 迁移路线。
 

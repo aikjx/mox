@@ -1,6 +1,6 @@
-# mox 模块化系统架构企业级数据库通用母版（mox_sys Universal Template）
+# MOX企业级数据库通用母版（mox_sys Universal Template）
 
-> 目标：一套**mox 模块化系统架构维度覆盖、归一化到 BCNF、企业级、人人可用、全方面可扩展**的关系数据库模板。
+> 目标：一套**MOX维度覆盖、归一化到 BCNF、企业级、人人可用、全方面可扩展**的关系数据库模板。
 > 配套 DDL：`mox_sys/mox_sys-universal-template.sql`（本文件为其设计说明与归一化规范）。
 > 权威契约：`mox_sys/module-contract.md`；跨库兼容：`mox_sys/cross-database.md`。
 
@@ -11,12 +11,12 @@
 旧 `mox_v3` 基线解决了"把 79 张乱表分层"的问题；本母版在其之上解决三件事：
 
 1. **归一化（Normalization）**：所有短码、配置、审计、授权只定义一次，消灭散落 CHECK 约束、每表大 JSON、重复快照表。
-2. **mox 模块化系统架构维度（Full-Dimension）**：身份 / 租户 / 组织 / 成员 / 授权 / 菜单 / 字典 / 配置 / 审计 / 事件总线 / 文件 / 通知 / 调度 / 特性开关 / 连接器 / 国际化 / 计量套餐 / 知识图谱 / 扩展钩子——19 个维度包一次就位。
+2. **MOX维度（Full-Dimension）**：身份 / 租户 / 组织 / 成员 / 授权 / 菜单 / 字典 / 配置 / 审计 / 事件总线 / 文件 / 通知 / 调度 / 特性开关 / 连接器 / 国际化 / 计量套餐 / 知识图谱 / 扩展钩子——19 个维度包一次就位。
 3. **全方面可扩展（Extensible）**：每个维度是一个可独立安装/禁用的模块；业务零改表即可通过 EAV 自定义字段、Webhook、事件 outbox、模块注册表扩展。
 
 ---
 
-## 1. mox 模块化系统架构现状分析（优化前 → 优化后）
+## 1. MOX现状分析（优化前 → 优化后）
 
 | 维度 | 旧痛点 | 本母版做法 |
 |---|---|---|
@@ -45,7 +45,7 @@
 - **A 级 · 封闭值域用 DDL `CHECK` 枚举**：仅用于**永不加项**的封闭值域（`effect allow/deny`、`scope_kind G/T/E/U`、`flag.percent ≤100`、P17 全部状态集），DDL 直接写 `CHECK (col IN (...))` + `COMMENT 'a/b/c'`，由 DB 强制、跨库保真。
 - **B 级 · 可演进值域用字典治理**：状态/类型/渠道等**可能加项**的类别字段，用 `COMMENT 'a/b/c'` 自描述并**必须**登记 `sys_enum_type` / `sys_enum_item`（4NF），作为应用层运行时校验与 UI 下拉源；**不写死 CHECK**——否则改枚举值需 `ALTER TABLE` 锁表，违背字典热维护原则。
 - **度量/序号允许数值**：`row_version`、`size_bytes`、`quantity`、`percent`、`confidence`、`priority`、`sort_no`、`version_no`、`execution_ms` 等是「量」不是「类」，保留 `BIGINT` / `DECIMAL` / `TINYINT`，不受本红线约束。
-- 判定一句话：**将来可能加项 → B 级字典；值域永锁死 → A 级 CHECK**。二者互补而非替代；文档凡言“每个类别字段都带 CHECK”一律以本两级规则为准。
+- 判定一句话：**将来可能加项 → B 级字典；值域永锁死 → A 级 CHECK**。二者互补而非替代；文档凡言"每个类别字段都带 CHECK"一律以本两级规则为准。
 
 > **精算审计结论（复核于 2026-09）**：母版 56 表 653 列，全部类别字段为显式字符串、**零数值型类别**（红线达标）。`CHECK` 共 14 条，均属 A 级封闭值域：`sys_policy.effect` / `sys_setting.scope_kind` / `sys_feature_flag_rollout.percent` 3 条 + P17 状态/基数 11 条；其余可演进类别列（B 级）以 `COMMENT 'a/b/c'` 自描述，取值登记于字典种子 `mox_sys-seed.sql`。
 
@@ -82,7 +82,7 @@
 
 ---
 
-## 3. mox 模块化系统架构维度包地图（19 包）
+## 3. MOX维度包地图（19 包）
 
 ```
 P01 身份    sys_user / sys_user_identity / sys_user_mfa / sys_user_session
@@ -147,7 +147,7 @@ P19 视图    v_tenant_user / v_user_effective_permission
 ## 6. 迁移与兼容
 
 - **一键安装（唯一入口）**：直接执行 `mox_sys-universal-template.sql`（它已含 `CREATE DATABASE IF NOT EXISTS mox_v3; USE mox_v3;` 并定义全部 56 张表，含 P17 模块注册与知识图谱）。同目录 `install.ps1` / `install.sh` 一行调用，无需任何顺序编排。
-- 已有 mox_v3（baseline 现状库）想对齐到本归一化母版：先按 `mox-v3.0-migration-plan.md` 做迁移（baseline 是“现状落库”，本母版是“归一化目标”，二者不是安装关系），再用本文件补齐缺失表；不要与本文件叠加执行同名旧表。
+- 已有 mox_v3（baseline 现状库）想对齐到本归一化母版：先按 `mox-v3.0-migration-plan.md` 做迁移（baseline 是"现状落库"，本母版是"归一化目标"，二者不是安装关系），再用本文件补齐缺失表；不要与本文件叠加执行同名旧表。
 - 旧库迁移见 `mox-v3.0-migration-plan.md`：先盘点 `information_schema`、建映射表、先迁全局用户再租户/组织/成员/权限、双写校验后切读，禁止生产直接 `DROP` / 关外键导入。
 - 破坏性变更必须：备份 + 回滚脚本 + 数据校验 + 停机/在线说明。
 

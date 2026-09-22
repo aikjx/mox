@@ -4,7 +4,7 @@
 > **版本**：V1.0
 > **日期**：2026-09-03
 > **项目**：moxfs 全自研云盘知识库（RustFS 仅为对标参考对象）
-> **阶段**：阶段六 — mox 模块化系统架构性能优化与稳定性加固
+> **阶段**：阶段六 — MOX性能优化与稳定性加固
 > **权威等级**：🟡验证报告
 > **编制依据**：cargo test 全量实测 + cargo clippy 实测 + cargo fmt 实测 + 代码审查
 
@@ -12,7 +12,7 @@
 
 ## 1. 阶段六目标
 
-阶段六聚焦**mox 模块化系统架构性能优化与稳定性加固**，包含两大工作线：
+阶段六聚焦**MOX性能优化与稳定性加固**，包含两大工作线：
 
 1. **P1+P2+P3 性能优化（4项）**：BufferPool 分片锁、Backpressure 缓存行对齐+thread-local、MultiWriter/HedgedReader Future对象池、ReedSolomon 矩阵缓存LRU
 2. **稳定性加固**：flaky 测试修复 + 性能基准补齐

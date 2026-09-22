@@ -1,4 +1,4 @@
-﻿# 专家联盟 · mox 模块化系统架构业务流程归一化手册 V1.0
+﻿﻿# 专家联盟 · MOX业务流程归一化手册 V1.0
 
 > 📝 **归一化修正记录（2026-08-31）**  
 > 已修正代码路径引用：原 `mox-expert/src/alliance/` → `platform/domains/alliance/`。EAF 6阶段与XOPT 8步分属不同crate，已做区分。
@@ -432,7 +432,7 @@ sequenceDiagram
 | **EAF 专家联盟企业级**（34 项） | `cd platform/backend-node && npm test -- test-expert-alliance-enterprise.js` | 34/34 PASS，`empty_query <100ms`、`security_forced_team`、`c_retry_loop`、`degrade_chain_1` 全部 ✅ | `EAF-STD-V1.2` 第 4~6 章 |
 | **璇玑融合全管线**（19 测试） | `cargo test -p mox-expert --test alliance` | 19/19 PASS：`phase_order`、`security_veto_irreversible`、`govern_respects_algo_veto`、`accelerate_ratio_ge_2_32x` | `16-P9 判重闸门验收报告 §4` |
 | **璇玑协作流程**（33 测试） | `cargo test -p mox-system` | 33/33 PASS：`br07_triple_check_cross_tenant_blocked`、`fsm_done_immutable`、`audit_hash_chain_continuous` | `12-RBAC审计全链路闭环验收报告` |
-| **7×8 算法对账**（Δ≤1e-6） | `node platform/domains/graph-algorithms/scripts/reconcile_7x8.js` | 56/56 点 Δ≤1e-6：CNM/Brandes/Harmonic/PR 与 Node 版结果一致 | `17-算子系统mox 模块化系统架构分析 §3` |
+| **7×8 算法对账**（Δ≤1e-6） | `node platform/domains/graph-algorithms/scripts/reconcile_7x8.js` | 56/56 点 Δ≤1e-6：CNM/Brandes/Harmonic/PR 与 Node 版结果一致 | `17-算子系统MOX分析 §3` |
 | **AI 四端点真实基准**（30 题） | `node platform/backend-node/test/ai-engine-real-benchmark.js` | 30/30 严格通过，degraded=0，SHA-256 留痕齐全 | `25-AI引擎真实基准评测报告` |
 | **前端对话 SSE 完整性**（E2E） | `cd frontend-ui && npx playwright test tests/10-key-pages@P0.spec.js --grep "Expert Alliance"` | SSE 帧 7/7 到达、5 芯片着色正确、TTS 三层回退正常、复制三格式齐全 | `27-企业级测试 §T-前端 5 题` |
 | **关图流程注入覆盖率** | `tools/info-graph coverage --kind alliance_flow` | F-01~F-05 核心节点 BFS 可达 ≥99%，FE-01~08 边 evidence 齐全 | `16-关图治理缺陷修复 §3 GR-E6` |

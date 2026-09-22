@@ -1,4 +1,4 @@
-# 仓库mox 模块化系统架构全景图 · 模块化分层导航（最详细版）
+# 仓库MOX全景图 · 模块化分层导航（最详细版）
 
 > ⚠️ **地图提示**：文中旧 Python `mox-server:8600` / `mox-store:8601` 已归档（`platform/legacy/`）；当前 Rust 网关唯一入口为 :3080。
 
@@ -11,9 +11,9 @@
 
 ## 0. 仓库身份
 
-- **产品/项目名**：MOX mox 模块化系统架构低代码平台（对外商业名：**璇玑（Aura）软件研发数字孪生中台**；对内研发代号：**关图 / 璇玑 RelGraph 算子统一mox 模块化系统架构治理系统**）
-- **一句话定位**：企业级动态 SQL 管理 + 自研知识图谱 + 字段级权限 + AI 驱动 + mox 模块化系统架构自动化治理
-- **核心铁律**：四归三连（需求→架构→业务→文档四归一；联盟/流程/代码三连）、mox 模块化系统架构双收口、三联盟协同闭环（产品联盟收需求 / 算法联盟落算法 / 开发联盟交付代码）
+- **产品/项目名**：MOX MOX低代码平台（对外商业名：**璇玑（Aura）软件研发数字孪生中台**；对内研发代号：**关图 / 璇玑 RelGraph 算子统一MOX治理系统**）
+- **一句话定位**：企业级动态 SQL 管理 + 自研知识图谱 + 字段级权限 + AI 驱动 + MOX自动化治理
+- **核心铁律**：四归三连（需求→架构→业务→文档四归一；联盟/流程/代码三连）、MOX双收口、三联盟协同闭环（产品联盟收需求 / 算法联盟落算法 / 开发联盟交付代码）
 
 ### 0.1 技术栈总览
 
@@ -179,13 +179,13 @@
 
 | 目录 | 文件数 | 内容 |
 |------|-------|------|
-| `enterprise/` | 49 | **企业级文档治理中心**：28 份编号文档 00~27（TOP-MASTER 顶层设计 / Aura 对外 SRS / 架构 / 设计 / 业务 / 路线图 / 需求-架构映射 / mox 模块化系统架构自动化 / 归一化总控卡 / 竞品对比 / 测试评测主控 等）+ 配套 |
+| `enterprise/` | 49 | **企业级文档治理中心**：28 份编号文档 00~27（TOP-MASTER 顶层设计 / Aura 对外 SRS / 架构 / 设计 / 业务 / 路线图 / 需求-架构映射 / MOX自动化 / 归一化总控卡 / 竞品对比 / 测试评测主控 等）+ 配套 |
 | `architecture/` | 15 | 架构文档编号系列：01-overview ~ 12 专题 + 归一化架构 + 13/14（本次新增的 platform 指南与仓库全景） |
 | `modules/` | 22 | 模块级文档 |
 | `microservices/` | 8 | 微服务文档 |
 | `rust-enterprise/` | 9 | Rust 企业级实践 |
 | `standards/` | 8 | 标准规范 |
-| `full-dimensional/` | 5 | mox 模块化系统架构分析 |
+| `full-dimensional/` | 5 | MOX分析 |
 | `cosmic-architecture/` | 6 | 宇宙级架构 |
 | `ai-architecture/` | 2 | AI 架构 |
 | `expert-alliance/` | 3 | 专家联盟 |
@@ -196,9 +196,9 @@
 
 ### 5.2 根级文档（docs/*.md / .html / .mmd）
 
-- **权威**：`architecture.md`（统一架构规范 v3.0-ai-powered）· `MOX-AI驱动mox 模块化系统架构平台-企业级设计-mox 模块化系统架构分析-v3.0.md` · `operations-manual.md`（操作手册 v2.0）· `GLOSSARY.md`（术语表）
+- **权威**：`architecture.md`（统一架构规范 v3.0-ai-powered）· `MOX-AI驱动MOX平台-企业级设计-MOX分析-v3.0.md` · `operations-manual.md`（操作手册 v2.0）· `GLOSSARY.md`（术语表）
 - **专项**：`data-exchange-spec.md`（MXDEF v1.0）· `deployment-guide.md`（部署指南 v1.0）· `app-store-architecture.md`（应用商店架构）· `AI-UNIFIED-OPTIMIZATION-PLAN.md` · `ARCHITECTURE_SAAS_PRIVATE.md` · `enterprise-architecture-analysis.md`
-- **可视化**：`mox-architecture.html` · `mox-system-business-architecture.html` · `璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.html/.md` · `璇玑-mox 模块化系统架构流水线.mmd` · `对话开发系统-端到端流水线.mmd` · `对话开发系统-mox 模块化系统架构分析与业务流程图.md`
+- **可视化**：`mox-architecture.html` · `mox-system-business-architecture.html` · `璇玑-MOX需求业务处理流程图-归一化企业级.html/.md` · `璇玑-MOX流水线.mmd` · `对话开发系统-端到端流水线.mmd` · `对话开发系统-MOX分析与业务流程图.md`
 - **本次新增**：`ai-development-concepts.md`（AI 工具概念区分）+ `architecture/13/14`（platform 指南 + 本全景图）
 
 ---
@@ -210,11 +210,11 @@
 | `prototypes/chat-project-generator/` | chat-project-generator.html | **对话驱动项目生成器**：AI 对话→自动编排→项目落地（含 flow.yaml + autoOrchestrator.js / flowEngine.js + examples.js） |
 | `reports/html/directory-audit-report/` | directory-audit-report.html | MOX 项目目录结构审计与整理方案（开发专家联盟） |
 | `prototypes/expert-alliance-cyber/` | expert-alliance-cyber.html | 专家联盟系统 CYBERPUNK 版 |
-| `prototypes/expert-alliance-design/` | expert-alliance-design.html | 专家联盟平台mox 模块化系统架构维度设计方案（Element Plus 规范） |
+| `prototypes/expert-alliance-design/` | expert-alliance-design.html | 专家联盟平台MOX维度设计方案（Element Plus 规范） |
 | `prototypes/kg-workflow-guide/` | kg-workflow-guide.html | 知识图谱数据处理工作流（采集到入库全链路，含 kg-pipeline-flow.yaml） |
-| `prototypes/mox-enterprise-optimization/` | mox-enterprise-optimization.html | 璇玑（MOX）企业级mox 模块化系统架构分析与优化设计报告 |
+| `prototypes/mox-enterprise-optimization/` | mox-enterprise-optimization.html | 璇玑（MOX）企业级MOX分析与优化设计报告 |
 | `reports/html/xuanji-ux-redesign/` | xuanji-ux-redesign.html | 璇玑系统 UX 重设计规划（信息架构与布局） |
-| `prototypes/data-vis/` | mox 模块化系统架构分析流程.html + flow_data.json | mox 模块化系统架构分析需求业务处理流程图可视化 |
+| `prototypes/data-vis/` | MOX分析流程.html + flow_data.json | MOX分析需求业务处理流程图可视化 |
 
 > 每个 HTML 项目均含 `assets/`（独有资源）；共享字体与 JS 统一存放于 `reports/_shared/`（报告类）与 `prototypes/_shared/`（原型类），`_shared/` 不随各项目复制。
 
@@ -274,7 +274,7 @@
 | `docker-compose.yml` | Docker 一体化部署 |
 | `start.sh` | 启动脚本 |
 | `platform_config.json` | 平台配置 |
-| `接口500错误mox 模块化系统架构分析报告.html` | 接口故障分析报告 |
+| `接口500错误MOX分析报告.html` | 接口故障分析报告 |
 
 ---
 

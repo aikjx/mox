@@ -39,7 +39,7 @@
 L6 行业领域包(domain pack)   → BP-INDEX（金融/医疗/政务/零售流程）
 L5 模块模板+插件             → TPL-INDEX + API-INDEX（Plugins/MCP/算子商城）
 L4 AI 持续优化闭环           → VAL-INDEX（优化产出回 verify + evidence 入图）
-L3 mox 模块化系统架构知识图谱(kg)          → ARC-INDEX §关系模型 + API-INDEX(graph)
+L3 MOX知识图谱(kg)          → ARC-INDEX §关系模型 + API-INDEX(graph)
 L2 生成与编排(meta+primiflow)→ TPL-INDEX + ARC-INDEX
 L1 mox_sys 母版              → ARC-INDEX §内核 + API-INDEX(system/iam)
 ```
@@ -53,7 +53,7 @@ L1 mox_sys 母版              → ARC-INDEX §内核 + API-INDEX(system/iam)
 - 🟢 母版内核：`docs/database/mox_sys/`（README / module-registry / relation-model / module-contract / cross-database）
 - 🟡 模块文档：`docs/modules/`（PrimiFlow 蓝图 / 业务流程 / mox-expert 系列）
 - 🌐 交互中心：`docs/docs-hub/docs-hub.html` · `docs/architecture/architecture-hub.html`
-- 📘 设计依据：`MOX-AI驱动mox 模块化系统架构平台-企业级设计-mox 模块化系统架构分析-v3.0.md`
+- 📘 设计依据：`MOX-AI驱动MOX平台-企业级设计-MOX分析-v3.0.md`
 
 ---
 

@@ -33,11 +33,11 @@
 
 ### P1 · 术语污染（历史批量替换事故）
 
-- 字符串 `mox 模块化系统架构` 在 `platform/` 下命中 **96+**（检索结果被截断，实际更多）。
+- 字符串 `MOX` 在 `platform/` 下命中 **96+**（检索结果被截断，实际更多）。
 - 已污染**功能数据**，不只是注释：
-  - `Cargo.toml:7` description 写作「专家联盟mox 模块化系统架构分析引擎」
+  - `Cargo.toml:7` description 写作「专家联盟MOX分析引擎」
   - `router.rs` 的 `complex_keywords` 关键词表含该串 → 复杂度判定会误命中
-  - `mox-unified-contract/src/quality.rs:281` 测试断言文案「安mox 模块化系统架构维度不达标」
+  - `mox-unified-contract/src/quality.rs:281` 测试断言文案「安MOX维度不达标」
 
 ### P1 · 两套联盟实现并行
 
@@ -163,7 +163,7 @@ INTENT_CLASSES 7 类, PHASE_NAMES 7 段, AUDIT_EVENTS_7 7 事件
 ### SSOT-6 · 术语
 
 - **优先修功能面**：`router.rs::complex_keywords`、`Cargo.toml` description、错误/断言文案
-- **其次修注释与文档**：`mox 模块化系统架构` 全量回退为正确术语
+- **其次修注释与文档**：`MOX` 全量回退为正确术语
 - **加 CI 禁词门禁**：`scripts/` 新增检查，禁止该串再次入库（防止批量替换复发）
 
 ---
@@ -207,7 +207,7 @@ tests/exact_scheduling.rs             有理数精确实验（断言 450/250/250
 ### 门禁建议（防复发）
 
 1. `arch-test`：core 层 crate 禁止依赖 `sqlx`/`reqwest`/`tokio-net`
-2. 禁词检查脚本：禁止 `mox 模块化系统架构` 入库
+2. 禁词检查脚本：禁止 `MOX` 入库
 3. 枚举唯一性检查：同名 `enum` 在 workspace 内出现次数 > 1 时告警
 4. 每次改 `constants.rs` / `quality.rs` 必须同步锁值测试
 
@@ -228,7 +228,7 @@ tests/exact_scheduling.rs             有理数精确实验（断言 450/250/250
 
 | # | 动作 | 落点 |
 |---|---|---|
-| 1 | 术语污染回退（可执行面） | **112 个文件 / 248 处**，`mox 模块化系统架构` → `架构`，按字节读写保留 BOM 与 CRLF |
+| 1 | 术语污染回退（可执行面） | **112 个文件 / 248 处**，`MOX` → `架构`，按字节读写保留 BOM 与 CRLF |
 | 2 | 路由关键词表修复 | `router.rs:227` 关键词表剔除污染串（原会导致复杂度判定误命中），补 `迁移` |
 | 3 | Cargo.toml description 修复 | `mox-ai-alliance-engine/Cargo.toml:7` → 「璇玑 · 专家联盟架构分析引擎」 |
 | 4 | 契约测试文案修复 | `mox-unified-contract/src/quality.rs` 阻断原因回退为「安全维度不达标」 |

@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>璇玑 · mox 模块化系统架构需求业务处理流程图（归一化 · 企业级）</title>
+<title>璇玑 · MOX需求业务处理流程图（归一化 · 企业级）</title>
 <style>
   :root{
     --ink:#1f2937; --ink-soft:#475467; --line:#d8dee9; --bg:#f7f9fc; --card:#ffffff;
@@ -66,13 +66,13 @@
 </head>
 <body>
 <header class="top">
-  <h1>璇玑 · mox 模块化系统架构需求业务处理流程图</h1>
+  <h1>璇玑 · MOX需求业务处理流程图</h1>
   <div class="meta">
     <span>标准编号：<b>AA-STD-V1.0</b></span>
     <span>承载底座：<b>GR-STD-V1.0 关图</b> + <b>PT-STD-V1.0 六维绑定</b></span>
     <span>引擎：<b>flow-ai 已验证最优求解</b></span>
     <span>代号：<b>璇玑（Mox）</b></span>
-    <span>mox 模块化系统架构视角：<b>双璇玑 · 十四维</b></span>
+    <span>MOX视角：<b>双璇玑 · 十四维</b></span>
   </div>
 </header>
 
@@ -83,17 +83,17 @@
   <h2>0 · 归一化总纲（Single Source of Truth）</h2>
   <p class="sub">四条不可妥协原则，是"整理优化 / 归一化 / 企业级"的唯一解释基准。</p>
   <div class="principle">
-    <div class="p"><h4>① 归一化</h4><p>四类流程图（业务/算法/权限/资源）在内存里是<b>同一个 FlowGraph</b>，差异仅体现于节点/边的 Dimension 着色与约束。不存在"四套图各自优化再合并"——那产生数据孤岛与冲突。物理节点唯一，维度只是标签，故"改一个节点，mox 模块化系统架构同步"天然成立。</p></div>
-    <div class="p"><h4>② mox 模块化系统架构</h4><p>每个节点同时被<b>双璇玑十四维</b>（业务七维 + 开发七维）评估；优化结论必须同时满足mox 模块化系统架构约束，不做单维最优而牺牲其他维。</p></div>
-    <div class="p"><h4>③ 最优算法处理</h4><p>最终求解交给 flow-ai 已验证算法栈（冒险分析并行化 + CPM 关键路径 + RCPSP 资源调度 + 冲突自动修复 + Dijkstra 关系网最短路）。本层只负责把mox 模块化系统架构约束<b>正确翻译</b>成引擎能吃的输入，不重造算法。</p></div>
+    <div class="p"><h4>① 归一化</h4><p>四类流程图（业务/算法/权限/资源）在内存里是<b>同一个 FlowGraph</b>，差异仅体现于节点/边的 Dimension 着色与约束。不存在"四套图各自优化再合并"——那产生数据孤岛与冲突。物理节点唯一，维度只是标签，故"改一个节点，MOX同步"天然成立。</p></div>
+    <div class="p"><h4>② MOX</h4><p>每个节点同时被<b>双璇玑十四维</b>（业务七维 + 开发七维）评估；优化结论必须同时满足MOX约束，不做单维最优而牺牲其他维。</p></div>
+    <div class="p"><h4>③ 最优算法处理</h4><p>最终求解交给 flow-ai 已验证算法栈（冒险分析并行化 + CPM 关键路径 + RCPSP 资源调度 + 冲突自动修复 + Dijkstra 关系网最短路）。本层只负责把MOX约束<b>正确翻译</b>成引擎能吃的输入，不重造算法。</p></div>
     <div class="p"><h4>④ 可治理</h4><p>多租户隔离、RBAC 权限、不可篡改审计、流程版本与审批、SLA/成本预算——任何"出码/执行"动作前必须过治理闸门。</p></div>
   </div>
-  <p class="note">一句话定位：<b>七个（+七个）领域专家在归一化 IR 上并行诊断，裁决器按"权限/安全优先"mox 模块化系统架构归一，flow-ai 引擎做已验证最优求解，⛨璇玑验证网关与治理闸门把关后出码——一张图，mox 模块化系统架构最优，企业可治理。</b></p>
+  <p class="note">一句话定位：<b>七个（+七个）领域专家在归一化 IR 上并行诊断，裁决器按"权限/安全优先"MOX归一，flow-ai 引擎做已验证最优求解，⛨璇玑验证网关与治理闸门把关后出码——一张图，MOX最优，企业可治理。</b></p>
 </section>
 
 <!-- ============ 1 主流程图 ============ -->
 <section>
-  <h2>1 · mox 模块化系统架构需求业务处理主流程图</h2>
+  <h2>1 · MOX需求业务处理主流程图</h2>
   <p class="sub">从关图 REQUIREMENT 根接入，到出码/出图，共 8 阶段、4 道强制闸门。任意闸门拒绝即阻断出码，且无降级旁路。</p>
   <div class="legend">
     <span><i class="dot" style="background:var(--navy)"></i>处理阶段</span>
@@ -152,12 +152,12 @@
       <tr class="dev"><td>Maintainability</td><td>开发</td><td>可维护性专家</td><td>变更影响面、腐化趋势</td><td>可维护性分、重构优先级</td><td><span class="pill soft">软</span></td></tr>
     </tbody>
   </table>
-  <p class="note">归一化收口：MCP 工具 / Skill / Loop / LLM 不是外接插件，而是归一化 IR 的<b>第一类公民</b>，参与与企业内部节点完全相同的mox 模块化系统架构约束与最优求解。</p>
+  <p class="note">归一化收口：MCP 工具 / Skill / Loop / LLM 不是外接插件，而是归一化 IR 的<b>第一类公民</b>，参与与企业内部节点完全相同的MOX约束与最优求解。</p>
 </section>
 
-<!-- ============ 3 mox 模块化系统架构通过关系图 ============ -->
+<!-- ============ 3 MOX通过关系图 ============ -->
 <section>
-  <h2>3 · mox 模块化系统架构通过关系图（六维绑定 + 十四维镜头）</h2>
+  <h2>3 · MOX通过关系图（六维绑定 + 十四维镜头）</h2>
   <p class="sub">关图六维绑定是唯一可追溯链：REQ→FUN→BIZ→ALG→TSK→COD。任意核心节点须可达某 REQ 根（GR-E6 偏离治理）；十四维镜头叠加于同一物理节点之上。</p>
   <div class="svgwrap">
     <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Microsoft YaHei, sans-serif">
@@ -210,7 +210,7 @@
         <line x1="480" y1="298" x2="498" y2="298" stroke="#64748b" stroke-width="1.5" marker-end="url(#ard)"/>
         <line x1="620" y1="298" x2="638" y2="298" stroke="#64748b" stroke-width="1.5" marker-end="url(#ard)"/>
       </g>
-      <text x="440" y="338" text-anchor="middle" font-size="11.5" fill="#6d28d9" font-weight="700">外部能力归一化为 IR 第一类公民 → 璇玑对其做与企业内部节点完全相同的mox 模块化系统架构约束与最优求解</text>
+      <text x="440" y="338" text-anchor="middle" font-size="11.5" fill="#6d28d9" font-weight="700">外部能力归一化为 IR 第一类公民 → 璇玑对其做与企业内部节点完全相同的MOX约束与最优求解</text>
     </svg>
   </div>
 </section>
