@@ -3,8 +3,8 @@ title: 专家联盟当前实现架构（唯一权威）
 version: V1.0
 authority: 🟢权威
 doc_id: EA-DOC-CURRENT
-last_updated: 2026-09-19
-source_of_truth: 代码事实（与 2026-09-19 代码核对一致）
+last_updated: 2026-09-22
+source_of_truth: 代码事实（与 2026-09-22 代码核对一致）
 ---
 
 # 专家联盟当前实现架构
@@ -16,7 +16,7 @@ source_of_truth: 代码事实（与 2026-09-19 代码核对一致）
 
 ## 一、物理代码分布
 
-### 1.1 Crate 拓扑（13 crates）
+### 1.1 Crate 拓扑（15 crates）
 
 ```
 platform/domains/alliance/
@@ -28,15 +28,17 @@ platform/domains/alliance/
 │   ├── mox-alliance-executor-core/   # 执行器业务逻辑
 │   ├── mox-alliance-config-core/     # 10大领域专家配置 + LLM路由
 │   └── mox-alliance-boot-config/    # Nacos/命名/启动配置
-├── proto/                        # gRPC契约与trait抽象
+├── proto/                        # 契约层：DTO + trait 抽象（协议先行）
 │   ├── mox-alliance-common-proto/
 │   ├── mox-alliance-scheduler-proto/
-│   └── mox-alliance-executor-proto/
+│   ├── mox-alliance-executor-proto/
+│   └── mox-alliance-registry-proto/  # 注册中心契约（2026-09 归一化落地）
 ├── sdk/                          # 客户端SDK
 │   ├── mox-alliance-sdk/
 │   └── mox-alliance-http-sdk/
 └── svc/                          # 可独立部署的服务
     ├── mox-alliance-scheduler-svc/  # 任务调度服务（:3100）
+    ├── mox-alliance-registry-svc/   # 专家注册中心（:3400，实现 registry-proto 契约）
     └── mox-alliance-executor-svc/   # DAG执行服务（:3200）
 ```
 
@@ -249,12 +251,12 @@ platform/domains/alliance/
 
 | 维度 | 当前实现 | v3 目标态 | 演进优先级 |
 |------|---------|----------|-----------|
-| 服务数 | 2 svc + 网关内联 | 7 独立服务 + sidecar | P2 |
+| 服务数 | 3 svc（scheduler/registry/executor）+ 网关内联 | 7 独立服务 + sidecar | P2 |
 | 存储 | SQLite + JSON | PostgreSQL + Redis + pgvector | P1 |
 | 服务间通信 | HTTP | gRPC :50051 | P3 |
 | fusion | executor-core 适配层 | 独立 fusion-svc | P2 |
 | memory | 网关内联 session/db | 独立 memory-svc | P2 |
-| registry | 网关内联 experts_registry | 独立 registry-svc | P1 |
+| registry | ✅ 已落地：独立 registry-svc(:3400) + proto 契约层 `mox-alliance-registry-proto`（2026-09 归一化） | 独立 registry-svc | 已完成 |
 | 协议 | REST + WS | + JSON-RPC + MCP | P3 |
 
 ---

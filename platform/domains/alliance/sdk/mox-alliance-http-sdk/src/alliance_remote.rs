@@ -503,7 +503,7 @@ pub async fn remote_get_task(
     })))
 }
 
-/// 任务操作（暂停/恢复/取消）→ 远程 POST {scheduler}/tasks/:id
+/// 任务操作（暂停/恢复/取消/标记完成）→ 远程 POST {scheduler}/tasks/:id
 pub async fn remote_task_action(
     s: &crate::alliance::AllianceGatewayState,
     task_id: Uuid,
@@ -526,6 +526,9 @@ pub async fn remote_task_action(
                     format!("任务 {} 已恢复执行", task_id)
                 }
                 mox_alliance_api::dto::TaskAction::Cancel => format!("任务 {} 已取消", task_id),
+                mox_alliance_api::dto::TaskAction::Complete => {
+                    format!("任务 {} 已标记为完成", task_id)
+                }
             };
             Some(api_ok(json!({
                 "ok": true,
@@ -541,6 +544,37 @@ pub async fn remote_task_action(
         Ok((st, v)) => Some(http_err(st, &v, format!("任务 {} 状态更新失败（远程调度器）", task_id))),
         Err(e) => transport_fallback("task_action", e),
     }
+}
+
+/// PUT /alliance/tasks/:id/toggle-done → 远程 complete 任务动作
+///
+/// 远程任务生命周期单向：标记完成 = POST {scheduler}/tasks/:id {action:"complete"}；
+/// 已完成任务不支持经网关重开（返回 409）。
+pub async fn remote_toggle_done(
+    s: &crate::alliance::AllianceGatewayState,
+    task_id: Uuid,
+    ctx: Option<&RequestContext>,
+) -> Option<ApiResponse<Value>> {
+    let client = s.remote.as_ref()?;
+    let current = match client
+        .scheduler_get(&format!("/tasks/{}", task_id), ctx)
+        .await?
+    {
+        Ok((st, v)) if (200..300).contains(&st) => v,
+        Ok((st, v)) => return Some(http_err(st, &v, format!("任务 {} 不存在", task_id))),
+        Err(e) => return transport_fallback("toggle_done", e),
+    };
+    if current["status"].as_str() == Some("completed") {
+        return Some(api_error(
+            409,
+            format!("任务 {} 已完成，远程任务不支持通过网关重新打开", task_id),
+        ));
+    }
+    let req = mox_alliance_api::dto::TaskActionRequest {
+        action: mox_alliance_api::dto::TaskAction::Complete,
+        reason: Some("网关手工标记完成".to_string()),
+    };
+    remote_task_action(s, task_id, &req, ctx).await
 }
 
 /// POST /api/alliance/experts/search → 远程 POST {scheduler}/experts/search

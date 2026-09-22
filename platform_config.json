@@ -246,6 +246,31 @@
         "DAG",
         "Rust"
       ]
+    },
+    "mox-alliance-registry": {
+      "name": "专家联盟注册中心（mox-alliance-registry）",
+      "description": "专家联盟注册中心：静态专家目录 CRUD + 应用级专家实例注册/发现/心跳（端口 3400）",
+      "port": 3400,
+      "health_check": "/health",
+      "cwd": ".",
+      "command": "target/debug/mox-alliance-registry.exe",
+      "args": [
+        "target/debug/mox-alliance-registry.exe"
+      ],
+      "binary_requires": [],
+      "npm_deps": false,
+      "is_admin_only": false,
+      "auto_start": false,
+      "restart_delay": 3,
+      "wait_time": 8,
+      "startup_order_hint": 24,
+      "depends_on": [],
+      "tags": [
+        "联盟",
+        "注册",
+        "专家",
+        "Rust"
+      ]
     }
   },
   "project_registry": {

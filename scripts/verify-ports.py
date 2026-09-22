@@ -46,6 +46,8 @@ CANONICAL: dict[int, tuple[str, str]] = {
     3999: ("RUNTIME", "dashboard（运维管理面板）"),
     # ---- ALLIANCE（3000-3999 段，PORT-NORM-001） ----
     3100: ("ALLIANCE", "scheduler-svc（调度编排）"),
+    3101: ("ALLIANCE", "scheduler-svc 宿主机映射（docker-compose.alliance.yml 3101:3100）"),
+    3400: ("ALLIANCE", "registry-svc（专家注册中心，HTTP，platform_config.json 登记）"),
     3200: ("ALLIANCE", "executor-svc（执行引擎）"),
     3300: ("ALLIANCE", "AI 专家服务桥接（scheduler 内部基址）"),
 33080: ("ALLIANCE", "联盟本地网关（start-alliance-local.ps1 默认，127.0.0.1）"),

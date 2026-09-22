@@ -52,6 +52,22 @@ pub trait TaskScheduler: Send + Sync {
     /// 恢复任务
     async fn resume_task(&self, task_id: Uuid, tenant_id: Uuid) -> AllianceResult<()>;
 
+    /// 人工标记任务完成
+    ///
+    /// 用于调度器无法自行判定终态的任务（如 human_in_loop 评审通过）。
+    /// 默认返回不支持错误，由具备任务状态机的实现覆写。
+    async fn complete_task(
+        &self,
+        task_id: Uuid,
+        _tenant_id: Uuid,
+        _reason: Option<String>,
+    ) -> AllianceResult<()> {
+        Err(mox_alliance_common_proto::AllianceError::new(
+            mox_alliance_common_proto::AllianceErrorCode::InvalidTaskStatus,
+            format!("Scheduler does not support manual completion of task {}", task_id),
+        ))
+    }
+
     /// 获取任务状态
     async fn get_task(&self, task_id: Uuid, tenant_id: Uuid) -> AllianceResult<Task>;
 

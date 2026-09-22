@@ -1,0 +1,18 @@
+[package]
+name = "mox-alliance-registry-proto"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "专家联盟 · 注册中心协议层（静态专家目录 + 应用级实例注册契约）"
+
+[dependencies]
+serde = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+uuid = { workspace = true, features = ["serde", "v4"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

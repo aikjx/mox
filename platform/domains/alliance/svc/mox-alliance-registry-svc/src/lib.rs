@@ -17,14 +17,13 @@
 //! Nacos 由 mox-alliance-boot-config 负责服务发现/配置，本服务管理专家元数据与健康。
 
 pub mod app_state;
-// pub mod grpc;  // gRPC 代码有类型不匹配问题，暂时禁用
+pub mod contract;
 pub mod models;
 pub mod routes;
 pub mod server;
 pub mod storage;
 
 pub use app_state::{AppState, Config};
-// pub use grpc::RegistryGrpcService;
 pub use models::{
     CreateExpertRequest, Expert, HeartbeatRequest, InstanceQuery, InstanceStatus,
     RegisterRequest, RegisteredInstance, UpdateExpertRequest,

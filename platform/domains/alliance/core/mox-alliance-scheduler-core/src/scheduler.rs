@@ -492,6 +492,51 @@ impl TaskScheduler for TaskSchedulerImpl {
         Ok(())
     }
 
+    async fn complete_task(
+        &self,
+        task_id: Uuid,
+        tenant_id: Uuid,
+        reason: Option<String>,
+    ) -> AllianceResult<()> {
+        let task = self.get_task_internal(task_id, tenant_id)?;
+
+        if task.status == TaskStatus::Completed {
+            return Err(AllianceError::new(
+                AllianceErrorCode::TaskAlreadyTerminal,
+                "Task is already completed".to_string(),
+            ));
+        }
+        if task.status.is_terminal() {
+            return Err(AllianceError::new(
+                AllianceErrorCode::TaskAlreadyTerminal,
+                format!("Cannot complete task in terminal state: {:?}", task.status),
+            ));
+        }
+
+        // 任务仍在执行器上运行时，先停止计算再落终态
+        if task.status == TaskStatus::Running || task.status == TaskStatus::Paused {
+            match self
+                .executor_bridge
+                .cancel_task(task_id, tenant_id, reason.clone())
+                .await
+            {
+                Ok(_) => {
+                    info!("Executor stopped task {} before manual completion", task_id);
+                }
+                Err(e) => {
+                    warn!(
+                        "Failed to stop task {} on executor before completion: {}",
+                        task_id, e
+                    );
+                }
+            }
+        }
+
+        self.update_task_status(task_id, TaskStatus::Completed)?;
+        info!("Task {} manually marked completed, reason: {:?}", task_id, reason);
+        Ok(())
+    }
+
     async fn get_task(&self, task_id: Uuid, tenant_id: Uuid) -> AllianceResult<Task> {
         // 先从本地获取
         let task = self.get_task_internal(task_id, tenant_id)?;
@@ -709,6 +754,54 @@ mod tests {
 
         let task = scheduler.get_task(task_id, tenant_id).await.unwrap();
         assert_eq!(task.status, TaskStatus::Running);
+    }
+
+    #[tokio::test]
+    async fn test_complete_task_with_mock_bridge() {
+        let config = create_test_config();
+        let matcher = Arc::new(ModularWeightMatcher::new());
+        let bridge = Arc::new(MockExecutorBridge::new());
+
+        let scheduler = TaskSchedulerImpl::new_with_bridge(config, matcher, bridge.clone());
+
+        let tenant_id = Uuid::new_v4();
+        let request = TaskSubmitRequest {
+            tenant_id,
+            user_id: Uuid::new_v4(),
+            title: "Test Task".to_string(),
+            description: "Test description".to_string(),
+            task_type: None,
+            priority: None,
+            mode: None,
+            fusion_strategy: None,
+            idempotency_key: None,
+        };
+
+        let response = scheduler.submit_task(request).await.unwrap();
+        let task_id = response.task.task_id;
+
+        // 运行中任务人工标记完成：应先停执行器再落 Completed 终态
+        let result = scheduler
+            .complete_task(task_id, tenant_id, Some("人工评审通过".to_string()))
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(bridge.cancelled_count(), 1);
+
+        let task = scheduler.get_task(task_id, tenant_id).await.unwrap();
+        assert_eq!(task.status, TaskStatus::Completed);
+
+        // 重复标记 → 终态冲突错误
+        let again = scheduler.complete_task(task_id, tenant_id, None).await;
+        assert_eq!(
+            again.unwrap_err().code(),
+            Some(AllianceErrorCode::TaskAlreadyTerminal)
+        );
+
+        // 其它租户不可见
+        let other = scheduler
+            .complete_task(task_id, Uuid::new_v4(), None)
+            .await;
+        assert!(other.is_err());
     }
 
     #[tokio::test]

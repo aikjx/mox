@@ -63,7 +63,7 @@ pub struct TaskListResponse {
     pub page_size: u32,
 }
 
-/// 任务操作请求（暂停/恢复/取消）
+/// 任务操作请求（暂停/恢复/取消/标记完成）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskActionRequest {
     pub action: TaskAction,
@@ -78,6 +78,8 @@ pub enum TaskAction {
     Pause,
     Resume,
     Cancel,
+    /// 人工标记任务完成：用于调度器无法自行判定终态的任务（如人工在环评审通过）。
+    Complete,
 }
 
 // ─── Execution API ───────────────────────────────────────────────────────────

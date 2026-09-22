@@ -788,6 +788,7 @@ async fn do_task_action(
                 TaskAction::Pause => (TaskStatus::Paused, format!("任务 {} 已暂停", task_id)),
                 TaskAction::Resume => (TaskStatus::Running, format!("任务 {} 已恢复执行", task_id)),
                 TaskAction::Cancel => (TaskStatus::Cancelled, format!("任务 {} 已取消", task_id)),
+                TaskAction::Complete => (TaskStatus::Completed, format!("任务 {} 已标记为完成", task_id)),
             };
 
             // 真实状态流转
@@ -1594,8 +1595,14 @@ async fn get_task_dag(
 /// PUT /alliance/tasks/:id/toggle-done — 完成状态切换（真实状态流转）
 async fn toggle_task_done(
     State(s): State<Arc<AllianceGatewayState>>,
+    headers: axum::http::HeaderMap,
     Path(task_id): Path<Uuid>,
 ) -> ApiResponse<Value> {
+    // 远程优先：调度器 supports complete 动作；未配置远程/远程关闭 → 本地行为不变
+    let ctx = alliance_remote::RequestContext::from_headers(&headers);
+    if let Some(r) = alliance_remote::remote_toggle_done(&s, task_id, Some(&ctx)).await {
+        return r;
+    }
     let t0 = now_ms();
 
     match s.tasks.get(task_id) {

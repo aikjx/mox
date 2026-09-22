@@ -289,6 +289,58 @@ async fn cancel_task_action_ok() {
 }
 
 #[tokio::test]
+async fn complete_task_action_flow() {
+    let app = build_test_app().await;
+    let tenant = Uuid::new_v4();
+
+    let (s, b) = send(
+        &app,
+        "POST",
+        "/tasks",
+        Some(serde_json::json!({"title": "t", "description": "d"})),
+        Some(tenant),
+    )
+    .await;
+    assert!(s.is_success());
+    let created: CreateTaskResponse = serde_json::from_slice(&b).unwrap();
+
+    let (status, bytes) = send(
+        &app,
+        "POST",
+        &format!("/tasks/{}", created.task_id),
+        Some(serde_json::to_value(TaskActionRequest {
+            action: TaskAction::Complete,
+            reason: Some("人工评审通过".to_string()),
+        })
+        .unwrap()),
+        Some(tenant),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "标记完成应 200，body={}", String::from_utf8_lossy(&bytes));
+
+    // 完成后详情状态为 completed
+    let (status, bytes) = send(&app, "GET", &format!("/tasks/{}", created.task_id), None, Some(tenant)).await;
+    assert_eq!(status, StatusCode::OK);
+    let detail: TaskDetailResponse = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(detail.status, mox_alliance_common_proto::TaskStatus::Completed);
+
+    // 重复标记 → 409 冲突
+    let (status, _) = send(
+        &app,
+        "POST",
+        &format!("/tasks/{}", created.task_id),
+        Some(serde_json::to_value(TaskActionRequest {
+            action: TaskAction::Complete,
+            reason: None,
+        })
+        .unwrap()),
+        Some(tenant),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT, "已完成任务重复标记应 409");
+}
+
+#[tokio::test]
 async fn search_experts_returns_builtin() {
     let app = build_test_app().await;
 

@@ -199,7 +199,7 @@ async fn list_tasks(
     }
 }
 
-/// 任务操作（暂停/恢复/取消）
+/// 任务操作（暂停/恢复/取消/标记完成）
 async fn handle_task_action(
     State(state): State<SchedulerAppState>,
     headers: HeaderMap,
@@ -217,6 +217,12 @@ async fn handle_task_action(
             state
                 .scheduler
                 .cancel_task(task_id, tenant_id, req.reason)
+                .await
+        }
+        TaskAction::Complete => {
+            state
+                .scheduler
+                .complete_task(task_id, tenant_id, req.reason)
                 .await
         }
     };

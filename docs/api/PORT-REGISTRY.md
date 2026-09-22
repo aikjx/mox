@@ -63,7 +63,7 @@
 | 3100 | scheduler-svc（调度编排） | `mox-alliance-scheduler-svc` | HTTP | `config/alliance-scheduler.yml` | 🟢已启用 |
 | 3200 | executor-svc（执行引擎） | `mox-alliance-executor-svc` | HTTP | `config/alliance-executor.yml` | 🟢已启用 |
 | 3300 | AI 专家服务（桥接基址） | scheduler 内部桥接 | HTTP | `config/alliance-scheduler.yml` → `expert_service` | 🟢已启用 |
-| 3400 | registry-svc（专家注册中心） | `mox-alliance-registry-svc` | HTTP | 内置默认配置 | 🟡骨架就绪 |
+| 3400 | registry-svc（专家注册中心） | `mox-alliance-registry-svc` | HTTP | 内置默认配置（`MOX_ALLIANCE_REGISTRY_*` 覆盖）；已注册 platform_config.json | 🟢运行中 |
 | 33080 | 联盟本地网关（start-alliance-local.ps1 默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
 | 33100 | 联盟本地调度器（默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
 | 33200 | 联盟本地执行器（默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
