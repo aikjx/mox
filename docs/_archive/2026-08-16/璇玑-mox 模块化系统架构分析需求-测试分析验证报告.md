@@ -1,6 +1,6 @@
-﻿# 璇玑 · mox 模块化系统架构分析需求 —— 架构功能开发 + 测试分析验证报告
+﻿# 璇玑 · 全维分析需求 —— 架构功能开发 + 测试分析验证报告
 
-> 需求根：**D04（mox 模块化系统架构治理 / 璇玑）**  ·  实现 crate：`crates/mox-expert`
+> 需求根：**D04（全维治理 / 璇玑）**  ·  实现 crate：`crates/mox-expert`
 > 验证日期：2026-08-16（初版） · 复测 2026-08-18
 > 工具链：cargo 1.98 (nightly) / rustc nightly
 > 结论：**所有架构功能已开发完成，146 项测试全部通过（0 失败、0 错误、无 unused 警告）。**（2026-08-18 复测：`cargo test -p mox-expert` 实测 **146 passed · 0 failed**；原 142/86 为历史口径。）
@@ -18,7 +18,7 @@
 | 桩 / 假实现（`todo!`/`unimplemented!`/`unreachable!`） | ✅ 无（仅业务启发式字符串与配置注释，非可执行桩） |
 | 本次归一化修正回归 | ✅ 零回归（重测全绿） |
 
-**判定**：`mox-expert` 的"mox 模块化系统架构分析需求业务处理"全部架构功能已落地并经测试验证，达到企业级可交付状态。
+**判定**：`mox-expert` 的"全维分析需求业务处理"全部架构功能已落地并经测试验证，达到企业级可交付状态。
 
 ---
 
@@ -33,7 +33,7 @@
 | 维度归一化 `auto_dimension`（业务七维 ↔ 开发七维统一着色引擎） | `ir.rs` | `auto_dimension_explicit_tag`、`auto_dimension_tags_llm_as_algo`、`priority_ordering` |
 | 双璇玑十四维默认装载 | `experts/mod.rs::all_experts()` | `mox_double_league_fourteen_dimensions`（断言 `dims.len()==14`） |
 
-### 2.2 mox 模块化系统架构分析处理主流程（mox_optimize 内核）
+### 2.2 全维分析处理主流程（mox_optimize 内核）
 | 架构功能 | 实现位置 | 测试证据 |
 |---|---|---|
 | 插件化运行时（Everything is a Plugin） | `pipeline.rs` + `harness.rs` | `expert_plugin_bundle_runs`、`waterfall_chains_and_delegates`、`ctx_event_bus_works`、`service_registry_roundtrip` |
@@ -96,9 +96,9 @@ let profile = HarnessProfile {
 
 代码层已统一，但**文档层仍有两套并行编号**未归一，构成新的漂移源：
 
-1. `璇玑-mox 模块化系统架构分析需求业务处理流程图.md`（我上一轮产出）：用 **①–⑩ + G-A~G-E 五护栏**。
-2. `docs/璇玑-mox 模块化系统架构需求业务处理流程图-归一化企业级.md`（基线 AA-STD-V1.0）：用 **S1–S8 + G0–G3 四闸门**。
-3. `璇玑-mox 模块化系统架构分析-TraceMatrix-六维绑定追溯.md`（我本轮产出）：用 **C1–C8 + 六维（REQ/FUN/BIZ/ALG/TSK/COD）**。
+1. `璇玑-全维分析需求业务处理流程图.md`（我上一轮产出）：用 **①–⑩ + G-A~G-E 五护栏**。
+2. `docs/璇玑-全维需求业务处理流程图-归一化企业级.md`（基线 AA-STD-V1.0）：用 **S1–S8 + G0–G3 四闸门**。
+3. `璇玑-全维分析-TraceMatrix-六维绑定追溯.md`（我本轮产出）：用 **C1–C8 + 六维（REQ/FUN/BIZ/ALG/TSK/COD）**。
 
 三者描述同一流程却编号并存；且编码层原本把 `emit`(⑦) 排在治理闸门(⑨)之前，与 AA-STD「闸门先于出码」相反。建议以 **AA-STD 时序为唯一基准**做文档归一（出码仅生成草稿，须经理闸 `approved` 方可交付）。
 
@@ -119,10 +119,10 @@ let profile = HarnessProfile {
 
 | 文件 | 类型 | 说明 |
 |---|---|---|
-| `crates/mox-expert/src/**/*.rs` | 源码 | mox 模块化系统架构分析需求业务处理全部架构功能（已开发） |
-| `璇玑-mox 模块化系统架构分析需求-测试分析验证报告.md` | 本报告 | 架构功能→测试证据映射 + 归一化修正 + 风险 |
-| `璇玑-mox 模块化系统架构分析需求业务处理流程图.md` | 规范 | 主流程图（待归一到 AA-STD） |
+| `crates/mox-expert/src/**/*.rs` | 源码 | 全维分析需求业务处理全部架构功能（已开发） |
+| `璇玑-全维分析需求-测试分析验证报告.md` | 本报告 | 架构功能→测试证据映射 + 归一化修正 + 风险 |
+| `璇玑-全维分析需求业务处理流程图.md` | 规范 | 主流程图（待归一到 AA-STD） |
 | `docs/modules/mox-flow.html` | 可视化 | 主流程自包含图 |
-| `璇玑-mox 模块化系统架构分析-TraceMatrix-六维绑定追溯.md` / `.html` | 追溯 | D04→六维→阶段→代码节点 |
+| `璇玑-全维分析-TraceMatrix-六维绑定追溯.md` / `.html` | 追溯 | D04→六维→阶段→代码节点 |
 
 **下一步建议**：① 文档三层编号归一到 AA-STD；② 接入 `tools/guantu_gate.py` 端到端漂移门禁；③ 可选补 `cargo llvm-cov` 覆盖率数值。

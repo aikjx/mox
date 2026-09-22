@@ -787,7 +787,7 @@ def last_underruns() -> Tuple[int, int]:
 # 诊断接口（供 --selftest-full / verify 脚本查询内部配置与缓存健康）
 # ---------------------------------------------------------------------------
 def diagnostics() -> Dict:
-    """返回播放引擎运行期指标（mox 模块化系统架构验证脚本用）。V2+ 三播放器指标增强。"""
+    """返回播放引擎运行期指标（全维验证脚本用）。V2+ 三播放器指标增强。"""
     u_count, u_bytes = _player.underruns()
     with _cache_lock:
         sc_n = len(_SYNTH_CACHE)

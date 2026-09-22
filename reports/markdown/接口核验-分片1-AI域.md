@@ -192,7 +192,7 @@
 
 以下接口在当前架构（网关→编排器）中无对应 handler，前端调用将 404。所有这些接口仅在 `platform/legacy/backend-rust/src/api/mod.rs` 中有定义，但 legacy 后端不在当前代理路径中。
 
-**A1. ai.api.js — mox 模块化系统架构智能分析引擎（6 个）**
+**A1. ai.api.js — 全维智能分析引擎（6 个）**
 - `aiFullAnalysis` (POST /api/ai/full-analysis) — legacy mod.rs:574
 - `aiGenerateDoc` (POST /api/ai/generate-doc) — legacy mod.rs:575
 - `aiGenerateFlowDiagram` (POST /api/ai/generate-flow-diagram) — legacy mod.rs:576

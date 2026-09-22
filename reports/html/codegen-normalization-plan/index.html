@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>关图/璇玑（mox）· mox 模块化系统架构全知识图谱模块化业务系统生成平台 — 愿景·架构·归一化总览</title>
+<title>关图/璇玑（mox）· 全维全知识图谱模块化业务系统生成平台 — 愿景·架构·归一化总览</title>
 <style>
   :root{
     --bg:#F4F3EE; --card:#FFFFFF; --border:#E4E3DD; --text:#1A1B1C; --sub:#6B7280;
@@ -58,7 +58,7 @@
 <div class="wrap">
 
 <header class="hero">
-  <h1>关图/璇玑（mox）· mox 模块化系统架构全知识图谱模块化业务系统生成平台</h1>
+  <h1>关图/璇玑（mox）· 全维全知识图谱模块化业务系统生成平台</h1>
   <div class="sub">愿景 · 架构 · 归一化总览 —— 无限插件 + 模块模板 + AI 持续优化，让所有行业的业务系统不再重复造轮子</div>
   <div class="meta">
     <span class="tag">对象：D:\a10\aikjx\gitcode\infotopograph</span>
@@ -72,11 +72,11 @@
   <b>目录</b>
   <ol style="columns:2;column-gap:32px;margin:6px 0 0;">
     <li><a href="#s1">愿景与一句话定位</a></li>
-    <li><a href="#s2">平台分层架构（mox 模块化系统架构 modular stack）</a></li>
+    <li><a href="#s2">平台分层架构（全维 modular stack）</a></li>
     <li><a href="#s3">无限插件体系</a></li>
     <li><a href="#s4">模块模板库（归一化 TPL）</a></li>
     <li><a href="#s5">AI 持续分析·优化闭环</a></li>
-    <li><a href="#s6">mox 模块化系统架构全知识图谱</a></li>
+    <li><a href="#s6">全维全知识图谱</a></li>
     <li><a href="#s7">业务处理流程明确·归一化</a></li>
     <li><a href="#s8">一键生成项目（module-manifest 管线）</a></li>
     <li><a href="#s9">行业零重复造轮子（领域包）</a></li>
@@ -90,7 +90,7 @@
 <h2 id="s1">一、愿景与一句话定位</h2>
 <div class="card">
   <div class="callout" style="font-size:15px;">
-    <b>一句话定位：</b>mox 是一块<b>通用系统母版（mox_sys）+ mox 模块化系统架构知识图谱 + AI 持续优化闭环</b>的业务系统生成平台。任何行业拿它"装领域包 → 选模块模板 → 装插件 → AI 一键生成并不断调优"，业务系统即成型，<b>不再从零造轮子</b>。
+    <b>一句话定位：</b>mox 是一块<b>通用系统母版（mox_sys）+ 全维知识图谱 + AI 持续优化闭环</b>的业务系统生成平台。任何行业拿它"装领域包 → 选模块模板 → 装插件 → AI 一键生成并不断调优"，业务系统即成型，<b>不再从零造轮子</b>。
   </div>
   <div class="kpi">
     <div class="box"><div class="v">1 块母版</div><div class="l">mox_sys 内核（身份/租户/组织/IAM/审计/文件/图谱）</div></div>
@@ -103,7 +103,7 @@
 </div>
 
 <!-- ============ 二 ============ -->
-<h2 id="s2">二、平台分层架构（mox 模块化系统架构 modular stack）</h2>
+<h2 id="s2">二、平台分层架构（全维 modular stack）</h2>
 <div class="card">
   <p>架构自上而下分为六层，越往下越稳定、越通用；越往上越业务、越可插拔。每一层都有唯一权威来源（SSoT）。</p>
   <pre>┌─────────────────────────────────────────────────────────────┐
@@ -113,7 +113,7 @@
 ├─────────────────────────────────────────────────────────────┤
 │ L4 AI 持续优化闭环  analyze→generate→verify→optimize→regen    │
 ├─────────────────────────────────────────────────────────────┤
-│ L3 mox 模块化系统架构知识图谱 (kg)  实体/关系/证据/溯源 + 投影重建           │
+│ L3 全维知识图谱 (kg)  实体/关系/证据/溯源 + 投影重建           │
 ├─────────────────────────────────────────────────────────────┤
 │ L2 生成与编排  meta(codegen) + primiflow(DAG) + 治理闸门       │
 ├─────────────────────────────────────────────────────────────┤
@@ -174,7 +174,7 @@
   </div>
   <table>
     <tr><th>阶段</th><th>现有能力</th><th>作用</th></tr>
-    <tr><td>① 分析</td><td><code>aiFullAnalysis</code> / <code>algorithmAnalysis</code> / <code>aiResourceAnalysis</code></td><td>mox 模块化系统架构诊断、性能/结构分析</td></tr>
+    <tr><td>① 分析</td><td><code>aiFullAnalysis</code> / <code>algorithmAnalysis</code> / <code>aiResourceAnalysis</code></td><td>全维诊断、性能/结构分析</td></tr>
     <tr><td>② 生成</td><td><code>aiFullComplete</code> / <code>aiGenerateDoc</code> / <code>aiGenerateFlowDiagram</code> / <code>aiGenerateErd</code></td><td>出码、出文档、出图</td></tr>
     <tr><td>③ 验证</td><td><code>verify</code> 5 项 + 治理闸门 G1~G8</td><td>合规/安全/权限门禁，拦截劣化</td></tr>
     <tr><td>④ 优化</td><td><code>InfiniteOptimizerView</code>(无穷维度优化) / <code>aiOptimize</code> / <code>moxOptimize</code> / <code>getInfiniteBenchmarks</code> / <code>applyBestConfig</code></td><td>自动寻优、A/B 对比、一键应用最优配置</td></tr>
@@ -184,7 +184,7 @@
 </div>
 
 <!-- ============ 六 ============ -->
-<h2 id="s6">六、mox 模块化系统架构全知识图谱</h2>
+<h2 id="s6">六、全维全知识图谱</h2>
 <div class="card">
   <p>依据 <code>docs/database/mox_sys/relation-model.md</code>，mox 采用 <b>SQL 交易真相 + 图谱语义投影</b>双轨。图谱不是装饰，而是系统的"记忆与推理层"：</p>
   <table>
@@ -195,7 +195,7 @@
     <tr><td>检索关系</td><td>embedding/倒排/图算法分数</td><td>可重建索引</td></tr>
   </table>
   <p>投影链：<code>SQL → outbox event → graph projector → idempotent upsert → checkpoint/rebuild</code>。节点由 <code>graph_id + entity_type + entity_key</code> 唯一确定（<code>entity_key</code> 为稳定业务键，不暴露自增 ID）。关系代码一律小写 snake_case（如 <code>task_depends_on_task</code>、<code>expert_has_capability</code>）。</p>
-  <div class="note"><b>mox 模块化系统架构含义：</b>所有模块、插件、模板、AI 优化产出、业务单据，最终都投影成"实体—关系—证据"图谱。系统因此具备<b>跨模块语义记忆</b>：新项目生成时可复用历史案例，AI 优化时可检索相似方案——这正是"不用重复造轮子"的知识底座。</div>
+  <div class="note"><b>全维含义：</b>所有模块、插件、模板、AI 优化产出、业务单据，最终都投影成"实体—关系—证据"图谱。系统因此具备<b>跨模块语义记忆</b>：新项目生成时可复用历史案例，AI 优化时可检索相似方案——这正是"不用重复造轮子"的知识底座。</div>
 </div>
 
 <!-- ============ 七 ============ -->
@@ -215,7 +215,7 @@
     <tr><td>架构</td><td>架构设计 → 系统架构图 → ER 图 → 技术选型</td><td>ARC 架构规范 + API 契约</td><td><code>ARC-xx</code> / <code>API-xx</code></td></tr>
     <tr><td>实现</td><td>开发测试 → 代码生成 → 制品管理</td><td>代码/DDL/图谱产物 + TPL 清单</td><td><code>TPL-xx</code></td></tr>
     <tr><td>测试</td><td>测试策略 → 单测/集成/E2E → 缺陷修复</td><td>验证矩阵与判定</td><td><code>VAL-xx</code></td></tr>
-    <tr><td>验收</td><td>验收标准 → 发布闸门 → 发布知识库 → mox 模块化系统架构完成</td><td>发布回执 + 入图证据</td><td><code>VAL-xx</code> + evidence</td></tr>
+    <tr><td>验收</td><td>验收标准 → 发布闸门 → 发布知识库 → 全维完成</td><td>发布回执 + 入图证据</td><td><code>VAL-xx</code> + evidence</td></tr>
   </table>
   <div class="callout"><b>流程明确 = 可复制：</b>同一套 SOP 套到金融信贷、医疗问诊、政务审批、零售进销存，差别只在"领域包数据"与"模板参数"。流程本身归一化、不变，这就是跨行业零重复造轮子的操作保障。</div>
 </div>
@@ -322,7 +322,7 @@
 </div>
 
 <footer>
-  关图/璇玑（mox 模块化系统）· mox 模块化系统架构全知识图谱模块化业务系统生成平台 · 愿景·架构·归一化总览 · 2026-09-04 · 静态分析（系统未运行）· 基准资产：mox_sys / meta(codegen) / primiflow(DAG) / kg(图谱) / MODULE-MANIFEST
+  关图/璇玑（mox 模块化系统）· 全维全知识图谱模块化业务系统生成平台 · 愿景·架构·归一化总览 · 2026-09-04 · 静态分析（系统未运行）· 基准资产：mox_sys / meta(codegen) / primiflow(DAG) / kg(图谱) / MODULE-MANIFEST
 </footer>
 
 </div>

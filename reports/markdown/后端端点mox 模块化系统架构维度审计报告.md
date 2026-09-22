@@ -1,4 +1,4 @@
-# 后端mox 模块化系统架构维度端点功能审计报告
+# 后端全维维度端点功能审计报告
 
 > 审计范围：`platform/gateway/mox-platform-gateway-svc/src/`（21 个 .rs 文件）
 > 审计日期：2026-09-03

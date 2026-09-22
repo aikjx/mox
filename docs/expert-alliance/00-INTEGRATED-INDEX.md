@@ -108,7 +108,7 @@
 | 18 | EA-DOC-063 | `docs/standards/expert-alliance-flow-standard.md` | EAF-STD-001业务处理流程行业标准 | V1.2 | 专家联盟业务处理流程行业级标准 |
 | 19 | EA-DOC-064 | `docs/working-reports/alliance-architecture-fix-report-20260831.html` | 架构修复报告 | 2026-08-31 | alliance域修复验证唯一权威 |
 | 20 | EA-DOC-065 | `docs/working-reports/alliance-architecture-review-20260831.html` | 架构评审报告 | 2026-08-31 | alliance域架构评审权威（⚠️修复前快照） |
-| 21 | EA-DOC-066 | `docs/modules/专家联盟-MOX业务流程归一化手册-V1.0.md` | MOX业务流程归一化手册 | V1.0 | 专家联盟业务流程归一化唯一真相源 |
+| 21 | EA-DOC-066 | `docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md` | 全维业务流程归一化手册 | V1.0 | 专家联盟业务流程归一化唯一真相源 |
 | 22 | EA-DOC-058 | `docs/modules/business-process-flows.md` | 企业级业务处理流程 | — | 业务流程规范主文档 |
 | 23 | EA-NORM-002 | `docs/standards/expert-alliance-port-norm.md` | 核心服务端口规划规范 PORT-NORM-001 | V1.0 | 核心服务 3000-3999 / 插件小服务 30000+ 唯一权威 |
 | 24 | EA-DOC-CURRENT | `docs/expert-alliance/CURRENT-ARCHITECTURE.md` | 专家联盟当前实现架构 | V1.0 | 当前实现态唯一权威（与代码核对，v1/v2/v3 设计稿以其为准） |
@@ -160,7 +160,7 @@
 | EA-DOC-054 | `docs/modules/mox-expert-alliance-fusion-flows.md` | 璇玑融合业务流程图 | mox-expert融合流水线 |
 | EA-DOC-055 | `docs/modules/mox-expert-business-requirements.md` | 璇玑融合企业级业务需求 | mox-expert三视图之业务需求 |
 | EA-DOC-056 | `docs/modules/mox-expert-product.md` | 璇玑产品需求架构设计书 | mox-expert三视图之产品需求 |
-| — | `docs/modules/mox-expert-normalization.md` | 璇玑MOX整理归一化优化规范 | mox-expert三视图之归一化规范 |
+| — | `docs/modules/mox-expert-normalization.md` | 璇玑全维整理归一化优化规范 | mox-expert三视图之归一化规范 |
 | EA-DOC-057 | `docs/modules/business-process-flowcharts.md` | 企业级业务处理流程图 | 可视化配套版，以flows.md为准 |
 | — | `docs/modules/ai-flow-graph-design.md` | AI流程图谱化设计 | AI引擎流程图谱设计 |
 

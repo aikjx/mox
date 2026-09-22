@@ -1,4 +1,4 @@
-# MOX mox 模块化系统架构低代码平台 — 操作说明手册
+# MOX 全维低代码平台 — 操作说明手册
 
 > ⚠️ **历史参考**：本文为旧 Python 栈操作（python run.py :8600 / :8601）；当前企业启动用 `scripts/start-mox-enterprise.ps1`（四进程，网关 :3080）。
 

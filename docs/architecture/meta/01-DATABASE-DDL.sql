@@ -460,7 +460,7 @@ CREATE TABLE ea_expert (
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP
 );
-COMMENT ON TABLE  ea_expert IS '专家注册表—— AI专家注册/能力定义/评分/版本管理，mox 模块化系统架构页面配置，专家匹配算法基于此表的embedding和评分';
+COMMENT ON TABLE  ea_expert IS '专家注册表—— AI专家注册/能力定义/评分/版本管理，全维页面配置，专家匹配算法基于此表的embedding和评分';
 COMMENT ON COLUMN ea_expert.model_config IS '模型配置JSON: model(模型名)/temperature(温度)/max_tokens(最大Token)/api_endpoint(API地址)/api_key(加密存储)';
 COMMENT ON COLUMN ea_expert.rating IS '综合评分0-5，算法: 0.4*ELO等级分 + 0.3*用户评分 + 0.2*成功率 - 0.1*成本系数';
 CREATE UNIQUE INDEX uk_ea_expert_tenant_code ON ea_expert(tenant_id, expert_code);

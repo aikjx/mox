@@ -91,7 +91,7 @@
 - [x] **质量门禁**：`cargo clippy` 零告警、`cargo test` 全绿（644/0）、集成测试覆盖越权路径（`test_rbac_viewer_denied_write` 403 实测）。
 - [ ] **可观测**：关键路径指标可采集（NFR-08 落地后）。
 - [ ] **文档同步**：变更在合并前同步，变更记录留痕。
-- [ ] **MOX双收口（铁律，见 `07`）**：任何功能须先过 `07` §3 双闸门——①业务流程图归一化（唯一 `FlowGraph` + 六维绑定 + 过 G0）；②开发璇玑MOX分析验证（`run_experts` 14 专家无 `veto` + 璇玑 `vetoed=false` + 治理 `approved=true` + `primiflow_fusion::full_gate` 全绿）。**未经双收口的功能一律退回，禁止无验证扩展、禁止模糊需求、禁止给闸门加旁路**。
+- [ ] **全维双收口（铁律，见 `07`）**：任何功能须先过 `07` §3 双闸门——①业务流程图归一化（唯一 `FlowGraph` + 六维绑定 + 过 G0）；②开发璇玑全维分析验证（`run_experts` 14 专家无 `veto` + 璇玑 `vetoed=false` + 治理 `approved=true` + `primiflow_fusion::full_gate` 全绿）。**未经双收口的功能一律退回，禁止无验证扩展、禁止模糊需求、禁止给闸门加旁路**。
 
 ---
 

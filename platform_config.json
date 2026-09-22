@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "project_name": "璇玑系统 · mox 模块化系统架构数字孪生中台",
+  "project_name": "璇玑系统 · 全维数字孪生中台",
   "dashboard_port": 3999,
   "admin": {
     "username": "admin",

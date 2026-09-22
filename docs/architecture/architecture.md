@@ -1,4 +1,4 @@
-# MOX · AI 驱动mox 模块化系统架构平台 — 统一架构规范
+# MOX · AI 驱动全维平台 — 统一架构规范
 
 > ⚠️ **历史参考**：本文档为 v3.0 旧 Python/FastAPI 栈描述（端口 8600/8601），已归档至 `platform/legacy/`；当前 Rust 企业级架构见 `docs/architecture/NORMALIZED_ARCHITECTURE.md`（v2.0）。
 
@@ -147,7 +147,7 @@ platform/domains/
 
 ## 一、平台定位（v2.0 技术底座）
 
-MOX 是一个**mox 模块化系统架构低代码平台**，核心能力四件套：
+MOX 是一个**全维低代码平台**，核心能力四件套：
 
 | 能力 | 说明 | 核心价值 |
 |------|------|---------|

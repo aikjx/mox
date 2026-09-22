@@ -1,4 +1,4 @@
-﻿# 璇玑 · mox 模块化系统架构分析需求 TraceMatrix（六维绑定追溯 · 企业级）
+﻿# 璇玑 · 全维分析需求 TraceMatrix（六维绑定追溯 · 企业级）
 
 > 编号：**AA-TRACE-V1.0**
 > 承载：AA-STD-V1.0（流程基准）+ GR-STD-V1.0（关图六维）+ `guantu.req.json`（D04 Bind）
@@ -31,13 +31,13 @@
 来源：`guantu.req.json` 与《关图骨架定义》§3。D04 真实 Bind 边（实测）：
 
 ```json
-{"id":"D04","name":"mox 模块化系统架构治理/璇玑","domain":"mox-expert","status":"partial"}        // guantu.req.json:6
+{"id":"D04","name":"全维治理/璇玑","domain":"mox-expert","status":"partial"}        // guantu.req.json:6
 {"req":"D04","to":"CodeFile:crates/mox-expert/src/lib.rs","label":"主责crate"}              // guantu.req.json:31
 ```
 
 六维语义与落点：
 
-- **REQ（需求根）**：`Requirement:D04` —— mox 模块化系统架构治理/璇玑
+- **REQ（需求根）**：`Requirement:D04` —— 全维治理/璇玑
 - **FUN（功能）**：`crates/mox-expert/src/lib.rs` 入口函数（`normalize_requirement` / `programming_pipeline` / `mox_optimize`）
 - **BIZ（业务）**：业务七维专家（`business/algorithm/permission/resource/security/data/observability`）对流程图并行分析
 - **ALG（算法）**：`flow-ai` 求解（CPM+RCPSP+Dijkstra+冲突修复）+ `reconcile` 约束物化 + `verify` 守恒残差（topology/data_dep/conflict/gains/code_rt）
@@ -69,7 +69,7 @@
 
 ```mermaid
 flowchart LR
-  D04([REQ:D04 mox 模块化系统架构治理/璇玑]) -->|Bind| LIB[FUN: mox-expert/src/lib.rs]
+  D04([REQ:D04 全维治理/璇玑]) -->|Bind| LIB[FUN: mox-expert/src/lib.rs]
   LIB --> C1[C1 归一化]
   C1 --> C2[C2 双璇玑14维并行]
   C2 --> C3[C3 归一裁决]
