@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""专家联盟 · 真实模型政企场景端到端验证
+"""专家联盟 · 政企场景端到端验证（支持真实模型 / mock 模型服务标注）
 
 做什么
-    对网关 `/api/alliance/*` 发起真实任务提交，覆盖 4 类政企场景（S1 公文起草 /
+    对网关 `/api/alliance/*` 发起任务提交，覆盖 4 类政企场景（S1 公文起草 /
     S2 合同审查 / S4 财务分析 / S7 政策解读），每类场景指定合理的协作模式与融合策略，
-    轮询至终态后拉取融合结果与各专家节点原始输出。全程不 mock LLM 响应——
-    真实模型输出原样记录到机器可读 JSON 与人读 Markdown 报告。
+    轮询至终态后拉取融合结果与各专家节点原始输出。
+
+    默认模式（非 mock）：全程对接真实 LLM 端点，输出标注为"真实模型"。
+    mock 模式（--mock 或自动检测到 :8999）：LLM 响应来自本地 mock OpenAI 兼容服务，
+    但任务提交/DAG 执行/融合/持久化/回读均为真实生产代码路径——报告必须显式标注
+    "mock 模型服务 · 真实生产代码路径"，不得与真实模型结果混同。
 
 前置条件
     必须设置环境变量（缺任一即退出码 2，不伪装）：
@@ -26,13 +30,17 @@
     python tools/alliance_scenario_e2e.py --base-url http://127.0.0.1:3080
     python tools/alliance_scenario_e2e.py --scenarios S1,S2
     python tools/alliance_scenario_e2e.py --no-startup     # 不自动启动服务
+    python tools/alliance_scenario_e2e.py --mock           # 显式进入 mock 标注模式
+    # 自动检测：MOX_LLM_BASE_URL 含 127.0.0.1:8999 或 localhost:8999 时自动 mock
 
 产物
-    reports/data/<YYYYMMDD-HHMMSS>-alliance-scenario-e2e.json
+    reports/data/<YYYYMMDD-HHMMSS>-alliance-scenario-e2e[-mock].json
         机器可读：每个场景的 task_id / status / 融合结果 / 节点结果 / 时间戳 /
         模型名 / 提供者 / HTTP 错误详情（失败项如实记录）。
-    reports/markdown/专家联盟-真实模型政企场景端到端-<YYYYMMDD>.md
-        人读：含真实模型输出引用、provider/model、时间戳；失败项记录 HTTP status + body。
+        mock 模式下顶层含 "mode":"mock" 与 "note" 字段。
+    reports/markdown/专家联盟-[-mock]政企场景端到端-<YYYYMMDD>.md
+        人读：含 provider/model、时间戳；失败项记录 HTTP status + body。
+        mock 模式下标题含"mock 模型服务 · 真实生产代码路径"并在开头加警告块。
 
 退出码
     0 = 全部场景成功（completed）
@@ -242,6 +250,18 @@ def check_env() -> Dict[str, str]:
     return env
 
 
+def detect_mock_mode(explicit_flag: bool) -> bool:
+    """判定是否进入 mock 标注模式。
+
+    显式 --mock flag 优先；否则自动检测 MOX_LLM_BASE_URL 是否指向本地
+    mock OpenAI 兼容服务（127.0.0.1:8999 或 localhost:8999）。
+    """
+    if explicit_flag:
+        return True
+    base = os.environ.get("MOX_LLM_BASE_URL", "")
+    return ("127.0.0.1:8999" in base) or ("localhost:8999" in base)
+
+
 # --------------------------------------------------------------------------- #
 # 服务健康检测与启动
 # --------------------------------------------------------------------------- #
@@ -291,9 +311,9 @@ def start_local_services(llm_env: Dict[str, str]) -> str:
     return "http://127.0.0.1:33080"
 
 
-def wait_for_gateway(base_url: str, timeout_s: int) -> GatewayClient:
+def wait_for_gateway(base_url: str, timeout_s: int, token: str = "") -> GatewayClient:
     """轮询网关就绪，超时返回 None。"""
-    client = GatewayClient(base_url, timeout=10)
+    client = GatewayClient(base_url, timeout=10, token=token)
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         health = check_health(client)
@@ -446,10 +466,17 @@ def git_head() -> str:
 
 
 def build_markdown(meta: Dict[str, Any], results: List[Dict[str, Any]],
-                   llm_env: Dict[str, str]) -> str:
+                   llm_env: Dict[str, str], is_mock: bool = False) -> str:
     lines: List[str] = []
-    lines.append("# 专家联盟 · 真实模型政企场景端到端报告")
-    lines.append("")
+    if is_mock:
+        lines.append("# 专家联盟 · 政企场景端到端报告（mock 模型服务 · 真实生产代码路径）")
+        lines.append("")
+        lines.append("> ⚠️ **本报告使用本地 mock OpenAI 兼容服务（:8999），LLM 响应为 mock 数据；"
+                     "任务提交/DAG 执行/融合/持久化/回读均为真实生产代码路径。**")
+        lines.append("")
+    else:
+        lines.append("# 专家联盟 · 真实模型政企场景端到端报告")
+        lines.append("")
     lines.append("> 由 `tools/alliance_scenario_e2e.py` 自动生成；"
                  "**工程事实以机器可读 JSON 证据为准**，本文件为同一批数据的可读视图。")
     lines.append("")
@@ -532,8 +559,12 @@ def build_markdown(meta: Dict[str, Any], results: List[Dict[str, Any]],
     lines.append("")
     failed = [r for r in results if r.get("status") != "completed"]
     if not failed:
-        lines.append("- 全部 " + str(len(results)) + " 个场景达到 completed 终态，"
-                     "真实模型输出已记录到 JSON 证据。")
+        if is_mock:
+            lines.append("- 全部 " + str(len(results)) + " 个场景达到 completed 终态，"
+                         "mock LLM 响应 + 真实生产代码路径已记录到 JSON 证据。")
+        else:
+            lines.append("- 全部 " + str(len(results)) + " 个场景达到 completed 终态，"
+                         "真实模型输出已记录到 JSON 证据。")
     else:
         lines.append("- " + str(len(failed)) + " 个场景未成功:")
         for r in failed:
@@ -552,9 +583,16 @@ def run(args: argparse.Namespace) -> int:
     # 1) 校验环境变量
     llm_env = check_env()
 
+    # 1b) 判定 mock 标注模式（显式 flag 或自动检测 :8999）
+    is_mock = detect_mock_mode(args.mock)
+    if is_mock:
+        sys.stdout.write("[模式] MOCK 标注 —— mock 模型服务 · 真实生产代码路径\n")
+    else:
+        sys.stdout.write("[模式] 真实模型\n")
+
     # 2) 检测网关；未就绪则启动本地服务
     base_url = args.base_url.rstrip("/")
-    client = GatewayClient(base_url, args.request_timeout)
+    client = GatewayClient(base_url, args.request_timeout, token=args.token)
     health = check_health(client)
 
     if not health["healthy"]:
@@ -563,7 +601,7 @@ def run(args: argparse.Namespace) -> int:
             return 2
         sys.stdout.write("[启动] 网关 " + base_url + " 未就绪，尝试启动本地服务…\n")
         local_url = start_local_services(llm_env)
-        client = wait_for_gateway(local_url, args.startup_timeout)
+        client = wait_for_gateway(local_url, args.startup_timeout, token=args.token)
         base_url = local_url
     else:
         sys.stdout.write("[就绪] 网关 " + base_url + " 探针=" + health["probe"]
@@ -590,9 +628,14 @@ def run(args: argparse.Namespace) -> int:
     # 5) 写产物
     stamp = time.strftime("%Y%m%d-%H%M%S")
     today = time.strftime("%Y%m%d")
-    json_path = REPO_ROOT / "reports" / "data" / (stamp + "-alliance-scenario-e2e.json")
-    md_path = REPO_ROOT / "reports" / "markdown" / (
-        "专家联盟-真实模型政企场景端到端-" + today + ".md")
+    if is_mock:
+        json_path = REPO_ROOT / "reports" / "data" / (stamp + "-alliance-scenario-e2e-mock.json")
+        md_path = REPO_ROOT / "reports" / "markdown" / (
+            "专家联盟-mock政企场景端到端-" + today + ".md")
+    else:
+        json_path = REPO_ROOT / "reports" / "data" / (stamp + "-alliance-scenario-e2e.json")
+        md_path = REPO_ROOT / "reports" / "markdown" / (
+            "专家联盟-真实模型政企场景端到端-" + today + ".md")
     json_path.parent.mkdir(parents=True, exist_ok=True)
     md_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -604,7 +647,7 @@ def run(args: argparse.Namespace) -> int:
         "requests": len(client.latencies),
         "json_path": str(json_path.relative_to(REPO_ROOT)),
     }
-    evidence = {
+    evidence: Dict[str, Any] = {
         "meta": meta,
         "llm_config": {
             "base_url": llm_env.get("MOX_LLM_BASE_URL", ""),
@@ -613,9 +656,13 @@ def run(args: argparse.Namespace) -> int:
         },
         "scenarios": results,
     }
+    if is_mock:
+        evidence["mode"] = "mock"
+        evidence["note"] = "mock 模型服务 · 真实生产代码路径"
     json_path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2),
                           encoding="utf-8")
-    md_path.write_text(build_markdown(meta, results, llm_env), encoding="utf-8")
+    md_path.write_text(build_markdown(meta, results, llm_env, is_mock=is_mock),
+                       encoding="utf-8")
 
     # 6) 汇总输出
     sys.stdout.write("-" * 70 + "\n")
@@ -649,6 +696,9 @@ def main() -> int:
                     help="等待服务就绪的最大秒数（默认 60）")
     ap.add_argument("--no-startup", dest="no_startup", action="store_true",
                     help="网关未就绪时不自动启动服务（直接退出码 2）")
+    ap.add_argument("--mock", action="store_true", default=False,
+                    help="显式进入 mock 标注模式（报告标注 mock 模型服务 · 真实生产代码路径）；"
+                         "不指定时自动检测 MOX_LLM_BASE_URL 是否含 127.0.0.1:8999")
     ap.add_argument("--token", default="dev-secret-token",
                     help="网关鉴权令牌（dev 后门令牌）")
     args = ap.parse_args()

@@ -1,0 +1,267 @@
+{
+  "meta": {
+    "generated_at": "2026-09-24 03:47:09",
+    "base_url": "http://127.0.0.1:3080",
+    "git_head": "762526c5",
+    "python": "3.14.7",
+    "requests": 25,
+    "json_path": "reports\\data\\20260924-034709-alliance-scenario-e2e-mock.json"
+  },
+  "llm_config": {
+    "base_url": "http://127.0.0.1:8999/v1",
+    "model": "mock-openai",
+    "timeout_ms": "15000"
+  },
+  "scenarios": [
+    {
+      "scenario_id": "S1",
+      "scenario_name": "政企公文起草与合规审查",
+      "mode": "sequential",
+      "fusion_strategy": "best_of",
+      "expected_experts": [
+        "law",
+        "research",
+        "creative"
+      ],
+      "submitted_at": "2026-09-24T03:46:29.398946",
+      "task_id": "c8a482d9-cf59-4110-a92f-c04ee8d1827b",
+      "status": "completed",
+      "error": null,
+      "http_status": null,
+      "fusion_result": {
+        "fusion_status": "completed",
+        "fusion_strategy": "first_wins",
+        "confidence": 0.9,
+        "key_findings": [
+          "择优融合：选中 law-expert-001（置信度 90.0%）"
+        ],
+        "recommendations": [
+          "融合策略 best_of 由执行器产出，参与专家 3 位，建议按置信度复核关键结论"
+        ],
+        "participating_nodes": 3
+      },
+      "nodes": [
+        {
+          "node_id": "node-1",
+          "expert_id": "law-expert-001",
+          "name": "法律咨询专家",
+          "status": "completed",
+          "duration_ms": 52,
+          "error_message": null
+        },
+        {
+          "node_id": "node-2",
+          "expert_id": "creative-expert-001",
+          "name": "创意写作专家",
+          "status": "completed",
+          "duration_ms": 24,
+          "error_message": null
+        },
+        {
+          "node_id": "node-3",
+          "expert_id": "research-expert-001",
+          "name": "学术研究专家",
+          "status": "completed",
+          "duration_ms": 67,
+          "error_message": null
+        }
+      ],
+      "duration_ms": 3214,
+      "model": "mock-openai",
+      "provider": "http://127.0.0.1:8999/v1",
+      "fusion_endpoint": "/fusion-result",
+      "completed_at": "2026-09-24T03:46:39.414118"
+    },
+    {
+      "scenario_id": "S2",
+      "scenario_name": "合同智能审查",
+      "mode": "parallel",
+      "fusion_strategy": "weighted",
+      "expected_experts": [
+        "law",
+        "finance",
+        "research"
+      ],
+      "submitted_at": "2026-09-24T03:46:39.414179",
+      "task_id": "f3da32fb-69c1-448c-8184-1e3dc558b99e",
+      "status": "completed",
+      "error": null,
+      "http_status": null,
+      "fusion_result": {
+        "fusion_status": "completed",
+        "fusion_strategy": "weighted_voting",
+        "confidence": 0.9,
+        "key_findings": [
+          "[ReAct] 真实 LLM(mock-openai) 专家推理",
+          "[1/1] 结论：6*7 等于 42，这是基本乘法运算结果。",
+          "[结论] 结论：6*7 等于 42，这是基本乘法运算结果。",
+          "[ReAct] 真实 LLM(mock-openai) 专家推理",
+          "[1/1] 结论：6*7 等于 42，这是基本乘法运算结果。"
+        ],
+        "recommendations": [
+          "融合策略 weighted 由执行器产出，参与专家 2 位，建议按置信度复核关键结论"
+        ],
+        "participating_nodes": 2
+      },
+      "nodes": [
+        {
+          "node_id": "node-1",
+          "expert_id": "finance-expert-001",
+          "name": "金融分析专家",
+          "status": "completed",
+          "duration_ms": 56,
+          "error_message": null
+        },
+        {
+          "node_id": "node-2",
+          "expert_id": "law-expert-001",
+          "name": "法律咨询专家",
+          "status": "completed",
+          "duration_ms": 36,
+          "error_message": null
+        }
+      ],
+      "duration_ms": 3218,
+      "model": "mock-openai",
+      "provider": "http://127.0.0.1:8999/v1",
+      "fusion_endpoint": "/fusion-result",
+      "completed_at": "2026-09-24T03:46:49.410649"
+    },
+    {
+      "scenario_id": "S4",
+      "scenario_name": "财务分析",
+      "mode": "hierarchical",
+      "fusion_strategy": "stacking",
+      "expected_experts": [
+        "finance",
+        "math",
+        "research"
+      ],
+      "submitted_at": "2026-09-24T03:46:49.410699",
+      "task_id": "b50a00b2-0ea1-47ac-af5b-b35337e30f59",
+      "status": "completed",
+      "error": null,
+      "http_status": null,
+      "fusion_result": {
+        "fusion_status": "completed",
+        "fusion_strategy": "stacking",
+        "confidence": 0.9000000000000001,
+        "key_findings": [
+          "堆叠融合：2 个基学习器，元学习器置信度 90.0%"
+        ],
+        "recommendations": [
+          "融合策略 stacking 由执行器产出，参与专家 2 位，建议按置信度复核关键结论"
+        ],
+        "participating_nodes": 2
+      },
+      "nodes": [
+        {
+          "node_id": "node-1",
+          "expert_id": "finance-expert-001",
+          "name": "金融分析专家",
+          "status": "completed",
+          "duration_ms": 53,
+          "error_message": null
+        },
+        {
+          "node_id": "node-2",
+          "expert_id": "research-expert-001",
+          "name": "学术研究专家",
+          "status": "completed",
+          "duration_ms": 28,
+          "error_message": null
+        }
+      ],
+      "duration_ms": 3182,
+      "model": "mock-openai",
+      "provider": "http://127.0.0.1:8999/v1",
+      "fusion_endpoint": "/fusion-result",
+      "completed_at": "2026-09-24T03:46:59.349329"
+    },
+    {
+      "scenario_id": "S7",
+      "scenario_name": "政策解读",
+      "mode": "iterative",
+      "fusion_strategy": "iterative",
+      "expected_experts": [
+        "law",
+        "research",
+        "arch"
+      ],
+      "submitted_at": "2026-09-24T03:46:59.349377",
+      "task_id": "bda5df54-0b93-46d3-8b1d-cfb0a655258e",
+      "status": "completed",
+      "error": null,
+      "http_status": null,
+      "fusion_result": {
+        "fusion_status": "completed",
+        "fusion_strategy": "iterative",
+        "confidence": 0.9000000000000001,
+        "key_findings": [
+          "迭代精炼融合：6 轮迭代，最终置信度 90.0%"
+        ],
+        "recommendations": [
+          "融合策略 iterative 由执行器产出，参与专家 6 位，建议按置信度复核关键结论"
+        ],
+        "participating_nodes": 6
+      },
+      "nodes": [
+        {
+          "node_id": "node-iter1-1",
+          "expert_id": "law-expert-001",
+          "name": "法律咨询专家",
+          "status": "completed",
+          "duration_ms": 60,
+          "error_message": null
+        },
+        {
+          "node_id": "node-iter1-2",
+          "expert_id": "research-expert-001",
+          "name": "学术研究专家",
+          "status": "completed",
+          "duration_ms": 46,
+          "error_message": null
+        },
+        {
+          "node_id": "node-iter2-1",
+          "expert_id": "law-expert-001",
+          "name": "法律咨询专家",
+          "status": "completed",
+          "duration_ms": 36,
+          "error_message": null
+        },
+        {
+          "node_id": "node-iter2-2",
+          "expert_id": "research-expert-001",
+          "name": "学术研究专家",
+          "status": "completed",
+          "duration_ms": 20,
+          "error_message": null
+        },
+        {
+          "node_id": "node-iter3-1",
+          "expert_id": "law-expert-001",
+          "name": "法律咨询专家",
+          "status": "completed",
+          "duration_ms": 34,
+          "error_message": null
+        },
+        {
+          "node_id": "node-iter3-2",
+          "expert_id": "research-expert-001",
+          "name": "学术研究专家",
+          "status": "completed",
+          "duration_ms": 58,
+          "error_message": null
+        }
+      ],
+      "duration_ms": 3229,
+      "model": "mock-openai",
+      "provider": "http://127.0.0.1:8999/v1",
+      "fusion_endpoint": "/fusion-result",
+      "completed_at": "2026-09-24T03:47:09.371190"
+    }
+  ],
+  "mode": "mock",
+  "note": "mock 模型服务 · 真实生产代码路径"
+}
