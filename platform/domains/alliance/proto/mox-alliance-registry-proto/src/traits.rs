@@ -8,16 +8,35 @@
 //! 为未来 gRPC 传输保留同一语义的规范定义。
 
 use crate::types::{
-    Expert, InstanceQuery, InstanceStatus, RegisteredInstance,
+    Expert, ExpertMetrics, InstanceQuery, InstanceStatus, PlatformOverview, RegisteredInstance,
 };
 
 /// 静态专家目录契约（`/api/v1/experts` 语义）
+///
+/// 方法与 proto `service ExpertRegistry` 一一对应：
+/// ListExperts/GetExpert/CreateExpert/UpdateExpert/DeleteExpert 为必备方法；
+/// GetExpertMetrics/GetPlatformOverview 为契约预留，提供默认「未实现」体，
+/// 消费方依赖该契约即可，服务端可按需覆盖实现。
 pub trait ExpertDirectory: Send + Sync {
     fn list_experts(&self) -> crate::RegistryResult<Vec<Expert>>;
     fn get_expert(&self, id: &str) -> crate::RegistryResult<Option<Expert>>;
     fn create_expert(&self, expert: &Expert) -> crate::RegistryResult<()>;
     fn update_expert(&self, expert: &Expert) -> crate::RegistryResult<()>;
     fn delete_expert(&self, id: &str) -> crate::RegistryResult<()>;
+
+    /// 专家指标（proto `GetExpertMetrics`）：契约预留，默认未实现。
+    fn get_expert_metrics(&self, _id: &str) -> crate::RegistryResult<ExpertMetrics> {
+        Err(crate::RegistryError::new(
+            "ExpertDirectory::get_expert_metrics 为 proto 契约预留，当前服务未实现",
+        ))
+    }
+
+    /// 平台概览（proto `GetPlatformOverview`）：契约预留，默认未实现。
+    fn get_platform_overview(&self) -> crate::RegistryResult<PlatformOverview> {
+        Err(crate::RegistryError::new(
+            "ExpertDirectory::get_platform_overview 为 proto 契约预留，当前服务未实现",
+        ))
+    }
 }
 
 /// 应用级专家实例注册契约（`/api/registry/experts` 语义）

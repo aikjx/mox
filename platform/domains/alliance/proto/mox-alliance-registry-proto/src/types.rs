@@ -11,6 +11,17 @@
 //!
 //! 注册中心是应用级实例注册表，不是 Nacos 命名注册的替代品——
 //! 它管理专家实例的元数据、能力标签与健康状态，供调度器/网关按能力发现实例。
+//!
+//! ## 契约对齐说明
+//!
+//! 本文件为 `proto/registry.proto` 的**手写 Rust 契约镜像**（workspace 全仓不引入
+//! tonic/prost，避免大依赖与代码生成耦合）。数值类型按 proto scalar 语义手写对齐：
+//!
+//! - `double`  → `f64`（如 [`Expert::rating`]）
+//! - `int32`   → `i32`（如 [`Expert::total_consultations`]）
+//!
+//! 当前运行时传输层为 **HTTP JSON**（非 gRPC）；`.proto` 仅作为未来 gRPC 传输的
+//! 规范契约保留，二者字段语义保持一致。
 
 use std::collections::HashMap;
 
@@ -39,10 +50,10 @@ pub struct Expert {
     pub bio: String,
     /// 是否启用
     pub enabled: bool,
-    /// 评分
-    pub rating: f32,
-    /// 总咨询次数
-    pub total_consultations: u32,
+    /// 评分（proto `double` → `f64`）
+    pub rating: f64,
+    /// 总咨询次数（proto `int32` → `i32`）
+    pub total_consultations: i32,
 }
 
 impl Expert {
@@ -83,6 +94,34 @@ pub struct UpdateExpertRequest {
     pub skills: Option<Vec<String>>,
     pub bio: Option<String>,
     pub enabled: Option<bool>,
+}
+
+/// 专家指标（对应 proto `ExpertMetrics`，`GetExpertMetrics` 返回）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpertMetrics {
+    /// 专家 ID
+    pub expert_id: String,
+    /// 平均评分（proto `double` → `f64`）
+    pub avg_rating: f64,
+    /// 总咨询次数（proto `int32` → `i32`）
+    pub total_consultations: i32,
+    /// 成功率（proto `double` → `f64`，0.0–1.0）
+    pub success_rate: f64,
+    /// 平均延迟毫秒（proto `double` → `f64`）
+    pub avg_latency_ms: f64,
+}
+
+/// 平台概览（对应 proto `PlatformOverview`，`GetPlatformOverview` 返回）
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PlatformOverview {
+    /// 专家总数（proto `int32` → `i32`）
+    pub total_experts: i32,
+    /// 活跃专家数（proto `int32` → `i32`）
+    pub active_experts: i32,
+    /// 覆盖领域数（proto `int32` → `i32`）
+    pub total_domains: i32,
+    /// 累计咨询次数（proto `int32` → `i32`）
+    pub total_consultations: i32,
 }
 
 // ─── 应用级专家实例注册（核心）─────────────────────────────────────────────

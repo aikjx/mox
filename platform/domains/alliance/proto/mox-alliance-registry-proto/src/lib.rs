@@ -23,6 +23,6 @@ pub mod types;
 pub use errors::{RegistryError, RegistryResult};
 pub use traits::{ExpertDirectory, InstanceRegistry};
 pub use types::{
-    CreateExpertRequest, Expert, HeartbeatRequest, InstanceQuery, InstanceStatus, RegisterRequest,
-    RegisteredInstance, UpdateExpertRequest,
+    CreateExpertRequest, Expert, ExpertMetrics, HeartbeatRequest, InstanceQuery, InstanceStatus,
+    PlatformOverview, RegisterRequest, RegisteredInstance, UpdateExpertRequest,
 };
