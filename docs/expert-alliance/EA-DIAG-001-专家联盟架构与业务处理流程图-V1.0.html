@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟架构与业务处理流程图 V1.0</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f4e79'/%3E%3Ctext x='16' y='22' font-size='16' fill='%23fff' text-anchor='middle' font-family='sans-serif'%3E%E8%81%94%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#16232f; --sub:#5b6b7a; --line:#d5dee6;
+    --gateway:#1f4e79; --sched:#0f766e; --exec:#b45309; --reg:#7c3aed;
+    --core:#334155; --data:#64748b; --bg:#f4f7fa; --card:#fff;
+    --warn:#b45309; --ok:#0f766e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",system-ui,sans-serif; line-height:1.55;}
+  .wrap{max-width:1180px; margin:0 auto; padding:28px 20px 60px;}
+  header.top{border-bottom:3px solid var(--gateway); padding-bottom:16px; margin-bottom:8px;}
+  h1{font-size:26px; color:var(--gateway);}
+  .meta{color:var(--sub); font-size:13px; margin-top:6px;}
+  .meta b{color:var(--ink);}
+  .ssot{background:#eef4fb; border-left:4px solid var(--gateway); padding:10px 14px; font-size:13px; color:var(--sub); margin:14px 0;}
+  h2{font-size:20px; color:var(--gateway); margin:34px 0 14px; padding-left:10px; border-left:4px solid var(--sched);}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:16px; box-shadow:0 1px 3px rgba(22,35,47,.05);}
+  .card h3{font-size:15px; color:var(--ink); margin-bottom:12px;}
+  /* 分层架构 */
+  .layers{display:flex; flex-direction:column; gap:10px;}
+  .layer{display:flex; gap:12px; align-items:stretch;}
+  .lname{width:110px; flex:0 0 110px; align-self:center; font-size:12px; font-weight:600; color:#fff; text-align:center; padding:6px 4px; border-radius:6px;}
+  .lbody{flex:1; display:flex; gap:10px; flex-wrap:wrap; align-content:center;}
+  .node{background:#fff; border:1.5px solid var(--line); border-radius:8px; padding:8px 12px; font-size:12.5px; min-width:150px; box-shadow:0 1px 2px rgba(0,0,0,.04);}
+  .node .nm{font-weight:700; font-size:13px;}
+  .node .sub{color:var(--sub); font-size:11.5px; margin-top:2px;}
+  .node.gw{border-color:var(--gateway);} .node.gw .nm{color:var(--gateway);}
+  .node.sc{border-color:var(--sched);} .node.sc .nm{color:var(--sched);}
+  .node.ex{border-color:var(--exec);} .node.ex .nm{color:var(--exec);}
+  .node.rg{border-color:var(--reg);} .node.rg .nm{color:var(--reg);}
+  .node.ct{border-color:var(--core);} .node.ct .nm{color:var(--core);}
+  .node.dt{border-color:var(--data);} .node.dt .nm{color:var(--data);}
+  .lgw{background:var(--gateway);} .lsc{background:var(--sched);} .lex{background:var(--exec);} .lrg{background:var(--reg);} .lct{background:var(--core);} .ldt{background:var(--data);}
+  .arrow-down{text-align:center; color:var(--sub); font-size:15px; line-height:1; margin:-2px 0;}
+  /* 流程步骤 */
+  .flow{display:flex; flex-wrap:wrap; align-items:stretch; gap:6px 0;}
+  .step{flex:1 1 130px; max-width:150px; min-width:120px; background:#fff; border:1.5px solid var(--line); border-top:3px solid var(--sched); border-radius:8px; padding:8px 8px; margin:0 6px; position:relative; font-size:12px;}
+  .step b{display:block; font-size:12.5px; margin-bottom:3px; color:var(--ink);}
+  .step .d{color:var(--sub); font-size:11px;}
+  .step::after{content:"→"; position:absolute; right:-10px; top:50%; transform:translateY(-50%); color:var(--sub); font-weight:700;}
+  .step:last-child::after{content:none;}
+  .step.alt{background:#fff8ef; border-top-color:var(--warn);}
+  .step.good{background:#eff9f6; border-top-color:var(--ok);}
+  .step.bad{background:#fdf1f1; border-top-color:#b91c1c;}
+  .branch{margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;}
+  .chip{font-size:12px; padding:5px 10px; border-radius:16px; border:1px solid var(--line); background:#fff;}
+  .chip.g{color:var(--ok); border-color:#9fd4c6;} .chip.w{color:var(--warn); border-color:#e3c49a;} .chip.r{color:#b91c1c; border-color:#eab8b8;}
+  /* 表格 */
+  table{width:100%; border-collapse:collapse; font-size:12.5px; table-layout:fixed;}
+  colgroup col{width:auto;}
+  th{background:var(--gateway); color:#fff; text-align:left; padding:7px 9px; font-weight:600;}
+  td{border:1px solid var(--line); padding:6px 9px; vertical-align:top;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--sub); margin-top:10px;}
+  .dot{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px;}
+  footer{color:var(--sub); font-size:12px; margin-top:36px; border-top:1px solid var(--line); padding-top:14px;}
+  @media (max-width:760px){
+    .lname{width:88px; flex-basis:88px;}
+    .step{flex:1 1 100%; max-width:none; margin:4px 0;}
+    .step::after{content:"↓"; right:auto; top:auto; bottom:-13px; left:50%; transform:translateX(-50%);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>专家联盟 · 架构与业务处理流程图</h1>
+  <div class="meta">文档编号 <b>EA-DIAG-001</b> ｜ 版本 <b>V1.0</b> ｜ 权威等级 🟢权威 ｜ 最后更新 <b>2026-09-24</b> ｜ 主责联盟：开发联盟 R</div>
+  <div class="meta">代码事实基线：<b>alliance 域 16 crate · 服务端口 3080/3100/3200/3300/3400 · 内置专家 11 位 · 协作模式 6 种 · 融合策略 6 种</b></div>
+</header>
+<div class="ssot"><b>单源声明：</b>本文档是专家联盟"架构拓扑 + 业务处理流程"的可视化权威载体。所有端口、crate、端点、专家、策略描述均以 <code>platform/domains/alliance/</code> 真实代码与 <code>docs/api/PORT-REGISTRY.md</code> 为准；冲突时以代码为准并修复本文档。上级权威：<code>docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md</code>；归一化规范：<code>docs/standards/expert-alliance-normalization-mode.md</code>（EA-NORM-001）。</div>
+
+<!-- ========== 1 全景架构 ========== -->
+<h2>一、全景架构图（企业级分布式 · 网关唯一入口）</h2>
+<div class="card">
+  <h3>接入层 → 联盟服务层 → 能力/数据层（自顶向下）</h3>
+  <div class="layers">
+    <div class="layer">
+      <div class="lname lgw">接入层</div>
+      <div class="lbody">
+        <div class="node gw"><div class="nm">前端工作台 frontend-ui</div><div class="sub">Vite Vue3 · dev 3020 / 33020 · 专家中心·任务工作台</div></div>
+        <div class="node gw"><div class="nm">模块化网关 :3080（唯一入口）</div><div class="sub">认证·路由·限流·/api/alliance/* · 提取 X-Tenant-Id/X-User-Id/x-request-id</div></div>
+        <div class="node gw"><div class="nm">mox-alliance-http-sdk</div><div class="sub">RemoteAllianceClient · RequestContext · 出站注入租户/用户/请求ID头</div></div>
+      </div>
+    </div>
+    <div class="arrow-down">▼</div>
+    <div class="layer">
+      <div class="lname lsc">联盟服务层</div>
+      <div class="lbody">
+        <div class="node sc"><div class="nm">scheduler-svc :3100</div><div class="sub">提交·幂等回放·匹配·DAG规划·派发·状态机·取消</div></div>
+        <div class="node ex"><div class="nm">executor-svc :3200</div><div class="sub">DAG执行·节点容错·融合·QA·state_sink·结果回读</div></div>
+        <div class="node rg"><div class="nm">registry-svc :3400</div><div class="sub">专家注册/发现/注销/心跳/健康 · 三存储后端</div></div>
+        <div class="node ex"><div class="nm">AI 专家桥接 :3300</div><div class="sub">expert_service 基址 · 模型路由（未配置时返回 MODEL_NOT_CONFIGURED）</div></div>
+      </div>
+    </div>
+    <div class="arrow-down">▼</div>
+    <div class="layer">
+      <div class="lname lct">核心层 core</div>
+      <div class="lbody">
+        <div class="node ct"><div class="nm">scheduler-core</div><div class="sub">TaskScheduler · ModularWeightMatcher · 多活租约选主 · DAG规划</div></div>
+        <div class="node ct"><div class="nm">executor-core</div><div class="sub">DAG执行引擎 · 节点执行 · 融合输出持久化 · 幂等仲裁</div></div>
+        <div class="node ct"><div class="nm">registry-core</div><div class="sub">专家实例模型 · 分级心跳聚合 · RocksDB 持久化门禁</div></div>
+        <div class="node ct"><div class="nm">alliance-core</div><div class="sub">融合引擎 · 6 策略 · 6 兼容函数 · DAG 模型</div></div>
+        <div class="node ct"><div class="nm">config-core / boot-config</div><div class="sub">11 内置专家定义 · yml 外部化 · Nacos 配置/命名注册</div></div>
+      </div>
+    </div>
+    <div class="arrow-down">▼</div>
+    <div class="layer">
+      <div class="lname ldt">数据与基础设施</div>
+      <div class="lbody">
+        <div class="node dt"><div class="nm">SQLite / JSON 快照</div><div class="sub">任务·节点·注册表持久化（原子 rename / 重启恢复）</div></div>
+        <div class="node dt"><div class="nm">RocksDB</div><div class="sub">注册中心持久化（回归门禁）</div></div>
+        <div class="node dt"><div class="nm">Nacos（rnacos）</div><div class="sub">配置中心整体覆盖 + 命名注册（gRPC 9848 / HTTP 8848）</div></div>
+        <div class="node dt"><div class="nm">LLM 提供者</div><div class="sub">MOX_LLM_* 环境注入 · 多提供者路由 · 熔断/降级</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span><span class="dot" style="background:var(--gateway)"></span>接入/网关</span><span><span class="dot" style="background:var(--sched)"></span>调度</span><span><span class="dot" style="background:var(--exec)"></span>执行</span><span><span class="dot" style="background:var(--reg)"></span>注册</span><span><span class="dot" style="background:var(--core)"></span>核心层</span><span><span class="dot" style="background:var(--data)"></span>数据层</span></div>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:10px;">租户身份贯穿链路：<b style="color:var(--gateway)">网关提取请求头 → RequestContext → http-sdk 出站注入 → 调度/执行/注册</b>，全链路租户/用户/请求 ID 不丢失（X-Tenant-Id · X-User-Id · x-request-id）。</p>
+</div>
+
+<!-- ========== 2 任务全生命周期 ========== -->
+<h2>二、业务流程图 1 · 任务全生命周期</h2>
+<div class="card">
+  <h3>主链路：提交 → 幂等回放 → 匹配 → 规划 → 派发 → 执行 → 融合 → 结果</h3>
+  <div class="flow">
+    <div class="step"><b>1 提交任务</b><div class="d">POST /api/alliance/tasks<br>tenant_id + 描述 + 模式 + 幂等键</div></div>
+    <div class="step"><b>2 幂等回放</b><div class="d">命中幂等键 → 直接回放既有任务，不重复派发</div></div>
+    <div class="step"><b>3 专家匹配</b><div class="d">ModularWeightMatcher<br>描述 → Top-N 专家</div></div>
+    <div class="step"><b>4 规划 DAG</b><div class="d">6 种协作模式生成差异化 DAG<br>无环/可达/输入完整验证</div></div>
+    <div class="step"><b>5 派发执行</b><div class="d">executor 收到 DAG<br>节点并行/串行按依赖拓扑</div></div>
+    <div class="step"><b>6 节点执行</b><div class="d">调用专家 · 超时/重试(≤3)/替代/降级</div></div>
+    <div class="step"><b>7 结果融合</b><div class="d">6 策略按模式匹配<br>加权投票/置信度/堆叠/辩论/MapReduce/迭代</div></div>
+    <div class="step"><b>8 QA 与回读</b><div class="d">质量评估 · state_sink 持久化<br>执行状态/融合结果跨重启读回</div></div>
+  </div>
+  <div class="branch">
+    <span class="chip g">resume 推进状态</span>
+    <span class="chip g">toggle-done 完成</span>
+    <span class="chip w">skip 跳过未终态节点</span>
+    <span class="chip r">cancel 优雅终止（所有节点 <2s）</span>
+    <span class="chip w">重试（指数退避）</span>
+    <span class="chip w">降级（无模型 → MODEL_NOT_CONFIGURED，不伪装成功）</span>
+  </div>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:10px;">人工干预走调度器干预 API（resume/skip/toggle-done/cancel），干预后经状态机仲裁校验合法性；执行记录标记为节点最新快照，未配置真实模型时如实返回错误而非空报告。</p>
+</div>
+
+<!-- ========== 3 状态机 ========== -->
+<h2>三、业务流程图 2 · 任务状态机与仲裁</h2>
+<div class="card">
+  <h3>主推进链（合法转换）与终态（不可离开）</h3>
+  <div class="flow">
+    <div class="step"><b>Pending</b><div class="d">已创建未规划</div></div>
+    <div class="step"><b>Planning</b><div class="d">规划中（幂等键并发绑定仲裁）</div></div>
+    <div class="step"><b>Running</b><div class="d">已派发执行</div></div>
+    <div class="step"><b>Partial</b><div class="d">部分节点终态（人工干预收尾）</div></div>
+    <div class="step good"><b>Succeeded</b><div class="d">终态 · 结果可读</div></div>
+    <div class="step bad"><b>Failed</b><div class="d">终态 · 可重试重建</div></div>
+  </div>
+  <div class="branch">
+    <span class="chip r">Cancelled（终态 · 优雅终止）</span>
+    <span class="chip w">Skipped（节点级终态 · 人工跳过）</span>
+  </div>
+  <div class="card" style="box-shadow:none;background:#f8fafc;margin-top:12px;">
+    <h3>仲裁规则（scheduler-core update_task_status / can_transition_to）</h3>
+    <table>
+      <colgroup><col style="width:33%"><col style="width:33%"><col style="width:34%"></colgroup>
+      <tr><th>规则</th><th>行为</th><th>证据位置</th></tr>
+      <tr><td>转换表仲裁</td><td>非表内转换 → warn 日志 + 拒绝 + 保持当前状态</td><td><code>scheduler-core/src/scheduler.rs</code></td></tr>
+      <tr><td>终态不可离开</td><td>Succeeded/Failed/Cancelled 不再接受任何转换</td><td><code>TaskStatus::can_transition_to</code></td></tr>
+      <tr><td>幂等并发绑定</td><td>两请求同键并发 → 后者回放前者任务并终止派发</td><td><code>bind_idempotency_key</code></td></tr>
+      <tr><td>持久化恢复</td><td>任务/节点状态写入 SQLite + state_sink，重启后回读继续</td><td><code>storage.rs · state_sink.rs</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ========== 4 注册中心 ========== -->
+<h2>四、业务流程图 3 · 专家注册中心生命周期</h2>
+<div class="card">
+  <h3>registry-svc :3400 · 注册 → 发现 → 心跳 → 摘除 → 恢复</h3>
+  <div class="flow">
+    <div class="step"><b>1 注册</b><div class="d">POST /api/registry/experts<br>module_id/能力/域名/工具</div></div>
+    <div class="step"><b>2 验证与存储</b><div class="d">名称冲突/能力完整校验<br>内存 / JSON快照 / SQLite / RocksDB</div></div>
+    <div class="step"><b>3 发现</b><div class="d">GET /api/registry/experts<br>capability/domain/status/name 过滤</div></div>
+    <div class="step"><b>4 心跳续约</b><div class="d">POST /{id}/heartbeat<br>租约续期</div></div>
+    <div class="step"><b>5 自动摘除</b><div class="d">后台任务超时未心跳 → 摘除（不健康降级）</div></div>
+    <div class="step good"><b>6 恢复</b><div class="d">心跳到达 → 自动恢复在册</div></div>
+  </div>
+  <div class="branch">
+    <span class="chip g">GET /api/registry/health 健康检查</span>
+    <span class="chip w">DELETE /{id} 注销（进行中任务不受影响）</span>
+    <span class="chip w">分级心跳聚合 + RocksDB 持久化（P0）</span>
+  </div>
+</div>
+
+<!-- ========== 5 多活与配置 ========== -->
+<h2>五、业务流程图 4 · 多活租约选主 / 故障接管 / 配置注册</h2>
+<div class="card">
+  <h3>调度器同库多活：租约选主 → 主调度 → 故障接管</h3>
+  <div class="flow">
+    <div class="step"><b>1 租约竞争</b><div class="d">多实例同库抢租约（lease）</div></div>
+    <div class="step"><b>2 选主成功</b><div class="d">主实例获得租约，承接调度</div></div>
+    <div class="step"><b>3 主故障</b><div class="d">租约过期 / 心跳中断</div></div>
+    <div class="step good"><b>4 从接管</b><div class="d">备实例续租 → 从持久化状态接管任务</div></div>
+  </div>
+  <h3 style="margin-top:18px;">Nacos 配置中心 + 命名注册链路</h3>
+  <div class="flow">
+    <div class="step"><b>启动</b><div class="d">读取本地引导 yml（离线兜底）</div></div>
+    <div class="step"><b>拉取远程配置</b><div class="d">nacos.enabled=true → 远程整体覆盖本地</div></div>
+    <div class="step"><b>注册实例</b><div class="d">NamingRegistry · 服务名/ip/端口/metadata</div></div>
+    <div class="step"><b>优雅注销</b><div class="d">服务停止 → deregister，无僵尸实例</div></div>
+  </div>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:10px;">配置优先级：内置默认 &lt; config/alliance-*.yml &lt; 环境变量 MOX_ALLIANCE_*；配置中心不可达 → 降级本地并告警，不阻断启动。</p>
+</div>
+
+<!-- ========== 6 事实表 ========== -->
+<h2>六、代码事实清单（对齐依据）</h2>
+<div class="card">
+  <h3>alliance 域 16 crate 分层</h3>
+  <table>
+    <colgroup><col style="width:14%"><col style="width:52%"><col style="width:34%"></colgroup>
+    <tr><th>层</th><th>crate</th><th>职责</th></tr>
+    <tr><td>proto ×4</td><td>mox-alliance-common-proto · scheduler-proto · executor-proto · registry-proto</td><td>服务间通信契约</td></tr>
+    <tr><td>api ×1</td><td>mox-alliance-api</td><td>域间契约（trait/DTO，依赖倒置）</td></tr>
+    <tr><td>core ×6</td><td>mox-alliance-core · config-core · boot-config · scheduler-core · executor-core · registry-core</td><td>纯业务逻辑 / 专家定义 / 启动配置 / 调度 / 执行 / 注册</td></tr>
+    <tr><td>sdk ×2</td><td>mox-alliance-sdk · mox-alliance-http-sdk</td><td>类型定义 + HTTP 客户端（租户头注入）</td></tr>
+    <tr><td>svc ×3</td><td>mox-alliance-scheduler-svc · executor-svc · registry-svc</td><td>调度 :3100 / 执行 :3200 / 注册 :3400</td></tr>
+  </table>
+</div>
+<div class="card">
+  <h3>服务端口（PORT-REGISTRY.md 对齐）</h3>
+  <table>
+    <colgroup><col style="width:14%"><col style="width:40%"><col style="width:46%"></colgroup>
+    <tr><th>端口</th><th>服务</th><th>说明</th></tr>
+    <tr><td>3080</td><td>模块化网关（唯一 API 入口）</td><td>frontend-ui 代理目标</td></tr>
+    <tr><td>3100</td><td>alliance scheduler-svc</td><td>调度编排</td></tr>
+    <tr><td>3200</td><td>alliance executor-svc</td><td>DAG 执行引擎</td></tr>
+    <tr><td>3300</td><td>AI 专家桥接基址</td><td>expert_service（模型未配置 → MODEL_NOT_CONFIGURED）</td></tr>
+    <tr><td>3400</td><td>alliance registry-svc</td><td>专家注册中心</td></tr>
+    <tr><td>3020 / 33020</td><td>前端 dev</td><td>工作台 / 联盟前端</td></tr>
+  </table>
+</div>
+<div class="card">
+  <h3>内置专家（module_id · domain_experts.rs，含 V1.1 新增）</h3>
+  <table>
+    <colgroup><col style="width:26%"><col style="width:40%"><col style="width:34%"></colgroup>
+    <tr><th>module_id</th><th>专家</th><th>能力域</th></tr>
+    <tr><td>expert-code</td><td>代码编程专家</td><td>代码生成/调试/重构</td></tr>
+    <tr><td>expert-code-engine</td><td>代码引擎专家（V1.1 新增）</td><td>自研代码引擎本地推理（降级链）</td></tr>
+    <tr><td>expert-math</td><td>数学推理专家</td><td>证明/逻辑/统计</td></tr>
+    <tr><td>expert-medical</td><td>医疗健康专家</td><td>医学知识/临床推理</td></tr>
+    <tr><td>expert-law</td><td>法律专家</td><td>法条检索/合规/合同审阅</td></tr>
+    <tr><td>expert-finance</td><td>金融专家</td><td>财务分析/投资/风险</td></tr>
+    <tr><td>expert-creative</td><td>创意写作专家</td><td>文案/头脑风暴</td></tr>
+    <tr><td>expert-vision</td><td>视觉图像专家</td><td>图像理解/多模态</td></tr>
+    <tr><td>expert-translation</td><td>翻译专家</td><td>多语种互译</td></tr>
+    <tr><td>expert-research</td><td>学术研究专家</td><td>文献调研/综述</td></tr>
+    <tr><td>expert-arch</td><td>架构设计专家</td><td>系统架构/选型/混合推理</td></tr>
+  </table>
+</div>
+<div class="card">
+  <h3>协作模式 × 融合策略</h3>
+  <table>
+    <colgroup><col style="width:30%"><col style="width:30%"><col style="width:40%"></colgroup>
+    <tr><th>6 协作模式</th><th>6 融合策略（trait）</th><th>兼容基础函数（fusion/mod.rs）</th></tr>
+    <tr><td>sequential / parallel / debate / hierarchical / iterative / voting</td><td>weighted_voting · confidence_weighting · stacking · debate · map_reduce · iterative_refinement</td><td>rrf · weighted · voting · best_of · concatenate · merge_json</td></tr>
+  </table>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:8px;">模式驱动 DAG 形态（节点/边数不同）；融合策略按模式自动匹配（如 voting → weighted_voting）。</p>
+</div>
+<div class="card">
+  <h3>关键工程能力（已落地）</h3>
+  <table>
+    <colgroup><col style="width:30%"><col style="width:42%"><col style="width:28%"></colgroup>
+    <tr><th>能力</th><th>说明</th><th>落地证据</th></tr>
+    <tr><td>幂等键回放</td><td>重复提交/响应丢失不产生重复任务，并发同键回放</td><td>scheduler-core</td></tr>
+    <tr><td>状态机仲裁</td><td>转换表拒绝非法转换，终态不可离开</td><td>scheduler-core</td></tr>
+    <tr><td>持久化与回读</td><td>state_sink + 融合输出持久化，跨重启恢复</td><td>executor-core / svc</td></tr>
+    <tr><td>租户身份贯穿</td><td>X-Tenant-Id / X-User-Id / x-request-id 全链路透传</td><td>http-sdk</td></tr>
+    <tr><td>多活租约选主</td><td>同库租约竞争 + 故障接管</td><td>scheduler-core</td></tr>
+    <tr><td>重试/追踪/熔断/降级</td><td>指数退避 ≤3、链路追踪、三态熔断、无模型如实报错</td><td>alliance 域</td></tr>
+    <tr><td>Nacos 配置/命名</td><td>远程配置整体覆盖、注册中心实例管理</td><td>boot-config</td></tr>
+  </table>
+</div>
+
+<footer>
+  编制：开发专家联盟 · 开发联盟 R ｜ 数据来源：platform/domains/alliance 真实代码 + docs/api/PORT-REGISTRY.md ｜ 本图为静态确定性 HTML，端口/清单与代码一致，冲突以代码为准。
+</footer>
+</div>
+</body>
+</html>
