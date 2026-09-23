@@ -33,7 +33,8 @@ impl EditBlock {
 
 /// 解析 SEARCH/REPLACE 文本（容忍 CRLF 与块间空行）
 pub fn parse_blocks(text: &str) -> Result<Vec<EditBlock>, String> {
-    let lines: Vec<&str> = text.replace("\r\n", "\n").lines().collect();
+    let normalized = text.replace("\r\n", "\n");
+    let lines: Vec<&str> = normalized.lines().collect();
     let mut out = Vec::new();
     let mut i = 0;
     while i < lines.len() {
@@ -88,6 +89,8 @@ pub enum ApplyStatus {
     Exact,
     /// search 与整个文件（忽略首尾空白）一致 → 全文件替换
     WholeFile,
+    /// 空块（基线与目标无差异），无需变更即成功
+    NoChange,
     /// 未命中
     NotFound,
     /// 命中多处，安全起见拒绝
@@ -133,6 +136,14 @@ pub fn apply_blocks(
             failed += 1;
             continue;
         };
+        if b.search.trim().is_empty() && b.replace.trim().is_empty() {
+            results.push(ApplyResult {
+                path: b.path.clone(),
+                status: ApplyStatus::NoChange,
+            });
+            applied += 1;
+            continue;
+        }
         if content.trim_end() == b.search.trim_end() && !b.search.trim().is_empty() {
             files.insert(b.path.clone(), b.replace.clone());
             results.push(ApplyResult {
@@ -209,7 +220,7 @@ pub fn make_block(path: &str, old: &str, new: &str) -> EditBlock {
     while suf < o.len() - pre && suf < n.len() - pre && o[o.len() - 1 - suf] == n[n.len() - 1 - suf] {
         suf += 1;
     }
-    let join = |v: &[&str]| -> String /* keep clause */ {
+    let join = |v: &[&str]| -> String {
         if v.is_empty() {
             String::new()
         } else {
@@ -304,6 +315,19 @@ mod tests {
         );
         assert_eq!(report.results[0].status, ApplyStatus::Ambiguous);
         assert_eq!(report.failed, 1);
+    }
+
+    #[test]
+    fn empty_block_is_noop_success() {
+        // 无差异压缩后的空块不得判失败（make_block 对 identical 内容产出空块）
+        let b = base();
+        let path = "generated/tasks.py".to_string();
+        let blk = make_block(&path, &b[&path], &b[&path]);
+        assert!(blk.search.is_empty() && blk.replace.is_empty());
+        let (files, report) = apply_blocks(&b, std::slice::from_ref(&blk));
+        assert!(report.ok());
+        assert_eq!(report.results[0].status, ApplyStatus::NoChange);
+        assert_eq!(files[&path], b[&path]);
     }
 
     #[test]
