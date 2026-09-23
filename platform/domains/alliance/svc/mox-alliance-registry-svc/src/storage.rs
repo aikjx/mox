@@ -263,6 +263,62 @@ impl RegistryStore {
         Some(updated)
     }
 
+    /// 分级心跳聚合续约（批量）：单写锁内逐成员刷新，快照整批只落盘一次。
+    ///
+    /// 与逐条 [`heartbeat`](Self::heartbeat) 的区别：10:1:1 聚合把 fan_in×batch
+    /// 条心跳合成一次调用，避免每次心跳重写全量 JSON 快照（磁盘放大 N 倍）。
+    /// 返回（续约成功数，注册中心中不存在的成员数）。
+    pub fn heartbeat_batch(
+        &self,
+        members: &std::collections::BTreeMap<String, mox_alliance_registry_core::Renewal>,
+        reported_at: chrono::DateTime<chrono::Utc>,
+    ) -> (usize, usize) {
+        let mut renewed = 0;
+        let mut unknown = 0;
+        {
+            let mut map = self.inner.write();
+            let now = chrono::Utc::now();
+            for (id, ren) in members {
+                match map.get_mut(id) {
+                    Some(inst) => {
+                        inst.last_heartbeat_at = reported_at.min(now);
+                        if let Some(load) = ren.load_current {
+                            inst.load_current = load;
+                        }
+                        inst.status = ren.status.to_instance_status();
+                        renewed += 1;
+                    }
+                    None => unknown += 1,
+                }
+            }
+        }
+        if renewed > 0 {
+            self.persist();
+        }
+        (renewed, unknown)
+    }
+
+    /// 聚合器中已消失（显式注销/淘汰）成员的注册中心侧摘除。返回实际删除数。
+    pub fn prune_members(&self, ids: &[String]) -> usize {
+        if ids.is_empty() {
+            return 0;
+        }
+        let removed = {
+            let mut map = self.inner.write();
+            let mut removed = 0;
+            for id in ids {
+                if map.remove(id).is_some() {
+                    removed += 1;
+                }
+            }
+            removed
+        };
+        if removed > 0 {
+            self.persist();
+        }
+        removed
+    }
+
     /// 主动标记状态（如后台主动探测失败标记 Unhealthy）
     pub fn set_status(&self, id: &str, status: InstanceStatus) -> Option<RegisteredInstance> {
         let updated = {

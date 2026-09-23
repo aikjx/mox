@@ -4183,6 +4183,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-alliance-registry-core"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "mox-alliance-registry-proto",
+ "serde",
+]
+
+[[package]]
 name = "mox-alliance-registry-proto"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4194,12 +4203,13 @@ dependencies = [
 
 [[package]]
 name = "mox-alliance-registry-svc"
-version = "0.1.0"
+version = "3.0.0-ai-powered"
 dependencies = [
  "axum",
  "chrono",
  "http-body-util",
  "mox-alliance-common-proto",
+ "mox-alliance-registry-core",
  "mox-alliance-registry-proto",
  "mox-api-crypto",
  "parking_lot",
@@ -5598,6 +5608,7 @@ dependencies = [
  "mox-kg-core",
  "mox-kg-meta-core",
  "mox-kg-service-svc",
+ "mox-kg-storage-svc",
  "mox-server-runtime",
  "serde",
  "serde_json",
@@ -5653,10 +5664,13 @@ version = "3.0.0-ai-powered"
 dependencies = [
  "async-raft",
  "async-trait",
+ "axum",
  "bytes",
  "chrono",
  "criterion",
  "hex",
+ "http-body-util",
+ "mox-api-protocol",
  "mox-cloud-foundation",
  "mox-kg-algo-core",
  "mox-kg-meta-core",
@@ -5671,6 +5685,7 @@ dependencies = [
  "tempfile",
  "thiserror 1.0.69",
  "tokio",
+ "tower 0.4.13",
  "tracing",
  "tracing-subscriber",
 ]

@@ -10,10 +10,13 @@
 //!
 //! Phase 1：基础 HTTP API + 内存调度器
 //! Phase 2：执行器桥接层（支持 HTTP 远程和进程内调用）
+//! Phase 3：多活（[`ha`]：租约选主 + leader 专属对账，默认关闭）
 
 pub mod app_state;
+pub mod ha;
 pub mod routes;
 pub mod server;
 
 pub use app_state::SchedulerAppState;
+pub use ha::HaConfig;
 pub use server::{SchedulerMode, SchedulerServer};

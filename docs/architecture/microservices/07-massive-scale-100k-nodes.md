@@ -12,7 +12,7 @@
 2. **数据管理归一化为一条管线**：OSS（冷/对象）→ 云盘知识库（温/文件+FTS）→ KG 分片（热/图），统一 namespace、生命周期、多租户、纠删码策略，一个事实一个权威源。
 3. **本次实测改进**（证据见 §六）：KG 在线分裂**丢边正确性 bug 已修复**（`shard_split_edge_integrity`，先红后绿）；顶点点查从整分片扫描 O(n) 改为 **vid 二级索引 O(log n)**，10 万顶点级点查延迟 **244µs→2.26µs（108×）**，扩展比 48.6×→2.2×；VID 长度前缀 1B→2B（长 URI 型 ID 可写入）；`mox-kg-storage-svc` 全套测试 release 单线程 **281 项全绿**（90+45+27+19+33+44+23）。
 4. **专家联盟**从"任务协作系统"升级为"海量数据管线编排器"：分片感知调度、分级心跳、批量导入 DAG（§五）。
-5. 诚实边界：仓库当前 Raft 为单进程模拟、持久化默认关、KB 无向量检索——方案给出 P0→P3 收敛路线与每阶段验收命令，不假装已存在。
+5. 诚实边界：仓库当前 Raft 为单进程模拟、部署二进制持久化已转正（P0，RocksDB 模式以 CI `kg-scale` 首绿为准）、KB 无向量检索——方案给出 P0→P3 收敛路线与每阶段验收命令，不假装已存在。
 
 ## 一、现状盘点（证据基线）
 
@@ -20,7 +20,7 @@
 |------|----------|------|------------------|
 | 分片路由 | VID→SHA256 低位→shard，分片数须 2^k，在线分裂 16→32 | `kg/svc/mox-kg-storage-svc/src/graph_codec.rs vid_hash_shard`、`partition_raft.rs` | 无一致性哈希/vnode，跨机再平衡未实现 |
 | 共识/复制 | "最小实现"：单进程内保留 shard 状态，Leader 静态取模，无选举/网络复制 | `src/shard_raft.rs` 头注释、`:234` | 无跨机副本 → 无故障转移 |
-| 持久化 | 默认 `RwLock<BTreeMap>` 内存引擎；`persist-rocksdb` feature 默认关 | `Cargo.toml default=[]`、`kv_engine.rs` | WAL 语义与"Raft 层保证持久性"承诺矛盾未闭环 |
+| 持久化 | 库默认 `RwLock<BTreeMap>` 内存引擎；部署二进制 `mox-kg-server` 已默认开启 `persist-rocksdb`（构建需 libclang），RocksDB 写路径 ack 前 fsync（`MOX_KG_WAL_SYNC=0` 显式降级性能档） | `Cargo.toml [features]`、`kv_engine.rs wal_sync_enabled`、`tests/t_persistence_rocksdb.rs` | 跨机复制仍未实现，单机 fsync 是当前唯一掉电防线 |
 | 实测规模 | 单测最大 10 万顶点路由/χ² 均匀、16→32 分裂 10 万顶点不丢、写基线 100k ops/s、千亿级靠**外推** | `tests/t_distributed_sharding.rs`、`t_perf_bench.rs`、`t_billion_scale_simulation.rs` | 100 节点仅为测试断言假设 |
 | CDC | 进程内内存队列（消费者组/offset/背压），10 万级 harness 因依赖未实现类型被禁用 | `src/cdc_publisher.rs`、`mox-kg-streams-svc/src/bin/cdc_100k_harness.rs.disabled` | 无 WAL/Kafka 持久化，10 万级 CDC 从未实测 |
 | 已承诺上限 | 6 节点 / 1 亿顶点 / 5 亿边 / 读 60k 写 6k QPS；缩放公式 `基准×(边/500M)^0.9` | `deploy/docs/ha-capacity-tco.md` §二 | 与 10 万节点差 ~4 个数量级 |
@@ -108,11 +108,17 @@ OSS 冷(对象, EC 8+3, glacier 归档) ← 云盘知识库 温(文件+FTS5/BM25
 
 **PageRank 基准测试（HEAD 上即随机失败）**：`t_perf_bench` 内联实现的 PageRank 对悬挂节点（出度 0）不做质量重分配，总和随迭代单调流失（HEAD 实测 sum≈0.94–0.96 抖动，断言 <0.01 必红）。已按标准 PageRank 补悬挂项均摊，23/23 连续两轮通过。
 
+**P0 基座闭环（本轮追加）**：
+- 纠偏假承诺：原注释「Raft 层已保证持久性」不成立（Raft 为单进程实现、日志不落盘、无副本多数派），而两处 `write_opts` 均 `set_sync(false)` → ack 不等于持久。现 RocksDB 写路径**默认 ack 前 fsync**（`kv_engine.rs::wal_sync_enabled`，env `MOX_KG_WAL_SYNC` 显式降级，含单元测试锁定解析语义）。
+- 部署形态持久化转正：`mox-kg-server`（端口 3411）默认 feature `persist-rocksdb`，经 `mox-kg-service-svc` 透传；`deploy/docker/Dockerfile.rust-service` 补 `clang libclang-dev`。库 crate 默认仍为内存引擎，保持本地/CI 轻量测试面。
+- 回归锁定入 CI（`ci.yml` job `kg-scale`）：内存全套单线程 281 项 → RocksDB 模式 `--all-targets` 编译门禁 → `t_persistence_rocksdb`（写 500 点+长 URI VID，关闭重开同目录读回，验证 vid_idx 跨重启一致）→ 正确性子集（`t_distributed_sharding`/`t_integration_storage`/`t_integration_query` 跑在 RocksDB+异步 WAL 档）→ 容量模型复算 + `reports/data/` 证据上传。
+- 诚实边界：本机（Windows）无 libclang，RocksDB 模式运行时以 CI `kg-scale` 首绿为准；且全仓尚无生产入口实例化 `StorageServer`（仅测试构造），feature 转正是为存储宿主接线后的默认 durable，接线属 P1 范围。
+
 ## 七、演进路线与验收（P0→P3）
 
 | 阶段 | 交付 | 验收命令（必须可执行） |
 |------|------|------------------------|
-| **P0 基座闭环**（上生产前置） | RocksDB 默认持久化 + WAL sync 语义修复；vid 索引/分裂修复回归锁定；容量模型脚本入 CI 产物 | `cargo test -p mox-kg-storage-svc --release -- --test-threads=1`；`python tools/scale-model/capacity_model.py` |
+| **P0 基座闭环**（上生产前置） | ✅ 已落地：`mox-kg-server` 默认 `persist-rocksdb` + ack 前 fsync WAL（`MOX_KG_WAL_SYNC=0` 可降性能档）；vid 索引/分裂/长 VID 回归入 CI 专用 job `kg-scale`；容量模型脚本 CI 复算并上传产物 | `cargo test -p mox-kg-storage-svc --release -- --test-threads=1`；`python tools/scale-model/capacity_model.py`；RocksDB 模式见 `.github/workflows/ci.yml` job `kg-scale`（本机无 libclang 时的权威执行环境） |
 | **P1 真分布式** | 跨机 Raft 复制（复用 `async-raft`，meta-core 已有依赖）、cell-master 心跳聚合、CDC 持久化（WAL/Kafka）+ 10 万级 harness 解禁、bucket 多租户 | 新建 `t_cell_split_crosshost`（3 VM×3 分片组杀 1 副本无数据丢失）；CDC 100k 幂等报告落 `reports/data/` |
 | **P2 管线打通** | KB 向量检索（embedding 落 pgvector 或自研 HNSW on CloudKernel）、ShardFanout DAG、fusion/memory-svc 按 Cell 部署、冷回沉自动化 | `alliance_demo.py` 增加 bulk-import 模式端到端；`check-doc-links.py` 门禁 |
 | **P3 全局形态** | 多 Region Cell、global-router gRPC+mTLS、跨 Cell 分布式遍历（当前为分片局部+应用层聚合）、混沌工程（Cell 级故障注入） | kind-3m3s → `helm --set cell.size=…` 参数化演练 1K 节点（1 Cell）沙箱 |

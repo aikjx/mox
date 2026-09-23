@@ -111,6 +111,8 @@ jobs:
           - mox-cloud-server
           - mox-iam-server
           - mox-kb-server
+          - mox-alliance-registry-core
+          - mox-alliance-registry-svc
     steps:
       - uses: actions/checkout@v4
 
@@ -128,6 +130,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-build-${{ matrix.crate }}-
             ${{ runner.os }}-cargo-build-
+
+      - name: Install libclang (mox-kg-server 默认 persist-rocksdb，需 rocksdb FFI)
+        if: matrix.crate == 'mox-kg-server'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang libclang-dev
 
       - name: Check ${{ matrix.crate }}
         run: cargo check -p ${{ matrix.crate }} --verbose
@@ -154,6 +160,7 @@ jobs:
           - mox-cache-core
           - mox-dsql-core
           - mox-server-runtime
+          - mox-alliance-registry-core
     steps:
       - uses: actions/checkout@v4
 
@@ -198,6 +205,59 @@ jobs:
 
       - name: Check mox-cache-core with redis-backend
         run: cargo check -p mox-cache-core --features redis-backend --verbose
+
+  # ===========================================================================
+  # 4b. KG 海量规模回归（十万节点方案 §七 P0 验收）
+  #     权威文档: docs/architecture/microservices/07-massive-scale-100k-nodes.md
+  # ===========================================================================
+  kg-scale:
+    name: KG massive-scale gate (P0 持久化+回归锁定)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install libclang (persist-rocksdb 编译依赖)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang libclang-dev
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-kgscale-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: 内存引擎全套回归（计时断言要求单线程）
+        run: cargo test -p mox-kg-storage-svc --release -- --test-threads=1
+
+      - name: RocksDB 模式编译门禁（全部 cfg 分支 + 持久化测试可编译）
+        run: cargo check -p mox-kg-storage-svc --release --features persist-rocksdb --all-targets
+
+      - name: RocksDB 持久化闭环（跨重启读回 + 长 VID，默认 ack 前 fsync）
+        run: cargo test -p mox-kg-storage-svc --release --features persist-rocksdb --test t_persistence_rocksdb -- --test-threads=1
+
+      - name: RocksDB 模式正确性子集（分裂守恒/分片/集成，异步 WAL 性能档）
+        env:
+          MOX_KG_WAL_SYNC: "0"
+        run: >
+          cargo test -p mox-kg-storage-svc --release --features persist-rocksdb
+          --test t_distributed_sharding --test t_integration_storage --test t_integration_query
+          -- --test-threads=1
+
+      - name: 容量模型复算
+        run: python3 tools/scale-model/capacity_model.py
+
+      - name: 上传容量证据
+        uses: actions/upload-artifact@v4
+        with:
+          name: capacity-model-100k
+          path: reports/data/*capacity-model-100k*.json
+          if-no-files-found: error
 
   # ===========================================================================
   # 5. Docker 镜像构建（仅 main 分支）

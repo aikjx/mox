@@ -45,6 +45,42 @@ pub fn cf_names_for(shard: u16) -> [String; 6] {
     ]
 }
 
+/// WAL fsync 语义开关：默认 true —— ack 前等待 fsync（单机掉电安全）。
+/// 设为 `MOX_KG_WAL_SYNC=0|false|off|no` 显式降级为异步 WAL 性能模式
+/// （进程崩溃安全，OS 掉电不安全）。当前 Raft 为单进程最小实现
+/// （无跨机副本、无独立持久化日志），fsync 是 ack 前唯一的持久性防线，
+/// 不得以「Raft 层保证」为由默认关闭。
+pub fn wal_sync_enabled() -> bool {
+    match std::env::var("MOX_KG_WAL_SYNC") {
+        Ok(v) => !matches!(
+            v.trim().to_ascii_lowercase().as_str(),
+            "0" | "false" | "off" | "no"
+        ),
+        Err(_) => true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::wal_sync_enabled;
+
+    #[test]
+    fn wal_sync_env_parsing() {
+        // 注意：env 读写在并行测试下可能互扰，本测试独占目标变量
+        std::env::remove_var("MOX_KG_WAL_SYNC");
+        assert!(wal_sync_enabled(), "默认必须为 durable（sync=true）");
+        for off in ["0", "false", "OFF", "No", " off "] {
+            std::env::set_var("MOX_KG_WAL_SYNC", off);
+            assert!(!wal_sync_enabled(), "{off} 应为性能模式");
+        }
+        for on in ["1", "true", "yes", "anything"] {
+            std::env::set_var("MOX_KG_WAL_SYNC", on);
+            assert!(wal_sync_enabled(), "{on} 应为 durable");
+        }
+        std::env::remove_var("MOX_KG_WAL_SYNC");
+    }
+}
+
 #[cfg(feature = "persist-rocksdb")]
 mod backend {
     use super::*;
@@ -78,9 +114,9 @@ mod backend {
     fn write_opts() -> &'static WriteOptions {
         WRITE_OPTS.get_or_init(|| {
             let mut opts = WriteOptions::default();
-            // 不等待WAL fsync，性能优先（Raft层已保证持久性）
-            opts.set_sync(false);
-            // 禁用WAL对于纯KV场景可进一步提升性能，但Raft场景保留WAL
+            // 默认 ack 前 fsync（掉电安全）；MOX_KG_WAL_SYNC=0 显式降级为性能模式
+            opts.set_sync(super::wal_sync_enabled());
+            // 保留 WAL：无 WAL 则崩溃后连 memtable 中未 flush 的写入都会丢
             opts.disable_wal(false);
             opts
         })

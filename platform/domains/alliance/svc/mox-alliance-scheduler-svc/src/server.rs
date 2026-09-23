@@ -223,7 +223,23 @@ impl SchedulerServer {
     }
 
     /// 构建应用（将构建逻辑与网络监听分离，便于测试注入与复用）
+    ///
+    /// 不含 HA 句柄；需要优雅让位请用 [`Self::build_app_with_ha`]（`run()` 即用此路径）。
     pub async fn build_app(&self) -> anyhow::Result<axum::Router> {
+        Ok(self.build_app_with_ha().await?.0)
+    }
+
+    /// 构建应用并装配多活运行面。
+    ///
+    /// 返回 `(Router, Option<(选主状态机, 后台循环)>)`；`None` 表示
+    /// `MOX_ALLIANCE_HA_MODE` 未开启——此时请求路径与周期职责都只由本副本承担，
+    /// 行为与单副本完全一致。
+    pub async fn build_app_with_ha(
+        &self,
+    ) -> anyhow::Result<(
+        axum::Router,
+        Option<(crate::ha::SharedElector, tokio::task::JoinHandle<()>)>,
+    )> {
         // ── 构建模块化配置子系统（全链路接线）──
         // 1) 配置引擎（内存存储，可替换为持久化实现）
         let config_engine = Arc::new(ConfigEngine::new(Arc::new(MemoryConfigStore::new())));
@@ -332,7 +348,7 @@ impl SchedulerServer {
             .executor_url
             .clone()
             .unwrap_or_else(|| "http://127.0.0.1:3200".to_string());
-        let state = SchedulerAppState::new_with_bridge(
+        let mut state = SchedulerAppState::new_with_bridge(
             self.config.clone(),
             scheduler,
             matcher,
@@ -341,8 +357,25 @@ impl SchedulerServer {
         .with_executor_base_url(executor_base_url)
         .with_metrics(metrics);
 
+        // ── 多活（HA）：租约选主 + leader 专属周期对账 ──
+        // 未开启时完全不介入：不起线程、不开租约库、不抢主。
+        let ha = match crate::ha::HaConfig::from_env() {
+            None => None,
+            Some(cfg) => {
+                let (elector, task) =
+                    crate::ha::start(&cfg, state.scheduler.clone()).map_err(|e| {
+                        anyhow::anyhow!(
+                            "HA 装配失败（多活要求 MOX_ALLIANCE_STORAGE_MODE=sqlite，\
+                             让所有副本共享同一个任务库）: {e}"
+                        )
+                    })?;
+                state.leadership = Some(elector.clone());
+                Some((elector, task))
+            }
+        };
+
         // 构建路由
-        Ok(build_router(state))
+        Ok((build_router(state), ha))
     }
 
     /// 启动服务器

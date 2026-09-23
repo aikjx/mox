@@ -50,6 +50,11 @@ pub fn create_router(state: AppState) -> Router {
             "/api/registry/experts/:id/heartbeat",
             post(heartbeat_expert),
         )
+        // 分级心跳聚合入口（node→rack→cell 10:1:1，rack/cell 代理批量续约）
+        .route(
+            "/api/registry/aggregated-heartbeat",
+            post(heartbeat_aggregated),
+        )
         // 一键传输加密（MOX_API_CRYPTO=sm4）：统一信封 data gzip+SM4-GCM，详见 mox-api-crypto
         .layer(axum::middleware::from_fn(
             mox_api_crypto::middleware::crypto_middleware,
@@ -308,4 +313,34 @@ async fn heartbeat_expert(
         .heartbeat(&id, load, status)
         .map(Json)
         .ok_or(StatusCode::NOT_FOUND)
+}
+
+/// POST /api/registry/aggregated-heartbeat — 分级聚合续约（10:1:1）
+///
+/// rack/cell 聚合代理（`mox-alliance-registry-core::RackAggregator/CellAggregator`）
+/// 把叶级心跳合并为单条 [`AggregatedRenewal`] 提交：一次写锁、一次快照落盘。
+/// 仅刷新已注册成员（聚合不隐式注册）；`unknown_members` 为聚合器中已消失
+/// 的成员，注册中心侧同步摘除（显式注销沿聚合链传播）。
+async fn heartbeat_aggregated(
+    State(state): State<AppState>,
+    Json(req): Json<mox_alliance_registry_core::AggregatedRenewal>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    if req.members.is_empty() && req.unknown_members.is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    let (renewed, unknown) = state
+        .registry
+        .heartbeat_batch(&req.members, req.reported_at);
+    let pruned = state.registry.prune_members(&req.unknown_members);
+    Ok(Json(serde_json::json!({
+        "group_id": req.group_id,
+        "seq": req.seq,
+        "renewed": renewed,
+        "unknown": unknown,
+        "pruned": pruned,
+        "member_count": req.member_count,
+        "unhealthy_count": req.unhealthy_count,
+        "load_total": req.load_total,
+        "health": format!("{:?}", req.health).to_lowercase(),
+    })))
 }

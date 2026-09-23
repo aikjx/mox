@@ -32,6 +32,9 @@ pub mod cdc_source;
 pub mod storage_api;
 pub mod storage_server;
 
+#[cfg(feature = "http")]
+pub mod http_api;
+
 // ---- 分布式存储新模块 ----
 pub mod kv_rocksdb;
 pub mod shard_raft;

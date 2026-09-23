@@ -598,6 +598,10 @@ pub mod tests {
         pub resumed: std::sync::Mutex<Vec<(Uuid, Uuid)>>,
         pub status_to_return: std::sync::Mutex<Option<ExecutionStatus>>,
         pub should_fail: std::sync::Mutex<bool>,
+        /// 执行器活着、但**不认识**这些任务（404 语义）：leader 对账判定孤儿的输入。
+        pub unknown_tasks: std::sync::Mutex<Vec<Uuid>>,
+        /// 覆盖 `health_check()` 结果：用于构造"活着但请求失败"的瞬时故障面。
+        pub health_override: std::sync::Mutex<Option<bool>>,
     }
 
     impl MockExecutorBridge {
@@ -609,6 +613,8 @@ pub mod tests {
                 resumed: std::sync::Mutex::new(Vec::new()),
                 status_to_return: std::sync::Mutex::new(None),
                 should_fail: std::sync::Mutex::new(false),
+                unknown_tasks: std::sync::Mutex::new(Vec::new()),
+                health_override: std::sync::Mutex::new(None),
             }
         }
 
@@ -618,6 +624,16 @@ pub mod tests {
 
         pub fn set_should_fail(&self, fail: bool) {
             *self.should_fail.lock().unwrap() = fail;
+        }
+
+        /// 声明这些任务在执行器侧不存在（`health_check` 仍为 true）。
+        pub fn set_unknown_tasks(&self, ids: Vec<Uuid>) {
+            *self.unknown_tasks.lock().unwrap() = ids;
+        }
+
+        /// `None` 恢复默认（`!should_fail`）。
+        pub fn set_health(&self, healthy: Option<bool>) {
+            *self.health_override.lock().unwrap() = healthy;
         }
 
         pub fn submitted_count(&self) -> usize {
@@ -678,6 +694,12 @@ pub mod tests {
                     "Mock failure",
                 ));
             }
+            if self.unknown_tasks.lock().unwrap().contains(&task_id) {
+                return Err(AllianceError::new(
+                    AllianceErrorCode::TaskNotFound,
+                    format!("Mock executor has no record of task {}", task_id),
+                ));
+            }
             let status = self.status_to_return.lock().unwrap().clone();
             Ok(status.unwrap_or(ExecutionStatus {
                 task_id,
@@ -705,7 +727,8 @@ pub mod tests {
         }
 
         async fn health_check(&self) -> bool {
-            !*self.should_fail.lock().unwrap()
+            let overridden = *self.health_override.lock().unwrap();
+            overridden.unwrap_or(!*self.should_fail.lock().unwrap())
         }
     }
 

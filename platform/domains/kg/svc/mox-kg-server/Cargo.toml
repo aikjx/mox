@@ -26,6 +26,13 @@ mox-kg-algo-core = { path = "../../core/mox-kg-algo-core" }
 mox-kg-meta-core = { path = "../../core/mox-kg-meta-core" }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
 mox-kg-service-svc = { path = "../mox-kg-service-svc", features = ["http-adapter"] }
+mox-kg-storage-svc = { workspace = true, features = ["http"] }
+
+[features]
+# 部署形态默认持久化：RocksDB + ack 前 fsync WAL（构建需 clang/libclang-dev，见 Dockerfile.rust-service）。
+# 本地快速迭代可用 --no-default-features 回退内存引擎。
+default = ["persist-rocksdb"]
+persist-rocksdb = ["mox-kg-service-svc/persist-rocksdb", "mox-kg-storage-svc/persist-rocksdb"]
 
 [lints]
 workspace = true

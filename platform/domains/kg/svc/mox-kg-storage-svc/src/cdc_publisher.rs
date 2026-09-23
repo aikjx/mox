@@ -722,7 +722,7 @@ mod tests {
         // 应该能收到之前的事件（重放）
         // 注意：unbounded channel 需要用 try_recv
         let mut count = 0;
-        while let Ok(_) = rx.try_recv() {
+        while rx.try_recv().is_ok() {
             count += 1;
         }
         assert_eq!(count, 2);
@@ -795,7 +795,7 @@ mod tests {
 
         let lag = publisher.consumer_lag("test_topic", "group1").unwrap();
         // 5 个事件都还没消费，lag 应该是 5
-        assert!(lag >= 0);
+        assert_eq!(lag, 5);
     }
 
     #[test]

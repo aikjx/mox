@@ -152,8 +152,7 @@ fn simulation_generate_er_random_graph() {
                     edge_count as i64,
                     None,
                     BTreeMap::new(),
-                )
-                .ok();
+                );
                 edge_count += 1;
             }
         }
@@ -344,8 +343,7 @@ fn simulation_generate_ws_small_world() {
                     edge_count,
                     None,
                     BTreeMap::new(),
-                )
-                    .ok();
+                );
                 edge_count += 1;
             }
         }
@@ -648,7 +646,7 @@ fn simulation_shard_scalability_linear() {
         let start = Instant::now();
         for i in 0..N {
             let vid = format!("scale_{}_{}", shards, i);
-            srv.add_vertex(vid, "t".into(), BTreeMap::new()).ok();
+            let _ = srv.add_vertex(vid, "t".into(), BTreeMap::new());
         }
         let elapsed = start.elapsed();
         let qps = N as f64 / elapsed.as_secs_f64();
@@ -1071,8 +1069,7 @@ fn simulation_memory_efficiency_large_dataset() {
     for i in 0..N {
         let src = format!("mem_{}", i);
         let dst = format!("mem_{}", (i * 7 + 3) % N);
-        srv.add_edge(src, dst, "e".into(), i as i64, None, BTreeMap::new())
-            .ok();
+        let _ = srv.add_edge(src, dst, "e".into(), i as i64, None, BTreeMap::new());
     }
 
     let elapsed = start.elapsed();
@@ -1111,8 +1108,7 @@ fn simulation_sequential_write_throughput() {
 
     let start = Instant::now();
     for i in 0..N {
-        srv.add_vertex(format!("seq_{:08}", i), "t".into(), BTreeMap::new())
-            .ok();
+        let _ = srv.add_vertex(format!("seq_{:08}", i), "t".into(), BTreeMap::new());
     }
     let elapsed = start.elapsed();
 
@@ -1145,7 +1141,7 @@ fn simulation_random_write_throughput() {
     let start = Instant::now();
     for _ in 0..N {
         let vid = format!("rand_{:016x}", rng.next_u64());
-        srv.add_vertex(vid, "t".into(), BTreeMap::new()).ok();
+        let _ = srv.add_vertex(vid, "t".into(), BTreeMap::new());
     }
     let elapsed = start.elapsed();
 
@@ -1183,8 +1179,7 @@ fn simulation_billion_scale_extrapolation() {
     for i in 0..BASE_EDGES {
         let src = format!("ext_{}", i % BASE_VERTICES);
         let dst = format!("ext_{}", (i * 7) % BASE_VERTICES);
-        srv.add_edge(src, dst, "e".into(), i as i64, None, BTreeMap::new())
-            .ok();
+        let _ = srv.add_edge(src, dst, "e".into(), i as i64, None, BTreeMap::new());
     }
     let import_time = start.elapsed();
 
@@ -1309,8 +1304,7 @@ fn simulation_bfs_scalability() {
                         (i * avg_degree + j) as i64,
                         None,
                         BTreeMap::new(),
-                    )
-                    .ok();
+                    );
                 }
             }
         }

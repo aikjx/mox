@@ -11,6 +11,8 @@ default = []
 # RocksDB snapshot persistence (Apache-2.0). Default off so unit tests are fast and build on
 # systems without libclang; the public API surface is identical between mem/rocks impls.
 persist-rocksdb = ["dep:rocksdb"]
+# HTTP 薄壳（供 mox-kg-server 等宿主挂载 /storage/v1；见 src/http_api.rs）
+http = ["dep:axum", "dep:mox-api-protocol", "mox-api-protocol/axum-integration"]
 
 [dependencies]
 mox-cloud-foundation = { workspace = true }
@@ -33,9 +35,13 @@ bytes = "1"
 chrono = { workspace = true }
 petgraph = { workspace = true }
 rusqlite = { workspace = true }
+axum = { workspace = true, optional = true }
+mox-api-protocol = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = "3"
+tower = { workspace = true, features = ["util"] }
+http-body-util = { workspace = true }
 criterion = { workspace = true }
 
 [lints]

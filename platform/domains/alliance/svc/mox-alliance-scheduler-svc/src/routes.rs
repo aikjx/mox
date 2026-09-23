@@ -22,6 +22,7 @@ pub fn build_router(state: SchedulerAppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
         .route("/metrics", get(metrics_handler))
+        .route("/leadership", get(leadership_handler))
         .route("/tasks", post(create_task).get(list_tasks))
         .route("/tasks/:task_id", get(get_task).post(handle_task_action))
         // 边界归一化（2026-09）：原 /tasks/:id/nodes、/tasks/:id/result 的执行器读代理端点已移除。
@@ -109,6 +110,23 @@ async fn health_check(State(state): State<SchedulerAppState>) -> impl IntoRespon
 /// 运行指标快照（供监控抓取 / 面板展示）
 async fn metrics_handler(State(state): State<SchedulerAppState>) -> impl IntoResponse {
     Json(state.metrics.snapshot())
+}
+
+/// 多活领导权观测（HA 未开启时如实报告"单副本即 leader"，不装作在选主）
+async fn leadership_handler(State(state): State<SchedulerAppState>) -> impl IntoResponse {
+    match &state.leadership {
+        Some(elector) => {
+            let mut body = crate::ha::status_json(elector);
+            body["ha_enabled"] = serde_json::Value::Bool(true);
+            Json(body)
+        }
+        None => Json(serde_json::json!({
+            "ha_enabled": false,
+            "is_leader": true,
+            "scope": crate::ha::SCOPE,
+            "note": "MOX_ALLIANCE_HA_MODE 未开启：本副本为唯一执行者，无租约仲裁",
+        })),
+    }
 }
 
 /// 创建任务

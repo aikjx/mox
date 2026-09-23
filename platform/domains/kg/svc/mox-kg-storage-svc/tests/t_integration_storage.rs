@@ -345,7 +345,7 @@ fn batch_insert_performance_baseline() {
     let start = Instant::now();
     for i in 0..N {
         let vid = format!("batch_{}", i);
-        srv.add_vertex(vid, "t".into(), BTreeMap::new()).ok();
+        let _ = srv.add_vertex(vid, "t".into(), BTreeMap::new());
     }
     let elapsed = start.elapsed().as_secs_f64();
     let qps = N as f64 / elapsed;

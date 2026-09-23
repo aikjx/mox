@@ -203,7 +203,8 @@ impl Default for TraversalOptions {
 /// 定义知识图谱存储的核心接口。所有实现必须保证：
 /// - 原子性：单个操作要么全部成功，要么全部失败
 /// - 一致性：写入对所有读操作可见（取决于一致性级别）
-/// - 持久性：已确认的数据不会丢失
+/// - 持久性：已确认的数据在实现方 ack 前完成 WAL fsync 时不丢失
+///   （内存态实现仅进程内不丢，掉电即丢；见 `kv_engine::wal_sync_enabled`）
 pub trait StorageEngine: Send + Sync {
     /// 插入顶点
     fn insert_vertex(&self, space_id: i32, vertex: &Vertex) -> StorageResult<u64>;

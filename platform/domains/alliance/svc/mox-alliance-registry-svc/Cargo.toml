@@ -1,7 +1,9 @@
 [package]
 name = "mox-alliance-registry-svc"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 description = "专家注册中心服务（v3 拆分）"
 
 [[bin]]
@@ -13,6 +15,8 @@ mox-api-crypto = { workspace = true }
 # 共享协议
 mox-alliance-common-proto = { workspace = true }
 mox-alliance-registry-proto = { workspace = true }
+# 分级心跳聚合核心（node→rack→cell 10:1:1，纯计算零 IO）
+mox-alliance-registry-core = { workspace = true }
 
 # Web 框架
 axum = "0.7"
@@ -31,8 +35,10 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 
 [dev-dependencies]
 # 测试用依赖（HTTP 端到端：axum Router + oneshot）
-tower = { version = "0.4", features = ["util"] }
-http-body-util = "0.1"
+tower = { workspace = true, features = ["util"] }
+http-body-util = { workspace = true }
+mox-alliance-registry-core = { workspace = true }
+chrono = { workspace = true }
 
 [lints]
 workspace = true

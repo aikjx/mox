@@ -26,6 +26,8 @@
 //! - [`registry`] — 专家注册桥接层（trait + 内存/HTTP 实现）
 //! - [`synchronizer`] — 专家同步器（定时从外部源同步）
 //! - [`config_sync`] — 配置同步器
+//! - [`storage`] — 任务仓库（内存 / 文件快照 / SQLite）与租约表
+//! - [`leadership`] — 租约选主与故障接管（多活副本的周期职责只在 leader 上跑）
 //!
 //! ## 执行与融合的归属
 //!
@@ -44,6 +46,7 @@ pub mod registry;
 pub mod synchronizer;
 pub mod config_sync;
 pub mod storage;
+pub mod leadership;
 pub mod metrics;
 
 // 专家匹配器：
@@ -91,7 +94,12 @@ pub use storage::{
 };
 
 #[cfg(feature = "sqlite")]
-pub use storage::{SqliteTaskRepository, StoredNode};
+pub use storage::{SqliteLeaseStore, SqliteTaskRepository, StoredNode};
+
+// 租约选主重导出（多活副本的周期职责只允许 leader 执行；见 leadership 模块文档）
+pub use leadership::{
+    decide, Clock, LeaseState, LeaseStore, LeaderElector, Leadership, MemoryLeaseStore,
+};
 
 // 可观测性指标重导出
 pub use metrics::{AllianceMetrics, MetricsSnapshot};

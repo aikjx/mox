@@ -585,7 +585,7 @@ fn raft_read_your_own_writes() {
         // 立即读邻居（通过 KV 验证存在性）
         let neighbors = srv.get_neighbors(&vid, Direction::Both, &[]).unwrap();
         // 新写入的顶点应该可以被查询到（即使没有边，查询也应成功）
-        assert!(neighbors.is_empty() || neighbors.len() >= 0);
+        assert!(neighbors.is_empty());
     }
 }
 
@@ -676,7 +676,7 @@ fn failure_recovery_data_consistency() {
         let vid = format!("recovery_{}", i);
         let nbrs = srv.get_neighbors(&vid, Direction::Both, &[]).unwrap();
         // 顶点存在（即使没有边，查询也应成功返回空）
-        assert!(nbrs.is_empty() || nbrs.len() >= 0);
+        assert!(nbrs.is_empty());
     }
 }
 
@@ -917,7 +917,7 @@ fn shard_scalability_throughput() {
         let start = Instant::now();
         for i in 0..N {
             let vid = format!("scale_{}_{}", shards, i);
-            srv.add_vertex(vid, "t".into(), BTreeMap::new()).ok();
+            let _ = srv.add_vertex(vid, "t".into(), BTreeMap::new());
         }
         let elapsed = start.elapsed().as_secs_f64();
         let qps = N as f64 / elapsed;
@@ -997,7 +997,7 @@ fn shard_split_data_integrity() {
         let vid = format!("integ_{}", i);
         let nbrs = srv.get_neighbors(&vid, Direction::Both, &[]).unwrap();
         // 查询应该成功（即使没有边也返回空列表，不报错）
-        assert!(nbrs.is_empty() || nbrs.len() >= 0);
+        assert!(nbrs.is_empty());
     }
 }
 

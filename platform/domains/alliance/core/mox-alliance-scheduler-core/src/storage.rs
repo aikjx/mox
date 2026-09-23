@@ -5,25 +5,36 @@
 //!
 //! 提供统一的任务仓库接口 `TaskRepository`，调度器通过 trait 对象使用，
 //! 可在运行时切换不同存储实现：
-//! - [`InMemoryTaskRepository`]：进程内内存存储（默认，高吞吐）
-//! - [`FileTaskRepository`]：JSON 快照文件存储（进程重启后任务状态可恢复）
+//! - [`InMemoryTaskRepository`]：进程内内存存储（默认，高吞吐，重启即失）
+//! - [`FileTaskRepository`] / [`BatchedFileTaskRepository`]：JSON 快照文件存储
+//!   （进程重启后任务状态可恢复；**单写者**，同机多副本共写同一路径会互相覆盖）
+//! - [`SqliteTaskRepository`]（feature `sqlite`）：增量 upsert 落盘，WAL + busy_timeout，
+//!   读路径直查数据库——这是当前唯一支持**多活副本共享权威状态**的实现
 //!
-//! 高吞吐场景可替换为数据库实现（如 Postgres/Redis），只需实现 `TaskRepository`。
+//! 同文件另有 [`SqliteLeaseStore`]：租约选主的权威仲裁点，与任务表同库。
+//! 需要更高吞吐可换 Postgres/Redis，只需实现 `TaskRepository` 与 `LeaseStore`。
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
+#[cfg(feature = "sqlite")]
+use std::time::Duration;
 use std::time::Instant;
 
 use mox_alliance_common_proto::{AllianceError, AllianceResult, Task};
 // TaskStatus / CollaborationPlan 仅被 SQLite 适配器使用（启用 `sqlite` feature 时编译）
 #[cfg(feature = "sqlite")]
+use chrono::{DateTime, Utc};
+#[cfg(feature = "sqlite")]
 use mox_alliance_common_proto::{CollaborationPlan, TaskStatus};
 #[cfg(feature = "sqlite")]
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, TransactionBehavior};
 #[cfg(feature = "sqlite")]
 use tracing::warn;
 use uuid::Uuid;
+
+#[cfg(feature = "sqlite")]
+use crate::leadership::{decide, LeaseState, LeaseStore};
 
 /// 任务仓库抽象
 ///
@@ -392,6 +403,18 @@ fn parse_task_status(s: &str) -> TaskStatus {
     }
 }
 
+/// 多副本共享一个库时的写锁等待窗口（毫秒）。
+///
+/// `MOX_ALLIANCE_SQLITE_BUSY_MS`，默认 5000。设为 0 即恢复 SQLite 原生"立刻 BUSY 报错"
+/// 行为——那会让副本间的并发写/抢主在高竞争下变成随机失败。
+#[cfg(feature = "sqlite")]
+fn sqlite_busy_timeout_ms() -> u64 {
+    std::env::var("MOX_ALLIANCE_SQLITE_BUSY_MS")
+        .ok()
+        .and_then(|v| v.trim().parse::<u64>().ok())
+        .unwrap_or(5_000)
+}
+
 /// SQLite 增量落盘任务仓库
 ///
 /// 与 [`FileTaskRepository`]（全量 JSON 快照）不同，本实现把任务与 DAG 节点分别落到
@@ -406,13 +429,14 @@ fn parse_task_status(s: &str) -> TaskStatus {
 /// 的增量写入通过本类型自身的方法 [`SqliteTaskRepository::upsert_node`] 暴露；trait
 /// 方法签名与现有 InMemory / File 实现保持不变。
 ///
-/// 启动恢复：打开库后把 `running` 的任务与节点批量标记为 `interrupted`，再把全部任务
-/// 读回内存缓存；`done` 节点的 `result_json` 原样保留，不重跑。
+/// 读路径**直查数据库**（无进程内快照缓存）：多活部署下多个副本共享同一个库文件，
+/// 副本 A 写入的任务必须能被副本 B 立刻读到（否则 LB 后的 `get_task` 会随机 NotFound，
+/// 且 `queue_capacity`/`max_concurrent_tasks` 准入判断只看得到本副本视图）。
+///
+/// 启动恢复：见 [`Self::new`]（单副本）与 [`Self::new_shared`]（多活副本）。
 #[cfg(feature = "sqlite")]
 pub struct SqliteTaskRepository {
     conn: Arc<Mutex<Connection>>,
-    /// 读穿缓存：构造时从两表加载，save/remove 时同步维护
-    cache: RwLock<HashMap<Uuid, Task>>,
 }
 
 /// 节点持久化行的只读视图（用于恢复校验 / 测试）
@@ -425,8 +449,24 @@ pub struct StoredNode {
 
 #[cfg(feature = "sqlite")]
 impl SqliteTaskRepository {
-    /// 打开（或创建）SQLite 仓库，建表 + WAL + 恢复标记
+    /// 打开（或创建）SQLite 仓库，建表 + WAL，并执行单副本崩溃恢复标记：
+    /// 把上次进程退出时仍在 running 的任务/节点批量标记为 `interrupted`。
     pub fn new(path: impl Into<PathBuf>) -> AllianceResult<Self> {
+        Self::open(path, true)
+    }
+
+    /// 多活副本打开方式：建表 + WAL，但**不做** running→interrupted 的全表改写。
+    ///
+    /// 原因：该改写假设"打开这个库的进程就是唯一的调度器，且它刚崩溃重启"。多活下
+    /// 新起的 standby 同样会打开这个库，若无条件改写就会把现任 leader 正在跑的任务
+    /// 打成 interrupted（假故障）。孤儿判定改由持有领导权的副本经
+    /// [`reconcile_active_tasks`](crate::TaskSchedulerImpl::reconcile_active_tasks)
+    /// 逐个向执行器对账后作出——那才是有证据的判定。
+    pub fn new_shared(path: impl Into<PathBuf>) -> AllianceResult<Self> {
+        Self::open(path, false)
+    }
+
+    fn open(path: impl Into<PathBuf>, sweep_on_open: bool) -> AllianceResult<Self> {
         let path = path.into();
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| {
@@ -441,10 +481,16 @@ impl SqliteTaskRepository {
         let conn = Connection::open(&path).map_err(|e| {
             AllianceError::internal(format!("Failed to open sqlite {}: {}", path.display(), e))
         })?;
-        conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")
-            .map_err(|e| {
-                AllianceError::internal(format!("Failed to set WAL on {}: {}", path.display(), e))
-            })?;
+        // busy_timeout：多副本共享一个库时，写者之间必须串行等待而不是立刻 SQLITE_BUSY 失败。
+        // WAL 只保证"读写不互斥"，同一时刻仍只有一个写事务；默认 busy_timeout=0 会让
+        // 副本间的并发 save/lease 抢主直接报错，故这里显式设窗口（env 可覆盖）。
+        let busy_ms = sqlite_busy_timeout_ms();
+        conn.execute_batch(&format!(
+            "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout={busy_ms};"
+        ))
+        .map_err(|e| {
+            AllianceError::internal(format!("Failed to set WAL on {}: {}", path.display(), e))
+        })?;
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS alliance_task (
                 id TEXT PRIMARY KEY,
@@ -481,12 +527,11 @@ impl SqliteTaskRepository {
 
         let repo = Self {
             conn: Arc::new(Mutex::new(conn)),
-            cache: RwLock::new(HashMap::new()),
         };
 
-        // 崩溃恢复：把上次进程退出时仍在 running 的任务/节点标记为 interrupted。
+        // 单副本崩溃恢复：把上次进程退出时仍在 running 的任务/节点标记为 interrupted。
         // done 节点不动（保留 result），仅 running 被挂起，等待调度器重新认领。
-        {
+        if sweep_on_open {
             let c = repo.conn.lock().unwrap();
             c.execute(
                 "UPDATE alliance_task SET status='interrupted' WHERE status='running'",
@@ -504,36 +549,18 @@ impl SqliteTaskRepository {
             })?;
         }
 
-        repo.load_into_cache()?;
         Ok(repo)
     }
 
-    /// 从 alliance_task 全量读回任务到内存缓存（恢复完成后服务期内读走缓存）。
-    fn load_into_cache(&self) -> AllianceResult<()> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn
-            .prepare("SELECT status, payload_json FROM alliance_task")
-            .map_err(|e| AllianceError::internal(format!("prepare load tasks: {}", e)))?;
-        let rows = stmt
-            .query_map([], |row| {
-                let status: String = row.get(0)?;
-                let payload: String = row.get(1)?;
-                Ok((status, payload))
-            })
-            .map_err(|e| AllianceError::internal(format!("query load tasks: {}", e)))?;
-
-        let mut cache = self.cache.write().unwrap();
-        for row in rows {
-            let (status, payload) = row
-                .map_err(|e| AllianceError::internal(format!("step load tasks: {}", e)))?;
-            let mut task: Task = serde_json::from_str(&payload).map_err(|e| {
-                AllianceError::internal(format!("parse task payload: {}", e))
-            })?;
-            // 以 status 列为准（恢复期已把 running 改写为 interrupted）
-            task.status = parse_task_status(&status);
-            cache.insert(task.task_id, task);
-        }
-        Ok(())
+    /// 把一行 `(status, payload_json)` 还原为 [`Task`]。
+    ///
+    /// 状态以 `status` 列为准（而非 payload 内嵌值）：列是恢复期改写的对象，
+    /// 且 `save()` 的终态仲裁也读这一列，读写两侧必须同一权威源。
+    fn task_from_row(status: &str, payload: &str) -> AllianceResult<Task> {
+        let mut task: Task = serde_json::from_str(payload)
+            .map_err(|e| AllianceError::internal(format!("parse task payload: {}", e)))?;
+        task.status = parse_task_status(status);
+        Ok(task)
     }
 
     /// 增量写入单个 DAG 节点（`ON CONFLICT(task_id, node_id) DO UPDATE`）。
@@ -779,21 +806,53 @@ impl TaskRepository for SqliteTaskRepository {
         .map_err(|e| {
             AllianceError::internal(format!("sqlite upsert task {}: {}", task.task_id, e))
         })?;
-        drop(conn);
-        self.cache.write().unwrap().insert(task.task_id, task.clone());
         Ok(())
     }
 
     fn get(&self, task_id: Uuid) -> AllianceResult<Option<Task>> {
-        Ok(self.cache.read().unwrap().get(&task_id).cloned())
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT status, payload_json FROM alliance_task WHERE id = ?1")
+            .map_err(|e| AllianceError::internal(format!("prepare get task: {}", e)))?;
+        let mut rows = stmt
+            .query(params![task_id.to_string()])
+            .map_err(|e| AllianceError::internal(format!("query get task: {}", e)))?;
+        match rows
+            .next()
+            .map_err(|e| AllianceError::internal(format!("step get task: {}", e)))?
+        {
+            Some(row) => {
+                let status: String = row
+                    .get(0)
+                    .map_err(|e| AllianceError::internal(format!("read task status: {}", e)))?;
+                let payload: String = row
+                    .get(1)
+                    .map_err(|e| AllianceError::internal(format!("read task payload: {}", e)))?;
+                Self::task_from_row(&status, &payload).map(Some)
+            }
+            None => Ok(None),
+        }
     }
 
     fn all(&self) -> AllianceResult<Vec<Task>> {
-        Ok(self.cache.read().unwrap().values().cloned().collect())
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT status, payload_json FROM alliance_task")
+            .map_err(|e| AllianceError::internal(format!("prepare load tasks: {}", e)))?;
+        let rows = stmt
+            .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
+            .map_err(|e| AllianceError::internal(format!("query load tasks: {}", e)))?;
+        let mut out = Vec::new();
+        for row in rows {
+            let (status, payload) = row
+                .map_err(|e| AllianceError::internal(format!("step load tasks: {}", e)))?;
+            out.push(Self::task_from_row(&status, &payload)?);
+        }
+        Ok(out)
     }
 
     fn remove(&self, task_id: Uuid) -> AllianceResult<Option<Task>> {
-        let removed = self.cache.write().unwrap().remove(&task_id);
+        let removed = self.get(task_id)?;
         if removed.is_some() {
             let conn = self.conn.lock().unwrap();
             conn.execute(
@@ -813,6 +872,188 @@ impl TaskRepository for SqliteTaskRepository {
             })?;
         }
         Ok(removed)
+    }
+}
+
+/// 租约选主的 SQLite 仲裁点（多活副本共享同一个库文件时才有意义）。
+///
+/// 表结构：`alliance_leader_lease(scope PK, holder, epoch, expires_at_ms)`。
+/// 跨进程互斥靠 `BEGIN IMMEDIATE`：抢主事务在**读**当前租约之前就先取得库的写锁，
+/// 因此"读-判-写"三步对其他副本不可分割；配合 `PRAGMA busy_timeout` 让并发副本
+/// 排队而不是随机失败。语义与
+/// [`MemoryLeaseStore`](crate::leadership::MemoryLeaseStore) 同源（两者共用
+/// [`decide`](crate::leadership::decide)），不存在第二套判定规则。
+///
+/// 与任务表同库而非另开文件：领导权的权威源必须与任务状态的权威源是**同一个**，
+/// 否则会出现"副本自认 leader，但它写的任务表与读到的任务表不是同一份"。
+#[cfg(feature = "sqlite")]
+pub struct SqliteLeaseStore {
+    conn: Arc<Mutex<Connection>>,
+}
+
+#[cfg(feature = "sqlite")]
+impl SqliteLeaseStore {
+    /// 独立打开一个库文件作为仲裁点。
+    pub fn new(path: impl Into<PathBuf>) -> AllianceResult<Self> {
+        let path = path.into();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| {
+                AllianceError::internal(format!(
+                    "Failed to create sqlite dir {}: {}",
+                    parent.display(),
+                    e
+                ))
+            })?;
+        }
+        let conn = Connection::open(&path).map_err(|e| {
+            AllianceError::internal(format!("Failed to open sqlite {}: {}", path.display(), e))
+        })?;
+        let busy_ms = sqlite_busy_timeout_ms();
+        conn.execute_batch(&format!(
+            "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout={busy_ms};"
+        ))
+        .map_err(|e| {
+            AllianceError::internal(format!("Failed to set WAL on {}: {}", path.display(), e))
+        })?;
+        let store = Self {
+            conn: Arc::new(Mutex::new(conn)),
+        };
+        store.init_schema()?;
+        Ok(store)
+    }
+
+    /// 复用任务仓库所在的库（推荐：任务表与领导权同一权威源）。
+    pub fn from_repo(repo: &SqliteTaskRepository) -> AllianceResult<Self> {
+        let store = Self {
+            conn: repo.conn.clone(),
+        };
+        store.init_schema()?;
+        Ok(store)
+    }
+
+    fn init_schema(&self) -> AllianceResult<()> {
+        self.conn
+            .lock()
+            .unwrap()
+            .execute_batch(
+                "CREATE TABLE IF NOT EXISTS alliance_leader_lease (
+                scope TEXT PRIMARY KEY,
+                holder TEXT,
+                epoch INTEGER NOT NULL,
+                expires_at_ms INTEGER NOT NULL
+            );",
+            )
+            .map_err(|e| AllianceError::internal(format!("init lease schema: {}", e)))
+    }
+}
+
+#[cfg(feature = "sqlite")]
+impl LeaseStore for SqliteLeaseStore {
+    fn state(&self, scope: &str) -> AllianceResult<LeaseState> {
+        let conn = self.conn.lock().unwrap();
+        read_lease(&conn, scope)
+    }
+
+    fn campaign(
+        &self,
+        scope: &str,
+        holder: &str,
+        now: DateTime<Utc>,
+        lease: Duration,
+    ) -> AllianceResult<LeaseState> {
+        let mut conn = self.conn.lock().unwrap();
+        // Immediate：写锁早于读租约，使"读-判-写"对其它进程不可分割。
+        let tx = conn
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|e| AllianceError::internal(format!("begin lease tx: {}", e)))?;
+        let cur = read_lease(&tx, scope)?;
+        let next = match decide(&cur, holder, now, lease) {
+            Some(next) => next,
+            // 落选：不写，也不抬高 epoch。
+            None => return Ok(cur),
+        };
+        tx.execute(
+            "INSERT INTO alliance_leader_lease (scope, holder, epoch, expires_at_ms)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(scope) DO UPDATE SET
+                holder = excluded.holder,
+                epoch = excluded.epoch,
+                expires_at_ms = excluded.expires_at_ms",
+            params![
+                scope,
+                next.holder,
+                next.epoch as i64,
+                lease_millis(next.expires_at),
+            ],
+        )
+        .map_err(|e| AllianceError::internal(format!("write lease {scope}: {}", e)))?;
+        tx.commit()
+            .map_err(|e| AllianceError::internal(format!("commit lease {scope}: {}", e)))?;
+        Ok(next)
+    }
+
+    fn release(&self, scope: &str, holder: &str) -> AllianceResult<()> {
+        let mut conn = self.conn.lock().unwrap();
+        let tx = conn
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|e| AllianceError::internal(format!("begin lease tx: {}", e)))?;
+        // 仅持有者本人的释放生效；epoch 保留（让位不得让后续任期回退）。
+        tx.execute(
+            "UPDATE alliance_leader_lease SET holder = NULL, expires_at_ms = 0
+             WHERE scope = ?1 AND holder = ?2",
+            params![scope, holder],
+        )
+        .map_err(|e| AllianceError::internal(format!("release lease {scope}: {}", e)))?;
+        tx.commit()
+            .map_err(|e| AllianceError::internal(format!("commit release {scope}: {}", e)))
+    }
+}
+
+/// `expires_at` → 毫秒整数（无持有者记 0）。用数值列比较，避免 RFC3339 文本
+/// 长度可变带来的字典序陷阱。
+#[cfg(feature = "sqlite")]
+fn lease_millis(at: Option<DateTime<Utc>>) -> i64 {
+    at.map(|t| t.timestamp_millis()).unwrap_or(0)
+}
+
+#[cfg(feature = "sqlite")]
+fn lease_from_millis(ms: i64) -> Option<DateTime<Utc>> {
+    if ms == 0 {
+        None
+    } else {
+        DateTime::<Utc>::from_timestamp_millis(ms)
+    }
+}
+
+/// 读取一个 scope 的租约行（不存在 → 默认空状态）。
+///
+/// 参数取 `&Connection`：`Transaction` 以 Deref 到 `Connection` 的方式复用同一份读逻辑，
+/// 因此在事务内读到的就是本事务写锁保护下的最新值。
+#[cfg(feature = "sqlite")]
+fn read_lease(conn: &Connection, scope: &str) -> AllianceResult<LeaseState> {
+    let mut stmt = conn
+        .prepare("SELECT holder, epoch, expires_at_ms FROM alliance_leader_lease WHERE scope = ?1")
+        .map_err(|e| AllianceError::internal(format!("prepare lease read: {}", e)))?;
+    let mut rows = stmt
+        .query_map(params![scope], |row| {
+            Ok((
+                row.get::<_, Option<String>>(0)?,
+                row.get::<_, i64>(1)?,
+                row.get::<_, i64>(2)?,
+            ))
+        })
+        .map_err(|e| AllianceError::internal(format!("query lease read: {}", e)))?;
+    match rows.next() {
+        Some(row) => {
+            let (holder, epoch, expires_ms) =
+                row.map_err(|e| AllianceError::internal(format!("step lease read: {}", e)))?;
+            Ok(LeaseState {
+                holder,
+                epoch: epoch.max(0) as u64,
+                expires_at: lease_from_millis(expires_ms),
+            })
+        }
+        None => Ok(LeaseState::default()),
     }
 }
 
@@ -1111,6 +1352,162 @@ mod tests {
             repo2.get(task.task_id).unwrap().unwrap().status,
             TaskStatus::Cancelled
         );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// 多活前提：副本 B 必须立刻读到副本 A 写入的任务（无进程内快照缓存）。
+    ///
+    /// 两个句柄共享同一库文件即同一份权威状态（真实跨进程部署里是两个 OS 进程，
+    /// 这里用两个连接覆盖同一语义面：SQLite WAL 下已提交写对后来的读事务可见）。
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn sqlite_replica_sees_other_replica_writes() {
+        let dir = std::env::temp_dir().join(format!("sqlite_multiactive_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        let a = SqliteTaskRepository::new_shared(&db).unwrap();
+        let b = SqliteTaskRepository::new_shared(&db).unwrap();
+
+        let mut task = make_task(Uuid::new_v4());
+        task.status = TaskStatus::Running;
+        a.save(&task).unwrap();
+
+        assert_eq!(
+            b.get(task.task_id).unwrap().map(|t| t.task_id),
+            Some(task.task_id),
+            "对端写入的任务必须立刻可读（LB 后 GET 不得随机 NotFound）"
+        );
+        assert_eq!(b.all().unwrap().len(), 1, "准入判断看到的是全局视图，而非本副本视图");
+
+        // 终态仲裁同样是全局的：任一副本先写入的终态，其它副本不得覆盖。
+        let mut done = task.clone();
+        done.status = TaskStatus::Completed;
+        b.save(&done).unwrap();
+        let mut raced = task.clone();
+        raced.status = TaskStatus::Cancelled;
+        a.save(&raced).unwrap();
+        assert_eq!(
+            a.get(task.task_id).unwrap().unwrap().status,
+            TaskStatus::Completed,
+            "跨副本竞争下先到终者为权威（读到的仍是 Completed）"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// 多活副本启动不得把对端正在跑的任务打成 interrupted（假故障）；
+    /// 单副本 `new` 的崩溃恢复语义保持不变。
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn shared_open_does_not_sweep_peers_running_tasks() {
+        let dir = std::env::temp_dir().join(format!("sqlite_no_sweep_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        let mut task = make_task(Uuid::new_v4());
+        task.status = TaskStatus::Running;
+        {
+            let leader = SqliteTaskRepository::new_shared(&db).unwrap();
+            leader.save(&task).unwrap();
+        }
+
+        // standby 加入：只读，不改写共享状态。
+        let standby = SqliteTaskRepository::new_shared(&db).unwrap();
+        assert_eq!(standby.get(task.task_id).unwrap().unwrap().status, TaskStatus::Running);
+
+        // 单副本崩溃重启路径仍执行恢复标记。
+        let restarted = SqliteTaskRepository::new(&db).unwrap();
+        assert_eq!(
+            restarted.get(task.task_id).unwrap().unwrap().status,
+            TaskStatus::Pending,
+            "new() 仍保留 running→interrupted(→Pending) 的单副本恢复语义"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// SQLite 租约表与内存实现共用 `decide` 语义，且跨句柄（跨进程等价）互斥。
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn sqlite_lease_store_elects_one_leader_and_takes_over() {
+        let dir = std::env::temp_dir().join(format!("sqlite_lease_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        let repo = SqliteTaskRepository::new_shared(&db).unwrap();
+        let store = SqliteLeaseStore::from_repo(&repo).unwrap();
+        let other = SqliteLeaseStore::new(&db).unwrap(); // 等价于另一个进程的连接
+        // 毫秒粒度的固定起点：租约到期时刻以整数毫秒落库，取整后写读才可比。
+        let t0 = chrono::DateTime::from_timestamp_millis(1_760_000_000_123).unwrap();
+        let lease = Duration::from_secs(10);
+
+        let a = store.campaign("scheduler", "a", t0, lease).unwrap();
+        assert_eq!(a.holder.as_deref(), Some("a"));
+        assert_eq!(a.epoch, 1);
+
+        // 另一进程、同一时刻：落选且不抬高 epoch。
+        let b = other.campaign("scheduler", "b", t0, lease).unwrap();
+        assert_eq!(b.holder.as_deref(), Some("a"), "跨句柄互斥");
+        assert_eq!(b.epoch, 1, "落选者不得制造任期风暴");
+
+        // 租约到期后由另一句柄接管，任期 +1。
+        let taken = other
+            .campaign("scheduler", "b", t0 + chrono::Duration::seconds(11), lease)
+            .unwrap();
+        assert_eq!(taken.holder.as_deref(), Some("b"));
+        assert_eq!(taken.epoch, 2);
+
+        // 过期后迟到的旧 leader 续约：只能观察到别人的任期，不能夺回。
+        let late = store
+            .campaign("scheduler", "a", t0 + chrono::Duration::seconds(12), lease)
+            .unwrap();
+        assert_eq!(late.holder.as_deref(), Some("b"));
+        assert_eq!(late.epoch, 2);
+        assert_eq!(store.state("scheduler").unwrap(), late, "读视图与写结果同源");
+
+        // 让位后 epoch 保留。
+        other.release("scheduler", "b").unwrap();
+        let after = store.state("scheduler").unwrap();
+        assert_eq!(after.holder, None);
+        assert_eq!(after.epoch, 2, "让位不得让后续任期回退");
+        let next = other
+            .campaign("scheduler", "a", t0 + chrono::Duration::seconds(13), lease)
+            .unwrap();
+        assert_eq!(next.epoch, 3);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// 复用任务库的租约表与任务表同库：一个权威源承载"谁能写"与"写了什么"。
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn sqlite_lease_tables_live_in_the_task_db() {
+        let dir = std::env::temp_dir().join(format!("sqlite_lease_same_db_{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = dir.join("tasks.db");
+
+        let repo = SqliteTaskRepository::new_shared(&db).unwrap();
+        let task = make_task(Uuid::new_v4());
+        repo.save(&task).unwrap();
+        let store = SqliteLeaseStore::from_repo(&repo).unwrap();
+        store.campaign("scheduler", "a", chrono::Utc::now(), Duration::from_secs(5)).unwrap();
+
+        let conn = Connection::open(&db).unwrap();
+        let tables: Vec<String> = conn
+            .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect();
+        assert!(
+            tables.contains(&"alliance_leader_lease".to_string()),
+            "租约表应与任务表同库：{:?}",
+            tables
+        );
+        assert!(tables.contains(&"alliance_task".to_string()));
 
         let _ = std::fs::remove_dir_all(&dir);
     }

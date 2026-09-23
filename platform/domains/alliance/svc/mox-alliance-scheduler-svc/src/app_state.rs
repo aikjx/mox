@@ -28,6 +28,8 @@ pub struct SchedulerAppState {
     pub executor_base_url: String,
     /// 联盟运行指标（匹配/LLM/融合/DAG 计数器，经 /metrics 暴露）
     pub metrics: Arc<AllianceMetrics>,
+    /// HA 选主状态机（`None` = 未开启多活；此时本副本即事实上的唯一执行者）
+    pub leadership: Option<crate::ha::SharedElector>,
 }
 
 impl SchedulerAppState {
@@ -49,6 +51,7 @@ impl SchedulerAppState {
             dispatch_tx,
             executor_base_url: "http://127.0.0.1:3200".to_string(),
             metrics: Arc::new(AllianceMetrics::new()),
+            leadership: None,
         }
     }
 
@@ -70,6 +73,7 @@ impl SchedulerAppState {
             dispatch_tx,
             executor_base_url: "http://127.0.0.1:3200".to_string(),
             metrics: Arc::new(AllianceMetrics::new()),
+            leadership: None,
         }
     }
 
@@ -82,6 +86,12 @@ impl SchedulerAppState {
     /// 注入共享的指标收集器（让调度器内部与 HTTP handler 共用同一实例）
     pub fn with_metrics(mut self, metrics: Arc<AllianceMetrics>) -> Self {
         self.metrics = metrics;
+        self
+    }
+
+    /// 注入 HA 选主状态机（仅 `/leadership` 观测端点读取；对账由后台循环驱动）
+    pub fn with_leadership(mut self, elector: crate::ha::SharedElector) -> Self {
+        self.leadership = Some(elector);
         self
     }
 }

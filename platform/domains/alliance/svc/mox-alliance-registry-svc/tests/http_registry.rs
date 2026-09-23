@@ -237,3 +237,152 @@ async fn legacy_directory_still_works() {
     let list: serde_json::Value = serde_json::from_slice(&b2).unwrap();
     assert!(list["total"].as_u64().unwrap() >= 1);
 }
+
+// ─── 分级心跳聚合（10:1:1）─────────────────────────────────────────────────
+
+async fn register_named(app: &axum::Router, id: &str) -> String {
+    let (s, b) = send(
+        app,
+        "POST",
+        "/api/registry/experts",
+        Some(serde_json::json!({
+            "id": id, "name": format!("expert-{id}"),
+            "endpoint": format!("http://127.0.0.1:9500/{id}")
+        })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "注册 {id} 应 200");
+    let inst: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    inst["id"].as_str().unwrap().to_string()
+}
+
+#[tokio::test]
+async fn aggregated_heartbeat_renews_registered_members() {
+    let state = AppState::for_test();
+    let app = create_router(state.clone());
+    let a = register_named(&app, "agg-a").await;
+    let b = register_named(&app, "agg-b").await;
+
+    // 模拟 rack 代理：登记两个成员并凑满 fan_in=2 触发摘要发布
+    use mox_alliance_registry_core::{MemberStatus, NodeBeat, RackAggregator, RackConfig};
+    let mut rack = RackAggregator::new(RackConfig {
+        rack_id: "r-agg".into(),
+        cell_id: "c-agg".into(),
+        fan_in: 2,
+        ..Default::default()
+    });
+    rack.register(&a, Some(4), MemberStatus::Active);
+    let digest = rack
+        .heartbeat(&NodeBeat {
+            member_id: b.clone(),
+            load_current: Some(9),
+            status: None,
+        })
+        .expect("2 条心跳应触发 rack 摘要");
+
+    let renewal = mox_alliance_registry_core::AggregatedRenewal::from_digest(&digest);
+    let (s, body) = send(
+        &app,
+        "POST",
+        "/api/registry/aggregated-heartbeat",
+        Some(serde_json::json!(&renewal)),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "聚合续约应 200，body={}", String::from_utf8_lossy(&body));
+    let resp: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(resp["renewed"], 2);
+    assert_eq!(resp["unknown"], 0);
+    assert_eq!(resp["group_id"], "r-agg");
+
+    let ia = state.registry.get(&a).unwrap();
+    assert_eq!(ia.load_current, 4);
+    let ib = state.registry.get(&b).unwrap();
+    assert_eq!(ib.load_current, 9);
+    assert_eq!(ib.status, mox_alliance_registry_svc::models::InstanceStatus::Active);
+}
+
+#[tokio::test]
+async fn aggregated_heartbeat_unknown_not_renewed_and_empty_is_400() {
+    let state = AppState::for_test();
+    let app = create_router(state.clone());
+
+    // 全部未知成员：renewed=0，实例表不受影响
+    let renewal = mox_alliance_registry_core::AggregatedRenewal {
+        group_id: "r-x".into(),
+        seq: 1,
+        reported_at: chrono::Utc::now(),
+        members: std::collections::BTreeMap::from([(
+            "ghost".to_string(),
+            mox_alliance_registry_core::Renewal { load_current: Some(1), status: mox_alliance_registry_core::MemberStatus::Active },
+        )]),
+        unknown_members: vec![],
+        health: mox_alliance_registry_core::AggregationHealth::Healthy,
+        member_count: 1,
+        unhealthy_count: 0,
+        load_total: 1,
+    };
+    let (s, b) = send(
+        &app,
+        "POST",
+        "/api/registry/aggregated-heartbeat",
+        Some(serde_json::json!(&renewal)),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    let resp: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(resp["renewed"], 0);
+    assert_eq!(resp["unknown"], 1);
+    assert_eq!(state.registry.count(), 0, "聚合续约不得隐式注册");
+
+    // 空载荷 → 400
+    let (s2, _) = send(
+        &app,
+        "POST",
+        "/api/registry/aggregated-heartbeat",
+        Some(serde_json::json!({
+            "group_id": "r-empty", "seq": 1,
+            "reported_at": chrono::Utc::now().to_rfc3339(),
+            "members": {}, "unknown_members": [],
+            "health": "healthy", "member_count": 0,
+            "unhealthy_count": 0, "load_total": 0
+        })),
+    )
+    .await;
+    assert_eq!(s2, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn aggregated_heartbeat_prunes_deregistered_members() {
+    let state = AppState::for_test();
+    let app = create_router(state.clone());
+    let keep = register_named(&app, "keep").await;
+    let gone = register_named(&app, "gone").await;
+
+    // rack 聚合器中 "gone" 已消失（显式注销沿聚合链传播）
+    use mox_alliance_registry_core::{MemberStatus, RackAggregator, RackConfig};
+    let mut rack = RackAggregator::new(RackConfig {
+        rack_id: "r-p".into(),
+        cell_id: "c-p".into(),
+        fan_in: 1,
+        ..Default::default()
+    });
+    rack.register(&keep, None, MemberStatus::Active);
+    rack.register(&gone, None, MemberStatus::Active);
+    rack.forget_member(&gone);
+    let digest = rack.flush();
+    assert_eq!(digest.unknown_members, vec![gone.clone()]);
+
+    let renewal = mox_alliance_registry_core::AggregatedRenewal::from_digest(&digest);
+    let (s, b) = send(
+        &app,
+        "POST",
+        "/api/registry/aggregated-heartbeat",
+        Some(serde_json::json!(&renewal)),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "body={}", String::from_utf8_lossy(&b));
+    let resp: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(resp["pruned"], 1);
+    assert!(state.registry.get(&gone).is_none(), "unknown 成员应被摘除");
+    assert!(state.registry.get(&keep).is_some());
+}

@@ -23,7 +23,8 @@
 //!
 //! - **前缀扫描优化**：所有 Key 均以 `{prefix}:{space_id}:` 开头，配合 RocksDB prefix_extractor
 //!   实现高效的前缀扫描，避免全表扫描。
-//! - **WAL 保证**：默认启用 WAL，配合 Raft 共识层提供持久化保证。
+//! - **WAL 保证**：默认启用 WAL 且 ack 前 fsync（`MOX_KG_WAL_SYNC=0` 可降级为异步 WAL）。
+//!   当前 Raft 为单进程最小实现（无跨机副本），单机 fsync 即 ack 前的全部持久性保障。
 //! - **批量写入**：WriteBatch 原子性写入，确保节点+索引的一致性。
 //! - **快照支持**：支持生成和恢复快照，用于 Raft 快照传输。
 //! - **布隆过滤器**：每个 CF 启用 Bloom Filter，点查性能提升显著。
@@ -518,7 +519,7 @@ mod backend {
     fn write_opts() -> &'static WriteOptions {
         WRITE_OPTS.get_or_init(|| {
             let mut opts = WriteOptions::default();
-            opts.set_sync(false); // 不等待 WAL fsync，Raft 层保证持久性
+            opts.set_sync(crate::kv_engine::wal_sync_enabled()); // 默认 ack 前 fsync；MOX_KG_WAL_SYNC=0 降级为性能模式
             opts.disable_wal(false); // 启用 WAL
             opts
         })

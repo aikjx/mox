@@ -1,0 +1,15 @@
+[package]
+name = "mox-alliance-registry-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "专家注册中心 · 分级心跳聚合核心（node→rack→cell 10:1:1 纯计算，零 IO）"
+
+[dependencies]
+mox-alliance-registry-proto = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+
+[lints]
+workspace = true

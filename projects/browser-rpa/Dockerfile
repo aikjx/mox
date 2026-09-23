@@ -12,6 +12,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir fastapi "uvicorn>=0.23" httpx "playwright==1.48.0"
 
 COPY rpa ./rpa
+COPY web ./web
 COPY run.py entrypoint.sh README.md ./
 RUN chmod +x entrypoint.sh
 
