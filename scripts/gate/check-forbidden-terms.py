@@ -14,8 +14,8 @@
 - 术语表与扫描范围集中在本文件顶部，便于随治理进展增补。
 
 用法：
-    python scripts/check-forbidden-terms.py            # 检查，命中则退出码 1
-    python scripts/check-forbidden-terms.py --verbose  # 打印已扫描文件数
+    python scripts/gate/check-forbidden-terms.py            # 检查，命中则退出码 1
+    python scripts/gate/check-forbidden-terms.py --verbose  # 打印已扫描文件数
 
 对齐：docs/working-reports/_norm_research/ai-engine-modularization-normalization.md SSOT-6
 """
@@ -114,7 +114,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     total = 0
     failures: list[tuple[Path, int, str, str]] = []
 

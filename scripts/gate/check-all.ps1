@@ -13,8 +13,8 @@
   任意一项失败即退出非零，并输出汇总表。
 
 .EXAMPLE
-  .\scripts\check-all.ps1
-  .\scripts\check-all.ps1 -SkipFrontend -SkipTest
+  .\scripts\gate\check-all.ps1
+  .\scripts\gate\check-all.ps1 -SkipFrontend -SkipTest
 #>
 param(
     [switch]$SkipFrontend,

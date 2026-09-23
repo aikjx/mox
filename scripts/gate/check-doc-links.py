@@ -7,11 +7,11 @@
     校验引用目标在仓库中是否真实存在；用于防止目录迁移、重命名后留下死链。
 
 用法
-    python scripts/check-doc-links.py                  # 校验 docs/（默认跳过 _archive）
-    python scripts/check-doc-links.py --all            # 含 _archive
-    python scripts/check-doc-links.py --repo           # 一并校验仓库其它 .md/.html 中对 docs/ 的引用
-    python scripts/check-doc-links.py --strict         # 反引号路径引用也视为错误（默认仅告警）
-    python scripts/check-doc-links.py --json out.json  # 输出机器可读报告
+    python scripts/gate/check-doc-links.py                  # 校验 docs/（默认跳过 _archive）
+    python scripts/gate/check-doc-links.py --all            # 含 _archive
+    python scripts/gate/check-doc-links.py --repo           # 一并校验仓库其它 .md/.html 中对 docs/ 的引用
+    python scripts/gate/check-doc-links.py --strict         # 反引号路径引用也视为错误（默认仅告警）
+    python scripts/gate/check-doc-links.py --json out.json  # 输出机器可读报告
 
 约定
     围栏代码块（``` / ~~~）内的链接视为示例，不参与校验；
@@ -33,7 +33,7 @@ import sys
 import urllib.parse
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DOCS_ROOT = REPO_ROOT / "docs"
 
 SKIP_DIRS = {

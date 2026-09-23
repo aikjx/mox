@@ -27,7 +27,7 @@
 | **mox-alliance-scheduler** | `mox-alliance-scheduler.exe` | `platform/domains/alliance/svc/mox-alliance-scheduler-svc` | **3100** | 专家联盟调度器：任务创建/列表/详情/操作、专家匹配（RuleBasedExpertMatcher）、计划生成；任务仓库（内存/文件快照）；桥接执行器 | `Cargo.toml [[bin]] name="mox-alliance-scheduler"`、`src/bin/main.rs:69-71 with_executor_url`、`src/routes.rs:19` |
 | **mox-alliance-executor** | `mox-alliance-executor.exe` | `platform/domains/alliance/svc/mox-alliance-executor-svc` | **3200** | 专家联盟执行器：DAG 执行 + 节点调度 + 状态管理；`expert` 模式内嵌 `mox-ai-expert-svc` 跑真实 AI 专家节点 | `Cargo.toml [[bin]] name="mox-alliance-executor"`、`src/bin/main.rs:61-63 ExecutorMode::Expert` |
 
-启动接线证据：`scripts/start-mox-enterprise.ps1`
+启动接线证据：`scripts/startup/start-mox-enterprise.ps1`
 - `Start-One mox-alliance-scheduler --port 3100`
 - `Start-One mox-alliance-executor --port 3200`
 - `Start-One operator-server --port 3001`（env `OUS_API_TOKEN`）
@@ -123,4 +123,4 @@
 - 联盟 HTTP SDK：`platform/domains/alliance/sdk/mox-alliance-http-sdk/src/{alliance.rs,alliance_remote.rs}`
 - 编排器：`platform/domains/platform/svc/mox-platform-orchestrator-svc/{Cargo.toml,src/main.rs,src/subservers.rs,src/routes/ai_engine.rs}`
 - 联盟服务：`platform/domains/alliance/svc/mox-alliance-scheduler-svc/{Cargo.toml,src/bin/main.rs,src/routes.rs}`、`.../mox-alliance-executor-svc/{Cargo.toml,src/bin/main.rs}`
-- 部署/权威：`scripts/start-mox-enterprise.ps1`、`docker-compose.domains.yml`、`docs/api/PORT-REGISTRY.md`
+- 部署/权威：`scripts/startup/start-mox-enterprise.ps1`、`docker-compose.domains.yml`、`docs/api/PORT-REGISTRY.md`

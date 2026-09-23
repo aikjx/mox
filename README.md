@@ -95,7 +95,7 @@ cargo clippy --all-targets # lint（CI 门禁）
 | gRPC（专家联盟内部） | 50051 |
 | redis / postgres / ollama / prometheus / grafana | 6379 / 5432 / 11434 / 9090 / 3000 |
 
-完整端口注册表见 `docs/api/PORT-REGISTRY.md`（端口漂移由 `scripts/verify-ports.py` 门禁校验）。
+完整端口注册表见 `docs/api/PORT-REGISTRY.md`（端口漂移由 `scripts/gate/verify-ports.py` 门禁校验）。
 
 ## 文档索引
 

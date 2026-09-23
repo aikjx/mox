@@ -232,11 +232,11 @@ tests/exact_scheduling.rs             有理数精确实验（断言 450/250/250
 | 2 | 路由关键词表修复 | `router.rs:227` 关键词表剔除污染串（原会导致复杂度判定误命中），补 `迁移` |
 | 3 | Cargo.toml description 修复 | `mox-ai-alliance-engine/Cargo.toml:7` → 「璇玑 · 专家联盟架构分析引擎」 |
 | 4 | 契约测试文案修复 | `mox-unified-contract/src/quality.rs` 阻断原因回退为「安全维度不达标」 |
-| 5 | 新增术语门禁 | `scripts/check-forbidden-terms.py` |
+| 5 | 新增术语门禁 | `scripts/gate/check-forbidden-terms.py` |
 | 6 | 同 crate 双份 `TaskStatus` 合并 | `persistence.rs` 删除自有枚举，统一引用 `orchestration::TaskStatus`；`as_str()` 委托 `label()` 保持单一真源，补齐 `from_str` 与 `Default` |
 | 7 | 门禁阈值第三处硬编码消除 | `learning.rs` 测试改用 `gate::grade_from_total`（该函数由私有提升为 `pub`） |
 
-### 7.2 术语门禁设计（`scripts/check-forbidden-terms.py`）
+### 7.2 术语门禁设计（`scripts/gate/check-forbidden-terms.py`）
 
 - **只扫可执行面**：跳过 `//` `///` `//!` `#` `*` `/*` `<!--` 开头的注释行。注释层存量另行逐步清理，避免一次性批量回退制造新错误术语。
 - **扫描范围**：`platform`、`frontend-ui/src`、`scripts`、`config`、`deploy`，扩展名 12 种；跳过 `target`/`node_modules`/`third_party`/`ais`/`90_历史归档` 等。
@@ -635,7 +635,7 @@ mox-ai-core [L3-core] -> reqwest  VIOLATION: 非可选 IO 依赖，未登记在�
 
 ### 14.2 体检工具
 
-新增 `scripts/normalization-scan.py`（可复跑，零第三方依赖）：
+新增 `scripts/validation/normalization-scan.py`（可复跑，零第三方依赖）：
 
 - 扫描 `platform/**/*.rs` 的**行首 `pub enum / struct / const / type`**（跳过注释行）；
 - 按 crate 归属聚合（向上查找最近 `Cargo.toml` 目录名）；

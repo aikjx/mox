@@ -19,11 +19,11 @@ jobs:
       - name: Verify deployment and port contracts
         run: |
           python -m unittest scripts.tests.test_deployment_architecture -v
-          python scripts/verify-ports.py
+          python scripts/gate/verify-ports.py
 
       - name: Verify API registry is up to date (gen + diff gate)
         run: |
-          python scripts/gen-api-registry.py
+          python scripts/doc/gen-api-registry.py
           git diff --exit-code -- docs/API-REGISTRY.md
 
   # ===========================================================================

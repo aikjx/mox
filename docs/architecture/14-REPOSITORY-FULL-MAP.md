@@ -291,7 +291,7 @@
 | 架构一致性 | `cargo metadata | jq '.packages | length'`（应为 73） |
 | 一键部署 | `docker-compose up -d --build` 或 `python tools/deploy.py local --start` |
 | 打包发布 | `python tools/package.py --version 1.0.0 --with-data` |
-| 运维面板 | `python scripts/server-manage.py` |
+| 运维面板 | `python scripts/service/server-manage.py` |
 | 文档导航 | `docs/README.md` → `docs/enterprise/00-INDEX.md` → `18 TOP-MASTER` |
 
 ---

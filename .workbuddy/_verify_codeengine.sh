@@ -14,4 +14,4 @@ cargo check -p mox-alliance-config-core --message-format short 2>&1 | tail -8
 echo "=== clippy new crates ==="
 cargo clippy -p mox-codeengine-core -p mox-codeengine-svc --all-targets --message-format short 2>&1 | tail -15
 echo "=== port gate ==="
-python scripts/verify-ports.py 2>&1 | tail -8
+python scripts/gate/verify-ports.py 2>&1 | tail -8

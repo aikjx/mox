@@ -1,7 +1,7 @@
 # server-manage.py 全维整理·修复·规范标准化报告
 
 - 日期：2026-09-01
-- 对象：`scripts/server-manage.py`（璇玑系统统一运维脚本，单文件整合版）
+- 对象：`scripts/service/server-manage.py`（璇玑系统统一运维脚本，单文件整合版）
 - 类型：全维整理 / 修复 / 规范标准化
 - 前置：脚本 docstring 已归一化为 `server-manage.py`（版本 3.0），内部 `manage.py` 引用已归一化（白名单双签名保留兼容）
 
@@ -13,11 +13,11 @@
 
 | 调用方 | 指向 | 处理 |
 |---|---|---|
-| `start.sh`（10 处） | `scripts/manage.py` | ✅ 改指权威名 |
-| `scripts/start-all.ps1` | `scripts/manage.py bootstrap` | ✅ 改指权威名 |
-| `scripts/stop-all.ps1` | `scripts/manage.py stop` | ✅ 改指权威名 |
-| `scripts/deploy/start.ps1` | `scripts\manage.py` | ✅ 改指权威名 |
-| `platform_config.json`（script_catalog） | `"path": "scripts/manage.py"` | ✅ 改指权威名 |
+| `start.sh`（10 处） | `scripts/service/manage.py` | ✅ 改指权威名 |
+| `scripts/startup/start-all.ps1` | `scripts/service/manage.py bootstrap` | ✅ 改指权威名 |
+| `scripts/startup/stop-all.ps1` | `scripts/service/manage.py stop` | ✅ 改指权威名 |
+| `scripts/deploy/start.ps1` | `scripts\service\manage.py` | ✅ 改指权威名 |
+| `platform_config.json`（script_catalog） | `"path": "scripts/service/manage.py"` | ✅ 改指权威名 |
 | `scripts/README.md` | 目录树 / 命令示例 | ✅ 主入口标注 + 兼容别名说明 |
 
 另发现 2 处规范性缺陷（非引用断裂）：
@@ -31,7 +31,7 @@
 
 ### 1. 文件名-引用断裂归一化
 
-- **新建 `scripts/manage.py` 兼容别名薄壳**（1202 字节）：检测权威入口存在性 → `subprocess.run([sys.executable, 权威路径] + sys.argv[1:])` 原样转发 → `KeyboardInterrupt` 返回 130。历史命令 / 历史文档不再断链。
+- **新建 `scripts/service/manage.py` 兼容别名薄壳**（1202 字节）：检测权威入口存在性 → `subprocess.run([sys.executable, 权威路径] + sys.argv[1:])` 原样转发 → `KeyboardInterrupt` 返回 130。历史命令 / 历史文档不再断链。
 - **外部调用方全部改指权威名** `server-manage.py`（上表 6 处）。
 - **权威规范文档同步**：`docs/api/PORT-REGISTRY.md`（§3.1 标题）、`docs/architecture/14-REPOSITORY-FULL-MAP.md`（主入口 + 运维面板）、`docs/enterprise/37-企业级处理流程规范-V1.0.md`（verify 命令）。
 - **历史工作报告保留原样**（`service_startup_script_optimization_plan.md` 等 27 处）：为当时快照，且兼容别名保证其命令仍可执行，不篡改历史。
@@ -58,15 +58,15 @@
 
 | 验证项 | 结果 |
 |---|---|
-| `python -m py_compile scripts/server-manage.py scripts/manage.py` | ✅ 通过 |
-| `python scripts/server-manage.py --help` | ✅ 正常（argparse 显示 `server-manage.py`） |
-| `python scripts/server-manage.py init` | ✅ 创建 .runtime/.logs，识别 5 服务 |
-| `python scripts/server-manage.py bootstrap --dry-run --no-dashboard` | ✅ 5 服务启动顺序 + 二进制预检全部通过（voice:30010 / api:8080 / frontend:3020 / melody2score:8012 / primiflow:8000） |
-| `python scripts/manage.py list`（别名转发等价） | ✅ 正常输出服务列表 |
-| `python scripts/server-manage.py status` / `manage.py status` | ✅ 正常，url 统一拼接生效 |
+| `python -m py_compile scripts/service/server-manage.py scripts/service/manage.py` | ✅ 通过 |
+| `python scripts/service/server-manage.py --help` | ✅ 正常（argparse 显示 `server-manage.py`） |
+| `python scripts/service/server-manage.py init` | ✅ 创建 .runtime/.logs，识别 5 服务 |
+| `python scripts/service/server-manage.py bootstrap --dry-run --no-dashboard` | ✅ 5 服务启动顺序 + 二进制预检全部通过（voice:30010 / api:8080 / frontend:3020 / melody2score:8012 / primiflow:8000） |
+| `python scripts/service/manage.py list`（别名转发等价） | ✅ 正常输出服务列表 |
+| `python scripts/service/server-manage.py status` / `manage.py status` | ✅ 正常，url 统一拼接生效 |
 | `_spawn_command` 端到端（PATH 命令 python，args 列表） | ✅ 不再抛异常、不再回退、日志正确写入、进程正常退出 |
 | `_spawn_command` 端到端（cwd 相对可执行文件） | ✅ 正确转绝对路径启动 |
-| `scripts/verify-ports.py` | ✅ ERROR=0 WARN=0 INFO=92 |
+| `scripts/gate/verify-ports.py` | ✅ ERROR=0 WARN=0 INFO=92 |
 
 ---
 
@@ -74,9 +74,9 @@
 
 | 文件 | 动作 |
 |---|---|
-| `scripts/server-manage.py` | M：docstring 归一化（版本 3.0）、内部引用归一化、`_spawn_command` 句柄 + args[0] 修复、`start/restart all` 语义对齐、url 统一 |
-| `scripts/manage.py` | A：兼容别名薄壳（转发权威入口） |
-| `start.sh` / `scripts/start-all.ps1` / `scripts/stop-all.ps1` / `scripts/deploy/start.ps1` / `platform_config.json` / `scripts/README.md` | M：外部调用改指权威名 + 说明 |
+| `scripts/service/server-manage.py` | M：docstring 归一化（版本 3.0）、内部引用归一化、`_spawn_command` 句柄 + args[0] 修复、`start/restart all` 语义对齐、url 统一 |
+| `scripts/service/manage.py` | A：兼容别名薄壳（转发权威入口） |
+| `start.sh` / `scripts/startup/start-all.ps1` / `scripts/startup/stop-all.ps1` / `scripts/deploy/start.ps1` / `platform_config.json` / `scripts/README.md` | M：外部调用改指权威名 + 说明 |
 | `docs/api/PORT-REGISTRY.md` / `docs/architecture/14-REPOSITORY-FULL-MAP.md` / `docs/enterprise/37-企业级处理流程规范-V1.0.md` | M：权威文档统一为 `server-manage.py` |
 
 ## 五、边界说明（诚实声明）

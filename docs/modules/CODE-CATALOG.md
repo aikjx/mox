@@ -1,6 +1,6 @@
 # 全仓代码模块目录
 
-由 `python scripts/module_catalog.py` 从 Cargo 元数据与目录生成；请勿手改。
+由 `python scripts/registry/module_catalog.py` 从 Cargo 元数据与目录生成；请勿手改。
 
 本目录记录代码归属和入口，不代表功能验收、生产可用性或部署就绪。运行时依赖包含可选依赖；开发和构建依赖分别列出。
 

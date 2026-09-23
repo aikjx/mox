@@ -261,7 +261,7 @@ docs/（23个子目录，309篇权威文档）
 - ✅ platform_config.json脱敏后复制为config/platform_config.example.json
 - ✅ 原配置文件从git跟踪移除（git rm --cached），保留本地运行时
 - ✅ 端口权威来源：docs/api/PORT-REGISTRY.md
-- ✅ 端口变更门禁：scripts/verify-ports.py
+- ✅ 端口变更门禁：scripts/gate/verify-ports.py
 
 ---
 
@@ -284,7 +284,7 @@ docs/（23个子目录，309篇权威文档）
 | 编译检查 | ✅ | cargo check --workspace |
 | 单元测试 | ✅ | cargo test --workspace |
 | Lint检查 | ✅ | cargo clippy --all-targets |
-| 端口漂移检查 | ✅ | scripts/verify-ports.py |
+| 端口漂移检查 | ✅ | scripts/gate/verify-ports.py |
 | 许可证合规 | ✅ | deny.toml配置 |
 | 代码覆盖率 | ⚠️ | tarpaulin.toml配置，需增强覆盖率门禁 |
 

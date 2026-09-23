@@ -53,7 +53,7 @@ foundation（横切基座）
 
 ### 2.4 二百二十三条已登记 API
 
-actuator ROUTES 为单一权威源，`scripts/gen-api-registry.py` 自动生成 `docs/API-REGISTRY.md`，声明与实现一一对应。
+actuator ROUTES 为单一权威源，`scripts/doc/gen-api-registry.py` 自动生成 `docs/API-REGISTRY.md`，声明与实现一一对应。
 
 ---
 
@@ -83,7 +83,7 @@ actuator ROUTES 为单一权威源，`scripts/gen-api-registry.py` 自动生成 
 | **mox-alliance-scheduler** | :3100 | 联盟任务调度（DAG 构建/节点调度） |
 | **mox-alliance-executor** | :3200 | 联盟任务执行（expert 模式，内嵌专家服务） |
 
-**一键启停**：`scripts/start-mox-enterprise.ps1` / `stop-mox-enterprise.ps1`（幂等，不动独立服务）。
+**一键启停**：`scripts/startup/start-mox-enterprise.ps1` / `stop-mox-enterprise.ps1`（幂等，不动独立服务）。
 
 ---
 

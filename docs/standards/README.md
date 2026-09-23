@@ -33,5 +33,5 @@
 
 1. 编号（`<域缩写>-STD-<序号>` 或 `<域缩写>-<类型>-<序号>`），在 `../enterprise/00-INDEX.md` 登记。
 2. 标准正文必须含：适用范围 / 约束条款（可判定）/ 校验方式（脚本或人工）/ 违规处置。
-3. 若影响 CI：同步 `scripts/ci-gate.ps1` 的门禁项。
+3. 若影响 CI：同步 `scripts/gate/ci-gate.ps1` 的门禁项。
 4. 在本页表格登记，并在 [`../normalization/`](../normalization/README.md) 建对应索引条目。

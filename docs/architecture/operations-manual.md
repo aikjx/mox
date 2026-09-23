@@ -1,6 +1,6 @@
 # MOX 全维低代码平台 — 操作说明手册
 
-> ⚠️ **历史参考**：本文为旧 Python 栈操作（python run.py :8600 / :8601）；当前企业启动用 `scripts/start-mox-enterprise.ps1`（四进程，网关 :3080）。
+> ⚠️ **历史参考**：本文为旧 Python 栈操作（python run.py :8600 / :8601）；当前企业启动用 `scripts/startup/start-mox-enterprise.ps1`（四进程，网关 :3080）。
 
 > **版本**: 2.0 | **日期**: 2026-08-28
 > **从安装到上线，一本手册搞定。所有命令可直接复制执行。**

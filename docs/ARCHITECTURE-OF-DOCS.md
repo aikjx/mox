@@ -2,7 +2,7 @@
 
 > 编号：**DOC-GOV-ARC-V1.0**　·　定位：`docs/` 目录的**唯一结构权威（Single Source of Truth）**
 > 生效范围：`docs/` 全部内容、以及仓库中任何指向 `docs/` 的引用
-> 关联：`docs/enterprise/00-INDEX.md`（企业级文档治理中心）· `docs/normalization/README.md`（归一化 SSoT 枢纽）· `scripts/ci-gate.ps1`（CI 门禁）
+> 关联：`docs/enterprise/00-INDEX.md`（企业级文档治理中心）· `docs/normalization/README.md`（归一化 SSoT 枢纽）· `scripts/gate/ci-gate.ps1`（CI 门禁）
 
 ---
 
@@ -111,7 +111,7 @@ architecture/
 单源规则：
 
 1. 接口事实 = `docs/API-REGISTRY.md`（由 `actuator.rs ROUTES` 生成）。
-2. 端口事实 = `docs/api/PORT-REGISTRY.md`（由 `scripts/verify-ports.py` 校验）。
+2. 端口事实 = `docs/api/PORT-REGISTRY.md`（由 `scripts/gate/verify-ports.py` 校验）。
 3. 术语事实 = `docs/enterprise/GLOSSARY.md`。
 4. 跨文档等价关系 = `docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md`。
 5. 关图需求 = `docs/architecture/graph/`；关图规范 = `docs/specifications/`（GR-STD/PT-Primi/OUS）。
@@ -135,7 +135,7 @@ architecture/
 <!-- check-doc-links:ignore-start -->
 | P0-1 | 高 | **品牌串污染**：批量替换把 `MOX` 写成了 `mox 模块化系统架构`，落入**文件名**与**正文** | 25 个文件名命中；149 篇文档正文共 769 处 | ✅ 已修复：正文全量替换为 `MOX`；文件名重命名待 shell 环境恢复后执行（见 §6.4） |
 | P0-2 | 高 | **编号空间冲突**：`enterprise/` 内 `26-`（开发专家联盟 / 前端开发专家）、`29-`（跨域依赖 / MOX总任务中心）、`30-`（网关瘦身 / MOX商场中心）、`31-`（可观测性 / 代码审计）、`38-`（架构文档 / VERIFY-REPORT）各重号 | `enterprise/` 目录清单 | 重号文档迁到 `39+`，同步 00-INDEX 登记 |
-| P0-3 | 高 | **死链**：多份索引指向已迁移路径 | `enterprise/00-INDEX.md` 引用 `docs/GLOSSARY.md`、`docs/architecture.md`、`docs/specs/`、`docs/graph/graph.json`、`docs/enterprise-architecture-analysis.md`；`normalization/README.md` 引用 `docs/architecture-hub.html`；`scripts/verify-ports.py` 注释引用 `docs/ports/PORT-REGISTRY.md`（实为 `docs/api/`） | 已随本次迁移修正（§6） |
+| P0-3 | 高 | **死链**：多份索引指向已迁移路径 | `enterprise/00-INDEX.md` 引用 `docs/GLOSSARY.md`、`docs/architecture.md`、`docs/specs/`、`docs/graph/graph.json`、`docs/enterprise-architecture-analysis.md`；`normalization/README.md` 引用 `docs/architecture-hub.html`；`scripts/gate/verify-ports.py` 注释引用 `docs/ports/PORT-REGISTRY.md`（实为 `docs/api/`） | 已随本次迁移修正（§6） |
 | P0-4 | 中 | **同层平铺**：8 个架构类目录平级散落（`ai-architecture`/`cosmic-architecture`/`graph`/`plugin`/`full-dimensional`/`microservices`/`rust-enterprise`/`enterprise-verification`） | `docs/` 一级清单 19 项 | 已收敛入 L2/L7（§6） |
 | P0-5 | 中 | **根级散落**：报告/产物与入口文档混放于 `docs/` 根 | `PRODUCTION_READINESS_ASSESSMENT_v3.4.md`、`SECURITY_AUDIT_v3.4.md`、`v21-features.md`、`developer-docs.html`、`bench_results_round7.json` | 已归位（§6） |
 | P1-1 | 中 | **层索引缺失**：`api/`、`standards/`、`specifications/`、`docs-hub/` 无 `README.md` | 目录清单 | 已补（§6.3） |
@@ -163,8 +163,8 @@ architecture/
 - `enterprise/38-企业级管理系统架构与业务处理流程文档-V2.1.md` 内部引用：报告路径同步更新
 - `enterprise/43-DOC-EP-038...md` 元信息：标注「已迁移至 43 号」
 - `docs/ARCHITECTURE-OF-DOCS.md` §2.2 示例：更新为新文件
-- `scripts/verify-doc-ep038.py` 生成路径 + 用法注释：`REPORT` 常量更新
-- `scripts/ci-gate.ps1` §6.3 错误提示：更新报告文件名
+- `scripts/doc/verify-doc-ep038.py` 生成路径 + 用法注释：`REPORT` 常量更新
+- `scripts/gate/ci-gate.ps1` §6.3 错误提示：更新报告文件名
 - `reports/data/20260921-171339-alliance-demo-local.json`：target 路径更新
 - `docs/working-reports/server-manage-normalization-20260901.md` §5：引用更新
 - `docs/docs-hub/docs-hub.html`：path + desc 更新
@@ -236,16 +236,16 @@ architecture/
 
 | 门禁 | 工具 | 覆盖 |
 |------|------|------|
-| 链接有效性 | `python scripts/check-doc-links.py` | `docs/**` 内相对/根相对引用是否可解析 |
-| 接口新鲜度 | `python scripts/gen-api-registry.py` + `docs/API-REGISTRY.md` 对比（CI G6 §6.3 / DOC-EP-038 D8） | 223 路由一致 |
-| 端口漂移 | `python scripts/verify-ports.py` | 与 `docs/api/PORT-REGISTRY.md` 一致 |
-| 模块清单漂移 | `python scripts/module_catalog.py --check` | `docs/modules/CODE-CATALOG.md` 与 workspace 一致 |
-| 企业级文档核对 | `python scripts/verify-doc-ep038.py` | 38 号文档与代码零漂移（20 项） |
-| 文档同步 | `scripts/ci-gate.ps1 -Gate G6` | 文档清单 + 核对门禁 |
+| 链接有效性 | `python scripts/gate/check-doc-links.py` | `docs/**` 内相对/根相对引用是否可解析 |
+| 接口新鲜度 | `python scripts/doc/gen-api-registry.py` + `docs/API-REGISTRY.md` 对比（CI G6 §6.3 / DOC-EP-038 D8） | 223 路由一致 |
+| 端口漂移 | `python scripts/gate/verify-ports.py` | 与 `docs/api/PORT-REGISTRY.md` 一致 |
+| 模块清单漂移 | `python scripts/registry/module_catalog.py --check` | `docs/modules/CODE-CATALOG.md` 与 workspace 一致 |
+| 企业级文档核对 | `python scripts/doc/verify-doc-ep038.py` | 38 号文档与代码零漂移（20 项） |
+| 文档同步 | `scripts/gate/ci-gate.ps1 -Gate G6` | 文档清单 + 核对门禁 |
 
 ### 7.1 链接门禁语义与基线
 
-`scripts/check-doc-links.py` 是链接有效性的唯一执行器：
+`scripts/gate/check-doc-links.py` 是链接有效性的唯一执行器：
 
 - **判定对象**：Markdown `[]()`、HTML `href/src`、以及反引号包裹的 `docs/...` 路径引用。
 - **退出码**：`0` = 无断链；`1` = 存在断链。

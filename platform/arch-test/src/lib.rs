@@ -466,7 +466,7 @@ fn crate_of_path(path: &Path) -> String {
 
 /// 扫描公开符号定义：返回 (kind, name) -> 出现过的 crate 集合
 ///
-/// 只统计行首 `pub enum/struct/const/type`（与 `scripts/normalization-scan.py` 规则一致），
+/// 只统计行首 `pub enum/struct/const/type`（与 `scripts/validation/normalization-scan.py` 规则一致），
 /// 跳过注释行；私有类型不构成跨 crate 契约，不计入。
 fn scan_public_symbols(root: &Path) -> HashMap<(String, String), HashSet<String>> {
     let mut map: HashMap<(String, String), HashSet<String>> = HashMap::new();
@@ -516,7 +516,7 @@ fn scan_public_symbols(root: &Path) -> HashMap<(String, String), HashSet<String>
 
 /// 跨 crate 重复定义的公开符号：不得新增，也不得扩散
 ///
-/// 基线：`platform/arch-test/baseline/normalization.txt`（由 `scripts/normalization-scan.py
+/// 基线：`platform/arch-test/baseline/normalization.txt`（由 `scripts/validation/normalization-scan.py
 /// --baseline-txt` 生成），格式为 `kind::Name|crateA,crateB` —— 记录该重复符号当前的
 /// **副本 crate 集合**。同名不等于重复债务（不同业务上下文可有不同模型），因此治理口径是：
 /// - **不得新增**：出现基线之外的新跨 crate 同名符号 → 失败；
@@ -527,7 +527,7 @@ fn scan_public_symbols(root: &Path) -> HashMap<(String, String), HashSet<String>
 ///
 /// 概念归属登记表：`platform/arch-test/baseline/ownership-registry.csv`
 /// （每项记录 权威拥有 crate / 处置决策 merge-pending-diff·keep-distinct·triage-pending / 依据）。
-/// 再生成：`python scripts/normalization-scan.py --baseline-txt ...` + `python scripts/ownership-registry.py`。
+/// 再生成：`python scripts/validation/normalization-scan.py --baseline-txt ...` + `python scripts/registry/ownership-registry.py`。
 #[test]
 fn test_no_new_cross_crate_duplicate_symbols() {
     let root = workspace_root();
@@ -537,7 +537,7 @@ fn test_no_new_cross_crate_duplicate_symbols() {
 
     let baseline_content = std::fs::read_to_string(&baseline_path).unwrap_or_else(|_| {
         panic!(
-            "缺少归一化基线文件: {}\n请先执行: python scripts/normalization-scan.py --baseline-txt {}",
+            "缺少归一化基线文件: {}\n请先执行: python scripts/validation/normalization-scan.py --baseline-txt {}",
             baseline_path.display(),
             baseline_path.display()
         )
@@ -619,7 +619,7 @@ fn test_no_new_cross_crate_duplicate_symbols() {
         panic!(
             "跨 crate 重复符号治理违规（{}）：\n{}\n\n\
              基线格式：kind::Name|crate1,crate2（副本 crate 集合）。\n\
-             处理后请重新生成基线：python scripts/normalization-scan.py --baseline-txt {}",
+             处理后请重新生成基线：python scripts/validation/normalization-scan.py --baseline-txt {}",
             violations.len(),
             violations.join("\n"),
             baseline_path.display()

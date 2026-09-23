@@ -8,7 +8,7 @@
 - `verify_axioms.py`     算子统一系统六大公理数学自洽性验证
 
 ## 交付物
-**`scripts/manage.py`**（stdlib-only，无 Flask 依赖，~53KB）
+**`scripts/service/manage.py`**（stdlib-only，无 Flask 依赖，~53KB）
 
 ### 架构（单文件分区）
 1. 通用：强制 UTF-8 输出（Windows GBK 控制台兼容）
@@ -36,7 +36,7 @@
 
 ## 清理动作
 删除：`service_monitor.py`、`service_manager.py`、`platform_manager.py`、`verify_axioms.py`（根目录），以及先前已存在但依赖 Flask（且未安装）的部分整合版 `scripts/service_manager.py`。
-修正引用：`start.sh`（`verify_axioms.py` → `scripts/manage.py verify`）、`README.md`（目录树 + 验证命令）。
+修正引用：`start.sh`（`verify_axioms.py` → `scripts/service/manage.py verify`）、`README.md`（目录树 + 验证命令）。
 
 ## 备注
 - `.workbuddy/memory/2026-08-18.md` 为历史日志，仍提及旧文件名，属记录性质不影响运行，未改动。

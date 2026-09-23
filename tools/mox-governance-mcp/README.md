@@ -11,8 +11,8 @@
 
 底层门禁脚本保持为唯一事实源，本服务器不复制规则，只负责编排与返回：
 
-- `scripts/verify-ports.py` —— 端口漂移校验，规范见 `docs/api/PORT-REGISTRY.md`（PORT-REGISTRY-001）
-- `scripts/check-doc-links.py` —— 文档链接校验（DOC-GOV-ARC-V1.0 §7）
+- `scripts/gate/verify-ports.py` —— 端口漂移校验，规范见 `docs/api/PORT-REGISTRY.md`（PORT-REGISTRY-001）
+- `scripts/gate/check-doc-links.py` —— 文档链接校验（DOC-GOV-ARC-V1.0 §7）
 
 ## 为什么零依赖
 

@@ -88,5 +88,5 @@ tags `code / codegen / self-hosted / programming`，provider `mox-selfhosted` �
   `/api/codeengine/patch` 应用状态 `["no_change","exact"]`，roundtrip 还原生成内容与全量覆写逐字节一致；
   Aider 式 `blocks_text` 文本块解析应用同样实测通过；
 - Learn：`/api/codeengine/cases` 输出 `avg_rounds_to_converge`（本 demo 1.5）与交付率；
-- 端口门禁：`3210` 已登记 `docs/api/PORT-REGISTRY.md` §3.2 与 `scripts/verify-ports.py` CANONICAL（ERROR=0）；
+- 端口门禁：`3210` 已登记 `docs/api/PORT-REGISTRY.md` §3.2 与 `scripts/gate/verify-ports.py` CANONICAL（ERROR=0）；
 - 否决路径：敏感资源 + `auto_guard=false` + `self_repair=false` → auditor 一票否决、不出码、不交付（测试覆盖）。

@@ -8,11 +8,11 @@
 cargo build                 # 构建 workspace 默认 members
 cargo test                  # 运行单元测试（默认 members）
 cargo clippy --all-targets  # lint（CI 门禁，workspace.lints 已配置）
-python scripts/verify-ports.py   # 端口漂移校验（CI 门禁）
+python scripts/gate/verify-ports.py   # 端口漂移校验（CI 门禁）
 docker-compose up -d --build     # 一键部署
 ./start.sh --dry-run             # 启动前预检
-scripts/start-mox-enterprise.ps1 # 企业级四进程一键启动（编排器3001/联盟调度3100/执行3200/模块化网关3080）
-scripts/stop-mox-enterprise.ps1  # 对应一键停止（不动前端3020/primiflow8000/melody2score8012）
+scripts/startup/start-mox-enterprise.ps1 # 企业级四进程一键启动（编排器3001/联盟调度3100/执行3200/模块化网关3080）
+scripts/startup/stop-mox-enterprise.ps1  # 对应一键停止（不动前端3020/primiflow8000/melody2score8012）
 python tools/mox-governance-mcp/server.py --selftest   # 治理 MCP 自检（端口/文档门禁 + CI 组合）
 python tools/alliance-demo/alliance_demo.py             # 专家联盟端到端链路演示（产出 reports/ 证据 + 治理体检）
 ```
@@ -29,7 +29,7 @@ python tools/alliance-demo/alliance_demo.py             # 专家联盟端到端�
 ## 仓库治理规则
 
 - **报告**只允许进入 `reports/`（html/ markdown/ data/）。HTML 报告放 `reports/html/<报告名>/`，自带 `assets/`（独有资源），共享字体/JS 引用 `../../_shared/`（即 `reports/_shared/`），**禁止**在报告目录内复制 `_shared/`。
-- **文档**按 `docs/` 分层归档，**结构权威为 `docs/ARCHITECTURE-OF-DOCS.md`（DOC-GOV-ARC-V1.0）**：L0 `docs/README.md` · `docs-hub/`｜L1 `CORE-CAPABILITIES.md` `ROADMAP-DOMAINS.md` `API-REGISTRY.md`｜L2 `architecture/`（含 meta/microservices/rust-enterprise/ai/graph/plugin/full-dimensional/assets）｜L3 `modules/` `expert-alliance/`｜L4 `api/` `database/`｜L5 `standards/` `normalization/`｜L6 `enterprise/` `specifications/`｜L7 `working-reports/`（含 verification/audits/）｜L8 `_archive/`。**一个主题一个目录，一个事实一个权威源，路径即契约**；根目录禁止散落报告文档，目录迁移须登记映射并跑 `python scripts/check-doc-links.py`。
+- **文档**按 `docs/` 分层归档，**结构权威为 `docs/ARCHITECTURE-OF-DOCS.md`（DOC-GOV-ARC-V1.0）**：L0 `docs/README.md` · `docs-hub/`｜L1 `CORE-CAPABILITIES.md` `ROADMAP-DOMAINS.md` `API-REGISTRY.md`｜L2 `architecture/`（含 meta/microservices/rust-enterprise/ai/graph/plugin/full-dimensional/assets）｜L3 `modules/` `expert-alliance/`｜L4 `api/` `database/`｜L5 `standards/` `normalization/`｜L6 `enterprise/` `specifications/`｜L7 `working-reports/`（含 verification/audits/）｜L8 `_archive/`。**一个主题一个目录，一个事实一个权威源，路径即契约**；根目录禁止散落报告文档，目录迁移须登记映射并跑 `python scripts/gate/check-doc-links.py`。
 - **提交规范**：conventional commits（feat/fix/docs/chore/refactor/build + scope），中文描述。
 - **运行时目录**（`target/` `.logs/` `.runtime/` `data/` `workspace/` `log/`）为本地运行态，已被 `.gitignore` 管理；`target/` 含本地服务数据（mox.db 等），**不要删除**，也不要提交。
 - `.trae/`（IDE 工作区数据）不入库；`ais/` `third_party/` 为第三方参考，不入库。

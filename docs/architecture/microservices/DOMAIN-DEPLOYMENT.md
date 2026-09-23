@@ -62,7 +62,7 @@ KG 现有适配器同时包含 `/graph/v1/*` 和 `/ai/engine/*`，拆分时保�
 cargo build -p mox-platform-gateway-svc --bin mox-server
 python scripts/tests/verify_domain_hosts.py target/debug/mox-server.exe
 python -m unittest scripts.tests.test_deployment_architecture -v
-python scripts/verify-ports.py
+python scripts/gate/verify-ports.py
 ```
 
 Linux 使用 `target/debug/mox-server`。进程验证使用临时目录和动态空闲测试端口，

@@ -1,10 +1,10 @@
 # A 项·概念归属登记表生成器（归一化治理 · SSOT 概念归属模式）
 #
 # 用法：
-#   1. 先重新生成重复基线：python scripts/normalization-scan.py --top 0 \
+#   1. 先重新生成重复基线：python scripts/validation/normalization-scan.py --top 0 \
 #        --baseline-txt platform/arch-test/baseline/normalization.txt \
 #        --json platform/arch-test/baseline/normalization.json
-#   2. 再生成本登记表：    python scripts/ownership-registry.py
+#   2. 再生成本登记表：    python scripts/registry/ownership-registry.py
 #
 # 输入：platform/arch-test/baseline/normalization.json（跨 crate 重复符号全集）
 # 输出：platform/arch-test/baseline/ownership-registry.csv
@@ -34,7 +34,7 @@ try:
 except (AttributeError, ValueError):
     pass
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "platform/arch-test/baseline/normalization.json"
 OUT = ROOT / "platform/arch-test/baseline/ownership-registry.csv"
 

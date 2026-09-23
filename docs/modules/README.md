@@ -36,7 +36,7 @@
 python tools/module_catalog.py
 python tools/module_catalog.py --check
 python tools/architecture_gate.py
-python scripts/verify-ports.py
+python scripts/gate/verify-ports.py
 ```
 
 代码目录自动读取完整 workspace（包括非默认成员），并列出运行、开发、构建依赖。前端扫描覆盖路由、页面、API、状态和组合逻辑；文件存在不表示已接通后端。目录检查负责发现清单漂移，架构门禁负责检查依赖边界，两者不能代替功能验收。

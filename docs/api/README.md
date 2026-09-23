@@ -11,7 +11,7 @@
 |------|:--------:|------|------|
 | [`API-SPECIFICATION.md`](./API-SPECIFICATION.md) | 🟢 | REST 接口契约规范（路径/方法/入参/出参/错误码约定） | 与 `../API-REGISTRY.md` 对照 |
 | [`API-CRYPTO-TRANSPORT.md`](./API-CRYPTO-TRANSPORT.md) | 🟢 | 接口 data 压缩+SM4-GCM 加密传输一键开关（协商头/线上格式/全链路证明） | `python tools/alliance-demo/crypto_proof.py` |
-| [`PORT-REGISTRY.md`](./PORT-REGISTRY.md) | 🟢 | **端口分配唯一权威**（服务 → 端口 → 用途） | `python scripts/verify-ports.py` |
+| [`PORT-REGISTRY.md`](./PORT-REGISTRY.md) | 🟢 | **端口分配唯一权威**（服务 → 端口 → 用途） | `python scripts/gate/verify-ports.py` |
 | [`TCP-SPECIFICATION.md`](./TCP-SPECIFICATION.md) | 🟢 | TCP/长连接协议规范（帧格式、心跳、鉴权） | 人工评审 |
 | [`mox-module-manifest.schema.json`](./mox-module-manifest.schema.json) | 🟢 | 模块清单（manifest）JSON Schema | `python tools/module_catalog.py --check` |
 
@@ -24,8 +24,8 @@
 | 接口**实现真源** | `platform/gateway/**/actuator.rs` 的 `ROUTES` | 代码即真源，注册表由脚本生成 |
 
 ```bash
-python scripts/gen-api-registry.py     # 重新生成 ../API-REGISTRY.md（禁止手改注册表正文）
-python scripts/verify-ports.py         # 端口漂移校验（CI 门禁）
+python scripts/doc/gen-api-registry.py     # 重新生成 ../API-REGISTRY.md（禁止手改注册表正文）
+python scripts/gate/verify-ports.py         # 端口漂移校验（CI 门禁）
 ```
 
 ## 三、变更流程

@@ -33,7 +33,7 @@ curl http://localhost:8080/actuator/mappings  # 全部路由注册表
 启动前预检（CI 门禁同款）：
 
 ```powershell
-python scripts/verify-ports.py   # 端口漂移校验，须 ERROR=0 WARN=0
+python scripts/gate/verify-ports.py   # 端口漂移校验，须 ERROR=0 WARN=0
 ./start.sh --dry-run             # 启动前预检
 ```
 
@@ -43,13 +43,13 @@ python scripts/verify-ports.py   # 端口漂移校验，须 ERROR=0 WARN=0
 |---|---|---|
 | 知识图谱 | `kg` | `GET /kg/v1/stats` 等；图算法在 `platform/domains/kg/core/`（pagerank / centrality / community / pathfinding） |
 | AI 意图 | `ai` | `mox-ai-intent-svc`（默认监听 8765，`MOX_AI_INTENT_PORT` 可改） |
-| 专家联盟 | `alliance` | 本地一键起：`scripts/start-alliance-local.ps1`（33080/33100/33200） |
+| 专家联盟 | `alliance` | 本地一键起：`scripts/startup/start-alliance-local.ps1`（33080/33100/33200） |
 | 前端 | — | `frontend-ui/`（dev 3020；专家联盟页面 dev 33020） |
 
 ## 3. 已有示例/探针
 
 - `tests/test_stream_e2e_probe.py` — 流式 E2E 探针（31111/31112，测试端口）
-- `scripts/verify-ports.py --json` — 端口漂移校验 JSON 报告
+- `scripts/gate/verify-ports.py --json` — 端口漂移校验 JSON 报告
 - `deploy/docs/trace-8stages-dashboard.json` — Grafana 面板（消费 `/metrics`）
 
 ## 4. 新手指南（分层路径）

@@ -27,14 +27,14 @@
       "title": "端口漂移校验",
       "readOnly": true,
       "destructive": false,
-      "summary": "执行 scripts/verify-ports.py，检出已退役端口被引用、platform_config.json 与注册表不一致、未登记端口。"
+      "summary": "执行 scripts/gate/verify-ports.py，检出已退役端口被引用、platform_config.json 与注册表不一致、未登记端口。"
     },
     {
       "name": "mox_doc_links_check",
       "title": "文档链接校验",
       "readOnly": true,
       "destructive": false,
-      "summary": "执行 scripts/check-doc-links.py，检出 Markdown/HTML/反引号路径引用中的断链。"
+      "summary": "执行 scripts/gate/check-doc-links.py，检出 Markdown/HTML/反引号路径引用中的断链。"
     },
     {
       "name": "mox_ci_gate",

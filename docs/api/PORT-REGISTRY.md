@@ -14,7 +14,7 @@
 
 | 分类 | 说明 | 端口段/示例 |
 |---|---|---|
-| **RUNTIME** | 由 `scripts/server-manage.py` 统一管理、`platform_config.json` 登记的**当前运行服务** | 3080 / 3020 / 30010 / 8012 / 8000 / 3999 |
+| **RUNTIME** | 由 `scripts/service/server-manage.py` 统一管理、`platform_config.json` 登记的**当前运行服务** | 3080 / 3020 / 30010 / 8012 / 8000 / 3999 |
 | **ALLIANCE** | 专家联盟核心服务（PORT-NORM-001 强制 3000–3999 段） | 3100 / 3200 / 3300 |
 | **ANCILLARY** | 运行期附属端口（gRPC、内网控制面、OUS 边缘、前端预览等） | 50051 / 50052 / 9080 / 9081 / 4173 / 3998 / 7000 / 3000 / 3001 / 3002 / 30400 |
 | **LEGACY** | 遗留模块，自洽但不再纳入统一运维（Python mox-server / mox-store / docker） | 8600 / 8601 / 6379(infra) |
@@ -66,9 +66,9 @@
 | 3300 | AI 专家服务（桥接基址） | scheduler 内部桥接 | HTTP | `config/alliance-scheduler.yml` → `expert_service` | 🟢已启用 |
 | 3400 | registry-svc（专家注册中心） | `mox-alliance-registry-svc` | HTTP | 内置默认配置（`MOX_ALLIANCE_REGISTRY_*` 覆盖）；已注册 platform_config.json | 🟢运行中 |
 | 3210 | codeengine-svc（全自研 AI 代码引擎 · 开发专家联盟处理模式） | `mox-codeengine-svc` | HTTP | `MOX_CODEENGINE_PORT` 环境变量覆盖 | 🟢已启用 |
-| 33080 | 联盟本地网关（start-alliance-local.ps1 默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
-| 33100 | 联盟本地调度器（默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
-| 33200 | 联盟本地执行器（默认） | 本地运行 | HTTP | `scripts/start-alliance-local.ps1` | 🟡本地开发 |
+| 33080 | 联盟本地网关（start-alliance-local.ps1 默认） | 本地运行 | HTTP | `scripts/startup/start-alliance-local.ps1` | 🟡本地开发 |
+| 33100 | 联盟本地调度器（默认） | 本地运行 | HTTP | `scripts/startup/start-alliance-local.ps1` | 🟡本地开发 |
+| 33200 | 联盟本地执行器（默认） | 本地运行 | HTTP | `scripts/startup/start-alliance-local.ps1` | 🟡本地开发 |
 
 > 配置加载优先级：内置默认 < `config/alliance-*.yml` < 环境变量 `MOX_ALLIANCE_*`（如 `MOX_ALLIANCE_SERVER_PORT=3100`）。
 
@@ -184,7 +184,7 @@
 3. **避让校验**：对照第3章避让清单 + 本机实查占用。
 4. **登记**：在本文档第3章登记（端口、服务、用途、状态）。
 5. **同步**：同步更新 `platform_config.json`、`config/alliance-*.yml`、启动脚本、前端代理、docker/helm、部署文档、PORT-NORM-001（如涉 3xxx 段）。
-6. **验证**：运行 `python scripts/verify-ports.py` 确认无漂移；重新编译 + 启动 + 健康检查。
+6. **验证**：运行 `python scripts/gate/verify-ports.py` 确认无漂移；重新编译 + 启动 + 健康检查。
 
 ---
 
@@ -192,11 +192,11 @@
 
 ### 6.1 自动校验
 
-仓库内置 `scripts/verify-ports.py` 端口漂移校验脚本：
+仓库内置 `scripts/gate/verify-ports.py` 端口漂移校验脚本：
 
 ```bash
-python scripts/verify-ports.py            # 全量校验，任何漂移/冲突返回非零退出码
-python scripts/verify-ports.py --json     # 输出机器可读 JSON 报告
+python scripts/gate/verify-ports.py            # 全量校验，任何漂移/冲突返回非零退出码
+python scripts/gate/verify-ports.py --json     # 输出机器可读 JSON 报告
 ```
 
 校验内容：
@@ -224,7 +224,7 @@ python scripts/verify-ports.py --json     # 输出机器可读 JSON 报告
 | `platform/domains/voice/svc/mox-voice-operator-svc` | module/feature `server_3717`/`server-3717`，绑定 `127.0.0.1:3717` | `voice_server`/`voice-server`，绑定 `127.0.0.1:30010`（文件同步改名 `voice_server.rs`） |
 | `platform/domains/voice/svc/mox-voice-desktop-app` | `server_3717` + `:3717`（30 处） | `voice_server` + `:30010` |
 | `platform/domains/platform/svc/mox-platform-orchestrator-svc`（voice_proxy/subservers） | voice 上游 `127.0.0.1:3717` | `127.0.0.1:30010` |
-| `platform_config.json` / `scripts/server-manage.py` | xiaobai_voice `port: 3717` | `port: 30010` |
+| `platform_config.json` / `scripts/service/server-manage.py` | xiaobai_voice `port: 3717` | `port: 30010` |
 | orchestrator 侧车（main.rs / ai_engine.rs / sidecar/*） | 默认 `http://127.0.0.1:3010`（指向已删除 backend-node） | 默认 `http://127.0.0.1:8080`（接管其职责的 Rust 网关，注释标注） |
 
 | `docs/architecture/ARCHITECTURE_SAAS_PRIVATE.md` | 前端 `:3021`（2处）、voice `:3717`（3处）、Vite `/voice` 代理→`:3001` | `:3020`、`:30010`、→`:8080`（网关→编排器 voice_proxy→:30010） |

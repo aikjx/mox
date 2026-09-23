@@ -8,7 +8,7 @@ export CARGO_TARGET_DIR="D:/cargo-target"
 export CARGO_INCREMENTAL=0
 cd "D:/a10/aikjx/gitcode/infotopograph"
 echo "=== verify-ports WARN lines ==="
-python scripts/verify-ports.py 2>&1 | grep -i "warn" | head -10
+python scripts/gate/verify-ports.py 2>&1 | grep -i "warn" | head -10
 echo "=== alliance tests (config-core + scheduler-core matching) ==="
 cargo test -p mox-alliance-config-core -p mox-alliance-scheduler-core 2>&1 | grep -E "test result|FAILED|panicked" | head -20
 echo "=== clippy codeengine (expect clean) ==="

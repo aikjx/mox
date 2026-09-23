@@ -6,7 +6,7 @@
 | 位置 | 文件名 | 作用 | 平台 |
 |---|---|---|---|
 | 仓库根 | [start.sh](file:///d:/a10/aikjx/gitcode/infotopograph/start.sh) | "算子统一系统" bash 启动：检查 Rust → cargo build --release → python verify → 运行 operator-server | Linux/Mac |
-| 仓库根/scripts/ | [manage.py](file:///d:/a10/aikjx/gitcode/infotopograph/scripts/manage.py) | 璇玑系统统一运维 CLI：`start/stop/restart/status/logs/dashboard/verify/init` + Web 面板（stdlib http.server） | Windows/Linux（跨平台） |
+| 仓库根/scripts/ | [manage.py](file:///d:/a10/aikjx/gitcode/infotopograph/scripts/service/manage.py) | 璇玑系统统一运维 CLI：`start/stop/restart/status/logs/dashboard/verify/init` + Web 面板（stdlib http.server） | Windows/Linux（跨平台） |
 | 仓库根/scripts/ | [run_enterprise_7gates.ps1](file:///d:/a10/aikjx/gitcode/infotopograph/scripts/run_enterprise_7gates.ps1) / [verify_tests.ps1](file:///d:/a10/aikjx/gitcode/infotopograph/scripts/verify_tests.ps1) 等 | 验收测试类脚本，非服务启动 | Windows |
 | platform/backend-node/scripts/ | [run-10task-rubric.ps1](file:///d:/a10/aikjx/gitcode/infotopograph/platform/backend-node/scripts/run-10task-rubric.ps1) | 企业 10 类评分 | Windows |
 
@@ -16,7 +16,7 @@
 | api | 3010 | `node src/api-server.js` | platform/backend-node | ✅ npm_deps |
 | frontend | 3020 | `npm run dev` | frontend-ui | ✅ npm_deps |
 | (gateway rust) | — | cargo run -p runtime | platform/gateway/runtime | ❌ 未登记 |
-| dashboard | 3040 | 由 manage.py dashboard 命令直接启动 | scripts/manage.py | 无端口占用检查前清 PID |
+| dashboard | 3040 | 由 manage.py dashboard 命令直接启动 | scripts/service/manage.py | 无端口占用检查前清 PID |
 
 ### 3. 问题清单（按严重度排序）
 **P0 致命 - 启动脚本与真实系统不一致**
@@ -42,7 +42,7 @@
 - `get_status()` 返回 `url: f"http://localhost:{port}"`，但实际 frontend 是 vite 需 host，API 为 `:3010/api`；URL 不准。
 
 **P2 中 - 跨平台与"一键启动"单一入口缺失**
-- Windows 用户无可一键脚本：需要手动记住 `python scripts/manage.py start all` + 再开终端跑 `dashboard`；Linux 有 start.sh 但脚本已过期。
+- Windows 用户无可一键脚本：需要手动记住 `python scripts/service/manage.py start all` + 再开终端跑 `dashboard`；Linux 有 start.sh 但脚本已过期。
 - 无 "一键启动 = 依赖检查 + 停止残留 + start_all + 开 dashboard" 的最短路径命令。
 - `start.sh` 用 `set -e` 但 `curl`/`cargo build` 失败后静默停止，也没有失败日志 dump。
 
@@ -57,7 +57,7 @@
 ## Files and Modules
 
 ### 修改（按优先级）
-1. **[scripts/manage.py](file:///d:/a10/aikjx/gitcode/infotopograph/scripts/manage.py)**（主优化点）
+1. **[scripts/service/manage.py](file:///d:/a10/aikjx/gitcode/infotopograph/scripts/service/manage.py)**（主优化点）
    - 新增 "bootstrap" 统一入口：依赖预检 → 清理残留 → start_all → 可选 dashboard
    - 新增 `depends_on: []` 服务拓扑 + 按依赖排序的 `start_all_sorted` / `stop_all_sorted`
    - 新增 "node/npm/python/cargo 二进制存在性" 预检（`shutil.which` + `--version` 回显）
@@ -68,12 +68,12 @@
    - 新增 `--dry-run` 与 `--strict`：strict 模式下 wait_time 内端口未就绪直接失败
 
 2. **[start.sh](file:///d:/a10/aikjx/gitcode/infotopograph/start.sh)**（对齐真实系统）
-   - 重写为"POSIX 一键入口"：优先调用 `python3 scripts/manage.py` 子命令组合，保留 cargo build 作为可选 `--build-rust` 开关
+   - 重写为"POSIX 一键入口"：优先调用 `python3 scripts/service/manage.py` 子命令组合，保留 cargo build 作为可选 `--build-rust` 开关
    - 修复前端/API 地址打印为真实 3020 / 3010 / 3040 dashboard
    - 失败统一 dump 最近 30 行日志到 stdout
 
 3. **新增 [scripts/start.ps1](file:///d:/a10/aikjx/gitcode/infotopograph/scripts/start.ps1)**（Windows 一键启动对等物）
-   - 语义 = start.sh 的 PowerShell 版：调用 `py.exe scripts/manage.py start all --strict` → `dashboard --no-browser`
+   - 语义 = start.sh 的 PowerShell 版：调用 `py.exe scripts/service/manage.py start all --strict` → `dashboard --no-browser`
    - 支持参数：`-NoBuild`、`-OnlyApi`、`-Restart`、`-OpenDashboard`
    - 输出企业级彩色状态清单：✔/✗ + 端口
 
@@ -102,8 +102,8 @@
 4. **新增 start.ps1**：实现 Windows 一键启动，`$ErrorActionPreference='Stop'`，色彩化输出
 5. **调整 platform_config.json**：`depends_on` 字段示例；保留向后兼容（缺失即无依赖）
 6. **回归验证**
-   - python scripts/manage.py init → list → status（全部 STOPPED）
-   - python scripts/manage.py bootstrap --strict（缺 node/npm 时要提前 fail 并给出安装路径提示）
+   - python scripts/service/manage.py init → list → status（全部 STOPPED）
+   - python scripts/service/manage.py bootstrap --strict（缺 node/npm 时要提前 fail 并给出安装路径提示）
    - 有环境下：start all → status 全 RUNNING → stop all → 端口全部释放
    - Linux/Mac 端：`bash start.sh --dry-run` 不做实质动作只打印步骤
    - 验证 scripts/verify_tests.ps1 中与 manage.py 相关的调用不被破坏（如果有）
@@ -123,15 +123,15 @@
 
 ## Validation
 
-1. **静态**：PEP8/语法检查 `python -m py_compile scripts/manage.py`
-2. **无依赖环境验证**：临时移除 PATH 中 node，运行 `python scripts/manage.py start api` → 预期 [ERROR] "未找到 node，请安装..."（不出栈追踪）
+1. **静态**：PEP8/语法检查 `python -m py_compile scripts/service/manage.py`
+2. **无依赖环境验证**：临时移除 PATH 中 node，运行 `python scripts/service/manage.py start api` → 预期 [ERROR] "未找到 node，请安装..."（不出栈追踪）
 3. **启动闭环**（若本机有 node）：
-   - `python scripts/manage.py bootstrap --strict --with-dashboard --no-browser`
+   - `python scripts/service/manage.py bootstrap --strict --with-dashboard --no-browser`
    - `curl http://localhost:3010/health` → 200
    - `curl http://localhost:3020/` → 200
-   - `python scripts/manage.py status` → api=RUNNING, frontend=RUNNING
-   - `python scripts/manage.py stop all --force`
-   - `python scripts/manage.py status` → 2 STOPPED；`netstat -ano` 中 3010/3020 不再 LISTENING
+   - `python scripts/service/manage.py status` → api=RUNNING, frontend=RUNNING
+   - `python scripts/service/manage.py stop all --force`
+   - `python scripts/service/manage.py status` → 2 STOPPED；`netstat -ano` 中 3010/3020 不再 LISTENING
 4. **start.sh dry-run**：`bash -n start.sh`（语法检查）
 5. **start.ps1 语法**：`powershell -NoProfile -Command "& { $ErrorActionPreference='Stop'; . .\scripts\start.ps1 -DryRun }"`
 

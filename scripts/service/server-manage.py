@@ -22,23 +22,23 @@ server-manage.py — 璇玑系统统一运维脚本（单文件整合版，stdli
     缺失时给出明确提示而非崩溃。
   · 跨进程可感知：运行状态以 .runtime/<key>.pid + 端口探测持久化判定，
     CLI 启动的服务、Web 面板另起的进程均可互相感知。
-  · 路径约定：仓库根为 <repo>/，本文件位于 <repo>/scripts/server-manage.py，
+  · 路径约定：仓库根为 <repo>/，本文件位于 <repo>/scripts/service/server-manage.py，
     所有相对路径（cwd、pid、log、config）均相对仓库根解析。
 
 用法:
-  python scripts/server-manage.py                    # 默认：一键启动全部服务 + 拉起 Web 管理面板（= bootstrap --with-dashboard）
-  python scripts/server-manage.py list
-  python scripts/server-manage.py list-projects      # 展示全量项目目录清单（project_registry）
-  python scripts/server-manage.py scripts            # 展示 scripts/ 目录分类索引
-  python scripts/server-manage.py start   [service_key|all]  [--strict]
-  python scripts/server-manage.py stop    [service_key|all]   [--force]
-  python scripts/server-manage.py restart [service_key|all]   [--strict]
-  python scripts/server-manage.py status
-  python scripts/server-manage.py logs    [service_key]       [--lines N]
-  python scripts/server-manage.py dashboard  [--host 0.0.0.0] [--port 3999] [--no-browser]
-  python scripts/server-manage.py verify            # 六大公理数学自洽性验证
-  python scripts/server-manage.py init               # 创建 .runtime / .logs 目录
-  python scripts/server-manage.py bootstrap [--strict] [--with-dashboard] [--no-browser] [--dry-run]
+  python scripts/service/server-manage.py                    # 默认：一键启动全部服务 + 拉起 Web 管理面板（= bootstrap --with-dashboard）
+  python scripts/service/server-manage.py list
+  python scripts/service/server-manage.py list-projects      # 展示全量项目目录清单（project_registry）
+  python scripts/service/server-manage.py scripts            # 展示 scripts/ 目录分类索引
+  python scripts/service/server-manage.py start   [service_key|all]  [--strict]
+  python scripts/service/server-manage.py stop    [service_key|all]   [--force]
+  python scripts/service/server-manage.py restart [service_key|all]   [--strict]
+  python scripts/service/server-manage.py status
+  python scripts/service/server-manage.py logs    [service_key]       [--lines N]
+  python scripts/service/server-manage.py dashboard  [--host 0.0.0.0] [--port 3999] [--no-browser]
+  python scripts/service/server-manage.py verify            # 六大公理数学自洽性验证
+  python scripts/service/server-manage.py init               # 创建 .runtime / .logs 目录
+  python scripts/service/server-manage.py bootstrap [--strict] [--with-dashboard] [--no-browser] [--dry-run]
                                             # 一键启动：预检 → 清残留 → 按拓扑启动 → 可选面板
 """
 
@@ -65,14 +65,14 @@ import subprocess
 import threading
 import time
 from datetime import datetime
-from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
 # =========================================================================== #
 # 1. 路径约定
 # =========================================================================== #
-PROJECT_ROOT = Path(__file__).resolve().parent.parent          # <repo>/
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent    # <repo>/
 CONFIG_PATH = PROJECT_ROOT / "platform_config.json"
 RUNTIME_DIR = PROJECT_ROOT / ".runtime"                        # pid 文件
 LOG_DIR = PROJECT_ROOT / ".logs"                               # 各服务输出日志
@@ -82,9 +82,12 @@ SESSION_TIMEOUT = 30 * 60                                      # 会话 30 分�
 
 # 默认服务配置（仅当 platform_config.json 缺失时回退使用；
 # 正常路径应依赖仓库根 platform_config.json）
+# 注意：本字典仅作为 platform_config.json 缺失时的回退模板。
+# 它与仓库根 platform_config.json（版本 3.0）保持同步；修改服务/端口/路径时，
+# 两处必须一起改，避免「回退模板」与「真实配置」漂移。
 DEFAULT_CONFIG = {
-    "version": "2.1",
-    "project_name": "璇玑系统",
+    "version": "3.0",
+    "project_name": "璇玑系统 · 全维数字孪生中台",
     "dashboard_port": DEFAULT_DASHBOARD_PORT,
     "admin": {"username": "admin"},
     "log_rolling": {"max_bytes": 5 * 1024 * 1024, "backup": 3},
@@ -109,7 +112,7 @@ DEFAULT_CONFIG = {
         },
         "frontend": {
             "name": "用户前端界面",
-            "description": "面向终端用户的操作界面（含系统管理区 /admin）；依赖 api 代理",
+            "description": "Vite + Vue3 前台；通过 /api 代理到 api 服务 :3080",
             "port": 3020,
             "health_check": "/",
             "cwd": "frontend-ui",
@@ -119,14 +122,14 @@ DEFAULT_CONFIG = {
             "npm_deps": True,
             "is_admin_only": False,
             "auto_start": False,
-            "wait_time": 12,
+            "wait_time": 14,
             "startup_order_hint": 20,
             "depends_on": ["api"],
             "tags": ["前端", "用户界面", "Vite"],
         },
         "xiaobai_voice": {
             "name": "小白语音服务（ASR + TTS）",
-            "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS；端口 30010",
+            "description": "本地离线语音：Paraformer ASR / CosyVoice2 TTS；端口 30010，供 Rust 网关 /voice/** 代理调用",
             "port": 30010,
             "health_check": "/voice/health",
             "cwd": "projects/xiaobai_voice",
@@ -177,6 +180,24 @@ DEFAULT_CONFIG = {
             "startup_order_hint": 40,
             "depends_on": [],
             "tags": ["低代码", "拓扑", "FastAPI", "引擎"],
+        },
+        "browser-rpa": {
+            "name": "浏览器RPA服务（browser-rpa）",
+            "description": "Playwright+Python 浏览器RPA单容器：codegen 录制产出 Python 脚本、页面变动 AI 自愈改脚本、智能运维调度；端口 30400，可 docker compose 部署",
+            "port": 30400,
+            "health_check": "/health",
+            "cwd": "projects/browser-rpa",
+            "command": "python run.py",
+            "args": ["python", "run.py"],
+            "binary_requires": ["python"],
+            "npm_deps": False,
+            "is_admin_only": False,
+            "auto_start": False,
+            "restart_delay": 3,
+            "wait_time": 8,
+            "startup_order_hint": 45,
+            "depends_on": [],
+            "tags": ["RPA", "浏览器自动化", "Playwright", "AI自愈", "FastAPI"],
         },
         "operator-server": {
             "name": "编排器（mox-platform-orchestrator）",
@@ -231,6 +252,24 @@ DEFAULT_CONFIG = {
             "startup_order_hint": 26,
             "depends_on": [],
             "tags": ["联盟", "执行", "DAG", "Rust"],
+        },
+        "mox-alliance-registry": {
+            "name": "专家联盟注册中心（mox-alliance-registry）",
+            "description": "专家联盟注册中心：静态专家目录 CRUD + 应用级专家实例注册/发现/心跳（端口 3400）",
+            "port": 3400,
+            "health_check": "/health",
+            "cwd": ".",
+            "command": "target/debug/mox-alliance-registry.exe",
+            "args": ["target/debug/mox-alliance-registry.exe"],
+            "binary_requires": [],
+            "npm_deps": False,
+            "is_admin_only": False,
+            "auto_start": False,
+            "restart_delay": 3,
+            "wait_time": 8,
+            "startup_order_hint": 24,
+            "depends_on": [],
+            "tags": ["联盟", "注册", "专家", "Rust"],
         },
     },
 }
@@ -497,8 +536,8 @@ def _project_owned_pid(pid: int) -> bool:
 
     信息不足时默认 True（允许进程级 pid 文件中记录的 pid 必然属于本项目）。
 
-    Windows 增强：相对路径启动（如 `python scripts/server-manage.py dashboard`）不会在 cmdline 中出现
-    PROJECT_ROOT，因此额外识别：命令行末尾/参数位置出现 scripts/server-manage.py、scripts/manage.py、
+    Windows 增强：相对路径启动（如 `python scripts/service/server-manage.py dashboard`）不会在 cmdline 中出现
+    PROJECT_ROOT，因此额外识别：命令行末尾/参数位置出现 scripts/service/server-manage.py、scripts/service/manage.py、
     server-manage.py dashboard、manage.py dashboard 这类签名时，视为本项目归属（避免明明是自己的
     dashboard server 却被判成「第三方」而不敢杀）。
     """
@@ -530,8 +569,8 @@ def _project_owned_pid(pid: int) -> bool:
                 return True
             # 启发式：识别本项目运维脚本的相对路径调用
             for sig in (
-                "scripts/server-manage.py",
-                "scripts/manage.py",
+                "scripts/service/server-manage.py",
+                "scripts/service/manage.py",
                 "server-manage.py dashboard",
                 "manage.py dashboard",
                 "server-manage.py bootstrap",
@@ -560,8 +599,8 @@ def _project_owned_pid(pid: int) -> bool:
                 return True
             blob_norm = blob.lower().replace("\\", "/")
             for sig in (
-                "scripts/server-manage.py",
-                "scripts/manage.py",
+                "scripts/service/server-manage.py",
+                "scripts/service/manage.py",
                 "server-manage.py dashboard",
                 "manage.py dashboard",
                 "server-manage.py bootstrap",
@@ -733,7 +772,7 @@ class ConfigManager:
             for k, _ in unknown:
                 svcs[k]["depends_on"] = [d for d in (svcs[k].get("depends_on") or []) if d in svcs]
         if "version" not in self.config:
-            self.config["version"] = "2.1"
+            self.config["version"] = "3.0"
 
     @property
     def project_name(self) -> str:
@@ -1707,7 +1746,7 @@ def run_dashboard(config: ConfigManager, manager: ServiceManager, host: str, por
             fallback = _find_free_port(port, span=60)
             if fallback == 0:
                 log(f"[ERROR] dashboard 原始端口 {port} 仍被第三方占用，且 {port}~{port+60} 区间全部占满，无法启动。")
-                log(f"[HINT]  请手工 `scripts/server-manage.py dashboard --port <其他端口>` 指定空闲端口。")
+                log(f"[HINT]  请手工 `scripts/service/server-manage.py dashboard --port <其他端口>` 指定空闲端口。")
                 return None
             log(f"[INFO] 原始端口 {port} 仍被第三方占用；dashboard 自动回落到端口 {fallback}")
             final_port = fallback
@@ -2330,7 +2369,7 @@ def cmd_bootstrap(
         port = dashboard_port or manager.config.dashboard_port
         run_dashboard(manager.config, manager, host, port, not no_browser)
     else:
-        log("[BOOTSTRAP] 阶段 4/4: 跳过管理面板（可稍后运行 `python scripts/server-manage.py dashboard`）")
+        log("[BOOTSTRAP] 阶段 4/4: 跳过管理面板（可稍后运行 `python scripts/service/server-manage.py dashboard`）")
         # 保持"前台日志尾"体验：打印已启动服务状态 + 结束
         log("[BOOTSTRAP] ✔ 一键启动流程完成。未启动项目服务 → 请在管理面板 ▶ 启动 / `status/logs/stop` 管理。Ctrl+C 不会停服务；需显式 `stop all`。")
     return 0
@@ -2377,7 +2416,7 @@ def cmd_scripts(manager: ServiceManager):
         log("[WARN] 配置中无 script_catalog 字段")
         return
     print(f"\n=== {manager.config.project_name} 脚本目录索引 ===")
-    print(f"  主入口: scripts/server-manage.py（本脚本；scripts/manage.py 为兼容别名）")
+    print(f"  主入口: scripts/service/server-manage.py（本脚本；scripts/service/manage.py 为兼容别名）")
     print()
     for key, info in catalog.items():
         if key.startswith("_") or key == "core":

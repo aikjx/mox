@@ -6,8 +6,8 @@
 与仓库真实代码逐项比对，输出 PASS/FAIL 报告，任一 FAIL 退出码非 0（可接入 CI 闸门）。
 
 用法:
-    python scripts/verify-doc-ep038.py            # 核对并输出报告（生成 docs/enterprise/43-DOC-EP-038文档代码事实自动核对报告.md）
-    python scripts/verify-doc-ep038.py --quiet    # 仅输出结论行
+    python scripts/doc/verify-doc-ep038.py            # 核对并输出报告（生成 docs/enterprise/43-DOC-EP-038文档代码事实自动核对报告.md）
+    python scripts/doc/verify-doc-ep038.py --quiet    # 仅输出结论行
 
 事实分级：本文核对项均为【已确认 · 代码核实】事实，任何 FAIL 必须修复文档或代码后重跑。
 """
@@ -19,7 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs" / "enterprise" / "38-企业级管理系统架构与业务处理流程文档-V2.1.md"
 REPORT = ROOT / "docs" / "enterprise" / "43-DOC-EP-038文档代码事实自动核对报告.md"
 
@@ -253,7 +253,7 @@ def main():
     finally:
         reg_path.write_bytes(reg_backup)  # 恢复，核对保持只读
     add("D8", "API-REGISTRY 新鲜度", f"{reg_route_count} 条（重新生成）", "docs/API-REGISTRY.md",
-        bool(reg_fresh), "不一致: 运行 python scripts/gen-api-registry.py 同步" if not reg_fresh else "一致")
+        bool(reg_fresh), "不一致: 运行 python scripts/doc/gen-api-registry.py 同步" if not reg_fresh else "一致")
 
     # ------------------------------------------------- E 系列：核心功能完成度（API + crate + 前端视图 三证据）
     api_reg = (ROOT / "docs" / "API-REGISTRY.md").read_text(encoding="utf-8", errors="ignore")
@@ -281,7 +281,7 @@ def main():
     A = lines.append
     A("# DOC-EP-038 文档↔代码事实自动核对报告")
     A("")
-    A(f"> 生成时间：{ts} · 生成脚本：`scripts/verify-doc-ep038.py` · 核对对象：`38-企业级管理系统架构与业务处理流程文档-V2.1.md`")
+    A(f"> 生成时间：{ts} · 生成脚本：`scripts/doc/verify-doc-ep038.py` · 核对对象：`38-企业级管理系统架构与业务处理流程文档-V2.1.md`")
     A("> 结论：**" + ("全部 PASS ✅" if not fails else f"{len(fails)} 项 FAIL ❌") + "**（D1~D8 + E1~E7 共 " + str(len(checks)) + " 项核对）")
     A("")
     A("| 编号 | 核对项 | 代码事实 | 文档声明 | 结果 | 说明 |")

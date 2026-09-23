@@ -80,8 +80,8 @@
 1. **路由先行登记**：新域路由先写 `actuator.rs` `ROUTES`，再写 handler（`/actuator/mappings` 为唯一权威视图）。
 2. **前缀唯一**：kg=`/kg/v1/*`、ai=`/ai/engine/*`、kb=`/api/kb/*`、alliance=`/api/alliance/*`、其余=`/api/<域>/*`。
 3. **状态如实**：实现未完成前声明 `stub`；`beta` = 依赖外部进程；只有"有路由 + 有 handler + 实测 200"才可声明 `ready`。
-4. **文档同步**：改完跑 `scripts/gen-api-registry.py` 重新生成 `docs/API-REGISTRY.md`，并在本文档变更记录登记。
-5. **门禁命令**：`cargo check -p mox-platform-gateway-svc` + `scripts/verify-ports.py`（ERROR=0）+ 新前缀实测 200。
+4. **文档同步**：改完跑 `scripts/doc/gen-api-registry.py` 重新生成 `docs/API-REGISTRY.md`，并在本文档变更记录登记。
+5. **门禁命令**：`cargo check -p mox-platform-gateway-svc` + `scripts/gate/verify-ports.py`（ERROR=0）+ 新前缀实测 200。
 
 ## 4. 变更记录
 

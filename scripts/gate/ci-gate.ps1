@@ -3,8 +3,8 @@
 # 架构专家联盟 · 企业级架构规范 V5.0 · 璇玑 RelGraph
 #
 # 用法:
-#   powershell -ExecutionPolicy Bypass -File scripts/ci-gate.ps1          # 全部门禁
-#   powershell -ExecutionPolicy Bypass -File scripts/ci-gate.ps1 -Gate G1  # 单门禁
+#   powershell -ExecutionPolicy Bypass -File scripts/gate/ci-gate.ps1          # 全部门禁
+#   powershell -ExecutionPolicy Bypass -File scripts/gate/ci-gate.ps1 -Gate G1  # 单门禁
 #
 # 说明:
 #   - 基于主文档 expert-alliance-enterprise-standard.html 的 G1-G6 定义。
@@ -318,7 +318,7 @@ function Invoke-G6 {
 
         # 6.3 DOC-EP-038 文档↔代码自动化核对 (verify-doc-ep038.py)
         #   任一 FAIL (域/crate/选型/端点/视图/映射/核心功能 19 项) 即阻断。
-        $verifyPy = Join-Path $root "scripts\verify-doc-ep038.py"
+        $verifyPy = Join-Path $root "scripts\doc\verify-doc-ep038.py"
         if (Test-Path $verifyPy) {
             $vOut = python $verifyPy --quiet 2>&1
             if ($LASTEXITCODE -ne 0) {

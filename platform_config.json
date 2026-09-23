@@ -455,7 +455,7 @@
   "script_catalog": {
     "_comment": "scripts/ 目录分类索引，供 server-manage.py scripts 子命令展示",
     "core": {
-      "path": "scripts/server-manage.py",
+      "path": "scripts/service/server-manage.py",
       "description": "统一运维入口（服务生命周期 + Web 面板 + 公理验证）"
     },
     "ci": {

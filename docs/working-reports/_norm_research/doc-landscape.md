@@ -222,7 +222,7 @@ SYSTEM-OVERVIEW.md 只需修 **3 处**（D1/D2 端口 8080→3080、D11 五进�
 | `MOX-UNIFIED-ENTERPRISE-BASELINE-v1.0.md` | "唯一扩展入口"（6层/6域） | ⚠️ **基线参考**：域列表未含 kb/base/project/alliance；当前 12 域见 `SYSTEM-OVERVIEW.md` §2.2 |
 | `ARCHITECTURE-ENTERPRISE.md` | "OUS 企业级架构 v1.0.0" | ⚠️ **三端融合视角设计稿**：与 SYSTEM-OVERVIEW.md 互补，不替代之 |
 | `rust-enterprise/README.md` | "权威单源 SSOT"（8域/60+ crate） | ⚠️ **2026-08-27 迁移期快照**：8域/60+ crate 已演进为 12域/143 crate；当前总览见 `SYSTEM-OVERVIEW.md` |
-| `operations-manual.md` | 操作手册（Python run.py 8600） | ⚠️ **历史参考**：旧 Python 栈操作；当前启动见 `scripts/start-mox-enterprise.ps1` |
+| `operations-manual.md` | 操作手册（Python run.py 8600） | ⚠️ **历史参考**：旧 Python 栈操作；当前启动见 `scripts/startup/start-mox-enterprise.ps1` |
 | `deployment-guide.md` | 部署指南（Docker 8600） | ⚠️ **历史参考**：旧 Python 栈部署；当前见 `docker-compose.yml` 及 AGENTS.md |
 
 ### 4.3 优先级排序

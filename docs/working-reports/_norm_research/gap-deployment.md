@@ -10,7 +10,7 @@
 
 ## 一、对照表（部署来源 × 进程/容器 × 端口 × 健康检查 × 与基准一致性）
 
-### A. 进程级 —— `scripts/start-mox-enterprise.ps1` / `stop-mox-enterprise.ps1`
+### A. 进程级 —— `scripts/startup/start-mox-enterprise.ps1` / `stop-mox-enterprise.ps1`
 
 | 进程/容器 | 端口 | 环境变量 | 健康检查 | 重启策略 | 与四进程基准 |
 |---|---|---|---|---|---|
@@ -136,4 +136,4 @@
 - k8s base / Dockerfile / domains x-host 的 `/health` 探针、`restart: unless-stopped`、非 root 运行、PVC RWO、Ingress 只到网关，均符合注册 6.4 与容器最佳实践。
 - 默认链路未把 KG/KB/Cloud/IAM 重复起为独立进程；split 形态由 profile 显式门控，不构成「重复起独立域进程」。
 
-> 复跑校验建议（只读，不改文件）：`python scripts/verify-ports.py --json`。
+> 复跑校验建议（只读，不改文件）：`python scripts/gate/verify-ports.py --json`。

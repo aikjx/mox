@@ -5,8 +5,8 @@
 定位
     把仓库既有的 CI 门禁脚本（唯一事实源）包装成可被 IDE / Coding Agent 调用的工具：
 
-        scripts/verify-ports.py     端口漂移校验（PORT-REGISTRY-001）
-        scripts/check-doc-links.py  文档链接校验（DOC-GOV-ARC-V1.0 第 7 节）
+        scripts/gate/verify-ports.py     端口漂移校验（PORT-REGISTRY-001）
+        scripts/gate/check-doc-links.py  文档链接校验（DOC-GOV-ARC-V1.0 第 7 节）
 
     这样 AI 助手在"写代码之前"就能读到权威端口表，在"写完之后"能自己跑一遍门禁，
     把"端口漂移 / 文档断链"这两类仓库治理缺陷从"事后 CI 报错"提前到"编码当场拦截"。
@@ -89,7 +89,7 @@ TOOLS: List[Dict[str, Any]] = [
         "name": "mox_port_lookup",
         "title": "端口注册表查询",
         "description": (
-            "查询璇玑仓库权威端口注册表（源自 scripts/verify-ports.py 的 CANONICAL， "
+            "查询璇玑仓库权威端口注册表（源自 scripts/gate/verify-ports.py 的 CANONICAL， "
             "与 docs/api/PORT-REGISTRY.md 同步）。可按端口号精确查，也可按服务名关键字模糊查。 "
             "用途：在新增服务、编写 docker-compose / nginx / 健康检查 / CORS 配置之前，"
             "先取得权威端口，避免臆造端口造成 CI 门禁失败。"
@@ -112,7 +112,7 @@ TOOLS: List[Dict[str, Any]] = [
         "name": "mox_port_verify",
         "title": "端口漂移校验",
         "description": (
-            "执行 scripts/verify-ports.py 全仓端口漂移校验。"
+            "执行 scripts/gate/verify-ports.py 全仓端口漂移校验。"
             "ERROR=已退役端口被活跃文件引用 或 platform_config.json 与注册表不一致（会阻断 CI）；"
             "WARN=发现未登记端口（潜在新服务，需按 PORT-REGISTRY-001 第 5 章登记）；"
             "INFO=正常引用。建议在改动端口、新增服务、release 之前调用。"
@@ -135,7 +135,7 @@ TOOLS: List[Dict[str, Any]] = [
         "name": "mox_doc_links_check",
         "title": "文档链接校验",
         "description": (
-            "执行 scripts/check-doc-links.py 文档链接校验（docs/ 结构门禁）。"
+            "执行 scripts/gate/check-doc-links.py 文档链接校验（docs/ 结构门禁）。"
             "检出 Markdown 链接、HTML href/src、反引号路径引用中的断链。"
             "用途：目录迁移、文件重命名之后，确认没有遗留死链。"
         ),
@@ -340,7 +340,7 @@ def tool_port_verify(args: Dict[str, Any]) -> Dict[str, Any]:
         "advice": (
             "端口校验通过，可放心提交。"
             if report.get("passed")
-            else "存在 ERROR：请修正后重跑 python scripts/verify-ports.py。"
+            else "存在 ERROR：请修正后重跑 python scripts/gate/verify-ports.py。"
         ),
     }
     if err.strip():
@@ -443,7 +443,7 @@ def tool_ci_gate(args: Dict[str, Any]) -> Dict[str, Any]:
         "summary": (
             "治理体检通过：端口无漂移、文档无断链，可以提交/发布。"
             if ok
-            else "治理体检未通过，请按 failures 逐项修复后重跑 python scripts/verify-ports.py 与 python scripts/check-doc-links.py。"
+            else "治理体检未通过，请按 failures 逐项修复后重跑 python scripts/gate/verify-ports.py 与 python scripts/gate/check-doc-links.py。"
         ),
     }
 
@@ -473,7 +473,7 @@ def resource_port_registry() -> str:
     for port, (cat, desc) in canonical.items():
         grouped.setdefault(cat, []).append((port, desc))
     lines = ["# 璇玑权威端口注册表", ""]
-    lines.append("> 来源：scripts/verify-ports.py 的 CANONICAL；改动须同步 docs/api/PORT-REGISTRY.md 并通过 PORT-REGISTRY-001 变更流程。")
+    lines.append("> 来源：scripts/gate/verify-ports.py 的 CANONICAL；改动须同步 docs/api/PORT-REGISTRY.md 并通过 PORT-REGISTRY-001 变更流程。")
     lines.append("")
     for cat in ["RUNTIME", "ALLIANCE", "ANCILLARY", "LEGACY", "DEPRECATED", "TEST", "THIRD"]:
         items = sorted(grouped.get(cat, []))
@@ -698,7 +698,7 @@ def _selftest() -> int:
            bool(lookup) and lookup.get("structuredContent", {}).get("category") == "RUNTIME")
 
     # 示范端口刻意取 99999（超出 TCP 端口上界）：既能验证“未登记”分支，
-    # 又不会被 scripts/verify-ports.py 扫成未登记端口 WARN（避免本文件污染自家门禁）
+    # 又不会被 scripts/gate/verify-ports.py 扫成未登记端口 WARN（避免本文件污染自家门禁）
     miss = safe("查询未登记端口", lambda: call_tool("mox_port_lookup", {"port": 99999}))
     record("未登记端口返回 found=false", bool(miss) and miss.get("structuredContent", {}).get("found") is False)
 

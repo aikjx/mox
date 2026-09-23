@@ -9,7 +9,7 @@ allowed-tools: mox_port_lookup, mox_port_verify, mox_doc_links_check, mox_ci_gat
 # 璇玑仓库治理 Skill
 
 本 skill 把仓库既有的两项 CI 门禁（唯一事实源）接到 AI 编码流程里：
-`scripts/verify-ports.py`（PORT-REGISTRY-001）与 `scripts/check-doc-links.py`（DOC-GOV-ARC-V1.0 §7）。
+`scripts/gate/verify-ports.py`（PORT-REGISTRY-001）与 `scripts/gate/check-doc-links.py`（DOC-GOV-ARC-V1.0 §7）。
 
 ## 何时必须调用
 
@@ -23,7 +23,7 @@ allowed-tools: mox_port_lookup, mox_port_verify, mox_doc_links_check, mox_ci_gat
 ## 标准工作流
 
 1. **先查后写**：任何端口字面量进入代码前，先 `mox_port_lookup`。若返回 `found=false`，说明未登记——
-   须先在 `docs/api/PORT-REGISTRY.md` 与 `scripts/verify-ports.py` 的 `CANONICAL` 中登记后再使用。
+   须先在 `docs/api/PORT-REGISTRY.md` 与 `scripts/gate/verify-ports.py` 的 `CANONICAL` 中登记后再使用。
 2. **改即校验**：改动落地后立即 `mox_port_verify`（关注 `error_count` 是否为 0）。
 3. **文档迁移联动**：目录迁移后跑 `mox_doc_links_check`，并按仓库约定在 `docs/ARCHITECTURE-OF-DOCS.md` 登记映射。
 4. **收口体检**：`mox_ci_gate` 返回 `ok=true` 才允许提交。
@@ -46,7 +46,7 @@ allowed-tools: mox_port_lookup, mox_port_verify, mox_doc_links_check, mox_ci_gat
 ## 快速命令（无 MCP 时等价手动执行）
 
 ```
-python scripts/verify-ports.py
-python scripts/check-doc-links.py
+python scripts/gate/verify-ports.py
+python scripts/gate/check-doc-links.py
 python tools/mox-governance-mcp/server.py --selftest
 ```

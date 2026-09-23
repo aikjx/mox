@@ -17,10 +17,10 @@
 - 注释与字符串内的匹配会被误计，故用行首锚定 + 排除 `//` 注释行
 
 用法：
-    python scripts/normalization-scan.py                 # 输出体检报告
-    python scripts/normalization-scan.py --top 30        # 只看前 30 项
-    python scripts/normalization-scan.py --kinds enum    # 只看枚举
-    python scripts/normalization-scan.py --json out.json # 导出 JSON
+    python scripts/validation/normalization-scan.py                 # 输出体检报告
+    python scripts/validation/normalization-scan.py --top 30        # 只看前 30 项
+    python scripts/validation/normalization-scan.py --kinds enum    # 只看枚举
+    python scripts/validation/normalization-scan.py --json out.json # 导出 JSON
 
 退出码：始终为 0（体检工具只报告，不做门禁；门禁由 arch-test 承担）。
 """
@@ -40,7 +40,7 @@ try:
 except (AttributeError, ValueError):
     pass
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SCAN_ROOTS = ["platform"]
 SKIP_DIRS = {"target", "node_modules", ".git", "third_party", "ais", "90_历史归档"}
 

@@ -7,7 +7,7 @@ import os, sys, json, argparse, subprocess, shutil
 from datetime import datetime, timezone, timedelta
 
 CST = timezone(timedelta(hours=8))
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def run(cmd, cwd=None, check=True):

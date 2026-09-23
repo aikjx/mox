@@ -177,7 +177,7 @@ A-1(凭据收口) ──→ A-2(secret 门禁)
 
 | # | 任务 | 状态 | 证据 / 说明 |
 |---|------|------|-------------|
-| A-1 | 移除明文 admin123 | ✅ **已完成** | ① `platform_config.json` 删除 password 字段（实测确认已无）② `scripts/server-manage.py` DEFAULT_CONFIG 同步移除（原 89 行硬编码）③ `admin_pass` 属性已有随机密码生成 + 环境变量 `MOX_ADMIN_PASS` 覆盖逻辑，无需改代码 |
+| A-1 | 移除明文 admin123 | ✅ **已完成** | ① `platform_config.json` 删除 password 字段（实测确认已无）② `scripts/service/server-manage.py` DEFAULT_CONFIG 同步移除（原 89 行硬编码）③ `admin_pass` 属性已有随机密码生成 + 环境变量 `MOX_ADMIN_PASS` 覆盖逻辑，无需改代码 |
 | A-2 | secret 扫描门禁 | ✅ **已完成** | 新增 `scripts/ci/secret-scan.py`（弱口令/私钥/高熵 token/云 AK/JWT 5 类模式 + 误报校准：排除 UUID/环境变量名/路径/引号外标识符）；scripts 目录实测 0 命中 PASS |
 | B-1 | 三目录归一 | ⏸️ **待执行** | 涉及 `projects/ my_projects/ workspace/` 合并，会引发路径漂移（platform_config.json 中 cwd 引用），需用户单独确认后执行 |
 | B-2 | scripts 四件套 | ✅ **已完成** | 新增 `setup-dev.ps1`（工具链检测+依赖安装）/ `check-all.ps1`（secret-scan+fmt+clippy+test+前端build 一键）/ `start-all.ps1`（复用 manage.py bootstrap）/ `stop-all.ps1`（复用 manage.py stop）；四件套 UTF-8 BOM 化，PowerShell 语法校验全部 PASS |

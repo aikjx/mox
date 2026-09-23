@@ -9,5 +9,5 @@ cd "D:/a10/aikjx/gitcode/infotopograph"
 echo "=== alliance config-core tests ==="
 cargo test -p mox-alliance-config-core 2>&1 | grep -E "test result|FAILED|error" | head -10
 echo "=== verify-ports ==="
-python scripts/verify-ports.py 2>&1 | tail -5
+python scripts/gate/verify-ports.py 2>&1 | tail -5
 echo "=== done ==="

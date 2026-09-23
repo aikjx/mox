@@ -8,7 +8,7 @@
   不影响前端 3020 / primiflow 8000 / melody2score 8012 等独立运行服务。
 
 .EXAMPLE
-  .\scripts\stop-mox-enterprise.ps1
+  .\scripts\startup\stop-mox-enterprise.ps1
 #>
 
 $Ports = 3001, 3100, 3200, 3080

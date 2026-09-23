@@ -25,7 +25,7 @@
 | 网关内嵌业务面 | 13 个（actuator/platform/kg/ai/kb/alliance/system/experts/monitor/projects/workspace/notification/misc） | `API-REGISTRY.md` §1 |
 | 域描述符 | **46 个全部 ready**（0 stub / 0 beta） | `actuator.rs` + commit `2cd3cc8a` |
 | 注册路由 | **223 条**（全部有真实实现） | `API-REGISTRY.md` §1 |
-| 企业默认进程 | **4** | `scripts/start-mox-enterprise.ps1` |
+| 企业默认进程 | **4** | `scripts/startup/start-mox-enterprise.ps1` |
 | 配置登记服务 | **8** | `platform_config.json` |
 | 网关内嵌模块 | 7 个（KG/KB/Cloud/IAM/RBAC/联盟任务域/专家广场） | `NORMALIZED_ARCHITECTURE.md` §4.2 |
 

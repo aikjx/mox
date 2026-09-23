@@ -15,9 +15,9 @@ verify-ports.py —— 璇玑系统全局端口漂移校验（PORT-REGISTRY-001 
   4. 退出码：0 = 无 ERROR；1 = 存在 ERROR（配合 CI 可作门禁）。
 
 用法：
-  python scripts/verify-ports.py            # 全量校验
-  python scripts/verify-ports.py --json     # 输出 JSON 报告到 stdout
-  python scripts/verify-ports.py --repo <路径>   # 指定仓库根（默认脚本上级两级）
+  python scripts/gate/verify-ports.py            # 全量校验
+  python scripts/gate/verify-ports.py --json     # 输出 JSON 报告到 stdout
+  python scripts/gate/verify-ports.py --repo <路径>   # 指定仓库根（默认脚本上级三级）
 
 规范依据：docs/api/PORT-REGISTRY.md（PORT-REGISTRY-001）
           docs/standards/expert-alliance-port-norm.md（PORT-NORM-001）
@@ -334,10 +334,10 @@ def main():
         sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description="璇玑系统端口漂移校验（PORT-REGISTRY-001）")
     ap.add_argument("--json", action="store_true", help="输出 JSON 报告")
-    ap.add_argument("--repo", default=None, help="仓库根路径（默认脚本上级两级）")
+    ap.add_argument("--repo", default=None, help="仓库根路径（默认脚本上级三级）")
     args = ap.parse_args()
 
-    repo = Path(args.repo) if args.repo else Path(__file__).resolve().parent.parent
+    repo = Path(args.repo) if args.repo else Path(__file__).resolve().parent.parent.parent
     repo = repo.resolve()
 
     hits = scan(repo)

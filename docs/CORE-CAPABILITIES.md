@@ -56,7 +56,7 @@ KG 动态 SQL 架构（`docs/architecture/07-KG-DYNAMIC-SQL-ARCHITECTURE.md`）�
 - **scheduler-svc**（3100）：任务分解与调度编排
 - **executor-svc**（3200）：执行引擎
 - **gateway**（3300 桥接 / 33080 本地）：统一入口
-- 11 条联盟路由（`/alliance/v1/tasks` 等），本地一键启动 `scripts/start-alliance-local.ps1`
+- 11 条联盟路由（`/alliance/v1/tasks` 等），本地一键启动 `scripts/startup/start-alliance-local.ps1`
 
 ### C4 · 统一服务化网关（8080 唯一入口）
 

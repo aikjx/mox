@@ -7,7 +7,7 @@ import os, sys, json, shutil, argparse, tarfile, zipfile, hashlib
 from datetime import datetime, timezone, timedelta
 
 CST = timezone(timedelta(hours=8))
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 INCLUDE_DIRS = [
     "platform/mox-server",

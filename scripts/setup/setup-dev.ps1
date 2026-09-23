@@ -11,8 +11,8 @@
   · 生成 .env 占位（如缺）
 
 .EXAMPLE
-  .\scripts\setup-dev.ps1
-  .\scripts\setup-dev.ps1 -SkipFrontend
+  .\scripts\setup\setup-dev.ps1
+  .\scripts\setup\setup-dev.ps1 -SkipFrontend
 #>
 param(
     [switch]$SkipFrontend,
@@ -106,5 +106,5 @@ if (-not (Test-Path ".env")) {
 }
 
 Write-Host "`n=== 准备完成 ===" -ForegroundColor Cyan
-Write-Host "下一步:  ./scripts/check-all.ps1  （一键构建+测试+clippy）"
-Write-Host "        ./scripts/start-all.ps1  （启动全部服务 + 管理面板）"
+Write-Host "下一步:  ./scripts/gate/check-all.ps1  （一键构建+测试+clippy）"
+Write-Host "        ./scripts/startup/start-all.ps1  （启动全部服务 + 管理面板）"

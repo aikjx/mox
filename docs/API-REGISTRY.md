@@ -1,6 +1,6 @@
 # API 注册表（权威·接口↔实现一一对应）
 
-> 本文档为网关 3080 暴露的全部 API 的唯一权威清单，由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 直接生成（生成脚本 `scripts/gen-api-registry.py`）。**声明即实现**：表中每一条都有对应源码注册与真实 handler，不存在纯占位条目。
+> 本文档为网关 3080 暴露的全部 API 的唯一权威清单，由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 直接生成（生成脚本 `scripts/doc/gen-api-registry.py`）。**声明即实现**：表中每一条都有对应源码注册与真实 handler，不存在纯占位条目。
 
 ## 1. 总览
 
@@ -116,7 +116,7 @@
 | `alliance.tasks.fusion` | GET | `/api/alliance/tasks/:id/fusion-result` | L4 | 融合结果（真实从节点输出融合） |
 | `alliance.tasks.fusion_alias` | GET | `/api/alliance/tasks/:id/fusion` | L4 | 融合结果（兼容别名） |
 | `alliance.tasks.dag` | GET | `/api/alliance/tasks/:id/dag` | L4 | DAG 节点+边（真实存储的 DAG） |
-| `alliance.tasks.toggle_done` | PUT | `/api/alliance/tasks/:id/toggle-done` | L4 | 完成状态切换（真实状态流转） |
+| `alliance.tasks.toggle_done` | PUT | `/api/alliance/tasks/:id/toggle-done` | L4 | 标记任务完成（远程任务单向完成，不支持重开；本地任务可切换） |
 | `alliance.tasks.status_poll` | GET | `/api/alliance/tasks/:id/status` | L4 | 任务状态轮询（供前端轮询） |
 | `alliance.tasks.plan` | GET | `/api/alliance/tasks/:id/plan` | L4 | 协作计划查询 |
 | `alliance.stats` | GET | `/api/alliance/stats` | L4 | 联盟统计（专家/任务/成功率） |
@@ -331,8 +331,7 @@
 | --- | --- | --- | --- |
 | kg-hub | `mox-kg-hub-svc` | `/api/kg/*`（15 条） | 知识图谱枢纽：检索/影响/治理/闭环 |
 | alliance-executor | `mox-alliance-executor` | `/health` `/tasks/:id/*` `/internal/*`（8 条） | 联盟任务执行器 |
-| alliance-scheduler | `mox-alliance-scheduler` | `/health` `/metrics` `/leadership` `/tasks` `/tasks/:id` `/experts/search`（6 条） | 联盟调度器；多活开关 `MOX_ALLIANCE_HA_MODE=on` 后 `/leadership` 报告租约任期 |
-| alliance-registry | `mox-alliance-registry` | `/health` `/api/v1/experts*` `/api/registry/*`（8 条） | 专家实例注册中心：单条心跳 + 分级聚合续约 `POST /api/registry/aggregated-heartbeat`（node→rack→cell 10:1:1） |
+| alliance-scheduler | `mox-alliance-scheduler` | `/tasks` `/experts/search`（5 条） | 联盟调度器 |
 | primiflow | 前端子项目 | — | `:8000`，经 `/api/projects/{*path}` 代理 |
 | melody2score | 前端子项目 | — | `:8012`，简谱转谱 |
 
@@ -362,7 +361,7 @@ Start-Process target\debug\mox-server.exe -ArgumentList @("--port","3080") -Wind
 
 1. **单一权威源**：所有对外路由必须先登记到 `actuator.rs` `ROUTES`，再写 handler；`/actuator/mappings` 是唯一注册表视图。
 2. **前缀权威**：kg=`/kg/v1/*`；ai=`/ai/engine/*`；kb=`/api/kb/*`；alliance=`/api/alliance/*`；experts=`/api/experts*`；system/security=`/api/system/*`、`/api/security/*`；其余模块=`/api/<module>/*`。历史前缀（`/ai/v1`、`/kb/v1`、`/alliance/v1`）已废弃，一律 404。
-3. **新增路由闭环**：改 `actuator.rs`/`routes.rs` → 重跑 `scripts/gen-api-registry.py`（CI 有 diff 门禁，漂移即失败）→ `cargo check -p mox-platform-gateway-svc` → 启动验证 `/actuator/mappings` 计数与新增路径 200。
+3. **新增路由闭环**：改 `actuator.rs`/`routes.rs` → 重跑 `scripts/doc/gen-api-registry.py`（CI 有 diff 门禁，漂移即失败）→ `cargo check -p mox-platform-gateway-svc` → 启动验证 `/actuator/mappings` 计数与新增路径 200。
 4. **状态语义**：`ready`=有真实 handler 且已接线路由；`stub`=仅规划；`beta`=可用但依赖外部进程。不允许出现"声明 ready 但无路由"的条目。
 
 ## 6. 变更记录

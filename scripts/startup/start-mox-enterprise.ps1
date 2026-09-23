@@ -11,8 +11,8 @@
   幂等：已监听端口自动跳过；缺失二进制给出明确提示。
 
 .EXAMPLE
-  .\scripts\start-mox-enterprise.ps1
-  .\scripts\start-mox-enterprise.ps1 -Token my-token
+  .\scripts\startup\start-mox-enterprise.ps1
+  .\scripts\startup\start-mox-enterprise.ps1 -Token my-token
 #>
 param(
     [string]$Token = "dev-secret-token",

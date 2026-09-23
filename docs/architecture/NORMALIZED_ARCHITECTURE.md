@@ -8,7 +8,7 @@
 > - 企业默认**四进程**：gateway:3080 / operator-server:3001 / alliance-scheduler:3100 / alliance-executor:3200；
 > - 六层单向依赖：`foundation → api → proto → core → svc → gateway:3080`。
 >
-> 权威引用：结构治理 `docs/ARCHITECTURE-OF-DOCS.md`（DOC-GOV-ARC-V1.0）；端口唯一权威 `docs/api/PORT-REGISTRY.md`；接口唯一权威 `docs/API-REGISTRY.md`（223 路由，由 `scripts/gen-api-registry.py` 从 `actuator.rs ROUTES` 生成）。
+> 权威引用：结构治理 `docs/ARCHITECTURE-OF-DOCS.md`（DOC-GOV-ARC-V1.0）；端口唯一权威 `docs/api/PORT-REGISTRY.md`；接口唯一权威 `docs/API-REGISTRY.md`（223 路由，由 `scripts/doc/gen-api-registry.py` 从 `actuator.rs ROUTES` 生成）。
 
 ---
 
@@ -28,7 +28,7 @@ MOX 是 **Rust 原生的企业级 AI 服务平台**：把知识图谱、专家�
 |---|---|---|
 | workspace crate 总数 | **143** | 根 `Cargo.toml` `[workspace].members` |
 | 业务域 | **12** | `platform/domains/*` |
-| 企业默认进程 | **4** | `scripts/start-mox-enterprise.ps1` |
+| 企业默认进程 | **4** | `scripts/startup/start-mox-enterprise.ps1` |
 | 已登记 API 路由 | **223** | `docs/API-REGISTRY.md`（ROUTES 生成） |
 
 ### 1.2 构成分解（143 去向）
@@ -116,7 +116,7 @@ L5 gateway      唯一入口 mox-server :3080（mox-platform-gateway-svc），�
 
 ## 4. 部署进程拓扑
 
-### 4.1 企业默认四进程（`scripts/start-mox-enterprise.ps1` 实测接线）
+### 4.1 企业默认四进程（`scripts/startup/start-mox-enterprise.ps1` 实测接线）
 
 | 进程名 | 二进制 | crate | 端口 | 职责 |
 |---|---|---|---:|---|
@@ -290,7 +290,7 @@ L5 gateway      唯一入口 mox-server :3080（mox-platform-gateway-svc），�
 
 - 本稿 `NORMALIZED_ARCHITECTURE.md`（v2.0）为 **L2 归一化架构唯一权威**；`SYSTEM-OVERVIEW.md` 作快速顶层总览（数值已与本稿对齐）。
 - 多版并行稿（`ARCHITECTURE_DESIGN_v3.1.md` / `OPTIMAL_ARCHITECTURE.md` / `MOX-UNIFIED-ENTERPRISE-BASELINE-v1.0.md` / `architecture.md` 旧 Python 栈等）应在头部标注"已被本稿取代/历史参考"，不删除（保留 git 历史）。
-- 变更后须跑门禁：`python scripts/check-doc-links.py`、`python scripts/verify-ports.py`、`python scripts/gen-api-registry.py` 对比。
+- 变更后须跑门禁：`python scripts/gate/check-doc-links.py`、`python scripts/gate/verify-ports.py`、`python scripts/doc/gen-api-registry.py` 对比。
 
 ### 8.3 演进方向（企业级加固，持续）
 

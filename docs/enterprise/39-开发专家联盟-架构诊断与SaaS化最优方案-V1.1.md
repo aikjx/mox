@@ -137,7 +137,7 @@ V1.0 的 Manifest YAML 设计是对的，但**不需要新造插件发现和加�
 
 **风险**：
 - 新成员按 config.json 说前端跑 3020，service-manager 启在 3000 → 调试半天连不上
-- xiaobai_voice 语音服务完全不被 service-manager 管 → `.\scripts\start-all.ps1` 和看门狗 watchdog 不启它 → AI 对话无 TTS/ASR，用户以为坏了
+- xiaobai_voice 语音服务完全不被 service-manager 管 → `.\scripts\startup\start-all.ps1` 和看门狗 watchdog 不启它 → AI 对话无 TTS/ASR，用户以为坏了
 - 以后改端口只改一处 → 另一处没改 → 端口冲突/连不上
 
 **修复方案（1 人日）**：
@@ -157,10 +157,10 @@ V1.0 的 Manifest YAML 设计是对的，但**不需要新造插件发现和加�
 |---|--------|----------------------|-------------|---------|---------|------|--------|
 | 1.1 | 清理 47 个根目录垃圾文件 | 根目录 | `Remove-Item *.log / NUL-*.d / *.rmeta / green_log.txt 等` | `git status --short` 只显示预期的已跟踪文件变更；未跟踪文件数=0 | 有回收站的从回收站还原；或 `git checkout .` 不影响（垃圾文件本来就是未跟踪） | 1h | DevOps |
 | 1.2 | 检查 graph.json 入仓状态+必要时清历史 | 根目录 + `.gitignore` | ① `git ls-files \| grep graph` → 如有输出则 `git rm --cached` + 可选 `git filter-repo` ② 补 `.gitignore` 漏的规则见 V1.0 1-1 | `git ls-files` 无 graph*.json；`.gitignore` 规则 `git check-ignore graph.json` 输出命中 | filter-repo 前自动做 `git clone --mirror` 冷备份，出问题整仓回退 | 2-4h（取决是否改历史） | DevOps |
-| 1.3 | 三目录重命名（projects→showcase-projects 等） | 多处（见 V1.0 1-3 清单） | ① `git mv projects showcase-projects` ② `git mv workspace ai-outputs` ③ `Rename-Item my_projects local-dev` ④ `grep -rl projects/ 各源码 → platform_config.json / Cargo.toml / .github/ workflows/*.yml` → 批量改路径 | `rg "projects/(?!showcase)"` 无残留；`.\scripts\check-all.ps1` 全绿 | `git mv` 反过来再改回去，路径替换有 git 历史可追溯 | 1d + 半天联调 | 全栈 1 人 |
+| 1.3 | 三目录重命名（projects→showcase-projects 等） | 多处（见 V1.0 1-3 清单） | ① `git mv projects showcase-projects` ② `git mv workspace ai-outputs` ③ `Rename-Item my_projects local-dev` ④ `grep -rl projects/ 各源码 → platform_config.json / Cargo.toml / .github/ workflows/*.yml` → 批量改路径 | `rg "projects/(?!showcase)"` 无残留；`.\scripts\gate\check-all.ps1` 全绿 | `git mv` 反过来再改回去，路径替换有 git 历史可追溯 | 1d + 半天联调 | 全栈 1 人 |
 | 1.4 | 强化 .gitignore 50+ 条运行时数据规则 | `.gitignore` | 追加 V1.0 1-1 + 1-3 的全部规则 | 改完后 `git status --ignored` 检查 `platform/backend-node/data/` 下种子数据（experts.json/projects.json 等）仍能显示为跟踪状态，运行时文件（tasks.json/audit_log.json/ous.db*）显示为 ignored | 直接从 git 历史恢复 .gitignore 旧版本 | 2h | DevOps |
 | 1.5 | **修复 P2-5 服务定义双源** | `platform/backend-node/src/service-manager.js` + [platform_config.json](../../platform_config.json) | ① 删 `SERVICE_DEFINITIONS` 常量 ② 加 `loadServicesFromConfig()` 读 platform_config.json + 字段映射（cwd→workingDir，port/healthCheck 直接用）③ frontend command 统一：若 `command` 是 npm run dev 用 shell 执行 | 单测：`new ServiceManager().services.size === 3` → 含 xiaobai_voice；端口 api=3010/frontend=3020/xiaobai=3717 全对 | 若 platform_config.json 解析失败，回退到嵌入的 `FALLBACK_SERVICE_DEFS`（包含正确的 3 服务定义） | 1d | Node 后端 1 人 |
-| 1.6 | 写 scripts 统一脚本 4 件套 | `scripts/setup-dev.ps1` + `scripts/start-all.ps1` + `scripts/stop-all.ps1` + `scripts/check-all.ps1` | start-all 复用修复后的 service-manager 单源读 config；check-all 顺序：cargo check --workspace → platform/backend-node npm test → frontend-ui vitest run → projects/xiaobai_voice pytest -x | 新人 `git clone` → `cd scripts ; .\setup-dev.ps1` → 全环境无报错；`.\start-all.ps1` 后 curl 三个 health 全部 200；`.\check-all.ps1` 退出码=0 | 删除 scripts 目录即可 | 1.5d | DevOps |
+| 1.6 | 写 scripts 统一脚本 4 件套 | `scripts/setup/setup-dev.ps1` + `scripts/startup/start-all.ps1` + `scripts/startup/stop-all.ps1` + `scripts/gate/check-all.ps1` | start-all 复用修复后的 service-manager 单源读 config；check-all 顺序：cargo check --workspace → platform/backend-node npm test → frontend-ui vitest run → projects/xiaobai_voice pytest -x | 新人 `git clone` → `cd scripts ; .\setup-dev.ps1` → 全环境无报错；`.\start-all.ps1` 后 curl 三个 health 全部 200；`.\check-all.ps1` 退出码=0 | 删除 scripts 目录即可 | 1.5d | DevOps |
 | 1.7 | sccache 冷编译缓存 + CI workflow 优化 | `.github/workflows/enterprise-ci.yml` + Cargo.toml 可选 | ① CI 加 actions/cache@v4 缓存 `~/.cargo/registry` + `target/`（key = `${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}`）② 本地文档提示装 sccache 加速冷编译 | `cargo build --workspace` 二次运行 5 分钟内（冷 15-30 分）；GitHub Actions 全量 CI 从 45min 降到 <20min | 删 cache 配置回原 CI 速度 | 0.5d | DevOps |
 
 **阶段一合计**：约 4-5 人日，1 个 DevOps + 1 个全栈并行 1 周可完成。
@@ -292,7 +292,7 @@ V1.0 的 Manifest YAML 设计是对的，但**不需要新造插件发现和加�
 |------|------|-------|-------|---------|
 | D1-D2 | 08-27,28 | 任务 1.1 + 1.2 完成：根目录干净 + graph.json 入仓状态修复 + git 历史瘦身报告（若需要 filter-repo） | DevOps TL | `git status --short` 输出 ≤ 3 行；仓库体积（du -sh .git）比 D0 减少 ≥ 150MB |
 | D3 | 08-29 | 任务 1.5 完成：P2-5 服务定义双源冲突修复 + 单测通过 | 后端 TL | `new ServiceManager().list().length === 3`（含 xiaobai_voice）；端口和 platform_config.json 完全一致 |
-| D4-D5 | 08-30,31 | 任务 1.6：scripts 4 件套 + 任务 1.7 sccache + CI 优化 | DevOps TL | 新人机器（无 node_modules / target 缓存）：`.\scripts\setup-dev.ps1` 30min 内跑完；`.\check-all.ps1` 全绿退出码 0 |
+| D4-D5 | 08-30,31 | 任务 1.6：scripts 4 件套 + 任务 1.7 sccache + CI 优化 | DevOps TL | 新人机器（无 node_modules / target 缓存）：`.\scripts\setup\setup-dev.ps1` 30min 内跑完；`.\check-all.ps1` 全绿退出码 0 |
 | D6-D7 | 09-01,02 | 任务 1.3：三目录重命名 + 所有路径引用全量替换 | 全栈 TL | `rg "projects/(?!showcase)" / "my_projects" / "^workspace/" 不在源码中出现；Cargo build / npm run dev / python xiaobai_voice 全正常启动 |
 | **周末** | 09-03,04 | 休息日，可选 R2 历史改造窗口（filter-repo 执行日） | — | — |
 | D8 | 09-05 | 任务 2.2 + R11 缓解：admin 密码 + JWT secret 环境变量化 + 启动校验 | 安全负责人 | 空环境启动进程退出码=1 且输出「请生成哈希命令」；正确设置后登录成功 |

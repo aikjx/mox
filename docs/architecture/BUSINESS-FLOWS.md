@@ -48,7 +48,7 @@
 | `GET /actuator/mappings` | ROUTES 静态表 → 222+ 路由（含 id/方法/路径/层/域/状态/描述） | 注册表单一权威源 |
 | `POST /actuator/api/:id/enable\|disable` | 匹配路由 → 原子切换 enabled 标志（持久化）→ 后续请求经可观测中间件拦截 | 运行时治理 |
 
-> **治理闭环**：actuator 是声明源 → `scripts/gen-api-registry.py` 重生成 `docs/API-REGISTRY.md` → 实测 223 条一一对应。
+> **治理闭环**：actuator 是声明源 → `scripts/doc/gen-api-registry.py` 重生成 `docs/API-REGISTRY.md` → 实测 223 条一一对应。
 
 ## 3. RBAC 域（L1 · `/rbac/v1/*`）
 

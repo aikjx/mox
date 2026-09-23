@@ -79,7 +79,7 @@ yml：`config/alliance-scheduler.yml` / `alliance-executor.yml` 新增 `naming:`
 | PORT-REGISTRY.md §6.2 | 声明「已完结（2026-09-01）…已完成并通过 verify-ports.py」 |
 | 全库扫描 3717 | 仅剩 5 个模型二进制词表文件（`asr-paraformer-streaming/tokens.txt`、`tts-kokoro/dict/idf.utf8`、`pos_dict/*`、`model.onnx`）——**非端口** |
 | 全库扫描 30010 | 遍布 17 个活动文件（`mox-voice-desktop-app/src/main.rs` 11 处、`voice_server.rs` 4 处绑定 `127.0.0.1:30010`、`verify_tts_rust_fullstack.py` 7 处等） |
-| `scripts/verify-ports.py` 实测 | **ERROR=0**；30010 登记 RUNTIME（引用 14 处） |
+| `scripts/gate/verify-ports.py` 实测 | **ERROR=0**；30010 登记 RUNTIME（引用 14 处） |
 
 ### 3.1 verify-ports.py 本轮同步维护
 
@@ -129,7 +129,7 @@ cargo test -p mox-alliance-boot-config --features nacos,naming \
 | 配置 | `svc/...scheduler-svc/Cargo.toml`、`svc/...executor-svc/Cargo.toml` | boot-config 启用 `nacos,naming` feature |
 | 配置 | `config/alliance-scheduler.yml`、`config/alliance-executor.yml` | 新增 `naming:` 段 |
 | 脚本 | `tools/alliance_nacos_e2e.py` | **新增**：配置中心+注册中心一次验证 |
-| 脚本 | `scripts/verify-ports.py` | CANONICAL 增 5 端口；NOISE_CTX 行号过滤；PRUNE nacos_db |
+| 脚本 | `scripts/gate/verify-ports.py` | CANONICAL 增 5 端口；NOISE_CTX 行号过滤；PRUNE nacos_db |
 | 文档 | `docs/api/PORT-REGISTRY.md` | §3.6 登记 8999/9848/10848 |
 | 文档 | `docs/standards/expert-alliance-port-norm.md` | **V1.3 → V1.4**：§7.11 补配置中心启动 e2e、§7.13 NamingService 阶段三、§7.14 语音核验 |
 

@@ -361,7 +361,7 @@
   - ✅ 新增moxfs阶段六验证报告已登记（VR-MOXFS-P6-20260903，全量1024测试1023通过+1 ignored 0失败，clippy零warning，6项验证全通过）
   - ✅ 新增moxfs阶段六MOX性能优化报告已登记（PERF-MOXFS-P6-20260903，4项优化完成，Backpressure核心场景3.8x-6.0x加速，5criterion基准全可运行）
   - ✅ 新增moxfs阶段六稳定性加固报告已登记（STAB-MOXFS-P6-20260903，3flaky修复连续3轮零flaky，multi_writer 23+hedged_reader 19基准点补齐）
-  - ✅ 2026-09-13 复跑 `scripts/verify-doc-ep038.py`：D1~D8 + E1~E7 共 20 项全 PASS、0 FAIL（系统管理 E6「系统管理/审计/通知」三证据齐备）
+  - ✅ 2026-09-13 复跑 `scripts/doc/verify-doc-ep038.py`：D1~D8 + E1~E7 共 20 项全 PASS、0 FAIL（系统管理 E6「系统管理/审计/通知」三证据齐备）
   - ✅ 2026-09-13 alliance 域 `cargo test` 全量实测：13 crate 约 300 测试通过、0 失败（7 个 ignored 为需本机 Nacos 的 e2e，属环境依赖）；修正过期单测 `build_consult_query_includes_expert_id`（实现已改为「描述非空时 query 取描述、不重复拼节点名」）
   - ✅ 2026-09-13 代码事实漂移修正：crate 数 11→13、融合策略清单按 `fusion/strategies/` 实际 6 大 trait 策略重列、内置专家改为语义化 module_id
 

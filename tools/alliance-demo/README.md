@@ -49,7 +49,7 @@ python tools/alliance-demo/alliance_demo.py --selftest
 
 ## 前置
 
-四进程需先启动（`scripts/start-mox-enterprise.ps1`，编排器 3001 / 联盟调度 3100 / 执行 3200 / 模块化网关 3080）。
+四进程需先启动（`scripts/startup/start-mox-enterprise.ps1`，编排器 3001 / 联盟调度 3100 / 执行 3200 / 模块化网关 3080）。
 脚本会等待健康探针（`/api/v1/status`）就绪，超时则退出码 2 并给出启动提示。
 
 ## 证据价值（对 AI Coding 赛）

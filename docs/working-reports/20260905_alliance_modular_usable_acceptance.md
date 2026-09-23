@@ -40,14 +40,14 @@
 在仓库根目录执行：
 
 ```powershell
-./scripts/start-alliance-local.ps1
+./scripts/startup/start-alliance-local.ps1
 # 已构建且源码没有变化时可使用 -SkipBuild
 ```
 
 独立启动网关 33080、调度器 33100、执行器 33200，全部绑定 `127.0.0.1`。状态及日志写到 `target/alliance-local`，不占用旧实例端口。停止本次脚本启动的服务：
 
 ```powershell
-./scripts/stop-alliance-local.ps1
+./scripts/startup/stop-alliance-local.ps1
 ```
 
 停止脚本检查进程路径、启动时间与 PID，避免停止其他实例。修改服务代码后应先停止本机实例，再重新构建启动，避免 Windows 锁定运行中的 exe。
