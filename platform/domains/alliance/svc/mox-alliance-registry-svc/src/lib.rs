@@ -18,12 +18,14 @@
 
 pub mod app_state;
 pub mod contract;
+pub mod health_probe;
 pub mod models;
 pub mod routes;
 pub mod server;
 pub mod storage;
 
 pub use app_state::{AppState, Config};
+pub use health_probe::{HealthProbe, HttpHealthProbe, MockHealthProbe, run_probe_cycle};
 pub use models::{
     CreateExpertRequest, Expert, HeartbeatRequest, InstanceQuery, InstanceStatus,
     RegisterRequest, RegisteredInstance, UpdateExpertRequest,

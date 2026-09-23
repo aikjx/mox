@@ -4205,6 +4205,7 @@ dependencies = [
 name = "mox-alliance-registry-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
+ "async-trait",
  "axum",
  "chrono",
  "http-body-util",
@@ -4213,6 +4214,7 @@ dependencies = [
  "mox-alliance-registry-proto",
  "mox-api-crypto",
  "parking_lot",
+ "reqwest",
  "rusqlite",
  "serde",
  "serde_json",

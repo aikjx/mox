@@ -36,6 +36,12 @@ pub struct Config {
     pub snapshot_path: Option<String>,
     /// 后台过期回收任务间隔（毫秒）
     pub reap_interval_ms: u64,
+    /// 是否启用后台主动健康探测（默认关闭，仅被动心跳租约）
+    pub health_probe_enabled: bool,
+    /// 主动探测周期（毫秒）
+    pub health_probe_interval_ms: u64,
+    /// 单次 HTTP 探测超时（毫秒）
+    pub health_probe_timeout_ms: u64,
 }
 
 impl Default for Config {
@@ -45,6 +51,11 @@ impl Default for Config {
             database_path: "./data/registry.db".to_string(), // allow: dev-default-prod-overridden
             snapshot_path: Some("./data/registry_instances.json".to_string()),
             reap_interval_ms: 5_000,
+            // 主动探测默认关闭：保持「仅被动心跳租约」的历史行为，
+            // 开启后才会启动后台探测任务（见 server.rs）。
+            health_probe_enabled: false,
+            health_probe_interval_ms: 30_000,
+            health_probe_timeout_ms: 5_000,
         }
     }
 }
@@ -56,6 +67,9 @@ impl Config {
     /// - `MOX_ALLIANCE_REGISTRY_DB`：SQLite 路径
     /// - `MOX_ALLIANCE_REGISTRY_SNAPSHOT`：实例快照路径；设为空串则纯内存
     /// - `MOX_ALLIANCE_REGISTRY_REAP_MS`：回收任务间隔（毫秒）
+    /// - `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED`：主动健康探测开关（`1`/`true`/`yes` 开启）
+    /// - `MOX_ALLIANCE_REGISTRY_PROBE_INTERVAL_MS`：探测周期（毫秒，须为正）
+    /// - `MOX_ALLIANCE_REGISTRY_PROBE_TIMEOUT_MS`：单次探测超时（毫秒，须为正）
     pub fn from_env() -> Self {
         let mut cfg = Self::default();
         if let Ok(v) = std::env::var("MOX_ALLIANCE_REGISTRY_ADDR") {
@@ -75,6 +89,24 @@ impl Config {
             if let Ok(ms) = v.parse::<u64>() {
                 if ms > 0 {
                     cfg.reap_interval_ms = ms;
+                }
+            }
+        }
+        if let Ok(v) = std::env::var("MOX_ALLIANCE_REGISTRY_PROBE_ENABLED") {
+            let low = v.to_lowercase();
+            cfg.health_probe_enabled = matches!(low.as_str(), "1" | "true" | "yes" | "on");
+        }
+        if let Ok(v) = std::env::var("MOX_ALLIANCE_REGISTRY_PROBE_INTERVAL_MS") {
+            if let Ok(ms) = v.parse::<u64>() {
+                if ms > 0 {
+                    cfg.health_probe_interval_ms = ms;
+                }
+            }
+        }
+        if let Ok(v) = std::env::var("MOX_ALLIANCE_REGISTRY_PROBE_TIMEOUT_MS") {
+            if let Ok(ms) = v.parse::<u64>() {
+                if ms > 0 {
+                    cfg.health_probe_timeout_ms = ms;
                 }
             }
         }

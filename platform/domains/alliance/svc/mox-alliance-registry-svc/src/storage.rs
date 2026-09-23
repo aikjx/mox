@@ -235,6 +235,14 @@ impl RegistryStore {
         self.inner.read().len()
     }
 
+    /// 列出全部实例（含所有状态：Active/Unhealthy/Draining/Expired）。
+    ///
+    /// 与 [`list`](Self::list) 不同：不带可发现性过滤，供后台主动健康探测
+    /// 遍历——探测需同时看到 Unhealthy 实例以判定恢复回册为 Active。
+    pub fn all_instances(&self) -> Vec<RegisteredInstance> {
+        self.inner.read().values().cloned().collect()
+    }
+
     /// 心跳续约：刷新最近心跳时间、更新负载/期望状态
     ///
     /// 不存在的实例返回 `None`（调用方应先注册）。
