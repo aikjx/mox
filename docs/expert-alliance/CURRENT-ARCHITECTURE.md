@@ -3,8 +3,8 @@ title: 专家联盟当前实现架构（唯一权威）
 version: V1.0
 authority: 🟢权威
 doc_id: EA-DOC-CURRENT
-last_updated: 2026-09-22
-source_of_truth: 代码事实（与 2026-09-22 代码核对一致）
+last_updated: 2026-09-24
+source_of_truth: 代码事实（与 2026-09-24 代码核对一致）
 ---
 
 # 专家联盟当前实现架构
@@ -16,7 +16,7 @@ source_of_truth: 代码事实（与 2026-09-22 代码核对一致）
 
 ## 一、物理代码分布
 
-### 1.1 Crate 拓扑（15 crates）
+### 1.1 Crate 拓扑（16 crates）
 
 ```
 platform/domains/alliance/
@@ -27,7 +27,8 @@ platform/domains/alliance/
 │   ├── mox-alliance-scheduler-core/  # 调度器业务逻辑
 │   ├── mox-alliance-executor-core/   # 执行器业务逻辑
 │   ├── mox-alliance-config-core/     # 10大领域专家配置 + LLM路由
-│   └── mox-alliance-boot-config/    # Nacos/命名/启动配置
+│   ├── mox-alliance-boot-config/    # Nacos/命名/启动配置
+│   └── mox-alliance-registry-core/  # 注册核心：分级心跳聚合 node→rack→cell 10:1:1
 ├── proto/                        # 契约层：DTO + trait 抽象（协议先行）
 │   ├── mox-alliance-common-proto/
 │   ├── mox-alliance-scheduler-proto/
