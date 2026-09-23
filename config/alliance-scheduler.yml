@@ -6,6 +6,14 @@
 #   MOX_ALLIANCE_SERVER_PORT=3100
 #   MOX_ALLIANCE_EXECUTOR_BRIDGE_BASE_URL=http://localhost:3200
 #   MOX_ALLIANCE_STORAGE_MODE=memory
+#   ── 多活（默认全部关闭；开启前须 STORAGE_MODE=sqlite 让副本共享同一任务库）──
+#   MOX_ALLIANCE_HA_MODE=on                 # 租约选主 + 仅 leader 跑周期对账/故障接管
+#   MOX_ALLIANCE_HA_LEASE_MS=10000          # 租约时长＝接管时延上界
+#   MOX_ALLIANCE_HA_TICK_MS=3333            # 竞选/续约/对账节奏（缺省 lease/3，须满足 tick*2 < lease）
+#   MOX_ALLIANCE_HA_STALL_MS=300000         # 孤儿判定的静默窗口（执行器明确不认识且超此窗口无进展）
+#   MOX_ALLIANCE_HA_DB=data/alliance_tasks.db   # 租约表所在库（与任务表同库同权威源）
+#   MOX_ALLIANCE_HA_HOLDER=scheduler-1      # 副本标识（缺省 scheduler-<pid>）
+#   GET /leadership 观测本副本视角；详见 scheduler-svc/src/ha.rs
 # =============================================================
 
 # 服务器监听（核心服务 3000-3999 段，31=编排）

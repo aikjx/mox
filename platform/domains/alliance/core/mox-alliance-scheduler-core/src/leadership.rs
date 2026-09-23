@@ -26,9 +26,11 @@
 //! 必须自身幂等（对账写是幂等 upsert、状态转换由协议层转换表仲裁）。跨机部署时
 //! 各副本时钟偏移会直接进入接管时延，故 `lease` 应显著大于 NTP 同步误差。
 
-use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use mox_alliance_common_proto::AllianceResult;
@@ -136,13 +138,7 @@ impl MemoryLeaseStore {
 
 impl LeaseStore for MemoryLeaseStore {
     fn state(&self, scope: &str) -> AllianceResult<LeaseState> {
-        Ok(self
-            .leases
-            .lock()
-            .unwrap()
-            .get(scope)
-            .cloned()
-            .unwrap_or_default())
+        Ok(self.leases.lock().unwrap().get(scope).cloned().unwrap_or_default())
     }
 
     fn campaign(
@@ -164,11 +160,7 @@ impl LeaseStore for MemoryLeaseStore {
         if let Some(cur) = leases.get_mut(scope) {
             if cur.holder.as_deref() == Some(holder) {
                 // 保留 epoch：让位不得让后续任期回退。
-                *cur = LeaseState {
-                    holder: None,
-                    epoch: cur.epoch,
-                    expires_at: None,
-                };
+                *cur = LeaseState { holder: None, epoch: cur.epoch, expires_at: None };
             }
         }
         Ok(())
@@ -272,11 +264,7 @@ impl LeaderElector {
     /// 优雅让位（进程退出时调用，让 standby 立即接管而不必等租约过期）。
     pub fn resign(&mut self) -> AllianceResult<()> {
         self.store.release(&self.scope, &self.holder)?;
-        self.view = Leadership {
-            leader: false,
-            epoch: self.view.epoch,
-            expires_at: None,
-        };
+        self.view = Leadership { leader: false, epoch: self.view.epoch, expires_at: None };
         Ok(())
     }
 }
@@ -298,9 +286,7 @@ mod tests {
     }
     impl TestClock {
         fn shared(start: i64) -> (Arc<Self>, Clock) {
-            let c = Arc::new(TestClock {
-                now: Mutex::new(start),
-            });
+            let c = Arc::new(TestClock { now: Mutex::new(start) });
             let cell = c.clone();
             (
                 c,
@@ -333,10 +319,7 @@ mod tests {
         let bview = b.step().unwrap();
         assert!(!bview.leader, "同一租约内第二个竞选者必须落选");
         assert_eq!(bview.epoch, a.leadership().epoch, "落选者不得抬高任期");
-        assert_eq!(
-            store.state("scheduler").unwrap().holder.as_deref(),
-            Some("a")
-        );
+        assert_eq!(store.state("scheduler").unwrap().holder.as_deref(), Some("a"));
     }
 
     #[test]
@@ -395,13 +378,8 @@ mod tests {
         let mut prev = 0u64;
         for round in 0..5 {
             let holder = if round % 2 == 0 { "a" } else { "b" };
-            let mut e = LeaderElector::with_clock(
-                store.clone(),
-                "scheduler",
-                holder,
-                LEASE,
-                now.clone(),
-            );
+            let mut e =
+                LeaderElector::with_clock(store.clone(), "scheduler", holder, LEASE, now.clone());
             let view = e.step().unwrap();
             assert!(view.leader, "第 {round} 轮应接管成功");
             assert!(view.epoch > prev, "任期只增不减：{:?} -> {:?}", prev, view.epoch);
@@ -456,11 +434,7 @@ mod tests {
     #[test]
     fn decide_expires_at_boundary_is_not_held() {
         // expires_at == now 视为已过期（半开区间），接管方可在同一时刻抢占。
-        let cur = LeaseState {
-            holder: Some("a".into()),
-            epoch: 3,
-            expires_at: Some(at(10)),
-        };
+        let cur = LeaseState { holder: Some("a".into()), epoch: 3, expires_at: Some(at(10)) };
         assert!(!cur.is_held_at(at(10)));
         let next = decide(&cur, "b", at(10), LEASE).expect("到期即可抢占");
         assert_eq!(next.holder.as_deref(), Some("b"));

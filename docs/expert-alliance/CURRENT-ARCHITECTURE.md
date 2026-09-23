@@ -95,9 +95,12 @@ platform/domains/alliance/
 - `POST /tasks` — 创建协作任务
 - `GET /tasks` — 列出任务
 - `GET /tasks/:task_id` — 获取任务详情
-- `GET /tasks/:task_id/nodes` — 代理查询节点
-- `GET /tasks/:task_id/result` — 代理查询结果
+- `POST /tasks/:task_id` — 任务动作（取消/暂停/恢复/完成）
 - `POST /experts/search` — 专家搜索
+- `GET /health` · `GET /metrics` — 存活与联盟指标快照
+- `GET /leadership` — 多活视角：`ha_enabled=false` 时本副本即唯一执行者；开启后返回 holder/是否 leader/租约任期与到期时刻
+
+> 执行状态/节点/融合结果的读代理端点已移除（2026-09 边界归一化）：读路径由网关(:3080)直连执行器(:3200)。
 
 **内部模块**（mox-alliance-scheduler-core）：
 | 模块 | 职责 | 生产状态 |
@@ -111,7 +114,9 @@ platform/domains/alliance/
 | `executor_bridge` | 执行器HTTP桥接 | ✅ |
 | `registry` | 专家注册桥接trait | ✅ |
 | `synchronizer` | 专家数据同步 | ✅ |
-| `storage` | 任务持久化（SQLite/JSON） | ✅ |
+| `storage` | 任务持久化：memory/file(单写者)/SQLite；SQLite 侧同库存放租约表 | ✅ |
+| `leadership` | 租约选主 + fencing 任期（`LeaseStore`/`LeaderElector`/`SqliteLeaseStore`） | ✅ 仅 `MOX_ALLIANCE_HA_MODE=on` 生效 |
+| `metrics` | 全联盟共享计数器（`/metrics` 暴露） | ✅ |
 
 ### 3.2 执行器（executor-svc:3200）
 
@@ -255,13 +260,13 @@ platform/domains/alliance/
 | 维度 | 当前实现 | v3 目标态 | 演进优先级 |
 |------|---------|----------|-----------|
 | 服务数 | 3 svc（scheduler/registry/executor）+ 网关内联 | 7 独立服务 + sidecar | P2 |
-| 存储 | SQLite + JSON | PostgreSQL + Redis + pgvector | P1 |
+| 存储 | SQLite 任务库（P1 起多副本安全：WAL + busy_timeout + 读直查库；租约表与任务表同库同权威源）+ JSON 文件仓库（全量快照单写者，开 HA 直接拒绝启动） | PostgreSQL + Redis + pgvector | P1 |
 | 服务间通信 | HTTP | gRPC :50051 | P3 |
 | fusion | executor-core 适配层 | 独立 fusion-svc | P2 |
 | memory | 网关内联 session/db | 独立 memory-svc | P2 |
-| registry | ✅ 已落地：独立 registry-svc(:3400) + proto 契约层 `mox-alliance-registry-proto`（2026-09 归一化） | 独立 registry-svc | 已完成 |
+| registry | ✅ 已落地：独立 registry-svc(:3400) + proto 契约层 `mox-alliance-registry-proto`（2026-09 归一化）；P1 追加 node→rack→cell 10:1:1 分级心跳聚合（入流降 100 倍） | 独立 registry-svc | 已完成 |
 | 传输加密 | ✅ 已落地：一键开关 `MOX_API_CRYPTO=sm4`，接口 data gzip+SM4-GCM 全链路归一化（网关/调度/执行/注册/桥/SDK，2026-09 证明 6/6，见 [API-CRYPTO-TRANSPORT](../api/API-CRYPTO-TRANSPORT.md)） | 生产密钥注入 + 前端协商 | 已完成(P0) |
-| 海量规模编排 | 方案已定：10 万节点 Cell 分层 + 联盟分片感知调度/分级心跳/批量导入 DAG（见 [十万级规模方案](../architecture/microservices/07-massive-scale-100k-nodes.md)） | 调度器多活 + registry 分级心跳落地 | P1 |
+| 海量规模编排 | ✅ 部分落地：registry 10:1:1 分级心跳聚合（`aggregation.rs` + `POST /api/registry/aggregated-heartbeat`）；调度器多活（`scheduler-core/src/leadership.rs` 租约选主 + fencing 任期、`SqliteLeaseStore`、leader 专属执行器对账与孤儿接管、`GET /leadership`，`MOX_ALLIANCE_HA_MODE=on` 显式开启，默认关闭＝单副本行为不变）。Cell 分层与分片感知方案见 [十万级规模方案](../architecture/microservices/07-massive-scale-100k-nodes.md) | 跨机仲裁后端（换 PG/etcd 类 `LeaseStore` 实现）+ ShardFanout 分片感知 DAG | P1→P2 |
 | 协议 | REST + WS | + JSON-RPC + MCP | P3 |
 
 ---
@@ -273,6 +278,7 @@ platform/domains/alliance/
 3. **共享状态单点**：ExpertsSharedState 在网关统一构造，避免数据分裂
 4. **桥接模式**：scheduler 通过 ExecutorBridge trait 调用 executor，可替换实现
 5. **模块化专家配置**：10大专家各自独立 LLM 配置，未配置回退全局默认
+6. **周期职责单点、请求路径多活**：调度器多活不加分布式锁，而是区分两类工作——请求路径（建任务/查任务）无状态可任意 LB；扫全表并逐条求证执行器的对账/接管是唯一的单点职责，用租约选主限定在 leader，且写成幂等（租约只保证互斥，不保证 exactly-once）。租约表与任务表同库，避免"自认 leader 却写着别人的状态表"
 
 ---
 

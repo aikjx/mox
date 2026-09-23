@@ -331,7 +331,8 @@
 | --- | --- | --- | --- |
 | kg-hub | `mox-kg-hub-svc` | `/api/kg/*`（15 条） | 知识图谱枢纽：检索/影响/治理/闭环 |
 | alliance-executor | `mox-alliance-executor` | `/health` `/tasks/:id/*` `/internal/*`（8 条） | 联盟任务执行器 |
-| alliance-scheduler | `mox-alliance-scheduler` | `/tasks` `/experts/search`（5 条） | 联盟调度器 |
+| alliance-scheduler | `mox-alliance-scheduler` | `/health` `/metrics` `/leadership` `/tasks` `/tasks/:id` `/experts/search`（6 条） | 联盟调度器；多活开关 `MOX_ALLIANCE_HA_MODE=on` 后 `/leadership` 报告租约任期 |
+| alliance-registry | `mox-alliance-registry` | `/health` `/api/v1/experts*` `/api/registry/*`（8 条） | 专家实例注册中心：单条心跳 + 分级聚合续约 `POST /api/registry/aggregated-heartbeat`（node→rack→cell 10:1:1） |
 | primiflow | 前端子项目 | — | `:8000`，经 `/api/projects/{*path}` 代理 |
 | melody2score | 前端子项目 | — | `:8012`，简谱转谱 |
 

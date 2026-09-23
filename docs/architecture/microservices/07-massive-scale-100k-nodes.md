@@ -83,8 +83,8 @@ OSS 冷(对象, EC 8+3, glacier 归档) ← 云盘知识库 温(文件+FTS5/BM25
 
 | 优化项 | 现状 | 方案 | 优先级 |
 |--------|------|------|:------:|
-| 调度器水平扩展 | 单实例，queue=1000/并发=100 已可 env 覆盖 | 多活 scheduler + Postgres 任务表为权威状态（已具备 sqlite/pg 双仓库），无状态化后 LB 前置；分片键=task space | P1 |
-| 节点/执行体注册分级 | registry-svc 单点，面向"专家" | 三级注册：节点→cell-master 本地租约（10s 抖动防惊群）→registry 仅持 98 Cell 摘要；心跳聚合后全局 1k pps（§二） | P1 |
+| 调度器水平扩展 | ✅ 已落地（P1，默认关闭需显式开启）：请求路径本就无状态可 LB；权威状态改为多副本共享同一 SQLite 任务库（WAL + `busy_timeout`，删掉进程内读缓存）；租约选主 + fencing 任期（`scheduler-core/src/leadership.rs`、`storage.rs::SqliteLeaseStore`）；周期对账与故障接管只在 leader 上跑（`scheduler-svc/src/ha.rs`，`MOX_ALLIANCE_HA_MODE=on`），`GET /leadership` 可观测 | 跨机互斥仍需换后端（实现 `LeaseStore`/`TaskRepository` 即可）。**纠正旧表述**：全仓只有 memory/file/sqlite 三种仓库，**不存在 Postgres 实现**，故当前多活仅覆盖"同一库文件可见"的同机/共享盘副本；接管时延上界=租约时长 | P1（跨机仲裁 → P2） |
+| 节点/执行体注册分级 | ✅ 已落地（P1）：`registry-core/src/aggregation.rs` 的 `RackAggregator`/`CellAggregator` 做 node→rack→cell 10:1:1 合成，`registry-svc` 新增 `POST /api/registry/aggregated-heartbeat`（一条聚合续约 = 一次写锁 + 一次快照落盘）→ 注册中心入流降 100 倍（§二 1k pps 口径成立的前提） | rack 代理宕机时其成员失去续约来源，靠注册中心租约摘除兜底；聚合链最坏发布间隔必须显著小于 `lease_seconds`，由部署方经容量模型校验；真机跨机分级部署随 P2 | P1 |
 | DAG 分片感知 | executor DAG 并行调度真实存在但面向任务 | 新增 `ShardFanout` 节点类型：一个逻辑任务按 vid_hash 区间展开 N×分片子任务，executor 池按 Cell 反亲和放置；批量导入即一个 DAG（10 万级实测 harness 解禁重建） | P2 |
 | LLM 编排成本 | 10 专家独立配置+降级链（已归一） | 海量数据预处理走自研 `expert-code-engine`（mox-selfhosted 零 token），LLM 仅裁决层；降级链校验已修复（provider_options 完整性） | 已落地 |
 | 融合/内存服务拆分 | 网关内联 | 沿用 v3 目标态 fusion-svc/memory-svc，按 Cell 部署本地实例避免跨 Cell 流量 | P2 |
@@ -114,12 +114,24 @@ OSS 冷(对象, EC 8+3, glacier 归档) ← 云盘知识库 温(文件+FTS5/BM25
 - 回归锁定入 CI（`ci.yml` job `kg-scale`）：内存全套单线程 281 项 → RocksDB 模式 `--all-targets` 编译门禁 → `t_persistence_rocksdb`（写 500 点+长 URI VID，关闭重开同目录读回，验证 vid_idx 跨重启一致）→ 正确性子集（`t_distributed_sharding`/`t_integration_storage`/`t_integration_query` 跑在 RocksDB+异步 WAL 档）→ 容量模型复算 + `reports/data/` 证据上传。
 - 诚实边界：本机（Windows）无 libclang，RocksDB 模式运行时以 CI `kg-scale` 首绿为准；且全仓尚无生产入口实例化 `StorageServer`（仅测试构造），feature 转正是为存储宿主接线后的默认 durable，接线属 P1 范围。
 
+**P1 联盟与宿主接线（本轮追加）**：
+- **P1-1 存储宿主接线**（闭合上条边界）：`mox-kg-server` 的 `KgModule` 生产入口改为实例化 `StorageServer::start_cluster(shard_count, &[], path)` 并挂载 `/storage/v1/*` 真实写读面；参数单通道 `MOX_KG_DATA_DIR`（未指定时 `persist-rocksdb` 构建默认 `data/kg-storage`，内存构建回退临时目录）与 `MOX_KG_SHARD_COUNT`（2^k，默认 16）；健康检查改为反映存储真实状态。
+- **P1-2 注册中心分级心跳聚合**：`registry-core/src/aggregation.rs`（`NodeBeat`→`RackAggregator`(fan-in 10)→`CellAggregator`(每 10 条 rack-digest 合成 1 条 cell 续约)）+ `registry-svc` 的 `POST /api/registry/aggregated-heartbeat`（一条聚合续约＝一次写锁 + 一次快照落盘）。B=10、两级 10:1:1 ⇒ 注册中心入流降 100 倍，§二"10 万节点 ≈ 1k pps"口径由此成立。验证：registry-core 7 项、registry-svc 10 lib + 10 集成全绿，`clippy --all-targets -D warnings` 零告警。
+- **P1-3 调度器多活（租约选主 + 故障接管）**：先修多活的真障碍，再给 leader 一件真实的活。
+  - 共享权威状态：`SqliteTaskRepository` 删除进程内读缓存（读直查库，否则副本读到陈旧态）；开库统一 `WAL + synchronous=NORMAL + busy_timeout`（`MOX_ALLIANCE_SQLITE_BUSY_MS`，缺省 5s）；`new_shared()` 不再执行"把 running 改 interrupted"的启动清扫（该清扫会改写对端副本正在跑的任务，`new()` 保留原语义）。
+  - 选主：`scheduler-core/src/leadership.rs` 的 `LeaseStore`/`LeaderElector`（互斥 + 单调 fencing 任期，落选者不得抬高 epoch）+ `storage.rs::SqliteLeaseStore`（租约表与任务表**同库**，`BEGIN IMMEDIATE` 保证读-判-写跨进程原子）。
+  - leader 专属职责：`reconcile_active_tasks(stall_timeout, now)` 扫活跃任务并向执行器逐条求证——执行器仍认识则只回填进度（绝不因"跑得久"判死），明确 `TaskNotFound` 且静默超窗才判孤儿失败，健康探测失败整轮不判定（宁可漏判不误判），`Paused` 永不出手。写回复用读路径同一套终态推断，故双跑幂等。
+  - 运行面：`scheduler-svc/src/ha.rs`（`MOX_ALLIANCE_HA_MODE=on` 显式开启，`tick*2 < lease` 否则拒绝启动；`file`/`memory` 仓库开 HA 直接拒绝启动而非假选主）+ `GET /leadership` 观测 + 收尾时先停循环再让位。默认关闭 ⇒ 单副本行为与此前完全一致。
+  - 验证：scheduler-core 108（默认）/117（`--features sqlite`）、scheduler-svc 9 lib + 11 集成全绿；其中"两副本两条连接指向同一库文件"用例实测收敛为唯一 leader、kill 掉 leader 后由对端在租约到期时以更高任期接管，standby 一轮也不轮询执行器（`polls==0`）。CI `build`/`test` 矩阵补齐 scheduler-core/svc，并追加 `--features sqlite` 与 `--tests` 两轮（多活实现只在 sqlite feature 下编译）。
+- 诚实边界：租约选主只保证**互斥**、不保证 exactly-once，故 leader 的职责必须是幂等写；时钟偏移进入接管时延；跨机仲裁需换 `LeaseStore`/`TaskRepository` 后端（**当前无 Postgres 实现**，多活仅覆盖"同一库文件可见"的同机/共享盘副本）。
+- 已知未闭合（非本轮引入）：`cargo fmt --all -- --check` 门禁在 HEAD 上即为红灯——`platform/rustfmt.toml`（`max_width=100` + `imports_granularity="Crate"`）与仓库既有代码风格冲突，多个本轮未改动的文件同样报 diff。本轮新增的 `leadership.rs`/`ha.rs` 已按该配置格式化；历史文件的整体格式化会产生巨量无关 diff，留作独立提交决策。
+
 ## 七、演进路线与验收（P0→P3）
 
 | 阶段 | 交付 | 验收命令（必须可执行） |
 |------|------|------------------------|
 | **P0 基座闭环**（上生产前置） | ✅ 已落地：`mox-kg-server` 默认 `persist-rocksdb` + ack 前 fsync WAL（`MOX_KG_WAL_SYNC=0` 可降性能档）；vid 索引/分裂/长 VID 回归入 CI 专用 job `kg-scale`；容量模型脚本 CI 复算并上传产物 | `cargo test -p mox-kg-storage-svc --release -- --test-threads=1`；`python tools/scale-model/capacity_model.py`；RocksDB 模式见 `.github/workflows/ci.yml` job `kg-scale`（本机无 libclang 时的权威执行环境） |
-| **P1 真分布式** | 跨机 Raft 复制（复用 `async-raft`，meta-core 已有依赖）、cell-master 心跳聚合、CDC 持久化（WAL/Kafka）+ 10 万级 harness 解禁、bucket 多租户 | 新建 `t_cell_split_crosshost`（3 VM×3 分片组杀 1 副本无数据丢失）；CDC 100k 幂等报告落 `reports/data/` |
+| **P1 真分布式** | ✅ 已落地：kg 存储宿主接线（§六 P1-1）、注册中心 10:1:1 分级心跳聚合（P1-2）、调度器同库多活＝租约选主 + leader 故障接管（P1-3，默认关闭）。仍待：跨机 Raft 复制（复用 `async-raft`，meta-core 已有依赖）、跨机仲裁后端（PG/外部 etcd 类 `LeaseStore`）、CDC 持久化（WAL/Kafka）+ 10 万级 harness 解禁、bucket 多租户 | 已落地部分：`cargo test -p mox-alliance-scheduler-core --lib --features sqlite`、`cargo test -p mox-alliance-scheduler-svc --tests`、`cargo test -p mox-alliance-registry-core --lib`（均已入 CI 矩阵）。待落地部分：新建 `t_cell_split_crosshost`（3 VM×3 分片组杀 1 副本无数据丢失）；CDC 100k 幂等报告落 `reports/data/` |
 | **P2 管线打通** | KB 向量检索（embedding 落 pgvector 或自研 HNSW on CloudKernel）、ShardFanout DAG、fusion/memory-svc 按 Cell 部署、冷回沉自动化 | `alliance_demo.py` 增加 bulk-import 模式端到端；`check-doc-links.py` 门禁 |
 | **P3 全局形态** | 多 Region Cell、global-router gRPC+mTLS、跨 Cell 分布式遍历（当前为分片局部+应用层聚合）、混沌工程（Cell 级故障注入） | kind-3m3s → `helm --set cell.size=…` 参数化演练 1K 节点（1 Cell）沙箱 |
 

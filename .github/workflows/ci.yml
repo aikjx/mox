@@ -113,6 +113,8 @@ jobs:
           - mox-kb-server
           - mox-alliance-registry-core
           - mox-alliance-registry-svc
+          - mox-alliance-scheduler-core
+          - mox-alliance-scheduler-svc
     steps:
       - uses: actions/checkout@v4
 
@@ -161,6 +163,8 @@ jobs:
           - mox-dsql-core
           - mox-server-runtime
           - mox-alliance-registry-core
+          - mox-alliance-scheduler-core
+          - mox-alliance-scheduler-svc
     steps:
       - uses: actions/checkout@v4
 
@@ -180,6 +184,17 @@ jobs:
 
       - name: Test ${{ matrix.crate }}
         run: cargo test -p ${{ matrix.crate }} --lib --verbose
+
+      # 调度器的多活实现（租约选主 + 共享任务库）落在 sqlite feature 上：
+      # 默认 feature 编译不到 SqliteLeaseStore / SqliteTaskRepository，必须单独跑一轮。
+      - name: Test alliance-scheduler-core with the sqlite backend
+        if: matrix.crate == 'mox-alliance-scheduler-core'
+        run: cargo test -p mox-alliance-scheduler-core --lib --features sqlite --verbose
+
+      # svc 的多活装配与 HTTP 面都在集成测试里（oneshot，无需占端口）
+      - name: Test alliance-scheduler-svc integration targets
+        if: matrix.crate == 'mox-alliance-scheduler-svc'
+        run: cargo test -p mox-alliance-scheduler-svc --tests --verbose
 
   # ===========================================================================
   # 4. Redis 后端特性编译

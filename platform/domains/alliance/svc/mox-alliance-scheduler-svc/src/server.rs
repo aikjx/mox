@@ -103,20 +103,15 @@ impl SchedulerServer {
         self
     }
 
-    /// 解析任务仓库：显式注入优先，否则按环境变量 MOX_ALLIANCE_STORAGE_MODE
-    /// - "file"（或未设置时默认 "file"）：文件快照持久化到 ./data/alliance_tasks.json
-    /// - "memory"：纯内存
-    /// - "sqlite"：SQLite 增量落盘（WAL）到 ./data/alliance_tasks.db
-    /// - 旧环境变量 `ALLIANCE_TASK_STORE` 保留兼容（deprecated，命中即告警）
-    fn resolve_task_repository(
-        &self,
-    ) -> anyhow::Result<Arc<dyn mox_alliance_scheduler_core::TaskRepository>> {
-        if let Some(repo) = &self.task_repository {
-            return Ok(repo.clone());
-        }
+    /// 多活前置条件：开启 HA 时任务库必须是共享权威源（sqlite）。
+    /// 调用方自行注入仓库时豁免——共享与否由宿主保证（测试/内嵌宿主即此路径）。
+    fn ha_storage_ok(ha_on: bool, mode: &str, injected_repo: bool) -> bool {
+        !ha_on || injected_repo || mode == "sqlite"
+    }
 
-        // 归一化：统一 `MOX_ALLIANCE_STORAGE_MODE`；旧 `ALLIANCE_TASK_STORE` 兼容
-        let mode = match std::env::var("MOX_ALLIANCE_STORAGE_MODE") {
+    /// 解析存储档位（归一化：统一 `MOX_ALLIANCE_STORAGE_MODE`；旧 `ALLIANCE_TASK_STORE` 兼容）
+    fn storage_mode() -> String {
+        match std::env::var("MOX_ALLIANCE_STORAGE_MODE") {
             Ok(v) if !v.is_empty() => v,
             _ => match std::env::var("ALLIANCE_TASK_STORE") {
                 Ok(old) if !old.is_empty() => {
@@ -125,8 +120,26 @@ impl SchedulerServer {
                 }
                 _ => "file".to_string(),
             },
-        };
-        match mode.as_str() {
+        }
+    }
+
+    /// 解析任务仓库：显式注入优先，否则按 `mode`（见 [`Self::storage_mode`]）
+    /// - "file"（默认）：文件快照持久化到 ./data/alliance_tasks.json
+    /// - "memory"：纯内存
+    /// - "sqlite"：SQLite 增量落盘（WAL）到 ./data/alliance_tasks.db
+    ///
+    /// `shared = true`（多活副本）时开库不做启动清扫：那会把别的副本正在跑的
+    /// 任务改写成 interrupted。异常态的收敛改由 leader 的 `reconcile_active_tasks` 负责。
+    fn resolve_task_repository(
+        &self,
+        mode: &str,
+        shared: bool,
+    ) -> anyhow::Result<Arc<dyn mox_alliance_scheduler_core::TaskRepository>> {
+        if let Some(repo) = &self.task_repository {
+            return Ok(repo.clone());
+        }
+
+        match mode {
             "memory" => {
                 info!("Using in-memory task repository");
                 Ok(Arc::new(
@@ -135,8 +148,18 @@ impl SchedulerServer {
             }
             "sqlite" => {
                 let path = std::path::Path::new("data").join("alliance_tasks.db");
-                let repo = mox_alliance_scheduler_core::SqliteTaskRepository::new(&path)?;
-                info!("Using sqlite task repository (WAL) at {}", path.display());
+                let repo = if shared {
+                    let repo = mox_alliance_scheduler_core::SqliteTaskRepository::new_shared(&path)?;
+                    info!(
+                        "Using shared sqlite task repository (WAL, 多活：跳过启动清扫) at {}",
+                        path.display()
+                    );
+                    repo
+                } else {
+                    let repo = mox_alliance_scheduler_core::SqliteTaskRepository::new(&path)?;
+                    info!("Using sqlite task repository (WAL) at {}", path.display());
+                    repo
+                };
                 Ok(Arc::new(repo))
             }
             _ => {
@@ -240,6 +263,18 @@ impl SchedulerServer {
         axum::Router,
         Option<(crate::ha::SharedElector, tokio::task::JoinHandle<()>)>,
     )> {
+        // ── 多活前置校验：先拒掉"假多活"，再建重型子系统 ──
+        // 任务状态本身必须是所有副本共享的权威源：`file` 是全量快照单写者（并发副本互相覆盖）、
+        // `memory` 各副本私有（选出的 leader 只看得见自己那份表）。
+        // 这两种档位下选主只是自娱自乐，故拒绝启动而不是勉强跑起来。
+        let ha_cfg = crate::ha::HaConfig::from_env();
+        let storage_mode = Self::storage_mode();
+        anyhow::ensure!(
+            Self::ha_storage_ok(ha_cfg.is_some(), &storage_mode, self.task_repository.is_some()),
+            "MOX_ALLIANCE_HA_MODE 要求 MOX_ALLIANCE_STORAGE_MODE=sqlite（当前 {storage_mode}）：\
+             多活副本必须共享同一个任务库，否则租约选出来的 leader 对账的是只有自己看得见的状态"
+        );
+
         // ── 构建模块化配置子系统（全链路接线）──
         // 1) 配置引擎（内存存储，可替换为持久化实现）
         let config_engine = Arc::new(ConfigEngine::new(Arc::new(MemoryConfigStore::new())));
@@ -327,8 +362,8 @@ impl SchedulerServer {
         // ── 创建执行器桥接 ──
         let executor_bridge = self.create_executor_bridge()?;
 
-        // ── 解析任务仓库（持久化可插拔）──
-        let task_repository = self.resolve_task_repository()?;
+        // ── 解析任务仓库（持久化可插拔；多活时按共享库打开，不做启动清扫）──
+        let task_repository = self.resolve_task_repository(&storage_mode, ha_cfg.is_some())?;
 
         // ── 初始化调度器（使用模块化匹配器 + 可插拔存储）──
         let scheduler = Arc::new(
@@ -359,17 +394,18 @@ impl SchedulerServer {
 
         // ── 多活（HA）：租约选主 + leader 专属周期对账 ──
         // 未开启时完全不介入：不起线程、不开租约库、不抢主。
-        let ha = match crate::ha::HaConfig::from_env() {
+        let ha = match ha_cfg {
             None => None,
             Some(cfg) => {
                 let (elector, task) =
                     crate::ha::start(&cfg, state.scheduler.clone()).map_err(|e| {
                         anyhow::anyhow!(
-                            "HA 装配失败（多活要求 MOX_ALLIANCE_STORAGE_MODE=sqlite，\
-                             让所有副本共享同一个任务库）: {e}"
+                            "HA 装配失败（租约库 {}，holder {}）: {e}",
+                            cfg.db.display(),
+                            cfg.holder
                         )
                     })?;
-                state.leadership = Some(elector.clone());
+                state = state.with_leadership(elector.clone());
                 Some((elector, task))
             }
         };
@@ -380,7 +416,7 @@ impl SchedulerServer {
 
     /// 启动服务器
     pub async fn run(&self) -> anyhow::Result<()> {
-        let app = self.build_app().await?;
+        let (app, ha) = self.build_app_with_ha().await?;
 
         info!(
             "Scheduler server starting on {} (mode: {:?})",
@@ -396,6 +432,19 @@ impl SchedulerServer {
                 info!("alliance-scheduler shutdown signal received");
             })
             .await?;
+
+        // HA 收尾：先停后台循环、等它真正退出，再主动让位。
+        // 顺序不能倒——循环若还在续约，会把刚交出去的租约又抢回来，
+        // standby 反而要等满一个租约周期。
+        if let Some((elector, task)) = ha {
+            task.abort();
+            let _ = tokio::time::timeout(
+                std::time::Duration::from_secs(1),
+                task,
+            )
+            .await;
+            crate::ha::resign(&elector);
+        }
 
         info!("alliance-scheduler stopped gracefully");
         Ok(())
@@ -415,4 +464,28 @@ fn _create_legacy_scheduler(
         dispatch_tx.clone(),
     ));
     (scheduler, dispatch_tx)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SchedulerServer;
+
+    #[test]
+    fn ha_refuses_storage_that_replicas_do_not_share() {
+        // 关闭 HA：任何档位放行（默认行为与单副本一致）
+        assert!(SchedulerServer::ha_storage_ok(false, "file", false));
+        assert!(SchedulerServer::ha_storage_ok(false, "memory", false));
+        // 开启 HA：只有共享权威源放行
+        assert!(SchedulerServer::ha_storage_ok(true, "sqlite", false));
+        assert!(
+            !SchedulerServer::ha_storage_ok(true, "file", false),
+            "file 是全量快照单写者：双副本会互相覆盖"
+        );
+        assert!(
+            !SchedulerServer::ha_storage_ok(true, "memory", false),
+            "memory 各副本私有：选出的 leader 只看得见自己的表"
+        );
+        // 注入式仓库由宿主自行保证共享性，不受此门禁约束
+        assert!(SchedulerServer::ha_storage_ok(true, "file", true));
+    }
 }

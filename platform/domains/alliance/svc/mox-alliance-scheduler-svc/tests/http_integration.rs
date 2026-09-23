@@ -179,6 +179,21 @@ async fn metrics_endpoint_returns_snapshot() {
 }
 
 #[tokio::test]
+async fn leadership_endpoint_reports_single_replica_mode() {
+    let app = build_test_app().await;
+    let (status, bytes) = send(&app, "GET", "/leadership", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    let body: serde_json::Value =
+        serde_json::from_slice(&bytes).expect("/leadership 必须返回 JSON");
+    // 未开 HA：本副本就是唯一执行者。明确标注 ha_enabled=false，
+    // 而不是谎报一份并不存在的租约状态。
+    assert_eq!(body["ha_enabled"], false);
+    assert_eq!(body["is_leader"], true);
+    assert_eq!(body["scope"], "alliance-scheduler");
+    assert!(body["note"].is_string(), "应说明为何没有租约仲裁");
+}
+
+#[tokio::test]
 async fn health_reports_executor_dependency() {
     let app = build_test_app().await;
     let (status, bytes) = send(&app, "GET", "/health", None, None).await;
