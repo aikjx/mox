@@ -69,6 +69,23 @@ GET /api/kb/documents → 含 {id: kb-3b727ac1, category: cat-dialogue, status: 
 GET /api/graph/stats → node_count=37 edge_count=28（对话实体已入全局图；相同内容不重复建点）
 ```
 
+
+### 3.6 内联源沉淀（source=inline · 任意内容直接入三端）
+
+以本报告全文为输入实测：
+
+```
+POST /api/alliance/sediment  {"source":"inline","title":"AI对话知识沉淀端到端验证报告","messages":[{"role":"user","content":"<报告全文 4496 字符>"}]}
+→ code=0 ok=true
+  kb:     doc_id=kb-f3d11cda  category=cat-dialogue  status=linked
+          graph_nodes_added=48  graph_edges_added=57（报告内容丰富度高于单次对话）
+  cloud:  bucket=dialogue  key=inline-1790345248169.md（报告全文入库）
+  entities=12（对话/沉淀/知识/云盘/核心/内容/图谱/前端/自动/专家/引擎/知识库，长文本同样无碎片）
+  summary=“把三套既有能力串成一条闭环：”（正文首句）
+```
+
+知识库现状（GET /api/kb/documents，共 5 篇）：`kb-f3d11cda`（本报告）· `kb-f39faf5d` / `kb-3b727ac1`（对话沉淀 e2e-sed-002 两次）· `kb-6b1a9c91` / `kb-b6b97c83`（历史 cat-tech）。
+
 ## 4. 过程中发现并修复的问题
 
 1. **前端会话 ID 与对话库 ID 不一致**：原 `ensure_session` 以客户端 ID 仅作标题、另生成 UUID 入库 → 读取/沉淀按前端 ID 全部 404。已改为以传入 ID 为唯一键。
@@ -94,9 +111,13 @@ curl -H "Authorization: Bearer dev-secret-token" -H "Content-Type: application/j
 # 3. 读取核心内容
 curl -H "Authorization: Bearer dev-secret-token" http://127.0.0.1:3080/api/dialogue/sessions/demo-001/messages
 
-# 4. 沉淀
+# 4. 沉淀（对话源）
 curl -H "Authorization: Bearer dev-secret-token" -H "Content-Type: application/json" `
   -d '{"source":"dialogue","session_id":"demo-001"}' http://127.0.0.1:3080/api/alliance/sediment
+
+# 5. 沉淀（内联源：任意文档/报告直接入知识库+云盘+挂图）
+curl -H "Authorization: Bearer dev-secret-token" -H "Content-Type: application/json" `
+  -d '{"source":"inline","title":"报告标题","messages":[{"role":"user","content":"报告全文"}]}' http://127.0.0.1:3080/api/alliance/sediment
 ```
 
 前端入口：AI 对话页会话列表每项新增「沉淀」按钮，点击后弹窗展示 KB 文档 id / 挂图节点数 / 云盘对象 / 摘要 / 实体。
