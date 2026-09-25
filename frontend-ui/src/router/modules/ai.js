@@ -11,7 +11,7 @@ export default [  // ===== AI 域 =====
     path: '/share/:token',
     name: 'ShareSnapshot',
     component: () => import('@/views/ai/ChatView.vue'),
-    meta: { title: '分享对话', shareMode: true }
+    meta: { title: '分享对话', shareMode: true, bare: true }
   },
   // 兼容短链 /s/TOKEN
   {

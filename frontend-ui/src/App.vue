@@ -1,28 +1,33 @@
 <template>
   <el-config-provider :locale="zhCn">
-    <div class="app-shell" :class="{ 'ai-fullscreen': isAIFullscreen }">
-      <!-- 图标侧栏（64px） -->
-      <IconSidebar ref="iconSidebarRef" />
+    <div class="app-shell" :class="{ 'ai-fullscreen': isAIFullscreen, 'app-bare': isBarePage }">
+      <!-- 裸页面（登录/门户/403/分享等）：不渲染应用框架，避免登录页嵌套在侧栏+顶栏内 -->
+      <template v-if="!isBarePage">
+        <!-- 图标侧栏（64px） -->
+        <IconSidebar ref="iconSidebarRef" />
 
-      <!-- 模块侧栏（240px，可折叠） -->
-      <TheSidebar
-        ref="sidebarRef"
-        :collapsed="moduleSidebarCollapsed"
-        :is-a-i-fullscreen="isAIFullscreen"
-        @toggle-collapse="appStore.toggleSidebar()"
-      />
-
-      <!-- 主区域 -->
-      <div class="app-main">
-        <!-- 顶栏 -->
-        <TheTopbar
-          ref="topbarRef"
+        <!-- 模块侧栏（240px，可折叠） -->
+        <TheSidebar
+          ref="sidebarRef"
           :collapsed="moduleSidebarCollapsed"
           :is-a-i-fullscreen="isAIFullscreen"
           @toggle-collapse="appStore.toggleSidebar()"
-          @toggle-help="appStore.openHelpDrawer()"
-          @refresh-health="refreshHealth"
         />
+      </template>
+
+      <!-- 主区域 -->
+      <div class="app-main">
+        <template v-if="!isBarePage">
+          <!-- 顶栏 -->
+          <TheTopbar
+            ref="topbarRef"
+            :collapsed="moduleSidebarCollapsed"
+            :is-a-i-fullscreen="isAIFullscreen"
+            @toggle-collapse="appStore.toggleSidebar()"
+            @toggle-help="appStore.openHelpDrawer()"
+            @refresh-health="refreshHealth"
+          />
+        </template>
 
         <!-- 页面内容 -->
         <main class="app-content">
@@ -32,6 +37,7 @@
         </main>
       </div>
 
+      <template v-if="!isBarePage">
       <!-- 全局帮助 Drawer -->
       <el-drawer
         v-model="helpDrawerOpen"
@@ -68,6 +74,7 @@
 
       <!-- 新手引导 -->
       <OnboardingGuide v-model="onboardingVisible" />
+      </template>
     </div>
   </el-config-provider>
 </template>
@@ -76,9 +83,10 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import { QUICK_CREATE_COMMANDS, HOTKEY_GROUPS, NAV_MODULES, MODULE_SIDEBAR_CONFIG, ICON_NAV_GROUPS } from '@/constants'
+import { QUICK_CREATE_COMMANDS, HOTKEY_GROUPS, ICON_NAV_GROUPS } from '@/constants'
 import { useGlobalShortcuts } from '@/globalShortcuts'
 import { provideProjectContext, useProject } from '@/composables/projectContext.js'
+import { useActiveModule } from '@/composables/useActiveModule'
 import { useAppStore } from '@/stores/app.store'
 import { useUiStore } from '@/stores/ui.store'
 import IconSidebar from '@/components/layout/IconSidebar.vue'
@@ -111,36 +119,18 @@ const helpDrawerOpen = computed({
 })
 const isAIFullscreen = computed(() => uiStore.aiFullscreen)
 
-// 当前模块 key
-const currentModuleKey = computed(() => {
-  const p = route.path
-  if (p.startsWith('/dashboard')) return 'dashboard'
-  if (p.startsWith('/projects')) return 'projects'
-  if (p.startsWith('/tasks')) return 'tasks'
-  if (p.startsWith('/expert-workspace') || p.startsWith('/expert-center') || p.startsWith('/expert-plaza')) return 'expert'
-  if (p.startsWith('/ai')) return 'ai'
-  if (p.startsWith('/graph')) return 'graph'
-  if (p.startsWith('/operators')) return 'operators'
-  if (p.startsWith('/workflow')) return 'workflow'
-  if (p.startsWith('/market')) return 'market'
-  if (p.startsWith('/admin')) return 'admin'
-  return 'dashboard'
-})
+// 当前模块 key（与 TheSidebar 共用同一判定，见 composables/useActiveModule）
+const { moduleKey: currentModuleKey, hasSections: hasSidebarSections } = useActiveModule()
 
-// 当前模块是否有侧栏 sections
-const hasSidebarSections = computed(() => {
-  const cfg = MODULE_SIDEBAR_CONFIG[currentModuleKey.value]
-  return cfg && cfg.sections && cfg.sections.length > 0
-})
+// 裸页面判定：登录/门户/403/分享等独立全屏页，不渲染应用框架与引导
+const isBarePage = computed(() => route.meta?.bare === true)
 
 // 追踪是否是自动折叠
 let autoCollapsed = false
 
 // 路由变化时自动折叠/展开模块侧栏
-watch(currentModuleKey, (key) => {
-  const cfg = MODULE_SIDEBAR_CONFIG[key]
-  const hasSections = cfg && cfg.sections && cfg.sections.length > 0
-  if (!hasSections) {
+watch(currentModuleKey, () => {
+  if (!hasSidebarSections.value) {
     // 无 sections 的模块自动折叠
     if (!appStore.sidebarCollapsed) {
       autoCollapsed = true
@@ -221,7 +211,26 @@ onBeforeUnmount(() => {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--bg-primary, #0f1117);
+  background: var(--bg-primary);
+}
+
+/* 裸页面（登录/门户/403/分享）：全屏独立布局，无应用框架 */
+.app-shell.app-bare {
+  display: block;
+}
+
+.app-shell.app-bare .app-main {
+  height: 100vh;
+}
+
+.app-shell.app-bare .app-content {
+  padding: 0;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.app-shell.app-bare .app-content > * {
+  height: 100%;
 }
 
 /* ===== Main Area ===== */
@@ -240,8 +249,8 @@ onBeforeUnmount(() => {
   padding: var(--content-pad, 20px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: var(--border, #2d3148) transparent;
-  background: var(--bg-primary, #0f1117);
+  scrollbar-color: var(--border) transparent;
+  background: var(--bg-primary);
 }
 
 .app-content::-webkit-scrollbar {
@@ -253,12 +262,12 @@ onBeforeUnmount(() => {
 }
 
 .app-content::-webkit-scrollbar-thumb {
-  background: var(--border, #2d3148);
+  background: var(--border);
   border-radius: 3px;
 }
 
 .app-content::-webkit-scrollbar-thumb:hover {
-  background: var(--border-light, #3a3f5a);
+  background: var(--border-light);
 }
 
 /* AI 全屏模式 */
@@ -304,7 +313,7 @@ onBeforeUnmount(() => {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   margin: 0 0 8px;
   font-weight: 600;
 }
@@ -324,7 +333,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--bg-card, #242838);
+  background: var(--bg-card);
 }
 
 .help-keys {
@@ -335,19 +344,19 @@ onBeforeUnmount(() => {
 }
 
 .help-desc {
-  color: var(--text-primary, #e8eaed);
+  color: var(--text-primary);
   font-size: 13px;
   flex: 1;
 }
 
 .help-desc-sub {
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   font-size: 12px;
   margin-left: 6px;
 }
 
 .qc-icon-help {
-  color: var(--accent-light, #818cf8);
+  color: var(--accent-light);
   font-size: 14px;
 }
 
@@ -356,7 +365,7 @@ onBeforeUnmount(() => {
   padding: 12px 14px;
   border-radius: 10px;
   background: var(--accent-dim, rgba(99,102,241,.15));
-  color: var(--accent-light, #818cf8);
+  color: var(--accent-light);
   font-size: 12px;
   line-height: 1.7;
 }
@@ -365,9 +374,9 @@ onBeforeUnmount(() => {
   display: inline-block;
   padding: 2px 8px;
   font-size: 11px;
-  background: var(--bg-tertiary, #1e2130);
-  color: var(--text-secondary, #9aa0b4);
-  border: 1px solid var(--border, #2d3148);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
   border-bottom-width: 2px;
   border-radius: 5px;
   line-height: 1.4;
