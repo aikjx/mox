@@ -1,4 +1,6 @@
 // Domain route definitions; authentication is applied by the host router.
+import { tenantPage } from '@/modules/admin-lowcode/pages/tenant.page.js'
+
 export default [  // ===== 系统管理（嵌套路由） =====
   {
     path: '/admin',
@@ -18,6 +20,14 @@ export default [  // ===== 系统管理（嵌套路由） =====
         name: 'AdminTenant',
         component: () => import('@/views/admin/panels/AdminTenant.vue'),
         meta: { title: '租户管理', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
+        // 低代码引擎试点：与手写版并存，URL /admin/tenant-lc 可对比
+        path: 'tenant-lc',
+        name: 'AdminTenantLc',
+        component: () => import('@/modules/admin-lowcode/engine/SchemaCrudPage.vue'),
+        props: () => ({ pageSchema: tenantPage }),
+        meta: { title: '租户管理(低代码试点)', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'user',
