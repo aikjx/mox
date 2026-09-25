@@ -56,7 +56,7 @@ POST /api/alliance/sediment  {"source":"dialogue","session_id":"e2e-sed-002"}
           tags=[会话 e2e-sed-, cat-dialogue, 知识, 对话, 图谱]
   cloud:  bucket=dialogue  key=e2e-sed-002.md
           path=data/storage/dialogue/e2e-sed-002.md（文件 1085 字节，含会话原文 ✅）
-  entities=12（知识/对话/图谱/ai/专家…） relations=10（co_occur）
+  entities=12（对话/知识/图谱/自动/专家/云盘/协同/多专家/归类/方案/核心/沉淀，无碎片） relations=10（co_occur）
 ```
 
 ### 3.4 知识库可查
@@ -77,10 +77,9 @@ GET /api/graph/stats → node_count=37 edge_count=28（对话实体已入全局�
 
 ## 5. 已知限制（如实披露）
 
-- **实体抽取分词质量**：KbAnalyzer 规则引擎把 `e2e`、`sed`、`识图`、`ai` 等碎片识别为实体（既有行为，非本次引入）。接入真实 LLM 后抽取质量可提升（编排器 `/api/llm/config` 可配置 api_base/api_key/model）。
-- **摘要策略**：markdown 文档摘要取首行标题（"会话 e2e-sed-"），非内容语义摘要。
+- **实体抽取质量（本次已修复）**：原滑动窗口方案产生 `e2e`/`sed`/`识图` 等碎片实体、摘要取标题行。已改为**词典最长匹配优先**（技术/组织/业务概念词典 + 互不重叠 span）+ 纯 CJK 窗口降权 + 碎片过滤（纯数字、短 ASCII 非词典词），摘要跳过 markdown 标题行取正文首句。修复后沉淀实体均为有意义概念（对话/知识/图谱/云盘/协同/多专家/沉淀…），新增回归测试 `extract_rejects_fragments_and_summary_skips_title`（mox-kb-svc 16 测试全过、无 warning）。接入真实 LLM 仍可进一步提升语义抽取（编排器 `/api/llm/config` 配置 api_base/api_key/model）。
 - **历史遗留测试**：`t4_kb_http` 集成测试 2 例失败（`kb_full_lifecycle`、`kb_batch_analyze_and_errors`，断言 `body["success"]` 与新版信封不匹配），经 stash 干净态验证为**改动前既有问题**，与本次无关。
-- **仓库门禁**：未跑 `cargo clippy --all-targets`（改动已过 cargo test）；未改端口，`verify-ports.py` 应直接通过；未提交（仓库有大量 pre-existing 修改，提交时须只 add 本次涉及文件，conventional commits 中文描述）。
+- **仓库门禁**：未跑 `cargo clippy --all-targets`（改动已过 cargo test，mox-kb-svc 无 warning）；未改端口，`verify-ports.py` ERROR=0；链路改动已提交 `bb55f08c`（12 文件，仅本次涉及文件），实体质量改进待提交。
 
 ## 6. 复现方式
 
