@@ -474,6 +474,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/graph/auto-sync/toggle", post(toggle_auto_sync))
         .route("/api/graph/auto-sync/status", get(auto_sync_status))
         .route("/api/dialogue/sessions", get(list_dialogue_sessions))
+        .route("/api/dialogue/sessions/:id/messages", get(dialogue_session_messages))
         .route("/api/graph/export", get(graph_export))
         .route("/api/graph/import", post(graph_import))
         // ========== AI智能对话API ==========
@@ -1654,6 +1655,19 @@ async fn list_dialogue_sessions(
     match state.ai_agent.dialogue_graph().list_sessions().await {
         Ok(sessions) => api_ok(serde_json::json!({ "sessions": sessions })),
         Err(e) => api_error(500, format!("列出会话失败: {e}")),
+    }
+}
+
+
+/// 读取对话会话完整内容（元信息 + 全部消息）
+async fn dialogue_session_messages(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<serde_json::Value> {
+    match state.ai_agent.dialogue_graph().session_transcript(&id).await {
+        Ok(Some(transcript)) => api_ok(serde_json::to_value(&transcript).unwrap_or(serde_json::json!({}))),
+        Ok(None) => api_error(404, format!("对话会话不存在: {id}")),
+        Err(e) => api_error(500, format!("读取会话失败: {e}")),
     }
 }
 

@@ -29,10 +29,10 @@
 pub mod handlers;
 pub mod model;
 
-mod analyze;
-mod document;
+pub mod analyze;
+pub mod document;
 mod expert_gate;
-mod link;
+pub mod link;
 mod search;
 mod version;
 

@@ -36,7 +36,8 @@ use crate::{
     actuator::{LogStore, RuntimeMetrics},
     alliance::{self, experts_collaboration, experts_common, experts_dispatcher, experts_ext,
         experts_graph, experts_orchestration, experts_registry, experts_session},
-    kb_ext, misc,
+    cloud::CloudState,
+    dialogue_sediment, kb_ext, misc,
     monitor, notification, projects_ext, proxy, system, workspace,
 };
 use crate::auth::{AuthMiddleware, auth_middleware};
@@ -68,6 +69,12 @@ pub struct ModuleStates {
     pub kb_ext: Arc<kb_ext::KbExtState>,
     /// 通知域状态（通知列表）
     pub notification: Arc<notification::NotificationState>,
+    /// 知识库域共享状态（mox-kb-svc 唯一真源；KB 路由与对话沉淀共用）
+    pub kb: Arc<mox_kb_svc::KbState>,
+    /// 云盘共享状态（本地对象存储根；Cloud 路由与对话沉淀共用）
+    pub cloud: CloudState,
+    /// 对话沉淀状态（对话核心内容 → 知识图谱 / 云盘 / 知识库）
+    pub sediment: dialogue_sediment::SedimentState,
 }
 
 impl ModuleStates {
@@ -79,14 +86,19 @@ impl ModuleStates {
     ///   启动期 JSON→SQLite 一次性迁移、内置专家种子化、能力图谱首次构建（均幂等）。
     pub fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>, iam: Arc<mox_platform_iam_core::IamRepository>) -> Self {
         let experts = Arc::new(experts_common::ExpertsSharedState::new());
+        let kb = Arc::new(mox_kb_svc::KbState::from_env());
+        let cloud = CloudState::new();
         Self {
             experts: experts.clone(),
-            monitor: Arc::new(monitor::MonitorState::new(runtime, logs, iam, experts)),
+            monitor: Arc::new(monitor::MonitorState::new(runtime, logs, iam, experts.clone())),
             workspace: Arc::new(workspace::WorkspaceState::new()),
             projects: Arc::new(projects_ext::ProjectsState::new()),
             misc: Arc::new(misc::MiscState::new()),
             kb_ext: Arc::new(kb_ext::KbExtState::new()),
             notification: Arc::new(notification::NotificationState::new()),
+            kb: kb.clone(),
+            cloud: cloud.clone(),
+            sediment: dialogue_sediment::SedimentState::new(kb, cloud, experts.clone()),
         }
     }
 }
@@ -120,7 +132,7 @@ pub fn build_module_routers(
         // 采用 nest 包装而非直接 merge，避免破坏 mox-kb-svc 自身的 /kb/* 集成测试。
         .merge(upgrade(Router::new().nest(
             "/api",
-            mox_kb_svc::handlers::build_kb_router(),
+            mox_kb_svc::handlers::build_kb_router_with_state(states.kb.clone()),
         )))
         // —— 联盟任务域（远程优先 + 本地降级）——
         .merge(upgrade(alliance::build_alliance_router()))
@@ -135,8 +147,11 @@ pub fn build_module_routers(
         .merge(upgrade(crate::voice::build_voice_router()))
         // —— Melody 域（L7 /melody/v1/* · melody2score 转谱桥接，复用 Voice 上游）——
         .merge(upgrade(crate::melody::build_melody_router()))
-        // —— Cloud 域（L5 /cloud/v1/* · 本地磁盘对象存储，S3 兼容语义）——
-        .merge(upgrade(crate::cloud::build_cloud_router())).merge(upgrade(proxy::build_proxy_router()))
+        // —— Cloud 域（L5 /cloud/v1/* · 本地磁盘对象存储，S3 兼容语义；注册中心统一持有）——
+        .merge(upgrade(crate::cloud::build_cloud_router_with_state(states.cloud.clone())))
+        .merge(upgrade(proxy::build_proxy_router()))
+        // —— 对话沉淀域（/api/alliance/sediment · 对话核心内容 → 知识图谱/云盘/知识库）——
+        .merge(upgrade(dialogue_sediment::build_sediment_router(states.sediment.clone())))
         // —— 通用业务域（状态由注册中心注入，路由构建器不负责创建） ——
         .merge(upgrade(monitor::build_monitor_router(
             states.monitor.clone(),
@@ -224,6 +239,16 @@ mod tests {
         assert!(Arc::ptr_eq(&states.misc, &cloned.misc));
         assert!(Arc::ptr_eq(&states.kb_ext, &cloned.kb_ext));
         assert!(Arc::ptr_eq(&states.notification, &cloned.notification));
+        assert!(Arc::ptr_eq(&states.kb, &cloned.kb));
+    }
+
+    /// 对话沉淀与 KB 路由共享同一 KbState（唯一真源）
+    #[test]
+    fn test_sediment_shares_kb_state() {
+        let states = test_states();
+        let cloned = states.clone();
+        assert!(Arc::ptr_eq(&states.sediment.kb, &states.kb));
+        assert!(Arc::ptr_eq(&cloned.sediment.kb, &cloned.kb));
     }
 
     /// 状态类型升级后仍可正常 merge（类型层面归一）

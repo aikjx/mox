@@ -48,6 +48,24 @@ fn default_weight() -> f64 {
     1.0
 }
 
+/// 会话完整内容（元信息 + 全部消息），供"对话核心内容读取/沉淀"使用
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionTranscript {
+    pub session_id: String,
+    pub title: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub messages: Vec<TranscriptMessage>,
+}
+
+/// 会话中的单条消息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TranscriptMessage {
+    pub role: String,
+    pub content: String,
+    pub created_at: String,
+}
+
 /// SQLite 表结构（会话 + 消息 + 索引），幂等创建
 const DB_SCHEMA: &str = r#"
     CREATE TABLE IF NOT EXISTS dialogue_sessions (
@@ -167,6 +185,85 @@ impl DialogueGraphSyncer {
             ],
         )?;
         Ok(id)
+    }
+
+    /// 会话是否存在
+    pub async fn has_session(&self, session_id: &str) -> Result<bool> {
+        Ok(self
+            .db
+            .query_one(
+                "SELECT 1 FROM dialogue_sessions WHERE id = ?1",
+                &[SqlValue::Text(session_id.to_string())],
+            )?
+            .is_some())
+    }
+
+    /// 以指定 ID 建会话（幂等：已存在直接返回），保证前端会话 ID 与对话库 ID 一致
+    pub async fn create_session_with_id(&self, session_id: &str, title: &str) -> Result<()> {
+        if self.has_session(session_id).await? {
+            return Ok(());
+        }
+        let id = &session_id[..session_id.len().min(128)];
+        let now = Utc::now().to_rfc3339();
+        self.db.exec(
+            "INSERT INTO dialogue_sessions (id, title, created_at, updated_at) VALUES (?1, ?2, ?3, ?4)",
+            &[
+                SqlValue::Text(id.to_string()),
+                SqlValue::Text(title.to_string()),
+                SqlValue::Text(now.clone()),
+                SqlValue::Text(now),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// 读取会话完整内容（元信息 + 全部消息，按时间正序）
+    pub async fn session_transcript(&self, session_id: &str) -> Result<Option<SessionTranscript>> {
+        let Some(s) = self
+            .db
+            .query_one(
+                "SELECT id, title, created_at, updated_at FROM dialogue_sessions WHERE id = ?1",
+                &[SqlValue::Text(session_id.to_string())],
+            )?
+        else {
+            return Ok(None);
+        };
+        let get_text = |k: &str| -> String {
+            match s.get(k) {
+                Some(SqlValue::Text(v)) => v.clone(),
+                _ => String::new(),
+            }
+        };
+        let id = get_text("id");
+        let title = get_text("title");
+        let ca = get_text("created_at");
+        let ua = get_text("updated_at");
+
+        let mrows = self.db.query(
+            "SELECT role, content, created_at FROM dialogue_messages WHERE session_id = ?1 ORDER BY created_at ASC",
+            &[SqlValue::Text(session_id.to_string())],
+        )?;
+        let mut messages = Vec::with_capacity(mrows.len());
+        for m in mrows {
+            let get_text_m = |k: &str| -> String {
+                match m.get(k) {
+                    Some(SqlValue::Text(v)) => v.clone(),
+                    _ => String::new(),
+                }
+            };
+            messages.push(TranscriptMessage {
+                role: get_text_m("role"),
+                content: get_text_m("content"),
+                created_at: get_text_m("created_at"),
+            });
+        }
+        Ok(Some(SessionTranscript {
+            session_id: id,
+            title,
+            created_at: ca,
+            updated_at: ua,
+            messages,
+        }))
     }
 
     /// 追加一条消息，并（在全自动模式下）自动同步进知识图谱

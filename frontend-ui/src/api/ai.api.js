@@ -56,6 +56,10 @@ export const aiGenerateErd = (payload) => http.post('/ai/generate-erd', payload)
 // AI 专家对话
 export const aiExpertChat = (payload) => http.post('/ai/expert-chat', payload)
 
+// ===== 对话沉淀 =====
+// 读取对话核心内容 → 自动归类：知识图谱 / 云盘 / 知识库
+export const sedimentDialogue = (payload) => http.post('/alliance/sediment', payload)
+
 // AI 流程图谱
 export const getEngineFlowGraph = () => http.get('/ai/engine/flow-graph')
 

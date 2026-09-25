@@ -27,6 +27,7 @@ const TAGS_KEY: &str = "kb:tags";
 /// 默认分类清单（与 legacy /kb/categories 语义对齐）
 pub const CATEGORIES: &[(&str, &str)] = &[
     ("cat-tech", "技术文档"),
+    ("cat-dialogue", "对话沉淀"),
     ("cat-business", "业务文档"),
     ("cat-research", "研究文档"),
 ];
@@ -291,7 +292,7 @@ mod tests {
         svc.create("A", "内容", Some("cat-tech")).await.unwrap();
         svc.create("B", "内容", Some("cat-business")).await.unwrap();
         let cats = svc.categories().await.unwrap();
-        assert_eq!(cats.len(), 3);
+        assert_eq!(cats.len(), 4); // cat-tech / cat-business / cat-research / cat-dialogue(对话沉淀)
         let tech = cats.iter().find(|c| c["id"] == "cat-tech").unwrap();
         assert_eq!(tech["count"], 1);
         let stats = svc.stats().await.unwrap();

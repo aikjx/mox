@@ -434,8 +434,8 @@ pub fn build_kb_router_with_dir(dir: std::path::PathBuf) -> Router {
     build_kb_router_with_state(Arc::new(KbState::with_data_dir(dir)))
 }
 
-/// 使用已装配状态构建路由
-fn build_kb_router_with_state(state: Arc<KbState>) -> Router {
+/// 使用已装配状态构建路由（网关注册中心共享同一 KbState，保证 KB/沉淀唯一真源）
+pub fn build_kb_router_with_state(state: Arc<KbState>) -> Router {
     Router::new()
         .route("/kb/documents", get(kb_documents_list).post(kb_document_create))
         .route("/kb/documents/:id", get(kb_document_get).put(kb_document_update).delete(kb_document_delete))

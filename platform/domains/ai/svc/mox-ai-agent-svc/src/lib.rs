@@ -69,7 +69,6 @@ use mox_platform_operator_core::{OperatorError, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use mox_platform_system_core::persistence_provider::SqlValue;
 
 /// AI智能体主结构 - 统一系统大脑
 pub struct AIAgent {
@@ -178,34 +177,42 @@ impl AIAgent {
         let llm = self.llm_client.read().await;
         if llm.is_enabled() {
             drop(llm);
-            return self.chat_with_llm(session_id, message).await;
+            let resp = self.chat_with_llm(session_id, message).await?;
+            // 助手回复同样落库并同步进知识图谱（对话核心内容完整沉淀）
+            let _ = self
+                .dialogue_graph
+                .append_message(session_id, "assistant", &resp.message.content)
+                .await;
+            return Ok(resp);
         }
         drop(llm);
 
         // 降级到内置规则引擎（用户消息已写入，process_message 只追加助手回复）
         let mut conv = self.conversation.write().await;
-        conv.process_message(session_id, message).await
+        let resp = conv.process_message(session_id, message).await;
+        if let Ok(r) = &resp {
+            let _ = self
+                .dialogue_graph
+                .append_message(session_id, "assistant", &r.message.content)
+                .await;
+        }
+        resp
     }
 
-    /// 确保会话在对话库中存在（不存在则按 id 建立会话记录）
+    /// 确保会话在对话库中存在（不存在则以传入 ID 建会话记录）
+    ///
+    /// 以客户端会话 ID 作为对话库唯一键（而非另生成 UUID），保证：
+    /// - 前端会话 ID 与对话库 ID 一致，可准确定位"对话核心内容"；
+    /// - 同一客户端会话的多轮消息落于同一会话记录（多轮连续性）。
     async fn ensure_session(&self, session_id: &str) -> Result<()> {
-        // 若会话不存在则创建（标题取截断 id，便于后续检索）
-        let exists = self
-            .dialogue_graph
-            .db
-            .query_one(
-                "SELECT 1 FROM dialogue_sessions WHERE id = ?1",
-                &[SqlValue::Text(session_id.to_string())],
-            )
-            .ok()
-            .flatten()
-            .is_some();
-        if !exists {
-            self.dialogue_graph
-                .create_session(&format!("会话 {}", &session_id[..8.min(session_id.len())]))
-                .await?;
+        if self.dialogue_graph.has_session(session_id).await? {
+            return Ok(());
         }
-        Ok(())
+        let title = format!("会话 {}", &session_id[..8.min(session_id.len())]);
+        self.dialogue_graph
+            .create_session_with_id(session_id, &title)
+            .await
+            .map_err(|e| OperatorError::Other(anyhow::anyhow!(e.to_string())))
     }
 
     fn detect_browser_intent(&self, message: &str) -> bool {

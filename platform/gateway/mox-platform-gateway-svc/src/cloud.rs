@@ -61,6 +61,18 @@ impl CloudState {
         }
         Some(self.root.as_ref().join(bucket).join(key))
     }
+
+    /// 程序化写入对象（S3 语义对齐；供对话沉淀等模块直接落盘，返回存储绝对路径）
+    pub fn put_object_text(&self, bucket: &str, key: &str, content: &str) -> Result<String, String> {
+        let p = self
+            .object_path(bucket, key)
+            .ok_or_else(|| "非法 bucket/key（仅字母/数字/_/-/.，≤128，不含路径分隔符）".to_string())?;
+        if let Some(parent) = p.parent() {
+            fs::create_dir_all(parent).map_err(|e| format!("创建对象目录失败: {e}"))?;
+        }
+        fs::write(&p, content.as_bytes()).map_err(|e| format!("写入对象失败: {e}"))?;
+        Ok(p.to_string_lossy().to_string())
+    }
 }
 
 impl Default for CloudState {
@@ -251,6 +263,11 @@ async fn cloud_delete_bucket(
 
 /// 装配 Cloud 域路由（自含存储状态，nest + 外层 `with_state(())`，与 Voice 同模式）
 pub fn build_cloud_router() -> Router<()> {
+    build_cloud_router_with_state(CloudState::new())
+}
+
+/// 使用已装配共享存储状态构建路由（网关注册中心统一持有，供对话沉淀等模块复用同一云盘根）
+pub fn build_cloud_router_with_state(state: CloudState) -> Router<()> {
     Router::new()
         .nest(
             "/cloud/v1",
@@ -262,7 +279,7 @@ pub fn build_cloud_router() -> Router<()> {
                 .route("/buckets/:bucket/objects/:key", put(cloud_put_object))
                 .route("/buckets/:bucket/objects/:key", get(cloud_get_object))
                 .route("/buckets/:bucket/objects/:key", delete(cloud_delete_object))
-                .with_state(CloudState::new()),
+                .with_state(state),
         )
         .with_state(())
 }

@@ -38,6 +38,15 @@
               <span class="session-time">{{ formatTime(s.updatedAt) }}</span>
             </div>
             <el-button
+              text
+              size="small"
+              class="session-sediment"
+              title="沉淀对话：自动归类到知识图谱/云盘/知识库"
+              @click.stop="handleSedimentSession(s.id)"
+            >
+              <el-icon><CollectionTag /></el-icon>
+            </el-button>
+            <el-button
               v-if="sidebarCollapsed"
               text
               size="small"
@@ -103,9 +112,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import {
-  Cpu, Expand, Fold, Plus, ChatDotRound, Delete, CircleCheckFilled
+  Cpu, Expand, Fold, Plus, ChatDotRound, Delete, CircleCheckFilled, CollectionTag
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { sedimentDialogue } from '@/api'
 import { useAIStore, ASSISTANTS } from '@/stores/ai.store'
 import AIChatPanel from '@/components/ai/AIChatPanel.vue'
 
@@ -177,6 +187,33 @@ function handleSelectSession(id) {
   aiStore.selectSession(id)
 }
 
+async function handleSedimentSession(id) {
+  const sessionId = id || aiStore.currentSessionId
+  if (!sessionId) {
+    ElMessage.warning('暂无会话可沉淀，请先发起对话')
+    return
+  }
+  const loading = ElMessage({ type: 'info', message: '正在读取对话核心内容并自动归类（知识图谱/云盘/知识库）…', duration: 0 })
+  try {
+    const res = await sedimentDialogue({ source: 'dialogue', session_id: sessionId })
+    const s = res && res.sediment
+    if (!s) {
+      ElMessage.error('沉淀失败：响应缺少 sediment 数据')
+      return
+    }
+    const entityNames = (s.entities || []).map(e => e.name).join('、') || '—'
+    ElMessageBox.alert(
+      `已沉淀完成<br/>· 知识库文档：${s.kb.doc_id}（${s.kb.category}，挂图 +${s.kb.graph_nodes_added} 节点 / +${s.kb.graph_edges_added} 边）<br/>· 云盘对象：${s.cloud.bucket}/${s.cloud.key}<br/>· 摘要：${s.summary || '—'}<br/>· 核心实体：${entityNames}`,
+      '对话沉淀完成',
+      { dangerouslyUseHTMLString: true, confirmButtonText: '知道了' }
+    )
+  } catch (e) {
+    ElMessage.error('沉淀失败：' + (e && e.message ? e.message : e))
+  } finally {
+    loading.close()
+  }
+}
+
 function handleDeleteSession(id) {
   ElMessageBox.confirm('删除这个对话？', '确认', {
     type: 'warning',
@@ -242,7 +279,7 @@ onMounted(() => {
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-5));
   display: grid;
   place-items: center;
   color: #fff;
@@ -256,7 +293,7 @@ onMounted(() => {
 }
 
 .toggle-btn {
-  color: #94a3b8;
+  color: var(--text-tertiary);
   padding: 4px;
 }
 
@@ -282,7 +319,7 @@ onMounted(() => {
 .list-label {
   font-size: 10px;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 10px 8px 6px;
@@ -309,12 +346,12 @@ onMounted(() => {
 
 .session-icon {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
 .session-item.active .session-icon {
-  color: #6366f1;
+  color: var(--cat-1);
 }
 
 .session-text {
@@ -341,7 +378,7 @@ onMounted(() => {
 
 .session-time {
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .sidebar-footer {
@@ -387,7 +424,7 @@ onMounted(() => {
 
 .switcher-tip {
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: 1px;
 }
 
@@ -423,7 +460,7 @@ onMounted(() => {
 
 .assistant-item.active {
   background: var(--accent-dim);
-  border-color: #c7d2fe;
+  border-color: var(--el-color-primary-light-5);
 }
 
 .ai-avatar {
@@ -450,11 +487,11 @@ onMounted(() => {
 
 .ai-desc {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .ai-check {
-  color: #6366f1;
+  color: var(--cat-1);
   font-size: 18px;
 }
 
