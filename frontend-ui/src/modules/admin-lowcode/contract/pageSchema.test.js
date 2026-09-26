@@ -4,6 +4,8 @@
 import { describe, it, expect } from 'vitest'
 import { validatePageSchema, assertPageSchema, REQUIRED_API_KEYS } from './pageSchema.js'
 import { tenantPage } from '../pages/tenant.page.js'
+import { configPage } from '../pages/config.page.js'
+import { accessPage } from '../pages/access.page.js'
 
 describe('PageSchema DSL 校验', () => {
   it('tenantPage 应通过完整校验', () => {
@@ -39,5 +41,19 @@ describe('PageSchema DSL 校验', () => {
 
   it('assertPageSchema 通过时原样返回', () => {
     expect(assertPageSchema(tenantPage)).toBe(tenantPage)
+  })
+
+  it('configPage（服务端分页 CRUD）应通过校验', () => {
+    expect(validatePageSchema(configPage)).toEqual([])
+    expect(configPage.list.serverPagination).toBe(true)
+  })
+
+  it('accessPage（凭证列表+吊销）应通过校验', () => {
+    expect(validatePageSchema(accessPage)).toEqual([])
+  })
+
+  it('checkboxGroup 是合法表单控件', () => {
+    const ok = { ...accessPage, form: { fields: [{ prop: 'p', type: 'checkboxGroup' }] } }
+    expect(validatePageSchema(ok)).toEqual([])
   })
 })

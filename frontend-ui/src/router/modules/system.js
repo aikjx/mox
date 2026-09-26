@@ -1,5 +1,7 @@
 // Domain route definitions; authentication is applied by the host router.
 import { tenantPage } from '@/modules/admin-lowcode/pages/tenant.page.js'
+import { configPage } from '@/modules/admin-lowcode/pages/config.page.js'
+import { accessPage } from '@/modules/admin-lowcode/pages/access.page.js'
 
 export default [  // ===== 系统管理（嵌套路由） =====
   {
@@ -28,6 +30,22 @@ export default [  // ===== 系统管理（嵌套路由） =====
         component: () => import('@/modules/admin-lowcode/engine/SchemaCrudPage.vue'),
         props: () => ({ pageSchema: tenantPage }),
         meta: { title: '租户管理(低代码试点)', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
+        // 低代码引擎：参数配置（服务端分页 CRUD）
+        path: 'config-lc',
+        name: 'AdminConfigLc',
+        component: () => import('@/modules/admin-lowcode/engine/SchemaCrudPage.vue'),
+        props: () => ({ pageSchema: configPage }),
+        meta: { title: '参数配置(低代码)', requiresAuth: true, requiresRole: ['admin'] }
+      },
+      {
+        // 低代码引擎：访问凭证
+        path: 'access-lc',
+        name: 'AdminAccessLc',
+        component: () => import('@/modules/admin-lowcode/engine/SchemaCrudPage.vue'),
+        props: () => ({ pageSchema: accessPage }),
+        meta: { title: '访问凭证(低代码)', requiresAuth: true, requiresRole: ['admin'] }
       },
       {
         path: 'user',

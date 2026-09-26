@@ -5,16 +5,42 @@
 import { h } from 'vue'
 import { ElTag } from 'element-plus'
 
+function fmtTime(t) {
+  if (!t) return '-'
+  const d = new Date(t)
+  if (Number.isNaN(d.getTime())) return String(t)
+  return d.toLocaleString()
+}
+
 const registry = {
   // 纯文本：空值渲染占位符
   text: ({ value }) => (value === null || value === undefined || value === '') ? '-' : String(value),
 
-  // 标签：支持 row 级 tagTypeOf(row) 与 labelOf(row)，兼容静态 map/tagType 表
+  // 行级标签：支持 tagTypeOf(row)/labelOf(row)，兼容静态 map/tagType
   tag: ({ value, row, col }) => h(ElTag, {
     type: typeof col.tagTypeOf === 'function' ? col.tagTypeOf(row) : (col.tagType?.[value] || 'info'),
     size: 'small',
     effect: col.tagEffect || 'plain',
   }, () => typeof col.labelOf === 'function' ? col.labelOf(row) : (col.map?.[value] ?? value)),
+
+  // 静态字典回显：col.map {值:中文} + col.tagType {值:类型}，无 row 函数
+  dict: ({ value, col }) => h(ElTag, {
+    type: col.tagType?.[value] || 'info',
+    size: 'small',
+  }, () => col.map?.[value] ?? value),
+
+  // 时间格式化：ISO/时间戳 → toLocaleString，空值占位（可用 col.emptyText 自定义）
+  date: ({ value, col }) => (value === null || value === undefined || value === '')
+    ? (col?.emptyText || '-')
+    : fmtTime(value),
+
+  // 数组 join：权限/permissions 等多值标签
+  arrayTags: ({ row, col }) => {
+    const arr = row?.[col.prop] || []
+    return arr.length
+      ? arr.map((p, i) => h(ElTag, { key: p + i, size: 'small', style: 'margin-right:6px' }, () => p))
+      : '-'
+  },
 }
 
 /** 注册自定义列控件（逃生舱：复杂列可注册自己的渲染函数）。 */

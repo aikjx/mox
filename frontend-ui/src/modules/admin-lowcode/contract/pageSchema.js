@@ -16,7 +16,7 @@
 export const REQUIRED_API_KEYS = Object.freeze(['list', 'create', 'update', 'remove'])
 
 export const VALID_FIELD_WIDGETS = Object.freeze([
-  'input', 'textarea', 'number', 'select', 'radio', 'switch', 'date', 'treeSelect', 'slot'
+  'input', 'textarea', 'number', 'select', 'radio', 'checkboxGroup', 'switch', 'date', 'treeSelect', 'slot'
 ])
 
 /**

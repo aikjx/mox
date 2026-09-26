@@ -163,6 +163,9 @@
           <el-radio-group v-else-if="field.type === 'radio'" v-model="formData[field.prop]" :disabled="isDisabled(field)">
             <el-radio v-for="opt in field.options || []" :key="opt.value" :value="opt.value">{{ opt.label }}</el-radio>
           </el-radio-group>
+          <el-checkbox-group v-else-if="field.type === 'checkboxGroup'" v-model="formData[field.prop]" :disabled="isDisabled(field)">
+            <el-checkbox v-for="opt in field.options || []" :key="opt.value" :value="opt.value">{{ opt.label }}</el-checkbox>
+          </el-checkbox-group>
           <el-switch
             v-else-if="field.type === 'switch'"
             v-model="formData[field.prop]"

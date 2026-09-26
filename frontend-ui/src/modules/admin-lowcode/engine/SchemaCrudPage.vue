@@ -19,11 +19,12 @@ const schema = markRaw(assertPageSchema(props.pageSchema))
 
 const {
   filteredRows, loading, submitting, dialogVisible, editingRow, isEdit,
-  loadList, onSearch, openCreate, openEdit, onSubmit, runRowAction,
+  total, serverMode, searchNonce,
+  loadList, onSearch, onPageChange, openCreate, openEdit, onSubmit, runRowAction,
 } = useCrudPage(schema)
 
 const columns = computed(() => schema.list.columns)
-// 需要自定义列渲染（tag 等）的列，按 prop 名挂到 DataTable 的动态 cell slot
+// 需要自定义列渲染（tag/dict/date/arrayTags 等）的列，按 prop 名挂到 DataTable 的动态 cell slot
 const widgetColumns = computed(() => schema.list.columns.filter(c => c.widget))
 const searchFields = computed(() => schema.search?.fields || [])
 
@@ -79,32 +80,36 @@ onMounted(loadList)
     <div v-if="schema.toolbar?.length" class="toolbar">
       <el-button
         v-for="t in schema.toolbar" :key="t.label"
-        :type="t.type || 'primary'" :icon="t.icon" @click="onToolbarAction(t)"
+        :type="t.type || 'primary'" :icon="t.icon" :loading="t.loading"
+        @click="onToolbarAction(t)"
       >{{ t.label }}</el-button>
     </div>
 
-    <!-- 表格 -->
-    <!-- serverPagination=true：DataTable 不再内部切片，原样展示已过滤全量行（与原版无分页行为一致） -->
+    <!-- 表格：serverMode 透传 total 并监听 page-change；searchNonce 变更时重挂载重置内部分页 -->
     <DataTable
+      :key="searchNonce"
       :data="filteredRows"
       :columns="columns"
       :loading="loading"
       :row-key="schema.list.rowKey || 'id'"
-      :show-pagination="schema.list.showPagination === true"
-      :server-pagination="true"
-      :total="filteredRows.length"
+      :show-pagination="schema.list.showPagination !== false"
+      :server-pagination="serverMode"
+      :total="total"
       @row-click="openEdit"
+      @page-change="onPageChange"
     >
       <!-- 动态具名 slot：每个需要 widget 渲染的列一个；v-memo 限制单元格仅在依赖变化时重渲 -->
       <template
         v-for="col in widgetColumns" #[`cell-${col.prop}`]="{ row }" :key="col.prop"
       >
-        <SchemaRenderer v-memo="[row.id, row.status, row.plan, row.name]" :node="col" :row="row" />
+        <SchemaRenderer v-memo="[row.id, row.status, row.name, row.enabled]" :node="col" :row="row" />
       </template>
       <template #actions="{ row }">
         <el-button
           v-for="a in visibleRowActions(row)" :key="rowActionLabel(a, row)"
-          size="small" :type="a.type || 'primary'" link @click.stop="runRowAction(a, row)"
+          size="small" :type="a.type || 'primary'" link
+          :disabled="a.disabled ? a.disabled(row) : false"
+          @click.stop="runRowAction(a, row)"
         >{{ rowActionLabel(a, row) }}</el-button>
       </template>
     </DataTable>
