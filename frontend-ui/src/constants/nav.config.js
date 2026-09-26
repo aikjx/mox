@@ -2,6 +2,8 @@
 // 设计原则：80% 用户 80% 时间用的功能放侧边栏
 //          二级功能通过页面内 Tabs 访问
 //          三级低频功能通过全局搜索 (Ctrl+K) 和 AI 对话访问
+// 模块化页面（src/modules/*）的导航项在文件末尾由模块登记表自动挂载，不要在此手抄。
+import { collectNav } from '@/modules'
 
 // ===== 一级导航模块（3 大域 × 11 个模块）=====
 export const NAV_MODULES = [
@@ -123,10 +125,10 @@ export const HIDDEN_MODULES = [
 
 // ===== 5 阶段流程（与 PhasePipeline 对齐 · 按项目开发流程）=====
 export const PROJECT_PHASES = [
-  { key: 'requirement', label: '需求阶段', desc: 'AI 对话 · 需求编译 · 知识库', color: '#6366f1', group: 's1-require' },
-  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟 · 架构融合', color: '#06b6d4', group: 's2-arch' },
-  { key: 'develop', label: '开发阶段', desc: '算子 · 工作流 · 插件 · 自动化', color: '#10b981', group: 's3-dev' },
-  { key: 'release', label: '发布阶段', desc: '监控 · 文档 · 系统管理', color: '#f59e0b', group: 's4-release' }
+  { key: 'requirement', label: '需求阶段', desc: 'AI 对话 · 需求编译 · 知识库', color: 'var(--cat-1-fill)', group: 's1-require' },
+  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟 · 架构融合', color: 'var(--cat-2-fill)', group: 's2-arch' },
+  { key: 'develop', label: '开发阶段', desc: '算子 · 工作流 · 插件 · 自动化', color: 'var(--cat-3-fill)', group: 's3-dev' },
+  { key: 'release', label: '发布阶段', desc: '监控 · 文档 · 系统管理', color: 'var(--cat-4-fill)', group: 's4-release' }
 ]
 
 // ===== 顶栏⚡新建命令（6 项，按 4 阶段顺序排）=====
@@ -137,23 +139,6 @@ export const QUICK_CREATE_COMMANDS = [
   { key: 'expert',     label: '注册专家',     icon: 'User',        tip: '专家联盟招募',        action: 'event', event: 'mox:open-register-expert' },
   { key: 'workflow',   label: '新建工作流',   icon: 'Operation',   tip: 'S3 方案设计',         action: 'route', route: '/workflow', query: { action: 'create' } },
   { key: 'market',     label: '上传算子包',   icon: 'Shop',        tip: 'S4 注册算子',         action: 'route', route: '/market', query: { action: 'upload' } }
-]
-
-// ===== 工作台快捷导航（ExpertWorkspace 专用）=====
-// 专家联盟工作台内的快捷入口卡片
-export const EXPERT_WORKSPACE_QUICK_NAV = [
-  { key: 'graph', label: '知识图谱', path: '/graph', icon: 'Share', desc: '图谱探索与分析', color: '#06b6d4' },
-  { key: 'knowledge', label: '知识库', path: '/resources/knowledge', icon: 'Coin', desc: '文档与知识管理', color: '#10b981' },
-  { key: 'expert-center', label: '联盟管理', path: '/expert-center', icon: 'Setting', desc: '专家管理配置', color: '#8b5cf6' },
-  { key: 'ai', label: 'AI 对话', path: '/ai', icon: 'ChatDotRound', desc: '通用 AI 助手', color: '#ec4899' }
-]
-
-// ===== 工作台快捷操作（ExpertWorkspace 专用）=====
-export const EXPERT_WORKSPACE_QUICK_ACTIONS = [
-  { key: 'register-expert', label: '注册专家', icon: 'Plus', desc: '添加新的领域专家', color: '#7c3aed' },
-  { key: 'new-debate', label: '发起辩论', icon: 'Aim', desc: '多专家观点碰撞', color: '#ef4444' },
-  { key: 'multi-consult', label: '多专家咨询', icon: 'User', desc: '协同解答复杂问题', color: '#06b6d4' },
-  { key: 'algo-analysis', label: '算法分析', icon: 'DataAnalysis', desc: '图谱与数据分析', color: '#f59e0b' }
 ]
 
 // ===== 快捷键分组（Shift + ? 弹 Drawer 展示给用户）=====
@@ -192,7 +177,7 @@ export const HOTKEY_GROUPS = [
 export const ICON_NAV_GROUPS = [
   { key: 'project', label: '项目', items: [
     { key: 'dashboard', label: '工作台', icon: '📊', path: '/dashboard' },
-    { key: 'projects', label: '项目中心', icon: '📁', path: '/projects', badge: 12 },
+    { key: 'projects', label: '项目中心', icon: '📁', path: '/projects' },
     { key: 'tasks', label: '任务中心', icon: '✅', path: '/tasks' },
   ]},
   { key: 'capability', label: '能力', items: [
@@ -201,6 +186,13 @@ export const ICON_NAV_GROUPS = [
     { key: 'operators', label: '算子引擎', icon: '⚙️', path: '/operators' },
     { key: 'workflow', label: '工作流', icon: '🔄', path: '/workflow' },
     { key: 'expert', label: '专家联盟', icon: '👥', path: '/expert-workspace' },
+    // —— 注册表派生的专家联盟模块页（collectNav 单源，勿手改路由；与 expert-alliance/index.js nav 一一对应）——
+    { key: 'alliance-console', label: '联盟控制台', icon: '🎛️', path: '/alliance/console' },
+    { key: 'alliance-collab', label: '智能协作', icon: '🧠', path: '/alliance/collab' },
+    { key: 'alliance-orchestration', label: '专家编排台', icon: '🧭', path: '/alliance/orchestration' },
+    { key: 'alliance-graph', label: '协作图谱', icon: '🔗', path: '/alliance/graph' },
+    { key: 'alliance-sessions', label: '会话中心', icon: '💬', path: '/alliance/sessions' },
+    { key: 'alliance-experts', label: '联盟专家广场', icon: '🎓', path: '/alliance/experts' },
   ]},
   { key: 'ecosystem', label: '生态', items: [
     { key: 'market', label: '算子商城', icon: '🛒', path: '/market' },
@@ -224,15 +216,15 @@ export const MODULE_SIDEBAR_CONFIG = {
     title: '项目中心', subtitle: '项目管理与协作',
     sections: [
       { title: '项目', items: [
-        { key: 'all', label: '全部项目', icon: '📋', count: 24 },
-        { key: 'active', label: '进行中', icon: '🔄', count: 12 },
-        { key: 'paused', label: '已暂停', icon: '⏸️', count: 2 },
-        { key: 'done', label: '已完成', icon: '✅', count: 8 },
+        { key: 'all', label: '全部项目', icon: '📋' },
+        { key: 'active', label: '进行中', icon: '🔄' },
+        { key: 'paused', label: '已暂停', icon: '⏸️' },
+        { key: 'done', label: '已完成', icon: '✅' },
       ]},
       { title: '我的', items: [
-        { key: 'starred', label: '收藏的项目', icon: '⭐', count: 5 },
-        { key: 'mine', label: '我负责的', icon: '👤', count: 3 },
-        { key: 'recent', label: '最近访问', icon: '🕐', count: 6 },
+        { key: 'starred', label: '收藏的项目', icon: '⭐' },
+        { key: 'mine', label: '我负责的', icon: '👤' },
+        { key: 'recent', label: '最近访问', icon: '🕐' },
       ]}
     ]
   },
@@ -240,28 +232,28 @@ export const MODULE_SIDEBAR_CONFIG = {
     title: '任务中心', subtitle: '任务与待办管理',
     sections: [
       { title: '任务', items: [
-        { key: 'all', label: '全部任务', icon: '📋', count: 28 },
-        { key: 'today', label: '今日待办', icon: '☀️', count: 5 },
-        { key: 'week', label: '本周任务', icon: '📅', count: 12 },
-        { key: 'done', label: '已完成', icon: '✅', count: 16 },
+        { key: 'all', label: '全部任务', icon: '📋' },
+        { key: 'today', label: '今日待办', icon: '☀️' },
+        { key: 'week', label: '本周任务', icon: '📅' },
+        { key: 'done', label: '已完成', icon: '✅' },
       ]},
       { title: '优先级', items: [
-        { key: 'high', label: '高优先级', icon: '🔴', count: 4 },
-        { key: 'mid', label: '中优先级', icon: '🟡', count: 10 },
-        { key: 'low', label: '低优先级', icon: '🟢', count: 14 },
+        { key: 'high', label: '高优先级', icon: '🔴' },
+        { key: 'mid', label: '中优先级', icon: '🟡' },
+        { key: 'low', label: '低优先级', icon: '🟢' },
       ]}
     ]
   },
   expert: {
     title: '专家联盟', subtitle: '专家协作与管理',
     sections: [
-      { title: '专家', items: [
-        { key: 'all', label: '全部专家', icon: '👥' },
-        { key: 'ai', label: 'AI 算法', icon: '🤖' },
-        { key: 'arch', label: '架构设计', icon: '🏗️' },
-        { key: 'frontend', label: '前端开发', icon: '🎨' },
-        { key: 'backend', label: '后端开发', icon: '⚙️' },
-        { key: 'data', label: '数据工程', icon: '📊' },
+      { title: '工作台', items: [
+        { key: 'workspace', label: '联盟工作台', icon: '🖥️', path: '/expert-workspace' },
+        { key: 'plaza', label: '专家广场', icon: '👥', path: '/expert-plaza' },
+      ]},
+      { title: '管理', items: [
+        { key: 'center', label: '联盟管理', icon: '🛠️', path: '/expert-center' },
+        { key: 'config', label: '专家配置', icon: '🎛️', path: '/expert-config' },
       ]},
     ]
   },
@@ -271,4 +263,17 @@ export const MODULE_SIDEBAR_CONFIG = {
   workflow: { title: '工作流', subtitle: '流程编排', sections: [] },
   market: { title: '算子商城', subtitle: '发现与分享', sections: [] },
   admin: { title: '系统设置', subtitle: '配置与管理', sections: [] },
+}
+
+// ===== 模块化页面导航自动挂载 =====
+// src/modules/* 声明的 nav 落入其 meta.module 对应模块的侧栏；新增模块页面不需要再改本文件。
+for (const item of collectNav()) {
+  const cfg = MODULE_SIDEBAR_CONFIG[item.module]
+  if (!cfg) continue
+  const title = item.section || '模块页面'
+  let section = cfg.sections.find(s => s.title === title)
+  if (!section) { section = { title, items: [] }; cfg.sections.push(section) }
+  if (!section.items.some(i => i.path === item.path)) {
+    section.items.push({ key: item.key, label: item.label, icon: item.icon, path: item.path })
+  }
 }
