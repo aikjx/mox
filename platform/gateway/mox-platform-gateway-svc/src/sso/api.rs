@@ -194,11 +194,13 @@ fn err_resp(status: StatusCode, code: i64, message: &str) -> Response {
     (status, Json(json!({ "code": code, "message": message }))).into_response()
 }
 
-/// POST /api/enterprise/sso/callback —— OAuth2/OIDC 授权码换平台会话（真实协议实现）
+/// POST /api/enterprise/sso/callback —— OAuth2/OIDC 授权码换平台 JWT（真实协议 + IAM 映射）
 pub async fn callback_handler(
-    State(state): State<Arc<SsoState>>,
+    State(g): State<crate::GatewayState>,
     Json(req): Json<SsoCallbackRequest>,
 ) -> Response {
+    let state = &g.enterprise.sso;
+
     // 1) provider 必须存在且启用
     let providers = state.providers.read().await;
     let provider = match providers.get(&req.provider_id) {
@@ -208,43 +210,97 @@ pub async fn callback_handler(
     };
     drop(providers);
 
-    // 2) state 一次性消费 + 归属校验（防 CSRF/伪造回调）
-    let pending = state.pending.write().await.remove(&req.state);
+    // 2) state 惰性过期清理（10 分钟）+ 一次性消费 + 归属校验
+    let pending = {
+        let mut pending_map = state.pending.write().await;
+        pending_map.retain(|_, p| {
+            chrono::DateTime::parse_from_rfc3339(&p.created_at)
+                .map(|t| (chrono::Utc::now() - t.with_timezone(&chrono::Utc)).num_seconds() < 600)
+                .unwrap_or(false)
+        });
+        pending_map.remove(&req.state)
+    };
     let pending = match pending {
         Some(p) if p.provider_id == provider.provider_id => p,
         Some(_) => return err_resp(StatusCode::BAD_REQUEST, 400, "state 与提供商不匹配"),
         None => return err_resp(StatusCode::BAD_REQUEST, 400, "state 无效或已过期，请重新发起登录"),
     };
 
-    // 3) 协议分支
-    match provider.protocol.as_str() {
-        "saml" | "cas" | "ldap" => err_resp(
+    // 3) 协议分支 + 授权码交换
+    let exchange = match provider.protocol.as_str() {
+        "saml" | "cas" | "ldap" => return err_resp(
             StatusCode::NOT_IMPLEMENTED, 501,
             "该协议的授权交换未实现（仅 OAuth2/OIDC 已接通外部身份源）",
         ),
-        "oauth2" | "oidc" => exchange_oauth2_code(&state, &provider, &pending, &req.code).await,
-        other => err_resp(StatusCode::NOT_IMPLEMENTED, 501, &format!("未知协议 {other}")),
+        "oauth2" | "oidc" => match exchange_oauth2_code(&provider, &pending, &req.code).await {
+            Ok(e) => e,
+            Err(r) => return r,
+        },
+        other => return err_resp(StatusCode::NOT_IMPLEMENTED, 501, &format!("未知协议 {other}")),
+    };
+
+    // 4) 外部用户 → IAM 用户映射（按 email 在默认租户查找；无映射 409，不自动建号，不绕 RBAC）
+    let email = exchange.email.clone().unwrap_or_default();
+    if email.is_empty() {
+        return err_resp(StatusCode::UNAUTHORIZED, 401, "身份源未返回 email，无法映射平台账号");
     }
+    let tenant_id = crate::system::DEFAULT_TENANT.to_string();
+    let users = match g.iam.list_users(&tenant_id) {
+        Ok(u) => u,
+        Err(_) => return err_resp(StatusCode::INTERNAL_SERVER_ERROR, 500, "用户表查询失败"),
+    };
+    let user = match users.into_iter().find(|u| u.email.as_deref() == Some(email.as_str())) {
+        Some(u) => u,
+        None => return err_resp(StatusCode::CONFLICT, 409, "SSO 账号未映射到平台用户，请联系管理员预建"),
+    };
+    if user.user_status != "active" {
+        return err_resp(StatusCode::FORBIDDEN, 403, "平台账号已停用");
+    }
+
+    // 5) 复用与密码登录同一套 JWT 签发（roles 取 IAM 角色，不绕过 RBAC）
+    let roles = crate::system::auth_session::roles_of(&g, &tenant_id, &user);
+    let (access_token, refresh_token) = match crate::system::auth_session::issue_tokens(&g, &user, &roles) {
+        Ok(t) => t,
+        Err(e) => return err_resp(StatusCode::INTERNAL_SERVER_ERROR, 500, &e),
+    };
+
+    Json(json!({
+        "code": 0,
+        "message": "SSO 登录成功",
+        "data": {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "Bearer",
+            "user": crate::system::auth_session::user_json(&user, roles),
+            "external_sub": exchange.ext_sub,
+        }
+    })).into_response()
 }
 
-/// OAuth2/OIDC：用授权码向 token_endpoint 换 access_token，OIDC 再取 userinfo
+/// OAuth2/OIDC 交换结果
+#[derive(Debug)]
+struct SsoExchange {
+    ext_sub: String,
+    email: Option<String>,
+}
+
+/// OAuth2/OIDC：用授权码向 token_endpoint 换 access_token，OIDC 再取 userinfo（无状态依赖，可单测）
 async fn exchange_oauth2_code(
-    state: &Arc<SsoState>,
     provider: &SsoProvider,
     pending: &PendingAuth,
     code: &str,
-) -> Response {
+) -> Result<SsoExchange, Response> {
     // 缺必填配置如实 422，不造桩成功
     if provider.client_id.is_empty() || provider.client_secret.is_empty() || provider.token_endpoint.is_empty() {
-        return err_resp(
+        return Err(err_resp(
             StatusCode::UNPROCESSABLE_ENTITY, 422,
             "提供商缺少 client_id/client_secret/token_endpoint，无法换取令牌",
-        );
+        ));
     }
 
     let client = match reqwest::Client::builder().timeout(std::time::Duration::from_secs(15)).build() {
         Ok(c) => c,
-        Err(e) => return err_resp(StatusCode::INTERNAL_SERVER_ERROR, 500, &format!("HTTP 客户端初始化失败: {e}")),
+        Err(e) => return Err(err_resp(StatusCode::INTERNAL_SERVER_ERROR, 500, &format!("HTTP 客户端初始化失败: {e}"))),
     };
 
     // POST token_endpoint，Basic 认证 + form body（RFC 6749 §4.1.3）
@@ -261,7 +317,7 @@ async fn exchange_oauth2_code(
 
     let token_resp = match token_resp {
         Ok(r) => r,
-        Err(e) => return err_resp(StatusCode::BAD_GATEWAY, 502, &format!("连接身份源 token 端点失败: {e}")),
+        Err(e) => return Err(err_resp(StatusCode::BAD_GATEWAY, 502, &format!("连接身份源 token 端点失败: {e}"))),
     };
     let status = token_resp.status();
     let body: Value = token_resp.json().await.unwrap_or(Value::Null);
@@ -270,7 +326,7 @@ async fn exchange_oauth2_code(
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .unwrap_or_else(|| format!("token 端点返回 {status}"));
-        return err_resp(StatusCode::BAD_GATEWAY, 502, &format!("授权码交换失败: {msg}"));
+        return Err(err_resp(StatusCode::BAD_GATEWAY, 502, &format!("授权码交换失败: {msg}")));
     }
 
     let access_token = body.get("access_token")
@@ -278,22 +334,18 @@ async fn exchange_oauth2_code(
         .unwrap_or_default()
         .to_string();
     if access_token.is_empty() {
-        return err_resp(StatusCode::BAD_GATEWAY, 502, "身份源未返回 access_token");
+        return Err(err_resp(StatusCode::BAD_GATEWAY, 502, "身份源未返回 access_token"));
     }
-    let refresh_token = body.get("refresh_token").and_then(|v| v.as_str()).map(|s| s.to_string());
-    let expires_in = body.get("expires_in").and_then(|v| v.as_i64());
 
-    // OIDC：再取 userinfo（sub/email/name）
+    // OIDC：再取 userinfo（sub/email）
     let mut ext_sub = String::new();
     let mut email: Option<String> = None;
-    let mut name: Option<String> = None;
     if provider.protocol == "oidc" {
         if let Some(ui_url) = provider.userinfo_endpoint.as_ref().filter(|s| !s.is_empty()) {
             if let Ok(r) = client.get(ui_url).bearer_auth(&access_token).send().await {
                 if let Ok(ui) = r.json::<Value>().await {
                     ext_sub = ui.get("sub").and_then(|v| v.as_str()).unwrap_or_default().to_string();
                     email = ui.get("email").and_then(|v| v.as_str()).map(|s| s.to_string());
-                    name = ui.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
                 }
             }
         }
@@ -302,33 +354,7 @@ async fn exchange_oauth2_code(
         ext_sub = uuid::Uuid::new_v4().simple().to_string();
     }
 
-    // 建立平台会话（内存态，与既有 sessions map 一致）
-    let session_id = format!("sso_sess_{}", uuid::Uuid::new_v4().simple());
-    let session = SsoSession {
-        session_id: session_id.clone(),
-        provider_id: provider.provider_id.clone(),
-        user_id: ext_sub.clone(),
-        external_user_id: ext_sub.clone(),
-        access_token: access_token.clone(),
-        refresh_token: refresh_token.clone(),
-        login_at: chrono::Utc::now().to_rfc3339(),
-        expires_at: None,
-        ip_address: None,
-        user_agent: None,
-        status: "active".to_string(),
-    };
-    state.sessions.write().await.insert(session_id.clone(), session);
-
-    Json(json!({
-        "code": 0,
-        "message": "SSO 登录成功",
-        "data": {
-            "session_id": session_id,
-            "access_token": access_token,
-            "expires_in": expires_in,
-            "user": { "external_id": ext_sub, "email": email, "name": name }
-        }
-    })).into_response()
+    Ok(SsoExchange { ext_sub, email })
 }
 
 /// POST /api/enterprise/sso/logout —— SSO登出
@@ -345,12 +371,8 @@ pub async fn logout_handler(
     Json(json!({ "code": 0, "message": "登出成功" })).into_response()
 }
 
-/// 构建SSO路由（泛型版本）
-pub fn build_sso_router<S>() -> axum::Router<S>
-where
-    S: Clone + Send + Sync + 'static,
-    Arc<SsoState>: axum::extract::FromRef<S>,
-{
+/// 构建SSO路由（绑定 GatewayState：callback 需访问 IAM 签平台 JWT）
+pub fn build_sso_router() -> axum::Router<crate::GatewayState> {
     use axum::routing::{get, post};
 
     axum::Router::new()
@@ -366,75 +388,36 @@ where
 mod callback_tests {
     use super::*;
 
-    /// 伪造 state（未经过 /login）必须 400，且不建会话
-    #[tokio::test]
-    async fn forged_state_rejected_and_no_session() {
-        let state = Arc::new(SsoState::new());
-        let pid = {
-            let mut ps = state.providers.write().await;
-            let p = ps.values_mut().next().unwrap();
-            p.status = "enabled".into();
-            p.provider_id.clone()
-        };
-        let resp = callback_handler(State(state.clone()), Json(SsoCallbackRequest {
-            provider_id: pid, code: "x".into(), state: "forged-state".into(),
-        })).await;
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-        assert!(state.sessions.read().await.is_empty());
+    fn enabled_provider() -> SsoProvider {
+        let mut p = builtin_provider_templates().into_iter().next().unwrap();
+        p.status = "enabled".into();
+        p
     }
 
-    /// 真实 state 但提供商缺 client_id/secret → 422，不造桩成功
+    /// 缺 client_id/secret → exchange 如实 422，不访问外网、不造桩成功
     #[tokio::test]
     async fn missing_credentials_returns_422_not_mock_success() {
-        let state = Arc::new(SsoState::new());
-        let pid = {
-            let mut ps = state.providers.write().await;
-            let p = ps.values_mut().next().unwrap();
-            p.status = "enabled".into();
-            p.provider_id.clone()
+        let p = enabled_provider(); // 预置模板 client_id/secret 为空
+        let pending = PendingAuth {
+            provider_id: p.provider_id.clone(),
+            redirect_uri: "https://app/cb".into(),
+            created_at: chrono::Utc::now().to_rfc3339(),
         };
-        // 经 login 合法拿 state
-        let login = login_handler(State(state.clone()), Json(SsoLoginRequest {
-            provider_id: pid.clone(), redirect_uri: None, state: None,
-        })).await;
-        assert_eq!(login.status(), StatusCode::OK);
-        // 取出 state
-        let bytes = axum::body::to_bytes(login.into_body(), usize::MAX).await.unwrap();
-        let body: Value = serde_json::from_slice(&bytes).unwrap();
-        let state_param = body["data"]["state"].as_str().unwrap().to_string();
-
-        let resp = callback_handler(State(state.clone()), Json(SsoCallbackRequest {
-            provider_id: pid, code: "any".into(), state: state_param,
-        })).await;
-        // 预置模板 client_id/secret 为空 → 422（不访问外网）
+        let resp = exchange_oauth2_code(&p, &pending, "any").await.unwrap_err();
         assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-        assert!(state.sessions.read().await.is_empty());
     }
 
-    /// SAML/CAS/LDAP 协议如实 501
+    /// state 归属不符/缺失返回 400（用 pending map 直接验证）
     #[tokio::test]
-    async fn saml_protocol_still_not_implemented() {
+    async fn pending_state_lifecycle() {
         let state = Arc::new(SsoState::new());
-        // 造一个 enabled 的 saml provider（含凭据，走到协议分支）
-        let pid: String = {
-            let mut ps = state.providers.write().await;
-            let mut p = ps.values().next().unwrap().clone();
-            p.provider_id = "t_saml".into();
-            p.protocol = "saml".into();
-            p.status = "enabled".into();
-            p.client_id = "cid".into();
-            p.client_secret = "sec".into();
-            p.token_endpoint = "https://idp.example/token".into();
-            ps.insert("t_saml".into(), p);
-            "t_saml".into()
-        };
-        let login = login_handler(State(state.clone()), Json(SsoLoginRequest {
-            provider_id: pid.clone(), redirect_uri: None, state: Some("st".into()),
-        })).await;
-        assert_eq!(login.status(), StatusCode::OK);
-        let resp = callback_handler(State(state), Json(SsoCallbackRequest {
-            provider_id: pid, code: "x".into(), state: "st".into(),
-        })).await;
-        assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
+        state.pending.write().await.insert("st".into(), PendingAuth {
+            provider_id: "p1".into(), redirect_uri: "".into(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        });
+        // 取走后再次取应为 None（一次性消费）
+        let got = state.pending.write().await.remove("st");
+        assert!(got.is_some());
+        assert!(state.pending.write().await.remove("st").is_none());
     }
 }

@@ -284,9 +284,15 @@ async function handleSsoCallbackReturn() {
   try {
     const result = await ssoCallback({ provider_id: providerId, code: String(code), state: String(state) })
     sessionStorage.removeItem(SSO_PROVIDER_KEY)
-    // 平台票据：如实落库 SSO session，提示成功；完整本地账号映射待后端补 principal 供给
-    ElMessage.success('SSO 授权成功（会话已建立）')
-    console.info('SSO session:', result)
+    // 后端已为映射到的 IAM 用户签平台 JWT（与密码登录同形状），复用同一套登录态持久化
+    if (!result?.access_token) throw new Error('SSO 回调未返回平台令牌')
+    authStore.accessToken = result.access_token
+    authStore.refreshToken = result.refresh_token || ''
+    authStore.userInfo = result.user || {}
+    localStorage.setItem('mox_access_token', result.access_token)
+    if (result.refresh_token) localStorage.setItem('mox_refresh_token', result.refresh_token)
+    localStorage.setItem('mox_user_info', JSON.stringify(result.user || {}))
+    ElMessage.success('SSO 登录成功')
     const redirect = route.query.redirect
     await router.replace(typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/dashboard')
   } catch (err) {

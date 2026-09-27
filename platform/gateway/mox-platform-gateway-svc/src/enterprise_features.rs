@@ -100,7 +100,7 @@ pub fn build_enterprise_router_for_gateway(_gateway: &GatewayState) -> Router<Ga
     // 构建各模块路由（直接使用 GatewayState 作为状态类型）
     let integration_router: Router<GatewayState> = build_integration_router::<GatewayState>();
     let designer_router: Router<GatewayState> = build_designer_router::<GatewayState>();
-    let sso_router: Router<GatewayState> = build_sso_router::<GatewayState>();
+    let sso_router: Router<GatewayState> = build_sso_router();
     let message_router: Router<GatewayState> = build_message_center_router::<GatewayState>();
     let document_router: Router<GatewayState> = build_document_router::<GatewayState>();
     let admin_router: Router<GatewayState> = build_admin_router::<GatewayState>();

@@ -26,7 +26,7 @@ pub fn domain_router(role: HostRole, gateway: &GatewayState) -> Router<GatewaySt
         HostRole::Iam => crate::system::build_system_router()
             .merge(crate::system::build_security_router())
             .merge(crate::rbac::build_rbac_router())
-            .nest("/api/enterprise/sso", crate::sso::api::build_sso_router::<GatewayState>()),
+            .nest("/api/enterprise/sso", crate::sso::api::build_sso_router()),
         HostRole::All => unreachable!("all uses the existing module registry"),
     };
     let auth = gateway.auth.clone();

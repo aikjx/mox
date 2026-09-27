@@ -136,8 +136,7 @@ fn tenant_input_of(raw: Option<String>) -> String {
     }
 }
 
-fn roles_of(s: &GatewayState, tenant_id: &str, user: &mox_platform_iam_core::IamUser) -> Vec<String> {
-    let mut roles: Vec<String> = s
+pub(crate) fn roles_of(s: &GatewayState, tenant_id: &str, user: &mox_platform_iam_core::IamUser) -> Vec<String> {    let mut roles: Vec<String> = s
         .iam
         .get_user_roles(tenant_id, &user.user_id)
         .unwrap_or_default()
@@ -153,7 +152,7 @@ fn roles_of(s: &GatewayState, tenant_id: &str, user: &mox_platform_iam_core::Iam
     roles
 }
 
-fn user_json(user: &mox_platform_iam_core::IamUser, roles: Vec<String>) -> Value {
+pub(crate) fn user_json(user: &mox_platform_iam_core::IamUser, roles: Vec<String>) -> Value {
     json!({
         "id": user.user_id,
         "username": user.username,
@@ -166,7 +165,7 @@ fn user_json(user: &mox_platform_iam_core::IamUser, roles: Vec<String>) -> Value
     })
 }
 
-fn issue_tokens(
+pub(crate) fn issue_tokens(
     s: &GatewayState,
     user: &mox_platform_iam_core::IamUser,
     roles: &[String],
