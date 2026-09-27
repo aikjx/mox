@@ -81,7 +81,6 @@
 
           <div class="form-options">
             <el-checkbox v-model="loginForm.remember_me">记住我</el-checkbox>
-            <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
           </div>
 
           <el-form-item>
@@ -123,21 +122,40 @@
         </div>
 
         <div class="social-login">
-          <el-button size="large" class="social-button" @click="handleSSO('sso')">
+          <el-button size="large" class="social-button" :loading="ssoLoading" @click="handleSsoLogin">
             企业 SSO 登录
           </el-button>
         </div>
       </div>
     </div>
+
+    <!-- 企业 SSO 提供商选择 -->
+    <el-dialog v-model="ssoDialogVisible" title="选择企业登录方式" width="420px" append-to-body>
+      <div v-loading="ssoLoading">
+        <el-empty v-if="!ssoLoading && ssoProviders.length === 0" description="暂无可登录的 SSO 提供商，请联系管理员启用" />
+        <div v-else class="sso-provider-list">
+          <div
+            v-for="p in ssoProviders"
+            :key="p.provider_id"
+            class="sso-provider-item"
+            @click="chooseProvider(p)"
+          >
+            <span class="sso-provider-name">{{ p.name }}</span>
+            <el-tag size="small" effect="plain">{{ p.protocol }}</el-tag>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { User, Lock, OfficeBuilding } from '@element-plus/icons-vue'
-import { useAuthStore } from '../../stores/auth.store'
+import { useAuthStore } from '@/stores'
+import { getSsoProviders, ssoLogin } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -201,8 +219,53 @@ async function handleLogin() {
   }
 }
 
-function handleSSO(provider) {
-  ElMessage.info(`${provider} 登录功能开发中`)
+// ── 企业 SSO 登录 ─────────────────────────────────────────────
+// 流程：拉取启用中的提供商 → 选择 → POST /sso/login 拿 auth_url → 跳转到身份源。
+// 注意：后端 /callback 当前 501（外部身份源授权码交换未实现），本流程只负责"发起跳转"，
+// 不伪造平台登录态；真正回跳换 token 待后端 callback 落地后接入。
+const ssoDialogVisible = ref(false)
+const ssoLoading = ref(false)
+const ssoProviders = ref([])
+
+async function handleSsoLogin() {
+  if (ssoLoading.value) return
+  ssoLoading.value = true
+  try {
+    const list = await getSsoProviders({ status: 'enabled' })
+    ssoProviders.value = Array.isArray(list) ? list : []
+    if (ssoProviders.value.length === 0) {
+      ElMessage.warning('暂无可登录的 SSO 提供商，请联系管理员启用')
+      return
+    }
+    if (ssoProviders.value.length === 1) {
+      // 仅一个启用提供商，直接发起跳转
+      await chooseProvider(ssoProviders.value[0])
+    } else {
+      ssoDialogVisible.value = true
+    }
+  } catch (err) {
+    ElMessage.error(err.message || '获取 SSO 提供商失败')
+  } finally {
+    ssoLoading.value = false
+  }
+}
+
+async function chooseProvider(provider) {
+  ssoDialogVisible.value = false
+  ssoLoading.value = true
+  try {
+    const redirect = route.query.redirect
+    const { auth_url } = await ssoLogin({
+      provider_id: provider.provider_id,
+      redirect_uri: typeof redirect === 'string' ? redirect : undefined
+    })
+    if (!auth_url) throw new Error('后端未返回授权地址')
+    window.location.href = auth_url
+  } catch (err) {
+    ElMessage.error(err.message || 'SSO 登录发起失败')
+  } finally {
+    ssoLoading.value = false
+  }
 }
 </script>
 
@@ -303,7 +366,7 @@ function handleSSO(provider) {
 
 .form-subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   margin: 0 0 32px 0;
 }
 
@@ -316,16 +379,6 @@ function handleSSO(provider) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-}
-
-.forgot-link {
-  color: #667eea;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.forgot-link:hover {
-  text-decoration: underline;
 }
 
 .login-button {
@@ -342,7 +395,7 @@ function handleSSO(provider) {
   text-align: center;
   margin-top: 24px;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .register-link {
@@ -385,6 +438,15 @@ function handleSSO(provider) {
 .social-button {
   width: 100%;
 }
+
+.sso-provider-list { display: flex; flex-direction: column; gap: 8px; }
+.sso-provider-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 8px;
+  cursor: pointer; transition: all .15s;
+}
+.sso-provider-item:hover { border-color: #667eea; background: #f5f7ff; }
+.sso-provider-name { font-size: 14px; }
 
 /* 响应式 */
 @media (max-width: 768px) {

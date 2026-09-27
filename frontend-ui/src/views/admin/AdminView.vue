@@ -49,7 +49,8 @@ const TABS = [
   { key: 'api', label: '接口管理', icon: 'Connection' },
   { key: 'logs', label: '在线日志', icon: 'Tickets' },
   { key: 'llm', label: '大模型配置', icon: 'Cpu' },
-  { key: 'docs', label: 'API 文档', icon: 'Document' }
+  { key: 'docs', label: 'API 文档', icon: 'Document' },
+  { key: 'sso', label: '企业 SSO', icon: 'Connection' }
 ]
 
 const TAB_KEYS = TABS.map(t => t.key)
