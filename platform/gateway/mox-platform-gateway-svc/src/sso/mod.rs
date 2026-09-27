@@ -150,6 +150,14 @@ pub struct SsoSession {
     pub status: String,
 }
 
+/// 发起登录时暂存的 state 凭证（防 CSRF + 回调时回填 provider/redirect_uri）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PendingAuth {
+    pub provider_id: String,
+    pub redirect_uri: String,
+    pub created_at: String,
+}
+
 /// 创建 SSO 提供商请求
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSsoProviderRequest {

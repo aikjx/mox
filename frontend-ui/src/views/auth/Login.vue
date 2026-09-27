@@ -150,12 +150,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { User, Lock, OfficeBuilding } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores'
-import { getSsoProviders, ssoLogin } from '@/api'
+import { getSsoProviders, ssoLogin, ssoCallback } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -220,9 +220,9 @@ async function handleLogin() {
 }
 
 // ── 企业 SSO 登录 ─────────────────────────────────────────────
-// 流程：拉取启用中的提供商 → 选择 → POST /sso/login 拿 auth_url → 跳转到身份源。
-// 注意：后端 /callback 当前 501（外部身份源授权码交换未实现），本流程只负责"发起跳转"，
-// 不伪造平台登录态；真正回跳换 token 待后端 callback 落地后接入。
+// 流程：拉取启用中的提供商 → 选择 → POST /sso/login 拿 auth_url → 跳身份源；
+// 回跳带 ?code&state 时在 onMounted 里 POST /callback 完成授权码交换。
+const SSO_PROVIDER_KEY = 'sso_pending_provider'
 const ssoDialogVisible = ref(false)
 const ssoLoading = ref(false)
 const ssoProviders = ref([])
@@ -260,6 +260,8 @@ async function chooseProvider(provider) {
       redirect_uri: typeof redirect === 'string' ? redirect : undefined
     })
     if (!auth_url) throw new Error('后端未返回授权地址')
+    // 回跳时需 provider_id，暂存（与 state 配对）
+    sessionStorage.setItem(SSO_PROVIDER_KEY, provider.provider_id)
     window.location.href = auth_url
   } catch (err) {
     ElMessage.error(err.message || 'SSO 登录发起失败')
@@ -267,6 +269,34 @@ async function chooseProvider(provider) {
     ssoLoading.value = false
   }
 }
+
+// 身份源回跳：?code&state → POST /sso/callback 完成授权码交换
+async function handleSsoCallbackReturn() {
+  const code = route.query.code
+  const state = route.query.state
+  if (!code || !state) return
+  const providerId = sessionStorage.getItem(SSO_PROVIDER_KEY)
+  if (!providerId) {
+    ElMessage.warning('登录会话已失效，请重新选择 SSO 提供商')
+    return
+  }
+  ssoLoading.value = true
+  try {
+    const result = await ssoCallback({ provider_id: providerId, code: String(code), state: String(state) })
+    sessionStorage.removeItem(SSO_PROVIDER_KEY)
+    // 平台票据：如实落库 SSO session，提示成功；完整本地账号映射待后端补 principal 供给
+    ElMessage.success('SSO 授权成功（会话已建立）')
+    console.info('SSO session:', result)
+    const redirect = route.query.redirect
+    await router.replace(typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/dashboard')
+  } catch (err) {
+    ElMessage.error(err.message || 'SSO 回调交换失败')
+  } finally {
+    ssoLoading.value = false
+  }
+}
+
+onMounted(handleSsoCallbackReturn)
 </script>
 
 <style scoped>
