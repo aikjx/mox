@@ -52,14 +52,22 @@ pub struct EnterpriseState {
 
 impl EnterpriseState {
     pub fn new() -> Self {
+        // 先构造被调度任务依赖的子状态，再把它们的引用注入 SchedulerState，
+        // 使后台循环能真实清理 SSO pending、归档审计日志（非占位）。
+        let sso = Arc::new(SsoState::new());
+        let admin = Arc::new(AdminState::new());
+        let scheduler = Arc::new(crate::scheduler::api::SchedulerState::new_with_deps(
+            Some(sso.pending.clone()),
+            Some(admin.audit.clone()),
+        ));
         Self {
             integration: Arc::new(IntegrationState::new()),
             designer: Arc::new(DesignerState::new()),
-            sso: Arc::new(SsoState::new()),
+            sso,
             message_center: Arc::new(MessageCenterState::new()),
             document: Arc::new(DocumentState::new()),
-            admin: Arc::new(AdminState::new()),
-            scheduler: Arc::new(SchedulerState::new()),
+            admin,
+            scheduler,
             system_config: Arc::new(ConfigState::new()),
             dictionary: Arc::new(DictionaryState::new()),
             operation_log: Arc::new(OperationLogState::new()),

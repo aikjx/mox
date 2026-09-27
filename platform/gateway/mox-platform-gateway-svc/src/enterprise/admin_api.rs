@@ -280,6 +280,70 @@ pub async fn audit_stats_handler(
     success(stats)
 }
 
+// ==================== 审计日志 CSV 导出 ====================
+
+/// GET /api/audit/export?start=&end=&user=&action=
+///
+/// 按条件查询审计日志，生成真实 CSV 文件写入 `.runtime/audit-exports/`，
+/// 同时以文件流形式返回下载（Content-Disposition: attachment）。
+/// 列：时间戳,用户ID,用户名,操作,IP,状态,详情
+pub async fn export_audit_logs_handler(
+    State(gw): State<crate::GatewayState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Response {
+    let audit = &gw.enterprise.admin.audit;
+    // start/end 为 RFC3339 时间区间；user 按 user_id 精确过滤；action 按 action_type 过滤
+    let logs = audit
+        .query(
+            None,
+            params.get("user").map(|s| s.as_str()),
+            params.get("action").map(|s| s.as_str()),
+            None,
+            None,
+            None,
+            params.get("start").map(|s| s.as_str()),
+            params.get("end").map(|s| s.as_str()),
+        )
+        .await;
+
+    let csv = crate::enterprise::audit::audit_logs_to_csv(&logs);
+
+    // 真实落盘：.runtime/audit-exports/audit-export-<ts>.csv
+    let export_dir = std::env::current_dir()
+        .unwrap_or_default()
+        .join(".runtime")
+        .join("audit-exports");
+    if let Err(e) = std::fs::create_dir_all(&export_dir) {
+        return internal_error(&format!("创建导出目录失败: {e}"));
+    }
+    let filename = format!(
+        "audit-export-{}.csv",
+        chrono::Utc::now().format("%Y%m%d-%H%M%S")
+    );
+    let filepath = export_dir.join(&filename);
+    if let Err(e) = std::fs::write(&filepath, &csv) {
+        return internal_error(&format!("写入导出文件失败: {e}"));
+    }
+
+    // 以 CSV 文件流返回下载
+    let disposition = format!("attachment; filename=\"{filename}\"");
+    let mut resp = axum::http::Response::new(axum::body::Body::from(csv));
+    *resp.status_mut() = axum::http::StatusCode::OK;
+    resp.headers_mut().insert(
+        axum::http::header::CONTENT_TYPE,
+        "text/csv; charset=utf-8".parse().unwrap(),
+    );
+    resp.headers_mut().insert(
+        axum::http::header::CONTENT_DISPOSITION,
+        disposition.parse().unwrap(),
+    );
+    resp.headers_mut().insert(
+        axum::http::header::HeaderName::from_static("x-audit-export-rows"),
+        logs.len().to_string().parse().unwrap(),
+    );
+    resp
+}
+
 // ==================== 请求结构体 ====================
 
 #[derive(Debug, Deserialize)]

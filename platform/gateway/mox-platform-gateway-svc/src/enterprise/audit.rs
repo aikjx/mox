@@ -57,6 +57,9 @@ pub struct AuditLog {
     pub duration_ms: Option<u64>,
     /// 操作时间
     pub created_at: String,
+    /// 是否已归档（定时任务每日标记 7 天前日志，仅标记不删除）
+    #[serde(default)]
+    pub archived: bool,
 }
 
 /// 审计操作类型
@@ -210,6 +213,7 @@ impl AuditLogBuilder {
                 user_agent: None,
                 duration_ms: None,
                 created_at: now,
+                archived: false,
             },
         }
     }
@@ -431,10 +435,123 @@ impl AuditState {
         stats.insert("denied".to_string(), logs.iter().filter(|l| l.result == AuditResult::Denied).count() as i64);
         stats
     }
+
+    /// 归档早于指定天数的审计日志（仅标记 archived=true，不删除记录）。
+    ///
+    /// RFC3339 时间戳可字典序比较（与 query() 一致）。返回本次新归档条数。
+    pub async fn archive_logs_older_than_days(&self, days: i64) -> usize {
+        let cutoff = (chrono::Utc::now() - chrono::Duration::days(days)).to_rfc3339();
+        let mut logs = self.logs.write().await;
+        let mut count = 0usize;
+        for log in logs.iter_mut() {
+            if !log.archived && log.created_at.as_str() < cutoff.as_str() {
+                log.archived = true;
+                count += 1;
+            }
+        }
+        count
+    }
 }
 
 impl Default for AuditState {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// CSV 字段转义：含逗号/引号/换行时用双引号包裹，内部双引号 doubled。
+pub fn csv_escape(field: &str) -> String {
+    let needs_quote = field.contains(',')
+        || field.contains('"')
+        || field.contains('\n')
+        || field.contains('\r');
+    if needs_quote {
+        format!("\"{}\"", field.replace('"', "\"\""))
+    } else {
+        field.to_string()
+    }
+}
+
+/// 把审计日志列表序列化为 CSV 文本（真实文件内容，非桩）。
+///
+/// 列：时间戳,用户ID,用户名,操作,IP,状态,详情
+pub fn audit_logs_to_csv(logs: &[AuditLog]) -> String {
+    let mut out = String::new();
+    out.push_str("时间戳,用户ID,用户名,操作,IP,状态,详情\n");
+    for log in logs {
+        let row = [
+            log.created_at.as_str(),
+            log.user_id.as_str(),
+            log.username.as_str(),
+            log.action_type.display_name(),
+            log.ip_address.as_deref().unwrap_or(""),
+            log.result.as_str(),
+            log.description.as_str(),
+        ];
+        out.push_str(&row.iter().map(|f| csv_escape(f)).collect::<Vec<_>>().join(","));
+        out.push('\n');
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_log(days_ago: i64, desc: &str) -> AuditLog {
+        let ts = (chrono::Utc::now() - chrono::Duration::days(days_ago)).to_rfc3339();
+        let mut log = AuditLogBuilder::new(AuditActionType::Query, "test", "resource")
+            .operator("user_001", "alice")
+            .description(desc)
+            .build();
+        log.created_at = ts; // builder 默认取 now，这里覆盖为指定天数前
+        log
+    }
+
+    #[tokio::test]
+    async fn test_archive_marks_old_only() {
+        let state = AuditState::new();
+        state.record(sample_log(10, "old log")).await; // 应被归档
+        state.record(sample_log(0, "fresh log")).await; // 不应归档
+
+        let archived = state.archive_logs_older_than_days(7).await;
+        assert_eq!(archived, 1, "仅 10 天前的日志应被归档");
+
+        let logs = state.logs.read().await;
+        assert!(logs[0].archived, "10 天前日志应已归档");
+        assert!(!logs[1].archived, "当天日志不应归档");
+    }
+
+    #[tokio::test]
+    async fn test_archive_idempotent() {
+        let state = AuditState::new();
+        state.record(sample_log(30, "very old")).await;
+        assert_eq!(state.archive_logs_older_than_days(7).await, 1);
+        assert_eq!(state.archive_logs_older_than_days(7).await, 0, "重复归档不应再计数");
+    }
+
+    #[test]
+    fn test_csv_header_and_rows() {
+        let logs = vec![sample_log(0, "查看用户列表")];
+        let csv = audit_logs_to_csv(&logs);
+        assert!(csv.starts_with("时间戳,用户ID,用户名,操作,IP,状态,详情\n"));
+        assert!(csv.contains("user_001"));
+        assert!(csv.contains("alice"));
+        assert!(csv.contains("查看用户列表"));
+        assert_eq!(csv.lines().count(), 2, "表头 + 1 行数据");
+    }
+
+    #[test]
+    fn test_csv_escaping() {
+        let logs = vec![sample_log(0, "包含逗号,和\"引号\"")];
+        let csv = audit_logs_to_csv(&logs);
+        // 含逗号与引号的字段应被双引号包裹并转义内部引号
+        assert!(csv.contains("\"包含逗号,和\"\"引号\"\"\""));
+    }
+
+    #[test]
+    fn test_csv_empty_result() {
+        let csv = audit_logs_to_csv(&[]);
+        assert_eq!(csv, "时间戳,用户ID,用户名,操作,IP,状态,详情\n");
     }
 }

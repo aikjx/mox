@@ -149,6 +149,13 @@ pub fn build_module_routers(
         .merge(upgrade(crate::melody::build_melody_router()))
         // —— Cloud 域（L5 /cloud/v1/* · 本地磁盘对象存储，S3 兼容语义；注册中心统一持有）——
         .merge(upgrade(crate::cloud::build_cloud_router_with_state(states.cloud.clone())))
+        // —— 存储管理面（/api/storage/* · /api/modules · StorageBackend 抽象：local 恒在 + s3 env 门控）——
+        .merge(upgrade({
+            let registry = Arc::new(crate::admin_storage::StorageRegistry::new(states.cloud.clone()));
+            crate::admin_storage::build_storage_admin_router(registry)
+        }))
+        // —— LLM 网关管理面·只读族（/api/llm/providers|presets|health|routing · 实时投影 MOX_LLM_* env）——
+        .merge(upgrade(crate::admin_llm::build_llm_admin_router()))
         .merge(upgrade(proxy::build_proxy_router()))
         // —— 对话沉淀域（/api/alliance/sediment · 对话核心内容 → 知识图谱/云盘/知识库）——
         .merge(upgrade(dialogue_sediment::build_sediment_router(states.sediment.clone())))
@@ -194,7 +201,18 @@ pub fn build_module_routers(
         .merge(Router::new().nest(
             "/api/enterprise",
             crate::enterprise_features::build_enterprise_router_for_gateway(gateway),
-        ));
+        ))
+        // —— P1 企业级缺口闭合：审计日志 CSV 导出 + 调度器状态总览 ——
+        // /api/audit/export?start=&end=&user=&action=  真实落盘 .runtime/audit-exports/ 并流式返回
+        .route(
+            "/api/audit/export",
+            axum::routing::get(crate::enterprise::admin_api::export_audit_logs_handler),
+        )
+        // /api/scheduler/status  任务列表 + 下次执行时间 + 上次执行结果
+        .route(
+            "/api/scheduler/status",
+            axum::routing::get(crate::scheduler::api::scheduler_status_handler),
+        );
 
     // 受保护路由统一鉴权：JWT Bearer 或 X-API-Key
     let auth_state: Arc<AuthMiddleware> = gateway.auth.clone();

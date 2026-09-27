@@ -23,6 +23,8 @@
 #![allow(dead_code)]
 pub mod config;
 pub mod auth;
+pub mod password_hash;
+pub mod token_blacklist;
 pub mod rate_limit;
 pub mod o11y;
 pub mod routes;
@@ -45,6 +47,10 @@ pub mod rbac;
 pub mod voice;
 pub mod melody;
 pub mod cloud;
+pub mod storage_backend;
+pub mod admin_storage;
+pub mod admin_llm;
+pub mod dialogue_sediment;
 pub mod integration;
 pub mod designer;
 pub mod sso;
@@ -471,6 +477,11 @@ pub async fn serve_forever(bind_addr: &str, port: u16) -> Result<(), Box<dyn std
     );
 
     let app = build_host_router(state.clone(), role);
+
+    // P1: start background scheduler loop (60s tick).
+    state.enterprise.scheduler.clone().spawn_loop();
+    state.logs.push("INFO", "gateway", "scheduler background loop started (60s tick)");
+
     let addr: SocketAddr = format!("{bind_addr}:{port}").parse()?;
 
     eprintln!("====================================================================");

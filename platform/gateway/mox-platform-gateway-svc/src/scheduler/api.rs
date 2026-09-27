@@ -1,18 +1,96 @@
 //! 定时任务调度 API 端点
 //!
 //! 提供：任务CRUD / 启用禁用 / 手动触发 / 执行历史 / 任务统计 / 模板列表
+//! 以及后台 tokio 执行循环（60s 扫描 due 任务并真实执行）。
 
 use crate::enterprise::api_response::*;
+use crate::enterprise::audit::AuditState;
 use crate::scheduler::*;
+use crate::sso::PendingAuth;
 use axum::{
     extract::{Path, Query, State},
     response::Response,
     Json,
 };
+use chrono::{DateTime, Utc};
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
+
+/// 内置真实任务的处理器类型：sso 待授权清理
+pub const HANDLER_SSO_PENDING_CLEANUP: &str = "sso_pending_cleanup";
+/// 内置真实任务的处理器类型：审计日志归档
+pub const HANDLER_AUDIT_LOG_ARCHIVE: &str = "audit_log_archive";
+
+/// 后台循环扫描间隔（秒）
+pub const LOOP_INTERVAL_SECS: u64 = 60;
+
+/// 已实现真实执行体的处理器白名单（其余内置模板任务不自动执行）。
+pub fn is_handler_implemented(handler_type: &str) -> bool {
+    matches!(
+        handler_type,
+        HANDLER_SSO_PENDING_CLEANUP | HANDLER_AUDIT_LOG_ARCHIVE
+    )
+}
+
+/// 构造一个启用的每日（interval=86400s）真实任务。
+fn daily_runtime_task(
+    task_id: &str,
+    task_name: &str,
+    description: &str,
+    handler_type: &str,
+) -> ScheduledTask {
+    // next_execution_at 置为启动时刻：首次 60s 扫描即执行一次，之后每 24h 一次。
+    let now = Utc::now().to_rfc3339();
+    ScheduledTask {
+        task_id: task_id.to_string(),
+        tenant_id: "system".to_string(),
+        task_name: task_name.to_string(),
+        description: Some(description.to_string()),
+        task_type: TaskType::Interval,
+        category: "maintenance".to_string(),
+        cron_expression: None,
+        interval_seconds: Some(86_400),
+        execute_at: None,
+        handler_type: handler_type.to_string(),
+        params: Some(HashMap::new()),
+        priority: TaskPriority::Low,
+        enabled: true,
+        max_retry: 1,
+        retry_interval_seconds: 60,
+        timeout_seconds: 300,
+        allow_concurrent: false,
+        last_executed_at: None,
+        next_execution_at: Some(now),
+        execution_count: 0,
+        success_count: 0,
+        failure_count: 0,
+        avg_duration_ms: None,
+        created_by: "system".to_string(),
+        created_at: Utc::now().to_rfc3339(),
+        updated_at: Utc::now().to_rfc3339(),
+    }
+}
+
+/// 内置真实后台任务（区别于仅作 CRUD 演示的模板）。
+pub fn builtin_runtime_tasks() -> Vec<ScheduledTask> {
+    vec![
+        daily_runtime_task(
+            "rt_sso_pending_cleanup",
+            "清理过期SSO待授权",
+            "每日清理发起登录后超过24小时仍未完成回调的 SSO pending 授权记录",
+            HANDLER_SSO_PENDING_CLEANUP,
+        ),
+        daily_runtime_task(
+            "rt_audit_log_archive",
+            "审计日志归档",
+            "每日将创建时间早于7天的审计日志标记为 archived（仅标记不删除）",
+            HANDLER_AUDIT_LOG_ARCHIVE,
+        ),
+    ]
+}
 
 /// 定时任务调度状态
 pub struct SchedulerState {
@@ -24,27 +102,247 @@ pub struct SchedulerState {
     pub running_tasks: Arc<RwLock<HashMap<String, String>>>,
     /// 调度器是否运行中
     pub scheduler_running: Arc<RwLock<bool>>,
+    /// 注入：SSO pending 授权表（供 sso_pending_cleanup 任务真实清理 >24h 授权）
+    pub sso_pending: Option<Arc<RwLock<HashMap<String, PendingAuth>>>>,
+    /// 注入：审计日志状态（供 audit_log_archive 任务真实归档 >7 天日志）
+    pub audit: Option<Arc<AuditState>>,
 }
 
 impl SchedulerState {
-    pub fn new() -> Self {
+    /// 无依赖便捷构造（企业状态装配用）。
+    pub fn new() -> Self { Self::new_with_deps(None, None) }
+
+    /// 构造调度状态：预置内置模板任务 + 2 个真实后台任务。
+    ///
+    /// `sso_pending` / `audit` 为真实任务所需的状态依赖；单测可传 None 仅验 CRUD。
+    pub fn new_with_deps(
+        sso_pending: Option<Arc<RwLock<HashMap<String, PendingAuth>>>>,
+        audit: Option<Arc<AuditState>>,
+    ) -> Self {
         let mut tasks = HashMap::new();
         // 预置内置任务模板
         for tpl in builtin_task_templates() {
             tasks.insert(tpl.task_id.clone(), tpl);
+        }
+        // 注册 2 个真实后台任务（每日执行）
+        for t in builtin_runtime_tasks() {
+            tasks.insert(t.task_id.clone(), t);
         }
         Self {
             tasks: Arc::new(RwLock::new(tasks)),
             execution_records: Arc::new(RwLock::new(Vec::new())),
             running_tasks: Arc::new(RwLock::new(HashMap::new())),
             scheduler_running: Arc::new(RwLock::new(true)),
+            sso_pending,
+            audit,
         }
+    }
+
+    // ==================== 后台执行循环 ====================
+
+    /// 判断任务在 `now` 时刻是否到期应被自动调度。
+    ///
+    /// 仅自动调度 Interval / Once 且已启用的任务；Cron/Manual 由其他路径触发。
+    pub fn is_due(task: &ScheduledTask, now: DateTime<Utc>) -> bool {
+        if !task.enabled {
+            return false;
+        }
+        match task.task_type {
+            TaskType::Interval => match task.last_executed_at {
+                None => true, // 从未执行 → 立即到期
+                Some(ref last) => {
+                    let interval_secs = task.interval_seconds.unwrap_or(0) as i64;
+                    match DateTime::parse_from_rfc3339(last) {
+                        Ok(t) => now >= t.with_timezone(&Utc) + chrono::Duration::seconds(interval_secs),
+                        Err(_) => false,
+                    }
+                }
+            },
+            TaskType::Once => {
+                task.last_executed_at.is_none()
+                    && task
+                        .execute_at
+                        .as_deref()
+                        .map(|e| e <= now.to_rfc3339().as_str())
+                        .unwrap_or(false)
+            }
+            // Cron（无解析器）/ Manual（仅手动）不进入自动循环
+            _ => false,
+        }
+    }
+
+    /// 真实执行指定任务，写入执行记录并更新任务统计。返回完成后的记录。
+    pub async fn execute_task(&self, task_id: &str, trigger_type: &str) -> Option<TaskExecutionRecord> {
+        // 取任务快照
+        let task = {
+            let tasks = self.tasks.read().await;
+            tasks.get(task_id).cloned()?
+        };
+
+        // 并发保护
+        if !task.allow_concurrent {
+            let running = self.running_tasks.read().await;
+            if running.contains_key(task_id) {
+                return None;
+            }
+        }
+
+        let execution_id = format!("exec_{}", uuid::Uuid::new_v4().simple());
+        let started = Utc::now();
+        let mut record = TaskExecutionRecord {
+            execution_id: execution_id.clone(),
+            task_id: task_id.to_string(),
+            tenant_id: task.tenant_id.clone(),
+            trigger_type: trigger_type.to_string(),
+            status: TaskStatus::Running,
+            started_at: started.to_rfc3339(),
+            finished_at: None,
+            duration_ms: None,
+            retry_count: 0,
+            result_data: None,
+            error_message: None,
+            error_stack: None,
+            execution_node: Some("local".to_string()),
+            triggered_by: if trigger_type == "manual" { Some("api".to_string()) } else { None },
+        };
+        self.execution_records.write().await.push(record.clone());
+        self.running_tasks.write().await.insert(task_id.to_string(), execution_id.clone());
+
+        // 真实派发执行体
+        let outcome = self.dispatch(&task.handler_type).await;
+        let finished = Utc::now();
+        let duration_ms = (finished - started).num_milliseconds() as u64;
+
+        // 回填执行记录
+        match outcome {
+            Ok(data) => {
+                record.status = TaskStatus::Completed;
+                record.result_data = Some(data);
+            }
+            Err(e) => {
+                record.status = TaskStatus::Failed;
+                record.error_message = Some(e);
+            }
+        }
+        record.finished_at = Some(finished.to_rfc3339());
+        record.duration_ms = Some(duration_ms);
+        if let Some(rec) = self
+            .execution_records
+            .write()
+            .await
+            .iter_mut()
+            .find(|r| r.execution_id == execution_id)
+        {
+            *rec = record.clone();
+        }
+
+        // 更新任务统计 + 计算下次执行时间
+        let mut tasks = self.tasks.write().await;
+        if let Some(t) = tasks.get_mut(task_id) {
+            t.last_executed_at = Some(started.to_rfc3339());
+            t.execution_count += 1;
+            if record.status == TaskStatus::Completed {
+                t.success_count += 1;
+            } else {
+                t.failure_count += 1;
+            }
+            t.avg_duration_ms = Some(match (t.avg_duration_ms, duration_ms) {
+                (Some(prev), cur) => (prev + cur) / 2,
+                (None, cur) => cur,
+            });
+            // interval 任务：下次执行 = 本次 + interval
+            if t.task_type == TaskType::Interval {
+                let secs = t.interval_seconds.unwrap_or(86_400) as i64;
+                t.next_execution_at =
+                    Some((finished + chrono::Duration::seconds(secs)).to_rfc3339());
+            }
+            t.updated_at = Utc::now().to_rfc3339();
+        }
+        drop(tasks);
+
+        self.running_tasks.write().await.remove(task_id);
+        Some(record)
+    }
+
+    /// 扫描并执行所有到期且已实现真实处理器的任务。
+    pub async fn execute_due_tasks(&self) -> Vec<TaskExecutionRecord> {
+        let now = Utc::now();
+        let due_ids: Vec<String> = {
+            let tasks = self.tasks.read().await;
+            let running = self.running_tasks.read().await;
+            tasks
+                .values()
+                .filter(|t| Self::is_due(t, now))
+                .filter(|t| is_handler_implemented(&t.handler_type))
+                .filter(|t| t.allow_concurrent || !running.contains_key(&t.task_id))
+                .map(|t| t.task_id.clone())
+                .collect()
+        };
+        let mut records = Vec::new();
+        for id in due_ids {
+            if let Some(rec) = self.execute_task(&id, "scheduled").await {
+                records.push(rec);
+            }
+        }
+        records
+    }
+
+    /// 后台循环：每 60s 扫描一次 due 任务并真实执行，直到进程退出。
+    pub fn spawn_loop(self: Arc<Self>) {
+        tokio::spawn(async move {
+            let mut ticker = tokio::time::interval(Duration::from_secs(LOOP_INTERVAL_SECS));
+            loop {
+                ticker.tick().await;
+                // 首次立即跑一轮，之后每 60s
+                let n = self.execute_due_tasks().await.len();
+                if n > 0 {
+                    tracing::info!(count = n, "scheduler: executed due tasks");
+                }
+            }
+        });
+    }
+
+    /// 处理器派发：按 handler_type 路由到真实执行体。
+    async fn dispatch(&self, handler_type: &str) -> Result<serde_json::Value, String> {
+        match handler_type {
+            HANDLER_SSO_PENDING_CLEANUP => self.run_sso_pending_cleanup().await,
+            HANDLER_AUDIT_LOG_ARCHIVE => self.run_audit_log_archive().await,
+            other => Err(format!(
+                "处理器 '{}' 未实现真实执行体（占位模板，不自动执行）",
+                other
+            )),
+        }
+    }
+
+    /// 真实任务：清理 >24h 未完成的 SSO pending 授权（保留 24h 内的）。
+    async fn run_sso_pending_cleanup(&self) -> Result<serde_json::Value, String> {
+        let pending = self
+            .sso_pending
+            .as_ref()
+            .ok_or("sso_pending 状态未注入，无法清理")?;
+        let mut map = pending.write().await;
+        let now = Utc::now();
+        let before = map.len();
+        map.retain(|_, p| {
+            DateTime::parse_from_rfc3339(&p.created_at)
+                .map(|t| (now - t.with_timezone(&Utc)).num_hours() < 24)
+                .unwrap_or(false) // 时间无法解析的视为异常，一并清理
+        });
+        let removed = before - map.len();
+        Ok(json!({ "removed_expired": removed, "remaining": map.len(), "older_than_hours": 24 }))
+    }
+
+    /// 真实任务：归档 7 天前的审计日志（标记 archived，不删除）。
+    async fn run_audit_log_archive(&self) -> Result<serde_json::Value, String> {
+        let audit = self.audit.as_ref().ok_or("audit 状态未注入，无法归档")?;
+        let archived = audit.archive_logs_older_than_days(7).await;
+        Ok(json!({ "archived": archived, "older_than_days": 7 }))
     }
 }
 
 impl Default for SchedulerState {
     fn default() -> Self {
-        Self::new()
+        Self::new_with_deps(None, None)
     }
 }
 
@@ -267,72 +565,40 @@ pub async fn disable_task_handler(
     }
 }
 
-/// POST /api/enterprise/scheduler/tasks/:id/trigger —— 手动触发任务
+/// POST /api/enterprise/scheduler/tasks/:id/trigger —— 手动触发任务（真实执行）
 pub async fn trigger_task_handler(
     State(state): State<Arc<SchedulerState>>,
     Path(id): Path<String>,
     Json(_req): Json<TriggerTaskRequest>,
 ) -> Response {
-    let tasks = state.tasks.read().await;
-    let task = match tasks.get(&id) {
-        Some(t) => t.clone(),
-        None => return not_found("定时任务不存在"),
-    };
-    drop(tasks);
-
-    // 检查是否允许并发
-    if !task.allow_concurrent {
-        let running = state.running_tasks.read().await;
-        if running.contains_key(&id) {
-            return conflict("任务正在运行中，不允许并发执行");
+    // 并发预检
+    {
+        let tasks = state.tasks.read().await;
+        let task = match tasks.get(&id) {
+            Some(t) => t.clone(),
+            None => return not_found("定时任务不存在"),
+        };
+        if !task.allow_concurrent {
+            let running = state.running_tasks.read().await;
+            if running.contains_key(&id) {
+                return conflict("任务正在运行中，不允许并发执行");
+            }
         }
     }
 
-    // 创建执行记录
-    let execution_id = format!("exec_{}", uuid::Uuid::new_v4().simple());
-    let now = chrono::Utc::now().to_rfc3339();
-    let record = TaskExecutionRecord {
-        execution_id: execution_id.clone(),
-        task_id: id.clone(),
-        tenant_id: task.tenant_id.clone(),
-        trigger_type: "manual".to_string(),
-        status: TaskStatus::Running,
-        started_at: now.clone(),
-        finished_at: None,
-        duration_ms: None,
-        retry_count: 0,
-        result_data: None,
-        error_message: None,
-        error_stack: None,
-        execution_node: Some("local".to_string()),
-        triggered_by: Some("system".to_string()),
-    };
-    state.execution_records.write().await.push(record);
-    state.running_tasks.write().await.insert(id.clone(), execution_id.clone());
-
-    // 模拟执行（实际实现中应调用任务处理器）
-    // 这里直接标记为成功
-    let mut records = state.execution_records.write().await;
-    if let Some(rec) = records.iter_mut().find(|r| r.execution_id == execution_id) {
-        rec.status = TaskStatus::Completed;
-        rec.finished_at = Some(chrono::Utc::now().to_rfc3339());
-        rec.duration_ms = Some(120);
-        rec.result_data = Some(json!({ "message": "任务执行成功", "handler": task.handler_type }));
+    // 真实执行（派发对应处理器，写入执行记录，更新统计）
+    match state.execute_task(&id, "manual").await {
+        Some(rec) if rec.status == TaskStatus::Completed => success_with_message(
+            "任务触发成功",
+            json!({ "execution_id": rec.execution_id, "task_id": id, "result": rec.result_data }),
+        ),
+        Some(rec) => error_with_details(
+            ApiCode::InternalError,
+            &format!("任务执行失败: {}", rec.error_message.unwrap_or_default()),
+            json!({ "execution_id": rec.execution_id, "task_id": id }),
+        ),
+        None => conflict("任务不存在或正在运行中"),
     }
-    drop(records);
-
-    // 更新任务统计
-    let mut tasks = state.tasks.write().await;
-    if let Some(t) = tasks.get_mut(&id) {
-        t.last_executed_at = Some(chrono::Utc::now().to_rfc3339());
-        t.execution_count += 1;
-        t.success_count += 1;
-    }
-    drop(tasks);
-
-    state.running_tasks.write().await.remove(&id);
-
-    success_with_message("任务触发成功", json!({ "execution_id": execution_id, "task_id": id }))
 }
 
 /// GET /api/enterprise/scheduler/tasks/:id/executions —— 获取任务执行历史
@@ -423,6 +689,76 @@ pub async fn scheduler_stats_handler(
     success(stats)
 }
 
+/// GET /api/scheduler/status —— 调度器状态总览
+///
+/// 返回：后台循环是否运行、扫描间隔、全部任务（含下次执行时间 + 上次执行结果）。
+/// 直接绑定 GatewayState：该端点在网关顶层挂载（/api/scheduler/status）。
+pub async fn scheduler_status_handler(State(gw): State<crate::GatewayState>) -> Response {
+    let state = &gw.enterprise.scheduler;
+
+    let tasks = state.tasks.read().await;
+    let records = state.execution_records.read().await;
+    let running = state.running_tasks.read().await;
+
+    // 每个任务的最新一次执行记录（按 started_at 取最大）
+    let mut latest: HashMap<String, &TaskExecutionRecord> = HashMap::new();
+    for rec in records.iter() {
+        match latest.get(&rec.task_id) {
+            None => {
+                latest.insert(rec.task_id.clone(), rec);
+            }
+            Some(cur) if rec.started_at > cur.started_at => {
+                latest.insert(rec.task_id.clone(), rec);
+            }
+            _ => {}
+        }
+    }
+
+    let mut task_list: Vec<serde_json::Value> = tasks
+        .values()
+        .map(|t| {
+            let last = latest.get(&t.task_id);
+            json!({
+                "task_id": t.task_id,
+                "task_name": t.task_name,
+                "handler_type": t.handler_type,
+                "task_type": t.task_type.as_str(),
+                "category": t.category,
+                "enabled": t.enabled,
+                "interval_seconds": t.interval_seconds,
+                "running": running.contains_key(&t.task_id),
+                "last_executed_at": t.last_executed_at,
+                "next_execution_at": t.next_execution_at,
+                "execution_count": t.execution_count,
+                "success_count": t.success_count,
+                "failure_count": t.failure_count,
+                "last_result": last.map(|r| json!({
+                    "status": r.status.as_str(),
+                    "finished_at": r.finished_at,
+                    "duration_ms": r.duration_ms,
+                    "trigger_type": r.trigger_type,
+                    "result_data": r.result_data,
+                    "error_message": r.error_message,
+                })),
+            })
+        })
+        .collect();
+    task_list.sort_by(|a, b| {
+        a["task_id"].as_str().unwrap_or("").cmp(b["task_id"].as_str().unwrap_or(""))
+    });
+
+    let running_flag = *state.scheduler_running.read().await;
+    success_with_message(
+        "success",
+        json!({
+            "scheduler_running": running_flag,
+            "loop_interval_secs": LOOP_INTERVAL_SECS,
+            "task_count": task_list.len(),
+            "tasks": task_list,
+        }),
+    )
+}
+
 /// 构建定时任务调度路由（泛型版本）
 pub fn build_scheduler_router<S>() -> axum::Router<S>
 where
@@ -448,4 +784,106 @@ where
         .route("/executions", get(list_all_executions_handler))
         // 统计
         .route("/stats", get(scheduler_stats_handler))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::enterprise::audit::{AuditActionType, AuditLogBuilder, AuditState};
+
+    #[test]
+    fn runtime_tasks_registered_and_enabled() {
+        let state = SchedulerState::default();
+        let tasks = state.tasks.try_read().unwrap();
+        assert!(tasks.contains_key("rt_sso_pending_cleanup"));
+        assert!(tasks.contains_key("rt_audit_log_archive"));
+        let sso = tasks.get("rt_sso_pending_cleanup").unwrap();
+        assert!(sso.enabled);
+        assert_eq!(sso.handler_type, HANDLER_SSO_PENDING_CLEANUP);
+        assert_eq!(sso.task_type, TaskType::Interval);
+        assert_eq!(sso.interval_seconds, Some(86_400));
+        let arch = tasks.get("rt_audit_log_archive").unwrap();
+        assert_eq!(arch.handler_type, HANDLER_AUDIT_LOG_ARCHIVE);
+        assert!(arch.enabled);
+    }
+
+    #[test]
+    fn is_due_interval_logic() {
+        let mut t = builtin_runtime_tasks().into_iter().next().unwrap();
+        let now = Utc::now();
+        t.last_executed_at = None;
+        assert!(SchedulerState::is_due(&t, now));
+        t.last_executed_at = Some((now - chrono::Duration::seconds(10)).to_rfc3339());
+        assert!(!SchedulerState::is_due(&t, now));
+        t.last_executed_at = Some((now - chrono::Duration::hours(25)).to_rfc3339());
+        assert!(SchedulerState::is_due(&t, now));
+        t.enabled = false;
+        t.last_executed_at = None;
+        assert!(!SchedulerState::is_due(&t, now));
+    }
+
+    #[tokio::test]
+    async fn execute_audit_archive_real() {
+        let audit = Arc::new(AuditState::new());
+        audit.record(
+            AuditLogBuilder::new(AuditActionType::Query, "t", "r").description("old log").build(),
+        ).await;
+        audit.logs.write().await[0].created_at =
+            (Utc::now() - chrono::Duration::days(10)).to_rfc3339();
+        let state = Arc::new(SchedulerState::new_with_deps(None, Some(audit.clone())));
+        let rec = state.execute_task("rt_audit_log_archive", "manual").await.unwrap();
+        assert_eq!(rec.status, TaskStatus::Completed);
+        let data = rec.result_data.unwrap();
+        assert_eq!(data["archived"], serde_json::json!(1));
+        assert_eq!(data["older_than_days"], serde_json::json!(7));
+        let tasks = state.tasks.read().await;
+        let t = tasks.get("rt_audit_log_archive").unwrap();
+        assert_eq!(t.success_count, 1);
+        assert!(t.next_execution_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn execute_sso_cleanup_real() {
+        let pending: Arc<RwLock<HashMap<String, PendingAuth>>> =
+            Arc::new(RwLock::new(HashMap::new()));
+        pending.write().await.insert("old".into(), PendingAuth {
+            provider_id: "p".into(), redirect_uri: "".into(),
+            created_at: (Utc::now() - chrono::Duration::hours(30)).to_rfc3339(),
+        });
+        pending.write().await.insert("fresh".into(), PendingAuth {
+            provider_id: "p".into(), redirect_uri: "".into(),
+            created_at: Utc::now().to_rfc3339(),
+        });
+        let state = Arc::new(SchedulerState::new_with_deps(Some(pending.clone()), None));
+        let rec = state.execute_task("rt_sso_pending_cleanup", "manual").await.unwrap();
+        assert_eq!(rec.status, TaskStatus::Completed);
+        let data = rec.result_data.unwrap();
+        assert_eq!(data["removed_expired"], serde_json::json!(1));
+        assert_eq!(data["remaining"], serde_json::json!(1));
+        assert!(pending.read().await.contains_key("fresh"));
+        assert!(!pending.read().await.contains_key("old"));
+    }
+
+    #[tokio::test]
+    async fn unknown_handler_records_failure() {
+        let state = Arc::new(SchedulerState::default());
+        let mut t = builtin_runtime_tasks().into_iter().next().unwrap();
+        t.task_id = "xyz".into();
+        t.handler_type = "no_such_handler".into();
+        state.tasks.write().await.insert("xyz".into(), t);
+        let rec = state.execute_task("xyz", "manual").await.unwrap();
+        assert_eq!(rec.status, TaskStatus::Failed);
+        assert!(rec.error_message.unwrap().contains("未实现"));
+    }
+
+    #[tokio::test]
+    async fn execute_due_tasks_only_runs_implemented() {
+        let audit = Arc::new(AuditState::new());
+        let state = Arc::new(SchedulerState::new_with_deps(None, Some(audit)));
+        let recs = state.execute_due_tasks().await;
+        let ids: Vec<String> = recs.iter().map(|r| r.task_id.clone()).collect();
+        assert!(ids.contains(&"rt_audit_log_archive".to_string()));
+        assert!(ids.contains(&"rt_sso_pending_cleanup".to_string()));
+        assert!(!ids.iter().any(|i| i.starts_with("template_")));
+    }
 }
