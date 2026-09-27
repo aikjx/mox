@@ -59,7 +59,7 @@ fn hex_lower(bytes: &[u8]) -> String {
 }
 
 /// 口令校验：优先 SHA-256 十六进制恒定时间比较；兼容历史明文存量。
-fn verify_password(pwd: &str, stored: &str) -> bool {
+pub(crate) fn verify_password(pwd: &str, stored: &str) -> bool {
     if stored.is_empty() {
         return false;
     }
@@ -178,6 +178,7 @@ pub(crate) fn issue_tokens(
         "email": user.email,
         "tenant_id": user.tenant_id,
         "roles": roles,
+        "jti": uuid::Uuid::new_v4().to_string(),
     });
     let access = sign_jwt(secret, issuer, access_claims, ACCESS_TTL_SECS)
         .ok_or_else(|| "访问令牌签发失败".to_string())?;
@@ -186,6 +187,7 @@ pub(crate) fn issue_tokens(
         "username": user.username,
         "tenant_id": user.tenant_id,
         "typ": "refresh",
+        "jti": uuid::Uuid::new_v4().to_string(),
     });
     let refresh = sign_jwt(secret, issuer, refresh_claims, REFRESH_TTL_SECS)
         .ok_or_else(|| "刷新令牌签发失败".to_string())?;
@@ -226,12 +228,26 @@ pub(crate) async fn login_handler(
     if stored.is_empty() {
         // 首次引导：种子用户（admin 超级管理员）密码为 NULL，dev 模式下首次登录即写入初始密码
         if s.config.auth.dev_mode && user.is_superuser == 1 {
-            let _ = s.iam.reset_password(&user.user_id, &hash_password(&password));
+            let _ = s.iam.reset_password(&user.user_id, &crate::password_hash::hash_new(&password));
         } else {
             return api_error(403, "用户尚未设置密码，请联系管理员重置");
         }
-    } else if !verify_password(&password, stored) {
-        return api_error(401, "用户名或密码错误");
+    } else {
+        let outcome = crate::password_hash::verify(&password, stored);
+        if !matches!(outcome, crate::password_hash::VerifyOutcome::Ok | crate::password_hash::VerifyOutcome::OkLegacy) {
+            return api_error(401, "用户名或密码错误");
+        }
+        if matches!(outcome, crate::password_hash::VerifyOutcome::OkLegacy) {
+            let _ = s.iam.reset_password(&user.user_id, &crate::password_hash::hash_new(&password));
+        }
+    }
+
+    // MFA 二次校验钩子：启用了 MFA 的用户暂不签正式 JWT，返回 mfa_required
+    if let Some(challenge) = match crate::system::mfa::mfa_challenge_or_issue(&s, &user) {
+        Ok(v) => v,
+        Err(e) => return e,
+    } {
+        return api_ok(challenge);
     }
 
     let roles = roles_of(&s, &tenant_id, &user);
@@ -295,7 +311,7 @@ pub(crate) async fn register_handler(
         &user_code,
         &username,
         Some(&username),
-        Some(&hash_password(&password)),
+        Some(&crate::password_hash::hash_new(&password)),
         None,
         false,
     ) {
@@ -357,4 +373,62 @@ pub(crate) async fn refresh_handler(
         "expires_in": ACCESS_TTL_SECS,
         "user": user_json(&user, roles),
     }))
+}
+
+
+// ======================== P0-2 登出 / 会话吊销 ========================
+
+/// POST /api/auth/logout —— 把当前 access 令牌的 jti 加入黑名单。
+pub(crate) async fn logout_handler(
+    State(s): State<GatewayState>,
+    headers: axum::http::HeaderMap,
+) -> ApiResponse<Value> {
+    let token = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer ").map(|x| x.to_string()))
+        .unwrap_or_default();
+    if token.is_empty() {
+        return api_error(400, "缺少 Bearer 令牌");
+    }
+    // 校验令牌以取出 jti/exp（无效令牌也按成功登出返回，避免侧信道）
+    if let Some(claims) = verify_jwt(&s.config.auth.jwt_secret, &token) {
+        if let Some(jti) = claims.get("jti").and_then(|v| v.as_str()) {
+            let exp = claims.get("exp").and_then(|v| v.as_i64()).unwrap_or(0);
+            s.auth.revoke_session(jti, exp);
+        }
+    }
+    api_ok(json!({"success": true, "message": "已登出"}))
+}
+
+/// GET /api/admin/users/:id/sessions —— 列出某用户活跃会话。
+pub(crate) async fn admin_list_sessions_handler(
+    State(s): State<GatewayState>,
+    axum::extract::Path(user_id): axum::extract::Path<String>,
+) -> ApiResponse<Value> {
+    let recs = s.auth.list_user_sessions(&user_id);
+    api_ok(json!({
+        "user_id": user_id,
+        "total": recs.len(),
+        "sessions": recs.iter().map(|r| json!({
+            "jti": r.jti, "sub": r.sub, "exp": r.exp, "iat": r.iat,
+        })).collect::<Vec<_>>(),
+    }))
+}
+
+/// DELETE /api/admin/users/:id/sessions/:jti —— 吊销指定会话（管理员踢人）。
+pub(crate) async fn admin_revoke_session_handler(
+    State(s): State<GatewayState>,
+    axum::extract::Path((user_id, jti)): axum::extract::Path<(String, String)>,
+) -> ApiResponse<Value> {
+    // 取该会话 exp 作为黑名单留存时长
+    let exp = s
+        .auth
+        .list_user_sessions(&user_id)
+        .into_iter()
+        .find(|r| r.jti == jti)
+        .map(|r| r.exp)
+        .unwrap_or(0);
+    s.auth.revoke_session(&jti, if exp > 0 { exp } else { i64::MAX });
+    api_ok(json!({"success": true, "revoked": jti}))
 }

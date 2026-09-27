@@ -55,6 +55,7 @@ pub mod permission;
 pub mod tenant;
 pub mod approval;
 pub mod auth_session;
+pub mod mfa;
 
 pub(crate) fn ok(data: Value) -> ApiResponse<Value> {
     api_ok(data)
@@ -360,6 +361,13 @@ pub fn build_system_router() -> Router<GatewayState> {
         .route("/api/auth/login", post(auth_session::login_handler))
         .route("/api/auth/register", post(auth_session::register_handler))
         .route("/api/auth/refresh", post(auth_session::refresh_handler))
+        .route("/api/auth/logout", post(auth_session::logout_handler))
+        .route("/api/admin/users/:id/sessions", get(auth_session::admin_list_sessions_handler))
+        .route("/api/admin/users/:id/sessions/:jti", delete(auth_session::admin_revoke_session_handler))
+        .route("/api/auth/mfa/bind", post(mfa::bind_handler))
+        .route("/api/auth/mfa/confirm", post(mfa::confirm_handler))
+        .route("/api/auth/mfa/unbind", post(mfa::unbind_handler))
+        .route("/api/auth/mfa/verify", post(mfa::verify_handler))
         .route("/api/tenant", get(tenant::list_tenants).post(tenant::create_tenant_handler))
         .route("/api/tenant/:id", get(tenant::get_tenant_detail).put(tenant::update_tenant_handler).delete(tenant::delete_tenant_handler))
         .route("/api/tenant/switch/:id", get(tenant::switch_tenant))

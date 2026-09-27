@@ -146,6 +146,15 @@
         </div>
       </div>
     </el-dialog>
+
+    <el-dialog v-model="mfaDialogVisible" title="两步验证" width="380px" append-to-body>
+      <p style="margin:0 0 12px;color:#666">请输入验证器 App 中的 6 位动态码（或恢复码）</p>
+      <el-input v-model="mfaCode" placeholder="6 位 TOTP 码" maxlength="10" @keyup.enter="handleMfaVerify" />
+      <template #footer>
+        <el-button @click="mfaDialogVisible=false">取消</el-button>
+        <el-button type="primary" :loading="mfaLoading" @click="handleMfaVerify">验证并登录</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -155,7 +164,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { User, Lock, OfficeBuilding } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores'
-import { getSsoProviders, ssoLogin, ssoCallback } from '@/api'
+import { getSsoProviders, ssoLogin, ssoCallback, login as authApi, mfaVerify } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -192,31 +201,57 @@ const loginRules = {
   ]
 }
 
+const mfaDialogVisible = ref(false)
+const mfaToken = ref('')
+const mfaCode = ref('')
+const mfaLoading = ref(false)
+
 async function handleLogin() {
   if (!loginFormRef.value) return
-
+  try { await loginFormRef.value.validate() } catch { return }
   try {
-    await loginFormRef.value.validate()
-  } catch {
-    return
-  }
-
-  try {
-    await authStore.login(
-      loginForm.username,
-      loginForm.password,
-      loginForm.tenant_id || 'default'
-    )
-
+    const resp = await authApi.login({
+      username: loginForm.username,
+      password: loginForm.password,
+      tenant_id: loginForm.tenant_id || 'default',
+    })
+    if (resp?.mfa_required) {
+      mfaToken.value = resp.mfa_token
+      mfaDialogVisible.value = true
+      return
+    }
+    authStore.accessToken = resp.access_token
+    authStore.refreshToken = resp.refresh_token || ''
+    authStore.userInfo = resp.user || {}
+    localStorage.setItem('mox_access_token', resp.access_token)
+    if (resp.refresh_token) localStorage.setItem('mox_refresh_token', resp.refresh_token)
+    localStorage.setItem('mox_user_info', JSON.stringify(resp.user || {}))
     ElMessage.success('登录成功')
-
-    // 跳转到原目标页面或首页
     const redirect = route.query.redirect || '/dashboard'
     router.push(redirect)
   } catch (err) {
-    // 错误已在 store 中设置
     console.error('登录失败:', err)
   }
+}
+
+async function handleMfaVerify() {
+  if (!mfaCode.value) { ElMessage.warning('请输入 6 位 TOTP 码'); return }
+  mfaLoading.value = true
+  try {
+    const resp = await mfaVerify({ mfa_token: mfaToken.value, code: mfaCode.value.trim() })
+    authStore.accessToken = resp.access_token
+    authStore.refreshToken = resp.refresh_token || ''
+    authStore.userInfo = resp.user || {}
+    localStorage.setItem('mox_access_token', resp.access_token)
+    if (resp.refresh_token) localStorage.setItem('mox_refresh_token', resp.refresh_token)
+    localStorage.setItem('mox_user_info', JSON.stringify(resp.user || {}))
+    mfaDialogVisible.value = false
+    mfaCode.value = ''
+    ElMessage.success('MFA 校验成功')
+    router.push(route.query.redirect || '/dashboard')
+  } catch (err) {
+    ElMessage.error(err.message || 'MFA 校验失败')
+  } finally { mfaLoading.value = false }
 }
 
 // ── 企业 SSO 登录 ─────────────────────────────────────────────

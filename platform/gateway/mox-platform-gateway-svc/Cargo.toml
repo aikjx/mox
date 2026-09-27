@@ -26,8 +26,10 @@ parking_lot = { workspace = true }
 uuid = { workspace = true }
 sha2 = { workspace = true }
 hmac = { workspace = true }
+sha1 = "0.10"
 hex = { workspace = true }
 prometheus = { workspace = true }
+rand = "0.8"
 
 # HTTP 框架（直接构建，无需 feature 开关）
 axum = { workspace = true, features = ["json", "query", "http1", "tokio", "multipart"] }
@@ -47,6 +49,8 @@ mox-platform-api = { workspace = true }
 
 # 平台 IAM 核心（/system/* · /security/* 真实数据链路）+ SQLite
 mox-platform-iam-core = { workspace = true }
+# 统一认证核心：PBKDF2-SHA256 加盐口令哈希（离线可用，无需新增外部 crate）
+mox-auth-core = { workspace = true }
 # 统一流程引擎（/system/approval/* 审批流程：人事/财务/业务审批）
 mox-flow-unified-process-core = { workspace = true }
 rusqlite = { workspace = true }
@@ -82,7 +86,6 @@ glacier = []
 
 [dev-dependencies]
 tempfile = "3"
-rand = "0.8"
 
 [lints]
 workspace = true

@@ -25,6 +25,10 @@ pub struct AuthConfig {
     /// explicitly set via MOX_DEV_MODE=1 in release.
     #[serde(default = "default_dev_mode")]
     pub dev_mode: bool,
+    /// 强制关闭 dev-secret-token 直通（生产门禁）。
+    /// MOX_DISABLE_DEV_TOKEN=true 置位后，无论 dev_mode 如何 dev-secret-token 一律 401。
+    #[serde(default)]
+    pub disable_dev_token: bool,
 }
 
 fn default_dev_mode() -> bool {
@@ -47,12 +51,17 @@ impl Default for AuthConfig {
                 "/api/auth/login".into(),
                 "/api/auth/register".into(),
                 "/api/auth/refresh".into(),
+                "/api/auth/mfa/verify".into(),
+                "/api/auth/mfa/bind".into(),
+                "/api/auth/mfa/confirm".into(),
+                "/api/auth/mfa/unbind".into(),
                 // 管理面探针端点（k8s / docker liveness & readiness）允许匿名访问，
                 // 其余 /actuator/*（env 配置泄露 / logs 日志泄露 / api 启停等）强制鉴权（见 lib.rs P0-2）。
                 "/actuator/health".into(),
                 "/actuator/info".into(),
             ],
             dev_mode: default_dev_mode(),
+            disable_dev_token: false,
         }
     }
 }
@@ -90,6 +99,10 @@ impl AuthConfig {
         } else if std::env::var("MOX_DEV_MODE").unwrap_or_default() == "1" {
             self.dev_mode = true;
             eprintln!("[WARN] MOX_DEV_MODE=1 已启用，dev 令牌可绕过严格 JWT 校验。仅限临时调试！");
+        }
+        // P0 生产门禁：MOX_DISABLE_DEV_TOKEN=true 强制关闭 dev-secret-token 直通。
+        if matches!(std::env::var("MOX_DISABLE_DEV_TOKEN").unwrap_or_default().as_str(), "1" | "true" | "TRUE") {
+            self.disable_dev_token = true;
         }
     }
 }
