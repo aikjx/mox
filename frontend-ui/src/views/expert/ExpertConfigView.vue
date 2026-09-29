@@ -830,7 +830,7 @@
                       :max="100"
                       :step="5"
                       show-input
-                      :input-size="small"
+                      input-size="small"
                     />
                     <div class="dim-desc">{{ dim.description }}</div>
                   </div>
@@ -2072,14 +2072,15 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Setting, User, Plus, MagicStick, DocumentCopy, DataAnalysis, Upload,
   Delete, Edit, VideoPlay, RefreshRight, Top, Bottom, ArrowDown,
   RefreshLeft, Download, View, Check, Promotion, CircleCheck,
   Folder, Connection, Loading, CircleClose, Close, Clock, Star
 } from '@element-plus/icons-vue'
-import { EXPERT_TYPES } from '@/constants/expert.constants'
+import { EXPERT_TYPES } from '@/constants'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 // ========== 基础数据 ==========
 const expertTypes = EXPERT_TYPES
@@ -3655,7 +3656,7 @@ onMounted(() => {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-7));
   display: grid;
   place-items: center;
   color: #fff;
@@ -3672,7 +3673,7 @@ onMounted(() => {
   margin: 0;
   font-size: 18px;
   font-weight: 800;
-  background: linear-gradient(135deg, #6366f1, #0ea5e9 50%, #10b981);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-7) 50%, var(--cat-3));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -3682,7 +3683,7 @@ onMounted(() => {
 .header-subtitle {
   margin: 0;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .header-right {
@@ -3737,7 +3738,7 @@ onMounted(() => {
 
 .nav-item.active {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(14, 165, 233, 0.08));
-  box-shadow: inset 3px 0 0 #6366f1;
+  box-shadow: inset 3px 0 0 var(--cat-1);
 }
 
 .nav-item.active .nav-label {
@@ -3760,12 +3761,12 @@ onMounted(() => {
 
 .nav-index {
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-family: ui-monospace, Menlo, monospace;
 }
 
 .nav-item.active .nav-index {
-  color: #6366f1;
+  color: var(--cat-1);
   font-weight: 700;
 }
 
@@ -3783,7 +3784,7 @@ onMounted(() => {
   gap: 6px;
   font-size: 12px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-tertiary);
   padding: 0 4px;
 }
 
@@ -3862,7 +3863,7 @@ onMounted(() => {
   min-width: 36px;
   height: 22px;
   padding: 0 8px;
-  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-7));
   color: #fff;
   font-size: 10.5px;
   font-weight: 700;
@@ -4042,7 +4043,7 @@ onMounted(() => {
 .chat-label {
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-bottom: 10px;
 }
 
@@ -4076,7 +4077,7 @@ onMounted(() => {
 }
 
 .catchphrase {
-  color: #6366f1;
+  color: var(--cat-1);
   font-style: italic;
   margin-left: 4px;
 }
@@ -4094,7 +4095,7 @@ onMounted(() => {
 
 .cap-category {
   font-size: 12px;
-  color: #6366f1;
+  color: var(--cat-1);
   font-weight: 600;
   background: rgba(99, 102, 241, 0.1);
   padding: 2px 8px;
@@ -4115,12 +4116,12 @@ onMounted(() => {
 
 .cap-desc {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .param-hint {
   font-size: 11.5px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: -4px;
 }
 
@@ -4144,12 +4145,12 @@ onMounted(() => {
 }
 
 .tool-item:hover {
-  border-color: #c7d2fe;
+  border-color: var(--el-color-primary-light-5);
   background: #fafbff;
 }
 
 .tool-item.enabled {
-  border-color: #6366f1;
+  border-color: var(--cat-1);
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(14, 165, 233, 0.04));
 }
 
@@ -4172,7 +4173,7 @@ onMounted(() => {
 
 .tool-desc {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -4218,7 +4219,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   font-size: 11.5px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   justify-content: flex-end;
 }
 
@@ -4265,8 +4266,8 @@ onMounted(() => {
 .var-code {
   font-family: ui-monospace, Menlo, monospace;
   font-size: 11.5px;
-  color: #6366f1;
-  background: #e0e7ff;
+  color: var(--cat-1);
+  background: var(--el-color-primary-light-7);
   padding: 2px 6px;
   border-radius: 4px;
   flex-shrink: 0;
@@ -4302,7 +4303,7 @@ onMounted(() => {
 .result-label {
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-bottom: 6px;
 }
 
@@ -4367,7 +4368,7 @@ onMounted(() => {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-7));
   color: #fff;
   display: grid;
   place-items: center;
@@ -4393,7 +4394,7 @@ onMounted(() => {
 
 .step-desc {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 3px;
 }
 
@@ -4410,7 +4411,7 @@ onMounted(() => {
 
 .unit {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-left: 4px;
 }
 
@@ -4431,7 +4432,7 @@ onMounted(() => {
 .connector-arrow {
   position: absolute;
   bottom: -2px;
-  color: #6366f1;
+  color: var(--cat-1);
   font-size: 12px;
 }
 
@@ -4459,7 +4460,7 @@ onMounted(() => {
 .cond-index {
   font-size: 12px;
   font-weight: 700;
-  color: #6366f1;
+  color: var(--cat-1);
 }
 
 .empty-hint {
@@ -4506,14 +4507,14 @@ onMounted(() => {
 }
 
 .scenario-item:hover {
-  border-color: #c7d2fe;
+  border-color: var(--el-color-primary-light-5);
   background: #fafbff;
 }
 
 .scenario-item.active {
-  border-color: #6366f1;
+  border-color: var(--cat-1);
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(14, 165, 233, 0.04));
-  box-shadow: inset 3px 0 0 #6366f1;
+  box-shadow: inset 3px 0 0 var(--cat-1);
 }
 
 .sc-icon {
@@ -4536,7 +4537,7 @@ onMounted(() => {
 
 .sc-desc {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4593,12 +4594,12 @@ onMounted(() => {
 
 .dim-weight-unit {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .dim-desc {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 4px;
 }
 
@@ -4626,7 +4627,7 @@ onMounted(() => {
 .manual-index {
   font-size: 12px;
   font-weight: 700;
-  color: #0ea5e9;
+  color: var(--cat-7);
 }
 
 /* 底部操作栏 */
@@ -4767,15 +4768,15 @@ onMounted(() => {
   border-radius: 20px;
 
   &.idle {
-    color: #64748b;
+    color: var(--text-tertiary);
     background: rgba(148, 163, 184, 0.15);
   }
   &.testing {
-    color: #0ea5e9;
+    color: var(--cat-7);
     background: rgba(14, 165, 233, 0.15);
   }
   &.success {
-    color: #10b981;
+    color: var(--cat-3);
     background: rgba(16, 185, 129, 0.15);
   }
   &.failed {
@@ -4840,7 +4841,7 @@ onMounted(() => {
 
 .weight-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 /* 预设卡片 */
@@ -4865,7 +4866,7 @@ onMounted(() => {
   }
 
   &.active {
-    border-color: #6366f1;
+    border-color: var(--cat-1);
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(14, 165, 233, 0.1));
     box-shadow: 0 4px 12px -2px rgba(99, 102, 241, 0.3);
   }
@@ -4885,7 +4886,7 @@ onMounted(() => {
 
 .preset-desc {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-bottom: 10px;
   line-height: 1.4;
 }
@@ -4895,7 +4896,7 @@ onMounted(() => {
   justify-content: center;
   gap: 10px;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
@@ -4909,19 +4910,19 @@ onMounted(() => {
   border-radius: 20px;
 
   &.disconnected {
-    color: #64748b;
+    color: var(--text-tertiary);
     background: rgba(148, 163, 184, 0.15);
     .status-dot { background: #94a3b8; }
   }
   &.connecting {
-    color: #0ea5e9;
+    color: var(--cat-7);
     background: rgba(14, 165, 233, 0.15);
-    .status-dot { background: #0ea5e9; animation: pulse 1.5s infinite; }
+    .status-dot { background: var(--cat-7-fill); animation: pulse 1.5s infinite; }
   }
   &.connected {
-    color: #10b981;
+    color: var(--cat-3);
     background: rgba(16, 185, 129, 0.15);
-    .status-dot { background: #10b981; }
+    .status-dot { background: var(--cat-3-fill); }
   }
   &.error {
     color: #ef4444;
@@ -4959,14 +4960,14 @@ onMounted(() => {
 .stat-value {
   font-size: 22px;
   font-weight: 700;
-  color: #6366f1;
+  color: var(--cat-1);
   margin-bottom: 4px;
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .graph-last-sync {
@@ -4975,7 +4976,7 @@ onMounted(() => {
   justify-content: center;
   gap: 6px;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   padding-top: 12px;
   border-top: 1px dashed rgba(226, 232, 240, 0.8);
 }
@@ -5048,13 +5049,13 @@ onMounted(() => {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: var(--module-color, #6366f1);
+  background: var(--module-color, var(--cat-1));
   opacity: 0;
   transition: opacity 0.25s ease;
 }
 
 .module-card:hover {
-  border-color: var(--module-color, #6366f1);
+  border-color: var(--module-color, var(--cat-1));
   background: rgba(255, 255, 255, 0.9);
   transform: translateX(2px);
   box-shadow: 0 4px 16px -6px rgba(99, 102, 241, 0.2);
@@ -5065,11 +5066,11 @@ onMounted(() => {
 }
 
 .module-card.active {
-  border-color: var(--module-color, #6366f1);
+  border-color: var(--module-color, var(--cat-1));
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
   box-shadow:
-    0 4px 20px -6px var(--module-color, #6366f1),
-    0 0 0 2px var(--module-color, #6366f1) inset;
+    0 4px 20px -6px var(--module-color, var(--cat-1)),
+    0 0 0 2px var(--module-color, var(--cat-1)) inset;
 }
 
 .module-card.active::before {
@@ -5121,7 +5122,7 @@ onMounted(() => {
 
 .module-model {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -5130,7 +5131,7 @@ onMounted(() => {
 
 .module-card-desc {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-tertiary);
   line-height: 1.5;
   margin-bottom: 10px;
   display: -webkit-box;
@@ -5181,17 +5182,17 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .detail-tab-item:hover {
   background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
+  color: var(--cat-1);
 }
 
 .detail-tab-item.active {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(14, 165, 233, 0.15));
-  color: #6366f1;
+  color: var(--cat-1);
   font-weight: 600;
   box-shadow: 0 2px 8px -4px rgba(99, 102, 241, 0.3);
 }
@@ -5248,7 +5249,7 @@ onMounted(() => {
 }
 
 .emoji-item.active {
-  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-7));
 }
 
 /* 关键词区 */
@@ -5272,7 +5273,7 @@ onMounted(() => {
 
 .empty-hint {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 /* 变量区 */
@@ -5305,14 +5306,14 @@ onMounted(() => {
 .variable-item .var-name {
   font-family: ui-monospace, Menlo, monospace;
   font-size: 12px;
-  color: #6366f1;
+  color: var(--cat-1);
   font-weight: 600;
 }
 
 .variable-item .var-desc {
   flex: 1;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .post-process-section {
@@ -5380,12 +5381,12 @@ onMounted(() => {
   justify-content: center;
   gap: 12px;
   padding: 40px;
-  color: #64748b;
+  color: var(--text-tertiary);
   font-size: 14px;
 }
 
 .test-loading .el-icon {
-  color: #6366f1;
+  color: var(--cat-1);
 }
 
 /* 滚动条美化 */

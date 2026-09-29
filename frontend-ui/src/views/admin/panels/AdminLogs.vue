@@ -85,11 +85,12 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Delete, Search } from '@element-plus/icons-vue'
 import {
   getLoggers, setLoggerLevel, getOnlineLogs, clearOnlineLogs, openLogTail
 } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 // ===== 常量 =====
 const LEVELS = ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR']
@@ -355,17 +356,17 @@ const consoleEl = ref(null)
 .log-line { display: flex; gap: 10px; white-space: nowrap; }
 .log-line:hover { background: rgba(99, 102, 241, 0.06); }
 .l-seq { color: #475569; min-width: 58px; text-align: right; flex-shrink: 0; }
-.l-ts { color: #64748b; flex-shrink: 0; }
+.l-ts { color: var(--text-tertiary); flex-shrink: 0; }
 .l-level { font-weight: 700; min-width: 46px; flex-shrink: 0; }
-.l-target { color: #94a3b8; min-width: 90px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+.l-target { color: var(--text-tertiary); min-width: 90px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
 .l-msg { color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; }
 
 /* 级别配色 */
-.lv-trace { color: #64748b; }
+.lv-trace { color: var(--text-tertiary); }
 .lv-debug { color: #22d3ee; }
-.lv-info { color: #34d399; }
-.lv-warn { color: #fbbf24; }
-.lv-error { color: #f87171; }
+.lv-info { color: var(--success); }
+.lv-warn { color: var(--warning); }
+.lv-error { color: var(--danger); }
 
 .log-empty { color: #475569; text-align: center; padding: 48px 0; font-family: inherit; }
 </style>

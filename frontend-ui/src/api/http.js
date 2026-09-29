@@ -1,7 +1,7 @@
 // HTTP 核心实例 - axios 配置、拦截器、项目ID注入、重试机制
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
-import { getToken } from '@/utils/secureStorage'
+import { getToken } from '@/utils'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 // ========== 配置常量 ==========
 const DEFAULT_RETRY_COUNT = 2       // 网络错误/5xx 默认重试次数

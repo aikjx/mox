@@ -147,10 +147,12 @@
 </template>
 
 <script setup>
+import { formatDateTimeLocaleOr as fmtTime } from '@/utils'
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, RefreshRight } from '@element-plus/icons-vue'
 import { getConfigList, createConfig, updateConfig, deleteConfig, refreshConfigCache } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -187,11 +189,6 @@ const formRules = {
   name: [{ required: true, message: '请输入参数名称', trigger: 'blur' }],
   key: [{ required: true, message: '请输入参数键名', trigger: 'blur' }],
   value: [{ required: true, message: '请输入参数键值', trigger: 'blur' }]
-}
-
-function fmtTime(t) {
-  if (!t) return '-'
-  try { return new Date(t).toLocaleString() } catch { return String(t) }
 }
 
 async function loadConfigs() {

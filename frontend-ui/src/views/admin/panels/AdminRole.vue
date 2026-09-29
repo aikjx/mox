@@ -181,7 +181,8 @@
             >
               <template #default="{ data }">
                 <span class="menu-tree-node">
-                  <el-icon :size="14" v-if="data.icon"><component :is="data.icon" /></el-icon>
+                  <el-icon v-if="navIcon(data.icon)" :size="14"><component :is="navIcon(data.icon)" /></el-icon>
+                  <span v-else-if="data.icon" class="muted">{{ data.icon }}</span>
                   <span class="menu-name">{{ data.name }}</span>
                   <el-tag v-if="data.type === 'M'" size="small" type="primary" effect="plain">目录</el-tag>
                   <el-tag v-else-if="data.type === 'C'" size="small" type="success" effect="plain">菜单</el-tag>
@@ -390,7 +391,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { formatDateTimeLocaleOr as formatTime } from '@/utils'
 import {
   Search, Plus, Refresh, Delete, Edit, ArrowDown, ArrowUp,
   User, CopyDocument, Select, Close, Menu
@@ -403,7 +404,10 @@ import {
   getMenuTree, getDeptTree,
   ROLE_TEMPLATES
 } from '@/api'
-import FormDialog from '@/components/common/FormDialog.vue'
+import { FormDialog } from '@/components'
+import { navIcon } from '@/modules/_kernel/nav-icons'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 // ===== 数据权限标签 =====
 const DATA_SCOPE_MAP = {
@@ -887,15 +891,7 @@ async function submitDataPerms() {
 }
 
 // ===== 工具函数 =====
-function formatTime(t) {
-  if (!t) return '-'
-  try {
-    const d = new Date(t)
-    return d.toLocaleString('zh-CN', { hour12: false })
-  } catch {
-    return String(t)
-  }
-}
+// 时间口径走出口别名 import（§5.36）：坏值/空值的话交回调用位点，这里不再自写一份
 
 onMounted(() => {
   loadList()
@@ -904,6 +900,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 未登记图标名走文本回落，口径与 AdminMenu.vue 的 .muted 一致（同值同注释，勿再各写一份） */
+.muted { color: var(--text-3); }
 .adm-role {
   display: flex;
   flex-direction: column;
@@ -949,9 +947,9 @@ onMounted(() => {
 .template-card.active { border-color: var(--tc, #8BC8EA); background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7)); }
 .tpl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .tpl-name { font-size: 14px; font-weight: 600; color: #1A1B1C; }
-.tpl-desc { font-size: 12px; color: #6B7280; line-height: 1.5; margin-bottom: 8px; min-height: 36px; }
+.tpl-desc { font-size: 12px; color: var(--text-tertiary); line-height: 1.5; margin-bottom: 8px; min-height: 36px; }
 .tpl-meta { display: flex; gap: 8px; }
-.tpl-meta-item { font-size: 11px; color: #9CA3AF; background: rgba(0,0,0,0.03); padding: 2px 8px; border-radius: 4px; }
+.tpl-meta-item { font-size: 11px; color: var(--text-tertiary); background: rgba(0,0,0,0.03); padding: 2px 8px; border-radius: 4px; }
 .tpl-check { position: absolute; top: 8px; right: 10px; width: 22px; height: 22px; background: var(--tc, #8BC8EA); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
 .role-name-cell {
   display: flex;
@@ -1068,7 +1066,7 @@ onMounted(() => {
 
 .selected-menu-name {
   font-weight: 600;
-  color: var(--brand-700);
+  color: var(--brand);
   font-size: 14px;
 }
 

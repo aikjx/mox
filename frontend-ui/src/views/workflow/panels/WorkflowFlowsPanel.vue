@@ -101,12 +101,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Refresh, Edit, Delete, VideoPlay,
   Connection, Timer, Cpu, DataAnalysis, MagicStick, Setting, Tools
 } from '@element-plus/icons-vue'
-import { getFlows, createFlow, updateFlow, deleteFlow, executeFlow as apiExecuteFlow } from '@/api/workflow.api.js'
+import { getFlows, createFlow, updateFlow, deleteFlow, executeFlow as apiExecuteFlow } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const loading = ref(false)
 const error = ref('')
@@ -269,7 +270,7 @@ onMounted(() => {
   flex-direction: column;
   padding: 16px;
   box-sizing: border-box;
-  background: var(--bg-primary, #0f1117);
+  background: var(--bg-primary);
 }
 
 .flows-toolbar {
@@ -289,7 +290,7 @@ onMounted(() => {
 .flows-title {
   font-size: 18px;
   font-weight: 700;
-  color: var(--text-primary, #e8eaed);
+  color: var(--text-primary);
 }
 
 .toolbar-right {
@@ -308,8 +309,8 @@ onMounted(() => {
 }
 
 .flow-card {
-  background: var(--bg-card, #1a1d2e);
-  border: 1px solid var(--border, #2d3148);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px;
   cursor: pointer;
@@ -319,7 +320,7 @@ onMounted(() => {
 }
 
 .flow-card:hover {
-  border-color: var(--accent, #6366f1);
+  border-color: var(--accent, var(--cat-1));
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
   transform: translateY(-2px);
 }
@@ -349,7 +350,7 @@ onMounted(() => {
 .flow-name {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #e8eaed);
+  color: var(--text-primary);
   margin-bottom: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -358,7 +359,7 @@ onMounted(() => {
 
 .flow-type {
   font-size: 11px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
 }
 
 .flow-card-body {
@@ -368,7 +369,7 @@ onMounted(() => {
 
 .flow-desc {
   font-size: 12px;
-  color: var(--text-secondary, #9aa0b4);
+  color: var(--text-secondary, var(--text-tertiary));
   line-height: 1.5;
   margin: 0 0 10px 0;
   display: -webkit-box;
@@ -381,7 +382,7 @@ onMounted(() => {
   display: flex;
   gap: 14px;
   font-size: 11px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   flex-wrap: wrap;
 }
 
@@ -395,7 +396,7 @@ onMounted(() => {
   display: flex;
   gap: 6px;
   padding-top: 12px;
-  border-top: 1px solid var(--border-ghost, #252840);
+  border-top: 1px solid var(--border-ghost);
 }
 
 .flows-empty,

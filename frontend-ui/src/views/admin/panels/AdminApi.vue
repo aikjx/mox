@@ -182,12 +182,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Search, View } from '@element-plus/icons-vue'
 import {
   getApiMappings, getApiDetail, enableApi, disableApi,
   getActuatorMetrics, getActuatorHealth
 } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 // ===== 状态 =====
 const loading = ref(false)

@@ -101,10 +101,12 @@
 </template>
 
 <script setup>
+import { formatDateTimeLocaleOr as fmtTime } from '@/utils'
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Plus, Delete, CopyDocument } from '@element-plus/icons-vue'
 import { getApiKeys, createApiKey, revokeApiKey, validateApiKey } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const loading = ref(false)
 const keys = ref([])
@@ -120,16 +122,17 @@ const validateKeyText = ref('')
 const validating = ref(false)
 const validateResult = ref(null)
 
-function fmtTime(t) {
-  if (!t) return '-'
-  try { return new Date(t).toLocaleString() } catch { return String(t) }
-}
-
 async function load() {
   loading.value = true
   try {
     const data = await getApiKeys()
-    keys.value = Array.isArray(data) ? data : []
+    // 后端行结构：{ id, name, apiKey(脱敏), status: "active"|"revoked", scopes, createdAt, revokedAt, userId }
+    // 归一化为面板期望：active(布尔) / permissions(数组)，与 security::list_api_keys 返回对齐
+    keys.value = (Array.isArray(data) ? data : []).map(r => ({
+      ...r,
+      active: r.active != null ? !!r.active : r.status === 'active',
+      permissions: r.permissions || r.scopes || []
+    }))
   } catch (e) {
     ElMessage.error('加载凭证列表失败：' + e.message)
   } finally {
@@ -154,7 +157,8 @@ async function handleCreate() {
       name: createForm.name.trim(),
       permissions: createForm.permissions.length ? createForm.permissions : ['read']
     })
-    createdKey.value = data?.key || ''
+    // 后端创建返回 { id, name, api_key(明文仅此一次), active, createdAt }
+    createdKey.value = data?.api_key || data?.key || ''
     createVisible.value = false
     keyVisible.value = true
     await load()

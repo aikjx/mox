@@ -114,10 +114,11 @@ import { ref, computed, onMounted } from 'vue'
 import {
   Cpu, Expand, Fold, Plus, ChatDotRound, Delete, CircleCheckFilled, CollectionTag
 } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { sedimentDialogue } from '@/api'
-import { useAIStore, ASSISTANTS } from '@/stores/ai.store'
-import AIChatPanel from '@/components/ai/AIChatPanel.vue'
+import { useAIStore, ASSISTANTS } from '@/stores'
+import { AIChatPanel } from '@/components'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const aiStore = useAIStore()
 

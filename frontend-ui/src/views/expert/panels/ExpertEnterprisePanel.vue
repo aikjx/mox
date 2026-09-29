@@ -136,14 +136,12 @@
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
           <el-select v-model="sessionFilterStatus" placeholder="状态" style="width: 120px" clearable>
-            <el-option label="进行中" value="active" />
-            <el-option label="已归档" value="archived" />
+            <!-- 选项集合取自契约：旧版只有 active/archived 两档，已关闭的会话根本筛不到（§5.38） -->
+            <el-option v-for="o in SESSION_STATUSES" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
           <el-select v-model="sessionFilterMode" placeholder="模式" style="width: 140px" clearable>
-            <el-option label="智能路由" value="smart" />
-            <el-option label="单专家" value="single" />
-            <el-option label="多专家" value="multi_expert" />
-            <el-option label="辩论" value="debate" />
+            <!-- 旧版是一张私表：smart/multi_expert/algorithm 都不是 session_type 的取值，选了就筛空（§5.38） -->
+            <el-option v-for="o in SESSION_TYPES" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
           <el-button type="primary" @click="loadSessions"><el-icon><Search /></el-icon> 查询</el-button>
           <el-button @click="createNewSession"><el-icon><Plus /></el-icon> 新建会话</el-button>
@@ -153,7 +151,7 @@
           <div v-for="s in filteredSessions" :key="s.id" class="session-card" @click="openSession(s)">
             <div class="session-header">
               <el-tag :type="sessionStatusColor(s.status)" size="small">{{ sessionStatusLabel(s.status) }}</el-tag>
-              <el-tag size="small" effect="plain">{{ modeLabels[s.mode] || s.mode }}</el-tag>
+              <el-tag size="small" effect="plain">{{ sessionTypeLabel(s.sessionType) }}</el-tag>
               <span class="session-updated">{{ formatTime(s.updated_at) }}</span>
             </div>
             <div class="session-title">{{ s.title || '新对话' }}</div>
@@ -297,7 +295,7 @@
               </div>
               <div v-if="flowGraphData" class="flow-legend">
                 <span class="legend-item" v-for="(meta, type) in flowNodeTypes" :key="type">
-                  <span class="legend-dot" :style="{ background: meta.color }"></span>
+                  <span class="legend-dot" :style="{ background: `var(${meta.token})` }"></span>
                   {{ meta.label }}
                 </span>
                 <span class="legend-edge">
@@ -453,11 +451,11 @@
             <span class="diag-level" :class="item.level">{{ item.levelText }}</span>
           </div>
         </div>
-        <div class="diag-summary" :class="diagSummaryLevel">
+        <div class="diag-summary" :class="diagnosticSummaryLevel">
           <el-icon :size="16">
-            <component :is="diagSummaryLevel === 'ok' ? CircleCheckFilled : (diagSummaryLevel === 'warn' ? WarningFilled : CircleCloseFilled)" />
+            <component :is="diagnosticSummaryLevel === 'ok' ? CircleCheckFilled : (diagnosticSummaryLevel === 'warn' ? WarningFilled : CircleCloseFilled)" />
           </el-icon>
-          <span>{{ diagSummary }}</span>
+          <span>{{ diagnosticSummary }}</span>
         </div>
       </div>
       <template #footer>
@@ -475,8 +473,33 @@ import {
   DataAnalysis, Refresh, Plus, Search, User, Connection, ChatDotRound,
   CircleCheckFilled, WarningFilled, CircleCloseFilled
 } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import * as api from '@/api'
+import { allianceApi } from '@/modules/expert-alliance/api'
+// 合法例外：
+//   enterpriseConsult  → /experts/enterprise/consult 在 contract UNMOUNTED_ROUTES 里 rejected（模板桩，无 LLM），模块不挂载
+//   getEngineFlowGraph → /ai/engine/flow-graph 属 AI 引擎域，非 alliance 契约面
+import { enterpriseConsult, getEngineFlowGraph } from '@/api'
+
+// legacy 方法名 → 模块 allianceApi；返回值补视图既有 snake_case 字段别名，视图逻辑不改
+const api = {
+  getExpertSessions: (filters) => allianceApi.listSessions({
+    status: filters?.status, sessionType: filters?.session_type
+  }).then((r) => ({ sessions: (r.items || []).map((s) => ({ ...s, updated_at: s.lastActiveAt })) })),
+  getExpertGraphStats: () => allianceApi.graphStats().then((s) => ({ ...s, total_nodes: s.totalNodes, total_edges: s.totalEdges })),
+  getDispatcherStatus: () => allianceApi.dispatcherStatus().then((d) => ({ ...d, circuit_breakers: d.circuitBreakers || [] })),
+  getExpertGraph: () => allianceApi.graphOverview(),
+  updateDispatcherConfig: (patch) => allianceApi.updateDispatcherConfig(patch),
+  rebuildExpertGraph: () => allianceApi.rebuildGraph(),
+  createExpertSession: (draft) => allianceApi.createSession({ title: draft.title }).then((s) => ({ ...s, updated_at: s.lastActiveAt })),
+  getExpertGraphCollaborators: (id, limit) => allianceApi.graphCollaborators(id, limit),
+  findOptimalTeam: (input) => allianceApi.optimalTeam({ goal: input.question, maxMembers: input.size }),
+  enterpriseConsult,
+  getEngineFlowGraph
+}
+import { tokenColor, themeRevision } from '@/constants'
+import { formatDateTimeLocaleOr } from '@/utils'
+import { sessionStatusLabel, sessionTypeLabel, SESSION_STATUSES, SESSION_TYPES, SESSION_STATUS, MESSAGE_ROLE, BREAKER_STATE } from '@/modules/expert-alliance/contract'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const activeTab = ref('overview')
 const loading = ref(false)
@@ -512,18 +535,20 @@ const flowChart = ref(null)
 const activeStage = ref('intent')
 let flowInst = null
 
+// 存档位名而不是色值：色值真值只在主题命名空间里。图例那侧 :style 能解析 var() 所以自己跟着换肤，
+// 画布（echarts 的 SVG 呈现属性）解析不了，只能在 buildFlowOption 里按名现取。
 const flowNodeTypes = {
-  step: { label: '流水线步骤', color: '#6366f1', size: 46 },
-  keyword: { label: '意图关键词', color: '#94a3b8', size: 14 },
-  capability: { label: 'AI 能力', color: '#06b6d4', size: 36 },
-  engine: { label: '委托引擎', color: '#ec4899', size: 30 }
+  step: { label: '流水线步骤', token: '--cat-1', size: 46 },
+  keyword: { label: '意图关键词', token: '--text-tertiary', size: 14 },
+  capability: { label: 'AI 能力', token: '--cat-2', size: 36 },
+  engine: { label: '委托引擎', token: '--cat-6', size: 30 }
 }
 
 const flowEdgeStyles = {
-  flows_to: { color: '#6366f1', width: 3, type: 'solid' },
-  triggers: { color: '#94a3b8', width: 1, type: 'solid' },
-  delegates_to: { color: '#06b6d4', width: 2, type: 'dashed' },
-  degrades_to: { color: '#ef4444', width: 1.5, type: 'dashed' }
+  flows_to: { token: '--cat-1', width: 3, type: 'solid' },
+  triggers: { token: '--text-tertiary', width: 1, type: 'solid' },
+  delegates_to: { token: '--cat-2', width: 2, type: 'dashed' },
+  degrades_to: { token: '--danger', width: 1.5, type: 'dashed' }
 }
 
 const pipelineStages = [
@@ -556,23 +581,10 @@ const strategyDescs = {
   affinity: '为每个用户/会话固定分配同一专家'
 }
 
-const typeLabels = {
-  algorithm: '算法', architecture: '架构', data: '数据', ai: 'AI',
-  workflow: '工作流', operator: '算子', graph: '图谱', security: '安全',
-  performance: '性能', monitor: '监控', market: '商业', mcp: 'MCP',
-  automation: '自动化', requirement: '需求', fusion: '融合'
-}
+const typeLabels = EXPERT_TYPE_SHORT_LABELS
 
-const modeLabels = {
-  smart: '智能路由', single: '单专家', multi_expert: '多专家', debate: '辩论', algorithm: '算法分析'
-}
+// 会话类型词表不在这里：契约的 SESSION_TYPES + sessionTypeLabel 是唯一权威（§5.38）
 
-const typeColors = {
-  algorithm: '#6366f1', architecture: '#8b5cf6', data: '#06b6d4', ai: '#ec4899',
-  workflow: '#10b981', operator: '#f59e0b', graph: '#3b82f6', security: '#ef4444',
-  performance: '#14b8a6', monitor: '#64748b', market: '#d946ef', mcp: '#0ea5e9',
-  automation: '#22c55e', requirement: '#f97316', fusion: '#6366f1'
-}
 
 const currentStrategyDesc = computed(() => strategyDescs[dispatcherConfig.value] || '')
 
@@ -584,7 +596,7 @@ const kpiCards = computed(() => [
   },
   {
     label: '活跃会话',
-    value: sessions.value.filter(s => s.status === 'active').length,
+    value: sessions.value.filter(s => s.status === SESSION_STATUS.ACTIVE).length,
     desc: '当前进行中的会话', color: 'success',
     icon: markRaw(DataAnalysis)
   },
@@ -602,7 +614,7 @@ const kpiCards = computed(() => [
   },
   {
     label: '熔断器触发',
-    value: (dispatcherStatus.value?.circuit_breakers || dispatcherStatus.value?.circuit_breaker?.states || []).filter(s => s.status === 'open').length || 0,
+    value: (dispatcherStatus.value?.circuit_breakers || dispatcherStatus.value?.circuit_breaker?.states || []).filter(s => s.status === BREAKER_STATE.OPEN).length || 0,
     desc: '当前熔断中的专家数', color: 'danger',
     icon: markRaw(DataAnalysis)
   },
@@ -622,23 +634,25 @@ const filteredSessions = computed(() => {
           !s.messages?.some(m => m.content?.toLowerCase().includes(kw))) return false
     }
     if (sessionFilterStatus.value && s.status !== sessionFilterStatus.value) return false
-    if (sessionFilterMode.value && s.mode !== sessionFilterMode.value) return false
+    if (sessionFilterMode.value && s.sessionType !== sessionFilterMode.value) return false
     return true
   })
 })
 
 const successRateColor = computed(() => {
   const rate = (selectedExpert.value?.metrics?.success_rate || 0) * 100
-  if (rate >= 90) return '#22c55e'
-  if (rate >= 70) return '#eab308'
-  return '#ef4444'
+  // el-progress 的 color 最终落到 SVG 的 stroke 呈现属性上，那里读不了 var() ⇒ 按档位现取色值。
+  // computed 里调 tokenColor 就自动挂上 themeRevision，换肤会自己重算。
+  if (rate >= 90) return tokenColor('--success')
+  if (rate >= 70) return tokenColor('--warning')
+  return tokenColor('--danger')
 })
 
 const confidenceColor = computed(() => {
   const conf = (selectedExpert.value?.metrics?.avg_confidence || 0) * 100
-  if (conf >= 80) return '#6366f1'
-  if (conf >= 60) return '#06b6d4'
-  return '#f59e0b'
+  if (conf >= 80) return tokenColor('--cat-1')
+  if (conf >= 60) return tokenColor('--cat-2')
+  return tokenColor('--warning')
 })
 
 async function loadAll() {
@@ -663,7 +677,7 @@ async function runDiagnostic() {
   diagnosticLoading.value = true
   try {
     const now = new Date()
-    diagnosticTime.value = now.toLocaleString('zh-CN')
+    diagnosticTime.value = formatDateTimeLocaleOr(now)
     // 并行采集三组实时状态
     const [sessionRes, graphRes, dispRes] = await Promise.all([
       api.getExpertSessions({}),
@@ -676,7 +690,7 @@ async function runDiagnostic() {
 
     // 维度1：会话体系
     const totalSessions = sessList.length
-    const activeSessions = sessList.filter((s) => (s.status || 'active') !== 'archived').length
+    const activeSessions = sessList.filter((s) => (s.status || SESSION_STATUS.ACTIVE) !== SESSION_STATUS.ARCHIVED).length
     const sessionLevel = totalSessions > 0 ? 'ok' : 'warn'
     const sessionItem = {
       label: '会话体系',
@@ -700,7 +714,7 @@ async function runDiagnostic() {
 
     // 维度3：调度引擎与熔断器
     const cbStates = disp.circuit_breakers || disp.circuit_breaker?.states || []
-    const openCbs = cbStates.filter((c) => c.status === 'open' || c.status === 'half_open')
+    const openCbs = cbStates.filter((c) => c.status === BREAKER_STATE.OPEN || c.status === 'half_open')
     const dispatchCount = (disp.recent_dispatches || disp.dispatcher?.recent_dispatches || []).length
     const dispLevel = openCbs.length > 0 ? 'warn' : 'ok'
     const dispItem = {
@@ -810,27 +824,26 @@ async function createNewSession() {
 
 async function openSession(session) {
   ElMessageBox.alert(
-    `<strong>${session.title}</strong><br/>模式: ${modeLabels[session.mode] || session.mode}<br/>消息数: ${session.messages?.length || 0}<br/>更新时间: ${formatTime(session.updated_at)}`,
+    `<strong>${session.title}</strong><br/>模式: ${sessionTypeLabel(session.sessionType)}<br/>消息数: ${session.messages?.length || 0}<br/>更新时间: ${formatTime(session.updated_at)}`,
     '会话详情',
     { dangerouslyUseHTMLString: true, confirmButtonText: '确定' }
   )
 }
 
 function getSessionPreview(session) {
-  const lastMsg = session.messages?.filter(m => m.role === 'user').pop()
+  const lastMsg = session.messages?.filter(m => m.role === MESSAGE_ROLE.USER).pop()
   return lastMsg?.content?.slice(0, 80) || '暂无消息'
 }
 
 function sessionStatusColor(status) {
-  return status === 'active' ? 'success' : 'info'
+  return status === SESSION_STATUS.ACTIVE ? 'success' : 'info'
 }
 
-function sessionStatusLabel(status) {
-  return status === 'active' ? '进行中' : status === 'archived' ? '已归档' : status
-}
+// 会话状态词表不在这里：模块契约的 sessionStatusLabel 是唯一权威（§5.37）
+// 旧副本只认 active/archived 两值，closed 会把英文原样印到界面上
 
 function cbStatusLabel(status) {
-  return status === 'closed' ? '正常' : status === 'open' ? '熔断中' : '半开'
+  return status === BREAKER_STATE.CLOSED ? '正常' : status === BREAKER_STATE.OPEN ? '熔断中' : '半开'
 }
 
 function formatTime(ts) {
@@ -840,7 +853,7 @@ function formatTime(ts) {
 }
 
 function getTypeColor(type) {
-  return typeColors[type] || '#64748b'
+  return expertColor(type)
 }
 
 function getNodePosition(id, nodes) {
@@ -929,13 +942,13 @@ function buildFlowOption() {
   }
 
   const chartNodes = nodes.map(n => {
-    const meta = flowNodeTypes[n.type] || { color: '#64748b', size: 16 }
+    const meta = flowNodeTypes[n.type] || { token: '--text-quaternary', size: 16 }
     return {
       id: n.id,
       name: n.label,
       symbolSize: meta.size,
       category: n.type,
-      itemStyle: { color: meta.color },
+      itemStyle: { color: tokenColor(meta.token) },
       label: { show: n.type !== 'keyword' },
       _desc: n.desc || '',
       _type: n.type
@@ -943,13 +956,13 @@ function buildFlowOption() {
   })
 
   const chartEdges = edges.map(e => {
-    const style = flowEdgeStyles[e.type] || { color: '#94a3b8', width: 1, type: 'solid' }
+    const style = flowEdgeStyles[e.type] || { token: '--text-tertiary', width: 1, type: 'solid' }
     return {
       source: e.source,
       target: e.target,
       value: e.weight,
       lineStyle: {
-        color: style.color,
+        color: tokenColor(style.token),
         width: style.width,
         type: style.type,
         opacity: e.type === 'triggers' ? 0.3 : 0.7,
@@ -961,9 +974,9 @@ function buildFlowOption() {
   return {
     backgroundColor: 'transparent',
     tooltip: {
-      backgroundColor: '#0a0f1e',
-      borderColor: '#243049',
-      textStyle: { color: '#e6ecf5' },
+      backgroundColor: tokenColor('--bg-card'),
+      borderColor: tokenColor('--border-normal'),
+      textStyle: { color: tokenColor('--text-primary') },
       formatter: (p) => {
         if (p.dataType === 'node') {
           const t = flowNodeTypes[p.data._type]?.label || p.data._type
@@ -982,7 +995,7 @@ function buildFlowOption() {
       categories: Object.keys(flowNodeTypes).map(t => ({ name: flowNodeTypes[t].label })),
       data: chartNodes,
       links: chartEdges,
-      label: { color: '#334155', fontSize: 11 },
+      label: { color: tokenColor('--text-secondary'), fontSize: 11 },
       emphasis: {
         focus: 'adjacency',
         lineStyle: { width: 4, opacity: 0.9 }
@@ -1037,6 +1050,11 @@ function resizeFlowChart() {
   flowInst && flowInst.resize()
 }
 
+// 换肤后必须重画：画布上的档位是建 option 时现取的色值，不重画就停在旧皮上。
+watch(themeRevision, () => {
+  if (flowInst) renderFlowGraph()
+})
+
 watch(activeTab, async (tab) => {
   if (tab === 'flow') {
     if (!flowGraphData.value) {
@@ -1075,7 +1093,7 @@ onBeforeUnmount(() => {
 .page-title {
   font-size: 22px;
   margin: 0 0 4px;
-  background: linear-gradient(135deg, #6366f1, #ec4899);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-6));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -1106,22 +1124,22 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-.kpi-card.primary { border-left: 4px solid #6366f1; }
-.kpi-card.success { border-left: 4px solid #22c55e; }
-.kpi-card.info { border-left: 4px solid #06b6d4; }
-.kpi-card.warning { border-left: 4px solid #f59e0b; }
-.kpi-card.danger { border-left: 4px solid #ef4444; }
-.kpi-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); color: #6366f1; }
+.kpi-card.primary { border-left: 4px solid var(--cat-1); }
+.kpi-card.success { border-left: 4px solid var(--success); }
+.kpi-card.info { border-left: 4px solid var(--cat-2); }
+.kpi-card.warning { border-left: 4px solid var(--cat-4); }
+.kpi-card.danger { border-left: 4px solid var(--danger); }
+.kpi-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); color: var(--cat-1); }
 .kpi-body { flex: 1; }
 .kpi-value { font-size: 24px; font-weight: 700; color: var(--text-primary); }
 .kpi-label { font-size: 13px; color: var(--text-muted); margin: 2px 0; }
 .kpi-desc { font-size: 11px; color: var(--text-muted); }
 .kpi-trend { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
-.kpi-trend.up { color: #22c55e; background: var(--success-dim); }
-.kpi-trend.down { color: #ef4444; background: #fef2f2; }
+.kpi-trend.up { color: var(--success); background: var(--success-dim); }
+.kpi-trend.down { color: var(--danger); background: var(--danger-dim); }
 .graph-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .graph-stat { text-align: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; }
-.stat-val { display: block; font-size: 22px; font-weight: 700; color: #6366f1; }
+.stat-val { display: block; font-size: 22px; font-weight: 700; color: var(--cat-1); }
 .stat-lbl { font-size: 12px; color: var(--text-muted); }
 .communities-section, .type-distribution { margin-bottom: 18px; }
 .communities-section h4, .type-distribution h4 { font-size: 14px; margin: 0 0 12px; color: var(--text-secondary); }
@@ -1135,27 +1153,27 @@ onBeforeUnmount(() => {
 .type-bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .type-name { width: 70px; color: var(--text-secondary); }
 .type-bar { flex: 1; height: 12px; background: var(--bg-tertiary); border-radius: 6px; overflow: hidden; }
-.type-bar-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #ec4899); border-radius: 6px; transition: width 0.5s; }
+.type-bar-fill { height: 100%; background: linear-gradient(90deg, var(--cat-1), var(--cat-6)); border-radius: 6px; transition: width 0.5s; }
 .type-count { width: 24px; text-align: right; color: var(--text-muted); }
-.dispatcher-panel .strategy-desc { padding: 12px; background: #f0f9ff; border-radius: 8px; color: #0369a1; font-size: 13px; margin-bottom: 16px; }
+.dispatcher-panel .strategy-desc { padding: 12px; background: var(--info-50); border-radius: 8px; color: var(--info); font-size: 13px; margin-bottom: 16px; }
 .circuit-breaker-section { margin-bottom: 16px; }
 .circuit-breaker-section h4 { font-size: 14px; margin: 0 0 10px; }
 .cb-list { display: flex; flex-direction: column; gap: 6px; }
 .cb-item { display: flex; justify-content: space-between; padding: 8px 12px; border-radius: 6px; background: var(--bg-tertiary); font-size: 12px; }
-.cb-item.closed { border-left: 3px solid #22c55e; }
-.cb-item.open { border-left: 3px solid #ef4444; background: #fef2f2; }
-.cb-item.half_open { border-left: 3px solid #f59e0b; background: var(--warning-50); }
+.cb-item.closed { border-left: 3px solid var(--success); }
+.cb-item.open { border-left: 3px solid var(--danger); background: var(--danger-dim); }
+.cb-item.half_open { border-left: 3px solid var(--cat-4); background: var(--warning-50); }
 .cb-key { font-weight: 600; }
 .cb-status { padding: 1px 6px; border-radius: 4px; font-size: 11px; }
-.cb-item.closed .cb-status { background: #dcfce7; color: #166534; }
-.cb-item.open .cb-status { background: #fee2e2; color: #991b1b; }
-.cb-item.half_open .cb-status { background: #fef3c7; color: #92400e; }
+.cb-item.closed .cb-status { background: var(--success-dim); color: var(--success); }
+.cb-item.open .cb-status { background: var(--danger-dim); color: var(--danger); }
+.cb-item.half_open .cb-status { background: var(--warning-dim); color: var(--warning); }
 .cb-empty { padding: 12px; text-align: center; color: var(--text-muted); background: var(--bg-tertiary); border-radius: 8px; font-size: 13px; }
 .dispatch-log h4 { font-size: 14px; margin: 0 0 10px; }
 .dispatch-list { max-height: 180px; overflow: auto; }
 .dispatch-item { display: flex; justify-content: space-between; padding: 6px 8px; font-size: 12px; border-bottom: 1px solid var(--border-ghost); }
 .ds-expert { color: var(--text-primary); font-weight: 500; }
-.ds-strategy { color: #6366f1; }
+.ds-strategy { color: var(--cat-1); }
 .ds-time { color: var(--text-muted); }
 .session-toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .session-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
@@ -1195,17 +1213,17 @@ onBeforeUnmount(() => {
 .metric-row span { width: 70px; font-size: 12px; color: var(--text-muted); }
 .collab-list { display: flex; flex-direction: column; gap: 4px; }
 .collab-item { display: flex; justify-content: space-between; padding: 6px 8px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; }
-.collab-weight { color: #6366f1; font-weight: 500; }
+.collab-weight { color: var(--cat-1); font-weight: 500; }
 .enterprise-form { max-width: 500px; }
 .enterprise-result { padding: 4px; }
 .result-section { margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; }
 .result-section h4 { margin: 0 0 8px; font-size: 14px; color: var(--text-secondary); }
 .result-meta { display: flex; gap: 8px; align-items: center; }
-.strategy-tag { font-size: 12px; color: #6366f1; background: var(--accent-dim); padding: 2px 8px; border-radius: 4px; }
+.strategy-tag { font-size: 12px; color: var(--cat-1); background: var(--accent-dim); padding: 2px 8px; border-radius: 4px; }
 .response-box { padding: 12px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
 .team-list { display: flex; flex-direction: column; gap: 6px; }
 .team-member { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
-.team-score { color: #6366f1; font-weight: 500; margin-left: auto; }
+.team-score { color: var(--cat-1); font-weight: 500; margin-left: auto; }
 .context-info { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text-muted); }
 /* ===== 流程编排 tab ===== */
 .flow-head-actions { display: flex; gap: 8px; align-items: center; }
@@ -1217,11 +1235,11 @@ onBeforeUnmount(() => {
   font-size: 11px; color: var(--text-secondary);
 }
 .legend-edge { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; color: var(--text-muted); }
-.edge-line { display: inline-block; width: 18px; height: 0; border-top: 2px solid #94a3b8; margin: 0 2px 0 6px; }
-.edge-line.flows { border-top: 3px solid #6366f1; }
-.edge-line.triggers { border-top: 1px solid #94a3b8; }
-.edge-line.delegates { border-top: 2px dashed #06b6d4; }
-.edge-line.degrades { border-top: 2px dashed #ef4444; }
+.edge-line { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--text-tertiary); margin: 0 2px 0 6px; }
+.edge-line.flows { border-top: 3px solid var(--cat-1); }
+.edge-line.triggers { border-top: 1px solid var(--text-tertiary); }
+.edge-line.delegates { border-top: 2px dashed var(--cat-2); }
+.edge-line.degrades { border-top: 2px dashed var(--danger); }
 .flow-chart { height: 420px; width: 100%; }
 .flow-side { display: flex; flex-direction: column; }
 .pipeline-steps { display: flex; flex-direction: column; gap: 2px; flex: 1; }
@@ -1233,7 +1251,7 @@ onBeforeUnmount(() => {
   background: var(--bg-tertiary); color: var(--text-muted); font-size: 12px; font-weight: 600;
   transition: all 0.2s; cursor: pointer; margin-top: 2px;
 }
-.stage-dot.active { background: #6366f1; color: #fff; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
+.stage-dot.active { background: var(--cat-1-fill); color: var(--on-cat-1); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
 .stage-body { flex: 1; min-width: 0; }
 .stage-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .stage-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-top: 2px; }
@@ -1265,26 +1283,26 @@ onBeforeUnmount(() => {
   background: var(--bg-tertiary); border: 1px solid rgba(15,23,42,0.06);
 }
 .diag-icon { flex-shrink: 0; margin-top: 1px; }
-.diag-icon.ok { color: #10b981; }
-.diag-icon.warn { color: #f59e0b; }
-.diag-icon.err { color: #ef4444; }
+.diag-icon.ok { color: var(--cat-3); }
+.diag-icon.warn { color: var(--cat-4); }
+.diag-icon.err { color: var(--danger); }
 .diag-content { flex: 1; min-width: 0; }
 .diag-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
-.diag-value { font-size: 12px; color: #6366f1; font-weight: 700; }
+.diag-value { font-size: 12px; color: var(--cat-1); font-weight: 700; }
 .diag-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
 .diag-level {
   flex-shrink: 0; font-size: 11px; font-weight: 600;
   padding: 2px 8px; border-radius: 999px;
 }
-.diag-level.ok { background: var(--success-50); color: #047857; }
-.diag-level.warn { background: var(--warning-50); color: #92400e; }
-.diag-level.err { background: #fef2f2; color: #b91c1c; }
+.diag-level.ok { background: var(--success-50); color: var(--success); }
+.diag-level.warn { background: var(--warning-50); color: var(--warning); }
+.diag-level.err { background: var(--danger-dim); color: var(--danger); }
 .diag-summary {
   display: flex; align-items: center; gap: 8px;
   margin-top: 14px; padding: 12px 14px; border-radius: 10px;
   font-size: 13px; font-weight: 600;
 }
-.diag-summary.ok { background: var(--success-50); color: #047857; }
-.diag-summary.warn { background: var(--warning-50); color: #92400e; }
-.diag-summary.err { background: #fef2f2; color: #b91c1c; }
+.diag-summary.ok { background: var(--success-50); color: var(--success); }
+.diag-summary.warn { background: var(--warning-50); color: var(--warning); }
+.diag-summary.err { background: var(--danger-dim); color: var(--danger); }
 </style>

@@ -56,13 +56,8 @@
                 <span class="progress-text">{{ projectProgress(p) }}%</span>
               </div>
               <div class="member-avatars">
-                <div
-                  v-for="(m, i) in projectMembers(p).slice(0, 4)"
-                  :key="i"
-                  class="mini-avatar"
-                  :style="{ background: avatarColor(i) }"
-                >{{ m }}</div>
-                <div v-if="projectMembers(p).length > 4" class="mini-avatar" style="background:var(--bg-tertiary)">+{{ projectMembers(p).length - 4 }}</div>
+                <div v-if="p.owner" class="mini-avatar" :style="{ background: avatarColor(0), color: avatarInk(0) }" :title="'负责人 ' + p.owner">{{ String(p.owner).charAt(0) }}</div>
+                <div v-if="projectMemberCount(p) > 1" class="mini-avatar" style="background:var(--bg-tertiary);color:var(--text-secondary)" :title="'共 ' + projectMemberCount(p) + ' 名成员'">+{{ projectMemberCount(p) - 1 }}</div>
               </div>
             </div>
             <el-empty v-if="!listLoading && !filteredProjects.length" description="暂无项目，点击上方新建" :image-size="60" />
@@ -112,7 +107,7 @@
             <div class="detail-meta-row">
               <span><b>状态：</b>{{ statusLabel(current.status) }}</span>
               <span><b>进度：</b>{{ projectProgress(current) }}%</span>
-              <span><b>成员：</b>{{ projectMembers(current).length }} 人</span>
+              <span><b>成员：</b>{{ projectMemberCount(current) }} 人</span>
               <span><b>创建时间：</b>{{ current.created_at || '—' }}</span>
               <span><b>资源：</b>{{ (current.resources || []).length }} 项</span>
             </div>
@@ -137,22 +132,18 @@
                 <div class="stat-card">
                   <div class="stat-value">{{ projectProgress(current) }}%</div>
                   <div class="stat-label">项目进度</div>
-                  <div class="stat-trend up">↑ 5% 本周</div>
                 </div>
                 <div class="stat-card">
                   <div class="stat-value">{{ tasks.filter(t => t.status === 'active').length }}</div>
                   <div class="stat-label">进行中任务</div>
-                  <div class="stat-trend up">↑ 2 新增</div>
                 </div>
                 <div class="stat-card">
-                  <div class="stat-value">{{ projectMembers(current).length }}</div>
+                  <div class="stat-value">{{ projectMemberCount(current) }}</div>
                   <div class="stat-label">团队成员</div>
-                  <div class="stat-trend up">↑ 1 人加入</div>
                 </div>
                 <div class="stat-card">
-                  <div class="stat-value">89%</div>
-                  <div class="stat-label">按时交付率</div>
-                  <div class="stat-trend down">↓ 2% 较上周</div>
+                  <div class="stat-value">{{ (current.resources || []).length }}</div>
+                  <div class="stat-label">关联资源</div>
                 </div>
               </div>
 
@@ -286,16 +277,17 @@
 
             <!-- ===== 成员 Tab ===== -->
             <div v-if="detailTab === 'members'">
-              <div class="member-grid">
-                <div v-for="(m, i) in projectMembers(current)" :key="i" class="member-card">
-                  <div class="member-avatar-lg" :style="{ background: avatarColor(i) }">{{ m }}</div>
-                  <div class="member-name">{{ m }}工</div>
-                  <div class="member-role">{{ memberRoles[i % memberRoles.length] }}</div>
-                  <div class="member-skills">
-                    <span v-for="(s, j) in memberSkillSets[i % memberSkillSets.length]" :key="j" class="skill-tag">{{ s }}</span>
+              <div v-loading="membersLoading" class="member-grid">
+                <div v-for="m in (projectMembersList || [])" :key="m.id" class="member-card">
+                  <div class="member-avatar-lg" :style="{ background: m.color }">{{ m.avatar }}</div>
+                  <div class="member-name">{{ m.name }}</div>
+                  <div class="member-role">{{ m.roleText }}</div>
+                  <div v-if="m.joinedAt" class="member-skills">
+                    <span class="skill-tag">加入于 {{ m.joinedAt }}</span>
                   </div>
                 </div>
               </div>
+              <el-empty v-if="!membersLoading && !(projectMembersList && projectMembersList.length)" description="该项目暂无成员" :image-size="60" />
             </div>
 
             <!-- ===== 文档 Tab ===== -->
@@ -388,7 +380,8 @@
               :style="dlg.form.category === c.key ? { borderColor: c.color, background: c.color + '14' } : {}"
               @click="dlg.form.category = c.key"
             >
-              <el-icon :style="{ color: c.color }"><component :is="c.icon" /></el-icon>
+              <el-icon v-if="navIcon(c.icon)" :style="{ color: c.color }"><component :is="navIcon(c.icon)" /></el-icon>
+              <span v-else-if="c.icon" class="cat-icon-fallback" :style="{ color: c.color }">{{ c.icon }}</span>
               <span>{{ c.label }}</span>
             </div>
           </div>
@@ -467,20 +460,25 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  Plus, Search, Edit, Delete, Promotion, ChatDotRound, List, Share,
-  MagicStick, Connection, User, Folder, CircleCheckFilled, ArrowLeft
-} from '@element-plus/icons-vue'
-import { useProject } from '@/composables/projectContext.js'
 import {
   getProjects, getProjectTypes, getProjectCatalog, getProjectStats,
   getProject, createProject, updateProject, deleteProject,
   bindProjectResources, unbindProjectResource, updateProjectResourceNote,
   getTasks, updateTask, aiGenerateProjectGraph,
   getProjectActivities, getProjectDocuments, toggleProjectFavorite,
-  shareProject as apiShareProject, downloadProjectDocument, getProjectsPaginated
+  shareProject as apiShareProject, downloadProjectDocument
 } from '@/api'
+import { normPage, pageQuery, PAGE_SIZE_MAX, PROJECT_SORTABLE } from '@/modules/_kernel/paged-list'
+import { navIcon } from '@/modules/_kernel/nav-icons'
+import { projectMemberCount } from '@/utils'
+import {
+  Plus, Search, Edit, Delete, Promotion, ChatDotRound, List, Share,
+  MagicStick, Connection, User, Folder, CircleCheckFilled, ArrowLeft
+} from '@element-plus/icons-vue'
+import { catFill, catInk } from '@/constants'
+import { useProject } from '@/composables'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const router = useRouter()
 
@@ -538,17 +536,12 @@ const tasks = ref([])
 async function loadTasks() {
   tasksLoading.value = true
   try {
-    const data = await getTasks()
-    if (Array.isArray(data)) {
-      tasks.value = data
-    } else if (Array.isArray(data?.list)) {
-      tasks.value = data.list
-    } else if (Array.isArray(data?.data)) {
-      tasks.value = data.data
-    } else if (Array.isArray(data?.tasks)) {
-      tasks.value = data.tasks
-    } else {
-      tasks.value = []
+    // 真列表键是 items（misc.rs 现读，见 paged-list.js）；此前四处猜键没有一个是真名 ⇒ 恒空。
+    // 显式取满 wire 上限：不发 page_size 时后端默认 20，而本页把 tasks 全量用于统计与筛选。
+    const p = normPage(await getTasks(pageQuery({ pageSize: PAGE_SIZE_MAX })))
+    tasks.value = p.items
+    if (p.total > p.items.length) {
+      ElMessage.warning(`任务共 ${p.total} 条，本次只取回 ${p.items.length} 条：页内统计与筛选为部分口径`)
     }
   } catch (e) {
     tasks.value = []
@@ -621,16 +614,25 @@ function projectProgress(p) {
   return { active: 60, done: 100, archived: 30 }[(p && p.status) || ''] || 0
 }
 
-function projectMembers(p) {
-  if (p && p.members && p.members.length) return p.members
-  const name = (p && p.name) || '项目'
-  const chars = name.replace(/[\s\W]/g, '').slice(0, 4)
-  return chars ? chars.split('') : ['项', '目']
-}
+/* 底与字必须成对取：白字压 --cat-n 文字档在 dark/cyberpunk 皮下只有 1.77–2.98:1，
+   所以头像走「填充档 + 底上字」，不能只换底不换字。 */
+const AVATAR_RAMP = [
+  [catFill(1), catInk(1)],
+  [catFill(2), catInk(2)],
+  [catFill(3), catInk(3)],
+  [catFill(4), catInk(4)],
+  ['var(--danger-fill)', 'var(--on-danger)'],
+  [catFill(6), catInk(6)],
+  [catFill(5), catInk(5)],
+  [catFill(8), catInk(8)]
+]
 
 function avatarColor(i) {
-  const colors = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#14b8a6']
-  return colors[i % colors.length]
+  return AVATAR_RAMP[i % AVATAR_RAMP.length][0]
+}
+
+function avatarInk(i) {
+  return AVATAR_RAMP[i % AVATAR_RAMP.length][1]
 }
 
 function priorityLabel(p) {
@@ -724,9 +726,11 @@ async function downloadDoc(d) {
   }
 }
 
-// 项目动态与文档：从后端加载
+// 项目动态、文档与成员：从后端加载
 const projectActivities = ref(null)
 const projectDocs = ref(null)
+const projectMembersList = ref(null)
+const membersLoading = ref(false)
 async function loadProjectDetailData() {
   if (!current.value?.id) return
   detailLoading.value = true
@@ -743,9 +747,17 @@ async function loadProjectDetailData() {
   } catch (e) {
     projectDocs.value = []
     ElMessage.error(e?.message || '项目文档加载失败')
-  } finally {
-    detailLoading.value = false
   }
+  membersLoading.value = true
+  try {
+    projectMembersList.value = normalizeProjectMembers(await getProjectMembers(current.value.id))
+  } catch (e) {
+    projectMembersList.value = []
+    ElMessage.error(e?.message || '项目成员加载失败')
+  } finally {
+    membersLoading.value = false
+  }
+  detailLoading.value = false
 }
 
 // ===== 加载 =====
@@ -753,22 +765,20 @@ async function loadProjectsPaginated() {
   if (!useServerPagination.value) return
   listLoading.value = true
   try {
-    const params = {
+    // 服务端分页与"取全量"是同一个 URL（misc.rs 的 list_projects_paginated），只差查询串；
+    // 原调用的"paginated 子路径"不在网关路由上（实测 502：落到 PrimiFlow :8000 前缀代理）。
+    const p = normPage(await getProjects(pageQuery({
       page: page.value,
-      page_size: pageSize.value,
-      keyword: keyword.value.trim() || undefined,
-      status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
-      sort_by: sortBy.value || undefined,
-      sort_order: sortOrder.value || undefined
-    }
-    Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
-    const result = await getProjectsPaginated(params)
-    if (result && Array.isArray(result.items)) {
-      projects.value = result.items
-      total.value = result.total || 0
-      page.value = result.page || page.value
-      pageSize.value = result.page_size || pageSize.value
-    }
+      pageSize: pageSize.value,
+      keyword: keyword.value.trim(),
+      status: statusFilter.value !== 'all' ? statusFilter.value : '',
+      sortBy: sortBy.value,
+      sortOrder: sortOrder.value
+    }, PROJECT_SORTABLE)))
+    projects.value = p.items
+    total.value = p.total
+    page.value = p.page
+    pageSize.value = p.pageSize
   } catch (e) {
     // 服务端分页不可用时降级为客户端模式
     useServerPagination.value = false
@@ -803,8 +813,18 @@ async function loadAll() {
   listLoading.value = true
   listError.value = ''
   try {
-    const [ps, ts, cat, st] = await Promise.all([getProjects(), getProjectTypes(), getProjectCatalog(), getProjectStats()])
-    projects.value = ps || []
+    const [ps, ts, cat, st] = await Promise.all([
+      getProjects(pageQuery({ pageSize: PAGE_SIZE_MAX })),
+      getProjectTypes(), getProjectCatalog(), getProjectStats()
+    ])
+    // /api/projects 的出参是分页壳（items/total/…），不是数组：原先 `ps || []` 会把整个壳对象
+    // 赋给 projects ⇒ v-for 遍历到壳的 8 个字段值，统计口径跟着错。
+    const p = normPage(ps)
+    projects.value = p.items
+    total.value = p.total
+    if (p.total > p.items.length) {
+      ElMessage.warning(`项目共 ${p.total} 条，本次只取回 ${p.items.length} 条：侧栏统计与筛选为部分口径`)
+    }
     categories.value = (ts && ts.categories) || []
     resourceTypes.value = (ts && ts.resource_types) || []
     catalogGroups.value = (cat && cat.groups) || []
@@ -885,8 +905,8 @@ async function removeProject() {
   await refreshList()
 }
 async function refreshList() {
-  const [ps, st] = await Promise.all([getProjects(), getProjectStats()])
-  projects.value = ps
+  const [ps, st] = await Promise.all([getProjects(pageQuery({ pageSize: PAGE_SIZE_MAX })), getProjectStats()])
+  projects.value = normPage(ps).items
   stats.value = st
 }
 async function refreshCurrent() {
@@ -957,6 +977,8 @@ async function saveNote() {
 </script>
 
 <style scoped>
+/* 分类图标名不在登记口时走文本回落：字号与行高压到与相邻 chip 同档，颜色由 :style 继承分类色 */
+.cat-icon-fallback { font-size: 12px; line-height: 1; }
 /* ===== 根容器 ===== */
 .projects-view {
   height: 100%;
@@ -1111,7 +1133,7 @@ async function saveNote() {
 
 .status-dot.active { background: var(--success); }
 .status-dot.archived { background: var(--warning); }
-.status-dot.done { background: var(--accent); }
+.status-dot.done { background: var(--accent-fill); color: var(--on-accent); }
 
 .list-item-title {
   font-size: 13px;
@@ -1162,7 +1184,7 @@ async function saveNote() {
 
 .progress-fill.active { background: var(--success); }
 .progress-fill.archived { background: var(--warning); }
-.progress-fill.done { background: var(--accent); }
+.progress-fill.done { background: var(--accent-fill); color: var(--on-accent); }
 
 .progress-text {
   font-size: 10px;
@@ -1186,7 +1208,6 @@ async function saveNote() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
   font-weight: 500;
 }
 
@@ -1288,15 +1309,15 @@ async function saveNote() {
 }
 
 .top-btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
+  background: var(--brand-fill);
+  border-color: var(--brand-fill);
+  color: var(--on-brand);
 }
 
 .top-btn.primary:hover {
-  background: #5558e3;
-  border-color: #5558e3;
-  color: white;
+  background: var(--brand-fill-hover);
+  border-color: var(--brand-fill-hover);
+  color: var(--on-brand);
 }
 
 .top-btn.loading {
@@ -1309,7 +1330,7 @@ async function saveNote() {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-5));
   border: none;
   border-radius: 6px;
   color: white;
@@ -2076,11 +2097,15 @@ async function saveNote() {
   flex-shrink: 0;
 }
 
-.code-keyword { color: #c792ea; }
-.code-string { color: #c3e88d; }
-.code-comment { color: #546e7a; font-style: italic; }
-.code-function { color: #82aaff; }
-.code-number { color: #f78c6c; }
+/* 语法色跟着皮肤走：原先五档 Material 常量压在 var(--bg-primary) 上，
+   sky（唯一亮皮）实测 1.29–2.26:1，等于在浅色下不可读。
+   注：sky 皮下 --brand 与 --info 取同一值，关键字/函数会并成同一种色相 —— 这是
+   现有令牌面里唯一四处都过 AA 的组合，扩色板属于 #27 的裁决范围。 */
+.code-keyword { color: var(--brand); }
+.code-string { color: var(--success); }
+.code-comment { color: var(--text-tertiary); font-style: italic; }
+.code-function { color: var(--info); }
+.code-number { color: var(--danger); }
 
 /* ===== 深视图右侧 ===== */
 .deep-right {
@@ -2241,6 +2266,6 @@ async function saveNote() {
 .deep-editor::-webkit-scrollbar-thumb:hover,
 .deep-left::-webkit-scrollbar-thumb:hover,
 .deep-panel-flex::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: var(--accent-fill); color: var(--on-accent);
 }
 </style>

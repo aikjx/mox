@@ -390,15 +390,16 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search, Upload, MagicStick, CopyDocument, Connection, List, Clock, Star,
   VideoPlay, Shop, Refresh, Check, Close, WarningFilled
 } from '@element-plus/icons-vue'
 import { marketList, marketRandom, marketUpload, marketClone, marketApprove, marketReject } from '@/api'
-import { reviewMarketTemplate } from '@/api/market.api'
+import { reviewMarketTemplate } from '@/api'
 import { pushSearchHistory, getSearchHistory } from '@/globalShortcuts'
-import { useAppStore } from '@/stores/app.store'
+import { useAppStore } from '@/stores'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const appStore = useAppStore()
 const router = useRouter()
@@ -797,7 +798,7 @@ onMounted(load)
   background: var(--bg-page); color: var(--text-2); cursor: pointer; transition: all 0.15s;
 }
 .cat:hover { color: var(--brand); }
-.cat.on { background: var(--brand); color: #fff; }
+.cat.on { background: var(--brand-fill); color: var(--on-brand); }
 .grid-cards {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
 }
@@ -820,14 +821,14 @@ onMounted(load)
 .card-name { font-size: 15px; font-weight: 700; color: var(--text-1); }
 .card-summary { font-size: 12px; color: var(--text-3); line-height: 1.6; min-height: 38px; }
 .card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
-.tag { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--brand-soft); color: var(--brand-dark); }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--brand-soft); color: var(--brand); }
 .card-meta { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); flex-wrap: wrap; }
 .card-meta span { display: inline-flex; align-items: center; gap: 4px; }
 .card-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 10px; }
 .author { font-size: 12px; color: var(--text-3); }
 .hint { font-size: 12px; color: var(--text-3); line-height: 1.5; }
 .badge { font-size: 11px; padding: 2px 9px; border-radius: 999px; }
-.badge.primary { background: var(--brand); color: #fff; }
+.badge.primary { background: var(--brand-fill); color: var(--on-brand); }
 
 /* 主 Tab 样式 */
 .main-tabs {

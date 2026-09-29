@@ -1,0 +1,169 @@
+# F31 原始读数（裸 ElMessage/ElMessageBox 补绑定＋闸门 flag 侧对照改合成样例）— 2026-09-30
+# 只放读数，结论权威在 FRONTEND-MODULE-GOVERNANCE-v1.0.md §5.60。
+==============================================================================
+[1] 修复驱动 D:/tmp/f31-fix3.py（md5=4afe80b1946d）逐文件图像：补 29 份文件／54 行 import
+  api/http.js                                        +ElMessage                @L3     eol=\n     CRLF=0 裸LF=323  12545/3e85e9e516a9 -> 12614/fadb6049a61d
+  composables/useMessageActions.js                   +ElMessage                @L8     eol=\n     CRLF=0 裸LF=266  7880/bd3d5c757264 -> 7949/f3683c33080b
+  utils/message.utils.js                             +ElMessage                @L2     eol=\n     CRLF=0 裸LF=198  5221/d51186706268 -> 5290/c124d87c0a41
+  views/admin/panels/AdminAccess.vue                 +ElMessage+ElMessageBox   @L107   eol=\n     CRLF=0 裸LF=229  8087/1d37eb73c695 -> 8232/744d7b0c64a1
+  views/admin/panels/AdminApi.vue                    +ElMessage+ElMessageBox   @L189   eol=\n     CRLF=0 裸LF=399  15705/fe51cf4dbf45 -> 15850/e491a86fe25f
+  views/admin/panels/AdminAudit.vue                  +ElMessage+ElMessageBox   @L258   eol=\n     CRLF=0 裸LF=611  21919/94aee4a62295 -> 22064/cefcb8969623
+  views/admin/panels/AdminConfig.vue                 +ElMessage+ElMessageBox   @L153   eol=\n     CRLF=0 裸LF=332  10542/dfd3e524f309 -> 10687/090a910e56b8
+  views/admin/panels/AdminDepartment.vue             +ElMessage+ElMessageBox   @L253   eol=\n     CRLF=0 裸LF=796  24700/7b8c7cce3c16 -> 24845/f76ba9c77a6f
+  views/admin/panels/AdminDict.vue                   +ElMessage+ElMessageBox   @L213   eol=\n     CRLF=0 裸LF=491  17396/5e1e72b7038e -> 17541/5458906a0f2f
+  views/admin/panels/AdminHitl.vue                   +ElMessage+ElMessageBox   @L122   eol=\n     CRLF=0 裸LF=381  13419/7c753d416270 -> 13564/d84cf1f1f159
+  views/admin/panels/AdminLlm.vue                    +ElMessage+ElMessageBox   @L428   eol=\r\n   CRLF=1364 裸LF=0  39527/ae5d568cade6 -> 39674/de6a42de7910
+  views/admin/panels/AdminLogs.vue                   +ElMessage+ElMessageBox   @L91    eol=\n     CRLF=0 裸LF=370  12901/3558bde0186b -> 13046/caaa06e918de
+  views/admin/panels/AdminMenu.vue                   +ElMessage+ElMessageBox   @L225   eol=\n     CRLF=0 裸LF=472  16768/cd645088d629 -> 16913/eed10d5ef339
+  views/admin/panels/AdminMonitor.vue                +ElMessage+ElMessageBox   @L486   eol=\n     CRLF=0 裸LF=1835  60370/4a5541da5f9b -> 60515/e5573f18bb35
+  views/admin/panels/AdminRole.vue                   +ElMessage+ElMessageBox   @L408   eol=\n     CRLF=0 裸LF=1153  36862/097575512fef -> 37007/53d564135139
+  views/admin/panels/AdminStorage.vue                +ElMessage+ElMessageBox   @L59    eol=\n     CRLF=0 裸LF=120  4905/30aef1f0e796 -> 5050/3cbac1145002
+  views/admin/panels/AdminTenant.vue                 +ElMessage+ElMessageBox   @L119   eol=\n     CRLF=0 裸LF=292  11573/70463755ab0e -> 11718/d053b3a2cfc0
+  views/admin/panels/AdminUser.vue                   +ElMessage+ElMessageBox   @L282   eol=\n     CRLF=0 裸LF=846  27262/b4c0fc4283f9 -> 27407/dfc7ba2c3527
+  views/ai/ChatView.vue                              +ElMessage+ElMessageBox   @L119   eol=\n     CRLF=0 裸LF=507  11869/ecc4a2ec025e -> 12014/52bf596150c6
+  views/ai/Melody2ScoreView.vue                      +ElMessage                @L237   eol=\r\n   CRLF=871 裸LF=1  29018/923e4c58dc11 -> 29088/7b4060cd8fbf
+  views/expert/ExpertConfigView.vue                  +ElMessage+ElMessageBox   @L2081  eol=\n     CRLF=0 裸LF=5413  192519/ecda74d3079f -> 192664/4929fd6a758d
+  views/expert/panels/ExpertEnterprisePanel.vue      +ElMessage+ElMessageBox   @L500   eol=\n     CRLF=0 裸LF=1306  60876/b6c7e5ad4db7 -> 61021/e6fdb2954425 [BOM]
+  views/market/MarketDetailView.vue                  +ElMessage+ElMessageBox   @L146   eol=\r\n   CRLF=397 裸LF=2  16172/5eed3a1539a8 -> 16319/014fcba70306
+  views/market/MarketView.vue                        +ElMessage+ElMessageBox   @L400   eol=\n     CRLF=8 裸LF=892  35410/c8302c330dce -> 35555/95ee0fd23669
+  views/project/ProjectsView.vue                     +ElMessage+ElMessageBox   @L479   eol=\n     CRLF=0 裸LF=2269  63711/e9144c086e0f -> 63856/e1db740a852c [BOM]
+  views/project/TaskView.vue                         +ElMessage+ElMessageBox   @L259   eol=\n     CRLF=0 裸LF=862  22991/32e36cce7c82 -> 23136/5bfc2171bf05 [BOM]
+  views/workflow/BrowserView.vue                     +ElMessage+ElMessageBox   @L269   eol=\n     CRLF=0 裸LF=898  27069/3bcf735ff79d -> 27214/cb46f10875eb
+  views/workflow/WorkflowView.vue                    +ElMessage+ElMessageBox   @L208   eol=\r\n   CRLF=611 裸LF=2  18887/5a2aed6c8db4 -> 19034/fe7844a940c1
+  views/workflow/panels/WorkflowFlowsPanel.vue       +ElMessage+ElMessageBox   @L108   eol=\n     CRLF=0 裸LF=407  11094/eb55fc9384c5 -> 11239/4d8107567932
+  混合行尾文件（split+join 型改法会把每行都改成动过 ⇒ 必须 keepends 插入）：4 份 ['views/ai/Melody2ScoreView.vue', 'views/market/MarketDetailView.vue', 'views/market/MarketView.vue', 'views/workflow/WorkflowView.vue']
+  逐字节见证：每份文件"撤掉插入行 == 写前图像"断言全过；复扫缺绑定 = 0 处
+==============================================================================
+[2] flag 侧对照的四枚见证（D:/tmp/f31-mutant.py md5=f32637247a81，现场重跑）
+  |   G0 真对照                           合格=True rc=0
+  |   M1 样例撤债（对照必须红）                   合格=True rc=1
+  |   M2 期望挪到别的形状（必须红）                 合格=True rc=1
+  |   M3 期望退化成空集（必须红）                  合格=True rc=1
+  | 不符枚数=0
+  | 说明：语料现量 0 处缺 import ⇒ clean 侧（MUST_BE_CLEAN 6 个文件）在真语料上无从反咬，它的牙由 --selftest 的 4 例形状对照承担（本轮实测 4/4 PASS）。
+==============================================================================
+[3] 门禁读数
+  vitest Test Files  77 passed (77)
+  vitest Tests  1035 passed (1035)
+  vitest Duration  126.17s (transform 43.60s, setup 0ms, collect 873.63s, tests 48.16s, environment 614.08s, prepare 14
+  build   ✓ built in 2m 13s
+  EP 闸门 --check（债务读数＋双向对照）               rc=0  缺 import 的非测试文件：0 个 / 0 处；测试文件另计 1 个（不参与账目） / 对照：clean 侧 6/6 通过，flag 侧 通过（合成样例判出 ['ElMessage']；语料现量缺 import 0 个文件／0 处） / verdict=PASS (探针：债务多少不改 rc)
+  EP 闸门 --selftest                       rc=0  EP-IMPORT SELFTEST: PASS (4/4)
+  check-framework-imports                rc=0
+  check-frontend-module                  rc=0
+  check-locale-format-outlets            rc=0
+==============================================================================
+[4] 图像
+  文档（写 §5.60 之后）：339477 B/1933d0840f91 CR=0 行数=2239
+  闸门脚本（flag 侧对照改合成样例后）：7331 B/19e641034a79 CR=0
+  doc-links rc=1 WARN=120 ERROR=0；对 09-29 写 §5.59 之前那份基线（WARN=120 ERROR=0）集差 new=1 gone=1
+==============================================================================
+[5] doc-links 复量（纠正块 [3] 最后那条集差行的两处仪器假账；驱动 D:/tmp/f31-doclinks.py，日志 D:/tmp/f31-gate-doclinks-full.log md5=18116558724a）
+  5.0 仪器缺陷①：`check-doc-links.py --max-detail` 默认 120（源码 scripts/gate/check-doc-links.py:267），
+      打印明细被截到 120 条 ⇒ 历轮记的"WARN=120"是**上限不是总体**；对两个都截断到 120 的打印集做集合差，
+      只要总体增 1 条就会挤出 1 条旧面孔 ⇒ 表现为"new=1/gone=1"，那条 gone 是被顶出上限的假象，不是被修好。
+      本轮用 --max-detail 1000 现量：总体 WARN=217（块 [3] 用的那份基线总体=216），打印行数=217（已不截断）。
+  5.1 仪器缺陷②：那支按 "[ERROR]" 计数针在这个闸门的词表里**永不开火**——明细标签是 [BROKEN]（现量 43 行）／[WARN]（217 行），      而 [ERROR] 出现 0 次；历轮写的"ERROR=0"因此是没有读数的 0，本轮作废，改引总体行。
+  5.2 总体对照（本轮 F30＋F31 两次插入之间）：
+      扫描/引用        基线(09-30 00:01) [check-doc-links] 扫描文件 369 个，判定引用 2058 条
+                   现量            [check-doc-links] 扫描文件 372 个，判定引用 2071 条
+      断链           基线(09-30 00:01) 断链总数 43，涉及 9 个文件；TOP 25 文件：
+                   现量            断链总数 43，涉及 9 个文件；TOP 25 文件：
+      告警           基线(09-30 00:01) 告警·反引号路径引用不存在（216，加 --strict 可视为错误）：
+                   现量            告警·反引号路径引用不存在（217，加 --strict 可视为错误）：
+      ⇒ 断链 43 处/9 文件不变；告警 216→217（+1）；扫描 369→372／引用 2058→2071 由并行作者 00:32–00:36 落盘的
+        docs/expert-alliance/15-product-spec-standard.md、14-enterprise-permission-model.md、16-decision-and-state-ledger.md、INDEX.md 带来（mtime 现量，非本轮所写）。
+  5.3 +1 那条点名：[WARN]   docs/expert-alliance/14-enterprise-permission-model.md:89 -> docs/enterprise/39-开发专家联盟-架构诊断与SaaS化最优方案-V1.1.md:24
+      目标 docs/enterprise/39-开发专家联盟-架构诊断与SaaS化最优方案-V1.1.md **在盘上存在**（ls 现量），
+      判红的原因是反引号里把行号后缀 `:24` 一起写进了路径 token ⇒ 属"写法"不属"断链"。该文件未跟踪（git ls-files 无）、
+      由本会话早轮（权限颗粒度勘察）所写、00:34 又被并发作者改过 ⇒ 本轮不改它（只报），修法＝把 `:24` 挪出反引号。
+  5.4 本轮两份文档插入的贡献：FRONTEND-MODULE-GOVERNANCE-v1.0.md 的 WARN 全文只有 1 条：
+      [WARN]   docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md:137 -> docs/architecture/frontend/FRONTEND-MODULE.md
+      （`:137` 那条指向 FRONTEND-MODULE.md，历轮已登记为存量，非 §5.59/§5.60 引入）
+      ⇒ 正确口径的结论：本轮两次插入未引入新断链（43→43），新增的 1 条告警在他人文件上，本文件计数不变。
+==============================================================================
+[6] 更正段落盘后复量（承接 [5]；驱动 D:/tmp/f31-doclinks2.py，两份日志同 --max-detail 1000 上限）
+  6.1 段落盘前日志 f31-gate-doclinks-full.log md5=18116558724a ｜段落后日志 f31-gate-doclinks-full2.log md5=18116558724a
+  6.2 总体（段落后）：
+      [check-doc-links] 扫描文件 372 个，判定引用 2071 条
+      断链总数 43，涉及 9 个文件；TOP 25 文件：
+      告警·反引号路径引用不存在（217，加 --strict 可视为错误）：
+  6.3 集差（同上限、两侧都 strip 后按整行比）：WARN 217 -> 217，new=0 gone=0 ⇒ §5.60 那段更正本身 0 新悬空
+      注意：这一句的算法就是 [5] 里说的那处仪器缺陷的修法——先前用"打印集前 120 条"比集差会得到 new=1/gone=1 的假象；
+      这里先把上限抬到 1000（打印行数＝总体 217），再 strip 归一，才得到 new=0/gone=0。
+  6.4 本文件（治理文档）全文 WARN 1 条：
+      [WARN]   docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md:137 -> docs/architecture/frontend/FRONTEND-MODULE.md
+  6.5 文档图像（写更正段之后）：341269 B md5=d6ee71fd5486 CR=0 行数=2241（写更正段之前 339477 B/1933d0840f91/CR=0/行数见块 [4]）
+  6.6 未付的证据：本轮没有真机证据（3080/3100/3200 DOWN，不擅自起服）；Y2 _smoke.js 的 globalThis 桩仍在。
+==============================================================================
+[7] 提交前归因（本轮把 30 份按名点名的文件入库，必须先回答"这些文件里还压着谁的活"）
+  7.0 判据：他人线索＝新增行里出现 sso/oauth/oidc/totp/mfa/gateway/jwt/ticket 任一子串（并行作者这几轮的活都在这些词上）；
+      未认领行＝既不含本轮 54 行的形状关键词（element-plus/es、catFill、var(--、@/utils、@/constants、出口名等），
+      也不含他人线索词，即"是我早前轮的改动但本枚针没命名到形状"的行——只作人工核对线索，不作判决。
+      驱动 D:/tmp/f31-attribute.py md5=e65be1c52e99（前两枚 subprocess 用 text=True 直接被 GBK 解码崩了一次，改 bytes+utf-8 replace 才跑出判决行）
+  7.1 逐枚归因（暂存+X＝index vs HEAD，工作树+Y＝worktree vs index）：
+      src/api/http.js                                            暂存+1 工作树+1 他人线索0 未认领0
+      src/composables/useMessageActions.js                       暂存+1 工作树+2 他人线索0 未认领1
+            UNRECOG: formatDateTime as formatTime,
+      src/utils/message.utils.js                                 暂存+0 工作树+1 他人线索0 未认领0
+      src/views/admin/panels/AdminAccess.vue                     暂存+9 工作树+3 他人线索0 未认领9
+            UNRECOG: // 后端行结构：{ id, name, apiKey(脱敏), status: "active"|"revoked", scopes, createdAt, revokedAt, userId }
+            UNRECOG: // 归一化为面板期望：active(布尔) / permissions(数组)，与 security::list_api_keys 返回对齐
+      src/views/admin/panels/AdminApi.vue                        暂存+0 工作树+2 他人线索0 未认领0
+      src/views/admin/panels/AdminAudit.vue                      暂存+0 工作树+3 他人线索0 未认领0
+      src/views/admin/panels/AdminConfig.vue                     暂存+0 工作树+3 他人线索0 未认领0
+      src/views/admin/panels/AdminDepartment.vue                 暂存+3 工作树+4 他人线索0 未认领1
+            UNRECOG: import { FormDialog } from '@/components'
+      src/views/admin/panels/AdminDict.vue                       暂存+0 工作树+2 他人线索0 未认领0
+      src/views/admin/panels/AdminHitl.vue                       暂存+1 工作树+2 他人线索0 未认领0
+      src/views/admin/panels/AdminLlm.vue                        暂存+39 工作树+2 他人线索0 未认领1
+            UNRECOG: // el-progress 的 :color 落进 backgroundColor 声明 ⇒ var() 解析得了，不必运行时读档
+      src/views/admin/panels/AdminLogs.vue                       暂存+6 工作树+2 他人线索0 未认领0
+      src/views/admin/panels/AdminMenu.vue                       暂存+0 工作树+39 他人线索0 未认领34
+            UNRECOG: <component :is="navIcon(row.icon)" />
+            UNRECOG: <component :is="navIcon(row.icon)" />
+      src/views/admin/panels/AdminMonitor.vue                    暂存+95 工作树+5 他人线索0 未认领65
+            UNRECOG: } from '@/api'
+            UNRECOG: import { useProject } from '@/composables'
+      src/views/admin/panels/AdminRole.vue                       暂存+4 工作树+9 他人线索0 未认领6
+            UNRECOG: import { FormDialog } from '@/components'
+            UNRECOG: <el-icon v-if="navIcon(data.icon)" :size="14"><component :is="navIcon(data.icon)" /></el-icon>
+      src/views/admin/panels/AdminStorage.vue                    暂存+0 工作树+2 他人线索0 未认领0
+      src/views/admin/panels/AdminTenant.vue                     暂存+1 工作树+2 他人线索0 未认领0
+      src/views/admin/panels/AdminUser.vue                       暂存+1 工作树+4 他人线索0 未认领2
+            UNRECOG: import { FormDialog } from '@/components'
+            UNRECOG: // 时间口径走出口别名 import（§5.36）：坏值/空值的话交回调用位点，这里不再自写一份
+      src/views/ai/ChatView.vue                                  暂存+2 工作树+2 他人线索0 未认领2
+            UNRECOG: import { useAIStore, ASSISTANTS } from '@/stores'
+            UNRECOG: import { AIChatPanel } from '@/components'
+      src/views/ai/Melody2ScoreView.vue                          暂存+1 工作树+1 他人线索0 未认领1
+            UNRECOG: } from '@/api'
+      src/views/expert/ExpertConfigView.vue                      暂存+65 工作树+2 他人线索0 未认领1
+            UNRECOG: input-size="small"
+      src/views/expert/panels/ExpertEnterprisePanel.vue          暂存+76 工作树+44 他人线索0 未认领74
+            UNRECOG: <span class="legend-dot" :style="{ background: `var(${meta.token})` }"></span>
+            UNRECOG: <div class="diag-summary" :class="diagnosticSummaryLevel">
+      src/views/market/MarketDetailView.vue                      暂存+7 工作树+2 他人线索0 未认领0
+      src/views/market/MarketView.vue                            暂存+5 工作树+2 他人线索0 未认领2
+            UNRECOG: import { reviewMarketTemplate } from '@/api'
+            UNRECOG: import { useAppStore } from '@/stores'
+      src/views/project/ProjectsView.vue                         暂存+68 工作树+43 他人线索0 未认领79
+            UNRECOG: <div v-if="p.owner" class="mini-avatar" :style="{ background: avatarColor(0), color: avatarInk(0) }" :title="'
+            UNRECOG: <span><b>成员：</b>{{ projectMemberCount(current) }} 人</span>
+      src/views/project/TaskView.vue                             暂存+1 工作树+29 他人线索0 未认领24
+            UNRECOG: import { getTasks, createTask, updateTask, deleteTask as apiDeleteTask } from '@/api'
+            UNRECOG: import { normPage, pageQuery, PAGE_SIZE_MAX, TASK_SORTABLE } from '@/modules/_kernel/paged-list'
+      src/views/workflow/BrowserView.vue                         暂存+4 工作树+2 他人线索0 未认领0
+      src/views/workflow/WorkflowView.vue                        暂存+5 工作树+2 他人线索0 未认领2
+            UNRECOG: import { useProject } from '@/composables'
+            UNRECOG: import { FlowDetailDialog } from '@/components'
+      src/views/workflow/panels/WorkflowFlowsPanel.vue           暂存+11 工作树+2 他人线索0 未认领1
+            UNRECOG: import { getFlows, createFlow, updateFlow, deleteFlow, executeFlow as apiExecuteFlow } from '@/api'
+      scripts/gate/check-ep-feedback-imports.py                  暂存+167 工作树+10 他人线索0 未认领167
+            UNRECOG: #!/usr/bin/env python3
+            UNRECOG: # -*- coding: utf-8 -*-
+      合计：暂存新增非零 23 份／工作树新增非零 30 份／出现他人线索 0 份／含未认领行 18 份
+  7.2 判决：**他人线索 0 份**（30 份文件的新增行里没有任何 SSO/网关/JWT 形状）⇒ 这批未入库内容是本仓库治理各轮自己的活；
+      合计 vs HEAD：+798/-553 行，其中本轮 F31 只占 +54/-0（纯插入，29 份源文件）；闸门脚本 check-ep-feedback-imports.py 在 HEAD 里根本没有（暂存+167＝首次入库）。
+  7.3 本轮 29 份源文件里"vs HEAD 恰好等于插入行数、零删除"的有 0 份，其余 29 份连带早前轮改动 ⇒ 提交信息里必须点名"连带"，不能只写 F31。
+  7.4 混合行尾的 4 份（块 [1] 点名）本轮按主导行尾插入；core.autocrlf=true，故入库后 git 侧的 EOL 归一属仓库既有口径，本轮不改动它。

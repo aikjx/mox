@@ -240,7 +240,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { formatDateTimeLocaleOr as formatTime } from '@/utils'
 import {
   Search, Plus, Edit, Delete, Refresh, User, OfficeBuilding,
   ArrowDown, ArrowUp, MoreFilled
@@ -250,7 +250,9 @@ import {
   getPostByDept, createPost, updatePost, deletePost,
   getDeptUserList, getUserList
 } from '@/api'
-import FormDialog from '@/components/common/FormDialog.vue'
+import { FormDialog } from '@/components'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 // ===== 部门树 =====
 const deptTreeRef = ref(null)
@@ -618,15 +620,7 @@ async function searchUsers(keyword) {
 }
 
 // ===== 工具函数 =====
-function formatTime(t) {
-  if (!t) return '-'
-  try {
-    const d = new Date(t)
-    return d.toLocaleString('zh-CN', { hour12: false })
-  } catch {
-    return String(t)
-  }
-}
+// 时间口径不在这里：坏值与空值的话都由出口 formatDateTimeLocaleOr 交回调用位点（别名 import，§5.36）
 
 onMounted(() => {
   loadDeptTree()
@@ -687,7 +681,7 @@ onMounted(() => {
 }
 
 .tree-node.is-current {
-  color: var(--brand-600);
+  color: var(--brand);
   font-weight: 600;
 }
 
@@ -727,7 +721,7 @@ onMounted(() => {
 }
 
 .more-icon:hover {
-  color: var(--brand-600);
+  color: var(--brand);
   background: var(--brand-50);
 }
 

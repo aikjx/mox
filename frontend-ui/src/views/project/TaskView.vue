@@ -214,7 +214,7 @@
           </div>
           <div class="detail-row" v-if="currentTask.created_at">
             <span class="detail-label">创建时间</span>
-            <span class="detail-value">{{ currentTask.created_at }}</span>
+            <span class="detail-value">{{ formatDateTimeLocaleOr(currentTask.created_at) }}</span>
           </div>
         </div>
 
@@ -251,11 +251,14 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Edit, Delete, User, Calendar, Folder
 } from '@element-plus/icons-vue'
-import { getTasks, createTask, updateTask, deleteTask as apiDeleteTask, getTasksPaginated } from '@/api'
+import { getTasks, createTask, updateTask, deleteTask as apiDeleteTask } from '@/api'
+import { normPage, pageQuery, PAGE_SIZE_MAX, TASK_SORTABLE } from '@/modules/_kernel/paged-list'
+import { formatDateTimeLocaleOr } from '@/utils'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 // ===== 状态 =====
 const tasks = ref([])
@@ -422,7 +425,8 @@ async function saveTask() {
         ...newTask,
         id: newTask.id || 't_' + Date.now(),
         progress: taskForm.status === 'done' ? 100 : 0,
-        created_at: new Date().toLocaleString()
+        // 网关按 created_at 字符串序排序（misc.rs），RFC3339 才可比；展示串会毁掉排序
+        created_at: newTask.created_at || new Date().toISOString()
       })
       ElMessage.success('任务创建成功')
     }
@@ -455,45 +459,31 @@ async function deleteTask(task) {
 
 async function loadTasks() {
   loading.value = true
-  if (useServerPagination.value) {
-    try {
-      const params = {
-        page: page.value,
-        page_size: pageSize.value,
-        keyword: searchKeyword.value.trim() || undefined,
-        status: currentFilter.value !== 'all' ? currentFilter.value : undefined,
-        sort_by: sortBy.value || undefined,
-        sort_order: sortOrder.value || undefined
-      }
-      Object.keys(params).forEach(k => params[k] === undefined && delete params[k])
-      const result = await getTasksPaginated(params)
-      if (result && Array.isArray(result.items)) {
-        tasks.value = result.items
-        total.value = result.total || 0
-        page.value = result.page || page.value
-        pageSize.value = result.page_size || pageSize.value
-        loading.value = false
-        return
-      }
-      // 响应非分页格式，降级为客户端模式
-      useServerPagination.value = false
-      total.value = 0
-    } catch (e) {
-      useServerPagination.value = false
-      total.value = 0
-      ElMessage.error(e?.message || '服务端分页加载失败，已降级为客户端模式')
-    }
-  }
-  // 客户端模式
   try {
-    const data = await getTasks()
-    if (Array.isArray(data) && data.length > 0) {
-      tasks.value = data
-    } else {
-      tasks.value = []
+    // 同一个 URL、同一台分页 handler：服务端分页开时按页取，客户端模式一次取满 wire 上限再本地筛。
+    // 原先两条路各自坏着——服务端叫"paginated 子路径"（实测 404，网关没这条路由），
+    // 客户端只认 `Array.isArray(data)` 而真出参是分页壳，于是恒空。
+    const q = useServerPagination.value
+      ? pageQuery({
+        page: page.value,
+        pageSize: pageSize.value,
+        keyword: searchKeyword.value.trim(),
+        status: currentFilter.value !== 'all' ? currentFilter.value : '',
+        sortBy: sortBy.value,
+        sortOrder: sortOrder.value
+      }, TASK_SORTABLE)
+      : pageQuery({ pageSize: PAGE_SIZE_MAX })
+    const p = normPage(await getTasks(q))
+    tasks.value = p.items
+    total.value = p.total
+    page.value = p.page
+    pageSize.value = p.pageSize
+    if (!useServerPagination.value && p.total > p.items.length) {
+      ElMessage.warning(`任务共 ${p.total} 条，本次只取回 ${p.items.length} 条：列表与状态计数为部分口径`)
     }
   } catch (e) {
     tasks.value = []
+    total.value = 0
     ElMessage.error(e?.message || '任务加载失败')
   } finally {
     loading.value = false
@@ -726,7 +716,7 @@ onMounted(() => {
 }
 .progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--accent-fill); color: var(--on-accent);
   border-radius: 3px;
   transition: width 0.3s;
 }

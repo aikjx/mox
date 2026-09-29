@@ -34,17 +34,24 @@
       >
         <el-table-column prop="name" label="菜单名称" min-width="200">
           <template #default="{ row }">
-            <el-icon v-if="row.icon" :size="16" style="vertical-align: -3px; margin-right: 6px; color: var(--text-2)">
-              <component :is="row.icon" />
+            <el-icon v-if="navIcon(row.icon)" :size="16" style="vertical-align: -3px; margin-right: 6px; color: var(--text-2)">
+              <component :is="navIcon(row.icon)" />
             </el-icon>
             <span>{{ row.name }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="icon" label="图标" width="80" align="center">
           <template #default="{ row }">
-            <el-icon v-if="row.icon" :size="18" style="color: var(--text-2)">
-              <component :is="row.icon" />
+            <el-icon v-if="navIcon(row.icon)" :size="18" style="color: var(--text-2)">
+              <component :is="navIcon(row.icon)" />
             </el-icon>
+            <el-tooltip
+              v-else-if="row.icon"
+              content="图标名不在登记口（_kernel/nav-icons.js）里，侧栏会按文本回落显示；请改成已登记的名称"
+              placement="top"
+            >
+              <span class="muted">{{ row.icon }}</span>
+            </el-tooltip>
             <span v-else class="muted">-</span>
           </template>
         </el-table-column>
@@ -127,8 +134,24 @@
           <el-input v-model="form.name" placeholder="请输入菜单名称" maxlength="50" show-word-limit />
         </el-form-item>
         <el-form-item v-if="form.type !== 'F'" label="图标" prop="icon">
-          <el-input v-model="form.icon" placeholder="请输入图标名称，如 Menu" maxlength="50" />
-          <div class="form-tip">填写 Element Plus 图标名称，例如：Menu、Setting、User 等</div>
+          <el-select
+            v-model="form.icon"
+            filterable
+            clearable
+            placeholder="选择图标名称（可输入搜索）"
+            style="width: 100%"
+          >
+            <el-option v-for="n in iconNames" :key="n" :label="n" :value="n">
+              <span class="icon-option">
+                <el-icon :size="16"><component :is="navIcon(n)" /></el-icon>
+                <span>{{ n }}</span>
+              </span>
+            </el-option>
+          </el-select>
+          <div class="form-tip">
+            图标取自唯一登记口 <code>_kernel/nav-icons.js</code>（当前 {{ iconNames.length }} 个）；
+            填写名单外的名称侧栏会按文本回落显示
+          </div>
         </el-form-item>
         <el-form-item label="排序号" prop="sort">
           <el-input-number v-model="form.sort" :min="0" :max="999" controls-position="right" />
@@ -195,10 +218,17 @@
 </template>
 
 <script setup>
+import { formatDateTimeLocaleOr as fmtTime } from '@/utils'
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Expand, Fold } from '@element-plus/icons-vue'
 import { getMenuTree, createMenu, updateMenu, deleteMenu } from '@/api'
+import { navIcon, navIconNames } from '@/modules/_kernel/nav-icons'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+
+// 图标的唯一封闭集：侧栏渲染走 navIcon()，未登记的名会回落成文本，
+// 所以录入端也必须只能从这份名单里选，否则打错一个字母就是一件看不见产出。
+const iconNames = navIconNames()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -280,11 +310,6 @@ function typeLabel(type) {
 function typeTagType(type) {
   const map = { M: 'primary', C: 'success', F: 'info' }
   return map[type] || 'info'
-}
-
-function fmtTime(t) {
-  if (!t) return '-'
-  try { return new Date(t).toLocaleString() } catch { return String(t) }
 }
 
 async function loadMenuTree() {
@@ -444,4 +469,6 @@ onMounted(loadMenuTree)
 }
 .muted { color: var(--text-3); }
 .form-tip { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+/* el-select 的下拉面板会 teleport 到 body，但槽内节点仍带本 SFC 的 data-v 作用域属性 */
+.icon-option { display: flex; align-items: center; gap: 8px; }
 </style>

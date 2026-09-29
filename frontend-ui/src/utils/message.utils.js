@@ -1,5 +1,6 @@
 // 消息相关工具函数
 // 从 MessageBubble 中提取的通用工具
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 /**
  * 安全 URL 处理：过滤危险协议
@@ -53,17 +54,6 @@ export function formatDuration(ms) {
   const pad = n => String(n).padStart(2, '0')
   if (hours > 0) return `${hours}:${pad(minutes)}:${pad(seconds)}`
   return `${minutes}:${pad(seconds)}`
-}
-
-/**
- * 格式化时间戳
- */
-export function formatTime(ts) {
-  if (!ts) return '-'
-  const d = new Date(ts)
-  if (isNaN(d)) return '-'
-  const pad = n => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 /**

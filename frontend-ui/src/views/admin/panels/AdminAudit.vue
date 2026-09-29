@@ -249,13 +249,15 @@
 </template>
 
 <script setup>
+import { formatDateTimeLocaleOr as fmtTime } from '@/utils'
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Download, Delete, Document, User } from '@element-plus/icons-vue'
 import {
   getOperLogList, cleanOperLog, exportOperLog,
   getLoginLogList, cleanLoginLog, exportLoginLog
 } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const activeTab = ref('operlog')
 
@@ -266,11 +268,6 @@ function switchTab(tab) {
   } else if (tab === 'logininfor' && !loginLogList.value.length) {
     loadLoginLog()
   }
-}
-
-function fmtTime(t) {
-  if (!t) return '-'
-  try { return new Date(t).toLocaleString() } catch { return String(t) }
 }
 
 function formatJson(val) {

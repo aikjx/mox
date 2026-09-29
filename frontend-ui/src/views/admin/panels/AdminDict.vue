@@ -206,12 +206,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Edit, Delete, Refresh, Top, Bottom } from '@element-plus/icons-vue'
 import {
   getDictTypeList, createDictType, updateDictType, deleteDictType,
   getDictDataList, createDictData, updateDictData, deleteDictData
 } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const typeLoading = ref(false)
 const dataLoading = ref(false)

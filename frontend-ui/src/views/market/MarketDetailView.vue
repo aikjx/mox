@@ -142,9 +142,10 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, CopyDocument, Select, Plus, Close, Edit, Download } from '@element-plus/icons-vue'
 import { marketGet, marketUpdate, marketClone, marketExport, marketDelete } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const route = useRoute()
 const router = useRouter()
@@ -356,8 +357,8 @@ watch(() => route.params.id, load, { immediate: true })
 .head-actions { display: flex; gap: 10px; }
 .muted { font-size: 12px; color: var(--text-3); }
 .badge { font-size: 11px; padding: 2px 9px; border-radius: 999px; background: var(--bg-page); color: var(--text-2); }
-.badge.primary { background: var(--brand); color: #fff; }
-.badge.info { background: var(--brand-soft); color: var(--brand-dark); }
+.badge.primary { background: var(--brand-fill); color: var(--on-brand); }
+.badge.info { background: var(--brand-soft); color: var(--brand); }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px; align-items: start; }
 .col { display: flex; flex-direction: column; gap: 16px; }
@@ -391,10 +392,10 @@ watch(() => route.params.id, load, { immediate: true })
 .node-label { font-size: 13px; font-weight: 600; color: var(--text-1); }
 .node-edit { position: absolute; right: 6px; top: 6px; color: var(--text-3); cursor: pointer; }
 .node-edit:hover { color: var(--brand); }
-.node.start { border-color: #10b981; background: var(--success-50); }
+.node.start { border-color: var(--cat-3); background: var(--success-50); }
 .node.end { border-color: #ef4444; background: #fef2f2; }
-.node.decision { border-color: #f59e0b; background: var(--warning-50); border-radius: 4px; }
-.node.io { border-color: #06b6d4; background: var(--accent-50); }
-.node.operator { border-color: #8b5cf6; background: #f3e8ff; }
-.flow-tip { margin-top: 10px; font-size: 12px; color: var(--brand-dark); background: var(--brand-soft); padding: 6px 10px; border-radius: 8px; }
+.node.decision { border-color: var(--cat-4); background: var(--warning-50); border-radius: 4px; }
+.node.io { border-color: var(--cat-2); background: var(--accent-50); }
+.node.operator { border-color: var(--cat-5); background: #f3e8ff; }
+.flow-tip { margin-top: 10px; font-size: 12px; color: var(--brand); background: var(--brand-soft); padding: 6px 10px; border-radius: 8px; }
 </style>

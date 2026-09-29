@@ -420,12 +420,14 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Refresh, Plus, Edit, Delete, Check, ArrowRight,
   Connection, Search, Loading, Select, CircleCheckFilled, CircleCloseFilled
 } from '@element-plus/icons-vue'
 import * as api from '@/api'
+import { catFill } from '@/constants'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -566,10 +568,10 @@ const kpis = computed(() => {
   const active = providers.value.find(p => p.active)
   
   return [
-    { label: '渠道总数', value: total, icon: 'Connection', color: '#6366f1', ok: total > 0 },
-    { label: '已启用', value: enabled, icon: 'CircleCheck', color: '#10b981', ok: enabled > 0 },
-    { label: '已配置 Key', value: withKey, icon: 'Key', color: '#f59e0b', ok: withKey > 0 },
-    { label: '当前使用', value: active?.name || '无', icon: 'Select', color: active ? '#06b6d4' : '#94a3b8', ok: !!active }
+    { label: '渠道总数', value: total, icon: 'Connection', color: catFill(1), ok: total > 0 },
+    { label: '已启用', value: enabled, icon: 'CircleCheck', color: catFill(3), ok: enabled > 0 },
+    { label: '已配置 Key', value: withKey, icon: 'Key', color: catFill(4), ok: withKey > 0 },
+    { label: '当前使用', value: active?.name || '无', icon: 'Select', color: active ? catFill(2) : '#94a3b8', ok: !!active }
   ]
 })
 
@@ -632,11 +634,12 @@ function getProviderName(id) {
   return p?.name || id
 }
 
+// el-progress 的 :color 落进 backgroundColor 声明 ⇒ var() 解析得了，不必运行时读档
 function getProgressColor(tokens) {
-  if (tokens > 1000000) return '#ef4444'
-  if (tokens > 100000) return '#f59e0b'
-  if (tokens > 10000) return '#06b6d4'
-  return '#10b981'
+  if (tokens > 1000000) return 'var(--danger-fill)'
+  if (tokens > 100000) return 'var(--warning-fill)'
+  if (tokens > 10000) return catFill(2)
+  return 'var(--success-fill)'
 }
 
 function formatTime(ts) {
@@ -866,7 +869,7 @@ onMounted(() => {
 
 .page-subtitle {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
@@ -900,13 +903,13 @@ onMounted(() => {
 .web-search-panel { margin-top: 18px; }
 .section-head-right { display: flex; align-items: center; gap: 14px; }
 .ws-panel-desc {
-  font-size: 13px; color: #64748b; line-height: 1.7;
+  font-size: 13px; color: var(--text-tertiary); line-height: 1.7;
   margin: -4px 0 16px; padding: 10px 14px;
-  background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;
+  background: var(--info-50); border: 1px solid var(--info); border-radius: 8px;
 }
 .ws-form :deep(.el-form-item) { margin-bottom: 14px; }
 .ws-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
-.ws-engine-desc { font-size: 12px; color: #94a3b8; line-height: 1.6; margin-top: 2px; }
+.ws-engine-desc { font-size: 12px; color: var(--text-tertiary); line-height: 1.6; margin-top: 2px; }
 .ws-actions { display: flex; gap: 10px; margin-top: 4px; }
 @media (max-width: 900px) { .ws-form-row { grid-template-columns: 1fr; } }
 
@@ -932,12 +935,12 @@ onMounted(() => {
 }
 
 .provider-card:hover {
-  border-color: #6366f1;
+  border-color: var(--cat-1);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
 }
 
 .provider-card.active {
-  border-color: #22c55e;
+  border-color: var(--success);
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), transparent);
 }
 
@@ -982,18 +985,18 @@ onMounted(() => {
 
 .provider-meta {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .provider-meta .sep {
-  color: #cbd5e1;
+  color: var(--text-tertiary);
 }
 
 .provider-meta .model {
-  color: #6366f1;
+  color: var(--cat-1);
   font-weight: 500;
 }
 
@@ -1033,13 +1036,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .routing-provider.active {
-  border-color: #6366f1;
+  border-color: var(--cat-1);
   background: var(--accent-dim);
-  color: #4f46e5;
+  color: var(--brand);
 }
 
 .weight-config {
@@ -1056,7 +1059,7 @@ onMounted(() => {
 .weight-item span {
   width: 100px;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .weight-item :deep(.el-slider) {
@@ -1086,7 +1089,7 @@ onMounted(() => {
 }
 
 .preset-card:hover {
-  border-color: #6366f1;
+  border-color: var(--cat-1);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
   transform: translateY(-2px);
 }
@@ -1118,7 +1121,7 @@ onMounted(() => {
 
 .preset-desc {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-bottom: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1132,7 +1135,7 @@ onMounted(() => {
 }
 
 .preset-arrow {
-  color: #cbd5e1;
+  color: var(--text-tertiary);
   font-size: 16px;
 }
 
@@ -1160,11 +1163,11 @@ onMounted(() => {
 }
 
 .test-status.success {
-  color: #22c55e;
+  color: var(--success);
 }
 
 .test-status.fail {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 .test-label {
@@ -1187,7 +1190,7 @@ onMounted(() => {
 
 .detail-item .label {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1206,7 +1209,7 @@ onMounted(() => {
 .test-loading {
   text-align: center;
   padding: 40px 0;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .spin {
@@ -1253,7 +1256,7 @@ onMounted(() => {
 
 .stat-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 4px;
 }
 
@@ -1283,7 +1286,7 @@ onMounted(() => {
 
 .usage-tokens {
   font-size: 12px;
-  color: #6366f1;
+  color: var(--cat-1);
   font-weight: 600;
 }
 
@@ -1305,11 +1308,11 @@ onMounted(() => {
 }
 
 .log-item.success {
-  border-left: 3px solid #22c55e;
+  border-left: 3px solid var(--success);
 }
 
 .log-item.failed {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--danger);
 }
 
 .log-status {
@@ -1320,11 +1323,11 @@ onMounted(() => {
 }
 
 .log-item.success .log-status {
-  color: #22c55e;
+  color: var(--success);
 }
 
 .log-item.failed .log-status {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 .log-info {
@@ -1347,18 +1350,18 @@ onMounted(() => {
 
 .log-latency {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
   font-family: monospace;
 }
 
 .log-time {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .log-error {
   font-size: 12px;
-  color: #ef4444;
+  color: var(--danger);
   margin-top: 4px;
 }
 </style>

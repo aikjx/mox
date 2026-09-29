@@ -115,12 +115,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, RefreshRight, Clock, CircleCheckFilled, Bell, Connection } from '@element-plus/icons-vue'
 import {
   hitlClient, HITL_ACTIONS,
   onHitlEvent, onHitlActionResult, onHitlPendingList, onHitlConnection
-} from '@/utils/hitl-ws'
+} from '@/utils'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const searchText = ref('')
 const currentPage = ref(1)

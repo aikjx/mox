@@ -1,12 +1,12 @@
 // 消息操作 composable - 从 MessageBubble 提取的通用业务逻辑
 import { ref, watch, onBeforeUnmount } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   stableMsgId,
   copyTextUniversal,
   mdToPlainText,
-  formatTime,
-} from '@/utils/message.utils'
+  formatDateTime as formatTime,
+} from '@/utils'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 /**
  * 消息评分（喜欢/不喜欢）

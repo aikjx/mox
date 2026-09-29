@@ -115,9 +115,10 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Refresh } from '@element-plus/icons-vue'
 import { getTenantList, createTenant, updateTenant, deleteTenant, switchTenant } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -284,7 +285,7 @@ onMounted(() => loadList())
   content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
   background: var(--c, #8BC8EA);
 }
-.stat-label { font-size: 12px; color: #6B7280; }
+.stat-label { font-size: 12px; color: var(--text-tertiary); }
 .stat-value { font-size: 24px; font-weight: 700; color: #1A1B1C; margin-top: 4px; }
 .stat-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 28px; opacity: 0.3; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }

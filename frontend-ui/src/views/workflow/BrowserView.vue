@@ -259,7 +259,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Promotion, Refresh, VideoPlay, Close, Setting, Warning } from '@element-plus/icons-vue'
 import {
   getBrowserTemplates,
@@ -268,6 +267,8 @@ import {
   browserNatural,
   executeBrowserTask
 } from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const router = useRouter()
 
@@ -748,12 +749,12 @@ onMounted(() => {
 }
 .ex:hover {
   background: var(--brand-soft);
-  color: var(--brand-dark);
+  color: var(--brand);
 }
 .out {
   margin-top: 14px;
   background: #0b1020;
-  color: #a5b4fc;
+  color: var(--el-color-primary-light-3);
   padding: 12px;
   border-radius: 10px;
   font-size: 12px;
@@ -807,7 +808,7 @@ onMounted(() => {
 }
 .security-banner.medium {
   background: var(--warning-50);
-  color: #92400e;
+  color: var(--warning);
   border: 1px solid #fde68a;
 }
 .security-banner.high {
@@ -879,7 +880,7 @@ onMounted(() => {
   border-radius: 6px;
   margin-bottom: 6px;
   font-size: 13px;
-  color: #92400e;
+  color: var(--warning);
 }
 .risk-task {
   background: var(--bg-tertiary);

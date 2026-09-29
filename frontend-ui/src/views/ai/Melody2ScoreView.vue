@@ -230,12 +230,12 @@
 
 <script>
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import {
   melodyHealth, melodySamples, melodyRecognize,
   melodyRecognizeSample, melodyExportSheet, melodySaveReport
-} from '@/api/melody.api.js'
+} from '@/api'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 // VexFlow 动态加载
 let VF = null

@@ -189,9 +189,8 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { VideoCamera, Document, Promotion } from '@element-plus/icons-vue'
-import { useProject } from '@/composables/projectContext.js'
+import { useProject } from '@/composables'
 import {
   getFlows,
   createFlow,
@@ -206,7 +205,9 @@ import {
   saveWorkflow,
   executeWorkflowDef
 } from '@/api'
-import FlowDetailDialog from '@/components/FlowDetailDialog.vue'
+import { FlowDetailDialog } from '@/components'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const router = useRouter()
 const route = useRoute()
@@ -561,7 +562,7 @@ onMounted(loadAll)
 .exec-out {
   margin-top: 16px;
   background: #0b1020;
-  color: #a5b4fc;
+  color: var(--el-color-primary-light-3);
   padding: 14px;
   border-radius: 10px;
   font-size: 12px;
@@ -586,8 +587,8 @@ onMounted(loadAll)
   margin-bottom: 6px;
 }
 .nt-type {
-  background: var(--brand-soft, #eef4ff);
-  color: var(--brand, #3b6fe0);
+  background: var(--brand-soft);
+  color: var(--brand);
   padding: 2px 8px;
   border-radius: 6px;
   font-size: 12px;

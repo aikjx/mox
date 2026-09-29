@@ -269,7 +269,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { formatDateTimeLocaleOr as formatTime } from '@/utils'
 import {
   Search, Plus, Refresh, Delete, Edit, ArrowDown, Setting,
   CopyDocument, RefreshRight, SwitchButton, CircleCheck
@@ -279,7 +279,9 @@ import {
   resetUserPwd, changeUserStatus, getUserRoles, assignUserRoles,
   getDeptTree, getPostList, getRoleList, uploadUserAvatar
 } from '@/api'
-import FormDialog from '@/components/common/FormDialog.vue'
+import { FormDialog } from '@/components'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 // ===== 搜索与列表 =====
 const loading = ref(false)
@@ -687,15 +689,7 @@ async function submitRoleAssign() {
 }
 
 // ===== 工具函数 =====
-function formatTime(t) {
-  if (!t) return '-'
-  try {
-    const d = new Date(t)
-    return d.toLocaleString('zh-CN', { hour12: false })
-  } catch {
-    return String(t)
-  }
-}
+// 时间口径走出口别名 import（§5.36）：坏值/空值的话交回调用位点，这里不再自写一份
 
 onMounted(() => {
   loadList()

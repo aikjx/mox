@@ -472,17 +472,20 @@
 </template>
 
 <script setup>
+import { formatClockSecond, formatDateTimeLocale } from '@/utils'
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import * as echarts from '@/echarts'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { getStatus, getFullStatus, getLogs, getPlugins, moxHealth, moxOptimize } from '@/api'
 import {
   getMetricsDetail, getMonitorQuality, getMonitorBusiness, getAlertsSummary,
   getMonitorNodes, getNodeLogs, getNodeTrace,
   getAlertRules, createAlertRule, updateAlertRule,
   deleteAlertRule, toggleAlertRule, getTimeseries, getBusinessTimeseries
-} from '@/api/monitor.api'
-import { useProject } from '@/composables/projectContext.js'
+} from '@/api'
+import { useProject } from '@/composables'
+import { catColor, tokenColor, withAlpha, themeRevision } from '@/constants'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 // ===== 基础状态 =====
 const loading = ref(false)
@@ -530,11 +533,10 @@ const cpuLevel = computed(() => {
   if (systemMetrics.cpu >= 70) return 'warn'
   return 'ok'
 })
-const cpuColor = computed(() => {
-  if (systemMetrics.cpu >= 90) return '#f56c6c'
-  if (systemMetrics.cpu >= 70) return '#e6a23c'
-  return '#10b981'
-})
+// el-progress 的 color 最终落到 SVG 的 stroke 呈现属性上，那里读不了 var()，所以现取色值。
+// computed 里调 tokenColor 就自动挂上了 themeRevision，换肤会自己重算。
+const levelInk = (level) => tokenColor(level === 'bad' ? '--danger' : level === 'warn' ? '--warning' : '--success')
+const cpuColor = computed(() => levelInk(cpuLevel.value))
 const memLevel = computed(() => {
   if (systemMetrics.memory >= 90) return 'bad'
   if (systemMetrics.memory >= 75) return 'warn'
@@ -542,9 +544,7 @@ const memLevel = computed(() => {
 })
 
 function diskColor(usage) {
-  if (usage >= 90) return '#f56c6c'
-  if (usage >= 75) return '#e6a23c'
-  return '#10b981'
+  return levelInk(usage >= 90 ? 'bad' : usage >= 75 ? 'warn' : 'ok')
 }
 
 function formatGB(val) {
@@ -795,6 +795,16 @@ function getBizTsSeries(key) {
   return (d.data && d.data[key]) || (d.series && d.series[key]) || (d[key]) || []
 }
 
+// ===== 画布配色 =====
+// echarts 的 option 与 el-progress 的 stroke 都落在 canvas / SVG 呈现属性上，那两处解析不了
+// var()，只能建 option 时把档位读成具体色值。色值仍只在主题命名空间里，这里做搬运；
+// 换肤之后由文件末尾 themeRevision 的 watch 重画。
+const axisText = () => tokenColor('--text-tertiary')
+const axisRule = () => tokenColor('--border-normal')
+const gridRule = () => tokenColor('--border-soft')
+const dangerInk = () => tokenColor('--danger')
+const warnInk = () => tokenColor('--warning')
+
 // ===== QPS + 错误率双Y轴图（使用真实时序数据） =====
 function renderQpsChart() {
   if (!qpsChartEl.value) return
@@ -805,28 +815,28 @@ function renderQpsChart() {
 
   qpsChart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-    legend: { data: ['QPS', '错误率'], top: 0, textStyle: { color: '#94a3b8' } },
+    legend: { data: ['QPS', '错误率'], top: 0, textStyle: { color: axisText() } },
     grid: { left: 50, right: 50, top: 36, bottom: 30 },
-    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: '#334155' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
+    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: axisRule() } }, axisLabel: { color: axisText(), fontSize: 11 } },
     yAxis: [
-      { type: 'value', name: 'QPS', position: 'left', axisLine: { lineStyle: { color: '#6366f1' } }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.1)' } }, axisLabel: { color: '#94a3b8' } },
-      { type: 'value', name: '错误率(%)', position: 'right', min: 0, axisLine: { lineStyle: { color: '#f56c6c' } }, splitLine: { show: false }, axisLabel: { color: '#94a3b8', formatter: '{value}%' } }
+      { type: 'value', name: 'QPS', position: 'left', axisLine: { lineStyle: { color: catColor(1) } }, splitLine: { lineStyle: { color: gridRule() } }, axisLabel: { color: axisText() } },
+      { type: 'value', name: '错误率(%)', position: 'right', min: 0, axisLine: { lineStyle: { color: dangerInk() } }, splitLine: { show: false }, axisLabel: { color: axisText(), formatter: '{value}%' } }
     ],
     series: [
       {
         name: 'QPS', type: 'line', smooth: true, data: qpsData, yAxisIndex: 0,
-        itemStyle: { color: '#6366f1' },
+        itemStyle: { color: catColor(1) },
         lineStyle: { width: 2 },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(99,102,241,0.3)' },
-            { offset: 1, color: 'rgba(99,102,241,0)' }
+            { offset: 0, color: withAlpha(catColor(1), 0.3) },
+            { offset: 1, color: withAlpha(catColor(1), 0) }
           ])
         }
       },
       {
         name: '错误率', type: 'line', smooth: true, data: errData, yAxisIndex: 1,
-        itemStyle: { color: '#f56c6c' },
+        itemStyle: { color: dangerInk() },
         lineStyle: { width: 2, type: 'dashed' }
       }
     ]
@@ -844,14 +854,14 @@ function renderLatencyChart() {
 
   latencyChart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { data: ['P50', 'P95', 'P99'], top: 0, textStyle: { color: '#94a3b8' } },
+    legend: { data: ['P50', 'P95', 'P99'], top: 0, textStyle: { color: axisText() } },
     grid: { left: 50, right: 20, top: 36, bottom: 30 },
-    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: '#334155' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
-    yAxis: { type: 'value', name: 'ms', axisLine: { lineStyle: { color: '#334155' } }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.1)' } }, axisLabel: { color: '#94a3b8' } },
+    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: axisRule() } }, axisLabel: { color: axisText(), fontSize: 11 } },
+    yAxis: { type: 'value', name: 'ms', axisLine: { lineStyle: { color: axisRule() } }, splitLine: { lineStyle: { color: gridRule() } }, axisLabel: { color: axisText() } },
     series: [
-      { name: 'P50', type: 'line', smooth: true, data: p50Data, itemStyle: { color: '#10b981' }, lineStyle: { width: 2 } },
-      { name: 'P95', type: 'line', smooth: true, data: p95Data, itemStyle: { color: '#f59e0b' }, lineStyle: { width: 2 } },
-      { name: 'P99', type: 'line', smooth: true, data: p99Data, itemStyle: { color: '#ef4444' }, lineStyle: { width: 2 } }
+      { name: 'P50', type: 'line', smooth: true, data: p50Data, itemStyle: { color: tokenColor('--success') }, lineStyle: { width: 2 } },
+      { name: 'P95', type: 'line', smooth: true, data: p95Data, itemStyle: { color: warnInk() }, lineStyle: { width: 2 } },
+      { name: 'P99', type: 'line', smooth: true, data: p99Data, itemStyle: { color: dangerInk() }, lineStyle: { width: 2 } }
     ]
   })
 }
@@ -866,30 +876,30 @@ function renderResChart() {
 
   resChart.setOption({
     tooltip: { trigger: 'axis', valueFormatter: v => v + '%' },
-    legend: { data: ['CPU', '内存'], top: 0, textStyle: { color: '#94a3b8' } },
+    legend: { data: ['CPU', '内存'], top: 0, textStyle: { color: axisText() } },
     grid: { left: 45, right: 20, top: 36, bottom: 30 },
-    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: '#334155' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
-    yAxis: { type: 'value', max: 100, axisLabel: { color: '#94a3b8', formatter: '{value}%' }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.1)' } } },
+    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: axisRule() } }, axisLabel: { color: axisText(), fontSize: 11 } },
+    yAxis: { type: 'value', max: 100, axisLabel: { color: axisText(), formatter: '{value}%' }, splitLine: { lineStyle: { color: gridRule() } } },
     series: [
       {
         name: 'CPU', type: 'line', smooth: true, data: cpuData,
-        itemStyle: { color: '#6366f1' },
+        itemStyle: { color: catColor(1) },
         lineStyle: { width: 2 },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(99,102,241,0.25)' },
-            { offset: 1, color: 'rgba(99,102,241,0)' }
+            { offset: 0, color: withAlpha(catColor(1), 0.25) },
+            { offset: 1, color: withAlpha(catColor(1), 0) }
           ])
         }
       },
       {
         name: '内存', type: 'line', smooth: true, data: memData,
-        itemStyle: { color: '#10b981' },
+        itemStyle: { color: catColor(3) },
         lineStyle: { width: 2 },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(16,185,129,0.25)' },
-            { offset: 1, color: 'rgba(16,185,129,0)' }
+            { offset: 0, color: withAlpha(catColor(3), 0.25) },
+            { offset: 1, color: withAlpha(catColor(3), 0) }
           ])
         }
       }
@@ -910,15 +920,15 @@ function renderBizChart() {
 
   bizChart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { data: ['对话数', '专家咨询', '工作流执行', '算子调用'], top: 0, textStyle: { color: '#94a3b8', fontSize: 11 } },
+    legend: { data: ['对话数', '专家咨询', '工作流执行', '算子调用'], top: 0, textStyle: { color: axisText(), fontSize: 11 } },
     grid: { left: 50, right: 20, top: 40, bottom: 30 },
-    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: '#334155' } }, axisLabel: { color: '#94a3b8', fontSize: 11 } },
-    yAxis: { type: 'value', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.1)' } } },
+    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: axisRule() } }, axisLabel: { color: axisText(), fontSize: 11 } },
+    yAxis: { type: 'value', axisLabel: { color: axisText() }, splitLine: { lineStyle: { color: gridRule() } } },
     series: [
-      { name: '对话数', type: 'bar', data: convData, itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
-      { name: '专家咨询', type: 'bar', data: expData, itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
-      { name: '工作流执行', type: 'bar', data: wfData, itemStyle: { color: '#f59e0b', borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
-      { name: '算子调用', type: 'bar', data: opData, itemStyle: { color: '#8b5cf6', borderRadius: [4, 4, 0, 0] }, barWidth: 12 }
+      { name: '对话数', type: 'bar', data: convData, itemStyle: { color: catColor(1), borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
+      { name: '专家咨询', type: 'bar', data: expData, itemStyle: { color: catColor(3), borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
+      { name: '工作流执行', type: 'bar', data: wfData, itemStyle: { color: catColor(4), borderRadius: [4, 4, 0, 0] }, barWidth: 12 },
+      { name: '算子调用', type: 'bar', data: opData, itemStyle: { color: catColor(5), borderRadius: [4, 4, 0, 0] }, barWidth: 12 }
     ]
   })
 }
@@ -940,11 +950,11 @@ function renderChart() {
         data,
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(99,102,241,0.35)' },
-            { offset: 1, color: 'rgba(99,102,241,0)' }
+            { offset: 0, color: withAlpha(catColor(1), 0.35) },
+            { offset: 1, color: withAlpha(catColor(1), 0) }
           ])
         },
-        itemStyle: { color: '#6366f1' },
+        itemStyle: { color: catColor(1) },
         lineStyle: { width: 2 }
       }
     ]
@@ -952,28 +962,30 @@ function renderChart() {
 }
 
 // ===== 璇玑雷达图 =====
+let lastRadarScores = []
 function renderRadar(scores) {
   if (!radarEl.value) return
+  lastRadarScores = scores
   if (!radarChart) radarChart = echarts.init(radarEl.value)
   const dims = scores.length ? scores.map((s) => s[0]) : dimList.value
   const vals = scores.length ? scores.map((s) => Math.round(s[1] * 100)) : dims.map(() => 60)
   radarChart.setOption({
     tooltip: {},
-    legend: { data: ['健康分'], bottom: 0, textStyle: { color: '#94a3b8' } },
+    legend: { data: ['健康分'], bottom: 0, textStyle: { color: axisText() } },
     radar: {
       indicator: dims.map((d) => ({ name: d, max: 100 })),
       radius: '62%',
-      axisName: { color: '#cbd5e1', fontSize: 11 },
-      splitArea: { areaStyle: { color: ['rgba(99,102,241,0.05)', 'rgba(99,102,241,0.10)'] } }
+      axisName: { color: tokenColor('--text-secondary'), fontSize: 11 },
+      splitArea: { areaStyle: { color: [withAlpha(catColor(1), 0.05), withAlpha(catColor(1), 0.1)] } }
     },
     series: [
       {
         type: 'radar',
         name: '健康分',
         data: [{ value: vals, name: '健康分' }],
-        areaStyle: { color: 'rgba(99,102,241,0.30)' },
-        lineStyle: { color: '#6366f1', width: 2 },
-        itemStyle: { color: '#6366f1' }
+        areaStyle: { color: withAlpha(catColor(1), 0.3) },
+        lineStyle: { color: catColor(1), width: 2 },
+        itemStyle: { color: catColor(1) }
       }
     ]
   })
@@ -1125,7 +1137,7 @@ async function loadMonitorData() {
     loadTimeseriesData(),
     loadBizTimeseriesData()
   ])
-  lastUpdateTime.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+  lastUpdateTime.value = formatClockSecond()
   triggerFlash()
 }
 
@@ -1206,6 +1218,16 @@ function renderAllCharts() {
   if (radarEl.value && dimList.value.length) renderRadar([])
 }
 
+// 换肤后画布里还是旧色值：档位一变，就按已 init 的实例原样重画（数据没变，只换皮）。
+watch(themeRevision, () => {
+  if (qpsChart) renderQpsChart()
+  if (latencyChart) renderLatencyChart()
+  if (resChart) renderResChart()
+  if (bizChart) renderBizChart()
+  if (chart) renderChart()
+  if (radarChart) renderRadar(lastRadarScores)
+})
+
 // ===== 实时刷新机制 =====
 function startAutoRefresh() {
   stopAutoRefresh()
@@ -1266,7 +1288,7 @@ const pluginCount = ref(0)
 function fmt(ts) {
   if (!ts) return '—'
   const d = new Date(ts)
-  return isNaN(d) ? String(ts) : d.toLocaleString('zh-CN', { hour12: false })
+  return isNaN(d) ? String(ts) : (formatDateTimeLocale(d) ?? String(ts))
 }
 
 
@@ -1404,7 +1426,7 @@ onBeforeUnmount(() => {
 }
 .countdown {
   font-weight: 700;
-  color: var(--accent, #6366f1);
+  color: var(--accent, var(--cat-1));
   font-size: 14px;
   min-width: 20px;
   text-align: center;
@@ -1442,13 +1464,13 @@ onBeforeUnmount(() => {
   height: 16px;
   border-radius: 2px;
 }
-.bar-icon.sys { background: #6366f1; }
-.bar-icon.qos { background: #10b981; }
-.bar-icon.biz { background: #f59e0b; }
+.bar-icon.sys { background: var(--cat-1-fill); }
+.bar-icon.qos { background: var(--cat-3-fill); }
+.bar-icon.biz { background: var(--cat-4-fill); }
 .bar-icon.alert { background: #ef4444; }
-.bar-icon.chart { background: #8b5cf6; }
-.bar-icon.health { background: #06b6d4; }
-.bar-icon.rule { background: #ec4899; }
+.bar-icon.chart { background: var(--cat-5-fill); }
+.bar-icon.health { background: var(--cat-2-fill); }
+.bar-icon.rule { background: var(--cat-6-fill); }
 
 .section-hint {
   font-size: 12px;
@@ -1490,14 +1512,14 @@ onBeforeUnmount(() => {
   font-weight: 700;
   line-height: 1.2;
 }
-.kpi-value.ok { color: var(--success, #10b981); }
-.kpi-value.warn { color: var(--warning, #e6a23c); }
-.kpi-value.bad { color: var(--danger, #f56c6c); }
-.kpi-value.qos-val { color: var(--accent, #6366f1); }
-.kpi-value.biz-val { color: #f59e0b; }
-.kpi-value.alert-total { color: #8b5cf6; }
+.kpi-value.ok { color: var(--success, var(--cat-3)); }
+.kpi-value.warn { color: var(--warning); }
+.kpi-value.bad { color: var(--danger); }
+.kpi-value.qos-val { color: var(--accent, var(--cat-1)); }
+.kpi-value.biz-val { color: var(--cat-4); }
+.kpi-value.alert-total { color: var(--cat-5); }
 .kpi-value.alert-p0 { color: #ef4444; }
-.kpi-value.alert-p1 { color: #f59e0b; }
+.kpi-value.alert-p1 { color: var(--cat-4); }
 .kpi-value.alert-p2 { color: #3b82f6; }
 
 .kpi-value .unit {
@@ -1521,7 +1543,7 @@ onBeforeUnmount(() => {
   gap: 2px;
 }
 .kpi-trend.up { color: #ef4444; }
-.kpi-trend.down { color: #10b981; }
+.kpi-trend.down { color: var(--cat-3); }
 
 .kpi.small .kpi-value {
   font-size: 20px;
@@ -1587,8 +1609,8 @@ onBeforeUnmount(() => {
 .net-dir {
   font-weight: 600;
 }
-.net-dir.up { color: #f59e0b; }
-.net-dir.down { color: #10b981; }
+.net-dir.up { color: var(--cat-4); }
+.net-dir.down { color: var(--cat-3); }
 .net-val {
   color: var(--text-2);
   font-weight: 600;
@@ -1631,11 +1653,11 @@ onBeforeUnmount(() => {
 }
 .health-summary.up {
   background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
+  color: var(--cat-3);
 }
 .health-summary.warn {
   background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
+  color: var(--cat-4);
 }
 .health-summary.down {
   background: rgba(239, 68, 68, 0.12);
@@ -1654,15 +1676,15 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 .svc-dot.up {
-  background: var(--success, #10b981);
+  background: var(--success, var(--cat-3));
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
 }
 .svc-dot.warning {
-  background: var(--warning, #e6a23c);
+  background: var(--warning);
   box-shadow: 0 0 0 3px rgba(230, 162, 60, 0.18);
 }
 .svc-dot.down {
-  background: var(--danger, #f56c6c);
+  background: var(--danger);
   box-shadow: 0 0 0 3px rgba(245, 108, 108, 0.18);
   animation: blink 1.5s infinite;
 }
@@ -1671,9 +1693,9 @@ onBeforeUnmount(() => {
   50% { opacity: 0.4; }
 }
 
-.bad { color: var(--danger, #f56c6c) !important; font-weight: 600; }
-.warn { color: var(--warning, #e6a23c) !important; font-weight: 600; }
-.ok { color: var(--success, #10b981) !important; }
+.bad { color: var(--danger) !important; font-weight: 600; }
+.warn { color: var(--warning) !important; font-weight: 600; }
+.ok { color: var(--success, var(--cat-3)) !important; }
 
 /* ===== 告警规则 ===== */
 .rule-duration {
@@ -1794,7 +1816,7 @@ onBeforeUnmount(() => {
   color: var(--text-2);
 }
 .suggest-list b {
-  color: var(--accent, #6366f1);
+  color: var(--accent, var(--cat-1));
   margin-right: 6px;
 }
 
