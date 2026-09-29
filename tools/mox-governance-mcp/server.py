@@ -36,6 +36,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -193,7 +194,8 @@ RESOURCES: List[Dict[str, Any]] = [
 def _resolve_script(name: str) -> Path:
     if name not in SCRIPTS:
         raise ToolError("脚本不在白名单内: " + str(name))
-    p = repo_root() / "scripts" / name
+    # 两枚门禁脚本自 2026-09 起都在 scripts/gate/ 下（AGENTS.md 常用命令同此路径）
+    p = repo_root() / "scripts" / "gate" / name
     if not p.is_file():
         raise ToolError("门禁脚本缺失: " + str(p))
     return p
@@ -404,6 +406,62 @@ def tool_doc_links_check(args: Dict[str, Any]) -> Dict[str, Any]:
     if err.strip():
         result["stderr_tail"] = err.strip()[-800:]
     return result
+
+
+# --------------------------------------------------------------------------- #
+# mox_doc_links_check 的自洽判据（--selftest 与变异电池共用同一份代码）
+#   期望全部现推：明细长度对上 limit、计数对上门禁自己打印的总体行、截断告示按
+#   「打印 < 总体」双向存在。不硬编语料条数——断链清零后这些格照样开火，
+#   断链未清零时也不因为「仓库还得留着这笔债」才绿。
+# --------------------------------------------------------------------------- #
+TRUNCATION_MARK = "明细已截断"
+_PRINTED_TOTAL = re.compile(r"打印\s*(\d+)\s*条／总体\s*(\d+)\s*条")
+
+
+def _total_from_stdout(text: str, head: str) -> Optional[int]:
+    """读门禁 stdout 里「<head>N」那个总数；该分支没打印（如无断链时的 [OK] 行）返回 None。"""
+    idx = text.find(head)
+    if idx < 0:
+        return None
+    m = re.match(r"\s*(\d+)", text[idx + len(head):])
+    return int(m.group(1)) if m else None
+
+
+def _doc_gate_cells(body: Dict[str, Any], stdout_text: str, limit: int) -> List[Tuple[str, bool, str]]:
+    """四格判据，返回 (格名, 是否通过, 现量说明)；说明只在失败时由调用方打印。"""
+    items = body.get("broken") or []
+    nb = int(body.get("broken_count", -1))
+    nw = int(body.get("warning_count", -1))
+
+    missing = [k for k in ("passed", "exit_code", "broken_count", "warning_count",
+                           "scanned_files", "checked_refs", "broken", "top_broken_files")
+               if k not in body]
+    cells: List[Tuple[str, bool, str]] = [
+        ("文档校验返回结构化字段", not missing, "缺字段: " + ",".join(missing)),
+        ("断链明细受 limit 约束且与计数同源",
+         len(items) == max(0, min(nb, limit)),
+         "明细 %d 条／计数 %d 条／limit %d" % (len(items), nb, limit)),
+    ]
+
+    printed_broken = _total_from_stdout(stdout_text, "断链总数 ")
+    printed_warn = _total_from_stdout(stdout_text, "告警·反引号路径引用不存在（")
+    cells.append((
+        "计数对上门禁自己打印的总体行",
+        (printed_broken == nb if printed_broken is not None else nb == 0)
+        and (printed_warn == nw if printed_warn is not None else nw == 0),
+        "stdout 断链=%s 告警=%s ｜ 工具 断链=%d 告警=%d" % (printed_broken, printed_warn, nb, nw),
+    ))
+
+    notice_pairs = [tuple(int(g) for g in m.groups()) for m in _PRINTED_TOTAL.finditer(stdout_text)]
+    ok_notice = (TRUNCATION_MARK in stdout_text) == (nb > limit or nw > limit)
+    consistent = all(p == min(t, limit) and t in (nb, nw) for p, t in notice_pairs)
+    cells.append((
+        "明细被截断时门禁必须显式告示（且告示内的数对得上）",
+        ok_notice and consistent,
+        "告示=%s 期望=%s 打印/总体=%s ｜ 工具 断链=%d 告警=%d limit=%d"
+        % (TRUNCATION_MARK in stdout_text, nb > limit or nw > limit, notice_pairs, nb, nw, limit),
+    ))
+    return cells
 
 
 def tool_ci_gate(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -735,6 +793,18 @@ def _selftest() -> int:
         body = ports.get("structuredContent", {})
         record("端口校验返回结构化字段",
                all(k in body for k in ("passed", "error_count", "warn_count", "scanned_ports")))
+
+    # 文档门禁这条通道此前一格未测（脚本路径写错也照样「全绿」，因为没人调用过它）。
+    # limit 故意取 3：小于本机现量的断链/告警总数，让「明细截断」这条通道真的开火。
+    doc_limit = 3
+    docs = safe("真实调用 mox_doc_links_check",
+                lambda: call_tool("mox_doc_links_check", {"limit": doc_limit}))
+    if docs:
+        db = docs.get("structuredContent", {})
+        _rc, doc_out, _err, _ms = _run_script(
+            "check-doc-links.py", ["--max-detail", str(doc_limit)], None)
+        for cell_name, cell_ok, cell_detail in _doc_gate_cells(db, doc_out, doc_limit):
+            record(cell_name, cell_ok, cell_detail)
 
     noti = safe("通知类消息不产生响应", lambda: handle({"jsonrpc": "2.0", "method": "notifications/initialized"}))
     record("通知返回 None", noti is None)

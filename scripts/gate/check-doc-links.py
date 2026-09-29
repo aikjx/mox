@@ -12,8 +12,13 @@
     python scripts/gate/check-doc-links.py --repo           # 一并校验仓库其它 .md/.html 中对 docs/ 的引用
     python scripts/gate/check-doc-links.py --strict         # 反引号路径引用也视为错误（默认仅告警）
     python scripts/gate/check-doc-links.py --json out.json  # 输出机器可读报告
+    python scripts/gate/check-doc-links.py --selftest        # 仪器自检（锚点解析/越界判定/截断告示）
 
 约定
+    带行号的引用（形如 docs/a.md:24）按「目标文件存在 + 行号落在该文件行数内」判定，
+    不再把整串当文件名——旧写法会把 5 条这类有效引用误判成「引用不存在」；
+    明细打印受 --max-detail 限制（默认 120），总体超过上限时另印一行「已截断」告示：
+    对两份都被截断的打印集做集合差，会凭空造出一条「消失」的条目，比较总体须先调大上限或读总体行。
     围栏代码块（``` / ~~~）内的链接视为示例，不参与校验；
     JS/Vue 模板插值（${...}）、file:// 绝对路径、glob/占位写法不计为断链；
     历史快照或「旧路径 → 新路径」迁移映射表，可用 HTML 注释显式豁免：
@@ -26,10 +31,13 @@
 """
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import re
 import sys
+import tempfile
 import urllib.parse
 from pathlib import Path
 
@@ -45,6 +53,12 @@ SKIP_DIR_NAMES_IN_DOCS = {"_archive"}  # 除非 --all
 MD_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 HTML_LINK = re.compile(r"""(?:href|src)\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
 CODE_REF = re.compile(r"`(docs/[^`\s]+)`")
+
+# 带行号的引用（docs/a.md:24）：路径部分照常校验，行号另判「越界」，两码事分开报。
+# 扩展名不列白名单（任何 1–6 位的点分扩展都算），否则 .mjs/.toml 这一族会退回成假阳。
+ANCHOR_REF = re.compile(r"^(.+?\.[A-Za-z0-9]{1,6}):(\d{1,6})$")
+# 越界判定的标签常量：判据句与自检共用同一个名，改措辞必须走这里，两边不会各自腐烂
+ANCHOR_TAG = "行号越界"
 
 # 围栏代码块（``` / ~~~）：其中的链接是示例或片段，不参与校验
 FENCE = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n.*?^[ \t]*\1[ \t]*$", re.S | re.M)
@@ -177,6 +191,47 @@ def resolve(path: Path) -> Path:
     return Path(os.path.normpath(str(path)))
 
 
+def split_anchor(raw: str):
+    """`docs/a.md:24` -> ('docs/a.md', 24)；不带行号锚点 -> (原串, None)。"""
+    m = ANCHOR_REF.match(raw.strip())
+    return (m.group(1), int(m.group(2))) if m else (raw, None)
+
+
+_LINE_COUNT = {}
+
+
+def line_count(path: Path) -> int:
+    """目标文件的行数；读不到（目录/权限/编码意外）返回 -1，表示「行数未知」而不是 0 行。"""
+    key = str(path)
+    if key not in _LINE_COUNT:
+        try:
+            _LINE_COUNT[key] = len(path.read_text(encoding="utf-8", errors="replace").splitlines())
+        except OSError:
+            _LINE_COUNT[key] = -1
+    return _LINE_COUNT[key]
+
+
+def truncation_notice(total, printed):
+    """总体大于打印数时给出截断告示；否则空串（没截断就不许印，印了就是假警报）。"""
+    if total <= printed:
+        return ""
+    return ("\n⚠ 明细已截断：打印 %d 条／总体 %d 条。对两份被截断的打印集做集合差会凭空造出「消失」的条目，"
+            "要比较总体请调大 --max-detail 或直接读上面那行总数。" % (printed, total))
+
+
+def anchor_reason(resolved: Path, anchor):
+    """文件确实存在时，对行号锚点做附加判定：返回 None（放行）或越界说明。
+
+    行数未知（-1）按放行处理——「读不到行数」不等于「行号无效」，不许据此判缺。
+    """
+    if anchor is None:
+        return None
+    lc = line_count(resolved)
+    if lc < 0 or 1 <= anchor <= lc:
+        return None
+    return "%s（目标 %d 行，引用第 %d 行）" % (ANCHOR_TAG, lc, anchor)
+
+
 def check(include_archive, include_repo, strict, report_path, max_detail):
     files = collect_files(include_archive, include_repo)
     broken, warnings, scanned_links = [], [], 0
@@ -195,7 +250,8 @@ def check(include_archive, include_repo, strict, report_path, max_detail):
             if lineno in ig:
                 skipped["ignored"] = skipped.get("ignored", 0) + 1
                 continue
-            resolved, mode = normalize_target(raw)
+            target_str, anchor = split_anchor(raw)
+            resolved, mode = normalize_target(target_str)
             if resolved is None:
                 if mode in ("absfile", "placeholder", "external"):
                     skipped[mode] = skipped.get(mode, 0) + 1
@@ -210,9 +266,14 @@ def check(include_archive, include_repo, strict, report_path, max_detail):
                 exists = resolved.exists()
             except OSError:
                 exists = False
+            reason = None
             if exists:
-                continue
+                reason = anchor_reason(resolved, anchor)
+                if reason is None:
+                    continue
             item = {"file": rel_file, "line": lineno, "target": raw, "kind": kind}
+            if reason:
+                item["reason"] = reason
             if kind == "code" and not strict:
                 warnings.append(item)
             else:
@@ -232,11 +293,17 @@ def check(include_archive, include_repo, strict, report_path, max_detail):
             print("  [%3d] %s" % (cnt, name))
         print("\n断链明细（最多 %d 条，--max-detail 可调）：" % max_detail)
         for it in broken[:max_detail]:
-            print("  [BROKEN] %s:%s -> %s  [%s]" % (it["file"], it["line"], it["target"], it["kind"]))
+            print("  [BROKEN] %s:%s -> %s  [%s]%s"
+                  % (it["file"], it["line"], it["target"], it["kind"],
+                     "  （%s）" % it["reason"] if it.get("reason") else ""))
+        sys.stdout.write(truncation_notice(len(broken), min(max_detail, len(broken))))
     if warnings:
         print("\n告警·反引号路径引用不存在（%d，加 --strict 可视为错误）：" % len(warnings))
         for it in warnings[:max_detail]:
-            print("  [WARN]   %s:%s -> %s" % (it["file"], it["line"], it["target"]))
+            print("  [WARN]   %s:%s -> %s%s"
+                  % (it["file"], it["line"], it["target"],
+                     "  （%s）" % it["reason"] if it.get("reason") else ""))
+        sys.stdout.write(truncation_notice(len(warnings), min(max_detail, len(warnings))))
 
     if report_path:
         Path(report_path).write_text(
@@ -254,6 +321,81 @@ def check(include_archive, include_repo, strict, report_path, max_detail):
     return 1 if broken else 0
 
 
+def selftest():
+    """仪器自检：锚点解析、越界判定、行数未知豁免、截断告示。夹具在临时目录，不动仓库。"""
+    state = {"pass": 0, "fail": 0}
+
+    def chk(name, cond, detail=""):
+        state["pass" if cond else "fail"] += 1
+        print("  [%s] %s%s" % ("PASS" if cond else "FAIL", name, ("  ｜" + detail) if detail else ""))
+
+    tmp = Path(tempfile.mkdtemp(prefix="check-doc-links-selftest-"))
+    try:
+        doc = tmp / "a.md"
+        doc.write_text("one\ntwo\nthree\n", encoding="utf-8")
+
+        # 一、锚点解析本身（这形状以前整串当文件名，于是 5 条有效引用被误判）
+        chk("A1 带行号的引用拆成路径＋行号", split_anchor("docs/x/a.md:24") == ("docs/x/a.md", 24))
+        chk("A2 非 .md 扩展也要认（扩展名不列白名单）", split_anchor("docs/x/a.mjs:7") == ("docs/x/a.mjs", 7))
+        chk("A3 不带行号的不误拆", split_anchor("docs/x/a.md") == ("docs/x/a.md", None))
+        chk("A4 目录简写不误拆成锚点", split_anchor("docs/enterprise/15") == ("docs/enterprise/15", None))
+
+        # 二、放宽不等于豁免：行号越界必须照判
+        chk("B1 行数现量", line_count(doc) == 3, "line_count=%d" % line_count(doc))
+        chk("B2 行号在范围内放行", anchor_reason(doc, 3) is None, "reason=%r" % anchor_reason(doc, 3))
+        chk("B3 行号越界必须判缺", anchor_reason(doc, 4) is not None, "reason=%r" % anchor_reason(doc, 4))
+        chk("B4 行号 0 不是合法锚点", anchor_reason(doc, 0) is not None, "reason=%r" % anchor_reason(doc, 0))
+        lc_dir = line_count(tmp)
+        chk("B5 读不到行数＝未知（-1），不是 0 行", lc_dir == -1, "line_count(目录)=%d" % lc_dir)
+        chk("B6 未知行数时不得凭「越界」判缺", anchor_reason(tmp, 999999) is None,
+            "reason=%r" % anchor_reason(tmp, 999999))
+
+        # 三、截断告示：期望由总体那两行现推，不硬编条数
+        capped = _run_capture(1)
+        full = _run_capture(10 ** 6)
+        n_broken = _int_after(r"断链总数 ", full)
+        n_warn = _int_after(r"路径引用不存在（", full)
+        expect = (1 if n_broken > 1 else 0) + (1 if len(warn_lines(full)) > 1 else 0)
+        chk("C1 上限小于总体时必须印截断告示", capped.count("已截断") == expect,
+            "总体断链 %d／告警 %d ⇒ 期望告示 %d 条，实得 %d 条"
+            % (n_broken, n_warn, expect, capped.count("已截断")))
+        chk("C2 上限足够大时不得印截断告示", full.count("已截断") == 0)
+        chk("C3 未截断时打印行数＝总体", len(warn_lines(full)) == n_warn,
+            "打印 %d／总体 %d" % (len(warn_lines(full)), n_warn))
+        anchored_self = re.compile(r":\d{1,6}$")  # 本格自带的针形正则：不借 split_anchor，否则变异体同时改掉尺子和被尺子审的那格
+        blind = [l for l in warn_lines(full)
+                 if " -> " in l
+                 and anchored_self.search(l.split(" -> ", 1)[1].split("  （", 1)[0].strip())
+                 and ANCHOR_TAG not in l]
+        chk("C4 被判「引用不存在」的不许带行号锚点（锚点只能判越界）", not blind,
+            "仍有 %d 条：%s" % (len(blind), [l.split(" -> ", 1)[1][:60] for l in blind[:3]]))
+    finally:
+        try:
+            (tmp / "a.md").unlink()
+            tmp.rmdir()
+        except OSError:
+            pass
+
+    print("\nSELFTEST PASS=%d FAIL=%d" % (state["pass"], state["fail"]))
+    return 1 if state["fail"] else 0
+
+
+def warn_lines(text):
+    return [l for l in text.split("\n") if "[WARN]" in l]
+
+
+def _int_after(marker, text):
+    m = re.search(marker + r"(\d+)", text)
+    return int(m.group(1)) if m else -1
+
+
+def _run_capture(max_detail):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        check(False, False, False, None, max_detail)
+    return buf.getvalue()
+
+
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -264,8 +406,12 @@ def main():
     ap.add_argument("--repo", action="store_true", help="同时校验仓库其它 md/html 对 docs/ 的引用")
     ap.add_argument("--strict", action="store_true", help="反引号路径引用也视为错误")
     ap.add_argument("--json", dest="json_path", default=None, help="输出 JSON 报告路径")
-    ap.add_argument("--max-detail", dest="max_detail", type=int, default=120, help="明细最多打印条数")
+    ap.add_argument("--max-detail", dest="max_detail", type=int, default=120,
+                    help="明细最多打印条数（总体超过它会另印一行截断告示）")
+    ap.add_argument("--selftest", action="store_true", help="自检锚点解析/越界判定/截断告示，不产出断链账")
     args = ap.parse_args()
+    if args.selftest:
+        sys.exit(selftest())
     sys.exit(check(args.all, args.repo, args.strict, args.json_path, args.max_detail))
 
 

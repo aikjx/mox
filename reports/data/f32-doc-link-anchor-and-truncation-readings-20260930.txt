@@ -1,0 +1,107 @@
+# F32 原始读数（文档门禁认行号锚点＋明细截断显式告示＋治理 MCP 门禁脚本路径缺陷）— 2026-09-30
+# 只放读数，结论权威在 docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md §5.61。
+==============================================================================
+[1] 全仓反引号里的「docs/…:行号」锚点引用——两把独立尺子逐条对上目标行数
+  尺子 A（grep -rhoE 反引号 docs 路径＋:数字，含 --include=*.md *.html，扫 docs/ README.md AGENTS.md）＝ census 文件 D:/tmp/f32-anchor-census.txt（236 B/2f0e0603773c），命中 5 行
+    docs/enterprise/39-开发专家联盟-架构诊断与SaaS化最优方案-V1.1.md               :24    目标 splitlines=302 行  在册=是
+    docs/api/API-CRYPTO-TRANSPORT.md                               :29    目标 splitlines=92 行  在册=是
+    docs/api/PORT-REGISTRY.md                                      :67    目标 splitlines=256 行  在册=是
+    docs/api/PORT-REGISTRY.md                                      :73    目标 splitlines=256 行  在册=是
+    docs/standards/expert-alliance-port-norm.md                    :156   目标 splitlines=354 行  在册=是
+  尺子 B（门禁改后现量，WARN 明细里带「行号越界」reason 的条数）：
+    rc=1 ｜ 带 reason=行号越界 的明细 0 条（期望 0：五枚全在册）
+  两把尺子同值＝5 枚引用全部合法；尺子 A 是独立实现（grep＋Python 现数行数），不共享门禁代码
+==============================================================================
+[2] 门禁自带对照 scripts/gate/check-doc-links.py --selftest（现场重跑）
+  | [PASS] A1 带行号的引用拆成路径＋行号
+  | [PASS] A2 非 .md 扩展也要认（扩展名不列白名单）
+  | [PASS] A3 不带行号的不误拆
+  | [PASS] A4 目录简写不误拆成锚点
+  | [PASS] B1 行数现量  ｜line_count=3
+  | [PASS] B2 行号在范围内放行  ｜reason=None
+  | [PASS] B3 行号越界必须判缺  ｜reason='行号越界（目标 3 行，引用第 4 行）'
+  | [PASS] B4 行号 0 不是合法锚点  ｜reason='行号越界（目标 3 行，引用第 0 行）'
+  | [PASS] B5 读不到行数＝未知（-1），不是 0 行  ｜line_count(目录)=-1
+  | [PASS] B6 未知行数时不得凭「越界」判缺  ｜reason=None
+  | [PASS] C1 上限小于总体时必须印截断告示  ｜总体断链 43／告警 212 ⇒ 期望告示 2 条，实得 2 条
+  | [PASS] C2 上限足够大时不得印截断告示
+  | [PASS] C3 未截断时打印行数＝总体  ｜打印 212／总体 212
+  | [PASS] C4 被判「引用不存在」的不许带行号锚点（锚点只能判越界）  ｜仍有 0 条：[]
+  | SELFTEST PASS=14 FAIL=0
+  rc=0 ｜ 判决行=['SELFTEST PASS=14 FAIL=0']
+  按名数格（不靠回忆）：A 组 4 格／B 组 6 格／C 组 4 格／合计 14 格
+==============================================================================
+[3] 门禁侧变异电池 D:/tmp/f32-mutant.py（3774 B/822223a2dac1）现场重跑，内存改实现、磁盘不动
+  | G0 未变异基线                                   rc=0 红格=[] 期望首批=无 命中=OK
+  | M1 锚点形状不认（回到旧世界）                           rc=1 红格=['A1', 'A2', 'C4'] 期望首批=A1 命中=OK
+  | M2 越界判定退化成一律放行                             rc=1 红格=['B3', 'B4'] 期望首批=B3 命中=OK
+  | M3 越界判定退化成凡锚点即判缺                           rc=1 红格=['B2', 'B6'] 期望首批=B2 命中=OK
+  | M4 截断告示哑掉                                  rc=1 红格=['C1'] 期望首批=C1 命中=OK
+  | M5 读不到行数当成 0 行                             rc=1 红格=['B5', 'B6'] 期望首批=B5 命中=OK
+  | H1 只改中文措辞（必须不红）                            rc=0 红格=[] 命中=OK
+  | 不符枚数=0
+  rc=0（不符枚数见末行）
+==============================================================================
+[4] 语料读数（同一 --max-detail 1000 口径，三份日志同 cap 才可比）
+  F31 修完 ElMessage 之后（F32 之前）    32572 B/18116558724a ｜ 扫描文件 372 个，判定引用 2071 条 ｜ 断链总数 43 涉 9 ｜ WARN 总体 217 ｜ 明细行 WARN=217 BROKEN=43
+  F32 改门禁之后·写 §5.61 之前           32226 B/c71980481a7d ｜ 扫描文件 372 个，判定引用 2071 条 ｜ 断链总数 43 涉 9 ｜ WARN 总体 212 ｜ 明细行 WARN=212 BROKEN=43
+  F32 改门禁之后·写 §5.61 之后           32226 B/c71980481a7d ｜ 扫描文件 372 个，判定引用 2071 条 ｜ 断链总数 43 涉 9 ｜ WARN 总体 212 ｜ 明细行 WARN=212 BROKEN=43
+  F32 净效果＝WARN 总体 217→212（−5），断链 43→43／涉 9→9 不变，rc 恒 1
+  写本节前后（同 cap）集差：new=0 gone=0 ｜ BROKEN 集差 new=0 gone=0
+  中途一枚自捉（形状登记，不引行号）：第一版 §5.61 把带行号的样例写在反引号里，写后同 cap 现量跑出 new=1／gone=0，那条点名在本治理文档自身；改成裸文本后复跑＝上面那行的 new=0／gone=0。中间那份 after 日志被第二次改写覆盖，故此处不引它的行号，只引两次判决的形状。
+  本文件在册 WARN=1 条（第 137 行指向已搬走的旧 FRONTEND-MODULE 文档，存量）
+==============================================================================
+[5] 下游消费者 tools/mox-governance-mcp/server.py --selftest：修前由 HEAD blob 副本现场跑，不靠回忆
+  修前载体＝git show HEAD:tools/mox-governance-mcp/server.py 落到 D:/tmp/f32-server-head.py（32677 B/052932f169ce），再放到同深度目录 D:/tmp/f32-headroot/tools/mox-governance-mcp/ 执行（因模块用 __file__ 上溯两级定位仓库根，直接放 D:/tmp 会 IndexError: 2 —— 该次失败原样留在此）
+  修前（HEAD 副本）    1656 B/6529d8f42b15 ｜ 合计 22 项，失败 9 项 ｜ FAIL 枚数=9
+  修后（工作树）        1587 B/542db436490e ｜ 合计 28 项，失败 0 项 ｜ FAIL 枚数=0
+  修前九枚 FAIL 的判决串全部来自同一句：门禁脚本缺失: D:\a10\aikjx\gitcode\infotopograph\scripts\verify-ports.py
+  修前 FAIL 名单：查询已登记端口 / 端口 3080 归类为 RUNTIME / 查询未登记端口 / 未登记端口返回 found=false / 关键字查询 alliance / 关键字查询有命中 / 资源内容非markdown空文 / 真实调用 mox_port_verify / stdio 端到端（子进程）
+  修后新增/首次抵达的格：端口校验返回结构化字段 / 真实调用 mox_doc_links_check / 文档校验返回结构化字段 / 断链明细受 limit 约束且与计数同源 / 计数对上门禁自己打印的总体行 / 明细被截断时门禁必须显式告示（且告示内的数对得上）
+==============================================================================
+[6] 消费者侧变异电池 D:/tmp/f32-mcp-mutant.py（4554 B/5c065c3e756f）现场重跑：只在内存改 server.py，门禁按盘上原文执行
+  | G0 真 server.py（对照）                         红格=无（断链 43／告警 212／明细 3／rc=1）
+  | M1 路径退回 scripts/                           通道不可用：ToolError: 门禁脚本缺失: D:\a10\aikjx\gitcode\infotopograph\scripts\check-doc-links.py
+  | M2 明细不切（limit 被忽略）                         红格=['C2 明细受 limit']（断链 43／告警 212／明细 43／rc=1）
+  | · C1 字段齐全        绿
+  | · C2 明细受 limit   红  明细 43 条／计数 43 条／limit 3
+  | · C3 计数对上总体行     绿
+  | · C4 截断告示        绿
+  | M3 计数取自明细（总体被 limit 削）                     红格=['C3 计数对上总体行', 'C4 截断告示']（断链 3／告警 212／明细 3／rc=1）
+  | · C1 字段齐全        绿
+  | · C2 明细受 limit   绿
+  | · C3 计数对上总体行     红  stdout 断链=43 告警=212 ｜ 工具 断链=3 告警=212
+  | · C4 截断告示        红  告示=True 期望=True 打印/总体=[(3, 43), (3, 212)] ｜ 工具 断链=3 告警=212 limit=3
+  | M4 告示标记换词（读不到＝该红的那格）                       红格=['C4 截断告示']（断链 43／告警 212／明细 3／rc=1）
+  | · C1 字段齐全        绿
+  | · C2 明细受 limit   绿
+  | · C3 计数对上总体行     绿
+  | · C4 截断告示        红  告示=False 期望=True 打印/总体=[(3, 43), (3, 212)] ｜ 工具 断链=43 告警=212 limit=3
+  | M5 字段改名（结构化契约断掉）                           红格=['C1 字段齐全', 'C2 明细受 limit', 'C3 计数对上总体行', 'C4 截断告示']（断链 None／告警 212／明细 3／rc=1）
+  | · C1 字段齐全        红  缺字段: broken_count
+  | · C2 明细受 limit   红  明细 3 条／计数 -1 条／limit 3
+  | · C3 计数对上总体行     红  stdout 断链=43 告警=212 ｜ 工具 断链=-1 告警=212
+  | · C4 截断告示        红  告示=True 期望=True 打印/总体=[(3, 43), (3, 212)] ｜ 工具 断链=-1 告警=212 limit=3
+  | H1 良性：只改中文说法（两处处）                          红格=无（断链 43／告警 212／明细 3／rc=1）
+  | 不符枚数=0 / 变异体 7 枚（G0+M1..M5+H1）
+  rc=0（不符枚数见末行；M1 那一枚以「整通道 ToolError」为期望，不是红格）
+==============================================================================
+[7] 图像（splitlines 尺子）与下游接线现量
+  scripts/gate/check-doc-links.py                              19048 B/f393b7ee4a73 CR=0 行数=419
+  tools/mox-governance-mcp/server.py                           36525 B/dffb718006d3 CR=0 行数=858
+  docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md  348912 B/e5dc56f2e493 CR=0 行数=2260
+  D:/tmp/f32-section-561.md（本节正文载体，插入前后同尺）                      7355 B/a2f915a355d7 CR=0 行数=19
+  接线现量：scripts/gate/check-all.ps1 里 check-doc-links 出现 0 次、verify-ports 出现 1 次（第 110 行）
+  README  写 scripts/gate/ 的行数=2，写 scripts/（缺 gate）的行数=0
+  SKILL   写 scripts/gate/ 的行数=4，写 scripts/（缺 gate）的行数=0
+  AGENTS  写 scripts/gate/ 的行数=2，写 scripts/（缺 gate）的行数=0
+  门禁单次执行耗时（本驱动现测，--max-detail 3）＝1.2 s，rc=1
+
+==============================================================================
+[8] §5.61 最后一次改写之后的图像与集差（改的是"集差见块 [7]"这一处引用，改成块 [4]）
+  本文件最终图像：349018 B/3f4243191748 CR=0 行数(splitlines)=2260
+  ⇒ 块 [7] 里那行 "FRONTEND-MODULE-GOVERNANCE… 348912 B/e5dc56f2e493" 是本块之前的中间态，已被本行取代；按 append-only 规矩原样留着不覆写。
+  同 cap 现量（门禁 19048 B/f393b7ee4a73，rc=1）：WARN 总体 212→212，集差 new=0 gone=0 ｜ BROKEN 43→43，集差 new=0 gone=0
+  对照基准 D:/tmp/f32-gate-doclinks-before.log（写 §5.61 之前那份，32226 B/c71980481a7d）
+  本文件在册 WARN=1 条（第 137 行，存量），§5.60／§5.61 两次插入各贡献 0 条
+  门禁 --selftest 与本文件无关，故未重跑；块 [2] 的 PASS=14 FAIL=0 仍是被本轮引用过的那次现场读数。
