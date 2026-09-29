@@ -1,0 +1,176 @@
+# F28 调色板入参形态 - 原始读数（2026-09-29，专家联盟前端 L14 格）
+# 口径：每条读数点名印出它的文件；本文件不含结论，结论见 FRONTEND-MODULE-GOVERNANCE-v1.0.md §5.57。
+# 本文件由 D:/tmp/f28-archive.py 一次性写出（UTF-8／LF；拒绝覆盖已存在图像）。
+
+## [1] 被碰文件图像（写本文件时现量；跑前图像＝D:/tmp/f28-backup，跑后＝磁盘）
+    | vocabulary-ownership.test.js   跑前  40585 B/09ec807e06f7 CR=0 CRLF=0 -> 跑后  43924 B/6e9121b326c4 CR=0 CRLF=0
+    | display.js                     跑前   3084 B/596c3c0dd6f5 CR=0 CRLF=0 -> 跑后   3290 B/37c3366be92d CR=0 CRLF=0
+    | useTaskOrchestration.js        跑前  11866 B/cba01375b7be CR=0 CRLF=0 -> 跑后  11877 B/9246c8c069c5 CR=0 CRLF=0
+    | TaskOrchestrationPanel.vue     跑前  24965 B/43abf91e6dba CR=0 CRLF=0 -> 跑后  25066 B/d01ef7597be6 CR=0 CRLF=0
+    | ExpertOverviewPanel.vue        跑前  27245 B/7784eae3104f CR=0 CRLF=0 -> 跑后  27293 B/8d6150f19e27 CR=0 CRLF=0
+    | 电池跑前判据图像（D:/tmp/f28-snap/guard.start） 43924 B/6e9121b326c4；电池跑后磁盘＝上一条的"跑后"值
+    | 上一轮（F27）归档 1 4 6 1 9   B ／ m d 5   b 8 f 3 1 4 c e 5 8 2 3（本轮实测，用来把上轮读数挂到仓库内文件上）
+
+## [2] 真值链（只读现量，逐条点名文件）
+    | [expertVisualKey 键推导] 源=modules/expert-alliance/model/display.js 命中 1 行 50: return domain || str(e.expertType) || str(e.type)
+    | [normExpert 折掉 type 键] 源=modules/expert-alliance/model/normalize.js 命中 1 行 248: expertType: str(e.expert_type ?? e.type),
+    | [调色板兜底常量] 源=constants/expert.constants.js 命中 6 行 53: export const EXPERT_COLOR_FALLBACK = '#6366f1' ‖ 54: export const EXPERT_GRADIENT_FALLBACK = 'linear-gradient(135deg, #7c3aed, #06b6d4)' ‖ 55: export const EXPERT_EMOJI_FALLBACK = '👤'
+    | [listExperts 走归一] 源=modules/expert-alliance/api/alliance.api.js 命中 2 行 9: normDag, normDebate, normDispatch, normDispatcherReset, normDispatcherResetAll, normDispatcherStatus, normExpert, normExpertList, normExpertMetrics, normExpertSearch, normExpertStats, normExpertWrite, ‖ 144: return normExpertList(payload)
+    | [collabLists 已算 visualKey] 源=modules/expert-alliance/model/collabLists.js 命中 1 行 65: visualKey: expertVisualKey(c),
+    | [建议键与 expertVisualKey 同词表] 源=composables/workspace/useTaskOrchestration.js 命中 1 行 127: const matchingExperts = onlinePool.filter(e => expertVisualKey(e) === task.suggestedExpertType)
+
+## [3] 同一把针的两副图像对照普查（跑前＝备份图像／跑后＝当前磁盘；驱动 D:/tmp/f28-archive.py 内联，未落库＝没牙）
+    | 跑前：调用点 45 处／非白名单命中 19 处／命中文件 4 个 按文件={'composables/workspace/useTaskOrchestration.js': 1, 'views/expert/panels/ExpertOverviewPanel.vue': 4, 'views/workspace/panels/SmartRouteDialog.vue': 2, 'views/workspace/panels/TaskOrchestrationPanel.vue': 12}
+    | 跑后：调用点 45 处／非白名单命中 5 处／命中文件 2 个 按文件={'views/workspace/panels/SmartRouteDialog.vue': 2, 'views/workspace/panels/TaskOrchestrationPanel.vue': 3}
+    |   跑前命中 composables/workspace/useTaskOrchestration.js:168 expertEmoji(expert?.type)
+    |   跑前命中 views/expert/panels/ExpertOverviewPanel.vue:81 expertColor(exp.type)
+    |   跑前命中 views/expert/panels/ExpertOverviewPanel.vue:82 expertEmoji(exp.type)
+    |   跑前命中 views/expert/panels/ExpertOverviewPanel.vue:220 expertColor(exp.type)
+    |   跑前命中 views/expert/panels/ExpertOverviewPanel.vue:221 expertEmoji(exp.type)
+    |   跑前命中 views/workspace/panels/SmartRouteDialog.vue:88 expertColor(item.visualKey)
+    |   跑前命中 views/workspace/panels/SmartRouteDialog.vue:89 expertEmoji(item.visualKey)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:144 expertColor(task.suggestedExpertType)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:144 expertColor(task.suggestedExpertType)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:146 expertEmoji(task.suggestedExpertType)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:185 expertGradient(getExpertById(expId)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:188 expertEmoji(getExpertById(expId)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:244 expertGradient(expert.type)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:245 expertEmoji(expert.type)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:297 expertColor(getExpertById(expId)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:299 expertGradient(getExpertById(expId)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:300 expertEmoji(getExpertById(expId)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:423 expertGradient(getExpertById(expId)
+    |   跑前命中 views/workspace/panels/TaskOrchestrationPanel.vue:426 expertEmoji(getExpertById(expId)
+    |   跑后留下 views/workspace/panels/SmartRouteDialog.vue:88 expertColor(item.visualKey)
+    |   跑后留下 views/workspace/panels/SmartRouteDialog.vue:89 expertEmoji(item.visualKey)
+    |   跑后留下 views/workspace/panels/TaskOrchestrationPanel.vue:144 expertColor(task.suggestedExpertType)
+    |   跑后留下 views/workspace/panels/TaskOrchestrationPanel.vue:144 expertColor(task.suggestedExpertType)
+    |   跑后留下 views/workspace/panels/TaskOrchestrationPanel.vue:146 expertEmoji(task.suggestedExpertType)
+    | 命令口径：与判据 L14 格同一把针（\b<fn>\s*(?:\?\.)?\(([^)]*)\)）＋同一白名单；扫描集排 .test.js 与 constants/expert.constants.js。
+
+## [4] 判据单文件活读（源：D:/tmp/f28-guard.log，ANSI 剥色后存 D:/tmp/f28-guard-clean.log）
+    | 源文件 2167 B／md5 57e02a33db5a；guard rc=0（rc 取自该次运行的退出码，非管道尾巴）
+    | [L12 目录] 模块内目录 7 个（在册 2／出账 5／未登记 0）实测=["api","components","contract","model","store","views","_verification"]
+    | [L14 调色板] 调用点扫描集 272 个文件／命中 5 处／非白名单形态文件 2 个 实测=["views/workspace/panels/SmartRouteDialog.vue:88 item.visualKey","views/workspace/panels/SmartRouteDialog.vue:89 item.visualKey","views/workspace/panels/TaskOrchestrationPanel.vue:144 task.suggestedExpertType","views/workspace/panels/TaskOrchestrationPanel.vue:144 task.suggestedExpertType","views/workspace/panels/TaskOrchestrationPanel.vue:146 task.suggestedExpertType"]
+    | [L12 语言] 前缀池 32 个文件（.vue=28／.ts=0）／扫描集 30（非 .vue=2）
+    | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2
+    | Test Files  1 passed (1)
+    | Tests  19 passed (19)
+
+## [5] 变异电池（源：D:/tmp/f28-battery.log，驱动 D:/tmp/f28-battery.py；每次变异＝单文件跑判据，还原写在 finally）
+    | 源文件 1255 B／md5 2f43e1d7b161
+    | baseline 未变异                                       rc=0 期望=green 判决=green 首个红格=- 点名=- OK
+    | H1 撤站点修复（ExpertOverviewPanel 两处退回 exp.type）        rc=1 期望=red   判决=red   首个红格=L14 出现未登记的调色板调用点 点名=L14 出现未登记的调色板调用点 OK
+    | H2 台账命中数写少（TaskOrchestrationPanel n:3 改 n:2）       rc=1 期望=red   判决=red   首个红格=命中数与台账登记数不符 点名=命中数与台账登记数不符 OK
+    | H3 台账理由写成空串（SmartRouteDialog 的 why）                rc=1 期望=red   判决=red   首个红格=的台账缺理由 点名=的台账缺理由 OK
+    | H4 扫描集塌缩（paletteSrc 加一条永不成立的过滤）                    rc=1 期望=red   判决=red   首个红格=L14 调色板扫描集塌缩 点名=L14 调色板扫描集塌缩 OK
+    | H5 良性：只改判据里的中文注释                                   rc=0 期望=green 判决=green 首个红格=- 点名=- OK
+    | re-verify(还原后复跑) rc=0 判决=green 红格数=0
+    | guard  还原MATCH 跑前  43924 B/6e9121b326c4  CR=0 -> 跑后  43924 B/6e9121b326c4  CR=0
+    | over   还原MATCH 跑前  27293 B/8d6150f19e27  CR=0 -> 跑后  27293 B/8d6150f19e27  CR=0
+    | 逐格点名规矩：fired 只取 ANSI 剥色后的 AssertionError 行（vitest 的代码框含别的格的文案串，拿全文匹配会把邻居的名字印成红格）。
+
+## [6] 六道门禁（rc 逐条取自 D:/tmp/f28-gates-rc.log，非管道尾巴）
+    | vitest rc=0
+    | build rc=0
+    | module rc=0
+    | locale rc=0
+    | doclinks rc=1
+    | 全量 vitest：源 D:/tmp/f28-gate-vitest.log（448616 B／md5 1830a3c75f5e）Test Files  77 passed (77) ‖ Tests  1035 passed (1035)
+    | vite build：源 D:/tmp/f28-gate-build.log（19049 B／md5 eede47655d28）✓ built in 36.22s
+    | check-frontend-module：源 D:/tmp/f28-gate-module.log（1042 B／md5 8e29856dc859）--- 前端模块化门禁：ERROR=0 ---
+    | check-locale-format-outlets：源 D:/tmp/f28-gate-locale.log（880 B／md5 e40e82795f1f）[OK] L1/L2/L3 无违规：扫描 270 个文件；无参时间格式化余账 2 处＝登记表；出口写法只在 utils/time.js ‖ [INFO] I1 数字千分位（与时间无关，不判定，按名点名 3 处）：views/admin/panels/AdminLlm.vue:258 <div class="stat-value">{{ stats.total_tokens.toLocaleString(); views/admin/panels/AdminLlm.vue:278 <span class="usage-tokens">{{ data.total_tokens.toLocaleString(); views/expert/ExpertPlazaView.vue:699 if (s.consult_count != null) heroStats.value[1].value =
+    | check-doc-links（写 §5.57 之前的图像）：源 D:/tmp/f28-gate-doclinks-before.log（19827 B／md5 3ccbfeeb0710）
+    | doc-links WARN 行计数（写前图像）＝120，与 F27 归档块 [6] 的 120 同值＝本轮未引入新悬空引用
+
+## [7] 文档写前图像（§5.57 插入之前现量，供插入驱动做 PRE 断言）
+    | FRONTEND-MODULE-GOVERNANCE-v1.0.md  309891 B  md5 cd0b648a8d9a  行数=2178（LF 计数）  CR=0  CRLF=0
+    | 锚点 '## 5.55' 出现行号＝[2139]（grep 现量）
+    | 锚点 '## 5.56' 出现行号＝[2153]（grep 现量）
+    | 锚点 '## 6. 性能基线' 出现行号＝[2167]（grep 现量）
+
+
+## [8] 修复块（追加，不覆写；本块由 D:/tmp/f28-land.py 现量写出）
+    | 仪器瑕疵（原样登记）：块 [1] 末行"上一轮（F27）归档 …"把 ' '.join(一个字符串)" 用在了已格式化好的串上，于是逐字符被空格插开（数字未坏、排版坏了）。
+    | 正确形态（同一把尺子重量）：f27-directory-coverage-readings-20260929.txt  14619 B／md5 b8f314ce5823／CR=0
+    | 追加会移动"引用本归档尺寸"的既有条目：追加前 10519 B/c6bb05e0c6fc -> 追加后由本块末尾现量给出；此后若再追加，末尾值即过期。
+
+## [9] 写 §5.57 之后的复量（本块由 D:/tmp/f28-land-after.py 现量写出）
+    | check-doc-links rc=1；WARN 行数 插前=120 插后=120；逐行集合差 new=120 gone=120（非空的新行点名：  [WARN]   docs/api/PORT-REGISTRY.md:235 -> docs/expert-alliance/00-INTEGRATED-INDEX.md |   [WARN]   docs/architecture/ARCHITECTURE-ENTERPRISE.md:1039 -> docs/expert-alliance/v3/01-architecture-optimization.md |   [WARN]   docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md:137 -> docs/architecture/frontend/FRONTEND-MODULE.md）
+    | FRONTEND-MODULE-GOVERNANCE-v1.0.md 插后 317363 B／md5 09e813fcb436／CR=0；§5.57 起点行号 2167、## 6. 性能基线 被移到 2181（插前 2167）
+    | 本归档尺寸：追加本块前 11128 B/8af5a02168d7 -> 追加后由块末行现量；引用"归档自身尺寸"的既有条目会随每次追加过期，末次实测值只在本行。
+
+## [10] 引用纪律修正块（追加；本块由 D:/tmp/f28-land-fix.py 现量写出）
+    | 瑕疵（原样保留不覆写）：块 [9] 印的 new=0 gone=0 出自"两把尺子不同源"——插前日志 19827 B/3ccbfeeb0710 带 CRLF=180（bash 重定向保留 print 的行尾翻译），插后日志 19647 B/0340b81c7116 带 CRLF=0（io.open(newline=LF) 写出），逐行集合差于是把 120 条全判成新面孔。
+    | 归一（先吃掉游离 \r 再 split）后重比：WARN 条数 插前=120 插后=120；集合差 new=0 gone=0。
+    | 逐条点名（new 为空即本次插入未引入新悬空引用）：无
+    | 本归档末次实测值（此后再追加即过期）：追加本块前 12037 B/bf43ced9ecba；追加后由下一行独立复量。
+
+## [11] 引文修正（追加；本块由 D:/tmp/f28-land-quote-fix.py 现量写出）
+    | [9] 里那条判决行原文（从磁盘读回，逐字）：| check-doc-links rc=1；WARN 行数 插前=120 插后=120；逐行集合差 new=120 gone=120（非空的新行点名：  [WARN]   docs/api/PORT-REGISTRY.md:235 -> docs/expert-alliance/00-INTEGRATED-INDEX.md |   [WARN]   docs/architecture/ARCHITECTURE-ENTERPRISE.md:1039 -> docs/expert-alliance/v3/01-architecture-optimization.md |   [WARN]   docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md:137 -> docs/architecture/frontend/FRONTEND-MODULE.md）
+    | [10] 首行把 [9] 引成 "new=0 gone=0"（它那两个占位取了本块归一后的值），而 [9] 当时印的是 new=120 gone=120——这两个数由本块从磁盘正则读回，不是我手里的新值 ⇒ 一行描述别人读数的散文自己成了坏引用（症状＝数字来自另一副图像）。[10] 的判决（归一后 new=0 gone=0）不受影响。
+    | 规矩补一条：修引用时要从被引文件读回原句，别用手里刚算出的新值回填旧句。
+    | 本归档图像（写本块时现量，追加前）：12802 B／md5 3cfa6ac14bbc／CR=0 CRLF=0。
+
+## [12] 追加：R2 走到底与调色板覆盖现量（由本轮收束命令写出，正文只用纯文件名，不过 shell 反引号）
+    | 白名单放过的裸标识符形态 8 处（7 行）逐个走到底：ExpertWorkspaceView.vue:570 的 2 处证为正确（同文件 :569 key = expertVisualKey(speaker)）；ExpertPlazaView.vue:631/890/892 与 RegisterExpertDialog.vue:314/316 共 5 处取 EXPERT_TYPES 键域；ExpertEnterprisePanel.vue:854 的 type 实参来源未定位（该文件 type: 命中全是图谱边线型 solid/dashed）。
+    | 覆盖现量：constants/expert.constants.js 的 EXPERT_COLORS=6 键（algorithm/ai/security/market/requirement/custom）、EXPERT_EMOJIS=6 键、EXPERT_TYPES=16 键；交集 6、差集 10（architecture/automation/data/fusion/graph/mcp/monitor/operator/performance/workflow）⇒ 按 EXPERT_TYPES 键查色的位置对 10 档按定义落兜底。登记为 §5.57 余账 R4（只报不改）。
+    | 本节正文据此改掉两处未现量的 16 色板 说法（标题与起段），并在 R4 内点名 display.js:41-45 的旧散文同属未现量、本轮不覆写。
+    | doc-links 复跑（文档二次改动后）：rc=0，WARN 条数与插前集合差 new/gone 见上一行打印；本归档写本块前 14014 B/md5 72786ee592b2。
+
+==============================================================================
+[13] R2 第 8 处走到底 + F4 交叉核对（本轮源码零改动，只动文档与本归档）
+  13.1 块 [1] 五份写后图现场复算＝逐位相同，DRIFT=0 条：
+       frontend-ui/src/composables/workspace/useTaskOrchestration.js                   11877 B md5=9246c8c069c5 (same as block[1])
+       frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js   43924 B md5=6e9121b326c4 (same as block[1])
+       frontend-ui/src/modules/expert-alliance/model/display.js                         3290 B md5=37c3366be92d (same as block[1])
+       frontend-ui/src/views/expert/panels/ExpertOverviewPanel.vue                     27293 B md5=8d6150f19e27 (same as block[1])
+       frontend-ui/src/views/workspace/panels/TaskOrchestrationPanel.vue               25066 B md5=d01ef7597be6 (same as block[1])
+       ⇒ "本轮只改文档"是他证的：判据文件与四份被改文件与电池验收时同一字节。
+  13.2 `ExpertEnterprisePanel.vue:854` 的实参来源（现读）：
+       :853 function getTypeColor(type) {
+       :854 return expertColor(type)
+       :855 }
+       模板调用点 4 处 行号=[190, 197, 212, 408]
+         :190 <span class="legend-dot" :style="{ background: getTypeColor(type) }"></span>
+         :197 :style="{ left: getNodePosition(node.id, graphData.nodes).x + '%', top: getNodePosition(node.id, graphData.nodes).y + '%', background: getTy
+         :212 <el-avatar :size="48" :style="{ background: getTypeColor(selectedExpert.type) }">
+         :408 <el-tag :style="{ background: getTypeColor(s.expert.type), color: '#fff' }">{{ s.expert.name }}</el-tag>
+       :582 const typeLabels = EXPERT_TYPE_SHORT_LABELS
+       :868 selectedExpert.value = node
+       :217 <el-tag size="small">{{ typeLabels[selectedExpert.type] || selectedExpert.type }}</el-tag>
+       归因：:190＝typeLabels 的键（与调色板同键集，见 [14]）；:197/:212＝getExpertGraph 出参的 node.type（服务端常量戳 "expert"，§5.40 F10）；
+             :408＝enterpriseResult.optimal_team.scores 的 s.expert.type（dispatch 出参，未过 normExpert）。
+       ⇒ R2 八处收口＝2 处正确／5 处走本地包装器／1 处＝图谱节点常量戳＋dispatch 出参，0 处属"入参形态可独立收口"。
+  13.3 新覆盖形态（登记为 F29 候选，本轮不扩针）：L14 的 PALLETTE_FNS 只认三个函数名，
+       而 5 处走包装器（typeColor/typeEmoji/getEmojiByType/getGradientByType/getTypeColor）⇒ 转发在账外。
+       扩集前须先量"库里有多少转发函数、各自实参形态"，不许直接把名字加进 PALLETTE_FNS。
+  13.4 F4 交叉核对：ExpertEnterprisePanel 在 f4-hand-assembly.test.js 的登记行 [":64 'views/expert/panels/ExpertEnterprisePanel.vue': 1,"] ⇒ :847 自写 formatTime(ts)
+       属 F4"档不同不并"的已登记项，不是缺口。
+  13.5 doc-links 复量：final4 19827 B/8c1ae7d77c5a WARN=120 → final5 rc=1 WARN=120 集差 new=0 gone=0（比较前两份统一剥 \r：CR=180/180）
+       final5 19827 B/8c1ae7d77c5a；rc=1 属存量（WARN 全在 docs/working-reports 的旧路径映射上）。
+
+==============================================================================
+[14] R4 的前提被现量推翻：调色板不是"只覆盖 6/16"，而是"16 键全覆盖但有同值并列"
+  14.0 作废范围：块 [2]／[3]／[12] 与本节 §5.57 起段、R1、R4、R2 第 8 处里凡"6 键／差集 10／10 档按定义落兜底"的字样。
+       归档只追加不改写，故旧块保留原样；以下是唯一有效的现量。
+  14.1 仪器自抓（同一枚坏针连错两轮）：
+       行首锚点 `^\s*ident\s*:` 在 EXPERT_COLORS 上数到 6（＝键行行数 :58-63，不是键数）
+       正确针 `ident\s*:\s*\x27…\x27` 数到 16 ⇒ 六 与 十六 差 10，正是旧账里那个"差集 10"的来源。
+       ⇒ 若本轮不设 len==16 的分母断言，[13] 会把"16 键查 6 键的表、差集 -1"带着真行号写进归档。
+  14.2 五表现量（键集两两相等，missing/extra 皆空）：
+       EXPERT_TYPES               n=16 distinct=16 anchored_would_say=16
+       EXPERT_TYPE_SHORT_LABELS   n=16 distinct=16 anchored_would_say= 5
+       EXPERT_COLORS              n=16 distinct=14 anchored_would_say= 6
+       EXPERT_EMOJIS              n=16 distinct=15 anchored_would_say= 6
+       EXPERT_GRADIENTS           n=16 distinct=15 anchored_would_say=16
+  14.3 真缺陷＝同值并列（身份不可分辨）：
+       COLORS dups ['#6366f1', '#64748b']  EMOJIS dups ['🤖']  GRADIENTS dups ['linear-gradient(135deg, #64748b, #475569)']
+       EXPERT_COLOR_FALLBACK=#6366f1 与之同值的登记档=['algorithm', 'architecture']（algorithm≡architecture≡"没查到"）
+       EXPERT_EMOJI_FALLBACK=👤 且 EMOJIS[custom]=👤 同形＝True（custom 与"没查到"在 emoji 上不可分辨）
+       逐档并列：algorithm≡architecture（色）、operator≡custom（色）、ai≡automation（emoji）
+  14.4 文档三处更正后的图：323584 B/a90895489b4d；§5.57 段内仍含"6 键"字样 9 处（全部为更正句里对旧词的点名引用），
+       未被"作废/仪器假账/点名引用"就近覆盖的旧断言串=[]（应为空）
+       文档改前（块[7]）320025 B/fbcc0d3a8b71 → 2179 措辞更正 320076 B/749e2affdb95 → 本轮 R4 改写后见上行 md5。
+  14.5 本节结论的连带修正：F28 的**落盘改动本身不受影响**（14 站点走 expertVisualKey 的根据是 normalize.js:248
+       没有 type 键＋兜底常量的存在，两条都独立于调色板键数）；受影响的只是"为什么 .type 也有人在用"这段解释与两条余账的命名。

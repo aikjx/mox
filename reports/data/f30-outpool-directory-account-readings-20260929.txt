@@ -1,0 +1,107 @@
+# F30 原始读数（模块外面向联盟的目录出账）— 2026-09-29
+# 本文件只放读数，不放结论；结论权威在 FRONTEND-MODULE-GOVERNANCE-v1.0.md §5.59。
+==============================================================================
+[1] 普查驱动 D:/tmp/f30-dir-census.py（md5=238b3f938716，未落库＝没牙，不接 CI）逐字输出
+  | 总文件（.vue/.js/.ts，含 .test.js）= 350
+  | L12 在册扫描集内（含 views/expert/**＋两份按名 .js）= 34
+  | 模块内文件 = 76
+  | 池外且 import 指向联盟/alliance 的目录数 = 7／文件数 = 20（非 .test.js = 17）
+  |   api                                          files=3(非测=2) eg-import=./allianceTaskModel.api | alliance.api.js,allianceTasks.test.jsT,index.js
+  |   composables                                  files=2(非测=1) eg-import=./useAllianceTasks | index.js,useAllianceTasks.test.jsT
+  |   composables/workspace                        files=3(非测=3) eg-import=@/modules/expert-alliance/api | useAlliance.js,useGraphCanvas.js,useTaskOrchestration.js
+  |   router                                       files=1(非测=1) eg-import=./modules/alliance.js | index.js
+  |   stores                                       files=3(非测=3) eg-import=@/modules/expert-alliance/api | ai.store.js,alliance.store.js,index.js
+  |   views/workspace                              files=2(非测=1) eg-import=@/modules/expert-alliance/api | ExpertWorkspaceView.vue,workspace-sessions.test.jsT
+  |   views/workspace/panels                       files=6(非测=6) eg-import=@/modules/expert-alliance/contract | CollaborationPanel.vue,DebateDialog.vue,ExpertPanel.vue,GraphCanvasPanel.vue,MultiConsultDialog.vue,SmartRouteDialog.vue
+  | census md5=238b3f938716
+==============================================================================
+[2] 电池日志 D:/tmp/f30-battery.log（md5=30318eb27c15）逐字；判据跑前图像见文末 [5]
+  | guard before 51960 B/f232d4247f93 CR=0
+  | baseline rc=0  [L12 模块外目录] 面向联盟的池外目录 7 个／非测试文件 17 份 实测=["api","composables","composables/workspace","router","stores","views/workspace","views/workspace/panels"]  19 passed (19)
+  | H1 probe removed exists=False
+  | restored=True md5=f232d4247f93
+  | baseline       期望=green  rc=0 合格=True 判决来源=-
+  |                L14行=[L12 模块外目录] 面向联盟的池外目录 7 个／非测试文件 17 份 实测=["api","composables","composables/workspace","router","stores","views/workspace"
+  |                红格=0
+  |                前两条红=[]
+  | H1 探针目录        期望=L      rc=1 合格=True 判决来源=first=AssertionError: L12 模块外面向联盟的目录数与出账表不符（新增目录没出账，或仪器静默判集为空）实测=["api","com
+  |                L14行=[L12 模块外目录] 面向联盟的池外目录 8 个／非测试文件 18 份 实测=["api","composables","composables/workspace","router","stores","views/telemetry"
+  |                红格=1
+  |                前两条红=["AssertionError: L12 模块外面向联盟的目录数与出账表不符（新增目录没出账，或仪器静默判集为空）实测=[\"api\",\"composables\",\"composables/workspace\",\"router\",\"stores\",\"views/telemetry\",\"views/workspace\",\"views/workspace/panels\"]: expected 8 to be 7 // Object.is equality"]
+  | H2 删条目         期望=T      rc=1 合格=True 判决来源=first=AssertionError: L12 模块外目录台账与实测集合不符（多＝条目该删，少＝有目录没出账）实测=["api","composab
+  |                L14行=[L12 模块外目录] 面向联盟的池外目录 7 个／非测试文件 17 份 实测=["api","composables","composables/workspace","router","stores","views/workspace"
+  |                红格=1
+  |                前两条红=["AssertionError: L12 模块外目录台账与实测集合不符（多＝条目该删，少＝有目录没出账）实测=[\"api\",\"composables\",\"composables/workspace\",\"router\",\"stores\",\"views/workspace\",\"views/workspace/panels\"]: expected [ 'api', 'composables', …(4) ] to deeply equal [ 'api', 'composables', …(5) ]"]
+  | H3 空理由         期望=W      rc=1 合格=True 判决来源=first=AssertionError: router 的出账缺理由（无理由的出账＝把覆盖面洞读成合法）: expected 0 to be grea
+  |                L14行=[L12 模块外目录] 面向联盟的池外目录 7 个／非测试文件 17 份 实测=["api","composables","composables/workspace","router","stores","views/workspace"
+  |                红格=1
+  |                前两条红=["AssertionError: router 的出账缺理由（无理由的出账＝把覆盖面洞读成合法）: expected 0 to be greater than or equal to 8"]
+  | H4 良性改词        期望=green  rc=0 合格=True 判决来源=-
+  |                L14行=[L12 模块外目录] 面向联盟的池外目录 7 个／非测试文件 17 份 实测=["api","composables","composables/workspace","router","stores","views/workspace"
+  |                红格=0
+  |                前两条红=[]
+  | 不符枚数=0 []
+==============================================================================
+[3] 门禁读数（写后复跑）
+  vitest Test Files  77 passed (77)
+  vitest Tests  1035 passed (1035)
+  vitest Duration  67.30s (transform 31.23s, setup 0ms, collect 298.42s, tests 48.04s, environment 421.16s, prepare 102
+  build   ✓ built in 45.20s  （另：首次从仓库根用 --config/--outDir 调用 ⇒ rc=1 Invalid resolved id，属调用方式错，已登记在 §5.59）
+  check-frontend-module      ERROR=0 WARN=0
+  check-locale-format-outlets ERROR=0 WARN=0
+  doc-links 写本节之前 WARN=120／之后 WARN=120／集差 new=0 gone=0／rc=1（ERROR 两次均 0；rc=1 属存量）
+==============================================================================
+[4] 判据新增三格的磁盘原文（含现场印行与出账表）
+  |       + JSON.stringify(offRosterTs) + '）').toEqual([])
+  |     // §5.59 F30：§5.56 的目录账只覆盖**模块内** 7 个目录；模块外那些"面向联盟但不在值域扫描集里"的目录
+  |     // 此前只靠人记得。现量口径＝池外（既不在三个前缀里，也不是按名在册的两份 .js，也不在模块内）
+  |     // 且文件里有一条 import 的源指向联盟；测试文件不算界面出口。普查驱动 D:/tmp/f30-dir-census.py 未落库＝没牙。
+  |     const outImportRe = /(?:^|[\s;])(?:import|export)\b[^\n]*?from\s*['"]([^'"]+)['"]/g
+  |     const outPoolPrefix = [MODULE_DIR + '/views/', MODULE_DIR + '/components/', 'views/expert/']
+  |     const outHits = new Map()
+  |     for (const abs of walk(SRC_DIR)) {
+  |       const rel = path.relative(SRC_DIR, abs).split(path.sep).join('/')
+  |       if (rel.endsWith('.test.js') || rel.startsWith(MODULE_DIR + '/')) continue
+  |       if (outPoolPrefix.some((p) => rel.startsWith(p)) || JS_IN_SCOPE.includes(rel)) continue
+  |       const txt = readFileSync(abs, 'utf8').replace(/\r\n/g, '\n')
+  |       outImportRe.lastIndex = 0
+  |       if (!([...txt.matchAll(outImportRe)].some((m) => /expert-alliance|alliance/i.test(m[1])))) continue
+  |       const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '(src-root)'
+  |       outHits.set(dir, (outHits.get(dir) || 0) + 1)
+  |     }
+  |     const outDirs = [...outHits.keys()].sort()
+  |     // 出账表：目录名＋一句理由。这里**不钉文件数**——往这些目录加文件是日常开发，钉数会把针磨钝；
+  |     // 要钉的是"池外还有哪些面向联盟的目录"这件事本身可见。
+  |     const OUT_DIR_ACCOUNT = {
+  |       'api': { why: '两份在册 .js 的同目录兄弟；此层只做请求体与出参透传，不是界面出口' },
+  |       'composables': { why: 'index.js 只做 re-export；真正读 wire 的 useAllianceTasks.js 已按名在册' },
+  |       'composables/workspace': { why: '直接 import 模块 api/contract，但状态是本地编排演示态（§5.56 逐处读：0 处同域债）' },
+  |       'router': { why: '路由表只挂 path/name 与懒加载组件，不比较 wire 取值' },
+  |       'stores': { why: 'pinia 本地状态机与聊天域词汇，与联盟 wire 取值同串不同域（§5.56）' },
+  |       'views/workspace': { why: '调色板调用走 expertVisualKey 键（§5.57 R2），五型比较实测 0 处同域命中' },
+  |       'views/workspace/panels': { why: '六个面板 import 契约；§5.56 逐处读 CollaborationPanel 的 failed 属聊天消息域' }
+  |     }
+  |     console.log('[L12 模块外目录] 面向联盟的池外目录 ' + outDirs.length + ' 个／非测试文件 '
+  |       + [...outHits.values()].reduce((a, b) => a + b, 0) + ' 份 实测=' + JSON.stringify(outDirs))
+  |     expect(outDirs.length, 'L12 模块外面向联盟的目录数与出账表不符（新增目录没出账，或仪器静默判集为空）实测='
+  |       + JSON.stringify(outDirs)).toBe(7)
+  |     expect(Object.keys(OUT_DIR_ACCOUNT).sort(), 'L12 模块外目录台账与实测集合不符（多＝条目该删，少＝有目录没出账）实测='
+  |       + JSON.stringify(outDirs)).toEqual(outDirs)
+  |     for (const [k, v] of Object.entries(OUT_DIR_ACCOUNT)) {
+  |       expect(v.why.length, k + ' 的出账缺理由（无理由的出账＝把覆盖面洞读成合法）').toBeGreaterThanOrEqual(8)
+  |     }
+==============================================================================
+[5] 图像与换行核验
+  判据 51960 B/f232d4247f93 CR=0（电池跑前即此图，见 [2] 首行；本轮源码唯一改动＝这三格＋出账表）
+  文档 333713 B/e7bfffeff860 CR=0（写 §5.59 之后现量）
+
+==============================================================================
+[6] X4 定价（§5.59 余账 X4：动态 import 形态的"池外→联盟"边）— 驱动 D:/tmp/f30-x4-price.py md5=6dfcc8f999e7
+  6.0 口径：DYN=`=> import\(\s*['"]...['"]`（箭头懒挂载）；ANYIMP=不带箭头的 `import\(...)` 也算，因为池外→联盟的判定只看**源串**；判集＝src 内 .vue/.js/.ts 且不含 .test.js。
+  6.1 全 src 箭头懒挂载 = 68 处／12 个文件（仪器正对照：这台尺子看得见东西）
+  6.2 联盟 barrel `modules/expert-alliance/index.js` 自身 = 14 处；其动态源串中含 Alliance 者 7 个（例 ["./views/AllianceCollabView.vue", "./views/AllianceConsoleView.vue", "./views/AllianceExpertsView.vue"]）⇒ **池外判定必须按目录排除模块内文件**：只按名过滤会把模块自己的挂载边算成池外命中＝假阳。（本轮我原本在文档里写"相对形态、串里不含 alliance"，被这条断言当场打回，改判按目录排除；见 §5.59 X4）
+  6.3 池外（不在三个前缀、不在按名在册两份 .js、不在模块内）里动态 import 源含 alliance = 0 处 ⇒ X4 是真 0，且 0 由 6.1 的 68 处正对照作证（非仪器静默）
+  6.4 第二口径复核（ripgrep，独立实现）：`import\s*\(\s*['"][^'"]*alliance[^'"]*['"]` 在 src（排除 .test.js）= No matches found；`import\s*\(\s*['"][^'"]+['"]\s*\)` 只在 router/ 下 = fallback.js 1 处＋public.js 4 处 = 5 处
+  6.5 文档图（X4 改写后）：334713 B/952f791383dc CR=0
+  6.6 doc-links rc=1 WARN=120 对写 §5.59 之前基线集差 new=0 gone=0／ERROR=0（基线 WARN=120）
+  6.7 裁决＝不为动态形态另开常驻格：池外→联盟这条边在现量语料里不存在，空集上的全称判据会把"没量"印成"没有"（§5.55 教训）；改守可见性——本块挂着 0 与它的正对照，将来出现池外动态挂载时重跑本驱动即可见。

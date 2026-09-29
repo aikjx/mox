@@ -1,0 +1,124 @@
+F29 调色板"转发口"在册账（§5.58）原始读数  2026-09-29  本文件结论-free，只印量到的东西
+==============================================================================
+[1] 普查（只读驱动 D:/tmp/f29-census.py，逐行照抄）
+    | 扫描文件数（.vue/.js/.ts，不含 .test.js）= 273
+    | 发现的"单表达式转发调色板函数"名 = 5 个
+    |   DEF getEmojiByType         views/expert/ExpertPlazaView.vue:890  (type) -> expertEmoji(type)
+    |   DEF getGradientByType      views/expert/ExpertPlazaView.vue:892  (type) -> expertGradient(type)
+    |   DEF getTypeColor           views/expert/panels/ExpertEnterprisePanel.vue:853  (type) -> expertColor(type)
+    |   DEF typeColor              components/expert/RegisterExpertDialog.vue:316  (type) -> expertColor(type)
+    |   DEF typeEmoji              components/expert/RegisterExpertDialog.vue:314  (type) -> expertEmoji(type)
+    | 
+    | 调用点形态（按转发口名逐个量）：
+    |   getEmojiByType         calls=  2  非白名单实参= 2
+    |         views/expert/ExpertPlazaView.vue:720 getEmojiByType(b.expertType)
+    |         views/expert/ExpertPlazaView.vue:877 getEmojiByType(e.type)
+    |   getGradientByType      calls=  1  非白名单实参= 1
+    |         views/expert/ExpertPlazaView.vue:878 getGradientByType(e.type)
+    |   getTypeColor           calls=  4  非白名单实参= 3
+    |         views/expert/panels/ExpertEnterprisePanel.vue:197 getTypeColor(node.type)
+    |         views/expert/panels/ExpertEnterprisePanel.vue:212 getTypeColor(selectedExpert.type)
+    |         views/expert/panels/ExpertEnterprisePanel.vue:408 getTypeColor(s.expert.type)
+    |   typeColor              calls=  2  非白名单实参= 2
+    |         components/expert/RegisterExpertDialog.vue:64 typeColor(formData.type)
+    |         components/expert/RegisterExpertDialog.vue:181 typeColor(formData.type)
+    |   typeEmoji              calls=  3  非白名单实参= 2
+    |         components/expert/RegisterExpertDialog.vue:65 typeEmoji(formData.type)
+    |         components/expert/RegisterExpertDialog.vue:182 typeEmoji(formData.type)
+    | 
+    | 合计：转发口 5 个／其调用点 12 处／其中实参非白名单形态 10 处
+    | （白名单＝expertVisualKey(|rowVisualKey(|visualKey( 或直接一个标识符）
+    | 参照：三函数本人的带实参调用点（同一扫描集）= 48 处
+    驱动 md5=ff2b51ac66e1  输出 md5=e27b5e867e3a
+[2] 落地的台账本体（从判据文件现场切出，非复述）
+    | const WRAPPER_LEDGER = {
+    |       getEmojiByType: {
+    |         file: 'views/expert/ExpertPlazaView.vue', to: 'expertEmoji', n: 2,
+    |         why: '广场预设行的 type 键本身就是领域名（与调色板同词表），:720 传的 b.expertType 也属同一词表，两处都不必再过一层 expertVisualKey'
+    |       },
+    |       getGradientByType: {
+    |         file: 'views/expert/ExpertPlazaView.vue', to: 'expertGradient', n: 1,
+    |         why: '与 getEmojiByType 成对出现，读同一张预设表的同一个键'
+    |       },
+    |       getTypeColor: {
+    |         file: 'views/expert/panels/ExpertEnterprisePanel.vue', to: 'expertColor', n: 3,
+    |         why: '三处实参分别是图谱节点 node.type（服务端常量戳 "expert"，§5.40）、同一节点赋值的 selectedExpert.type、以及 dispatch 出参 s.expert.type，三者都不是归一化专家的键，收口要等服务侧契约裁决'
+    |       },
+    |       typeColor: {
+    |         file: 'components/expert/RegisterExpertDialog.vue', to: 'expertColor', n: 2,
+    |         why: 'formData.type 是该表单自己的领域名下拉值（键域＝EXPERT_TYPES），构造性正确'
+    |       },
+    |       typeEmoji: {
+    |         file: 'components/expert/RegisterExpertDialog.vue', to: 'expertEmoji', n: 2,
+    |         why: '与 typeColor 成对，出现在预览与提交摘要两处，同一个 formData.type'
+    |       }
+    |     }
+    |     
+[3] 变异电池判决（D:/tmp/f29-battery.log 逐行照抄；每枚验收＝L14b 是否第一个说谎的）
+    | baseline rc=0  L14b行=[L14b 转发口] 扫描集 272 个文件／转发口 5 个／非白名单调用点合计 10 处 实测={"typeEmoji":2,"typeColor":2,"getEmojiByType":2,"getGradientByType":1,"getTypeColor":3}
+    | baseline cases=19
+    | M1 新增转发口 rc=1 红格=['L14b'] 首行=AssertionError: L14b 出现未登记或已消失的调色板转发口（新增要写进 WRAPPER_LEDGER，收口要删条目）实测=["f29ProbeWrapper","getEmojiByType","getGradientByType","getTypeColor","typeColor","typeEmoji"]: expected [ 'f29ProbeWrapper', …(5)
+    | M2 台账改名 rc=1 红格=['L14b'] 首行=AssertionError: L14b 出现未登记或已消失的调色板转发口（新增要写进 WRAPPER_LEDGER，收口要删条目）实测=["getEmojiByType","getGradientByType","getTypeColor
+    | M3 只改中文文案 rc=0 红格=[]（期望 rc=0：文案不钉）
+    | M4 计数+1 rc=1 红格=['L14b'] 首行=AssertionError: L14b typeColor 的非白名单调用点数与台账不符 实测=2: expected 2 to be 3 // Object.is equality
+    | restore vocabulary-ownership.test.js           md5=6e9121b326c4 expect=6e9121b326c4 OK
+    | restore RegisterExpertDialog.vue               md5=244ba11a8bf3 expect=244ba11a8bf3 OK
+    写前备份：vocabulary-ownership.test.js.before = 43924 B md5=6e9121b326c4 CR=0 | RegisterExpertDialog.vue.before = 19089 B md5=244ba11a8bf3 CR=0 | guard.before = 43924 B md5=6e9121b326c4 CR=0
+[4] 门禁现量（日志均 ANSI-stripped）
+    guard rc=0  ['Tests  19 passed (19)']
+    L14b 现场印出行：[L14b 转发口] 扫描集 272 个文件／转发口 5 个／非白名单调用点合计 10 处 实测={"typeEmoji":2,"typeColor":2,"getEmojiByType":2,"getGradientByType":1,"getTypeColor":3}
+    vitest rc=0 ['Test Files  77 passed (77)'] / ['Tests  1035 passed (1035)']
+    build  rc=0 ['✓ built in 31.49s']
+      log f29-gate-guard   2357 B md5=6ca196e495c4 CR=0
+      log f29-gate-vitest  416821 B md5=8c5e4f1c7a4a CR=0
+      log f29-gate-build   12264 B md5=9526bb543f89 CR=0
+    doc-links rc=1 WARN=120（上一读数 19827 B md5=8c1ae7d77c5a CR=180）对 final5 集差 new=0 gone=0
+[5] 文档与判据图
+    §5.58 标题行：## 5.58 F29 调色板转发口在册账：L14 的针只认三个函数名，包装器把形态债藏在账外（2026-09-29）
+    判据 48680 B md5=811e2488fbdc CR=0（电池还原后＝43924 B md5=6e9121b326c4 CR=0；F28 写后图 6e9121b326c4）
+    文档 327852 B md5=51249cd3643a CR=0；§5.58 在文档内字节偏移 192907
+[6] 仪器自抓（本轮，逐条点名）
+    ① 落盘驱动里一枚 assert 写错针的形态：查 `'; L14b 台账缺理由` 是否存在，而台账文案实为拼接式 `"L14b " + name + " 的台账缺理由"` ⇒ 该串在盘上根本不存在，断言会在什么都没测到的情况下把落地拦死。跑前 `ast ok` 只挡语法不挡语义 ⇒ 改成查结构串（WRAPPER_LEDGER[name]）。
+    ② M3（只改文案必须不红）第一版接在 M2 之后＝在被改坏的台账上测"文案无关"，那条判决不成立；已改成在正确台账 g3=landed+改文案 上跑，期望 rc=0。顺序错会造出一枚"永远绿"的对照。
+    ③ 全量分母：本轮判据文件用例 19→19（新格插在既有 it 内），而全量现量 1035 例；旧账里的 1034 是更早轮次的快照，本轮未增用例 ⇒ 不许写"本轮 +1"。
+    ④ 普查与判据的扫描集相差 1（273 vs 272），差的正是 `constants/expert.constants.js` 的排除项 ⇒ 两把尺子同口径后才可比。
+
+==============================================================================
+[7] W3 定价（把 §5.58 那句边界从散文改成读数）
+  7.0 仪器＝exec 同一份普查脚本 D:/tmp/f30-w3-census2.py（md5=50cc10049aa7），pure/impure 直接取自它的 globals，
+      不在这里重打一遍正则＝不给第二次转写误差留门。第一版（f30-w3-census.py）死在不配对的巨型正则：re.error 编译期即炸 ⇒ 那一次没有产生任何数字，不许引用。
+  7.1 扫描集 272 个文件（判据同口径：不含 .test.js 与 constants/expert.constants.js）
+  7.2 函数/箭头体内的调色板调用：纯转发（实参＝裸标识符）8 处／带加工的转发 0 处
+      ⇒ W3 声称的那一型（return expertColor(norm(type))）**实测 0 站点**。空集是量出来的，不是没量：
+      正对照＝在册 5 枚转发口被本仪器重新数到 5/5（owner 命中）
+  7.3 八处纯转发逐条（file:line fn(arg) owner）：
+      components/expert/RegisterExpertDialog.vue           :314   expertEmoji(type) owner=typeEmoji
+      components/expert/RegisterExpertDialog.vue           :316   expertColor(type) owner=typeColor
+      views/expert/ExpertPlazaView.vue                     :631   expertColor(type) owner=expertTypes
+      views/expert/ExpertPlazaView.vue                     :890   expertEmoji(type) owner=getEmojiByType
+      views/expert/ExpertPlazaView.vue                     :892   expertGradient(type) owner=getGradientByType
+      views/expert/panels/ExpertEnterprisePanel.vue        :854   expertColor(type) owner=getTypeColor
+      views/workspace/ExpertWorkspaceView.vue              :570   expertEmoji(key) owner=key
+      views/workspace/ExpertWorkspaceView.vue              :570   expertColor(key) owner=key
+      其中落在已登记转发口体内 5 处；落在**其它函数体内**以裸标识符直接查色 3 处：
+        views/expert/ExpertPlazaView.vue                     :631   expertColor(type) owner=expertTypes
+        views/workspace/ExpertWorkspaceView.vue              :570   expertEmoji(key) owner=key
+        views/workspace/ExpertWorkspaceView.vue              :570   expertColor(key) owner=key
+      ⇒ 多的那几处正是 L14 白名单（裸标识符）放过的形态，归 §5.57 R2/R4 口径，本轮不重开一格。
+  7.4 普查输出逐字（D:/tmp/f30-w3-census2.txt md5=41fc58880178）：
+      | 扫描文件（不含 .test.js 与调色板常量表）= 272
+      | 函数/箭头体内的调用点：纯转发（实参＝裸标识符）8 处／带加工的转发 0 处
+      | 
+      | 正对照（L14b 已登记的 5 枚纯转发口，本仪器是否重新数到）：
+      |    getEmojiByType         期望体内>=1 处裸标识符转发，实测 1 处  FOUND
+      |    getGradientByType      期望体内>=1 处裸标识符转发，实测 1 处  FOUND
+      |    getTypeColor           期望体内>=1 处裸标识符转发，实测 1 处  FOUND
+      |    typeColor              期望体内>=1 处裸标识符转发，实测 1 处  FOUND
+      |    typeEmoji              期望体内>=1 处裸标识符转发，实测 1 处  FOUND
+      |    正对照总体 = PASS
+      | 
+      | 带加工的转发（W3 声称的那一型），逐条：
+      |    （无）
+  7.5 文档图：328649 B/c26f45a4e385 CR=0；§5.58 W3 段已按本块改写
+  7.6 doc-links rc=1 WARN=120 对 final5 集差 new=0 gone=0（本块与 §5.58 改写均未引入新悬空引用）
+  7.7 本轮源码零改动：判据文件仍 48680 B/811e2488fbdc（落地后图，见块 [5]）
