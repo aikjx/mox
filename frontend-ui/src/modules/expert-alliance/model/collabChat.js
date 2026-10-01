@@ -2,16 +2,16 @@
 // 结构化的六模式结果渲染仍归 components/ExpertCollabPanel.vue。
 // 字段口径全部来自 contract/collab.js 的 resultKind 与 model/normalize.js 的归一化器，
 // 这里不重复后端规则，也不补写后端没产出的内容。
-import { collabMode, collabTemplateNote } from '@/modules/expert-alliance/contract'
+import { collabMode, collabTemplateNote, expertNameOr } from '@/modules/expert-alliance/contract'
 import { collabOutcome } from './normalize.js'
 
-/** 发言者显示名：优先后端给的真实专家名，缺则回落到模式中文名（不编造人名） */
+/** 发言者显示名：优先后端给的真实专家名；给了名字但编码丢了 → 显形成 id 短码；一个名字都没有才回落到模式中文名（不编造人名） */
 export function collabChatSpeaker(result) {
   const r = result || {}
   if (collabOutcome(r) === 'blocked') return '质量闸门'
   const def = collabMode(r.mode)
   if (def?.resultKind === 'answer') {
-    return r.expertName || r.expert?.name || '匹配专家'
+    return expertNameOr({ id: r.expert?.id, name: r.expertName || r.expert?.name }, '匹配专家')
   }
   return def?.label || '联盟协作'
 }

@@ -1,0 +1,189 @@
+# F26 L12 语言构成格与 .ts 覆盖接管 原始读数（2026-09-29，现场量，勿手抄）
+
+## [1] `.ts` 语料三口径现量（find 两条口径 ＋ 判据 DEF_FILES/walk 是否本就收 .ts）  （源：D:/tmp/f26-ts-census.log，8 行）
+    | [口径1] src 下 .ts/.tsx（去 .d.ts/.test.ts/.spec.ts）
+    |   count=0
+    | [口径2] 全仓（去 node_modules，同上排除）
+    |   count=0
+    | [口径3] 判据 DEF_FILES 与 walk 是否本就收 .ts
+    |   26:const DEF_FILES = ['.js', '.ts', '.vue']
+    |   33:    else if (DEF_FILES.includes(path.extname(name))) out.push(p)
+    |   388:    // §5.55 F26：`.ts` 此前挂在"下一族"里属未现量的散文——walk 的 DEF_FILES 本就收 `.ts`，
+
+## [2] 单文件判据（加格后首跑，绿：19 例＋[L12 语言] 现量行）  （源：D:/tmp/f26-single.log，5 行）
+    | [22m[39m[L12 语言] 前缀池 32 个文件（.vue=28／.ts=0）／扫描集 30（非 .vue=2）
+    | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2
+    | [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+    | [2m   Duration [22m 3.41s[2m (transform 179ms, setup 0ms, collect 292ms, tests 475ms, environment 1.20s, prepare 498ms)[22m
+
+## [3] 电池第 1 版（断言顺序未改：两枚本该点名新格的变异体被"扫描集尺寸"格顶掉）  （源：D:/tmp/f26-battery.log，91 行）
+    | [OK ] rc=0 期望=green 实读=green 红格=- 用时=3.9s  baseline 未变异
+    | [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/a10/aikjx/gitcode/infotopograph/frontend-ui[39m
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL2 分母：模块导出集与扫描集都没塌缩
+    | [22m[39m[词表] 模块导出 356 个名字 / 模块外扫描 219 个文件 / 登记 15 处
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL9 模块内部自写同名出口：命中集＝登记集双向相等（补 L1 扫描集的模块盲区）
+    | [22m[39m[词表·模块内] 扫描 32 个文件 / 命中 2 处 / 登记 2 处
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账
+    | [22m[39m[L12 语言] 前缀池 32 个文件（.vue=28／.ts=0）／扫描集 30（非 .vue=2）
+    | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2
+    |  [32m✓[39m src/modules/expert-alliance/contract/vocabulary-ownership.test.js [2m([22m[2m19 tests[22m[2m)[22m[33m 385[2mms[22m[39m
+    | [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+    | [2m   Start at [22m 21:03:56
+    | [2m   Duration [22m 2.68s[2m (transform 131ms, setup 0ms, collect 206ms, tests 385ms, environment 1.06s, prepare 336ms)[22m
+    | [OK ] rc=1 期望=red 实读=red 红格=出现名单外 .ts 用时=3.6s  T1 目录里冒出一枚名单外 .ts
+    |     [7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+    | [31m[1m[7m FAIL [27m[22m[39m src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账
+    | [31m[1mAssertionError[22m: L12 出现名单外 .ts，必须按名进 JS_IN_SCOPE 才算纳管（实测=["modules/expert-alliance/views/f26-probe.ts"]）: expected [ Array(1) ] to deeply equal [][39m
+    | [32m- Expected[39m
+    | [31m+ Received[39m
+    | [32m- Array [][39m
+    | [31m+ Array [[39m
+    | [31m+   "modules/expert-alliance/views/f26-probe.ts",[39m
+    | [31m+ ][39m
+    | [36m [2m❯[22m src/modules/expert-alliance/contract/vocabulary-ownership.test.js:[2m399:44[22m[39m
+    |     [90m397| [39m      [33m+[39m [32m'（非 .vue='[39m [33m+[39m files[33m.[39m[34mfilter[39m((r) [33m=>[39m [33m![39mr[33m.[39m[34mendsWith[39m([32m'.vue'[39m))[33m.[39mlength…
+    |     [90m398| [39m    [34mexpect[39m(offRosterTs[33m,[39m [32m'L12 出现名单外 .ts，必须按名进 JS_IN_SCOPE 才[39m…
+    |     [90m399| [39m      [33m+[39m [33mJSON[39m[33m.[39m[34mstringify[39m(offRosterTs) [33m+[39m [32m'）'[39m)[33m.[39m[34mtoEqual[39m([])
+    |     [90m   | [39m                                           [31m^[39m
+    |     [90m400| [39m    [90m// §5.52 形状加宽：只咬 `op '字面量'` 的针会放过"字面量在左／switc[39m…
+    |     [90m401| [39m    [90m// 反事实现量（28 个 .vue 文件）：A 9 处（＝下面 EXEMPT 的全部），[39m…
+    | [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+    | [OK ] rc=1 期望=red 实读=red 红格=扫描集塌缩 用时=3.3s  T2 撤掉名单一项（覆盖面静默缩回）
+    |     39m
+    | [2m   Start at [22m 21:04:03
+    | [2m   Duration [22m 2.21s[2m (transform 99ms, setup 0ms, collect 164ms, tests 272ms, environment 883ms, prepare 311ms)[22m
+    | [31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+    | [31m[1m[7m FAIL [27m[22m[39m src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账
+    | [31m[1mAssertionError[22m: L12 扫描集塌缩（判集为空时台账恒真）实测=29: expected 29 to be greater than or equal to 30[39m
+    | [36m [2m❯[22m src/modules/expert-alliance/contract/vocabulary-ownership.test.js:[2m378:68[22m[39m
+    |     [90m376| [39m        [33m||[39m rel[33m.[39m[34mstartsWith[39m([32m'views/expert/'[39m) [33m||[39m [33mJS_IN_SCOPE[39m[33m.[39m[34mincludes[39m(rel…
+    |     [90m377| [39m      [33m.[39m[34mfilter[39m((rel) [33m=>[39m rel[33m.[39m[34mendsWith[39m([32m'.vue'[39m) [33m||[39m [33mJS_IN_SCOPE[39m[33m.[39m[34mincludes[39m(re…
+    |     [90m378| [39m    [34mexpect[39m(files[33m.[39mlength[33m,[39m [32m'L12 扫描集塌缩（判集为空时台账恒真）实测='[39m [33m+[39m…
+    |     [90m   | [39m                                                                   [31m^[39m
+    |     [90m379| [39m    [90m// §5.55 F26：非 .vue 成员数与按名名单长度**恰等**（旧格写死 `.js`[39m…
+    |     [90m380| [39m    [90m// 两个失效方向各管一头：名单写了却没进集＝红；有未登记的第二语言[39m…
+    | [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+    | [OK ] rc=1 期望=red 实读=red 红格=扫描集塌缩 用时=3.9s  T3 名单写了却没进集（指向不存在的路径）
+    |     9m
+    | [2m   Start at [22m 21:04:06
+    | [2m   Duration [22m 2.71s[2m (transform 119ms, setup 0ms, collect 180ms, tests 275ms, environment 1.05s, prepare 387ms)[22m
+    | [31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+    | [31m[1m[7m FAIL [27m[22m[39m src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账
+    | [31m[1mAssertionError[22m: L12 扫描集塌缩（判集为空时台账恒真）实测=29: expected 29 to be greater than or equal to 30[39m
+    | [36m [2m❯[22m src/modules/expert-alliance/contract/vocabulary-ownership.test.js:[2m378:68[22m[39m
+    |     [90m376| [39m        [33m||[39m rel[33m.[39m[34mstartsWith[39m([32m'views/expert/'[39m) [33m||[39m [33mJS_IN_SCOPE[39m[33m.[39m[34mincludes[39m(rel…
+    |     [90m377| [39m      [33m.[39m[34mfilter[39m((rel) [33m=>[39m rel[33m.[39m[34mendsWith[39m([32m'.vue'[39m) [33m||[39m [33mJS_IN_SCOPE[39m[33m.[39m[34mincludes[39m(re…
+    |     [90m378| [39m    [34mexpect[39m(files[33m.[39mlength[33m,[39m [32m'L12 扫描集塌缩（判集为空时台账恒真）实测='[39m [33m+[39m…
+    |     [90m   | [39m                                                                   [31m^[39m
+    |     [90m379| [39m    [90m// §5.55 F26：非 .vue 成员数与按名名单长度**恰等**（旧格写死 `.js`[39m…
+    |     [90m380| [39m    [90m// 两个失效方向各管一头：名单写了却没进集＝红；有未登记的第二语言[39m…
+    | [31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+    | [OK ] rc=0 期望=green 实读=green 红格=- 用时=3.4s  T4 只加一行中文注释（口径未动）
+    | [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/a10/aikjx/gitcode/infotopograph/frontend-ui[39m
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL2 分母：模块导出集与扫描集都没塌缩
+    | [22m[39m[词表] 模块导出 356 个名字 / 模块外扫描 219 个文件 / 登记 15 处
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL9 模块内部自写同名出口：命中集＝登记集双向相等（补 L1 扫描集的模块盲区）
+    | [22m[39m[词表·模块内] 扫描 32 个文件 / 命中 2 处 / 登记 2 处
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账
+    | [22m[39m[L12 语言] 前缀池 32 个文件（.vue=28／.ts=0）／扫描集 30（非 .vue=2）
+    | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2
+    |  [32m✓[39m src/modules/expert-alliance/contract/vocabulary-ownership.test.js [2m([22m[2m19 tests[22m[2m)[22m[33m 356[2mms[22m[39m
+    | [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+    | [2m   Start at [22m 21:04:10
+    | [2m   Duration [22m 2.37s[2m (transform 101ms, setup 0ms, collect 166ms, tests 356ms, environment 877ms, prepare 329ms)[22m
+    | [OK ] rc=0 期望=green 实读=green 红格=- 用时=3.7s  re-verify 还原后复验
+    | [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/a10/aikjx/gitcode/infotopograph/frontend-ui[39m
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL2 分母：模块导出集与扫描集都没塌缩
+    | [22m[39m[词表] 模块导出 356 个名字 / 模块外扫描 219 个文件 / 登记 15 处
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL9 模块内部自写同名出口：命中集＝登记集双向相等（补 L1 扫描集的模块盲区）
+    | [22m[39m[词表·模块内] 扫描 32 个文件 / 命中 2 处 / 登记 2 处
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账
+    | [22m[39m[L12 语言] 前缀池 32 个文件（.vue=28／.ts=0）／扫描集 30（非 .vue=2）
+    | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2
+    |  [32m✓[39m src/modules/expert-alliance/contract/vocabulary-ownership.test.js [2m([22m[2m19 tests[22m[2m)[22m[33m 514[2mms[22m[39m
+    | [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+    | [2m   Start at [22m 21:04:14
+    | [2m   Duration [22m 2.63s[2m (transform 137ms, setup 0ms, collect 235ms, tests 514ms, environment 958ms, prepare 303ms)[22m
+    | restored guard 865bf7022b9c vs before 865bf7022b9c MATCH | probe exists=False
+
+## [4] 第 2 版电池（顺序修正后，每格各自点名）逐字日志  （源：D:/tmp/f26-battery2.log，13 行）
+    | [OK ] rc=0 期望=green 实读=green 首个红格=- 该枚期望点名=- 用时=3.7s  baseline 未变异
+    |     尾部：Test Files  1 passed (1) | Tests  19 passed (19) | Start at  21:07:04 | Duration  2.54s (transform 115ms, setup 0ms, collect 188ms, tests 477ms, environment 853ms, prepare 317ms)
+    | [OK ] rc=1 期望=red 实读=red 首个红格=按名名单塌缩 该枚期望点名=按名名单塌缩 用时=3.9s  N1 撤掉名单一项（覆盖面静默缩回）
+    |     尾部：382|     // §5.55 F26：非 .vue 成员数与按名名单长度**恰等**（旧格写死 `.js`… | 383|     // 两个失效方向各管一头：名单写了却没进集＝红；名单项其实是个 .vue… | ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+    | [OK ] rc=1 期望=red 实读=red 首个红格=非 .vue 成员实测 该枚期望点名=非 .vue 成员实测 用时=3.9s  N2 名单项写成 .vue（旁路被白拿，非 .vue 成员少一个）
+    |     尾部：387|     expect(files.length, 'L12 扫描集塌缩（判集为空时台账恒真）实测=' +… | 388|     // §5.55 F26：`.ts` 此前挂在"下一族"里属未现量的散文——walk 的 DEF_… | ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+    | [OK ] rc=1 期望=red 实读=red 首个红格=出现名单外 .ts 该枚期望点名=出现名单外 .ts 用时=4.2s  N3 目录里冒出一枚名单外 .ts
+    |     尾部：402|     // §5.52 形状加宽：只咬 `op '字面量'` 的针会放过"字面量在左／switc… | 403|     // 反事实现量（28 个 .vue 文件）：A 9 处（＝下面 EXEMPT 的全部），… | ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+    | [OK ] rc=0 期望=green 实读=green 首个红格=- 该枚期望点名=- 用时=3.7s  N4 只加一行中文注释（口径未动）
+    |     尾部：Test Files  1 passed (1) | Tests  19 passed (19) | Start at  21:07:20 | Duration  2.55s (transform 126ms, setup 0ms, collect 190ms, tests 384ms, environment 945ms, prepare 391ms)
+    | [OK ] rc=0 期望=green 实读=green 首个红格=- 该枚期望点名=- 用时=4.1s  re-verify 还原后复验
+    |     尾部：Test Files  1 passed (1) | Tests  19 passed (19) | Start at  21:07:24 | Duration  2.77s (transform 129ms, setup 0ms, collect 192ms, tests 366ms, environment 1.02s, prepare 460ms)
+    | restored guard c8feb0adf6e0 vs before c8feb0adf6e0 MATCH | probe exists=False
+
+## [5] 第 1 版崩溃后的磁盘见证（判据还原回跑前哈希 c8feb0adf6e0／37291 B；崩溃 trace 只在会话 stdout，未落盘⇒该行的独立复验＝现在再量一次哈希）  （源：D:/tmp/f26-disk-witness.txt，5 行）
+    | 判据文件 src/modules/expert-alliance/contract/vocabulary-ownership.test.js
+    |   md5(12)=c8feb0adf6e0  bytes=37291
+    |   电池第 2 版记录的跑前哈希＝c8feb0adf6e0（同值⇒崩溃后磁盘确已还原）
+    |   临时夹具 src/modules/expert-alliance/views/f26-probe.ts 存在? NO
+    |   git 视角（未跟踪夹具若残留会出现在 ??）：0 条 ??
+
+## [6] 门禁读数  （源：D:/tmp/f26-gates.txt，5 行）
+    | full rc=0 (42.4 s)
+    | build rc=0 (39.3 s)
+    | fmodule rc=0 (1.1 s)
+    | locale rc=0 (0.4 s)
+    | doclinks rc=1 (1.0 s)
+
+## [7] 全量 vitest 判决行  （源：D:/tmp/f26-full.log，3 行）
+    | [2m Test Files [22m [1m[32m77 passed[39m[22m[90m (77)[39m
+    | [2m      Tests [22m [1m[32m1035 passed[39m[22m[90m (1035)[39m
+    | [2m   Duration [22m 40.89s[2m (transform 14.60s, setup 0ms, collect 212.91s, tests 26.87s, environment 228.70s, prepare 52.43s)[22m
+
+## [8] vite build 判决行  （源：D:/tmp/f26-build.log，2 行）
+    | [32m✓[39m 4373 modules transformed.
+    | [32m✓ built in 37.91s[39m
+
+## [9] 三门禁判决头  （源：D:/tmp/f26-gate-fmodule.log，5 行）
+    | [INFO ] E1 element-plus 根导入：0 处 ✓
+    | [INFO ] E2 跨目录相对导入：0 处 ✓
+    | [INFO ] E3 barrel 导出名冲突：0 处 ✓
+    | [INFO ] E4 api/store 命名规范：全部符合 ✓
+    | [INFO ] E5 vite.config.js epSubpathResolver 在位 ✓
+
+[10] F26 文档插入的修复链（第一次落盘正文被 shell 命令替换破坏，本节为重插后的第二次）
+  失效机理（本轮实测症状，非推测）：用 Bash 双引号里的 python -c 填充 {{GATES_LINE}} 时，
+  填充串中的反引号片段被 shell 当成命令替换执行，于是插进正文的句子留下空位——数字还在，
+  挂着数字的那份文件名却不见了。这一类正是引用纪律要抓的缺陷：尺寸完好、来源消失。
+  第一次落盘图像已被还原覆盖，故本节不引用它的尺寸（无盘上载体＝不可引用）。
+  恢复源验证：BK1 297947 B / 2151 行 / md5 430aabcc2399 且插前 5.55 计数=0；
+  还原后磁盘图像与 BK1 逐字节一致（还原即由该备份驱动，备份写盘前先断言当前 md5 等于已知插前值）。
+  重插备份 BK2 297947 B / 2151 行 / md5 430aabcc2399；BK1==BK2 逐字节 = True
+  正文载体 SEC 4698 B / 14 行 / md5 5b14eca57de0（占位符 0 个、零宽字符 0 个，由 Write 工具落盘而非命令行）
+  插入驱动输出 INS 323 B / 7 行 / md5 f47f5e32a6b1：文档 297947 B -> 302646 B（净增 4699），CRLF 前后 0/0，
+  小节标题 5.52/5.53/5.54/5.55 与锚点 ## 6. 各计数=1；文档现图像 md5 fcbf46229d33 / 302646 B / 2165 行
+  写后 doc-links 复验 AFT rc=1（存量）：WARN 120 行；与插前 BEF 逐行 diff 唯一差异是本轮自己 tee 进去的 rc 行，
+  即「本次插入没有引入新的悬空引用」；AFT md5 3213c14dbaa4 / 180 行
+  口径边界（登记，不当已修）：本块的 BK1/SEC/INS 三个尺寸是本轮现场量的；第一次损坏图像的尺寸只存在于当轮命令输出，按纪律不许在正文里挂成引用。
+
+[11] F26 终态读数（正文定稿＝引用形式改为点块名之后）
+  正文改法：本节不再携带归档的字节数/md5（同一份归档在一轮里被追加两次，第一次追加就使正文里的旧尺寸成过期引用），
+  改为点名 `[1]`–`[11]` 各块承载哪个数字；因此本块是唯一携带归档自身尺寸的登记处。
+  归档本块落盘前图像：AFT-before 19149 B / 172 行 / md5 9391fc5ffc93（本块自身的字节不计入——自指哈希不可满足）。
+  治理文档终态：303392 B / 2165 行 / md5 a8ef8ef71b34；小节标题 5.52/5.53/5.54/5.55 与 "## 6. " 计数= [1, 1, 1, 1, 1]（各应为 1）
+  正文残留的过期尺寸串：STALE=['17405 B／157', 'ec4e2cf7ab8e']（空列表＝17405/19149/ec4e2cf7ab8e/9391fc5ffc93 都不再以尺寸引用形态出现）
+  写后 doc-links 复跑 FINAL rc=1：WARN=120 行（插前基线 WARN=120，AFT2 WARN=120）；与插前基线逐行 diff=0 行，
+  diff 内容只允许是本轮自己附加的 rc 行或空行，出现任何 WARN 行名变化即视为本次插入引入新悬空引用。
+  diff 明细：[]
+
+[12] F26 正文引用形式定稿后的终态复量（覆盖 `[11]` 的 STALE 读数）
+  治理文档终态：303282 B / 2165 行 / md5 479052996ecc；小节标题 5.52/5.53/5.54/5.55 各 1 次。
+  正文中残留的旧尺寸串逐行点名（这些是"引用纪律反例的引文"，不是活引用）：[(2149, '17405 B')]
+  与 `[11]` 的差异：`[11]` 记的 STALE 有两处且其中一处挂在句子里像活引用，定稿后只剩"仪器自捉 ③"里的症状引文一处。
+  doc-links 定稿后复跑 rc=1：WARN 120 行；与插前基线的 WARN 行逐行比较，新增 0 条 / 消失 0 条（都应为 0）。
+  归档本块落盘前图像：20273 B / 182 行 / md5 3e536eb319dc（本块自身字节不计入，自指哈希不可满足）。
+  登记口径边界：本节之后若再追加归档，正文不再携带归档尺寸，故不再产生过期引用——这是把"追加即过期"从"每轮重写数字"改成"每轮不改数字"的结构修法。

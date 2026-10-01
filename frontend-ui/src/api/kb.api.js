@@ -22,8 +22,21 @@ export const kbLinkEntity = (docId, entityId) =>
   http.post(`/kb/documents/${encodeURIComponent(docId)}/entities`, { entity_id: entityId })
 export const kbUnlinkEntity = (docId, entityId) =>
   http.delete(`/kb/documents/${encodeURIComponent(docId)}/entities`, { data: { entity_id: entityId } })
-export const kbGraphLink = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/graph-link`, payload)
-export const kbGraphUnlink = (id, payload) => http.delete(`/kb/documents/${encodeURIComponent(id)}/graph-link`, { data: payload })
+// 挂图/解图都是文档级动作，两个 handler 都只取 Path(:id)，不收请求体
+export const kbGraphLink = (id) => http.post(`/kb/documents/${encodeURIComponent(id)}/graph-link`)
+export const kbGraphUnlink = (id) => http.delete(`/kb/documents/${encodeURIComponent(id)}/graph-link`)
 export const kbGetStats = () => http.get('/kb/stats')
 export const kbGetDocHistory = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/history`)
 export const kbGetHistory = (params) => http.get('/kb/history', { params })
+
+// One atomic edit: the server archives the old content and advances the version.
+export function kbSaveDocumentEdit(data) {
+  if (!data.id || typeof data.current_version !== 'string' || !data.current_version.trim()) {
+    throw new Error('请重新读取完整文档后编辑')
+  }
+  return kbUpdateDocument(data.id, {
+    title: data.title, content: data.content, category: data.category, tags: data.tags,
+    expected_current_version: data.current_version,
+    version_note: (data.version_note || '').trim()
+  })
+}

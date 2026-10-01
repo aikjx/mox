@@ -1,0 +1,23 @@
+BASELINE rc=0 fired=0 tests-line=['Test Files  1 passed (1)']
+M1 hour12:false->true (kills output-equality + midnight pins)                  rc=1 fired=4 expect=4  RED-AS-PINNED
+      fired: × formatDateTimeLocale 单出口 > 对可解析输入与旧表达式逐字符相同 29ms
+      fired: × formatDateTimeLocale 单出口 > hour12 确实关掉：零点打印 00:00:00 而不是 12:00:00 1ms
+      fired: × formatDateTimeLocale 单出口 > epoch 毫秒数字串不再落成 Invalid Date（旧写法 new Date("1758000000000") 是 Invalid Date） 1ms
+      fired: × formatDateTimeLocale 单出口 > 棘轮：F2 字面量全库只许剩登记口那 1 处 66ms
+      -> restored src/utils/time.js sha=5a47e464883e
+M2 bad-value null->empty string (kills bad-value pin)                          rc=1 fired=1 expect=1  RED-AS-PINNED
+      fired: × formatDateTimeLocale 单出口 > 坏值返回 null，把空态文案交回调用方（各面板契约不同：- / — / 原样回显） 8ms
+      -> restored src/utils/time.js sha=5a47e464883e
+M3 re-plant one F2 copy in AdminMonitor (kills ratchet + wiring)               rc=1 fired=2 expect=2  RED-AS-PINNED
+      fired: × formatDateTimeLocale 单出口 > 棘轮：F2 字面量全库只许剩登记口那 1 处 78ms
+      fired: × formatDateTimeLocale 单出口 > 8 个收口点都真的引到了出口（防驱动器静默 no-op） 8ms
+      -> restored src/views/admin/panels/AdminMonitor.vue sha=a65a3a24e37a
+M4 drop the import line in Dashboard (kills the contains-import channel only)  rc=1 fired=1 expect=1  RED-AS-PINNED
+      fired: × formatDateTimeLocale 单出口 > 8 个收口点都真的引到了出口（防驱动器静默 no-op） 12ms
+      -> restored src/views/project/Dashboard.vue sha=47bf7d31ea4f
+M5 rename the call site in display.js (kills the contains-call channel only)   rc=1 fired=1 expect=1  RED-AS-PINNED
+      fired: × formatDateTimeLocale 单出口 > 8 个收口点都真的引到了出口（防驱动器静默 no-op） 23ms
+      -> restored src/modules/expert-alliance/model/display.js sha=bda203450f1f
+RESTORED re-run rc=0 fired=0 verdict=['Tests  7 passed (7)']
+all five mutants went red on their own channel; all 4 touched files byte-identical to pre-battery
+rc=0

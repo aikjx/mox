@@ -1,0 +1,17 @@
+[INFO ] E1 element-plus 根导入：0 处 ✓
+[INFO ] E2 跨目录相对导入：0 处 ✓
+[INFO ] E3 barrel 导出名冲突：0 处 ✓
+[INFO ] E4 api/store 命名规范：全部符合 ✓
+[INFO ] E5 vite.config.js epSubpathResolver 在位 ✓
+[INFO ] E6 barreled 目录 @/ 深路径导入：0 处 ✓
+[INFO ] E7 @/ 别名导入目标：全部可解析 ✓
+[WARN ] 块注释配对异常 25 处（含字符串/CSS 误报可能，需人工甄别）：
+[WARN ]   frontend-ui\src\api\actuator.api.js (open=3 close=2)
+[WARN ]   frontend-ui\src\api\ai.api.js (open=2 close=1)
+[WARN ]   frontend-ui\src\api\http.js (open=8 close=7)
+[WARN ]   frontend-ui\src\components\MessageBubble.vue (open=30 close=31)
+[WARN ]   frontend-ui\src\components\ai\PhasePipeline.vue (open=11 close=12)
+[WARN ]   frontend-ui\src\constants\nav.config.js (open=2 close=0)
+[WARN ]   frontend-ui\src\modules\health-check.js (open=2 close=0)
+[WARN ]   frontend-ui\src\modules\admin-lowcode\index.js (open=1 close=0)
+--- 前端模块化门禁：ERROR=0 ---

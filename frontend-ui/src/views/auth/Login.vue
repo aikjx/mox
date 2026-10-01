@@ -164,7 +164,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { User, Lock, OfficeBuilding } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores'
-import { getSsoProviders, ssoLogin, ssoCallback, login as authApi, mfaVerify } from '@/api'
+import { getSsoProviders, ssoLogin, ssoCallback, login as apiLogin, mfaVerify } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -210,7 +210,7 @@ async function handleLogin() {
   if (!loginFormRef.value) return
   try { await loginFormRef.value.validate() } catch { return }
   try {
-    const resp = await authApi.login({
+    const resp = await apiLogin({
       username: loginForm.username,
       password: loginForm.password,
       tenant_id: loginForm.tenant_id || 'default',

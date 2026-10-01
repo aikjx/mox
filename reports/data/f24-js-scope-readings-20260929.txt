@@ -1,0 +1,161 @@
+# F24 L12 纳在册 .js 使用位点 原始读数（2026-09-29，现场量，勿手抄）
+
+## [1] 反事实普查：.vue 全 src ＋ .js/.ts 全 src 四型命中与目录分布（D:/tmp/f24-storecensus.mjs，未落库＝没牙）  （源：D:/tmp/f24-census.log，15 行）
+    |   禁串来源 TASK_STATUS = 7 值 ["pending","planning","running","paused","completed","failed","cancelled"]
+    |   禁串来源 NODE_STATUS = 7 值 ["pending","ready","running","completed","failed","skipped","cancelled"]
+    |   禁串来源 EXPERT_AVAILABILITY = 4 值 ["online","busy","offline","away"]
+    |   禁串来源 BREAKER_STATE = 2 值 ["open","closed"]
+    |   禁串来源 ROOM_STATUS = 2 值 ["available","waiting"]
+    |   禁串来源 SESSION_STATUSES = 3 值 ["active","archived","closed"]
+    |   禁串来源 MESSAGE_ROLES = 4 值 ["user","expert","system","assistant"]
+    |   禁串来源 MSG_TYPES = 5 值 ["text","markdown","code","image","file"]
+    | 禁串集合（现推，含 MSG_TYPE_DEFAULT=text）= 28 值
+    | [A/B/C/D 四型 · .vue 全 src（L12 现状集＝28 文件已在账上）] 候选 128 文件 → 非测试非定义位点 128 文件／命中 101 处／逐型 A=100 B=0 C=1 D=0
+    |    目录分布（命中数 / 该目录被扫文件里的样例最多 3 条）：
+    | [A/B/C/D 四型 · .js/.ts 全 src（store/composable/api/views 里的 js…）] 候选 222 文件 → 非测试非定义位点 123 文件／命中 30 处／逐型 A=30 B=0 C=0 D=0
+    |    目录分布（命中数 / 该目录被扫文件里的样例最多 3 条）：
+    | 对照：L12 现状集 28 文件内命中 9 处（常驻判据印的是 A=9 且 B/C/D=0）
+    |      ⇒ 现状集外 .vue 命中 92 处；.js/.ts 命中 30 处
+
+## [2] .js/.ts 30 处逐条分类（D:/tmp/f24-js-classify.mjs，含左侧表达式与"是否 import 契约"）  （源：D:/tmp/f24-js-classify3.log，56 行）
+    | 命中 30 处；左侧读不出 0 处（引用契约? = 该文件是否 import 联盟契约/模型）
+    | api/allianceTaskModel.api.js   [import 契约/模型: no]
+    |    :  58 比 "pending" 表=TASK_STATUS/NODE_STATUS      左侧=data.fusion_status
+    |    :  58 比 "pending" 表=TASK_STATUS/NODE_STATUS      左侧=data.status
+    | composables/projectContext.js   [import 契约/模型: no]
+    |    :  50 比 "active" 表=SESSION_STATUS               左侧=p.status
+    |    :  79 比 "active" 表=SESSION_STATUS               左侧=p.status
+    |    : 151 比 "active" 表=SESSION_STATUS               左侧=p.status
+    | composables/useAllianceTasks.js   [import 契约/模型: no]
+    |    :  24 比 "completed" 表=TASK_STATUS/NODE_STATUS      左侧=(task?.status
+    |    :  26 比 "completed" 表=TASK_STATUS/NODE_STATUS      左侧=task?.status
+    |    :  37 比 "completed" 表=TASK_STATUS/NODE_STATUS      左侧=task.status
+    | composables/useMessageActions.js   [import 契约/模型: no]
+    |    : 169 比 "paused" 表=TASK_STATUS                  左侧=(speechState.value
+    | composables/workspace/useTaskOrchestration.js   [import 契约/模型: YES]
+    |    : 155 比 "completed" 表=TASK_STATUS/NODE_STATUS      左侧=depTask?.status
+    |    : 175 比 "completed" 表=TASK_STATUS/NODE_STATUS      左侧=t.status
+    | composables/workspace/useWhiteboard.js   [import 契约/模型: no]
+    |    :  32 比 "text" 表=MSG_TYPE                     左侧=(activeWbTool.value
+    | composables/workspace/useWorkspaceData.js   [import 契约/模型: no]
+    |    : 223 比 "image" 表=MSG_TYPE                     左侧=(file.type
+    |    : 286 比 "file" 表=MSG_TYPE                     左侧=(item.type
+    | modules/admin-lowcode/pages/access.page.js   [import 契约/模型: no]
+    |    :  17 比 "active" 表=SESSION_STATUS               左侧=r.status
+    | modules/admin-lowcode/pages/tenant.page.js   [import 契约/模型: no]
+    |    :  37 比 "active" 表=SESSION_STATUS               左侧=row.status
+    |    :  40 比 "active" 表=SESSION_STATUS               左侧=next
+    |    :  75 比 "active" 表=SESSION_STATUS               左侧=t.status
+    |    :  86 比 "active" 表=SESSION_STATUS               左侧=row.status
+    |    : 103 比 "active" 表=SESSION_STATUS               左侧=row.status
+    | stores/ai.store.js   [import 契约/模型: YES]
+    |    : 116 比 "user" 表=MESSAGE_ROLE                 左侧=m.role
+    |    : 343 比 "user" 表=MESSAGE_ROLE                 左侧=m.role
+    |    : 408 比 "user" 表=MESSAGE_ROLE                 左侧=m.role
+    |    : 408 比 "assistant" 表=MESSAGE_ROLE                 左侧=m.role
+    |    : 439 比 "user" 表=MESSAGE_ROLE                 左侧=m.role
+    |    : 439 比 "assistant" 表=MESSAGE_ROLE                 左侧=m.role
+    |    : 553 比 "user" 表=MESSAGE_ROLE                 左侧=m.role
+    |    : 556 比 "assistant" 表=MESSAGE_ROLE                 左侧=m.role
+    | stores/alliance.store.js   [import 契约/模型: YES]
+    |    : 140 比 "running" 表=TASK_STATUS/NODE_STATUS      左侧=runState.value
+    | stores/project.store.js   [import 契约/模型: no]
+    |    :  38 比 "active" 表=SESSION_STATUS               左侧=p.status
+
+## [3] Rust 出参真值：fusion_status 值域（alliance.rs:1229-1248 现场片段）  （源：D:/tmp/f24-fusion-rust.txt，41 行）
+    | --- alliance.rs 540-548
+    |   540|         })
+    |   541|         .collect();
+    |   542| 
+    |   543|     FusionResultData {
+    |   544|         fusion_status: if completed.len() >= 3 { "completed" } else { "partial" }.to_string(),
+    |   545|         fusion_strategy: strategy.to_string(),
+    |   546|         participating_nodes: completed.len(),
+    |   547|         summary,
+    |   548|         confidence: if completed.is_empty() { 0.0 } else { 0.7 + 0.05 * completed.len() as f32 },
+    | --- alliance.rs 1232-1250
+    |  1232|     // 真实融合：基于已完成节点的输出构建融合结果
+    |  1233|     let fusion = build_fusion_result(&exec.nodes, strategy);
+    |  1234| 
+    |  1235|     let status_str = if fusion.fusion_status == "completed" { "completed" } else { "pending" };
+    |  1236|     let fused_at_str = fusion.fused_at.map(|d| d.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+    |  1237|     let summary = fusion.summary;
+    |  1238|     let confidence = fusion.confidence;
+    |  1239|     let key_findings = fusion.key_findings;
+    |  1240|     let recommendations = fusion.recommendations;
+    |  1241|     let contributions = fusion.node_contributions;
+    |  1242| 
+    |  1243|     api_ok(json!({
+    |  1244|             "elapsed_ms": now_ms() - t0,
+    |  1245|             "data": {
+    |  1246|                 "task_id": task_id,
+    |  1247|                 "status": status_str,
+    |  1248|                 "fusion_status": fusion.fusion_status,
+    |  1249|                 "fusion_strategy": fusion.fusion_strategy,
+    |  1250|                 "participating_nodes": fusion.participating_nodes,
+    | --- alliance_remote.rs 965-973
+    |   965|             "elapsed_ms": now_ms() - t0,
+    |   966|             "data": {
+    |   967|                 "task_id": task_id,
+    |   968|                 "status": "pending",
+    |   969|                 "fusion_status": "pending",
+    |   970|                 "fusion_strategy": "unknown",
+    |   971|                 "participating_nodes": 0,
+    |   972|                 "fusion_result": {
+    |   973|                     "summary": "任务尚未产生可融合的节点输出",
+
+## [4] 单文件 vitest（改判据后首跑 rc=1：扫描集仍 28 ⇒ 前缀过滤器没放行名单）  （源：D:/tmp/f24-single.log，9 行）
+    | [31m   [31m×[31m 联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账[90m 74[2mms[22m[31m[39m
+    | [31m     → L12 扫描集塌缩（判集为空时台账恒真）实测=28: expected 28 to be greater than or equal to 30[39m
+    | [31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+    | [31m[1m[7m FAIL [27m[22m[39m src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账
+    | [31m[1mAssertionError[22m: L12 扫描集塌缩（判集为空时台账恒真）实测=28: expected 28 to be greater than or equal to 30[39m
+    |     [90m376| [39m    [34mexpect[39m(files[33m.[39mlength[33m,[39m [32m'L12 扫描集塌缩（判集为空时台账恒真）实测='[39m [33m+[39m…
+    |     [90m377| [39m    [34mexpect[39m(files[33m.[39m[34mfilter[39m((r) [33m=>[39m r[33m.[39m[34mendsWith[39m([32m'.js'[39m))[33m.[39mlength[33m,[39m [32m'L12 在册 .j[39m…
+    | [2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m18 passed[39m[22m[90m (19)[39m
+
+## [5] 单文件 vitest（补名单旁路后 rc=0）  （源：D:/tmp/f24-single2.log，5 行）
+    | [90mstdout[2m | src/modules/expert-alliance/contract/vocabulary-ownership.test.js[2m > [22m[2m联盟词表所有权：模块外不许自写模块已导出的名字[2m > [22m[2mL12 视图不许把契约已登记的取值重新打字：字面量比较双向台账
+    | [22m[39m[L12 形状] 扫描 30 个文件（.vue＋在册 .js）／四型命中 A=9 B=0 C=0 D=0
+    | [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+    | [2m   Duration [22m 2.56s[2m (transform 125ms, setup 0ms, collect 189ms, tests 368ms, environment 1.04s, prepare 346ms)[22m
+
+## [6] 变异电池逐字日志（第 2 版：解析器先在真实红/绿日志上干测过）  （源：D:/tmp/f24-battery2.log，18 行）
+    | snapshot tasks_js     5689 B md5 812684260cbe
+    | snapshot api_js       3431 B md5 80606482ba65
+    | snapshot taskview    34736 B md5 a3108e09658e
+    | test md5 (判据文件不许被碰) a057cec5e7ba
+    | [OK ] rc=0 green 期望=green failed=0 passed=19 total=19 | files=30 A=9 B=0 C=0 D=0 | BASELINE 未变异
+    | [OK ] rc=1 red 期望=red failed=1 passed=18 total=19 | files=30 A=10 B=0 C=0 D=0 | M1 在册 .js 站点被重新打字（useAllianceTasks 任务完成态）=> 必须红
+    | [OK ] rc=1 red 期望=red failed=1 passed=18 total=19 | files=30 A=10 B=0 C=0 D=0 | M2 在册 .js 站点被重新打字（fusion 待融合态）=> 必须红
+    | [OK ] rc=1 red 期望=red failed=1 passed=18 total=19 | files=30 A=10 B=0 C=0 D=0 | M3 融合档 partial 被重新打字（证明 FUSION_STATUS 真进了禁串集合）=> 必须红
+    | [OK ] rc=0 green 期望=green failed=0 passed=19 total=19 | files=30 A=9 B=0 C=0 D=0 | M4 契约外的档新增比较（draft 不属任何登记表）=> 必须不红
+    | [OK ] rc=0 green 期望=green failed=0 passed=19 total=19 | files=30 A=9 B=0 C=0 D=0 | M5 只改中文文案（api 层错误提示）=> 必须不红
+    | [OK ] rc=0 green 期望=green failed=0 passed=19 total=19 | files=30 A=9 B=0 C=0 D=0 | 复验基线（还原后必须仍绿）
+    | 电池结束：不符 0 枚 / 共 7 枚
+    | restored want=812684260cbe now=812684260cbe MATCH src/composables/useAllianceTasks.js
+    | restored want=80606482ba65 now=80606482ba65 MATCH src/api/allianceTaskModel.api.js
+    | restored want=a3108e09658e now=a3108e09658e MATCH src/views/expert/AllianceTaskView.vue
+    | test md5 after a057cec5e7ba
+    | battery exit=0
+
+## [7] 门禁与全量读数  （源：D:/tmp/f24-gates.txt，9 行）
+    | === full vitest ===
+    | vitest rc=0
+    | === vite build ===
+    | build rc=0
+    | === gates ===
+    | check-frontend-module rc=0
+    | locale gate rc=0
+    | doc-links rc=1
+
+## [8] 全量 vitest 判决行  （源：D:/tmp/f24-full.log，3 行）
+    | [2m Test Files [22m [1m[32m77 passed[39m[22m[90m (77)[39m
+    | [2m      Tests [22m [1m[32m1035 passed[39m[22m[90m (1035)[39m
+    | [2m   Duration [22m 46.65s[2m (transform 17.09s, setup 0ms, collect 231.00s, tests 27.63s, environment 267.72s, prepare 59.62s)[22m
+
+## [9] vite build 判决行  （源：D:/tmp/f24-build.log，2 行）
+    | [32m✓[39m 4373 modules transformed.
+    | [32m✓ built in 36.72s[39m

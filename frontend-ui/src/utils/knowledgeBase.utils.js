@@ -42,46 +42,59 @@ export function simpleMarkdownRender(text) {
 }
 
 // ========== 格式化工具 ==========
-
-export function formatTime(ts) {
-  if (!ts) return '-'
-  const d = new Date(ts)
-  if (isNaN(d)) return '-'
-  const pad = n => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
+// 时间口径不在这里：见 utils/time.js 的 formatDateTime（此前本文件与 message.utils.js 各抄了一份逐字符相同的副本）
 
 export function truncateText(text, max) {
   if (!text) return ''
   return text.length > max ? text.slice(0, max) + '...' : text
 }
 
-// ========== 文档类型/状态映射 ==========
+// ========== 文档分类 / 状态词表（wire 真相）==========
+// 后端 `mox-kb-svc` 的文档对象根本没有"类型"这个字段：分类只有 document.rs:28-33 的 CATEGORIES
+// 四档（id 落在 doc.category 上），状态只有 model.rs:14-16 的 draft/analyzed/linked 三种。
+// 这一处此前拿的是另一套词表（article/tutorial/api/design/report/spec 与
+// published/draft/archived），与 wire 零重叠 ⇒ 按"类型"筛选恒为空、状态标签永远走原样显形的兜底。
 
-export const DOC_TYPES = [
-  { value: 'article', label: '文章' },
-  { value: 'tutorial', label: '教程' },
-  { value: 'api', label: 'API 文档' },
-  { value: 'design', label: '设计文档' },
-  { value: 'report', label: '报告' },
-  { value: 'spec', label: '规范' }
+export const KB_CATEGORIES = [
+  { value: 'cat-tech', label: '技术文档', tagType: 'info', icon: '💻' },
+  { value: 'cat-dialogue', label: '对话沉淀', tagType: 'success', icon: '💬' },
+  { value: 'cat-business', label: '业务文档', tagType: 'warning', icon: '📊' },
+  { value: 'cat-research', label: '研究文档', tagType: 'danger', icon: '🔍' }
 ]
 
-export function getTypeLabel(type) {
-  return DOC_TYPES.find(t => t.value === type)?.label || type
+export const KB_STATUSES = [
+  { value: 'draft', label: '草稿', tagType: 'warning' },
+  { value: 'analyzed', label: '已分析', tagType: 'success' },
+  { value: 'linked', label: '已关联图谱', tagType: 'primary' }
+]
+
+const CATEGORY_BY_ID = Object.fromEntries(KB_CATEGORIES.map((c) => [c.value, c]))
+const STATUS_BY_ID = Object.fromEntries(KB_STATUSES.map((s) => [s.value, s]))
+
+/** 分类/状态不在词表里时原样显形——后端哪天加一档，界面要看得见而不是显示空白 */
+export function getCategoryLabel(id) {
+  return CATEGORY_BY_ID[id]?.label || id
 }
 
-export function getTagType(type) {
-  const map = { article: 'info', tutorial: 'success', api: 'warning', design: 'info', report: 'danger', spec: 'info' }
-  return map[type] || undefined
+export function getCategoryTagType(id) {
+  return CATEGORY_BY_ID[id]?.tagType || 'info'
+}
+
+export function getCategoryIcon(id) {
+  return CATEGORY_BY_ID[id]?.icon || '📄'
 }
 
 export function getStatusType(status) {
-  return { published: 'success', draft: 'warning', archived: 'info' }[status] || 'info'
+  return STATUS_BY_ID[status]?.tagType || 'info'
 }
 
 export function getStatusLabel(status) {
-  return { published: '已发布', draft: '草稿', archived: '归档' }[status] || status
+  return STATUS_BY_ID[status]?.label || status
+}
+
+/** AI 分析的痕迹只写在 status 上（analyzed 与 linked 都经过分析），wire 上没有 aiAnalysis */
+export function isAiAnalyzed(status) {
+  return status === 'analyzed' || status === 'linked'
 }
 
 export function getActionLabel(action) {
@@ -91,7 +104,13 @@ export function getActionLabel(action) {
 // ========== 数据映射 ==========
 
 export function mapDoc(d) {
-  return { ...d, version_count: d.version || 1, ai_analyzed: !!d.aiAnalysis }
+  // 版本数与"分析过"都从真实键推导：KbDocument 上是 current_version + versions[]（历史快照，不含当前版），
+  // 而 aiAnalysis / version 这两个键后端从来不发。
+  return {
+    ...d,
+    version_count: (d.versions?.length || 0) + 1,
+    ai_analyzed: isAiAnalyzed(d.status)
+  }
 }
 
 // ========== 标签尺寸计算 ==========

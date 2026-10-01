@@ -1,0 +1,37 @@
+F20 补录：6 处 X2 候选债的出参域逐条读毕（2026-09-29，本轮最后一轮，只读、零代码改动）
+===========================================================================
+方法：把 `f20-outlet-spread-20260929.txt` 第 2 节列的 6 处命中各读 ±3 行原文（路径经 os.walk 索引解析，
+真实位置全在 `frontend-ui/src/views/expert/**`，不在 modules 下——档案里写的相对路径是普查器口径的 src 相对路径）。
+判决尺子＝§5.48 三条；分类只按**值域与形态**，不按出口名字。
+
+## 逐条（原文摘录）
+1. `src/views/expert/AllianceTaskView.vue:104`
+   `<el-icon><VideoPlay /></el-icon> {{ selectedTask.status === 'paused' ? '继续执行' : '启动任务' }}`
+   ⇒ **不是直印，是比较型**：把契约已登记的取值重新打字成 `'paused'`（`TASK_STATUS.PAUSED` 存在，同 §5.44 病灶形态）。
+   **本文件确有联盟契约引用（2 处）** ⇒ 6 处里唯一落在这条链上的真候选。修法＝改比 `TASK_STATUS.PAUSED`（按钮文案是两态语义，不是七档展示，不动文案）。
+   待测的第二问：`:104` 的 else 支覆盖 planning/running/completed/failed 全印"启动任务"，属按钮可用性语义（不是缺档折叠），要一并核 `canResume` 的定义。
+2. `src/views/expert/ExpertConfigView.vue:276` 与 `:2055`（同一写法两处）
+   `{{ expertTypes[config.profile.type] || '专家类型' }}`
+   ⇒ 本地查表＋**中文兜底**（坏值不回显原始键）＝该文件自己的出口，属 B 档/未知值回落设计。
+   `ruleTypeLabel` 是**词根巧合命中**（真出口叫 `expertTypes` 表）⇒ **X2 假阳**，正是 f20 第 4 节自述的那个反向错。
+3. `src/views/expert/ExpertConfigView.vue:523` 与 `:1732`
+   `{{ v.type === 'system' ? '系统' : '自定义' }}`（含同行 `:type` 三元）
+   ⇒ 值域是**配置变量域**（system/custom），不属联盟契约八张表（也不在 L12 现推的 `banned` 集合里）⇒ §5.37 (c) 跨域同名，不并。
+   若将来要收口，那是配置域自己开档，不是本模块的债。
+4. `src/views/expert/panels/ExpertEnterprisePanel.vue:217`
+   `<el-tag size="small">{{ typeLabels[selectedExpert.type] || selectedExpert.type }}</el-tag>`
+   ⇒ 查表＋**坏值回显原始键**（同 §5.48 的 `RegisterExpertDialog.vue:193` 形态＝该文件自己的归一化写法）；
+   真问题是 `typeLabels` 是本文件**私表**，属 §5.38 企业面板内联档表余账（L6/L6b 那本账），不是"直印无出口"。
+
+## 结论（一句）
+6 处 X2 里：**1 处真候选债**（`AllianceTaskView.vue:104` 的比较型重新打字）、**3 处仪器假阳**（`:276/:2055/:217` 本地查表出口，
+其中 `:217` 转 §5.38 私表余账）、**2 处跨域同名**（`:523/:1732` 配置变量域）。
+⇒ §5.48 的 F17 阴性结论**再获一次支撑**：模块外至今没有一枚"契约有中文出口却直印上界面"的活界面缺陷；
+而唯一的新真候选落在**比较型**这一族（§5.44/§5.45 已建过 L12 账），意味着下一步该问的是
+"L12 的扫描集为什么没抓到 `AllianceTaskView.vue:104`"——答案是 L12 只扫 `modules/expert-alliance/views|components`，
+而 `src/views/expert/**` 在模块外（§5.48 的口径边界），**这是覆盖面账不是漏检**。
+
+## 下一轮的第一个动作（明确、单枚）
+把 `AllianceTaskView.vue:104` 的 `'paused'` 改比 `TASK_STATUS.PAUSED`（按 §5.45 形态：LEDGER 不留条目、判据格按取值/形状钉、
+电池含一枚"只改中文措辞必须不红"），并当场测一次"把 L12 扫描集扩到 `src/views/expert/**` 会多咬出谁"（反事实，先测再决定是否纳）。
+未入库状态与恢复源同 `f20-outlet-spread-20260929.txt` 第 7 节。

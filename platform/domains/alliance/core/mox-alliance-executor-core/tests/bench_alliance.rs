@@ -359,7 +359,10 @@ async fn run_e2e_bench(node_count: usize, iterations: usize) -> E2EResult {
 
     for i in 0..iterations {
         let task_id = Uuid::new_v4();
-        let nodes = make_dag_nodes(node_count);
+        let mut nodes = make_dag_nodes(node_count);
+        for node in &mut nodes {
+            node.task_id = task_id;
+        }
         let plan = CollaborationPlan {
             task_id,
             mode: AllianceMode::Parallel,

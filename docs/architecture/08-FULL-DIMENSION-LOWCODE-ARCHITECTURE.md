@@ -1,5 +1,7 @@
 # 全维低代码模块 · 璇玑 RelGraph · 架构设计白皮书
 
+> **2026-10-01 设计边界补记**：本白皮书是早期设计参考，竞品判断/性能倍数/拟建模块未经本轮外部核证，不作为事实基线。现行低代码设计接缝见 `docs/standards/lowcode-dynamic-configuration.md#scope` 与 `docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md#architecture`。已有meta/DSQL/模块装配与前端Schema能力优先复用；不再以拟建通用低代码core为必要前提。
+
 > **版本**: v1.0  
 > **日期**: 2026-08-27  
 > **架构师**: 开发专家联盟 · 璇玑 RelGraph  

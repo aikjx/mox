@@ -1,0 +1,16 @@
+# locale-format gate wiring witness (2026-09-29, rerun this turn)
+# driver: D:/tmp/land-wiring.py (scratch, untracked, no teeth outside this artifact)
+
+CMD1 python scripts/gate/check-locale-format-outlets.py --selftest  rc=0
+  last line: SELFTEST PASS（0 例未落地）
+  PASS lines: 11  FAIL lines: 0
+CMD2 python scripts/gate/check-locale-format-outlets.py  rc=0
+  [OK] L1/L2/L3 无违规：扫描 270 个文件；无参时间格式化余账 3 处＝登记表；出口写法只在 utils/time.js
+  [INFO] L1 余账明细（清零后要删条目而不是写 0）：modules/admin-lowcode/engine/widgetRegistry.js x1, views/admin/panels/AdminHitl.vue x1, views/project/TaskView.vue x1
+  [INFO] I1 数字千分位（与时间无关，不判定，按名点名 3 处）：views/admin/panels/AdminLlm.vue:258 <div class="stat-value">{{ stats.total_tokens.toLocaleString(); views/admin/panels/AdminLlm.vue:278 <span class="usage-tokens">{
+  [INFO] I2 登记口外的带参 toLocale* 直写 6 处（task #25 余账）：views/admin/panels/AdminLlm.vue:647; views/admin/panels/AdminMonitor.vue:1138; views/expert/panels/ExpertEnterprisePanel.vue:680; views/market/MarketVie
+CMD3 powershell PSParser::ParseFile on scripts/gate/check-all.ps1  rc=0
+  PS_ERRORS=0
+
+references to check-locale-format-outlets: check-all.ps1=1 AGENTS.md=1
+step labels in check-all.ps1: [6/7]=1 [7/7]=1 (step count unchanged at 7)

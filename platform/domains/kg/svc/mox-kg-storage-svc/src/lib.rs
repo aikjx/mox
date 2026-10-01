@@ -41,11 +41,16 @@ pub mod shard_raft;
 pub mod storage_engine;
 pub mod cdc_publisher;
 
-use petgraph::graph::{DiGraph, NodeIndex, EdgeIndex};
-use petgraph::visit::EdgeRef;
+use petgraph::{
+    graph::{EdgeIndex, NodeIndex},
+    stable_graph::StableDiGraph,
+    visit::EdgeRef,
+};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -118,7 +123,7 @@ pub struct GraphSnapshot {
 /// In-memory knowledge graph store with optional SQLite persistence.
 #[derive(Clone)]
 pub struct GraphStore {
-    graph: Arc<parking_lot::RwLock<DiGraph<GraphNode, GraphEdge>>>,
+    graph: Arc<parking_lot::RwLock<StableDiGraph<GraphNode, GraphEdge>>>,
     node_index: Arc<parking_lot::RwLock<HashMap<String, NodeIndex>>>,
     edge_index: Arc<parking_lot::RwLock<HashMap<String, EdgeIndex>>>,
     type_index: Arc<parking_lot::RwLock<HashMap<String, Vec<String>>>>, // node_type -> node_ids
@@ -127,7 +132,7 @@ pub struct GraphStore {
 impl GraphStore {
     pub fn new() -> Self {
         Self {
-            graph: Arc::new(parking_lot::RwLock::new(DiGraph::new())),
+            graph: Arc::new(parking_lot::RwLock::new(StableDiGraph::new())),
             node_index: Arc::new(parking_lot::RwLock::new(HashMap::new())),
             edge_index: Arc::new(parking_lot::RwLock::new(HashMap::new())),
             type_index: Arc::new(parking_lot::RwLock::new(HashMap::new())),
@@ -149,16 +154,20 @@ impl GraphStore {
     }
 
     pub fn get_node(&self, id: &str) -> Option<GraphNode> {
-        let idx = self.node_index.read();
         let graph = self.graph.read();
+        let idx = self.node_index.read();
         idx.get(id).and_then(|ni| graph.node_weight(*ni).cloned())
     }
 
-    pub fn update_node(&self, id: &str, label: Option<&str>, properties: Option<serde_json::Value>) -> Result<GraphNode, StorageError> {
+    pub fn update_node(
+        &self,
+        id: &str,
+        label: Option<&str>,
+        properties: Option<serde_json::Value>,
+    ) -> Result<GraphNode, StorageError> {
+        let mut graph = self.graph.write();
         let idx = self.node_index.read();
         let ni = *idx.get(id).ok_or_else(|| StorageError::NodeNotFound(id.into()))?;
-        drop(idx);
-        let mut graph = self.graph.write();
         let node = graph.node_weight_mut(ni).ok_or_else(|| StorageError::NodeNotFound(id.into()))?;
         if let Some(l) = label { node.label = l.into(); }
         if let Some(p) = properties { node.properties = p; }
@@ -167,8 +176,8 @@ impl GraphStore {
     }
 
     pub fn delete_node(&self, id: &str) -> Result<(), StorageError> {
-        let mut idx = self.node_index.write();
         let mut graph = self.graph.write();
+        let mut idx = self.node_index.write();
         let mut edge_idx = self.edge_index.write();
         let mut type_idx = self.type_index.write();
 
@@ -195,11 +204,10 @@ impl GraphStore {
     }
 
     pub fn add_edge(&self, edge: GraphEdge) -> Result<(), StorageError> {
+        let mut graph = self.graph.write();
         let idx = self.node_index.read();
         let source = *idx.get(&edge.source).ok_or_else(|| StorageError::NodeNotFound(edge.source.clone()))?;
         let target = *idx.get(&edge.target).ok_or_else(|| StorageError::NodeNotFound(edge.target.clone()))?;
-        drop(idx);
-        let mut graph = self.graph.write();
         let mut edge_idx = self.edge_index.write();
         let ei = graph.add_edge(source, target, edge.clone());
         edge_idx.insert(edge.id, ei);
@@ -207,14 +215,14 @@ impl GraphStore {
     }
 
     pub fn get_edge(&self, id: &str) -> Option<GraphEdge> {
-        let idx = self.edge_index.read();
         let graph = self.graph.read();
+        let idx = self.edge_index.read();
         idx.get(id).and_then(|ei| graph.edge_weight(*ei).cloned())
     }
 
     pub fn delete_edge(&self, id: &str) -> Result<(), StorageError> {
-        let mut edge_idx = self.edge_index.write();
         let mut graph = self.graph.write();
+        let mut edge_idx = self.edge_index.write();
         let ei = *edge_idx.get(id).ok_or_else(|| StorageError::EdgeNotFound(id.into()))?;
         graph.remove_edge(ei);
         edge_idx.remove(id);
@@ -246,8 +254,8 @@ impl GraphStore {
 
     /// Neighbors of a node (outgoing edges).
     pub fn neighbors(&self, id: &str) -> Vec<GraphNode> {
-        let idx = self.node_index.read();
         let graph = self.graph.read();
+        let idx = self.node_index.read();
         let Some(ni) = idx.get(id) else { return vec![]; };
         graph.neighbors(*ni).filter_map(|n| graph.node_weight(n).cloned()).collect()
     }
@@ -292,17 +300,78 @@ impl GraphStore {
         }
     }
 
-    /// Import from snapshot (replaces existing graph).
+    /// 原子替换已验证快照；失败时保留旧图。
     pub fn import_snapshot(&self, snap: GraphSnapshot) -> Result<(), StorageError> {
-        // Clear existing
+        let prepared = Self::prepare(snap.nodes, snap.edges)?;
         let mut graph = self.graph.write();
-        graph.clear();
-        self.node_index.write().clear();
-        self.edge_index.write().clear();
-        self.type_index.write().clear();
-        drop(graph);
-        self.batch_add(snap.nodes, snap.edges)?;
+        let mut nodes = self.node_index.write();
+        let mut edges = self.edge_index.write();
+        let mut types = self.type_index.write();
+        *graph = prepared.graph.read().clone();
+        *nodes = prepared.node_index.read().clone();
+        *edges = prepared.edge_index.read().clone();
+        *types = prepared.type_index.read().clone();
         Ok(())
+    }
+
+    fn prepare(nodes: Vec<GraphNode>, edges: Vec<GraphEdge>) -> Result<Self, StorageError> {
+        let prepared = Self::new();
+        for node in nodes {
+            prepared.add_node(node)?;
+        }
+        let mut seen = HashSet::new();
+        for edge in edges {
+            if !edge.weight.is_finite() || !seen.insert(edge.id.clone()) {
+                return Err(StorageError::InvalidSchema("invalid or duplicate edge".into()));
+            }
+            prepared.add_edge(edge)?;
+        }
+        Ok(prepared)
+    }
+
+    /// 原子替换一个文档的完整投影；所有生成节点必须携带出处。
+    pub fn replace_document_projection(
+        &self,
+        owner: &str,
+        nodes: Vec<GraphNode>,
+        edges: Vec<GraphEdge>,
+    ) -> Result<usize, StorageError> {
+        if owner.is_empty()
+            || nodes
+                .iter()
+                .any(|node| node.properties["source_doc_id"].as_str() != Some(owner))
+        {
+            return Err(StorageError::InvalidSchema("missing projection owner".into()));
+        }
+        let mut graph = self.graph.write();
+        let mut node_index = self.node_index.write();
+        let mut edge_index = self.edge_index.write();
+        let mut type_index = self.type_index.write();
+        let removed_ids: HashSet<String> = graph
+            .node_weights()
+            .filter(|node| node.properties["source_doc_id"].as_str() == Some(owner))
+            .map(|node| node.id.clone())
+            .collect();
+        let mut retained_nodes: Vec<_> = graph
+            .node_weights()
+            .filter(|node| !removed_ids.contains(&node.id))
+            .cloned()
+            .collect();
+        let mut retained_edges: Vec<_> = graph
+            .edge_weights()
+            .filter(|edge| {
+                !removed_ids.contains(&edge.source) && !removed_ids.contains(&edge.target)
+            })
+            .cloned()
+            .collect();
+        retained_nodes.extend(nodes);
+        retained_edges.extend(edges);
+        let prepared = Self::prepare(retained_nodes, retained_edges)?;
+        *graph = prepared.graph.read().clone();
+        *node_index = prepared.node_index.read().clone();
+        *edge_index = prepared.edge_index.read().clone();
+        *type_index = prepared.type_index.read().clone();
+        Ok(removed_ids.len())
     }
 
     /// Get adjacency list for graph algorithms.
@@ -563,6 +632,58 @@ pub use storage_api::{HotNeighborCache, LruCache};
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn deleting_middle_nodes_and_edges_preserves_other_identifiers() {
+        let store = GraphStore::new();
+        for id in ["a", "b", "c", "d"] {
+            store.add_node(GraphNode::new(id, "entity", id)).unwrap();
+        }
+        store.add_edge(GraphEdge::new("ab", "a", "b", "relates")).unwrap();
+        store.add_edge(GraphEdge::new("cd", "c", "d", "relates")).unwrap();
+        store.delete_node("a").unwrap();
+        assert_eq!(store.get_node("d").unwrap().id, "d");
+        assert_eq!(store.get_edge("cd").unwrap().id, "cd");
+        assert_eq!(store.neighbors("c")[0].id, "d");
+        store.delete_edge("cd").unwrap();
+        assert!(store.get_edge("cd").is_none());
+    }
+
+    #[test]
+    fn projection_replacement_is_scoped_and_invalid_updates_keep_old_graph() {
+        let store = GraphStore::new();
+        let owner = |id: &str, doc: &str| {
+            GraphNode::new(id, "document", id)
+                .with_properties(serde_json::json!({"source_doc_id":doc}))
+        };
+        store.replace_document_projection("a", vec![owner("a", "a")], vec![]).unwrap();
+        store
+            .replace_document_projection("a-b", vec![owner("a-b", "a-b")], vec![])
+            .unwrap();
+        assert_eq!(store.replace_document_projection("a", vec![], vec![]).unwrap(), 1);
+        assert!(store.get_node("a-b").is_some());
+        let before = store.snapshot();
+        assert!(store
+            .replace_document_projection(
+                "a",
+                vec![owner("a", "a")],
+                vec![GraphEdge::new("bad", "a", "missing", "relates")]
+            )
+            .is_err());
+        assert_eq!(store.snapshot().node_count, before.node_count);
+        assert!(store.get_node("a-b").is_some());
+        let invalid = GraphSnapshot {
+            nodes: vec![
+                GraphNode::new("duplicate", "x", "x"),
+                GraphNode::new("duplicate", "x", "x"),
+            ],
+            edges: vec![],
+            node_count: 2,
+            edge_count: 0,
+        };
+        assert!(store.import_snapshot(invalid).is_err());
+        assert!(store.get_node("a-b").is_some());
+    }
 
     #[test]
     fn add_get_node() {

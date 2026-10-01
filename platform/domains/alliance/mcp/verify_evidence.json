@@ -1,0 +1,180 @@
+[
+  {
+    "step": "initialize",
+    "response": {
+      "id": 1,
+      "jsonrpc": "2.0",
+      "result": {
+        "capabilities": {
+          "tools": {
+            "listChanged": false
+          }
+        },
+        "protocolVersion": "2024-11-05",
+        "serverInfo": {
+          "name": "mox-alliance-mcp-server",
+          "version": "3.0.0-ai-powered"
+        }
+      }
+    }
+  },
+  {
+    "step": "tools/list",
+    "response": {
+      "id": 2,
+      "jsonrpc": "2.0",
+      "result": {
+        "tools": [
+          {
+            "description": "专家匹配搜索：按关键词/领域在专家库做 RuleBasedExpertMatcher 真实匹配，返回逐维 scores（domain/capability/health/priority/performance）与 match_score。对应网关 POST /api/alliance/experts/search。",
+            "inputSchema": {
+              "properties": {
+                "domains": {
+                  "description": "限定领域 id 列表，可空",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "limit": {
+                  "description": "返回条数上限，默认 10",
+                  "type": "integer"
+                },
+                "query": {
+                  "description": "搜索关键词 / 任务描述",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "type": "object"
+            },
+            "name": "expert_search"
+          },
+          {
+            "description": "最优团队推荐：真实加权集合覆盖贪心算法，按所需技能/领域组队，返回 team_members + coverage + team_score。对应网关 POST /api/expert-graph/optimal-team。",
+            "inputSchema": {
+              "properties": {
+                "goal": {
+                  "description": "自然语言目标（未显式给技能/领域时由规则提取）",
+                  "type": "string"
+                },
+                "max_members": {
+                  "description": "团队人数上限，默认 5",
+                  "type": "integer"
+                },
+                "min_rating": {
+                  "description": "最低评分门槛，默认 4.0",
+                  "type": "number"
+                },
+                "required_domains": {
+                  "description": "所需领域 id 列表",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "required_skills": {
+                  "description": "所需技能 id 列表",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "name": "optimal_team"
+          },
+          {
+            "description": "图 RAG 多跳邻域扩展（T2）：从种子节点沿边权重乘积聚合做邻域检索，返回邻域节点 + aggregate_weight + path。对应网关 POST /api/expert-graph/rag/expand。",
+            "inputSchema": {
+              "properties": {
+                "max_depth": {
+                  "description": "最大跳数 1..=4，默认 2",
+                  "type": "integer"
+                },
+                "min_weight": {
+                  "description": "边权重下限 0.0..=1.0，默认 0.0",
+                  "type": "number"
+                },
+                "node_types": {
+                  "description": "结果节点类型过滤，如 [\"expert\"]",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "seeds": {
+                  "description": "种子节点 id（专家或域），非空",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "top_k": {
+                  "description": "返回条数上限，默认 20",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "seeds"
+              ],
+              "type": "object"
+            },
+            "name": "graph_expand"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "step": "expert_search",
+    "response": {
+      "id": 3,
+      "jsonrpc": "2.0",
+      "result": {
+        "content": [
+          {
+            "text": "{\n  \"called_at\": \"2026-10-01T11:05:04.424583900+00:00\",\n  \"gateway_status\": 200,\n  \"mcp_tool\": \"expert_search\",\n  \"result\": {\n    \"code\": 0,\n    \"data\": {\n      \"data\": {\n        \"experts\": [\n          {\n            \"description\": \"专注于系统架构设计与性能优化、技术选型\",\n            \"domains\": [\n              \"architecture\",\n              \"performance\",\n              \"design\"\n            ],\n            \"expert_id\": \"expert-architecture\",\n            \"match_reason\": \"领域匹配 100%，能力匹配 39%，健康 100%\",\n            \"match_score\": 0.6812499999999999,\n            \"name\": \"架构设计专家\",\n            \"scores\": {\n              \"capability\": {\n                \"value\": 0.3875,\n                \"weight\": 0.30000001192092896\n              },\n              \"domain\": {\n                \"value\": 1.0,\n                \"weight\": 0.3499999940395355\n              },\n              \"health\": {\n                \"value\": 1.0,\n                \"weight\": 0.05000000074505806\n              },\n              \"performance\": {\n                \"value\": 1.0,\n                \"weight\": 0.10000000149011612\n              },\n              \"priority\": {\n                \"value\": 0.1,\n                \"weight\": 0.20000000298023224\n              },\n              \"total\": 0.6812499999999999\n            },\n            \"status\": \"online\"\n          },\n          {\n            \"description\": \"专注于需求梳理、优先级排序与结构化拆解\",\n            \"domains\": [\n              \"requirement\",\n              \"analysis\",\n              \"architecture\"\n            ],\n            \"expert_id\": \"expert-requirement\",\n            \"match_reason\": \"领域匹配 100%，能力匹配 35%，健康 100%\",\n            \"match_score\": 0.6699999999999999,\n            \"name\": \"需求分析专家\",\n            \"scores\": {\n              \"capability\": {\n                \"value\": 0.35,\n                \"weight\": 0.30000001192092896\n              },\n              \"domain\": {\n                \"value\": 1.0,\n                \"weight\": 0.3499999940395355\n              },\n              \"health\": {\n                \"value\": 1.0,\n                \"weight\": 0.05000000074505806\n              },\n              \"performance\": {\n                \"value\": 1.0,\n                \"weight\": 0.10000000149011612\n              },\n              \"priority\": {\n                \"value\": 0.1,\n                \"weight\": 0.20000000298023224\n              },\n              \"total\": 0.6699999999999999\n            },\n            \"status\": \"online\"\n          },\n          {\n            \"description\": \"多维度技术方案评审、风险评估与质量把关\",\n            \"domains\": [\n              \"review\",\n              \"quality\",\n              \"architecture\"\n            ],\n            \"expert_id\": \"expert-review\",\n            \"match_reason\": \"领域匹配 100%，能力匹配 35%，健康 100%\",\n            \"match_score\": 0.6699999999999999,\n            \"name\": \"方案评审专家\",\n            \"scores\": {\n              \"capability\": {\n                \"value\": 0.35,\n                \"weight\": 0.30000001192092896\n              },\n              \"domain\": {\n                \"value\": 1.0,\n                \"weight\": 0.3499999940395355\n              },\n              \"health\": {\n                \"value\": 1.0,\n                \"weight\": 0.05000000074505806\n              },\n              \"performance\": {\n                \"value\": 1.0,\n                \"weight\": 0.10000000149011612\n              },\n              \"priority\": {\n                \"value\": 0.1,\n                \"weight\": 0.20000000298023224\n              },\n              \"total\": 0.6699999999999999\n            },\n            \"status\": \"online\"\n          }\n        ],\n        \"total\": 3\n      },\n      \"elapsed_ms\": 0,\n      \"params\": {\n        \"domains\": [\n          \"architecture\"\n        ],\n        \"limit\": 3,\n        \"query\": \"分布式架构与微服务\"\n      }\n    },\n    \"msg\": \"ok\"\n  },\n  \"upstream\": \"POST /api/alliance/experts/search\"\n}",
+            "type": "text"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "step": "optimal_team",
+    "response": {
+      "id": 4,
+      "jsonrpc": "2.0",
+      "result": {
+        "content": [
+          {
+            "text": "{\n  \"called_at\": \"2026-10-01T11:05:04.428004700+00:00\",\n  \"gateway_status\": 200,\n  \"mcp_tool\": \"optimal_team\",\n  \"result\": {\n    \"code\": 0,\n    \"data\": {\n      \"coverage\": {\n        \"coverage_ratio\": 1.0,\n        \"covered_count\": 2,\n        \"missing_domains\": [],\n        \"missing_skills\": [],\n        \"required_total\": 2\n      },\n      \"created_at\": \"2026-10-01T11:05:04Z\",\n      \"required_domains\": [\n        \"architecture\",\n        \"ai\"\n      ],\n      \"required_skills\": [],\n      \"selection_strategy\": \"weighted_set_cover_greedy\",\n      \"team_id\": \"team-6de6f01b758e480aac69e6ab91ecf293\",\n      \"team_members\": [\n        {\n          \"avg_rating\": 4.8,\n          \"covered_domains\": [\n            \"ai\"\n          ],\n          \"covered_skills\": [],\n          \"id\": \"exp-ai-001\",\n          \"match_score\": 0.96,\n          \"name\": \"AI算法·灵玑\",\n          \"role\": \"domain_lead\",\n          \"title\": \"人工智能\"\n        },\n        {\n          \"avg_rating\": 4.8,\n          \"covered_domains\": [\n            \"architecture\"\n          ],\n          \"covered_skills\": [],\n          \"id\": \"exp-architecture-001\",\n          \"match_score\": 0.96,\n          \"name\": \"架构师·玄枢\",\n          \"role\": \"domain_lead\",\n          \"title\": \"系统架构\"\n        }\n      ],\n      \"team_score\": 1.92\n    },\n    \"msg\": \"ok\"\n  },\n  \"upstream\": \"POST /api/expert-graph/optimal-team\"\n}",
+            "type": "text"
+          }
+        ],
+        "isError": false
+      }
+    }
+  },
+  {
+    "step": "graph_expand",
+    "response": {
+      "id": 5,
+      "jsonrpc": "2.0",
+      "result": {
+        "content": [
+          {
+            "text": "{\n  \"called_at\": \"2026-10-01T11:05:04.431572400+00:00\",\n  \"gateway_status\": 200,\n  \"mcp_tool\": \"graph_expand\",\n  \"result\": {\n    \"code\": 0,\n    \"data\": {\n      \"query\": {\n        \"max_depth\": 2,\n        \"min_weight\": 0.0,\n        \"node_types\": [],\n        \"seeds\": [\n          \"exp-architecture-001\"\n        ],\n        \"top_k\": 5\n      },\n      \"rerank\": \"graph_only（向量融合待 #27）\",\n      \"results\": [\n        {\n          \"aggregate_weight\": 1.0,\n          \"depth\": 1,\n          \"first_hops\": [\n            {\n              \"edge_type\": \"has_domain\",\n              \"from\": \"exp-architecture-001\",\n              \"to\": \"domain-architecture\",\n              \"weight\": 1.0\n            }\n          ],\n          \"node\": {\n            \"id\": \"domain-architecture\",\n            \"label\": \"architecture\",\n            \"node_type\": \"domain\"\n          },\n          \"path\": [\n            \"exp-architecture-001\",\n            \"domain-architecture\"\n          ]\n        },\n        {\n          \"aggregate_weight\": 1.0,\n          \"depth\": 1,\n          \"first_hops\": [\n            {\n              \"edge_type\": \"has_domain\",\n              \"from\": \"exp-architecture-001\",\n              \"to\": \"domain-backend\",\n              \"weight\": 1.0\n            }\n          ],\n          \"node\": {\n            \"id\": \"domain-backend\",\n            \"label\": \"backend\",\n            \"node_type\": \"domain\"\n          },\n          \"path\": [\n            \"exp-architecture-001\",\n            \"domain-backend\"\n          ]\n        },\n        {\n          \"aggregate_weight\": 1.0,\n          \"depth\": 1,\n          \"first_hops\": [\n            {\n              \"edge_type\": \"has_domain\",\n              \"from\": \"exp-architecture-001\",\n              \"to\": \"domain-distributed\",\n              \"weight\": 1.0\n            }\n          ],\n          \"node\": {\n            \"id\": \"domain-distributed\",\n            \"label\": \"distributed\",\n            \"node_type\": \"domain\"\n          },\n          \"path\": [\n            \"exp-architecture-001\",\n            \"domain-distributed\"\n          ]\n        },\n        {\n          \"aggregate_weight\": 1.0,\n          \"depth\": 2,\n          \"first_hops\": [\n            {\n              \"edge_type\": \"has_domain\",\n              \"from\": \"exp-architecture-001\",\n              \"to\": \"domain-architecture\",\n              \"weight\": 1.0\n            }\n          ],\n          \"node\": {\n            \"id\": \"exp-cbf168cdeded4127bb812dca4d2b2936\",\n            \"label\": \"???????\",\n            \"node_type\": \"expert\"\n          },\n          \"path\": [\n            \"exp-architecture-001\",\n            \"domain-architecture\",\n            \"exp-cbf168cdeded4127bb812dca4d2b2936\"\n          ]\n        },\n        {\n          \"aggregate_weight\": 1.0,\n          \"depth\": 2,\n          \"first_hops\": [\n            {\n              \"edge_type\": \"has_domain\",\n              \"from\": \"exp-architecture-001\",\n              \"to\": \"domain-architecture\",\n              \"weight\": 1.0\n            }\n          ],\n          \"node\": {\n            \"id\": \"exp-ea7e55798aa54c1bb9878e30de951817\",\n            \"label\": \"测试专家·云帆\",\n            \"node_type\": \"expert\"\n          },\n          \"path\": [\n            \"exp-architecture-001\",\n            \"domain-architecture\",\n            \"exp-ea7e55798aa54c1bb9878e30de951817\"\n          ]\n        }\n      ],\n      \"stats\": {\n        \"elapsed_ms\": 0,\n        \"returned\": 5,\n        \"searched_nodes\": 7\n      }\n    },\n    \"msg\": \"ok\"\n  },\n  \"upstream\": \"POST /api/expert-graph/rag/expand\"\n}",
+            "type": "text"
+          }
+        ],
+        "isError": false
+      }
+    }
+  }
+]

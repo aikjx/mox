@@ -1,0 +1,61 @@
+F20 出口按名配对的第二次收窄（51 处活界面候选 ⇒ 6 处候选债）2026-09-29
+===========================================================================
+性质：**只读普查**，本轮零代码改动、未新增判据格、未动文档章节（§5.51 待下一轮随修随写）。
+上游档案：`f19-direct-print-screen-v2-20260929.txt`（四通道可达性，md5 e857e25117a74088）给出 R3 活界面 51 处／28 文件。
+本档案回答 §5.48 尺子③那句"该值域在本文件有没有中文出口"，把谓词从**文件级**（F17 的错）换成**字段名级**。
+
+## 1. 仪器（一次性 python，未落库＝没牙，禁止接 CI）
+谓词：对每条命中取字段 `field`（status/state/type/role/kind/mode/level/phase），
+在**同一文件全文**里找函数名匹配 `\w*<Field 首字母大写>Label\b` 的出口（定义或导入均算），
+再看命中行本身（同行）与命中行 ±5 行是否调用它；另记该文件出现 `modules/expert-alliance` 的次数（跨域标志）。
+分母断言：输入 51 处／28 文件（与 v2 档案逐条对账一致）。
+
+## 2. 读数
+桶分布（51 处）：
+  X1 本文件未按名找到该字段族的 Label 出口 ………… 45 处
+  X2 有同字段 Label 出口却直印 ⇒ **候选债** ……… 6 处
+  X3 同行/邻行已在用同字段出口（两档版面） ……… 0 处
+跨域标志：28 个文件里 **28 个中的 25 个文件 `modules/expert-alliance` 出现次数 = 0**（按站点计 45/51 处）。
+`views/admin/panels` 的 **24 处全部落 X1**，且这些文件对联盟契约的引用数为 0
+⇒ **admin 面板族不属联盟归一化族**（企业域自己的字典/租户/审计枚举；要归一时是"企业域开档"的产品选择，不是本模块的债）。
+这一条把任务 #38 里"从 admin 面板 24 处开工"的起点**推翻**了：那 24 处按现证据不在本族队列里。
+
+6 处候选债（file:line | 字段 | 本文件按名找到的出口 | 联盟契约引用数）：
+  views/expert/AllianceTaskView.vue:104          | status | nodeStatusLabel, taskStatusLabel | 2
+  views/expert/ExpertConfigView.vue:276          | type   | ruleTypeLabel                   | 0
+  views/expert/ExpertConfigView.vue:523          | type   | ruleTypeLabel                   | 0
+  views/expert/ExpertConfigView.vue:1732         | type   | ruleTypeLabel                   | 0
+  views/expert/ExpertConfigView.vue:2055         | type   | ruleTypeLabel                   | 0
+  views/expert/panels/ExpertEnterprisePanel.vue:217 | type | sessionTypeLabel              | 2
+
+## 3. 这 6 处各自的未决问题（本档案不下判决，因为差分在这三处）
+- `AllianceTaskView.vue:104`：本文件**同时**有 `taskStatusLabel` 与 `nodeStatusLabel` 两把出口，
+  要问的是这一行渲染的是任务还是节点（§5.37 (c)：同一个 `status` 字段名分属两族）。上一轮同类差分见 §5.45 的 `:645`。
+- `ExpertConfigView.vue` 四处的候选出口叫 `ruleTypeLabel`——**名字里带 rule**，
+  命中的 `.type` 是否属于规则值域未溯源；若属另一子域（配置项类型），则 `ruleTypeLabel` 是巧合命中而非配对。
+- `ExpertEnterprisePanel.vue:217`：`sessionTypeLabel` 同族（本文件确有联盟契约引用），
+  最像 §5.38 那批"企业面板内联档表"的余亲，需读该行对象来源再定。
+
+## 4. 仪器自述（假阳/假阴方向，必须先读再用数）
+- **按名字配对 ≠ 按值域配对**：出口若叫 `dictText`／`categoryLabel`（换了词根）会被判成 X1 ⇒
+  X1 的含义是"未按名找到出口"，**不等于**"该值域没有中文出口"。所以 45 处 X1 不能读成 45 处免检。
+- 反向也错：`ruleTypeLabel` 因词根相同命中 `type` 字段，可能跨子域 ⇒ X2 是候选队列不是债务量（同 §5.48 的教训换了轴）。
+- 只看同行与 ±5 行 ⇒ 跨行写法（在 computed 里映射好再直印）会落进 X2（假阳方向）。
+- 可达性沿用 v2 的四通道，`views/` 恒真（§5.50 已立此口径），故本轮不再复述 R0/R3。
+
+## 5. 下一轮该做的三件事（按顺序，不扩范围）
+1. 读 6 处候选债的出参域（`normXxx`／`json!` 两处即可判定），把"该值域有没有契约出口"按**值域**问完；
+   真有出口却直印的按 §5.45 的形态改走出口，配一枚按形状/取值钉的常驻格＋电池（含"只改中文必须不红"一枚）。
+2. 把本轮结论回写任务 #38 与 §5.51（起点从 admin 24 处改为这 6 处；admin 族转"企业域开档"待裁决）。
+3. 全量 vitest 与 `vite build` 重量后写现值（F18/F19/F20 三轮零代码改动未跑，不许沿用 §5.48 的 1035）。
+
+## 6. 工具坑（本轮新撞，务必带走）
+解析逐条档案的正则有 **6 个捕获组**，我第一次把桶取成 `group(5)`（通道），当场印出 `R3=0 admin=0`，
+差点据此上报"admin 面板族零候选"。规矩：**读到 0 先怀疑解包/字段错位，再怀疑现场**（同 §5.44 的 `t[0]` 与 §5.36 的"仪器假账"）。
+第二次跑用 `group(6)` 并对账到 51 处才继续。
+
+## 7. 未入库
+本档案（`??`）＋前序：治理文档 §5.49/§5.50（`AM`）、`f18-messagebubble-reachability-20260929.txt`、
+`f19-direct-print-screen-20260929.txt`、`f19-direct-print-screen-v2-20260929.txt`、`f19-screen-verdict-20260929.txt`、
+判据文件 `frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js`（`??`，恢复源 `D:/tmp/f16-snap`）。
+未执行 `add`/`commit`/`stash`，未动索引区（并发作者占用中）。

@@ -7,7 +7,10 @@ const { api } = vi.hoisted(() => ({
   api: {
     graphOverview: vi.fn(), graphStats: vi.fn(), graphCommunities: vi.fn(),
     graphNeighbors: vi.fn(), graphCollaborators: vi.fn(), graphPath: vi.fn(),
-    rebuildGraph: vi.fn(), optimalTeam: vi.fn()
+    rebuildGraph: vi.fn(), optimalTeam: vi.fn(),
+    createGraphNode: vi.fn(), updateGraphNode: vi.fn(), deleteGraphNode: vi.fn(),
+    createGraphEdge: vi.fn(), updateGraphEdge: vi.fn(), deleteGraphEdge: vi.fn(),
+    expandGraphNeighborhood: vi.fn()
   }
 }))
 vi.mock('../api/alliance.api.js', () => ({ allianceApi: api }))
@@ -199,5 +202,132 @@ describe('最优团队', () => {
     expect(await store.formTeam()).toBe(null)
     expect(store.error.team).toBe('无候选')
     expect(store.team.teamId).toBe('team-1')
+  })
+})
+
+// 真机探针（2026-09-27）：注册表里两个专家的名字在写入侧就丢成了 '???????'，
+// 它们会顺着候选下拉流进路径查询与团队组建的表单——下拉是使用者点选的地方，
+// 印一串问号等于让人拿它当真名去问专家。
+describe('候选下拉不吃编码丢失的名字', () => {
+  const LOST_EXPERT = { id: 'exp-af875a6f60d943e6964fcef4db0ab73f', label: '?????????', nodeType: 'expert' }
+  const LOST_DOMAIN = { id: 'domain-data-engineering', label: '???', nodeType: 'domain' }
+
+  /** 两条通道各钉一枚：撤掉专家候选的口径不能让能力域那条针替它红，反之也一样 */
+  async function storeWithLost(extraNodes) {
+    api.graphOverview.mockResolvedValue({ ...graphFixture(), nodes: [...graphFixture().nodes, ...extraNodes] })
+    const store = useAllianceGraphStore()
+    await store.loadGraph()
+    return store
+  }
+  const asMap = (list) => Object.fromEntries(list.map((o) => [o.value, o.label]))
+
+  it('丢码的专家在专家候选里改标 id 短码', async () => {
+    const store = await storeWithLost([LOST_EXPERT])
+    expect(asMap(store.expertOptions)).toEqual({
+      e1: '甲',
+      e2: '乙',
+      'exp-af875a6f60d943e6964fcef4db0ab73f': '未命名节点 af875a6f'
+    })
+  })
+
+  it('丢码的能力域在能力域候选里改标 id 短码', async () => {
+    const store = await storeWithLost([LOST_DOMAIN])
+    expect(asMap(store.domainOptions)).toEqual({
+      ai: 'ai',
+      'data-engineering': '未命名节点 data-eng'
+    })
+  })
+
+  it('两个候选列表里都不许出现问号串，也不许有空标签', async () => {
+    const store = await storeWithLost([LOST_EXPERT, LOST_DOMAIN])
+    const labels = [...store.expertOptions, ...store.domainOptions].map((o) => o.label)
+    expect(labels.some((l) => l.includes('?'))).toBe(false)
+    expect(labels.every((l) => l.length > 0)).toBe(true)
+  })
+})
+
+describe('U1 画布编辑（视觉覆盖不入库）', () => {
+  it('setNodePosition 只覆盖 layout 坐标，不改 graph 原始数据', async () => {
+    const store = useAllianceGraphStore()
+    await store.loadGraph()
+    const before = store.layout.nodes.find((n) => n.id === 'e1')
+    store.setNodePosition('e1', 123.4, 56.7)
+    const after = store.layout.nodes.find((n) => n.id === 'e1')
+    expect(after.x).toBe(123.4)
+    expect(after.y).toBe(56.7)
+    // 原布局坐标仍在 positions 里被覆盖，graph.value 本身没动
+    expect(store.graph.nodes.find((n) => n.id === 'e1').x).toBeUndefined()
+    expect(before.x).not.toBe(123.4)
+  })
+
+  it('重取图后手动拖拽位置被丢弃，不贴到新节点集合上', async () => {
+    const store = useAllianceGraphStore()
+    await store.loadGraph()
+    store.setNodePosition('e1', 10, 10)
+    expect(store.dragPositions).toEqual({ e1: { x: 10, y: 10 } })
+    api.graphOverview.mockResolvedValue(graphFixture())
+    await store.loadGraph()
+    expect(store.dragPositions).toEqual({})
+  })
+
+  it('编辑模式点节点：先当连线起点，再点别的节点产出 pendingEdge', async () => {
+    const store = useAllianceGraphStore()
+    expect(store.canvasClickNode('e1')).toBe('select') // 未开编辑模式一律选中
+    store.setEditMode(true)
+    expect(store.canvasClickNode('e1')).toBe('link-source')
+    expect(store.linkSourceId).toBe('e1')
+    expect(store.canvasClickNode('e1')).toBe('select') // 再点自己=取消
+    expect(store.linkSourceId).toBe('')
+    store.canvasClickNode('e1')
+    expect(store.canvasClickNode('e2')).toBe('pending-edge')
+    expect(store.pendingEdge).toEqual({ source: 'e1', target: 'e2' })
+    store.cancelLink()
+    expect(store.pendingEdge.source).toBe('')
+  })
+
+  it('mergeRagResults 幂等并入：新节点+首跳边追加，已有跳过', async () => {
+    const store = useAllianceGraphStore()
+    await store.loadGraph()
+    const rows = [
+      // e1 已存在 → 跳过节点；首跳到新节点 exp-new → 追加
+      { id: 'e1', label: '甲', nodeType: 'expert', firstHops: [{ from: 'e1', to: 'exp-new', edgeType: 'collaborates_with', weight: 0.3 }] },
+      // 全新节点
+      { id: 'exp-new', label: '新专家', nodeType: 'expert', firstHops: [{ from: 'e1', to: 'exp-new', edgeType: 'collaborates_with', weight: 0.3 }] }
+    ]
+    const r1 = store.mergeRagResults(rows)
+    expect(r1.addedNodes).toBe(1)
+    expect(r1.addedEdges).toBe(1)
+    expect(store.layout.nodes.map((n) => n.id)).toContain('exp-new')
+    // 再来一遍：幂等，不重复
+    const r2 = store.mergeRagResults(rows)
+    expect(r2.addedNodes).toBe(0)
+    expect(r2.addedEdges).toBe(0)
+  })
+
+  it('expandSelectedNeighborhood 以选中节点为 seed 调 RAG 并就地并入', async () => {
+    const store = useAllianceGraphStore()
+    await store.loadGraph()
+    await store.selectNode('e1')
+    api.expandGraphNeighborhood.mockResolvedValue({
+      query: {}, results: [{ id: 'exp-x', label: 'X', nodeType: 'expert', depth: 1, firstHops: [{ from: 'e1', to: 'exp-x', edgeType: 'collaborates_with', weight: 0.2 }] }],
+      stats: {}, rerank: 'graph_only'
+    })
+    const r = await store.expandSelectedNeighborhood()
+    expect(api.expandGraphNeighborhood).toHaveBeenCalled()
+    expect(store.ragDraft.seeds).toEqual(['e1'])
+    expect(r.addedNodes).toBe(1)
+    expect(store.layout.nodes.map((n) => n.id)).toContain('exp-x')
+  })
+
+  it('CRUD 写成功后重取图保持画布一致', async () => {
+    const store = useAllianceGraphStore()
+    await store.loadGraph()
+    api.createGraphNode.mockResolvedValue({ id: 'new' })
+    const calls = api.graphOverview.mock.calls.length
+    await store.createGraphNode({ id: 'new', label: '新', node_type: 'expert' })
+    expect(api.graphOverview.mock.calls.length).toBe(calls + 1)
+    api.deleteGraphNode.mockResolvedValue({ removed_edges: 1 })
+    await store.deleteGraphNode('e1')
+    expect(api.graphOverview.mock.calls.length).toBe(calls + 2)
   })
 })

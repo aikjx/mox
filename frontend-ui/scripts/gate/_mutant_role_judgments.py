@@ -8,6 +8,10 @@ import re
 import subprocess
 import sys
 
+if hasattr(sys.stdout, 'reconfigure'):
+    # Windows 控制台默认 GBK：变异体的判点名是中文，未重配置时打印即崩（这台机器实测）
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 GATE_DIR = r'D:\a10\aikjx\gitcode\infotopograph\frontend-ui\scripts\gate'
 SRC = os.path.join(GATE_DIR, 'check-view-hex.py')
 ORIG = open(SRC, encoding='utf-8').read()

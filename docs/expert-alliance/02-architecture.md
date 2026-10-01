@@ -9,6 +9,8 @@ source_of_truth: 代码事实（platform/domains/alliance/ + gateway/src/allianc
 
 # 专家联盟系统总体架构
 
+> 状态：V1.0 目标态，部分结论已被 CURRENT-ARCHITECTURE.md V1.1 取代（见文中 ⚠️ 补记）。
+
 ## 1. 架构总览
 
 ### 1.1 设计原则
@@ -58,6 +60,8 @@ source_of_truth: 代码事实（platform/domains/alliance/ + gateway/src/allianc
 │    mox-alliance-http-sdk（HTTP 客户端 SDK）                     │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+> ⚠️ **V1.1 核对补记（2026-09-29）**：本文此处所述的 `/ws/v1/*` WebSocket 推送在实现中不存在（全 crate `WebSocketUpgrade` 零命中）；实时性由 SSE `GET /api/alliance/tasks/:id/logs/stream` 承担。以 CURRENT-ARCHITECTURE.md V1.1 为准。
 
 ### 1.3 物理代码分布
 
@@ -115,6 +119,8 @@ executor-svc:3200（DAG执行/节点调度）
     ↓
 底层微服务（AI/图谱/搜索/存储等）
 ```
+
+> ⚠️ **V1.1 核对补记（2026-09-29）**：本文此处所述的 `/ws/v1/*` WebSocket 推送在实现中不存在（全 crate `WebSocketUpgrade` 零命中）；实时性由 SSE `GET /api/alliance/tasks/:id/logs/stream` 承担。以 CURRENT-ARCHITECTURE.md V1.1 为准。
 
 **关键说明：**
 - 当前服务间通信为 **HTTP 短调用**，非 gRPC 长连接

@@ -14,6 +14,7 @@
  * - ai.store: 通用 AI 对话，单助手/多助手聊天
  * - alliance.store: 仅承载联盟分析的历史与结果快照
  */
+import { formatClockMinute } from '@/utils'
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { PHASE_META as CONTRACT_PHASE_META } from '@/modules/expert-alliance/contract'
@@ -221,7 +222,7 @@ export const useAllianceStore = defineStore('alliance', () => {
       role: 'user',
       name: '我',
       content: currentQuery.value,
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      time: formatClockMinute(),
     })
 
     // 运行面已停用（2026-09-27 归一化）：本 store 原先假设的联盟整流程流式端点在 Rust 侧
@@ -251,7 +252,7 @@ export const useAllianceStore = defineStore('alliance', () => {
         icon: '✅',
         color: '#10b981',
         content: `分析完成，耗时 ${(durationMs.value / 1000).toFixed(1)}秒`,
-        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        time: formatClockMinute(),
       })
       saveToHistory()
     } else if (state === 'error' && err) {
@@ -262,7 +263,7 @@ export const useAllianceStore = defineStore('alliance', () => {
         icon: '❌',
         color: '#ef4444',
         content: `分析失败：${err.message}`,
-        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        time: formatClockMinute(),
       })
     }
   }

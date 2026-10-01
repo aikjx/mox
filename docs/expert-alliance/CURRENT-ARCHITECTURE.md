@@ -195,7 +195,7 @@ platform/domains/alliance/
          → Top N 专家输出
 ```
 
-> ⚠️ **V1.1 核对补记**：第五步原写「健康状态过滤」，实为**加权项**：matcher.rs:166 `is_healthy ? 1.0 : 0.3` 折成 health_score，再按 :122 以 **0.15 权重**进入总分。也就是说不健康的专家仍会被选中，只是排名靠后——写成"过滤"会让人以为不健康者已被排除，这与熔断器无写侧（circuit_breakers 恒 `[]`）合起来看尤其容易误判。
+> **2026-10-01 匹配路径复核**：此前把备用matcher参数误用于主路径。主ModularWeightMatcher的健康分为1.0/0.2，默认健康权重0.05，可被每专家配置覆盖；备用matcher为1.0/0.3、权重0.15。健康不是独立硬过滤，但主路径会过滤租户、非Active、低优先级、领域不匹配和总分低于0.2的候选；健康改变也可能使总分跌过门槛。详见下方增量核对。
 
 ---
 
@@ -245,7 +245,7 @@ platform/domains/alliance/
 | `/tasks/:task_id` | GET + POST | 任务详情 / 任务动作（pause·resume·cancel·retry 走 `handle_task_action`） |
 | `/experts/search` | POST | 专家搜索 |
 
-以上即 `scheduler-svc/src/routes.rs:23-32` 注册的全部 6 条路径、9 个动词面。
+以上即 `scheduler-svc/src/routes.rs:23-32` 注册的全部 6 条路径、8 个动词面。
 
 > ⚠️ **V1.1 核对补记**：本节原表把 `/tasks/:task_id/nodes` 与 `/tasks/:task_id/result` 列为调度器端点，**这两条已在 2026-09 的边界归一化中删除**（routes.rs:28-31 的注释写明理由：调度器只管排队/计划/匹配/执行器桥接，执行状态·节点·融合结果的读路径由网关 :3080 直连执行器 :3200，此前的 HTTP 读代理既与网关重复、又含逐请求 `.expect()` 恐慌点）；同时漏记了实际存在的 `/metrics`、`/leadership` 两条路径和 `/tasks/:task_id` 的 POST 动词。这一处对前端的直接影响：**要拿节点级与融合结果，唯一入口是网关的 `/api/alliance/tasks/:id/...` 一族**，按本表旧值去调调度器 :3100 只会得到 404。
 
@@ -324,4 +324,18 @@ exp-architecture-001 架构师·玄枢 ｜ exp-ai-001 AI算法·灵玑 ｜ exp-d
 
 ---
 
-*相关文档：[v3 架构优化设计](v3/README.md)（演进路线） | [专家注册表协议](expert-registry-and-protocol.md) | [知识图谱Schema](knowledge-graph-schema.md) | [接口传输加密一键开关](../api/API-CRYPTO-TRANSPORT.md)*
+*现行关联：[统一索引](docs/expert-alliance/INDEX.md#一文档总表) | [架构与流程图谱](docs/expert-alliance/17-docs-architecture-and-flow-atlas.md#scope) | [模块化目标设计](docs/expert-alliance/18-modular-product-design.md#modules) | [近期状态总账](docs/expert-alliance/16-decision-and-state-ledger.md#一总账总表核心交付) | [接口传输加密](../api/API-CRYPTO-TRANSPORT.md)*
+
+<a id="matching-20261001"></a>
+## 十、2026-10-01 匹配语义增量复核
+
+此节只更新匹配路径事实，其他章节保持其原核验日期，不声称全域重核。来源：`platform/domains/alliance/core/mox-alliance-scheduler-core/src/modular_matcher.rs`、同目录 `matcher.rs`、`platform/domains/alliance/proto/mox-alliance-common-proto/src/types.rs`。
+
+| 项 | 主 ModularWeightMatcher | 备用 matcher |
+|---|---|---|
+| 健康分 | 健康1.0；不健康0.2（:170–171） | 健康1.0；不健康0.3（:166） |
+| 健康权重 | 读取实际专家权重/default_weights（:197–207/265–268）；默认0.05（types.rs:1217） | 固定0.15（matcher.rs:122） |
+| 硬过滤 | 租户及system特例、Active状态、最小优先级、所需领域（:228–250）；总分低于0.2（:279–282） | 必须按备用代码另核，不能外推主路径 |
+| 状态语义 | ExpertStatus::Active 为调度模型字段 | 与网关availability四值登记字段不同 |
+
+§1.2 旧核对补记中的0.3/0.15来自备用matcher，保留其历史证据，不能作为主路径参数。权重可配置，主路径默认值也不是所有环境固定值。已同步08矩阵、13流程与15-U2验收；不改运行时算法或配置。

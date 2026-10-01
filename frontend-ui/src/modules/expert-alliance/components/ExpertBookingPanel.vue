@@ -59,6 +59,7 @@
 </template>
 
 <script setup>
+import { formatDateTimeLocale } from '@/utils'
 import { computed, ref } from 'vue'
 import { CircleClose, VideoPlay } from '@element-plus/icons-vue'
 import { BOOKING_STATUS, bookingStatusLabel, canCancelBooking } from '@/modules/expert-alliance/contract'
@@ -106,7 +107,7 @@ function statusTone(status) {
 function formatTime(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('zh-CN', { hour12: false })
+  return Number.isNaN(d.getTime()) ? iso : (formatDateTimeLocale(d) ?? iso)
 }
 </script>
 

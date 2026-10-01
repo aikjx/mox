@@ -36,6 +36,7 @@
 </template>
 
 <script setup>
+import { formatClockMinute, formatClockSecond, formatDateStamp } from '@/utils'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { SessionSidebar } from '@/components'
@@ -66,7 +67,7 @@ async function loadSessions() {
       sessions.value = list.map((s) => ({
         id: s.id,
         title: s.title || '未命名会话',
-        time: s.created_at ? new Date(s.created_at).toLocaleDateString('zh-CN') : '',
+        time: s.created_at ? formatDateStamp(s.created_at) : '',
       }))
       activeSession.value = sessions.value[0].id
       return
@@ -80,7 +81,7 @@ async function loadSessions() {
 }
 
 async function newSession() {
-  const title = '新会话 ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  const title = '新会话 ' + formatClockMinute()
   let id = genId()
   try {
     const created = await createExpertSession({ title, type: 'workbench' })
@@ -94,7 +95,7 @@ async function newSession() {
   sessions.value.unshift({
     id,
     title,
-    time: new Date().toLocaleDateString('zh-CN'),
+    time: formatDateStamp(),
   })
   activeSession.value = id
 }
@@ -154,7 +155,7 @@ async function checkStatus() {
 }
 
 function tick() {
-  clock.value = new Date().toLocaleTimeString('zh-CN')
+  clock.value = formatClockSecond()
 }
 
 onMounted(async () => {

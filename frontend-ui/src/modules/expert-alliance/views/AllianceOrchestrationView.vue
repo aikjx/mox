@@ -72,7 +72,7 @@
               <span class="aov-step-meta">
                 专家 {{ s.expertId ? (expertNames[s.expertId] || s.expertId) : '未指派' }}
                 · 依赖 {{ s.dependsOn.length ? s.dependsOn.join(', ') : '（首步）' }}
-                · {{ s.status }}
+                · {{ orchStatusLabel(s.status) }}
               </span>
             </li>
           </ol>
@@ -95,7 +95,7 @@
         <div><span>duration_ms</span><code>{{ store.orchestration.execution.durationMs }}</code><el-tag size="small" type="success" effect="plain">{{ tierLabel('orchestrate.execution.duration_ms') }}</el-tag></div>
       </div>
       <div class="aov-chips">
-        <el-tag v-for="e in store.orchestration.experts" :key="e.id" size="small" effect="plain">{{ e.name || e.id }}（{{ e.title || '无职称' }}）</el-tag>
+        <el-tag v-for="e in store.orchestration.experts" :key="e.id" size="small" effect="plain">{{ expertNameOr(e, e.id) }}（{{ e.title || '无职称' }}）</el-tag>
         <span v-if="!store.orchestration.experts.length" class="aov-empty">本次没有匹配到专家</span>
       </div>
       <div v-if="store.orchestration.result" class="aov-fusion">
@@ -123,14 +123,14 @@
     <section v-if="store.execution" class="aov-card">
       <h2 class="aov-h">
         计划执行 · {{ store.execution.executionId }}
-        <el-tag size="small" :type="store.outcome.failed ? 'danger' : 'success'" effect="dark">{{ store.outcome.status || '—' }}</el-tag>
+        <el-tag size="small" :type="store.outcome.failed ? 'danger' : 'success'" effect="dark">{{ orchStatusLabel(store.outcome.status) || '—' }}</el-tag>
       </h2>
       <el-alert v-if="store.outcome.failed" type="error" :closable="false" show-icon :title="store.outcome.error || '拓扑排序失败'" :description="store.outcome.note" />
       <el-alert v-else type="info" :closable="false" :title="store.outcome.note" />
       <ol class="aov-steps">
         <li v-for="s in store.execution.stepsExecuted" :key="s.stepId" class="aov-step">
           <span class="aov-step-name">{{ s.name }}</span>
-          <el-tag size="small" type="danger" effect="plain">{{ s.status }}（{{ tierLabel('execute.steps_executed[].status') }}）</el-tag>
+          <el-tag size="small" type="danger" effect="plain">{{ orchStatusLabel(s.status) }}（{{ tierLabel('execute.steps_executed[].status') }}）</el-tag>
           <span class="aov-step-meta">
             耗时 {{ s.durationMs }}ms（{{ tierLabel('execute.steps_executed[].duration_ms') }}）
             · 置信度 {{ s.result?.confidence ?? '—' }}（{{ tierLabel('execute.steps_executed[].result.confidence') }}）
@@ -179,7 +179,8 @@
         <h2 class="aov-h">执行历史（仅本次进程）</h2>
         <div class="aov-btns">
           <el-select v-model="store.filters.status" clearable placeholder="status 过滤" size="small" @change="store.setHistoryFilter('status', $event)">
-            <el-option v-for="s in ['completed', 'partial', 'failed']" :key="s" :label="s" :value="s" />
+            <!-- §5.54 F25：档名交 ORCH_STATUS，文案交 orchStatusLabel（原来是内联三档字面量表＋把 wire 串直接当标签印出） -->
+            <el-option v-for="s in [ORCH_STATUS.COMPLETED, ORCH_STATUS.PARTIAL, ORCH_STATUS.FAILED]" :key="s" :label="orchStatusLabel(s)" :value="s" />
           </el-select>
           <el-input v-model="store.filters.taskType" clearable placeholder="task_type 过滤" size="small" @change="store.setHistoryFilter('taskType', $event)" />
         </div>
@@ -259,6 +260,7 @@ import { computed, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { FUSION_STRATEGY } from '@/modules/expert-alliance/contract'
 import { ORCH_PROVENANCE } from '@/modules/expert-alliance/contract'
+import { expertNameOr, orchStatusLabel, ORCH_STATUS } from '@/modules/expert-alliance/contract'
 import { useAllianceOrchStore } from '@/modules/expert-alliance/store'
 import { useAllianceExpertsStore } from '@/modules/expert-alliance/store'
 
@@ -266,12 +268,10 @@ const store = useAllianceOrchStore()
 const expertStore = useAllianceExpertsStore()
 
 const fusionOptions = computed(() => Object.values(FUSION_STRATEGY))
-const expertOptions = computed(() => expertStore.experts.map((e) => ({ value: e.id, label: e.name || e.id })))
-const expertNames = computed(() => {
-  const map = {}
-  for (const e of expertStore.experts) map[e.id] = e.name || e.id
-  return map
-})
+// 候选与 id→名字映射都指回 store 那一份，视图不再自己 map 注册表 name：
+// 注册表里有两行的 name 在写入侧就丢成了 '???????'（见 contract/graph.js）。
+const expertOptions = computed(() => expertStore.expertOptions)
+const expertNames = computed(() => expertStore.expertNames)
 
 const tierLabel = (path) => store.provenance(path)?.label || '真实计算'
 const tierOf = (path) => {

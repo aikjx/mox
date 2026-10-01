@@ -37,7 +37,7 @@
           v-for="task in filteredTasks"
           :key="task.id"
           class="task-item"
-          :class="{ active: selectedTask?.id === task.id, done: task.status === 'completed' }"
+          :class="{ active: selectedTask?.id === task.id, done: task.status === TASK_STATUS.COMPLETED }"
           @click="selectTask(task)"
           role="button" tabindex="0" :aria-label="task.name"
           @keydown.enter="selectTask(task)" @keydown.space.prevent="selectTask(task)"
@@ -45,10 +45,10 @@
           <!-- Execution status is read-only; completion comes from the executor. -->
           <div
             class="task-checkbox"
-            :class="{ done: task.status === 'completed' }"
-            :title="statusLabel(task.status)"
+            :class="{ done: task.status === TASK_STATUS.COMPLETED }"
+            :title="taskStatusLabel(task.status)"
           >
-            <span v-if="task.status === 'completed'" class="check-icon">✓</span>
+            <span v-if="task.status === TASK_STATUS.COMPLETED" class="check-icon">✓</span>
           </div>
 
           <div class="task-info">
@@ -81,7 +81,7 @@
           </div>
 
           <div class="task-status-badge" :class="task.status">
-            {{ statusLabel(task.status) }}
+            {{ taskStatusLabel(task.status) }}
           </div>
         </div>
       </div>
@@ -101,7 +101,7 @@
         </div>
         <div class="detail-actions">
           <el-button size="small" @click="runTask" :loading="actionPending" :disabled="!canResume">
-            <el-icon><VideoPlay /></el-icon> {{ selectedTask.status === 'paused' ? '继续执行' : '启动任务' }}
+            <el-icon><VideoPlay /></el-icon> {{ selectedTask.status === TASK_STATUS.PAUSED ? '继续执行' : '启动任务' }}
           </el-button>
           <el-button size="small" @click="pauseTask" :disabled="actionPending || !canPause">
             <el-icon><VideoPause /></el-icon> 暂停
@@ -133,10 +133,7 @@
         <div class="section-header">
           <h4 class="section-title"><el-icon><Share /></el-icon> 执行流程</h4>
           <div class="dag-legend">
-            <span class="legend-item"><span class="legend-dot pending"></span>待处理</span>
-            <span class="legend-item"><span class="legend-dot running"></span>运行中</span>
-            <span class="legend-item"><span class="legend-dot completed"></span>已完成</span>
-            <span class="legend-item"><span class="legend-dot failed"></span>失败</span>
+            <span v-for="s in DAG_LEGEND" :key="s" class="legend-item"><span class="legend-dot" :class="s"></span>{{ nodeStatusLabel(s) }}</span>
           </div>
         </div>
         <el-alert v-if="dagError" type="error" :closable="false" show-icon title="执行流程加载失败" style="margin-bottom:8px" />
@@ -166,7 +163,7 @@
                 rx="8"
               />
               <text class="dag-node-label" x="0" y="-2" text-anchor="middle">{{ node.name }}</text>
-              <text class="dag-node-sub" x="0" y="12" text-anchor="middle">{{ node.type }}</text>
+              <text class="dag-node-sub" x="0" y="12" text-anchor="middle">{{ nodeStatusLabel(node.status) }}</text>
             </g>
           </svg>
         </div>
@@ -221,7 +218,7 @@
         </div>
       </div>
       <el-alert v-else-if="fusionError" type="error" :closable="false" show-icon title="融合结果加载失败" style="margin-bottom:12px" />
-      <el-alert v-else-if="selectedTask.status === 'completed' && !fusionLoading" type="warning" :closable="false" show-icon title="结果暂不可用" description="执行器未返回结果，可能尚未生成或重启后未恢复。请刷新核对；完成状态本身不代表交付物可用。" style="margin-bottom:12px" />
+      <el-alert v-else-if="selectedTask.status === TASK_STATUS.COMPLETED && !fusionLoading" type="warning" :closable="false" show-icon title="结果暂不可用" description="执行器未返回结果，可能尚未生成或重启后未恢复。请刷新核对；完成状态本身不代表交付物可用。" style="margin-bottom:12px" />
 
       <!-- AI 助手 -->
       <div class="ai-assistant">
@@ -269,10 +266,7 @@
         </el-form-item>
         <el-form-item label="融合策略">
           <el-select v-model="newTask.fusion_strategy" style="width: 100%">
-            <el-option label="加权融合" value="weighted" />
-            <el-option label="投票融合" value="voting" />
-            <el-option label="辩论融合" value="debate" />
-            <el-option label="择优汇总" value="best_of" />
+            <el-option v-for="o in FUSION_CHOICES" :key="o" :label="fusionLabel(o)" :value="o" />
           </el-select>
         </el-form-item>
         <p class="form-hint">调度服务根据任务描述自动匹配专家。提交后可在执行流程中查看参与专家。</p>
@@ -289,8 +283,80 @@
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Plus, VideoPlay, VideoPause, Close, Share, Document, MagicStick, ChatDotRound, User, Calendar, Timer, Clock, Search } from '@element-plus/icons-vue'
-import * as api from '@/api'
+import { allianceApi } from '@/modules/expert-alliance/api'
+import { TASK_STATUS, NODE_STATUS, taskStatusLabel, nodeStatusLabel, fusionLabel } from '@/modules/expert-alliance/contract'
+import { aiChat } from '@/api'
 import { useAllianceTasks, taskActions } from '@/composables'
+
+// ── legacy 视图形状适配层 ──────────────────────────────────────────────
+// 调用入口统一到模块 allianceApi；以下把模块 normalize 后的 camelCase 输出转回本视图模板
+// 与 useAllianceTasks composable 消费的 snake_case 形状，视图/模板/composable 不改一行。
+// estimated_remaining_ms / expert_count 在模块契约里已 rejected（见 UNMOUNTED_ROUTES），
+// 视图对 undefined 兜底显示 '--'，属预期。
+function toLegacyTask(t) {
+  if (!t) return t
+  return {
+    ...t,
+    id: t.id,
+    task_id: t.id,
+    name: t.title,
+    title: t.title,
+    description: t.description,
+    status: t.status,
+    priority: t.priority,
+    progress: t.progress,
+    started_at: t.startedAt,
+    completed_at: t.completedAt,
+    duration_ms: t.durationMs
+  }
+}
+function toLegacyLog(l) {
+  return { ...l, level: String(l.level || 'info').toLowerCase(), time: l.ts || '' }
+}
+function toLegacyDag(d) {
+  const nodes = (d?.nodes || []).map((n, i) => ({
+    ...n,
+    id: n.id,
+    name: n.name || n.label,
+    x: n.position?.x ?? 100 + i * 160,
+    y: n.position?.y ?? 70
+  }))
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  const edges = (d?.edges || []).map((e) => {
+    const s = byId.get(e.source), t = byId.get(e.target)
+    return { ...e, x1: s?.x, y1: s?.y, x2: t?.x, y2: t?.y, status: t?.status }
+  })
+  return { nodes, edges }
+}
+function toLegacyFusion(f) {
+  if (!f) return null
+  return {
+    ...f,
+    summary: f.summary,
+    confidence: f.confidence,
+    key_findings: f.keyFindings,
+    expertResults: [],
+    emptyReport: false,
+    raw: f
+  }
+}
+
+const api = {
+  getAllianceTasks: () => allianceApi.listTasks().then((r) => r.items.map(toLegacyTask)),
+  getAllianceTaskLogs: (id) => allianceApi.getLogs(id).then((r) => r.items.map(toLegacyLog)),
+  getAllianceTaskDag: (id) => allianceApi.getDag(id).then(toLegacyDag),
+  getAllianceFusionResult: (id) => allianceApi.getFusion(id).then(toLegacyFusion).catch(() => null),
+  getAllianceTaskStatus: (id) => allianceApi.getTask(id).then(toLegacyTask),
+  resumeAllianceTask: (id) => allianceApi.controlTask(id, 'resume'),
+  pauseAllianceTask: (id) => allianceApi.controlTask(id, 'pause'),
+  cancelAllianceTask: (id) => allianceApi.controlTask(id, 'cancel'),
+  createAllianceTask: (payload) => allianceApi.createTask({
+    title: payload.title, description: payload.description, fusionStrategy: payload.fusion_strategy
+  }).then(toLegacyTask),
+  getAllianceRuntime: () => allianceApi.getRuntime().then((r) => ({ ...r, execution_ready: r.executionReady, message: r.message })),
+  // AI 域例外：任务诊断走通用 /ai/chat（非 alliance 契约面）
+  aiChat
+}
 
 const taskState = useAllianceTasks(api)
 const { tasks, selectedTask, tasksLoading, tasksError, logs, fusionResult, dagNodesData, dagEdgesData,
@@ -298,11 +364,13 @@ const { tasks, selectedTask, tasksLoading, tasksError, logs, fusionResult, dagNo
   selectTask, loadTasks, performAction, startPolling, dispose } = taskState
 const currentFilter = ref('all'), showCreate = ref(false), creating = ref(false), logsContainer = ref(null)
 const newTask = reactive({ name: '', description: '', fusion_strategy: 'weighted' })
-const statusFilters = [
-  { key: 'all', label: '全部' }, { key: 'pending', label: '待处理' },
-  { key: 'running', label: '运行中' }, { key: 'paused', label: '已暂停' },
-  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '已取消' },
-]
+// 任务状态档与文案一律取契约 TASK_STATUS（alliance.rs:326-334 归一线名）：旧表自列六档，planning（规划中）的任务在界面筛不到（§5.39）
+const statusFilters = [{ key: 'all', label: '全部' }, ...Object.values(TASK_STATUS).map((key) => ({ key, label: taskStatusLabel(key) }))]
+// 图例与策略子集：档名交给契约（nodeStatusLabel/fusionLabel），这里只留"这一屏画哪几档"
+// §5.54 F25：图例是节点档的子集，档名交 NODE_STATUS（原来手打四个字符串＝契约值域第二本源）；
+// 成员与顺序一字未动，:136 的 `:class="s"` 与 nodeStatusLabel(s) 仍拿到同一批 wire 串。
+const DAG_LEGEND = [NODE_STATUS.PENDING, NODE_STATUS.RUNNING, NODE_STATUS.COMPLETED, NODE_STATUS.FAILED]
+const FUSION_CHOICES = ['weighted', 'voting', 'debate', 'best_of']
 const filteredTasks = computed(() => currentFilter.value === 'all' ? tasks.value : tasks.value.filter(t => t.status === currentFilter.value))
 const dagNodes = computed(() => dagNodesData.value || [])
 const dagEdges = computed(() => dagEdgesData.value || [])
@@ -312,7 +380,7 @@ const canResume = computed(() => runtimeReady.value && taskActions.resume.has(se
 const canPause = computed(() => runtimeReady.value && taskActions.pause.has(selectedTask.value?.status))
 const canCancel = computed(() => runtimeReady.value && taskActions.cancel.has(selectedTask.value?.status))
 const getStatusCount = key => key === 'all' ? tasks.value.length : tasks.value.filter(t => t.status === key).length
-const statusLabel = status => ({ pending: '待处理', planning: '规划中', ready: '已就绪', running: '运行中', paused: '已暂停', completed: '已完成', failed: '失败', cancelled: '已取消', unknown: '状态待确认' }[status] || status)
+// 旧 statusLabel 是第四本任务状态字典（还带 ready/unknown 两个 wire 上不会出现的键），已交回契约 taskStatusLabel（§5.39）
 const getPriority = task => task.priority || 'normal'
 const getPriorityLabel = p => ({ critical: '紧急', high: '高优', normal: '中优', mid: '中优', low: '低优' }[p] || '中优')
 const getAssignee = task => task.assignee || '自动匹配专家'
@@ -351,16 +419,13 @@ async function sendAiMessage() {
   aiMessages.value.push({ role: 'user', content: message })
   aiInput.value = ''; aiLoading.value = true
   try {
-    let content = ''
-    if (task) {
-      // 任务问答：基于任务真实状态/日志/融合结果的后端诊断
-      const resp = await api.askAllianceTaskQa(task.id, message)
-      content = resp?.content || resp?.message || ''
-    } else {
-      const context = `当前未选择任务。`
-      const response = await api.aiChat({ message: `请根据以下任务状态和日志分析，缺少信息时明确说明。${context}\n用户问题：${message}` })
-      content = response?.data?.content || response?.content || response?.data?.message || response?.message || (typeof response === 'string' ? response : '')
-    }
+    // 后端 registry 无 POST /alliance/tasks/:id/qa（原 askAllianceTaskQa 已随假端点撤除），
+    // 任务诊断一律走通用 aiChat；选中任务时把任务名/状态拼进上下文。
+    const context = task
+      ? `当前任务：${task.name || task.id}（状态 ${task.status || '未知'}）。`
+      : `当前未选择任务。`
+    const response = await api.aiChat({ message: `请根据以下任务状态和日志分析，缺少信息时明确说明。${context}\n用户问题：${message}` })
+    const content = response?.data?.content || response?.content || response?.data?.message || response?.message || (typeof response === 'string' ? response : '')
     if (!content) throw new Error('AI 服务没有返回有效内容')
     aiMessages.value.push({ role: 'assistant', content })
   } catch (error) { aiMessages.value.push({ role: 'assistant', content: `暂时无法分析：${error.message}。可以重试，任务执行不受影响。` }) }

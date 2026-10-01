@@ -17,7 +17,7 @@
       <p class="agm-dim">degree_centrality = 度数 / (节点数 − 1)；betweenness 为 Brandes 介数（无向图已除以 2）</p>
       <ul v-if="centrality.length" class="agm-rank">
         <li v-for="row in centrality" :key="row.id" class="agm-rank-item">
-          <button class="agm-jump" type="button" @click="store.selectNode(row.id)">{{ row.name || row.id }}</button>
+          <button class="agm-jump" type="button" @click="store.selectNode(row.id)">{{ graphNodeLabel({ id: row.id, label: row.name }) }}</button>
           <span>度 {{ row.degree }}</span>
           <span>中心性 {{ row.degreeCentrality.toFixed(3) }}</span>
           <span>介数 {{ row.betweenness.toFixed(1) }}</span>
@@ -46,7 +46,7 @@
               <span class="agm-community-id">{{ c.communityId }}</span>
               <span class="agm-dim">{{ c.size }} 名 · 内边 {{ c.internalEdges }} · 外边 {{ c.externalEdges }}</span>
             </header>
-            <p class="agm-community-members">{{ c.memberLabels.join('、') || '（成员标签均为空）' }}</p>
+            <p class="agm-community-members">{{ communityMemberText(c) }}</p>
           </li>
         </ul>
       </template>
@@ -82,6 +82,7 @@
 <script setup>
 // 指标面板：统计 + 社区 + 路径查询。三份接口各自独立加载，任一失败不影响其余呈现。
 import { computed, ref } from 'vue'
+import { graphNodeLabel, isLostGraphLabel } from '@/modules/expert-alliance/contract'
 import { pathChainText } from '@/modules/expert-alliance/model'
 
 const props = defineProps({ store: { type: Object, required: true } })
@@ -98,6 +99,18 @@ const pathTarget = ref(store.pathDraft.target)
 const canQueryPath = computed(() => !!(pathSource.value && pathTarget.value))
 
 const pct = (v) => `${(Number(v || 0) * 100).toFixed(1)}%`
+
+/**
+ * 社区成员只有 label、没有 id（wire 的 member_labels 就是字符串数组），
+ * 所以丢码成员无法逐个指认，只能合并成"未命名节点 ×N"——宁可不指认也不把一串问号印出来。
+ */
+function communityMemberText(c) {
+  const labels = Array.isArray(c?.memberLabels) ? c.memberLabels : []
+  const named = labels.filter((l) => !isLostGraphLabel(l))
+  const lost = labels.length - named.length
+  if (lost) named.push(`未命名节点 ×${lost}`)
+  return named.join('、') || '（无成员）'
+}
 const cells = computed(() => {
   const m = metrics.value
   if (!m) return []

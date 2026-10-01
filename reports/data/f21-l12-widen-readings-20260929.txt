@@ -1,0 +1,189 @@
+# F21 L12 覆盖面扩裁 原始读数（2026-09-29，现场量，勿手抄）
+
+## [1] 改动前后：五个文件的字节/行数/哈希 + 逐行差异
+- src/views/expert/AllianceTaskView.vue
+    改前 34686 B / 998 行 / md5 03886def32e0db21b2011d84c03bb3f6
+    改后 34736 B / 998 行 / md5 a3108e09658e8e1dd523efc922b1c678 / CRLF=0 / 游离CR=0
+    差异 +5/-5 行
+    | @@ -40 +40 @@
+    | -          :class="{ active: selectedTask?.id === task.id, done: task.status === 'completed' }"
+    | +          :class="{ active: selectedTask?.id === task.id, done: task.status === TASK_STATUS.COMPLETED }"
+    | @@ -48 +48 @@
+    | -            :class="{ done: task.status === 'completed' }"
+    | +            :class="{ done: task.status === TASK_STATUS.COMPLETED }"
+    | @@ -51 +51 @@
+    | -            <span v-if="task.status === 'completed'" class="check-icon">✓</span>
+    | +            <span v-if="task.status === TASK_STATUS.COMPLETED" class="check-icon">✓</span>
+    | @@ -104 +104 @@
+    | -            <el-icon><VideoPlay /></el-icon> {{ selectedTask.status === 'paused' ? '继续执行' : '启动任务' }}
+    | +            <el-icon><VideoPlay /></el-icon> {{ selectedTask.status === TASK_STATUS.PAUSED ? '继续执行' : '启动任务' }}
+    | @@ -221 +221 @@
+    | -      <el-alert v-else-if="selectedTask.status === 'completed' && !fusionLoading" type="warning" :closable="false" show-icon title="结果暂不可用" description="执行器未返回结果，可能尚未生成或重启后未恢复。请刷新核对；完成状态本身不代表交付物可用。" style="margin-bottom:12px" />
+    | +      <el-alert v-else-if="selectedTask.status === TASK_STATUS.COMPLETED && !fusionLoading" type="warning" :closable="false" show-icon title="结果暂不可用" description="执行器未返回结果，可能尚未生成或重启后未恢复。请刷新核对；完成状态本身不代表交付物可用。" style="margin-bottom:12px" />
+- src/views/expert/ExpertPlazaView.vue
+    改前 54453 B / 1942 行 / md5 b4b2704e1ec830596bffd15511425aa0
+    改后 54508 B / 1942 行 / md5 9581e23fcbb9cc3a1fc8de971e105493 / CRLF=0 / 游离CR=0
+    差异 +3/-3 行
+    | @@ -188 +188 @@
+    | -              v-if="booking.status === 'pending'"
+    | +              v-if="booking.status === BOOKING_STATUS.PENDING"
+    | @@ -203 +203 @@
+    | -              v-if="booking.status === 'completed' || booking.status === 'cancelled'"
+    | +              v-if="booking.status === BOOKING_STATUS.COMPLETED || booking.status === BOOKING_STATUS.CANCELLED"
+    | @@ -605 +605 @@
+    | -import { bookingStatusLabel } from '@/modules/expert-alliance/contract'
+    | +import { bookingStatusLabel, BOOKING_STATUS } from '@/modules/expert-alliance/contract'
+- src/views/expert/panels/ExpertEnterprisePanel.vue
+    改前 60720 B / 1307 行 / md5 4128487eb2b108ec726653bd34a4e3ac
+    改后 60876 B / 1307 行 / md5 b6c7e5ad4db76bae30f63b1aae712e00 / CRLF=0 / 游离CR=0
+    差异 +8/-8 行
+    | @@ -500 +500 @@
+    | -import { sessionStatusLabel, sessionTypeLabel, SESSION_STATUSES, SESSION_TYPES } from '@/modules/expert-alliance/contract'
+    | +import { sessionStatusLabel, sessionTypeLabel, SESSION_STATUSES, SESSION_TYPES, SESSION_STATUS, MESSAGE_ROLE, BREAKER_STATE } from '@/modules/expert-alliance/contract'
+    | @@ -597 +597 @@
+    | -    value: sessions.value.filter(s => s.status === 'active').length,
+    | +    value: sessions.value.filter(s => s.status === SESSION_STATUS.ACTIVE).length,
+    | @@ -615 +615 @@
+    | -    value: (dispatcherStatus.value?.circuit_breakers || dispatcherStatus.value?.circuit_breaker?.states || []).filter(s => s.status === 'open').length || 0,
+    | +    value: (dispatcherStatus.value?.circuit_breakers || dispatcherStatus.value?.circuit_breaker?.states || []).filter(s => s.status === BREAKER_STATE.OPEN).length || 0,
+    | @@ -691 +691 @@
+    | -    const activeSessions = sessList.filter((s) => (s.status || 'active') !== 'archived').length
+    | +    const activeSessions = sessList.filter((s) => (s.status || SESSION_STATUS.ACTIVE) !== SESSION_STATUS.ARCHIVED).length
+    | @@ -715 +715 @@
+    | -    const openCbs = cbStates.filter((c) => c.status === 'open' || c.status === 'half_open')
+    | +    const openCbs = cbStates.filter((c) => c.status === BREAKER_STATE.OPEN || c.status === 'half_open')
+    | @@ -832 +832 @@
+    | -  const lastMsg = session.messages?.filter(m => m.role === 'user').pop()
+    | +  const lastMsg = session.messages?.filter(m => m.role === MESSAGE_ROLE.USER).pop()
+    | @@ -837 +837 @@
+    | -  return status === 'active' ? 'success' : 'info'
+    | +  return status === SESSION_STATUS.ACTIVE ? 'success' : 'info'
+    | @@ -844 +844 @@
+    | -  return status === 'closed' ? '正常' : status === 'open' ? '熔断中' : '半开'
+    | +  return status === BREAKER_STATE.CLOSED ? '正常' : status === BREAKER_STATE.OPEN ? '熔断中' : '半开'
+- src/views/expert/panels/ExpertOrchestratorPanel.vue
+    改前 23875 B / 753 行 / md5 4001849e9a44fa1cfba2eb02e3e29252
+    改后 23960 B / 754 行 / md5 b5350c46b2913838dffbb918f1196518 / CRLF=0 / 游离CR=0
+    差异 +3/-2 行
+    | @@ -261,0 +262 @@
+    | +import { ORCH_STATUS } from '@/modules/expert-alliance/contract'
+    | @@ -373 +374 @@
+    | -        status: x.status === 'completed' ? 'success' : (x.status || 'failed'),
+    | +        status: x.status === ORCH_STATUS.COMPLETED ? 'success' : (x.status || 'failed'),
+    | @@ -402 +403 @@
+    | -    status: execStatus === 'completed' ? 'success' : (execStatus || 'failed'),
+    | +    status: execStatus === ORCH_STATUS.COMPLETED ? 'success' : (execStatus || 'failed'),
+- src/modules/expert-alliance/contract/vocabulary-ownership.test.js
+    改前 28656 B / 417 行 / md5 c55223ab5adcb71c9f5a4376dd162378
+    改后 30936 B / 442 行 / md5 84137ac7dba4a735b217f474b66497ba / CRLF=0 / 游离CR=0
+    差异 +28/-3 行
+    | @@ -365 +365,4 @@
+    | -      .filter((rel) => rel.startsWith(MODULE_DIR + '/views/') || rel.startsWith(MODULE_DIR + '/components/'))
+    | +      .filter((rel) => rel.startsWith(MODULE_DIR + '/views/') || rel.startsWith(MODULE_DIR + '/components/')
+    | +        // §5.51 F21：模块外同族视图一直在集外＝覆盖面洞。反事实扩集现量：纳 views/expert/**（7 文件）命中 27 处，
+    | +        // 其中 18 处判为同域债并已并成契约常量（文案一字未动），余 9 处（4 个唯一键）逐条读原文登记在 EXEMPT。
+    | +        || rel.startsWith('views/expert/'))
+    | @@ -367 +370 @@
+    | -    expect(files.length, 'L12 扫描集塌缩（判集为空时台账恒真）实测=' + files.length).toBeGreaterThanOrEqual(21)
+    | +    expect(files.length, 'L12 扫描集塌缩（判集为空时台账恒真）实测=' + files.length).toBeGreaterThanOrEqual(28)
+    | @@ -375,0 +379,11 @@
+    | +    // 跨域同串／本地状态豁免表：n＝该键出现次数（多＝新债，少＝那行已改、条目该删）；why 必填——没理由的豁免不存在
+    | +    const EXEMPT = {
+    | +      'views/expert/AllianceTaskView.vue|user': { n: 1, why: '本地 AI 助手消息（aiMessages 只在 :412-429 写 user/assistant），与 wire 消息族同串不同域' },
+    | +      'views/expert/ExpertConfigView.vue|system': { n: 6, why: '专家来源 type（system＝系统内置 vs 自定义）与 testScene，非 MESSAGE_ROLES 的 system' },
+    | +      'views/expert/ExpertConfigView.vue|failed': { n: 1, why: 'llmConnectionStatus 是前端连接自检结果，非任务/节点状态机' },
+    | +      'views/expert/ExpertPlazaView.vue|online': { n: 1, why: '快切标签 id（activeQuickTab）与 EXPERT_AVAILABILITY 同串，标签域非 wire 域' }
+    | +    }
+    | +    const expected = [
+    | +      ...LEDGER,
+    | +      ...Object.entries(EXEMPT).flatMap(([k, v]) => Array.from({ length: v.n }, () => k))
+    | +    ].sort()
+    | @@ -378 +392,5 @@
+    | -      .toEqual(LEDGER.slice().sort())
+    | +      .toEqual(expected)
+    | +    for (const [k, v] of Object.entries(EXEMPT)) {
+    | +      expect(v.why, k + ' 的豁免必须带走掉理由（无理由的豁免＝把缺陷读成合法）').toBeTruthy()
+    | +    }
+    | +    expect(Object.keys(EXEMPT).length, '豁免表塌缩实测=' + Object.keys(EXEMPT).length).toBeGreaterThanOrEqual(4)
+    | @@ -380,0 +399,7 @@
+    | +    // §5.51：模块外八处站点已改比常量，任何一个取值被重新打字都必须红
+    | +    for (const k of ['views/expert/AllianceTaskView.vue|completed', 'views/expert/AllianceTaskView.vue|paused',
+    | +      'views/expert/panels/ExpertEnterprisePanel.vue|active', 'views/expert/panels/ExpertEnterprisePanel.vue|open',
+    | +      'views/expert/panels/ExpertEnterprisePanel.vue|user', 'views/expert/panels/ExpertOrchestratorPanel.vue|completed',
+    | +      'views/expert/ExpertPlazaView.vue|pending', 'views/expert/ExpertPlazaView.vue|cancelled']) {
+    | +      expect(countOf(hits.join('\n'), k), k + ' 已收口成契约常量，必须保持 0 命中').toBe(0)
+    | +    }
+
+    五文件差异行数合计（增行与删行都算）= 68
+
+## [2] 反事实扩集普查（驱动器 D:/tmp/f21-l12-widen.mjs，未落库＝没牙，勿接 CI）
+    node rc=0
+    |   TASK_STATUS          7 值: pending,planning,running,paused,completed,failed,cancelled
+    |   NODE_STATUS          7 值: pending,ready,running,completed,failed,skipped,cancelled
+    |   EXPERT_AVAILABILITY  4 值: online,busy,offline,away
+    |   BREAKER_STATE        2 值: open,closed
+    |   ROOM_STATUS          2 值: available,waiting
+    |   SESSION_STATUSES     3 值: active,archived,closed
+    |   MESSAGE_ROLES        4 值: user,expert,system,assistant
+    |   MSG_TYPES            5 值: text,markdown,code,image,file
+    |   MSG_TYPE_DEFAULT     5 值: text,markdown,code,image,file
+    | 禁串集合大小=28（含 available/archived 检查=true）
+    | 现扫描集 21 文件 => 命中 0 处（常驻判据的 LEDGER 是空集，此处必须 0 才算同口径）
+    | 扩集 views/expert/** 7 文件 => 命中 9 处
+    |   WIDE views/expert/AllianceTaskView.vue:232 | user | <div class="msg-avatar">{{ msg.role === 'user' ? '我' : 'AI' }}</div>
+    |   WIDE views/expert/ExpertConfigView.vue:522 | system | <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'" effect="
+    |   WIDE views/expert/ExpertConfigView.vue:523 | system | {{ v.type === 'system' ? '系统' : '自定义' }}
+    |   WIDE views/expert/ExpertConfigView.vue:972 | failed | <el-icon v-else-if="llmConnectionStatus === 'failed'"><CircleClose /></el-icon
+    |   WIDE views/expert/ExpertConfigView.vue:1732 | system | <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'" effect="
+    |   WIDE views/expert/ExpertConfigView.vue:1732 | system | <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'" effect="
+    |   WIDE views/expert/ExpertConfigView.vue:3068 | system | if (type === 'system') {
+    |   WIDE views/expert/ExpertConfigView.vue:3081 | system | if (testScene.value === 'system') {
+    |   WIDE views/expert/ExpertPlazaView.vue:774 | online | } else if (activeQuickTab.value === 'online') {
+
+## [3] 变异电池原始日志（D:/tmp/f21-battery.log 逐字）
+    | snap: AllianceTaskView.vue=a3108e09658e ExpertPlazaView.vue=9581e23fcbb9 ExpertEnterprisePanel.vue=b6c7e5ad4db7 ExpertOrchestratorPanel.vue=b5350c46b291 vocabulary-ownership.test.js=84137ac7dba4
+    | BASELINE rc=0 Test Files  1 passed (1) || Tests  19 passed (19)
+    | [OK ] rc=1 Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M1 已收口站点被重新打字（AllianceTaskView 任务完成态）=> 必须红
+    | [OK ] rc=1 Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M2 已收口站点被重新打字（企业面板会话活跃数）=> 必须红
+    | [OK ] rc=1 Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M3 撤掉一条豁免（configView 连接自检 failed）=> 必须红
+    | [OK ] rc=1 Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M4 豁免次数写少了（system 6 -> 5）=> 必须红
+    | [OK ] rc=1 Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M5 塞一条盘上不存在的豁免条目 => 必须红
+    | [OK ] rc=1 Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M6 豁免理由被清空（无理由的豁免）=> 必须红
+    | [OK ] rc=0 Test Files  1 passed (1) || Tests  19 passed (19) | 期望=green | M7 只改中文文案（继续执行/启动任务）=> 必须不红
+    | [OK ] rc=0 Test Files  1 passed (1) || Tests  19 passed (19) | 期望=green | M8 新增一次契约外取值的比较（bot 不在任何登记表）=> 必须不红
+    | 电池结束：不符 0 枚 / 共 8 枚
+    | restored a3108e09658e src/views/expert/AllianceTaskView.vue
+    | restored 9581e23fcbb9 src/views/expert/ExpertPlazaView.vue
+    | restored b6c7e5ad4db7 src/views/expert/panels/ExpertEnterprisePanel.vue
+    | restored b5350c46b291 src/views/expert/panels/ExpertOrchestratorPanel.vue
+    | restored 84137ac7dba4 src/modules/expert-alliance/contract/vocabulary-ownership.test.js
+    | battery exit=0
+
+## [4] 判据单文件 + 全量 vitest + vite build
+    单文件 rc=0
+    | Test Files  1 passed (1)
+    | Tests  19 passed (19)
+    | Duration  6.64s (transform 339ms, setup 0ms, collect 586ms, tests 788ms, environment 2.74s, prepare 795ms)
+    全量 rc=0
+    | Test Files  77 passed (77)
+    | Tests  1035 passed (1035)
+    | Duration  48.67s (transform 19.94s, setup 0ms, collect 253.83s, tests 30.56s, environment 275.86s, prepare 59.97s)
+    build rc=0 | ✓ built in 42.61s
+
+## [5] 前端模块化门禁（本轮新增两处跨目录 contract 导入，专门复核）
+    check-frontend-module rc=0（末 6 行）
+    | [WARN ]   frontend-ui\src\components\MessageBubble.vue (open=30 close=31)
+    | [WARN ]   frontend-ui\src\components\ai\PhasePipeline.vue (open=11 close=12)
+    | [WARN ]   frontend-ui\src\constants\nav.config.js (open=2 close=0)
+    | [WARN ]   frontend-ui\src\modules\health-check.js (open=2 close=0)
+    | [WARN ]   frontend-ui\src\modules\admin-lowcode\index.js (open=1 close=0)
+    | --- 前端模块化门禁：ERROR=0 ---
+
+## [6] 口径与已知盲区
+    - L12 的禁串集合本轮未 widening：仍由 TASK_STATUS/NODE_STATUS/EXPERT_AVAILABILITY/BREAKER_STATE/
+      SESSION_STATUSES/ROOM_STATUS/MESSAGE_ROLES/MSG_TYPES/MSG_TYPE_DEFAULT 现推（28 值）。
+    - ORCH_STATUS 的 completed 与任务域同串但不在禁串集合内（§5.43 的表），故 OrchestratorPanel 两处
+      是靠人工判定域后改成 ORCH_STATUS.COMPLETED，仪器对'blocked' 这类契约外取值仍不报（M8 见证）。
+    - 扫描集口径：modules/expert-alliance/{views,components} + views/expert/**，只扫 .vue，含注释行；
+      非 .vue（.js/.ts）composable 与 store 仍在集外。
+    - 本档案只放读数与逐字差异，结论在 docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md §5.51。

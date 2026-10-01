@@ -10,7 +10,7 @@
     Phase 4 : 10 任务评分脚本（10task rubric，Full 模式）
     Phase 5 : 生成 最终报告  （Markdown + JSON 双产物）
   执行目录：仓库根目录。可直接:
-    pwsh ./scripts/run-enterprise-final-acceptance.ps1
+    pwsh ./scripts/tests/run-enterprise-final-acceptance.ps1
 .NOTES
   所有阶段 GREEN 后才会返回 exit 0。
   任一阶段 RED 立即停止（可通过 -ForceContinue 强制继续）。

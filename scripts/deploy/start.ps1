@@ -29,12 +29,12 @@
   等价于旧版本的默认启动行为（api + frontend 一起拉起）。
 
 .EXAMPLE
-  .\scripts\start.ps1                        # 默认：预检 → 仅启动管理面板（项目服务不自动启）
-  .\scripts\start.ps1 Start -WithServices    # 与旧版一致：同步启动 api + frontend + 管理面板
-  .\scripts\start.ps1 DryRun -Strict         # 仅预检，严格模式（不实际启动）
-  .\scripts\start.ps1 Start -Strict -OpenDashboard
-  .\scripts\start.ps1 Stop                   # 按拓扑停止
-  .\scripts\start.ps1 Restart -Strict        # 严格重启（已配置服务）
+  .\scripts\deploy\start.ps1                        # 默认：预检 → 仅启动管理面板（项目服务不自动启）
+  .\scripts\deploy\start.ps1 Start -WithServices    # 与旧版一致：同步启动 api + frontend + 管理面板
+  .\scripts\deploy\start.ps1 DryRun -Strict         # 仅预检，严格模式（不实际启动）
+  .\scripts\deploy\start.ps1 Start -Strict -OpenDashboard
+  .\scripts\deploy\start.ps1 Stop                   # 按拓扑停止
+  .\scripts\deploy\start.ps1 Restart -Strict        # 严格重启（已配置服务）
 #>
 
 [CmdletBinding()]
@@ -207,9 +207,9 @@ $($C.G)============================================================$($C._)
    · Dashboard: $($C.B)http://localhost:$dashPort/$($C._)   → 登录后点 ▶ 启动所有 （api:$apiPort / frontend:$fePort）
    · API      : $($C.B)http://localhost:$apiPort/health$($C._)   （需在管理面板启动 api 服务后可用）
    · Frontend : $($C.B)http://localhost:$fePort/$($C._)         （需在管理面板启动 frontend 服务后可用）
-   · 停止所有 : $($C.C).\scripts\start.ps1 Stop$($C._)
+   · 停止所有 : $($C.C).\scripts\deploy\start.ps1 Stop$($C._)
    · 运维 CLI : $($C.C)& $($PY.Bin) scripts\service\server-manage.py list|status|logs|stop$($C._)
-   · 旧行为启动（脚本同步启动所有服务）: $($C.C).\scripts\start.ps1 Start -WithServices$($C._)
+   · 旧行为启动（脚本同步启动所有服务）: $($C.C).\scripts\deploy\start.ps1 Start -WithServices$($C._)
 $($C.G)============================================================$($C._)
 "@
       if ($OpenDashboard -eq $false) {

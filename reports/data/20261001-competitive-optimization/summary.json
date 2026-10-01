@@ -1,0 +1,291 @@
+{
+  "complete": false,
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kb-svc"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 17.5,
+      "log": "reports\\data\\20261001-competitive-optimization\\01.log",
+      "sha256": "d13396a835281f78f558571b8b965ec6d1d72d1238e0759e1cd071b9cf43733b",
+      "test_counts": [
+        [
+          17,
+          0,
+          1
+        ],
+        [
+          5,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          3,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "protected_kb_requires_trusted_identity_and_denies_readonly_writes"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 36.26,
+      "log": "reports\\data\\20261001-competitive-optimization\\02.log",
+      "sha256": "d53080187474f827c82f3b8f2f0b9a9c6324d70c5c26f7aee025669a36eaa106",
+      "test_counts": [],
+      "warning_count": 2
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "dialogue_sediment::tests"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 34.7,
+      "log": "reports\\data\\20261001-competitive-optimization\\03.log",
+      "sha256": "6ea6d9388efd0c9c0d6189267c0ace89cc9b1909481add2ff5819a86f11d5c96",
+      "test_counts": [],
+      "warning_count": 3
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-kb-svc",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 27.09,
+      "log": "reports\\data\\20261001-competitive-optimization\\04.log",
+      "sha256": "0a44bc07a13a0706becd47150ce6a3ea720a0aa30c0bafcc97ac1f76174d971d",
+      "test_counts": [],
+      "warning_count": 109
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 1.43,
+      "log": "reports\\data\\20261001-competitive-optimization\\05.log",
+      "sha256": "9e15a2a67648456485331cf5c95fc1ae3f0b203df8ea8e94014719092b63594b",
+      "test_counts": [],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "node",
+        "frontend-ui/node_modules/vitest/vitest.mjs",
+        "run",
+        "--root",
+        "frontend-ui",
+        "src/api/kb-edit.test.js",
+        "src/views/workspace/workspace-kb.test.js"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 6.81,
+      "log": "reports\\data\\20261001-competitive-optimization\\06.log",
+      "sha256": "fe83459ce5b08879178e0ae002ecc5218b89125f5ad0a9b11c31550f4e1203d4",
+      "test_counts": [],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 2.12,
+      "log": "reports\\data\\20261001-competitive-optimization\\07.log",
+      "sha256": "c5b4728226f32a51cfa1bc43fd637154da2f9e8470b6e94e53fe1d5a8f3c440c",
+      "test_counts": [],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-kb-svc",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\08-clippy-all-targets.log",
+      "sha256": "abdca968ea5a2c45f41db5b74267191d4ff5afc440248ad26bee84a1656a8a4a",
+      "test_counts": [],
+      "warning_count": 66
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\09-final-doc-links.log",
+      "sha256": "9be978b87952c4c9af56ae69e016d7088033d46f263481d7a12c258e025b78da",
+      "test_counts": [],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "check",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib"
+      ],
+      "exit_code": 101,
+      "log": "reports\\data\\20261001-competitive-optimization\\10-gateway-recheck.log",
+      "sha256": "5f25c6b080416366626fdf395570549bb6feded2c47eb9840a96cd5976e16f92"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-locale-format-outlets.py"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\12-locale.log",
+      "sha256": "bdae4779a86901d204747f72644206ca39e6f2c78dd1723a07b54d7a04b7afcb"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\13-script-selftest.log",
+      "sha256": "5f848e8cbcfb1d193996c1b883a1ceca3f76a6b0339904da5f2ef75476b1aada"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\11-ports.log",
+      "sha256": "0a331a08ba1ad7c310de9dce9c81a4f4bdae2c770960a24a212b87c5f314732e"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\14-script-paths.log",
+      "sha256": "ce3e898cf8dbc7a7b5923b0924b8180588389af62fb73ac756f71454da28bfe3"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/doc/inventory-architecture-docs.py",
+        "--selftest"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\15-inventory-selftest.log",
+      "sha256": "22d186bc9360258f9010f185539bb5201b88c4cd045c7cc8d4862f0e5509d488"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/doc/inventory-architecture-docs.py"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\16-inventory-refresh.log",
+      "sha256": "771e059eb0d84371b098a9b119475c13292d233d1765d54ddb0867cfde986d0f"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\17-final-doc-links.log",
+      "sha256": "9be978b87952c4c9af56ae69e016d7088033d46f263481d7a12c258e025b78da"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/doc/inventory-architecture-docs.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-competitive-optimization\\18-inventory-check.log",
+      "sha256": "771e059eb0d84371b098a9b119475c13292d233d1765d54ddb0867cfde986d0f"
+    },
+    {
+      "command": [
+        "cargo",
+        "check",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib"
+      ],
+      "exit_code": 101,
+      "log": "reports\\data\\20261001-competitive-optimization\\19-gateway-recheck.log",
+      "sha256": "1184413cef31dfedd6baa4109da05c4e71bc0743b08b4d376b219b8cbbf94fb9"
+    }
+  ],
+  "rust_passed": 32,
+  "rust_failed": 0,
+  "rust_ignored": 1,
+  "frontend_passed": 36,
+  "frontend_failed": 0,
+  "expected_red_evidence": [
+    "baseline-query-cost.log",
+    "citation-red.log"
+  ],
+  "fixture_restoration": "Original bytes restored atomically; assertion passed",
+  "limitations": [
+    "No SaaS competitor runtime test",
+    "No real cloud verification",
+    "No full workspace or load/chaos run"
+  ],
+  "evidence_collection_complete": true,
+  "all_required_checks_passed": false,
+  "rust_test_scope": "mox-kb-svc only; gateway tests did not execute due to compilation failures",
+  "integration_blocker": {
+    "component": "mox-platform-gateway-svc expert alliance tenant partition migration",
+    "status": "compile failure; concurrent external edits observed 2026-10-02",
+    "initial_lib_test_compile_errors": 262,
+    "action": "preserve shared changes, collect diagnostics and retest",
+    "latest_production_compile_errors": 4,
+    "tenant_authorization": "Header-selected tenant is not bound to trusted UserInfo in inspected extractor/auth middleware; remediation and executable isolation tests required",
+    "latest_check": "19-gateway-recheck.log: missing tenant binding in session audit call sites; external migration changes preserved"
+  }
+}

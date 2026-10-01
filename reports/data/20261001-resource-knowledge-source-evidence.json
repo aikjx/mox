@@ -1,0 +1,518 @@
+{
+  "date": "2026-10-01",
+  "method": "static source excerpts; no runtime or remote-provider validation",
+  "files": [
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/modules.rs",
+      "sha256": "163a146061de98a896bf2988c60d71ce4c93d7115d496361434342e97effe491",
+      "matches": [
+        {
+          "pattern": "KbState::from_env",
+          "locations": [
+            {
+              "line": 89,
+              "text": "let kb = Arc::new(mox_kb_svc::KbState::from_env());"
+            }
+          ]
+        },
+        {
+          "pattern": "build_kb_router_with_state",
+          "locations": [
+            {
+              "line": 135,
+              "text": "mox_kb_svc::handlers::build_kb_router_with_state(states.kb.clone()),"
+            }
+          ]
+        },
+        {
+          "pattern": "build_cloud_router_with_state",
+          "locations": [
+            {
+              "line": 151,
+              "text": ".merge(upgrade(crate::cloud::build_cloud_router_with_state(states.cloud.clone())))"
+            }
+          ]
+        },
+        {
+          "pattern": "StorageRegistry::new",
+          "locations": [
+            {
+              "line": 154,
+              "text": "let registry = Arc::new(crate::admin_storage::StorageRegistry::new(states.cloud.clone()));"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/admin_storage.rs",
+      "sha256": "970055ebd42bed7f1d24008e8d0e070a609dec414026a5766a2ff80d82f3a91f",
+      "matches": [
+        {
+          "pattern": "pub struct StorageRegistry",
+          "locations": [
+            {
+              "line": 28,
+              "text": "pub struct StorageRegistry {"
+            }
+          ]
+        },
+        {
+          "pattern": "s3b.health",
+          "locations": [
+            {
+              "line": 52,
+              "text": "Some(s3b) => match s3b.health().await {"
+            },
+            {
+              "line": 104,
+              "text": "Some(s3b) => match s3b.health().await {"
+            }
+          ]
+        },
+        {
+          "pattern": "\"provider\": \"local\"",
+          "locations": [
+            {
+              "line": 60,
+              "text": "\"provider\": \"local\","
+            },
+            {
+              "line": 99,
+              "text": "\"provider\": \"local\", \"switched\": true,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/storage_backend.rs",
+      "sha256": "eecf0d2c0354d3f0a793cdfd6a8983c2194a61aef9a01c608684ce617e9edc1d",
+      "matches": [
+        {
+          "pattern": "pub trait StorageBackend",
+          "locations": [
+            {
+              "line": 40,
+              "text": "pub trait StorageBackend: Send + Sync + 'static {"
+            }
+          ]
+        },
+        {
+          "pattern": "path-style",
+          "locations": [
+            {
+              "line": 75,
+              "text": "/// S3/MinIO 兼容后端（path-style endpoint）"
+            },
+            {
+              "line": 163,
+              "text": "// ListBuckets（path-style GET /）"
+            },
+            {
+              "line": 184,
+              "text": "// path-style 单桶模型：bucket 在 env 配置；多桶管理留待后续"
+            }
+          ]
+        },
+        {
+          "pattern": "MOX_S3_ENDPOINT",
+          "locations": [
+            {
+              "line": 88,
+              "text": "let endpoint = std::env::var(\"MOX_S3_ENDPOINT\").ok()?;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/cloud.rs",
+      "sha256": "45252c16bb7f2dfda6c90ec57712eb5dce61b08341ce11fa61c46b45af9e424c",
+      "matches": [
+        {
+          "pattern": "pub struct CloudState",
+          "locations": [
+            {
+              "line": 38,
+              "text": "pub struct CloudState {"
+            }
+          ]
+        },
+        {
+          "pattern": "fn object_path",
+          "locations": [
+            {
+              "line": 61,
+              "text": "fn object_path(&self, bucket: &str, key: &str) -> Option<PathBuf> {"
+            }
+          ]
+        },
+        {
+          "pattern": "put_object_text",
+          "locations": [
+            {
+              "line": 69,
+              "text": "pub fn put_object_text(&self, bucket: &str, key: &str, content: &str) -> Result<String, String> {        let p = self"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/file_storage/api.rs",
+      "sha256": "eb2424b0b5caeede4199b07ae9d55f14b41cd918a3855743fcfe267b3bb341d0",
+      "matches": [
+        {
+          "pattern": "sample_files()",
+          "locations": [
+            {
+              "line": 25,
+              "text": "for f in sample_files() {"
+            }
+          ]
+        },
+        {
+          "pattern": "tenant_id: None",
+          "locations": [
+            {
+              "line": 216,
+              "text": "tenant_id: None,"
+            }
+          ]
+        },
+        {
+          "pattern": "storage_type: \"local\"",
+          "locations": [
+            {
+              "line": 224,
+              "text": "storage_type: \"local\".to_string(),"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/dialogue_sediment.rs",
+      "sha256": "d12609850fa83765b33988c5d3272ef15a2f1ffbe687c08f91bb83e59b3a1cf5",
+      "matches": [
+        {
+          "pattern": "state.kb.docs.create",
+          "locations": [
+            {
+              "line": 178,
+              "text": "let mut doc = match state.kb.docs.create(&title, &transcript_md, Some(&category)).await {"
+            }
+          ]
+        },
+        {
+          "pattern": "GraphLinker.link",
+          "locations": [
+            {
+              "line": 190,
+              "text": "let link = GraphLinker.link(&state.kb.graph, &doc, &chunks);"
+            },
+            {
+              "line": 405,
+              "text": "let link = GraphLinker.link(&kb.graph, &doc, &chunks);"
+            }
+          ]
+        },
+        {
+          "pattern": "state.cloud.put_object_text",
+          "locations": [
+            {
+              "line": 199,
+              "text": "let cloud_path = match state.cloud.put_object_text(\"dialogue\", &cloud_key, &final_md) {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/lib.rs",
+      "sha256": "a6cb41b45cd77f6cfd721c7e2958f28fd5fe5fbb152a8808f4d3e2b669606c5f",
+      "matches": [
+        {
+          "pattern": "s3: None",
+          "locations": [
+            {
+              "line": 76,
+              "text": "s3: None,"
+            },
+            {
+              "line": 103,
+              "text": "s3: None,"
+            },
+            {
+              "line": 122,
+              "text": "s3: None,"
+            }
+          ]
+        },
+        {
+          "pattern": "graph: GraphStore::new()",
+          "locations": [
+            {
+              "line": 93,
+              "text": "graph: GraphStore::new(),"
+            }
+          ]
+        },
+        {
+          "pattern": "FILE_BACKEND",
+          "locations": [
+            {
+              "line": 68,
+              "text": "/// 从环境装配存储后端（`FILE_BACKEND` + `MOX_STORE_DATA_DIR`，与 cloud-api 同约定）"
+            },
+            {
+              "line": 70,
+              "text": "let kind = std::env::var(\"FILE_BACKEND\").unwrap_or_else(|_| \"fs\".into());"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/document.rs",
+      "sha256": "097d99ed193507924a071da9f0b76f0bcf200981a079445c907f3cafc98c4580",
+      "matches": [
+        {
+          "pattern": "pub async fn save",
+          "locations": [
+            {
+              "line": 73,
+              "text": "pub async fn save(&self, doc: &KbDocument) -> crate::Result<()> {"
+            }
+          ]
+        },
+        {
+          "pattern": "pub async fn get",
+          "locations": [
+            {
+              "line": 85,
+              "text": "pub async fn get(&self, id: &str) -> crate::Result<KbDocument> {"
+            }
+          ]
+        },
+        {
+          "pattern": "DOC_KEY_PREFIX",
+          "locations": [
+            {
+              "line": 22,
+              "text": "const DOC_KEY_PREFIX: &str = \"kb/docs/\";"
+            },
+            {
+              "line": 59,
+              "text": "format!(\"{DOC_KEY_PREFIX}{id}.json\")"
+            },
+            {
+              "line": 213,
+              "text": ".filter(|p| p.starts_with(DOC_KEY_PREFIX) && p.ends_with(\".json\"))"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/model.rs",
+      "sha256": "8e9c8509f9cd174bb8c9ca7ed960a3c96c565d20375897e7e2f60d9791466622",
+      "matches": [
+        {
+          "pattern": "pub struct KbDocument",
+          "locations": [
+            {
+              "line": 57,
+              "text": "pub struct KbDocument {"
+            }
+          ]
+        },
+        {
+          "pattern": "pub current_version: String",
+          "locations": [
+            {
+              "line": 67,
+              "text": "pub current_version: String,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/search.rs",
+      "sha256": "5ac9cbcf29c4ddfeb6d256488487e0034d7ef308973b1f76c5a09f5f4514437a",
+      "matches": [
+        {
+          "pattern": "pub async fn search_docs",
+          "locations": [
+            {
+              "line": 21,
+              "text": "pub async fn search_docs(&self, state: &KbState, req: &SearchRequest) -> crate::Result<Vec<SearchHit>> {"
+            }
+          ]
+        },
+        {
+          "pattern": "read_index",
+          "locations": [
+            {
+              "line": 22,
+              "text": "let index = state.docs.read_index().await?;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs",
+      "sha256": "c7c8462420036dd0c1bfe46978da0506fcfc347690477dd238044b4d9e15864f",
+      "matches": [
+        {
+          "pattern": "pub struct GraphStore",
+          "locations": [
+            {
+              "line": 120,
+              "text": "pub struct GraphStore {"
+            }
+          ]
+        },
+        {
+          "pattern": "pub fn with_persistence",
+          "locations": [
+            {
+              "line": 353,
+              "text": "pub fn with_persistence(db_path: &str) -> Result<Self, StorageError> {"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/kb/svc/mox-kb-server/src/main.rs",
+      "sha256": "0d244fddcb8fc30d0fb3232a6b420ab8ded13028f4337ab184cdef28b16fef0b",
+      "matches": [
+        {
+          "pattern": "SqliteKbStore::open_default",
+          "locations": [
+            {
+              "line": 30,
+              "text": "SqliteKbStore::open_default().expect(\"打开知识库 SQLite 失败\"),"
+            }
+          ]
+        },
+        {
+          "pattern": "\"documents\": [], \"total\": 0",
+          "locations": [
+            {
+              "line": 71,
+              "text": "Json(json!({ \"documents\": [], \"total\": 0 }))"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/kb/core/mox-kb-core/src/model.rs",
+      "sha256": "7b3b503310af09b4311dfb500fe4c13abc345fc571bd26b3c764dde6c9684f85",
+      "matches": [
+        {
+          "pattern": "pub struct Document",
+          "locations": [
+            {
+              "line": 10,
+              "text": "pub struct Document {"
+            },
+            {
+              "line": 66,
+              "text": "pub struct DocumentVersion {"
+            }
+          ]
+        },
+        {
+          "pattern": "pub version: u32",
+          "locations": [
+            {
+              "line": 24,
+              "text": "pub version: u32,"
+            },
+            {
+              "line": 67,
+              "text": "pub version: u32,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-kb-core/src/lib.rs",
+      "sha256": "abbbbd8297f0534de135461afee559e3667b14194359c10b04f6bab526350578",
+      "matches": [
+        {
+          "pattern": "MockEmbeddingProvider",
+          "locations": [
+            {
+              "line": 33,
+              "text": "pub use embedding::{EmbeddingProvider, EmbeddingResult, MockEmbeddingProvider};"
+            }
+          ]
+        },
+        {
+          "pattern": "InMemoryVectorIndex",
+          "locations": [
+            {
+              "line": 34,
+              "text": "pub use index::{VectorIndex, IndexConfig, InMemoryVectorIndex, SearchResult};"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-store-core/src/backend.rs",
+      "sha256": "9ce88de9d5c9da81352da8345de0d46efb10c7b106ee199948ae1a57b335773a",
+      "matches": [
+        {
+          "pattern": "pub enum BackendKind",
+          "locations": [
+            {
+              "line": 22,
+              "text": "pub enum BackendKind {"
+            }
+          ]
+        },
+        {
+          "pattern": "force_path_style",
+          "locations": [
+            {
+              "line": 55,
+              "text": "pub force_path_style: bool,"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-store-core/src/s3_backend.rs",
+      "sha256": "69d87446329974e8ebcae4fa9ad211987870e2030c978f64f5086b31ea9d394b",
+      "matches": [
+        {
+          "pattern": "path-style",
+          "locations": [
+            {
+              "line": 9,
+              "text": "//! 与 MinIO / 腾讯 COS / 华为 OBS / 阿里 OSS 互通（path-style）。"
+            },
+            {
+              "line": 43,
+              "text": "/// 自研异步 S3 客户端（SigV4，path-style）"
+            },
+            {
+              "line": 79,
+              "text": "/// 目标 URL（path-style：`{endpoint}/{bucket}/{key}`）"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

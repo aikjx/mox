@@ -56,6 +56,12 @@ pub struct KbVersion {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct KbDocument {
     pub id: String,
+    #[serde(default)]
+    pub access: Option<crate::access::KnowledgeAccess>,
+    #[serde(default)]
+    pub readers: Vec<String>,
+    #[serde(default)]
+    pub acl_revision: u64,
     pub title: String,
     pub content: String,
     pub category: String,
@@ -76,6 +82,9 @@ impl KbDocument {
         let now = now_iso();
         Self {
             id,
+            access: None,
+            readers: Vec::new(),
+            acl_revision: 0,
             title,
             content,
             category,
@@ -97,6 +106,16 @@ impl KbDocument {
     }
 }
 
+/// Reconstructable text provenance; offsets count original Unicode scalar characters.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SourceCitation {
+    pub document_id: String,
+    pub version: String,
+    pub field: String,
+    pub start_char: usize,
+    pub end_char: usize,
+}
+
 /// 检索命中（search.rs 产出）
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SearchHit {
@@ -104,6 +123,8 @@ pub struct SearchHit {
     pub title: String,
     pub category: String,
     pub snippet: String,
+    #[serde(default)]
+    pub citation: Option<SourceCitation>,
     pub score: f64,
     pub tags: Vec<String>,
 }

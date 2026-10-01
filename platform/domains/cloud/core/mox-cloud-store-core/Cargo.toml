@@ -28,6 +28,7 @@ futures = { workspace = true }
 reqwest = { workspace = true, optional = true }
 base64 = { workspace = true, optional = true }
 hmac = { workspace = true, optional = true }
+quick-xml = { version = "0.41", features = ["serialize"], optional = true }
 # 阶段3：bitrot 分片 checksum
 crc32c = { version = "0.6", default-features = false, optional = true }
 
@@ -38,7 +39,7 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 [features]
 default = []
 # 阶段2：S3 协议层（S3/MinIO/COS/OSS 客户端 + 目标空读回源）
-s3 = ["dep:reqwest", "dep:base64", "dep:hmac"]
+s3 = ["dep:reqwest", "dep:base64", "dep:hmac", "dep:quick-xml"]
 # 阶段3：完整 RS 纠删码（复用 mox-cloud-kernel 引擎）。
 # 默认持久化 = 内容寻址 + 引用计数 GC；EC 作为 ObjectStore 装饰器按配置开启。
 erasure = ["dep:mox-cloud-kernel", "dep:crc32c"]

@@ -282,3 +282,29 @@ architecture/
 |------|------|------|
 | 2026-09-21 | v1.1 | P0-2 编号冲突修复（29/30/31/38 → 40/41/42/43，§6.0）；P0-3 新增死链清零（9 处旧路径引用同步，00-INDEX / ARCHITECTURE-OF-DOCS / verify-doc-ep038.py / ci-gate.ps1 / 工作汇报 / docs-hub / JSON 数据）；P0-5 根目录核查通过（仅余合规入口文件） |
 | 2026-09-13 | v1.0 | 首版：确立 L0~L8 分层、命名/权威/引用规范、缺陷登记（7 项）、迁移映射（8 目录 + 6 文件）、门禁与变更流程 |
+
+<a id="ea-navigation-20261001"></a>
+## 专家联盟现行导航替代登记（2026-10-01）
+
+本轮不移动归档文件。旧路径已在先前工作中归档，以下登记现行入口替代，不代表语义逐字等价；历史演进仍保存在原归档目录。
+
+<!-- check-doc-links:ignore-start -->
+| 已退役入口 | 现行替代 | 关系 |
+|---|---|---|
+| expert-alliance/00-INTEGRATED-INDEX.md、README.md旧版 | expert-alliance/INDEX.md、新README.md | 当前导航替代；历史来源不作为现状 |
+| expert-alliance/01-ENTERPRISE-OPTIMIZATION.md、v3/01-architecture-optimization.md | expert-alliance/18-modular-product-design.md | 优化建议重评，不搬用旧结论 |
+| expert-alliance/architecture/system-architecture-design.html | expert-alliance/17-docs-architecture-and-flow-atlas.md | 架构与业务图形视图替代 |
+| expert-alliance/expert-registry-and-protocol.md | expert-alliance/CURRENT-ARCHITECTURE.md、14-enterprise-permission-model.md | 当前目录/授权语义 |
+| expert-alliance/knowledge-graph-schema.md | expert-alliance/08-normalized-architecture.md | 当前存储与模块导航 |
+| expert-alliance/v2/*、v3/*入口 | expert-alliance/INDEX.md | 不再作为现行设计入口；历史文件不改 |
+<!-- check-doc-links:ignore-end -->
+
+新关联视图：`docs/expert-alliance/17-docs-architecture-and-flow-atlas.md#scope`；目标设计：`docs/expert-alliance/18-modular-product-design.md#goals`；全文件结构与图源盘点由 `scripts/doc/inventory-architecture-docs.py` 生成到 reports/data 和 reports/markdown，属于证据，不提升为架构事实权威。
+
+## 低代码逐目录设计登记（2026-10-01）
+
+[LC-DIR-01](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)登记24类主题目录；[LC-STD-001](docs/standards/lowcode-dynamic-configuration.md#scope)定义配置语义，主题接缝放在各原目录。没有目录迁移；归档、资产与历史任务包保持各自生命周期，不为每个叶目录复制架构规范。新增报告放reports。
+
+## 资源知识主题设计登记（2026-10-01）
+
+L3入口与业务流程位于modules/resource-knowledge；L2架构、L4接口/数据契约、L6 ADR分别维护自身事实，统一入口见[RK-MAP-01](docs/modules/resource-knowledge/README.md#navigation)。本轮新增主题文件，无目录迁移；报告与核对证据放reports。

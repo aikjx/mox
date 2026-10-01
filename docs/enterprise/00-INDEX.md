@@ -108,6 +108,7 @@
 | `41-MOX商场中心-全AI系统MCP插件统一搜集分类一键下载企业级管理-V1.0.md` | MOX商场中心 | 🟢 L2 · 架构 | 全AI系统MCP插件统一搜集分类一键下载企业级管理（原 30 号，因与 ADR-11 重号迁至 41） | 开发联盟 | ✅ v1.0 |
 | `42-MOX平台代码审计与验证报告-V1.0.md` | MOX平台代码审计 | 🟢 L4 · 验证报告 | MOX平台代码审计与验证报告（原 31 号，因与 ADR-12 重号迁至 42） | 开发联盟 | ✅ v1.0 |
 | `43-DOC-EP-038文档代码事实自动核对报告.md` | DOC-EP-038 自动核对报告 | 🟢 L4 · 验证报告 | 由 `scripts/doc/verify-doc-ep038.py` 确定性生成（原 `38-VERIFY-REPORT.md`，因与 38 号企业架构文档重号迁至 43；禁止手改） | 开发联盟 · 文档组 | ✅ 自动生成 |
+| `44-权限颗粒度接线勘察与分阶段方案-V1.0.md` | 系统管理权限颗粒度勘察（ISD-PERM-GRAN-V1.0） | 🟢 L4 · 勘察+方案 | 九层权限矩阵逐层给判据：功能面 18/18 面板已接线，授权接线 4/92、身份绑定 4/92（2026-09-29 现量，挂 `reports/data/perm-gate-readings-20260929.txt`）；常驻门禁 `scripts/gate/check-admin-endpoint-guards.py`（10 例自检 + 88 条双向台账）；登记与 `12-RBAC审计全链路闭环验收报告` 的适用范围冲突；五期方案各带验收 | 开发联盟 · 文档组 | 🟡 v1.0（未提交） |
 
 **配套参考文档（既有，纳入本索引统一管理，不重复造轮子）**：
 
@@ -216,6 +217,7 @@
 
 | 日期 | 变更 | 主责 | 说明 |
 |------|------|------|------|
+| 2026-09-29 | 新增 `44-权限颗粒度接线勘察与分阶段方案-V1.0.md` + 常驻门禁 `scripts/gate/check-admin-endpoint-guards.py` | 开发联盟 · 文档组 | 系统管理权限颗粒度勘察结案（只报不改）：功能面 18 张 `/admin/*` 面板全接线，权限九层里只有"认证"一层真执行——授权 4/92、身份绑定 4/92、菜单/数据范围/审计三处死码或空表。门禁现量 88 条裸放行入双向台账，自检 10 例全 PASS，四枚反证（撤条目⇒GROWN／塞假条目⇒STALE／复原⇒PASS／固定字符窗变异体⇒G5 FAIL）均落 `reports/data/perm-gate-readings-20260929.txt`。仪器本轮自咬出三缺陷（窗口溢出假阴／同名 fn 首见者假阳／失败静默不打印）已修并各配见证。与 `12-RBAC审计全链路闭环验收报告` 的适用范围冲突已在该文档 §5 登记，处置待裁决；门禁未接 CI（`check-all.ps1` 未改，等点名）。 |
 | 2026-09-21 | P0-2 编号冲突修复 + P0-3 死链清零 + 00-INDEX 总览表补齐 28~43 号 | 开发联盟 · 文档组 | ① `enterprise/` 内 29/30/31/38 重号文档迁移至 40/41/42/43（§6.0 迁移映射见 `ARCHITECTURE-OF-DOCS.md`）；② 同步修正 9 处旧路径引用（00-INDEX / 38 号文档 / 43 号报告 / ARCHITECTURE-OF-DOCS / verify-doc-ep038.py / ci-gate.ps1 / 工作汇报 / docs-hub.html / JSON 数据）；③ 00-INDEX §1 文档总览表补齐 28~43 号共 16 条登记（ADR-09~16 + 专题文档 + 迁入文档）；④ P0-5 根目录核查通过（docs/ 根仅余合规入口文件）。 |
 | 2026-09-12 | DOC-EP-038 核对新增 D8：API-REGISTRY 新鲜度门禁 | 开发联盟 · 文档组 | `scripts/doc/verify-doc-ep038.py` 新增 D8「API-REGISTRY 新鲜度」：以 `gen-api-registry.py`（actuator.rs ROUTES 单一权威源）重新生成注册表并与 `docs/API-REGISTRY.md` 对比（备份-生成-对比-恢复，全程只读），不一致即 FAIL 并提示运行生成脚本同步——守护 E 系列 API 证据地基。实测 223 条一致，核对扩至 20 项（D1~D8 + E1~E7）全 PASS；CI G6 同步输出 20 checks 0 FAIL。 |
 | 2026-09-12 | CI 门禁存量漂移修复：G6 §6.1 文档清单校正 | 开发联盟 · 文档组 | `scripts/gate/ci-gate.ps1` G6 §6.1 原引用 `expert-alliance-enterprise-standard.html`（已重构为 docs/enterprise 治理体系）与 `docs/modules/统一基座层落地改造.html`（实际位于 docs/modules/），校正为真实路径：`docs/enterprise/00-INDEX.md`、37 号、38 号、`docs/modules/统一基座层落地改造.html`；§6.3 DOC-EP-038 核对门禁保持全 PASS。标准用法 `-File scripts/gate/ci-gate.ps1 -Gate G6` 验证：文档同步 [OK]、核对 19/19 PASS、退出码 0；负向验证 FAIL→exit 1 正确阻断。 |
@@ -231,3 +233,32 @@
 ---
 
 *本目录为活文档，随系统演进持续迭代。任何目录结构变更须在「变更记录」留痕。*
+
+## 专家联盟文档治理增量（2026-10-01）
+
+[ADR-17 专家联盟模块化归一与证据治理](docs/enterprise/45-专家联盟模块化归一与证据治理-ADR-17.md#decision)，状态Proposed；关联[全域架构流程图谱](docs/expert-alliance/17-docs-architecture-and-flow-atlas.md#scope)及[模块化产品设计](docs/expert-alliance/18-modular-product-design.md#goals)。本次修正文档入口与状态口径，未改变TOP-MASTER正文或既有运行拓扑。
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 架构方案、风险、质量场景与实际证据 |
+| 处理与边界 | 组织产品/算法/开发角色评审；ADR状态与配置发布/业务交付判定分开 |
+| 输出 | 决策、责任、验收结论与待核项 |
+| 维护角色 | 企业治理角色（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/enterprise/46-低代码全维配置控制与运行边界-ADR-18.md#decision) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。
+
+## 低代码全维配置规范与决策登记（2026-10-01）
+
+LC-STD-001：[统一配置规范](docs/standards/lowcode-dynamic-configuration.md#scope)，目标规范；LC-DIR-01：[目录设计矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)；ADR-18：[控制与运行边界](docs/enterprise/46-低代码全维配置控制与运行边界-ADR-18.md#decision)，Proposed。主题实现状态需单独验收，不把本登记当组织会签或发布批准。
+
+## 资源知识决策登记（2026-10-01）
+
+[ADR-19](docs/enterprise/47-资源知识主源与存储适配归一-ADR-19.md#decision)，Proposed；[能力地图](docs/modules/resource-knowledge/README.md#map)，待评审目标设计，不表示已会签或迁移完成。

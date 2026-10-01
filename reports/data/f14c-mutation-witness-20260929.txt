@@ -1,0 +1,28 @@
+F14c 变异电池见证 — 2026-09-29（任务族 5 处 wire 字面量比较收口成 TASK_STATUS/NODE_STATUS 后，L12 台账清空的牙齿）
+判据文件：src/modules/expert-alliance/contract/vocabulary-ownership.test.js（18 例，LEDGER 现为 []）  被碰文件：vocabulary-ownership.test.js / orchestration.js / SessionListPanel.vue / AllianceExpertsView.vue / AllianceConsoleView.vue
+快照目录：D:/tmp/f14c-cur（写前图像，拒绝覆盖）
+
+基线：rc=0 18 passed (18)
+基线红格：无
+
+N1 [CAUGHT] 任务族已收口站点退回 wire 字面量（台账现为空 ⇒ 多＝新债该红） → AllianceConsoleView.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceConsoleView.vue 19fc54b4349427b4 MATCH
+N2 [CAUGHT] 重开阻断那处退回字面量（同轮拆过 contract.test.js:1144 的针，这里验它有没有牙） → AllianceConsoleView.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceConsoleView.vue 19fc54b4349427b4 MATCH
+N3 [CAUGHT] 台账凭空多一条而扫描集没变＝"少＝台账该删"方向必须红 → vocabulary-ownership.test.js / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 vocabulary-ownership.test.js 83fe066ba3668753 MATCH
+N4 [CAUGHT] 房间站点退回字面量 → AllianceExpertsView.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceExpertsView.vue dfd28050f3c469ec MATCH
+N5 [CAUGHT] 会话站点退回字面量 → SessionListPanel.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 SessionListPanel.vue b9417e9e5ca046df MATCH
+N6 [GREEN] 换成常量（另一个档）＝不该红（针钉的是"重新打字面量"，不是钉哪一档） → AllianceConsoleView.vue / 红=- / 意外红=- / 18 passed (18)
+     还原 AllianceConsoleView.vue 19fc54b4349427b4 MATCH
+N7 [GREEN] 只改中文措辞（'真实计算'→漂档文案，必须不红＝没过度钉文案） → orchestration.js / 红=- / 意外红=- / 18 passed (18)
+     还原 orchestration.js ec85648e564c3ba6 MATCH
+
+终检 vocabulary-ownership.test.js             83fe066ba3668753 MATCH
+终检 orchestration.js                         ec85648e564c3ba6 MATCH
+终检 SessionListPanel.vue                     b9417e9e5ca046df MATCH
+终检 AllianceExpertsView.vue                  dfd28050f3c469ec MATCH
+终检 AllianceConsoleView.vue                  19fc54b4349427b4 MATCH
+复跑基线：rc=0 18 passed (18)

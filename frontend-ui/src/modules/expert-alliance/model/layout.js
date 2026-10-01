@@ -5,7 +5,7 @@
 // 布局规则对齐图的真实构成（见 contract/graph.js 顶部说明）：
 // 能力域节点等角分布在中环，专家节点围在自己主域的外侧弧上，
 // 没有任何 has_domain 边的专家落在外环，不与其他簇重叠。
-import { GRAPH_EDGE_TYPE, GRAPH_NODE_TYPE } from '@/modules/expert-alliance/contract'
+import { GRAPH_EDGE_TYPE, GRAPH_NODE_TYPE, graphNodeLabel, isLostGraphLabel } from '@/modules/expert-alliance/contract'
 
 export const GRAPH_VIEWPORT = Object.freeze({ width: 720, height: 520 })
 
@@ -117,7 +117,11 @@ export function graphLayout(nodes = [], edges = [], viewport = GRAPH_VIEWPORT) {
 
 /** 路径序列 → 可读链路文本，不可达时明确说"不连通"而不是空串 */
 export function pathChainText(path = [], found = true) {
-  const labels = (Array.isArray(path) ? path : []).map((p) => p.label || p.nodeId).filter(Boolean)
+  // 分两种缺名：label 有值但编码丢了（写入侧丢过）→ 显形成"未命名节点 短码"；
+  // 压根没给 label（调用方只拿到 id）→ 沿用裸 id，那不是"名字丢了"，不该改标。
+  const labels = (Array.isArray(path) ? path : [])
+    .map((p) => (p?.label && isLostGraphLabel(p.label) ? graphNodeLabel({ id: p.nodeId, label: p.label }) : (p?.label || p?.nodeId)))
+    .filter(Boolean)
   if (!found || !labels.length) return '两节点间不存在连通路径'
   return labels.join(' → ')
 }

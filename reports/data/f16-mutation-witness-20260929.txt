@@ -1,0 +1,15 @@
+F16（§5.47）L13 熔断器服务侧真值账 变异电池见证 2026-09-29
+判据文件 vocabulary-ownership.test.js md5=c55223ab5adcb71c（本档案描述的是这一版）
+被测对象：L13 实时解析 platform/gateway/mox-platform-gateway-svc/src/alliance/experts_dispatcher.rs
+  :498-502 state_str 只产出 open/closed；:503-507 json! 行键 expert_id/failure_count/state
+快照：D:/tmp/f16-snap（写前图像＝恢复源）
+
+基线（无变异）：rc=0 Tests=[22m [1m[32m19 passed[39m[22m[90m (19)[39m 红格=无
+Q1 [CAUGHT] rc=1 Tests=[22m [1m[31m1 failed[39m[22m[2m | [22m[33m18 skipped[39m[90m (19)[39m 红=['L13'] 期望红=['L13'] ｜ 契约凭空加一档 half_open（wire 只出 open/closed）＝档位账必须咬住
+Q2 [CAUGHT] rc=1 Tests=[22m [1m[31m1 failed[39m[22m[2m | [22m[33m18 skipped[39m[90m (19)[39m 红=['L13'] 期望红=['L13'] ｜ 归一化少映射 failure_count 键＝行键账必须咬住（界面会显示空值）
+Q3 [GREEN] rc=0 Tests=[22m [1m[32m1 passed[39m[22m[2m | [22m[33m18 skipped[39m[90m (19)[39m 红=无 期望红=无 ｜ 只改熔断档的中文措辞（针不许钉文案，必须不红）
+终检（还原逐枚比 md5）：
+  enums.js MATCH md5=ff8828882a748328 bytes=12477 lines=375
+  vocabulary-ownership.test.js MATCH md5=c55223ab5adcb71c bytes=28656 lines=416
+  normalize.js MATCH md5=e34410396b4fd461 bytes=44410 lines=1293
+复跑无变异基线：rc=0 Tests=[22m [1m[32m19 passed[39m[22m[90m (19)[39m 红格=无

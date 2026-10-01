@@ -60,3 +60,22 @@ cd docs/database/mox_sys && ./install.sh 127.0.0.1 3306 root <pwd>
 现有导出实际包含约 79 张表（不是报告标题中的 58 张），有 `utf8mb3`、多套 ID、两套时间类型、重复 demo 表、备份表、Quartz 表和大量快照表。旧库先冻结为 legacy；完成双写/回填/校验后再切读，禁止在生产直接 `DROP TABLE` 或关闭外键检查后导入。
 
 本基线是 MySQL 8.3 目标模型。若运行时仍以 SQLite 为默认后端，应通过 repository/adapter 映射，不要把 MySQL DDL 原样塞进 SQLite。
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 配置版本、发布闭包、作用域指针与执行快照 |
+| 处理与边界 | 确定owner/事务/索引/保留/迁移，实际SQLite与目标母版分别适配 |
+| 输出 | 持久化/恢复设计与迁移验收，本文不执行DDL |
+| 维护角色 | 数据owner与运维（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/database/LOWCODE-CONFIGURATION-STORAGE.md#ownership) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。
+
+资源知识逻辑目标：[所有权、版本与一致性](docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md#ownership)；运行现状定向更新见[2026-10-01复核](docs/database/DATABASE-ARCHITECTURE.md#resource-knowledge-20261001)。

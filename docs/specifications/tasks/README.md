@@ -38,3 +38,20 @@
 | 2026-08-26 | xiaobai-mox-full-arch | 小白MOX全架构 |
 | 2026-08-26 | xiaobai-mox-full-landing | 小白MOX全落地 |
 | 2026-08-26 | xiaobai-voice-mox-enterprise-spec | 小白语音MOX企业级规格 |
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 已有规格、设计决策与依赖关系 |
+| 处理与边界 | 逐任务引用长期规范而不复制；先复用后实现，结束记录真实测试与遗留项 |
+| 输出 | 任务状态、证据、偏差和目录源回写 |
+| 维护角色 | 开发交付owner（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#progress) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。

@@ -1,5 +1,7 @@
 // The gateway wraps native task DTOs in a timing envelope. Keep that transport
 // shape and the scheduler's 0..1 progress out of view components.
+import { FUSION_STATUS } from '@/modules/expert-alliance/contract'
+
 export function unwrapTaskPayload(value) {
   for (let depth = 0; depth < 4 && value && !Array.isArray(value); depth++) {
     if (!Object.hasOwn(value, 'data')) break
@@ -55,7 +57,9 @@ export function normalizeTaskDag(value) {
 
 export function normalizeTaskFusion(value) {
   const data = unwrapTaskPayload(value)
-  if (!data || data.fusion_status === 'pending' || data.status === 'pending') return null
+  // 服务侧 alliance.rs:1235/1247-1248：本载荷的 status 由 fusion 派生（只有 completed|pending），
+  // 与任务七档 TASK_STATUS 同串不同域 ⇒ 两支都比 FUSION_STATUS.PENDING。
+  if (!data || data.fusion_status === FUSION_STATUS.PENDING || data.status === FUSION_STATUS.PENDING) return null
   const result = data.fusion_result ?? data.result ?? data
   if (!result || typeof result !== 'object') throw new Error('任务结果格式不正确')
   const outputs = result.content?.outputs || []

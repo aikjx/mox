@@ -1,12 +1,14 @@
 // 工具函数统一出口（聚集）
-// 规则：无命名冲突直接 re-export；冲突项（safeUrl / formatTime）以 kb 前缀别名导出，
-//      避免 export * 造成 ambiguous binding。
+// 规则：无命名冲突直接 re-export；冲突项（safeUrl）以 kb 前缀别名导出，避免 export * 造成 ambiguous binding。
+// formatTime 曾经的"两份同体副本"已并到 utils/time.js 的 formatDateTime，这里不再需要别名。
 export * from './message.utils'
 export {
-  escapeHtml, simpleMarkdownRender, truncateText, DOC_TYPES, getTypeLabel,
-  getTagType, getStatusType, getStatusLabel, getActionLabel, mapDoc, getTagSize,
+  escapeHtml, simpleMarkdownRender, truncateText, KB_CATEGORIES, KB_STATUSES,
+  getCategoryLabel, getCategoryTagType, getCategoryIcon, isAiAnalyzed,
+  getStatusType, getStatusLabel, getActionLabel, mapDoc, getTagSize,
 } from './knowledgeBase.utils'
-export { safeUrl as kbSafeUrl, formatTime as kbFormatTime } from './knowledgeBase.utils'
+export { safeUrl as kbSafeUrl } from './knowledgeBase.utils'
+export { timeValue, formatDateTime, formatDateTimeLocale, formatDateTimeLocaleOr, formatClockMinute, formatClockSecond, formatDateStamp, relativeTimeText, timeAgoOrDate } from './time'
 export * from './projectMember.utils'
 export { renderMarkdown, escapeText } from './markdown'
 export {

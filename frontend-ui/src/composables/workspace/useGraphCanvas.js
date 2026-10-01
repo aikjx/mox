@@ -1,160 +1,112 @@
 /**
- * 图谱画布 Composable
- * 职责：图谱数据加载、视口控制、布局切换、节点交互
+ * 工作台图谱区外壳：图数据、字段口径与布局全部来自联盟模块
+ * （store/alliance-graph.store.js + model/layout.js + components/GraphCanvas.vue）。
+ * 本文件只剩工作台特有的两件事：视口缩放/平移，以及把选中态交给 store。
+ *
+ * 为什么不允许再在这里自己拉数归一化（2026-09-27 实测的整条静默失真链路）：
+ * - payload 给 node_type，旧代码读 n.type ⇒ 每个节点都掉成"节点"、类型统计恒 1、按类型上色失效；
+ * - doc_count / expert_count / rank 后端从不产出 ⇒ 信息卡三行永远显示 0 / 0 / '-'；
+ * - 坐标来自 Math.random() ⇒ 同一张图每次刷新都在换位置，无法比对也无法截图复验；
+ * - 标签 .slice(0, 4) ⇒ architecture 画成 clou、data 与 database 撞成同一个 'data'，
+ *   而后端写入侧就丢了编码的那两个专家（label='???????'）画成 '????'；
+ * - 边端点按坐标反查 ⇒ 一布局就接错线；
+ * - 空态分支写的是 nodes.value / edges.value，这两个 ref 在本作用域不存在 ⇒ 真跑到就是 ReferenceError；
+ * - "图谱分析"是 setTimeout(1500) 后高亮前三个节点再宣称"已高亮核心节点"，与任何计算无关。
+ * 模块侧那一份把这些逐条做掉了（确定性分层布局、真实 stats、按码点裁剪、id 解析边端点、分区错误隔离），
+ * 完整分析面（中心性榜、社区、路径、最优团队）在 /alliance/graph，工作台不再养第二份。
  */
-import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus/es/components/message/index'
-import { getExpertGraph } from '@/api'
+import { computed, ref } from 'vue'
+import { GRAPH_NODE_TYPE } from '@/modules/expert-alliance/contract'
+import { useAllianceGraphStore } from '@/modules/expert-alliance/store'
 
-export function useGraphCanvas(expertColor) {
+const SCALE_MIN = 0.5
+const SCALE_MAX = 2.5
+const SCALE_STEP = 1.25
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+export function useGraphCanvas() {
+  const store = useAllianceGraphStore()
+
   const canvasRef = ref(null)
-  const activeCanvasTool = ref('select')
-  const currentLayout = ref('force')
-  const selectedNode = ref(null)
-  const graphLoading = ref(false)
-  const graphAnalyzing = ref(false)
   const viewport = ref({ x: 0, y: 0, scale: 1 })
-  const graphNodes = ref([])
-  const graphEdges = ref([])
-  const graphStats = ref({ nodes: 0, edges: 0, types: 0 })
 
-  const svgViewBox = computed(() => {
-    const w = 800 / viewport.value.scale
-    const h = 500 / viewport.value.scale
-    const x = viewport.value.x - w / 2 + 400
-    const y = viewport.value.y - h / 2 + 250
-    return `${x} ${y} ${w} ${h}`
+  const graphLoading = computed(() => store.loading.graph)
+  const graphError = computed(() => store.error.graph)
+  const selectedId = computed(() => store.selectedId)
+  const selectedNode = computed(() => store.selectedNode)
+  const layout = computed(() => store.layout)
+
+  /** 统计条只报后端真给过的数：节点/边数取当前布局（与画布所见一致），拆分与密度取 stats */
+  const graphStats = computed(() => {
+    const stats = store.graph?.stats || {}
+    const nodes = layout.value?.nodes || []
+    const countByType = (type) => nodes.filter((n) => n.nodeType === type).length
+    return {
+      nodes: nodes.length,
+      edges: (layout.value?.edges || []).length,
+      expertNodes: Number(stats.expertCount) || countByType(GRAPH_NODE_TYPE.expert),
+      domainNodes: Number(stats.domainCount) || countByType(GRAPH_NODE_TYPE.domain),
+      density: Number(stats.density) || 0,
+      version: Number(store.graph?.version) || 0,
+      builtAt: store.graph?.builtAt || ''
+    }
   })
+
+  const viewportStyle = computed(() => {
+    const v = viewport.value
+    return {
+      transform: `translate(${v.x}px, ${v.y}px) scale(${v.scale})`,
+      transformOrigin: 'center center'
+    }
+  })
+
+  async function loadGraphData() {
+    await store.loadGraph()
+    return !!store.graph
+  }
+
+  function selectNode(id) {
+    store.selectNode(id)
+  }
+
+  function clearSelectedNode() {
+    store.selectedId = ''
+  }
+
+  function zoomIn() { viewport.value.scale = clamp(viewport.value.scale * SCALE_STEP, SCALE_MIN, SCALE_MAX) }
+  function zoomOut() { viewport.value.scale = clamp(viewport.value.scale / SCALE_STEP, SCALE_MIN, SCALE_MAX) }
+  function fitView() { viewport.value = { x: 0, y: 0, scale: 1 } }
 
   let isDragging = false
   let dragStart = { x: 0, y: 0 }
   let viewportStart = { x: 0, y: 0 }
 
-  async function loadGraphData() {
-    graphLoading.value = true
-    try {
-      const res = await getExpertGraph()
-      const data = res?.data || res
-      if (data?.nodes && data?.edges) {
-        graphNodes.value = normalizeGraphNodes(data.nodes)
-        graphEdges.value = normalizeGraphEdges(data.edges, data.nodes)
-        graphStats.value = { nodes: data.nodes.length, edges: data.edges.length, types: [...new Set(data.nodes.map(n => n.type || 'default'))].length }
-      } else { nodes.value = []; edges.value = []; console.warn("[graph] API returned empty, showing blank canvas") }
-    } catch (e) { console.warn('[workspace] 加载图谱失败:', e); nodes.value = []; edges.value = [] }
-    finally { graphLoading.value = false }
-  }
-
-
-  function normalizeGraphNodes(nodes) {
-    return nodes.map((n, i) => ({
-      id: n.id || `n${i}`, label: (n.label || n.name || '?').slice(0, 4), fullName: n.name || n.label || '',
-      type: n.type || '节点', x: n.x || 200 + Math.random() * 400, y: n.y || 100 + Math.random() * 300,
-      size: n.size || (n.highlight ? 24 : 18), color: n.color || expertColor?.(n.type) || '#6366f1',
-      docs: n.doc_count || n.docs || 0, experts: n.expert_count || n.experts || 0,
-      rank: n.rank || '-', highlight: n.highlight || false, description: n.description || ''
-    }))
-  }
-
-  function normalizeGraphEdges(edges, nodes) {
-    const nodeMap = {}
-    nodes.forEach(n => { nodeMap[n.id || n.name] = n })
-    return edges.map((e, i) => {
-      const s = nodeMap[e.source || e.from || e.s]
-      const t = nodeMap[e.target || e.to || e.t]
-      return { id: e.id || `e${i}`, sourceX: s?.x || 0, sourceY: s?.y || 0, targetX: t?.x || 0, targetY: t?.y || 0, color: e.color || '#94a3b8', width: e.width || 1.5, highlight: e.highlight || false }
-    })
-  }
-
-  function selectNode(node) {
-    selectedNode.value = node
-    graphEdges.value.forEach(e => {
-      e.highlight = e.id?.includes(node.id) || graphEdges.value.some(edge => (edge.sourceX === node.x && edge.sourceY === node.y) || (edge.targetX === node.x && edge.targetY === node.y))
-    })
-  }
-
-  function switchLayout(layout) { currentLayout.value = layout; applyLayout(layout) }
-
-  function applyLayout(layout) {
-    const nodes = graphNodes.value
-    const cx = 400, cy = 250
-    if (layout === 'force') { /* force layout uses real graph data */ }
-    else if (layout === 'radial') {
-      const center = nodes[0]
-      if (center) { center.x = cx; center.y = cy }
-      nodes.slice(1).forEach((n, i) => {
-        const angle = (i / (nodes.length - 1)) * Math.PI * 2
-        const r = 120 + (i % 3) * 40
-        n.x = cx + Math.cos(angle) * r; n.y = cy + Math.sin(angle) * r
-      })
-      updateEdgePositions()
-    } else if (layout === 'hierarchical') {
-      const levels = 4
-      const perLevel = Math.ceil(nodes.length / levels)
-      nodes.forEach((n, i) => {
-        const level = Math.floor(i / perLevel)
-        const posInLevel = i % perLevel
-        const nodesInLevel = Math.min(perLevel, nodes.length - level * perLevel)
-        n.x = cx + (posInLevel - (nodesInLevel - 1) / 2) * 100
-        n.y = 80 + level * 130
-      })
-      updateEdgePositions()
-    } else if (layout === 'circular') {
-      nodes.forEach((n, i) => {
-        const angle = (i / nodes.length) * Math.PI * 2 - Math.PI / 2
-        const r = 150
-        n.x = cx + Math.cos(angle) * r; n.y = cy + Math.sin(angle) * r
-      })
-      updateEdgePositions()
-    }
-  }
-
-  function updateEdgePositions() {
-    graphEdges.value.forEach(e => {
-      const s = graphNodes.value.find(n => Math.abs(n.x - e.sourceX) < 1 && Math.abs(n.y - e.sourceY) < 1)
-      const t = graphNodes.value.find(n => Math.abs(n.x - e.targetX) < 1 && Math.abs(n.y - e.targetY) < 1)
-      if (s) { e.sourceX = s.x; e.sourceY = s.y }
-      if (t) { e.targetX = t.x; e.targetY = t.y }
-    })
-  }
-
-  function zoomIn() { viewport.value.scale = Math.min(viewport.value.scale * 1.2, 3) }
-  function zoomOut() { viewport.value.scale = Math.max(viewport.value.scale / 1.2, 0.3) }
-  function fitView() { viewport.value = { x: 0, y: 0, scale: 1 } }
-
-  async function runGraphAlgo() {
-    graphAnalyzing.value = true
-    try {
-      await new Promise(r => setTimeout(r, 1500))
-      graphNodes.value.forEach((n, i) => { n.highlight = i < 3 })
-      ElMessage.success('图谱分析完成，已高亮核心节点')
-    } catch (e) { ElMessage.error('图谱分析失败') }
-    finally { graphAnalyzing.value = false }
-  }
-
   function onCanvasMouseDown(e) {
-    if (activeCanvasTool.value === 'pan' || e.button === 1) {
-      isDragging = true; dragStart = { x: e.clientX, y: e.clientY }; viewportStart = { ...viewport.value }
-    }
+    if (e.button !== 0 && e.button !== 1) return
+    isDragging = true
+    dragStart = { x: e.clientX, y: e.clientY }
+    viewportStart = { ...viewport.value }
   }
   function onCanvasMouseMove(e) {
-    if (isDragging) {
-      const dx = (e.clientX - dragStart.x) / viewport.value.scale
-      const dy = (e.clientY - dragStart.y) / viewport.value.scale
-      viewport.value.x = viewportStart.x - dx; viewport.value.y = viewportStart.y - dy
-    }
+    if (!isDragging) return
+    viewport.value.x = viewportStart.x + (e.clientX - dragStart.x)
+    viewport.value.y = viewportStart.y + (e.clientY - dragStart.y)
   }
   function onCanvasMouseUp() { isDragging = false }
   function onCanvasWheel(e) {
     e.preventDefault()
-    const delta = e.deltaY > 0 ? 0.9 : 1.1
-    viewport.value.scale = Math.max(0.3, Math.min(3, viewport.value.scale * delta))
+    const next = viewport.value.scale * (e.deltaY > 0 ? 0.9 : 1.1)
+    viewport.value.scale = clamp(next, SCALE_MIN, SCALE_MAX)
   }
-  function onNodeMouseDown(e, node) { /* 节点拖拽逻辑可扩展 */ }
 
   return {
-    canvasRef, activeCanvasTool, currentLayout, selectedNode, graphLoading, graphAnalyzing,
-    viewport, svgViewBox, graphNodes, graphEdges, graphStats,
-    loadGraphData, selectNode, switchLayout, zoomIn, zoomOut, fitView, runGraphAlgo,
-    onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp, onCanvasWheel, onNodeMouseDown
+    // 检视器组件按 AllianceGraphView 的既有约定收 store 本身（它要读 neighbors/collaborators/loading）
+    graphStore: store,
+    canvasRef, viewport, viewportStyle,
+    graphLoading, graphError, graphStats, layout,
+    selectedId, selectedNode,
+    loadGraphData, selectNode, clearSelectedNode,
+    zoomIn, zoomOut, fitView,
+    onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp, onCanvasWheel
   }
 }

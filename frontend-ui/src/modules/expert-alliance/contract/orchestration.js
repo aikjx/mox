@@ -402,3 +402,36 @@ export function orchExecuteOutcome(res) {
       : ''
   }
 }
+
+/**
+ * 编排面状态档（计划 / 步骤 / 总体共用一张表）。wire 权威：
+ * platform/gateway/mox-platform-gateway-svc/src/alliance/experts_orchestration.rs
+ *   :186 pending（计划步骤初值）  :203 draft（计划）  :469/:484 running
+ *   :490/:497/:511 completed      :456 failed         :508 completed|partial
+ *   :750 unknown（读不到 overall_status 时的兜底串）
+ * 与任务域 TASK_STATUS 只共享四个措辞（待执行/执行中/已完成/失败），
+ * 本表另有 draft/partial/unknown 三档，任务域没有 planning 之外的这组值，故不并表。
+ */
+export const ORCH_STATUS = Object.freeze({
+  PENDING: 'pending',
+  DRAFT: 'draft',
+  RUNNING: 'running',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  PARTIAL: 'partial',
+  UNKNOWN: 'unknown'
+})
+
+export const ORCH_STATUS_LABELS = Object.freeze({
+  pending: '待执行',
+  draft: '草案',
+  running: '执行中',
+  completed: '已完成',
+  failed: '失败',
+  partial: '部分完成',
+  unknown: '未知'
+})
+
+export function orchStatusLabel(status) {
+  return ORCH_STATUS_LABELS[status] ?? status ?? ''
+}

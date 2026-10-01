@@ -42,6 +42,11 @@ pub struct Config {
     pub health_probe_interval_ms: u64,
     /// 单次 HTTP 探测超时（毫秒）
     pub health_probe_timeout_ms: u64,
+    /// 专家成功率健康判定阈值：成功率低于此值即 Degraded（默认 0.80）。
+    /// 启动加载自 env；热更新接缝见 `Config::health_thresholds` 文档。
+    pub health_healthy_min: f64,
+    /// 专家健康判定阈值：失败占比高于此值即 Degraded（默认 0.20）。
+    pub health_degraded_max_ratio: f64,
 }
 
 impl Default for Config {
@@ -56,6 +61,9 @@ impl Default for Config {
             health_probe_enabled: false,
             health_probe_interval_ms: 30_000,
             health_probe_timeout_ms: 5_000,
+            // 健康阈值单一来源的 svc 侧默认值（与 registry-core `HealthThresholds::DEFAULT` 对齐）。
+            health_healthy_min: 0.80,
+            health_degraded_max_ratio: 0.20,
         }
     }
 }
@@ -110,7 +118,35 @@ impl Config {
                 }
             }
         }
+        if let Ok(v) = std::env::var("MOX_ALLIANCE_REGISTRY_HEALTHY_MIN") {
+            if let Ok(rate) = v.parse::<f64>() {
+                if (0.0..=1.0).contains(&rate) {
+                    cfg.health_healthy_min = rate;
+                }
+            }
+        }
+        if let Ok(v) = std::env::var("MOX_ALLIANCE_REGISTRY_DEGRADED_MAX_RATIO") {
+            if let Ok(ratio) = v.parse::<f64>() {
+                if (0.0..=1.0).contains(&ratio) {
+                    cfg.health_degraded_max_ratio = ratio;
+                }
+            }
+        }
         cfg
+    }
+
+    /// 把 svc 启动配置投影为 registry-core 的健康阈值单一来源。
+    ///
+    /// **热更新接缝（未做，需评审）**：本 svc 当前不依赖 `mox-alliance-config-core`
+    /// （其带 tokio/store/broadcast，registry-svc 加这条依赖边需走 Cargo.toml 变更评审，
+    /// 本轮铁律禁止）。故本阈值为**启动加载档**：进程启动时从 env 读入，运行期不可变。
+    /// 后续若接入 config-engine 的 broadcast 变更事件，只需在收到 `health.*` 变更时
+    /// 用本方法重建 `HealthThresholds` 并热替换 `AppState` 内的句柄，handler 签名不变。
+    pub fn health_thresholds(&self) -> mox_alliance_registry_core::HealthThresholds {
+        mox_alliance_registry_core::HealthThresholds {
+            degraded_success_rate: self.health_healthy_min,
+            degraded_failure_ratio: self.health_degraded_max_ratio,
+        }
     }
 }
 
@@ -138,5 +174,56 @@ impl AppState {
             dir_store,
             registry,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mox_alliance_registry_core::{
+        ExpertHealth, ExpertMetrics, HealthThresholds, classify_with, record_result,
+    };
+
+    #[test]
+    fn default_thresholds_are_80_20_and_aligned_with_core_default() {
+        let cfg = Config::default();
+        assert_eq!(cfg.health_healthy_min, 0.80);
+        assert_eq!(cfg.health_degraded_max_ratio, 0.20);
+        assert_eq!(cfg.health_thresholds(), HealthThresholds::DEFAULT);
+    }
+
+    #[test]
+    fn custom_thresholds_change_classification_outcome() {
+        // 一个 7/10 成功率（0.70）的专家：默认 0.80 阈值下 Degraded
+        let mut m = ExpertMetrics::new("x");
+        for _ in 0..7 {
+            record_result(&mut m, true, 10);
+        }
+        for _ in 0..3 {
+            record_result(&mut m, false, 10);
+        }
+        assert_eq!(
+            classify_with(&m, &Config::default().health_thresholds()),
+            ExpertHealth::Degraded
+        );
+
+        // svc 侧把阈值放宽到 0.60 → 同一专家转 Healthy
+        let mut relaxed = Config::default();
+        relaxed.health_healthy_min = 0.60;
+        relaxed.health_degraded_max_ratio = 0.50;
+        assert_eq!(
+            classify_with(&m, &relaxed.health_thresholds()),
+            ExpertHealth::Healthy
+        );
+    }
+
+    #[test]
+    fn custom_fields_project_into_thresholds() {
+        let mut cfg = Config::default();
+        cfg.health_healthy_min = 0.95;
+        cfg.health_degraded_max_ratio = 0.10;
+        let th = cfg.health_thresholds();
+        assert_eq!(th.degraded_success_rate, 0.95);
+        assert_eq!(th.degraded_failure_ratio, 0.10);
     }
 }

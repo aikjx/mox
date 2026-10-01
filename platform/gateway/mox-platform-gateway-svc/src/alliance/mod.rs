@@ -25,4 +25,5 @@ pub mod experts_graph;
 pub mod experts_registry;
 pub mod experts_orchestration;
 pub mod experts_dispatcher;
+pub mod experts_rbac;
 pub mod registry_client;

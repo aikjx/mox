@@ -87,20 +87,38 @@ impl GateNodeEffect {
     }
 }
 
-/// 根据一条审批请求推导当前对节点的作用；同时按需把过期的 Pending 翻成 Expired。
-pub fn derive_effect(req: &ApprovalRequest, now: DateTime<Utc>, ttl: Duration) -> GateNodeEffect {
+/// 根据一条审批请求推导当前对节点的作用。
+///
+/// 纯函数：只读取状态、不做副作用，因此**不在此把过期的 Pending 翻成 Expired**。
+/// Pending（无论是否已超过 TTL）与 Expired 对当拍派发的作用相同——都是 Hold（不派发、
+/// 不推进）；过期状态的惰性翻转由持有 `&mut self` 的 [`ApprovalGate::list_pending`]
+/// 与 [`ApprovalGate::decide`] 负责。
+pub fn derive_effect(
+    req: &ApprovalRequest,
+    _now: DateTime<Utc>,
+    _ttl: Duration,
+) -> GateNodeEffect {
     match req.status {
         ApprovalStatus::Approved => GateNodeEffect::Release,
         ApprovalStatus::Rejected => GateNodeEffect::Fail,
-        ApprovalStatus::Expired => GateNodeEffect::Hold,
-        ApprovalStatus::Pending => {
-            if req.is_expired(now, ttl) {
-                GateNodeEffect::Hold
-            } else {
-                GateNodeEffect::Hold
-            }
-        }
+        // Pending（含已过期但尚未被惰性翻转的那一拍）与 Expired 都挂起，等待决策/续期。
+        ApprovalStatus::Pending | ApprovalStatus::Expired => GateNodeEffect::Hold,
     }
+}
+
+/// DAG 派发循环对一个「依赖已满足、本可执行」节点应采取的动作（派发前包装判定）。
+///
+/// 这是审批门接入执行器的**纯接缝判定**：执行器的 `schedule_ready_nodes` 在把就绪节点
+/// 标 Running 之前，应先问一次 [`ApprovalGate::dispatch_decision`]：
+/// - [`DispatchDecision::Dispatch`] → 维持现有路径，标 Running 并派发；
+/// - [`DispatchDecision::Hold`] → 本 tick 跳过该节点（沿用现有「不派发即挂起」语义，
+///   不新增 NodeStatus 变体、不改节点状态），下一轮再问；
+/// - [`DispatchDecision::Fail`] → 把节点标记 Failed（映射 `NodeStatus::Failed`）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DispatchDecision {
+    Dispatch,
+    Hold,
+    Fail,
 }
 
 /// 审批决策失败原因。
@@ -227,6 +245,22 @@ impl ApprovalGate {
         }
     }
 
+    /// 派发前包装判定：执行器 `schedule_ready_nodes` 在把就绪节点标 Running 前调用。
+    /// 无审批挂起 → Dispatch（不阻塞既有 DAG）；pending/过期 → Hold（本 tick 跳过）；
+    /// 拒绝 → Fail（标 NodeStatus::Failed）。
+    pub fn dispatch_decision(
+        &self,
+        task_id: &str,
+        node_id: &str,
+        now: DateTime<Utc>,
+    ) -> DispatchDecision {
+        match self.effect_of(task_id, node_id, now) {
+            GateNodeEffect::Release => DispatchDecision::Dispatch,
+            GateNodeEffect::Hold => DispatchDecision::Hold,
+            GateNodeEffect::Fail => DispatchDecision::Fail,
+        }
+    }
+
     pub fn ttl(&self) -> Duration {
         self.ttl
     }
@@ -341,5 +375,23 @@ mod tests {
             gate.decide("task-x", "node-y", true, now),
             Err(DeciseError::NotFound)
         );
+    }
+
+    #[test]
+    fn dispatch_decision_maps_gate_state() {
+        let now = Utc::now();
+        let mut gate = ApprovalGate::new(Duration::hours(1));
+        // 无人审 → Dispatch
+        assert_eq!(gate.dispatch_decision("t", "n-a", now), DispatchDecision::Dispatch);
+        // pending 未决 → Hold
+        gate.submit("t", "n-h", "需人审", now);
+        assert_eq!(gate.dispatch_decision("t", "n-h", now), DispatchDecision::Hold);
+        // 批准 → Dispatch
+        gate.decide("t", "n-h", true, now).unwrap();
+        assert_eq!(gate.dispatch_decision("t", "n-h", now), DispatchDecision::Dispatch);
+        // 拒绝 → Fail
+        gate.submit("t", "n-f", "需人审", now);
+        gate.decide("t", "n-f", false, now).unwrap();
+        assert_eq!(gate.dispatch_decision("t", "n-f", now), DispatchDecision::Fail);
     }
 }

@@ -7,6 +7,7 @@
  * 从浏览器调用恒 404，七阶段"进度"也就从未真按帧推进过。现改走模块登记的六模式原生端点，
  * 阶段指示只在拿到结果后置为终态，不再臆造中间进度。
  */
+import { formatClockMinute } from '@/utils'
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { allianceApi } from '@/modules/expert-alliance/api'
@@ -19,7 +20,7 @@ import { collabChatSpeaker, collabChatText, collabChatPhase } from '@/modules/ex
 const DONE_PHASE = PHASE_IDS.indexOf('done')
 
 function timeText() {
-  return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return formatClockMinute()
 }
 
 /** 归一化结果 → 一条聊天消息：正文口径由模块的 model/collabChat.js 单源决定 */

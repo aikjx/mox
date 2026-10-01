@@ -54,6 +54,36 @@ async fn registry_health_ok() {
 }
 
 #[tokio::test]
+async fn platform_overview_aggregates_registered_instances() {
+    let app = create_router(AppState::for_test());
+
+    // 空实例 → 全 0
+    let (s0, b0) = send(&app, "GET", "/api/registry/overview", None).await;
+    assert_eq!(s0, StatusCode::OK);
+    let o0: serde_json::Value = serde_json::from_slice(&b0).unwrap();
+    assert_eq!(o0["total_experts"], 0);
+    assert_eq!(o0["active_experts"], 0);
+
+    // 注册两个实例（code + math）
+    send(&app, "POST", "/api/registry/experts", Some(serde_json::json!({
+        "name": "expert-code", "version": "1.0.0", "endpoint": "http://127.0.0.1:9101",
+        "capabilities": ["code"], "domain": "code", "weight": 1.0, "lease_seconds": 15
+    }))).await;
+    send(&app, "POST", "/api/registry/experts", Some(serde_json::json!({
+        "name": "expert-math", "version": "1.0.0", "endpoint": "http://127.0.0.1:9102",
+        "capabilities": ["math"], "domain": "math", "weight": 1.0, "lease_seconds": 15
+    }))).await;
+
+    let (s, b) = send(&app, "GET", "/api/registry/overview", None).await;
+    assert_eq!(s, StatusCode::OK, "body={}", String::from_utf8_lossy(&b));
+    let o: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(o["total_experts"], 2);
+    assert_eq!(o["active_experts"], 2);
+    assert_eq!(o["total_domains"], 2);
+    assert_eq!(o["total_consultations"], 0);
+}
+
+#[tokio::test]
 async fn register_then_get_then_heartbeat_flow() {
     let app = create_router(AppState::for_test());
 

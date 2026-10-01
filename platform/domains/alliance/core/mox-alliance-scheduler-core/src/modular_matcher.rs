@@ -288,6 +288,8 @@ impl ExpertMatcher for ModularWeightMatcher {
                 score: total_score,
                 match_reason: Self::generate_match_reason(&breakdown, expert_weights),
                 score_breakdown: breakdown,
+                // U2 透明化：带出本次实际使用的权重（默认或该专家覆盖值）
+                weights: expert_weights.clone(),
             });
         }
 

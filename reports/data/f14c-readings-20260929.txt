@@ -1,0 +1,27 @@
+F14c 落盘读数 — 2026-09-29（md5/字节/行数由本文件现场量得；门禁判决行原样摘录自 D:/tmp/f14c-*.log，标了出处）
+
+views/AllianceConsoleView.vue              md5=19fc54b4349427b4 bytes=52274 lines=1484 crlf=0
+contract/contract.test.js                  md5=e28a3f77df6f98be bytes=91508 lines=1530 crlf=0
+contract/vocabulary-ownership.test.js      md5=83fe066ba3668753 bytes=25119 lines=379 crlf=0
+components/SessionListPanel.vue            md5=b9417e9e5ca046df bytes=10741 lines=206 crlf=0
+views/AllianceExpertsView.vue              md5=dfd28050f3c469ec bytes=30787 lines=751 crlf=0
+
+[全量 vitest] 原样摘录自 D:/tmp/f14c-vitest.log
+    Test Files [22m [1m[32m77 passed[39m[22m[90m (77)[39m
+    Tests [22m [1m[32m1034 passed[39m[22m[90m (1034)[39m
+    Duration [22m 24.28s[2m (transform 11.77s, setup 0ms, collect 128.94s, tests 13.74s, environment 121.59s, pr
+[vite build] 原样摘录自 D:/tmp/f14c-build.log
+    built in 32.97s
+[模块化门禁] 原样摘录自 D:/tmp/f14c-module.log
+    --- 前端模块化门禁：ERROR=0 ---
+[locale 闸门] 原样摘录自 D:/tmp/f14c-locale.log
+    [OK] L1/L2/L3 无违规：扫描 270 个文件；无参时间格式化余账 2 处＝登记表；出口写法只在 utils/time.js
+
+站点 :362 >{{ current?.status === TASK_STATUS.COMPLETED ? '重新打开' : '标记完成' }}</el-button>
+站点 :562 const reopenBlocked = computed(() => current.value?.status === TASK_STATUS.COMPLETED && 
+站点 :593 const canPause = computed(() => current.value?.status === TASK_STATUS.RUNNING)
+站点 :594 const canResume = computed(() => current.value?.status === TASK_STATUS.PAUSED)
+站点 :645 const done = store.detail.nodes?.filter((n) => n.status === NODE_STATUS.COMPLETED).lengt
+针 :8 import { TASK_STATUS, NODE_STATUS, NODE_STATUS_LABELS, PRIORITY, MODE_WIRE, MODE_DISPLAY, FUSION_STR
+针 :103 for (const v of Object.values(TASK_STATUS)) expect(ALLIANCE_RS).toContain(`"${v}"`)
+针 :1144 expect(VIEW).toMatch(/current\.value\?\.status === TASK_STATUS\.COMPLETED && store\.runtime\?\.mode 

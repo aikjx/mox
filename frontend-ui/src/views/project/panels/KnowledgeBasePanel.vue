@@ -50,15 +50,8 @@
             </el-input>
           </div>
           <div class="filter-row">
-            <el-select v-model="filterType" placeholder="类型" size="default" clearable style="width: 100%">
-              <el-option v-for="t in docTypes" :key="t.value" :label="t.label" :value="t.value" />
-            </el-select>
-          </div>
-          <div class="filter-row">
             <el-select v-model="filterStatus" placeholder="状态" size="default" clearable style="width: 100%">
-              <el-option label="已发布" value="published" />
-              <el-option label="草稿" value="draft" />
-              <el-option label="归档" value="archived" />
+              <el-option v-for="s in KB_STATUSES" :key="s.value" :label="s.label" :value="s.value" />
             </el-select>
           </div>
           <div class="filter-row">
@@ -193,12 +186,12 @@
                 @change="toggleSelectDoc(doc)"
               />
               <el-tag
-                :type="getTagType(doc.type)"
+                :type="getCategoryTagType(doc.category)"
                 size="small"
                 effect="light"
                 round
               >
-                {{ getTypeLabel(doc.type) }}
+                {{ getCategoryLabel(doc.category) }}
               </el-tag>
               <el-tag
                 :type="getStatusType(doc.status)"
@@ -210,7 +203,7 @@
               </el-tag>
             </div>
             <h3 class="doc-card-title">{{ doc.title }}</h3>
-            <p class="doc-card-desc">{{ truncateText(doc.description, 80) }}</p>
+            <p v-if="doc.summary" class="doc-card-desc">{{ truncateText(doc.summary, 80) }}</p>
             <div class="doc-card-tags" v-if="doc.tags?.length">
               <el-tag
                 v-for="t in doc.tags.slice(0, 3)"
@@ -272,8 +265,8 @@
             <div class="row-main" @click="viewDocument(doc)">
               <div class="row-title-row">
                 <h3 class="row-title">{{ doc.title }}</h3>
-                <el-tag :type="getTagType(doc.type)" size="small" effect="light" round>
-                  {{ getTypeLabel(doc.type) }}
+                <el-tag :type="getCategoryTagType(doc.category)" size="small" effect="light" round>
+                  {{ getCategoryLabel(doc.category) }}
                 </el-tag>
                 <el-tag :type="getStatusType(doc.status)" size="small" effect="dark" round>
                   {{ getStatusLabel(doc.status) }}
@@ -282,7 +275,7 @@
                   <el-icon><MagicStick /></el-icon> 已分析
                 </el-tag>
               </div>
-              <p class="row-desc">{{ truncateText(doc.description, 120) }}</p>
+              <p v-if="doc.summary" class="row-desc">{{ truncateText(doc.summary, 120) }}</p>
               <div class="row-tags" v-if="doc.tags?.length">
                 <el-tag
                   v-for="t in doc.tags"
@@ -345,8 +338,8 @@
           <div class="detail-title-area">
             <h2 class="detail-title">{{ selectedDoc?.title }}</h2>
             <div class="detail-meta">
-              <el-tag :type="getTagType(selectedDoc?.type)" effect="light" round>
-                {{ getTypeLabel(selectedDoc?.type) }}
+              <el-tag :type="getCategoryTagType(selectedDoc?.category)" effect="light" round>
+                {{ getCategoryLabel(selectedDoc?.category) }}
               </el-tag>
               <el-tag :type="getStatusType(selectedDoc?.status)" effect="dark" round>
                 {{ getStatusLabel(selectedDoc?.status) }}
@@ -406,10 +399,11 @@
               <div v-if="docVersions.length" class="version-timeline">
                 <div
                   v-for="(ver, idx) in docVersions"
-                  :key="ver.id"
+                  :key="ver.version"
                   class="version-item"
                 >
-                  <div class="version-badge">v{{ ver.version }}</div>
+                  <!-- KbVersion 的版本号自带 "v" 前缀（next_version 产出 v{n+1}），模板不再补 v -->
+                  <div class="version-badge">{{ ver.version }}</div>
                   <div class="version-info">
                     <div class="version-header">
                       <span class="version-label">版本 {{ ver.version }}</span>
@@ -427,7 +421,7 @@
                         v-if="idx < docVersions.length - 1"
                         size="small"
                         type="warning"
-                        @click="revertVersion(ver.id)"
+                        @click="revertVersion(selectedDoc?.id, ver)"
                       >
                         <el-icon><Refresh /></el-icon> 回滚到此版
                       </el-button>
@@ -469,18 +463,18 @@
                   </div>
                   <div class="analysis-section">
                     <h4 class="analysis-title">
-                      <el-icon><Collection /></el-icon>
-                      分类建议
+                      <el-icon><Share /></el-icon>
+                      提取关系
                     </h4>
+                    <!-- wire 上没有 category_suggestions 这一族；AnalysisResult / KbDocument 都发 relations -->
                     <div class="suggestion-list">
                       <div
-                        v-for="(sug, i) in aiAnalysis.category_suggestions"
-                        :key="'cat-'+i"
+                        v-for="(r, i) in aiAnalysis.relations"
+                        :key="'rel-'+i"
                         class="suggestion-item"
                       >
-                        <span class="sug-name">{{ sug.name }}</span>
-                        <el-progress :percentage="sug.confidence" :stroke-width="6" :show-text="false" />
-                        <span class="sug-conf">{{ sug.confidence }}%</span>
+                        <span class="sug-name">{{ r.source }} → {{ r.target }}</span>
+                        <el-tag size="small" type="info" effect="plain" round>{{ r.relation }}</el-tag>
                       </div>
                     </div>
                   </div>
@@ -488,18 +482,18 @@
                 <div class="analysis-section">
                   <h4 class="analysis-title">
                     <el-icon><PriceTag /></el-icon>
-                    标签建议
+                    分析标签
                   </h4>
                   <div class="tag-suggestions">
+                    <!-- AnalysisResult.tags / KbDocument.tags 都是字符串数组，没有 name+confidence 的对象 -->
                     <el-tag
-                      v-for="(sug, i) in aiAnalysis.tag_suggestions"
+                      v-for="(t, i) in aiAnalysis.tags"
                       :key="'tag-'+i"
                       effect="plain"
                       type="info"
                       round
                     >
-                      {{ sug.name }}
-                      <span class="sug-conf-small">{{ sug.confidence }}%</span>
+                      {{ t }}
                     </el-tag>
                   </div>
                 </div>
@@ -512,21 +506,17 @@
                     <div class="entity-row entity-header">
                       <span>实体</span>
                       <span>类型</span>
-                      <span>置信度</span>
+                      <span>出现次数</span>
                     </div>
                     <div
                       v-for="(ent, i) in entities"
                       :key="'ent-'+i"
                       class="entity-row"
                     >
-                      <span>{{ ent.name }}</span>
+                      <span :title="ent.snippet">{{ ent.name }}</span>
                       <span class="entity-type">{{ ent.type }}</span>
-                      <el-progress
-                        :percentage="ent.confidence"
-                        :stroke-width="6"
-                        :show-text="true"
-                        :text-inside="true"
-                      />
+                      <!-- KbEntity 的五键是 id/name/type/frequency/snippet，没有 confidence ⇒ 进度条换成计次 -->
+                      <span class="entity-freq">{{ ent.frequency ?? 0 }}</span>
                     </div>
                   </div>
                 </div>
@@ -547,14 +537,15 @@
                   :key="'h-'+i"
                   class="history-item"
                 >
-                  <div class="history-dot" :class="h.action"></div>
+                  <!-- /kb/documents/:id/history 的行是版本快照，wire 上没有 action / user / detail 三键 -->
+                  <div class="history-dot"></div>
                   <div class="history-content">
                     <div class="history-action">
-                      <span class="action-label">{{ getActionLabel(h.action) }}</span>
+                      <span class="action-label">版本 {{ h.version }}</span>
                       <span class="history-time">{{ formatTime(h.created_at) }}</span>
                     </div>
-                    <div class="history-user">操作人：{{ h.user || '系统' }}</div>
-                    <div class="history-detail" v-if="h.detail">{{ h.detail }}</div>
+                    <div class="history-user" v-if="h.title">{{ h.title }}</div>
+                    <div class="history-detail" v-if="h.note">{{ h.note }}</div>
                   </div>
                 </div>
               </div>
@@ -566,75 +557,46 @@
             <div class="tab-content-wrapper">
               <div class="graph-entities">
                 <div class="graph-header">
-                  <h4>关联知识图谱实体</h4>
-                  <el-button size="small" type="primary" plain @click="showLinkDialog = true">
-                    <el-icon><Plus /></el-icon> 关联实体
+                  <h4>整篇文档挂图</h4>
+                  <!-- 挂图/解图都是文档级：graph-link 两端点不收请求体，wire 上也没有按实体的边接口 -->
+                  <el-button
+                    v-if="isGraphLinked"
+                    size="small"
+                    type="danger"
+                    plain
+                    @click="unlinkGraph(selectedDoc?.id)"
+                  >
+                    <el-icon><Close /></el-icon> 解除关联
+                  </el-button>
+                  <el-button
+                    v-else
+                    size="small"
+                    type="primary"
+                    plain
+                    @click="linkGraph(selectedDoc?.id)"
+                  >
+                    <el-icon><Share /></el-icon> 关联图谱
                   </el-button>
                 </div>
-                <div v-if="linkedEntities.length" class="linked-entities">
-                  <div
-                    v-for="ent in linkedEntities"
-                    :key="ent.id"
-                    class="entity-card"
-                  >
+                <div class="graph-summary" v-if="isGraphLinked">
+                  <span>子图节点 {{ graphNodes.length }}</span>
+                  <span>本次新增节点 {{ graphResult?.nodes_added ?? 0 }}</span>
+                  <span>本次新增边 {{ graphResult?.edges_added ?? 0 }}</span>
+                </div>
+                <div v-if="graphNodes.length" class="linked-entities">
+                  <div v-for="n in graphNodes" :key="n.id" class="entity-card">
                     <div class="entity-info">
-                      <span class="entity-name">{{ ent.name }}</span>
-                      <el-tag size="small" type="info" effect="plain" round>{{ ent.type }}</el-tag>
+                      <span class="entity-name">{{ n.label || n.id }}</span>
+                      <el-tag size="small" type="info" effect="plain" round>{{ n.node_type }}</el-tag>
                     </div>
-                    <el-button
-                      size="small"
-                      text
-                      type="danger"
-                      @click="unlinkEntity(ent)"
-                    >
-                      <el-icon><Close /></el-icon> 解除关联
-                    </el-button>
                   </div>
                 </div>
-                <el-empty v-else description="暂未关联图谱实体" :image-size="60" />
+                <el-empty v-else :description="isGraphLinked ? '挂图响应未带回节点' : '尚未关联图谱'" :image-size="60" />
               </div>
             </div>
           </el-tab-pane>
         </el-tabs>
       </div>
-
-      <!-- Link Entity Dialog -->
-      <el-dialog
-        v-model="showLinkDialog"
-        title="关联图谱实体"
-        width="480px"
-        :close-on-click-modal="false"
-      >
-        <div class="link-dialog-content">
-          <el-input
-            v-model="linkSearchQuery"
-            placeholder="搜索实体名称..."
-            clearable
-            @keyup.enter="searchEntities"
-          >
-            <template #append>
-              <el-button @click="searchEntities"><el-icon><Search /></el-icon></el-button>
-            </template>
-          </el-input>
-          <div class="entity-search-results" v-if="searchResults.length">
-            <div
-              v-for="ent in searchResults"
-              :key="ent.id"
-              class="search-entity-item"
-              @click="linkEntity(ent)"
-            >
-              <span class="entity-name">{{ ent.name }}</span>
-              <el-tag size="small" type="info" effect="plain" round>{{ ent.type }}</el-tag>
-              <el-button size="small" type="primary" text>
-                <el-icon><Plus /></el-icon> 关联
-              </el-button>
-            </div>
-          </div>
-          <div v-else class="no-results">
-            <span>输入关键词搜索实体</span>
-          </div>
-        </div>
-      </el-dialog>
     </el-dialog>
 
     <!-- Create/Edit Dialog -->
@@ -649,21 +611,12 @@
         <el-form-item label="标题" prop="title">
           <el-input v-model="editForm.title" placeholder="请输入文档标题" maxlength="200" show-word-limit />
         </el-form-item>
-        <el-form-item label="类型" prop="type">
-          <el-select v-model="editForm.type" placeholder="选择文档类型" style="width: 100%">
-            <el-option
-              v-for="t in docTypes"
-              :key="t.value"
-              :label="t.label"
-              :value="t.value"
-            />
-          </el-select>
-        </el-form-item>
         <el-form-item label="分类" prop="category">
           <el-tree-select
             v-model="editForm.category"
             :data="categories"
-            :props="{ label: 'name', value: 'name', children: 'children' }"
+            node-key="id"
+            :props="{ label: 'name', value: 'id', children: 'children' }"
             placeholder="选择分类"
             check-strictly
             style="width: 100%"
@@ -738,37 +691,46 @@
         <div class="compare-header">
           <div class="compare-version">
             <span class="compare-label">旧版本</span>
-            <el-tag type="info" effect="dark" round>v{{ compareFrom?.version }}</el-tag>
+            <el-tag type="info" effect="dark" round>{{ compareFrom?.version }}</el-tag>
           </div>
           <div class="compare-arrow">
             <el-icon><ArrowRight /></el-icon>
           </div>
           <div class="compare-version">
             <span class="compare-label">新版本</span>
-            <el-tag type="success" effect="dark" round>v{{ compareTo?.version }}</el-tag>
+            <el-tag type="success" effect="dark" round>{{ compareTo?.version }}</el-tag>
+          </div>
+        </div>
+        <!-- VersionDiff 只有 version / added_lines / removed_lines / unchanged 四键，没有"修改"这一类 -->
+        <div class="diff-result" v-if="compareDiff">
+          <div class="diff-col">
+            <h4>新增 {{ compareDiff.added_lines?.length ?? 0 }} 行</h4>
+            <pre v-for="(l, i) in compareDiff.added_lines" :key="'add-'+i" class="diff-line added">{{ l }}</pre>
+          </div>
+          <div class="diff-col">
+            <h4>删除 {{ compareDiff.removed_lines?.length ?? 0 }} 行</h4>
+            <pre v-for="(l, i) in compareDiff.removed_lines" :key="'rem-'+i" class="diff-line removed">{{ l }}</pre>
+          </div>
+          <div class="diff-col">
+            <h4>未变 {{ compareDiff.unchanged ?? 0 }} 行</h4>
           </div>
         </div>
         <div class="compare-body">
           <div class="compare-pane">
-            <h4>v{{ compareFrom?.version }} — {{ formatTime(compareFrom?.created_at) }}</h4>
+            <h4>{{ compareFrom?.version }} — {{ formatTime(compareFrom?.created_at) }}</h4>
             <div class="compare-content" v-html="renderedCompareFrom"></div>
           </div>
           <div class="compare-pane diff-pane">
-            <h4>v{{ compareTo?.version }} — {{ formatTime(compareTo?.created_at) }}</h4>
+            <h4>{{ compareTo?.version }} — {{ formatTime(compareTo?.created_at) }}</h4>
             <div class="compare-content" v-html="renderedCompareTo"></div>
           </div>
-        </div>
-        <div class="diff-legend">
-          <span class="legend-item"><i class="legend-added"></i> 新增</span>
-          <span class="legend-item"><i class="legend-removed"></i> 删除</span>
-          <span class="legend-item"><i class="legend-changed"></i> 修改</span>
         </div>
       </div>
       <template #footer>
         <el-button @click="compareVisible = false">关闭</el-button>
         <el-button
           type="warning"
-          @click="revertVersion(compareFrom?.id)"
+          @click="revertVersion(selectedDoc?.id, compareFrom)"
           :disabled="!compareFrom"
         >
           <el-icon><Refresh /></el-icon> 回滚到此版本
@@ -786,7 +748,7 @@ import {
   Plus, Search, Refresh, View, Edit, Delete, MagicStick,
   Share, Document, Folder, CollectionTag, Clock, Check, Close,
   ArrowLeft, ArrowRight, Download, Upload, DataAnalysis,
-  List, Grid, Loading, PriceTag, Collection
+  List, Grid, Loading, PriceTag
 } from '@element-plus/icons-vue'
 import * as api from '@/api'
 import { useProject } from '@/composables'
@@ -802,7 +764,9 @@ const docVersions = ref([])
 const docHistory = ref([])
 const aiAnalysis = ref(null)
 const entities = ref([])
-const linkedEntities = ref([])
+// 挂图是文档级动作：graph-link 响应给 {graph_nodes[],nodes_added,edges_added,...}，没有按实体的接口
+const graphNodes = ref([])
+const graphResult = ref(null)
 // 统计：由 kbGetStats() 加载，初始为空
 const stats = ref({})
 
@@ -811,7 +775,6 @@ const error = ref('')
 const saving = ref(false)
 const searchQuery = ref('')
 const filterCategory = ref('')
-const filterType = ref('')
 const filterStatus = ref('')
 const filterTag = ref('')
 const filterDateRange = ref(null)
@@ -823,35 +786,27 @@ const detailTab = ref('content')
 const detailMode = ref('view')
 const editVisible = ref(false)
 const isEditing = ref(false)
-const showLinkDialog = ref(false)
 const compareVisible = ref(false)
 const compareFrom = ref(null)
 const compareTo = ref(null)
-const linkSearchQuery = ref('')
-const searchResults = ref([])
+const compareDiff = ref(null)
 
 const categoryTreeRef = ref(null)
 const editFormRef = ref(null)
 
-const docTypes = [
-  { value: 'article', label: '文章' },
-  { value: 'tutorial', label: '教程' },
-  { value: 'api', label: 'API 文档' },
-  { value: 'design', label: '设计文档' },
-  { value: 'report', label: '报告' },
-  { value: 'spec', label: '规范' }
-]
 
 const tagOptions = computed(() => tags.value)
+// 挂图与否只有一个真源：KbDocument.status ∈ {draft, analyzed, linked}
+const isGraphLinked = computed(() => selectedDoc.value?.status === 'linked')
 
 // ========== Mapping ==========
-const mapDoc = (d) => ({ ...d, version_count: d.version || 1, ai_analyzed: !!d.aiAnalysis })
 
+// editForm 的字段与 CreateDocReq 一一对应（title/content/category/tags）；
+// description 与 auto_save 是 wire 上没有落点的表单装饰（已登记为待裁决），version_note 走独立的建版端点。
 const editForm = reactive({
   id: null,
   title: '',
   content: '',
-  type: 'article',
   category: '',
   tags: [],
   description: '',
@@ -864,37 +819,39 @@ const formRules = {
     { required: true, message: '请输入文档标题', trigger: 'blur' },
     { min: 2, max: 200, message: '标题长度在 2 到 200 个字符', trigger: 'blur' }
   ],
-  type: [{ required: true, message: '请选择文档类型', trigger: 'change' }],
   content: [{ required: true, message: '请输入文档内容', trigger: 'blur' }]
 }
 
 // ========== Computed ==========
+// 四张卡只挂两个真源：/kb/stats 给 {documents,categories,tags,storage_bytes,graph_nodes,graph_edges}
+// （handler 里再补两个图计数），"版本总数"与"已分析"没有服务端计数键 ⇒ 前者撤下，后者由列表行的 status 本地数。
+// icon 传组件本身：模板是 <component :is="s.icon">，本项目无 unplugin-auto-import，字符串名解析不出图标。
 const statCards = computed(() => [
   {
     label: '文档总数',
-    value: stats.value.total ?? 0,
-    icon: 'Document',
+    value: stats.value.documents ?? 0,
+    icon: Document,
     color: 'var(--on-cat-1)',
     bg: 'var(--cat-1-fill)'
   },
   {
     label: '分类数',
     value: stats.value.categories ?? 0,
-    icon: 'Folder',
+    icon: Folder,
     color: 'var(--on-cat-2)',
     bg: 'var(--cat-2-fill)'
   },
   {
-    label: '版本总数',
-    value: stats.value.versions ?? 0,
-    icon: 'Clock',
+    label: '标签数',
+    value: stats.value.tags ?? 0,
+    icon: PriceTag,
     color: 'var(--on-cat-3)',
     bg: 'var(--cat-3-fill)'
   },
   {
     label: '已分析',
-    value: stats.value.analyzed ?? 0,
-    icon: 'MagicStick',
+    value: documents.value.filter((d) => isAiAnalyzed(d.status)).length,
+    icon: MagicStick,
     color: 'var(--on-cat-4)',
     bg: 'var(--cat-4-fill)'
   }
@@ -907,11 +864,10 @@ const filteredDocuments = computed(() => {
     result = result.filter(
       d =>
         d.title?.toLowerCase().includes(q) ||
-        d.description?.toLowerCase().includes(q) ||
+        d.summary?.toLowerCase().includes(q) ||
         d.tags?.some(t => t.toLowerCase().includes(q))
     )
   }
-  if (filterType.value) result = result.filter(d => d.type === filterType.value)
   if (filterStatus.value) result = result.filter(d => d.status === filterStatus.value)
   if (filterTag.value) result = result.filter(d => d.tags?.includes(filterTag.value))
   if (filterCategory.value) result = result.filter(d => d.category === filterCategory.value)
@@ -976,39 +932,19 @@ function getTagSize(count) {
   return min + (count / maxCount) * (max - min)
 }
 
-function getTagType(type) {
-  const map = { article: 'info', tutorial: 'success', api: 'warning', design: 'info', report: 'danger', spec: 'info' }
-  return map[type] || undefined
-}
 
-function getTypeLabel(type) {
-  return docTypes.find(t => t.value === type)?.label || type
-}
 
-function getStatusType(status) {
-  return { published: 'success', draft: 'warning', archived: 'info' }[status] || 'info'
-}
 
-function getStatusLabel(status) {
-  return { published: '已发布', draft: '草稿', archived: '归档' }[status] || status
-}
-
-function getActionLabel(action) {
-  return { create: '创建', update: '更新', delete: '删除', analyze: 'AI 分析', revert: '回滚', link: '关联图谱' }[action] || action
-}
 
 function truncateText(text, max) {
   if (!text) return ''
   return text.length > max ? text.slice(0, max) + '...' : text
 }
 
-function formatTime(ts) {
-  if (!ts) return '-'
-  const d = new Date(ts)
-  if (isNaN(d)) return '-'
-  const pad = n => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
+// 时间口径不再自写：这一份与 utils/knowledgeBase.utils.js、utils/message.utils.js 里的两份逐字符相同
+import { formatDateTime as formatTime } from '@/utils'
+import { KB_STATUSES, getCategoryLabel, getCategoryTagType, getStatusType, getStatusLabel, isAiAnalyzed, mapDoc } from '@/utils'
+import { unwrap, unwrapList } from '@/modules/_kernel/envelope'
 
 function handleSearch() {
   fetchDocuments()
@@ -1016,7 +952,6 @@ function handleSearch() {
 
 function resetFilters() {
   searchQuery.value = ''
-  filterType.value = ''
   filterStatus.value = ''
   filterTag.value = ''
   filterCategory.value = ''
@@ -1025,7 +960,8 @@ function resetFilters() {
 }
 
 function handleCategoryClick(node) {
-  filterCategory.value = node?.name || ''
+  // 列表行的 category 存的是 cat-* id（/kb/categories 的 id 键），按中文名筛恒空
+  filterCategory.value = node?.id || ''
   fetchDocuments()
 }
 
@@ -1046,7 +982,6 @@ async function fetchDocuments() {
   try {
     const params = {}
     if (searchQuery.value) params.q = searchQuery.value
-    if (filterType.value) params.type = filterType.value
     if (filterStatus.value) params.status = filterStatus.value
     if (filterTag.value) params.tag = filterTag.value
     if (filterCategory.value) params.category = filterCategory.value
@@ -1055,8 +990,7 @@ async function fetchDocuments() {
       params.end_date = filterDateRange.value[1].toISOString()
     }
     const data = await api.kbListDocuments(params)
-    const list = Array.isArray(data) ? data : (data?.items || data?.documents || [])
-    documents.value = list.map(mapDoc)
+    documents.value = unwrapList(unwrap(data), 'items').map(mapDoc)
   } catch (e) {
     documents.value = []
     error.value = e?.message || '文档加载失败'
@@ -1100,10 +1034,9 @@ async function fetchStats() {
   } catch (e) {
     ElMessage.error(e?.message || '统计加载失败')
     stats.value = {
-      total: documents.value.length,
+      documents: documents.value.length,
       categories: categories.value.length,
-      versions: documents.value.reduce((sum, d) => sum + (d.version_count || 1), 0),
-      analyzed: documents.value.filter(d => d.ai_analyzed).length
+      tags: tags.value.length
     }
   }
 }
@@ -1119,6 +1052,10 @@ async function viewDocument(doc) {
   detailTab.value = 'content'
   detailMode.value = 'view'
   detailVisible.value = true
+  // 换文档要把只在动作响应里出现的派生态清掉，否则子图/差异是上一篇的
+  graphNodes.value = []
+  graphResult.value = null
+  compareDiff.value = null
   try {
     const fullDoc = await api.kbGetDocument(doc.id)
     if (fullDoc) {
@@ -1141,7 +1078,9 @@ function closeDetail() {
   docHistory.value = []
   aiAnalysis.value = null
   entities.value = []
-  linkedEntities.value = []
+  graphNodes.value = []
+  graphResult.value = null
+  compareDiff.value = null
 }
 
 function handleDetailTabChange(tab) {
@@ -1162,7 +1101,6 @@ function openCreateDialog() {
     id: null,
     title: '',
     content: '',
-    type: 'article',
     category: '',
     tags: [],
     description: '',
@@ -1172,17 +1110,26 @@ function openCreateDialog() {
   editVisible.value = true
 }
 
-function openEditDialog(doc) {
+async function openEditDialog(doc) {
   if (!doc) return
+  try {
+    const full = await api.kbGetDocument(doc.id)
+    if (!full?.id || !full?.current_version) throw new Error('文档详情缺失，请刷新后重试')
+    doc = mapDoc(full)
+  } catch (e) {
+    ElMessage.error(e?.message || '读取文档失败')
+    return
+  }
   isEditing.value = true
   Object.assign(editForm, {
     id: doc.id,
+    current_version: doc.current_version,
     title: doc.title,
     content: doc.content || '',
-    type: doc.type,
     category: doc.category,
     tags: doc.tags || [],
-    description: doc.description || '',
+    // wire 上没有 description 键，编辑时不继承上一篇的残留
+    description: '',
     auto_save: false,
     version_note: ''
   })
@@ -1212,6 +1159,13 @@ async function submitForm() {
     editVisible.value = false
     fetchDocuments()
     fetchStats()
+    // 详情里挂着的正是这一篇时，正文与版本列表都要重取：后端更新已原子归档旧正文并推进版本
+    if (isEditing.value && selectedDoc.value?.id === editForm.id) {
+      const full = await api.kbGetDocument(editForm.id).catch(() => null)
+      if (full) selectedDoc.value = mapDoc(full)
+      fetchVersions(editForm.id)
+      fetchHistory(editForm.id)
+    }
   } catch (e) {
     ElMessage.error((e?.message || '操作失败'))
   } finally {
@@ -1219,39 +1173,30 @@ async function submitForm() {
   }
 }
 
+// CreateDocReq 只认 title/content/category/tags 四键（category 取 cat-* id），响应是 {id,status,document}
 async function createDocument(data) {
   const payload = {
     title: data.title,
-    type: data.type,
+    content: data.content,
     category: data.category,
-    tags: data.tags,
-    description: data.description,
-    content: data.content
+    tags: data.tags
   }
   try {
     const result = await api.kbCreateDocument(payload)
-    const newDoc = mapDoc(result)
-    documents.value.unshift(newDoc)
-    return newDoc
+    const created = mapDoc(result?.document)
+    documents.value.unshift(created)
+    return created
   } catch (e) {
     ElMessage.error(e?.message || '创建失败')
     throw e
   }
 }
 
+// 正文、版本备注与预期版本统一提交；由后端原子归档上一版。
 async function saveDocument(data) {
-  const payload = {
-    title: data.title,
-    type: data.type,
-    category: data.category,
-    tags: data.tags,
-    description: data.description,
-    content: data.content,
-    version_note: data.version_note
-  }
   try {
-    const result = await api.kbUpdateDocument(data.id, payload)
-    const updated = mapDoc(result)
+    const result = await api.kbSaveDocumentEdit(data)
+    const updated = mapDoc(result?.document)
     const idx = documents.value.findIndex(d => d.id === data.id)
     if (idx !== -1) {
       documents.value[idx] = { ...documents.value[idx], ...updated }
@@ -1288,21 +1233,24 @@ async function deleteDocument(id) {
   }
 }
 
+// POST /kb/documents/:id/analyze 的响应就是 AnalysisResult{doc_id,status,entities,relations,keywords,tags,summary,chunks,...}；
+// 落库进文档的只有 status/summary/entities/relations，所以这份结果只在内存里用，不再找 aiAnalysis 这种不存在的键。
 async function analyzeDocument(id) {
   if (!id) return
   ElMessage.info('AI 分析已开始，请稍候...')
   try {
     const result = await api.kbAnalyzeDocument(id)
+    const status = result?.status || 'analyzed'
+    aiAnalysis.value = result || null
+    entities.value = result?.entities || []
     const doc = documents.value.find(d => d.id === id)
     if (doc) {
-      doc.ai_analyzed = true
-      if (result) {
-        doc.aiAnalysis = result
-      }
-      selectedDoc.value = { ...doc }
+      doc.status = status
+      doc.ai_analyzed = isAiAnalyzed(status)
     }
+    // 详情里已有这一篇时只改状态：拿列表行（没有 content）整份覆盖会把正文清空
     if (selectedDoc.value?.id === id) {
-      loadAiAnalysis(id)
+      selectedDoc.value = { ...selectedDoc.value, status, ai_analyzed: isAiAnalyzed(status) }
     }
     ElMessage.success('AI 分析完成')
     fetchStats()
@@ -1311,39 +1259,33 @@ async function analyzeDocument(id) {
   }
 }
 
+// BatchAnalyzeReq 只认 ids；响应是 {status,analyzed,failed[]}，除失败清单外不给逐篇结果
 async function batchAnalyze() {
   if (!selectedDocs.value.length) return
   ElMessage.info(`开始批量分析 ${selectedDocs.value.length} 篇文档...`)
   try {
-    const result = await api.kbBatchAnalyze({ doc_ids: selectedDocs.value })
-    const analyzedIds = Array.isArray(result) ? result : (result?.analyzed_ids || [])
-    for (const id of analyzedIds) {
-      const doc = documents.value.find(d => d.id === id)
-      if (doc) doc.ai_analyzed = true
-    }
-    ElMessage.success('批量分析完成')
+    const result = await api.kbBatchAnalyze({ ids: selectedDocs.value })
+    const analyzed = result?.analyzed ?? 0
+    const failed = result?.failed || []
+    if (failed.length) ElMessage.warning(`批量分析：成功 ${analyzed} 篇，失败 ${failed.length} 篇`)
+    else ElMessage.success(`批量分析完成：成功 ${analyzed} 篇`)
     selectedDocs.value = []
+    fetchDocuments()
     fetchStats()
   } catch (e) {
     ElMessage.error(e?.message || '批量分析失败')
   }
 }
 
+// 重开分析页签时只能回到文档本身：KbDocument 上没有 aiAnalysis / linked_entities 两个键
 async function loadAiAnalysis(docId) {
   try {
     const data = await api.kbGetDocument(docId)
-    if (data?.aiAnalysis) {
-      aiAnalysis.value = data.aiAnalysis
-      entities.value = data.aiAnalysis.entities || []
-    } else if (data) {
-      aiAnalysis.value = data
-      entities.value = data.entities || []
-    }
-    linkedEntities.value = data?.linked_entities || linkedEntities.value
+    aiAnalysis.value = data || null
+    entities.value = data?.entities || []
   } catch (e) {
     aiAnalysis.value = null
     entities.value = []
-    linkedEntities.value = []
     ElMessage.error(e?.message || 'AI 分析加载失败')
   }
 }
@@ -1351,17 +1293,33 @@ async function loadAiAnalysis(docId) {
 async function fetchVersions(docId) {
   try {
     const data = await api.kbGetVersions(docId)
-    docVersions.value = Array.isArray(data) ? data : (data?.versions || [])
+    docVersions.value = unwrapList(unwrap(data), 'versions')
   } catch (e) {
     docVersions.value = []
     ElMessage.error(e?.message || '版本记录加载失败')
   }
 }
 
-function viewVersion(ver) {
-  compareTo.value = ver
-  compareFrom.value = docVersions.value[docVersions.value.indexOf(ver) + 1] || docVersions.value[0]
+async function openCompare(fromVer, toVer) {
+  compareFrom.value = fromVer
+  compareTo.value = toVer
+  compareDiff.value = null
   compareVisible.value = true
+  const docId = selectedDoc.value?.id
+  if (!docId || !fromVer || !toVer) return
+  // CompareReq 只认 {v1,v2}，响应是 {doc_id,diff:{version,added_lines,removed_lines,unchanged}}
+  try {
+    const data = await api.kbCompareVersions(docId, { v1: fromVer.version, v2: toVer.version })
+    compareDiff.value = data?.diff || null
+  } catch (e) {
+    ElMessage.error(e?.message || '版本对比加载失败')
+  }
+}
+
+function viewVersion(ver) {
+  const idx = docVersions.value.indexOf(ver)
+  // 列表按版本倒序：ver 的"上一版"在它之后
+  openCompare(docVersions.value[idx + 1] || docVersions.value[0], ver)
 }
 
 function compareWithPrevious(idx) {
@@ -1369,41 +1327,26 @@ function compareWithPrevious(idx) {
     ElMessage.info('已是最早版本，无更早版本可对比')
     return
   }
-  compareTo.value = docVersions.value[idx]
-  compareFrom.value = docVersions.value[idx + 1]
-  compareVisible.value = true
+  openCompare(docVersions.value[idx + 1], docVersions.value[idx])
 }
 
-async function compareVersions(docId, v1, v2) {
-  try {
-    const data = await api.kbCompareVersions(docId, { version_from: v1?.id || v1, version_to: v2?.id || v2 })
-    compareFrom.value = data?.from || v1
-    compareTo.value = data?.to || v2
-    if (data?.diff) {
-      compareFrom.value.content = data.from?.content || compareFrom.value?.content
-      compareTo.value.content = data.to?.content || compareTo.value?.content
-    }
-    compareVisible.value = true
-  } catch (e) {
-    compareFrom.value = v1
-    compareTo.value = v2
-    compareVisible.value = true
-    ElMessage.error(e?.message || '版本对比加载失败')
-  }
-}
-
+// RevertReq 只认 {version}；版本串自带 "v" 前缀，不再补一次
 async function revertVersion(docId, version) {
-  if (!version) return
+  if (!docId || !version?.version) return
   try {
     await ElMessageBox.confirm(
-      `确定回滚到版本 v${version.version} 吗？当前版本将保存为新版本。`,
+      `确定回滚到版本 ${version.version} 吗？当前版本将保存为新版本。`,
       '回滚确认',
       { confirmButtonText: '回滚', cancelButtonText: '取消', type: 'warning' }
     )
-    await api.kbRevertVersion(docId, { target_version: version.id || version.version })
-    ElMessage.success(`已回滚到版本 v${version.version}`)
+    const res = await api.kbRevertVersion(docId, { version: version.version })
+    ElMessage.success(`已回滚到 ${version.version}，当前版本为 ${res?.version || '?'}`)
+    // 回滚改的是正文，详情与列表都要重取
+    const full = await api.kbGetDocument(docId).catch(() => null)
+    if (full) selectedDoc.value = mapDoc(full)
     fetchVersions(docId)
     fetchHistory(docId)
+    fetchDocuments()
   } catch (e) {
     if (e !== 'cancel' && e !== 'close') {
       ElMessage.error(e?.message || '回滚失败')
@@ -1414,72 +1357,56 @@ async function revertVersion(docId, version) {
 async function fetchHistory(docId) {
   try {
     const data = await api.kbGetDocHistory(docId)
-    docHistory.value = Array.isArray(data) ? data : (data?.history || [])
+    docHistory.value = unwrapList(unwrap(data), 'history')
   } catch (e) {
     docHistory.value = []
     ElMessage.error(e?.message || '变更历史加载失败')
   }
 }
 
-async function searchEntities() {
-  if (!linkSearchQuery.value.trim()) {
-    searchResults.value = []
-    return
-  }
+// 挂图端点不收请求体：POST/DELETE /kb/documents/:id/graph-link 都是整篇文档级的子图操作
+async function linkGraph(docId) {
+  if (!docId) return
   try {
-    const data = await api.kbSearch({ q: linkSearchQuery.value, type: 'entity' })
-    searchResults.value = Array.isArray(data) ? data : (data?.results || data?.items || [])
-  } catch (e) {
-    searchResults.value = []
-    ElMessage.error(e?.message || '实体搜索失败')
-  }
-}
-
-async function linkToGraph(docId, entityIds) {
-  try {
-    const data = await api.kbGraphLink(docId, { entity_ids: entityIds })
-    if (data?.linked_entities) {
-      linkedEntities.value = data.linked_entities
+    const data = await api.kbGraphLink(docId)
+    graphResult.value = data || null
+    graphNodes.value = data?.graph_nodes || []
+    if (selectedDoc.value?.id === docId) {
+      selectedDoc.value = { ...selectedDoc.value, status: 'linked', ai_analyzed: true }
     }
-    ElMessage.success(`已关联 ${entityIds.length} 个实体`)
-    showLinkDialog.value = false
-    searchResults.value = []
-    linkSearchQuery.value = ''
-    if (selectedDoc.value) {
-      fetchHistory(docId)
+    const doc = documents.value.find(d => d.id === docId)
+    if (doc) {
+      doc.status = 'linked'
+      doc.ai_analyzed = true
     }
+    ElMessage.success(`已挂图：新增节点 ${data?.nodes_added ?? 0}，新增边 ${data?.edges_added ?? 0}`)
+    fetchStats()
   } catch (e) {
     ElMessage.error(e?.message || '关联失败')
   }
 }
 
-async function linkEntity(ent) {
-  if (!linkedEntities.value.find(e => e.id === ent.id)) {
-    linkedEntities.value.push(ent)
-    if (selectedDoc.value) {
-      await linkToGraph(selectedDoc.value.id, [ent.id])
-    } else {
-      ElMessage.success(`已关联实体：${ent.name}`)
+async function unlinkGraph(docId) {
+  if (!docId) return
+  try {
+    await ElMessageBox.confirm(
+      '解除关联会移除该文档在图谱中的整个子图（含实体节点与边），确定继续吗？',
+      '解除关联确认',
+      { confirmButtonText: '解除关联', cancelButtonText: '取消', type: 'warning' }
+    )
+    const data = await api.kbGraphUnlink(docId)
+    graphNodes.value = []
+    graphResult.value = null
+    ElMessage.success(`已解除关联：移除节点 ${data?.nodes_removed ?? 0}`)
+    // 后端的 unlink 不改 KbDocument.status（仍写 linked），这里只能先把界面拉回真实样子
+    if (selectedDoc.value?.id === docId) {
+      selectedDoc.value = { ...selectedDoc.value, status: 'analyzed' }
     }
-  }
-}
-
-async function unlinkEntity(ent) {
-  // 先更新本地状态以获得即时反馈
-  const prev = [...linkedEntities.value]
-  linkedEntities.value = linkedEntities.value.filter(e => e.id !== ent.id)
-  if (selectedDoc.value) {
-    try {
-      await api.kbGraphUnlink(selectedDoc.value.id, { entity_ids: [ent.id] })
-      ElMessage.success(`已解除关联：${ent.name}`)
-    } catch (e) {
-      // 回滚本地状态
-      linkedEntities.value = prev
-      console.warn('[KB] 解除实体关联失败:', e)
-      ElMessage.error('解除关联失败，请重试')
+    fetchDocuments()
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') {
+      ElMessage.error(e?.message || '解除关联失败')
     }
-  } else {
-    ElMessage.success(`已解除关联：${ent.name}`)
   }
 }
 
@@ -1493,7 +1420,6 @@ function handleKeydown(e) {
   }
   if (e.key === 'Escape') {
     if (compareVisible.value) compareVisible.value = false
-    else if (showLinkDialog.value) showLinkDialog.value = false
     else if (editVisible.value) editVisible.value = false
     else if (detailVisible.value) closeDetail()
   }
@@ -2619,33 +2545,35 @@ watch(detailVisible, (v) => {
   border-color: var(--brand);
 }
 
-.diff-legend {
+.diff-result {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  padding-top: 8px;
+  gap: 12px;
+  padding: 8px 0 12px;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
+.diff-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.diff-col h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
   color: var(--text-2);
 }
 
-.legend-item i {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  display: inline-block;
-  box-sizing: border-box;
+.diff-line {
+  margin: 0 0 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-radius: 4px;
 }
 
 /* 淡染底在四皮下与卡面只差 1.04–1.24:1，色块必须靠描边才认得出边界 */
-.legend-added { background: var(--success-dim); border: 1px solid var(--success); }
-.legend-removed { background: var(--danger-dim); border: 1px solid var(--danger); }
-.legend-changed { background: var(--warning-dim); border: 1px solid var(--warning); }
+.diff-line.added { background: var(--success-dim); border: 1px solid var(--success); }
+.diff-line.removed { background: var(--danger-dim); border: 1px solid var(--danger); }
 
 /* Edit Dialog */
 .edit-dialog-footer {

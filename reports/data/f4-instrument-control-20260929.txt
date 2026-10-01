@@ -1,0 +1,4 @@
+components/MessageBubble.vue: 锚点行命中 0（需 1）-> 无效见证
+composables/workspace/useWorkspaceData.js: 锚点行命中 0（需 1）-> 无效见证
+components/FlowDetailDialog.vue: 锚点行命中 0（需 1）-> 无效见证
+WITNESS FAIL: 3 处不同或锚点不唯一

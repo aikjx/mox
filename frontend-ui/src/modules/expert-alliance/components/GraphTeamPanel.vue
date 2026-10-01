@@ -51,7 +51,7 @@
       <ol v-if="team.members.length" class="agt-members">
         <li v-for="m in team.members" :key="m.id" class="agt-member">
           <header class="agt-member-head">
-            <button class="agt-jump" type="button" @click="store.selectNode(m.id)">{{ m.name || m.id }}</button>
+            <button class="agt-jump" type="button" @click="store.selectNode(m.id)">{{ graphNodeLabel({ id: m.id, label: m.name }) }}</button>
             <el-tag size="small" effect="plain">{{ roleLabel(m.role) }}</el-tag>
             <span class="agt-dim">评分 {{ m.avgRating.toFixed(2) }} · 贡献 {{ m.matchScore.toFixed(3) }}</span>
           </header>
@@ -71,7 +71,7 @@
 // 最优团队面板：入参拼装交给 contract/graph.js，本组件只管渲染字段表与结果。
 import { computed } from 'vue'
 import {
-  OPTIMAL_TEAM_BACKEND_RULES, OPTIMAL_TEAM_FIELDS, coverageText, optimalTeamRoleLabel
+  OPTIMAL_TEAM_BACKEND_RULES, OPTIMAL_TEAM_FIELDS, coverageText, graphNodeLabel, optimalTeamRoleLabel
 } from '@/modules/expert-alliance/contract'
 
 const props = defineProps({

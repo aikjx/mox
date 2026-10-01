@@ -153,6 +153,8 @@ fn duration_minutes(start: &str, end: &str) -> Option<f64> {
 // ---------------------------------------------------------------------
 async fn create_session(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Json(body): Json<CreateSessionBody>,
 ) -> ApiResponse<Value> {
     let now = now_iso();
@@ -180,7 +182,7 @@ async fn create_session(
         save_sessions(&sessions);
     }
 
-    emit_audit(&state, AuditAction::Unknown("session.create".into()), "session", &session_id, AuditOutcome::Success, Some(&format!("type={}", session.session_type)));
+    emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("session.create".into()), "session", &session_id, AuditOutcome::Success, Some(&format!("type={}", session.session_type)));
 
     ok(json!(session))
 }
@@ -190,6 +192,7 @@ async fn create_session(
 // ---------------------------------------------------------------------
 async fn list_sessions(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Query(params): Query<HashMap<String, String>>,
 ) -> ApiResponse<Value> {
     let (offset, page_size) = parse_pagination(&params);
@@ -261,6 +264,7 @@ async fn list_sessions(
 // ---------------------------------------------------------------------
 async fn session_stats(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
     let sessions = state.sessions.lock();
     let now_str = now_iso();
@@ -346,6 +350,7 @@ async fn session_stats(
 // ---------------------------------------------------------------------
 async fn get_session(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
     let sessions = state.sessions.lock();
@@ -360,6 +365,7 @@ async fn get_session(
 // ---------------------------------------------------------------------
 async fn update_session(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Path(id): Path<String>,
     Json(body): Json<UpdateSessionBody>,
 ) -> ApiResponse<Value> {
@@ -400,13 +406,15 @@ async fn update_session(
 // ---------------------------------------------------------------------
 async fn delete_session(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
     {
         let mut sessions = state.sessions.lock();
         if sessions.remove(&id).is_some() {
             save_sessions(&sessions);
-            emit_audit(&state, AuditAction::Unknown("session.delete".into()), "session", &id, AuditOutcome::Success, None);
+            emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("session.delete".into()), "session", &id, AuditOutcome::Success, None);
             return ok(json!({
                 "deleted": true,
                 "session_id": id,
@@ -421,6 +429,8 @@ async fn delete_session(
 // ---------------------------------------------------------------------
 async fn append_message(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Path(id): Path<String>,
     Json(body): Json<AppendMessageBody>,
 ) -> ApiResponse<Value> {
@@ -446,7 +456,7 @@ async fn append_message(
                 session.messages.push(message.clone());
                 session.last_active_at = now.clone();
                 save_sessions(&sessions);
-                emit_audit(&state, AuditAction::Unknown("session.append_message".into()), "session", &id, AuditOutcome::Success, Some(&format!("msg_id={}", msg_id)));
+                emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("session.append_message".into()), "session", &id, AuditOutcome::Success, Some(&format!("msg_id={}", msg_id)));
                 ok(json!(message))
             }
             None => err(404, format!("session not found: {id}")),
@@ -459,6 +469,7 @@ async fn append_message(
 // ---------------------------------------------------------------------
 async fn similar_search(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Path(id): Path<String>,
     Json(body): Json<SimilarSearchBody>,
 ) -> ApiResponse<Value> {
@@ -510,6 +521,7 @@ async fn similar_search(
 // ---------------------------------------------------------------------
 async fn semantic_search(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<SemanticSearchBody>,
 ) -> ApiResponse<Value> {
     let top_k = body.top_k.unwrap_or(10);
@@ -572,6 +584,7 @@ async fn semantic_search(
 // ---------------------------------------------------------------------
 async fn export_session(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
     let sessions = state.sessions.lock();
@@ -598,6 +611,8 @@ async fn export_session(
 // ---------------------------------------------------------------------
 async fn archive_session(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
     let now = now_iso();
@@ -610,7 +625,7 @@ async fn archive_session(
                 session.last_active_at = now.clone();
                 let message_count = session.messages.len();
                 save_sessions(&sessions);
-                emit_audit(&state, AuditAction::Unknown("session.archive".into()), "session", &id, AuditOutcome::Success, Some(&format!("message_count={}", message_count)));
+                emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("session.archive".into()), "session", &id, AuditOutcome::Success, Some(&format!("message_count={}", message_count)));
                 ok(json!({
                     "session_id": id,
                     "status": "archived",
@@ -670,7 +685,7 @@ mod tests {
             sessions: Arc::new(Mutex::new(HashMap::new())),
             dispatcher_config: Arc::new(Mutex::new(DispatcherConfig::default())),
             dispatch_records: Arc::new(Mutex::new(Vec::new())),
-            graph: Arc::new(Mutex::new(ExpertGraph::default())),
+            graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
@@ -710,7 +725,7 @@ mod tests {
             tags: Some(vec!["rust".into(), "architecture".into()]),
             metadata: None,
         };
-        let resp = create_session(State(state.clone()), Json(body)).await;
+        let resp = create_session(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Json(body)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["status"], "active");
         assert_eq!(data["title"], " Rust 架构咨询");
@@ -728,13 +743,13 @@ mod tests {
         let session = make_session("sess-get-001", "获取测试");
         state.sessions.lock().insert("sess-get-001".into(), session);
 
-        let resp = get_session(State(state.clone()), Path("sess-get-001".into())).await;
+        let resp = get_session(State(state.clone()), TenantId("default".into()), Path("sess-get-001".into())).await;
         let data = resp.data.unwrap();
         assert_eq!(data["id"], "sess-get-001");
         assert_eq!(data["title"], "获取测试");
 
         // 不存在返回 404
-        let resp404 = get_session(State(state.clone()), Path("nonexistent".into())).await;
+        let resp404 = get_session(State(state.clone()), TenantId("default".into()), Path("nonexistent".into())).await;
         assert_eq!(resp404.code, 404);
     }
 
@@ -753,7 +768,7 @@ mod tests {
         let mut params = HashMap::new();
         params.insert("page".into(), "1".into());
         params.insert("page_size".into(), "2".into());
-        let resp = list_sessions(State(state.clone()), Query(params)).await;
+        let resp = list_sessions(State(state.clone()), TenantId("default".into()), Query(params)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["total"], 5);
         assert_eq!(data["page"], 1);
@@ -769,7 +784,7 @@ mod tests {
         let mut params2 = HashMap::new();
         params2.insert("page".into(), "3".into());
         params2.insert("page_size".into(), "2".into());
-        let resp2 = list_sessions(State(state.clone()), Query(params2)).await;
+        let resp2 = list_sessions(State(state.clone()), TenantId("default".into()), Query(params2)).await;
         let data2 = resp2.data.unwrap();
         assert_eq!(data2["sessions"].as_array().unwrap().len(), 1);
     }
@@ -790,7 +805,7 @@ mod tests {
             attachments: None,
             rating: None,
         };
-        let resp = append_message(State(state.clone()), Path("sess-msg-001".into()), Json(body)).await;
+        let resp = append_message(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Path("sess-msg-001".into()), Json(body)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["role"], "user");
         assert_eq!(data["content"], "如何设计高可用系统？");
@@ -850,7 +865,7 @@ mod tests {
             top_k: Some(2),
             min_score: Some(0.05),
         };
-        let resp = similar_search(State(state.clone()), Path("sess-sim-001".into()), Json(body)).await;
+        let resp = similar_search(State(state.clone()), TenantId("default".into()), Path("sess-sim-001".into()), Json(body)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["session_id"], "sess-sim-001");
         assert_eq!(data["query"], "微服务架构设计");
@@ -869,7 +884,7 @@ mod tests {
         let session = make_session("sess-arch-001", "归档测试");
         state.sessions.lock().insert("sess-arch-001".into(), session);
 
-        let resp = archive_session(State(state.clone()), Path("sess-arch-001".into())).await;
+        let resp = archive_session(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Path("sess-arch-001".into())).await;
         let data = resp.data.unwrap();
         assert_eq!(data["status"], "archived");
         assert_eq!(data["session_id"], "sess-arch-001");
@@ -900,7 +915,7 @@ mod tests {
                 m
             }),
         };
-        let resp = update_session(State(state.clone()), Path("sess-upd-001".into()), Json(body)).await;
+        let resp = update_session(State(state.clone()), TenantId("default".into()), Path("sess-upd-001".into()), Json(body)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["title"], "新标题");
         assert_eq!(data["topic"], "新主题");
@@ -917,7 +932,7 @@ mod tests {
         state.sessions.lock().insert("sess-del-001".into(), session);
         assert_eq!(state.sessions.lock().len(), 1);
 
-        let resp = delete_session(State(state.clone()), Path("sess-del-001".into())).await;
+        let resp = delete_session(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Path("sess-del-001".into())).await;
         let data = resp.data.unwrap();
         assert_eq!(data["deleted"], true);
         assert_eq!(data["session_id"], "sess-del-001");
@@ -945,7 +960,7 @@ mod tests {
         state.sessions.lock().insert("sess-stats-001".into(), s1);
         state.sessions.lock().insert("sess-stats-002".into(), s2);
 
-        let resp = session_stats(State(state.clone())).await;
+        let resp = session_stats(State(state.clone()), TenantId("default".into())).await;
         let data = resp.data.unwrap();
         assert_eq!(data["total_sessions"], 2);
         assert_eq!(data["active_sessions"], 1);

@@ -33,6 +33,11 @@ VITE = REPO / 'frontend-ui' / 'vite.config.js'
 
 BARREL_MODULES = ['api', 'stores', 'constants', 'utils', 'composables', 'directives']
 
+if hasattr(sys.stdout, 'reconfigure'):
+    # Windows 控制台默认 GBK：本门禁打印的 '✓' 会让 print() 直接抛 UnicodeEncodeError，
+    # 于是 AGENTS.md 里那条文档命令在这台机器上必崩（2026-09-27 实测），门禁形同不存在。
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 def walk(d: Path):
     for p in d.rglob('*'):
         if p.is_file() and p.suffix in ('.js', '.vue') and 'node_modules' not in p.parts:

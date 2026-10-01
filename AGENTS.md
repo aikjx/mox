@@ -10,6 +10,8 @@ cargo test                  # 运行单元测试（默认 members）
 cargo clippy --all-targets  # lint（CI 门禁，workspace.lints 已配置）
 python scripts/gate/verify-ports.py   # 端口漂移校验（CI 门禁）
 python scripts/gate/check-frontend-module.py  # 前端模块化门禁（CI 门禁；规范见 docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md）
+python scripts/gate/check-locale-format-outlets.py  # 时间/locale 口径闸门（CI 门禁，§5.32；无参 toLocaleString 棘轮 + 出口写法唯一性 + locale pin + 扫描集分母）
+python scripts/gate/check-script-paths.py           # 脚本路径解析门禁（CI 门禁，§5.62；代码/CI/仓根脚本里写死的仓内路径必须解析得到，先跑 --selftest 再跑体检）
 scripts/gate/check-all.ps1            # 一键质量检查（7 项：secret/fmt/clippy/test/前端构建/前端门禁/端口）
 docker-compose up -d --build     # 一键部署
 ./start.sh --dry-run             # 启动前预检

@@ -1,0 +1,11 @@
+    Checking mox-platform-foundation v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\foundation\mox-platform-foundation)
+    Checking mox-error v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\foundation\mox-error)
+    Checking mox-alliance-common-proto v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\proto\mox-alliance-common-proto)
+    Checking mox-ai-expert-proto v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\ai\proto\mox-ai-expert-proto)
+    Checking mox-alliance-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-core)
+    Checking mox-alliance-executor-proto v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\proto\mox-alliance-executor-proto)
+    Checking mox-alliance-scheduler-proto v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\proto\mox-alliance-scheduler-proto)
+    Checking mox-alliance-config-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-config-core)
+    Checking mox-alliance-executor-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-executor-core)
+    Checking mox-alliance-scheduler-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-scheduler-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.96s

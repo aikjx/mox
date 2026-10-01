@@ -1,0 +1,1249 @@
+{
+  "scanned_files": 387,
+  "checked_refs": 2305,
+  "broken": [],
+  "warnings": [
+    {
+      "file": "docs/api/PORT-REGISTRY.md",
+      "line": 235,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
+      "line": 141,
+      "target": "docs/expert-alliance/FRONTEND-MODULE.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/architecture/ARCHITECTURE-ENTERPRISE.md",
+      "line": 1039,
+      "target": "docs/expert-alliance/v3/01-architecture-optimization.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md",
+      "line": 137,
+      "target": "docs/architecture/frontend/FRONTEND-MODULE.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/architecture/full-dimensional/00-README.md",
+      "line": 6,
+      "target": "docs/璇玑-全维需求业务处理流程图-归一化企业级.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/architecture/full-dimensional/00-README.md",
+      "line": 19,
+      "target": "docs/_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/architecture/full-dimensional/00-README.md",
+      "line": 20,
+      "target": "docs/_archive/2026-08-16/璇玑-全维分析需求-测试分析验证报告.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/architecture/full-dimensional/00-README.md",
+      "line": 21,
+      "target": "docs/_archive/2026-08-16/璇玑-全维分析需求业务处理流程图.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/00-INDEX.md",
+      "line": 116,
+      "target": "docs/璇玑-MOX需求业务处理流程图-归一化企业级.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/00-INDEX.md",
+      "line": 122,
+      "target": "docs/璇玑-全维需求业务处理流程图-归一化企业级.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md",
+      "line": 10,
+      "target": "docs/璇玑-全维需求业务处理流程图-归一化企业级.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md",
+      "line": 289,
+      "target": "docs/璇玑-全维需求业务处理流程图-归一化企业级.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md",
+      "line": 364,
+      "target": "docs/enterprise/11-全维测试验证优化修复报告.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md",
+      "line": 798,
+      "target": "docs/enterprise/14-全维愿景核心架构与业务流程总纲.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md",
+      "line": 799,
+      "target": "docs/enterprise/15-产品规范标准-人人爱用全自动全维-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md",
+      "line": 807,
+      "target": "docs/璇玑-全维需求业务处理流程图-归一化企业级.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md",
+      "line": 26,
+      "target": "docs/enterprise/15-产品规范标准-人人爱用全自动全维-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md",
+      "line": 27,
+      "target": "docs/enterprise/07-全维需求明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md",
+      "line": 38,
+      "target": "docs/enterprise/14-全维愿景核心架构与业务流程总纲.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md",
+      "line": 42,
+      "target": "docs/enterprise/17-算子系统全维分析与归一化设计.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md",
+      "line": 49,
+      "target": "docs/enterprise/08-全维自动化处理明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md",
+      "line": 50,
+      "target": "docs/enterprise/11-全维测试验证优化修复报告.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md",
+      "line": 354,
+      "target": "docs/enterprise/22-归一化总控卡.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md",
+      "line": 391,
+      "target": "docs/enterprise/VOICE-DOMAIN-ANALYSIS.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md",
+      "line": 443,
+      "target": "docs/enterprise/MICROSERVICES-EVOLUTION.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/37-企业级处理流程规范-V1.0.md",
+      "line": 72,
+      "target": "docs/enterprise/07-全维需求明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/37-企业级处理流程规范-V1.0.md",
+      "line": 463,
+      "target": "docs/enterprise/07-全维需求明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/37-企业级处理流程规范-V1.0.md",
+      "line": 468,
+      "target": "docs/enterprise/08-全维自动化处理明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/_data/test-report-20260824/t4-enterprise-test-report-20260824.md",
+      "line": 336,
+      "target": "docs/enterprise/_data/test-report-20260824/screenshots/17-clippy-fail.png",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/DOC-NORMALIZATION-REPORT.md",
+      "line": 31,
+      "target": "docs/mox-expert-mox-fusion-flows.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/DOC-NORMALIZATION-REPORT.md",
+      "line": 78,
+      "target": "docs/guantu-skeleton.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/DOC-NORMALIZATION-REPORT.md",
+      "line": 79,
+      "target": "docs/mox-requirement-baseline.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/DOC-NORMALIZATION-REPORT.md",
+      "line": 146,
+      "target": "docs/market-module.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/GLOSSARY.md",
+      "line": 35,
+      "target": "docs/璇玑-MOX需求业务处理流程图-归一化企业级.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/MOX-AI驱动MOX平台-企业级设计-MOX分析-v3.0.md",
+      "line": 292,
+      "target": "docs/对话开发系统-MOX分析与业务流程图.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md",
+      "line": 92,
+      "target": "docs/璇玑-全维需求业务处理流程图-归一化企业级.html/.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md",
+      "line": 94,
+      "target": "docs/璇玑-全维流水线.mmd",
+      "kind": "code"
+    },
+    {
+      "file": "docs/expert-alliance/_verification/docs-verification-report.md",
+      "line": 70,
+      "target": "docs/standards/expert-alliance-port-norm.md:171,231",
+      "kind": "code"
+    },
+    {
+      "file": "docs/expert-alliance/_verification/docs-verification-report.md",
+      "line": 71,
+      "target": "docs/architecture/microservices/07-massive-scale-100k-nodes.md:86,124",
+      "kind": "code"
+    },
+    {
+      "file": "docs/expert-alliance/_verification/docs-verification-report.md",
+      "line": 130,
+      "target": "docs/database/DATABASE-ARCHITECTURE.md:7-9",
+      "kind": "code"
+    },
+    {
+      "file": "docs/modules/business-process-flowcharts.md",
+      "line": 407,
+      "target": "docs/expert-alliance/FRONTEND-MODULE.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/normalization/API-INDEX.md",
+      "line": 68,
+      "target": "docs/normalization/api/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/normalization/ARC-INDEX.md",
+      "line": 66,
+      "target": "docs/normalization/arch/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/normalization/README.md",
+      "line": 7,
+      "target": "docs/DOC-NORMALIZATION-REPORT.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/normalization/README.md",
+      "line": 24,
+      "target": "docs/DOC-NORMALIZATION-REPORT.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/normalization/TPL-INDEX.md",
+      "line": 50,
+      "target": "docs/normalization/template/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/normalization/VAL-INDEX.md",
+      "line": 13,
+      "target": "docs/DOC-NORMALIZATION-REPORT.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/normalization/VAL-INDEX.md",
+      "line": 37,
+      "target": "docs/NO-MOCK-POLICY.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/normalization/VAL-INDEX.md",
+      "line": 56,
+      "target": "docs/normalization/verify/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-full-enterprise-architecture/tasks.md",
+      "line": 288,
+      "target": "docs/project-atlas.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-storage-distributed-ai-unified-query/tasks.md",
+      "line": 169,
+      "target": "docs/enterprise/18-mox-storage-ai-unified-query-report.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 6,
+      "target": "docs/architecture/architecture.md(v7)",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 6,
+      "target": "docs/DOC-NORMALIZATION-REPORT.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 6,
+      "target": "docs/mox-mox-product-handbook-v3.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 54,
+      "target": "docs/specs",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 54,
+      "target": "docs/full-dimensional",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 67,
+      "target": "docs/enterprise/14-全维愿景核心架构与业务流程总纲.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 75,
+      "target": "docs/enterprise/07-全维需求明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 76,
+      "target": "docs/enterprise/08-全维自动化处理明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md",
+      "line": 151,
+      "target": "docs/specifications/GR-STD",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md",
+      "line": 40,
+      "target": "docs/enterprise/14-全维愿景核心架构与业务流程总纲.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md",
+      "line": 41,
+      "target": "docs/mox-mox-product-handbook-v3.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md",
+      "line": 120,
+      "target": "docs/enterprise/14-全维愿景核心架构与业务流程总纲.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md",
+      "line": 249,
+      "target": "docs/enterprise/07-全维需求明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md",
+      "line": 274,
+      "target": "docs/enterprise/08-全维自动化处理明确书.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md",
+      "line": 154,
+      "target": "docs/enterprise/28-信创适配清单-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md",
+      "line": 155,
+      "target": "docs/enterprise/29-企业级部署手册-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md",
+      "line": 274,
+      "target": "docs/enterprise/28-信创适配清单-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md",
+      "line": 275,
+      "target": "docs/enterprise/29-企业级部署手册-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md",
+      "line": 318,
+      "target": "docs/enterprise/28-信创适配清单-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260825-mox-all-core-rust-max-algo/tasks.md",
+      "line": 321,
+      "target": "docs/standards/mox-formulas-rust.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/specifications/tasks/20260825-mox-all-core-rust-max-algo/tasks.md",
+      "line": 336,
+      "target": "docs/standards/mox-formulas-rust.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 10,
+      "target": "docs/DOC-NORMALIZATION-REPORT.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 36,
+      "target": "docs/DOC-NORMALIZATION-REPORT.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 77,
+      "target": "docs/expert-alliance/v2/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 78,
+      "target": "docs/expert-alliance/v3/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 79,
+      "target": "docs/expert-alliance/architecture/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 102,
+      "target": "docs/expert-alliance/v2/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 250,
+      "target": "docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 302,
+      "target": "docs/expert-alliance/v2/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 303,
+      "target": "docs/expert-alliance/architecture/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 340,
+      "target": "docs/expert-alliance/architecture/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 573,
+      "target": "docs/expert-alliance/architecture/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 718,
+      "target": "docs/expert-alliance/00-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 863,
+      "target": "docs/expert-alliance/v2/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-normalization-mode.md",
+      "line": 1011,
+      "target": "docs/expert-alliance/00-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-port-norm.md",
+      "line": 10,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-port-norm.md",
+      "line": 10,
+      "target": "docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-port-norm.md",
+      "line": 121,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/expert-alliance-port-norm.md",
+      "line": 137,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/PR-TYPES.md",
+      "line": 4,
+      "target": "docs/architecture/crate-boundaries.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/standards/PR-TYPES.md",
+      "line": 44,
+      "target": "docs/working-reports/_norm_research/compat-cleanup-register.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/20260902_hybrid_architecture_phase1_verification_report.md",
+      "line": 251,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md",
+      "line": 444,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md",
+      "line": 516,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md",
+      "line": 520,
+      "target": "docs/domains-code-review.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/_norm_research/mox-architecture-review-optimization.md",
+      "line": 131,
+      "target": "docs/working-reports/_norm_research/compat-cleanup-register.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/_norm_research/rustfs-modularity-benchmark.md",
+      "line": 268,
+      "target": "docs/architecture/overview.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/_norm_research/rustfs-modularity-benchmark.md",
+      "line": 269,
+      "target": "docs/architecture/crate-boundaries.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/_norm_research/rustfs-modularity-benchmark.md",
+      "line": 270,
+      "target": "docs/architecture/ecstore-module-split-plan.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/_norm_research/rustfs-modularity-benchmark.md",
+      "line": 271,
+      "target": "docs/architecture/storage-control-data-plane.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/_norm_research/rustfs-modularity-benchmark.md",
+      "line": 272,
+      "target": "docs/architecture/global-state-crate-split-plan.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/enterprise-optimization-round-2_plan.md",
+      "line": 33,
+      "target": "docs/enterprise/ac-compliance-report.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/enterprise-optimization-round-2_plan.md",
+      "line": 71,
+      "target": "docs/enterprise/ac-compliance-report.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-code-alignment-20260831.md",
+      "line": 403,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-code-alignment-20260831.md",
+      "line": 416,
+      "target": "docs/expert-alliance/v2/01-architecture.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-code-alignment-20260831.md",
+      "line": 431,
+      "target": "docs/expert-alliance/v3/01-architecture-optimization.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-code-alignment-20260831.md",
+      "line": 661,
+      "target": "docs/expert-alliance/CODE-FACTS.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 66,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 67,
+      "target": "docs/expert-alliance/01-ENTERPRISE-OPTIMIZATION.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 69,
+      "target": "docs/expert-alliance/expert-registry-and-protocol.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 70,
+      "target": "docs/expert-alliance/knowledge-graph-schema.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 71,
+      "target": "docs/expert-alliance/v2/00-requirements.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 72,
+      "target": "docs/expert-alliance/v2/01-architecture.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 73,
+      "target": "docs/expert-alliance/v2/02-domain-model.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 74,
+      "target": "docs/expert-alliance/v2/03-business-flow.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 75,
+      "target": "docs/expert-alliance/v2/04-api-design.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 76,
+      "target": "docs/expert-alliance/v2/05-data-architecture.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 77,
+      "target": "docs/expert-alliance/v2/06-security-observability.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 78,
+      "target": "docs/expert-alliance/v2/07-roadmap.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 79,
+      "target": "docs/expert-alliance/v2/README.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 80,
+      "target": "docs/expert-alliance/v3/01-architecture-optimization.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 81,
+      "target": "docs/expert-alliance/v3/02-requirements-matrix.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 82,
+      "target": "docs/expert-alliance/v3/03-business-flow-diagrams.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 83,
+      "target": "docs/expert-alliance/v3/README.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 84,
+      "target": "docs/expert-alliance/architecture/deployment-guide.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 85,
+      "target": "docs/expert-alliance/architecture/ops-manual.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 86,
+      "target": "docs/expert-alliance/architecture/system-architecture-design.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 92,
+      "target": "docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 93,
+      "target": "docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 109,
+      "target": "docs/modules/专家联盟AI对话需求文档-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 111,
+      "target": "docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 130,
+      "target": "docs/alliance-architecture-fix-report-20260831.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 131,
+      "target": "docs/alliance-architecture-review-20260831.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 132,
+      "target": "docs/架构开发联盟知识库融合设计方案.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 144,
+      "target": "docs/modules/专家联盟AI对话需求文档-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 151,
+      "target": "docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 158,
+      "target": "docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 159,
+      "target": "docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 165,
+      "target": "docs/expert-alliance/v2/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 166,
+      "target": "docs/expert-alliance/v3/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 181,
+      "target": "docs/expert-alliance/v2/01-architecture.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 182,
+      "target": "docs/expert-alliance/v3/01-architecture-optimization.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 227,
+      "target": "docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 236,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-doc-inventory-20260831.md",
+      "line": 379,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 86,
+      "target": "docs/expert-alliance/01-ENTERPRISE-OPTIMIZATION.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 87,
+      "target": "docs/expert-alliance/expert-registry-and-protocol.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 88,
+      "target": "docs/expert-alliance/knowledge-graph-schema.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 89,
+      "target": "docs/expert-alliance/v2/00-requirements.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 90,
+      "target": "docs/expert-alliance/v2/01-architecture.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 91,
+      "target": "docs/expert-alliance/v2/02-domain-model.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 92,
+      "target": "docs/expert-alliance/v2/03-business-flow.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 93,
+      "target": "docs/expert-alliance/v2/04-api-design.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 94,
+      "target": "docs/expert-alliance/v2/05-data-architecture.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 95,
+      "target": "docs/expert-alliance/v2/06-security-observability.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 96,
+      "target": "docs/expert-alliance/v2/07-roadmap.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 97,
+      "target": "docs/expert-alliance/v2/README.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 98,
+      "target": "docs/expert-alliance/v3/01-architecture-optimization.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 99,
+      "target": "docs/expert-alliance/v3/02-requirements-matrix.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 100,
+      "target": "docs/expert-alliance/v3/03-business-flow-diagrams.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 101,
+      "target": "docs/expert-alliance/v3/README.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 102,
+      "target": "docs/expert-alliance/architecture/deployment-guide.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 103,
+      "target": "docs/expert-alliance/architecture/ops-manual.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 104,
+      "target": "docs/expert-alliance/architecture/system-architecture-design.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 116,
+      "target": "docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 130,
+      "target": "docs/alliance-architecture-fix-report-20260831.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 131,
+      "target": "docs/alliance-architecture-review-20260831.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 132,
+      "target": "docs/架构开发联盟知识库融合设计方案.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 133,
+      "target": "docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 134,
+      "target": "docs/expert-alliance/03-GLOSSARY.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 141,
+      "target": "docs/modules/专家联盟AI对话需求文档-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 148,
+      "target": "docs/modules/专家联盟-全维业务流程归一化手册-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 150,
+      "target": "docs/expert-alliance/v3/README.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 155,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 280,
+      "target": "docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/expert-alliance-normalization-report-20260831.md",
+      "line": 281,
+      "target": "docs/expert-alliance/03-GLOSSARY.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-archive-20260831.md",
+      "line": 28,
+      "target": "docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-archive-20260831.md",
+      "line": 36,
+      "target": "docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.1-补充修订版.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-archive-20260831.md",
+      "line": 57,
+      "target": "docs/modules/专家联盟AI对话需求文档-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 29,
+      "target": "docs/expert-alliance/00-INTEGRATED-INDEX.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 40,
+      "target": "docs/expert-alliance/01-ENTERPRISE-OPTIMIZATION.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 41,
+      "target": "docs/expert-alliance/expert-registry-and-protocol.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 42,
+      "target": "docs/expert-alliance/knowledge-graph-schema.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 48,
+      "target": "docs/expert-alliance/v2/00-requirements.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 49,
+      "target": "docs/expert-alliance/v2/01-architecture.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 50,
+      "target": "docs/expert-alliance/v2/02-domain-model.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 51,
+      "target": "docs/expert-alliance/v2/03-business-flow.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 52,
+      "target": "docs/expert-alliance/v2/04-api-design.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 53,
+      "target": "docs/expert-alliance/v2/05-data-architecture.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 54,
+      "target": "docs/expert-alliance/v2/06-security-observability.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 55,
+      "target": "docs/expert-alliance/v2/07-roadmap.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 56,
+      "target": "docs/expert-alliance/v2/README.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 62,
+      "target": "docs/expert-alliance/v3/01-architecture-optimization.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 63,
+      "target": "docs/expert-alliance/v3/02-requirements-matrix.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 64,
+      "target": "docs/expert-alliance/v3/03-business-flow-diagrams.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 65,
+      "target": "docs/expert-alliance/v3/README.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 71,
+      "target": "docs/expert-alliance/architecture/deployment-guide.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 72,
+      "target": "docs/expert-alliance/architecture/ops-manual.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 73,
+      "target": "docs/expert-alliance/architecture/system-architecture-design.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 89,
+      "target": "docs/expert-alliance/v2/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 90,
+      "target": "docs/expert-alliance/v3/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 91,
+      "target": "docs/expert-alliance/architecture/",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupA-20260831.md",
+      "line": 111,
+      "target": "docs/alliance-architecture-fix-report-20260831.html",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupB-20260831.md",
+      "line": 29,
+      "target": "docs/enterprise/26-开发专家联盟-架构诊断与SaaS化最优方案-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/normalization-execution-groupB-20260831.md",
+      "line": 30,
+      "target": "docs/modules/专家联盟AI对话需求文档-V1.0.md",
+      "kind": "code"
+    },
+    {
+      "file": "docs/working-reports/verification/README.md",
+      "line": 4,
+      "target": "docs/enterprise-verification/",
+      "kind": "code"
+    }
+  ]
+}

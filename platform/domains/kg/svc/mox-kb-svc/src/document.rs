@@ -7,16 +7,15 @@
 //!
 //! 存储布局（物理落盘，原子写 + 引用计数 GC 由 store-core 保障）：
 //! - 文档对象：`kb/docs/{id}.json`（完整 KbDocument JSON）
-//! - 索引 KV：`kb:index` = 文档摘要数组（list/stats 免扫全量对象）
+//! - 索引 KV：`kb:index` = 文档摘要数组（兼容写入；读请求按当前主源扫描）
 //! - 标签 KV：`kb:tags` = 全局标签聚合
 
-use crate::model::{KbDocument, now_iso, new_kb_id};
+use crate::model::{new_kb_id, now_iso, KbDocument};
 use bytes::Bytes;
 use mox_base_store_core::StoreError;
-use mox_cloud_sdk::{StoreBackend, list_object_refs};
+use mox_cloud_sdk::StoreBackend;
 use serde_json::{json, Value};
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 /// 文档对象 key 前缀
 const DOC_KEY_PREFIX: &str = "kb/docs/";
@@ -36,6 +35,7 @@ pub const CATEGORIES: &[(&str, &str)] = &[
 #[derive(Clone)]
 pub struct KbDocumentService {
     backend: Arc<StoreBackend>,
+    access: Option<crate::access::KnowledgeAccess>,
     mutation: Arc<tokio::sync::Mutex<()>>,
 }
 
@@ -43,28 +43,91 @@ pub struct KbDocumentService {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DocSummary {
     pub id: String,
+    #[serde(default)]
+    pub access: Option<crate::access::KnowledgeAccess>,
+    #[serde(default)]
+    pub readers: Vec<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default)]
+    pub storage_bytes: u64,
     pub title: String,
     pub category: String,
     pub status: String,
     pub updated_at: String,
 }
 
+/// Optimistic write outcome, distinct from missing/unauthorized resources.
+#[derive(Debug)]
+pub enum DocumentWriteError {
+    Conflict,
+    Storage(StoreError),
+}
+impl From<StoreError> for DocumentWriteError {
+    fn from(error: StoreError) -> Self {
+        Self::Storage(error)
+    }
+}
+impl std::fmt::Display for DocumentWriteError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Conflict => f.write_str("knowledge write conflict"),
+            Self::Storage(error) => error.fmt(f),
+        }
+    }
+}
+
 impl KbDocumentService {
     /// 包装已装配的存储后端
     pub fn new(backend: Arc<StoreBackend>) -> Self {
-        Self { backend, mutation: Arc::new(tokio::sync::Mutex::new(())) }
+        Self { backend, access: None, mutation: Arc::new(tokio::sync::Mutex::new(())) }
     }
 
+    pub fn scoped(&self, access: crate::access::KnowledgeAccess) -> Self {
+        Self { access: Some(access), ..self.clone() }
+    }
+    pub(crate) fn unscoped(&self) -> Self {
+        Self { access: None, ..self.clone() }
+    }
+    pub(crate) fn request_access(&self) -> Option<&crate::access::KnowledgeAccess> {
+        self.access.as_ref()
+    }
+    pub fn is_scoped(&self) -> bool {
+        self.access.is_some()
+    }
+    fn denied(id: &str) -> StoreError {
+        StoreError::NotFound { path: id.to_owned() }
+    }
+    fn check(&self, doc: &KbDocument, write: bool) -> crate::Result<()> {
+        if let Some(access) = &self.access {
+            if (write && (!access.permits(&doc.access) || access.readonly))
+                || (!write && !access.can_read(&doc.access, &doc.readers))
+            {
+                return Err(Self::denied(&doc.id));
+            }
+        }
+        Ok(())
+    }
     fn doc_key(id: &str) -> String {
         format!("{DOC_KEY_PREFIX}{id}.json")
     }
 
     /// 创建文档（自动分配 id）
-    pub async fn create(&self, title: &str, content: &str, category: Option<&str>) -> crate::Result<KbDocument> {
+    pub async fn create(
+        &self,
+        title: &str,
+        content: &str,
+        category: Option<&str>,
+    ) -> crate::Result<KbDocument> {
         let cat = category
             .map(str::to_string)
             .unwrap_or_else(|| KbDocument::default_category().to_string());
-        let doc = KbDocument::new(new_kb_id(), title.to_string(), content.to_string(), cat);
+        let mut doc = KbDocument::new(new_kb_id(), title.to_string(), content.to_string(), cat);
+        doc.access = self.access.clone().map(|mut access| {
+            access.administrator = false;
+            access.readonly = false;
+            access
+        });
         self.save(&doc).await?;
         Ok(doc)
     }
@@ -72,6 +135,21 @@ impl KbDocumentService {
     /// 保存文档（原子写对象 + 刷新索引）
     pub async fn save(&self, doc: &KbDocument) -> crate::Result<()> {
         let _mutation = self.mutation.lock().await;
+        self.check(doc, true)?;
+        if self.backend.object.exists(&Self::doc_key(&doc.id)).await? {
+            let existing = self.get(&doc.id).await?;
+            self.check(&existing, true)?;
+            if existing.access != doc.access
+                || existing.readers != doc.readers
+                || existing.acl_revision != doc.acl_revision
+            {
+                return Err(Self::denied(&doc.id));
+            }
+        }
+        self.write_document(doc).await
+    }
+
+    async fn write_document(&self, doc: &KbDocument) -> crate::Result<()> {
         let blob = Bytes::from(serde_json::to_vec(doc).map_err(crate::err_other)?);
         self.backend
             .object
@@ -84,13 +162,119 @@ impl KbDocumentService {
     /// 读取文档
     pub async fn get(&self, id: &str) -> crate::Result<KbDocument> {
         let raw = self.backend.object.get(&Self::doc_key(id)).await?;
-        serde_json::from_slice(&raw)
-            .map_err(|e| StoreError::Other(format!("文档 JSON 损坏: {e}")))
+        let doc = serde_json::from_slice(&raw)
+            .map_err(|e| StoreError::Other(format!("文档 JSON 损坏: {e}")))?;
+        self.check(&doc, false)?;
+        Ok(doc)
+    }
+
+    pub async fn get_for_write(&self, id: &str) -> crate::Result<KbDocument> {
+        let doc = self.get(id).await?;
+        self.check(&doc, true)?;
+        Ok(doc)
+    }
+
+    /// ACL updates are separate from content writes and serialized with them.
+    pub async fn change_reader(
+        &self,
+        id: &str,
+        user_id: &str,
+        grant: bool,
+        expected_revision: u64,
+    ) -> std::result::Result<KbDocument, crate::access::ShareError> {
+        use crate::access::ShareError;
+        let _mutation = self.mutation.lock().await;
+        let mut doc = self.get_for_write(id).await?;
+        if doc.access.is_none()
+            || user_id.trim().is_empty()
+            || user_id != user_id.trim()
+            || user_id.len() > 128
+            || user_id.chars().any(char::is_control)
+        {
+            return Err(ShareError::InvalidRequest);
+        }
+        if doc.acl_revision != expected_revision {
+            return Err(ShareError::Conflict);
+        }
+        let present = doc.readers.iter().any(|id| id == user_id);
+        if present == grant {
+            return Ok(doc);
+        }
+        if grant {
+            if doc.readers.len() >= 256 {
+                return Err(ShareError::InvalidRequest);
+            }
+            doc.readers.push(user_id.to_owned());
+            doc.readers.sort();
+        } else {
+            doc.readers.retain(|id| id != user_id);
+        }
+        doc.acl_revision = doc.acl_revision.checked_add(1).ok_or(ShareError::Conflict)?;
+        doc.updated_at = now_iso();
+        self.write_document(&doc).await?;
+        Ok(doc)
+    }
+
+    /// Reject work based on any changed source snapshot, including ACL changes.
+    pub async fn save_if_unchanged(
+        &self,
+        expected: &KbDocument,
+        updated: &KbDocument,
+    ) -> std::result::Result<(), DocumentWriteError> {
+        let _mutation = self.mutation.lock().await;
+        let current = self.get_for_write(&expected.id).await?;
+        if current != *expected
+            || updated.id != expected.id
+            || updated.access != current.access
+            || updated.readers != current.readers
+            || updated.acl_revision != current.acl_revision
+        {
+            return Err(DocumentWriteError::Conflict);
+        }
+        self.check(updated, true)?;
+        self.write_document(updated).await?;
+        Ok(())
     }
 
     /// 更新文档字段（title/content/category/tags 增量合并），保留实体/版本
     pub async fn update(&self, id: &str, patch: &Value) -> crate::Result<KbDocument> {
-        let mut doc = self.get(id).await?;
+        self.update_checked(id, patch).await.map_err(|error| match error {
+            DocumentWriteError::Storage(error) => error,
+            DocumentWriteError::Conflict => crate::err_other("knowledge write conflict"),
+        })
+    }
+
+    pub async fn update_checked(
+        &self,
+        id: &str,
+        patch: &Value,
+    ) -> std::result::Result<KbDocument, DocumentWriteError> {
+        let _mutation = self.mutation.lock().await;
+        let mut doc = self.get_for_write(id).await?;
+        if let Some(expected) = patch.get("expected_current_version") {
+            if expected.as_str() != Some(doc.current_version.as_str()) {
+                return Err(DocumentWriteError::Conflict);
+            }
+        }
+        let changed = patch
+            .get("title")
+            .and_then(Value::as_str)
+            .is_some_and(|value| value != doc.title)
+            || patch
+                .get("content")
+                .and_then(Value::as_str)
+                .is_some_and(|value| value != doc.content);
+        let note = patch.get("version_note").and_then(Value::as_str).unwrap_or("").trim();
+        if changed || !note.is_empty() {
+            crate::version::KbVersionService::create(
+                &mut doc,
+                if note.is_empty() { "更新文档内容" } else { note },
+            );
+            doc.entities.clear();
+            doc.relations.clear();
+            doc.summary.clear();
+        }
+        doc.status = crate::model::STATUS_DRAFT.into();
         if let Some(v) = patch.get("title").and_then(Value::as_str) {
             doc.title = v.to_string();
         }
@@ -104,7 +288,7 @@ impl KbDocumentService {
             doc.tags = v.iter().filter_map(Value::as_str).map(str::to_string).collect();
         }
         doc.updated_at = now_iso();
-        self.save(&doc).await?;
+        self.write_document(&doc).await?;
         Ok(doc)
     }
 
@@ -113,6 +297,7 @@ impl KbDocumentService {
         let _mutation = self.mutation.lock().await;
         let existed = self.backend.object.exists(&Self::doc_key(id)).await?;
         if existed {
+            self.check(&self.get(id).await?, true)?;
             self.backend.object.delete(&Self::doc_key(id)).await?;
             self.rebuild_index().await?;
         }
@@ -157,12 +342,10 @@ impl KbDocumentService {
 
     /// 全局标签聚合（tags 端点）
     pub async fn tags(&self) -> crate::Result<Vec<Value>> {
-        let _ = self.read_index().await?;
         let mut tags = HashMap::<String, usize>::new();
-        if let Some(raw) = self.backend.kv.get(TAGS_KEY).await? {
-            let map: HashMap<String, usize> = serde_json::from_slice(&raw).unwrap_or_default();
-            for (tag, count) in map {
-                tags.entry(tag).or_insert(count);
+        for summary in self.read_index().await? {
+            for tag in summary.tags {
+                *tags.entry(tag).or_default() += 1;
             }
         }
         let mut out: Vec<Value> = tags
@@ -171,69 +354,59 @@ impl KbDocumentService {
             .collect();
         out.sort_by(|a, b| {
             b["count"].as_u64().unwrap_or(0).cmp(&a["count"].as_u64().unwrap_or(0))
+                .then_with(|| a["name"].as_str().cmp(&b["name"].as_str()))
         });
         Ok(out)
     }
 
     /// 统计（documents 数 / categories 数 / tags 数 / storage 字节）
     pub async fn stats(&self) -> crate::Result<Value> {
-        let docs = self.list().await?;
-        let cats = self.categories().await?;
-        let tags = self.tags().await?;
-        let storage_bytes = self.estimate_storage_bytes(&docs).await;
+        let index = self.read_index().await?;
+        let mut tags = std::collections::HashSet::new();
+        let mut storage_bytes = 0u64;
+        for summary in &index {
+            tags.extend(summary.tags.iter());
+            storage_bytes = storage_bytes
+                .checked_add(summary.storage_bytes)
+                .ok_or_else(|| crate::err_other("knowledge byte count overflow"))?;
+        }
         Ok(json!({
-            "documents": docs.len(),
-            "categories": cats.len(),
+            "documents": index.len(),
+            "categories": CATEGORIES.len(),
             "tags": tags.len(),
             "storage_bytes": storage_bytes,
         }))
     }
 
-    /// 估算物理容量（head 对象累计）
-    async fn estimate_storage_bytes(&self, docs: &[Value]) -> u64 {
-        let mut total = 0u64;
-        for d in docs {
-            if let Some(id) = d["id"].as_str() {
-                if let Ok(obj) = self.backend.object.head(&Self::doc_key(id)).await {
-                    total += obj.size_bytes;
-                }
-            }
+    /// One source scan, including ACL and logical JSON byte size; never cached permissions.
+    async fn scan_index(&self) -> crate::Result<Vec<DocSummary>> {
+        let mut summaries = Vec::new();
+        let keys = self.backend.object.list_keys(DOC_KEY_PREFIX).await?;
+        for key in keys.into_iter().filter(|key| key.ends_with(".json")) {
+            let raw = self.backend.object.get(&key).await?;
+            let doc: KbDocument = serde_json::from_slice(&raw).map_err(crate::err_other)?;
+            summaries.push(DocSummary {
+                id: doc.id,
+                access: doc.access,
+                readers: doc.readers,
+                tags: doc.tags,
+                storage_bytes: u64::try_from(raw.len()).map_err(crate::err_other)?,
+                title: doc.title,
+                category: doc.category,
+                status: doc.status,
+                updated_at: doc.updated_at,
+            });
         }
-        total
+        Ok(summaries)
     }
 
-    /// 重建摘要索引 + 标签聚合（list/stats 一致性）
+    /// 写入兼容派生索引；当前查询不依赖或写入该 KV。
     async fn rebuild_index(&self) -> crate::Result<()> {
-        let mut summaries = Vec::new();
+        let summaries = self.scan_index().await?;
         let mut tags = HashMap::<String, usize>::new();
-        let mut keys: Vec<String> = list_object_refs(&self.backend.data_dir)
-            .await?
-            .into_iter()
-            .map(|(p, _)| p)
-            .filter(|p| p.starts_with(DOC_KEY_PREFIX) && p.ends_with(".json"))
-            .collect();
-        if keys.is_empty() {
-            // S3 后端 / 索引未落库时回退：复用旧索引缓存
-            if let Some(raw) = self.backend.kv.get(INDEX_KEY).await? {
-                if let Ok(prev) = serde_json::from_slice::<Vec<DocSummary>>(&raw) {
-                    keys = prev.into_iter().map(|s| Self::doc_key(&s.id)).collect();
-                }
-            }
-        }
-        for key in keys {
-            if let Ok(raw) = self.backend.object.get(&key).await {
-                if let Ok(doc) = serde_json::from_slice::<KbDocument>(&raw) {
-                    for t in &doc.tags {
-                        *tags.entry(t.clone()).or_default() += 1;
-                    }
-                    summaries.push(DocSummary {
-                        id: doc.id,
-                        title: doc.title,
-                        category: doc.category,
-                        status: doc.status,
-                        updated_at: doc.updated_at,
-                    });
-                }
+        for summary in &summaries {
+            for tag in &summary.tags {
+                *tags.entry(tag.clone()).or_default() += 1;
             }
         }
         let index_blob = Bytes::from(serde_json::to_vec(&summaries).map_err(crate::err_other)?);
@@ -246,15 +419,13 @@ impl KbDocumentService {
     /// 读取摘要索引
     pub(crate) async fn read_index(&self) -> crate::Result<Vec<DocSummary>> {
         let _mutation = self.mutation.lock().await;
-        // ponytail: O(n) rebuild; move to a transactional index when document volume requires it.
-        // Existing releases wrote empty indexes by confusing physical hashes with logical keys.
-        // Rebuild from the store's metadata so restart also repairs those indexes.
-        self.rebuild_index().await?;
-        match self.backend.kv.get(INDEX_KEY).await? {
-            Some(raw) => serde_json::from_slice(&raw)
-                .map_err(|e| StoreError::Other(format!("索引损坏: {e}"))),
-            None => Ok(Vec::new()),
+        // ponytail: O(n) source scan until a transactional ACL-aware index is available.
+        // Read requests do not write KV indexes and do not cache authorization decisions.
+        let mut index = self.scan_index().await?;
+        if let Some(access) = &self.access {
+            index.retain(|d| access.can_read(&d.access, &d.readers));
         }
+        Ok(index)
     }
 }
 
@@ -300,7 +471,3 @@ mod tests {
         assert!(stats["storage_bytes"].as_u64().unwrap() > 0);
     }
 }
-
-
-
-

@@ -1,0 +1,29 @@
+{
+  "environment": "Windows local FS; 12 JSON documents, 15 warm sequential KbDocumentService.stats calls; no SaaS/cloud comparison",
+  "before": {
+    "documents": 12,
+    "iterations": 15,
+    "get_calls": 720,
+    "head_calls": 180,
+    "list_calls": 45,
+    "median_us": 109312
+  },
+  "after": {
+    "documents": 12,
+    "iterations": 15,
+    "get_calls": 180,
+    "head_calls": 0,
+    "list_calls": 15,
+    "median_us": 31603
+  },
+  "get_reduction_percent": 75.0,
+  "observed_median_reduction_percent": 71.09,
+  "ci_gate": "Object operation budget and fresh ACL behavior; no absolute latency threshold",
+  "limits": [
+    "Small single-host sample",
+    "No parallel load or cold cache measurement",
+    "No real S3/OSS data plane",
+    "No competitor runtime test",
+    "Still O(n) source scan"
+  ]
+}

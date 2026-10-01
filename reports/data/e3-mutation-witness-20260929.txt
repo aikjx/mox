@@ -1,0 +1,21 @@
+E3 变异电池（L8：DAG 画布节点副标签走契约出口，不许直印 wire 原始枚举键）
+被测常驻门禁：src/modules/expert-alliance/contract/vocabulary-ownership.test.js（12 例）
+被改变异面：src/views/expert/AllianceTaskView.vue 的 dag-node-sub 一行
+服务侧真值：本地降级 alliance.rs:1544 与远程 alliance_remote.rs:843 均硬编 "type": "expert"；
+           proto types.rs:314 Node / sdk alliance.rs:65 ExecNode / api dto.rs:104 皆无 type 键
+判据：每枚只打一处，红格必须点名牌 L8；[] 期望的盲测必须全绿，否则针不承重。
+盘上基线 sha：GUARD=54139919c5232f83 VIEW=1288d04827721474
+未变异基线：rc=0，红格=[]，用例分母=12
+E1 ok  说明=副标签退回直印 wire 原始枚举键（node.type）  期望打红=['L8']  实际红=['L8 DAG 画布节点副标签：走契约出口，不许把 wire 原始枚举键直印上画布']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH AllianceTaskView.vue=MATCH
+E2 ok  说明=副标签直印未归一的 node.status（出口没穿这条通道）  期望打红=['L8']  实际红=['L8 DAG 画布节点副标签：走契约出口，不许把 wire 原始枚举键直印上画布']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH AllianceTaskView.vue=MATCH
+E3 ok  说明=同一个出口调用印两遍（countOf==1 那一格必须红）  期望打红=['L8']  实际红=['L8 DAG 画布节点副标签：走契约出口，不许把 wire 原始枚举键直印上画布']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH AllianceTaskView.vue=MATCH
+E4 ok  说明=撤掉 L8 的两枚针＋把缺陷放回视图＝盲测（无针必须谁也不红，证明针承重）  期望打红=[]  实际红=[]  rc=0
+   还原他证：vocabulary-ownership.test.js=MATCH AllianceTaskView.vue=MATCH
+E5 ok  说明=改几何坐标不许红（L8 钉取值出口，不钉版面＝不过度钉）  期望打红=[]  实际红=[]  rc=0
+   还原他证：vocabulary-ownership.test.js=MATCH AllianceTaskView.vue=MATCH
+E6 ok  说明=副标签写回视图自定的中文档名（绕过契约出口）  期望打红=['L8']  实际红=['L8 DAG 画布节点副标签：走契约出口，不许把 wire 原始枚举键直印上画布']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH AllianceTaskView.vue=MATCH
+判决：6 枚变异，判据不符 0 枚（BLIND/反咬/还原=[]）

@@ -1,0 +1,17 @@
+anchor preflight F4-M1 components/MessageBubble.vue               occurrences=1
+anchor preflight F4-M2 components/FlowDetailDialog.vue            occurrences=1
+anchor preflight F4-M3 components/FlowDetailDialog.vue            occurrences=1
+anchor preflight F4-M4 utils/time.js                              occurrences=1
+anchor preflight F4-M5 composables/workspace/useWorkspaceData.js  occurrences=1
+anchor preflight F4-C1 views/ai/ChatView.vue                      occurrences=1
+基线（写前图像）: FlowDetailDialog.vue=a78fc73dd6b4  MessageBubble.vue=59b2668b1933  useWorkspaceData.js=b56d15cb3fd9  time.js=c77a6af0656f  ChatView.vue=600046cefb9b
+基线套件 rc=0 失败用例=[]
+F4-M1 HIT: 打红「棘轮」 其余失败=[]
+F4-M2 HIT: 打红「FlowDetailDialog」 其余失败=[]
+F4-M3 HIT: 打红「三个收口站点」 其余失败=[]
+F4-M4 HIT: 打红「表格档旧写法」 其余失败=[]
+F4-M5 HIT: 打红「同名包装」 其余失败=['\x1b[22m三个收口站点真的经 barrel 引到了出口（防静默 no-op；深路径 @/utils/time 会被 E6 判 ERROR）\x1b[90m 14\x1b[2mms\x1b[22m\x1b[31m\x1b[39m']
+F4-C1 反对照(views/ai/ChatView.vue): rc=0 失败=[] -> 合法形状未被计入（掩码有效）
+还原复验: 5 个文件逐字节回到基线
+复跑基线: rc=0 失败=[] 文件数分母行=['[F4] 扫描 270 个文件，余账 6 处']
+账: 6/6 命中指名用例  BLIND=[]  WRONG=[]

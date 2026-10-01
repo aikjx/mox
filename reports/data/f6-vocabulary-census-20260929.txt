@@ -1,0 +1,78 @@
+F6 词表所有权普查与门禁读数（2026-09-29，§5.37）
+================================================
+
+一、普查仪器与判集
+  驱动：scratch/D:\tmp\vocab-ownership.mjs（未落库＝没牙，只作本轮见证，别接 CI）
+  常驻判据：frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js（已落库，7 例）
+  名字集：modules/expert-alliance/{contract,model}/*.js 的具名导出 = 346 个
+  扫描集：src 内除 modules/expert-alliance/ 与 .(test|stories).js 外的 .js/.ts/.vue = 219 个文件
+  命中形态：定义位点（`function NAME` 或 `const NAME =`）；导入、调用、注释都不算
+
+  命中名字 8 个 / 命中站点 15 处：
+    formatTime  6 处
+        components/MessageBubble.vue:936          function formatTime(ts) {
+        views/admin/panels/AdminLlm.vue:643       function formatTime(ts) {
+        views/admin/panels/AdminSso.vue:194       function formatTime(t) {
+        views/ai/ChatView.vue:170                 function formatTime(ts) {
+        views/expert/panels/ExpertEnterprisePanel.vue:851  function formatTime(ts) {
+        views/workflow/BrowserView.vue:583        function formatTime(iso) {
+    ENDPOINTS  2 处
+        modules/admin-lowcode/contract/endpoints.js:3      export const ENDPOINTS = {
+        modules/governance/contract/endpoints.js:10        export const ENDPOINTS = Object.freeze({
+    phaseProgress  2 处
+        stores/alliance.store.js:98               const phaseProgress = ref({})
+        views/expert/panels/ExpertOverviewPanel.vue:384    const phaseProgress = ref({
+    gradeLabel / confidenceText / requestPath / PHASE_META / collabMode  各 1 处
+        components/ai/GateResult.vue:104          const gradeLabel = computed(() => {
+        components/MessageBubble.vue:752          const confidenceText = computed(() => {
+        modules/governance/contract/endpoints.js:114       export function requestPath(name, params = {}) {
+        stores/alliance.store.js:54               export const PHASE_META = Object.freeze(Object.fromE
+        views/workspace/ExpertWorkspaceView.vue:716        const collabMode = ref('smart')
+
+  15 处全部登记在判据的 REGISTERED 里并逐条给理由（三类：T=§5.36 已按形状量过的时间副本；
+  N=跨命名空间同名；D=同域但档位真的不同、改界面显示，未定价不许动）。
+
+二、本轮真收口的两处（名字撞在"词表"上，逐字比过文案）
+  1) views/expert/panels/ExpertEnterprisePanel.vue  局部 sessionStatusLabel
+     盘上：active→进行中 / archived→已归档 / 其余原样回显（三元链，没有 closed 档）
+     模块：contract/sessions.js:31-35 SESSION_STATUSES = active/archived/closed 三档 + 未知态显式标记
+     ⇒ closed 会话旧版把英文原样印上界面＝缺陷，收口即修复；代价：未知态从 `xxx` 变 `xxx（后端未统计此状态）`
+  2) views/expert/ExpertPlazaView.vue  局部 bookingStatusLabel
+     盘上：pending/confirmed/completed/cancelled → 待确认/已确认/已完成/已取消（|| status 兜底）
+     模块：contract/enums.js:198-203 BOOKING_STATUS_LABELS 四档逐字相同 + Labeled 的 ?? key ?? '' 兜底
+     ⇒ 零显示改动，收的是"第二本字典"（后端加第五档时只有模块那份会更新）
+
+三、仪器教训（两条都是本轮实测踩出来的）
+  1) **按标识符找命中 ≠ 能力重叠**：346 个导出名 × 219 个文件扫出 15 处，逐处走到底只有 2 处是词表副本，
+     6 处是 §5.36 已定价的时间档，5 处是别的模块/局部状态的撞名，2 处是同域不同档（改了会动界面）。
+     判据因此不是"清零"，而是"命中集与登记集双向相等"——它挡的是新增，不是要求本轮清完。
+  2) **注释里的 import 会把 `toMatch` 针骗成假绿**：M4 变异（把 import 整行注释掉）在旧针下 rc=0，
+     因为 `import \{[^}]*sessionStatusLabel[^}]*\} from '...'` 不介意行首有没有 `//`。
+     修法＝锚行首（`^import ...` + m 标志），修完 M4 才真的打红 L4。
+     已知残留边界：utils/time.test.js 与 time-locale-outlet.test.js 的同类针仍未锚行首；
+     其后果由 rollup 兜（注释掉 import 而模板还在调用 ⇒ vite build 直接崩），故本轮只登记不动。
+
+四、变异电池（scratch/D:\tmp\f6-battery.py；见证全文见 f6-mutation-witness-20260929.txt）
+  未变异基线 rc=0，红格=[]
+  M1 模块外自写 bookingStatusLabel        → 红 [L1]                                    ok
+  M2 同前缀名 bookingStatusLabelExtra      → 红 []（必须不红，挡子串针）                 ok
+  M3 名字集摘掉 model/（346⇒254）          → 红 [L1, L2]（双向台账 + 分母各自生效）      ok
+  M4 撤销一处收口的接线                    → 红 [L4]                                    ok
+  M5 扫描集清空                            → 红 [L1, L2]（"0 命中"与"没有缺陷"不同形）   ok
+  判决：5 枚变异，判据不符 0 枚；三处被碰文件还原后 sha 与盘上基线逐位 MATCH（PLANT 已删）
+
+五、门禁与分母（同轮实测）
+  全量 vitest：77 文件 / 1023 例 / rc=0（本轮 +1 文件 +7 例；上一轮 76/1016）
+  vite build：rc=0（30.77 s）——改导入名的唯一验收命令
+  check-locale-format-outlets.py：rc=0，L4 扫描集 = 270 文件，--selftest PASS
+  check-frontend-module.py：ERROR=0（WARN 两条为存量）
+  check-sfc-dead-refs.mjs：files=128 checked=126 deadRefFiles=0 structFiles=0 verdict=PASS
+  check-doc-links.py：见 §5.37 落笔后另跑
+
+六、余账（不许被本轮的绿灯掩盖）
+  D1 components/ai/GateResult.vue:104 与 contract 的 GRADE_LABELS 是同域两档（短档 `优秀` vs 长档 `优秀 · 优质交付`），
+     圆环位放不下长后缀 ⇒ 要么给契约层补一个短档出口，要么改版面；需用户选档。
+  D2 components/MessageBubble.vue:752 与 contract 的 confidenceText 对"真 0"给出不同显示（0% vs —）；
+     并入前要量 wire 上 confidence 能否为 0（未量 ⇒ 不许动）。
+  D3 views/admin/panels/AdminSso.vue:194 印服务端 UTC 挂钟（§5.36 已定位未修），修法要选档。
+  D4 stores/alliance.store.js 是零消费者空壳（`useAllianceStore` 除 stores/ 内无 importer），退役需点名。

@@ -14,11 +14,13 @@
 //! - 图谱统计（度中心性、聚类系数、连通分量、介数中心性、密度）
 
 use super::experts_common::*;
+use super::experts_rbac::{RbacAction, enforce_admin_or_respond};
 use mox_api_protocol::ApiResponse;
+use mox_audit::{AuditAction, AuditOutcome};
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{get, post},
+    routing::{get, post, put},
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -607,12 +609,96 @@ struct OptimalTeamBody {
 }
 
 // =====================================================================
+// 六-B、图谱节点/边增量 CRUD 请求体（N4，管理写面）
+// =====================================================================
+
+/// 合法节点类型（与 GraphNode 注释一致：expert / capability / domain）。
+/// builder 只产出 expert/domain；capability 留给画布手工建点。
+const VALID_NODE_TYPES: &[&str] = &["expert", "domain", "capability"];
+
+/// POST /api/expert-graph/nodes — 新增节点
+#[derive(Debug, Deserialize)]
+struct CreateNodeBody {
+    id: String,
+    label: String,
+    node_type: String,
+    #[serde(default)]
+    properties: Option<HashMap<String, Value>>,
+}
+
+/// PUT /api/expert-graph/nodes/:id — 更新节点（合并式：仅覆盖提供的字段）
+#[derive(Debug, Deserialize)]
+struct UpdateNodeBody {
+    label: Option<String>,
+    node_type: Option<String>,
+    #[serde(default)]
+    properties: Option<HashMap<String, Value>>,
+}
+
+/// POST /api/expert-graph/edges — 新增边
+#[derive(Debug, Deserialize)]
+struct CreateEdgeBody {
+    source: String,
+    target: String,
+    edge_type: String,
+    #[serde(default)]
+    weight: Option<f64>,
+    #[serde(default)]
+    properties: Option<HashMap<String, Value>>,
+}
+
+/// PUT /api/expert-graph/edges/:seq — 更新边（合并式：仅覆盖提供的字段）
+#[derive(Debug, Deserialize)]
+struct UpdateEdgeBody {
+    edge_type: Option<String>,
+    weight: Option<f64>,
+    #[serde(default)]
+    properties: Option<HashMap<String, Value>>,
+}
+
+/// 校验 node_type 合法；返回 Some(错误响应) 表示失败，None 表示通过
+fn validate_node_type(node_type: &str) -> Option<ApiResponse<Value>> {
+    if VALID_NODE_TYPES.contains(&node_type) {
+        None
+    } else {
+        Some(err(
+            400,
+            format!("非法 node_type: {node_type}（允许 {}）", VALID_NODE_TYPES.join(" / ")),
+        ))
+    }
+}
+
+/// 校验 weight 落在 [0, 1]
+fn validate_weight(weight: f64) -> Option<ApiResponse<Value>> {
+    if (0.0..=1.0).contains(&weight) {
+        None
+    } else {
+        Some(err(400, format!("weight 须在 0.0..=1.0，收到 {weight}")))
+    }
+}
+
+/// 构造写操作响应：受影响元素 + 图统计（便于前端即时刷新）
+fn mutation_response(affected: Value, graph: &ExpertGraph) -> ApiResponse<Value> {
+    ok(json!({
+        "affected": affected,
+        "stats": {
+            "node_count": graph.nodes.len(),
+            "edge_count": graph.edges.len(),
+            "version": graph.version,
+        },
+        "built_at": graph.built_at,
+    }))
+}
+
+
+// =====================================================================
 // 七、端点 Handler
 // =====================================================================
 
 /// 1. GET /api/expert-graph — 获取完整图谱
-async fn get_graph(State(state): State<Arc<ExpertsSharedState>>) -> ApiResponse<Value> {
-    let graph = state.graph.lock();
+async fn get_graph(State(state): State<Arc<ExpertsSharedState>>, TenantId(tenant): TenantId) -> ApiResponse<Value> {
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
     let expert_count = graph.nodes.iter().filter(|n| n.node_type == "expert").count();
     let domain_count = graph.nodes.iter().filter(|n| n.node_type == "domain").count();
     let n = graph.nodes.len();
@@ -641,8 +727,9 @@ async fn get_graph(State(state): State<Arc<ExpertsSharedState>>) -> ApiResponse<
 }
 
 /// 2. GET /api/expert-graph/stats — 图谱统计
-async fn get_graph_stats(State(state): State<Arc<ExpertsSharedState>>) -> ApiResponse<Value> {
-    let graph = state.graph.lock();
+async fn get_graph_stats(State(state): State<Arc<ExpertsSharedState>>, TenantId(tenant): TenantId) -> ApiResponse<Value> {
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
     ok(compute_graph_stats(&graph))
 }
 
@@ -650,8 +737,10 @@ async fn get_graph_stats(State(state): State<Arc<ExpertsSharedState>>) -> ApiRes
 async fn get_neighbors(
     Path(id): Path<String>,
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
-    let graph = state.graph.lock();
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
     let idx = node_index(&graph);
     let node = match idx.get(&id) {
         Some(n) => n,
@@ -692,9 +781,11 @@ async fn get_collaborators(
     Path(id): Path<String>,
     Query(params): Query<HashMap<String, String>>,
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
     let limit: usize = params.get("limit").and_then(|v| v.parse().ok()).unwrap_or(10);
-    let graph = state.graph.lock();
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
     let idx = node_index(&graph);
     if !idx.contains_key(&id) {
         return err(404, format!("expert not found: {id}"));
@@ -749,8 +840,10 @@ async fn get_collaborators(
 async fn get_path(
     Path((source, target)): Path<(String, String)>,
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
-    let graph = state.graph.lock();
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
     let idx = node_index(&graph);
     match bfs_shortest_path(&graph, &source, &target) {
         Some(path_ids) => {
@@ -796,8 +889,9 @@ async fn get_path(
 }
 
 /// 6. GET /api/expert-graph/communities — 社区检测
-async fn get_communities(State(state): State<Arc<ExpertsSharedState>>) -> ApiResponse<Value> {
-    let graph = state.graph.lock();
+async fn get_communities(State(state): State<Arc<ExpertsSharedState>>, TenantId(tenant): TenantId) -> ApiResponse<Value> {
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
     let idx = node_index(&graph);
     let (communities, modularity, iterations, converged) = detect_communities(&graph);
 
@@ -842,9 +936,11 @@ async fn get_communities(State(state): State<Arc<ExpertsSharedState>>) -> ApiRes
 /// 7. POST /api/expert-graph/optimal-team — 最优团队组建
 async fn post_optimal_team(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<OptimalTeamBody>,
 ) -> ApiResponse<Value> {
-    let registry = state.registry.lock();
+    let all_reg = state.registry.lock();
+    let registry = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
     let max_members = body.max_members.unwrap_or(5);
     let min_rating = body.min_rating.unwrap_or(4.0);
     // goal 文本规则提取：仅当未显式声明需求时启用，提取结果来自 registry 真实 id
@@ -870,23 +966,35 @@ async fn post_optimal_team(
 }
 
 /// 8. POST /api/expert-graph/rebuild — 重建图谱
-async fn post_rebuild(State(state): State<Arc<ExpertsSharedState>>) -> ApiResponse<Value> {
+async fn post_rebuild(
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
+) -> ApiResponse<Value> {
+    // R1 后端 RBAC 强制：图谱重建属管理写面，需 super_admin / tenant_admin
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::RebuildGraph) {
+        return resp;
+    }
+
     let start = std::time::Instant::now();
     let previous_version;
     let new_graph;
     {
-        let registry = state.registry.lock();
-        let mut graph = state.graph.lock();
+        let all_reg = state.registry.lock();
+        let registry = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
+        let mut all_g = state.graph.lock();
+        let graph = all_g.entry(tenant.clone()).or_default();
         previous_version = graph.version;
-        new_graph = build_graph_from_registry(&registry);
+        new_graph = build_graph_from_registry(registry);
         *graph = ExpertGraph {
             version: previous_version + 1,
             ..new_graph
         };
-        save_graph(&graph);
+        save_graph(tenant.as_str(), graph);
     }
     let duration_ms = start.elapsed().as_millis() as u64;
-    let graph = state.graph.lock();
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
     let expert_count = graph.nodes.iter().filter(|n| n.node_type == "expert").count();
     ok(json!({
         "rebuilt": true,
@@ -899,6 +1007,628 @@ async fn post_rebuild(State(state): State<Arc<ExpertsSharedState>>) -> ApiRespon
         "duration_ms": duration_ms,
     }))
 }
+
+// =====================================================================
+// 七-B、图谱节点/边增量 CRUD（N4，全部管理写面，强制 RBAC）
+// =====================================================================
+//
+// 语义约定（与 rebuild 互补）：
+// - 内存态 `state.graph` 为权威源，锁内完成校验+变更+落库，version += 1；
+// - 边 seq == edges 下标；删除边/节点后用 replace_graph_edges 重排 seq，保持不变量；
+// - rebuild 全量重算会覆盖增量改动，属预期（见文档）。
+
+/// 9. POST /api/expert-graph/nodes — 新增节点
+async fn post_graph_node(
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
+    Json(body): Json<CreateNodeBody>,
+) -> ApiResponse<Value> {
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::MutateGraph) {
+        return resp;
+    }
+    if body.id.trim().is_empty() {
+        return err(400, "节点 id 不能为空");
+    }
+    if body.label.trim().is_empty() {
+        return err(400, "节点 label 不能为空");
+    }
+    if let Some(resp) = validate_node_type(&body.node_type) {
+        return resp;
+    }
+
+    let mut all_g = state.graph.lock();
+    let graph = all_g.entry(tenant.clone()).or_default();
+    if graph.nodes.iter().any(|n| n.id == body.id) {
+        return err(409, format!("节点 id 已存在: {}", body.id));
+    }
+    let node = GraphNode {
+        id: body.id.clone(),
+        label: body.label.clone(),
+        node_type: body.node_type.clone(),
+        properties: body.properties.unwrap_or_default(),
+    };
+    graph.nodes.push(node.clone());
+    graph.version += 1;
+    graph.built_at = now_iso();
+    drop(graph);
+
+    crate::alliance::experts_db::upsert_graph_node(tenant.as_str(), &node);
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
+    emit_audit(
+        &state,
+        &actor_from_opt_user(&user),
+        tenant.as_str(),
+        AuditAction::Unknown("graph.node.create".into()),
+        "graph_node",
+        &node.id,
+        AuditOutcome::Success,
+        Some(&format!("node_type={}", node.node_type)),
+    );
+    mutation_response(json!({ "node": node }), &graph)
+}
+
+/// 10. PUT /api/expert-graph/nodes/:id — 更新节点
+async fn put_graph_node(
+    Path(id): Path<String>,
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
+    Json(body): Json<UpdateNodeBody>,
+) -> ApiResponse<Value> {
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::MutateGraph) {
+        return resp;
+    }
+    if let Some(t) = &body.node_type {
+        if let Some(resp) = validate_node_type(t) {
+            return resp;
+        }
+    }
+    let mut all_g = state.graph.lock();
+    let graph = all_g.entry(tenant.clone()).or_default();
+    let node = match graph.nodes.iter_mut().find(|n| n.id == id) {
+        Some(n) => n,
+        None => return err(404, format!("node not found: {id}")),
+    };
+    if let Some(label) = body.label {
+        if label.trim().is_empty() {
+            return err(400, "节点 label 不能为空");
+        }
+        node.label = label;
+    }
+    if let Some(t) = body.node_type {
+        node.node_type = t;
+    }
+    if let Some(props) = body.properties {
+        node.properties = props;
+    }
+    let node_clone = node.clone();
+    graph.version += 1;
+    graph.built_at = now_iso();
+    drop(graph);
+
+    crate::alliance::experts_db::upsert_graph_node(tenant.as_str(), &node_clone);
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
+    emit_audit(
+        &state,
+        &actor_from_opt_user(&user),
+        tenant.as_str(),
+        AuditAction::Unknown("graph.node.update".into()),
+        "graph_node",
+        &id,
+        AuditOutcome::Success,
+        None,
+    );
+    mutation_response(json!({ "node": node_clone }), &graph)
+}
+
+/// 11. DELETE /api/expert-graph/nodes/:id — 删除节点（联动删除关联边）
+async fn delete_graph_node(
+    Path(id): Path<String>,
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
+) -> ApiResponse<Value> {
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::MutateGraph) {
+        return resp;
+    }
+    let mut all_g = state.graph.lock();
+    let graph = all_g.entry(tenant.clone()).or_default();
+    let node_idx = graph.nodes.iter().position(|n| n.id == id);
+    let node_idx = match node_idx {
+        Some(i) => i,
+        None => return err(404, format!("node not found: {id}")),
+    };
+    let removed_node = graph.nodes.remove(node_idx);
+    let removed_edges = graph
+        .edges
+        .iter()
+        .filter(|e| e.source == id || e.target == id)
+        .count();
+    graph.edges.retain(|e| e.source != id && e.target != id);
+    graph.version += 1;
+    graph.built_at = now_iso();
+    let edges_snapshot: Vec<GraphEdge> = graph.edges.clone();
+    drop(graph);
+
+    crate::alliance::experts_db::delete_graph_node_cascade(tenant.as_str(), &id);
+    crate::alliance::experts_db::replace_graph_edges(tenant.as_str(), &edges_snapshot);
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
+    emit_audit(
+        &state,
+        &actor_from_opt_user(&user),
+        tenant.as_str(),
+        AuditAction::Unknown("graph.node.delete".into()),
+        "graph_node",
+        &id,
+        AuditOutcome::Success,
+        Some(&format!("cascaded_edges={removed_edges}")),
+    );
+    mutation_response(
+        json!({ "node": removed_node, "removed_edges": removed_edges }),
+        &graph,
+    )
+}
+
+/// 12. POST /api/expert-graph/edges — 新增边
+async fn post_graph_edge(
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
+    Json(body): Json<CreateEdgeBody>,
+) -> ApiResponse<Value> {
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::MutateGraph) {
+        return resp;
+    }
+    if body.edge_type.trim().is_empty() {
+        return err(400, "edge_type 不能为空");
+    }
+    let weight = body.weight.unwrap_or(1.0);
+    if let Some(resp) = validate_weight(weight) {
+        return resp;
+    }
+
+    let mut all_g = state.graph.lock();
+    let graph = all_g.entry(tenant.clone()).or_default();
+    // source/target 必须存在
+    let node_ids = node_index(&graph);
+    if !node_ids.contains_key(&body.source) {
+        return err(400, format!("边的 source 节点不存在: {}", body.source));
+    }
+    if !node_ids.contains_key(&body.target) {
+        return err(400, format!("边的 target 节点不存在: {}", body.target));
+    }
+    // 重复边冲突（source,target,edge_type 无序视为同一条）
+    let dup = graph.edges.iter().any(|e| {
+        let a = (e.source.as_str(), e.target.as_str());
+        let b = (body.source.as_str(), body.target.as_str());
+        e.edge_type == body.edge_type
+            && ((a == b) || (a.0 == b.1 && a.1 == b.0))
+    });
+    if dup {
+        return err(
+            409,
+            format!(
+                "边已存在: {} --[{}]--> {}",
+                body.source, body.edge_type, body.target
+            ),
+        );
+    }
+    let edge = GraphEdge {
+        source: body.source.clone(),
+        target: body.target.clone(),
+        edge_type: body.edge_type.clone(),
+        weight,
+        properties: body.properties.unwrap_or_default(),
+    };
+    let seq = graph.edges.len() as i64; // 追加到末尾，seq == 下标
+    graph.edges.push(edge.clone());
+    graph.version += 1;
+    graph.built_at = now_iso();
+    drop(graph);
+
+    crate::alliance::experts_db::upsert_graph_edge(tenant.as_str(), seq, &edge);
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
+    emit_audit(
+        &state,
+        &actor_from_opt_user(&user),
+        tenant.as_str(),
+        AuditAction::Unknown("graph.edge.create".into()),
+        "graph_edge",
+        &format!("{}/{}", edge.source, edge.target),
+        AuditOutcome::Success,
+        Some(&format!("seq={seq} edge_type={}", edge.edge_type)),
+    );
+    mutation_response(json!({ "edge": edge, "seq": seq }), &graph)
+}
+
+/// 13. PUT /api/expert-graph/edges/:seq — 更新边
+async fn put_graph_edge(
+    Path(seq): Path<i64>,
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
+    Json(body): Json<UpdateEdgeBody>,
+) -> ApiResponse<Value> {
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::MutateGraph) {
+        return resp;
+    }
+    if let Some(w) = body.weight {
+        if let Some(resp) = validate_weight(w) {
+            return resp;
+        }
+    }
+    let mut all_g = state.graph.lock();
+    let graph = all_g.entry(tenant.clone()).or_default();
+    let idx = seq as usize;
+    if idx >= graph.edges.len() {
+        return err(404, format!("edge seq 不存在: {seq}"));
+    }
+    let edge = &mut graph.edges[idx];
+    if let Some(t) = body.edge_type {
+        if t.trim().is_empty() {
+            return err(400, "edge_type 不能为空");
+        }
+        edge.edge_type = t;
+    }
+    if let Some(w) = body.weight {
+        edge.weight = w;
+    }
+    if let Some(props) = body.properties {
+        edge.properties = props;
+    }
+    let edge_clone = edge.clone();
+    graph.version += 1;
+    graph.built_at = now_iso();
+    drop(graph);
+
+    crate::alliance::experts_db::upsert_graph_edge(tenant.as_str(), seq, &edge_clone);
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
+    emit_audit(
+        &state,
+        &actor_from_opt_user(&user),
+        tenant.as_str(),
+        AuditAction::Unknown("graph.edge.update".into()),
+        "graph_edge",
+        &format!("seq={seq}"),
+        AuditOutcome::Success,
+        None,
+    );
+    mutation_response(json!({ "edge": edge_clone, "seq": seq }), &graph)
+}
+
+/// 14. DELETE /api/expert-graph/edges/:seq — 删除边
+async fn delete_graph_edge(
+    Path(seq): Path<i64>,
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
+) -> ApiResponse<Value> {
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::MutateGraph) {
+        return resp;
+    }
+    let mut all_g = state.graph.lock();
+    let graph = all_g.entry(tenant.clone()).or_default();
+    let idx = seq as usize;
+    if idx >= graph.edges.len() {
+        return err(404, format!("edge seq 不存在: {seq}"));
+    }
+    let removed = graph.edges.remove(idx);
+    graph.version += 1;
+    graph.built_at = now_iso();
+    let edges_snapshot: Vec<GraphEdge> = graph.edges.clone();
+    drop(graph);
+
+    // 删除后剩余边下标前移，重排 seq 保持 seq==下标
+    crate::alliance::experts_db::replace_graph_edges(tenant.as_str(), &edges_snapshot);
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
+    emit_audit(
+        &state,
+        &actor_from_opt_user(&user),
+        tenant.as_str(),
+        AuditAction::Unknown("graph.edge.delete".into()),
+        "graph_edge",
+        &format!("seq={seq}"),
+        AuditOutcome::Success,
+        Some(&format!("removed {}-{}", removed.source, removed.target)),
+    );
+    mutation_response(json!({ "edge": removed, "removed_seq": seq }), &graph)
+}
+
+
+// =====================================================================
+// 七-C、图 RAG（T2）：多跳邻域扩展检索
+// =====================================================================
+//
+// 设计定位（2026-10-01）：
+// - 护城河方向：竞品均向量 RAG，本能力以「图谱结构化邻域扩展」为差异化——
+//   沿边多跳召回相关专家/能力域/历史协作链路，给 planner 提供「该找谁、为什么、怎么组队」
+//   的可解释上下文（每条结果带完整路径与首跳边）。
+// - 实现选择：本实现采用**内存态加权多跳扩展**（数据源 state.graph，与 get_graph 同源、
+//   与 SQLite 双向同步等价）。规划期曾选「SQLite 图表递归 CTE」，但 state 无 SQLite 连接句柄
+//   （引入需连接生命周期管理），内存态零连接开销且与既有 8 只读查询同构。语义等价，
+//   A4 图库迁入时仅替换查询实现，handler 契约不变。
+// - 权重聚合：路径边权重**乘积**（w∈[0,1]，随深度自然衰减）；同节点多路径取最优
+//   （乘积大者优先，同乘积取更浅深度）。
+// - 融合重排：向量/关键词检索目标态未落地（#27 pgvector 是 P1），本端点为图谱纯检索；
+//   `hybrid_rerank` 仅作扩展点函数签名与文档，真实向量融合待 #27，不冒充已做。
+// - 读面公开（与 get_graph 一致，无需角色）。
+
+/// POST /api/expert-graph/rag/expand 请求体
+#[derive(Debug, Deserialize)]
+struct RagExpandBody {
+    /// 种子节点 id 数组（专家或域均可）
+    seeds: Vec<String>,
+    /// 最大跳数（1-4，缺省 2）
+    #[serde(default)]
+    max_depth: Option<usize>,
+    /// 返回条数上限（缺省 20）
+    #[serde(default)]
+    top_k: Option<usize>,
+    /// 结果节点类型过滤（如 ["expert"]）；空=不过滤，展开仍可经过其他类型
+    #[serde(default)]
+    node_types: Option<Vec<String>>,
+    /// 边权重下限（缺省 0.0）：低于该值的边不沿其展开
+    #[serde(default)]
+    min_weight: Option<f64>,
+}
+
+/// 单条召回结果（内部）
+pub struct RagHit {
+    pub node_id: String,
+    pub depth: usize,
+    pub aggregate_weight: f64,
+    pub path: Vec<String>,
+    pub first_hop: Value,
+}
+
+/// 多跳邻域扩展纯函数。
+///
+/// - seeds 中不存在的节点自动跳过（存在性由 handler 统一 404）；
+/// - 排除种子自身；环路防重复：单条路径内不回环（path.contains），跨路径以 best 择优；
+/// - min_weight 在边展开侧过滤；node_types 在结果侧过滤（路径仍保留完整节点序列）。
+pub fn expand_neighborhood(
+    graph: &ExpertGraph,
+    seeds: &[String],
+    max_depth: usize,
+    top_k: usize,
+    node_types: &HashSet<String>,
+    min_weight: f64,
+) -> Vec<RagHit> {
+    // 带边类型的无向邻接表：node_id -> [(neighbor_id, edge_type, normalized_weight)]
+    let mut adj: HashMap<String, Vec<(String, String, f64)>> = HashMap::new();
+    for node in &graph.nodes {
+        adj.entry(node.id.clone()).or_default();
+    }
+    for edge in &graph.edges {
+        let w = if edge.weight > 0.0 { edge.weight } else { 1.0 };
+        adj.entry(edge.source.clone()).or_default()
+            .push((edge.target.clone(), edge.edge_type.clone(), w));
+        adj.entry(edge.target.clone()).or_default()
+            .push((edge.source.clone(), edge.edge_type.clone(), w));
+    }
+
+    // best: node_id -> (aggregate_weight, depth, path, first_hop)
+    struct Best {
+        acc: f64,
+        depth: usize,
+        path: Vec<String>,
+        first_hop: Value,
+    }
+    let mut best: HashMap<String, Best> = HashMap::new();
+
+    // 队列元素：(curr, acc, depth, path, first_hop)
+    let mut queue: VecDeque<(String, f64, usize, Vec<String>, Value)> = VecDeque::new();
+
+    // 种子首跳入队
+    for seed in seeds {
+        if !adj.contains_key(seed) {
+            continue;
+        }
+        if let Some(neighbors) = adj.get(seed) {
+            for (nb, et, w) in neighbors {
+                if *w < min_weight {
+                    continue;
+                }
+                let path = vec![seed.clone(), nb.clone()];
+                let fh = json!({
+                    "from": seed,
+                    "to": nb,
+                    "edge_type": et,
+                    "weight": w,
+                });
+                queue.push_back((nb.clone(), *w, 1usize, path, fh));
+            }
+        }
+    }
+
+    while let Some((curr, acc, depth, path, fh)) = queue.pop_front() {
+        // 择优判据：权重更大，或同权重更浅
+        let better = match best.get(&curr) {
+            None => true,
+            Some(b) => acc > b.acc || (acc == b.acc && depth < b.depth),
+        };
+        if !better {
+            continue;
+        }
+        best.insert(
+            curr.clone(),
+            Best { acc, depth, path: path.clone(), first_hop: fh.clone() },
+        );
+
+        if depth >= max_depth {
+            continue;
+        }
+        if let Some(neighbors) = adj.get(&curr) {
+            for (nb, _et, w) in neighbors {
+                if *w < min_weight {
+                    continue;
+                }
+                // 单路径内防回环
+                if path.contains(nb) {
+                    continue;
+                }
+                let mut new_path = path.clone();
+                new_path.push(nb.clone());
+                queue.push_back((nb.clone(), acc * w, depth + 1, new_path, fh.clone()));
+            }
+        }
+    }
+
+    // 结果侧 node_types 过滤
+    let idx = node_index(graph);
+    let mut hits: Vec<RagHit> = best
+        .into_iter()
+        .filter(|(id, _)| {
+            if node_types.is_empty() {
+                return true;
+            }
+            idx.get(id).map(|n| node_types.contains(&n.node_type)).unwrap_or(false)
+        })
+        .map(|(node_id, b)| RagHit {
+            node_id,
+            depth: b.depth,
+            aggregate_weight: b.acc,
+            path: b.path,
+            first_hop: b.first_hop,
+        })
+        .collect();
+
+    // 排序：权重降序 → 深度升序 → id 字典序（确定性）
+    hits.sort_by(|a, b| {
+        b.aggregate_weight
+            .partial_cmp(&a.aggregate_weight)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then(a.depth.cmp(&b.depth))
+            .then(a.node_id.cmp(&b.node_id))
+    });
+
+    hits.truncate(top_k);
+    hits
+}
+
+/// 融合重排扩展点（待 #27 pgvector 落地后真实实现）。
+///
+/// 当前为图谱纯检索结果，向量/关键词召回尚未落地。本函数仅签名占位：
+/// 接收图谱召回 hits 与未来向量召回列表，返回融合后 hits。
+/// 落地前直接透传图谱 hits，不伪造向量分数。
+pub fn hybrid_rerank(graph_hits: Vec<RagHit>, _vector_candidates: Value) -> Vec<RagHit> {
+    // TODO(#27): 接入 pgvector 召回后，按 RRF（Reciprocal Rank Fusion）与图谱权重融合。
+    // 当前阶段：向量候选集恒为空，直接返回图谱 hits，如实标注「向量融合待 #27」。
+    graph_hits
+}
+
+/// 15. POST /api/expert-graph/rag/expand — 图 RAG 多跳邻域扩展（T2，读面公开）
+async fn post_rag_expand(
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    Json(body): Json<RagExpandBody>,
+) -> ApiResponse<Value> {
+    // 校验：seeds 非空
+    if body.seeds.is_empty() {
+        return err(400, "seeds 不能为空");
+    }
+    // 校验：max_depth 范围 1..=4
+    let max_depth = body.max_depth.unwrap_or(2);
+    if !(1..=4).contains(&max_depth) {
+        return err(400, format!("max_depth 须在 1..=4，收到 {max_depth}"));
+    }
+    let top_k = body.top_k.unwrap_or(20);
+    if top_k == 0 {
+        return err(400, "top_k 须 > 0");
+    }
+    let min_weight = body.min_weight.unwrap_or(0.0);
+    if !(0.0..=1.0).contains(&min_weight) {
+        return err(400, format!("min_weight 须在 0.0..=1.0，收到 {min_weight}"));
+    }
+    let node_types: HashSet<String> = body.node_types.clone().unwrap_or_default().into_iter().collect();
+
+    let start = std::time::Instant::now();
+    let all_g = state.graph.lock();
+    let graph = all_g.get(tenant.as_str()).unwrap_or(empty_graph());
+
+    // 种子存在性校验：任一不存在 → 404（与 get_neighbors 语义一致）
+    let idx = node_index(&graph);
+    let mut missing: Vec<String> = Vec::new();
+    for s in &body.seeds {
+        if !idx.contains_key(s) {
+            missing.push(s.clone());
+        }
+    }
+    if !missing.is_empty() {
+        return err(404, format!("种子节点不存在: {}", missing.join(", ")));
+    }
+
+    // 空图 → 空 results（非错误）
+    if graph.nodes.is_empty() {
+        return ok(json!({
+            "query": {
+                "seeds": body.seeds,
+                "max_depth": max_depth,
+                "top_k": top_k,
+            },
+            "results": [],
+            "stats": {
+                "searched_nodes": 0usize,
+                "returned": 0usize,
+                "elapsed_ms": start.elapsed().as_millis() as u64,
+            },
+            "rerank": "graph_only（向量融合待 #27）",
+        }));
+    }
+
+    // 先做全量扩展（未按 node_types 过滤），searched_nodes 记过滤前的去重节点数
+    let all_hits = expand_neighborhood(&graph, &body.seeds, max_depth, usize::MAX, &HashSet::new(), min_weight);
+    let searched_nodes = all_hits.len();
+
+    // 再按 node_types 过滤并截断（expand_neighborhood 内部已排序）
+    let hits = expand_neighborhood(&graph, &body.seeds, max_depth, top_k, &node_types, min_weight);
+
+    // 融合重排扩展点（当前透传）
+    let hits = hybrid_rerank(hits, json!([]));
+
+    let results: Vec<Value> = hits
+        .iter()
+        .map(|h| {
+            let node = idx.get(&h.node_id);
+            json!({
+                "node": {
+                    "id": h.node_id,
+                    "label": node.map(|n| n.label.clone()).unwrap_or_default(),
+                    "node_type": node.map(|n| n.node_type.clone()).unwrap_or_default(),
+                },
+                "depth": h.depth,
+                "aggregate_weight": h.aggregate_weight,
+                "path": h.path,
+                "first_hops": [h.first_hop],
+            })
+        })
+        .collect();
+
+    ok(json!({
+        "query": {
+            "seeds": body.seeds,
+            "max_depth": max_depth,
+            "top_k": top_k,
+            "node_types": body.node_types.unwrap_or_default(),
+            "min_weight": min_weight,
+        },
+        "results": results,
+        "stats": {
+            "searched_nodes": searched_nodes,
+            "returned": results.len(),
+            "elapsed_ms": start.elapsed().as_millis() as u64,
+        },
+        "rerank": "graph_only（向量融合待 #27）",
+    }))
+}
+
 
 // =====================================================================
 // 八、路由装配
@@ -914,6 +1644,13 @@ pub fn build_experts_graph_router(state: Arc<ExpertsSharedState>) -> Router {
         .route("/api/expert-graph/communities", get(get_communities))
         .route("/api/expert-graph/optimal-team", post(post_optimal_team))
         .route("/api/expert-graph/rebuild", post(post_rebuild))
+        // ── N4 节点级 CRUD（管理写面，强制 RBAC MutateGraph）──
+        .route("/api/expert-graph/nodes", post(post_graph_node))
+        .route("/api/expert-graph/nodes/:id", put(put_graph_node).delete(delete_graph_node))
+        .route("/api/expert-graph/edges", post(post_graph_edge))
+        .route("/api/expert-graph/edges/:seq", put(put_graph_edge).delete(delete_graph_edge))
+        // ── T2 图 RAG：多跳邻域扩展（读面公开，无需角色）──
+        .route("/api/expert-graph/rag/expand", post(post_rag_expand))
         .with_state(state)
 }
 
@@ -1095,5 +1832,432 @@ mod tests {
         assert_eq!(graph.version, 1);
         let new_version = graph.version + 1;
         assert_eq!(new_version, 2);
+    }
+
+    // ── N4 节点级 CRUD ──────────────────────────────────────────────
+
+    use crate::alliance::experts_rbac::enforce_admin;
+    use mox_audit::{AuditContext, MultiSink, NoopSink};
+    use mox_platform_api::UserInfo;
+    use parking_lot::Mutex;
+
+    fn admin_user() -> UserInfo {
+        UserInfo {
+            id: "u-admin".into(),
+            username: "admin".into(),
+            email: "a@a.com".into(),
+            tenant_id: "t".into(),
+            roles: vec!["tenant_admin".into()],
+            enabled: true,
+            created_at: "2026-09-30T00:00:00Z".into(),
+        }
+    }
+
+    fn normal_user() -> UserInfo {
+        let mut u = admin_user();
+        u.roles = vec!["normal_user".into()];
+        u
+    }
+
+    /// 构造带测试图的共享状态；DB 指向临时文件，避免污染 data/experts.db
+    fn crud_state() -> Arc<ExpertsSharedState> {
+        std::env::set_var(
+            crate::alliance::experts_db::ENV_DB_PATH,
+            std::env::temp_dir().join("mox-test-crud-experts.db").to_string_lossy().to_string(),
+        );
+        let audit = AuditContext::new(Arc::new(MultiSink::new().with_sink(Box::new(NoopSink))));
+        Arc::new(ExpertsSharedState {
+            registry: Arc::new(Mutex::new(HashMap::new())),
+            sessions: Arc::new(Mutex::new(HashMap::new())),
+            dispatcher_config: Arc::new(Mutex::new(Default::default())),
+            dispatch_records: Arc::new(Mutex::new(Vec::new())),
+            graph: Arc::new(Mutex::new(HashMap::from([("default".to_string(), make_test_graph())]))),
+            plans: Arc::new(Mutex::new(HashMap::new())),
+            orchestration_history: Arc::new(Mutex::new(Vec::new())),
+            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            audit: Arc::new(audit),
+        })
+    }
+
+    fn rt() -> tokio::runtime::Runtime {
+        tokio::runtime::Runtime::new().unwrap()
+    }
+
+    #[test]
+    fn test_validate_node_type_and_weight() {
+        assert!(validate_node_type("expert").is_none());
+        assert!(validate_node_type("domain").is_none());
+        assert!(validate_node_type("capability").is_none());
+        assert!(validate_node_type("weird").unwrap().code == 400);
+        assert!(validate_weight(0.0).is_none());
+        assert!(validate_weight(1.0).is_none());
+        assert!(validate_weight(1.5).unwrap().code == 400);
+        assert!(validate_weight(-0.1).unwrap().code == 400);
+    }
+
+    #[test]
+    fn test_mutate_graph_rbac_rejects() {
+        // 未认证 → 401
+        assert_eq!(enforce_admin(&None, RbacAction::MutateGraph).unwrap_err().status, 401);
+        // 普通用户 → 403
+        assert_eq!(enforce_admin(&Some(normal_user()), RbacAction::MutateGraph).unwrap_err().status, 403);
+        // 管理员放行
+        assert!(enforce_admin(&Some(admin_user()), RbacAction::MutateGraph).is_ok());
+        assert_eq!(RbacAction::MutateGraph.code(), "graph.mutate");
+    }
+
+    #[test]
+    fn test_create_node_ok_and_duplicate_409() {
+        let state = crud_state();
+        let body = CreateNodeBody {
+            id: "exp-new".into(),
+            label: "新专家".into(),
+            node_type: "expert".into(),
+            properties: None,
+        };
+        let resp = rt().block_on(post_graph_node(
+            State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user())), Json(body)));
+        assert_eq!(resp.code, 0);
+        assert_eq!(state.graph.lock().get("default").unwrap().nodes.len(), 6);
+        assert!(state.graph.lock().get("default").unwrap().version >= 2);
+
+        // 重复 id → 409
+        let dup = CreateNodeBody {
+            id: "exp-new".into(), label: "x".into(), node_type: "expert".into(), properties: None,
+        };
+        let resp2 = rt().block_on(post_graph_node(
+            State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user())), Json(dup)));
+        assert_eq!(resp2.code, 409);
+    }
+
+    #[test]
+    fn test_create_node_bad_type_400() {
+        let state = crud_state();
+        let body = CreateNodeBody {
+            id: "exp-x".into(), label: "x".into(), node_type: "bogus".into(), properties: None,
+        };
+        let resp = rt().block_on(post_graph_node(
+            State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user())), Json(body)));
+        assert_eq!(resp.code, 400);
+        assert_eq!(state.graph.lock().get("default").unwrap().nodes.len(), 5);
+    }
+
+    #[test]
+    fn test_update_node_404_and_merge() {
+        let state = crud_state();
+        // 不存在 → 404
+        let resp = rt().block_on(put_graph_node(
+            Path("nope".into()), State(state.clone()), TenantId("default".into()),
+            OptionalAuthUser(Some(admin_user())), Json(UpdateNodeBody { label: None, node_type: None, properties: None })));
+        assert_eq!(resp.code, 404);
+        // 合并更新 label
+        let resp2 = rt().block_on(put_graph_node(
+            Path("exp-1".into()), State(state.clone()), TenantId("default".into()),
+            OptionalAuthUser(Some(admin_user())),
+            Json(UpdateNodeBody { label: Some("改名".into()), node_type: None, properties: None })));
+        assert_eq!(resp2.code, 0);
+        assert_eq!(state.graph.lock().get("default").unwrap().nodes[0].label, "改名");
+    }
+
+    #[test]
+    fn test_delete_node_cascades_edges() {
+        let state = crud_state();
+        // exp-1 关联边：exp-1--domain-ai, exp-1--exp-2（2 条）
+        let before_edges = state.graph.lock().get("default").unwrap().edges.len();
+        let resp = rt().block_on(delete_graph_node(
+            Path("exp-1".into()), State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user()))));
+        assert_eq!(resp.code, 0);
+        let g_lock = state.graph.lock();
+        let g = g_lock.get("default").unwrap();
+        assert_eq!(g.nodes.len(), 4);
+        assert_eq!(g.edges.len(), before_edges - 2);
+        // 残留边不得再引用 exp-1
+        assert!(g.edges.iter().all(|e| e.source != "exp-1" && e.target != "exp-1"));
+    }
+
+    #[test]
+    fn test_create_edge_ok_duplicate_409_missing_endpoint_400() {
+        let state = crud_state();
+        // 端点不存在 → 400
+        let bad = CreateEdgeBody {
+            source: "exp-1".into(), target: "ghost".into(), edge_type: "collaborates_with".into(), weight: Some(0.5), properties: None,
+        };
+        let resp0 = rt().block_on(post_graph_edge(
+            State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user())), Json(bad)));
+        assert_eq!(resp0.code, 400);
+
+        // 新建边 exp-1 -- exp-3（当前无直接协作边）
+        let ok = CreateEdgeBody {
+            source: "exp-1".into(), target: "exp-3".into(), edge_type: "collaborates_with".into(), weight: Some(0.5), properties: None,
+        };
+        let before = state.graph.lock().get("default").unwrap().edges.len();
+        let resp = rt().block_on(post_graph_edge(
+            State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user())), Json(ok)));
+        assert_eq!(resp.code, 0);
+        assert_eq!(state.graph.lock().get("default").unwrap().edges.len(), before + 1);
+
+        // 重复边（反向同对同类型）→ 409
+        let dup = CreateEdgeBody {
+            source: "exp-3".into(), target: "exp-1".into(), edge_type: "collaborates_with".into(), weight: None, properties: None,
+        };
+        let resp2 = rt().block_on(post_graph_edge(
+            State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user())), Json(dup)));
+        assert_eq!(resp2.code, 409);
+    }
+
+    #[test]
+    fn test_update_delete_edge_by_seq() {
+        let state = crud_state();
+        let n = state.graph.lock().get("default").unwrap().edges.len();
+        // 更新 seq=0 的权重
+        let resp = rt().block_on(put_graph_edge(
+            Path(0i64), State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user())),
+            Json(UpdateEdgeBody { edge_type: None, weight: Some(0.9), properties: None })));
+        assert_eq!(resp.code, 0);
+        assert_eq!(state.graph.lock().get("default").unwrap().edges[0].weight, 0.9);
+        // seq 越界 → 404
+        let resp2 = rt().block_on(put_graph_edge(
+            Path((n as i64) + 5), State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user())),
+            Json(UpdateEdgeBody { edge_type: None, weight: None, properties: None })));
+        assert_eq!(resp2.code, 404);
+        // 删除 seq=0
+        let resp3 = rt().block_on(delete_graph_edge(
+            Path(0i64), State(state.clone()), TenantId("default".into()), OptionalAuthUser(Some(admin_user()))));
+        assert_eq!(resp3.code, 0);
+        assert_eq!(state.graph.lock().get("default").unwrap().edges.len(), n - 1);
+    }
+
+    #[test]
+    fn test_crud_requires_auth_401() {
+        let state = crud_state();
+        let body = CreateNodeBody { id: "x".into(), label: "x".into(), node_type: "expert".into(), properties: None };
+        let resp = rt().block_on(post_graph_node(
+            State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Json(body)));
+        assert_eq!(resp.code, 401);
+    }
+
+    // ── T2 图 RAG 多跳邻域扩展 ───────────────────────────────────────
+
+    /// 检索器测试用：复用 make_test_graph（exp-1/2/3 + domain-ai/data）
+    /// 边权重：has_domain=1.0，exp-1--exp-2=0.6，exp-2--exp-3=0.4
+    fn rag_empty_types() -> HashSet<String> {
+        HashSet::new()
+    }
+
+    #[test]
+    fn test_rag_multihop_reaches_third_hop() {
+        let graph = make_test_graph();
+        // 种子 exp-1，max_depth=2：直达 domain-ai/exp-2；二跳可达 exp-3（经 exp-2，乘积 0.6*0.4=0.24）
+        let hits = expand_neighborhood(&graph, &["exp-1".into()], 2, 50, &rag_empty_types(), 0.0);
+        let ids: Vec<&str> = hits.iter().map(|h| h.node_id.as_str()).collect();
+        // 排除种子自身
+        assert!(!ids.contains(&"exp-1"));
+        // 一跳邻居
+        assert!(ids.contains(&"domain-ai"));
+        assert!(ids.contains(&"exp-2"));
+        // 二跳可达 exp-3（经 exp-2）
+        assert!(ids.contains(&"exp-3"));
+        // exp-3 的 depth=2，aggregate_weight = 0.6 * 0.4 = 0.24
+        let exp3 = hits.iter().find(|h| h.node_id == "exp-3").unwrap();
+        assert_eq!(exp3.depth, 2);
+        assert!((exp3.aggregate_weight - 0.24).abs() < 1e-9);
+        // 路径含 exp-2 中转
+        assert_eq!(exp3.path, vec!["exp-1", "exp-2", "exp-3"]);
+        // 首跳是 exp-1 -> exp-2
+        assert_eq!(exp3.first_hop["from"], "exp-1");
+        assert_eq!(exp3.first_hop["to"], "exp-2");
+    }
+
+    #[test]
+    fn test_rag_weight_ranking_desc() {
+        let graph = make_test_graph();
+        let hits = expand_neighborhood(&graph, &["exp-1".into()], 2, 50, &rag_empty_types(), 0.0);
+        // 一跳 domain-ai 权重 1.0、exp-2 权重 0.6；二跳 domain-data 经 exp-2 = 0.6*1.0=0.6、exp-3 = 0.24
+        // 排序应按 aggregate_weight 降序
+        let weights: Vec<f64> = hits.iter().map(|h| h.aggregate_weight).collect();
+        for w in weights.windows(2) {
+            assert!(w[0] >= w[1], "权重未降序: {:?}", weights);
+        }
+        // 第一名是 domain-ai（权重 1.0）
+        assert_eq!(hits[0].node_id, "domain-ai");
+        assert!((hits[0].aggregate_weight - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_rag_cycle_guard_no_self_loop() {
+        // 构造一个含环的图：exp-a -- exp-b -- exp-c -- exp-a
+        let nodes = vec![
+            GraphNode { id: "exp-a".into(), label: "A".into(), node_type: "expert".into(), properties: HashMap::new() },
+            GraphNode { id: "exp-b".into(), label: "B".into(), node_type: "expert".into(), properties: HashMap::new() },
+            GraphNode { id: "exp-c".into(), label: "C".into(), node_type: "expert".into(), properties: HashMap::new() },
+        ];
+        let edges = vec![
+            GraphEdge { source: "exp-a".into(), target: "exp-b".into(), edge_type: "collaborates_with".into(), weight: 0.9, properties: HashMap::new() },
+            GraphEdge { source: "exp-b".into(), target: "exp-c".into(), edge_type: "collaborates_with".into(), weight: 0.8, properties: HashMap::new() },
+            GraphEdge { source: "exp-c".into(), target: "exp-a".into(), edge_type: "collaborates_with".into(), weight: 0.7, properties: HashMap::new() },
+        ];
+        let graph = ExpertGraph { nodes, edges, built_at: now_iso(), version: 1 };
+        let hits = expand_neighborhood(&graph, &["exp-a".into()], 3, 50, &rag_empty_types(), 0.0);
+        // 排除种子；其余两节点各只出现一次（best 去重）
+        let ids: Vec<&str> = hits.iter().map(|h| h.node_id.as_str()).collect();
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&"exp-b"));
+        assert!(ids.contains(&"exp-c"));
+        // exp-b 最短 depth=1，不应被 depth=2 的环路路径覆盖
+        let b = hits.iter().find(|h| h.node_id == "exp-b").unwrap();
+        assert_eq!(b.depth, 1);
+        // exp-c 经 exp-a->b->c depth=2，乘积 0.9*0.8=0.72；不选 a->c(0.7) 那条（虽然 depth=1 但权重低）
+        // 注意：a->c 直接相连 weight=0.7，depth=1；best 择优：0.72(d=2) vs 0.7(d=1) → 0.72 胜
+        let c = hits.iter().find(|h| h.node_id == "exp-c").unwrap();
+        assert!((c.aggregate_weight - 0.72).abs() < 1e-9);
+        assert_eq!(c.path, vec!["exp-a", "exp-b", "exp-c"]);
+    }
+
+    #[test]
+    fn test_rag_empty_graph_returns_empty() {
+        let graph = ExpertGraph::default();
+        let hits = expand_neighborhood(&graph, &["exp-1".into()], 2, 20, &rag_empty_types(), 0.0);
+        assert!(hits.is_empty());
+    }
+
+    #[test]
+    fn test_rag_max_depth_3_reaches_deep_chain() {
+        // 链：s -- a(0.9) -- b(0.8) -- c(0.7) -- d(0.6)
+        // depth: s=0(种子), a=1, b=2, c=3, d=4
+        let nodes = vec![
+            GraphNode { id: "s".into(), label: "S".into(), node_type: "expert".into(), properties: HashMap::new() },
+            GraphNode { id: "a".into(), label: "A".into(), node_type: "expert".into(), properties: HashMap::new() },
+            GraphNode { id: "b".into(), label: "B".into(), node_type: "expert".into(), properties: HashMap::new() },
+            GraphNode { id: "c".into(), label: "C".into(), node_type: "expert".into(), properties: HashMap::new() },
+            GraphNode { id: "d".into(), label: "D".into(), node_type: "expert".into(), properties: HashMap::new() },
+        ];
+        let edges = vec![
+            GraphEdge { source: "s".into(), target: "a".into(), edge_type: "collaborates_with".into(), weight: 0.9, properties: HashMap::new() },
+            GraphEdge { source: "a".into(), target: "b".into(), edge_type: "collaborates_with".into(), weight: 0.8, properties: HashMap::new() },
+            GraphEdge { source: "b".into(), target: "c".into(), edge_type: "collaborates_with".into(), weight: 0.7, properties: HashMap::new() },
+            GraphEdge { source: "c".into(), target: "d".into(), edge_type: "collaborates_with".into(), weight: 0.6, properties: HashMap::new() },
+        ];
+        let graph = ExpertGraph { nodes, edges, built_at: now_iso(), version: 1 };
+        // max_depth=2：到 a(1)、b(2)，到不了 c(3)、d(4)
+        let h2 = expand_neighborhood(&graph, &["s".into()], 2, 50, &rag_empty_types(), 0.0);
+        let ids2: Vec<&str> = h2.iter().map(|h| h.node_id.as_str()).collect();
+        assert!(ids2.contains(&"a"));
+        assert!(ids2.contains(&"b"));
+        assert!(!ids2.contains(&"c"));
+        assert!(!ids2.contains(&"d"));
+        // max_depth=3：到 c(3)，仍到不了 d(4)
+        let h3 = expand_neighborhood(&graph, &["s".into()], 3, 50, &rag_empty_types(), 0.0);
+        let ids3: Vec<&str> = h3.iter().map(|h| h.node_id.as_str()).collect();
+        assert!(ids3.contains(&"c"));
+        assert!(!ids3.contains(&"d"));
+        // max_depth=4：才到 d
+        let h4 = expand_neighborhood(&graph, &["s".into()], 4, 50, &rag_empty_types(), 0.0);
+        assert!(h4.iter().any(|h| h.node_id == "d"));
+    }
+
+    #[test]
+    fn test_rag_node_types_filter() {
+        let graph = make_test_graph();
+        let mut types = HashSet::new();
+        types.insert("expert".to_string());
+        let hits = expand_neighborhood(&graph, &["exp-1".into()], 2, 50, &types, 0.0);
+        // 只返回 expert 类型，domain-ai/domain-data 被过滤
+        for h in &hits {
+            assert_eq!(h.node_id.starts_with("domain-"), false, "不应返回 domain 节点: {}", h.node_id);
+        }
+        assert!(hits.iter().any(|h| h.node_id == "exp-2"));
+        assert!(hits.iter().any(|h| h.node_id == "exp-3"));
+        // 但路径里仍保留 domain 节点（exp-2 经 domain-data 到 exp-3 的路径要完整）
+        // exp-3 的路径可能含 domain-data
+    }
+
+    #[test]
+    fn test_rag_min_weight_filter_edges() {
+        // 构造图：s -- a(0.9) -- x(0.3)；x 只有弱边 0.3 可达
+        let nodes = vec![
+            GraphNode { id: "s".into(), label: "S".into(), node_type: "expert".into(), properties: HashMap::new() },
+            GraphNode { id: "a".into(), label: "A".into(), node_type: "expert".into(), properties: HashMap::new() },
+            GraphNode { id: "x".into(), label: "X".into(), node_type: "expert".into(), properties: HashMap::new() },
+        ];
+        let edges = vec![
+            GraphEdge { source: "s".into(), target: "a".into(), edge_type: "collaborates_with".into(), weight: 0.9, properties: HashMap::new() },
+            GraphEdge { source: "a".into(), target: "x".into(), edge_type: "collaborates_with".into(), weight: 0.3, properties: HashMap::new() },
+        ];
+        let graph = ExpertGraph { nodes, edges, built_at: now_iso(), version: 1 };
+        // min_weight=0.5：a(0.9) 可达，x 因 a--x(0.3<0.5) 被过滤而不可达
+        let hits = expand_neighborhood(&graph, &["s".into()], 3, 50, &rag_empty_types(), 0.5);
+        let ids: Vec<&str> = hits.iter().map(|h| h.node_id.as_str()).collect();
+        assert!(ids.contains(&"a"));
+        assert!(!ids.contains(&"x"), "min_weight=0.5 下 x 应不可达（a--x 边权重 0.3 被过滤）");
+        // min_weight=0.2：x 可达
+        let hits2 = expand_neighborhood(&graph, &["s".into()], 3, 50, &rag_empty_types(), 0.2);
+        assert!(hits2.iter().any(|h| h.node_id == "x"));
+    }
+
+    #[test]
+    fn test_rag_top_k_truncation() {
+        let graph = make_test_graph();
+        let hits = expand_neighborhood(&graph, &["exp-1".into()], 2, 1, &rag_empty_types(), 0.0);
+        assert_eq!(hits.len(), 1);
+        // 权重最高的是 domain-ai (1.0)
+        assert_eq!(hits[0].node_id, "domain-ai");
+    }
+
+    #[test]
+    fn test_rag_handler_seed_not_found_404() {
+        let state = crud_state();
+        let body = RagExpandBody {
+            seeds: vec!["exp-1".into(), "ghost".into()],
+            max_depth: Some(2),
+            top_k: Some(20),
+            node_types: None,
+            min_weight: None,
+        };
+        let resp = rt().block_on(post_rag_expand(State(state), TenantId("default".into()), Json(body)));
+        assert_eq!(resp.code, 404);
+    }
+
+    #[test]
+    fn test_rag_handler_validation_400() {
+        let state = crud_state();
+        // seeds 空
+        let r1 = rt().block_on(post_rag_expand(State(state.clone()), TenantId("default".into()), Json(RagExpandBody {
+            seeds: vec![], max_depth: None, top_k: None, node_types: None, min_weight: None,
+        })));
+        assert_eq!(r1.code, 400);
+        // max_depth=5 越界
+        let r2 = rt().block_on(post_rag_expand(State(state.clone()), TenantId("default".into()), Json(RagExpandBody {
+            seeds: vec!["exp-1".into()], max_depth: Some(5), top_k: None, node_types: None, min_weight: None,
+        })));
+        assert_eq!(r2.code, 400);
+        // top_k=0
+        let r3 = rt().block_on(post_rag_expand(State(state.clone()), TenantId("default".into()), Json(RagExpandBody {
+            seeds: vec!["exp-1".into()], max_depth: None, top_k: Some(0), node_types: None, min_weight: None,
+        })));
+        assert_eq!(r3.code, 400);
+    }
+
+    #[test]
+    fn test_rag_handler_ok_returns_results() {
+        let state = crud_state();
+        let resp = rt().block_on(post_rag_expand(State(state), TenantId("default".into()), Json(RagExpandBody {
+            seeds: vec!["exp-1".into()],
+            max_depth: Some(2),
+            top_k: Some(20),
+            node_types: Some(vec!["expert".into()]),
+            min_weight: Some(0.0),
+        })));
+        assert_eq!(resp.code, 0);
+        let data = resp.data.as_ref().unwrap();
+        let results = data["results"].as_array().unwrap();
+        // 只回 expert：exp-2、exp-3
+        assert!(!results.is_empty());
+        assert!(results.iter().all(|r| r["node"]["node_type"] == "expert"));
+        // stats 字段齐全
+        assert!(data["stats"]["searched_nodes"].is_number());
+        assert!(data["stats"]["returned"].is_number());
+        assert!(data["stats"]["elapsed_ms"].is_number());
+        // rerank 标注向量融合待 #27
+        assert!(data["rerank"].as_str().unwrap().contains("#27"));
     }
 }

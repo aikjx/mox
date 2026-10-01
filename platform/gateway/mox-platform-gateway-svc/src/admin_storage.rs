@@ -11,7 +11,7 @@
 //!
 //! - `GET  /api/storage/status`   —— 实时投影：bucket/对象总数/分布/字节（local 为系统记录盘）
 //! - `GET  /api/storage/providers`—— 动态列出 local +（若配置）s3
-//! - `POST /api/storage/switch`  —— local 恒可切；s3 仅在已配置时切，否则 409
+//! - `POST /api/storage/switch`  —— local 恒可切；s3 写路径尚未切换，明确返回冲突
 //! - `GET  /api/modules`         —— 投影 `routes::DOMAINS` 自描述域注册表
 
 use std::sync::Arc;
@@ -39,7 +39,7 @@ impl StorageRegistry {
 
 /// GET /api/storage/status —— 当前存储状态（local 实时读盘；附 s3 可达性）
 async fn storage_status(State(reg): State<Arc<StorageRegistry>>) -> ApiResponse<Value> {
-    let buckets = reg.local.list_buckets().await.unwrap_or_default();
+    let buckets = match reg.local.list_buckets().await { Ok(buckets) => buckets, Err(_) => return api_error(503,"本地对象存储不可用") };
     let total_objects: u64 = buckets.iter().map(|b| b.object_count).sum();
     let total_bytes: u64 = buckets.iter().map(|b| b.used_bytes).sum();
     let entities_by_type: Vec<Value> = buckets.iter()
@@ -102,8 +102,7 @@ async fn storage_switch(
         })),
         "s3" => match &reg.s3 {
             Some(s3b) => match s3b.health().await {
-                Ok(h) => api_ok(json!({ "provider": "s3", "switched": true, "health": h,
-                    "note": "S3/MinIO 后端已配置且探测可达。" })),
+                Ok(_) => api_error(409,"S3 后端可达，但当前文件/云盘写路径尚未接入切换；provider 仍为 local"),
                 Err(e) => api_error(502, format!("S3 已配置但探测不可达: {}", truncate_str(&e, 160))),
             },
             None => api_error(409,
@@ -128,7 +127,9 @@ async fn list_modules() -> ApiResponse<Value> {
 }
 
 fn truncate_str(s: &str, n: usize) -> &str {
-    if s.len() > n { &s[..n] } else { s }
+    let mut end = n.min(s.len());
+    while !s.is_char_boundary(end) { end -= 1; }
+    &s[..end]
 }
 
 /// 装配存储管理面路由
@@ -139,4 +140,13 @@ pub fn build_storage_admin_router(registry: Arc<StorageRegistry>) -> Router<()> 
         .route("/api/storage/switch", post(storage_switch))
         .route("/api/modules", get(list_modules))
         .with_state(registry)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn unicode_errors_truncate_without_panicking() {
+        assert_eq!(super::truncate_str("中文错误",4),"中");
+        assert_eq!(super::truncate_str("中文",100),"中文");
+    }
 }

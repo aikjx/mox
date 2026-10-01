@@ -1,0 +1,98 @@
+F18 可达性溯源读数 — MessageBubble.vue 的 sm.role 出参域与挂载通道
+日期 2026-09-29 | 工作目录 D:/a10/aikjx/gitcode/infotopograph/frontend-ui
+本轮性质：只读普查（零代码改动）。判据结论写在治理文档 §5.49，本文件只存原始读数。
+
+============================================================
+1) 文件测量（Python：md5[:16] / getsize B / b.count(b'\n') / CRLF / 游离 CR）
+============================================================
+MessageBubble.vue                     md5=16f57d6f72e73754 B=108651  lines=2423 CRLF=0 bareCR=0
+components/index.js                   md5=f8e78cc0fec0cf64 B=2278    lines=34   CRLF=0 bareCR=0
+FRONTEND-MODULE-GOVERNANCE-v1.0.md    md5=2a25c15353983eae B=266544  lines=1924 CRLF=0 bareCR=0   (写入 §5.49 之前)
+barrel 出口条数（^export 计数）= 32
+
+============================================================
+2) MessageBubble.vue 内含 role 字面量比较的行号（正则 role\s*===?\s*['"]）
+============================================================
+[80, 261, 414, 415, 737, 738, 742, 743, 1375]
+其中本轮定性的两条：
+:414 <el-tag size="small" :type="sm.role==='user'?'danger':(sm.role==='assistant'?'primary':'warning')" effect="light">
+:415   {{ sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手':'系统') }}
+
+============================================================
+3) sm 的来源（shareMessages 计算属性，同一文件 :559-:570 原文摘录）
+============================================================
+:560   const rawMsgs = (Array.isArray(props.sessionMessages) && props.sessionMessages.length)
+:561     ? props.sessionMessages
+:562     : [props.msg];
+:567     const role = m?.role || (m?.system ? 'system' : 'assistant');
+:568     return { id, raw: m, role, preview, timestamp: m?.timestamp };
+props 声明（:524-:528）：msg: { type: Object, required: true } / sessionMessages: { type: Array, default: () => [] }
+
+============================================================
+4) 挂载通道三扫（这是"零 importer"结论的三件独立仪器）
+============================================================
+$ grep -rn "MessageBubble" src --include=*.vue | grep -v "^src/components/MessageBubble.vue"
+（无输出 ⇒ .vue 模板里没有任何一处写 <MessageBubble）
+
+$ grep -rn --include=*.vue --include=*.js -Pzo "import\s*\{[^}]*MessageBubble[^}]*\}\s*from" src | tr '\0' '\n'
+（无输出 ⇒ 具名导入 0 处，含多行 import 子句；本轮特意用 -z 整文件匹配，因为单行 grep 看不见换行的 import）
+
+$ grep -rn "import\.meta\.glob" src
+（无输出 ⇒ 全库没有 glob 自动注册通道）
+
+$ grep -rn "MessageBubble" src --include=*.js
+src/components/index.js:18:export { default as MessageBubble } from './MessageBubble.vue'
+src/composables/useMessageActions.js:1:// 消息操作 composable - 从 MessageBubble 提取的通用业务逻辑   ← 注释
+src/stories/Introduction.stories.js:41:          <li>MessageBubble - 消息气泡</li>                        ← 文案
+src/stories/MessageBubble.stories.js:6:import MessageBubble from '../components/MessageBubble.vue'         ← stories
+src/utils/message.utils.js:2:// 从 MessageBubble 中提取的通用工具                                          ← 注释
+⇒ 唯一真消费者是 stories（Storybook 挂载），app 运行时消费者 0；barrel 再导出无人按名取用。
+
+$ grep -rn ":is=" src | head（截取）
+App.vue:35 <component :is="Component" ...>（路由出口）；其余均为图标变量（collapsed ? Expand : Fold 等）
+⇒ 不存在字符串形式 :is="'MessageBubble'" 的隐式挂载。
+
+$ grep -rn "session-messages\|sessionMessages" src --include=*.vue --include=*.js
+src/modules/expert-alliance/api/alliance.api.js:215（API 调用参数名）
+src/modules/expert-alliance/api/alliance.api.test.js:816（测试）
+src/modules/expert-alliance/contract/endpoints.js:48（端点键 sessionMessages → POST /api/experts/sessions/:id/messages）
+⇒ 没有任何 .vue 向 MessageBubble 传 :session-messages；props.sessionMessages 恒为默认空数组 ⇒ shareMessages 恒为 [props.msg]。
+
+============================================================
+5) 与联盟会话族（contract/sessions.js:42-47 MESSAGE_ROLES）的值域对照
+============================================================
+契约登记：user / expert / system / assistant（四档，出口 messageRoleLabel :129）
+:567 现推：m?.role（透传，实际可达值域＝上游 chat 消息）|| 'system' || 'assistant'
+重叠档：user / assistant / system；契约独有：expert
+可达性：expert 永不到达本组件（第 4 节：无人传 sessionMessages，props.msg 由 stories 供给）
+⇒ :415 第三分支「系统」＝未知值回落，不是把已登记档折进别的档。
+
+============================================================
+6) 判决措辞的口径边界（本档案自己的限制）
+============================================================
+- 本节证明的是「app 运行时零挂载」，不证明该组件"该删"；退役与否属可达性账（孤儿清单），需用户点名。
+- "零 importer"依赖第 4 节三条通道；若将来新增第四种挂载形态（如 unplugin-vue-components 自动注册），本结论要重测。
+  本仓库实测无该插件（grep import.meta.glob 与具名导入双 0）。
+- 未入库声明：本轮零代码改动、未执行 add/commit/stash；新增文件仅本读数档案与治理文档 §5.49 一节。
+
+============================================================
+7) 本轮实跑的门禁读数（ANSI 先剥再解析：re.sub(r'\x1b\[[0-9;]*m','',blob)）
+============================================================
+$ python scripts/gate/check-doc-links.py            rc=1（存量）
+WARN 总数=120；本 doc 唯一 WARN 仍是 docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md:137（既有，非本轮引入）
+⇒ §5.49 新写的 12 处反引号路径没有新增悬空引用。
+（注：msys 的 /tmp 对 Windows Python 不存在，第一次把日志重定向到 /tmp 后读取报 FileNotFoundError；改 D:/tmp 才测到。rc 一律直接从本次命令拿，不从管道尾巴拿。）
+
+$ python -c "<doc 测量>"   # 写 §5.49 之后
+md5=9b45616c69c1edd6 B=270114 lines=1961 CRLF=0 bareCR=0  → 相对写前（2a25c15353983eae/266544/1924）为 +3570 B / +37 行
+5.x 节数=49（最大 5.49）、重复节号=[]、"## 5.49 F18" 命中 1 次、"## 6. 性能基线" 命中 1 次
+
+$ npx vitest run src/modules/expert-alliance/contract/vocabulary-ownership.test.js
+rc=0 | Test Files 1 passed (1) | Tests 19 passed (19) | Duration 2.81s
+⇒ 常驻判据（含 L12 双向台账与 L13 Rust 真值账）在本轮之后仍全绿。全量 vitest 与 vite build 本轮**未重跑**
+（零代码改动），§5.49 因此不复述其分母；下轮重量后再写（见任务 #38 第 ② 条）。
+
+$ git status --porcelain <三个文件>
+AM docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md   （第一列 A＝并发作者占用索引，非本轮暂存）
+?? frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js
+?? reports/data/f18-messagebubble-reachability-20260929.txt

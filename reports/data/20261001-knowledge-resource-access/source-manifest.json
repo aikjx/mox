@@ -1,0 +1,34 @@
+[
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/access.rs",
+    "sha256": "e0569e8819662547b6193f1aef0206223a43d657a80ba07dc4d69d9c061eea02"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/lib.rs",
+    "sha256": "223250fc405d52458003b42ceaa42225d3e134b9dfeeb721ba04c3ae50c2ace0"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/model.rs",
+    "sha256": "dd0e5587ea37cc537b80cb01c0bce491ea955c372d8a065e6fffc8e389908848"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/document.rs",
+    "sha256": "3ff17e0a2bc6cf61b653bc484182f8f9292bc037e7d7d62539f02605b5709329"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/handlers.rs",
+    "sha256": "29a2e269297658275b5f61954d13f4b3cfce0269c56ad805e61511911d483bfd"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/tests/t5_resource_access.rs",
+    "sha256": "f19ed69029f4ab3f787f2f7db0e21521ad05bf18b095a2c4e9a8635843203bcc"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/modules.rs",
+    "sha256": "8c876a2682856f13021dc2f602f5d1dc2d3ed55deab4e9a3a3fbf8c9a17ba18a"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/dialogue_sediment.rs",
+    "sha256": "6b365068abd790493849e5266735dfd40ed069431c92f066aa58f042395188be"
+  }
+]

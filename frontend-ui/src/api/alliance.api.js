@@ -120,15 +120,7 @@ export async function allianceAlgorithmAnalysis(payload) {
   return http.post('/experts/algorithm-analysis', payload)
 }
 
-// ===== 专家概览/指标 =====
-export async function allianceGetExpertOverview() {
-  return http.get('/experts/overview')
-}
-
-export async function allianceGetExpertMetrics() {
-  return http.get('/experts/metrics')
-}
-
+// ===== 专家指标 =====
 export async function allianceGetSingleExpertMetrics(expertId) {
   return http.get(`/experts/${encodeURIComponent(expertId)}/metrics`)
 }
@@ -199,10 +191,6 @@ export async function getExecutionLogsSSE(taskId, onLog) {
 }
 
 // ===== 融合结果/任务控制 =====
-export async function getFusionResults(taskId) {
-  return http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/fusion`)
-}
-
 export async function pauseAllianceTask(taskId) {
   return http.post(`/alliance/tasks/${encodeURIComponent(taskId)}/pause`)
 }
@@ -238,12 +226,6 @@ export async function toggleAllianceTaskDone(taskId) {
 
 export async function getAllianceTaskStatus(taskId) {
   return normalizeTask(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}/status`, { _retry: 0, silent: true }))
-}
-
-/** 任务智能问答：基于任务真实状态/日志/融合结果生成诊断回答 */
-export async function askAllianceTaskQa(taskId, question) {
-  const resp = await http.post(`/alliance/tasks/${encodeURIComponent(taskId)}/qa`, { question }, { _retry: 0, silent: true })
-  return resp?.data?.data || resp?.data || resp
 }
 
 export async function getAllianceRuntime() {

@@ -1,0 +1,101 @@
+[
+  {
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "mox-alliance-common-proto",
+      "-p",
+      "mox-alliance-core",
+      "-p",
+      "mox-alliance-scheduler-core",
+      "-p",
+      "mox-alliance-executor-core",
+      "--lib"
+    ],
+    "exit_code": 0,
+    "seconds": 17.53,
+    "log": "reports/data/20261001-flow-check-0.txt",
+    "summary": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 15.21s",
+      "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 115 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s",
+      "test result: ok. 115 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s"
+    ]
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "mox-alliance-common-proto",
+      "--test",
+      "plan_validation"
+    ],
+    "exit_code": 0,
+    "seconds": 2.95,
+    "log": "reports/data/20261001-flow-check-1.txt",
+    "summary": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.45s",
+      "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    ]
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "mox-alliance-executor-core",
+      "--test",
+      "integration_e2e"
+    ],
+    "exit_code": 0,
+    "seconds": 5.94,
+    "log": "reports/data/20261001-flow-check-2.txt",
+    "summary": [
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.73s",
+      "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.64s"
+    ]
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "-p",
+      "mox-alliance-common-proto",
+      "-p",
+      "mox-alliance-core",
+      "-p",
+      "mox-alliance-scheduler-core",
+      "-p",
+      "mox-alliance-executor-core",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "seconds": 13.61,
+    "log": "reports/data/20261001-flow-check-3.txt",
+    "summary": [
+      "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.96s"
+    ]
+  },
+  {
+    "command": [
+      "cargo",
+      "check",
+      "-p",
+      "mox-alliance-scheduler-svc",
+      "-p",
+      "mox-alliance-executor-svc"
+    ],
+    "exit_code": 0,
+    "seconds": 8.77,
+    "log": "reports/data/20261001-flow-check-4.txt",
+    "summary": [
+      "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.47s"
+    ]
+  }
+]

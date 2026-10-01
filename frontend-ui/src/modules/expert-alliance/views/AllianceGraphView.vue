@@ -11,7 +11,11 @@
       <div class="agv-actions">
         <el-tag size="small" type="info" effect="plain">内存态派生图</el-tag>
         <el-button :icon="Refresh" :loading="store.loading.graph" @click="reload">刷新</el-button>
-        <el-button :icon="MagicStick" :loading="store.loading.rebuild" @click="rebuild">重建图谱</el-button>
+        <el-button v-role-any="['super_admin', 'tenant_admin']" :icon="MagicStick" :loading="store.loading.rebuild" @click="rebuild">重建图谱</el-button>
+        <el-button v-role-any="['super_admin', 'tenant_admin']" :type="store.editMode ? 'primary' : 'default'" @click="toggleEdit">
+          {{ store.editMode ? '退出编辑' : '编辑模式' }}
+        </el-button>
+        <el-button v-role-any="['super_admin', 'tenant_admin']" :icon="Plus" @click="openCreateNode">新增节点</el-button>
       </div>
     </header>
 
@@ -24,7 +28,8 @@
     <div class="agv-body">
       <div class="agv-main">
         <div class="agv-card">
-          <GraphCanvas :layout="store.layout" :selected-id="store.selectedId" @select="store.selectNode" />
+          <GraphCanvas :layout="store.layout" :selected-id="store.selectedId" :edit-mode="store.editMode"
+            :link-source-id="store.linkSourceId" @select="onCanvasSelect" @drag="store.setNodePosition" />
           <p v-if="!store.layout.nodes.length && !store.loading.graph" class="agv-dim">
             图为空：注册表里还没有专家，或图谱尚未构建。可先在专家广场注册专家，再点「重建图谱」。
           </p>
@@ -57,13 +62,49 @@
     <div class="agv-card agv-metrics">
       <GraphMetricsPanel :store="store" />
     </div>
+
+    <el-dialog v-model="createVisible" title="新增节点" width="420px" append-to-body>
+      <el-form label-width="64px" size="small">
+        <el-form-item label="ID">
+          <el-input v-model="store.nodeDraft.id" placeholder="如 exp-new-1 / capability-ocr" />
+        </el-form-item>
+        <el-form-item label="名称">
+          <el-input v-model="store.nodeDraft.label" placeholder="节点显示名" />
+        </el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="store.nodeDraft.nodeType" style="width: 100%">
+            <el-option v-for="t in WRITE_TYPES" :key="t.value" :label="t.label" :value="t.value" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button size="small" @click="createVisible = false">取消</el-button>
+        <el-button size="small" type="primary" :loading="store.loading.graph" @click="submitCreate">创建</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog :model-value="!!store.pendingEdge.source" title="选择边类型" width="380px" append-to-body @update:model-value="onEdgeDialogClose">
+      <p class="agv-dim">
+        连接 <code>{{ store.pendingEdge.source }}</code> → <code>{{ store.pendingEdge.target }}</code>
+      </p>
+      <el-radio-group v-model="pendingEdgeType" class="agv-edge-types">
+        <el-radio v-for="t in EDGE_TYPES" :key="t.value" :value="t.value">
+          {{ t.label }}<span class="agv-dim">（{{ t.weightHint }}）</span>
+        </el-radio>
+      </el-radio-group>
+      <template #footer>
+        <el-button size="small" @click="onEdgeDialogClose(false)">取消</el-button>
+        <el-button size="small" type="primary" :loading="store.loading.graph" @click="submitEdge">连线</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 // 协作图谱页面：只提供外壳与三个子面板的装配，接口调用与状态都在 alliance-graph.store。
-import { computed, onMounted } from 'vue'
-import { MagicStick, Refresh } from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
+import { MagicStick, Plus, Refresh } from '@element-plus/icons-vue'
+import { GRAPH_EDGE_TYPES, GRAPH_WRITE_NODE_TYPES } from '@/modules/expert-alliance/contract'
 import { useAllianceGraphStore } from '@/modules/expert-alliance/store'
 import { useAllianceExpertsStore } from '@/modules/expert-alliance/store'
 import { GraphCanvas } from '@/modules/expert-alliance/components'
@@ -73,6 +114,45 @@ import { GraphTeamPanel } from '@/modules/expert-alliance/components'
 
 const store = useAllianceGraphStore()
 const expertStore = useAllianceExpertsStore()
+
+const WRITE_TYPES = GRAPH_WRITE_NODE_TYPES
+const EDGE_TYPES = GRAPH_EDGE_TYPES
+const createVisible = ref(false)
+const pendingEdgeType = ref(EDGE_TYPES[0].value)
+
+// 画布点选交给 store 分发：编辑模式下可能是"选连线起点/弹边类型"，普通模式才是选中查邻域
+function onCanvasSelect(id) {
+  const intent = store.canvasClickNode(id)
+  if (intent === 'select') store.selectNode(id)
+  else if (intent === 'pending-edge') pendingEdgeType.value = EDGE_TYPES[0].value
+}
+
+function toggleEdit() {
+  store.setEditMode(!store.editMode)
+}
+
+function openCreateNode() {
+  store.resetNodeDraft()
+  createVisible.value = true
+}
+
+async function submitCreate() {
+  const { id, label, nodeType } = store.nodeDraft
+  if (!id || !label) return
+  const res = await store.createGraphNode({ id, label, node_type: nodeType })
+  if (res) createVisible.value = false
+}
+
+function onEdgeDialogClose(clear = true) {
+  if (clear) store.cancelLink()
+}
+
+async function submitEdge() {
+  const { source, target } = store.pendingEdge
+  if (!source || !target) return
+  await store.createGraphEdge({ source, target, edge_type: pendingEdgeType.value })
+  store.cancelLink()
+}
 
 const stats = computed(() => store.graph?.stats || { nodeCount: 0, edgeCount: 0, version: 0 })
 const rebuildNote = computed(() => {
@@ -127,6 +207,7 @@ onMounted(() => {
 .agv-notes-title { margin: 0; font-size: 13px; color: var(--text-primary); }
 .agv-notes { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 1.6; color: var(--text-secondary); }
 .agv-notes code { font-size: 11px; color: var(--accent-light); }
+.agv-edge-types { display: flex; flex-direction: column; gap: 8px; }
 @media (max-width: 1180px) {
   .agv-body { grid-template-columns: minmax(0, 1fr); }
 }

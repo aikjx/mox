@@ -1,7 +1,7 @@
 <template>
   <section class="agn">
     <header class="agn-head">
-      <h2 class="agn-title">{{ node ? node.label || node.id : '未选择节点' }}</h2>
+      <h2 class="agn-title">{{ node ? graphNodeLabel(node) : '未选择节点' }}</h2>
       <el-tag v-if="node" size="small" :type="isDomain ? 'warning' : 'primary'" effect="plain">
         {{ isDomain ? '能力域' : '专家' }}
       </el-tag>
@@ -27,6 +27,29 @@
         <dt>节点 ID</dt>
         <dd><code>{{ node.id }}</code></dd>
       </dl>
+
+      <div class="agn-actions">
+        <el-button size="small" :loading="store.loading.rag" @click="onExpand">展开邻域</el-button>
+        <span v-if="expandNote" class="agn-note">{{ expandNote }}</span>
+
+        <template v-role-any="['super_admin', 'tenant_admin']">
+          <el-button v-if="!editing" size="small" @click="startEdit">编辑节点</el-button>
+          <el-button size="small" type="danger" plain @click="onDelete">删除节点</el-button>
+        </template>
+      </div>
+
+      <div v-if="editing" class="agn-edit">
+        <label class="agn-dim" for="agn-label">名称</label>
+        <el-input id="agn-label" v-model="editDraft.label" size="small" />
+        <label class="agn-dim" for="agn-type">类型</label>
+        <el-select id="agn-type" v-model="editDraft.nodeType" size="small">
+          <el-option v-for="t in WRITE_TYPES" :key="t.value" :label="t.label" :value="t.value" />
+        </el-select>
+        <div class="agn-edit-bar">
+          <el-button size="small" type="primary" :loading="store.loading.graph" @click="onSaveEdit">保存</el-button>
+          <el-button size="small" @click="editing = false">取消</el-button>
+        </div>
+      </div>
 
       <div class="agn-block">
         <h3 class="agn-block-title">
@@ -63,7 +86,7 @@
         <ul v-if="collaboratorRows.length" class="agn-list">
           <li v-for="c in collaboratorRows" :key="c.id" class="agn-item">
             <span class="agn-rank">{{ c.rank }}</span>
-            <button class="agn-jump" type="button" @click="store.selectNode(c.id)">{{ c.name || c.id }}</button>
+            <button class="agn-jump" type="button" @click="store.selectNode(c.id)">{{ graphNodeLabel({ id: c.id, label: c.name }) }}</button>
             <span class="agn-dim">权重 {{ c.collaborationWeight.toFixed(3) }}</span>
             <span v-if="c.sharedDomains.length" class="agn-tag">{{ c.sharedDomains.join('、') }}</span>
           </li>
@@ -79,23 +102,60 @@
 <script setup>
 // 节点详情：只读 store 的 neighbors/collaborators，跳转仍走 store.selectNode。
 // 注意 collaborators 与 neighbors 是两份不同口径——后者含能力域边，前者只算 collaborates_with。
-import { computed } from 'vue'
-import { COLLABORATOR_LIMITS, GRAPH_NODE_TYPE, edgeTypeMeta } from '@/modules/expert-alliance/contract'
+// 三处名称（标题/邻域/协作者）一律过 graphNodeLabel：注册表里那两个专家的 name 在写入侧就丢成了
+// '???????'，neighbors 与 collaborators 都从同一张表取名字，照抄就会把问号当真名印出来。
+import { computed, reactive, ref } from 'vue'
+import { COLLABORATOR_LIMITS, GRAPH_NODE_TYPE, GRAPH_WRITE_NODE_TYPES, edgeTypeMeta, graphNodeLabel } from '@/modules/expert-alliance/contract'
 import { availabilityLabel } from '@/modules/expert-alliance/contract'
 
 const props = defineProps({ store: { type: Object, required: true } })
 const store = props.store
+
+const WRITE_TYPES = GRAPH_WRITE_NODE_TYPES
+const editing = ref(false)
+const editDraft = reactive({ label: '', nodeType: 'expert' })
+const expandNote = ref('')
 
 const node = computed(() => store.selectedNode)
 const isDomain = computed(() => node.value?.nodeType === GRAPH_NODE_TYPE.domain)
 const neighbors = computed(() => store.neighbors)
 const collaborators = computed(() => store.collaborators)
 
+function startEdit() {
+  editDraft.label = node.value?.label || ''
+  editDraft.nodeType = node.value?.nodeType || 'expert'
+  editing.value = true
+}
+
+async function onSaveEdit() {
+  if (!node.value) return
+  const res = await store.updateGraphNode(node.value.id, {
+    label: editDraft.label,
+    node_type: editDraft.nodeType
+  })
+  if (res) editing.value = false
+}
+
+async function onDelete() {
+  if (!node.value) return
+  if (!window.confirm(`确认删除节点「${graphNodeLabel(node.value)}」？其关联边将一并删除。`)) return
+  await store.deleteGraphNode(node.value.id)
+  editing.value = false
+}
+
+async function onExpand() {
+  expandNote.value = ''
+  const { addedNodes, addedEdges } = await store.expandSelectedNeighborhood()
+  expandNote.value = addedNodes || addedEdges
+    ? `已并入 ${addedNodes} 节点 / ${addedEdges} 边`
+    : '邻域无新节点（已在图上）'
+}
+
 const neighborRows = computed(() =>
   (neighbors.value?.neighbors || []).map((n) => ({
     key: `${n.id}-${n.edgeType}-${n.direction}`,
     id: n.id,
-    label: n.label || n.id,
+    label: graphNodeLabel({ id: n.id, label: n.label }),
     edgeLabel: edgeTypeMeta(n.edgeType).label,
     direction: n.direction,
     weight: Number(n.weight) || 0,
@@ -117,6 +177,9 @@ const shown = computed(() => collaboratorRows.value.length)
 .agn-meta dd { margin: 0; color: var(--text-primary); word-break: break-all; }
 .agn-meta code { font-size: 11px; color: var(--accent-light); }
 .agn-block { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--border-light); }
+.agn-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 8px; }
+.agn-edit { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 6px 8px; align-items: center; padding-top: 8px; }
+.agn-edit-bar { grid-column: 2; display: flex; gap: 6px; }
 .agn-block-title { margin: 0; font-size: 13px; color: var(--text-primary); display: flex; align-items: baseline; gap: 6px; }
 .agn-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .agn-item { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }

@@ -78,8 +78,8 @@
                 :class="{ selected: isSelected(exp.id) }"
                 @click="toggleExpert(exp)"
               >
-                <div class="expert-avatar" :style="{ background: expertColor(exp.type) }">
-                  {{ expertEmoji(exp.type) }}
+                <div class="expert-avatar" :style="{ background: expertColor(expertVisualKey(exp)) }">
+                  {{ expertEmoji(expertVisualKey(exp)) }}
                 </div>
                 <div class="expert-info">
                   <div class="expert-name">{{ exp.name }}</div>
@@ -217,8 +217,8 @@
               class="ranking-item"
             >
               <div class="rank-idx" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</div>
-              <div class="rank-avatar" :style="{ background: expertColor(exp.type) }">
-                {{ expertEmoji(exp.type) }}
+              <div class="rank-avatar" :style="{ background: expertColor(expertVisualKey(exp)) }">
+                {{ expertEmoji(expertVisualKey(exp)) }}
               </div>
               <div class="rank-info">
                 <div class="rank-name">{{ exp.name }}</div>
@@ -247,7 +247,20 @@ import { useAIStore, CONSULT_MODES } from '@/stores'
 import { AIChatPanel } from '@/components'
 import { EXPERT_TYPES, expertColor, expertEmoji } from '@/constants'
 import { catFill, catInk, catFillColor, catInkColor, withAlpha, themeRevision } from '@/constants'
-import { getExperts, getExpertGraph, getExpertOverview } from '@/api'
+import { allianceApi } from '@/modules/expert-alliance/api'
+// 合法例外：/experts/overview 在 contract UNMOUNTED_ROUTES 里 rejected（七键全是二手汇总），
+// 模块不挂载，UI 面板的 phase_progress 派生暂留——故仅此函数保留 legacy 桶导入。
+import { getExpertOverview } from '@/api'
+
+// 模块 normExpert → 本面板既有字段读取（type/success_rate 别名补全）
+function toLegacyExpert(e) {
+  if (!e) return e
+  return {
+    ...e,
+    type: e.expertType,
+    metrics: e.metrics ? { ...e.metrics, success_rate: e.metrics.resolutionRate } : e.metrics
+  }
+}
 
 const router = useRouter()
 const aiStore = useAIStore()
@@ -289,7 +302,7 @@ async function loadExperts() {
   expertsLoading.value = true
   expertsError.value = ''
   try {
-    const data = await getExperts({ page: 1, page_size: 100 })
+    const data = await allianceApi.listExperts({ page: 1, pageSize: 100 }).then(r => ({ experts: (r.items || []).map(toLegacyExpert) }))
     // 兼容多种返回结构：数组 / { list } / { data }
     if (Array.isArray(data)) {
       experts.value = data
@@ -389,7 +402,7 @@ const graphLoading = ref(false)
 async function loadGraph() {
   graphLoading.value = true
   try {
-    const data = await getExpertGraph()
+    const data = await allianceApi.graphOverview()
     if (data && Array.isArray(data.nodes) && Array.isArray(data.edges)) {
       graphData.value = data
     } else if (data?.data && Array.isArray(data.data.nodes)) {

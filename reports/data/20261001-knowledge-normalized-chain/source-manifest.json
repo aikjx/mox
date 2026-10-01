@@ -1,0 +1,54 @@
+[
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/document.rs",
+    "sha256": "f370fdc8e5ecb1f3498b695e173432ea84e7bbd82feced8bfa747d7efda610d2"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/handlers.rs",
+    "sha256": "7ca38b0f5a7a89667ab6d80fb47898a16c123913323b955daffae82b5752fe16"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/tests/t5_resource_access.rs",
+    "sha256": "df2bb6e66a82e1dd95577799e23336b4049e7ef9771c079e7ccaca187c551b77"
+  },
+  {
+    "path": "frontend-ui/src/api/kb.api.js",
+    "sha256": "01d1d2203b11a271f3d634dd0f57ef2db30771645d81df03499a0ae3d72c1ceb"
+  },
+  {
+    "path": "frontend-ui/src/api/kb-edit.test.js",
+    "sha256": "dd1d114a54312987910e3715d2b2b24ac96273a3a2b52fbb5bf0f7f6edcb71d2"
+  },
+  {
+    "path": "frontend-ui/src/views/project/panels/KnowledgeBasePanel.vue",
+    "sha256": "bf060918ff7523a9c260e9589cb2e122fa21b54ebe08aaf6bbe12567975c2365"
+  },
+  {
+    "path": "frontend-ui/src/views/workspace/workspace-kb.test.js",
+    "sha256": "6131abb211a08ec1eb2417cf78c838c316ed279aee2593e9a66cb73b941865bf"
+  },
+  {
+    "path": "docs/modules/resource-knowledge/README.md",
+    "sha256": "7d7804d8b9f43f8f91f55ac57e3d1e261f761d2f9c8b52e199c429280b2a2452"
+  },
+  {
+    "path": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "sha256": "12c6d5e523fb3b9ad00cf3a3af618518b9db6caeaa8aa9f7953f55a6df719f5c"
+  },
+  {
+    "path": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+    "sha256": "ed4c6e52be81e279d71fbf91103c69853933c1478faf69bfb3df6f97baa18d1c"
+  },
+  {
+    "path": "docs/modules/resource-knowledge/DELIVERY-MATRIX.md",
+    "sha256": "960d2a8b3ed18a11122401286695c600587636f4727f4ed2434139a3e0a629ab"
+  },
+  {
+    "path": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "sha256": "0c3b4a38f013c75fd8c2ac7dcef72325ee5ab30e56f132cc111f67c5a2642967"
+  },
+  {
+    "path": "docs/expert-alliance/README.md",
+    "sha256": "567a40947fab2db9352cfb8549c5497ac9ec660088b567959ddcab3a619c9800"
+  }
+]

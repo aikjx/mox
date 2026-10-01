@@ -20,3 +20,9 @@ pub use aggregation::{
     AggregatedRenewal, AggregationHealth, CellAggregator, GroupDigest, MemberStatus, NodeBeat,
     RackAggregator, RackConfig, RegistryApplier, Renewal,
 };
+
+// 专家指标聚合（调用成功率健康引擎 + 实例库存概览）
+pub use metrics_agg::{
+    classify, classify_with, inventory_platform_overview, record_result, summarize, summarize_with,
+    ExpertHealth, ExpertMetrics, HealthThresholds, PlatformOverview,
+};

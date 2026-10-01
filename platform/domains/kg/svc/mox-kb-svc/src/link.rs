@@ -41,148 +41,87 @@ pub fn doc_node_id(doc_id: &str) -> String {
 }
 
 impl GraphLinker {
-    /// 挂图：重建文档子图（幂等：节点已存在则更新）
-    pub fn link(&self, graph: &GraphStore, doc: &KbDocument, chunks: &[String]) -> LinkResult {
-        // 1. Document 节点
-        upsert_node(
-            graph,
-            &doc_node_id(&doc.id),
-            "document",
-            &doc.title,
-            json!({
-                "category": doc.category,
-                "status": doc.status,
-                "summary": doc.summary,
-                "tags": doc.tags,
-                "current_version": doc.current_version,
-            }),
-        );
-
-        // 2. Chunk 节点 + Document → Chunk 边
-        let mut nodes_added = 1;
-        let mut edges_added = 0;
+    /// 完整子图先验证后一次发布，来源文档与版本贯穿所有投影。
+    pub fn link(
+        &self,
+        graph: &GraphStore,
+        doc: &KbDocument,
+        chunks: &[String],
+    ) -> Result<LinkResult, mox_kg_storage_svc::StorageError> {
+        let mut nodes = Vec::new();
+        let mut edges = Vec::new();
+        let document = doc_node_id(&doc.id);
+        let node = |id: &str, kind: &str, label: &str, mut props: serde_json::Value| {
+            props["source_doc_id"] = json!(doc.id);
+            props["source_version"] = json!(doc.current_version);
+            GraphNode::new(id, kind, label).with_properties(props)
+        };
+        let edge = |id: &str, source: &str, target: &str, kind: &str, weight: f64| {
+            let mut edge = GraphEdge::new(id, source, target, kind).with_weight(weight);
+            edge.properties = json!({"source_doc_id":doc.id,"source_version":doc.current_version});
+            edge
+        };
+        nodes.push(node(&document,"document",&doc.title,json!({"category":doc.category,"status":STATUS_LINKED,"summary":doc.summary,"tags":doc.tags,"current_version":doc.current_version})));
         for (i, chunk) in chunks.iter().enumerate() {
-            let chunk_id = format!("kb-{}-chunk-{i}", doc.id);
-            upsert_node(
-                graph,
-                &chunk_id,
+            let id = format!("kb-{}-chunk-{i}", doc.id);
+            nodes.push(node(
+                &id,
                 "chunk",
                 &format!("{} · 片段 {}", doc.title, i + 1),
-                json!({ "content": chunk, "index": i }),
-            );
-            nodes_added += 1;
-            upsert_edge(
-                graph,
-                &format!("kb-{}-e-dc-{i}", doc.id),
-                &doc_node_id(&doc.id),
-                &chunk_id,
-                "contains",
-                1.0,
-            );
-            edges_added += 1;
+                json!({"content":chunk,"index":i}),
+            ));
+            edges.push(edge(&format!("kb-{}-e-dc-{i}", doc.id), &document, &id, "contains", 1.0));
         }
-
-        // 3. Entity 节点 + Document → Entity 边
-        for ent in &doc.entities {
-            let ent_id = format!("kb-{}-{}", doc.id, ent.id);
-            upsert_node(
-                graph,
-                &ent_id,
-                &ent.entity_type,
-                &ent.name,
-                json!({ "frequency": ent.frequency, "snippet": ent.snippet }),
-            );
-            nodes_added += 1;
-            upsert_edge(
-                graph,
-                &format!("kb-{}-e-de-{}", doc.id, ent.id),
-                &doc_node_id(&doc.id),
-                &ent_id,
+        for entity in &doc.entities {
+            let id = format!("kb-{}-{}", doc.id, entity.id);
+            nodes.push(node(
+                &id,
+                &entity.entity_type,
+                &entity.name,
+                json!({"frequency":entity.frequency,"snippet":entity.snippet}),
+            ));
+            edges.push(edge(
+                &format!("kb-{}-e-de-{}", doc.id, entity.id),
+                &document,
+                &id,
                 "mentions",
-                ent.frequency as f64,
-            );
-            edges_added += 1;
+                entity.frequency as f64,
+            ));
         }
-
-        // 4. Entity → Entity 关系边
-        for rel in &doc.relations {
-            let src = format!("kb-{}-{}", doc.id, rel.source);
-            let dst = format!("kb-{}-{}", doc.id, rel.target);
-            if graph.get_node(&src).is_some() && graph.get_node(&dst).is_some() {
-                upsert_edge(
-                    graph,
-                    &format!("kb-{}-{}", doc.id, rel.id),
-                    &src,
-                    &dst,
-                    &rel.relation,
-                    rel.weight,
-                );
-                edges_added += 1;
-            }
+        for relation in &doc.relations {
+            edges.push(edge(
+                &format!("kb-{}-{}", doc.id, relation.id),
+                &format!("kb-{}-{}", doc.id, relation.source),
+                &format!("kb-{}-{}", doc.id, relation.target),
+                &relation.relation,
+                relation.weight,
+            ));
         }
-
-        // 5. 节点类型分布
+        let nodes_added = nodes.len();
+        let edges_added = edges.len();
+        graph.replace_document_projection(&doc.id, nodes, edges)?;
+        let snapshot = graph.snapshot();
         let mut node_types = std::collections::BTreeMap::new();
-        for node in graph.list_nodes() {
+        for node in snapshot.nodes {
             *node_types.entry(node.node_type).or_insert(0) += 1;
         }
-
-        LinkResult {
+        Ok(LinkResult {
             doc_id: doc.id.clone(),
             status: STATUS_LINKED.into(),
             nodes_added,
             edges_added,
-            graph_nodes: graph.node_count(),
-            graph_edges: graph.edge_count(),
+            graph_nodes: snapshot.node_count,
+            graph_edges: snapshot.edge_count,
             node_types,
-        }
+        })
     }
-
-    /// 移除文档子图（删除时反挂图）
-    pub fn unlink(&self, graph: &GraphStore, doc_id: &str) -> usize {
-        let doc_nid = doc_node_id(doc_id);
-        let related: Vec<String> = graph
-            .list_nodes()
-            .into_iter()
-            .filter(|n| n.id == doc_nid || n.id.starts_with(&format!("kb-{doc_id}-")))
-            .map(|n| n.id)
-            .collect();
-        let mut removed = 0usize;
-        for id in related {
-            if graph.delete_node(&id).is_ok() {
-                removed += 1;
-            }
-        }
-        removed
+    pub fn unlink(
+        &self,
+        graph: &GraphStore,
+        doc_id: &str,
+    ) -> Result<usize, mox_kg_storage_svc::StorageError> {
+        graph.replace_document_projection(doc_id, Vec::new(), Vec::new())
     }
-}
-
-/// 节点 upsert：不存在则 add，存在则 update
-fn upsert_node(graph: &GraphStore, id: &str, node_type: &str, label: &str, props: serde_json::Value) {
-    if graph.get_node(id).is_some() {
-        let _ = graph.update_node(id, Some(label), Some(props));
-        return;
-    }
-    let mut node = GraphNode::new(id, node_type, label);
-    node.properties = props;
-    let _ = graph.add_node(node);
-}
-
-/// 边 upsert：存在则删后重建（保持最新权重）
-fn upsert_edge(
-    graph: &GraphStore,
-    id: &str,
-    source: &str,
-    target: &str,
-    edge_type: &str,
-    weight: f64,
-) {
-    if graph.get_edge(id).is_some() {
-        let _ = graph.delete_edge(id);
-    }
-    let mut edge = GraphEdge::new(id, source, target, edge_type);
-    edge.weight = weight;
-    let _ = graph.add_edge(edge);
 }
 
 #[cfg(test)]
@@ -191,7 +130,12 @@ mod tests {
     use crate::model::{KbDocument, KbEntity, KbRelation};
 
     fn analyzed_doc() -> KbDocument {
-        let mut doc = KbDocument::new("kb-1".into(), "云盘架构".into(), "内容寻址去重与纠删码".into(), "cat-tech".into());
+        let mut doc = KbDocument::new(
+            "kb-1".into(),
+            "云盘架构".into(),
+            "内容寻址去重与纠删码".into(),
+            "cat-tech".into(),
+        );
         doc.entities = vec![
             KbEntity {
                 id: "ent-0".into(),
@@ -224,7 +168,7 @@ mod tests {
         let graph = GraphStore::new();
         let doc = analyzed_doc();
         let chunks = vec!["片段一".to_string(), "片段二".to_string()];
-        let result = GraphLinker.link(&graph, &doc, &chunks);
+        let result = GraphLinker.link(&graph, &doc, &chunks).unwrap();
         assert_eq!(result.status, STATUS_LINKED);
         assert!(result.nodes_added >= 1 + 2 + 2); // doc + 2 chunk + 2 entity
         assert!(result.edges_added > 2 + 2); // 2 contains + 2 mentions + 1 relates
@@ -245,17 +189,30 @@ mod tests {
         let graph = GraphStore::new();
         let doc = analyzed_doc();
         let chunks = vec!["片段一".to_string()];
-        GraphLinker.link(&graph, &doc, &chunks);
+        GraphLinker.link(&graph, &doc, &chunks).unwrap();
         let before = graph.node_count();
         // 二次挂图不报错（幂等 upsert）
-        GraphLinker.link(&graph, &doc, &chunks);
+        GraphLinker.link(&graph, &doc, &chunks).unwrap();
         assert_eq!(graph.node_count(), before, "幂等：节点数不增长");
         // 反挂图
-        let removed = GraphLinker.unlink(&graph, &doc.id);
+        let removed = GraphLinker.unlink(&graph, &doc.id).unwrap();
         assert!(removed >= 4);
         assert!(graph.get_node(&doc_node_id(&doc.id)).is_none());
     }
+    #[test]
+    fn relink_removes_obsolete_chunks_entities_and_evidence() {
+        let graph = GraphStore::new();
+        let mut doc = analyzed_doc();
+        GraphLinker.link(&graph, &doc, &["first".into(), "obsolete".into()]).unwrap();
+        doc.entities.clear();
+        doc.relations.clear();
+        GraphLinker.link(&graph, &doc, &["new".into()]).unwrap();
+        assert_eq!(graph.node_count(), 2);
+        assert_eq!(graph.edge_count(), 1);
+        assert!(graph.search("obsolete", 10).is_empty());
+        let node = graph.get_node(&format!("kb-{}-chunk-0", doc.id)).unwrap();
+        assert_eq!(node.properties["content"], "new");
+        assert_eq!(node.properties["source_doc_id"], doc.id);
+        assert_eq!(node.properties["source_version"], doc.current_version);
+    }
 }
-
-
-

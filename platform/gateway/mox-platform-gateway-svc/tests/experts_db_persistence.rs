@@ -74,9 +74,9 @@ fn test_registry_roundtrip_with_projection() {
     let mut map = HashMap::new();
     map.insert(e1.id.clone(), e1.clone());
     map.insert(e2.id.clone(), e2.clone());
-    experts_db::save_registry(&map);
+    experts_db::save_registry("default", &map);
 
-    let loaded = experts_db::load_registry();
+    let loaded = experts_db::load_registry("default");
     assert_eq!(loaded.len(), 2, "独立临时库应精确 2 行");
     assert_eq!(as_json(loaded.get("exp-it-001").unwrap()), as_json(&e1));
     assert_eq!(as_json(loaded.get("exp-it-002").unwrap()), as_json(&e2));
@@ -196,9 +196,9 @@ fn test_graph_roundtrip() {
         "version": 7
     }))
     .unwrap();
-    experts_db::save_graph(&g);
+    experts_db::save_graph("default", &g);
 
-    let loaded = experts_db::load_graph();
+    let loaded = experts_db::load_graph("default");
     assert_eq!(loaded.nodes.len(), 2);
     assert_eq!(loaded.edges.len(), 2);
     assert_eq!(loaded.version, 7);
@@ -250,7 +250,7 @@ fn test_wal_mode_and_integrity() {
     let mut map = HashMap::new();
     let e = ExpertDescriptor::minimal("exp-it-wal".into(), "WAL检查专家".into());
     map.insert(e.id.clone(), e);
-    experts_db::save_registry(&map);
+    experts_db::save_registry("default", &map);
 
     let conn = experts_db::open_experts_db().unwrap();
     let mode: String = conn.query_row("PRAGMA journal_mode", [], |r| r.get(0)).unwrap();
@@ -325,12 +325,12 @@ fn test_migration_imports_and_archives() {
     }
 
     // 数据可从 SQLite 读回
-    let reg = experts_db::load_registry();
+    let reg = experts_db::load_registry("default");
     assert_eq!(reg.len(), 1);
     assert_eq!(reg["exp-mig-001"].name, "迁移专家");
     let sess = experts_db::load_sessions();
     assert_eq!(sess["sess-mig-001"].messages.len(), 1);
-    let g = experts_db::load_graph();
+    let g = experts_db::load_graph("default");
     assert_eq!(g.nodes.len(), 1);
     let bk = experts_db::load_bookings();
     assert_eq!(bk.len(), 1);
@@ -352,7 +352,7 @@ fn test_migration_skips_when_db_populated() {
     let e = ExpertDescriptor::minimal("exp-db-001".into(), "DB内专家".into());
     let mut map = HashMap::new();
     map.insert(e.id.clone(), e);
-    experts_db::save_registry(&map);
+    experts_db::save_registry("default", &map);
 
     // 同目录放一个内容不同的"历史"JSON
     let json_path = db.dir().join("experts_registry.json");
@@ -372,7 +372,7 @@ fn test_migration_skips_when_db_populated() {
     );
     assert!(json_path.exists(), "JSON 应保留");
 
-    let reg = experts_db::load_registry();
+    let reg = experts_db::load_registry("default");
     assert_eq!(reg.len(), 1);
     assert_eq!(reg["exp-db-001"].name, "DB内专家");
 }
@@ -397,8 +397,8 @@ fn test_concurrent_writers_integrity() {
                         ExpertDescriptor::minimal(id, format!("并发专家{}-{}-{}", t, i, j)),
                     );
                 }
-                experts_db::save_registry(&map);
-                let _ = experts_db::load_registry();
+                experts_db::save_registry("default", &map);
+                let _ = experts_db::load_registry("default");
             }
         }));
     }

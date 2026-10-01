@@ -8,6 +8,8 @@ last_updated: 2026-09-25
 
 # 专家联盟业务处理流程
 
+> 状态：V1.0 目标态，部分结论已被 CURRENT-ARCHITECTURE.md V1.1 取代（见文中 ⚠️ 补记）。
+
 ## 1. 端到端主流程
 
 ```
@@ -172,6 +174,8 @@ CollaborationPlan 输入
     ↓
 输出：全部节点执行结果
 ```
+
+> ⚠️ **V1.1 核对补记（2026-09-29）**：本文此处所述的 `/ws/v1/*` WebSocket 推送在实现中不存在（全 crate `WebSocketUpgrade` 零命中）；实时性由 SSE `GET /api/alliance/tasks/:id/logs/stream` 承担。以 CURRENT-ARCHITECTURE.md V1.1 为准。
 
 **对应代码：** `executor-core/` + 网关 `experts_orchestration.rs → topological_sort()`
 

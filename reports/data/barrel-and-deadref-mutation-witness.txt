@@ -1,0 +1,11 @@
+BASELINE vitest rc=0 fired=0
+BASELINE deadref rc=0 rows=['SFCSCAN files=128 checked=126 skippedNonSetup=2 deadRefFiles=0 structFiles=0 verdict=PASS']
+M6 Dashboard deep-path re-plant (@/utils -> @/utils/time): wiring pin must red       rc=1 fired=1 expect=1
+      fired: × formatDateTimeLocale 单出口 > 8 个收口点都真的引到了出口（防驱动器静默 no-op） 15ms
+      -> restored src/views/project/Dashboard.vue sha=26f7de88638e
+M7 delete the added helper import in ProjectsView: landed dead-ref gate must FAIL    rc=1 rows=['DEADREF src/views/project/ProjectsView.vue :: projectMemberCount', 'SFCSCAN files=128 checked=126 skippedNonSetup=2 deadRefFiles=1 structFiles=0 verdict=FAIL']
+      -> restored src/views/project/ProjectsView.vue sha=cd44b0f1523d
+RESTORED vitest rc=0 fired=0
+RESTORED deadref rc=0 rows=['SFCSCAN files=128 checked=126 skippedNonSetup=2 deadRefFiles=0 structFiles=0 verdict=PASS']
+two island controls each flipped their own instrument; both files byte-identical after restore
+rc=0

@@ -62,25 +62,25 @@
 
         <el-divider class="ws-kb-divider" />
 
-        <!-- 文档列表 -->
+        <!-- 文档列表：行形状来自 /kb/documents 的 DocSummary（id/title/category/status/updated_at 五个键） -->
         <el-scrollbar class="ws-doc-scroll">
           <div
             v-for="doc in filteredDocs"
             :key="doc.id"
             class="ws-doc-item"
-            :class="{ active: activeDoc?.id === doc.id, linked: doc.graph_linked }"
+            :class="{ active: activeDoc?.id === doc.id }"
             @click="$emit('open-doc', doc)"
           >
-            <span class="ws-doc-icon">{{ docIcon(doc.type) }}</span>
+            <span class="ws-doc-icon">{{ getCategoryIcon(doc.category) }}</span>
             <div class="ws-doc-info">
-              <div class="ws-doc-name">{{ doc.title || doc.name }}</div>
+              <div class="ws-doc-name">{{ doc.title }}</div>
               <div class="ws-doc-meta">
-                {{ formatFileSize(doc.size) }} · {{ formatTime(doc.updated_at || doc.created_at) }}
+                {{ getCategoryLabel(doc.category) }} · {{ docMetaText(doc) }}
               </div>
             </div>
-            <span v-if="doc.graph_linked" class="ws-doc-badge" title="已关联图谱">
-              <el-icon><Link /></el-icon>
-            </span>
+            <el-tag v-if="isAiAnalyzed(doc.status)" :type="getStatusType(doc.status)" size="small" effect="plain" round>
+              {{ getStatusLabel(doc.status) }}
+            </el-tag>
           </div>
           <el-empty v-if="filteredDocs.length === 0 && docsLoading" description="加载中…" :image-size="40" />
           <el-empty v-else-if="filteredDocs.length === 0" description="暂无文档" :image-size="40" />
@@ -108,12 +108,12 @@
       <div v-if="activeKbTab === 'versions'" class="ws-kb-versions">
         <div class="ws-version-current-doc" v-if="activeDoc">
           <el-icon><Document /></el-icon>
-          <span>{{ activeDoc.title || activeDoc.name }}</span>
+          <span>{{ activeDoc.title }}</span>
         </div>
         <el-scrollbar class="ws-version-scroll">
           <div
             v-for="(ver, idx) in docVersions"
-            :key="ver.id || ver.version"
+            :key="ver.version"
             class="ws-version-item"
             :class="{ latest: idx === 0 }"
           >
@@ -121,8 +121,8 @@
               <span class="ws-version-badge">{{ idx === 0 ? '当前版本' : '历史版本' }}</span>
               <span class="ws-version-time">{{ formatTime(ver.created_at) }}</span>
             </div>
-            <div class="ws-version-label">v{{ ver.version || (docVersions.length - idx) }}</div>
-            <div class="ws-version-author">{{ ver.author || '系统' }} · {{ ver.action || '更新' }}</div>
+            <div class="ws-version-label">{{ ver.version }}</div>
+            <div class="ws-version-author">{{ ver.title }} · {{ ver.note || '（无备注）' }}</div>
           </div>
           <el-empty v-if="docVersions.length === 0" description="暂无版本记录" :image-size="40" />
         </el-scrollbar>
@@ -166,9 +166,10 @@
 import { computed, ref } from 'vue'
 import {
   Search, ArrowLeft, ArrowRight, Folder, FolderOpened,
-  Link, Document, Upload, Edit
+  Document, Upload, Edit
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
+import { getCategoryIcon, getCategoryLabel, getStatusType, getStatusLabel, isAiAnalyzed } from '@/utils'
 
 const props = defineProps({
   collapsed: { type: Boolean, default: false },
@@ -198,42 +199,31 @@ const kbTabs = [
 
 const filteredDocs = computed(() => {
   let list = props.documents
+  // 分类键是 doc.category（值＝cat-tech 这类 id），后端没有 category_id
   if (props.activeCategory) {
-    list = list.filter(d => d.category_id === props.activeCategory)
+    list = list.filter(d => d.category === props.activeCategory)
   }
   if (searchQuery.value) {
     const kw = searchQuery.value.toLowerCase()
     list = list.filter(d =>
-      (d.title || d.name || '').toLowerCase().includes(kw) ||
+      (d.title || '').toLowerCase().includes(kw) ||
       (d.tags || []).some(t => (t || '').toLowerCase().includes(kw))
     )
   }
   return list
 })
 
-function docIcon(type) {
-  const icons = { pdf: '📕', doc: '📄', api: '🔌', image: '🖼️', code: '💻', sheet: '📊' }
-  return icons[type] || '📄'
+// 检索行（SearchHit：snippet/score，没有 updated_at）与列表行（DocSummary：updated_at）共用一行，
+// 所以这里按"这一行有没有时间"分支，而不是给不存在的 size/graph_linked 编个占位值。
+function docMetaText(doc) {
+  if (doc.updated_at) return formatTime(doc.updated_at)
+  if (typeof doc.score === 'number') return `相关度 ${doc.score.toFixed(2)}`
+  return '—'
 }
 
-function formatFileSize(bytes) {
-  if (!bytes) return '未知'
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / 1048576).toFixed(1) + ' MB'
-}
-
-function formatTime(ts) {
-  if (!ts) return ''
-  const now = Date.now()
-  const diff = now - ts
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前'
-  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前'
-  if (diff < 604800000) return Math.floor(diff / 86400000) + '天前'
-  const d = new Date(ts)
-  return `${d.getMonth() + 1}/${d.getDate()}`
-}
+// 旧副本拿 Date.now() 去减后端下发的 RFC3339 字符串 ⇒ NaN ⇒ 所有 diff < X 恒假 ⇒ "刚刚/N 分钟前/N 小时前"
+// 三档一次也没触发过，界面只会掉到 M/D。现在相对档与绝对档都由 utils/time.js 判（它先 timeValue 再减）。
+import { timeAgoOrDate as formatTime } from '@/utils'
 
 function handleBeforeUpload(file) {
   ElMessage.info(`正在上传：${file.name}`)

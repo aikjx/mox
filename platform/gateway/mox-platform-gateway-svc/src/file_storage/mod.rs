@@ -3,6 +3,9 @@
 //! 支持：文件元数据管理 / 文件上传下载 / 多存储后端 / 文件分类 / 文件统计
 
 pub mod api;
+mod repository;
+#[cfg(test)]
+mod tests;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -57,6 +60,9 @@ pub struct FileMetadata {
     pub bucket: Option<String>,
     /// MD5校验值
     pub md5: Option<String>,
+    /// SHA-256 内容校验值；旧元数据兼容读取。
+    #[serde(default)]
+    pub sha256: Option<String>,
     /// 上传人
     pub uploaded_by: String,
     /// 上传时间
@@ -101,11 +107,13 @@ pub fn sample_files() -> Vec<FileMetadata> {
             stored_name: "2026/09/file_001.docx".to_string(),
             file_path: "/data/files/2026/09/file_001.docx".to_string(),
             file_size: 245760,
-            content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string(),
+            content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                .to_string(),
             extension: "docx".to_string(),
             file_category: "document".to_string(),
             storage_type: "local".to_string(),
             bucket: None,
+            sha256: None,
             md5: Some("abc123def456".to_string()),
             uploaded_by: "admin".to_string(),
             uploaded_at: now.clone(),
@@ -127,6 +135,7 @@ pub fn sample_files() -> Vec<FileMetadata> {
             file_category: "image".to_string(),
             storage_type: "local".to_string(),
             bucket: None,
+            sha256: None,
             md5: Some("def789ghi012".to_string()),
             uploaded_by: "admin".to_string(),
             uploaded_at: now.clone(),
@@ -148,6 +157,7 @@ pub fn sample_files() -> Vec<FileMetadata> {
             file_category: "video".to_string(),
             storage_type: "minio".to_string(),
             bucket: Some("videos".to_string()),
+            sha256: None,
             md5: None,
             uploaded_by: "zhangsan".to_string(),
             uploaded_at: now,

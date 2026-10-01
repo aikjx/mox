@@ -24,6 +24,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::experts_common::*;
+use super::experts_rbac::{RbacAction, enforce_admin_or_respond};
 use mox_api_protocol::ApiResponse;
 use mox_audit::{AuditAction, AuditOutcome};
 
@@ -238,12 +239,14 @@ fn make_room_token(room_id: &str, expert_id: &str) -> String {
 // 二、专家 CRUD（5 个端点）
 // =====================================================================
 
-/// GET /api/experts — 专家列表（分页 + 多维度过滤 + 搜索匹配）
+/// GET /api/experts — 专家列表（分页 + 多维度过滤 + 搜索匹配，按租户隔离）
 async fn list_experts(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Query(params): Query<HashMap<String, String>>,
 ) -> ApiResponse<Value> {
-    let reg = s.registry.lock();
+    let all = s.registry.lock();
+    let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
     let (offset, page_size) = parse_pagination(&params);
 
     let domain_filter = params.get("domain").map(|v| v.to_lowercase());
@@ -316,12 +319,14 @@ async fn list_experts(
     }))
 }
 
-/// GET /api/experts/:id — 单个专家详情
+/// GET /api/experts/:id — 单个专家详情（按租户隔离）
 async fn get_expert(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
-    let reg = s.registry.lock();
+    let all = s.registry.lock();
+    let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
     match reg.get(&id) {
         Some(exp) if exp.enabled => ok(expert_json(exp)),
         _ => err(404, format!("expert not found: {}", id)),
@@ -347,8 +352,15 @@ fn expert_json(exp: &ExpertDescriptor) -> Value {
 /// POST /api/experts — 注册专家
 async fn create_expert(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Json(body): Json<Value>,
 ) -> ApiResponse<Value> {
+    // R1 后端 RBAC 强制：管理写面，需 super_admin / tenant_admin
+    if let Err(resp) = enforce_admin_or_respond(&s, &user, tenant.as_str(), RbacAction::RegisterExpert) {
+        return resp;
+    }
+
     let name = match body.get("name").and_then(|v| v.as_str()) {
         Some(n) if !n.is_empty() => n.to_string(),
         _ => return err(400, "expert name is required"),
@@ -359,7 +371,8 @@ async fn create_expert(
         _ => gen_id("exp"),
     };
 
-    let mut reg = s.registry.lock();
+    let mut all = s.registry.lock();
+    let reg = all.entry(tenant.clone()).or_default();
     if reg.contains_key(&id) {
         return err(400, format!("expert id already exists: {}", id));
     }
@@ -370,9 +383,9 @@ async fn create_expert(
     exp.updated_at = exp.created_at.clone();
 
     reg.insert(id.clone(), exp.clone());
-    save_registry(&reg);
+    save_registry(tenant.as_str(), reg);
 
-    emit_audit(&s, AuditAction::Unknown("expert.register".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", exp.name)));
+    emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.register".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", exp.name)));
 
     ok(json!({
         "expert": expert_json(&exp),
@@ -384,17 +397,25 @@ async fn create_expert(
 /// PUT /api/experts/:id — 合并式更新专家信息
 async fn update_expert(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Path(id): Path<String>,
     Json(body): Json<Value>,
 ) -> ApiResponse<Value> {
-    let mut reg = s.registry.lock();
+    // R1 后端 RBAC 强制：管理写面，需 super_admin / tenant_admin
+    if let Err(resp) = enforce_admin_or_respond(&s, &user, tenant.as_str(), RbacAction::UpdateExpert) {
+        return resp;
+    }
+
+    let mut all = s.registry.lock();
+    let reg = all.entry(tenant.clone()).or_default();
     match reg.get_mut(&id) {
         Some(exp) if exp.enabled => {
             merge_expert_from_value(exp, &body);
             exp.updated_at = now_iso();
             let updated = exp.clone();
-            save_registry(&reg);
-            emit_audit(&s, AuditAction::Unknown("expert.update".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", updated.name)));
+            save_registry(tenant.as_str(), reg);
+            emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.update".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", updated.name)));
             ok(json!({
                 "expert": expert_json(&updated),
                 "updated": true,
@@ -407,16 +428,24 @@ async fn update_expert(
 /// DELETE /api/experts/:id — 软删除专家（enabled=false + deleted_at）
 async fn delete_expert(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
-    let mut reg = s.registry.lock();
+    // R1 后端 RBAC 强制：管理写面，需 super_admin / tenant_admin
+    if let Err(resp) = enforce_admin_or_respond(&s, &user, tenant.as_str(), RbacAction::DeleteExpert) {
+        return resp;
+    }
+
+    let mut all = s.registry.lock();
+    let reg = all.entry(tenant.clone()).or_default();
     match reg.get_mut(&id) {
         Some(exp) => {
             exp.enabled = false;
             exp.updated_at = now_iso();
             exp.metadata.insert("deleted_at".into(), json!(now_iso()));
-            save_registry(&reg);
-            emit_audit(&s, AuditAction::Unknown("expert.disable".into()), "expert", &id, AuditOutcome::Success, Some("soft_delete"));
+            save_registry(tenant.as_str(), reg);
+            emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.disable".into()), "expert", &id, AuditOutcome::Success, Some("soft_delete"));
             ok(json!({
                 "id": id,
                 "deleted": true,
@@ -435,8 +464,10 @@ async fn delete_expert(
 /// GET /api/experts/capabilities — 从注册表聚合去重后的能力目录
 async fn list_capabilities(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
-    let reg = s.registry.lock();
+    let all = s.registry.lock();
+    let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
 
     // capability_id -> (name, domain, expert_count, proficiency_sum)
     let mut cap_map: HashMap<String, (String, String, u64, f64)> = HashMap::new();
@@ -484,17 +515,21 @@ async fn list_capabilities(
 /// GET /api/experts/metrics — 平台级专家指标聚合（实时计算，非零值 stub）
 async fn platform_metrics(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
-    let reg = s.registry.lock();
-    let metrics = compute_platform_metrics(&reg);
+    let all = s.registry.lock();
+    let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
+    let metrics = compute_platform_metrics(reg);
     ok(metrics)
 }
 
 /// GET /api/experts/overview — 概览仪表盘
 async fn platform_overview(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
-    let reg = s.registry.lock();
+    let all = s.registry.lock();
+    let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
     let sessions = s.sessions.lock();
 
     let enabled: Vec<&ExpertDescriptor> = reg.values().filter(|e| e.enabled).collect();
@@ -558,9 +593,11 @@ async fn platform_overview(
 /// GET /api/experts/:id/metrics — 单个专家指标 + 衍生指标
 async fn expert_metrics(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
-    let reg = s.registry.lock();
+    let all = s.registry.lock();
+    let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
     let exp = match reg.get(&id) {
         Some(e) if e.enabled => e.clone(),
         _ => return err(404, format!("expert not found: {}", id)),
@@ -603,9 +640,11 @@ async fn expert_metrics(
 /// GET /api/experts/stats — 真实统计（字段对齐前端期望，含 domains 对象与 ts）
 async fn experts_stats_real(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
-    let reg = s.registry.lock();
-    let m = compute_platform_metrics(&reg);
+    let all = s.registry.lock();
+    let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
+    let m = compute_platform_metrics(reg);
 
     // 将 domain_distribution 转为前端期望的 domains 对象（固定键 + 动态补充）
     let domain_dist = m.get("domain_distribution")
@@ -647,9 +686,11 @@ async fn experts_stats_real(
 /// GET /api/experts/bookings/:id/consult-room — 真实咨询室（生成令牌与 WebRTC 配置）
 async fn consult_room_real(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
-    let reg = s.registry.lock();
+    let all = s.registry.lock();
+    let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
     let expert = reg.get(&id).cloned();
 
     let room_id = gen_id("room");
@@ -693,6 +734,7 @@ async fn consult_room_real(
 /// POST /api/experts/team — 真实团队加入（验证专家存在性，已验证则自动批准）
 async fn join_team_real(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<Value>,
 ) -> ApiResponse<Value> {
     let team_id = match body.get("team_id").and_then(|v| v.as_str()) {
@@ -703,7 +745,8 @@ async fn join_team_real(
     let role = body.get("role").and_then(|v| v.as_str()).unwrap_or("member").to_string();
 
     let (status, verified_expert_id) = if let Some(eid) = &expert_id {
-        let reg = s.registry.lock();
+        let all = s.registry.lock();
+        let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
         match reg.get(eid) {
             Some(exp) if exp.enabled => {
                 if exp.verification_status == "verified" || exp.verification_status == "certified" {
@@ -740,6 +783,8 @@ async fn join_team_real(
 /// POST /api/experts/:id/consult-now — 真实即时咨询（验证在线 + 创建会话）
 async fn consult_now_real(
     State(s): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Path(id): Path<String>,
     Json(body): Json<Value>,
 ) -> ApiResponse<Value> {
@@ -747,9 +792,10 @@ async fn consult_now_real(
     let question = body.get("question").and_then(|v| v.as_str()).map(String::from);
     let channel = body.get("channel").and_then(|v| v.as_str()).unwrap_or("text").to_string();
 
-    // 验证专家存在且在线
+    // 验证专家存在且在线（按租户）
     let expert_online = {
-        let reg = s.registry.lock();
+        let all = s.registry.lock();
+        let reg = all.get(tenant.as_str()).unwrap_or(empty_registry());
         match reg.get(&id) {
             Some(exp) if exp.enabled => exp.availability.status == "online",
             _ => return err(404, format!("expert not found: {}", id)),
@@ -799,19 +845,20 @@ async fn consult_now_real(
         sessions.insert(session_id.clone(), session);
     }
 
-    //  increment expert consultation counters
+    //  increment expert consultation counters（按租户）
     {
-        let mut reg = s.registry.lock();
+        let mut all = s.registry.lock();
+        let reg = all.entry(tenant.clone()).or_default();
         if let Some(exp) = reg.get_mut(&id) {
             exp.metrics.total_consultations += 1;
             exp.metrics.today_consultations += 1;
             exp.availability.current_load += 1;
             exp.availability.last_active = now.clone();
-            save_registry(&reg);
+            save_registry(tenant.as_str(), reg);
         }
     }
 
-    emit_audit(&s, AuditAction::Unknown("expert.consult_now".into()), "session", &session_id, AuditOutcome::Success, Some(&format!("expert_id={}, topic={}", id, topic)));
+    emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.consult_now".into()), "session", &session_id, AuditOutcome::Success, Some(&format!("expert_id={}, topic={}", id, topic)));
 
     let chat_url = format!("/chat/{}", session_id);
 
@@ -865,7 +912,7 @@ mod tests {
             sessions: Arc::new(Mutex::new(HashMap::new())),
             dispatcher_config: Arc::new(Mutex::new(DispatcherConfig::default())),
             dispatch_records: Arc::new(Mutex::new(Vec::new())),
-            graph: Arc::new(Mutex::new(ExpertGraph::default())),
+            graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
@@ -873,8 +920,22 @@ mod tests {
         })
     }
 
+    /// R1 后端 RBAC 强制：测试用管理员身份（tenant_admin），供管理写面 handler 调用。
+    fn admin_user() -> OptionalAuthUser {
+        OptionalAuthUser(Some(mox_platform_api::UserInfo {
+            id: "u-test-admin".into(),
+            username: "test-admin".into(),
+            email: "admin@test.local".into(),
+            tenant_id: "t-test".into(),
+            roles: vec!["tenant_admin".into()],
+            enabled: true,
+            created_at: "2026-09-30T00:00:00Z".into(),
+        }))
+    }
+
     fn seed_expert(state: &Arc<ExpertsSharedState>, id: &str, name: &str, domains: Vec<&str>) {
-        let mut reg = state.registry.lock();
+        let mut all = state.registry.lock();
+        let reg = all.entry("default".to_string()).or_default();
         let mut exp = ExpertDescriptor::minimal(id.into(), name.into());
         exp.domains = domains.into_iter().map(String::from).collect();
         exp.skills = vec!["Rust".into(), "Python".into()];
@@ -895,24 +956,24 @@ mod tests {
             "skills": ["Rust", "Go"],
             "expert_type": "ai",
         });
-        let resp = create_expert(State(state.clone()), Json(body)).await;
+        let resp = create_expert(State(state.clone()), TenantId("default".into()), admin_user(), Json(body)).await;
         assert!(resp.data.is_some());
         let d = resp.data.unwrap();
         assert_eq!(d["created"], true);
         assert!(d["expert"]["name"].as_str().unwrap().contains("测试专家"));
         assert_eq!(d["expert"]["expert_type"], "ai");
 
-        // 验证持久化到注册表
+        // 验证持久化到默认租户注册表
         let reg = state.registry.lock();
         let id = d["id"].as_str().unwrap();
-        assert!(reg.contains_key(id));
+        assert!(reg.get("default").unwrap().contains_key(id));
     }
 
     // 测试 2：获取不存在的专家返回 404
     #[tokio::test]
     async fn test_get_expert_not_found() {
         let state = make_test_state();
-        let resp = get_expert(State(state), Path("nonexistent-999".into())).await;
+        let resp = get_expert(State(state), TenantId("default".into()), Path("nonexistent-999".into())).await;
         assert!(resp.data.is_none());
         assert_eq!(resp.code, 404);
     }
@@ -928,7 +989,7 @@ mod tests {
             "hourly_rate_cents": 5000,
             "metrics": { "avg_rating": 4.9 },
         });
-        let resp = update_expert(State(state.clone()), Path("exp-update-001".into()), Json(body)).await;
+        let resp = update_expert(State(state.clone()), TenantId("default".into()), admin_user(), Path("exp-update-001".into()), Json(body)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["updated"], true);
         assert_eq!(data["expert"]["title"], "更新后的头衔");
@@ -945,21 +1006,21 @@ mod tests {
         let state = make_test_state();
         seed_expert(&state, "exp-del-001", "待删除专家", vec!["data"]);
 
-        let resp = delete_expert(State(state.clone()), Path("exp-del-001".into())).await;
+        let resp = delete_expert(State(state.clone()), TenantId("default".into()), admin_user(), Path("exp-del-001".into())).await;
         let data = resp.data.unwrap();
         assert_eq!(data["deleted"], true);
         assert_eq!(data["soft_delete"], true);
 
         // 验证 enabled=false 且 deleted_at 已记录
         let reg = state.registry.lock();
-        let exp = reg.get("exp-del-001").unwrap();
+        let exp = reg.get("default").unwrap().get("exp-del-001").unwrap();
         assert!(!exp.enabled);
         assert!(exp.metadata.contains_key("deleted_at"));
 
         // 验证列表中不再出现
         drop(reg);
         let params = HashMap::new();
-        let list_resp = list_experts(State(state), Query(params)).await;
+        let list_resp = list_experts(State(state), TenantId("default".into()), Query(params)).await;
         let list_data = list_resp.data.unwrap();
         let experts = list_data["experts"].as_array().unwrap();
         assert!(experts.iter().all(|e| e["id"] != "exp-del-001"));
@@ -975,7 +1036,7 @@ mod tests {
 
         let mut params = HashMap::new();
         params.insert("search".into(), "架构 backend Kubernetes".into());
-        let resp = list_experts(State(state), Query(params)).await;
+        let resp = list_experts(State(state), TenantId("default".into()), Query(params)).await;
         let data = resp.data.unwrap();
         let experts = data["experts"].as_array().unwrap();
         // 架构师应排在第一位（匹配度最高）
@@ -995,7 +1056,7 @@ mod tests {
         seed_expert(&state, "exp-metric-001", "专家A", vec!["ai"]);
         seed_expert(&state, "exp-metric-002", "专家B", vec!["architecture", "ai"]);
 
-        let resp = platform_metrics(State(state)).await;
+        let resp = platform_metrics(State(state), TenantId("default".into())).await;
         let data = resp.data.unwrap();
         assert_eq!(data["total_experts"], 2);
         assert_eq!(data["total_consultations"], 200); // 每个 100

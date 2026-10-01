@@ -215,6 +215,13 @@
 | `experts.graph.communities` | GET | `/api/expert-graph/communities` | L3 | 协作社区发现 |
 | `experts.graph.optimal_team` | POST | `/api/expert-graph/optimal-team` | L3 | 最优团队推荐 |
 | `experts.graph.rebuild` | POST | `/api/expert-graph/rebuild` | L3 | 重建协作图 |
+| `experts.graph.node_create` | POST | `/api/expert-graph/nodes` | L3 | 新增图谱节点（管理写面，RBAC graph.mutate） |
+| `experts.graph.node_update` | PUT | `/api/expert-graph/nodes/:id` | L3 | 更新图谱节点（合并式） |
+| `experts.graph.node_delete` | DELETE | `/api/expert-graph/nodes/:id` | L3 | 删除图谱节点（联动删关联边） |
+| `experts.graph.edge_create` | POST | `/api/expert-graph/edges` | L3 | 新增图谱边（source/target 须存在，重复边 409） |
+| `experts.graph.edge_update` | PUT | `/api/expert-graph/edges/:seq` | L3 | 更新图谱边（按 seq） |
+| `experts.graph.edge_delete` | DELETE | `/api/expert-graph/edges/:seq` | L3 | 删除图谱边（按 seq） |
+| `experts.graph.rag_expand` | POST | `/api/expert-graph/rag/expand` | L3 | 图 RAG 多跳邻域扩展（T2，读面公开，权重乘积聚合，向量融合待 #27） |
 | `experts.orch.orchestrate` | POST | `/api/experts/orchestrate` | L3 | 专家编排执行 |
 | `experts.orch.plan_generate` | POST | `/api/experts/plan/generate` | L3 | 生成协作计划 |
 | `experts.orch.plan_execute` | POST | `/api/experts/plan/execute` | L3 | 执行协作计划 |
@@ -399,3 +406,15 @@ Start-Process target\debug\mox-server.exe -ArgumentList @("--port","3080") -Wind
 | 2026-09-06 | **注册表归一化（98→199）**：修正 ai/kb/alliance 三域前缀漂移（`/ai/engine`、`/api/kb`、`/api/alliance`）；补齐漏声明的 experts 48 / monitor 12 / projects 14 / workspace 7 / notification 4 / misc 5 / kb_ext 2 / auth 1；canonical 映射修正；S3 如实降 stub、Expert 如实升 ready；生成脚本与治理规则落地 |
 | 2026-09-07 | **运行验证与语义修复**：5 进程全链路实测（编排器3001/kb8104/调度3100/执行3200/网关8080）；联盟远程模式激活（`MOX_ALLIANCE_*_URL`）；Mock 执行器全链路任务闭环 completed（5/5 节点）；readiness 语义修复（mock 模式如实就绪）；一键启停脚本落地 |
 | 2026-09-07 | **Phase 0 落地（199→208）**：RBAC 域 3 条（IAM 真实仓储：角色/权限/当前用户）、Graph 域 3 条（与 kg 同源真实算法：总览/统计/社区）、Voice 域 3 条（桥接 melody2score :8012：健康/样例/识别）；三域描述符 stub→ready，全链路实测 200 |
+
+## 附：非 HTTP 入口 —— MCP Server（stdio，T3，2026-10-01）
+
+> 该入口不经过网关 3080 HTTP 路由表，为独立进程二进制，传输为 JSON-RPC 2.0 over stdio（`Content-Length: N\r\n\r\n` 帧），故不在上方 236 条路由内，单列登记。
+
+| 项 | 值 |
+| --- | --- |
+| 二进制 | `mox-alliance-mcp-server`（crate `platform/domains/alliance/mcp/mox-alliance-mcp-server`） |
+| 传输 | stdio（Content-Length 帧），非 HTTP |
+| 网关基址 | `MOX_MCP_GATEWAY_URL`（默认 `http://127.0.0.1:3080`） |
+| 鉴权 | `MOX_INTERNAL_TOKEN`（可选，注入 Bearer；读面经网关鉴权） |
+| 工具 | `expert_search`→POST `/api/alliance/experts/search`；`optimal_team`→POST `/api/expert-graph/optimal-team`；`graph_expand`→POST `/api/expert-graph/rag/expand` |

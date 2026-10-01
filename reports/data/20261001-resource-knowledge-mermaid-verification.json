@@ -1,0 +1,26 @@
+{
+  "mermaid": "11.17.2",
+  "method": "parse only; no browser visual verification",
+  "results": [
+    {
+      "file": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+      "line": 32,
+      "pass": true
+    },
+    {
+      "file": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+      "line": 32,
+      "pass": true
+    },
+    {
+      "file": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "line": 8,
+      "pass": true
+    },
+    {
+      "file": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "line": 27,
+      "pass": true
+    }
+  ]
+}

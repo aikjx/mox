@@ -106,14 +106,9 @@ const kpi = computed(() => {
 
 // 专家候选与名字都取自己加载的那一页注册表；越界的 id 只能标成"不在本页名单内"，
 // 不能标成"专家不存在"——后端 expert_ids 从不校验成员资格。
-const expertOptions = computed(() =>
-  expertStore.experts.map((e) => ({ value: e.id, label: e.name || e.id }))
-)
-const expertNames = computed(() => {
-  const map = {}
-  for (const e of expertStore.experts) map[e.id] = e.name || e.id
-  return map
-})
+// 候选与映射本身指回 store 那一份（名字要过丢码口径，视图不再自己 map name）。
+const expertOptions = computed(() => expertStore.expertOptions)
+const expertNames = computed(() => expertStore.expertNames)
 
 function goCollab() {
   router.push('/alliance/collab')

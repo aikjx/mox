@@ -1,0 +1,36 @@
+{
+  "mermaid": "11.17.2",
+  "method": "parse only; no browser visual verification",
+  "results": [
+    {
+      "file": "docs/standards/lowcode-dynamic-configuration.md",
+      "line": 66,
+      "pass": true
+    },
+    {
+      "file": "docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md",
+      "line": 8,
+      "pass": true
+    },
+    {
+      "file": "docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md",
+      "line": 41,
+      "pass": true
+    },
+    {
+      "file": "docs/architecture/frontend/LOWCODE-PAGE-RUNTIME.md",
+      "line": 12,
+      "pass": true
+    },
+    {
+      "file": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "line": 25,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/19-lowcode-dynamic-configuration.md",
+      "line": 26,
+      "pass": true
+    }
+  ]
+}

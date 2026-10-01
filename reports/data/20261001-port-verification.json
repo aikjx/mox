@@ -1,0 +1,2452 @@
+{
+  "repo": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "passed": true,
+  "error_count": 0,
+  "warn_count": 284,
+  "scanned_ports": 397,
+  "issues": [
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1026（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "frontend-ui/src/modules/expert-alliance/_verification/frontend-fix-report.md"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1028（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1029（2 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md",
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1033（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1042（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1045（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1047（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1049（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "frontend-ui/src/modules/expert-alliance/_verification/frontend-fix-report.md"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1052（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1054（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1057（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1058（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1060（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1061（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1064（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "frontend-ui/src/modules/expert-alliance/_verification/frontend-fix-report.md"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1066（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1072（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1075（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1081（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1091（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1092（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1096（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1100（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1113（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1115（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1121（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1129（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1136（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1142（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1147（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1153（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1161（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1162（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1164（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1166（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1171（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1173（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1183（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1192（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1197（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1200（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1206（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1216（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1217（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1225（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1227（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1231（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1234（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1235（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1237（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1243（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1252（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1267（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1269（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1270（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1287（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1293（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1301（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1303（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1312（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1321（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1322（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1323（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1330（2 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json",
+        "platform/domains/alliance/_verification/backend-fix-report.md"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1331（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1341（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1353（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1356（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1357（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1362（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1363（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1367（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1375（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1378（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1379（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1380（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1384（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1389（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1404（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1407（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1427（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1428（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1446（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1452（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1464（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1472（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1473（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1478（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1504（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1506（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1512（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1520（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1523（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1541（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1546（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1549（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1565（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1578（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1581（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1584（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1585（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1594（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1596（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1602（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1604（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1622（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1624（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1635（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1643（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1645（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1661（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1674（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1676（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1678（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1679（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1688（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1692（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "frontend-ui/src/modules/expert-alliance/contract/endpoints.js"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1694（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "frontend-ui/src/modules/expert-alliance/contract/endpoints.js"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1709（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1710（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1714（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1722（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1723（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1725（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1728（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1738（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1740（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1744（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1750（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1757（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1758（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1767（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1769（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1783（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1784（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1791（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1794（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1797（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1799（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1805（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1809（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1840（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1841（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1842（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1853（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1866（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1886（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1889（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1897（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1930（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1931（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1943（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1945（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1955（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1969（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 1973（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2020（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2023（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2043（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2075（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2084（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2093（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2111（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2119（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2164（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2172（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2175（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2179（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2186（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2198（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2213（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2218（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2220（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2225（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2249（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2259（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2266（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2274（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2279（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2332（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2357（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2390（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2400（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2412（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2414（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2467（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2469（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2472（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2478（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2491（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2520（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2545（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2560（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2561（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2580（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2584（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2586（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2643（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2653（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2659（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2661（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2694（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2705（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2738（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2746（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2752（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2762（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2778（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2821（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2836（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2853（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2926（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 2977（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3004（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3017（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3075（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3126（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3190（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3258（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3267（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3299（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3349（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3401（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3417（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3419（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3484（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3543（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3622（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3651（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3652（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3680（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3883（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 3896（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4004（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4044（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4055（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4074（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4233（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4321（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4361（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4393（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4486（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4543（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4577（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4646（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4678（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4895（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 4910（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5238（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5243（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5281（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5412（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5441（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5572（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5614（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5626（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5759（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5799（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 5802（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 6094（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 6346（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 6569（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 6715（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 6936（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 7165（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 7232（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 7748（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 8186（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 8310（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 8541（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 8593（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 9100（2 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "platform/domains/alliance/_verification/batch_grep.txt",
+        "platform/domains/alliance/svc/mox-alliance-registry-svc/tests/http_registry.rs"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 9200（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "platform/domains/alliance/svc/mox-alliance-registry-svc/tests/http_registry.rs"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 9300（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "platform/domains/alliance/svc/mox-alliance-registry-svc/tests/http_registry.rs"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 9446（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 9500（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "platform/domains/alliance/svc/mox-alliance-registry-svc/tests/http_registry.rs"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 9863（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 10925（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 13510（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 13814（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 18151（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 19199（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 27330（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "WARN",
+      "msg": "发现未登记端口 46424（1 处）：请核对是否新服务，按 PORT-REGISTRY-001 第5章登记",
+      "files": [
+        "docs/graphify-out/cache/stat-index.json"
+      ]
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 2379（etcd client，THIRD）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 2380（etcd peer，THIRD）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3000（OUS 算子统一系统边缘（mox-platform-system-core 默认绑定；曾为 Node 边缘入口；注意 Grafana 默认同为 3000 需避让），ANCILLARY）：引用 22 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3001（orchestrator-svc（operator-unified-system）HTTP 默认绑定（--port 默认 3001），ANCILLARY）：引用 32 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3002（enterprise-svc 默认绑定（休眠/备用服务），ANCILLARY）：引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "已退役端口 3010（Node.js API / Node sidecar（backend-node 已删除））：仅存于文档/遗留 opt-in 引用（10 处），可保留"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3020（frontend（Vite Vue3 dev server），RUNTIME）：引用 21 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "已退役端口 3021（前端旧端口（AI 对话 UI 曾用，已迁 3020））：仅存于文档/遗留 opt-in 引用（7 处），可保留"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3079（mox-flow-bridge serve demo（mox serve --port 3079），TEST）：测试/第三方引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3080（api（Rust 网关 mox-server，唯一对外 HTTP 入口），RUNTIME）：引用 84 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3100（scheduler-svc（调度编排），ALLIANCE）：引用 71 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3101（scheduler-svc 宿主机映射（docker-compose.alliance.yml 3101:3100），ALLIANCE）：引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3123（alliance boot-config 测试 fixture，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3155（alliance Nacos 配置中心 e2e 远程端口（tools/alliance_nacos_e2e.py 专用），TEST）：测试/第三方引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3199（alliance Nacos 配置中心 e2e 本地引导端口（tools/alliance_nacos_e2e.py 专用），TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3200（executor-svc（执行引擎），ALLIANCE）：引用 51 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3210（codeengine-svc（全自研 AI 代码引擎，开发专家联盟处理模式，HTTP），ALLIANCE）：引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3300（AI 专家服务桥接（scheduler 内部基址），ALLIANCE）：引用 6 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3306（MySQL，THIRD）：测试/第三方引用 4 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3400（registry-svc（专家注册中心，HTTP，platform_config.json 登记），ALLIANCE）：引用 26 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3411（mox-kg-server（可选独立部署），ANCILLARY）：引用 9 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3412（mox-cloud-server（可选独立部署），ANCILLARY）：引用 8 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3413（mox-iam-server（可选独立部署），ANCILLARY）：引用 7 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3414（mox-kb-server（可选独立部署），ANCILLARY）：引用 8 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "已退役端口 3717（xiaobai_voice 旧端口（ASR+TTS，2026-09 已迁 30010））：仅存于文档/遗留 opt-in 引用（6 处），可保留"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3998（operator API（mox-ai-agent-svc OPERATOR_API_BASE 默认 / runtime --port 测试），ANCILLARY）：引用 4 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 3999（dashboard（运维管理面板），RUNTIME）：引用 7 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 4173（frontend 生产预览（Vite preview），ANCILLARY）：引用 5 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 4222（NATS，THIRD）：测试/第三方引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 4317（OpenTelemetry OTLP，THIRD）：测试/第三方引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 5173（Vite dev 默认端口（网关 CORS 白名单引用，非监听），ANCILLARY）：引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 5236（达梦 DM，THIRD）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 5432（PostgreSQL，THIRD）：测试/第三方引用 16 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 6379（redis（基础设施），LEGACY）：引用 15 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 7000（mox-dr raft（helm containerPort；历史文档亦见 8200），ANCILLARY）：引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 7480（Ceph RGW，THIRD）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 7687（Neo4j Bolt，THIRD）：测试/第三方引用 7 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 7688（mox-dr 部署映射 7688:7687（Neo4j Bolt 备用映射），THIRD）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8000（primiflow（低代码拓扑引擎），RUNTIME）：引用 18 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8001（cloud-master 卷节点测试，TEST）：测试/第三方引用 10 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8002（cloud-master 卷节点测试，TEST）：测试/第三方引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8003（cloud-master 卷节点测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8012（melody2score（旋律转谱 WebUI），RUNTIME）：引用 15 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8080（Nginx 对外代理/第三方软件常用端口（MOX 进程不得监听），THIRD）：测试/第三方引用 57 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8081（mox-dualrpc jsonrpc 测试端口（曾为 alliance scheduler 旧端口，已迁 3100），TEST）：测试/第三方引用 10 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8082（mox-dualrpc jsonrpc 测试端口（曾为 alliance executor 旧端口，已迁 3200），TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "已退役端口 8101（mox-kg-server 旧独立部署端口（已迁 3411））：仅存于文档/遗留 opt-in 引用（1 处），可保留"
+    },
+    {
+      "severity": "INFO",
+      "msg": "已退役端口 8102（mox-cloud-server 旧独立部署端口（已迁 3412））：仅存于文档/遗留 opt-in 引用（1 处），可保留"
+    },
+    {
+      "severity": "INFO",
+      "msg": "已退役端口 8103（mox-iam-server 旧独立部署端口（已迁 3413））：仅存于文档/遗留 opt-in 引用（2 处），可保留"
+    },
+    {
+      "severity": "INFO",
+      "msg": "已退役端口 8104（mox-kb-server 旧独立部署端口（已迁 3414））：仅存于文档/遗留 opt-in 引用（4 处），可保留"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8200（raft（mox-dr），THIRD）：测试/第三方引用 4 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8333（mox-cloud-filer-svc 挂载测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8600（legacy Python mox-server（docker/systemd/nginx），LEGACY）：引用 11 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8601（legacy mox-store（应用商店），LEGACY）：引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8765（ai-intent-svc 默认监听（MOX_AI_INTENT_PORT，默认 8765），ANCILLARY）：引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8787（primiflow demo（Server::serve 0.0.0.0:8787），TEST）：测试/第三方引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8788（primiflow-fusion demo（fusion-server 默认），TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8848（Nacos，THIRD）：测试/第三方引用 12 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8888（前端 Web 搜索服务占位，THIRD）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 8999（alliance executor expert e2e：mock OpenAI 兼容服务（tools/mock_openai.py），TEST）：测试/第三方引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9000（cloud-master/kg-storage 节点测试；MinIO S3 默认，TEST）：测试/第三方引用 10 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9001（kg-storage 测试；MinIO Console，TEST）：测试/第三方引用 6 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9002（kg-storage 测试，TEST）：测试/第三方引用 4 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9003（kg-storage 测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9080（data-plane-svc 内网控制面 ctrl，ANCILLARY）：引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9081（data-plane-svc 内网数据面 data，ANCILLARY）：引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9090（Prometheus，THIRD）：测试/第三方引用 11 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9093（Alertmanager，THIRD）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9101（kg-storage 集成测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9102（kg-storage 集成测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9103（kg-storage 集成测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9201（kg-storage 查询测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9202（kg-storage 查询测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9203（kg-storage 查询测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9301（kg-storage 分片测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9302（kg-storage 分片测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9303（kg-storage 分片测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9333（cloud-master raft 测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9401（kg-storage 性能基准，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9402（kg-storage 性能基准，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9403（kg-storage 性能基准，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9501（kg-storage 千亿模拟，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9502（kg-storage 千亿模拟，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9503（kg-storage 千亿模拟，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9779（kg-meta-core 存储宿主测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9780（kg-meta-core 存储宿主测试，TEST）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 9781（kg-meta-core 存储宿主测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 11434（Ollama（本地 LLM 推理），THIRD）：测试/第三方引用 7 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 12345（glacier-adapter 测试 endpoint，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 13130（xiaobai_voice 语音代理 WS 测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 18080（single-node 验证模式 public（t19），TEST）：测试/第三方引用 4 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 19302（STUN（stun.l.google.com，WebRTC ICE），THIRD）：测试/第三方引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 19601（kg-meta-core 集群测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 19602（kg-meta-core 集群测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 19603（kg-meta-core 集群测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 19876（mox-dualrpc 测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 19999（kg-connector 不可用降级测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 30010（xiaobai_voice（ASR+TTS，PORT-NORM 30000+ 段），RUNTIME）：引用 23 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 30400（browser-rpa 浏览器RPA容器（录制/AI自愈/运维/归一化，FastAPI+Playwright，RPA_PORT 覆盖），ANCILLARY）：引用 5 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 30499（browser-rpa API 集成测试端口（projects/browser-rpa/tests/test_core.py），TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 31111（test_stream_e2e_probe 流式 E2E 探针，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 31112（test_stream_e2e_probe 流式 E2E 探针，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 33020（专家联盟前端 dev（npm run dev --port 33020，127.0.0.1），ANCILLARY）：引用 5 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 33080（联盟本地网关（start-alliance-local.ps1 默认，127.0.0.1），ALLIANCE）：引用 3 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 33100（联盟本地调度器（start-alliance-local.ps1 默认，127.0.0.1），ALLIANCE）：引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 33200（联盟本地执行器（start-alliance-local.ps1 默认，127.0.0.1），ALLIANCE）：引用 2 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 33300（orchestrator 本地运行端口（MOX_ORCHESTRATOR_PORT，MOX-MODULE-COMPOSITION），ALLIANCE）：引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 35432（本地 PostgreSQL 测试库（MOX_TEST_PG_URL），TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 50051（gRPC（framework/dualrpc 默认），ANCILLARY）：引用 25 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 54321（KingbaseES，THIRD）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 65528（alliance-sdk 连通性测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 65529（alliance-sdk 连通性测试，TEST）：测试/第三方引用 1 处"
+    },
+    {
+      "severity": "INFO",
+      "msg": "端口 65530（alliance-sdk 连通性测试，TEST）：测试/第三方引用 1 处"
+    }
+  ]
+}

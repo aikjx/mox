@@ -23,3 +23,20 @@
 - 视图：`src/views/` 72 个 `.vue`；最大单文件 `views/expert/ExpertConfigView.vue` 5414 行。
 - 样式：`styles/global.css` 532 行（含 137 个 `:root` 令牌）+ 三主题各 ~100 令牌 + `styles/workspace.css` 4329 行（非 scoped，由单个 view 引入）。
 - 未决：FE-LAY-REF 的 P0 布局分层（`layouts/DefaultLayout.vue` + `meta.layout` 生效）、登录页外壳泄漏、`styles/tokens.css` 令牌外提。
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 纯数据页面定义、权限视图、query/command/widget引用 |
+| 处理与边界 | 校验后绑定受信API与控件，适配现有PageSchema；维护外壳、契约、状态与缓存隔离 |
+| 输出 | 声明式页面运行模型与用户可操作的错误/空态 |
+| 维护角色 | frontend模块owner（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/architecture/frontend/LOWCODE-PAGE-RUNTIME.md#runtime) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。

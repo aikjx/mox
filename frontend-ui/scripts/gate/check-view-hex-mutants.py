@@ -17,6 +17,10 @@ import io
 import os
 import sys
 
+if hasattr(sys.stdout, 'reconfigure'):
+    # Windows 控制台默认 GBK：本驱动打印的红针名册是中文，不重配置就整份报告变乱码或被管道读方判为坏输出
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 GATE = os.path.join(HERE, 'check-view-hex.py')
 sys.dont_write_bytecode = True

@@ -1,0 +1,11 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/a10/aikjx/gitcode/infotopograph/frontend-ui[39m
+
+ [32m✓[39m src/utils/time-f1-outlet.test.js [2m([22m[2m6 tests[22m[2m)[22m[90m 172[2mms[22m[39m
+ [32m✓[39m src/utils/time-locale-outlet.test.js [2m([22m[2m7 tests[22m[2m)[22m[90m 175[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 02:19:31
+[2m   Duration [22m 3.23s[2m (transform 169ms, setup 0ms, collect 497ms, tests 347ms, environment 3.31s, prepare 818ms)[22m
+

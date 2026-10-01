@@ -30,6 +30,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use super::experts_common::*;
+use super::experts_rbac::{RbacAction, enforce_admin_or_respond};
 
 // =====================================================================
 // 一、模块级静态状态（轮询指针 + 熔断失败计数）
@@ -222,12 +223,14 @@ fn weighted_random_pick(
 /// 补齐按类型路由属独立能力项，需先定义类型→专家领域的映射规则。
 pub fn dispatch_task(
     state: &ExpertsSharedState,
+    tenant: &str,
     _task_type: &str,
     input: &str,
     specified_ids: Option<Vec<String>>,
 ) -> (Vec<String>, HashMap<String, f64>, String) {
     let config = state.dispatcher_config.lock().clone();
-    let registry = state.registry.lock();
+    let all_reg = state.registry.lock();
+    let registry = all_reg.get(tenant).map(|m| m).unwrap_or(empty_registry());
 
     // 分支 1：指定专家 ID —— 直接分配，验证存在且可用
     if let Some(ids) = specified_ids {
@@ -325,11 +328,13 @@ pub fn dispatch_task(
 /// 调度 N 名专家（用于 multi-consult），返回 (ids, scores)
 fn dispatch_n_experts(
     state: &ExpertsSharedState,
+    tenant: &str,
     input: &str,
     n: usize,
 ) -> (Vec<String>, HashMap<String, f64>) {
     let config = state.dispatcher_config.lock().clone();
-    let registry = state.registry.lock();
+    let all_reg = state.registry.lock();
+    let registry = all_reg.get(tenant).map(|m| m).unwrap_or(empty_registry());
     let mut candidates = collect_candidates(&registry, input, &config);
     candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -388,8 +393,15 @@ async fn get_config(
 // ---------------------------------------------------------------------
 async fn update_config(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Json(body): Json<UpdateConfigBody>,
 ) -> ApiResponse<Value> {
+    // R1 后端 RBAC 强制：调度配置写属管理写面，需 super_admin / tenant_admin
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::UpdateConfig) {
+        return resp;
+    }
+
     // 校验 strategy
     if let Some(ref s) = body.strategy {
         let valid = ["round_robin", "least_load", "best_match", "weighted_random"];
@@ -451,10 +463,12 @@ async fn update_config(
 // ---------------------------------------------------------------------
 async fn dispatcher_status(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
     let config = state.dispatcher_config.lock().clone();
     let records = state.dispatch_records.lock().clone();
-    let registry = state.registry.lock().clone();
+    let all_reg = state.registry.lock();
+    let registry = all_reg.get(tenant.as_str()).cloned().unwrap_or_default();
 
     let total_dispatches = records.len() as u64;
     let active_dispatches = records
@@ -551,13 +565,15 @@ async fn dispatcher_status(
 // ---------------------------------------------------------------------
 async fn dispatch(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Json(body): Json<DispatchBody>,
 ) -> ApiResponse<Value> {
     let now = now_iso();
     let dispatch_id = gen_id("disp");
 
     let (assigned_ids, match_scores, strategy_used) =
-        dispatch_task(&state, &body.task_type, &body.input, body.expert_ids.clone());
+        dispatch_task(&state, tenant.as_str(), &body.task_type, &body.input, body.expert_ids.clone());
 
     if assigned_ids.is_empty() {
         return err(503, "no available experts for dispatch".to_string());
@@ -577,10 +593,11 @@ async fn dispatch(
     };
     state.dispatch_records.lock().push(record);
 
-    crate::alliance::experts_common::emit_audit(&state, AuditAction::ExpertDispatch, "dispatch", &dispatch_id, AuditOutcome::Success, Some(&format!("task_type={}, assigned={:?}", body.task_type, assigned_ids)));
+    crate::alliance::experts_common::emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::ExpertDispatch, "dispatch", &dispatch_id, AuditOutcome::Success, Some(&format!("task_type={}, assigned={:?}", body.task_type, assigned_ids)));
 
     // 构造 assigned_experts 详情
-    let registry = state.registry.lock();
+    let all_reg = state.registry.lock();
+    let registry = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
     let assigned_experts: Vec<Value> = assigned_ids
         .iter()
         .filter_map(|id| {
@@ -611,20 +628,23 @@ async fn dispatch(
 // ---------------------------------------------------------------------
 async fn consult(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Json(body): Json<ConsultBody>,
 ) -> ApiResponse<Value> {
     let now = now_iso();
     let dispatch_id = gen_id("disp");
 
     let (assigned_ids, match_scores, strategy_used) =
-        dispatch_task(&state, "consult", &body.question, None);
+        dispatch_task(&state, tenant.as_str(), "consult", &body.question, None);
 
     if assigned_ids.is_empty() {
         return err(503, "no available experts for consult".to_string());
     }
 
     let expert_id = &assigned_ids[0];
-    let registry = state.registry.lock();
+    let all_reg = state.registry.lock();
+    let registry = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
     let expert = match registry.get(expert_id) {
         Some(e) => e.clone(),
         None => return err(500, format!("expert not found after dispatch: {expert_id}")),
@@ -648,7 +668,7 @@ async fn consult(
     };
     state.dispatch_records.lock().push(record);
 
-    crate::alliance::experts_common::emit_audit(&state, AuditAction::Unknown("expert.consult".into()), "consult", &dispatch_id, AuditOutcome::Success, Some(&format!("expert_id={}", expert.id)));
+    crate::alliance::experts_common::emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.consult".into()), "consult", &dispatch_id, AuditOutcome::Success, Some(&format!("expert_id={}", expert.id)));
 
     ok(json!({
         "dispatch_id": dispatch_id,
@@ -669,19 +689,22 @@ async fn consult(
 // ---------------------------------------------------------------------
 async fn multi_consult(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Json(body): Json<MultiConsultBody>,
 ) -> ApiResponse<Value> {
     let now = now_iso();
     let dispatch_id = gen_id("disp");
     let max_experts = body.max_experts.unwrap_or(3).max(1);
 
-    let (assigned_ids, match_scores) = dispatch_n_experts(&state, &body.question, max_experts);
+    let (assigned_ids, match_scores) = dispatch_n_experts(&state, tenant.as_str(), &body.question, max_experts);
 
     if assigned_ids.is_empty() {
         return err(503, "no available experts for multi-consult".to_string());
     }
 
-    let registry = state.registry.lock();
+    let all_reg = state.registry.lock();
+    let registry = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
     let mut expert_answers: Vec<Value> = Vec::new();
     let mut best_score = 0.0f64;
     let mut best_answer: Option<Value> = None;
@@ -746,7 +769,7 @@ async fn multi_consult(
     };
     state.dispatch_records.lock().push(record);
 
-    crate::alliance::experts_common::emit_audit(&state, AuditAction::Unknown("expert.multi_consult".into()), "consult", &dispatch_id, AuditOutcome::Success, Some(&format!("experts={:?}", assigned_ids)));
+    crate::alliance::experts_common::emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.multi_consult".into()), "consult", &dispatch_id, AuditOutcome::Success, Some(&format!("experts={:?}", assigned_ids)));
 
     ok(json!({
         "dispatch_id": dispatch_id,
@@ -762,12 +785,20 @@ async fn multi_consult(
 // ---------------------------------------------------------------------
 async fn reset_expert(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Path(id): Path<String>,
     Json(body): Json<ResetBody>,
 ) -> ApiResponse<Value> {
+    // R1 后端 RBAC 强制：调度负载重置属管理写面，需 super_admin / tenant_admin
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::ResetDispatcher) {
+        return resp;
+    }
+
     let now = now_iso();
     let (previous_load, previous_failures) = {
-        let registry = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let registry = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         let prev_load = registry
             .get(&id)
             .map(|e| e.availability.current_load)
@@ -781,9 +812,10 @@ async fn reset_expert(
         (prev_load, prev_failures)
     };
 
-    // 清零注册表中的 current_load
+    // 清零注册表中的 current_load（按租户）
     {
-        let mut registry = state.registry.lock();
+        let mut all_reg = state.registry.lock();
+        let registry = all_reg.entry(tenant.clone()).or_default();
         if let Some(expert) = registry.get_mut(&id) {
             expert.availability.current_load = 0;
         }
@@ -812,10 +844,18 @@ async fn reset_expert(
 // ---------------------------------------------------------------------
 async fn reset_all(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
 ) -> ApiResponse<Value> {
+    // R1 后端 RBAC 强制：全量重置属管理写面，需 super_admin / tenant_admin
+    if let Err(resp) = enforce_admin_or_respond(&state, &user, tenant.as_str(), RbacAction::ResetAllDispatcher) {
+        return resp;
+    }
+
     let now = now_iso();
     let reset_ids: Vec<String> = {
-        let mut registry = state.registry.lock();
+        let mut all_reg = state.registry.lock();
+        let registry = all_reg.entry(tenant.clone()).or_default();
         let ids: Vec<String> = registry.keys().cloned().collect();
         for expert in registry.values_mut() {
             expert.availability.current_load = 0;
@@ -905,17 +945,32 @@ mod tests {
         exp_c.availability.max_concurrent = 5;
         registry.insert("exp-data-001".into(), exp_c);
 
+        let mut outer_reg: HashMap<String, HashMap<String, ExpertDescriptor>> = HashMap::new();
+        outer_reg.insert("default".into(), registry);
         Arc::new(ExpertsSharedState {
-            registry: Arc::new(Mutex::new(registry)),
+            registry: Arc::new(Mutex::new(outer_reg)),
             sessions: Arc::new(Mutex::new(HashMap::new())),
             dispatcher_config: Arc::new(Mutex::new(DispatcherConfig::default())),
             dispatch_records: Arc::new(Mutex::new(Vec::new())),
-            graph: Arc::new(Mutex::new(ExpertGraph::default())),
+            graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
             audit: crate::alliance::experts_common::build_audit_context(),
         })
+    }
+
+    /// R1 后端 RBAC 强制：测试用管理员身份（tenant_admin），供管理写面 handler 调用。
+    fn admin_user() -> OptionalAuthUser {
+        OptionalAuthUser(Some(mox_platform_api::UserInfo {
+            id: "u-test-admin".into(),
+            username: "test-admin".into(),
+            email: "admin@test.local".into(),
+            tenant_id: "t-test".into(),
+            roles: vec!["tenant_admin".into()],
+            enabled: true,
+            created_at: "2026-09-30T00:00:00Z".into(),
+        }))
     }
 
     // --- 测试 1：配置更新验证 ---
@@ -934,7 +989,7 @@ mod tests {
             circuit_breaker_threshold: None,
             concurrency_control: None,
         };
-        let resp = update_config(State(state.clone()), Json(body)).await;
+        let resp = update_config(State(state.clone()), TenantId("default".into()), admin_user(), Json(body)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["strategy"], "least_load");
         assert_eq!(data["match_threshold"], 0.5);
@@ -952,7 +1007,7 @@ mod tests {
             circuit_breaker_threshold: None,
             concurrency_control: None,
         };
-        let resp_bad = update_config(State(state.clone()), Json(bad_body)).await;
+        let resp_bad = update_config(State(state.clone()), TenantId("default".into()), admin_user(), Json(bad_body)).await;
         assert_eq!(resp_bad.code, 400);
 
         // 非法 match_threshold
@@ -966,7 +1021,7 @@ mod tests {
             circuit_breaker_threshold: None,
             concurrency_control: None,
         };
-        let resp_t = update_config(State(state.clone()), Json(bad_threshold)).await;
+        let resp_t = update_config(State(state.clone()), TenantId("default".into()), admin_user(), Json(bad_threshold)).await;
         assert_eq!(resp_t.code, 400);
     }
 
@@ -980,6 +1035,7 @@ mod tests {
         // 查询"微服务架构设计"应该匹配到架构师
         let (ids, scores, strategy) = dispatch_task(
             &state,
+            "default",
             "consult",
             "微服务架构设计 Rust backend",
             None,
@@ -1001,6 +1057,7 @@ mod tests {
         // exp-data-001 current_load=0, 应该被选中
         let (ids, _scores, strategy) = dispatch_task(
             &state,
+            "default",
             "consult",
             "data database etl 数据工程",
             None,
@@ -1019,7 +1076,7 @@ mod tests {
         // 先设置一个专家的负载
         {
             let mut registry = state.registry.lock();
-            if let Some(e) = registry.get_mut("exp-ai-001") {
+            if let Some(e) = registry.get_mut("default").unwrap().get_mut("exp-ai-001") {
                 e.availability.current_load = 5;
             }
         }
@@ -1035,7 +1092,7 @@ mod tests {
         let body = ResetBody {
             reason: Some("手动重置".into()),
         };
-        let resp = reset_expert(State(state.clone()), Path("exp-ai-001".into()), Json(body)).await;
+        let resp = reset_expert(State(state.clone()), TenantId("default".into()), admin_user(), Path("exp-ai-001".into()), Json(body)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["expert_id"], "exp-ai-001");
         assert_eq!(data["reset"], true);
@@ -1045,7 +1102,7 @@ mod tests {
 
         // 验证已清零
         let registry = state.registry.lock();
-        assert_eq!(registry.get("exp-ai-001").unwrap().availability.current_load, 0);
+        assert_eq!(registry.get("default").unwrap().get("exp-ai-001").unwrap().availability.current_load, 0);
     }
 
     // --- 测试 5：status 计算 ---
@@ -1080,7 +1137,7 @@ mod tests {
             });
         }
 
-        let resp = dispatcher_status(State(state.clone())).await;
+        let resp = dispatcher_status(State(state.clone()), TenantId("default".into())).await;
         let data = resp.data.unwrap();
         assert_eq!(data["engine_status"], "running");
         assert_eq!(data["current_strategy"], "best_match");
@@ -1098,6 +1155,7 @@ mod tests {
         let state = test_state();
         let (ids, scores, strategy) = dispatch_task(
             &state,
+            "default",
             "consult",
             "任意问题",
             Some(vec!["exp-arch-001".into(), "exp-ai-001".into()]),
@@ -1119,7 +1177,7 @@ mod tests {
         // 连续调度多次，验证轮询不重复（在 3 个专家间循环）
         let mut first_ids = Vec::new();
         for _ in 0..3 {
-            let (ids, _, _) = dispatch_task(&state, "consult", "test", None);
+            let (ids, _, _) = dispatch_task(&state, "default", "consult", "test", None);
             first_ids.push(ids[0].clone());
         }
         // 3 次应该覆盖不同专家（轮询）
@@ -1137,7 +1195,7 @@ mod tests {
             question: "如何设计微服务架构".into(),
             constraints: None,
         };
-        let resp = consult(State(state.clone()), Json(body)).await;
+        let resp = consult(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Json(body)).await;
         let data = resp.data.unwrap();
         assert!(data["dispatch_id"].as_str().unwrap().starts_with("disp-"));
         assert_eq!(data["expert"]["id"], "exp-arch-001");
@@ -1154,19 +1212,19 @@ mod tests {
         // 设置所有专家负载
         {
             let mut registry = state.registry.lock();
-            for e in registry.values_mut() {
+            for e in registry.get_mut("default").unwrap().values_mut() {
                 e.availability.current_load = 10;
             }
         }
 
-        let resp = reset_all(State(state.clone())).await;
+        let resp = reset_all(State(state.clone()), TenantId("default".into()), admin_user()).await;
         let data = resp.data.unwrap();
         assert_eq!(data["reset_count"], 3);
         assert_eq!(data["reset_expert_ids"].as_array().unwrap().len(), 3);
 
         // 验证全部清零
         let registry = state.registry.lock();
-        for e in registry.values() {
+        for e in registry.get("default").unwrap().values() {
             assert_eq!(e.availability.current_load, 0);
         }
     }

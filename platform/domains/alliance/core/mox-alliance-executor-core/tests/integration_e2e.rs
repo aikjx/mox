@@ -332,3 +332,99 @@ async fn test_e2e_full_pipeline() -> AllianceResult<()> {
 
     Ok(())
 }
+
+/// 七种协作模式共用同一计划契约与执行入口，动态分支包含串行后继。
+#[tokio::test]
+async fn test_all_modes_share_validated_execution_pipeline() -> AllianceResult<()> {
+    let matcher = ModularWeightMatcher::new();
+    matcher.register_experts(create_test_experts());
+    let matches = matcher
+        .match_experts(ExpertMatchQuery {
+            tenant_id: "system".into(),
+            task_description: "研究数据分析".into(),
+            required_domains: vec![],
+            required_capabilities: vec![],
+            min_priority: 1,
+            max_results: 3,
+        })
+        .await?
+        .matches;
+    assert!(!matches.is_empty());
+    let engine = DagEngineImpl::spawn(
+        mox_alliance_executor_proto::types::ExecutorConfig {
+            poll_interval_ms: 5,
+            ..Default::default()
+        },
+        Arc::new(mock_executor::MockNodeExecutor::new(
+            mock_executor::MockExecutorConfig {
+                delay_ms: 1,
+                success_rate: 1.0,
+                generate_output: true,
+            },
+        )),
+    );
+    for mode in [
+        AllianceMode::Parallel,
+        AllianceMode::Sequential,
+        AllianceMode::Voting,
+        AllianceMode::Hierarchical,
+        AllianceMode::Debate,
+        AllianceMode::Iterative,
+        AllianceMode::Dynamic,
+    ] {
+        let task = mox_alliance_common_proto::Task::new(
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            "模式回归".into(),
+            "逐步串行处理".into(),
+        );
+        let plan = SimplePlanGenerator::new().generate(
+            &PlanGenerationRequest {
+                task_id: task.task_id,
+                tenant_id: task.tenant_id,
+                task_description: task.description.clone(),
+                preferred_mode: Some(mode),
+                preferred_experts: vec![],
+                constraints: serde_json::json!({}),
+                fusion_strategy: FusionStrategy::Weighted,
+            },
+            &matches,
+        )?;
+        let total = plan.nodes.len();
+        engine
+            .start_execution(&task, plan, ExecutionOptions::default())
+            .await?;
+        tokio::time::timeout(Duration::from_secs(3), async {
+            loop {
+                if let Ok(nodes) = engine.get_nodes(task.task_id, task.tenant_id).await {
+                    if nodes.len() == total && nodes.iter().all(|n| n.status.is_terminal()) {
+                        assert!(
+                            nodes.iter().all(|n| matches!(
+                                n.status,
+                                NodeStatus::Completed | NodeStatus::Skipped
+                            )),
+                            "{mode:?}"
+                        );
+                        assert_eq!(
+                            nodes
+                                .iter()
+                                .filter(|n| n.status == NodeStatus::Skipped)
+                                .count(),
+                            usize::from(mode == AllianceMode::Dynamic),
+                            "{mode:?}"
+                        );
+                        break;
+                    }
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .expect("generated mode must reach a terminal state");
+        let output = engine
+            .get_fusion_output(task.task_id, task.tenant_id)
+            .await?;
+        assert!(output.is_some(), "{mode:?} must deliver fusion output");
+    }
+    Ok(())
+}

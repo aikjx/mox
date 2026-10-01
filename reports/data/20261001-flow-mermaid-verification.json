@@ -1,0 +1,11 @@
+{
+  "mermaid": "11.17.2",
+  "method": "parse only; no browser visual verification",
+  "results": [
+    {
+      "file": "docs/expert-alliance/20-normalized-plan-execution.md",
+      "line": 18,
+      "pass": true
+    }
+  ]
+}

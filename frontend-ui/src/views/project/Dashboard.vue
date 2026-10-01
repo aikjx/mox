@@ -193,6 +193,7 @@
 </template>
 
 <script setup>
+import { formatDateTimeLocale } from '@/utils'
 import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Select, CaretTop, CaretBottom, MagicStick, Cpu, Share, ChatDotRound, Operation, List, VideoPlay, TrendCharts, CloseBold, Promotion } from '@element-plus/icons-vue'
@@ -320,7 +321,7 @@ function go(p) {
 function fmt(ts) {
   if (!ts) return ''
   const d = new Date(ts)
-  return isNaN(d) ? String(ts) : d.toLocaleString('zh-CN', { hour12: false })
+  return isNaN(d) ? String(ts) : (formatDateTimeLocale(d) ?? String(ts))
 }
 
 async function load() {

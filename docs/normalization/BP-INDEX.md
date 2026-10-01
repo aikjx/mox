@@ -17,7 +17,7 @@
 | 测试 | 测试策略 → 单测/集成/E2E → 缺陷修复 | 验证矩阵 | `BP-04`→`VAL` | `aiDevTestFix` / 功能图谱 §10 |
 | 验收 | 验收标准 → 发布闸门 → 发布 KB → MOX完成 | 发布回执 + evidence 入图 | `BP-05`→`VAL` | `aiPublishArtifactsToKb` / `aiGenerateProjectGraph` |
 
-**事实来源**：`docs/对话开发系统-端到端流水线.mmd` · `璇玑-MOX需求业务处理流程图-归一化企业级.md` · 功能图谱 §9。
+**事实来源**：`docs/modules/对话开发系统-端到端流水线.mmd` · `璇玑-MOX需求业务处理流程图-归一化企业级.md` · 功能图谱 §9。
 
 ---
 
@@ -28,7 +28,7 @@
 | 项目联动上下文 | 选项目 → 自动注入 project_id → 会话/任务/资源/图谱/制品归属 | `ProjectPicker` / `ProjectChip` / `projectContext.js` |
 | 专家联盟调度 | 提问 → 意图识别 → 路由(内容感知) → 单/多/辩论/智能咨询 → 熔断器 → 图谱沉淀 | `ExpertCenterView` / `expertDebate` / `multiExpertConsult` |
 | 知识沉淀 | AI 对话 → 自动入图(开关) → 节点/边 → 导出/项目图谱/发布 KB | `GraphView` / `aiPublishArtifactsToKb` |
-| 对话开发端到端 | 需求→架构→实现→测试→验收（5 阶段展开） | `docs/对话开发系统-端到端流水线.mmd` |
+| 对话开发端到端 | 需求→架构→实现→测试→验收（5 阶段展开） | `docs/modules/对话开发系统-端到端流水线.mmd` |
 
 ---
 
@@ -45,7 +45,7 @@
 > **首个落地样例**：[BP-GOV-政务审批.md](business/BP-GOV-政务审批.md)（DOC-NORM-BP-GOV-V1.0）—— 含领域包装配、5 阶段 SOP、流程明细、零重复造轮子论证；可作为其余行业（金融/医疗/零售）复制蓝本。
 | 零售 `retail` | 进销存→会员→营销→订单履约 | `TPL-03` 主子表 + `TPL-06` AI 域 | mox_sys + ea + ai |
 
-> 状态：🔴 尚无领域包样例。首个样例建议 `gov`（政务审批），复用现有 `WorkflowView` + `iam(sso)`。
+> 状态（2026-10-01 校正）：政务审批样例文档已存在；这证明设计样例存在，不证明领域包已部署或业务闭环已运行验收。其余领域按各自证据登记。
 
 ---
 

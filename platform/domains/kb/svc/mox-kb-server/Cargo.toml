@@ -24,5 +24,9 @@ mox-server-runtime = { path = "../../../../shared/mox-server-runtime" }
 mox-kb-core = { path = "../../core/mox-kb-core", features = ["sqlite"] }
 mox-cache-core = { path = "../../../../shared/mox-cache-core" }
 
+[dev-dependencies]
+tower = { workspace = true, features = ["util"] }
+tempfile = "3"
+
 [lints]
 workspace = true

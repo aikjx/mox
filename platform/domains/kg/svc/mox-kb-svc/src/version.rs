@@ -60,7 +60,9 @@ impl KbVersionService {
             note: "当前版本".into(),
             created_at: doc.updated_at.clone(),
         });
-        all.sort_by(|a, b| b.version.cmp(&a.version));
+        all.sort_by_key(|version| {
+            std::cmp::Reverse(version.version.trim_start_matches('v').parse::<u32>().unwrap_or(0))
+        });
         all
     }
 
@@ -110,7 +112,10 @@ impl KbVersionService {
         Self::create(doc, &note);
         doc.title = target.title;
         doc.content = target.content;
-        doc.current_version = next_version(&doc.current_version);
+        doc.entities.clear();
+        doc.relations.clear();
+        doc.summary.clear();
+        doc.status = crate::model::STATUS_DRAFT.into();
         doc.updated_at = now_iso();
         Some(KbVersion {
             version: doc.current_version.clone(),

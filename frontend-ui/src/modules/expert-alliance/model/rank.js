@@ -2,6 +2,9 @@
 // 权威源 platform/gateway/mox-platform-gateway-svc/src/alliance/experts_common.rs::ExpertMetrics，
 // 字段名由 contract/contract.test.js 锁定；后端删字段时那边先红，这里不会悄悄造假。
 
+import { formatDateStamp } from '@/utils'
+import { expertDisplayName } from '@/modules/expert-alliance/contract'
+
 export const RANK_BOARD = Object.freeze({
   CONSULTATIONS: 'consultations',
   RATING: 'rating',
@@ -61,7 +64,7 @@ function datumOf(expert, key) {
     const raw = String(expert.createdAt || '')
     const stamp = Date.parse(raw)
     if (!raw || Number.isNaN(stamp)) return null
-    return { value: stamp, display: new Date(stamp).toLocaleDateString('zh-CN'), secondary: raw.slice(0, 19).replace('T', ' ') }
+    return { value: stamp, display: formatDateStamp(stamp), secondary: raw.slice(0, 19).replace('T', ' ') }
   }
 
   return null
@@ -82,7 +85,7 @@ export function buildBoard(key, experts, limit = RANK_LIMIT) {
     if (!datum) continue
     scored.push({
       id: expert.id,
-      name: expert.name,
+      name: expertDisplayName(expert),
       subtitle: expert.title || expert.organization || '—',
       online: !!expert.online,
       ...datum

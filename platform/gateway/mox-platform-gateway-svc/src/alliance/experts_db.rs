@@ -80,16 +80,81 @@ pub fn open_experts_db() -> Result<Connection, String> {
     conn.pragma_update(None, "synchronous", "NORMAL")
         .map_err(|e| format!("设置 synchronous 失败: {}", e))?;
     init_schema(&conn)?;
+    migrate_schema_version(&conn)?;
     Ok(conn)
 }
 
-/// 幂等建表（列投影 + JSON 文档混合建模）
-fn init_schema(conn: &Connection) -> Result<(), String> {
+/// 当前 schema 版本号。加列/加表/改主键时递增此值，并在 migrate_schema_version 中
+/// 加对应版本间的迁移步骤。
+///
+/// v1：单租户初始 schema（experts.id 为全局主键，graph_edges.seq 为全局行号）。
+/// v2：A1 多租户——experts/graph_nodes/graph_edges/graph_meta 全部引入
+/// `tenant_id TEXT NOT NULL DEFAULT 'default'`，主键升为复合键
+/// (tenant_id, id|seq|k)。存量 v1 库在迁移时把既有行统一归到 `default` 租户。
+const SCHEMA_VERSION: i32 = 2;
+
+/// 启动时按 `PRAGMA user_version` 做 schema 版本迁移。
+///
+/// - 新库（user_version=0 且无表）：`init_schema` 已直接建成 v2 形状，此处仅 bump 到 2；
+/// - 存量 v1 库（user_version=1，表无 tenant_id 列）：重建四张表为复合主键形状，
+///   既有行归 `default` 租户；
+/// - 已迁移库（user_version>=2）：直接跳过。
+/// 保持 WAL / busy_timeout 等 PRAGMA 不变，不破坏单写者约定。
+fn migrate_schema_version(conn: &Connection) -> Result<(), String> {
+    let current: i64 = conn
+        .query_row("PRAGMA user_version", [], |r| r.get(0))
+        .unwrap_or(0);
+    if current >= SCHEMA_VERSION as i64 {
+        return Ok(());
+    }
+    // 存量 v1 库：experts 表存在但缺 tenant_id 列 → 重建为 v2 复合主键形状。
+    // 新库由 init_schema 直接建成 v2 形状（含 tenant_id），无需重建。
+    if table_exists(conn, "experts") && !column_exists(conn, "experts", "tenant_id") {
+        migrate_v1_to_v2(conn)?;
+    }
+    conn.pragma_update(None, "user_version", SCHEMA_VERSION)
+        .map_err(|e| format!("设置 PRAGMA user_version={} 失败: {}", SCHEMA_VERSION, e))?;
+    tracing::info!("[experts_db] schema 迁移完成: user_version {} -> {}", current, SCHEMA_VERSION);
+    Ok(())
+}
+
+/// 判断表是否存在
+fn table_exists(conn: &Connection, table: &str) -> bool {
+    conn.query_row(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?1",
+        params![table],
+        |_| Ok(()),
+    ).is_ok()
+}
+
+/// 判断某表是否已含某列（PRAGMA table_info）
+fn column_exists(conn: &Connection, table: &str, col: &str) -> bool {
+    let mut stmt = match conn.prepare(&format!("PRAGMA table_info({})", table)) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+    let rows = stmt.query_map([], |r| r.get::<_, String>(1));
+    if let Ok(iter) = rows {
+        for name in iter.flatten() {
+            if name == col {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// v1 → v2 迁移：把单租户表重建为按 `tenant_id` 复合主键的形状。
+///
+/// 既有行统一归入 `default` 租户（与「无头请求=default」的零回归语义一致）。
+/// SQLite 不支持 ALTER 改主键，故采用「建新表 → 拷贝 → 删旧表 → 改名」标准流程。
+fn migrate_v1_to_v2(conn: &Connection) -> Result<(), String> {
     conn.execute_batch(
         r#"
-        -- 专家注册表：热查询字段建列，完整描述符存 data_json
-        CREATE TABLE IF NOT EXISTS experts (
-            id           TEXT PRIMARY KEY,
+        -- experts：(tenant_id, id) 复合主键
+        CREATE TABLE experts_new (
+            tenant_id    TEXT NOT NULL DEFAULT 'default',
+            id           TEXT NOT NULL,
             name         TEXT NOT NULL DEFAULT '',
             title        TEXT NOT NULL DEFAULT '',
             organization TEXT NOT NULL DEFAULT '',
@@ -99,8 +164,92 @@ fn init_schema(conn: &Connection) -> Result<(), String> {
             avg_rating   REAL NOT NULL DEFAULT 0,
             created_at   TEXT NOT NULL DEFAULT '',
             updated_at   TEXT NOT NULL DEFAULT '',
-            data_json    TEXT NOT NULL
+            data_json    TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, id)
         );
+        INSERT INTO experts_new
+            (tenant_id, id, name, title, organization, expert_type, status, enabled, avg_rating, created_at, updated_at, data_json)
+        SELECT 'default', id, name, title, organization, expert_type, status, enabled, avg_rating, created_at, updated_at, data_json FROM experts;
+        DROP TABLE experts;
+        ALTER TABLE experts_new RENAME TO experts;
+        CREATE INDEX idx_experts_tenant ON experts(tenant_id);
+        CREATE INDEX idx_experts_name ON experts(name);
+        CREATE INDEX idx_experts_enabled ON experts(enabled);
+
+        -- graph_nodes：(tenant_id, id) 复合主键
+        CREATE TABLE graph_nodes_new (
+            tenant_id TEXT NOT NULL DEFAULT 'default',
+            id        TEXT NOT NULL,
+            label     TEXT NOT NULL DEFAULT '',
+            node_type TEXT NOT NULL DEFAULT '',
+            data_json TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, id)
+        );
+        INSERT INTO graph_nodes_new (tenant_id, id, label, node_type, data_json)
+        SELECT 'default', id, label, node_type, data_json FROM graph_nodes;
+        DROP TABLE graph_nodes;
+        ALTER TABLE graph_nodes_new RENAME TO graph_nodes;
+        CREATE INDEX idx_graph_nodes_tenant ON graph_nodes(tenant_id);
+
+        -- graph_edges：(tenant_id, seq) 复合主键（seq 语义在租户内重新从 0 计数）
+        CREATE TABLE graph_edges_new (
+            tenant_id TEXT NOT NULL DEFAULT 'default',
+            seq       INTEGER NOT NULL,
+            source    TEXT NOT NULL DEFAULT '',
+            target    TEXT NOT NULL DEFAULT '',
+            edge_type TEXT NOT NULL DEFAULT '',
+            weight    REAL NOT NULL DEFAULT 0,
+            data_json TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, seq)
+        );
+        INSERT INTO graph_edges_new (tenant_id, seq, source, target, edge_type, weight, data_json)
+        SELECT 'default', seq, source, target, edge_type, weight, data_json FROM graph_edges;
+        DROP TABLE graph_edges;
+        ALTER TABLE graph_edges_new RENAME TO graph_edges;
+        CREATE INDEX idx_graph_edges_tenant ON graph_edges(tenant_id);
+
+        -- graph_meta：(tenant_id, k) 复合主键
+        CREATE TABLE graph_meta_new (
+            tenant_id TEXT NOT NULL DEFAULT 'default',
+            k TEXT NOT NULL,
+            v TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, k)
+        );
+        INSERT INTO graph_meta_new (tenant_id, k, v)
+        SELECT 'default', k, v FROM graph_meta;
+        DROP TABLE graph_meta;
+        ALTER TABLE graph_meta_new RENAME TO graph_meta;
+        "#,
+    )
+    .map_err(|e| format!("v1→v2 重建多租户表失败: {}", e))?;
+    Ok(())
+}
+
+/// 幂等建表（列投影 + JSON 文档混合建模）
+///
+/// v2（A1 多租户）：experts / graph_nodes / graph_edges / graph_meta 均带
+/// `tenant_id` 并以 `(tenant_id, …)` 为复合主键。新库由此直接建成 v2 形状；
+/// 存量 v1 库由 [`migrate_v1_to_v2`] 重建。
+fn init_schema(conn: &Connection) -> Result<(), String> {
+    conn.execute_batch(
+        r#"
+        -- 专家注册表：热查询字段建列，完整描述符存 data_json；按租户复合主键
+        CREATE TABLE IF NOT EXISTS experts (
+            tenant_id    TEXT NOT NULL DEFAULT 'default',
+            id           TEXT NOT NULL,
+            name         TEXT NOT NULL DEFAULT '',
+            title        TEXT NOT NULL DEFAULT '',
+            organization TEXT NOT NULL DEFAULT '',
+            expert_type  TEXT NOT NULL DEFAULT 'ai',
+            status       TEXT NOT NULL DEFAULT 'online',
+            enabled      INTEGER NOT NULL DEFAULT 1,
+            avg_rating   REAL NOT NULL DEFAULT 0,
+            created_at   TEXT NOT NULL DEFAULT '',
+            updated_at   TEXT NOT NULL DEFAULT '',
+            data_json    TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_experts_tenant ON experts(tenant_id);
         CREATE INDEX IF NOT EXISTS idx_experts_name ON experts(name);
         CREATE INDEX IF NOT EXISTS idx_experts_enabled ON experts(enabled);
 
@@ -132,26 +281,34 @@ fn init_schema(conn: &Connection) -> Result<(), String> {
         );
         CREATE INDEX IF NOT EXISTS idx_messages_session ON session_messages(session_id);
 
-        -- 能力图谱：节点/边投影 + 元信息
+        -- 能力图谱：节点/边投影 + 元信息（均按租户隔离，复合主键）
         CREATE TABLE IF NOT EXISTS graph_nodes (
-            id        TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL DEFAULT 'default',
+            id        TEXT NOT NULL,
             label     TEXT NOT NULL DEFAULT '',
             node_type TEXT NOT NULL DEFAULT '',
-            data_json TEXT NOT NULL
+            data_json TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, id)
         );
+        CREATE INDEX IF NOT EXISTS idx_graph_nodes_tenant ON graph_nodes(tenant_id);
 
         CREATE TABLE IF NOT EXISTS graph_edges (
-            seq       INTEGER PRIMARY KEY,
+            tenant_id TEXT NOT NULL DEFAULT 'default',
+            seq       INTEGER NOT NULL,
             source    TEXT NOT NULL DEFAULT '',
             target    TEXT NOT NULL DEFAULT '',
             edge_type TEXT NOT NULL DEFAULT '',
             weight    REAL NOT NULL DEFAULT 0,
-            data_json TEXT NOT NULL
+            data_json TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, seq)
         );
+        CREATE INDEX IF NOT EXISTS idx_graph_edges_tenant ON graph_edges(tenant_id);
 
         CREATE TABLE IF NOT EXISTS graph_meta (
-            k TEXT PRIMARY KEY,
-            v TEXT NOT NULL
+            tenant_id TEXT NOT NULL DEFAULT 'default',
+            k TEXT NOT NULL,
+            v TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, k)
         );
 
         -- 专家广场预约（experts_ext）
@@ -184,18 +341,20 @@ fn table_count(conn: &Connection, table: &str) -> Result<i64, String> {
 
 fn save_registry_conn(
     conn: &Connection,
+    tenant: &str,
     registry: &HashMap<String, ExpertDescriptor>,
 ) -> Result<(), String> {
     let tx = conn
         .unchecked_transaction()
         .map_err(|e| e.to_string())?;
-    tx.execute("DELETE FROM experts", [])
+    // 仅清空本租户行——多租户下绝不能 DELETE FROM experts（会跨租户清库）
+    tx.execute("DELETE FROM experts WHERE tenant_id = ?1", params![tenant])
         .map_err(|e| e.to_string())?;
     {
         let mut stmt = tx
             .prepare(
-                "INSERT INTO experts (id, name, title, organization, expert_type, status, enabled, avg_rating, created_at, updated_at, data_json)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                "INSERT INTO experts (tenant_id, id, name, title, organization, expert_type, status, enabled, avg_rating, created_at, updated_at, data_json)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
             )
             .map_err(|e| e.to_string())?;
         // 按 id 排序写入，保证落库顺序确定（可复现/可对比）
@@ -205,6 +364,7 @@ fn save_registry_conn(
             let data =
                 serde_json::to_string(e).map_err(|er| format!("序列化 expert {}: {}", e.id, er))?;
             stmt.execute(params![
+                tenant,
                 e.id,
                 e.name,
                 e.title,
@@ -223,16 +383,16 @@ fn save_registry_conn(
     tx.commit().map_err(|e| e.to_string())
 }
 
-/// 全量同步专家注册表到 SQLite（单事务；失败仅记录不阻断）
-pub fn save_registry(registry: &HashMap<String, ExpertDescriptor>) {
-    let res = open_experts_db().and_then(|conn| save_registry_conn(&conn, registry));
+/// 全量同步某租户的专家注册表到 SQLite（单事务；失败仅记录不阻断）
+pub fn save_registry(tenant: &str, registry: &HashMap<String, ExpertDescriptor>) {
+    let res = open_experts_db().and_then(|conn| save_registry_conn(&conn, tenant, registry));
     if let Err(e) = res {
         log_err("save_registry", &e);
     }
 }
 
-/// 从 SQLite 加载专家注册表（失败返回空表，与历史 JSON 行为一致）
-pub fn load_registry() -> HashMap<String, ExpertDescriptor> {
+/// 从 SQLite 加载某租户的专家注册表（失败返回空表，与历史 JSON 行为一致）
+pub fn load_registry(tenant: &str) -> HashMap<String, ExpertDescriptor> {
     let mut map = HashMap::new();
     let conn = match open_experts_db() {
         Ok(c) => c,
@@ -242,9 +402,9 @@ pub fn load_registry() -> HashMap<String, ExpertDescriptor> {
         }
     };
     let rows = conn
-        .prepare("SELECT data_json FROM experts")
+        .prepare("SELECT data_json FROM experts WHERE tenant_id = ?1")
         .and_then(|mut stmt| {
-            stmt.query_map([], |row| row.get::<_, String>(0))
+            stmt.query_map(params![tenant], |row| row.get::<_, String>(0))
                 .map(|iter| iter.collect::<Result<Vec<_>, _>>())
         });
     match rows {
@@ -262,6 +422,44 @@ pub fn load_registry() -> HashMap<String, ExpertDescriptor> {
         Err(er) => log_err("load_registry 查询", &er.to_string()),
     }
     map
+}
+
+/// 启动期加载全部租户的注册表（tenant -> 该租户 id->专家）。
+///
+/// 内存态 `ExpertsSharedState.registry` 为 per-tenant 结构，启动时一次性把所有
+/// 租户行读入并按 `tenant_id` 分组，避免运行期按租户逐次开连接。
+pub fn load_all_registries() -> HashMap<String, HashMap<String, ExpertDescriptor>> {
+    let mut out: HashMap<String, HashMap<String, ExpertDescriptor>> = HashMap::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_all_registries", &e);
+            return out;
+        }
+    };
+    let rows = conn
+        .prepare("SELECT tenant_id, data_json FROM experts")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                let t: String = row.get(0)?;
+                let d: String = row.get(1)?;
+                Ok((t, d))
+            })
+            .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        });
+    if let Ok(Ok(list)) = rows {
+        for (tenant, s) in list {
+            match serde_json::from_str::<ExpertDescriptor>(&s) {
+                Ok(e) => {
+                    out.entry(tenant).or_default().insert(e.id.clone(), e);
+                }
+                Err(er) => log_err("load_all_registries 反序列化", &er.to_string()),
+            }
+        }
+    } else if let Err(er) | Ok(Err(er)) = rows {
+        log_err("load_all_registries 查询", &er.to_string());
+    }
+    out
 }
 
 // =====================================================================
@@ -365,20 +563,21 @@ pub fn load_sessions() -> HashMap<String, ExpertSession> {
 // 能力图谱（graph_nodes / graph_edges / graph_meta）
 // =====================================================================
 
-fn save_graph_conn(conn: &Connection, graph: &ExpertGraph) -> Result<(), String> {
+fn save_graph_conn(conn: &Connection, tenant: &str, graph: &ExpertGraph) -> Result<(), String> {
     let tx = conn
         .unchecked_transaction()
         .map_err(|e| e.to_string())?;
-    tx.execute("DELETE FROM graph_nodes", [])
+    // 仅重建本租户的图数据——多租户下不得清空其他租户的节点/边/元信息
+    tx.execute("DELETE FROM graph_nodes WHERE tenant_id = ?1", params![tenant])
         .map_err(|e| e.to_string())?;
-    tx.execute("DELETE FROM graph_edges", [])
+    tx.execute("DELETE FROM graph_edges WHERE tenant_id = ?1", params![tenant])
         .map_err(|e| e.to_string())?;
-    tx.execute("DELETE FROM graph_meta", [])
+    tx.execute("DELETE FROM graph_meta WHERE tenant_id = ?1", params![tenant])
         .map_err(|e| e.to_string())?;
     {
         let mut node_stmt = tx
             .prepare(
-                "INSERT INTO graph_nodes (id, label, node_type, data_json) VALUES (?1, ?2, ?3, ?4)",
+                "INSERT INTO graph_nodes (tenant_id, id, label, node_type, data_json) VALUES (?1, ?2, ?3, ?4, ?5)",
             )
             .map_err(|e| e.to_string())?;
         let mut nodes: Vec<&GraphNode> = graph.nodes.iter().collect();
@@ -387,42 +586,42 @@ fn save_graph_conn(conn: &Connection, graph: &ExpertGraph) -> Result<(), String>
             let data =
                 serde_json::to_string(n).map_err(|er| format!("序列化 node {}: {}", n.id, er))?;
             node_stmt
-                .execute(params![n.id, n.label, n.node_type, data])
+                .execute(params![tenant, n.id, n.label, n.node_type, data])
                 .map_err(|er| format!("insert node {}: {}", n.id, er))?;
         }
 
         let mut edge_stmt = tx
             .prepare(
-                "INSERT INTO graph_edges (seq, source, target, edge_type, weight, data_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                "INSERT INTO graph_edges (tenant_id, seq, source, target, edge_type, weight, data_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             )
             .map_err(|e| e.to_string())?;
         for (i, e) in graph.edges.iter().enumerate() {
             let data = serde_json::to_string(e)
                 .map_err(|er| format!("序列化 edge #{}: {}", i, er))?;
             edge_stmt
-                .execute(params![i as i64, e.source, e.target, e.edge_type, e.weight, data])
+                .execute(params![tenant, i as i64, e.source, e.target, e.edge_type, e.weight, data])
                 .map_err(|er| format!("insert edge #{}: {}", i, er))?;
         }
 
         tx.execute(
-            "INSERT INTO graph_meta (k, v) VALUES ('built_at', ?1), ('version', ?2)",
-            params![graph.built_at, graph.version.to_string()],
+            "INSERT INTO graph_meta (tenant_id, k, v) VALUES (?1, 'built_at', ?2), (?1, 'version', ?3)",
+            params![tenant, graph.built_at, graph.version.to_string()],
         )
         .map_err(|e| e.to_string())?;
     }
     tx.commit().map_err(|e| e.to_string())
 }
 
-/// 全量同步能力图谱到 SQLite（单事务）
-pub fn save_graph(graph: &ExpertGraph) {
-    let res = open_experts_db().and_then(|conn| save_graph_conn(&conn, graph));
+/// 全量同步某租户的能力图谱到 SQLite（单事务）
+pub fn save_graph(tenant: &str, graph: &ExpertGraph) {
+    let res = open_experts_db().and_then(|conn| save_graph_conn(&conn, tenant, graph));
     if let Err(e) = res {
         log_err("save_graph", &e);
     }
 }
 
-/// 从 SQLite 加载能力图谱（失败返回默认空图谱）
-pub fn load_graph() -> ExpertGraph {
+/// 从 SQLite 加载某租户的能力图谱（失败返回默认空图谱）
+pub fn load_graph(tenant: &str) -> ExpertGraph {
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
     let mut built_at = String::new();
@@ -436,9 +635,9 @@ pub fn load_graph() -> ExpertGraph {
     };
     // 节点
     if let Ok(rows) = conn
-        .prepare("SELECT data_json FROM graph_nodes ORDER BY id")
+        .prepare("SELECT data_json FROM graph_nodes WHERE tenant_id = ?1 ORDER BY id")
         .and_then(|mut stmt| {
-            stmt.query_map([], |row| row.get::<_, String>(0))
+            stmt.query_map(params![tenant], |row| row.get::<_, String>(0))
                 .map(|iter| iter.collect::<Result<Vec<_>, _>>())
         })
     {
@@ -450,9 +649,9 @@ pub fn load_graph() -> ExpertGraph {
     }
     // 边（按 seq 保持写入顺序）
     if let Ok(rows) = conn
-        .prepare("SELECT data_json FROM graph_edges ORDER BY seq")
+        .prepare("SELECT data_json FROM graph_edges WHERE tenant_id = ?1 ORDER BY seq")
         .and_then(|mut stmt| {
-            stmt.query_map([], |row| row.get::<_, String>(0))
+            stmt.query_map(params![tenant], |row| row.get::<_, String>(0))
                 .map(|iter| iter.collect::<Result<Vec<_>, _>>())
         })
     {
@@ -463,14 +662,18 @@ pub fn load_graph() -> ExpertGraph {
         }
     }
     // 元信息
-    if let Ok(v) = conn.query_row("SELECT v FROM graph_meta WHERE k = 'built_at'", [], |r| {
-        r.get::<_, String>(0)
-    }) {
+    if let Ok(v) = conn.query_row(
+        "SELECT v FROM graph_meta WHERE tenant_id = ?1 AND k = 'built_at'",
+        params![tenant],
+        |r| r.get::<_, String>(0),
+    ) {
         built_at = v;
     }
-    if let Ok(v) = conn.query_row("SELECT v FROM graph_meta WHERE k = 'version'", [], |r| {
-        r.get::<_, String>(0)
-    }) {
+    if let Ok(v) = conn.query_row(
+        "SELECT v FROM graph_meta WHERE tenant_id = ?1 AND k = 'version'",
+        params![tenant],
+        |r| r.get::<_, String>(0),
+    ) {
         version = v.parse().unwrap_or(0);
     }
     ExpertGraph {
@@ -480,6 +683,213 @@ pub fn load_graph() -> ExpertGraph {
         version,
     }
 }
+
+/// 启动期加载全部租户的能力图谱（tenant -> 该租户图）。
+pub fn load_all_graphs() -> HashMap<String, ExpertGraph> {
+    let mut out: HashMap<String, ExpertGraph> = HashMap::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_all_graphs", &e);
+            return out;
+        }
+    };
+    // 节点按租户分组
+    if let Ok(rows) = conn
+        .prepare("SELECT tenant_id, data_json FROM graph_nodes")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                let t: String = row.get(0)?;
+                let d: String = row.get(1)?;
+                Ok((t, d))
+            })
+            .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for (t, s) in rows.into_iter().flatten() {
+            if let Ok(n) = serde_json::from_str::<GraphNode>(&s) {
+                out.entry(t).or_default().nodes.push(n);
+            }
+        }
+    }
+    // 边按租户分组（按 seq 排序后落位，保持 seq==下标）
+    if let Ok(rows) = conn
+        .prepare("SELECT tenant_id, data_json FROM graph_edges ORDER BY tenant_id, seq")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                let t: String = row.get(0)?;
+                let d: String = row.get(1)?;
+                Ok((t, d))
+            })
+            .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for (t, s) in rows.into_iter().flatten() {
+            if let Ok(e) = serde_json::from_str::<GraphEdge>(&s) {
+                out.entry(t).or_default().edges.push(e);
+            }
+        }
+    }
+    // 元信息
+    if let Ok(rows) = conn
+        .prepare("SELECT tenant_id, k, v FROM graph_meta")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                let t: String = row.get(0)?;
+                let k: String = row.get(1)?;
+                let v: String = row.get(2)?;
+                Ok((t, k, v))
+            })
+            .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for (t, k, v) in rows.into_iter().flatten() {
+            let g = out.entry(t).or_default();
+            if k == "built_at" {
+                g.built_at = v;
+            } else if k == "version" {
+                g.version = v.parse().unwrap_or(0);
+            }
+        }
+    }
+    out
+}
+
+// =====================================================================
+// 图谱增量写（N4 节点级 CRUD）：单条 UPSERT / 级联删 / 边重排
+// =====================================================================
+//
+// 与全量 `save_graph_conn`（DELETE+INSERT，rebuild 语义）互补而不改动它：
+// - 节点主键是 `graph_nodes.id`（TEXT PRIMARY KEY），用 INSERT ... ON CONFLICT(id) DO UPDATE
+//   实现 UPSERT；
+// - 边主键是 `graph_edges.seq`（INTEGER PRIMARY KEY = 行号），且 seq 与内存中
+//   `ExpertGraph.edges` 的下标一一对应（load_graph 按 seq 升序落位、save_graph 按下标写入）。
+//   追加/原位更新走 ON CONFLICT(seq) DO UPDATE；删除会让后续边下标前移，因此删除后
+//   用 `replace_graph_edges_conn` 按当前内存顺序一次性重排 seq，保持「seq == 下标」不变量。
+// - 持久化仍遵循本模块约定：内存态是权威源，SQLite 为投影；写失败仅记日志不阻断业务。
+
+/// 单条 UPSERT 节点（ON CONFLICT(tenant_id, id) DO UPDATE）
+pub fn upsert_graph_node_conn(conn: &Connection, tenant: &str, node: &GraphNode) -> Result<(), String> {
+    let data =
+        serde_json::to_string(node).map_err(|er| format!("序列化 node {}: {}", node.id, er))?;
+    conn.execute(
+        "INSERT INTO graph_nodes (tenant_id, id, label, node_type, data_json)
+         VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(tenant_id, id) DO UPDATE SET label = excluded.label, node_type = excluded.node_type, data_json = excluded.data_json",
+        params![tenant, node.id, node.label, node.node_type, data],
+    )
+    .map_err(|e| format!("upsert node {}: {}", node.id, e))?;
+    Ok(())
+}
+
+/// 删除节点并级联删除其关联边（单事务，仅限本租户）
+pub fn delete_graph_node_cascade_conn(conn: &Connection, tenant: &str, id: &str) -> Result<(), String> {
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| e.to_string())?;
+    tx.execute(
+        "DELETE FROM graph_edges WHERE tenant_id = ?1 AND (source = ?2 OR target = ?2)",
+        params![tenant, id],
+    )
+    .map_err(|e| format!("cascade delete edges of node {}: {}", id, e))?;
+    tx.execute(
+        "DELETE FROM graph_nodes WHERE tenant_id = ?1 AND id = ?2",
+        params![tenant, id],
+    )
+    .map_err(|e| format!("delete node {}: {}", id, e))?;
+    tx.commit().map_err(|e| e.to_string())
+}
+
+/// UPSERT 一条边到指定 seq（POST 追加新 seq / PUT 原位更新同一 seq；仅限本租户）
+pub fn upsert_graph_edge_conn(conn: &Connection, tenant: &str, seq: i64, edge: &GraphEdge) -> Result<(), String> {
+    let data =
+        serde_json::to_string(edge).map_err(|er| format!("序列化 edge #{seq}: {er}"))?;
+    conn.execute(
+        "INSERT INTO graph_edges (tenant_id, seq, source, target, edge_type, weight, data_json)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+         ON CONFLICT(tenant_id, seq) DO UPDATE SET source = excluded.source, target = excluded.target,
+             edge_type = excluded.edge_type, weight = excluded.weight, data_json = excluded.data_json",
+        params![tenant, seq, edge.source, edge.target, edge.edge_type, edge.weight, data],
+    )
+    .map_err(|e| format!("upsert edge #{seq}: {e}"))?;
+    Ok(())
+}
+
+/// 按当前内存边顺序重排某租户的 graph_edges（删除边/节点后调用，保持 seq==下标不变量）
+pub fn replace_graph_edges_conn(conn: &Connection, tenant: &str, edges: &[GraphEdge]) -> Result<(), String> {
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| e.to_string())?;
+    tx.execute("DELETE FROM graph_edges WHERE tenant_id = ?1", params![tenant])
+        .map_err(|e| e.to_string())?;
+    {
+        let mut stmt = tx
+            .prepare(
+                "INSERT INTO graph_edges (tenant_id, seq, source, target, edge_type, weight, data_json)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            )
+            .map_err(|e| e.to_string())?;
+        for (i, e) in edges.iter().enumerate() {
+            let data = serde_json::to_string(e)
+                .map_err(|er| format!("序列化 edge #{}: {er}", i))?;
+            stmt.execute(params![tenant, i as i64, e.source, e.target, e.edge_type, e.weight, data])
+                .map_err(|er| format!("insert edge #{}: {er}", i))?;
+        }
+    }
+    tx.commit().map_err(|e| e.to_string())
+}
+
+/// 写入某租户的 graph_meta（built_at / version），UPSERT
+pub fn set_graph_meta_conn(conn: &Connection, tenant: &str, version: u64, built_at: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO graph_meta (tenant_id, k, v) VALUES (?1, 'built_at', ?2), (?1, 'version', ?3)
+         ON CONFLICT(tenant_id, k) DO UPDATE SET v = excluded.v",
+        params![tenant, built_at, version.to_string()],
+    )
+    .map_err(|e| format!("set graph_meta: {e}"))?;
+    Ok(())
+}
+
+/// 增量 UPSERT 节点落库（best-effort，失败仅记日志）
+pub fn upsert_graph_node(tenant: &str, node: &GraphNode) {
+    let res = open_experts_db().and_then(|conn| upsert_graph_node_conn(&conn, tenant, node));
+    if let Err(e) = res {
+        log_err("upsert_graph_node", &e);
+    }
+}
+
+/// 删除节点 + 级联边落库（best-effort）
+pub fn delete_graph_node_cascade(tenant: &str, id: &str) {
+    let res = open_experts_db().and_then(|conn| delete_graph_node_cascade_conn(&conn, tenant, id));
+    if let Err(e) = res {
+        log_err("delete_graph_node_cascade", &e);
+    }
+}
+
+/// 增量 UPSERT 边落库（best-effort）
+pub fn upsert_graph_edge(tenant: &str, seq: i64, edge: &GraphEdge) {
+    let res = open_experts_db().and_then(|conn| upsert_graph_edge_conn(&conn, tenant, seq, edge));
+    if let Err(e) = res {
+        log_err("upsert_graph_edge", &e);
+    }
+}
+
+/// 删除边后按当前内存顺序重排落库（best-effort）
+pub fn replace_graph_edges(tenant: &str, edges: &[GraphEdge]) {
+    let res = open_experts_db().and_then(|conn| replace_graph_edges_conn(&conn, tenant, edges));
+    if let Err(e) = res {
+        log_err("replace_graph_edges", &e);
+    }
+}
+
+/// bump graph_meta（best-effort）
+pub fn bump_graph_meta(tenant: &str, version: u64, built_at: &str) {
+    let res = open_experts_db().and_then(|conn| set_graph_meta_conn(&conn, tenant, version, built_at));
+    if let Err(e) = res {
+        log_err("bump_graph_meta", &e);
+    }
+}
+
 
 // =====================================================================
 // 专家广场预约（bookings，供 experts_ext 使用，JSON 文档行存储）
@@ -612,7 +1022,7 @@ pub fn migrate_json_to_sqlite() -> MigrationReport {
                 if table_count(&conn, "experts")? > 0 {
                     return Ok(false);
                 }
-                save_registry_conn(&conn, &map)?;
+                save_registry_conn(&conn, "default", &map)?;
                 Ok(true)
             }) {
                 Ok(true) => {
@@ -659,7 +1069,7 @@ pub fn migrate_json_to_sqlite() -> MigrationReport {
                     if table_count(&conn, "graph_nodes")? > 0 {
                         return Ok(false);
                     }
-                    save_graph_conn(&conn, &g)?;
+                    save_graph_conn(&conn, "default", &g)?;
                     Ok(true)
                 }) {
                     Ok(true) => {
@@ -719,3 +1129,100 @@ pub fn integrity_check() -> Result<String, String> {
     conn.query_row("PRAGMA integrity_check", [], |r| r.get::<_, String>(0))
         .map_err(|e| e.to_string())
 }
+
+// =====================================================================
+// 增量写（N4）单测：内存 SQLite，全闭环验证 UPSERT / 级联 / 边重排
+// =====================================================================
+
+#[cfg(test)]
+mod incremental_tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    /// 新建内存库并建表（不读 env、不落盘）
+    fn mem_conn() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        init_schema(&conn).unwrap();
+        conn
+    }
+
+    fn node(id: &str, t: &str) -> GraphNode {
+        GraphNode { id: id.into(), label: id.into(), node_type: t.into(), properties: HashMap::new() }
+    }
+
+    fn edge(source: &str, target: &str, w: f64) -> GraphEdge {
+        GraphEdge {
+            source: source.into(),
+            target: target.into(),
+            edge_type: "has_domain".into(),
+            weight: w,
+            properties: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn upsert_node_insert_then_update() {
+        let conn = mem_conn();
+        upsert_graph_node_conn(&conn, "default", &node("a", "expert")).unwrap();
+        upsert_graph_node_conn(&conn, "default", &node("b", "domain")).unwrap();
+        // 再次 upsert 同 id 应覆盖而非冲突
+        let mut n = node("a", "expert");
+        n.label = "改名".into();
+        upsert_graph_node_conn(&conn, "default", &n).unwrap();
+        let cnt: i64 = conn.query_row("SELECT COUNT(*) FROM graph_nodes", [], |r| r.get(0)).unwrap();
+        assert_eq!(cnt, 2);
+        let label: String = conn.query_row(
+            "SELECT label FROM graph_nodes WHERE id='a'", [], |r| r.get(0)).unwrap();
+        assert_eq!(label, "改名");
+    }
+
+    #[test]
+    fn delete_node_cascades_edges() {
+        let conn = mem_conn();
+        upsert_graph_node_conn(&conn, "default", &node("a", "expert")).unwrap();
+        upsert_graph_node_conn(&conn, "default", &node("b", "domain")).unwrap();
+        upsert_graph_node_conn(&conn, "default", &node("c", "expert")).unwrap();
+        replace_graph_edges_conn(&conn, "default", &[edge("a", "b", 1.0), edge("a", "c", 0.5)]).unwrap();
+        delete_graph_node_cascade_conn(&conn, "default", "a").unwrap();
+        let nodes: i64 = conn.query_row("SELECT COUNT(*) FROM graph_nodes", [], |r| r.get(0)).unwrap();
+        let edges: i64 = conn.query_row("SELECT COUNT(*) FROM graph_edges", [], |r| r.get(0)).unwrap();
+        assert_eq!(nodes, 2);
+        assert_eq!(edges, 0); // a 的两条边都被级联删除
+    }
+
+    #[test]
+    fn edge_upsert_then_renumber_keeps_seq_order() {
+        let conn = mem_conn();
+        upsert_graph_node_conn(&conn, "default", &node("a", "expert")).unwrap();
+        upsert_graph_node_conn(&conn, "default", &node("b", "domain")).unwrap();
+        upsert_graph_node_conn(&conn, "default", &node("c", "expert")).unwrap();
+        // 三条边，seq 0/1/2
+        replace_graph_edges_conn(&conn, "default", &[edge("a", "b", 1.0), edge("b", "c", 0.4), edge("a", "c", 0.9)]).unwrap();
+        // 更新 seq=1 的边
+        let mut e = edge("b", "c", 0.4);
+        e.weight = 0.7;
+        upsert_graph_edge_conn(&conn, "default", 1, &e).unwrap();
+        // 删除中间边（b-c），剩余两条重排为 seq 0/1
+        replace_graph_edges_conn(&conn, "default", &[edge("a", "b", 1.0), edge("a", "c", 0.9)]).unwrap();
+        let rows: Vec<(i64, String, String)> = conn
+            .prepare("SELECT seq, source, target FROM graph_edges ORDER BY seq")
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0], (0, "a".into(), "b".into()));
+        assert_eq!(rows[1], (1, "a".into(), "c".into()));
+    }
+
+    #[test]
+    fn bump_meta_upsert() {
+        let conn = mem_conn();
+        set_graph_meta_conn(&conn, "default", 3, "2026-09-30T00:00:00Z").unwrap();
+        set_graph_meta_conn(&conn, "default", 4, "2026-09-30T01:00:00Z").unwrap();
+        let v: String = conn.query_row("SELECT v FROM graph_meta WHERE k='version'", [], |r| r.get(0)).unwrap();
+        assert_eq!(v, "4");
+    }
+}
+

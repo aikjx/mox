@@ -29,6 +29,7 @@ use mox_alliance_executor_proto::{
 use mox_alliance_core::dag;
 use parking_lot::RwLock;
 use tokio::sync::mpsc;
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
@@ -37,6 +38,38 @@ use mox_alliance_executor_proto::types::ExecutorConfig;
 use crate::condition::{CompareOp, Condition, Operand, Operator};
 use crate::fusion::{FusionEngine, FusionInput, FusionItem};
 use crate::state_sink::{ExecutionStateSink, ExecutionView, synthesize_nodes};
+
+/// DAG 全局并行度 env 变量名（与 12 号 T1 一致）。
+pub const ENV_DAG_MAX_PARALLEL: &str = "MOX_DAG_MAX_PARALLEL";
+
+/// 解析 DAG 节点全局并行度上限。
+///
+/// 优先级：env [`ENV_DAG_MAX_PARALLEL`] > 既有配置 `ExecutorConfig.max_concurrent_nodes`。
+///
+/// 返回 `Some(n)` 表示启用有界信号量（同时在跑的节点 ≤ n）；返回 `None` 表示无界
+/// （保留改动前行为，由 tokio 自然调度）。
+///
+/// 解析规则：
+/// - env 未设置 / 非法字符串 → 回退到 `config_default`（接线既有"最大并发节点数"语义，
+///   生产默认 50，已是有界护栏）；
+/// - env 为正整数 → 采用该值（运维收紧到 8 等）；
+/// - env 为 `0` 或负数 → `None`（显式逃生门，恢复无界）。
+fn resolve_dag_max_parallel(env_val: Option<&str>, config_default: usize) -> Option<usize> {
+    match env_val {
+        Some(raw) => match raw.trim().parse::<i64>() {
+            Ok(v) if v > 0 => Some(v as usize),
+            Ok(_) => None, // 0 / 负数 = 显式无界
+            Err(_) => Some(config_default), // 非法值忽略，回退配置默认
+        },
+        None => {
+            if config_default == 0 {
+                None
+            } else {
+                Some(config_default)
+            }
+        }
+    }
+}
 
 /// 任务执行状态（内部完整状态）
 pub(crate) struct TaskExecutionState {
@@ -64,6 +97,14 @@ pub struct DagEngineImpl {
     control_tx: mpsc::UnboundedSender<ControlCommand>,
     /// 执行状态持久化端口（None = 纯内存执行，行为与未接线前一致）
     state_sink: Option<Arc<dyn ExecutionStateSink>>,
+    /// 全局节点并行度信号量（None = 无界，行为同改动前）。
+    ///
+    /// T1a 并发护栏：节点真正调用 `execute_node`（打 LLM）前须 acquire 一个 permit，
+    /// 避免跨任务把并行节点全部铺开打爆下游 LLM 配额。permit 在节点任务结束时随
+    /// `OwnedSemaphorePermit` drop 自动归还。
+    node_semaphore: Option<Arc<Semaphore>>,
+    /// 信号量上限（仅日志指标用；无界时为 None）。
+    max_parallel: Option<usize>,
 }
 
 /// 控制命令
@@ -108,12 +149,36 @@ impl DagEngineImpl {
     ) -> (Self, mpsc::UnboundedReceiver<ControlCommand>) {
         let (control_tx, control_rx) = mpsc::unbounded_channel();
 
+        // T1a：全局并行度护栏。env MOX_DAG_MAX_PARALLEL 优先，否则回退既有
+        // config.max_concurrent_nodes（生产默认 50）；0/负 = 无界逃生门。
+        let max_parallel = resolve_dag_max_parallel(
+            std::env::var(ENV_DAG_MAX_PARALLEL).ok().as_deref(),
+            config.max_concurrent_nodes,
+        );
+        let node_semaphore = max_parallel.map(|m| Arc::new(Semaphore::new(m)));
+        match max_parallel {
+            Some(m) => info!(
+                "DAG 全局并行护栏已启用: dag.max_parallel={}, available={}",
+                m,
+                node_semaphore
+                    .as_ref()
+                    .map(|s| s.available_permits())
+                    .unwrap_or(m)
+            ),
+            None => warn!(
+                "DAG 全局并行护栏未启用（无界）: env {} 显式置 0/负或 config=0",
+                ENV_DAG_MAX_PARALLEL
+            ),
+        }
+
         let engine = Self {
             config,
             node_executor,
             states: Arc::new(RwLock::new(HashMap::new())),
             control_tx,
             state_sink,
+            node_semaphore,
+            max_parallel,
         };
 
         (engine, control_rx)
@@ -137,6 +202,8 @@ impl DagEngineImpl {
         let executor_clone = node_executor;
         let sink_clone = engine.state_sink.clone();
         let poll_interval = config.poll_interval_ms;
+        let sem_clone = engine.node_semaphore.clone();
+        let max_parallel = engine.max_parallel;
 
         tokio::spawn(async move {
             Self::run_scheduler_loop(
@@ -145,6 +212,8 @@ impl DagEngineImpl {
                 control_rx,
                 poll_interval,
                 sink_clone,
+                sem_clone,
+                max_parallel,
             )
             .await;
         });
@@ -159,6 +228,8 @@ impl DagEngineImpl {
         mut control_rx: mpsc::UnboundedReceiver<ControlCommand>,
         poll_interval_ms: u64,
         state_sink: Option<Arc<dyn ExecutionStateSink>>,
+        node_semaphore: Option<Arc<Semaphore>>,
+        max_parallel: Option<usize>,
     ) {
         loop {
             tokio::select! {
@@ -169,7 +240,14 @@ impl DagEngineImpl {
 
                 // 定期调度就绪节点
                 _ = tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms)) => {
-                    Self::schedule_ready_nodes(states.clone(), node_executor.clone(), state_sink.clone()).await;
+                    Self::schedule_ready_nodes(
+                        states.clone(),
+                        node_executor.clone(),
+                        state_sink.clone(),
+                        node_semaphore.clone(),
+                        max_parallel,
+                    )
+                    .await;
                 }
             }
         }
@@ -187,6 +265,10 @@ impl DagEngineImpl {
             let task_id = r.task.task_id;
             if self.states.read().contains_key(&task_id) {
                 debug!("Task {} 已在执行中，跳过恢复", task_id);
+                continue;
+            }
+            if let Err(reason) = r.plan.validate_for_task(task_id) {
+                warn!("恢复任务 {}：计划无效，未派发：{}", task_id, reason);
                 continue;
             }
             let cmd = ControlCommand::Restore {
@@ -446,6 +528,8 @@ impl DagEngineImpl {
         states: Arc<RwLock<HashMap<Uuid, TaskExecutionState>>>,
         node_executor: Arc<dyn NodeExecutor>,
         state_sink: Option<Arc<dyn ExecutionStateSink>>,
+        node_semaphore: Option<Arc<Semaphore>>,
+        max_parallel: Option<usize>,
     ) {
         // 收集所有就绪的节点（附带任务级重试预算，场景⑤ SSOT）
         let mut ready_nodes: Vec<(Uuid, String, Node, String, u32)> = Vec::new();
@@ -495,8 +579,30 @@ impl DagEngineImpl {
             let executor = node_executor.clone();
             let states_clone = states.clone();
             let sink = state_sink.clone();
+            let sem_arc = node_semaphore.clone();
 
             let handle = tokio::spawn(async move {
+                // T1a 并发护栏：进入节点执行（打 LLM）前先 acquire 全局许可；
+                // 拿不到则在此排队，保证同时在跑的节点数 ≤ max_parallel。
+                // permit 随本任务结束 drop 自动归还（节点结果落库后作用域结束）。
+                let _permit: Option<OwnedSemaphorePermit> = match sem_arc.as_ref() {
+                    Some(sem) => Some(
+                        sem.clone()
+                            .acquire_owned()
+                            .await
+                            .expect("DAG 信号量从不 close"),
+                    ),
+                    None => None,
+                };
+                if let (Some(sem), Some(max)) = (sem_arc.as_ref(), max_parallel) {
+                    let inflight = max - sem.available_permits();
+                    debug!(
+                        target: "dag",
+                        "dag.concurrent={}/{} task={} node={}",
+                        inflight, max, task_id, node_id
+                    );
+                }
+
                 let request = NodeExecutionRequest {
                     task_id,
                     node: node.clone(),
@@ -790,7 +896,7 @@ impl DagEngine for DagEngineImpl {
         options: ExecutionOptions,
     ) -> AllianceResult<()> {
         // 验证计划
-        plan.validate().map_err(|e| {
+        plan.validate_for_task(task.task_id).map_err(|e| {
             AllianceError::new(AllianceErrorCode::InvalidPlan, e)
         })?;
 
@@ -1167,6 +1273,48 @@ mod tests {
         assert!(DagEngineImpl::build_dynamic_routes(&plan_with_routes(vec![])).is_none());
     }
 
+    #[tokio::test]
+    async fn rejects_plan_from_another_task_before_queueing() {
+        let task = Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".into(), "d".into());
+        let value = serde_json::json!({
+            "task_id": Uuid::new_v4(), "mode": "parallel", "fusion_strategy": "weighted",
+            "nodes": [], "version": 1, "created_at": chrono::Utc::now()
+        });
+        let mut plan: CollaborationPlan = serde_json::from_value(value).unwrap();
+        plan.nodes.push(Node {
+            node_id: "n".into(),
+            task_id: plan.task_id,
+            expert_id: "e".into(),
+            module_id: None,
+            name: "n".into(),
+            description: None,
+            status: NodeStatus::Pending,
+            retry_count: 0,
+            dependencies: vec![],
+            input_refs: vec![],
+            output_ref: None,
+            started_at: None,
+            completed_at: None,
+            duration_ms: None,
+            error_message: None,
+        });
+        assert!(plan.validate().is_ok());
+        let (engine, mut rx) = DagEngineImpl::with_state_sink(
+            ExecutorConfig::default(),
+            Arc::new(ConcurrencyProbe::default()),
+            None,
+        );
+        let result = engine.start_execution(&task, plan, test_options()).await;
+        assert!(
+            result.is_err(),
+            "a plan for another task must not be admitted"
+        );
+        assert!(
+            rx.try_recv().is_err(),
+            "invalid input must not enqueue work"
+        );
+    }
+
     #[test]
     fn valid_route_is_loaded_and_evaluable() {
         let routes = DagEngineImpl::build_dynamic_routes(&plan_with_routes(vec![route("eq")]))
@@ -1220,6 +1368,7 @@ mod tests {
         nodes: std::sync::Mutex<Vec<(Uuid, String, String)>>,
         plans: std::sync::Mutex<Vec<Uuid>>,
         fusion: std::sync::Mutex<HashMap<Uuid, serde_json::Value>>,
+        pending: std::sync::Mutex<Vec<RestorableTask>>,
     }
 
     impl ExecutionStateSink for RecordingSink {
@@ -1234,7 +1383,7 @@ mod tests {
         }
 
         fn restore_pending(&self) -> AllianceResult<Vec<RestorableTask>> {
-            Ok(Vec::new())
+            Ok(std::mem::take(&mut *self.pending.lock().unwrap()))
         }
 
         fn persist_node(
@@ -1279,6 +1428,50 @@ mod tests {
         fn read_fusion_output(&self, task_id: Uuid) -> AllianceResult<Option<serde_json::Value>> {
             Ok(self.fusion.lock().unwrap().get(&task_id).cloned())
         }
+    }
+
+    #[test]
+    fn invalid_restore_plan_does_not_enter_control_queue() {
+        let sink = Arc::new(RecordingSink::default());
+        let task = Task::new(Uuid::new_v4(), Uuid::new_v4(), "t".into(), "d".into());
+        let plan = mox_alliance_scheduler_core::SimplePlanGenerator::new()
+            .generate(
+                &mox_alliance_scheduler_proto::PlanGenerationRequest {
+                    task_id: task.task_id,
+                    tenant_id: task.tenant_id,
+                    task_description: "restore".into(),
+                    preferred_mode: Some(AllianceMode::Parallel),
+                    preferred_experts: vec![],
+                    constraints: serde_json::json!({}),
+                    fusion_strategy: FusionStrategy::Weighted,
+                },
+                &[],
+            )
+            .unwrap();
+        let mut wrong_task = task.clone();
+        wrong_task.task_id = Uuid::new_v4();
+        sink.pending.lock().unwrap().push(RestorableTask {
+            task: wrong_task,
+            plan: plan.clone(),
+            completed_nodes: vec![],
+        });
+        let task_id = task.task_id;
+        sink.pending.lock().unwrap().push(RestorableTask {
+            task,
+            plan,
+            completed_nodes: vec![],
+        });
+        let (engine, mut rx) = DagEngineImpl::with_state_sink(
+            ExecutorConfig::default(),
+            Arc::new(ConcurrencyProbe::default()),
+            None,
+        );
+        let source: Arc<dyn ExecutionStateSink> = sink;
+        assert_eq!(engine.restore(&source).unwrap(), vec![task_id]);
+        assert!(
+            matches!(rx.try_recv().unwrap(), ControlCommand::Restore { task, .. } if task.task_id == task_id)
+        );
+        assert!(rx.try_recv().is_err());
     }
 
     fn test_options() -> ExecutionOptions {
@@ -1498,5 +1691,132 @@ mod tests {
             DagEngineImpl::fusion_from_sink(&Some(sink.clone() as Arc<dyn ExecutionStateSink>), orphan, tenant),
             Err(e) if e.code() == Some(AllianceErrorCode::NotFound)
         ));
+    }
+
+    // ─── T1a：DAG 全局并行度信号量护栏 ───
+
+    #[test]
+    fn resolve_dag_max_parallel_prefers_env_and_supports_escape_hatch() {
+        // env 未设置 → 回退配置默认（有界）
+        assert_eq!(resolve_dag_max_parallel(None, 50), Some(50));
+        // 配置默认 0 且无 env → 无界
+        assert_eq!(resolve_dag_max_parallel(None, 0), None);
+        // env 正整数覆盖配置
+        assert_eq!(resolve_dag_max_parallel(Some("8"), 50), Some(8));
+        // 带空白也能解析
+        assert_eq!(resolve_dag_max_parallel(Some("  16 "), 50), Some(16));
+        // env = 0 / 负数 → 显式无界逃生门
+        assert_eq!(resolve_dag_max_parallel(Some("0"), 50), None);
+        assert_eq!(resolve_dag_max_parallel(Some("-5"), 50), None);
+        // env 非法字符串 → 忽略，回退配置默认
+        assert_eq!(resolve_dag_max_parallel(Some("abc"), 50), Some(50));
+    }
+
+    /// 记录峰值并发的节点执行器（验证信号量护栏用）
+    #[derive(Default)]
+    struct ConcurrencyProbe {
+        current: std::sync::atomic::AtomicI64,
+        peak: std::sync::atomic::AtomicI64,
+    }
+
+    #[async_trait::async_trait]
+    impl NodeExecutor for ConcurrencyProbe {
+        async fn execute_node(
+            &self,
+            req: NodeExecutionRequest,
+        ) -> AllianceResult<NodeExecutionResult> {
+            use std::sync::atomic::Ordering;
+            use std::time::Duration;
+            let cur = self.current.fetch_add(1, Ordering::SeqCst) + 1;
+            self.peak.fetch_max(cur, Ordering::SeqCst);
+            // 留足窗口：让多个节点同时处于临界区内，便于观测峰值
+            tokio::time::sleep(Duration::from_millis(60)).await;
+            self.current.fetch_sub(1, Ordering::SeqCst);
+            Ok(NodeExecutionResult {
+                node_id: req.node.node_id,
+                task_id: req.task_id,
+                success: true,
+                output: None,
+                error_message: None,
+                duration_ms: 60,
+                retry_count: 0,
+            })
+        }
+        fn executor_name(&self) -> &str {
+            "concurrency-probe"
+        }
+    }
+
+    #[tokio::test]
+    async fn semaphore_caps_in_flight_nodes_at_configured_max() {
+        use std::sync::atomic::Ordering;
+        use std::time::Duration;
+
+        let probe = Arc::new(ConcurrencyProbe::default());
+        let cfg = ExecutorConfig {
+            max_concurrent_nodes: 2, // 全局护栏压到 2
+            poll_interval_ms: 5,     // 加快调度节奏
+            ..Default::default()
+        };
+        let engine = DagEngineImpl::spawn(cfg, probe.clone());
+
+        let tenant = Uuid::new_v4();
+        let task = Task::new(tenant, Uuid::new_v4(), "t".to_string(), "d".to_string());
+        let task_id = task.task_id;
+
+        let mut plan = plan_with_routes(vec![]);
+        plan.task_id = task_id;
+        plan.mode = AllianceMode::Parallel;
+        // 6 个无依赖根节点：首轮即全部就绪，无护栏时峰值应为 6
+        plan.nodes = (0..6)
+            .map(|i| Node {
+                node_id: format!("n{}", i),
+                task_id,
+                expert_id: "e".to_string(),
+                module_id: None,
+                name: format!("n{}", i),
+                description: None,
+                status: NodeStatus::Pending,
+                retry_count: 0,
+                dependencies: vec![],
+                input_refs: vec![],
+                started_at: None,
+                completed_at: None,
+                duration_ms: None,
+                output_ref: None,
+                error_message: None,
+            })
+            .collect();
+
+        engine
+            .start_execution(&task, plan, test_options())
+            .await
+            .expect("start_execution 应成功");
+
+        // 轮询直到 6 个节点全部终态（容忍 NotFound：调度循环异步接纳 Start 命令）
+        let mut completed = 0usize;
+        for _ in 0..300 {
+            match engine.get_execution_status(task_id, tenant).await {
+                Ok(st) => {
+                    completed = st.completed_nodes + st.failed_nodes + st.cancelled_nodes;
+                    if completed >= 6 {
+                        break;
+                    }
+                }
+                Err(_) => {
+                    // task 尚未被调度循环接纳，继续等待
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(completed, 6, "6 个节点应全部跑完");
+
+        let peak = probe.peak.load(Ordering::SeqCst);
+        assert!(
+            peak <= 2,
+            "峰值并发 {} 超过护栏上限 2（信号量未生效？）",
+            peak
+        );
+        assert!(peak >= 1, "至少应有节点真正并发执行过");
     }
 }

@@ -7,8 +7,10 @@
 //!
 //! 评分：标题命中 3 分 / 标签命中 2 分 / 分类命中 1 分 / 正文命中 1 分，按分倒序截断。
 
-use crate::model::{KbDocument, SearchHit, SearchRequest};
-use crate::KbState;
+use crate::{
+    model::{KbDocument, SearchHit, SearchRequest, SourceCitation},
+    KbState,
+};
 use mox_kg_storage_svc::GraphStore;
 use serde_json::Value;
 
@@ -18,9 +20,13 @@ pub struct KbSearcher;
 
 impl KbSearcher {
     /// 文档关键词检索
-    pub async fn search_docs(&self, state: &KbState, req: &SearchRequest) -> crate::Result<Vec<SearchHit>> {
+    pub async fn search_docs(
+        &self,
+        state: &KbState,
+        req: &SearchRequest,
+    ) -> crate::Result<Vec<SearchHit>> {
         let index = state.docs.read_index().await?;
-        let q = req.query.to_lowercase();
+        let q = req.query.trim().to_lowercase();
         let mut hits = Vec::new();
         for summary in index {
             if let Some(cat) = &req.category {
@@ -32,16 +38,11 @@ impl KbSearcher {
                 continue;
             };
             let mut score = 0.0_f64;
-            let mut matched_field = String::new();
             if doc.title.to_lowercase().contains(&q) {
                 score += 3.0;
-                matched_field = "title".into();
             }
             if doc.content.to_lowercase().contains(&q) {
                 score += 1.0;
-                if matched_field.is_empty() {
-                    matched_field = "content".into();
-                }
             }
             if doc.category.to_lowercase().contains(&q) {
                 score += 1.0;
@@ -49,23 +50,28 @@ impl KbSearcher {
             for t in &doc.tags {
                 if t.to_lowercase().contains(&q) {
                     score += 2.0;
-                    if matched_field.is_empty() {
-                        matched_field = "tag".into();
-                    }
                 }
             }
             if score > 0.0 {
+                let (snippet, field, start_char, end_char) = build_snippet(&doc, &q);
                 hits.push(SearchHit {
                     id: doc.id.clone(),
                     title: doc.title.clone(),
                     category: doc.category.clone(),
-                    snippet: build_snippet(&doc, &q),
+                    snippet,
+                    citation: Some(SourceCitation {
+                        document_id: doc.id.clone(),
+                        version: doc.current_version.clone(),
+                        field: field.into(),
+                        start_char,
+                        end_char,
+                    }),
                     score,
                     tags: doc.tags.clone(),
                 });
             }
         }
-        hits.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        hits.sort_by(|a, b| b.score.total_cmp(&a.score).then_with(|| a.id.cmp(&b.id)));
         hits.truncate(req.limit);
         Ok(hits)
     }
@@ -88,23 +94,31 @@ impl KbSearcher {
 }
 
 /// 构建命中片段：正文首现处附近 60 字符
-fn build_snippet(doc: &KbDocument, q: &str) -> String {
-    if let Some(idx) = doc.content.to_lowercase().find(q) {
+fn build_snippet(doc: &KbDocument, q: &str) -> (String, &'static str, usize, usize) {
+    if let Some(byte_idx) = doc.content.to_lowercase().find(q) {
+        // Lowercase may expand characters (for example U+0130). Its byte offsets
+        // cannot be used to slice the original text. Map to original characters.
+        let mut lower_end = 0usize;
+        let mut char_idx = 0usize;
+        for (index, ch) in doc.content.chars().enumerate() {
+            lower_end += ch.to_lowercase().map(char::len_utf8).sum::<usize>();
+            if byte_idx < lower_end {
+                char_idx = index;
+                break;
+            }
+        }
         let chars: Vec<char> = doc.content.chars().collect();
-        // find 返回字节偏移；先转字符索引再切，避免多字节(中文)越界
-        let char_idx = doc.content[..idx].chars().count();
         let start = char_idx.saturating_sub(20);
         let end = (char_idx + q.chars().count() + 40).min(chars.len());
-        let s: String = chars[start..end].iter().collect();
-        if !s.is_empty() {
-            return s;
+        let snippet: String = chars[start..end].iter().collect();
+        if !snippet.is_empty() {
+            return (snippet, "content", start, end);
         }
     }
-    if doc.summary.is_empty() {
-        doc.title.clone()
-    } else {
-        doc.summary.clone()
-    }
+    // Title is retained in content version snapshots; generated summary is not.
+    let snippet: String = doc.title.chars().take(80).collect();
+    let end = snippet.chars().count();
+    (snippet, "title", 0, end)
 }
 
 #[cfg(test)]
@@ -157,4 +171,3 @@ mod tests {
         assert!(hits.is_empty(), "分类过滤应排除 business 文档");
     }
 }
-

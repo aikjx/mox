@@ -1,0 +1,55 @@
+F19 两轴筛查 定性档案（可达性仪器的当场翻账）2026-09-29
+===========================================================================
+原始逐条读数在两份**分开**的档案里（本轮按 §5.48 的规矩写新文件名、不复用、不覆写）：
+  · `f19-direct-print-screen-20260929.txt`   md5 37b5696265d58f33 / 13116 B / 131 行  ← 三通道版（v1，含仪器的假阴）
+  · `f19-direct-print-screen-v2-20260929.txt` md5 e857e25117a74088 / 15480 B / 131 行  ← 四通道版（v2，权威）
+驱动器 `D:/tmp/f19-screen.py`（未落库＝没牙，禁止接 CI）。本轮**零代码改动**。
+
+## 1. 两次跑的读数（同一台仪器，只多了一条边形态）
+
+| | v1（四通道：template-tag／named-import／default-import／string-:is） | v2（v1 ＋ path-import） |
+|---|---|---|
+| 形状命中 | 55 处 / 30 文件（扫描集 107 个 `.vue`，`import.meta.glob` 全库 0 次） | 同（55 处 / 30 文件，口径未变） |
+| R0（零 app 消费者） | **51 处 / 26 文件** | **4 处 / 2 文件** |
+| R3（活界面且本文件无按名出口） | 4 处 | **51 处 / 28 文件** |
+
+逐条对账（两份档案按 (file,line) 比对）：**47 处由 R0 翻成 R3**；v2 里仍是 R0 的只有 4 处——
+`components/MessageBubble.vue:164/:415`（通道 `default-import,path-import`，且消费者全是 `.stories.js`）
+与 `components/AgentFlowPanel.vue:72/:136`（**四通道全 0 命中**，真零 importer）。
+
+## 2. v1 为什么错（本轮唯一的新仪器账）
+
+路由挂载写的是 `component: () => import('../views/XxxView.vue')`——**按路径**、**动态**、**不出现组件名**。
+v1 的四条通道全按"名字"找边，于是 24 个 `.vue` 视图被报成孤儿。v2 补的 `path-import` 通道按
+`['"]…/<Name>.vue['"]` 找路径串，并**排除以 `export` 开头的行**——因为 barrel 的
+`export { default as MessageBubble } from './MessageBubble.vue'` 也算路径引用，若不排除就会把
+§5.49 刚判死的零消费者组件算成活的（两个方向的错都能在这一条里发生）。
+⇒ 这是 [[project-frontend-reachability-ledger]] 里"提取器少一种边形态 ⇒ 造假日孤儿"的**第二次实证**，
+而且这次是**我本轮新写的仪器当场复现**：假阴的代价不是多修一处，是把 24 处 admin 面板的活界面措辞判成死码免检。
+
+## 3. 对 §5.49 那条规矩的口径修正（不许原样引用）
+
+"先过可达性账，再谈值域"**仍然成立**，但它的作用域要写清：**可达性筛只对 `components/` 有判别力**；
+对 `views/`（路由挂载）**恒真**，跑了等于没跑。v2 的 R3 分布正好把这句话说出来：
+`views/admin/panels` 24 处、`views/expert` 8 处、`views/expert/panels` 4 处、`views/project` 4 处、
+`views/workflow` 3 处、`views/ai` 2 处、`views/graph` 2 处，另有 `components/expert`／`modules/governance/views`／
+`views/project/panels`／`views/workspace/panels` 各 1 处（合计 51）。
+⇒ 所以下一步不是"再筛一遍"，而是**从 admin 面板族开始做值域溯源**（那 24 处是最大单一集中地）。
+
+## 4. 前面两轮的结论要不要改
+
+- §5.48（F17 阴性）**不改**：本轮 R0 的两文件正是 F17/F18 判过的 `AgentFlowPanel`（跨域同名 + 真零 importer）与 `MessageBubble`（stories-only）。
+- §5.49（F18）**不改判定、改预期**：那里写"51 条未判定先过可达性筛"，隐含预期是"能筛掉一批"。实测只筛掉 4 条 ⇒
+  **预期被证伪，已在本档案与 §5.50 里明说**，不留成一句漂亮话。
+
+## 5. 本轮没做的（诚实缺口）
+
+- 51 处 R3 **一处也没有逐条溯源**（预算所限），状态是"活界面候选"，不是"债"。
+  `outlet_in_expr`/`file_outlets` 谓词仍按**名字**问出口，(b) 两档版面与 (c) 跨域同名都会落进 R3 ⇒ R3 是队列不是债务量。
+- v2 的 `path-import` 用了"前 160 字符内出现 `export` 则跳过"的启发式，理论上会误伤
+  多行 `export ... from` 距离更远的写法（本轮实测未见，但没被证伪成不存在）。
+- 普查器仍**未落库**（任务 #18 待裁决），故本轮无电池、无新判据格；判据文件仍 19 例
+  （本轮早先实测：`npx vitest run …vocabulary-ownership.test.js` rc=0／`Tests 19 passed (19)`／2.81 s）。
+- 全量 vitest 与 `vite build` 本轮未跑（零代码改动），分母沿用 §5.48 那轮实测，下轮重量。
+- 未入库：`?? reports/data/f19-direct-print-screen-20260929.txt`、`?? …/f19-direct-print-screen-v2-20260929.txt`、
+  本档案，以及治理文档新增的 §5.50 一节。未执行 `add`/`commit`/`stash`。

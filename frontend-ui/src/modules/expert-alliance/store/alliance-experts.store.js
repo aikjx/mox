@@ -3,7 +3,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
 import { allianceApi } from '@/modules/expert-alliance/api'
-import { BOOKING_STATUS, isConsultable } from '@/modules/expert-alliance/contract'
+import { BOOKING_STATUS, expertDisplayName, expertNameOr, isConsultable } from '@/modules/expert-alliance/contract'
 import { deleteResultText, expertDraftProblem, expertFormDraft, expertPatch } from '@/modules/expert-alliance/contract'
 
 const EMPTY_FILTERS = () => ({ search: '', domain: '', skill: '', status: '', expertType: '', sort: '' })
@@ -49,6 +49,17 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
       .filter((b) => b.status === BOOKING_STATUS.PENDING || b.status === BOOKING_STATUS.CONFIRMED)
       .map((b) => b.expertId)
   ))
+
+  // 候选下拉与 id→名字映射的唯一出处：编排页与会话页此前各自抄了一份同样的三行，
+  // 且都直接把注册表 name 印到界面上（那里有两行的名字在写入侧就丢成了问号）。
+  const expertOptions = computed(() =>
+    experts.value.map((e) => ({ value: e.id, label: expertDisplayName(e) }))
+  )
+  const expertNames = computed(() => {
+    const map = {}
+    for (const e of experts.value) map[e.id] = expertDisplayName(e)
+    return map
+  })
 
   function isFavorite(expertId) {
     return favorites.value.has(expertId)
@@ -324,7 +335,7 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
     favorites.value = set
     bookings.value = bookings.value.filter((b) => b.expertId !== expert.id)
     await Promise.all([loadStats(), loadCapabilities()])
-    notice.value = `已停用 ${expert.name || expert.id}：该 id 不能再次注册，也没有再启用入口`
+    notice.value = `已停用 ${expertNameOr(expert, expert.id)}：该 id 不能再次注册，也没有再启用入口`
     return res
   }
 
@@ -332,6 +343,7 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
     experts, total, page, pageSize, filters, bookings, bookingCounts, stats,
     capabilities, expertMetrics, expertMatches,
     favorites, favoriteSessionOnly, favoriteCount, onlineCount, pageCount, bookedExpertIds,
+    expertOptions, expertNames,
     loading, error, notice,
     isFavorite, setFilters, resetFilters, goPage,
     loadExperts, loadBookings, loadStats, loadCapabilities, loadExpertMetrics,

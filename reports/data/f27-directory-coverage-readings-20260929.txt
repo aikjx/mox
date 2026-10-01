@@ -1,0 +1,144 @@
+# F27 目录维度覆盖面 - 原始读数（2026-09-29，专家联盟前端 L12 判据第四维）
+# 口径：每条读数点名印出它的文件；本文件不含结论，结论见 FRONTEND-MODULE-GOVERNANCE-v1.0.md §5.56。
+# 本文件由 D:/tmp/f27-archive.py 一次性写出（UTF-8／LF；拒绝覆盖已存在图像）。
+
+## [1] 判据与对照图像（写本文件时现量）
+    | vocabulary-ownership.test.js  40433 B  md5 2d2f6e093a02  CRLF=0（LF 判据文件）
+    | 上一轮（F26）图像 37291 B／md5 c8feb0adf6e0，来源＝本报告目录内 f26 归档块 [5]，非 /tmp 临时件
+    | f26-language-coverage-readings-20260929.txt  21249 B  md5 3426f46c8a76（本轮实测，用于把上轮值挂到仓库内文件上）
+
+## [2] 模块内目录清点（现量：os.listdir 目录 + os.walk 逐目录文件数）
+    | 目录 7 个：_verification／api／components／contract／model／store／views
+    | _verification    2 个文件
+    | api              3 个文件
+    | components       19 个文件
+    | contract         21 个文件
+    | model            12 个文件
+    | store            11 个文件
+    | views            6 个文件
+    | （根层散文件 4 个）
+    | 在册（进值域扫描集）= views + components；其余五个目录本轮起必须带理由出账
+
+## [3] 判据单文件活读（源：D:/tmp/f27-guard-live.log，1860 B／md5 05c82d81320f）
+    | guard rc=0； Test Files  1 passed (1) |       Tests  19 passed (19)
+    | [L12 目录] 模块内目录 7 个（在册 2／出账 5／未登记 0）实测=["api","components","contract","model","store","views","_verification"]
+    | [L12 语言] 前缀池 32 个文件（.vue=28／.ts=0）／扫描集 30（非 .vue=2）
+
+## [4] 反事实普查：同口径复算 + 集外扩集（源：D:/tmp/f27-census.log，1983 B／md5 2b032ef086a8，rc=0）
+    | [同口径复算] 在册集 30 个文件 → A=9 B=0 C=0 D=0 E=2
+    | [反事实扩集] 集外引用联盟契约的文件 34 个 → A=13 B=0 C=0 D=0 E=3
+    | stores/ai.store.js  命中 8
+    | A | user | :116 | [...messages.value].reverse().find(m => m.role === 'user')
+    | A | user | :343 | const userMsgs = messages.value.filter(m => m.role === 'user')
+    | A | user | :408 | .filter(m => m.role === 'user' || m.role === 'assistant')
+    | A | assistant | :408 | .filter(m => m.role === 'user' || m.role === 'assistant')
+    | A | user | :439 | .filter(m => m.role === 'user' || m.role === 'assistant')
+    | A | assistant | :439 | .filter(m => m.role === 'user' || m.role === 'assistant')
+    | A | user | :553 | const lastUser = [...messages.value].reverse().find(m => m.role === 'user')
+    | A | assistant | :556 | const lastAiIdx = [...messages.value].reverse().findIndex(m => m.role === 'assistant')
+    | composables/workspace/useTaskOrchestration.js  命中 5
+    | E | waiting | :29 | t.expertIds?.includes(expertId) && ['inProgress', 'reviewing', 'pending', 'waiting'].includes(t.status)
+    | A | completed | :155 | const depsCompleted = task.dependencies.every(depId => { const depTask = taskOrchestration.subtasks.find(t => t.id === d
+    | E | completed | :172 | const allDone = taskOrchestration.subtasks.every(t => ['completed', 'failed', 'archived'].includes(t.status))
+    | E | archived | :172 | const allDone = taskOrchestration.subtasks.every(t => ['completed', 'failed', 'archived'].includes(t.status))
+    | A | completed | :175 | const successCount = taskOrchestration.subtasks.filter(t => t.status === 'completed').length
+    | views/workspace/panels/CollaborationPanel.vue  命中 2
+    | A | failed | :137 | <el-icon v-else-if="msg.status === 'failed'"><Warning /></el-icon>
+    | A | assistant | :360 | if (m?.role !== 'assistant' || !m.status) continue
+    | stores/alliance.store.js  命中 1
+    | A | running | :140 | const isRunning = computed(() => runState.value === 'running')
+    | 驱动：D:/tmp/f27-e-shape-census.mjs ＋ ESM 解析钩子 D:/tmp/f27-loader.mjs / D:/tmp/f27-hooks.mjs
+    | 命令：node --import "file:///D:/tmp/f27-loader.mjs" D:/tmp/f27-e-shape-census.mjs
+    | 该驱动未落库＝没牙，不接 CI；只作本轮覆盖面裁决的证据。
+
+## [5] 变异电池（源：D:/tmp/f27-battery.log，1206 B／md5 9d80db2220c6）
+    | 电池驱动 D:/tmp/f27-battery.py；每次变异＝单文件跑判据，还原写在 finally。
+    | baseline                                                 rc=0 期望=green 实读=green 首个红格=-            点名=-            OK
+    | G1 新目录无出账（临时 wizard/Wiz.vue，不含任何禁串）                      rc=1 期望=red   实读=red   首个红格=未登记的目录       点名=未登记的目录       OK
+    | G2 撤一条出账条目（删 api 行）                                      rc=1 期望=red   实读=red   首个红格=出账目录表塌缩      点名=出账目录表塌缩      OK
+    | G3 理由写成空串                                                rc=1 期望=red   实读=red   首个红格=出账理由为空       点名=出账理由为空       OK
+    | G4 条目名与真实目录不符（api 改成 apix）                               rc=1 期望=red   实读=red   首个红格=已不存在的目录      点名=已不存在的目录      OK
+    | G5 良性：只加一行中文注释                                           rc=0 期望=green 实读=green 首个红格=-            点名=-            OK
+    | re-verify(还原后复跑) rc=0 实读=- 红格=green
+    | restored guard 2d2f6e093a02 vs before 2d2f6e093a02 MATCH | probe exists=False | size 40433 -> 40433
+    | 已知仪器瑕疵（原样登记，不修饰）：第 7 行的两个标签写反了——
+    |   打印语句把"实读"位取成了 fired 首项、把"红格"位取成了 verdict，
+    |   故 `实读=- 红格=green` 的真实含义是：rc=0／判决 green／无红格。数值未受影响。
+
+## [6] 六门禁（rc 逐条取自 D:/tmp/f27-gates-rc.log，61 B／md5 b87f0779d2ae，非管道尾巴）
+    | vitest rc=0
+    | build rc=0
+    | module rc=0
+    | locale rc=0
+    | doclinks rc=1
+    | 全量 vitest：源 D:/tmp/f27-gate-vitest.log（449203 B／md5 1353d2f7ff16） Test Files  77 passed (77)／      Tests  1035 passed (1035)
+    | 对比上轮：f26 归档块同记 77 passed (77)／1035 passed (1035) ⇒ 本轮覆盖面收紧而用例总数不涨（新格并进 L12 既有 it，未加例）。
+    | vite build：源 D:/tmp/f27-gate-build.log（18987 B／md5 a587708c5f16）✓ built in 37.35s
+    | check-frontend-module：源 D:/tmp/f27-gate-module.log（1042 B／md5 8e29856dc859）--- 前端模块化门禁：ERROR=0 ---
+    | check-locale-format-outlets：源 D:/tmp/f27-gate-locale.log（793 B／md5 16bbfc71d2d4，含 GBK 转码残留字节，故 grep 判为 binary）
+    |   人读到的首行要点：扫描 270 个文件／登记 2 处（自写只读 utils/time.js）；I1 数字千分位 3 处；I2 登记表外 toLocale* 直写 3 处
+    | check-doc-links（写 §5.56 之前的图像）：源 D:/tmp/f27-gate-doclinks-before.log（19827 B／md5 3ccbfeeb0710）WARN=120 ERROR=0 rc=1（存量，本轮未引入）
+
+## [7] 文档写前图像（§5.56 插入之前现量，供插入驱动做 PRE 断言）
+    | FRONTEND-MODULE-GOVERNANCE-v1.0.md  303282 B  md5 479052996ecc  行数=2164（LF 计数）  CRLF=0  仅 LF=2164
+    | 锚点行号：## 5.55 在 2139、## 6. 性能基线 在 2153（grep -n 现量）
+
+## [8] 本文件自身的落盘后修复（同一轮，晚于 [1]–[7]，不可被 §5.56 当轮值引用）
+    | 首版 7634 B／md5 d51149384216（写前图像已按此哈希做断言）：块 [3]／[6] 里三行保留了 vitest 原始 ANSI 转义序列（驱动没剥色就抄了）。
+    | 修复＝只删这些转义序列（正则 \x1b\[[0-9;]*m，本次共 36 处、合计 172 字节），不改任何数字或汉字；
+    |   写前图像已备份到 D:/tmp/f27-archive-fix-backup.txt（拒绝覆盖已有备份），修复后正文长度＝首版正文长度－172。
+    | 留痕的意义：归档里出现转义序列＝读数不可读，剥色是抄录器该做的活；下次抄 vitest 输出要先 re.sub 剥色（电池驱动里就是这么做的）。
+
+## [9] 出账目录的**逐文件**复扫（比块 [4] 更宽的口径：不要求"引用联盟契约"，因为相对 import `./contract` 不被 contractRe 命中）
+    | 源：D:/tmp/f27-outdir-scan.mjs ＋同一套 ESM 钩子；读数 D:/tmp/f27-outdir-scan.log，3878 B／md5 4d84cb0b3921，rc=0
+    | [出账目录逐文件扫] 目标 30 个文件（出账目录 api/model/store/_verification ＋根层散文件 4 个）
+    | [结果] A=2 B=0 C=0 D=0 E=0
+    | modules/expert-alliance/api/alliance.api.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/api/alliance.api.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/api/index.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/collab-chat.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/collab-lists.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/collabChat.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/collabLists.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/dag.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/dag.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/display.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/index.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/layout.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/normalize.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/rank.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/model/rank.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-collab.store.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-collab.store.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-console.store.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-experts.store.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-experts.store.test.js  命中 2
+    | A|online|:33|online: status === 'online',
+    | A|pending|:37|const booking = (id, status = 'pending') => ({ id, expertId: 'e1', expertName: 'N', topic: 't', status, cancel
+    | modules/expert-alliance/store/alliance-graph.store.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-graph.store.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-orch.store.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-sessions.store.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/alliance-sessions.store.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/store/index.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/index.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/module.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/registry-name-outlets.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | modules/expert-alliance/style.test.js  命中 0（.md/.d.ts 之类不算源码的文件已在目标集外）
+    | 该驱动同样未落库＝没牙，不接 CI。
+
+## [10] 电池判决之后的合法改文案窗口（块 [5] 的电池跑在这处改动之前，改动本身由复跑见证）
+    | 触发＝块 [9] 把 `store` 出账理由里那句"本轮五型实测 0 处命中"证伪了：宽口径实测 2 处（都在 `store/alliance-experts.store.test.js`：
+    |   :33 `online: status === 'online'`、:37 `booking(id, status = 'pending')` 的夹具默认值与派生布尔）。
+    |   旧句只在块 [4] 的 contractRe 口径下成立，而 `DIR_ACCOUNT` 的理由是给下一轮读者看的，不能挂在一个会被口径换掉的数上 ⇒ 按实测改写理由。
+    | 改动只动一个 `why` 字符串（条目数仍 5、针锚 POOLED_DIRS／api 行／_verification 行未动 ⇒ 块 [5] 的四枚变异体锚点全部仍在）。
+    | 复跑（改后现量）：rc=0／判决 green／Test Files  1 passed (1) | Tests  19 passed (19)
+    | [L12 目录] 模块内目录 7 个（在册 2／出账 5／未登记 0）实测=["api","components","contract","model","store","views","_verification"]
+    | 改后判据图像＝40585 B／md5 09ec807e06f7（块 [1] 记的是改前图像 40433 B／md5 2d2f6e093a02，两者差在这一句 `why` 上）
+    | 抄录规矩：本块的复跑读数在写入前已 `re.sub(r"\x1b\[[0-9;]*m","")` 剥色（块 [8] 那条教训当场生效）。
+
+## [11] §5.56 落盘之后（本节数字不可被 §5.56 当轮值引用，只登记复跑结论）
+    | 文档写前图像 303282 B／md5 479052996ecc；插入后＝309891 B／md5 cd0b648a8d9a（锚点＝"## 6. 性能基线"，唯一命中 1 次；备份 D:/tmp/f27-doc-backup.md 拒绝覆盖已有图像）
+    | check-doc-links 复跑：rc=1／WARN 120→120／新增 0／消失 0／ERROR 0（逐行按整行文本比对，非按总数比对）
+    | 版面自证：`## 5.55 `/`## 5.56 `/`## 6. ` 各恰 1 次；CRLF=0；行数增量＝本节行数（14）
+    | 失败即还原：本块之前任何断言不过都会把文档刷回写前图像再抛错（本轮未触发）。

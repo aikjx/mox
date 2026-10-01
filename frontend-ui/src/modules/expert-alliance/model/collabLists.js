@@ -1,7 +1,7 @@
 // 协作结果 → 列表型界面（多专家结果区、辩论逐轮流水、路由候选区）的行投影。
 // 存在的理由：视图不许各自摸后端字段名——字段口径在这里出现一次，
 // 由 model/normalize.js 的归一化结果喂进来，视图只读投影后的行。
-import { answerSourceText, collabMode, collabTemplateNote } from '@/modules/expert-alliance/contract'
+import { answerSourceText, collabMode, collabTemplateNote, expertDisplayName } from '@/modules/expert-alliance/contract'
 import { expertVisualKey } from './display.js'
 
 const SIDE_LABEL = { pro: '正方', con: '反方' }
@@ -17,7 +17,7 @@ export function collabContributionItems(result) {
     key: c.id || `c-${i}`,
     // id 单独留一列：视图要按它回查花名册取配色，不能拿 key 当身份（key 有兜底序）
     id: c.id || '',
-    name: c.name || '专家',
+    name: expertDisplayName(c),
     text: answerText(c.answer),
     confidence: Number(c.answer?.confidence) || 0,
     modelBacked: c.answer?.source === 'llm',
@@ -59,7 +59,7 @@ export function collabCandidateItems(result) {
   return (result?.candidates || []).map((c, i) => ({
     key: c.id || `r-${i}`,
     id: c.id,
-    name: c.name || '专家',
+    name: expertDisplayName(c),
     subtitle: c.title || (c.domains || []).join(' / '),
     // 配色键取自首个领域（16 色板按领域命名），视图不再自己从展示文案里猜键
     visualKey: expertVisualKey(c),

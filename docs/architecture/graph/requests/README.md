@@ -57,3 +57,20 @@ info-graph query --graph graph.json --kind CodeFile --name mox
 1. 先确认真的没有相近能力（换关键词再查一遍 `query`）；
 2. 确有必要立项 → 在 `docs/architecture/graph/guantu.req.json` 增加 REQ 根与六维绑定；
 3. 需求落地后，把本目录下对应规格文件移除或更新（其判定自然会变为 `reuse`）。
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 新业务需求、候选复用能力和质量场景 |
+| 处理与边界 | 判重、登记需求ID/owner/验收，关联配置维度与已有模块 |
+| 输出 | 需求卡、复用决策与下游规格引用 |
+| 维护角色 | 产品/开发需求owner（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。

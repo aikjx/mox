@@ -35,3 +35,20 @@
 2. 标准正文必须含：适用范围 / 约束条款（可判定）/ 校验方式（脚本或人工）/ 违规处置。
 3. 若影响 CI：同步 `scripts/gate/ci-gate.ps1` 的门禁项。
 4. 在本页表格登记，并在 [`../normalization/`](../normalization/README.md) 建对应索引条目。
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 全维配置类别、业务/技术约束与质量目标 |
+| 处理与边界 | 定义配置身份、作用域覆盖、生命周期、不可变发布与验收；来源统一LC-STD-001 |
+| 输出 | LC-D01–20与LC-Q01–12可判定约束 |
+| 维护角色 | 规范维护角色（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/standards/lowcode-dynamic-configuration.md#scope) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。

@@ -20,7 +20,7 @@ use mox_alliance_api::dto::*;
 use mox_alliance_common_proto::{AllianceError, AllianceErrorCode, CollaborationPlan, Task, TaskStatus};
 use mox_alliance_executor_proto::{DagEngine, ExecutionOptions, ExecutionStatus};
 
-use crate::app_state::ExecutorAppState;
+use crate::app_state::{ExecutorAppState, ExecutorMetricsSnapshot};
 
 /// 从请求头解析租户 ID（X-Tenant-Id），缺省为 nil
 fn tenant_from_headers(headers: &HeaderMap) -> Uuid {
@@ -91,6 +91,8 @@ pub fn build_router(state: ExecutorAppState) -> Router {
         .layer(middleware::from_fn(request_tracing_layer))
         // 一键传输加密（MOX_API_CRYPTO=sm4）：统一信封 data gzip+SM4-GCM，详见 mox-api-crypto
         .layer(middleware::from_fn(mox_api_crypto::middleware::crypto_middleware))
+        // 内部服务间鉴权：防绕过网关直连（MOX_INTERNAL_TOKEN；未配置则放行）
+        .layer(middleware::from_fn(internal_auth_layer))
         .with_state(state)
 }
 
@@ -113,6 +115,49 @@ async fn request_tracing_layer(req: Request, next: Next) -> Response {
     async move { next.run(req).await }.instrument(span).await
 }
 
+
+/// 内部服务间鉴权：校验网关注入的共享令牌（MOX_INTERNAL_TOKEN，主值）。
+///
+/// 下游 svc 不直接对前端暴露，唯一入口是网关(:3080)。本层防止绕过网关直连：
+/// - 配置 MOX_INTERNAL_TOKEN 后，所有非公开路径必须携带 `Authorization: Bearer <token>`；
+/// - 未配置主/备任一（开发/本地默认）则放行，保持向后兼容；
+/// - MOX_DEV_MODE=1 强制跳过；
+/// - 探活/指标端点（/health、/metrics、/leadership、/api/registry/health）始终放行。
+///
+/// 双值滚动（零停机换令牌，P0-C 2026-09-29）：
+/// - 新增可选 `MOX_INTERNAL_TOKEN_ALT`（备用值）。Bearer 等于主值 **或** 备用值即通过。
+/// - 生产滚动流程：① 旧值写入 `MOX_INTERNAL_TOKEN_ALT` → 全集群滚动重启本 svc；
+///   ② 网关出站把 `MOX_INTERNAL_TOKEN` 切到新值，全集群滚动重启网关；
+///   ③ 观察一个周期后移除 `MOX_INTERNAL_TOKEN_ALT`，完成双窗口滚动。
+///   两个窗口内网关旧请求带旧值（命中 ALT）、新请求带新值（命中主值），均不 401。
+async fn internal_auth_layer(req: Request, next: Next) -> Result<Response, StatusCode> {
+    let dev_mode = std::env::var("MOX_DEV_MODE")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(cfg!(debug_assertions));
+    let expected = std::env::var("MOX_INTERNAL_TOKEN").unwrap_or_default();
+    let expected_alt = std::env::var("MOX_INTERNAL_TOKEN_ALT").unwrap_or_default();
+    if dev_mode || (expected.is_empty() && expected_alt.is_empty()) {
+        return Ok(next.run(req).await);
+    }
+    let path = req.uri().path();
+    const PUBLIC: &[&str] = &["/health", "/metrics", "/leadership", "/api/registry/health"];
+    if PUBLIC.iter().any(|p| path.starts_with(p)) {
+        return Ok(next.run(req).await);
+    }
+    let ok = req
+        .headers()
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .map(|t| t == expected || (!expected_alt.is_empty() && t == expected_alt))
+        .unwrap_or(false);
+    if ok {
+        Ok(next.run(req).await)
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    }
+}
+
 /// 健康检查
 async fn health_check(State(state): State<ExecutorAppState>) -> impl IntoResponse {
     Json(serde_json::json!({
@@ -125,8 +170,52 @@ async fn health_check(State(state): State<ExecutorAppState>) -> impl IntoRespons
 }
 
 /// 运行指标快照（纯原子计数 JSON，与调度器 /metrics 同模式）
-async fn metrics_handler(State(state): State<ExecutorAppState>) -> impl IntoResponse {
-    Json(state.metrics.snapshot())
+///
+/// N7 指标文本化：按 `Accept` 头协商——`Accept: text/plain` 返回 Prometheus 文本
+/// （`mox_alliance_executor_*`），否则保持原 JSON 快照（向后兼容前端/控制台）。
+async fn metrics_handler(
+    State(state): State<ExecutorAppState>,
+    headers: HeaderMap,
+) -> Response {
+    let snap = state.metrics.snapshot();
+    if wants_prometheus_text(&headers) {
+        (
+            StatusCode::OK,
+            [(
+                axum::http::header::CONTENT_TYPE,
+                "text/plain; version=0.0.4; charset=utf-8",
+            )],
+            render_executor_metrics_prometheus(&snap),
+        )
+            .into_response()
+    } else {
+        Json(snap).into_response()
+    }
+}
+
+/// N7：判定请求是否要求 Prometheus 文本格式（Accept 头含 `text/plain`）。
+fn wants_prometheus_text(headers: &HeaderMap) -> bool {
+    headers
+        .get(axum::http::header::ACCEPT)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.contains("text/plain"))
+        .unwrap_or(false)
+}
+
+/// N7：写一行 Prometheus 指标（HELP + TYPE + sample）。
+fn prom_metric(o: &mut String, help: &str, ty: &str, name: &str, val: u64) {
+    o.push_str(&format!("# HELP {name} {help}\n# TYPE {name} {ty}\n{name} {val}\n"));
+}
+
+/// N7：把 executor 指标快照渲染为 Prometheus exposition 0.0.4 文本。
+fn render_executor_metrics_prometheus(s: &ExecutorMetricsSnapshot) -> String {
+    let mut o = String::new();
+    prom_metric(&mut o, "累计提交执行任务数", "counter", "mox_alliance_executor_tasks_submitted_total", s.tasks_submitted);
+    prom_metric(&mut o, "累计完成任务数", "counter", "mox_alliance_executor_tasks_completed_total", s.tasks_completed);
+    prom_metric(&mut o, "累计完成节点数", "counter", "mox_alliance_executor_nodes_completed_total", s.nodes_completed);
+    prom_metric(&mut o, "累计错误数", "counter", "mox_alliance_executor_errors_total", s.errors);
+    prom_metric(&mut o, "累计取消任务数", "counter", "mox_alliance_executor_tasks_cancelled_total", s.tasks_cancelled);
+    o
 }
 
 // ─── 公共 API ──────────────────────────────────────────────────────────────

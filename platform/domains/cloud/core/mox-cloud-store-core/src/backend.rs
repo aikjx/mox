@@ -14,8 +14,7 @@
 use crate::fs_backend::FsObjectStore;
 use mox_base_store_core::{KvStore, ObjectStore, ObjectStreamWriter, StoreError, StoreResult};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 /// 后端类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -86,10 +85,69 @@ impl Default for StoreConfig {
     fn default() -> Self {
         Self {
             kind: BackendKind::Fs,
-            data_dir: PathBuf::from("./data/store"),  // allow: dev-default-prod-overridden
+            data_dir: PathBuf::from("./data/store"), // allow: dev-default-prod-overridden
             verify_checksum: true,
             s3: None,
         }
+    }
+}
+
+impl StoreConfig {
+    /// 所有存储消费者共享同一配置解析，不允许缺配置时悄悄换盘。
+    pub fn from_env() -> StoreResult<Self> {
+        let kind = BackendKind::from_str_ci(
+            &std::env::var("FILE_BACKEND").unwrap_or_else(|_| "fs".into()),
+        )?;
+        Self::from_env_for_kind(kind)
+    }
+    pub fn from_env_for_kind(kind: BackendKind) -> StoreResult<Self> {
+        Self::from_lookup(kind, |name| std::env::var(name).ok())
+    }
+    fn from_lookup(
+        kind: BackendKind,
+        lookup: impl Fn(&str) -> Option<String>,
+    ) -> StoreResult<Self> {
+        let required = |name: &str| {
+            lookup(name)
+                .filter(|value| !value.trim().is_empty())
+                .ok_or_else(|| StoreError::Other(format!("缺少配置 {name}")))
+        };
+        let credential = |primary: &str, legacy: &str| -> StoreResult<String> {
+            match (lookup(primary), lookup(legacy)) {
+                (Some(a), Some(b)) if a != b => {
+                    Err(StoreError::Other(format!("配置 {primary} 与 {legacy} 不一致")))
+                },
+                (Some(value), _) | (_, Some(value)) if !value.trim().is_empty() => Ok(value),
+                _ => Err(StoreError::Other(format!("缺少配置 {primary}"))),
+            }
+        };
+        let s3 = if kind == BackendKind::Fs {
+            None
+        } else {
+            let path_style = match lookup("MOX_S3_FORCE_PATH_STYLE") {
+                Some(value) => value.parse::<bool>().map_err(|_| {
+                    StoreError::Other("MOX_S3_FORCE_PATH_STYLE 必须为 true/false".into())
+                })?,
+                None => kind != BackendKind::Oss,
+            };
+            if kind == BackendKind::Oss && path_style {
+                return Err(StoreError::Other("OSS 不允许 path-style 寻址".into()));
+            }
+            Some(S3ClientConfig {
+                endpoint: required("MOX_S3_ENDPOINT")?,
+                region: lookup("MOX_S3_REGION").unwrap_or_else(|| "us-east-1".into()),
+                bucket: required("MOX_S3_BUCKET")?,
+                access_key: credential("MOX_S3_ACCESS_KEY_ID", "MOX_S3_ACCESS_KEY")?,
+                secret_key: credential("MOX_S3_SECRET_ACCESS_KEY", "MOX_S3_SECRET_KEY")?,
+                force_path_style: path_style,
+            })
+        };
+        Ok(Self {
+            kind,
+            data_dir: lookup("MOX_STORE_DATA_DIR").unwrap_or_else(|| "./data/store".into()).into(),
+            verify_checksum: true,
+            s3,
+        }) // allow: env-MOX_STORE_DATA_DIR-overrides
     }
 }
 
@@ -105,26 +163,51 @@ pub fn create_backend(cfg: &StoreConfig) -> StoreResult<StoreBackend> {
                 stream: store,
                 data_dir: cfg.data_dir.clone(),
             })
-        }
+        },
         #[cfg(feature = "s3")]
         BackendKind::S3 | BackendKind::Minio | BackendKind::Oss => {
-            let s3_cfg = cfg
-                .s3
-                .as_ref()
-                .ok_or_else(|| StoreError::Other("S3 后端缺少 s3 配置".into()))?;
+            let s3_cfg =
+                cfg.s3.as_ref().ok_or_else(|| StoreError::Other("S3 后端缺少 s3 配置".into()))?;
             crate::s3_backend::build_s3_backend(&cfg.data_dir, s3_cfg, cfg.kind)
-        }
+        },
         #[cfg(not(feature = "s3"))]
-        BackendKind::S3 | BackendKind::Minio | BackendKind::Oss => Err(StoreError::Other(format!(
-            "后端 {:?} 需启用 feature `s3`（阶段2 计划）",
-            cfg.kind
-        ))),
+        BackendKind::S3 | BackendKind::Minio | BackendKind::Oss => {
+            Err(StoreError::Other(format!("后端 {:?} 需启用 feature `s3`（阶段2 计划）", cfg.kind)))
+        },
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_configuration_is_strict_and_oss_uses_virtual_hosted() {
+        let mut values = std::collections::HashMap::from([
+            ("MOX_S3_ENDPOINT", "https://oss-cn-hangzhou.aliyuncs.com"),
+            ("MOX_S3_BUCKET", "bucket"),
+            ("MOX_S3_ACCESS_KEY_ID", "key"),
+            ("MOX_S3_SECRET_ACCESS_KEY", "secret"),
+        ]);
+        let config = StoreConfig::from_lookup(BackendKind::Oss, |key| {
+            values.get(key).map(|value| value.to_string())
+        })
+        .unwrap();
+        assert!(!config.s3.unwrap().force_path_style);
+        values.insert("MOX_S3_FORCE_PATH_STYLE", "true");
+        assert!(StoreConfig::from_lookup(BackendKind::Oss, |key| values
+            .get(key)
+            .map(|value| value.to_string()))
+        .is_err());
+        values.remove("MOX_S3_FORCE_PATH_STYLE");
+        values.insert("MOX_S3_ACCESS_KEY", "different");
+        assert!(StoreConfig::from_lookup(BackendKind::S3, |key| values
+            .get(key)
+            .map(|value| value.to_string()))
+        .is_err());
+        assert!(StoreConfig::from_lookup(BackendKind::S3, |_| None).is_err());
+        assert!(StoreConfig::from_lookup(BackendKind::Fs, |_| None).unwrap().s3.is_none());
+    }
 
     #[test]
     fn backend_kind_parsing() {
@@ -154,10 +237,7 @@ mod tests {
         let got = be.object.get("kb/notes.md").await.unwrap();
         assert_eq!(&got[..], b"# note");
 
-        be.kv
-            .put("bucket:docs", bytes::Bytes::from_static(b"{}"))
-            .await
-            .unwrap();
+        be.kv.put("bucket:docs", bytes::Bytes::from_static(b"{}")).await.unwrap();
         assert_eq!(&be.kv.get("bucket:docs").await.unwrap().unwrap()[..], b"{}");
     }
 }

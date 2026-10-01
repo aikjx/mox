@@ -1,5 +1,5 @@
 # T10 云盘 M4 一键回归测试脚本（Run-T10-AllTests.ps1）
-# 用法：在仓库根目录执行 .\scripts\Run-T10-AllTests.ps1
+# 用法：在仓库根目录执行 .\scripts\tests\Run-T10-AllTests.ps1
 # 覆盖：Rust 3 crate lib tests + Clippy → Node 5 份 Mocha → 生成 artifacts → Rubric 评分
 
 param(

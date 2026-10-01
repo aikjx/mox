@@ -252,15 +252,46 @@
 </template>
 
 <script setup>
+import { formatDateTimeLocaleOr as formatTime } from '@/utils'
 import { ref, computed, onMounted } from 'vue'
 import {
   Refresh, Promotion, Document, Link, CircleCheck, Timer, Grid, Lightning
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
-import {
-  expertOrchestrate, expertGeneratePlan,
-  getOrchestrationStats, getOrchestrationPlugins, getOrchestrationHistory
-} from '@/api'
+import { allianceApi } from '@/modules/expert-alliance/api'
+import { ORCH_STATUS } from '@/modules/expert-alliance/contract'
+// 合法例外：/experts/orchestration/plugins 在 contract UNMOUNTED_ROUTES 里 rejected（后端硬编码 6 条假数据），
+// 模块不挂载，UI 面板暂留——故仅此函数保留 legacy 桶导入。
+import { getOrchestrationPlugins } from '@/api'
+
+// 模块 camelCase 输出 → 本面板既有 snake_case 读取的别名补全（视图 normalizeResult/normalizePlan 不改）
+function orchStatsLegacy(s) {
+  if (!s) return s
+  return { ...s, total_executions: s.totalExecutions, avg_duration_ms: s.avgDurationMs,
+    total_plans: s.totalPlans, plans_completed: s.plansCompleted, plans_failed: s.plansFailed,
+    fusion_strategy_distribution: s.fusionStrategyDistribution, active_plugins: s.plansReady }
+}
+function orchHistoryLegacy(r) {
+  if (!r) return r
+  return { ...r, records: (r.records || []).map(x => ({
+    ...x, execution_id: x.executionId, plan_id: x.planId, task_type: x.taskType,
+    steps_completed: x.stepsCompleted, steps_total: x.stepsTotal,
+    result_summary: x.resultSummary, created_at: x.createdAt, completed_at: x.completedAt,
+    duration_ms: x.durationMs
+  })) }
+}
+function orchResultLegacy(d) {
+  if (!d) return d
+  return { ...d,
+    orchestration_id: d.orchestrationId, task_type: d.taskType,
+    plan_id: d.planId,
+    plan: { plan_id: d.planId, steps: (d.steps || []).map(s => ({
+      step_id: s.stepId, name: s.name, description: s.description,
+      expert_id: s.expertId, status: s.status, depends_on: s.dependsOn
+    })), experts: d.experts, task: d.task },
+    execution: { ...d.execution, duration_ms: d.execution?.durationMs },
+    result: d.result }
+}
 
 const loading = ref(false)
 const running = ref(false)
@@ -308,7 +339,7 @@ async function loadAll() {
 
 async function loadStats() {
   try {
-    const raw = await getOrchestrationStats()
+    const raw = orchStatsLegacy(await allianceApi.getOrchStats())
     stats.value = {
       totalTurns: raw?.total_executions ?? raw?.totalTurns ?? 0,
       avgDuration: Math.round(raw?.avg_duration_ms ?? raw?.avgDuration ?? 0),
@@ -332,7 +363,7 @@ async function loadPlugins() {
 
 async function loadHistory() {
   try {
-    const r = await getOrchestrationHistory({ limit: 20 })
+    const r = orchHistoryLegacy(await allianceApi.getOrchHistory({ limit: 20 }))
     const list = Array.isArray(r) ? r : (r?.records || r?.history || [])
     history.value = list.map(x => ({
       ...x,
@@ -340,7 +371,7 @@ async function loadHistory() {
       input: x.input || { question: x.task_type || x.execution_id, mode: 'standard' },
       result: {
         ...(x.result || {}),
-        status: x.status === 'completed' ? 'success' : (x.status || 'failed'),
+        status: x.status === ORCH_STATUS.COMPLETED ? 'success' : (x.status || 'failed'),
         duration: x.duration_ms
       },
       timestamp: x.completed_at || x.created_at || x.timestamp
@@ -369,7 +400,7 @@ function normalizeResult(data) {
   const execStatus = raw.execution?.status || raw.status
   return {
     ...raw,
-    status: execStatus === 'completed' ? 'success' : (execStatus || 'failed'),
+    status: execStatus === ORCH_STATUS.COMPLETED ? 'success' : (execStatus || 'failed'),
     duration: raw.duration ?? raw.execution?.duration_ms ?? 0,
     state: raw.state || {
       execution: {
@@ -392,12 +423,12 @@ async function runOrchestrate() {
   result.value = null
   currentPlan.value = null
   try {
-    const data = await expertOrchestrate({
+    const data = orchResultLegacy(await allianceApi.orchestrate({
       question: form.value.question,
       pipeline: form.value.pipeline,
       enableCheckpoints: form.value.enableCheckpoints,
       enableLearning: form.value.enableLearning
-    })
+    }))
     result.value = normalizeResult(data)
     if (data.plan) currentPlan.value = normalizePlan(data.plan)
     ElMessage.success('编排执行完成')
@@ -418,10 +449,10 @@ async function generatePlan() {
   planGenerating.value = true
   currentPlan.value = null
   try {
-    const data = await expertGeneratePlan({
+    const data = orchResultLegacy(await allianceApi.generateOrchPlan({
       question: form.value.question,
       pipeline: form.value.pipeline
-    })
+    }))
     if (data.plan) {
       currentPlan.value = normalizePlan(data.plan)
       ElMessage.success('计划生成成功')
@@ -441,11 +472,7 @@ function formatJSON(obj) {
   }
 }
 
-function formatTime(ts) {
-  if (!ts) return '-'
-  const d = new Date(ts)
-  return d.toLocaleString('zh-CN', { hour12: false })
-}
+// 时间口径走出口别名 import（§5.36）：坏值/空值的话交回调用位点，这里不再自写一份
 
 onMounted(() => {
   loadAll()

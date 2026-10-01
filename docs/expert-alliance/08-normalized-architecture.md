@@ -3,7 +3,7 @@ title: 专家联盟企业级模块化归一化架构（导航+现状+目标合�
 version: V1.0
 authority: 🟢权威（与 CURRENT-ARCHITECTURE.md 并列；现状事实以 CURRENT V1.1 为最终裁决）
 doc_id: EA-ARCH-NORM-001
-last_updated: 2026-09-27
+last_updated: 2026-10-01（收官核验：A1/A2 全维度盘点 + 归一化整合）
 source_of_truth: 2026-09-27 三方代码事实核验（platform 后端 / frontend-ui 前端 / docs 文档体系）；核验报告位于各工程 `_verification/` 目录
 scope: 打通 platform / frontend-ui / docs 三目录的归一化架构视图，产出全维功能矩阵、缺口清单与目标态路线
 ---
@@ -68,16 +68,17 @@ docs/expert-alliance/
 | sdk | `domains/alliance/sdk/` | 2 crates | mox-alliance-sdk、mox-alliance-http-sdk（含 alliance_remote.rs 远程模式切换） |
 | svc | `domains/alliance/svc/` | 3 crates | scheduler-svc(:3100) / executor-svc(:3200) / registry-svc(:3400) |
 | 网关内联 | `gateway/mox-platform-gateway-svc/src/alliance/` | 11 .rs（9924 行） | experts_collaboration(2227)/orchestration(1236)/dispatcher(1173)/graph(1099)/common(1014)/registry(1009)/session(959)/db(721)/ext(366)/registry_client(92)/mod(28) |
+| **MCP Server（T3）** | `domains/alliance/mcp/mox-alliance-mcp-server/src/main.rs`（15198B） | 独立 bin（2026-10-01 落地） | 自实现 JSON-RPC 2.0 over stdio（Content-Length 帧），3 工具 `expert_search`(main.rs:69)/`optimal_team`(:82)/`graph_expand`(:96) 薄适配网关读面；**非 HTTP 路由、不进 actuator ROUTES**，stdio 传输；cargo test 5 通过 |
 
 ### 2.2 前端 frontend-ui（模块 + 视图两层）
 
 | 层 | 路径 | 模块数 | 关键文件 |
 |----|------|--------|---------|
-| 模块内 api | `src/modules/expert-alliance/api/` | 1 文件（19KB） | alliance.api.js（68 端点 key） |
+| 模块内 api | `src/modules/expert-alliance/api/` | 3 文件 | alliance.api.js（68 端点 key）+ alliance.api.test.js + index.js |
 | 模块内 contract | `contract/` | 11 源文件 + 对应 .test.js | endpoints.js（68 key + 11 UNMOUNTED_ROUTES）、collab/dispatcher/graph/mode/orchestration/registry/sessions |
 | 模块内 store | `store/` | 6 Pinia stores | collab/console/experts/graph/orch/sessions |
 | 模块内 views | `views/` | 6 .vue | Console(1483行)/Experts(749)/Orchestration(348)/Sessions(157)/Graph(134)/Collab(92) |
-| 模块内 components | `components/` | 16 .vue | ExpertCollabPanel/Session×4/Graph×4/ExpertCard/RankBoard/Booking/RegistryForm/CapabilityMatrix/SemanticSearch |
+| 模块内 components | `components/` | 16 .vue + 4 .test.js | ExpertCollabPanel/Session×4(SessionList/Meta/Stats/Thread)/Graph×4(GraphCanvas/GraphNodeInspector/GraphTeamPanel/GraphMetricsPanel)/ExpertCard/RankBoard/Booking/RegistryForm/CapabilityMatrix/SemanticSearch/**MatchExplainPanel（U2 匹配透明化，2026-10-01 新增）** |
 | 外部 legacy 视图 | `src/views/expert/` + `src/views/workspace/` | 5 .vue | AllianceTaskView(935)/ExpertCenterView(1021)/ExpertConfigView(5414)/ExpertPlazaView(1921)/ExpertWorkspaceView(891) |
 | legacy API 客户端 | `src/api/` | 2 文件 | alliance.api.js（旧层，含假端点 /qa 与禁端点 /ai/engine/alliance/*）、experts.api.js |
 
@@ -104,9 +105,9 @@ docs/expert-alliance/
 | 7 | **任务分解** | experts_orchestration.rs:99-140 按 task_type 选固定步骤表 | allianceOrch store + AllianceOrchestrationView（POST /api/experts/orchestrate） | 03 §1；CURRENT §1.2 补记 | ✅ |
 | 8 | **7 种协作模式（DAG）** | planner.rs:81-91 AllianceMode 7 臂：Sequential/Parallel/Voting/Hierarchical/Debate/Iterative/Dynamic | allianceCollab store mode 枚举 + contract/mode.js | CURRENT §3.7；05 §7 FusionStrategy 误写 9 值 | ✅（7 种，非 6 非 9） |
 | 9 | **结果融合（6 策略）** | mox-alliance-core/src/fusion/strategies/（confidence_weighted/debate/iterative/map_reduce/stacking/weighted_vote） | 前端通过 /api/alliance/tasks/:id/fusion-result 消费 | CURRENT §1.1；05 §7 | ✅ |
-| 10 | **图谱关联查询** | experts_graph.rs（1099 行）：8 条只读路由 + rebuild POST | allianceGraph store + AllianceGraphView + GraphCanvas/NodeInspector/TeamPanel/MetricsPanel | 05 §6；CURRENT §1.2 | ✅ |
-| 11 | **图谱节点级 CRUD** | **grep `INSERT/UPDATE/DELETE graph` 零命中**；唯一写是 POST /rebuild（全量重建） | 前端 graph store rebuildGraph 对应 | 05 §6 未提 | 🔴 缺口（N4） |
-| 12 | **调度匹配（模块化权重）** | scheduler-core/modular_matcher.rs（生产主路径）；matcher.rs 是 fallback；健康度 0.15 加权非过滤（matcher.rs:166,122） | allianceExperts store searchExpertMatches（POST /api/alliance/experts/search） | 01 F-02 误写 RuleBased 主路径 + "状态过滤" | ✅（但 01 文档口径错） |
+| 10 | **图谱关联查询** | experts_graph.rs：8 条只读路由 + rebuild POST + N4 6 节点/边写面 + T2 图 RAG 多跳扩展（2026-10-01） | allianceGraph store + AllianceGraphView + GraphCanvas/NodeInspector/TeamPanel/MetricsPanel | 05 §6；CURRENT §1.2 | ✅ |
+| 11 | **图谱节点级 CRUD** | experts_graph.rs：8 只读路由 + rebuild + **6 个增量写端点**（POST/PUT/DELETE /nodes[/:id]、/edges[/:seq]，RBAC `graph.mutate`）；experts_db.rs UPSERT/级联删增量落库 | allianceGraph store createGraphNode/update/delete + createGraphEdge/update/delete 薄方法（alliance-graph.store.js:229-286）；**U1 画布 MVP 2026-10-01 已在 GraphCanvas.vue 落地**（拖拽 dragPositions:47、Inspector 改删、连线、T2 邻域展开并入:325） | 05 §6；BFR §N4 | ✅（2026-09-30 闭环） |
+| 12 | **调度匹配（模块化权重）** | scheduler-core/modular_matcher.rs（生产主路径）；matcher.rs 是 fallback；主路径健康权重可配置（默认0.05）、不健康得分0.2，另有Active/租户/领域/总分下限过滤；备用matcher为0.15/0.3 | allianceExperts store searchExpertMatches（POST /api/alliance/experts/search） | 01 F-02 误写 RuleBased 主路径 + "状态过滤" | ✅（但 01 文档口径错） |
 | 13 | **计划生成器** | scheduler-core/planner.rs SimplePlanGenerator；网关侧 experts_orchestration.rs 做固定步骤表+Kahn+预演文案 | allianceOrch store generateOrchPlan | CURRENT §3.7 补记 | ✅ |
 | 14 | **执行器 DAG 引擎** | executor-core/dag_engine.rs（拓扑调度/并行执行）；expert_executor.rs（超时 300s + 重试 3 + 指数退避） | AllianceConsoleView 消费 /api/alliance/tasks/:id/dag + /nodes | 03 §5；CURRENT §3.2 | ✅ |
 | 15 | **DAG 并行度上限** | **grep `max_parallel/concurrency/Semaphore` 零命中**；靠 tokio 自然调度 | 前端无配置入口 | — | 🔴 缺口（N8） |
@@ -216,9 +217,15 @@ docs/expert-alliance/
 |------|-----------|-------------------|-------------|------|
 | `/api/experts/*` | 43 | 46 | 68 key 中 51 个走此前缀 | 专家 CRUD/会话/协作/图谱/分发/编排/预约 |
 | `/api/alliance/*` | 20 | 28 | 68 key 中 17 个走此前缀（+1 SSE） | 任务全生命周期 + DAG/节点/融合/日志流 |
-| `/api/expert-graph/*` | 8 | 8 | graph store 8 个方法 | 图谱只读查询 + rebuild + optimal-team |
+| `/api/expert-graph/*` | 8 + 6 写面 + 1 RAG = 15 | 15 | graph store 8 只读 + 6 增量写方法 + 1 RAG 扩展 | 图谱只读查询 + rebuild + optimal-team + **节点/边 CRUD（2026-09-30，RBAC `graph.mutate`）** + **图 RAG 多跳扩展（2026-10-01，T2，读面公开）** |
 | `/ws/v1/*` | **0** | 0 | 无 | **代码零命中**（06 §4 幻影） |
 | `/api/ai/engine/alliance/*` | — | — | legacy 工作台 2 个调用点 | 模块契约 **明令禁止**（endpoints.js:135-136），归一化须移除 |
+
+> **2026-10-01 三方核对（以代码为准）**：
+> - ① 代码 `actuator.rs:423` `ROUTES: [ApiRoute; 243]` 实计 **243 条**（r() 条目 243/243，解析全过）。
+> - ② `docs/API-REGISTRY.md` 文首自称 **236 条**，实际表格行 **220 行**、分节标题合计 **213**——三处数字互不一致；但其 alliance 相关子集（`alliance.*` 20 条 + `experts.*` 61 条，含 expert-graph 15 条）**与代码完全对齐**；缺漏的 23 条在 system/monitor/projects/storage/llm 等非联盟域，本账不代改 registry，**以代码 ROUTES=243 为准**。
+> - ③ 本表 `/api/experts/*` 46 行、`/api/alliance/*` 20 条目、`/api/expert-graph/*` 15 条均与代码逐条对上（experts 去重路径 43 = 46 行减 3 个路径碰撞）。
+> - ⚠️ 残留文案：registry `alliance.experts.search` 说明仍写「RuleBasedExpertMatcher」，与 08 §三#12「modular_matcher 为生产主路径」冲突，**以代码为准**（modular_matcher.rs 主路径，health 权重 0.05）。
 
 ### 7.1 前端模块契约纪律（已核实）
 
@@ -234,6 +241,8 @@ docs/expert-alliance/
 | G2 | `src/api/alliance.api.js:315` | 假端点 `POST /alliance/tasks/:id/qa`（后端无） | 删除死代码 |
 | G3 | `src/api/alliance.api.js:289,191,195,310,269` | 把已定性为 stub/重复的 5 条端点重新请回（死代码但埋雷） | 删除或标记 @deprecated |
 
+> ✅ **2026-09-29 完整收敛（G1/G2/G3 + 全量 legacy 清理）已闭环**：
+> 6 个视图文件（ExpertCenterView / AllianceTaskView / ExpertPlazaView / ExpertOrchestratorPanel / ExpertOverviewPanel / ExpertEnterprisePanel）的 30+ 调用点已全部从 @/api 桶收敛到模块 allianceApi（含字段映射 type→expertType、description→bio、snake_case↔camelCase 适配）。vitest 980/981 通过（唯一失败为 admin 面板预先存在的 fmtTime 问题，与专家联盟无关）；grep 确认 views/expert、views/workspace 下 legacy import 零命中；9 处合法例外（AI 域 aiChat/getEngineFlowGraph、契约 rejected 的 enterpriseConsult/getOrchestrationPlugins/getExpertOverview 等）已记录理由。详见 frontend-ui/src/modules/expert-alliance/_verification/frontend-fix-report.md。
 ---
 
 ## 八、状态机与枚举字典（统一版）
@@ -247,7 +256,7 @@ docs/expert-alliance/
 | **节点状态 NodeStatus** | executor-core/dag_engine.rs | 含 `ready` / `running` / `success` / `failed` / `cancelled` | 04 §1.2 缺 ready/cancelled |
 | **协作模式 AllianceMode** | planner.rs:81-91 | `Sequential` / `Parallel` / `Voting` / `Hierarchical` / `Debate` / `Iterative` / `Dynamic`（**7 种**） | 05 §7 FusionStrategy 写 9 值（混淆了模式与策略） |
 | **融合策略 FusionStrategy** | mox-alliance-core/fusion/strategies/ | `confidence_weighted` / `debate` / `iterative` / `map_reduce` / `stacking` / `weighted_vote`（**6 种**） | 05 §7 列 9 值 |
-| **健康度** | matcher.rs:166 | `is_healthy ? 1.0 : 0.3`，按 **0.15 权重**参与总分（**加权非过滤**） | 01 F-02 / 03 §2 误写"状态过滤" |
+| **健康度与过滤** | modular_matcher.rs:170–171/197–207/228–250/279–282；types.rs:1213–1217 | 主路径健康分1.0/0.2、权重可配置（默认0.05）；备用matcher为1.0/0.3、权重0.15。主路径仍有租户/Active/领域/优先级/总分过滤 | 不得用备用参数解释主路径，也不得把登记值当健康 |
 
 > **统一原则**：`availability.status` 是**登记值**（注册时写入），不是探活结果。前端文案不得把它表述为"在线检测通过"。主动探活仅在 registry-svc 侧（默认关闭，N5）。
 
@@ -256,6 +265,8 @@ docs/expert-alliance/
 ## 九、已核实缺口清单（按严重度排序）
 
 > 以下为 2026-09-27 三方核验新发现的缺口，均附代码证据。已知缺口（favorites/plans/history 进程内、无 WS、availability 登记值、engine_status 恒 running、experts_db 零 fs::write）已在 CURRENT V1.1 记录，不重复列出。
+
+> **⚠️ 2026-10-01 收官注记**：本节为 2026-09-27 首核快照，其中 **N1/N2/N3/N4/N7/N8/N12 与 G1/G2/G3 已在 R1–R4 多轮修复闭环**（含 P0-A~D、T1a、图 CRUD、指标文本化），闭环证据与测试数见 `16-decision-and-state-ledger.md` §一.1/§一.2（**该台账为闭环状态唯一权威**）。本节表格保留作首核历史证据，状态请以台账为准；当前仍开放项为 N5（探活默认关，设计取舍）/N11（会话多活）、G5/G6/G7/G9、进程内三项落盘（D4）等。
 
 ### 🔴 高严重度
 
@@ -272,7 +283,7 @@ docs/expert-alliance/
 
 | # | 缺口 | 代码证据 | 归一化建议 |
 |---|------|---------|-----------|
-| N4 | 图谱无节点级 CRUD，只能全量 rebuild | experts_graph.rs:909-916 仅 8 条只读路由 + rebuild；grep `INSERT/UPDATE/DELETE graph` 零命中 | 补 POST /nodes、POST /edges，或专家 CRUD 时自动增量维护图谱 |
+| ~~N4~~ | ~~图谱无节点级 CRUD，只能全量 rebuild~~（✅ 2026-09-30 闭环） | experts_graph.rs 原 8 只读 + rebuild；现新增 6 写端点 + experts_db.rs 增量 UPSERT/级联删 | 已补 POST/PUT/DELETE /nodes[/:id]、/edges[/:seq]，RBAC `graph.mutate`；详见 BFR §N4 | ✅ 已闭环 |
 | N5 | registry 主动健康探测默认关闭 | registry-svc/app_state.rs:56 `health_probe_enabled: false` | 生产默认开启或文档明确标注需显式设 true |
 | N6 | registry_client.rs:26 生产 `.expect()` 恐慌点 | `gateway/src/alliance/registry_client.rs:26` `.build().expect(...)` | 改为返回 Result 并降级为 None |
 | N7 | scheduler/executor /metrics 是 JSON 非 Prometheus 文本 | scheduler/routes.rs:112 `Json(state.metrics.snapshot())`；gateway 侧是 Prometheus 文本（o11y.rs:21） | 补 Prometheus 文本格式端点 |
@@ -308,7 +319,7 @@ docs/expert-alliance/
 | **审计用户身份** | 🔴 Actor 硬编码 system | 从 ApiAuth 注入真实用户 | P1 | 补（N2） |
 | **前端 API 收敛** | 🔴 两套客户端并行 | 收敛到模块 allianceApi，删除 legacy | P1 | 清理 G1/G2/G3/G4 |
 | **前端权限** | 🟡 控制台路由无角色校验 | requiresRole + 按钮级 v-permission | P1 | 补（G3） |
-| **图谱节点级 CRUD** | 🔴 只能全量 rebuild | 增量维护 | P2 | 补（N4） |
+| **图谱节点级 CRUD** | ✅ 已闭环（2026-09-30）：6 写端点增量维护，RBAC `graph.mutate` | — | ✅ 已完成 | 见 BFR §N4 |
 | **DAG 并行度** | 🟡 无信号量上限 | Semaphore 限流 | P2 | 补（N8） |
 | **/metrics 格式统一** | 🟡 scheduler/executor 是 JSON | Prometheus 文本 | P2 | 补（N7） |
 | **服务间通信** | 🟡 HTTP 短调用 | gRPC :50051 | P3 | 保持现状 |
@@ -329,7 +340,7 @@ docs/expert-alliance/
 | **编排历史空了** | orchestration_history 是进程内 Vec（experts_common.rs:470），重启即失；空结果只证明"本进程没有"，不证明"从未发生" | 界面文案已合规（"仅本次进程"）；如需持久化走 P1 落盘 |
 | **收藏全没了** | favorites 是进程内 HashSet（:472） | 同上 |
 | **plan_id 404** | plans 是进程内 HashMap（:468），网关重启后旧 plan_id 失效 | orch store 已注释提示；重新生成 plan |
-| **专家显示"在线"但实际不通** | `availability.status` 是注册时写入的登记值，不是探活结果；registry 主动探活默认关闭（N5） | ①不要把登记值当健康检测；②生产开 REGISTRY_PROBE_ENABLED；③真正健康判断看 scheduler matcher 的 health_score（0.15 加权） |
+| **专家显示"在线"但实际不通** | `availability.status` 是注册时写入的登记值，不是探活结果；registry 主动探活默认关闭（N5） | ①不要把登记值当健康检测；②生产开 REGISTRY_PROBE_ENABLED；③健康证据看调度专家health字段；主路径按实际配置加权，不套用备用matcher的0.15 |
 | **直连 :3100 创建任务成功，绕过了登录** | 下游 svc 无 JWT 中间件（N1） | 生产环境网络隔离，不暴露 :3100/:3200/:3400 到公网；代码层补 JWT |
 | **Prometheus 抓 scheduler /metrics 解析失败** | 返回的是 JSON 快照，非 Prometheus 文本（N7） | 写 JSON→Prometheus 适配器，或补文本格式端点 |
 | **前端工作台调 /ai/engine/alliance/full 404** | 该端点仅编排器 :3001 提供，网关 :3080 不保证（G1） | 迁移到模块 allianceApi 的 /api/alliance/* 族 |
@@ -349,3 +360,108 @@ docs/expert-alliance/
 ---
 
 *本文档为 2026-09-27 三方代码事实核验后的归一化产物。所有"已实现"结论均可在上述三份核验报告中找到 文件:行号 证据。与 CURRENT-ARCHITECTURE.md V1.1 冲突时以 CURRENT 为准。*
+
+---
+
+## 十三、全维度功能总表（2026-10-01 收官核验）
+
+> 本表为 A1 收官整合产物：把 §三 40 项矩阵与多轮新增真实模块（N4 图谱 CRUD / T2 图 RAG / T3 MCP Server / U1 画布 / U2 匹配透明化）的**最终状态**逐条核到代码 `文件:行号` 与 `_verification/` 真实测试数。
+> 状态口径：**✅闭环** = 代码+前端+文档三方对齐且测试全绿；**🟡部分** = 核心已落地但有留待项/进程内/默认关闭；**🔴残留** = 仍无实现或纯文档幻觉。
+> 测试数来源（均读自报告，非估算）：gateway alliance **97**、三 svc（scheduler 23+executor 15+registry 28）**66**、scheduler-core **115**、scheduler-svc+http-sdk **38**、mox-alliance-mcp-server **5**、前端 vitest **78 文件/1044**。
+
+### 13.1 专家注册与画像
+
+| 功能 | 实现位置（文件:行号） | 验证证据 | 状态 |
+|---|---|---|---|
+| 专家注册 CRUD | gateway/src/alliance/experts_registry.rs；表 experts（experts_db.rs:115）；ROUTES `experts.registry.*` | gateway alliance 97 | ✅ |
+| 可用性枚举 online/busy/offline/away | experts_registry.rs:127-128（登记值非探活） | gateway alliance 97 | ✅ |
+| 专家预约 booking | experts_ext.rs + 表 bookings（experts_db.rs:182） | gateway alliance 97 | ✅ |
+| 指标/排行 compute_platform_metrics | experts_registry.rs:180-192 | gateway alliance 97 | ✅ |
+| 语义搜索 | POST /api/experts/semantic-search（ROUTES） | gateway alliance 97 | ✅ |
+| 内置专家 11 条 / 网关种子 10 位 | config-core/examples/domain_experts.rs:108-132；experts_common.rs:645-660 | gateway alliance 97 | ✅ |
+| 收藏 favorites（进程内 HashSet） | experts_common.rs:472，无表、重启即失 | 前端文案「仅本次会话」合规 | 🟡 进程内（D4 P1 落盘） |
+
+### 13.2 协作编排与执行
+
+| 功能 | 实现位置（文件:行号） | 验证证据 | 状态 |
+|---|---|---|---|
+| 多轮协作辩论 run_debate | experts_collaboration.rs:496 | gateway alliance 97 | ✅ |
+| 7 种协作模式 DAG（非 6 非 9） | scheduler-core/planner.rs:81-91 | scheduler-core 115 | ✅ |
+| 6 种融合策略 | mox-alliance-core/src/fusion/strategies/ | executor-core 41 | ✅ |
+| 任务分解固定步骤表 | experts_orchestration.rs:99-140 | gateway alliance 97 | ✅ |
+| DAG 执行引擎 + 超时300s/重试3/退避 | executor-core/dag_engine.rs；expert_executor.rs:93/98 | executor-core 41 + e2e 5 | ✅ |
+| DAG 并行度信号量（T1a/N8） | dag_engine.rs:43 ENV_DAG_MAX_PARALLEL、:105 semaphore、:152-158、:587 acquire_owned（默认50，0=无界） | executor-core lib 41+e2e5+bench1 | ✅（两级配额/前端滑块留待 P1.5） |
+| LLM 多 Provider 路由 + scheduler 熔断 | scheduler-core/llm_router.rs:477（threshold5/60s） | scheduler-core 115 | ✅ |
+| SSE 日志流 | GET /api/alliance/tasks/:id/logs/stream（actuator.rs ROUTES）；前端 useSSE | gateway alliance 97 | ✅ |
+| 会话管理 sessions/messages | experts_db.rs:132/148，SQLite 落盘 | gateway alliance 97 | ✅（单进程恢复 N11） |
+| 编排计划 plans / 编排历史（进程内） | experts_common.rs:468 HashMap / :470 Vec | 前端文案「仅本次进程」合规 | 🟡 进程内（D4 P1 落盘） |
+| 网关侧熔断器（独立内存） | experts_dispatcher.rs:494 | gateway alliance 97 | 🟡 与 scheduler 侧不共享（N10 设计取舍） |
+
+### 13.3 知识图谱（只读 + CRUD + RAG）
+
+| 功能 | 实现位置（文件:行号） | 验证证据 | 状态 |
+|---|---|---|---|
+| 图谱 8 条只读路由 + rebuild | experts_graph.rs:1598-1605（overview/stats/neighbors/collaborators/path/communities/optimal-team/rebuild） | gateway alliance 97 | ✅ |
+| 节点级 CRUD 6 写端点（N4/D7） | experts_graph.rs:1607-1610（POST/PUT/DELETE /nodes[/:id]、/edges[/:seq]）；RBAC `MutateGraph` 挂 6 handler（:1011/1060/1110/1155/1225/1276），code=`graph.mutate`（:1865）；experts_db.rs upsert_node/cascade_delete_node/upsert_edge/replace_edges/set_meta 增量落库 | gateway alliance 86（73+13） | ✅ 闭环（2026-09-30） |
+| 图 RAG 加权多跳扩展（T2） | POST /api/expert-graph/rag/expand（experts_graph.rs:1612）；store alliance-graph.store.js:325 expandGraphNeighborhood（权重乘积聚合、hybrid_rerank 扩展点） | gateway alliance 97（86+11 RAG） | 🟡 内存态多跳已落地；向量融合待 #27、A4 图库迁入换 CTE |
+| 前端图谱 CRUD/邻域接线 | alliance-graph.store.js:229-286（6 薄方法）、:432-433（RAG seeds） | 前端 graph.store.test.js 18 例 | ✅ |
+
+### 13.4 调度匹配与透明化（U2）
+
+| 功能 | 实现位置（文件:行号） | 验证证据 | 状态 |
+|---|---|---|---|
+| 模块化权重匹配主路径 | scheduler-core/modular_matcher.rs:286（主路径健康权重默认0.05、不健康0.2；Active/租户/领域/总分下限过滤） | scheduler-core 115 | ✅（01 文档「RuleBased 主路径」口径错） |
+| 匹配逐维演算视图（U2） | proto/matcher.rs:35 MatchedExpert.weights；api/dto.rs:169 ScoreDim{value,weight}、:181 ExpertScoreView{domain/capability/health/priority/performance,total}；scheduler-svc/routes.rs /experts/search 透出；http-sdk+alliance_remote 双路径透传 | scheduler-core 115 + svc/http-sdk 38 | ✅ 闭环（2026-10-01） |
+| 前端匹配透明面板（U2） | components/MatchExplainPanel.vue:42-46（五维条形图+权重+总分演算；健康 0.05 硬标注纠错）；views/AllianceExpertsView.vue 消费 props.scores | 前端 vitest 78 文件/1044 | ✅（后端无 scores 时面板不渲染，降级合规） |
+
+### 13.5 平台基础（鉴权/加密/审计/HA/存储）
+
+| 功能 | 实现位置（文件:行号） | 验证证据 | 状态 |
+|---|---|---|---|
+| 网关 JWT 鉴权 | auth.rs:143 | gateway alliance 97 | ✅ |
+| 下游三 svc 内部令牌双值（N1/P0-C） | scheduler/routes.rs:62-94、executor/routes.rs:137-161、registry/routes.rs:89-113；网关出站 registry_client.rs:22-41、alliance_remote.rs:116-130 | 三 svc 66 + gateway 64 | ✅ 代码闭环（生产须配 MOX_INTERNAL_TOKEN 才生效） |
+| 审计哈希链 + 真实 Actor（N2） | experts_common.rs:521-574 NDJSON 哈希链；:587-626 OptionalAuthUser 提取器注入 11 写 handler | gateway alliance 97 | ✅ |
+| 管理写面 RBAC（N12/G-2） | experts_rbac.rs（ADMIN_ROLES + RbacAction），7 handler 强制 super_admin/tenant_admin | gateway alliance 73（64+9） | ✅ |
+| SM4 全链路加密（6 挂载点） | gateway/lib.rs:332、scheduler/routes.rs:36、executor/routes.rs:93、registry/routes.rs:60、executor_bridge.rs:112、alliance_remote.rs:156 | 报告 BVR §2.1(6) | ✅（生产必开 MOX_API_CRYPTO=sm4） |
+| SQLite schema 版本（N3） | PRAGMA user_version=1 三点接入（experts_db.rs / scheduler-core/storage.rs / registry-svc/storage.rs） | gateway alliance 97 | ✅ |
+| JSON→SQLite 一次性迁移 | experts_db.rs:604 | gateway alliance 97 | ✅ |
+| 调度器 HA 选主+fencing | leadership.rs:110/194、storage.rs:890 SqliteLeaseStore、ha.rs:200 leader 对账 | scheduler-core 115 | ✅（须 HA_MODE=on 且 STORAGE_MODE=sqlite） |
+| 注册中心 3400 + 10:1:1 聚合 | registry-svc + aggregation.rs:11/489 | 三 svc 66 | ✅ |
+| 注册中心主动探活（默认关） | registry-svc/app_state.rs:56 health_probe_enabled=false | — | 🟡 设计取舍（N5：生产显式设 MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=true） |
+| /metrics Prometheus 文本（N7） | 三 svc routes.rs 按 Accept 协商（scheduler:168/184/201、executor:176/197、registry:37/83-99） | 三 svc 66 | ✅（2026-09-30） |
+| registry_client .expect 降级（N6） | registry_client.rs:37-41 unwrap_or_else | gateway alliance 64 | ✅ |
+| actuator ROUTES 全量注册 | actuator.rs:423 `[ApiRoute; 243]` | 代码实计 243 | ✅ |
+
+### 13.6 MCP 接入（T3）
+
+| 功能 | 实现位置（文件:行号） | 验证证据 | 状态 |
+|---|---|---|---|
+| MCP Server（stdio 自实现） | platform/domains/alliance/mcp/mox-alliance-mcp-server/src/main.rs（Content-Length 帧 JSON-RPC 2.0）；工具 expert_search(:69)/optimal_team(:82)/graph_expand(:96) | cargo test -p mox-alliance-mcp-server **5**（initialize/tools-list/通知静默/未知工具错路/帧头解析） | 🟡 Server 闭环（2026-10-01）；**Client 端与凭证托管留待**（M2） |
+
+### 13.7 前端契约与 UI（U1/U2 + 收敛）
+
+| 功能 | 实现位置（文件:行号） | 验证证据 | 状态 |
+|---|---|---|---|
+| 模块契约纪律（68 key 0 假端点） | contract/endpoints.js（68 key + 11 UNMOUNTED_ROUTES rejected:147-174） | 前端 vitest 78 文件/1044 | ✅ |
+| legacy 30+ 调用点收敛（G1/G2/G3/G4） | views/expert、views/workspace 全部归并模块 allianceApi；forbidden-revival.test.js 9 例防复活 | 前端 vitest 1044 | ✅（2026-09-29） |
+| 路由 requiresRole + 按钮 v-role-any | router/index.js:115-133；7 管理写面按钮（与后端 ADMIN_ROLES 三端同源，无 operator 角色） | 前端 vitest 1044 | ✅（G-1/G-2 闭环） |
+| U1 能力图谱画布 MVP | components/GraphCanvas.vue（手写确定性 SVG，不引 VueFlow/LogicFlow）；store dragPositions(:47/:349 视觉态不入库)、Inspector 改删/新增节点、点两节点连线(linkSourceId/pendingEdge:447)、选中节点展开 T2 邻域幂等并入(:432) | store/graph-canvas.test.js 18 例；前端 vitest 1044 | 🟡 MVP 闭环（DAG 导出/实时多人回显/虚拟滚动/拖拽坐标持久化留待） |
+| U2 匹配透明面板 | components/MatchExplainPanel.vue（见 13.4） | 前端 vitest 1044 | ✅ |
+
+### 13.8 残留缺口与设计取舍（如实标注）
+
+| 项 | 位置/证据 | 状态 |
+|---|---|---|
+| 进程内三项 favorites/plans/history 落盘（D4） | experts_common.rs:468/470/472 | 🟡 P1 落盘规划 |
+| SSE 未统一（G5） | AllianceTaskView 手写 reader vs Console useSSE | 🟡 P2 |
+| console/orch store 无独立测试（G6） | alliance-console.store.js / alliance-orch.store.js 无 .test.js | 🟡 P2 |
+| 大列表虚拟滚动（G7） | 全仓 virtual/VirtualScroll 零命中，GraphCanvas 手写 SVG 全量渲染 | 🟡 P2 |
+| 图谱可视化三套栈未归一（G9/D10/U3） | 模块 SVG vs ExpertCenterView 力导向 vs EnterprisePanel echarts | 🟡 P2 |
+| 会话多活 sticky（N11） | sessions 落网关本地 SQLite，网关未多活 | 🟡 设计取舍（A2 网关无状态化时解） |
+| 中文硬编码 i18n（G8） | 全仓 $t/vue-i18n 零命中 | 🟡 设计取舍（内网政务定位） |
+| WebSocket 幻影（#25/D3） | 代码 WebSocketUpgrade 零命中，实时性仅 SSE | 🔴→✅ 文档侧已补记（2026-09-29），代码无 WS |
+| gRPC :50051 措辞 | PORT-REGISTRY 写「联盟内部 gRPC」vs CURRENT 写「未使用」 | 🟡 措辞待统一（代码事实：联盟未用 gRPC） |
+| API-REGISTRY 总数 | 文首 236 / 实表 220 / 代码 ROUTES 243 | 🟡 文档落后代码 23 条（非联盟域），以代码为准 |
+
+> **总表统计（2026-10-01）**：✅闭环 **38** 项｜🟡部分/进程内/设计取舍 **14** 项｜🔴残留 **0** 项（原 🔴 N1/N2/N3/G1/G2/G3/WS 均已闭环或文档补记）。新增真实模块（图谱 CRUD N4、图 RAG T2、MCP Server T3、U1 画布、U2 透明化）已全部并入对应子表并核到行号与测试数。
+

@@ -9,7 +9,9 @@ import {
   COLLABORATOR_LIMITS, COLLABORATOR_LIMIT_DEFAULT, DOMAIN_NODE_ID_PREFIX,
   GRAPH_EDGE_TYPES, GRAPH_NODE_TYPE,
   OPTIMAL_TEAM_BACKEND_RULES, OPTIMAL_TEAM_DEFAULTS, OPTIMAL_TEAM_FIELDS, OPTIMAL_TEAM_ROLES,
-  collaboratorQuery, coverageText, edgeTypeMeta, nodeTypeMeta, optimalTeamBody, optimalTeamProblem, optimalTeamRoleLabel
+  collaboratorQuery, coverageText, edgeTypeMeta, graphNodeLabel, graphNodeShortId,
+  isDomainNode, isLostGraphLabel, nodeTypeMeta,
+  optimalTeamBody, optimalTeamProblem, optimalTeamRoleLabel
 } from './graph.js'
 import { ENDPOINTS } from './endpoints.js'
 import {
@@ -159,19 +161,27 @@ function structFields(structBody) {
 const graphEndpoints = () => Object.entries(ENDPOINTS).filter(([, ep]) => ep.path.startsWith('/api/expert-graph'))
 
 describe('协作图谱端点面', () => {
-  it('契约里的 8 条与 build_experts_graph_router 注册的路由等集，方法逐字一致', () => {
+  it('契约里的图谱端点与 build_experts_graph_router 注册的路由等集，方法逐字一致', () => {
     const router = rustFn('pub fn build_experts_graph_router')
-    const routed = [...router.matchAll(/\.route\("([^"]+)",\s*(get|post)\((\w+)\)/g)]
-      .map((m) => ({ path: m[1], method: m[2].toUpperCase(), handler: m[3] }))
-    expect(routed.length).toBe(8)
-    const byPath = Object.fromEntries(routed.map((r) => [r.path, r]))
-
+    // 每条 .route("PATH", CHAIN) 独占一行；CHAIN 形如 get(h) / post(h) / put(h).delete(h)
+    const routed = new Map()
+    for (const line of router.split('\n')) {
+      const m = line.match(/\.route\("([^"]+)",\s*(.+)\)\s*$/)
+      if (!m) continue
+      const path = m[1]
+      const methods = [...m[2].matchAll(/\b(get|post|put|delete|patch)\((\w+)\)/g)]
+        .map((mm) => ({ method: mm[1].toUpperCase(), handler: mm[2] }))
+      routed.set(path, methods)
+    }
     const contracted = graphEndpoints()
-    expect(contracted.map(([, ep]) => ep.path).sort()).toEqual(Object.keys(byPath).sort())
+    // 契约里每条 (method, path) 都能在 router 里找到，反之亦然
+    const contractedKeys = contracted.map(([, ep]) => `${ep.method} ${ep.path}`).sort()
+    const routedKeys = [...routed.entries()]
+      .flatMap(([p, ms]) => ms.map((x) => `${x.method} ${p}`))
+      .sort()
+    expect(contractedKeys).toEqual(routedKeys)
     for (const [name, ep] of contracted) {
-      expect(ep.method, `${name} 方法与 router 不符`).toBe(byPath[ep.path].method)
       expect(ep.nesting, `${name} 信封不是 flat`).toBe('flat')
-      expect(byPath[ep.path].handler).toMatch(/^(get_|post_)/)
     }
   })
 
@@ -466,5 +476,68 @@ describe('布局确定性', () => {
   it('不可达路径给出明确文案而不是空串', () => {
     expect(pathChainText([], false)).toBe('两节点间不存在连通路径')
     expect(pathChainText([{ label: '甲' }, { nodeId: 'e2' }], true)).toBe('甲 → e2')
+  })
+
+  it('链路里丢码的名字显形，但"压根没给名字"仍照裸 id 走', () => {
+    // 两种缺名不是一回事：label 有值但全是问号 = 写入侧丢了编码，要显形；
+    // label 缺失只是调用方只拿到 id，不该被改标成"未命名节点"。
+    expect(pathChainText([
+      { nodeId: 'e1', label: '甲' },
+      { nodeId: 'exp-af875a6f60d943e6964fcef4db0ab73f', label: '???????' }
+    ], true)).toBe('甲 → 未命名节点 af875a6f')
+    expect(pathChainText([{ nodeId: 'e1' }, { nodeId: 'e2', label: '  ' }], true))
+      .toBe('e1 → 未命名节点 e2')
+  })
+})
+
+// 真机探针（2026-09-27）：GET /api/expert-graph 的 45 个节点里，两个专家的 label 原样就是
+// '???????' 与 '?????????'，而同一网关用 UTF-8 请求体写入的中文名可以字节级读回，
+// 其余 13 个专家的中文名也正常。所以问号是**写入侧**丢的字符，不是字体渲染问题。
+// 界面既不能把一串问号当真名印出来，也不能因此把两个节点混成同一个"未命名"。
+describe('编码丢失的节点标签显形，不当真名用', () => {
+  const LOST_EXPERTS = [
+    { id: 'exp-af875a6f60d943e6964fcef4db0ab73f', label: '?????????' },
+    { id: 'exp-cbf168cdeded4127bb812dca4d2b2936', label: '???????' }
+  ]
+
+  it('正对照：好名字原样用，绝不套上"未命名"外壳', () => {
+    expect(graphNodeLabel({ id: 'exp-01', label: '张三' })).toBe('张三')
+    expect(isLostGraphLabel('张三')).toBe(false)
+    // 中文名里带问号是语义（疑问句），不是编码丢失，不许误判
+    expect(isLostGraphLabel('这个能行？')).toBe(false)
+    expect(graphNodeLabel({ id: 'domain-ai', label: 'ai' })).toBe('ai')
+  })
+
+  it('实测的丢码节点被改标为 id 短码，一串问号不外泄', () => {
+    for (const n of LOST_EXPERTS) {
+      expect(isLostGraphLabel(n.label), `${n.id} 应判为编码丢失`).toBe(true)
+      expect(graphNodeLabel(n)).toBe(`未命名节点 ${graphNodeShortId(n.id)}`)
+      expect(graphNodeLabel(n)).not.toContain('?')
+    }
+  })
+
+  it('两个丢码节点仍可互相区分，短码截断会撞车所以要把边界说出来', () => {
+    const [a, b] = LOST_EXPERTS.map(graphNodeLabel)
+    expect(a).not.toBe(b)
+    // 短码取前 8 位：同一前缀的两个 id 必然撞车，这是**已知代价**而不是缺陷——
+    // 撞车时图上有两个同名节点，但信息卡与提问仍按 id 寻址，不会串到别人身上。
+    const samePrefix = { id: 'exp-af875a6f00000000000000000000ffff', label: '?????????' }
+    expect(graphNodeShortId('exp-af875a6f60d943e6964fcef4db0ab73f')).toBe('af875a6f')
+    expect(graphNodeShortId(samePrefix.id)).toBe('af875a6f')
+    expect(graphNodeShortId('domain-data-engineering')).toBe('data-eng')
+    expect(graphNodeLabel(samePrefix)).toBe(graphNodeLabel(LOST_EXPERTS[0]))
+    // 真实的两枚丢码节点不撞车
+    expect(new Set(LOST_EXPERTS.map(graphNodeLabel)).size).toBe(2)
+  })
+
+  it('残缺输入不许印出 undefined 或空串', () => {
+    for (const junk of [null, undefined, {}, { id: 'exp-' }, { id: 'exp-', label: '???' }, { label: '   ' }]) {
+      const text = graphNodeLabel(junk)
+      expect(typeof text).toBe('string')
+      expect(text.length, JSON.stringify(junk)).toBeGreaterThan(0)
+      expect(text).not.toContain('undefined')
+    }
+    expect(graphNodeLabel({ id: 'exp-x', label: '' })).toBe('未命名节点 x')
+    expect(graphNodeShortId(null)).toBe('')
   })
 })

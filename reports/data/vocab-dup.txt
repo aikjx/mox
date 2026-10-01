@@ -1,0 +1,28 @@
+自写码->文案映射（含中文，键>=2）: 45 条
+
+== (a) 内容逐条相同的真副本组: 1 ==
+  x2  sha=05523e3ad4c1  id=f-|time=刚刚|uploader=我
+      src/views/workspace/panels/CollaborationPanel.vue:418 newFile
+      src/views/workspace/panels/FilePanel.vue:106 newFile
+
+== (b) 同键集不同文案（口径分裂，需裁决）: 2 ==
+  keys=affinity,content_aware,least_loaded,performance_based,round_robin
+      src/views/expert/panels/ExpertEnterprisePanel.vue:548 strategyLabels -> affinity=亲和度|content_aware=内容感知|least_loaded=最少负载|performance_based=性能优先|round_robin=轮询
+      src/views/expert/panels/ExpertEnterprisePanel.vue:553 strategyDescs -> affinity=为每个用户/会话固定分配同一专家|content_aware=根据问题内容智能匹配最合适的专家|least_loaded=优先分配给当前负载最轻的专家|performance_based=根据历史绩效选
+  keys=high,low,medium
+      src/views/workflow/BrowserView.vue:319 map -> high=高|low=低|medium=中
+      src/views/workflow/BrowserView.vue:324 map -> high=严格白名单模式，所有外域访问均需确认|low=仅记录审计日志，不限制域名访问|medium=启用域名白名单检查，高危操作需确认
+
+== (c) 键集重叠>=2且>=50%% 的对（跨文件）==
+  重叠4/9,5  src/components/FlowDetailDialog.vue:145 STATUS_MAP | src/views/ai/InfiniteOptimizerView.vue:280 map  同文案=False
+  重叠2/9,4  src/components/FlowDetailDialog.vue:145 STATUS_MAP | src/views/expert/ExpertConfigView.vue:2966 map  同文案=False
+  重叠2/9,4  src/components/FlowDetailDialog.vue:145 STATUS_MAP | src/views/expert/ExpertPlazaView.vue:999 map  同文案=False
+  重叠3/9,5  src/components/FlowDetailDialog.vue:145 STATUS_MAP | src/views/workflow/panels/WorkflowFlowsPanel.vue:234 map  同文案=False
+  重叠2/9,2  src/composables/workspace/useTaskOrchestration.js:59 newTask | src/stores/ai.store.js:240 session  同文案=False
+  重叠2/3,5  src/modules/admin-lowcode/pages/tenant.page.js:15 STATUS_LABEL | src/views/workflow/panels/WorkflowFlowsPanel.vue:234 map  同文案=False
+  重叠2/5,4  src/views/ai/InfiniteOptimizerView.vue:280 map | src/views/expert/ExpertConfigView.vue:2966 map  同文案=False
+  重叠3/28,5  src/views/graph/GraphView.vue:565 typeLabels | src/views/workflow/panels/WorkflowFlowsPanel.vue:229 map  同文案=False
+  重叠2/3,3  src/views/project/TaskView.vue:347 map | src/views/workflow/BrowserView.vue:319 map  同文案=False
+  重叠2/3,3  src/views/project/TaskView.vue:347 map | src/views/workflow/BrowserView.vue:324 map  同文案=False
+  重叠3/3,3  src/views/workspace/panels/CollaborationPanel.vue:418 newFile | src/views/workspace/panels/FilePanel.vue:106 newFile  同文案=True
+pairs=11

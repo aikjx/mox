@@ -12,7 +12,7 @@
 //! 这是最简单的匹配实现，后续可以替换为向量匹配或图谱推理。
 
 use async_trait::async_trait;
-use mox_alliance_common_proto::{AllianceError, AllianceResult, Expert, ExpertStatus};
+use mox_alliance_common_proto::{AllianceError, AllianceResult, Expert, ExpertStatus, MatchingWeights};
 use mox_alliance_scheduler_proto::{
     ExpertMatchQuery, ExpertMatchResult, ExpertMatcher, MatchScoreBreakdown, MatchedExpert,
 };
@@ -194,6 +194,8 @@ impl ExpertMatcher for RuleBasedExpertMatcher {
                 score: total_score,
                 match_reason,
                 score_breakdown: breakdown,
+                // 规则匹配器不做权重覆盖，U2 透明化带出默认权重即可
+                weights: MatchingWeights::default(),
             });
         }
 

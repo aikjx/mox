@@ -26,6 +26,7 @@
 //! - **检索**：标题加权关键词检索 + 图谱节点检索，分类过滤与结果排序。
 //! - **适配**：`handlers::build_kb_router()` 对齐 legacy `/kb/*` API 面，前端零改动。
 
+pub mod access;
 pub mod handlers;
 pub mod model;
 
@@ -62,27 +63,50 @@ pub fn err_other<E: std::fmt::Display>(msg: E) -> StoreError {
 pub struct KbState {
     pub docs: KbDocumentService,
     pub graph: GraphStore,
+    projection_ready: Arc<tokio::sync::OnceCell<()>>,
 }
 
 impl KbState {
+    pub fn scoped(&self, access: access::KnowledgeAccess) -> Self {
+        Self {
+            docs: self.docs.scoped(access),
+            graph: self.graph.clone(),
+            projection_ready: self.projection_ready.clone(),
+        }
+    }
+    /// Filter before graph search/ranking/counting; nodes without provenance are excluded.
+    pub async fn visible_graph(&self) -> Result<GraphStore> {
+        if !self.docs.is_scoped() {
+            return Ok(self.graph.clone());
+        }
+        let ids: std::collections::HashSet<String> = self
+            .docs
+            .list()
+            .await?
+            .into_iter()
+            .filter_map(|v| v["id"].as_str().map(str::to_owned))
+            .collect();
+        let mut snapshot = self.graph.snapshot();
+        snapshot.nodes.retain(|n| {
+            n.properties
+                .get("source_doc_id")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|id| ids.contains(id))
+        });
+        let nodes: std::collections::HashSet<_> =
+            snapshot.nodes.iter().map(|n| n.id.clone()).collect();
+        snapshot
+            .edges
+            .retain(|e| nodes.contains(&e.source) && nodes.contains(&e.target));
+        let visible = GraphStore::new();
+        visible.import_snapshot(snapshot).map_err(err_other)?;
+        Ok(visible)
+    }
+
     /// 从环境装配存储后端（`FILE_BACKEND` + `MOX_STORE_DATA_DIR`，与 cloud-api 同约定）
     pub fn from_env() -> Self {
-        let kind = std::env::var("FILE_BACKEND").unwrap_or_else(|_| "fs".into());
-        let data_dir = std::env::var("MOX_STORE_DATA_DIR").unwrap_or_else(|_| "./data/store".into());  // allow: env-MOX_STORE_DATA_DIR-overrides
-        let cfg = StoreConfig {
-            kind: BackendKind::from_str_ci(&kind).unwrap_or(BackendKind::Fs),
-            data_dir: data_dir.into(),
-            verify_checksum: true,
-            s3: None,
-        };
-        let backend = Arc::new(create_backend(&cfg).unwrap_or_else(|e| {
-            tracing::warn!("store backend 装配失败({e})，回退默认路径");
-            create_backend(&StoreConfig {
-                data_dir: "./data/store".into(),  // allow: env-fallback-default
-                ..cfg
-            })
-            .expect("默认后端必须可装配")
-        }));
+        let cfg = StoreConfig::from_env().expect("invalid KB storage configuration");
+        let backend = Arc::new(create_backend(&cfg).expect("configured KB storage unavailable"));
         Self::new(backend)
     }
 
@@ -91,7 +115,31 @@ impl KbState {
         Self {
             docs: KbDocumentService::new(backend),
             graph: GraphStore::new(),
+            projection_ready: Arc::new(tokio::sync::OnceCell::new()),
         }
+    }
+
+    /// 从持久化文档主源重建挂图投影。初始化失败不发布半张图，下次请求可重试。
+    pub async fn ensure_projection_ready(&self) -> Result<()> {
+        self.projection_ready
+            .get_or_try_init(|| async {
+                let rebuilt = GraphStore::new();
+                let docs = self.docs.unscoped();
+                for item in docs.list().await? {
+                    let id =
+                        item["id"].as_str().ok_or_else(|| err_other("invalid KB index entry"))?;
+                    let doc = docs.get(id).await?;
+                    if doc.status == model::STATUS_LINKED {
+                        link::GraphLinker
+                            .link(&rebuilt, &doc, &analyze::chunk_doc(&doc))
+                            .map_err(err_other)?;
+                    }
+                }
+                self.graph.import_snapshot(rebuilt.snapshot()).map_err(err_other)?;
+                Ok::<(), StoreError>(())
+            })
+            .await?;
+        Ok(())
     }
 
     /// 使用显式数据目录装配 FS 后端（测试/单测注入，避免进程级环境变量竞态）

@@ -38,6 +38,7 @@
         <el-tag :type="configTag.type" effect="plain" size="small">{{ configTag.text }}</el-tag>
         <span class="ack-note">网关内存态 · PUT 为合并式更新，只发改动过的键</span>
         <el-button
+          v-role-any="['super_admin', 'tenant_admin']"
           class="ack-save"
           size="small"
           type="primary"
@@ -138,7 +139,7 @@
           </div>
           <ul class="ack-run-list">
             <li v-for="a in store.dispatchResult.assigned" :key="a.id" class="ack-run-item">
-              <span class="ack-run-name">{{ a.name || '（注册表里没有名字）' }}</span>
+              <span class="ack-run-name">{{ expertNameOr(a, '（注册表里没有名字）') }}</span>
               <span class="ack-run-score">匹配 {{ a.matchScore.toFixed(3) }}</span>
               <span class="ack-run-load">负载率 {{ percent(a.loadRatio) }}</span>
               <code class="ack-run-mid">{{ a.id }}</code>
@@ -200,7 +201,7 @@
             <li v-for="c in store.dispatcherStatus.circuitBreakers" :key="c.expertId" class="acks-cb-item">
               <code class="acks-mid">{{ c.expertId }}</code>
               <span>失败 {{ c.failureCount }} 次</span>
-              <span class="acks-cb-state">{{ c.state }}</span>
+              <span class="acks-cb-state">{{ breakerStateLabel(c.state) }}</span>
             </li>
           </ul>
           <p v-else class="acks-honest">{{ store.breakerNote }}</p>
@@ -224,6 +225,7 @@
             <el-table-column label="动作" width="120" align="right">
               <template #default="{ row }">
                 <el-button
+                  v-role-any="['super_admin', 'tenant_admin']"
                   size="small"
                   text
                   type="warning"
@@ -240,6 +242,7 @@
 
         <div class="acks-foot">
           <el-button
+            v-role-any="['super_admin', 'tenant_admin']"
             class="acks-foot-btn"
             size="small"
             type="danger"
@@ -270,7 +273,7 @@
     <el-dialog
       v-model="resetVisible"
       class="acks-dialog"
-      :title="resetTarget?.all ? '全量重置调度状态' : `重置「${resetTarget?.name || resetTarget?.id || '该专家'}」的调度状态`"
+      :title="resetTarget?.all ? '全量重置调度状态' : `重置「${expertNameOr(resetTarget, resetTarget?.id || '该专家')}」的调度状态`"
       width="560px"
       :close-on-click-modal="false"
     >
@@ -359,7 +362,7 @@
                 :disabled="reopenBlocked"
                 :title="reopenHint"
                 @click="toggleDone"
-              >{{ current?.status === 'completed' ? '重新打开' : '标记完成' }}</el-button>
+              >{{ current?.status === TASK_STATUS.COMPLETED ? '重新打开' : '标记完成' }}</el-button>
               <el-button size="small" @click="store.selectTask(store.selectedId)">重载</el-button>
             </div>
           </div>
@@ -520,7 +523,7 @@ import { useSSE } from '@/composables'
 import { allianceApi } from '@/modules/expert-alliance/api'
 import { useAllianceConsoleStore } from '@/modules/expert-alliance/store'
 import {
-  FUSION_STRATEGY, GATE_THRESHOLDS, MODE_DISPLAY, MODE_WIRE, PRIORITY,
+  FUSION_STRATEGY, GATE_THRESHOLDS, TASK_STATUS, NODE_STATUS, MODE_DISPLAY, MODE_WIRE, PRIORITY,
   fusionLabel, gradeLabel, modeLabel, nodeStatusLabel, taskStatusLabel
 } from '@/modules/expert-alliance/contract'
 import { PHASE_IDS, phaseLabel } from '@/modules/expert-alliance/contract'
@@ -529,6 +532,7 @@ import {
   dispatchResetAllNotice, dispatchResetLines, dispatchResetNotice, dispatchRunProblem
 } from '@/modules/expert-alliance/contract'
 import { ENDPOINTS } from '@/modules/expert-alliance/contract'
+import { expertNameOr, breakerStateLabel } from '@/modules/expert-alliance/contract'
 import { modeTopologyNote } from '@/modules/expert-alliance/contract'
 import { normLogEntry } from '@/modules/expert-alliance/model'
 import { layoutDag } from '@/modules/expert-alliance/model'
@@ -558,7 +562,7 @@ const toggleNote = ref('')
 const runReady = computed(() => !dispatchRunProblem(runForm) && !store.loading.dispatch)
 
 // 远程任务的完成是单向的：重开必经网关返回 409，所以本地"可逆"不能推广到远程
-const reopenBlocked = computed(() => current.value?.status === 'completed' && store.runtime?.mode === 'remote')
+const reopenBlocked = computed(() => current.value?.status === TASK_STATUS.COMPLETED && store.runtime?.mode === 'remote')
 const reopenHint = computed(() => (reopenBlocked.value ? '远程任务生命周期单向：已完成的任务经网关重新打开会返回 409' : ''))
 
 async function toggleDone() {
@@ -589,9 +593,10 @@ const filteredTasks = computed(() => {
 })
 const formReady = computed(() => form.title.trim().length > 1 && form.description.trim().length > 3)
 const current = computed(() => store.detail.task)
-const canPause = computed(() => current.value?.status === 'running')
-const canResume = computed(() => current.value?.status === 'paused')
-const canCancel = computed(() => ['pending', 'planning', 'running', 'paused'].includes(current.value?.status))
+const canPause = computed(() => current.value?.status === TASK_STATUS.RUNNING)
+const canResume = computed(() => current.value?.status === TASK_STATUS.PAUSED)
+// §5.54 F25：可取消档位交 TASK_STATUS（上面两行已经这么写了，这一行是同一本账的漏网元素表）；成员与顺序未动
+const canCancel = computed(() => [TASK_STATUS.PENDING, TASK_STATUS.PLANNING, TASK_STATUS.RUNNING, TASK_STATUS.PAUSED].includes(current.value?.status))
 
 const dagCount = computed(() => store.detail.dag?.nodes?.length ?? 0)
 const dagView = computed(() => layoutDag(store.detail.dag?.nodes ?? [], store.detail.dag?.edges ?? []))
@@ -641,7 +646,7 @@ const streamTag = computed(() => ({
 }[streamMode.value]))
 
 const phaseHint = computed(() => {
-  const done = store.detail.nodes?.filter((n) => n.status === 'completed').length ?? 0
+  const done = store.detail.nodes?.filter((n) => n.status === NODE_STATUS.COMPLETED).length ?? 0
   return `执行阶段 ${done}/${store.detail.nodes?.length ?? 0} · 7 阶段管线：${PHASE_IDS.map(phaseLabel).join(' → ')}`
 })
 

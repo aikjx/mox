@@ -1,0 +1,9 @@
+BASELINE rc=0 Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+M1 role resolver removed                       rc=1 [22m [1m[31m1 failed[39m[22m[90m (1)[39m fired=(no arrow line)
+M1 role resolver removed                       -> restored rc=0 [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+M2 proj resolver removed                       rc=1 [22m [1m[31m1 failed[39m[22m[90m (1)[39m fired=(no arrow line)
+M2 proj resolver removed                       -> restored rc=0 [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+M3 menu both sites removed                     rc=1 [22m [1m[31m1 failed[39m[22m[90m (1)[39m fired=(no arrow line)
+M3 menu both sites removed                     -> restored rc=0 [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+M4 only :is unwrapped (island check for assert#2) rc=1 [22m [1m[31m1 failed[39m[22m[90m (1)[39m fired=(no arrow line)
+M4 only :is unwrapped (island check for assert#2) -> restored rc=0 [22m [1m[32m1 passed[39m[22m[90m (1)[39m

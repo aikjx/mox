@@ -5,7 +5,7 @@
 
 //! 知识库 HTTP 集成测试：直接驱动 `build_kb_router()`，端到端验证全部 `/kb/*` 接口。
 //!
-//! 对齐 legacy API 面：成功 `{ "success": true, "data": ... }`，失败 `{ "success": false, ... }`。
+//! 对齐 legacy API 面：成功 `{ "code": 0, "data": ... }`，失败使用 HTTP 对应错误码。
 //! 存储走真实 FS 后端（tempdir），分析走本地引擎（无 LLM 时自动降级）。
 
 use axum::body::Body;
@@ -65,7 +65,7 @@ async fn kb_full_lifecycle() {
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{body}");
-    assert_eq!(body["success"], true, "{body}");
+    assert_eq!(body["code"], 0, "{body}");
     let doc_id = body["data"]["id"].as_str().expect("应返回 id").to_string();
     let doc = body["data"]["document"].clone();
     assert_eq!(doc["title"], "云盘混合架构");
@@ -97,6 +97,7 @@ async fn kb_full_lifecycle() {
     assert!(data["expert_score"].as_f64().unwrap() >= 0.0);
     assert!(data["expert_score"].as_f64().unwrap() <= 1.0);
     let entity_count = data["entities"].as_array().unwrap().len();
+    assert!(entity_count > 0);
 
     // 5. 图谱挂图
     let (status, body) = call(&router, "POST", &format!("/kb/documents/{doc_id}/graph-link"), None).await;
@@ -161,10 +162,22 @@ async fn kb_full_lifecycle() {
     .await;
     assert_eq!(status, StatusCode::OK, "{body}");
 
+    // 内容修改与回滚后重新分析/挂图，旧投影不能继续冒充当前知识。
+    assert_eq!(
+        call(&router, "POST", &format!("/kb/documents/{doc_id}/analyze"), None).await.0,
+        StatusCode::OK
+    );
+    assert_eq!(
+        call(&router, "POST", &format!("/kb/documents/{doc_id}/graph-link"), None)
+            .await
+            .0,
+        StatusCode::OK
+    );
+
     // 8. 实体端点
     let (status, body) = call(&router, "GET", &format!("/kb/documents/{doc_id}/entities"), None).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["data"]["entities"].as_array().unwrap().len(), entity_count);
+    assert!(!body["data"]["entities"].as_array().unwrap().is_empty());
 
     // 9. 统计
     let (status, body) = call(&router, "GET", "/kb/stats", None).await;
@@ -175,7 +188,7 @@ async fn kb_full_lifecycle() {
     // 10. 分类 / 标签
     let (status, body) = call(&router, "GET", "/kb/categories", None).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["data"].as_array().unwrap().len(), 3);
+    assert_eq!(body["data"].as_array().unwrap().len(), mox_kb_svc::document::CATEGORIES.len());
     let (status, body) = call(&router, "GET", "/kb/tags", None).await;
     assert_eq!(status, StatusCode::OK);
     assert!(!body["data"].as_array().unwrap().is_empty(), "{body}");
@@ -216,7 +229,7 @@ async fn kb_batch_analyze_and_errors() {
     // 不存在的文档 → 404
     let (status, body) = call(&router, "GET", "/kb/documents/not-exist", None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(body["success"], false);
+    assert_eq!(body["code"], 404);
 
     // 删除不存在 → 404
     let (status, _) = call(&router, "DELETE", "/kb/documents/not-exist", None).await;
@@ -253,3 +266,51 @@ async fn kb_graph_unlink() {
 }
 
 
+#[tokio::test]
+async fn linked_projection_recovers_after_restart_and_unlink_stays_unlinked() {
+    let temp = tempfile::tempdir().unwrap();
+    let dir = temp.path().to_path_buf();
+    let router = build_kb_router_with_dir(dir.clone());
+    let (_,body) = call(&router,"POST","/kb/documents",Some(serde_json::json!({"title":"恢复测试","content":"Rust SQLite persistent storage graph document"}))).await;
+    let id = body["data"]["id"].as_str().unwrap();
+    let link = format!("/kb/documents/{id}/graph-link");
+    let (_, body) = call(&router, "POST", &link, None).await;
+    assert_eq!(body["code"], 0, "{body}");
+    let (_, before) = call(&router, "GET", "/kb/stats", None).await;
+    assert!(before["data"]["graph_nodes"].as_u64().unwrap() > 0);
+    drop(router);
+    let router = build_kb_router_with_dir(dir.clone());
+    let (_, after) = call(&router, "GET", "/kb/stats", None).await;
+    assert_eq!(after["data"]["graph_nodes"], before["data"]["graph_nodes"]);
+    assert_eq!(after["data"]["graph_edges"], before["data"]["graph_edges"]);
+    assert_eq!(call(&router, "DELETE", &link, None).await.1["code"], 0);
+    drop(router);
+    let router = build_kb_router_with_dir(dir);
+    let (_, body) = call(&router, "GET", "/kb/stats", None).await;
+    assert_eq!(body["data"]["graph_nodes"], 0);
+}
+
+#[tokio::test]
+async fn content_update_invalidates_projection_and_keeps_previous_snapshot() {
+    let temp = tempfile::tempdir().unwrap();
+    let router = build_kb_router_with_dir(temp.path().to_path_buf());
+    let (_, body) = call(
+        &router,
+        "POST",
+        "/kb/documents",
+        Some(serde_json::json!({"title":"文档","content":"old Rust SQLite source"})),
+    )
+    .await;
+    let id = body["data"]["id"].as_str().unwrap();
+    let url = format!("/kb/documents/{id}");
+    assert_eq!(call(&router, "POST", &format!("{url}/graph-link"), None).await.0, StatusCode::OK);
+    let (_, body) =
+        call(&router, "PUT", &url, Some(serde_json::json!({"content":"new current source"}))).await;
+    assert_eq!(body["data"]["document"]["current_version"], "v2");
+    assert_eq!(body["data"]["document"]["status"], "draft");
+    assert_eq!(body["data"]["document"]["entities"], serde_json::json!([]));
+    let (_, stats) = call(&router, "GET", "/kb/stats", None).await;
+    assert_eq!(stats["data"]["graph_nodes"], 0);
+    let (_, snapshot) = call(&router, "GET", &format!("{url}/versions/v1"), None).await;
+    assert_eq!(snapshot["data"]["content"], "old Rust SQLite source");
+}

@@ -110,4 +110,158 @@ test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
 ---
 
+## 六、第二轮接线增量（同日追加）：三项低风险纯增量接线
+
+> 范围：本轮继续遵守铁律（不删/不改既有逻辑签名、不动 proto 既有字段、不动 workspace/Cargo.toml/CI、不 git）。跨 16 crate SSOT 重构本轮**仍不做**。
+
+### 6.1 三项状态总览
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| [1] approval_gate 接入派发前判定 | **部分（阻塞点）** | 纯接缝判定 `dispatch_decision` 已交付并测试；真正穿入 executor-core 派发循环需改依赖边/签名，本轮未硬改 |
+| [2] 库存概览接入 registry-svc | **已接线** | 新增纯函数 `inventory_platform_overview` + 只读路由 `GET /api/registry/overview` + 集成测试 |
+| [3] 健康阈值单一来源 | **已接线** | 抽 `HealthThresholds{0.80,0.20}` 可注入结构，`classify_with`/`summarize_with` 读阈值，默认值单源 |
+
+### 6.2 [1] approval_gate 派发判定：阻塞点与建议接缝
+
+- 新增 `ApprovalGate::dispatch_decision(task,node,now) -> DispatchDecision{Dispatch,Hold,Fail}`（纯包装 `GateNodeEffect`），单测 `dispatch_decision_maps_gate_state`。
+- **阻塞点（未硬改）**：真正的 per-node 派发循环在 `mox-alliance-executor-core/src/dag_engine.rs::schedule_ready_nodes`（约 445–493 行：`find_ready_nodes` → 标 Running → spawn）。但 `mox-alliance-executor-core` 对 `mox-alliance-scheduler-core` **仅为 dev-dependency**（见其 Cargo.toml 第 30 行），生产代码不能 import `approval_gate`；且要把 gate 穿进 `DagEngineImpl::new` / `ExecutionOptions` 必须改既有结构体字段与构造签名。两者都违反本轮铁律。
+- **建议接缝**（后续评审）：二选一——(a) 把 `approval_gate` 下沉到一个 executor-core 已常规依赖的低层 crate（如 common-proto 或新建 tiny gate crate），再在 `schedule_ready_nodes` 标 Running 前插一行 `match gate.dispatch_decision(...) { Hold => continue, Fail => mark Failed, Dispatch => ... }`；或 (b) 把 gate 作为 `ExecutionOptions` 的一个 `Option<Arc<ApprovalGate>>` 字段注入（需评审签名变更）。
+
+### 6.3 [2] registry-svc 概览接口接线
+
+- registry-core 新增纯函数 `inventory_platform_overview(&[RegisteredInstance]) -> proto::PlatformOverview`：从现存实例视图聚合 total/active/domains，`total_consultations=0`（逐次调用遥测待接入）。
+- registry-svc `routes.rs` 新增只读路由 `GET /api/registry/overview`，handler 直接调上述纯函数；未改既有路由、未加 proto 字段。
+- **仍阻塞的子项**：`get_expert_metrics(id)` 的 success_rate/avg_latency_ms 需要逐次调用遥测，svc 当前不记录；静态 `ExpertStore` 只有 rating/total_consultations，待后续在 executor 侧补 telemetry 后再喂 `summarize`。
+
+### 6.4 [3] 健康阈值单一来源
+
+- `metrics_agg.rs` 新增 `HealthThresholds { degraded_success_rate, degraded_failure_ratio }`，`const DEFAULT = {0.80, 0.20}`；新增 `classify_with`/`summarize_with` 接受阈值，旧 `classify`/`summarize` 保留为默认阈值包装。
+- 测试 `default_thresholds_are_80_percent_and_20_percent`（断言默认=0.80/0.20）+ `thresholds_are_overridable`（放宽到 0.50 后同数据转 Healthy）。
+- 说明：本应下沉 config-core 做热更新配置，但 registry-core 当前不依赖 config-core（本轮禁改 Cargo.toml 加依赖边），故先在消费侧固化为可注入结构，后续搬迁零函数签名变化。
+
+### 6.5 真实验证证据（第二轮，尾部摘要）
+
+`cargo test -p mox-alliance-registry-core`：
+```
+running 16 tests
+test metrics_agg::tests::default_thresholds_are_80_percent_and_20_percent ... ok
+test metrics_agg::tests::thresholds_are_overridable ... ok
+test metrics_agg::tests::inventory_overview_counts_active_and_distinct_domains ... ok
+test metrics_agg::tests::inventory_overview_empty ... ok
+...
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+```
+
+`cargo test -p mox-alliance-scheduler-core`：
+```
+running 115 tests
+test approval_gate::tests::dispatch_decision_maps_gate_state ... ok
+...
+test result: ok. 115 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+```
+
+`cargo test -p mox-alliance-registry-svc`：
+```
+running 14 tests   (lib 单测) ... test result: ok. 14 passed; 0 failed
+running 11 tests   (tests/http_registry.rs 集成)
+test platform_overview_aggregates_registered_instances ... ok
+...
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+```
+
+> 注：PowerShell 仍把 cargo 写 stderr 的进度流误报为 NativeCommandError（退出码 1），以上 `test result: ok` 行为真实通过依据。
+
+---
+
+## 七、决策项④：健康阈值 svc 侧 provider（启动加载档，同日追加）
+
+> 范围：本轮只做决策项④（健康阈值热更新）。①SSOT / ②approval_gate 穿 executor / ③executor 遥测本轮不做。
+
+### 7.1 分层约束与落点
+
+- **禁止**：registry-core 不得新增对 `mox-alliance-config-core` 的依赖（它是零 IO 纯计算核，config-core 带 tokio/store/broadcast 太重）。本轮 registry-core 未动。
+- **结论：做到"启动加载 + 可注入"档，未做真热更新**。原因：registry-svc 的 Cargo.toml 当前**不依赖** `mox-alliance-config-core`，要订阅 config-engine 的 broadcast 变更事件必须新增这条依赖边，违反本轮铁律。故停在 svc 既有 env 配置源上做启动加载。
+
+### 7.2 新增内容（均为纯增量）
+
+- svc `Config` 新增两个字段：`health_healthy_min: f64`（默认 0.80）、`health_degraded_max_ratio: f64`（默认 0.20）。
+- `Config::from_env()` 新增两条 env 覆盖：`MOX_ALLIANCE_REGISTRY_HEALTHY_MIN` / `MOX_ALLIANCE_REGISTRY_DEGRADED_MAX_RATIO`（解析失败或越界 [0,1] 则保留默认，与既有 `*_MS` 字段同构）。
+- 新增 `Config::health_thresholds(&self) -> registry_core::HealthThresholds`：把 svc 启动配置投影为 registry-core 的阈值单一来源。
+- registry-core 纯逻辑（`HealthThresholds`/`classify_with`/`summarize_with`）保持零 IO，未引入 async/tokio。
+
+### 7.3 热更新建议接缝（未做，需评审）
+
+后续若要真热更新：给 registry-svc 加 `mox-alliance-config-core` 依赖边（走 Cargo.toml 变更评审），订阅 config-engine broadcast，收到 `health.*` 变更时用 `Config::health_thresholds()` 重建 `HealthThresholds` 并热替换 `AppState` 句柄；handler 签名不变。
+
+### 7.4 真实验证证据（尾部摘要）
+
+`cargo test -p mox-alliance-registry-svc`：
+```
+running 17 tests
+test app_state::tests::default_thresholds_are_80_20_and_aligned_with_core_default ... ok
+test app_state::tests::custom_thresholds_change_classification_outcome ... ok
+test app_state::tests::custom_fields_project_into_thresholds ... ok
+...（其余 14 个既有测试全 ok）
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+running 11 tests   (tests/http_registry.rs 集成)
+test platform_overview_aggregates_registered_instances ... ok
+...
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+```
+
+`cargo test -p mox-alliance-registry-core`：
+```
+running 16 tests
+test metrics_agg::tests::default_thresholds_are_80_percent_and_20_percent ... ok
+test metrics_agg::tests::thresholds_are_overridable ... ok
+...
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+```
+
+---
+
+## 八、决策项④延伸：config-core 真热更新可行性判定（同日追加）
+
+> 范围：用户已批准给 registry-svc 加 `mox-alliance-config-core` 内部依赖以做真热更新。本轮先判定承载点，再决定是否硬做。
+
+### 8.1 判定结论：env 档 + ADR（未加依赖、未改 config-core）
+
+读 `config-core` 的 `events.rs`/`engine.rs`/`store.rs` 后确认：**当前没有干净承载点**。
+
+- `ConfigStore` trait 全是**类型化槽位**：只有 `GlobalLlmConfig`（全局 LLM provider 默认）与 `ExpertModuleConfig`（专家模块 LLM+Graph+匹配权重）两类持久化对象，**没有通用 KV、没有 system/health 槽位**。
+- `ConfigChangeEvent` **不携带值载荷**（只有 module_id/config_type/change_type/version/changed_by/reason/timestamp）；订阅方必须用类型化 getter 回读，而 getter 里没有任何 health 阈值字段。
+- 把 `health.healthy_min` 塞进 `GlobalLlmConfig` 或 `ExpertModuleConfig.graph_config`/`llm_config` 都会**污染专家模块 LLM/Graph 语义**——正是任务明令禁止的。
+- 真热更新需要先给 config-core 加新类型化配置槽位（动 trait、动 common-proto），超出本轮"不改 config-core 既有公共 API/字段"的铁律。
+
+故本轮**不加** registry-svc/Cargo.toml 那条依赖（无消费方，加了是死依赖），保留上一轮的 env 启动加载档，把前置改造写成 ADR。
+
+### 8.2 ADR：config-core 健康策略槽位前置改造（待评审，未实施）
+
+建议新增（均为 additive，不改既有 LLM/Graph 语义）：
+
+1. `common-proto` 新增 `HealthPolicyConfig { healthy_min: f64, degraded_max_ratio: f64, version: u32, updated_at: DateTime<Utc> }`，默认 `(0.80, 0.20)`。
+2. `ConfigType` 新增变体 `Health`（或复用 module_id=`__system__`）。
+3. `ConfigStore` trait 新增 `get_health_policy()` / `save_health_policy()`；`MemoryConfigStore` 相应加一个 `RwLock<Option<HealthPolicyConfig>>` 字段。
+4. `ConfigEngine` 新增 `get_health_policy()` / `set_health_policy(policy, by, reason)`，后者在保存后 `publish_event(ConfigChangeEvent::new("__system__", ConfigType::Health, Updated, ...))`。
+5. registry-svc 侧（待上述落地后）：Cargo.toml 加 `mox-alliance-config-core = { workspace = true }`；启动时 `ConfigEngine::subscribe()`，收到 `module_id=="__system__" && config_type==Health` 事件时回读 `get_health_policy()`，用 `parking_lot::RwLock` 热替换 `AppState` 内的 `HealthThresholds` 句柄；`/overview` 每次读最新值。handler 签名不变。
+
+事件映射：`__system__` + `ConfigType::Health` + `ConfigChangeType::Updated` → registry-svc 回读 → 重建 `HealthThresholds{degraded_success_rate=healthy_min, degraded_failure_ratio=degraded_max_ratio}`。
+
+### 8.3 真实验证证据（本轮无代码变更，基线回归）
+
+`cargo test -p mox-alliance-registry-svc`：
+```
+running 17 tests ... test result: ok. 17 passed; 0 failed
+running 11 tests (tests/http_registry.rs) ... test result: ok. 11 passed; 0 failed
+```
+
+`cargo test -p mox-alliance-registry-core`：
+```
+running 16 tests ... test result: ok. 16 passed; 0 failed
+```
+
+---
+
 *本报告为 L7 证据（🟡），非权威；结论固化后应回填 L1–L6。未修复既有 41 条文档断链（技术债，独立治理项）。*

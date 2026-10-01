@@ -154,4 +154,4 @@ EventScheduler::schedule_repeat("approval-due-reap", "approval.due.check", inter
 | ~~新建~~ | ~~mox-approval-core~~ | ❌ 已删除——与 process_engine / approval_gate 重复且弱于现有 |
 | 复用 | 流程审批 / DAG 人审门 / HITL 面板 | ✅ 权威归属确认 |
 
-*相关：[CURRENT-ARCHITECTURE.md](../expert-alliance/CURRENT-ARCHITECTURE.md)（alliance leadership/存储约定）· [前端模块治理规范](../architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md) · [流程引擎](../modules/flow-unified-process.md)（如存在）*
+*相关：[CURRENT-ARCHITECTURE.md](../expert-alliance/CURRENT-ARCHITECTURE.md)（alliance leadership/存储约定）· [前端模块治理规范](../architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md) · [流程能力历史说明](docs/modules/business-process-flows.md#1-概述)（旧实现资料，不作当前联盟事实）*

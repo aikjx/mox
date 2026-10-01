@@ -1,0 +1,178 @@
+[check-doc-links] 扫描文件 359 个，判定引用 2031 条
+跳过：外部链接 16 条，file:// 绝对路径链接 132 条（技术债·应改为仓根相对），占位/非路径 84 条，显式豁免 40 行
+
+断链总数 42，涉及 8 个文件；TOP 25 文件：
+  [ 14] docs/docs-hub/docs-hub.html
+  [  8] docs/modules/CODE-CATALOG.md
+  [  8] docs/README.md
+  [  4] docs/architecture/README.md
+  [  3] docs/architecture/architecture-hub.html
+  [  3] docs/expert-alliance/CURRENT-ARCHITECTURE.md
+  [  1] docs/architecture/15-EVENT-TRIGGER-APPROVAL-ARCHITECTURE.md
+  [  1] docs/architecture/ai/README.md
+
+断链明细（最多 120 条，--max-detail 可调）：
+  [BROKEN] docs/architecture/15-EVENT-TRIGGER-APPROVAL-ARCHITECTURE.md:157 -> ../modules/flow-unified-process.md  [link]
+  [BROKEN] docs/architecture/ai/README.md:22 -> ../../expert-alliance/00-INTEGRATED-INDEX.md  [link]
+  [BROKEN] docs/architecture/architecture-hub.html:575 -> ../expert-alliance/README.md  [html]
+  [BROKEN] docs/architecture/architecture-hub.html:584 -> ../expert-alliance/architecture/system-architecture-design.html  [html]
+  [BROKEN] docs/architecture/architecture-hub.html:600 -> ../expert-alliance/v2/README.md  [html]
+  [BROKEN] docs/architecture/README.md:98 -> ../expert-alliance/README.md  [link]
+  [BROKEN] docs/architecture/README.md:99 -> ../expert-alliance/architecture/system-architecture-design.html  [link]
+  [BROKEN] docs/architecture/README.md:101 -> ../expert-alliance/v2/README.md  [link]
+  [BROKEN] docs/architecture/README.md:102 -> ../expert-alliance/v3/01-architecture-optimization.md  [link]
+  [BROKEN] docs/docs-hub/docs-hub.html:694 -> ../expert-alliance/00-INTEGRATED-INDEX.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:695 -> ../expert-alliance/01-ENTERPRISE-OPTIMIZATION.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:696 -> ../expert-alliance/expert-registry-and-protocol.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:697 -> ../expert-alliance/knowledge-graph-schema.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:698 -> ../expert-alliance/v2/00-requirements.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:699 -> ../expert-alliance/v2/01-architecture.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:700 -> ../expert-alliance/v2/02-domain-model.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:701 -> ../expert-alliance/v2/03-business-flow.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:702 -> ../expert-alliance/v2/04-api-design.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:703 -> ../expert-alliance/v2/05-data-architecture.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:704 -> ../expert-alliance/v2/06-security-observability.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:705 -> ../expert-alliance/v2/07-roadmap.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:706 -> ../expert-alliance/v3/01-architecture-optimization.md  [html]
+  [BROKEN] docs/docs-hub/docs-hub.html:707 -> ../expert-alliance/v3/02-requirements-matrix.md  [html]
+  [BROKEN] docs/expert-alliance/CURRENT-ARCHITECTURE.md:327 -> v3/README.md  [link]
+  [BROKEN] docs/expert-alliance/CURRENT-ARCHITECTURE.md:327 -> expert-registry-and-protocol.md  [link]
+  [BROKEN] docs/expert-alliance/CURRENT-ARCHITECTURE.md:327 -> knowledge-graph-schema.md  [link]
+  [BROKEN] docs/modules/CODE-CATALOG.md:265 -> ../../frontend-ui/src/views/auth/ForgotPassword.vue  [link]
+  [BROKEN] docs/modules/CODE-CATALOG.md:280 -> ../../frontend-ui/src/views/misc/BusinessHall.vue  [link]
+  [BROKEN] docs/modules/CODE-CATALOG.md:281 -> ../../frontend-ui/src/views/misc/Forbidden.vue  [link]
+  [BROKEN] docs/modules/CODE-CATALOG.md:282 -> ../../frontend-ui/src/views/misc/Login.vue  [link]
+  [BROKEN] docs/modules/CODE-CATALOG.md:283 -> ../../frontend-ui/src/views/misc/PortalHome.vue  [link]
+  [BROKEN] docs/modules/CODE-CATALOG.md:318 -> ../../frontend-ui/src/api/alliance.js  [link]
+  [BROKEN] docs/modules/CODE-CATALOG.md:319 -> ../../frontend-ui/src/api/allianceTaskModel.js  [link]
+  [BROKEN] docs/modules/CODE-CATALOG.md:321 -> ../../frontend-ui/src/api/auth.js  [link]
+  [BROKEN] docs/README.md:17 -> expert-alliance/README.md  [link]
+  [BROKEN] docs/README.md:59 -> expert-alliance/00-INTEGRATED-INDEX.md  [link]
+  [BROKEN] docs/README.md:59 -> expert-alliance/01-ENTERPRISE-OPTIMIZATION.md  [link]
+  [BROKEN] docs/README.md:59 -> expert-alliance/expert-registry-and-protocol.md  [link]
+  [BROKEN] docs/README.md:59 -> expert-alliance/knowledge-graph-schema.md  [link]
+  [BROKEN] docs/README.md:59 -> expert-alliance/v2/README.md  [link]
+  [BROKEN] docs/README.md:59 -> expert-alliance/v3/01-architecture-optimization.md  [link]
+  [BROKEN] docs/README.md:93 -> expert-alliance/00-INTEGRATED-INDEX.md  [link]
+
+告警·反引号路径引用不存在（216，加 --strict 可视为错误）：
+  [WARN]   docs/api/PORT-REGISTRY.md:235 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/architecture/ARCHITECTURE-ENTERPRISE.md:1039 -> docs/expert-alliance/v3/01-architecture-optimization.md
+  [WARN]   docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md:137 -> docs/architecture/frontend/FRONTEND-MODULE.md
+  [WARN]   docs/architecture/full-dimensional/00-README.md:6 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/architecture/full-dimensional/00-README.md:19 -> docs/_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md
+  [WARN]   docs/architecture/full-dimensional/00-README.md:20 -> docs/_archive/2026-08-16/璇玑-全维分析需求-测试分析验证报告.md
+  [WARN]   docs/architecture/full-dimensional/00-README.md:21 -> docs/_archive/2026-08-16/璇玑-全维分析需求业务处理流程图.md
+  [WARN]   docs/enterprise/00-INDEX.md:115 -> docs/璇玑-MOX需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/00-INDEX.md:121 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:10 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:289 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:364 -> docs/enterprise/11-全维测试验证优化修复报告.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:798 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:799 -> docs/enterprise/15-产品规范标准-人人爱用全自动全维-V1.0.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:807 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:26 -> docs/enterprise/15-产品规范标准-人人爱用全自动全维-V1.0.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:27 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:38 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:42 -> docs/enterprise/17-算子系统全维分析与归一化设计.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:49 -> docs/enterprise/08-全维自动化处理明确书.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:50 -> docs/enterprise/11-全维测试验证优化修复报告.md
+  [WARN]   docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md:354 -> docs/enterprise/22-归一化总控卡.md
+  [WARN]   docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md:391 -> docs/enterprise/VOICE-DOMAIN-ANALYSIS.md
+  [WARN]   docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md:443 -> docs/enterprise/MICROSERVICES-EVOLUTION.md
+  [WARN]   docs/enterprise/37-企业级处理流程规范-V1.0.md:72 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/enterprise/37-企业级处理流程规范-V1.0.md:463 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/enterprise/37-企业级处理流程规范-V1.0.md:468 -> docs/enterprise/08-全维自动化处理明确书.md
+  [WARN]   docs/enterprise/_data/test-report-20260824/t4-enterprise-test-report-20260824.md:336 -> docs/enterprise/_data/test-report-20260824/screenshots/17-clippy-fail.png
+  [WARN]   docs/enterprise/DOC-NORMALIZATION-REPORT.md:31 -> docs/mox-expert-mox-fusion-flows.md
+  [WARN]   docs/enterprise/DOC-NORMALIZATION-REPORT.md:78 -> docs/guantu-skeleton.md
+  [WARN]   docs/enterprise/DOC-NORMALIZATION-REPORT.md:79 -> docs/mox-requirement-baseline.md
+  [WARN]   docs/enterprise/DOC-NORMALIZATION-REPORT.md:146 -> docs/market-module.md
+  [WARN]   docs/enterprise/GLOSSARY.md:35 -> docs/璇玑-MOX需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/MOX-AI驱动MOX平台-企业级设计-MOX分析-v3.0.md:292 -> docs/对话开发系统-MOX分析与业务流程图.md
+  [WARN]   docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md:92 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.html/.md
+  [WARN]   docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md:94 -> docs/璇玑-全维流水线.mmd
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:68 -> docs/api/API-CRYPTO-TRANSPORT.md:29
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:70 -> docs/standards/expert-alliance-port-norm.md:171,231
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:71 -> docs/architecture/microservices/07-massive-scale-100k-nodes.md:86,124
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:72 -> docs/api/PORT-REGISTRY.md:67
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:73 -> docs/api/PORT-REGISTRY.md:73
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:73 -> docs/standards/expert-alliance-port-norm.md:156
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:130 -> docs/database/DATABASE-ARCHITECTURE.md:7-9
+  [WARN]   docs/modules/business-process-flowcharts.md:405 -> docs/expert-alliance/FRONTEND-MODULE.md
+  [WARN]   docs/normalization/API-INDEX.md:68 -> docs/normalization/api/
+  [WARN]   docs/normalization/ARC-INDEX.md:66 -> docs/normalization/arch/
+  [WARN]   docs/normalization/BP-INDEX.md:20 -> docs/对话开发系统-端到端流水线.mmd
+  [WARN]   docs/normalization/BP-INDEX.md:31 -> docs/对话开发系统-端到端流水线.mmd
+  [WARN]   docs/normalization/README.md:7 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/normalization/README.md:24 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/normalization/TPL-INDEX.md:50 -> docs/normalization/template/
+  [WARN]   docs/normalization/VAL-INDEX.md:13 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/normalization/VAL-INDEX.md:37 -> docs/NO-MOCK-POLICY.md
+  [WARN]   docs/normalization/VAL-INDEX.md:56 -> docs/normalization/verify/
+  [WARN]   docs/specifications/tasks/20260823-mox-full-enterprise-architecture/tasks.md:288 -> docs/project-atlas.md
+  [WARN]   docs/specifications/tasks/20260823-mox-storage-distributed-ai-unified-query/tasks.md:169 -> docs/enterprise/18-mox-storage-ai-unified-query-report.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:6 -> docs/architecture/architecture.md(v7)
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:6 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:6 -> docs/mox-mox-product-handbook-v3.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:54 -> docs/specs
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:54 -> docs/full-dimensional
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:67 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:75 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:76 -> docs/enterprise/08-全维自动化处理明确书.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:151 -> docs/specifications/GR-STD
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:40 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:41 -> docs/mox-mox-product-handbook-v3.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:120 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:249 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:274 -> docs/enterprise/08-全维自动化处理明确书.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:154 -> docs/enterprise/28-信创适配清单-V1.0.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:155 -> docs/enterprise/29-企业级部署手册-V1.0.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:274 -> docs/enterprise/28-信创适配清单-V1.0.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:275 -> docs/enterprise/29-企业级部署手册-V1.0.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:318 -> docs/enterprise/28-信创适配清单-V1.0.md
+  [WARN]   docs/specifications/tasks/20260825-mox-all-core-rust-max-algo/tasks.md:321 -> docs/standards/mox-formulas-rust.md
+  [WARN]   docs/specifications/tasks/20260825-mox-all-core-rust-max-algo/tasks.md:336 -> docs/standards/mox-formulas-rust.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:10 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:36 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:77 -> docs/expert-alliance/v2/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:78 -> docs/expert-alliance/v3/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:79 -> docs/expert-alliance/architecture/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:102 -> docs/expert-alliance/v2/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:250 -> docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:302 -> docs/expert-alliance/v2/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:303 -> docs/expert-alliance/architecture/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:340 -> docs/expert-alliance/architecture/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:573 -> docs/expert-alliance/architecture/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:718 -> docs/expert-alliance/00-INDEX.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:863 -> docs/expert-alliance/v2/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:1011 -> docs/expert-alliance/00-INDEX.md
+  [WARN]   docs/standards/expert-alliance-port-norm.md:10 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/standards/expert-alliance-port-norm.md:10 -> docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md
+  [WARN]   docs/standards/expert-alliance-port-norm.md:121 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/standards/expert-alliance-port-norm.md:137 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/standards/PR-TYPES.md:4 -> docs/architecture/crate-boundaries.md
+  [WARN]   docs/standards/PR-TYPES.md:44 -> docs/working-reports/_norm_research/compat-cleanup-register.md
+  [WARN]   docs/working-reports/20260902_hybrid_architecture_phase1_verification_report.md:251 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md:444 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md:516 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md:520 -> docs/domains-code-review.md
+  [WARN]   docs/working-reports/_norm_research/mox-architecture-review-optimization.md:131 -> docs/working-reports/_norm_research/compat-cleanup-register.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:268 -> docs/architecture/overview.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:269 -> docs/architecture/crate-boundaries.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:270 -> docs/architecture/ecstore-module-split-plan.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:271 -> docs/architecture/storage-control-data-plane.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:272 -> docs/architecture/global-state-crate-split-plan.md
+  [WARN]   docs/working-reports/enterprise-optimization-round-2_plan.md:33 -> docs/enterprise/ac-compliance-report.md
+  [WARN]   docs/working-reports/enterprise-optimization-round-2_plan.md:71 -> docs/enterprise/ac-compliance-report.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:384 -> docs/expert-alliance/README.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:403 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:416 -> docs/expert-alliance/v2/01-architecture.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:431 -> docs/expert-alliance/v3/01-architecture-optimization.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:661 -> docs/expert-alliance/CODE-FACTS.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:66 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:67 -> docs/expert-alliance/01-ENTERPRISE-OPTIMIZATION.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:68 -> docs/expert-alliance/README.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:69 -> docs/expert-alliance/expert-registry-and-protocol.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:70 -> docs/expert-alliance/knowledge-graph-schema.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:71 -> docs/expert-alliance/v2/00-requirements.md

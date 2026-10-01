@@ -65,3 +65,7 @@
 
 - 架构文档 `ARC-{两位序号}-{中文短名}.md` 放 `docs/normalization/arch/`，须含 ADR 关联与依赖图。
 - 跨文档引用 `docs/normalization/ARC-INDEX.md#章节`。
+
+## 7. 专家联盟分层突破关联
+
+[全域架构家族](docs/expert-alliance/17-docs-architecture-and-flow-atlas.md#families)、[模块责任](docs/expert-alliance/18-modular-product-design.md#modules)、[ADR-17](docs/enterprise/45-专家联盟模块化归一与证据治理-ADR-17.md#decision)为现有归一化分类的关联视图；目标能力以任务验收推进。

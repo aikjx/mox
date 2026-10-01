@@ -1,0 +1,114 @@
+F16（§5.47）熔断器档位的**服务侧真值**常驻账 L13 —— 读数档案（2026-09-29）
+================================================================
+本档案只收本轮现场测量值。行数一律 `len(bytes.decode('utf-8').splitlines())`，字节 `len(bytes)`，md5 取前 16 位。
+
+## 1. 结论（先给判决，再给读数）
+
+`views/AllianceConsoleView.vue:203` 的 `breakerStateLabel(c.state)`（#33 遗留的"要不要开第三档"）
+**不需要开第三档**：出参由 `platform/gateway/mox-platform-gateway-svc/src/alliance/experts_dispatcher.rs:498-502` 现算
+（`let state_str = if count >= config.circuit_breaker_threshold { "open" } else { "closed" };`），
+`json!` 行只有 `expert_id` / `failure_count` / `state` 三键（:503-507），且行集先经 `.filter(|(_, &count)| count > 0)`。
+`half_open` 在全库只是 scheduler-core 的配置项名 `half_open_probes`（`llm_router.rs:438/:447`），**从不进该端点**
+⇒ 契约 `BREAKER_STATE` 两档是完备的。这一判决现在由 **L13** 从 Rust 源码现推，而不是由我的眼睛担保。
+
+L13 两条通道：① wire 档位集 ⇄ `Object.values(BREAKER_STATE)` 双向相等＋每档有中文且文案≠键名；
+② wire snake 行键机械转 camel ⇄ `model/normalize.js:642` 的 `circuitBreakers` 行映射键集合相等。
+两通道各带分母格（解析块必须命中、档位 ≥2），解析不到即红并指名"服务侧换了写法 ⇒ 这本账要跟着改，不许静默恒真"。
+
+## 2. 判据文件（本轮唯一被改的对象）
+
+| 文件 | md5(16) | 字节 | 行数 | 用例数 |
+|---|---|---|---|---|
+| `frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js` | c55223ab5adcb71c | 28656 | 416 | **19**（18→19，新增 L13） |
+
+未被本轮改动、只被读作参照：`contract/enums.js` `ff8828882a748328` / 12477 B / 375 行；
+`model/normalize.js` `e34410396b4fd461` / 44410 B / 1293 行。（两者在电池里被临时改写过，终检 md5 全 MATCH，见 §3）
+
+## 3. 变异电池 3 枚，0 不符
+
+判决行逐字见 `reports/data/f16-mutation-witness-20260929.txt`（md5 `680d34b33c48ba8c` / 1533 B / 15 行）：
+- 基线（无变异）`rc=0 Tests 19 passed (19)`
+- Q1 契约凭空加 `HALF_OPEN: 'half_open'` → `rc=1 Tests 1 failed | 18 skipped (19)` 红=[L13] ＝CAUGHT
+- Q2 归一化删掉 `failureCount: num(c.failure_count),` 一行 → 同判决 红=[L13] ＝CAUGHT
+- Q3 只把 `open` 档中文从「已熔断」改成「熔断中」→ `rc=0 Tests 1 passed | 18 skipped` ＝GREEN（针不许钉文案）
+- 终检三个被碰文件 md5 全 MATCH；复跑无变异基线 `rc=0 19 passed (19)`
+- 快照/恢复源：`D:/tmp/f16-snap`（写前图像，三份齐）；驱动 `D:/tmp/f16-battery.py` **未落库 ⇒ 没牙，不要接 CI**
+
+## 4. 门禁（本轮现场复跑）
+
+| 门禁 | rc | 读数 |
+|---|---|---|
+| 判据单跑（电池基线，两次） | 0 | `19 passed (19)` |
+| 全量 vitest | 0 | `Test Files  77 passed (77)`；**`Tests` 总数行本轮再次被我的 grep 模式漏掉**（同 §5.46 那条 `head -2` 陷阱第三次复发）⇒ 不写未量到的数字，下轮重量 |
+| `vite build` | 0 | `✓ built in 32.05s` |
+| 模块化门禁 | 0 | `--- 前端模块化门禁：ERROR=0 ---`（`admin-lowcode/index.js` 那条 WARN 是存量括号账） |
+| locale 闸门 | 0 | rc=0 |
+| `check-doc-links.py` | **1** | WARN 120 条，属存量；本 doc 唯一 WARN 仍在 `:137`（未随本轮新增节移动） |
+
+## 5. 仪器账（本轮自己撞的三条）
+
+1. **路径算错先红再修**：L13 第一版把仓库根写成 `path.resolve(SRC_DIR, '../platform/…')`，
+   而 `SRC_DIR` 已是 `frontend-ui/src` ⇒ `readFileSync` 直接抛（正确是 `'../../platform/…'`）。
+   症状长得像"判据红"，其实是夹具坏——第一次跑就是 `1 failed | 18 passed` 而失败行停在 `readFileSync`。
+2. **reporter 字形不可解析**：第一遍电池里 Q1/Q2 明明 `rc=1 / 2 failed`，却被我记成 `BLIND PASS`，
+   因为 `×` 经过 Windows 控制台（GBK）后匹配不上。⇒ 改成 `vitest -t "L13"` **按名过滤**，
+   判决只取 `rc` 与 `failed/skipped` 计数，不再解析装饰字符。**这不是判据没牙，是我读牙的方式错**——
+   同一条规矩第二次以不同形态出现（第一次是 rc 从管道尾巴拿）。
+3. 驱动对每步都断言了"替换后字节必须不同＋写后回读相等"，因此 `BLIND PASS` 阶段磁盘也是安全的（三轮均还原 MATCH）。
+
+## 6. 未入库声明
+
+本轮只有 1 个代码文件被改（判据文件，状态 `??`＝**无 git 恢复源**，恢复只能靠 `D:/tmp/f16-snap`），
+外加本档案与 `f16-mutation-witness-20260929.txt`（同为 `??`）与文档载体 `FRONTEND-MODULE-GOVERNANCE-v1.0.md`（状态 `AM`）。
+一律**未提交**，未执行 `add`/`commit`/`stash`，索引仍由并发作者占用（上一次实测 436 条，本轮未重量）。
+
+## 7. 文档载体（§5.47 写入后终值）
+
+`docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md`：`5b44c736e953e750` / 259168 B / 1857 行（§5.46 末态）
+→ **`d12f52d17ada2a0a` / 262950 B / 1891 行**（本轮 +34 行 / +3782 B），CRLF=0、游离 CR=0 未变。
+写入后复跑 `check-doc-links.py`：rc=1（存量）、WARN 仍 **120**、本文件唯一 WARN 仍在 `:137`。
+
+## 8. 待接手（本档案没做完的两件事）
+
+1. **F16 记忆落账没做**（回合预算耗尽）：应把本节追加到 project 记忆 `project-vocab-copy-taxonomy.md` 末尾
+   并同步索引行；验收＝索引锚点 `缺档折叠才是债` 仍命中 1 次、索引行数不减、备份在 memory 目录之外。
+2. **全量 vitest 的 `Tests` 总数**本轮第三次被 grep 模式漏掉 ⇒ 下轮重量并把新值写进本档案（不许由 1034+1 推导）。
+
+
+## 9. 重量记录（未成功）
+A) 文档 §5.x 节数=47 末三节=['5.45', '5.46', '5.47'] doc行数=1891 md5=d12f52d17ada2a0a
+A) 判据文件 it( 计数=19（文档 §5.47 写的是"18→19 例"，判据文件自身不许有硬编用例总数格）
+B) vitest rc=0 Test Files=[22m [1m[32m77 passed[39m[22m[90m (77)[39m Tests=未读到
+   | If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+   |   at <AdminAccess ref="VTU_COMPONENT" > 
+   |   at <VTUROOT>
+   | [Vue warn]: Failed to resolve component: el-form
+   | If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+   |   at <AdminAccess ref="VTU_COMPONENT" > 
+   |   at <VTUROOT>
+   | [Vue warn]: Failed to resolve component: el-dialog
+   | If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+   |   at <AdminAccess ref="VTU_COMPONENT" > 
+   |   at <VTUROOT>
+   | [Vue warn]: Failed to resolve component: el-alert
+   | If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+   |   at <AdminAccess ref="VTU_COMPONENT" > 
+   |   at <VTUROOT>
+   | [Vue warn]: Failed to resolve directive: loading 
+   |   at <AdminAccess ref="VTU_COMPONENT" > 
+   |   at <VTUROOT>
+   | 
+   | [90mstderr[2m | src/views/admin/panels/AdminDocs.smoke.test.js[2m > [22m[2mAdminDocs 冒烟[2m > [22m[2m渲染不崩：端点目录渲染，存在搜索框与端点条目
+   | [22m[39m[Vue warn]: Failed to resolve component: el-input
+   | If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+   |   at <AdminDocs ref="VTU_COMPONENT" > 
+   |   at <VTUROOT>
+   | 
+
+
+## 9b. 补做成功（本段作废 §9 的"未读到"）
+§9 那次失败是**解析器没剥 ANSI 色码**（`^\s*Tests` 前有色码 ⇒ 恒不匹配），不是行不存在；剥码后同一条正则一次命中。下面两行即现量判决。
+A) 文档 §5.x 节数=47 末三节=['5.45', '5.46', '5.47'] doc行数=1891 md5=d12f52d17ada2a0a
+A) 判据文件 it( 计数=19（文档 §5.47 写的是"18→19 例"，判据文件自身不许有硬编用例总数格）
+B) vitest rc=0 Test Files=77 passed (77) Tests=1035 passed (1035)
+C) 记忆已落账：project `project-vocab-copy-taxonomy.md` 追加 F16 一节，索引行同步（备份 D:/tmp/f16-mem-backup）

@@ -62,6 +62,11 @@ pub trait ObjectStore: Send + Sync {
     /// 对象元数据
     async fn head(&self, path: &str) -> StoreResult<BlobObject>;
 
+    /// 列出逻辑对象 key；不支持的适配器明确失败，不能假装空库。
+    async fn list_keys(&self, _prefix: &str) -> StoreResult<Vec<String>> {
+        Err(StoreError::Other("object listing is not supported by this backend".into()))
+    }
+
     /// 判断对象是否存在
     async fn exists(&self, path: &str) -> StoreResult<bool>;
 }
@@ -123,6 +128,14 @@ impl InMemoryObjectStore {
 
 #[async_trait]
 impl ObjectStore for InMemoryObjectStore {
+    async fn list_keys(&self, prefix: &str) -> StoreResult<Vec<String>> {
+        let objects = self.objects.lock().map_err(|error| StoreError::Other(error.to_string()))?;
+        let mut keys: Vec<_> =
+            objects.keys().filter(|key| key.starts_with(prefix)).cloned().collect();
+        keys.sort();
+        Ok(keys)
+    }
+
     async fn put(&self, path: &str, content_type: &str, data: Bytes) -> StoreResult<BlobObject> {
         let sha = format!("sha256-{}", simple_hash(path));
         let size = data.len() as u64;

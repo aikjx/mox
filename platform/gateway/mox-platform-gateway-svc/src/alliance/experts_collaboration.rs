@@ -787,11 +787,13 @@ fn match_top_experts(
 async fn consult_expert(
     Path(id): Path<String>,
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<ConsultBody>,
 ) -> ApiResponse<Value> {
     // 验证专家存在且 enabled
     let expert = {
-        let reg = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         match reg.get(&id) {
             Some(e) if e.enabled => e.clone(),
             Some(_) => return err(403, format!("专家 {} 已被禁用", id)),
@@ -870,13 +872,15 @@ async fn consult_expert(
 
 async fn multi_consult(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<MultiConsultBody>,
 ) -> ApiResponse<Value> {
     let max_experts = body.max_experts.unwrap_or(3).clamp(1, 10);
 
     // 匹配专家
     let matched = {
-        let reg = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         if let Some(ids) = &body.expert_ids {
             // 指定专家
             ids.iter()
@@ -984,13 +988,15 @@ async fn multi_consult(
 
 async fn debate(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<DebateBody>,
 ) -> ApiResponse<Value> {
     let rounds = body.rounds.unwrap_or(3).clamp(1, 10);
 
     // 匹配 2-4 名专家
     let debaters = {
-        let reg = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         if let Some(ids) = &body.expert_ids {
             ids.iter()
                 .filter_map(|id| reg.get(id).cloned())
@@ -1053,6 +1059,7 @@ async fn debate(
 
 async fn route_query(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<RouteBody>,
 ) -> ApiResponse<Value> {
     let query = body.question.clone().unwrap_or_default();
@@ -1076,7 +1083,8 @@ async fn route_query(
         .unwrap_or(false);
 
     let (matched, total_scanned) = {
-        let reg = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         let total = reg.len();
 
         let mut scored: Vec<(ExpertDescriptor, f64)> = reg.values()
@@ -1169,6 +1177,7 @@ async fn route_query(
 
 async fn intelligent_consult(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<IntelligentConsultBody>,
 ) -> ApiResponse<Value> {
     // 意图分类
@@ -1176,7 +1185,8 @@ async fn intelligent_consult(
 
     // 路由匹配最佳专家
     let (best_expert, related) = {
-        let reg = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         let matched = match_top_experts(&body.question, &reg, 4, 0.2, Some(&intent));
         if matched.is_empty() {
             // 回退：无领域过滤
@@ -1304,6 +1314,7 @@ async fn intelligent_consult(
 
 async fn algorithm_analysis(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<AlgorithmAnalysisBody>,
 ) -> ApiResponse<Value> {
     // 复杂度分析
@@ -1311,7 +1322,8 @@ async fn algorithm_analysis(
 
     // 推荐相关专家
     let recommended = {
-        let reg = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         let query = format!("{} algorithm", body.algorithm_description);
         let matched = match_top_experts(&query, &reg, 3, 0.15, Some("math"));
         if matched.is_empty() {
@@ -1362,11 +1374,13 @@ async fn algorithm_analysis(
 
 async fn enterprise_consult(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<EnterpriseConsultBody>,
 ) -> ApiResponse<Value> {
     // 匹配 3-5 名企业级专家
     let assigned = {
-        let reg = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         let query = format!("{} {} {}", body.company_name, body.industry, body.problem_statement);
 
         // 优先企业/咨询领域专家
@@ -1528,6 +1542,7 @@ async fn enterprise_consult(
 
 async fn enterprise_analyze(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<EnterpriseAnalyzeBody>,
 ) -> ApiResponse<Value> {
     let analysis_type = body.analysis_type.to_lowercase();
@@ -1546,7 +1561,8 @@ async fn enterprise_analyze(
     };
 
     let _experts = {
-        let reg = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         match_top_experts(&body.subject, &reg, 3, 0.15, Some(domain_hint))
     };
 
@@ -1669,6 +1685,7 @@ fn generate_finance_analysis(subject: &str) -> (Vec<Value>, Value, Vec<Value>, f
 /// 并以 `{content, mode, ...}` 形状返回（前端取 content 渲染）。
 async fn expert_chat_dispatch(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<ExpertChatBody>,
 ) -> ApiResponse<Value> {
     if body.message.trim().is_empty() {
@@ -1698,7 +1715,8 @@ async fn expert_chat_dispatch(
                 return err(400, "单专家模式需要 selected_experts 指定专家");
             }
             let expert = {
-                let reg = state.registry.lock();
+                let all_reg = state.registry.lock();
+        let reg = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
                 match reg.get(&id) {
                     Some(e) if e.enabled => e.clone(),
                     _ => return err(404, format!("专家不存在或已禁用: {}", id)),
@@ -1720,6 +1738,7 @@ async fn expert_chat_dispatch(
         "multi" => {
             let resp = multi_consult(
                 State(state.clone()),
+                TenantId("default".into()),
                 Json(MultiConsultBody {
                     question: body.message.clone(),
                     expert_ids: if body.selected_experts.is_empty() {
@@ -1771,6 +1790,7 @@ async fn expert_chat_dispatch(
         "debate" => {
             let resp = debate(
                 State(state.clone()),
+                TenantId("default".into()),
                 Json(DebateBody {
                     topic: body.message.clone(),
                     expert_ids: if body.selected_experts.is_empty() {
@@ -1798,6 +1818,7 @@ async fn expert_chat_dispatch(
         "algorithm" => {
             let resp = algorithm_analysis(
                 State(state.clone()),
+                TenantId("default".into()),
                 Json(AlgorithmAnalysisBody {
                     algorithm_description: body.message.clone(),
                     input_constraints: None,
@@ -1824,6 +1845,7 @@ async fn expert_chat_dispatch(
             // smart / 默认：智能路由 + 最优专家深度咨询
             let resp = intelligent_consult(
                 State(state.clone()),
+                TenantId("default".into()),
                 Json(IntelligentConsultBody {
                     question: body.message.clone(),
                     context: None,

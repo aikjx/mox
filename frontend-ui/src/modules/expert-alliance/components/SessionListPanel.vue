@@ -122,10 +122,12 @@
 import { computed, ref } from 'vue'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import {
+  SESSION_STATUS,
   SESSION_PAGE_SIZES,
   SESSION_STATUSES,
   SESSION_TYPES,
   sessionDraftTitle,
+  sessionListTitle,
   sessionStatusLabel,
   sessionTypeLabel
 } from '@/modules/expert-alliance/contract'
@@ -150,9 +152,9 @@ function onPage(page) {
 }
 
 const statusTagType = (status) => {
-  if (status === 'active') return 'success'
-  if (status === 'archived') return 'info'
-  if (status === 'closed') return 'warning'
+  if (status === SESSION_STATUS.ACTIVE) return 'success'
+  if (status === SESSION_STATUS.ARCHIVED) return 'info'
+  if (status === SESSION_STATUS.CLOSED) return 'warning'
   // 统计只认三个值，写成别的状态就是"库里存在但统计隐形"
   return 'danger'
 }
@@ -160,7 +162,7 @@ const statusTagType = (status) => {
 const rows = computed(() =>
   (store.list.items || []).map((s) => ({
     id: s.id,
-    title: s.title || `（无标题）${s.id}`,
+    title: sessionListTitle(s),
     typeLabel: sessionTypeLabel(s.sessionType),
     statusLabel: sessionStatusLabel(s.status),
     statusTag: statusTagType(s.status),

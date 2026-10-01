@@ -1,0 +1,307 @@
+{
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-base-store-core",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 10.969,
+      "log": "reports/data/20261001-resource-modules-validation/01.log",
+      "test_counts": [
+        [
+          4,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0,
+      "log_sha256": "5580ef8cfc2fbabee7da5892cdb909632736f7288a58953cfec4d03ad03ed4da"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-cloud-store-core",
+        "--features",
+        "s3",
+        "--lib",
+        "--test",
+        "t2_s3_backend"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 4.297,
+      "log": "reports/data/20261001-resource-modules-validation/02.log",
+      "test_counts": [
+        [
+          33,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0,
+      "final_recheck": true,
+      "log_sha256": "0b9faba70bd2e2b5fc795e2c29d75dc0203cc4175661e5397a5a364129128333"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-cloud-admin-sdk",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 8.391,
+      "log": "reports/data/20261001-resource-modules-validation/03.log",
+      "test_counts": [
+        [
+          4,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0,
+      "log_sha256": "7e0168b4308d9cb7d3f58cf398a5b84e0606ae98edb1748dfe46241f25a2a196"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kb-core",
+        "--features",
+        "sqlite",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "log": "reports/data/20261001-resource-modules-validation/04.log",
+      "test_counts": [
+        [
+          19,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0,
+      "final_recheck": true,
+      "initial_duration_seconds": 6.0,
+      "log_sha256": "a6f25f5e7179317b247e933acb3c5fbfed7b13dc68f818a7ba918bd18b48ebd1"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kg-storage-svc",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 8.578,
+      "log": "reports/data/20261001-resource-modules-validation/05.log",
+      "test_counts": [
+        [
+          93,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0,
+      "log_sha256": "c5d7947c78783a439adda79c989db6792db4d0aa17e679b10e06f1bd0c5ae124"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kb-svc",
+        "--lib",
+        "--test",
+        "t4_kb_http"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 4.11,
+      "log": "reports/data/20261001-resource-modules-validation/06.log",
+      "test_counts": [
+        [
+          17,
+          0,
+          1
+        ],
+        [
+          5,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0,
+      "log_sha256": "8d710e3ca83214856cf5395660d9ed1a97f0605fd42f25ed9db8e48e999fe857"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kb-server",
+        "--bin",
+        "mox-kb-server"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 3.14,
+      "log": "reports/data/20261001-resource-modules-validation/07.log",
+      "test_counts": [
+        [
+          2,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0,
+      "log_sha256": "8e7f84e6362ca73adfe3e19eac2d85a78b1b5677cff777ed67ba0108551dd20d"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "file_storage::tests"
+      ],
+      "exit_code": 0,
+      "log": "reports/data/20261001-resource-modules-validation/08.log",
+      "test_counts": [
+        [
+          5,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2,
+      "final_recheck": true,
+      "initial_duration_seconds": 103.906,
+      "log_sha256": "4acb61fb67efc4d1a4f0c4efa3d7c3a20750ec29c9c2e915d9ae8e38e4e13eb9"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "dialogue_sediment::tests"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 3.735,
+      "log": "reports/data/20261001-resource-modules-validation/09.log",
+      "test_counts": [
+        [
+          3,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2,
+      "log_sha256": "36842c9b6ec21637f34ca6a41d87009a21ef812ad98416da0a71825a9576497a"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "admin_storage::tests"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 3.687,
+      "log": "reports/data/20261001-resource-modules-validation/10.log",
+      "test_counts": [
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2,
+      "log_sha256": "aaf884074abe7cae2f935534c006f5c0bbcba4c62e7beacf71eada70bc0c3793"
+    },
+    {
+      "command": [
+        "cargo",
+        "check",
+        "-p",
+        "mox-platform-gateway-svc",
+        "-p",
+        "mox-kb-server"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 55.641,
+      "log": "reports/data/20261001-resource-modules-validation/11.log",
+      "test_counts": [],
+      "warning_count": 2,
+      "log_sha256": "08741e72000aed3ca5236e8b3a0f6e0c3d43156b9a0ec45aeec836cb7f021764"
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-base-store-core",
+        "-p",
+        "mox-cloud-store-core",
+        "-p",
+        "mox-cloud-admin-sdk",
+        "-p",
+        "mox-kb-core",
+        "-p",
+        "mox-kb-svc",
+        "-p",
+        "mox-kg-storage-svc",
+        "-p",
+        "mox-kb-server",
+        "--features",
+        "mox-cloud-store-core/s3,mox-kb-core/sqlite",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 10.625,
+      "log": "reports/data/20261001-resource-modules-validation/12.log",
+      "test_counts": [],
+      "warning_count": 96,
+      "final_recheck": true,
+      "log_sha256": "abe1f603728fb0973495cd163d58070a78dea1b92dc884d0f61d584b535adb73"
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "log": "reports/data/20261001-resource-modules-validation/13.log",
+      "test_counts": [],
+      "warning_count": 63,
+      "final_recheck": true,
+      "initial_duration_seconds": 43.468,
+      "log_sha256": "ae1ea02828a52001d2507106b584e68d9cc9d7fe0049d070c7d726730e236a81"
+    }
+  ],
+  "complete": true,
+  "passed": 190,
+  "failed": 0,
+  "all_commands_succeeded": true,
+  "ignored": 1,
+  "completion_scope": "core resource-module fixes only; enterprise module acceptance remains incomplete"
+}

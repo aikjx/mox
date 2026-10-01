@@ -1,0 +1,36 @@
+{
+  "mermaid": "11.17.2",
+  "method": "parse only; no browser visual verification",
+  "results": [
+    {
+      "file": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "line": 23,
+      "pass": true
+    },
+    {
+      "file": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "line": 10,
+      "pass": true
+    },
+    {
+      "file": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "line": 30,
+      "pass": true
+    },
+    {
+      "file": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "line": 47,
+      "pass": true
+    },
+    {
+      "file": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "line": 69,
+      "pass": true
+    },
+    {
+      "file": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "line": 88,
+      "pass": true
+    }
+  ]
+}

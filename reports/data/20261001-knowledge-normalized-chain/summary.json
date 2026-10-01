@@ -1,0 +1,168 @@
+{
+  "complete": true,
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kb-svc"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 12.98,
+      "log": "reports\\data\\20261001-knowledge-normalized-chain\\01.log",
+      "sha256": "84cf79b690adb32e4933a2e9c22c4352f384f8b7641bc358d4661a6ccd81113f",
+      "final_recheck": true,
+      "test_counts": [
+        [
+          17,
+          0,
+          1
+        ],
+        [
+          5,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "protected_kb_requires_trusted_identity_and_denies_readonly_writes"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 75.42,
+      "log": "reports\\data\\20261001-knowledge-normalized-chain\\02.log",
+      "sha256": "f63c3f59c0649bcfb2489dabff4f1fa1cf42f12097a6dbd9ea12e23e8105e61f",
+      "test_counts": [
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "dialogue_sediment::tests"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 2.98,
+      "log": "reports\\data\\20261001-knowledge-normalized-chain\\03.log",
+      "sha256": "134670c153a5d4ac528b743251bed0c9c7183a25ecde655054c67fc24aa5e8af",
+      "test_counts": [
+        [
+          3,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-kb-svc",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 26.04,
+      "log": "reports\\data\\20261001-knowledge-normalized-chain\\04.log",
+      "sha256": "7b88efbcec5e70487d2fd03e5172d576ad7381d8689546ac734e6603ef9bcf1d",
+      "test_counts": [],
+      "warning_count": 128
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 1.5,
+      "log": "reports\\data\\20261001-knowledge-normalized-chain\\05.log",
+      "sha256": "cf2ade650199f49724abd4cf19becc1c78b5c8da32837c5b1957c96405639b62",
+      "final_recheck": true,
+      "test_counts": [],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "node",
+        "frontend-ui/node_modules/vitest/vitest.mjs",
+        "run",
+        "--root",
+        "frontend-ui",
+        "src/api/kb-edit.test.js",
+        "src/views/workspace/workspace-kb.test.js"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 6.35,
+      "log": "reports\\data\\20261001-knowledge-normalized-chain\\06.log",
+      "sha256": "9879b74ea00dc9e85c1dae4251d351c08cd086daf707584c54104227a3e0eee1",
+      "test_counts": [],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 1.54,
+      "log": "reports\\data\\20261001-knowledge-normalized-chain\\07.log",
+      "sha256": "c5b4728226f32a51cfa1bc43fd637154da2f9e8470b6e94e53fe1d5a8f3c440c",
+      "test_counts": [],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "node",
+        "node_modules/vite/bin/vite.js",
+        "build"
+      ],
+      "cwd": "frontend-ui",
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-knowledge-normalized-chain\\08-build.log",
+      "sha256": "c9a85b3684c1b6aabe387d715af3a0e061398b8267fce416a63cfb50fa87ef12",
+      "test_counts": [],
+      "warning_count": 0
+    }
+  ],
+  "rust_passed": 32,
+  "rust_failed": 0,
+  "rust_ignored": 1,
+  "frontend_passed": 36,
+  "frontend_failed": 0,
+  "fixture_restoration": "Exact original bytes restored with atomic replacement; assertion passed.",
+  "limitations": [
+    "No full workspace run",
+    "No real browser end-to-end run",
+    "No real OSS or production deployment"
+  ]
+}

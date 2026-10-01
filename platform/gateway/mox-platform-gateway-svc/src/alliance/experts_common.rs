@@ -21,10 +21,98 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
+use mox_platform_api::UserInfo;
 use mox_audit::{
     AuditAction, AuditActor, AuditContext, AuditError, AuditEvent, AuditOutcome, AuditResource,
     AuditSeverity, AuditSink, MultiSink, NoopSink,
 };
+use axum::extract::FromRequestParts;
+use axum::http::request::Parts;
+use axum::http::StatusCode;
+
+// =====================================================================
+// 零、多租户：租户标识（A1，2026-10-01）
+// =====================================================================
+
+/// 默认租户标识：请求未带 `X-Tenant-Id`（或空值）时归入此租户。
+///
+/// 硬约束：无头请求行为与改造前（单租户）完全一致——存量内置专家、历史 SQLite
+/// 数据均归 `default`，保证零回归。
+pub const DEFAULT_TENANT: &str = "default";
+
+/// 租户标识（A1 多租户行级隔离的第一性硬能力）。
+///
+/// 来源：HTTP 请求头 `X-Tenant-Id`。无头 / 空串 → [`DEFAULT_TENANT`]。
+/// 取值校验：`[A-Za-z0-9_-]`，长度 ≤ 64；非法 → 400。
+/// 内存态注册表/图谱与 SQLite `tenant_id` 列均以此为分区键。
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TenantId(pub String);
+
+impl TenantId {
+    /// 取租户标识字符串
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl<S> FromRequestParts<S> for TenantId
+where
+    S: Send + Sync + 'static,
+{
+    // 非法头 → 400；合法/无头 → Ok
+    type Rejection = (StatusCode, &'static str);
+
+    // 手写 async_trait 展开签名（与 OptionalAuthUser / auth.rs ApiAuth 同策略）
+    fn from_request_parts<'life0, 'life1, 'async_trait>(
+        parts: &'life0 mut Parts,
+        _state: &'life1 S,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self, Self::Rejection>> + Send + 'async_trait>,
+    >
+    where
+        'life0: 'async_trait,
+        'life1: 'async_trait,
+        S: 'async_trait,
+    {
+        Box::pin(async move {
+            let raw = parts
+                .headers
+                .get("x-tenant-id")
+                .and_then(|v| v.to_str().ok())
+                .map(|s| s.trim().to_string());
+            match raw {
+                None => Ok(TenantId(DEFAULT_TENANT.to_string())),
+                Some(v) if v.is_empty() => Ok(TenantId(DEFAULT_TENANT.to_string())),
+                Some(v) if v.len() <= 64
+                    && v.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') =>
+                {
+                    Ok(TenantId(v))
+                }
+                _ => Err((
+                    StatusCode::BAD_REQUEST,
+                    "invalid X-Tenant-Id: allowed chars [A-Za-z0-9_-], max length 64",
+                )),
+            }
+        })
+    }
+}
+
+/// 空注册表投影（租户无数据时读面复用，保证 handler 下游 `.values()/.get()` 零改动）
+pub static EMPTY_REGISTRY: std::sync::OnceLock<HashMap<String, ExpertDescriptor>> =
+    std::sync::OnceLock::new();
+
+/// 取空注册表静态引用
+pub fn empty_registry() -> &'static HashMap<String, ExpertDescriptor> {
+    EMPTY_REGISTRY.get_or_init(HashMap::new)
+}
+
+/// 空图谱投影（同上）
+pub static EMPTY_GRAPH: std::sync::OnceLock<ExpertGraph> = std::sync::OnceLock::new();
+
+/// 取空图谱静态引用
+pub fn empty_graph() -> &'static ExpertGraph {
+    EMPTY_GRAPH.get_or_init(ExpertGraph::default)
+}
 
 // =====================================================================
 // 一、核心领域模型：ExpertDescriptor（专家描述符）
@@ -454,16 +542,19 @@ pub struct OrchestrationRecord {
 /// 专家联盟全域共享状态
 #[derive(Clone)]
 pub struct ExpertsSharedState {
-    /// 专家注册表（ID -> ExpertDescriptor）
-    pub registry: Arc<Mutex<HashMap<String, ExpertDescriptor>>>,
+    /// 专家注册表（tenant -> 专家ID -> ExpertDescriptor）。
+    ///
+    /// A1 多租户（2026-10-01）：注册表按租户分区，读写一律先按 `TenantId` 取内层 map，
+    /// 跨租户不可见。内存态分区与 SQLite `experts.tenant_id` 列投影一致。
+    pub registry: Arc<Mutex<HashMap<String, HashMap<String, ExpertDescriptor>>>>,
     /// 会话存储（ID -> ExpertSession）
     pub sessions: Arc<Mutex<HashMap<String, ExpertSession>>>,
     /// 调度配置
     pub dispatcher_config: Arc<Mutex<DispatcherConfig>>,
     /// 调度记录
     pub dispatch_records: Arc<Mutex<Vec<DispatchRecord>>>,
-    /// 能力图谱
-    pub graph: Arc<Mutex<ExpertGraph>>,
+    /// 能力图谱（tenant -> ExpertGraph）。A1 多租户：每租户一份独立图，按租户取/存。
+    pub graph: Arc<Mutex<HashMap<String, ExpertGraph>>>,
     /// 编排计划
     pub plans: Arc<Mutex<HashMap<String, CollaborationPlan>>>,
     /// 编排执行历史
@@ -479,24 +570,33 @@ impl ExpertsSharedState {
         // 启动期一次性迁移：历史 JSON（data/experts_*.json）→ SQLite（data/experts.db）
         // 幂等：SQLite 已有数据则跳过导入；JSON 解析失败则保留原文件不归档
         crate::alliance::experts_db::migrate_json_to_sqlite();
-        let registry = Arc::new(Mutex::new(load_registry()));
+        // A1 多租户：注册表与图谱均按租户加载（tenant -> inner），一次读入全部分区
+        let registry = Arc::new(Mutex::new(load_all_registries()));
         let sessions = Arc::new(Mutex::new(load_sessions()));
-        let graph = Arc::new(Mutex::new(load_graph()));
-        // 若注册表为空，种子化内置专家（确保非空启动）
+        let graph = Arc::new(Mutex::new(load_all_graphs()));
+        // 若默认租户注册表为空，种子化内置专家（内置专家归属 default 租户）
         {
             let mut reg = registry.lock();
-            if reg.is_empty() {
-                seed_builtin_experts(&mut reg);
-                save_registry(&reg);
+            let need_seed = reg.get(DEFAULT_TENANT).map(|m| m.is_empty()).unwrap_or(true);
+            if need_seed {
+                let inner = reg.entry(DEFAULT_TENANT.to_string()).or_default();
+                seed_builtin_experts(inner);
+                save_registry(DEFAULT_TENANT, inner);
             }
         }
-        // 若图谱为空，从注册表构建初始图谱
+        // 若默认租户图谱为空，从默认租户注册表构建初始图谱
         {
-            let mut g = graph.lock();
-            if g.nodes.is_empty() {
+            let mut graphs = graph.lock();
+            let need_build = graphs
+                .get(DEFAULT_TENANT)
+                .map(|g| g.nodes.is_empty())
+                .unwrap_or(true);
+            if need_build {
                 let reg = registry.lock();
-                *g = build_graph_from_registry(&reg);
-                save_graph(&g);
+                let inner = reg.get(DEFAULT_TENANT).cloned().unwrap_or_default();
+                let g = graphs.entry(DEFAULT_TENANT.to_string()).or_default();
+                *g = build_graph_from_registry(&inner);
+                save_graph(DEFAULT_TENANT, g);
             }
         }
         Self {
@@ -574,10 +674,61 @@ pub fn build_audit_context() -> Arc<AuditContext> {
     Arc::new(AuditContext::new(Arc::new(multi)).with_hmac_secret(secret))
 }
 
+/// 可选的已认证用户身份提取器（P1-审计 actor 修复）。
+///
+/// auth_middleware 已将 `UserInfo` 注入请求扩展；本提取器对缺失身份不报错
+/// （返回 `None`），供专家联盟 handler 在审计时记录真实操作人。与
+/// `proxy::OptionalUserInfo` 同语义，此处本地定义以避免跨模块耦合。
+pub struct OptionalAuthUser(pub Option<UserInfo>);
+
+impl<S> FromRequestParts<S> for OptionalAuthUser
+where
+    S: Send + Sync + 'static,
+{
+    type Rejection = std::convert::Infallible;
+
+    // 手写 async_trait 展开签名（与 auth.rs `ApiAuth` 同策略，避免引入 async_trait 依赖）。
+    fn from_request_parts<'life0, 'life1, 'async_trait>(
+        parts: &'life0 mut Parts,
+        _state: &'life1 S,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self, Self::Rejection>> + Send + 'async_trait>,
+    >
+    where
+        'life0: 'async_trait,
+        'life1: 'async_trait,
+        S: 'async_trait,
+    {
+        Box::pin(async move { Ok(OptionalAuthUser(parts.extensions.get::<UserInfo>().cloned())) })
+    }
+}
+
+/// 从可选用户身份构造审计 Actor；未认证时降级为 `system()`（向后兼容）。
+///
+/// 优先记录真实操作人（`AuditActor::human`）；取不到身份时回退 system，
+/// 保持与改造前一致的审计链行为。
+pub fn actor_from_opt_user(user: &Option<UserInfo>) -> AuditActor {
+    match user {
+        Some(u) => {
+            let roles = if u.roles.is_empty() { "user".to_string() } else { u.roles.join(",") };
+            AuditActor::human(&u.id, &roles)
+        }
+        None => AuditActor::system(),
+    }
+}
+
 /// 专家联盟写操作审计发射辅助（失败静默，不阻断业务）
+///
+/// `actor` 为本次操作的真实行动者：handler 经 `OptionalAuthUser` 提取后传入；
+/// 未认证/公开路径降级为 `AuditActor::system()`，与历史行为兼容。
+///
+/// `tenant` 为本次请求的租户标识（A1）：写入 `AuditResource.tenant_id`，
+/// 替换改造前硬编码的 `"experts-alliance"`，使审计可按租户维度追溯。
 #[allow(clippy::too_many_arguments)]
 pub fn emit_audit(
     state: &ExpertsSharedState,
+    actor: &AuditActor,
+    tenant: &str,
     action: AuditAction,
     resource_type: &str,
     resource_id: &str,
@@ -587,11 +738,11 @@ pub fn emit_audit(
     let resource = AuditResource {
         resource_type: resource_type.to_string(),
         resource_id: resource_id.to_string(),
-        tenant_id: "experts-alliance".to_string(),
+        tenant_id: tenant.to_string(),
         name: None,
     };
     let mut ev = AuditEvent::new(
-        AuditActor::system(),
+        actor.clone(),
         action,
         resource,
         outcome,
@@ -614,12 +765,12 @@ pub fn emit_audit(
 // JSON 文件由 `ExpertsSharedState::new()` 启动时自动一次性导入并归档。
 // 详细设计见 `experts_db` 模块文档。
 
-pub fn load_registry() -> HashMap<String, ExpertDescriptor> {
-    crate::alliance::experts_db::load_registry()
+pub fn load_all_registries() -> HashMap<String, HashMap<String, ExpertDescriptor>> {
+    crate::alliance::experts_db::load_all_registries()
 }
 
-pub fn save_registry(registry: &HashMap<String, ExpertDescriptor>) {
-    crate::alliance::experts_db::save_registry(registry)
+pub fn save_registry(tenant: &str, registry: &HashMap<String, ExpertDescriptor>) {
+    crate::alliance::experts_db::save_registry(tenant, registry)
 }
 
 pub fn load_sessions() -> HashMap<String, ExpertSession> {
@@ -630,12 +781,12 @@ pub fn save_sessions(sessions: &HashMap<String, ExpertSession>) {
     crate::alliance::experts_db::save_sessions(sessions)
 }
 
-pub fn load_graph() -> ExpertGraph {
-    crate::alliance::experts_db::load_graph()
+pub fn load_all_graphs() -> HashMap<String, ExpertGraph> {
+    crate::alliance::experts_db::load_all_graphs()
 }
 
-pub fn save_graph(graph: &ExpertGraph) {
-    crate::alliance::experts_db::save_graph(graph)
+pub fn save_graph(tenant: &str, graph: &ExpertGraph) {
+    crate::alliance::experts_db::save_graph(tenant, graph)
 }
 
 // =====================================================================
@@ -956,7 +1107,7 @@ mod tests {
             sessions: Arc::new(Mutex::new(HashMap::new())),
             dispatcher_config: Arc::new(Mutex::new(DispatcherConfig::default())),
             dispatch_records: Arc::new(Mutex::new(Vec::new())),
-            graph: Arc::new(Mutex::new(ExpertGraph::default())),
+            graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
@@ -964,8 +1115,11 @@ mod tests {
         };
 
         let before = state.audit.chain_len();
+        let sys = AuditActor::system();
         emit_audit(
             &state,
+            &sys,
+            DEFAULT_TENANT,
             AuditAction::Unknown("expert.register".into()),
             "expert",
             "exp-test-001",
@@ -974,6 +1128,8 @@ mod tests {
         );
         emit_audit(
             &state,
+            &sys,
+            DEFAULT_TENANT,
             AuditAction::Unknown("expert.disable".into()),
             "expert",
             "exp-test-001",
@@ -993,7 +1149,7 @@ mod tests {
             sessions: Arc::new(Mutex::new(HashMap::new())),
             dispatcher_config: Arc::new(Mutex::new(DispatcherConfig::default())),
             dispatch_records: Arc::new(Mutex::new(Vec::new())),
-            graph: Arc::new(Mutex::new(ExpertGraph::default())),
+            graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
@@ -1002,6 +1158,8 @@ mod tests {
         let before = state.audit.chain_len();
         emit_audit(
             &state,
+            &AuditActor::system(),
+            DEFAULT_TENANT,
             AuditAction::ExpertDispatch,
             "dispatch",
             "disp-test",

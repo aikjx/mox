@@ -26,7 +26,8 @@ export const ElTableColumn = {
   props: ['label', 'prop'],
   setup(props, { slots }) {
     const rows = inject(ROWS, () => [])
-    return () => h('div', { class: 'el-col' }, rows().map((row, i) =>
+    // data-label 让测试能按列头点名某一列（用 findAll 的下标选列会把断言钉在模板列序上）
+    return () => h('div', { class: 'el-col', 'data-label': props.label ?? '', 'data-prop': props.prop ?? '' }, rows().map((row, i) =>
       h('div', { class: 'el-cell', 'data-i': String(i) },
         slots.default ? slots.default({ row, $index: i }) : (row[props.prop] ?? ''))
     ))

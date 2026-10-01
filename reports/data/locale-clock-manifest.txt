@@ -1,0 +1,13 @@
+locale-clock 收口对账（驱动器在写账前 TypeError 崩溃，本表由独立测量脚本补写；源文件未被本脚本改动）
+
+composables/workspace/useAlliance.js           pre=8ba74e470ad7(4703B) now=a280dc1ead50(4688B) delta=-15  HM锚点残留=0
+stores/alliance.store.js                       pre=41773deba1b9(10859B) now=1d7c767064e9(10726B) delta=-133  HM锚点残留=0
+views/workspace/ExpertWorkspaceView.vue        pre=4f559bf3d96d(40161B) now=f34ea3166637(40087B) delta=-74  HM锚点残留=0
+views/project/Workbench.vue                    pre=8f14bfd38bf4(5249B) now=d5cee2e2e36f(5209B) delta=-40  HM锚点残留=0
+modules/expert-alliance/model/rank.js          pre=9f15225a8e68(3623B) now=0743fa214f38(3644B) delta=+21  HM锚点残留=0
+
+余量复算 OPTS 字面量     = 1 处 :: utils/time.js x1
+余量复算 日期档调用        = 1 处 :: utils/time.js x1
+余量复算 时钟档调用        = 3 处 :: utils/time.js x1; views/admin/panels/AdminMonitor.vue x1; views/project/Workbench.vue x1
+余量复算 被禁整串 HM      = 0 处 :: 
+

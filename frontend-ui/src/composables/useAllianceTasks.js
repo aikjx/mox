@@ -1,10 +1,15 @@
 import { ref } from 'vue'
+import { TASK_STATUS, NODE_STATUS } from '@/modules/expert-alliance/contract'
 
-const activeStates = new Set(['pending', 'planning', 'ready', 'running'])
+// §5.54 F25：三张动作表原来是手打的字符串元素表＝契约值域的第二本源（L12 第五型）。
+// 成员取值一个没动，只是改成引用常量。其中 'ready' 不属 task_status_str 的七档（alliance.rs:326-336），
+// 但远程调度器出参是 `v["status"].as_str()` 直传（alliance_remote.rs:465）⇒ 不敢断定产不出，
+// 先按节点档常量保住原语义，"任务值域到底含不含 ready"登记为待裁决（同 #41 一族）。
+const activeStates = new Set([TASK_STATUS.PENDING, TASK_STATUS.PLANNING, NODE_STATUS.READY, TASK_STATUS.RUNNING])
 export const taskActions = {
-  resume: new Set(['pending', 'ready', 'paused']),
-  pause: new Set(['running']),
-  cancel: new Set(['pending', 'planning', 'ready', 'running', 'paused']),
+  resume: new Set([TASK_STATUS.PENDING, NODE_STATUS.READY, TASK_STATUS.PAUSED]),
+  pause: new Set([TASK_STATUS.RUNNING]),
+  cancel: new Set([TASK_STATUS.PENDING, TASK_STATUS.PLANNING, NODE_STATUS.READY, TASK_STATUS.RUNNING, TASK_STATUS.PAUSED]),
 }
 
 export function useAllianceTasks(api, { intervalMs = 2000 } = {}) {
@@ -21,9 +26,9 @@ export function useAllianceTasks(api, { intervalMs = 2000 } = {}) {
     const version = ++selectionVersion
     selectedTask.value = task
     if (!sameTask) { logs.value = []; fusionResult.value = null; dagNodesData.value = []; dagEdgesData.value = [] }
-    if (task?.status !== 'completed') fusionResult.value = null
+    if (task?.status !== TASK_STATUS.COMPLETED) fusionResult.value = null
     logsError.value = ''; fusionError.value = ''; dagError.value = ''
-    logsLoading.value = !!task && !quiet; dagLoading.value = !!task && !quiet; fusionLoading.value = task?.status === 'completed' && !quiet
+    logsLoading.value = !!task && !quiet; dagLoading.value = !!task && !quiet; fusionLoading.value = task?.status === TASK_STATUS.COMPLETED && !quiet
     if (!task) return
     const current = () => !disposed && version === selectionVersion
     await Promise.all([
@@ -34,7 +39,7 @@ export function useAllianceTasks(api, { intervalMs = 2000 } = {}) {
         if (current()) { dagNodesData.value = value.nodes; dagEdgesData.value = value.edges }
       }).catch(error => { if (current()) dagError.value = message(error) })
         .finally(() => { if (current()) dagLoading.value = false }),
-      task.status === 'completed' ? api.getAllianceFusionResult(task.id)
+      task.status === TASK_STATUS.COMPLETED ? api.getAllianceFusionResult(task.id)
         .then(value => { if (current()) fusionResult.value = value })
         .catch(error => { if (current()) fusionError.value = message(error) })
         .finally(() => { if (current()) fusionLoading.value = false }) : Promise.resolve(),

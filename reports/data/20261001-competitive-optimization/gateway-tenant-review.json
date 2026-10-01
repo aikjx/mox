@@ -1,0 +1,26 @@
+{
+  "observed_at": "2026-10-02 Asia/Shanghai",
+  "method": "static source inspection; gateway compile blocked, no runtime exploit test",
+  "finding": "TenantId reads x-tenant-id and defaults when absent; auth middleware injects UserInfo without validating or rewriting this header. Authenticated identity and requested tenant can differ. Partitioned maps alone do not prove authorization.",
+  "severity": "P0 release blocker",
+  "required_checks": [
+    "derive tenant from enabled trusted UserInfo extension",
+    "reject missing trusted identity and header/identity mismatch",
+    "test cross-tenant list/detail/create/update/delete/graph/dispatch plus restart",
+    "scope sessions, jobs, history, favorites and audit reads, not only registry and graph"
+  ],
+  "source_snapshots": [
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_common.rs",
+      "sha256": "5f7e0860ae7a09be7699b6ce78ccb527bac1fb5fe33f5a65ccf03872be2f1ad4"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/auth.rs",
+      "sha256": "3a4cb52f0e601413a3cab9b5ca74c7da2a06534b8cdae543b6fad20d6d7a706f"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/modules.rs",
+      "sha256": "8c876a2682856f13021dc2f602f5d1dc2d3ed55deab4e9a3a3fbf8c9a17ba18a"
+    }
+  ]
+}

@@ -62,8 +62,8 @@
             :disabled="store.loading.run"
             @click="store.toggleExpert(e.id)"
           >
-            <b>{{ e.name }}</b>
-            <span>{{ e.title || '未填头衔' }} · {{ availabilityLabel(e) }}</span>
+            <b>{{ expertDisplayName(e) }}</b>
+            <span>{{ e.title || '未填头衔' }} · {{ availabilityLabel(expertDisplayStatus(e.status)) }}</span>
           </button>
         </div>
       </div>
@@ -96,10 +96,10 @@
       <ul class="acw-rows">
         <li v-for="row in store.result.candidates" :key="row.id" class="acw-row">
           <div class="acw-row-main">
-            <b>{{ row.name }}</b>
+            <b>{{ expertDisplayName(row) }}</b>
             <span>{{ row.title || '未填头衔' }} · 匹配度 {{ row.matchScore.toFixed(3) }} · 评分 {{ row.avgRating.toFixed(1) }} · 累计 {{ row.totalConsultations }} 次</span>
           </div>
-          <em class="acw-side">{{ row.status }} · 响应 {{ row.avgResponseMinutes }} 分钟 · 负载 {{ row.currentLoad }}</em>
+          <em class="acw-side">{{ availabilityLabel(expertDisplayStatus(row.status)) }} · 响应 {{ row.avgResponseMinutes }} 分钟 · 负载 {{ row.currentLoad }}</em>
         </li>
       </ul>
     </section>
@@ -121,7 +121,7 @@
       </div>
       <div v-for="row in store.result.contributions" :key="row.id" class="acw-answer">
         <div class="acw-answer-head">
-          <b>{{ row.name }}</b>
+          <b>{{ expertDisplayName(row) }}</b>
           <span>匹配度 {{ row.matchScore.toFixed(3) }} · {{ answerSourceText(row.answer) }} · 置信度 {{ confidenceText(row.answer.confidence) }}</span>
         </div>
         <p class="acw-pre">{{ row.answer.solution }}</p>
@@ -142,7 +142,7 @@
       <ul class="acw-rows">
         <li v-for="p in store.result.participants" :key="p.id" class="acw-row">
           <div class="acw-row-main">
-            <b>{{ p.name }}</b>
+            <b>{{ expertDisplayName(p) }}</b>
             <span>{{ p.side === 'pro' ? '正方' : '反方' }}</span>
           </div>
           <em class="acw-side">{{ p.finalScore.toFixed(2) }} 分</em>
@@ -242,7 +242,7 @@
 // 智能协作工作台：六个后端原生协作端点的唯一入口，替代存量两份互不兼容的实现。
 // 直接绑协作 store——六模式的输入/控件/结果状态量大，逐 prop 透传只会把 store 形状抄进视图。
 import { computed } from 'vue'
-import { COLLAB_MODES, answerSourceText, confidenceText, consensusText, intentLabel, complexityLevel } from '@/modules/expert-alliance/contract'
+import { COLLAB_MODES, availabilityLabel, expertDisplayStatus, answerSourceText, confidenceText, consensusText, intentLabel, complexityLevel, expertNameOr, expertDisplayName } from '@/modules/expert-alliance/contract'
 import { HISTORY_CAP } from '@/modules/expert-alliance/store'
 
 const props = defineProps({
@@ -267,13 +267,12 @@ const isPicked = (id) => props.store.input.expertIds.includes(id)
 const expertPickerLabel = computed(() =>
   props.store.current.expertChoice === 'one' ? '选择 1 位专家' : '参与专家（不选则由后端自动匹配）'
 )
-const availabilityLabel = (e) => (e.online ? '在线' : e.status === 'busy' ? '忙碌' : '离线')
 
 const recommendationTitle = computed(() => {
   const rec = props.store.result?.recommendation
   if (!rec?.expertId) return '无满足约束的可用专家'
   const hit = props.store.result.candidates.find((c) => c.id === rec.expertId)
-  return `推荐 ${hit?.name || rec.expertId}`
+  return `推荐 ${expertNameOr({ id: rec.expertId, name: hit?.name }, rec.expertId)}`
 })
 
 const consensusDisplay = computed(() =>
@@ -293,11 +292,11 @@ const blockedNote = computed(() => {
 
 const answerExpertName = computed(() => {
   const r = props.store.result || {}
-  return r.expertName || r.expert?.name || '匹配专家'
+  return expertNameOr({ id: r.expert?.id, name: r.expertName || r.expert?.name }, '匹配专家')
 })
 
 const relatedText = computed(() =>
-  (props.store.result?.relatedExperts || []).map((e) => `${e.name}（${e.title || '未填头衔'}）`).join('、')
+  (props.store.result?.relatedExperts || []).map((e) => `${expertNameOr(e, '未命名专家')}（${e.title || '未填头衔'}）`).join('、')
 )
 
 const recommendedText = computed(() =>

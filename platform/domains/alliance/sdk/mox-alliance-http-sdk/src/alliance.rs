@@ -881,6 +881,10 @@ async fn search_experts(
                 .matches
                 .iter()
                 .map(|m| {
+                    // U2 匹配透明化：逐维得分 + 本次实际权重一并透出。
+                    // priority 维在加权时乘 weights.rating（Expert 无独立 rating 字段）。
+                    let b = &m.score_breakdown;
+                    let w = &m.weights;
                     json!({
                         "expert_id": m.expert.expert_id,
                         "name": m.expert.name,
@@ -888,6 +892,15 @@ async fn search_experts(
                         "domains": m.expert.domains,
                         "status": expert_status_str(m.expert.status),
                         "match_score": m.score,
+                        "match_reason": m.match_reason,
+                        "scores": {
+                            "domain":      { "value": b.domain_match,      "weight": w.domain },
+                            "capability":  { "value": b.capability_match,  "weight": w.capability },
+                            "health":      { "value": b.health_score,      "weight": w.health },
+                            "priority":    { "value": b.priority_score,    "weight": w.rating },
+                            "performance": { "value": b.performance_score,"weight": w.performance },
+                            "total": m.score,
+                        }
                     })
                 })
                 .collect();

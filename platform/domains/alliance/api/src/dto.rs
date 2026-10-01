@@ -151,6 +151,41 @@ pub struct ExpertSummary {
     pub description: String,
     pub domains: Vec<String>,
     pub status: mox_alliance_common_proto::ExpertStatus,
+    // ── U2 匹配透明化（2026-10-01）──────────────────────────────────────────────
+    // 旧消费者不读这些字段，全部 #[serde(default)] 缺省即 None，向后兼容。
+    /// 综合匹配总分 0.0~1.0（各维 value*weight 加权和）
+    #[serde(default)]
+    pub match_score: Option<f64>,
+    /// 人可读的匹配原因（由匹配器生成）
+    #[serde(default)]
+    pub match_reason: Option<String>,
+    /// 逐维演算明细（value=该维得分，weight=本次实际权重），供前端画「为什么匹配」
+    #[serde(default)]
+    pub scores: Option<ExpertScoreView>,
+}
+
+/// 单维度得分明细（U2）
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ScoreDim {
+    /// 该维得分 0.0~1.0
+    pub value: f64,
+    /// 该维本次实际权重（默认或专家覆盖值）
+    pub weight: f64,
+}
+
+/// 匹配总分逐维演算视图（U2）
+///
+/// 与 `MatchScoreBreakdown` 的对应关系（注意 priority 维用的是 weights.rating 权重，
+/// 因为现有 Expert 模型没有独立 rating 字段，priority 归一化后映射到 rating 权重）。
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ExpertScoreView {
+    pub domain: ScoreDim,
+    pub capability: ScoreDim,
+    pub health: ScoreDim,
+    pub priority: ScoreDim,
+    pub performance: ScoreDim,
+    /// 总分 = Σ(value*weight)
+    pub total: f64,
 }
 
 // ─── 通用响应 ────────────────────────────────────────────────────────────────

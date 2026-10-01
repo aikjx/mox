@@ -1,0 +1,19 @@
+PLAN views/admin/panels/AdminAccess.vue       6b46d623e16d  [OK swallow-blank; size 8146->8087]
+PLAN views/admin/panels/AdminAudit.vue        580e394d9986  [OK swallow-blank; size 21978->21919]
+PLAN views/admin/panels/AdminConfig.vue       eeaa1779aae8  [OK swallow-blank; size 10601->10542]
+PLAN views/admin/panels/AdminMenu.vue         1ba75594aba7  [OK swallow-blank; size 16827->16768]
+views/admin/panels/AdminAccess.vue before=6b46d623e16d bytes=8146
+views/admin/panels/AdminAudit.vue before=580e394d9986 bytes=21978
+views/admin/panels/AdminConfig.vue before=eeaa1779aae8 bytes=10601
+views/admin/panels/AdminMenu.vue before=1ba75594aba7 bytes=16827
+views/admin/panels/AdminAccess.vue after =1da05683420e bytes=8087
+views/admin/panels/AdminAudit.vue after =2f210793918d bytes=21919
+views/admin/panels/AdminConfig.vue after =bb6de0b09d1e bytes=10542
+views/admin/panels/AdminMenu.vue after =a438507afa5c bytes=16768
+pre-image dir: D:/tmp/time-f1-pre (整份写前图像，恢复源)
+被禁字面量余量: 6 处
+   D:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/modules/admin-lowcode/engine/widgetRegistry.js x1
+   D:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/admin/panels/AdminHitl.vue x1
+   D:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/admin/panels/AdminLlm.vue x2
+   D:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/expert/ExpertPlazaView.vue x1
+   D:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/project/TaskView.vue x1

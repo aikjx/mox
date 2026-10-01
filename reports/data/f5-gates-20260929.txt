@@ -1,0 +1,20 @@
+== å…¨é‡ vitest
+== vite build
+[2mdist/[22m[36massets/js/3d-force-graph-CPA8Mdj7.js               [39m[1m[2m1,350.68 kB[22m[1m[22m
+[32mâœ“ built in 35.00s[39m
+== locale é—¸é—¨ --check
+[OK] L1/L2/L3 ÎŞÎ¥¹æ£ºÉ¨Ãè 270 ¸öÎÄ¼ş£»ÎŞ²ÎÊ±¼ä¸ñÊ½»¯ÓàÕË 2 ´¦£½µÇ¼Ç±í£»³ö¿ÚĞ´·¨Ö»ÔÚ utils/time.js
+[INFO] L1 ÓàÕËÃ÷Ï¸£¨ÇåÁãºóÒªÉ¾ÌõÄ¿¶ø²»ÊÇĞ´ 0£©£ºmodules/admin-lowcode/engine/widgetRegistry.js x1, views/admin/panels/AdminHitl.vue x1
+[INFO] I1 Êı×ÖÇ§·ÖÎ»£¨ÓëÊ±¼äÎŞ¹Ø£¬²»ÅĞ¶¨£¬°´ÃûµãÃû 3 ´¦£©£ºviews/admin/panels/AdminLlm.vue:258 <div class="stat-value">{{ stats.total_tokens.toLocaleString(); views/admin/panels/AdminLlm.vue:278 <span class="usage-tokens">{{ data.total_tokens.toLocaleString(); views/expert/ExpertPlazaView.vue:698 if (s.consult_count != null) heroStats.value[1].value = s.consult_count.toLocaleString()
+[INFO] I2 µÇ¼Ç¿ÚÍâµÄ´ø²Î toLocale* Ö±Ğ´ 3 ´¦£¨task #25 ÓàÕË£©£ºviews/admin/panels/AdminLlm.vue:647; views/market/MarketView.vue:608; views/workflow/BrowserView.vue:586
+rc=0
+== locale é—¸é—¨ --selftest
+[PASS] L4 Õæ²Ö¿âÉ¨Ãè¼¯ = 270 ¸öÎÄ¼ş£¨ÏÂÏŞ 100£©
+SELFTEST PASS£¨0 ÀıÎ´ÂäµØ£©
+== æ¨¡å—åŒ–é—¨ç¦
+[WARN ]   frontend-ui\src\constants\nav.config.js (open=2 close=0)
+[WARN ]   frontend-ui\src\modules\health-check.js (open=2 close=0)
+[WARN ]   frontend-ui\src\modules\admin-lowcode\index.js (open=1 close=0)
+--- å‰ç«¯æ¨¡å—åŒ–é—¨ç¦ï¼šERROR=0 ---
+== SFC æ­»å¼•ç”¨
+SFCSCAN files=128 checked=126 skippedNonSetup=2 deadRefFiles=0 structFiles=0 verdict=PASS

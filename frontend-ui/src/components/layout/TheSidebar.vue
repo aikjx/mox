@@ -31,7 +31,7 @@
               :class="{ active: activeItemKey === item.key, navigable: !!item.path }"
               @click="onItemActivate(item)"
             >
-              <span v-if="isIconComponent(item.icon)" class="ms-item-icon ep-icon"><component :is="item.icon" /></span>
+              <el-icon v-if="iconOf(item.icon)" class="ms-item-icon"><component :is="iconOf(item.icon)" /></el-icon>
               <span v-else class="ms-item-icon">{{ item.icon }}</span>
               <span class="ms-item-label">{{ item.label }}</span>
               <span v-if="item.count != null" class="ms-item-count">{{ item.count }}</span>
@@ -47,6 +47,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useActiveModule } from '@/composables'
+import { navIcon } from '@/modules'
 
 defineProps({
   collapsed: { type: Boolean, default: false },
@@ -69,10 +70,9 @@ function onItemActivate(item) {
   router.push(item.path)
 }
 
-// 旧配置用 emoji，模块登记的 nav 用 Element Plus 图标名（main.js 已全局注册）
-function isIconComponent(icon) {
-  return typeof icon === 'string' && /^[A-Z][A-Za-z]+$/.test(icon)
-}
+// 显式走登记表而不是靠全局注册：本处除了 Element Plus 图标名还要兼容旧配置的 emoji，
+// 未登记的名称返回 null ⇒ 落到 v-else 分支原样显示文字，比空白可诊断。
+const iconOf = (name) => navIcon(name)
 
 function focusTopbarSearch() {
   // 触发全局搜索快捷键

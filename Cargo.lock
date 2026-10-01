@@ -4183,6 +4183,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mox-alliance-mcp-server"
+version = "3.0.0-ai-powered"
+dependencies = [
+ "chrono",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "mox-alliance-registry-core"
 version = "3.0.0-ai-powered"
 dependencies = [
@@ -4732,6 +4743,7 @@ dependencies = [
  "mox-cloud-foundation",
  "mox-cloud-kernel",
  "parking_lot",
+ "quick-xml 0.41.0",
  "reqwest",
  "serde",
  "serde_json",
@@ -5458,8 +5470,10 @@ dependencies = [
  "mox-server-runtime",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
+ "tower 0.4.13",
  "tracing",
 ]
 
@@ -5467,6 +5481,7 @@ dependencies = [
 name = "mox-kb-svc"
 version = "3.0.0-ai-powered"
 dependencies = [
+ "async-trait",
  "axum",
  "bytes",
  "chrono",
@@ -7935,6 +7950,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
 dependencies = [
  "memchr",
+ "serde",
 ]
 
 [[package]]

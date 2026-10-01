@@ -1,0 +1,19 @@
+F15 变异电池见证 — 2026-09-29（L12 覆盖面纳入消息族 role/msg_type；4 站点已改比 MESSAGE_ROLE.* 与 MSG_TYPE_DEFAULT）
+判据文件：src/modules/expert-alliance/contract/vocabulary-ownership.test.js（18 例）  被碰文件：vocabulary-ownership.test.js / SessionThreadPanel.vue / sessions.js
+快照目录：D:/tmp/f15-cur
+
+基线：rc=0 18 passed (18) / 红格=无
+
+P1 [CAUGHT] 消息族 role 站点退回字面量＝新纳入的禁串必须咬 → SessionThreadPanel.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 SessionThreadPanel.vue 9057855302809c42 MATCH
+P2 [CAUGHT] 同一函数另一档退回字面量（逐档都有牙，不是只钉第一档） → SessionThreadPanel.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 SessionThreadPanel.vue 9057855302809c42 MATCH
+P3 [CAUGHT] msg_type 站点退回字面量 → SessionThreadPanel.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 SessionThreadPanel.vue 9057855302809c42 MATCH
+P4 [GREEN] 只改消息族 role 的中文措辞（不该红＝新纳入的禁串只认取值不认文案） → sessions.js / 红=- / 意外红=- / 18 passed (18)
+     还原 sessions.js 271cf438e52734c0 MATCH
+
+终检 vocabulary-ownership.test.js       0d07119459c45de6 MATCH
+终检 SessionThreadPanel.vue             9057855302809c42 MATCH
+终检 sessions.js                        271cf438e52734c0 MATCH
+复跑基线：rc=0 18 passed (18)

@@ -1,0 +1,30 @@
+F14 变异电池见证 — 2026-09-29（视图里的 wire 字面量比较：L12 双向台账；禁串集合由契约表 Object.values 现推）
+判据文件：src/modules/expert-alliance/contract/vocabulary-ownership.test.js（18 例）  被碰文件：vocabulary-ownership.test.js / orchestration.js / SessionListPanel.vue / AllianceExpertsView.vue / AllianceConsoleView.vue
+快照目录：D:/tmp/f14-cur（写前图像，拒绝覆盖）
+
+基线：rc=0 18 passed (18)
+基线红格：无
+
+M27 [CAUGHT] 把比较对象换成另一档已登记取值（closed）＝台账外新债 → AllianceConsoleView.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceConsoleView.vue 23cc21aefe0e8f4d MATCH
+M28 [CAUGHT] 台账删掉一条而扫描集没变＝少登记该红 → vocabulary-ownership.test.js / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 vocabulary-ownership.test.js 032f5a4f9dfdb97f MATCH
+M29 [CAUGHT] 会话面板退回 wire 字面量比较 → SessionListPanel.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 SessionListPanel.vue b9417e9e5ca046df MATCH
+M30 [CAUGHT] 房间状态退回 wire 字面量比较 → AllianceExpertsView.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceExpertsView.vue dfd28050f3c469ec MATCH
+M31 [GREEN] 新增一枚契约里没有的档做比较＝不该红（禁串集合只覆盖已登记取值） → AllianceConsoleView.vue / 红=- / 意外红=- / 18 passed (18)
+     还原 AllianceConsoleView.vue 23cc21aefe0e8f4d MATCH
+M32 [CAUGHT] 把任务档换成会话档（archived 也在契约里登记过）＝台账外新债 → AllianceConsoleView.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceConsoleView.vue 23cc21aefe0e8f4d MATCH
+M33 [CAUGHT] 扫描集少一条而台账没改＝"少＝台账该删"这个方向必须红 → AllianceConsoleView.vue / 红=['L12'] / 意外红=- / 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceConsoleView.vue 23cc21aefe0e8f4d MATCH
+M34 [GREEN] 只改中文措辞（'真实计算'→漂档文案，必须不红＝没过度钉文案） → orchestration.js / 红=- / 意外红=- / 18 passed (18)
+     还原 orchestration.js ec85648e564c3ba6 MATCH
+
+终检 vocabulary-ownership.test.js             032f5a4f9dfdb97f MATCH
+终检 orchestration.js                         ec85648e564c3ba6 MATCH
+终检 SessionListPanel.vue                     b9417e9e5ca046df MATCH
+终检 AllianceExpertsView.vue                  dfd28050f3c469ec MATCH
+终检 AllianceConsoleView.vue                  23cc21aefe0e8f4d MATCH
+复跑基线：rc=0 18 passed (18)

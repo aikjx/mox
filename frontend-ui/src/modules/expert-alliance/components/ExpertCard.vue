@@ -1,10 +1,10 @@
 <template>
   <article class="ae-card" :class="{ 'is-favorite': favorite }">
     <header class="ae-card-head">
-      <div class="ae-avatar" :title="expert.name">{{ initial }}</div>
+      <div class="ae-avatar" :title="expertDisplayName(expert)">{{ initial }}</div>
       <div class="ae-headline">
         <div class="ae-name-row">
-          <h3 class="ae-name">{{ expert.name || '(未命名专家)' }}</h3>
+          <h3 class="ae-name">{{ expertDisplayName(expert) }}</h3>
           <el-tag v-if="verificationTag" :type="verificationTag.type" size="small" effect="plain">{{ verificationTag.text }}</el-tag>
         </div>
         <p class="ae-role">{{ [expert.title, expert.organization].filter(Boolean).join(' · ') || '暂无头衔' }}</p>
@@ -78,7 +78,7 @@
 import { computed } from 'vue'
 import { Calendar, ChatDotRound, Star, StarFilled, View } from '@element-plus/icons-vue'
 import {
-  VERIFICATION_STATUS, availabilityLabel, expertTypeLabel, pricingText, verificationLabel
+  VERIFICATION_STATUS, availabilityLabel, expertDisplayName, expertTypeLabel, pricingText, verificationLabel
 } from '@/modules/expert-alliance/contract'
 
 const props = defineProps({
@@ -87,7 +87,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['view', 'book', 'consult', 'favorite'])
 
-const initial = computed(() => (props.expert.name || '?').slice(0, 1))
+const initial = computed(() => expertDisplayName(props.expert).slice(0, 1))
 const overflow = computed(() => Math.max(0, props.expert.domains.length + props.expert.skills.length - 6))
 
 const VERIFICATION_TAG = {

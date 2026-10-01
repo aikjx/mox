@@ -1,0 +1,11 @@
+BASELINE rc=0 fired=0
+DROP src/views/admin/panels/AdminRole.vue               rc=1 fired=2 RED-AS-PINNED
+      fired: × 回落分支的类名有定义 > views/admin/panels/AdminRole.vue 用到 .muted 且同文件 <style> 里有规则 14ms
+      fired: × 回落分支的类名有定义 > 驱动器不许把规则塞进注释里（去掉注释后仍判得出定义存在） 1ms
+      -> restored src/views/admin/panels/AdminRole.vue sha=c5090a0604ff
+DROP src/views/project/ProjectsView.vue                 rc=1 fired=2 RED-AS-PINNED
+      fired: × 回落分支的类名有定义 > views/project/ProjectsView.vue 用到 .cat-icon-fallback 且同文件 <style> 里有规则 10ms
+      fired: × 回落分支的类名有定义 > 驱动器不许把规则塞进注释里（去掉注释后仍判得出定义存在） 3ms
+      -> restored src/views/project/ProjectsView.vue sha=253267048968
+RESTORED rc=0 fired=0
+rc=0

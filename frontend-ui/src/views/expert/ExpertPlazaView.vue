@@ -185,7 +185,7 @@
             <el-button
               size="small"
               @click="cancelBooking(booking.id)"
-              v-if="booking.status === 'pending'"
+              v-if="booking.status === BOOKING_STATUS.PENDING"
             >
               取消预约
             </el-button>
@@ -200,7 +200,7 @@
             <el-button
               size="small"
               @click="rebook(booking)"
-              v-if="booking.status === 'completed' || booking.status === 'cancelled'"
+              v-if="booking.status === BOOKING_STATUS.COMPLETED || booking.status === BOOKING_STATUS.CANCELLED"
             >
               再次预约
             </el-button>
@@ -574,8 +574,35 @@ import {
   DataAnalysis, MagicStick, Document, ChatLineSquare, UserFilled,
   TrendCharts
 } from '@element-plus/icons-vue'
-import { getExperts, getExpert, getExpertsStats, getMyBookings, toggleExpertFavorite, createBooking, cancelBooking as apiCancelBooking, enterConsultRoom, joinExpertTeam, consultNow } from '@/api'
+import { allianceApi } from '@/modules/expert-alliance/api'
+
+// 模块 normExpert/normExpertStats/normBooking/normConsultRoom/normConsultNow → 本视图既有字段读取别名补全
+function toLegacyExpert(e) {
+  if (!e) return e
+  return {
+    ...e,
+    type: e.expertType,
+    consultCount: e.metrics?.totalConsultations ?? 0,
+    goodRate: e.metrics?.resolutionRate ?? 0,
+    avgRating: e.metrics?.avgRating ?? '0.0',
+    price: Math.round((e.hourlyRateCents ?? 0) / 100),
+    online: !!e.online,
+    skills: e.skills || [],
+    description: e.description || e.bio || ''
+  }
+}
+function toLegacyStats(s) {
+  if (!s) return s
+  return { ...s,
+    expert_count: s.totalExperts, consult_count: s.totalConsultations,
+    good_rate: s.satisfactionRate, avg_response: s.avgResponseMinutes }
+}
+function toLegacyBooking(b) {
+  if (!b) return b
+  return { ...b, expertType: '' }
+}
 import { EXPERT_TYPES, expertColor, expertEmoji, expertGradient } from '@/constants'
+import { bookingStatusLabel, BOOKING_STATUS } from '@/modules/expert-alliance/contract'
 
 // ===== 状态 =====
 const loading = ref(true)
@@ -666,7 +693,7 @@ const heroStats = ref([
 
 async function loadStats() {
   try {
-    const s = await getExpertsStats()
+    const s = toLegacyStats(await allianceApi.expertsStats())
     if (s) {
       if (s.expert_count != null) heroStats.value[0].value = s.expert_count + '+'
       if (s.consult_count != null) heroStats.value[1].value = s.consult_count.toLocaleString()
@@ -686,7 +713,7 @@ const myBookings = ref([])
 
 async function loadMyBookings() {
   try {
-    const data = await getMyBookings()
+    const data = (await allianceApi.listMyBookings()).items.map(toLegacyBooking)
     if (Array.isArray(data)) {
       myBookings.value = data.map(b => ({
         ...b,
@@ -813,7 +840,7 @@ async function loadExperts() {
   loading.value = true
   error.value = ''
   try {
-    const data = await getExperts()
+    const data = await allianceApi.listExperts().then(r => ({ experts: (r.items || []).map(toLegacyExpert) }))
     // 兼容分页信封 {experts,total} / {list} / 裸数组 三种形态
     const list = Array.isArray(data) ? data : (data?.experts || data?.list || data?.data || [])
     experts.value = processExperts(list)
@@ -898,7 +925,7 @@ async function toggleFavorite(expert) {
   const prev = expert.favorited
   expert.favorited = !expert.favorited
   try {
-    await toggleExpertFavorite(expert.id)
+    await allianceApi.toggleFavorite(expert.id)
     ElMessage.success(expert.favorited ? '已加入收藏' : '已取消收藏')
   } catch (e) {
     expert.favorited = prev
@@ -954,7 +981,9 @@ async function submitBooking() {
       time_slot: bookingForm.timeSlot,
       description: bookingForm.description
     }
-    const created = await createBooking(payload)
+    const created = await allianceApi.createBooking({
+      expertId: payload.expert_id, topic: payload.topic, scheduledAt: payload.date
+    })
 
     const newBooking = {
       id: created.id || 'bk_' + Date.now(),
@@ -995,15 +1024,7 @@ function bookingStatusType(status) {
   return map[status] || 'info'
 }
 
-function bookingStatusLabel(status) {
-  const map = {
-    pending: '待确认',
-    confirmed: '已确认',
-    completed: '已完成',
-    cancelled: '已取消'
-  }
-  return map[status] || status
-}
+// 预约状态词表不在这里：模块契约的 bookingStatusLabel 是唯一权威（§5.37，四档文案逐字相同）
 
 // 专家预约取消：调用 PUT /api/experts/bookings/:id/cancel，失败回滚
 async function cancelBooking(id) {
@@ -1012,7 +1033,7 @@ async function cancelBooking(id) {
   const prevStatus = booking.status
   booking.status = 'cancelled'
   try {
-    await apiCancelBooking(id)
+    await allianceApi.cancelBooking(id)
     ElMessage.success('预约已取消')
   } catch (e) {
     booking.status = prevStatus
@@ -1023,7 +1044,7 @@ async function cancelBooking(id) {
 // 预约咨询进入：调用 GET /api/experts/bookings/:id/consult-room
 async function startConsult(booking) {
   try {
-    const room = await enterConsultRoom(booking.id)
+    const room = await allianceApi.consultRoom(booking.id).then(r => r ? { ...r, url: r.joinUrl } : r)
     ElMessage.success('已进入咨询室')
     if (room && room.url) {
       window.open(room.url, '_blank')
@@ -1046,7 +1067,7 @@ function rebook(booking) {
 async function addToTeam() {
   try {
     if (currentExpert.value) {
-      await joinExpertTeam({ expert_id: currentExpert.value.id })
+      await allianceApi.joinTeam({ expertId: currentExpert.value.id })
     }
     ElMessage.success('已加入团队协作列表')
   } catch (e) {
@@ -1061,7 +1082,7 @@ async function startConsultNow(expert) {
     return
   }
   try {
-    const result = await consultNow(expert.id, { topic: '即时咨询' })
+    const result = await allianceApi.consultNow(expert.id, { topic: '即时咨询' }).then(r => r ? { ...r, url: r.chatUrl } : r)
     ElMessage.success('已连接专家咨询室')
     if (result && result.url) {
       window.open(result.url, '_blank')

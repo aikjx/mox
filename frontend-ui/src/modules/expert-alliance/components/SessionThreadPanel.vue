@@ -38,7 +38,7 @@
               <el-tag size="small" :type="roleTag(m.role)" effect="plain">{{ roleLabel(m.role) }}</el-tag>
               <span v-if="m.senderName || m.senderId" class="sth-msg-sender">{{ m.senderName || m.senderId }}</span>
               <span class="sth-dim">{{ formatTime(m.createdAt) }}</span>
-              <el-tag v-if="m.msgType && m.msgType !== 'text'" size="small" type="info" effect="plain">
+              <el-tag v-if="m.msgType && m.msgType !== MSG_TYPE_DEFAULT" size="small" type="info" effect="plain">
                 {{ msgTypeLabel(m.msgType) }}
               </el-tag>
               <span v-if="m.rating !== null" class="sth-msg-rating">评分 {{ m.rating }}{{ ratingOutOfRange(m.rating) }}</span>
@@ -156,6 +156,7 @@ import {
   THREAD_RENDER_LIMIT,
   activeMinutes,
   appendMessageProblem,
+  MESSAGE_ROLE, MSG_TYPE_DEFAULT,
   messageRoleLabel,
   msgTypeLabel,
   sessionStatusLabel,
@@ -209,9 +210,9 @@ const truncatedNote = computed(() =>
 
 const roleLabel = (role) => messageRoleLabel(role)
 const roleTag = (role) => {
-  if (role === 'user') return 'primary'
-  if (role === 'expert') return 'success'
-  if (role === 'system') return 'info'
+  if (role === MESSAGE_ROLE.USER) return 'primary'
+  if (role === MESSAGE_ROLE.EXPERT) return 'success'
+  if (role === MESSAGE_ROLE.SYSTEM) return 'info'
   return 'warning'
 }
 // 后端不校验评分，21 分照样入库；出现越界值只能标出来，不能假装是 0–5

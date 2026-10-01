@@ -1,0 +1,698 @@
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+  const _component_el_input = __vite_ssr_import_4__.resolveComponent("el-input")
+  const _component_el_button = __vite_ssr_import_4__.resolveComponent("el-button")
+  const _component_el_icon = __vite_ssr_import_4__.resolveComponent("el-icon")
+  const _component_el_table_column = __vite_ssr_import_4__.resolveComponent("el-table-column")
+  const _component_el_tooltip = __vite_ssr_import_4__.resolveComponent("el-tooltip")
+  const _component_el_tag = __vite_ssr_import_4__.resolveComponent("el-tag")
+  const _component_el_switch = __vite_ssr_import_4__.resolveComponent("el-switch")
+  const _component_el_table = __vite_ssr_import_4__.resolveComponent("el-table")
+  const _component_el_empty = __vite_ssr_import_4__.resolveComponent("el-empty")
+  const _component_el_tree_select = __vite_ssr_import_4__.resolveComponent("el-tree-select")
+  const _component_el_form_item = __vite_ssr_import_4__.resolveComponent("el-form-item")
+  const _component_el_radio = __vite_ssr_import_4__.resolveComponent("el-radio")
+  const _component_el_radio_group = __vite_ssr_import_4__.resolveComponent("el-radio-group")
+  const _component_el_option = __vite_ssr_import_4__.resolveComponent("el-option")
+  const _component_el_select = __vite_ssr_import_4__.resolveComponent("el-select")
+  const _component_el_input_number = __vite_ssr_import_4__.resolveComponent("el-input-number")
+  const _component_el_form = __vite_ssr_import_4__.resolveComponent("el-form")
+  const _component_el_dialog = __vite_ssr_import_4__.resolveComponent("el-dialog")
+  const _directive_loading = __vite_ssr_import_4__.resolveDirective("loading")
+
+  return (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createElementBlock("div", _hoisted_1, [
+    __vite_ssr_import_4__.createElementVNode("div", _hoisted_2, [
+      __vite_ssr_import_4__.createElementVNode("div", _hoisted_3, [
+        __vite_ssr_import_4__.createElementVNode("div", _hoisted_4, [
+          __vite_ssr_import_4__.createVNode(_component_el_input, {
+            modelValue: $setup.searchKeyword,
+            "onUpdate:modelValue": _cache[0] || (_cache[0] = $event => (($setup.searchKeyword) = $event)),
+            placeholder: "搜索菜单名称 / 权限标识",
+            clearable: "",
+            style: {"width":"260px"},
+            "prefix-icon": $setup.Search,
+            onKeyup: __vite_ssr_import_4__.withKeys($setup.handleSearch, ["enter"]),
+            onClear: $setup.handleSearch
+          }, null, 8 /* PROPS */, ["modelValue", "prefix-icon"]),
+          __vite_ssr_import_4__.createVNode(_component_el_button, {
+            type: "primary",
+            icon: $setup.Search,
+            onClick: $setup.handleSearch
+          }, {
+            default: __vite_ssr_import_4__.withCtx(() => [...(_cache[19] || (_cache[19] = [
+              __vite_ssr_import_4__.createTextVNode("搜索", -1 /* CACHED */)
+            ]))]),
+            _: 1 /* STABLE */
+          }, 8 /* PROPS */, ["icon"]),
+          __vite_ssr_import_4__.createVNode(_component_el_button, {
+            icon: $setup.Refresh,
+            onClick: $setup.resetSearch
+          }, {
+            default: __vite_ssr_import_4__.withCtx(() => [...(_cache[20] || (_cache[20] = [
+              __vite_ssr_import_4__.createTextVNode("重置", -1 /* CACHED */)
+            ]))]),
+            _: 1 /* STABLE */
+          }, 8 /* PROPS */, ["icon"])
+        ]),
+        __vite_ssr_import_4__.createElementVNode("div", _hoisted_5, [
+          __vite_ssr_import_4__.createVNode(_component_el_button, {
+            type: "primary",
+            icon: $setup.Plus,
+            onClick: _cache[1] || (_cache[1] = $event => ($setup.handleAdd(null)))
+          }, {
+            default: __vite_ssr_import_4__.withCtx(() => [...(_cache[21] || (_cache[21] = [
+              __vite_ssr_import_4__.createTextVNode("新增菜单", -1 /* CACHED */)
+            ]))]),
+            _: 1 /* STABLE */
+          }, 8 /* PROPS */, ["icon"]),
+          __vite_ssr_import_4__.createVNode(_component_el_button, {
+            icon: $setup.Expand,
+            onClick: $setup.expandAll
+          }, {
+            default: __vite_ssr_import_4__.withCtx(() => [...(_cache[22] || (_cache[22] = [
+              __vite_ssr_import_4__.createTextVNode("展开全部", -1 /* CACHED */)
+            ]))]),
+            _: 1 /* STABLE */
+          }, 8 /* PROPS */, ["icon"]),
+          __vite_ssr_import_4__.createVNode(_component_el_button, {
+            icon: $setup.Fold,
+            onClick: $setup.collapseAll
+          }, {
+            default: __vite_ssr_import_4__.withCtx(() => [...(_cache[23] || (_cache[23] = [
+              __vite_ssr_import_4__.createTextVNode("折叠全部", -1 /* CACHED */)
+            ]))]),
+            _: 1 /* STABLE */
+          }, 8 /* PROPS */, ["icon"])
+        ])
+      ]),
+      __vite_ssr_import_4__.withDirectives((__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_table, {
+        ref: "menuTableRef",
+        data: $setup.filteredMenuTree,
+        "row-key": "id",
+        "default-expand-all": "",
+        "tree-props": { children: 'children', hasChildren: 'hasChildren' },
+        stripe: "",
+        style: {"width":"100%"}
+      }, {
+        default: __vite_ssr_import_4__.withCtx(() => [
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "name",
+            label: "菜单名称",
+            "min-width": "200"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              ($setup.navIcon(row.icon))
+                ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_icon, {
+                    key: 0,
+                    size: 16,
+                    style: {"vertical-align":"-3px","margin-right":"6px","color":"var(--text-2)"}
+                  }, {
+                    default: __vite_ssr_import_4__.withCtx(() => [
+                      (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(__vite_ssr_import_4__.resolveDynamicComponent($setup.navIcon(row.icon))))
+                    ]),
+                    _: 2 /* DYNAMIC */
+                  }, 1024 /* DYNAMIC_SLOTS */))
+                : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+              __vite_ssr_import_4__.createElementVNode("span", null, __vite_ssr_import_4__.toDisplayString(row.name), 1 /* TEXT */)
+            ]),
+            _: 1 /* STABLE */
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "icon",
+            label: "图标",
+            width: "80",
+            align: "center"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              ($setup.navIcon(row.icon))
+                ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_icon, {
+                    key: 0,
+                    size: 18,
+                    style: {"color":"var(--text-2)"}
+                  }, {
+                    default: __vite_ssr_import_4__.withCtx(() => [
+                      (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(__vite_ssr_import_4__.resolveDynamicComponent($setup.navIcon(row.icon))))
+                    ]),
+                    _: 2 /* DYNAMIC */
+                  }, 1024 /* DYNAMIC_SLOTS */))
+                : (row.icon)
+                  ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_tooltip, {
+                      key: 1,
+                      content: "图标名不在登记口（_kernel/nav-icons.js）里，侧栏会按文本回落显示；请改成已登记的名称",
+                      placement: "top"
+                    }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [
+                        __vite_ssr_import_4__.createElementVNode("span", _hoisted_6, __vite_ssr_import_4__.toDisplayString(row.icon), 1 /* TEXT */)
+                      ]),
+                      _: 2 /* DYNAMIC */
+                    }, 1024 /* DYNAMIC_SLOTS */))
+                  : (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createElementBlock("span", _hoisted_7, "-"))
+            ]),
+            _: 1 /* STABLE */
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "sort",
+            label: "排序",
+            width: "80",
+            align: "center"
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "permission",
+            label: "权限标识",
+            "min-width": "160"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              (row.permission)
+                ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createElementBlock("span", _hoisted_8, __vite_ssr_import_4__.toDisplayString(row.permission), 1 /* TEXT */))
+                : (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createElementBlock("span", _hoisted_9, "-"))
+            ]),
+            _: 1 /* STABLE */
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "component",
+            label: "组件路径",
+            "min-width": "180"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              (row.component)
+                ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createElementBlock("span", _hoisted_10, __vite_ssr_import_4__.toDisplayString(row.component), 1 /* TEXT */))
+                : (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createElementBlock("span", _hoisted_11, "-"))
+            ]),
+            _: 1 /* STABLE */
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "path",
+            label: "路由路径",
+            "min-width": "160"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              (row.path)
+                ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createElementBlock("span", _hoisted_12, __vite_ssr_import_4__.toDisplayString(row.path), 1 /* TEXT */))
+                : (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createElementBlock("span", _hoisted_13, "-"))
+            ]),
+            _: 1 /* STABLE */
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "type",
+            label: "类型",
+            width: "100",
+            align: "center"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              __vite_ssr_import_4__.createVNode(_component_el_tag, {
+                type: $setup.typeTagType(row.type),
+                size: "small"
+              }, {
+                default: __vite_ssr_import_4__.withCtx(() => [
+                  __vite_ssr_import_4__.createTextVNode(__vite_ssr_import_4__.toDisplayString($setup.typeLabel(row.type)), 1 /* TEXT */)
+                ]),
+                _: 2 /* DYNAMIC */
+              }, 1032 /* PROPS, DYNAMIC_SLOTS */, ["type"])
+            ]),
+            _: 1 /* STABLE */
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "status",
+            label: "状态",
+            width: "90",
+            align: "center"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              __vite_ssr_import_4__.createVNode(_component_el_switch, {
+                "model-value": row.status === 1,
+                disabled: "",
+                size: "small"
+              }, null, 8 /* PROPS */, ["model-value"])
+            ]),
+            _: 1 /* STABLE */
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            prop: "createdAt",
+            label: "创建时间",
+            width: "180"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              __vite_ssr_import_4__.createTextVNode(__vite_ssr_import_4__.toDisplayString($setup.fmtTime(row.createdAt)), 1 /* TEXT */)
+            ]),
+            _: 1 /* STABLE */
+          }),
+          __vite_ssr_import_4__.createVNode(_component_el_table_column, {
+            label: "操作",
+            width: "220",
+            fixed: "right",
+            align: "center"
+          }, {
+            default: __vite_ssr_import_4__.withCtx(({ row }) => [
+              __vite_ssr_import_4__.createVNode(_component_el_button, {
+                type: "primary",
+                link: "",
+                size: "small",
+                icon: $setup.Plus,
+                onClick: $event => ($setup.handleAdd(row))
+              }, {
+                default: __vite_ssr_import_4__.withCtx(() => [...(_cache[24] || (_cache[24] = [
+                  __vite_ssr_import_4__.createTextVNode("新增子菜单", -1 /* CACHED */)
+                ]))]),
+                _: 1 /* STABLE */
+              }, 8 /* PROPS */, ["icon", "onClick"]),
+              __vite_ssr_import_4__.createVNode(_component_el_button, {
+                type: "primary",
+                link: "",
+                size: "small",
+                icon: $setup.Edit,
+                onClick: $event => ($setup.handleEdit(row))
+              }, {
+                default: __vite_ssr_import_4__.withCtx(() => [...(_cache[25] || (_cache[25] = [
+                  __vite_ssr_import_4__.createTextVNode("编辑", -1 /* CACHED */)
+                ]))]),
+                _: 1 /* STABLE */
+              }, 8 /* PROPS */, ["icon", "onClick"]),
+              __vite_ssr_import_4__.createVNode(_component_el_button, {
+                type: "danger",
+                link: "",
+                size: "small",
+                icon: $setup.Delete,
+                onClick: $event => ($setup.handleDelete(row))
+              }, {
+                default: __vite_ssr_import_4__.withCtx(() => [...(_cache[26] || (_cache[26] = [
+                  __vite_ssr_import_4__.createTextVNode("删除", -1 /* CACHED */)
+                ]))]),
+                _: 1 /* STABLE */
+              }, 8 /* PROPS */, ["icon", "onClick"])
+            ]),
+            _: 1 /* STABLE */
+          })
+        ]),
+        _: 1 /* STABLE */
+      }, 8 /* PROPS */, ["data"])), [
+        [_directive_loading, $setup.loading]
+      ]),
+      (!$setup.loading && !$setup.filteredMenuTree.length)
+        ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_empty, {
+            key: 0,
+            description: "暂无菜单数据"
+          }))
+        : __vite_ssr_import_4__.createCommentVNode("v-if", true)
+    ]),
+    __vite_ssr_import_4__.createCommentVNode(" 菜单表单对话框 "),
+    __vite_ssr_import_4__.createVNode(_component_el_dialog, {
+      modelValue: $setup.dialogVisible,
+      "onUpdate:modelValue": _cache[18] || (_cache[18] = $event => (($setup.dialogVisible) = $event)),
+      title: $setup.dialogTitle,
+      width: "640px",
+      "close-on-click-modal": false
+    }, {
+      footer: __vite_ssr_import_4__.withCtx(() => [
+        __vite_ssr_import_4__.createVNode(_component_el_button, {
+          onClick: _cache[17] || (_cache[17] = $event => ($setup.dialogVisible = false))
+        }, {
+          default: __vite_ssr_import_4__.withCtx(() => [...(_cache[44] || (_cache[44] = [
+            __vite_ssr_import_4__.createTextVNode("取消", -1 /* CACHED */)
+          ]))]),
+          _: 1 /* STABLE */
+        }),
+        __vite_ssr_import_4__.createVNode(_component_el_button, {
+          type: "primary",
+          loading: $setup.submitting,
+          onClick: $setup.handleSubmit
+        }, {
+          default: __vite_ssr_import_4__.withCtx(() => [...(_cache[45] || (_cache[45] = [
+            __vite_ssr_import_4__.createTextVNode("确定", -1 /* CACHED */)
+          ]))]),
+          _: 1 /* STABLE */
+        }, 8 /* PROPS */, ["loading"])
+      ]),
+      default: __vite_ssr_import_4__.withCtx(() => [
+        __vite_ssr_import_4__.createVNode(_component_el_form, {
+          ref: "formRef",
+          model: $setup.form,
+          rules: $setup.formRules,
+          "label-width": "100px"
+        }, {
+          default: __vite_ssr_import_4__.withCtx(() => [
+            __vite_ssr_import_4__.createVNode(_component_el_form_item, {
+              label: "上级菜单",
+              prop: "parentId"
+            }, {
+              default: __vite_ssr_import_4__.withCtx(() => [
+                __vite_ssr_import_4__.createVNode(_component_el_tree_select, {
+                  modelValue: $setup.form.parentId,
+                  "onUpdate:modelValue": _cache[2] || (_cache[2] = $event => (($setup.form.parentId) = $event)),
+                  data: $setup.menuTreeOptions,
+                  props: { label: 'name', value: 'id', children: 'children' },
+                  "check-strictly": "",
+                  placeholder: "顶级菜单",
+                  clearable: "",
+                  style: {"width":"100%"},
+                  disabled: $setup.form.id != null && $setup.form.type === 'M'
+                }, null, 8 /* PROPS */, ["modelValue", "data", "disabled"])
+              ]),
+              _: 1 /* STABLE */
+            }),
+            __vite_ssr_import_4__.createVNode(_component_el_form_item, {
+              label: "菜单类型",
+              prop: "type"
+            }, {
+              default: __vite_ssr_import_4__.withCtx(() => [
+                __vite_ssr_import_4__.createVNode(_component_el_radio_group, {
+                  modelValue: $setup.form.type,
+                  "onUpdate:modelValue": _cache[3] || (_cache[3] = $event => (($setup.form.type) = $event))
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_radio, { value: "M" }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [...(_cache[27] || (_cache[27] = [
+                        __vite_ssr_import_4__.createTextVNode("目录", -1 /* CACHED */)
+                      ]))]),
+                      _: 1 /* STABLE */
+                    }),
+                    __vite_ssr_import_4__.createVNode(_component_el_radio, { value: "C" }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [...(_cache[28] || (_cache[28] = [
+                        __vite_ssr_import_4__.createTextVNode("菜单", -1 /* CACHED */)
+                      ]))]),
+                      _: 1 /* STABLE */
+                    }),
+                    __vite_ssr_import_4__.createVNode(_component_el_radio, { value: "F" }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [...(_cache[29] || (_cache[29] = [
+                        __vite_ssr_import_4__.createTextVNode("按钮", -1 /* CACHED */)
+                      ]))]),
+                      _: 1 /* STABLE */
+                    })
+                  ]),
+                  _: 1 /* STABLE */
+                }, 8 /* PROPS */, ["modelValue"])
+              ]),
+              _: 1 /* STABLE */
+            }),
+            __vite_ssr_import_4__.createVNode(_component_el_form_item, {
+              label: "菜单名称",
+              prop: "name"
+            }, {
+              default: __vite_ssr_import_4__.withCtx(() => [
+                __vite_ssr_import_4__.createVNode(_component_el_input, {
+                  modelValue: $setup.form.name,
+                  "onUpdate:modelValue": _cache[4] || (_cache[4] = $event => (($setup.form.name) = $event)),
+                  placeholder: "请输入菜单名称",
+                  maxlength: "50",
+                  "show-word-limit": ""
+                }, null, 8 /* PROPS */, ["modelValue"])
+              ]),
+              _: 1 /* STABLE */
+            }),
+            ($setup.form.type !== 'F')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 0,
+                  label: "图标",
+                  prop: "icon"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_select, {
+                      modelValue: $setup.form.icon,
+                      "onUpdate:modelValue": _cache[5] || (_cache[5] = $event => (($setup.form.icon) = $event)),
+                      filterable: "",
+                      clearable: "",
+                      placeholder: "选择图标名称（可输入搜索）",
+                      style: {"width":"100%"}
+                    }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [
+                        (__vite_ssr_import_4__.openBlock(true), __vite_ssr_import_4__.createElementBlock(__vite_ssr_import_4__.Fragment, null, __vite_ssr_import_4__.renderList($setup.iconNames, (n) => {
+                          return (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_option, {
+                            key: n,
+                            label: n,
+                            value: n
+                          }, {
+                            default: __vite_ssr_import_4__.withCtx(() => [
+                              __vite_ssr_import_4__.createElementVNode("span", _hoisted_14, [
+                                __vite_ssr_import_4__.createVNode(_component_el_icon, { size: 16 }, {
+                                  default: __vite_ssr_import_4__.withCtx(() => [
+                                    (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(__vite_ssr_import_4__.resolveDynamicComponent($setup.navIcon(n))))
+                                  ]),
+                                  _: 2 /* DYNAMIC */
+                                }, 1024 /* DYNAMIC_SLOTS */),
+                                __vite_ssr_import_4__.createElementVNode("span", null, __vite_ssr_import_4__.toDisplayString(n), 1 /* TEXT */)
+                              ])
+                            ]),
+                            _: 2 /* DYNAMIC */
+                          }, 1032 /* PROPS, DYNAMIC_SLOTS */, ["label", "value"]))
+                        }), 128 /* KEYED_FRAGMENT */))
+                      ]),
+                      _: 1 /* STABLE */
+                    }, 8 /* PROPS */, ["modelValue"]),
+                    __vite_ssr_import_4__.createElementVNode("div", _hoisted_15, [
+                      _cache[30] || (_cache[30] = __vite_ssr_import_4__.createTextVNode(" 图标取自唯一登记口 ", -1 /* CACHED */)),
+                      _cache[31] || (_cache[31] = __vite_ssr_import_4__.createElementVNode("code", null, "_kernel/nav-icons.js", -1 /* CACHED */)),
+                      __vite_ssr_import_4__.createTextVNode("（当前 " + __vite_ssr_import_4__.toDisplayString($setup.iconNames.length) + " 个）； 填写名单外的名称侧栏会按文本回落显示 ", 1 /* TEXT */)
+                    ])
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            __vite_ssr_import_4__.createVNode(_component_el_form_item, {
+              label: "排序号",
+              prop: "sort"
+            }, {
+              default: __vite_ssr_import_4__.withCtx(() => [
+                __vite_ssr_import_4__.createVNode(_component_el_input_number, {
+                  modelValue: $setup.form.sort,
+                  "onUpdate:modelValue": _cache[6] || (_cache[6] = $event => (($setup.form.sort) = $event)),
+                  min: 0,
+                  max: 999,
+                  "controls-position": "right"
+                }, null, 8 /* PROPS */, ["modelValue"])
+              ]),
+              _: 1 /* STABLE */
+            }),
+            ($setup.form.type === 'F')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 1,
+                  label: "权限标识",
+                  prop: "permission"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_input, {
+                      modelValue: $setup.form.permission,
+                      "onUpdate:modelValue": _cache[7] || (_cache[7] = $event => (($setup.form.permission) = $event)),
+                      placeholder: "如 system:user:list",
+                      maxlength: "100"
+                    }, null, 8 /* PROPS */, ["modelValue"]),
+                    _cache[32] || (_cache[32] = __vite_ssr_import_4__.createElementVNode("div", { class: "form-tip" }, "按钮权限标识，用于接口权限校验", -1 /* CACHED */))
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            ($setup.form.type !== 'F')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 2,
+                  label: "权限标识",
+                  prop: "permission"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_input, {
+                      modelValue: $setup.form.permission,
+                      "onUpdate:modelValue": _cache[8] || (_cache[8] = $event => (($setup.form.permission) = $event)),
+                      placeholder: "如 system:user:list（选填）",
+                      maxlength: "100"
+                    }, null, 8 /* PROPS */, ["modelValue"])
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            ($setup.form.type === 'C')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 3,
+                  label: "路由路径",
+                  prop: "path"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_input, {
+                      modelValue: $setup.form.path,
+                      "onUpdate:modelValue": _cache[9] || (_cache[9] = $event => (($setup.form.path) = $event)),
+                      placeholder: "如 system/user",
+                      maxlength: "200"
+                    }, null, 8 /* PROPS */, ["modelValue"])
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            ($setup.form.type === 'C')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 4,
+                  label: "组件路径",
+                  prop: "component"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_input, {
+                      modelValue: $setup.form.component,
+                      "onUpdate:modelValue": _cache[10] || (_cache[10] = $event => (($setup.form.component) = $event)),
+                      placeholder: "如 system/user/index",
+                      maxlength: "200"
+                    }, null, 8 /* PROPS */, ["modelValue"])
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            ($setup.form.type === 'C')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 5,
+                  label: "路由参数",
+                  prop: "query"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_input, {
+                      modelValue: $setup.form.query,
+                      "onUpdate:modelValue": _cache[11] || (_cache[11] = $event => (($setup.form.query) = $event)),
+                      type: "textarea",
+                      rows: 2,
+                      placeholder: "JSON 格式，如 {\"id\": \"1\"}",
+                      maxlength: "500"
+                    }, null, 8 /* PROPS */, ["modelValue"])
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            ($setup.form.type === 'C')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 6,
+                  label: "是否外链",
+                  prop: "isFrame"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_radio_group, {
+                      modelValue: $setup.form.isFrame,
+                      "onUpdate:modelValue": _cache[12] || (_cache[12] = $event => (($setup.form.isFrame) = $event))
+                    }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [
+                        __vite_ssr_import_4__.createVNode(_component_el_radio, { value: 1 }, {
+                          default: __vite_ssr_import_4__.withCtx(() => [...(_cache[33] || (_cache[33] = [
+                            __vite_ssr_import_4__.createTextVNode("是", -1 /* CACHED */)
+                          ]))]),
+                          _: 1 /* STABLE */
+                        }),
+                        __vite_ssr_import_4__.createVNode(_component_el_radio, { value: 0 }, {
+                          default: __vite_ssr_import_4__.withCtx(() => [...(_cache[34] || (_cache[34] = [
+                            __vite_ssr_import_4__.createTextVNode("否", -1 /* CACHED */)
+                          ]))]),
+                          _: 1 /* STABLE */
+                        })
+                      ]),
+                      _: 1 /* STABLE */
+                    }, 8 /* PROPS */, ["modelValue"]),
+                    _cache[35] || (_cache[35] = __vite_ssr_import_4__.createElementVNode("div", { class: "form-tip" }, "外链菜单将在新窗口打开", -1 /* CACHED */))
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            ($setup.form.type === 'C')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 7,
+                  label: "是否缓存",
+                  prop: "isCache"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_radio_group, {
+                      modelValue: $setup.form.isCache,
+                      "onUpdate:modelValue": _cache[13] || (_cache[13] = $event => (($setup.form.isCache) = $event))
+                    }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [
+                        __vite_ssr_import_4__.createVNode(_component_el_radio, { value: 1 }, {
+                          default: __vite_ssr_import_4__.withCtx(() => [...(_cache[36] || (_cache[36] = [
+                            __vite_ssr_import_4__.createTextVNode("是", -1 /* CACHED */)
+                          ]))]),
+                          _: 1 /* STABLE */
+                        }),
+                        __vite_ssr_import_4__.createVNode(_component_el_radio, { value: 0 }, {
+                          default: __vite_ssr_import_4__.withCtx(() => [...(_cache[37] || (_cache[37] = [
+                            __vite_ssr_import_4__.createTextVNode("否", -1 /* CACHED */)
+                          ]))]),
+                          _: 1 /* STABLE */
+                        })
+                      ]),
+                      _: 1 /* STABLE */
+                    }, 8 /* PROPS */, ["modelValue"]),
+                    _cache[38] || (_cache[38] = __vite_ssr_import_4__.createElementVNode("div", { class: "form-tip" }, "启用后使用 keep-alive 缓存页面", -1 /* CACHED */))
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            ($setup.form.type !== 'F')
+              ? (__vite_ssr_import_4__.openBlock(), __vite_ssr_import_4__.createBlock(_component_el_form_item, {
+                  key: 8,
+                  label: "是否显示",
+                  prop: "visible"
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_radio_group, {
+                      modelValue: $setup.form.visible,
+                      "onUpdate:modelValue": _cache[14] || (_cache[14] = $event => (($setup.form.visible) = $event))
+                    }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [
+                        __vite_ssr_import_4__.createVNode(_component_el_radio, { value: 1 }, {
+                          default: __vite_ssr_import_4__.withCtx(() => [...(_cache[39] || (_cache[39] = [
+                            __vite_ssr_import_4__.createTextVNode("是", -1 /* CACHED */)
+                          ]))]),
+                          _: 1 /* STABLE */
+                        }),
+                        __vite_ssr_import_4__.createVNode(_component_el_radio, { value: 0 }, {
+                          default: __vite_ssr_import_4__.withCtx(() => [...(_cache[40] || (_cache[40] = [
+                            __vite_ssr_import_4__.createTextVNode("否", -1 /* CACHED */)
+                          ]))]),
+                          _: 1 /* STABLE */
+                        })
+                      ]),
+                      _: 1 /* STABLE */
+                    }, 8 /* PROPS */, ["modelValue"]),
+                    _cache[41] || (_cache[41] = __vite_ssr_import_4__.createElementVNode("div", { class: "form-tip" }, "隐藏后菜单不显示但仍可通过路由访问", -1 /* CACHED */))
+                  ]),
+                  _: 1 /* STABLE */
+                }))
+              : __vite_ssr_import_4__.createCommentVNode("v-if", true),
+            __vite_ssr_import_4__.createVNode(_component_el_form_item, {
+              label: "状态",
+              prop: "status"
+            }, {
+              default: __vite_ssr_import_4__.withCtx(() => [
+                __vite_ssr_import_4__.createVNode(_component_el_radio_group, {
+                  modelValue: $setup.form.status,
+                  "onUpdate:modelValue": _cache[15] || (_cache[15] = $event => (($setup.form.status) = $event))
+                }, {
+                  default: __vite_ssr_import_4__.withCtx(() => [
+                    __vite_ssr_import_4__.createVNode(_component_el_radio, { value: 1 }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [...(_cache[42] || (_cache[42] = [
+                        __vite_ssr_import_4__.createTextVNode("启用", -1 /* CACHED */)
+                      ]))]),
+                      _: 1 /* STABLE */
+                    }),
+                    __vite_ssr_import_4__.createVNode(_component_el_radio, { value: 0 }, {
+                      default: __vite_ssr_import_4__.withCtx(() => [...(_cache[43] || (_cache[43] = [
+                        __vite_ssr_import_4__.createTextVNode("停用", -1 /* CACHED */)
+                      ]))]),
+                      _: 1 /* STABLE */
+                    })
+                  ]),
+                  _: 1 /* STABLE */
+                }, 8 /* PROPS */, ["modelValue"])
+              ]),
+              _: 1 /* STABLE */
+            }),
+            __vite_ssr_import_4__.createVNode(_component_el_form_item, {
+              label: "备注",
+              prop: "remark"
+            }, {
+              default: __vite_ssr_import_4__.withCtx(() => [
+                __vite_ssr_import_4__.createVNode(_component_el_input, {
+                  modelValue: $setup.form.remark,
+                  "onUpdate:modelValue": _cache[16] || (_cache[16] = $event => (($setup.form.remark) = $event)),
+                  type: "textarea",
+                  rows: 2,
+                  placeholder: "请输入备注",
+                  maxlength: "200"
+                }, null, 8 /* PROPS */, ["modelValue"])
+              ]),
+              _: 1 /* STABLE */
+            })
+          ]),
+          _: 1 /* STABLE */
+        }, 8 /* PROPS */, ["model"])
+      ]),
+      _: 1 /* STABLE */
+    }, 8 /* PROPS */, ["modelValue", "title"])
+  ]))
+}

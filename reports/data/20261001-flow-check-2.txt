@@ -1,0 +1,14 @@
+   Compiling mox-alliance-executor-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-executor-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.73s
+     Running tests\integration_e2e.rs (target\debug\deps\integration_e2e-6668bf6911e4d809.exe)
+
+running 6 tests
+test test_e2e_expert_matching ... ok
+test test_e2e_plan_generation ... ok
+test test_e2e_task_submission ... ok
+test test_e2e_full_pipeline ... ok
+test test_e2e_dag_execution_sequential ... ok
+test test_all_modes_share_validated_execution_pipeline ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.64s
+

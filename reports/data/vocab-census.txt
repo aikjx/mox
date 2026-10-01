@@ -1,0 +1,31 @@
+src/utils/index.js                         14 exports
+src/utils/knowledgeBase.utils.js           15 exports
+src/constants/index.js                     0 exports
+src/constants/nav.config.js                9 exports
+src/modules/_kernel/nav-icons.js           4 exports
+vocabulary-ish authority names: ['getActionLabel', 'getCategoryIcon', 'getCategoryLabel', 'getCategoryTagType', 'getStatusLabel', 'getStatusType', 'getTagSize', 'getActionLabel', 'getCategoryIcon', 'getCategoryLabel', 'getCategoryTagType', 'getStatusLabel', 'getStatusType', 'getTagSize']
+
+== 自写"码->中文"映射（按名字聚合，键数=条目数）==
+map                        x21  src/views/admin/panels/AdminAudit.vue:444; src/views/admin/panels/AdminHitl.vue:172; src/views/admin/panels/AdminMenu.vue:303; src/views/ai/InfiniteOptimizerView.vue:280; src/views/expert/ExpertConfigView.vue:2966; src/views/expert/ExpertConfigView.vue:2972; src/views/expert/ExpertConfigView.vue:3200; src/views/expert/ExpertConfigView.vue:3563; src/views/expert/ExpertPlazaView.vue:808; src/views/expert/ExpertPlazaView.vue:999; src/views/project/TaskView.vue:331; src/views/project/TaskView.vue:347; src/views/public/Forbidden.vue:197; src/views/workflow/BrowserView.vue:319; src/views/workflow/BrowserView.vue:324; src/views/workflow/BrowserView.vue:564; src/views/workflow/panels/WorkflowFlowsPanel.vue:229; src/views/workflow/panels/WorkflowFlowsPanel.vue:234; src/views/workspace/panels/CollaborationPanel.vue:366; src/views/workspace/panels/CollaborationPanel.vue:371; src/views/workspace/panels/DebateDialog.vue:127
+names                      x3  src/components/ai/GateResult.vue:110; src/views/ai/InfiniteOptimizerView.vue:508; src/views/graph/GraphView.vue:1072
+typeLabels                 x2  src/components/NotificationCenter.vue:96; src/views/graph/GraphView.vue:565
+newFile                    x2  src/views/workspace/panels/CollaborationPanel.vue:418; src/views/workspace/panels/FilePanel.vue:106
+base                       x1  src/api/graph.api.js:143
+STATUS_MAP                 x1  src/components/FlowDetailDialog.vue:145
+labels                     x1  src/components/ai/GateResult.vue:105
+SSEState                   x1  src/composables/useSSE.js:31
+newTask                    x1  src/composables/workspace/useTaskOrchestration.js:59
+PLAN_LABEL                 x1  src/modules/admin-lowcode/pages/tenant.page.js:13
+STATUS_LABEL               x1  src/modules/admin-lowcode/pages/tenant.page.js:15
+SIDE_LABEL                 x1  src/modules/expert-alliance/model/collabLists.js:7
+session                    x1  src/stores/ai.store.js:240
+DATA_SCOPE_MAP             x1  src/views/admin/panels/AdminRole.vue:411
+suggestions                x1  src/views/ai/ChatView.vue:129
+pj                         x1  src/views/expert/ExpertCenterView.vue:152
+levelLabels                x1  src/views/expert/ExpertConfigView.vue:2085
+strategyLabels             x1  src/views/expert/panels/ExpertEnterprisePanel.vue:548
+strategyDescs              x1  src/views/expert/panels/ExpertEnterprisePanel.vue:553
+modeLabels                 x1  src/views/expert/panels/ExpertEnterprisePanel.vue:563
+STATUS_LABELS              x1  src/views/graph/GraphView.vue:415
+statusMap                  x1  src/views/project/Dashboard.vue:212
+distinct names=22 sites=46

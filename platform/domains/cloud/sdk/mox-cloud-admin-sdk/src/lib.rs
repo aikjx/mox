@@ -7,7 +7,7 @@ use mox_cloud_api::{
 };
 use mox_cloud_store_core::{
     collect_store_stats, create_backend, list_object_refs, BackendKind, GarbageCollector,
-    KeyPathCodec, S3ClientConfig, StoreBackend, StoreConfig,
+    KeyPathCodec, StoreBackend, StoreConfig,
 };
 use parking_lot::Mutex;
 use std::{
@@ -60,31 +60,9 @@ fn health_for(err_count: u64) -> &'static str {
     }
 }
 
-/// 从环境变量装配 S3 配置（MOX_S3_ENDPOINT / MOX_S3_REGION / MOX_S3_ACCESS_KEY /
-/// MOX_S3_SECRET_KEY / MOX_S3_BUCKET）。
-fn s3_config_from_env() -> Option<S3ClientConfig> {
-    let endpoint = std::env::var("MOX_S3_ENDPOINT").ok()?;
-    Some(S3ClientConfig {
-        endpoint,
-        region: std::env::var("MOX_S3_REGION").unwrap_or_else(|_| "us-east-1".into()),
-        access_key: std::env::var("MOX_S3_ACCESS_KEY").unwrap_or_default(),
-        secret_key: std::env::var("MOX_S3_SECRET_KEY").unwrap_or_default(),
-        bucket: std::env::var("MOX_S3_BUCKET").unwrap_or_else(|_| "kb".into()),
-        force_path_style: true,
-    })
-}
-
-/// 依据环境装配后端：`FILE_BACKEND`（fs|s3|minio|oss）+ `MOX_STORE_DATA_DIR`。
+/// 共享存储配置解析：缺配置/矛盾配置直接失败。
 pub fn assemble_backend() -> CloudApiResult<StoreBackend> {
-    let kind = std::env::var("FILE_BACKEND").unwrap_or_else(|_| "fs".into());
-    let data_dir = std::env::var("MOX_STORE_DATA_DIR").unwrap_or_else(|_| "./data/store".into());  // allow: env-MOX_STORE_DATA_DIR-overrides
-    let cfg = StoreConfig {
-        kind: BackendKind::from_str_ci(&kind).map_err(store_err)?,
-        data_dir: PathBuf::from(data_dir),
-        s3: s3_config_from_env(),
-        ..Default::default()
-    };
-    create_backend(&cfg).map_err(store_err)
+    create_backend(&StoreConfig::from_env().map_err(store_err)?).map_err(store_err)
 }
 
 impl StoreAdmin {
@@ -120,14 +98,14 @@ impl StoreAdmin {
     }
 
     /// 构建指定 kind 的后端（沿用当前 data_dir + 环境 S3 配置）
-    fn build_kind(&self, kind_str: &str, data_dir: &PathBuf) -> CloudApiResult<StoreBackend> {
+    fn build_kind(
+        &self,
+        kind_str: &str,
+        data_dir: &std::path::Path,
+    ) -> CloudApiResult<StoreBackend> {
         let kind = BackendKind::from_str_ci(kind_str).map_err(store_err)?;
-        let cfg = StoreConfig {
-            kind,
-            data_dir: data_dir.clone(),
-            s3: s3_config_from_env(),
-            ..Default::default()
-        };
+        let mut cfg = StoreConfig::from_env_for_kind(kind).map_err(store_err)?;
+        cfg.data_dir = data_dir.to_path_buf();
         create_backend(&cfg).map_err(store_err)
     }
 

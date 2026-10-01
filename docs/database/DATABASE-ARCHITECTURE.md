@@ -38,7 +38,8 @@
 | primiflow gen | PG 风格（仅生成产物） | 无落库 | `src/gen/ddl.sql` | 6（规格） |
 | market | 无自身库，发 PG DDL 模板 | — | `template_market/seed.rs:91-153` | 6（模板） |
 | cloud | 对象存储 | 文件/卷，无关系表 | filer 仅内存 inodes | 0 |
-| kb | 内存 HashMap | 无 | `kb-server/main.rs:24` InMemoryKbStore | 0 |
+| kb（网关主链） | StoreBackend对象/索引；KB子图内存 | FILE_BACKEND/MOX_STORE_DATA_DIR装配 | 见本文件2026-10-01复核节 | 非关系表模型 |
+| kb（独立服务） | SQLite+FTS5 | SqliteKbStore::open_default | 见本文件2026-10-01复核节；与网关不同模型 | 本轮未盘点表数 |
 
 > IAM 实际 **22 表**（非预期 24）：iam_tenant/iam_department/iam_user/iam_user_dept/iam_role/
 > iam_permission/iam_user_role/iam_role_permission/iam_role_inherit/iam_menu/iam_user_menu/
@@ -106,7 +107,7 @@
 | # | 技术债 | 证据 | 影响 |
 |---|---|---|---|
 | T1 | **联盟 DAG 运行态内存未落盘** | `alliance-engine/persistence.rs:231` InMemory 默认；磁盘 `alliance_tasks.json` 为全量快照 | 重启在途任务/DAG 节点状态丢失；全量快照有放大 |
-| T2 | **KB 纯内存 HashMap** | `kb-server/main.rs:24` InMemoryKbStore | 重启知识库全丢，且无 SQLite/PG 实现可迁 |
+| T2 | **KB多模型与子图主源未归一**（修正旧纯内存结论） | 2026-10-01复核：网关对象持久化、独立服务SQLite+FTS5、KbState子图内存 | 需做版本/授权映射与图持久化或重建；不能继续宣称无SQLite实现 |
 | T3 | **API-Key 重启回灌缺失** | 鉴权中间件只持内存表，启动未从 `mox.db` 回灌 `sys_api_key` | 重启后已发 API Key 失效 |
 | T4 | KG 双套表名并存 | `kg_vertex/kg_edge` vs `kg_nodes/kg_edges`，整表 DELETE 重插 | 两套未统一，全量快照并发有放大 |
 | T5 | `_mox_migrations` 未被采用 | 见 §4 | 无统一版本治理 |
@@ -122,3 +123,10 @@
 - 目标母版（MySQL 8.3）：`docs/database/mox_sys/mox_sys-universal-template.sql` + `docs/database/README.md`。
 - 证据：`docs/working-reports/_norm_research/db-inventory.md`。
 - 端口/进程事实：`docs/api/PORT-REGISTRY.md`；接口事实：`docs/API-REGISTRY.md`。
+
+<a id="resource-knowledge-20261001"></a>
+## 7. 资源知识持久化定向复核（2026-10-01）
+
+本节只复核KB与关联存储，不将整份旧快照的其他状态更新为当前。网关modules.rs装配mox-kb-svc::KbState：文档用StoreBackend持久化对象/索引，KbState::new创建独立内存GraphStore；from_env设s3=None，不证明任意FILE_BACKEND都能装配远程后端。独立kb-server已改用SqliteKbStore+FTS5，但Document与网关KbDocument不同，列表handler仍固定空列表；不能继续引用“纯内存、无SQLite实现”的旧结论。企业file_storage有本地文件写入，但元数据内存/样例初始化，不能并列当持久化云盘主源。
+
+定向证据位于reports/data/20261001-resource-knowledge-source-evidence.json；目标数据归属见[资源知识数据契约](docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md#ownership)，整体边界见[资源知识架构](docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md#evidence)。本轮未做迁移或重启验证。

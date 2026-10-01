@@ -37,6 +37,7 @@
 | 统一基线 | [`MOX-UNIFIED-ENTERPRISE-BASELINE-v1.0.md`](./MOX-UNIFIED-ENTERPRISE-BASELINE-v1.0.md) | 企业级统一基线 v1.0 |
 | 模块组合 | [`MOX-MODULE-COMPOSITION-v1.md`](./MOX-MODULE-COMPOSITION-v1.md) | 模块组合与装配关系 |
 | 前端布局重构方案 | [`frontend/FRONTEND-LAYOUT-REFACTOR-PLAN-v1.0.md`](./frontend/FRONTEND-LAYOUT-REFACTOR-PLAN-v1.0.md) | FE-LAY-REF-V1.0：外壳/导航/样式三类机制缺失的 12 条证据与 P0~P2 计划 🟡 |
+| API 表面单源化计划 | [`API-SURFACE-AUTHORITY-PLAN-v0.1.md`](./API-SURFACE-AUTHORITY-PLAN-v0.1.md) | API-SURFACE-PLAN-V0.1：ROUTES 声明侧与装配侧双向差额 138 条的实测账与 P1~P5 分阶段计划 🟡 待评审 |
 | 元架构总纲 | [`meta/00-COSMIC-META-ARCHITECTURE.md`](./meta/00-COSMIC-META-ARCHITECTURE.md) | 设计哲学、9 大能力域、5 级扩展点 |
 | 元架构索引 | [`meta/README.md`](./meta/README.md) | 元架构文档导航 |
 | 全域顶层总设计 | [`../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md) | 三联盟模式全域顶层设计 |
@@ -95,11 +96,12 @@
 
 | 文档 | 说明 |
 |------|------|
-| [`../expert-alliance/README.md`](../expert-alliance/README.md) | **入口**：专家联盟系统定位与整体架构 |
-| [`../expert-alliance/architecture/system-architecture-design.html`](../expert-alliance/architecture/system-architecture-design.html) | 系统架构设计可视化 🌐 |
-| [`meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md`](./meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md) | 元架构版：7 服务 + 1 Sidecar |
-| [`../expert-alliance/v2/README.md`](../expert-alliance/v2/README.md) | V2 完整设计文档集（7 篇） |
-| [`../expert-alliance/v3/01-architecture-optimization.md`](../expert-alliance/v3/01-architecture-optimization.md) | V3 模块化架构优化 |
+| [专家联盟入口](docs/expert-alliance/README.md#专家联盟文档入口) | 现行导航与主题分工 |
+| [全 docs 架构与流程图谱](docs/expert-alliance/17-docs-architecture-and-flow-atlas.md#families) | 全域架构家族、流程、权威与冲突 |
+| [当前实现](docs/expert-alliance/CURRENT-ARCHITECTURE.md#一物理代码分布) | 现状代码与运行边界 |
+| [模块化产品设计](docs/expert-alliance/18-modular-product-design.md#modules) | 目标模块、质量场景与突破路线 |
+| [端到端业务流程](docs/expert-alliance/13-end-to-end-business-flow.md#一流程总览) | 当前任务主链与本地/远程差异 |
+| [元架构版](docs/architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md#专家联盟架构设计-v20) | 早期设计视图；7服务目标不作为当前拓扑 |
 
 ### AI 引擎架构
 
@@ -221,3 +223,24 @@ foundation → api → proto(gRPC契约) → core(纯计算) → svc(服务) →
 - **结构规范**：[ARCHITECTURE-OF-DOCS.md](../ARCHITECTURE-OF-DOCS.md)
 - **更新频率**：架构变更时同步更新；新增文档须在本页登记
 - **负责人**：架构开发联盟　**最后整理**：2026-09-13（L2 层收敛：meta / microservices / rust-enterprise / ai / graph / plugin / full-dimensional / assets）
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 产品约束、当前代码分层、域边界与能力目录 |
+| 处理与边界 | 协调控制/运行/部署视图；逻辑模块先于进程划分；各主题目录维护自己的接缝 |
+| 输出 | 总架构关联图、目录设计边界与可测演进方案 |
+| 维护角色 | 架构维护角色（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。
+
+## 资源知识一体化设计
+
+[统一架构](docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md#scope)关联系统策略、云盘、对象、知识版本、加工、图谱与检索，区分静态复核与待实施能力。

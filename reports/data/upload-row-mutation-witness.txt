@@ -1,0 +1,11 @@
+BASELINE rc=0 fired=0
+MU1 kernel id prefix f- -> upload- (equality pin + ratchet)                    rc=1 fired=2 expect=2 RED-AS-PINNED
+      fired: × upload-row 单源 > makeUploadRow 产出合并前那 6 个键与同一取值口径 14ms
+      fired: × upload-row 单源 > 棘轮：占位行字面量全库只许活在登记口 77ms
+      -> restored src/modules/_kernel/upload-row.js sha=1f2f4ac63d44
+MU2 plant the needle in a FilePanel comment (ratchet must read comments)       rc=1 fired=1 expect=1 RED-AS-PINNED
+      fired: × upload-row 单源 > 棘轮：占位行字面量全库只许活在登记口 84ms
+      -> restored src/views/workspace/panels/FilePanel.vue sha=fb363afb20c0
+RESTORED rc=0 fired=0
+both island controls red on their own channels; 2 files byte-identical after restore
+rc=0

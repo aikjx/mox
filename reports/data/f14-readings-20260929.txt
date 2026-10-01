@@ -1,0 +1,39 @@
+F14 落盘读数 — 2026-09-29（本节 md5/字节/行数由本文件现场量得 python hashlib；日志行是原样摘录，标了出处）
+
+contract/sessions.js                           md5=7afa888ba155446c bytes=23196 lines=500 crlf=0
+contract/registry.js                           md5=d48b6dce09e230d9 bytes=15164 lines=271 crlf=0
+contract/vocabulary-ownership.test.js          md5=032f5a4f9dfdb97f bytes=25629 lines=387 crlf=0
+components/SessionListPanel.vue                md5=b9417e9e5ca046df bytes=10741 lines=206 crlf=0
+views/AllianceExpertsView.vue                  md5=dfd28050f3c469ec bytes=30787 lines=751 crlf=0
+views/AllianceConsoleView.vue                  md5=23cc21aefe0e8f4d bytes=52198 lines=1484 crlf=0
+
+[全量 vitest] 原样摘录自 D:/tmp/f14-vitest.log
+    Test Files [22m [1m[32m77 passed[39m[22m[90m (77)[39m
+    Tests [22m [1m[32m1034 passed[39m[22m[90m (1034)[39m
+    Duration [22m 28.19s[2m (transform 14.41s, setup 0ms, collect 149.07s, tests 18.46s, environment 144.42s, pr
+[vite build] 原样摘录自 D:/tmp/f14-build.log
+    built in 39.41s
+[locale 闸门] 原样摘录自 D:/tmp/f14-locale.log
+    [OK] L1/L2/L3 无违规：扫描 270 个文件；无参时间格式化余账 2 处＝登记表；出口写法只在 utils/time.js
+[模块化门禁] 原样摘录自 D:/tmp/f14-module.log
+    --- 前端模块化门禁：ERROR=0 ---
+[ep 探针] 原样摘录自 D:/tmp/f14-ep.log
+    verdict=PASS (探针：债务多少不改 rc)
+
+判据 contract/vocabulary-ownership.test.js    :353 it('L12 视图不许把契约已登记的取值重新打字：字面量比较双向台账', () => {
+判据 contract/vocabulary-ownership.test.js    :370 const LEDGER = [
+判据 contract/vocabulary-ownership.test.js    :373 'modules/expert-alliance/views/AllianceConsoleView.vue|completed',
+判据 contract/vocabulary-ownership.test.js    :374 'modules/expert-alliance/views/AllianceConsoleView.vue|completed',
+判据 contract/vocabulary-ownership.test.js    :375 'modules/expert-alliance/views/AllianceConsoleView.vue|completed',
+判据 contract/vocabulary-ownership.test.js    :376 'modules/expert-alliance/views/AllianceConsoleView.vue|paused',
+判据 contract/vocabulary-ownership.test.js    :377 'modules/expert-alliance/views/AllianceConsoleView.vue|running'
+判据 contract/vocabulary-ownership.test.js    :382 expect(countOf(hits.join('\n'), 'components/SessionListPanel.vue|'), '会话族应已清零').to
+判据 contract/vocabulary-ownership.test.js    :383 expect(countOf(hits.join('\n'), 'views/AllianceExpertsView.vue|'), '房间族应已清零').toBe
+契约 contract/sessions.js                     :499 export const SESSION_STATUS = Object.freeze({ ACTIVE: 'active', ARCHIVED: 'archive
+契约 contract/registry.js                     :270 export const ROOM_STATUS = Object.freeze({ AVAILABLE: 'available', WAITING: 'waiti
+站点 components/SessionListPanel.vue          :155 if (status === SESSION_STATUS.ACTIVE) return 'success'
+站点 components/SessionListPanel.vue          :156 if (status === SESSION_STATUS.ARCHIVED) return 'info'
+站点 components/SessionListPanel.vue          :157 if (status === SESSION_STATUS.CLOSED) return 'warning'
+站点 views/AllianceExpertsView.vue            :282 <el-descriptions-item label="房间状态">{{ room.status === ROOM_STATUS.AVAILABLE ? '专家在
+站点 views/AllianceExpertsView.vue            :333 import { ROOM_STATUS } from '@/modules/expert-alliance/contract'
+台账外债 views/AllianceConsoleView.vue            :594 const canResume = computed(() => current.value?.status === 'paused')

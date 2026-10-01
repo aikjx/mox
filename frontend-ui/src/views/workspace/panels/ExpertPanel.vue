@@ -91,22 +91,22 @@
         </div>
         <el-scrollbar class="ws-session-scroll">
           <div
-            v-for="session in sessions"
-            :key="session.id"
+            v-for="row in sessionRows"
+            :key="row.session.id"
             class="ws-session-item"
-            :class="{ active: activeSession?.id === session.id }"
-            @click="$emit('select-session', session)"
+            :class="{ active: activeSession?.id === row.session.id }"
+            @click="$emit('select-session', row.session)"
           >
-            <div class="ws-session-title">{{ session.title }}</div>
+            <div class="ws-session-title">{{ row.title }}</div>
             <div class="ws-session-meta">
               <span class="ws-session-experts">
-                {{ session.expert_count || 0 }} 位专家
+                {{ row.expertCount }} 位专家
               </span>
-              <span class="ws-session-time">{{ formatTime(session.updated_at || session.created_at) }}</span>
+              <span class="ws-session-time">{{ row.timeText }}</span>
             </div>
-            <div v-if="session.mode" class="ws-session-mode">
-              <el-tag size="small" :type="sessionModeType(session.mode)" effect="light">
-                {{ sessionModeLabel(session.mode) }}
+            <div class="ws-session-mode">
+              <el-tag size="small" :type="row.typeTag" effect="light">
+                {{ row.typeLabel }}
               </el-tag>
             </div>
           </div>
@@ -184,8 +184,8 @@
 import { ref, computed } from 'vue'
 import { Search, ArrowLeft, ArrowRight, Plus, Compass, CircleCheckFilled } from '@element-plus/icons-vue'
 import { EXPERT_TYPES, expertColor, expertGradient, expertEmoji } from '@/constants'
-import { availabilityLabel } from '@/modules/expert-alliance/contract'
-import { expertStatusClass, expertVisualKey } from '@/modules/expert-alliance/model'
+import { availabilityLabel, sessionActivityAt, sessionListTitle, sessionTypeLabel, sessionTypeTagType } from '@/modules/expert-alliance/contract'
+import { expertStatusClass, expertVisualKey, sessionTimeText } from '@/modules/expert-alliance/model'
 
 const props = defineProps({
   collapsed: { type: Boolean, default: false },
@@ -244,25 +244,17 @@ function isExpertSelected(id) {
   return props.selectedExpertIds.includes(id)
 }
 
-function formatTime(ts) {
-  if (!ts) return ''
-  const now = Date.now()
-  const diff = now - ts
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前'
-  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前'
-  if (diff < 604800000) return Math.floor(diff / 86400000) + '天前'
-  const d = new Date(ts)
-  return `${d.getMonth() + 1}/${d.getDate()}`
-}
-
-function sessionModeLabel(mode) {
-  const map = { smart: '智能路由', single: '单专家', multi: '多专家', debate: '辩论', algorithm: '算法分析' }
-  return map[mode] || '协作'
-}
-
-function sessionModeType(mode) {
-  const map = { smart: 'info', single: 'primary', multi: 'success', debate: 'warning', algorithm: 'danger' }
-  return map[mode] || 'info'
-}
+// 会话行的一切口径来自模块：字段名取自 normSession 的投影（后端从不发 updated_at/mode/expert_count），
+// 标签与配色取自 contract/sessions 的 session_type 词表（旧版这里有一张含 smart/algorithm 的私表，
+// 与后端词表不相交，于是服务端行永远没有标签、本地草稿行 reload 后标签就消失）。
+const sessionRows = computed(() =>
+  props.sessions.map((s) => ({
+    session: s,
+    title: sessionListTitle(s),
+    expertCount: s.expertIds.length,
+    timeText: sessionTimeText(sessionActivityAt(s)),
+    typeLabel: sessionTypeLabel(s.sessionType),
+    typeTag: sessionTypeTagType(s.sessionType)
+  }))
+)
 </script>

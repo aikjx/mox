@@ -1,0 +1,134 @@
+[
+  {
+    "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "target": "docs/modules/resource-knowledge/README.md",
+    "anchor": "map",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "target": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "anchor": "scope",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "target": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "anchor": null,
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "target": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+    "anchor": null,
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "target": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "anchor": null,
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "target": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "anchor": "status",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "target": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "anchor": "scope",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "target": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "anchor": "ownership",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "target": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "anchor": "operations",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "target": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+    "anchor": "flows",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "target": "docs/enterprise/47-资源知识主源与存储适配归一-ADR-19.md",
+    "anchor": "decision",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "target": "docs/standards/lowcode-dynamic-configuration.md",
+    "anchor": "model",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "target": "docs/database/DATABASE-ARCHITECTURE.md",
+    "anchor": "resource-knowledge-20261001",
+    "pass": true
+  },
+  {
+    "source": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "target": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "anchor": "compatibility",
+    "pass": true
+  },
+  {
+    "source": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "target": "docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md",
+    "anchor": "architecture",
+    "pass": true
+  },
+  {
+    "source": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "target": "docs/standards/lowcode-dynamic-configuration.md",
+    "anchor": "dimensions",
+    "pass": true
+  },
+  {
+    "source": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "target": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "anchor": "compatibility",
+    "pass": true
+  },
+  {
+    "source": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "target": "docs/database/DATABASE-ARCHITECTURE.md",
+    "anchor": "resource-knowledge-20261001",
+    "pass": true
+  },
+  {
+    "source": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "target": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "anchor": "compatibility",
+    "pass": true
+  },
+  {
+    "source": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "target": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "anchor": "ownership",
+    "pass": true
+  },
+  {
+    "source": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "target": "docs/api/LOWCODE-CONFIGURATION-CONTRACT.md",
+    "anchor": "contract",
+    "pass": true
+  },
+  {
+    "source": "reports/markdown/20261001-resource-modules-implementation.md",
+    "target": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "anchor": "status",
+    "pass": true
+  }
+]

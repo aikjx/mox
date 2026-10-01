@@ -63,28 +63,21 @@
         <!-- 图谱画布（非编排模式时显示） -->
         <div v-show="activeMode !== 'orchestration'">
           <GraphCanvasPanel
-            v-model:activeCanvasTool="activeCanvasTool"
-            :current-layout="currentLayout"
-            :selected-node="selectedNode"
-            :graph-loading="graphLoading"
-            :graph-analyzing="graphAnalyzing"
-            :graph-nodes="graphNodes"
-            :graph-edges="graphEdges"
+            :store="graphStore"
             :graph-stats="graphStats"
-            :svg-view-box="svgViewBox"
-            :viewport="viewport"
+            :graph-loading="graphLoading"
+            :viewport-style="viewportStyle"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
             @fit-view="fitView"
-            @switch-layout="switchLayout"
-            @run-graph-algo="runGraphAlgo"
+            @retry="loadGraphData"
+            @open-graph-workbench="openGraphWorkbench"
             @canvas-mousedown="onCanvasMouseDown"
             @canvas-mousemove="onCanvasMouseMove"
             @canvas-mouseup="onCanvasMouseUp"
             @canvas-wheel="onCanvasWheel"
             @select-node="selectNode"
-            @node-mousedown="onNodeMouseDown"
-            @clear-selected-node="selectedNode = null"
+            @clear-selected-node="clearSelectedNode"
             @view-node-docs="viewNodeDocs"
             @ask-experts-about="askExpertsAbout"
           />
@@ -272,26 +265,27 @@
 </template>
 
 <script setup>
+import { formatClockMinute } from '@/utils'
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { allianceApi } from '@/modules/expert-alliance/api'
 // 协作流一律走模块契约：入参字段名、上下界、结果口径都只在契约层出现一次。
 // 视图自己拼 body 就是 defects 的产地——后端字段是 topic 时发 question 会吃 422，
 // 发 camelCase 的 maxExperts 会被 serde 静默丢弃。
-import { COLLAB_MODE, collabControlValue, collabProblem, collabTemplateNote, collabMode as collabModeOf } from '@/modules/expert-alliance/contract'
+import { COLLAB_MODE, collabControlValue, collabProblem, collabTemplateNote, collabMode as collabModeOf, graphNodeLabel, SESSION_PAGE, sessionActivityAt, sessionListTitle, sessionTypeForCollabMode } from '@/modules/expert-alliance/contract'
 import {
   collabCandidateItems, collabContributionItems, collabDebateTurns, collabResultNote,
-  expertPickable, expertVisualKey
+  draftSession, expertPickable, expertVisualKey, sessionTimeText
 } from '@/modules/expert-alliance/model'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { expertColor, expertEmoji } from '@/constants'
-import { getExpertSessions } from '@/api'
 import { RegisterExpertDialog } from '@/components'
 import {
   kbListDocuments, kbGetCategories, kbGetTags,
   kbSearch, kbGetVersions, kbCreateDocument
 } from '@/api'
 import { getProjects } from '@/api'
+import { unwrap, unwrapList } from '@/modules/_kernel/envelope'
 import '@/styles/workspace.css'
 
 // 子组件导入
@@ -366,7 +360,7 @@ const projectOptions = ref([
 async function loadProjects() {
   try {
     const data = await getProjects()
-    const list = Array.isArray(data) ? data : (data?.list || data?.items || data?.projects || [])
+    const list = unwrapList(unwrap(data), 'items')
     if (list.length) {
       projectOptions.value = list.map((p) => ({ id: p.id, name: p.name || p.title || '未命名项目' }))
       if (!projectOptions.value.find((p) => p.id === currentProject.value)) currentProject.value = projectOptions.value[0].id
@@ -418,26 +412,45 @@ const sessions = ref([])
 const sessionsLoading = ref(false)
 const activeSession = ref(null)
 
+/**
+ * 本地草稿行走与服务端同一个出口（model/normalize.js 的 draftSession）：两者会出现在同一个列表里，必须同形
+ * （同键名、同为 RFC3339 字符串）。旧版草稿在这里手写 created_at/updated_at 加 Date.now() 毫秒数，
+ * 于是"活跃度"一栏对服务端行与草稿行各走一套时间口径，而 updated_at 后端根本没有。
+ * 草稿不落库（工作台从不调用 sessionCreate），reload 即消失——这是既有行为，本次不动它，
+ * 只在注释里留痕：界面不许把草稿说成已保存。
+ */
+function localSessionRow(title, expertIds, mode) {
+  const picked = [...(expertIds || [])]
+  return draftSession({
+    id: 'sess-' + Date.now(),
+    title,
+    expertIds: picked,
+    sessionType: sessionTypeForCollabMode(mode, picked.length),
+    at: new Date().toISOString()
+  })
+}
+
 async function loadSessions() {
   sessionsLoading.value = true
   try {
-    const res = await getExpertSessions({ project_id: currentProject.value, limit: 20 })
-    if (res && Array.isArray(res.data)) sessions.value = res.data
-    else if (res && Array.isArray(res)) sessions.value = res
-    else sessions.value = []
+    // 走模块 api：信封解包与字段投影都只在它那里做一次。旧版在这里猜响应形状
+    // （res.data / res 两种都是数组才收），而后端返回的是 {sessions,total,page,page_size}，
+    // 两个分支都不成立 ⇒ 列表恒空；project_id 由 http 层统一注入，limit 与 page_size 同义。
+    const { items } = await allianceApi.listSessions({ pageSize: SESSION_PAGE.defaultSize })
+    sessions.value = items
   } catch (e) { sessions.value = []; ElMessage.error(e?.message || '加载会话失败') }
   finally { sessionsLoading.value = false }
 }
 
 function selectSession(session) {
   activeSession.value = session
-  collabMessages.value = [{ id: Date.now(), role: 'system', name: '系统', avatar: '📢', color: '#64748b', time: formatTime(session.updated_at), text: `已进入「${session.title}」协作会话` }]
+  collabMessages.value = [{ id: Date.now(), role: 'system', name: '系统', avatar: '📢', color: '#64748b', time: sessionTimeText(sessionActivityAt(session)), text: `已进入「${sessionListTitle(session)}」协作会话` }]
 }
 
 function newCollaboration() {
   activeMode.value = 'collaboration'
   collabExpanded.value = true
-  const newSess = { id: 'sess-' + Date.now(), title: '新协作会话', expert_count: selectedExpertIds.value.length || 0, mode: collabMode.value, created_at: Date.now(), updated_at: Date.now() }
+  const newSess = localSessionRow('新协作会话', selectedExpertIds.value, collabMode.value)
   sessions.value.unshift(newSess)
   selectSession(newSess)
   ElMessage.success('已创建新的协作会话')
@@ -545,11 +558,11 @@ async function startDebate() {
 
 function appendDebateToCollab(result) {
   if (!activeSession.value) {
-    const newSess = { id: 'sess-' + Date.now(), title: debateConfig.topic.slice(0, 20) + '…', expert_count: debateConfig.selectedExpertIds.length, mode: 'debate', created_at: Date.now(), updated_at: Date.now() }
+    const newSess = localSessionRow(debateConfig.topic.slice(0, 20) + '…', debateConfig.selectedExpertIds, COLLAB_MODE.DEBATE)
     sessions.value.unshift(newSess)
     selectSession(newSess)
   }
-  const now = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  const now = () => formatClockMinute()
   collabMessages.value.push({ id: Date.now(), role: 'system', name: '辩论系统', avatar: '⚔️', color: '#ef4444', time: now(), text: `【辩论开始】辩题：${result.topic}` })
   debateTurns.value.forEach(turn => {
     const speaker = debateSpeakerExpert(result, turn.side)
@@ -684,16 +697,18 @@ function selectedExpertNames() {
 }
 
 // ========== 图谱节点交互 ==========
+// 节点名一律经 contract/graph.js 的 graphNodeLabel：后端写入侧丢过编码（label='???????'），
+// 直接拼进提问串等于让专家去猜一串问号，那里会换成"未命名节点 + id 短码"。
 function viewNodeDocs(node) {
   rightCollapsed.value = false
   activeKbTab.value = 'docs'
-  kbSearchQuery.value = node.fullName || node.label
+  kbSearchQuery.value = graphNodeLabel(node)
   searchKb()
 }
 
 function askExpertsAbout(node) {
   collabExpanded.value = true
-  collabInput.value = `请专家们分析一下「${node.fullName || node.label}」的相关情况，包括其定义、关联关系和应用场景。`
+  collabInput.value = `请专家们分析一下「${graphNodeLabel(node)}」的相关情况，包括其定义、关联关系和应用场景。`
   if (!activeSession.value) newCollaboration()
 }
 
@@ -737,7 +752,7 @@ async function handleSaveWhiteboard(activeSession) {
 }
 
 function insertNodeRef() {
-  if (selectedNode.value) collabInput.value += `【节点：${selectedNode.value.fullName || selectedNode.value.label}】`
+  if (selectedNode.value) collabInput.value += `【节点：${graphNodeLabel(selectedNode.value)}】`
 }
 
 // ========== 知识库 ==========
@@ -763,37 +778,33 @@ async function loadDocuments() {
   docsLoading.value = true
   try {
     const res = await kbListDocuments({ project_id: currentProject.value, limit: 50 })
-    if (res && Array.isArray(res.data)) documents.value = res.data
-    else if (res && Array.isArray(res)) documents.value = res
-    else documents.value = []
+    documents.value = unwrapList(unwrap(res), 'items')
   } catch (e) { documents.value = []; ElMessage.error(e?.message || '加载文档失败') }
   finally { docsLoading.value = false }
 }
 
 async function loadCategories() {
   try {
-    const res = await kbGetCategories()
-    if (res && Array.isArray(res.data)) categories.value = res.data
-    else if (res && Array.isArray(res)) categories.value = res
-    else categories.value = []
+    categories.value = unwrapList(unwrap(await kbGetCategories()))
     expandedCategories.value = categories.value.map(c => c.id)
   } catch (e) { categories.value = []; expandedCategories.value = []; ElMessage.error(e?.message || '加载分类失败') }
 }
 
 async function loadTags() {
   try {
-    const res = await kbGetTags()
-    if (res && Array.isArray(res.data)) popularTags.value = res.data.map(t => ({ name: t.name || t.tag, count: t.count || 0, fontSize: 12 + Math.min(t.count || 0, 20) * 0.5 }))
-    else popularTags.value = []
+    // /kb/tags 给的是裸数组 [{name,count}]，没有 tag 这个别名键
+    popularTags.value = unwrapList(unwrap(await kbGetTags())).map(t => ({
+      name: t.name,
+      count: t.count || 0,
+      fontSize: 12 + Math.min(t.count || 0, 20) * 0.5
+    }))
   } catch (e) { popularTags.value = []; ElMessage.error(e?.message || '加载标签失败') }
 }
 
 async function loadVersions(docId) {
   try {
-    const res = await kbGetVersions(docId)
-    if (res && Array.isArray(res.data)) docVersions.value = res.data
-    else if (res && Array.isArray(res)) docVersions.value = res
-    else docVersions.value = []
+    // /kb/documents/:id/versions 的 payload 是 {doc_id,versions}
+    docVersions.value = unwrapList(unwrap(await kbGetVersions(docId)), 'versions')
   } catch (e) { docVersions.value = []; ElMessage.error(e?.message || '加载版本失败') }
 }
 
@@ -804,9 +815,9 @@ async function searchKb() {
   if (!kbSearchQuery.value.trim()) { if (documents.value.length === 0) loadDocuments(); return }
   docsLoading.value = true
   try {
-    const res = await kbSearch({ query: kbSearchQuery.value, project_id: currentProject.value })
-    if (res && Array.isArray(res.data)) documents.value = res.data
-  } catch (e) { /* 使用前端过滤 */ }
+    // /kb/search 的 payload 是 {results,graph_hits,total}，行形状是 SearchHit（snippet/score，没有 updated_at）
+    documents.value = unwrapList(unwrap(await kbSearch({ query: kbSearchQuery.value, limit: 50 })), 'results')
+  } catch (e) { documents.value = []; ElMessage.error(e?.message || '检索失败') }
   finally { docsLoading.value = false }
 }
 
@@ -857,17 +868,8 @@ function removeNotification(id) {
 }
 
 // ========== 工具函数 ==========
-function formatTime(ts) {
-  if (!ts) return ''
-  const now = Date.now()
-  const diff = now - ts
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前'
-  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前'
-  if (diff < 604800000) return Math.floor(diff / 86400000) + '天前'
-  const d = new Date(ts)
-  return `${d.getMonth() + 1}/${d.getDate()}`
-}
+// 会话时间不在这里格式化：一天内相对、超出绝对的两档口径由 model/display.js 的 sessionTimeText 单源给出，
+// 旧版在此另写一份，且把入参当毫秒数减（Date.now() - '2026-…' = NaN），服务端行永远落到 M/D 兜底档。
 
 // ========== Composables 初始化 ==========
 const {
@@ -880,14 +882,17 @@ const {
 } = useWhiteboard(addHistoryEvent)
 
 const {
-  activeCanvasTool, currentLayout, selectedNode, graphLoading, graphAnalyzing,
-  viewport, svgViewBox, graphNodes, graphEdges, graphStats,
-  loadGraphData, selectNode, switchLayout, zoomIn, zoomOut, fitView, runGraphAlgo,
-  onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp, onCanvasWheel, onNodeMouseDown
-} = useGraphCanvas(expertColor)
+  graphStore, selectedNode, graphLoading, graphStats, viewportStyle,
+  loadGraphData, selectNode, clearSelectedNode, zoomIn, zoomOut, fitView,
+  onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp, onCanvasWheel
+} = useGraphCanvas()
+
+function openGraphWorkbench() {
+  router.push('/alliance/graph')
+}
 
 function addOrchMessage(msg) {
-  collabMessages.value.push({ id: Date.now() + Math.random(), time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), ...msg })
+  collabMessages.value.push({ id: Date.now() + Math.random(), time: formatClockMinute(), ...msg })
   if (messagesScrollRef.value) nextTick(() => { messagesScrollRef.value.scrollTo?.({ top: 999999, behavior: 'smooth' }) })
 }
 
@@ -922,6 +927,8 @@ onBeforeUnmount(() => {
 })
 
 watch(selectedExpertIds, () => {
-  if (activeSession.value) activeSession.value.expert_count = selectedExpertIds.value.length
+  // 成员数就是 expertIds 本身；旧版这里写的是 expert_count —— 后端没有这个键，
+  // 它只是给面板提供了一个假字段，reload 后（服务端行）计数立刻变 0。
+  if (activeSession.value) activeSession.value.expertIds = [...selectedExpertIds.value]
 }, { deep: true })
 </script>

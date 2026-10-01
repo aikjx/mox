@@ -12,6 +12,7 @@ import router from './router'
 import './styles/global.css'
 import './styles/themes/index.css'  // 三大主题：dark / sky / cyberpunk
 import { setupPermissionDirectives } from '@/directives'
+import { registerNavIcons } from '@/modules'
 
 const app = createApp(App)
 
@@ -30,6 +31,14 @@ pinia.use(({ store }) => {
 
 app.use(router)
 app.use(pinia)
+
+// ===== 图标名解析口 =====
+// vite.config.js 的 unplugin-vue-components resolver 只改写**模板标签**（<el-icon>、<ElIconAim>），
+// 而模板里有两类位点传的是**字符串**：数据表 icon:'Aim'（实测 127 处）与内联三元
+// :is="open ? 'ArrowUp' : 'ArrowDown'"（14 处）⇒ 这些名字编译期没人改写，运行期也没有登记项，
+// 一律 "Failed to resolve component" 渲染成空白。这里按封闭集 app.component 注册把它们接上：
+// 名单与理由见 src/modules/_kernel/nav-icons.js，nav-icons.test.js 全库扫描守这张表。
+registerNavIcons(app)
 
 // ===== v-loading 指令（按需引入，函数式 API 不会被模板解析器覆盖）=====
 app.directive('loading', ElLoading.directive)

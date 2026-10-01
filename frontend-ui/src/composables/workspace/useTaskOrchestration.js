@@ -165,7 +165,7 @@ export function useTaskOrchestration(experts, expertColor, expertEmoji, addHisto
         addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expertVisualKey(expert)) || '🤖', color: expertColor?.(expertVisualKey(expert)) || '#6366f1', text: `✅ **${task.title}** 执行完成\n\n${task.result}`, status: 'done', phase: 'orchestration' })
       } else {
         task.status = 'failed'; task.result = '执行过程中遇到问题，需要人工介入。'
-        addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert?.type) || '🤖', color: '#ef4444', text: `❌ **${task.title}** 执行失败\n\n执行过程中遇到异常，请检查任务配置或重新分配专家。`, status: 'failed', phase: 'orchestration' })
+        addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expertVisualKey(expert)) || '🤖', color: '#ef4444', text: `❌ **${task.title}** 执行失败\n\n执行过程中遇到异常，请检查任务配置或重新分配专家。`, status: 'failed', phase: 'orchestration' })
       }
       updateGanttLayout()
     }

@@ -22,6 +22,17 @@ export const GRAPH_NODE_TYPE_META = Object.freeze({
   domain: { label: '能力域', abbr: '域' }
 })
 
+// N4 写入端（POST/PUT /api/expert-graph/nodes）实际接受的 node_type，逐字取自
+// experts_graph.rs 的 VALID_NODE_TYPES = ["expert","domain","capability"]。
+// 注意与 GRAPH_NODE_TYPE 的分工：后者是「builder 派生图里真实出现的类型」，被 graph.test.js
+// 与 Rust 源码双向钉死（builder 只产出 expert/domain）；capability 是手动 CRUD 才会出现的节点，
+// 派生图经 rebuild 后不会自动带它。因此这里只作写入表单选项与画布兜底色，绝不并入 GRAPH_NODE_TYPE。
+export const GRAPH_WRITE_NODE_TYPES = Object.freeze([
+  { value: 'expert', label: '专家' },
+  { value: 'domain', label: '能力域' },
+  { value: 'capability', label: '能力点' }
+])
+
 /** 图中真实存在的边类型，权重来源逐字取自 builder */
 export const GRAPH_EDGE_TYPE = Object.freeze({
   has_domain: 'has_domain',
@@ -46,6 +57,58 @@ export const DOMAIN_NODE_ID_PREFIX = 'domain-'
 
 export function isDomainNode(id) {
   return str(id).startsWith(DOMAIN_NODE_ID_PREFIX)
+}
+
+/**
+ * 编码丢失的标签：实测 GET /api/expert-graph 里存在 label='???????' 与 '?????????' 的专家节点，
+ * 而同一网关经 UTF-8 请求体写入的中文名可以原样读回（2026-09-27 往返探针），
+ * 所以这串问号是**写入侧**就丢的字符，不是渲染层的字体问题。
+ * 界面不得照抄一串问号，也不得拿它当真名去问专家。
+ */
+const LOST_LABEL_RE = /^[\s?]*$/
+
+export function isLostGraphLabel(label) {
+  return LOST_LABEL_RE.test(str(label))
+}
+
+/** id 短码：编码丢失时唯一还能指认这个节点的东西（exp-/domain- 前缀对读的人没有信息量） */
+export function graphNodeShortId(id) {
+  return str(id).replace(/^(exp|domain)-/, '').slice(0, 8)
+}
+
+/**
+ * 节点的可读名，图上的标签、信息卡标题与"带节点去协作"的提问都用它。
+ * 编码丢失时给"未命名节点 + id 短码"，宁可难读也不假装读得懂。
+ */
+export function graphNodeLabel(node) {
+  const label = str(node?.label)
+  if (label && !isLostGraphLabel(label)) return label
+  const short = graphNodeShortId(node?.id)
+  return short ? `未命名节点 ${short}` : '未命名节点'
+}
+
+/**
+ * 注册表里一个专家的可读名，与 graphNodeLabel 共用同一套判丢与短码口径（不另起第二张表）。
+ * 只管"名字丢了/没名字"这一档；若调用方知道**注册表里根本没有这一行**，
+ * 那句话要调用方自己说（例如调度台的"（注册表里没有名字）"），不许混进这里来。
+ */
+export function expertDisplayName(expert) {
+  const name = str(expert?.name)
+  if (name && !isLostGraphLabel(name)) return name
+  const short = graphNodeShortId(expert?.id)
+  return short ? `未命名专家 ${short}` : '未命名专家'
+}
+
+/**
+ * 区分"名字丢了"与"压根没给名字"两种缺名的出口专用。
+ * 一个字符都没有（后端字段为空/缺失）时把话交回调用方：那一档的意思是"这里没有这个人可指认"，
+ * 不许在本模块编造人名；给了名字但名字丢了码的，仍走 expertDisplayName 显形成 id 短码。
+ * 判空口径与 graphNodeLabel 一致：只看是否为空串，空白串算"给过但丢了"。
+ */
+export function expertNameOr(expert, absentText) {
+  const name = str(expert?.name)
+  if (!name) return str(absentText)
+  return expertDisplayName(expert)
 }
 
 export function nodeTypeMeta(nodeType) {
@@ -186,4 +249,90 @@ export function collaboratorRows(payload = {}) {
     weight: Number(c.collaborationWeight) || 0,
     sharedDomains: Array.isArray(c.sharedDomains) ? c.sharedDomains : []
   }))
+}
+
+// ── 图 RAG 多跳邻域扩展（POST /api/expert-graph/rag/expand，T2）──────────
+//
+// 后端语义（experts_graph.rs 七-C）：
+// - max_depth 合法范围 1..=4，缺省 2；top_k 缺省 20 且必须 >0；
+// - min_weight ∈ [0,1]，低于该值的边不沿其展开；
+// - node_types 为空=不过滤；过滤作用在结果侧，路径仍保留完整节点序列；
+// - aggregate_weight = 路径边权重乘积（w∈[0,1]，随深度衰减）；
+// - rerank 当前固定为 graph_only（向量融合待 #27），前端不得假装有向量分数。
+
+export const RAG_EXPAND_DEFAULTS = Object.freeze({
+  maxDepth: 2,
+  topK: 20,
+  minWeight: 0
+})
+
+export const RAG_EXPAND_DEPTH_RANGE = Object.freeze({ min: 1, max: 4 })
+
+/**
+ * 生成请求体：只发对结果有意义的键。
+ * - seeds 必发（非空字符串数组）；
+ * - 数值等于后端缺省时不发；
+ * - node_types 为空不发（后端缺省=不过滤）。
+ */
+export function ragExpandBody(input = {}) {
+  const body = {}
+  const seeds = list(input.seeds)
+  if (!seeds.length) return body
+  body.seeds = seeds
+  const maxDepth = num(input.maxDepth)
+  if (Number.isFinite(maxDepth) && maxDepth >= RAG_EXPAND_DEPTH_RANGE.min && maxDepth <= RAG_EXPAND_DEPTH_RANGE.max && maxDepth !== RAG_EXPAND_DEFAULTS.maxDepth) {
+    body.max_depth = Math.trunc(maxDepth)
+  }
+  const topK = num(input.topK)
+  if (Number.isFinite(topK) && topK > 0 && topK !== RAG_EXPAND_DEFAULTS.topK) {
+    body.top_k = Math.trunc(topK)
+  }
+  const minWeight = num(input.minWeight)
+  if (Number.isFinite(minWeight) && minWeight >= 0 && minWeight <= 1 && minWeight !== RAG_EXPAND_DEFAULTS.minWeight) {
+    body.min_weight = minWeight
+  }
+  const types = list(input.nodeTypes)
+  if (types.length) body.node_types = types
+  return body
+}
+
+/** 提交前自检：seeds 空 / max_depth 越界后端会 400，由前端先挡 */
+export function ragExpandProblem(input = {}) {
+  const seeds = list(input.seeds)
+  if (!seeds.length) return '请至少给出一个种子节点'
+  const unset = (v) => v === undefined || v === null || v === ''
+  if (!unset(input.maxDepth)) {
+    const d = num(input.maxDepth)
+    if (!Number.isFinite(d) || d < RAG_EXPAND_DEPTH_RANGE.min || d > RAG_EXPAND_DEPTH_RANGE.max) {
+      return `跳数须在 ${RAG_EXPAND_DEPTH_RANGE.min}–${RAG_EXPAND_DEPTH_RANGE.max} 之间`
+    }
+  }
+  if (!unset(input.topK)) {
+    const k = num(input.topK)
+    if (!Number.isFinite(k) || k < 1) return '返回条数至少为 1'
+  }
+  return ''
+}
+
+/** 召回行归一化：路径/首跳兜底成空数组，weight 兜底 0 */
+export function ragExpandRows(payload = {}) {
+  const results = Array.isArray(payload.results) ? payload.results : []
+  return results.map((r) => {
+    const node = r.node || {}
+    const firstHops = Array.isArray(r.first_hops) ? r.first_hops : []
+    return {
+      id: String(node.id || ''),
+      label: String(node.label || ''),
+      nodeType: String(node.node_type || ''),
+      depth: Number(r.depth) || 0,
+      aggregateWeight: Number(r.aggregate_weight) || 0,
+      path: Array.isArray(r.path) ? r.path.map(String) : [],
+      firstHops: firstHops.map((fh) => ({
+        from: String(fh.from || ''),
+        to: String(fh.to || ''),
+        edgeType: String(fh.edge_type || ''),
+        weight: Number(fh.weight) || 0
+      }))
+    }
+  })
 }

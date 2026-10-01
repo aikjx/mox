@@ -11,16 +11,17 @@ import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import * as api from '@/api'
+import { unwrap, unwrapList } from '@/modules/_kernel/envelope'
 import { useProject } from '@/composables'
 import {
   mapDoc,
-  DOC_TYPES,
-  getTypeLabel,
-  getTagType,
+  KB_CATEGORIES,
+  getCategoryLabel,
+  getCategoryTagType,
   getStatusType,
   getStatusLabel,
   getActionLabel,
-  formatTime,
+  formatDateTime as formatTime,
   truncateText,
   getTagSize,
   simpleMarkdownRender
@@ -47,7 +48,6 @@ export function useKnowledgeBase() {
   const saving = ref(false)
   const searchQuery = ref('')
   const filterCategory = ref('')
-  const filterType = ref('')
   const filterStatus = ref('')
   const filterTag = ref('')
   const filterDateRange = ref(null)
@@ -108,7 +108,6 @@ export function useKnowledgeBase() {
           d.tags?.some(t => t.toLowerCase().includes(q))
       )
     }
-    if (filterType.value) result = result.filter(d => d.type === filterType.value)
     if (filterStatus.value) result = result.filter(d => d.status === filterStatus.value)
     if (filterTag.value) result = result.filter(d => d.tags?.includes(filterTag.value))
     if (filterCategory.value) result = result.filter(d => d.category === filterCategory.value)
@@ -146,7 +145,6 @@ export function useKnowledgeBase() {
     try {
       const params = {}
       if (searchQuery.value) params.q = searchQuery.value
-      if (filterType.value) params.type = filterType.value
       if (filterStatus.value) params.status = filterStatus.value
       if (filterTag.value) params.tag = filterTag.value
       if (filterCategory.value) params.category = filterCategory.value
@@ -155,8 +153,7 @@ export function useKnowledgeBase() {
         params.end_date = filterDateRange.value[1].toISOString()
       }
       const data = await api.kbListDocuments(params)
-      const list = Array.isArray(data) ? data : (data?.items || data?.documents || [])
-      documents.value = list.map(mapDoc)
+      documents.value = unwrapList(unwrap(data), 'items').map(mapDoc)
     } catch (e) {
       documents.value = []
       error.value = e?.message || '文档列表加载失败'
@@ -215,7 +212,7 @@ export function useKnowledgeBase() {
   async function fetchVersions(docId) {
     try {
       const data = await api.kbGetVersions(docId)
-      docVersions.value = Array.isArray(data) ? data : (data?.items || [])
+      docVersions.value = unwrapList(unwrap(data), 'versions')
     } catch (e) {
       docVersions.value = []
       console.error('[kb] fetchVersions failed:', e)
@@ -226,7 +223,7 @@ export function useKnowledgeBase() {
   async function fetchHistory(docId) {
     try {
       const data = await api.kbGetHistory({ doc_id: docId })
-      docHistory.value = Array.isArray(data) ? data : (data?.items || [])
+      docHistory.value = unwrapList(unwrap(data))
     } catch (e) {
       docHistory.value = []
       console.error('[kb] fetchHistory failed:', e)
@@ -322,10 +319,8 @@ export function useKnowledgeBase() {
       id: doc.id,
       title: doc.title,
       content: doc.content || '',
-      type: doc.type,
       category: doc.category,
       tags: doc.tags || [],
-      description: doc.description || '',
       auto_save: false,
       version_note: ''
     })
@@ -433,7 +428,6 @@ export function useKnowledgeBase() {
 
   function resetFilters() {
     searchQuery.value = ''
-    filterType.value = ''
     filterStatus.value = ''
     filterTag.value = ''
     filterCategory.value = ''
@@ -463,7 +457,7 @@ export function useKnowledgeBase() {
     if (!linkSearchQuery.value.trim()) return
     try {
       const data = await api.kbSearchEntities({ q: linkSearchQuery.value })
-      searchResults.value = Array.isArray(data) ? data : (data?.items || [])
+      searchResults.value = unwrapList(unwrap(data))
     } catch (e) {
       searchResults.value = []
       console.error('[kb] searchEntities failed:', e)
@@ -519,7 +513,6 @@ export function useKnowledgeBase() {
     error,
     searchQuery,
     filterCategory,
-    filterType,
     filterStatus,
     filterTag,
     filterDateRange,
@@ -545,11 +538,11 @@ export function useKnowledgeBase() {
     renderedCompareFrom,
     renderedCompareTo,
     // Constants
-    docTypes: DOC_TYPES,
+    categories: KB_CATEGORIES,
     // Methods - 工具函数
     getTagSize: (count) => getTagSize(tags.value, count),
-    getTagType,
-    getTypeLabel,
+    getCategoryTagType,
+    getCategoryLabel,
     getStatusType,
     getStatusLabel,
     getActionLabel,

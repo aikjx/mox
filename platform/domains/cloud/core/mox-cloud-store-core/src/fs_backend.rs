@@ -231,6 +231,17 @@ impl FsObjectStore {
 
 #[async_trait]
 impl ObjectStore for FsObjectStore {
+    async fn list_keys(&self, prefix: &str) -> StoreResult<Vec<String>> {
+        let mut keys: Vec<_> = crate::dedup::list_object_refs(&self.data_dir)
+            .await?
+            .into_iter()
+            .map(|(key, _)| key)
+            .filter(|key| key.starts_with(prefix))
+            .collect();
+        keys.sort();
+        Ok(keys)
+    }
+
     async fn put(&self, path: &str, content_type: &str, data: Bytes) -> StoreResult<BlobObject> {
         self.store_bytes(path, content_type, &data).await
     }

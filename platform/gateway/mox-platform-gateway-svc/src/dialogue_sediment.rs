@@ -107,9 +107,23 @@ pub fn build_sediment_router(state: SedimentState) -> Router<()> {
 
 /// POST /api/alliance/sediment —— 对话核心内容自动归类沉淀
 async fn sediment_dialogue(
-    State(state): State<SedimentState>,
+    State(mut state): State<SedimentState>,
+    crate::auth::ApiAuth(user): crate::auth::ApiAuth,
     Json(req): Json<SedimentRequest>,
 ) -> ApiResponse<Value> {
+    let access = mox_kb_svc::access::KnowledgeAccess {
+        tenant_id: user.tenant_id.clone(),
+        owner_id: user.id.clone(),
+        administrator: user
+            .roles
+            .iter()
+            .any(|r| matches!(r.as_str(), "tenant_admin" | "super_admin")),
+        readonly: user.roles.iter().any(|r| r == "readonly_auditor"),
+    };
+    if !user.enabled || !access.valid() || access.readonly {
+        return api_error(403, "无权沉淀知识");
+    }
+    state.kb = Arc::new(state.kb.scoped(access));
     // ===== 1. 读取对话核心内容 =====
     let category = req.category.clone().unwrap_or_else(|| "cat-dialogue".to_string());
     let (session_id, title, messages) = match req.source.as_str() {
@@ -173,6 +187,10 @@ async fn sediment_dialogue(
         }
     };
 
+    if let Err(e) = state.kb.ensure_projection_ready().await {
+        return api_error(503, format!("知识投影初始化失败: {e}"));
+    }
+
     // ===== 2. 知识库：创建文档（原文） + 分析（摘要/关键词/实体/关系） + 挂图 =====
     let transcript_md = build_transcript_md(&title, &session_id, &messages);
     let mut doc = match state.kb.docs.create(&title, &transcript_md, Some(&category)).await {
@@ -187,7 +205,10 @@ async fn sediment_dialogue(
         return api_error(500, format!("知识库文档保存失败: {e}"));
     }
     let chunks = chunk_doc(&doc);
-    let link = GraphLinker.link(&state.kb.graph, &doc, &chunks);
+    let link = match GraphLinker.link(&state.kb.graph, &doc, &chunks) {
+        Ok(link) => link,
+        Err(e) => return api_error(500, format!("知识图谱投影失败: {e}")),
+    };
     doc.status = STATUS_LINKED.into();
     if let Err(e) = state.kb.docs.save(&doc).await {
         return api_error(500, format!("知识库文档挂图状态保存失败: {e}"));
@@ -402,7 +423,7 @@ mod tests {
         assert!(!analysis.entities.is_empty());
 
         let chunks = chunk_doc(&doc);
-        let link = GraphLinker.link(&kb.graph, &doc, &chunks);
+        let link = GraphLinker.link(&kb.graph, &doc, &chunks).unwrap();
         assert!(link.nodes_added >= 1, "挂图应新增节点");
 
         let _ = std::fs::remove_dir_all(&dir);

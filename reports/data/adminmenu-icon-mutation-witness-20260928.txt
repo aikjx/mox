@@ -1,0 +1,10 @@
+BASELINE rc=0 [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+
+M1-render-both-columns           rc=1 [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+M1-render-both-columns -> restored rc=0 [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+M2-render-name-col-only          rc=1 [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+M2-render-name-col-only -> restored rc=0 [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+M3-input-is-select               rc=1 [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+M3-input-is-select -> restored   rc=0 [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+
+ALL MUTANTS CAUGHT + RESTORED

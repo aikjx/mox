@@ -1,0 +1,12 @@
+[PASS] L1 无参 + 同行 new Date：fired=True want=True :: unpinned=1
+[PASS] L1 无参 + 别名 Date 变量：fired=True want=True :: unpinned=1
+[PASS] L2 登记口外重复时钟档选项：fired=True want=True :: L2 OUTLET_LITERAL a/views/Z.vue:1 在登记口之外重复了出口写法片段 `{ hour: '2-digit', minute: '2-digit' }`
+[PASS] L2 登记口外重复完整 F2 写法：fired=True want=True :: L2 OUTLET_LITERAL a/views/W.vue 出现出口写法串 `toLocaleString('zh-CN', { hour12: false })`
+[PASS] L3 pin 到别的 locale：fired=True want=True :: L3 LOCALE_PIN a/views/V.vue:1 pin 到了 `en-US` 而非 zh-CN
+[PASS] 合法：登记口自身：fired=False want=False 
+[PASS] 合法：数字千分位无参：fired=False want=False 
+[PASS] 合法：pin 到 zh-CN 的日期档：fired=False want=False 
+[PASS] 合法：带秒档自己写 hour12（不是登记口写法）：fired=False want=False 
+[PASS] L4 空判集必须被拒（不存在的仓库根）：rc=1 want=1
+[PASS] L4 真仓库扫描集 = 270 个文件（下限 100）
+SELFTEST PASS（0 例未落地）

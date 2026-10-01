@@ -1,0 +1,59 @@
+# F23 L12 形状加宽 原始读数（2026-09-29，现场量，勿手抄）
+
+## [1] 四型反事实普查（D:/tmp/f23-shapes.mjs，未落库＝没牙）
+    node rc=0
+    | A 现状 op+字面量            9 处 / 扫描 28 文件
+    |    views/expert/AllianceTaskView.vue:232|user | <div class="msg-avatar">{{ msg.role === 'user' ? '我' : 'AI' }}</div>
+    |    views/expert/ExpertConfigView.vue:1732|system | <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'
+    |    views/expert/ExpertConfigView.vue:1732|system | <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'
+    |    views/expert/ExpertConfigView.vue:3068|system | if (type === 'system') {
+    |    views/expert/ExpertConfigView.vue:3081|system | if (testScene.value === 'system') {
+    |    views/expert/ExpertConfigView.vue:522|system | <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'
+    |    views/expert/ExpertConfigView.vue:523|system | {{ v.type === 'system' ? '系统' : '自定义' }}
+    |    views/expert/ExpertConfigView.vue:972|failed | <el-icon v-else-if="llmConnectionStatus === 'failed'"><CircleClose /
+    |    views/expert/ExpertPlazaView.vue:774|online | } else if (activeQuickTab.value === 'online') {
+    | B 字面量在左                0 处 / 扫描 28 文件
+    | C switch-case          0 处 / 扫描 28 文件
+    | D includes/indexOf     0 处 / 扫描 28 文件
+    | 分母：.vue 扫描集=28 禁串=26 现型基线=9
+    注：scratch 普查的禁串集合是手写 26 值，常驻判据由 Object.values 现推 28 值；
+    两口径在 A 型上给出同一个 9 处，B/C/D 在两口径下都是 0，故本型普查与常驻账同判。
+
+## [2] 形状电池原始日志（D:/tmp/f23-battery.log 逐字）
+    | BASELINE rc=0 [L12 形状] 扫描 28 个 .vue／四型命中 A=9 B=0 C=0 D=0 || Test Files  1 passed (1) || Tests  19 passed (19)
+    | 基线形状计数应只落 A 型（9 处），B/C/D 为 0
+    | [OK ] rc=1 [L12 形状] 扫描 28 个 .vue／四型命中 A=9 B=1 C=0 D=0 || Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M-B1 字面量在左的重新打字（B 型新针）=> 必须红
+    | [OK ] rc=1 [L12 形状] 扫描 28 个 .vue／四型命中 A=9 B=0 C=1 D=0 || Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M-C1 switch-case 重新打字（C 型新针）=> 必须红
+    | [OK ] rc=1 [L12 形状] 扫描 28 个 .vue／四型命中 A=9 B=0 C=0 D=1 || Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M-D1 includes 重新打字（D 型新针）=> 必须红
+    | [OK ] rc=0 [L12 形状] 扫描 28 个 .vue／四型命中 A=9 B=0 C=0 D=0 || Test Files  1 passed (1) || Tests  19 passed (19) | 期望=green | M-E1 三型同时用契约外取值（blocked 不属任何登记表）=> 必须不红
+    | [OK ] rc=1 [L12 形状] 扫描 28 个 .vue／四型命中 A=9 B=1 C=0 D=0 || Test Files  1 failed (1) || Tests  1 failed | 18 passed (19) | 期望=red | M-E2 三型同时用已豁免的本地取值（role 域 user 只在 A 型账上）=> 必须红（B 型不看豁免表？不，看同一本账）
+    | F23 电池结束：不符 0 枚 / 共 5 枚
+    | restored 6a528ce147c2 src/modules/expert-alliance/contract/vocabulary-ownership.test.js
+    | restored a3108e09658e src/views/expert/AllianceTaskView.vue
+    | exit=0
+
+## [3] 判据文件 + 全量 vitest + build + 门禁
+    单文件 rc=0
+    | [L12 形状] 扫描 28 个 .vue／四型命中 A=9 B=0 C=0 D=0
+    | Test Files  1 passed (1)
+    | Tests  19 passed (19)
+    | Duration  4.21s (transform 228ms, setup 0ms, collect 334ms, tests 728ms, environment 1.54s, prepare 553ms)
+    全量 rc=0
+    | Test Files  77 passed (77)
+    | Tests  1035 passed (1035)
+    build rc=0 | ✓ built in 48.36s
+    check-doc-links rc=1 / WARN+ERROR 行数=120
+
+## [4] 被改文件指纹
+    src/modules/expert-alliance/contract/vocabulary-ownership.test.js 32153 B / 459 行 / md5 6a528ce147c24be82068c201b9d6f40b / CRLF=0 / 游离CR=0
+    src/views/expert/AllianceTaskView.vue 34736 B / 997 行 / md5 a3108e09658e8e1dd523efc922b1c678 / CRLF=0 / 游离CR=0
+    src/views/expert/ExpertPlazaView.vue 54508 B / 1941 行 / md5 9581e23fcbb9cc3a1fc8de971e105493 / CRLF=0 / 游离CR=0
+    src/views/expert/panels/ExpertEnterprisePanel.vue 60876 B / 1306 行 / md5 b6c7e5ad4db76bae30f63b1aae712e00 / CRLF=0 / 游离CR=0
+    src/views/expert/panels/ExpertOrchestratorPanel.vue 23960 B / 753 行 / md5 b5350c46b2913838dffbb918f1196518 / CRLF=0 / 游离CR=0
+
+## [5] 口径
+    - 本轮只动针的形状（NEEDLES 四型）与打印计数，禁串集合、扫描集、LEDGER/EXEMPT 账目一字未改；
+      判据文件仍 19 例，用例数零增长。
+    - B 型正则带 (?![\s\*'] 负向预查，避开 x === 'a' === y 之类的同行双字面量重复计数；
+      这条预查本身由 M-B1 的计数 B=1（而非 2）见证。
+    - D 型只认 .includes(/.indexOf( 的首参字面量；some/filter 回调里的比较仍归 A/B 型管。

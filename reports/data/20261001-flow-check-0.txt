@@ -1,0 +1,314 @@
+   Compiling mox-alliance-common-proto v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\proto\mox-alliance-common-proto)
+   Compiling mox-alliance-config-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-config-core)
+   Compiling mox-alliance-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-core)
+   Compiling mox-alliance-executor-proto v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\proto\mox-alliance-executor-proto)
+   Compiling mox-alliance-scheduler-proto v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\proto\mox-alliance-scheduler-proto)
+   Compiling mox-alliance-scheduler-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-scheduler-core)
+   Compiling mox-alliance-executor-core v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\core\mox-alliance-executor-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 15.21s
+     Running unittests src\lib.rs (target\debug\deps\mox_alliance_common_proto-76f6ffa315c997d0.exe)
+
+running 9 tests
+test naming::tests::all_variants_are_covered ... ok
+test naming::tests::display_names_are_unique ... ok
+test naming::tests::fusion_display_roundtrip ... ok
+test naming::tests::mode_display_roundtrip ... ok
+test naming::tests::unknown_input_returns_none ... ok
+test naming::tests::historical_aliases_are_supported ... ok
+test types::transition_tests::happy_path_and_cancels_are_legal ... ok
+test types::transition_tests::terminal_states_are_final ... ok
+test naming::tests::input_is_trimmed_and_case_insensitive ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\mox_alliance_core-44bcc4e19cca4106.exe)
+
+running 115 tests
+test dag::tests::test_find_ready_nodes ... ok
+test dag::tests::test_topological_sort_linear ... ok
+test dag::tests::test_topological_sort_rejects_ambiguous_dependencies ... ok
+test dag::tests::test_has_path ... ok
+test dag::tests::test_critical_path ... ok
+test fusion::basic_tests::test_concatenate_fusion ... ok
+test fusion::basic_tests::test_best_of_fusion ... ok
+test fusion::basic_tests::test_rrf_fusion ... ok
+test fusion::basic_tests::test_merge_json_values ... ok
+test dag::tests::test_topological_sort_cycle ... ok
+test dag::tests::test_topological_sort_parallel ... ok
+test fusion::engine::tests::test_all_strategies_scalar_fusion ... ok
+test fusion::basic_tests::test_weighted_fusion ... ok
+test dag::tests::test_topological_order_is_repeatable ... ok
+test fusion::engine::tests::test_all_strategies_classification_fusion ... ok
+test fusion::basic_tests::test_voting_fusion ... ok
+test fusion::engine::tests::test_engine_best_of_classification ... ok
+test fusion::engine::tests::test_engine_concatenation_scalar ... ok
+test fusion::engine::tests::test_engine_best_of_scalar ... ok
+test fusion::engine::tests::test_engine_confidence_weighted_classification ... ok
+test fusion::engine::tests::test_engine_confidence_weighted_scalar ... ok
+test fusion::engine::tests::test_engine_config_default ... ok
+test fusion::engine::tests::test_engine_debate_classification ... ok
+test fusion::engine::tests::test_engine_debate_scalar ... ok
+test fusion::engine::tests::test_engine_empty_input ... ok
+test fusion::engine::tests::test_engine_iterative_scalar ... ok
+test fusion::engine::tests::test_engine_map_reduce_scalar ... ok
+test fusion::engine::tests::test_engine_map_reduce_with_config ... ok
+test fusion::engine::tests::test_engine_stacking_classification ... ok
+test fusion::engine::tests::test_engine_stacking_scalar ... ok
+test fusion::engine::tests::test_engine_strategy_accessor ... ok
+test fusion::engine::tests::test_engine_voting_classification ... ok
+test fusion::engine::tests::test_engine_weighted_scalar ... ok
+test fusion::engine::tests::test_engine_with_config ... ok
+test fusion::engine::tests::test_fusion_config_builder ... ok
+test fusion::error::tests::test_error_messages ... ok
+test fusion::strategies::confidence_weighting::tests::test_all_filtered_out ... ok
+test fusion::strategies::confidence_weighting::tests::test_basic_confidence_weighting ... ok
+test fusion::strategies::confidence_weighting::tests::test_empty_input ... ok
+test fusion::strategies::confidence_weighting::tests::test_equal_confidence ... ok
+test fusion::strategies::confidence_weighting::tests::test_invalid_confidence_above_one ... ok
+test fusion::strategies::confidence_weighting::tests::test_invalid_confidence_negative ... ok
+test fusion::strategies::confidence_weighting::tests::test_min_confidence_filter ... ok
+test fusion::strategies::confidence_weighting::tests::test_name ... ok
+test fusion::strategies::confidence_weighting::tests::test_nan_value ... ok
+test fusion::strategies::confidence_weighting::tests::test_single_value ... ok
+test fusion::strategies::confidence_weighting::tests::test_softmax_normalization ... ok
+test fusion::strategies::confidence_weighting::tests::test_with_stats ... ok
+test fusion::strategies::confidence_weighting::tests::test_zero_confidence_total ... ok
+test fusion::strategies::debate::tests::test_basic_debate ... ok
+test fusion::strategies::debate::tests::test_debate_rounds_recorded ... ok
+test fusion::strategies::debate::tests::test_default_values ... ok
+test fusion::strategies::debate::tests::test_debate_convergence ... ok
+test fusion::strategies::debate::tests::test_empty_input ... ok
+test fusion::strategies::debate::tests::test_high_weight_expert_influence ... ok
+test fusion::strategies::debate::tests::test_learning_rate_effect ... ok
+test fusion::strategies::debate::tests::test_majority_wins ... ok
+test fusion::strategies::debate::tests::test_name ... ok
+test fusion::strategies::debate::tests::test_negative_confidence ... ok
+test fusion::strategies::debate::tests::test_single_position ... ok
+test fusion::strategies::debate::tests::test_zero_max_rounds ... ok
+test fusion::strategies::iterative_refinement::tests::test_accessors ... ok
+test fusion::strategies::iterative_refinement::tests::test_all_same_value ... ok
+test fusion::strategies::iterative_refinement::tests::test_basic_iterative_refinement ... ok
+test fusion::strategies::iterative_refinement::tests::test_convergence ... ok
+test fusion::strategies::iterative_refinement::tests::test_empty_input ... ok
+test fusion::strategies::iterative_refinement::tests::test_invalid_weight ... ok
+test fusion::strategies::iterative_refinement::tests::test_iteration_count ... ok
+test fusion::strategies::iterative_refinement::tests::test_min_weight ... ok
+test fusion::strategies::iterative_refinement::tests::test_name ... ok
+test fusion::strategies::iterative_refinement::tests::test_nan_value ... ok
+test fusion::strategies::iterative_refinement::tests::test_negative_tolerance ... ok
+test fusion::strategies::iterative_refinement::tests::test_outlier_downweighted ... ok
+test fusion::strategies::iterative_refinement::tests::test_scale_parameter_effect ... ok
+test fusion::strategies::iterative_refinement::tests::test_single_value ... ok
+test fusion::strategies::iterative_refinement::tests::test_zero_max_iterations ... ok
+test fusion::strategies::map_reduce::tests::test_accessors ... ok
+test fusion::strategies::map_reduce::tests::test_basic_map_reduce ... ok
+test fusion::strategies::map_reduce::tests::test_empty_input ... ok
+test fusion::strategies::map_reduce::tests::test_invalid_confidence ... ok
+test fusion::strategies::map_reduce::tests::test_min_confidence_filtering ... ok
+test fusion::strategies::map_reduce::tests::test_more_partitions_than_items ... ok
+test fusion::strategies::map_reduce::tests::test_name ... ok
+test fusion::strategies::map_reduce::tests::test_partition_strategy_default ... ok
+test fusion::strategies::map_reduce::tests::test_random_partition_reproducible ... ok
+test fusion::strategies::map_reduce::tests::test_single_partition ... ok
+test fusion::strategies::map_reduce::tests::test_weight_balanced_partition ... ok
+test fusion::strategies::map_reduce::tests::test_with_partition_results ... ok
+test fusion::strategies::map_reduce::tests::test_zero_partitions ... ok
+test fusion::strategies::stacking::tests::test_dimension_mismatch ... ok
+test fusion::strategies::stacking::tests::test_empty_input ... ok
+test fusion::strategies::stacking::tests::test_linear_weighted_stacking ... ok
+test fusion::strategies::stacking::tests::test_mean_stacking ... ok
+test fusion::strategies::stacking::tests::test_meta_learner_type_default ... ok
+test fusion::strategies::stacking::tests::test_name ... ok
+test fusion::strategies::stacking::tests::test_nan_in_training_data ... ok
+test fusion::strategies::stacking::tests::test_predict_dimension_mismatch ... ok
+test fusion::strategies::stacking::tests::test_scalar_fusion_strategy ... ok
+test fusion::strategies::stacking::tests::test_single_model ... ok
+test fusion::strategies::stacking::tests::test_weighted_median_stacking ... ok
+test fusion::strategies::weighted_voting::tests::test_all_different ... ok
+test fusion::strategies::weighted_voting::tests::test_basic_weighted_voting ... ok
+test fusion::strategies::weighted_voting::tests::test_empty_input ... ok
+test fusion::strategies::weighted_voting::tests::test_fuse_ranked_ordering ... ok
+test fusion::strategies::weighted_voting::tests::test_name ... ok
+test fusion::strategies::weighted_voting::tests::test_nan_weight ... ok
+test fusion::strategies::weighted_voting::tests::test_negative_weight ... ok
+test fusion::strategies::weighted_voting::tests::test_normalized_weights ... ok
+test fusion::strategies::weighted_voting::tests::test_single_vote ... ok
+test fusion::strategies::weighted_voting::tests::test_tie_breaking ... ok
+test fusion::strategies::weighted_voting::tests::test_zero_total_weight_normalized ... ok
+test utils::tests::test_now_ms ... ok
+test utils::tests::test_safe_parse_f64 ... ok
+test utils::tests::test_short_id ... ok
+test utils::tests::test_truncate ... ok
+
+test result: ok. 115 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\debug\deps\mox_alliance_executor_core-96dea2d1aa0ea50c.exe)
+
+running 43 tests
+test condition::tests::test_greater_than ... ok
+test condition::tests::test_logical_and ... ok
+test condition::tests::test_simple_equality ... ok
+test dag_engine::tests::empty_routes_yield_none ... ok
+test dag_engine::tests::cancel_wins_over_late_node_completion_scenario4 ... ok
+test dag_engine::tests::cancel_command_persists_terminal_state_via_sink ... ok
+test dag_engine::tests::resolve_dag_max_parallel_prefers_env_and_supports_escape_hatch ... ok
+test dag_engine::tests::fusion_output_persist_and_read_back_via_sink ... ok
+test dag_engine::tests::invalid_restore_plan_does_not_enter_control_queue ... ok
+test dag_engine::tests::start_command_persists_running_task_via_sink ... ok
+test dag_engine::tests::unknown_operator_is_skipped_without_affecting_others ... ok
+test dag_engine::tests::valid_route_is_loaded_and_evaluable ... ok
+test dag_engine::tests::numeric_operator_maps_correctly ... ok
+test dag_engine::tests::without_sink_execution_stays_pure_in_memory ... ok
+test dag_engine::tests::rejects_plan_from_another_task_before_queueing ... ok
+test expert_executor::tests::config_default_values ... ok
+test expert_executor::tests::build_consult_query_includes_expert_id ... ok
+test expert_executor::tests::config_retry_delay_exponential_backoff ... ok
+test expert_executor::tests::executor_name_is_correct ... ok
+test expert_executor::tests::report_to_output_structure ... ok
+test expert_executor::tests::execute_node_vetoed_report ... ok
+test expert_executor::tests::is_healthy_default_true ... ok
+test expert_executor::tests::test_config_from_env_defaults ... ok
+test expert_executor::tests::test_execute_node_skips_retries_on_circuit_break ... ok
+test fusion::participating_nodes_tests::legacy_payload_without_participating_nodes_deserializes ... ok
+test fusion::participating_nodes_tests::participating_nodes_counts_fused_items ... ok
+test fusion::tests::best_of_selects_highest_score ... ok
+test fusion::tests::empty_input_zero_confidence ... ok
+test fusion::tests::from_execution_ignores_failed ... ok
+test fusion::tests::voting_selects_majority_summary ... ok
+test fusion::tests::weighted_fusion_uses_core_engine ... ok
+test expert_executor::tests::test_circuit_break_error_detection ... ok
+test fusion::participating_nodes_tests::participating_nodes_is_zero_without_items ... ok
+test expert_executor::tests::test_config_from_env_custom_values ... ok
+test fusion::tests::all_strategies_produce_output ... ok
+test expert_executor::tests::execute_node_success ... ok
+test expert_executor::tests::test_execute_node_retries_on_normal_failure ... ok
+test expert_executor::tests::execute_node_fails_after_max_retries ... ok
+test expert_executor::tests::execute_node_retries_on_failure ... ok
+test expert_executor::tests::executor_stats_tracking ... ok
+test expert_executor::tests::test_task_level_retry_budget_caps_executor_config ... ok
+test expert_executor::tests::execute_node_timeout ... ok
+test dag_engine::tests::semaphore_caps_in_flight_nodes_at_configured_max ... ok
+
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+
+     Running unittests src\lib.rs (target\debug\deps\mox_alliance_scheduler_core-15ba503877ed4807.exe)
+
+running 115 tests
+test approval_gate::tests::double_decide_is_idempotent ... ok
+test approval_gate::tests::reject_fails_node ... ok
+test approval_gate::tests::approve_releases_node ... ok
+test approval_gate::tests::empty_pending_list_and_unknown_node_releases ... ok
+test approval_gate::tests::expired_request_holds_node ... ok
+test executor_bridge::tests::test_mock_bridge_pause_resume ... ok
+test executor_bridge::tests::test_mock_bridge_with_failure ... ok
+test executor_bridge::tests::test_mock_bridge_cancel_task ... ok
+test executor_bridge::tests::test_mock_bridge_get_status ... ok
+test approval_gate::tests::dispatch_decision_maps_gate_state ... ok
+test executor_bridge::tests::test_mock_bridge_health_check ... ok
+test approval_gate::tests::submit_then_lists_pending ... ok
+test leadership::tests::decide_expires_at_boundary_is_not_held ... ok
+test executor_bridge::tests::test_mock_bridge_submit_plan ... ok
+test executor_bridge::tests::test_noop_bridge ... ok
+test config_sync::tests::module_to_expert_mapping ... ok
+test leadership::tests::epoch_is_monotonic_across_repeated_takeovers ... ok
+test config_sync::tests::full_sync_works ... ok
+test config_sync::tests::disabled_modules_skipped_in_sync ... ok
+test leadership::tests::release_by_non_holder_is_noop ... ok
+test leadership::tests::resign_lets_standby_take_over_without_waiting ... ok
+test leadership::tests::scopes_are_independent ... ok
+test leadership::tests::standby_takes_over_after_lease_expiry ... ok
+test leadership::tests::store_errors_surface_as_internal ... ok
+test leadership::tests::zombie_leader_cannot_resume_old_epoch ... ok
+test leadership::tests::first_candidate_wins_and_others_stay_standby ... ok
+test leadership::tests::leader_renews_without_bumping_epoch ... ok
+test llm_router::tests::test_router_cost_priority ... ok
+test llm_router::tests::test_no_available_provider ... ok
+test matcher::tests::test_get_expert ... ok
+test llm_router::tests::test_provider_recovery ... ok
+test llm_router::tests::test_router_fallback_when_primary_unavailable ... ok
+test llm_router::tests::test_router_selection_priority ... ok
+test matcher::tests::test_match_experts ... ok
+test matching::tests::description_overlap_english_stem ... ok
+test matching::tests::description_overlap_chinese ... ok
+test matching::tests::generic_query_no_domain_inferred ... ok
+test metrics::tests::test_new_metrics_all_zero ... ok
+test matching::tests::tokenize_mixed ... ok
+test matching::tests::infer_code_domain_mixed ... ok
+test matching::tests::tokenize_cjk_bigram ... ok
+test matching::tests::infer_finance_domain_english ... ok
+test matching::tests::tokenize_english_word ... ok
+test metrics::tests::test_record_dag_execution ... ok
+test matching::tests::infer_finance_domain_english_plural ... ok
+test metrics::tests::test_record_fusion ... ok
+test matching::tests::infer_finance_domain_chinese ... ok
+test metrics::tests::test_record_llm_call ... ok
+test metrics::tests::test_record_match_success ... ok
+test metrics::tests::test_record_match_with_errors ... ok
+test metrics::tests::test_snapshot_is_independent ... ok
+test matching::tests::infer_vision_domain_from_document_layout_query ... ok
+test metrics::tests::test_snapshot_serializes_to_json ... ok
+test modular_matcher::tests::default_weights_sum_to_one ... ok
+test modular_matcher::tests::basic_matching_works ... ok
+test metrics::tests::test_concurrent_recording ... ok
+test matching::tests::infer_medical_domain_chinese_symptom ... ok
+test modular_matcher::tests::custom_weights_change_ranking ... ok
+test modular_matcher::tests::inactive_experts_filtered ... ok
+test modular_matcher::tests::get_expert_works ... ok
+test planner::tests::test_debate_plan ... ok
+test modular_matcher::tests::min_priority_filter_applied ... ok
+test planner::tests::test_dynamic_close_scores_uses_voting ... ok
+test planner::tests::test_dynamic_cross_domain_uses_hierarchical ... ok
+test planner::tests::test_dynamic_decision_reason_is_auditable ... ok
+test planner::tests::test_dynamic_default_uses_debate ... ok
+test planner::tests::test_dynamic_iterative_by_keyword ... ok
+test planner::tests::test_dynamic_plan_has_decision_and_fallback_branches ... ok
+test planner::tests::test_dynamic_review_keyword_uses_sequential ... ok
+test planner::tests::test_dynamic_single_expert_uses_sequential ... ok
+test planner::tests::test_expert_weights_carry_match_scores ... ok
+test planner::tests::test_empty_matches_falls_back_to_generic_expert ... ok
+test planner::tests::test_dynamic_skewed_scores_uses_hierarchical ... ok
+test planner::tests::test_module_id_mapping_filled ... ok
+test planner::tests::test_node_description_embeds_task_description ... ok
+test planner::tests::test_parallel_plan ... ok
+test planner::tests::test_non_dynamic_modes_produce_no_routes ... ok
+test planner::tests::test_sequential_plan ... ok
+test registry::tests::in_memory_get_expert_list ... ok
+test registry::tests::in_memory_register_and_get ... ok
+test registry::tests::in_memory_sync_replaces_all ... ok
+test registry::tests::in_memory_unregister ... ok
+test registry::tests::incremental_sync_stats ... ok
+test registry::tests::in_memory_update_health ... ok
+test scheduler::tests::reclaim_abstains_when_executor_health_fails ... ok
+test scheduler::tests::reclaim_converges_after_takeover_without_double_write ... ok
+test scheduler::tests::reclaim_waits_for_recent_orphans_within_stall_window ... ok
+test scheduler::tests::reclaim_fences_orphans_but_not_long_running_tasks ... ok
+test matching::tests::infer_math_domain_algorithm_task ... ok
+test scheduler::tests::test_cancel_task_with_mock_bridge ... ok
+test scheduler::tests::test_backward_compatible_new ... ok
+test scheduler::tests::test_complete_task_with_mock_bridge ... ok
+test scheduler::tests::test_auto_select_respects_explicit_strategy ... ok
+test scheduler::tests::test_auto_select_single_expert_best_of ... ok
+test scheduler::tests::test_auto_select_strategy_multi_expert_confidence_weighted ... ok
+test storage::tests::batched_flush_noop_when_clean ... ok
+test scheduler::tests::test_get_task_syncs_executor_status ... ok
+test scheduler::tests::transient_executor_error_never_reclaims ... ok
+test scheduler::tests::test_weak_query_does_not_team_random_five ... ok
+test scheduler::tests::test_executor_bridge_failure ... ok
+test scheduler::tests::test_pause_resume_task_with_mock_bridge ... ok
+test scheduler::tests::test_submit_task_with_mock_bridge ... ok
+test storage::tests::in_memory_save_get_remove ... ok
+test synchronizer::tests::incremental_sync_adds_new ... ok
+test synchronizer::tests::full_sync_replaces_existing ... ok
+test synchronizer::tests::synchronizer_manual_full_sync ... ok
+test synchronizer::tests::sync_config_default_values ... ok
+test synchronizer::tests::full_sync_basic ... ok
+test synchronizer::tests::health_update_updates_existing ... ok
+test storage::tests::batched_flush_persists_to_disk ... ok
+test storage::tests::batched_save_get_without_flush ... ok
+test storage::tests::batched_maybe_flush_respects_interval ... ok
+test storage::tests::batched_remove_marks_dirty ... ok
+test storage::tests::file_repo_persists_across_instances ... ok
+test synchronizer::tests::synchronizer_start_stop ... ok
+
+test result: ok. 115 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+

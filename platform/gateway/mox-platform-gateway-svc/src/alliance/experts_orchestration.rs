@@ -574,6 +574,7 @@ struct ExecutePlanBody {
 /// 1. POST /api/experts/orchestrate — 一键编排执行
 async fn orchestrate(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<OrchestrateBody>,
 ) -> ApiResponse<Value> {
     let start = std::time::Instant::now();
@@ -586,7 +587,8 @@ async fn orchestrate(
 
     // 自动匹配专家
     let matched_experts: Vec<ExpertDescriptor> = {
-        let registry = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let registry = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         let mut scored: Vec<(ExpertDescriptor, f64)> = registry.values()
             .filter(|e| e.enabled && e.availability.status != "offline")
             .map(|e| (e.clone(), compute_match_score(&body.task, e)))
@@ -669,6 +671,7 @@ async fn orchestrate(
 /// 2. POST /api/experts/plan/generate — 生成协作计划（不执行）
 async fn generate_plan_handler(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<GeneratePlanBody>,
 ) -> ApiResponse<Value> {
     if body.task.trim().is_empty() {
@@ -679,7 +682,8 @@ async fn generate_plan_handler(
 
     // 获取专家列表
     let experts: Vec<ExpertDescriptor> = {
-        let registry = state.registry.lock();
+        let all_reg = state.registry.lock();
+        let registry = all_reg.get(tenant.as_str()).unwrap_or(empty_registry());
         if let Some(ref ids) = body.expert_ids {
             ids.iter().filter_map(|id| registry.get(id).cloned()).collect()
         } else {
@@ -732,6 +736,7 @@ async fn generate_plan_handler(
 /// 3. POST /api/experts/plan/execute — 执行已有计划
 async fn execute_plan_handler(
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
     Json(body): Json<ExecutePlanBody>,
 ) -> ApiResponse<Value> {
     let mut plans = state.plans.lock();
@@ -932,6 +937,7 @@ async fn orchestration_plugins() -> ApiResponse<Value> {
 async fn orchestration_history(
     Query(params): Query<HashMap<String, String>>,
     State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
     let page: usize = params.get("page").and_then(|v| v.parse().ok()).unwrap_or(1);
     let page_size: usize = params.get("page_size").and_then(|v| v.parse().ok()).unwrap_or(20);

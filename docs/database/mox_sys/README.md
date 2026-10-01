@@ -75,3 +75,20 @@ flowchart TB
 ## 开源发布定位
 
 本模板随仓库 MIT License 发布。发布时必须同时提供 DDL、迁移、验证 SQL、模块契约、示例数据和变更日志；不得将真实租户数据、密钥、连接串或内部生产配置提交到模板仓库。提交新模块必须通过租户泄露、幂等、迁移回滚和多数据库兼容检查。
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 跨模块身份、组织、资源、事件与配置关联 |
+| 处理与边界 | 提供平台数据契约；引用版本，不复制领域私表；MySQL模板通过adapter映射现状 |
+| 输出 | 模块主源与跨库引用规则 |
+| 维护角色 | 平台数据契约owner（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/database/LOWCODE-CONFIGURATION-STORAGE.md#ownership) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。

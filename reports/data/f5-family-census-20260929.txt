@@ -1,0 +1,24 @@
+F5 族普查（驱动器 D:/tmp/f5-family.mjs，未落库＝没牙，只作本轮判决依据）
+判据：把每处自写时间函数从磁盘截出、在 new Function 里注入它引用的出口真身后逐形状比对（15 个输入形状）。
+第 1 轮仪器假账：MessageBubble 那处全 15 形状输出空串＝仪器没喂 formatClockMinute，被它自己的 try/catch 吞掉；补 SHIM 后判决才有意义。
+
+== 委托前（display.js relativeTime 仍在）
+定义 12 处 / 文件 12 个 / 扫描 349 个文件
+按归一化函数体分组：10 组
+== 收口后（5 处已并，余 8 处登记）
+    components/MessageBubble.vue:936-948  formatTime ||     formatClockMinute: 异 7 处 ||     抽取首行「function formatTime(ts) {」 行数=13 自吞异常=yes(全异可能是仪器假账)
+    modules/expert-alliance/components/ExpertBookingPanel.vue:107-111  formatTime ||     formatDateTimeLocale: 异 6 处 ||     抽取首行「function formatTime(iso) {」 行数=5 自吞异常=no
+    modules/expert-alliance/model/display.js:8-13  formatTime ||     formatDateTimeLocale: 异 6 处 ||     抽取首行「export function formatTime(iso) {」 行数=6 自吞异常=no
+    views/admin/panels/AdminLlm.vue:643-657  formatTime ||     relativeTimeText: 异 11 处 ||     抽取首行「function formatTime(ts) {」 行数=15 自吞异常=no
+    views/admin/panels/AdminSso.vue:194-197  formatTime ||     formatDateTime: 异 11 处 ||     抽取首行「function formatTime(t) {」 行数=4 自吞异常=no
+    views/ai/ChatView.vue:170-179  formatTime ||     relativeTimeText: 异 11 处 ||     抽取首行「function formatTime(ts) {」 行数=10 自吞异常=no
+    views/expert/panels/ExpertEnterprisePanel.vue:851-855  formatTime ||     formatDateTime: 异 11 处 ||     抽取首行「function formatTime(ts) {」 行数=5 自吞异常=no
+
+== 全量 vitest（重跑，上一条日志的 grep 过滤器静默 0 行）
+rc=0
+[2m Test Files [22m [1m[32m76 passed[39m[22m[90m (76)[39m
+[2m      Tests [22m [1m[32m1016 passed[39m[22m[90m (1016)[39m
+== vite build rc=0（35.00s，别名 import 的消费者账只由 rollup 验）
+== 闸门：locale --check rc=0（L1 登记 2 处 / L4 扫描集 270 / selftest PASS）、模块化 ERROR=0、SFC 死引用 PASS
+
+== 补记（仪器自身的账）：上面表格由 awk 按空行分段，最后一组（views/workflow/BrowserView.vue:583-597，自吞异常=yes，YYYY/MM/DD HH:mm:ss 档，§5.34 I2 已登记）被丢掉——共 8 处登记，不是 7 处。

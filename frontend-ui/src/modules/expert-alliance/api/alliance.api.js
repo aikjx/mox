@@ -18,7 +18,7 @@ import {
 import { collabBody, collabMode } from '@/modules/expert-alliance/contract'
 import { dispatchResetBody, dispatchRunBody } from '@/modules/expert-alliance/contract'
 import { orchHistoryQuery, orchestrateBody, planExecuteBody, planGenerateBody } from '@/modules/expert-alliance/contract'
-import { collaboratorQuery, optimalTeamBody } from '@/modules/expert-alliance/contract'
+import { collaboratorQuery, optimalTeamBody, ragExpandBody, ragExpandRows } from '@/modules/expert-alliance/contract'
 import {
   appendMessageBody, createSessionBody, semanticSearchBody, sessionListQuery, similarSearchBody
 } from '@/modules/expert-alliance/contract'
@@ -324,6 +324,38 @@ export function createAllianceApi(httpClient = defaultHttp) {
       const { payload } = await call(httpClient, 'graphRebuild')
       return normGraphRebuild(payload)
     },
+
+    // ── 图谱节点级 CRUD（N4，管理写面；返回 affected + stats，供画布即时刷新）──
+    /** 新增节点：{ id, label, node_type, properties? }；id 重复 409、node_type 非法 400 */
+    async createGraphNode(body) {
+      const { payload } = await call(httpClient, 'graphNodeCreate', { body })
+      return payload || {}
+    },
+    /** 更新节点：{ label?, node_type?, properties? } 合并式；id 不存在 404 */
+    async updateGraphNode(id, body) {
+      const { payload } = await call(httpClient, 'graphNodeUpdate', { params: { id }, body })
+      return payload || {}
+    },
+    /** 删除节点：联动删除其所有关联边，响应带 removed_edges 计数 */
+    async deleteGraphNode(id) {
+      const { payload } = await call(httpClient, 'graphNodeDelete', { params: { id } })
+      return payload || {}
+    },
+    /** 新增边：{ source, target, edge_type, weight?, properties? }；端点须存在、重复边 409 */
+    async createGraphEdge(body) {
+      const { payload } = await call(httpClient, 'graphEdgeCreate', { body })
+      return payload || {}
+    },
+    /** 更新边：{ edge_type?, weight?, properties? } 合并式；seq 越界 404 */
+    async updateGraphEdge(seq, body) {
+      const { payload } = await call(httpClient, 'graphEdgeUpdate', { params: { seq }, body })
+      return payload || {}
+    },
+    /** 删除边：按 seq；删除后剩余边下标前移重排 */
+    async deleteGraphEdge(seq) {
+      const { payload } = await call(httpClient, 'graphEdgeDelete', { params: { seq } })
+      return payload || {}
+    },
     /**
      * 最优团队组建。body 一律由 contract/graph.js 生成：字段写错不会报错，
      * 只会被 serde 静默丢弃（constraints 就是后端收了却从不读的那一类）。
@@ -331,6 +363,21 @@ export function createAllianceApi(httpClient = defaultHttp) {
     async optimalTeam(input) {
       const { payload } = await call(httpClient, 'optimalTeam', { body: optimalTeamBody(input) })
       return normOptimalTeam(payload)
+    },
+
+    /**
+     * 图 RAG 多跳邻域扩展（T2）。body 由 contract/graph.js 的 ragExpandBody 生成：
+     * seeds 必发，max_depth 合法范围 1..=4（缺省 2），node_types 作用在结果侧。
+     * 返回归一化行 + stats + rerank 标注（当前 graph_only，向量融合待 #27）。
+     */
+    async expandGraphNeighborhood(input) {
+      const { payload } = await call(httpClient, 'graphRagExpand', { body: ragExpandBody(input) })
+      return {
+        query: payload?.query || {},
+        results: ragExpandRows(payload),
+        stats: payload?.stats || {},
+        rerank: payload?.rerank || ''
+      }
     },
 
     // ── 广场交互：预约 / 收藏 / 即时咨询 / 咨询室 / 团队 ─────────

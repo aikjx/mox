@@ -1,0 +1,23 @@
+== 全 toLocale* 家族（排除 *.test.js）实测 20 处 ==
+-- UNPINNED（输出随浏览器区域漂移）6 处 --
+   c/modules/admin-lowcode/engine/widgetRegistry.js:12 .toLocaleString()   接收者=...
+   c/views/admin/panels/AdminHitl.vue:168 .toLocaleString()   接收者=...
+   c/views/admin/panels/AdminLlm.vue:258 .toLocaleString()   接收者=...<div class="stat-value">{{ stats
+   c/views/admin/panels/AdminLlm.vue:278 .toLocaleString()   接收者=...<span class="usage-tokens">{{ data
+   c/views/expert/ExpertPlazaView.vue:698 .toLocaleString()   接收者=...value = s
+   c/views/project/TaskView.vue:425 .toLocaleString()   接收者=...
+-- PINNED 14 处 --
+   c/composables/workspace/useAlliance.js:22 .toLocaleTimeString(PINNED)
+   c/modules/expert-alliance/model/rank.js:66 .toLocaleDateString(PINNED)
+   c/stores/alliance.store.js:224 .toLocaleTimeString(PINNED)
+   c/stores/alliance.store.js:254 .toLocaleTimeString(PINNED)
+   c/stores/alliance.store.js:265 .toLocaleTimeString(PINNED)
+   c/utils/time.js:68 .toLocaleString(PINNED)
+   c/views/admin/panels/AdminMonitor.vue:1138 .toLocaleTimeString(PINNED)
+   c/views/expert/panels/ExpertEnterprisePanel.vue:680 .toLocaleString(PINNED)
+   c/views/project/Workbench.vue:69 .toLocaleDateString(PINNED)
+   c/views/project/Workbench.vue:83 .toLocaleTimeString(PINNED)
+   c/views/project/Workbench.vue:97 .toLocaleDateString(PINNED)
+   c/views/project/Workbench.vue:157 .toLocaleTimeString(PINNED)
+   c/views/workspace/ExpertWorkspaceView.vue:564 .toLocaleTimeString(PINNED)
+   c/views/workspace/ExpertWorkspaceView.vue:894 .toLocaleTimeString(PINNED)

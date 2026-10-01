@@ -1,0 +1,3129 @@
+{
+  "generated_at": "2026-10-01 23:56:08+0800",
+  "revision": 4,
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-01 23:41:33+0800",
+      "defect": "调用者语料含 .test.js，把 forbidden-revival.test.js 的 planted 合成样例读成活调用者（/api/ai/expert-chat 唯一命中即此类），rev1 因此报 18 条有调用者",
+      "fix": "语料分档：源文件与测试文件分开计数，「有活调用者」只看源文件档"
+    },
+    {
+      "rev": 3,
+      "at": "（并入 rev4）",
+      "note": "加宽档与严格档同报，两档之差就是覆盖面差额"
+    },
+    {
+      "rev": "3.5",
+      "at": "2026-10-01 23:51:56+0800",
+      "note": "这一次运行**没有产出判决**（rc=1）：驱动从 %TEMP% 起跑，语料路径被改成仓根相对后 open() 报 FileNotFoundError，死在装载阶段而非判定阶段。23:45 那份 rev1 工件因此没有被覆盖——记账要区分「仪器判 0」与「仪器没跑起来」"
+    },
+    {
+      "rev": "3.6",
+      "at": "2026-10-01 23:53:26+0800",
+      "note": "又没产出判决（rc=1）：我自己给源档分母硬钉了 300 下限，而 300 是**两档合计**的手感值，源档实测 271／测试档 82 —— 断言按手感红，不是语料塌。修法是把下限换成「两档都非空 ＋ 两个已知成员各在其档」，分母只印实测不猜。"
+    },
+    {
+      "rev": 4,
+      "at": "2026-10-01 23:56:08+0800",
+      "note": "接收者不限的 any 档会在 map.get(之类非 HTTP 位点上开火（干测第 8 例抓到），故精度档=decl|httpish|bare，any 只作召回与盲区点名，逐条证据行人工复核"
+    }
+  ],
+  "authority_for_mounted_side": "reports/data/api-surface-census-2026-10-01.json",
+  "mounted_not_in_table_len": 138,
+  "corpus_ext": [
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".vue"
+  ],
+  "corpus_src_files": 271,
+  "corpus_test_files": 82,
+  "判据正则": {
+    "decl": "url\\s*:\\s*['`\"]",
+    "httpish": "\\b((?:[\\w$]*(?:[Hh]ttp|[Aa]xios)|request|service|api|instance))\\.(?:get|post|put|patch|delete)\\(\\s*['`\"]",
+    "any": "\\b([\\w$.]*)\\.(?:get|post|put|patch|delete)\\(\\s*['`\"]",
+    "bare": "(?:^|[^\\w.]])((?:get|post|put|patch|del|fetch))\\(\\s*['`\"]"
+  },
+  "baseurl_relative_rule": "http.js baseURL=/api、actuator 实例 baseURL=/actuator，源字面量不带该前缀；两种形态都探",
+  "live_caller_precision_count": 17,
+  "live_caller_recall_count": 9,
+  "recall_only_paths": [],
+  "zero_live_caller_precision": 121,
+  "test_only_paths": [
+    "/api/ai/expert-chat"
+  ],
+  "by_domain_total_and_live": {
+    "actuator/api": [
+      2,
+      2
+    ],
+    "api/admin": [
+      2,
+      0
+    ],
+    "api/ai": [
+      2,
+      1
+    ],
+    "api/alliance": [
+      2,
+      2
+    ],
+    "api/audit": [
+      1,
+      0
+    ],
+    "api/auth": [
+      8,
+      8
+    ],
+    "api/enterprise": [
+      109,
+      0
+    ],
+    "api/scheduler": [
+      1,
+      0
+    ],
+    "api/system": [
+      8,
+      1
+    ],
+    "api/tenant": [
+      3,
+      3
+    ]
+  },
+  "domain_word_frequency_second_channel": {
+    "actuator/api": 434,
+    "api/admin": 95,
+    "api/ai": 158,
+    "api/alliance": 196,
+    "api/audit": 3,
+    "api/auth": 22,
+    "api/enterprise": 11,
+    "api/scheduler": 0,
+    "api/system": 92,
+    "api/tenant": 18
+  },
+  "rows": [
+    {
+      "path": "/actuator/api/{P}/disable",
+      "src_prefix": "/actuator/api",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 3,
+        "any": 3,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/actuator.api.js",
+        "frontend-ui/src/composables/useSSE.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/actuator.api.js:39 export const getApiDetail = (id) => actuatorHttp.get(`/api/${encodeURIComponent(id)}`)",
+        "frontend-ui/src/api/actuator.api.js:40 export const enableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/enable`)",
+        "frontend-ui/src/api/actuator.api.js:41 export const disableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/disable`)"
+      ],
+      "src_matched_literal": [
+        "/api"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 4,
+        "any": 4,
+        "bare": 0
+      },
+      "test_files": [
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js"
+      ],
+      "test_evidence": [
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js:128 \"http.get('/api/expert-graph/overview')\",",
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js:129 \"http.post('/api/ai/expert-chat', body)\""
+      ]
+    },
+    {
+      "path": "/actuator/api/{P}/enable",
+      "src_prefix": "/actuator/api",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 3,
+        "any": 3,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/actuator.api.js",
+        "frontend-ui/src/composables/useSSE.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/actuator.api.js:39 export const getApiDetail = (id) => actuatorHttp.get(`/api/${encodeURIComponent(id)}`)",
+        "frontend-ui/src/api/actuator.api.js:40 export const enableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/enable`)",
+        "frontend-ui/src/api/actuator.api.js:41 export const disableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/disable`)"
+      ],
+      "src_matched_literal": [
+        "/api"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 4,
+        "any": 4,
+        "bare": 0
+      },
+      "test_files": [
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js"
+      ],
+      "test_evidence": [
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js:128 \"http.get('/api/expert-graph/overview')\",",
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js:129 \"http.post('/api/ai/expert-chat', body)\""
+      ]
+    },
+    {
+      "path": "/api/admin/users/{P}/sessions",
+      "src_prefix": "/api/admin/users",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/admin/users/{P}/sessions/{P}",
+      "src_prefix": "/api/admin/users",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/ai/engine/flow-graph",
+      "src_prefix": "/api/ai/engine/flow-graph",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/ai.api.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/ai.api.js:66 export const getEngineFlowGraph = () => http.get('/ai/engine/flow-graph')"
+      ],
+      "src_matched_literal": [
+        "/ai/engine/flow-graph"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/ai/expert-chat",
+      "src_prefix": "/api/ai/expert-chat",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "test_files": [
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js"
+      ],
+      "test_evidence": [
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js:129 \"http.post('/api/ai/expert-chat', body)\""
+      ]
+    },
+    {
+      "path": "/api/alliance/sediment",
+      "src_prefix": "/api/alliance/sediment",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/ai.api.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/ai.api.js:63 export const sedimentDialogue = (payload) => http.post('/alliance/sediment', payload)"
+      ],
+      "src_matched_literal": [
+        "/alliance/sediment"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/alliance/tasks/{P}/qa",
+      "src_prefix": "/api/alliance/tasks",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 13,
+        "any": 13,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/alliance.api.js",
+        "frontend-ui/src/composables/useSSE.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/alliance.api.js:130 return normalizeTask(await http.post('/alliance/tasks', { title: payload.title ?? payload.name, description: payload.description, ",
+        "frontend-ui/src/api/alliance.api.js:134 return normalizeTaskList(await http.get('/alliance/tasks', { params, _retry: 0, silent: true }))",
+        "frontend-ui/src/api/alliance.api.js:138 return normalizeTask(await http.get(`/alliance/tasks/${encodeURIComponent(taskId)}`, { _retry: 0, silent: true }))"
+      ],
+      "src_matched_literal": [
+        "/alliance/tasks",
+        "/api/alliance/tasks"
+      ],
+      "test_hits": {
+        "decl": 3,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [
+        "frontend-ui/src/modules/expert-alliance/api/alliance.api.test.js"
+      ],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/audit/export",
+      "src_prefix": "/api/audit/export",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/auth/login",
+      "src_prefix": "/api/auth/login",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "src_evidence": [],
+      "src_matched_literal": [
+        "/auth/login"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/auth/logout",
+      "src_prefix": "/api/auth/logout",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "src_evidence": [],
+      "src_matched_literal": [
+        "/auth/logout"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/auth/mfa/bind",
+      "src_prefix": "/api/auth/mfa/bind",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "src_evidence": [],
+      "src_matched_literal": [
+        "/auth/mfa/bind"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/auth/mfa/confirm",
+      "src_prefix": "/api/auth/mfa/confirm",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "src_evidence": [],
+      "src_matched_literal": [
+        "/auth/mfa/confirm"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/auth/mfa/unbind",
+      "src_prefix": "/api/auth/mfa/unbind",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "src_evidence": [],
+      "src_matched_literal": [
+        "/auth/mfa/unbind"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/auth/mfa/verify",
+      "src_prefix": "/api/auth/mfa/verify",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "src_evidence": [],
+      "src_matched_literal": [
+        "/auth/mfa/verify"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/auth/refresh",
+      "src_prefix": "/api/auth/refresh",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "src_evidence": [],
+      "src_matched_literal": [
+        "/auth/refresh"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/auth/register",
+      "src_prefix": "/api/auth/register",
+      "src_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "src_evidence": [],
+      "src_matched_literal": [
+        "/auth/register"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/audit-logs",
+      "src_prefix": "/api/enterprise/admin/audit-logs",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/audit-stats",
+      "src_prefix": "/api/enterprise/admin/audit-stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/departments",
+      "src_prefix": "/api/enterprise/admin/departments",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/permissions",
+      "src_prefix": "/api/enterprise/admin/permissions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/roles",
+      "src_prefix": "/api/enterprise/admin/roles",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/tenants",
+      "src_prefix": "/api/enterprise/admin/tenants",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/tenants/{P}",
+      "src_prefix": "/api/enterprise/admin/tenants",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/users/{P}/roles",
+      "src_prefix": "/api/enterprise/admin/users",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/batch-update",
+      "src_prefix": "/api/enterprise/config/batch-update",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/config-types",
+      "src_prefix": "/api/enterprise/config/config-types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/feature-flags",
+      "src_prefix": "/api/enterprise/config/feature-flags",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/feature-flags/{P}/toggle",
+      "src_prefix": "/api/enterprise/config/feature-flags",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/groups",
+      "src_prefix": "/api/enterprise/config/groups",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/items",
+      "src_prefix": "/api/enterprise/config/items",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/items/{P}",
+      "src_prefix": "/api/enterprise/config/items",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/items/{P}/rollback/{P}",
+      "src_prefix": "/api/enterprise/config/items",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/items/{P}/versions",
+      "src_prefix": "/api/enterprise/config/items",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/refresh-cache",
+      "src_prefix": "/api/enterprise/config/refresh-cache",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/stats",
+      "src_prefix": "/api/enterprise/config/stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/form/definitions",
+      "src_prefix": "/api/enterprise/designer/form/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/form/definitions/{P}",
+      "src_prefix": "/api/enterprise/designer/form/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/form/definitions/{P}/publish",
+      "src_prefix": "/api/enterprise/designer/form/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/form/field-types",
+      "src_prefix": "/api/enterprise/designer/form/field-types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/definitions",
+      "src_prefix": "/api/enterprise/designer/process/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/definitions/{P}",
+      "src_prefix": "/api/enterprise/designer/process/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/definitions/{P}/publish",
+      "src_prefix": "/api/enterprise/designer/process/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/templates",
+      "src_prefix": "/api/enterprise/designer/process/templates",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/templates/{P}",
+      "src_prefix": "/api/enterprise/designer/process/templates",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/report/component-types",
+      "src_prefix": "/api/enterprise/designer/report/component-types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/report/definitions",
+      "src_prefix": "/api/enterprise/designer/report/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/report/definitions/{P}",
+      "src_prefix": "/api/enterprise/designer/report/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/report/definitions/{P}/publish",
+      "src_prefix": "/api/enterprise/designer/report/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/all",
+      "src_prefix": "/api/enterprise/dictionary/all",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/items",
+      "src_prefix": "/api/enterprise/dictionary/items",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/items/{P}",
+      "src_prefix": "/api/enterprise/dictionary/items",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/items/{P}/{P}",
+      "src_prefix": "/api/enterprise/dictionary/items",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/types",
+      "src_prefix": "/api/enterprise/dictionary/types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/types/{P}",
+      "src_prefix": "/api/enterprise/dictionary/types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents",
+      "src_prefix": "/api/enterprise/document/documents",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}",
+      "src_prefix": "/api/enterprise/document/documents",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}/activities",
+      "src_prefix": "/api/enterprise/document/documents",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}/sign",
+      "src_prefix": "/api/enterprise/document/documents",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}/signatures",
+      "src_prefix": "/api/enterprise/document/documents",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}/versions",
+      "src_prefix": "/api/enterprise/document/documents",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/stats",
+      "src_prefix": "/api/enterprise/document/stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/types",
+      "src_prefix": "/api/enterprise/document/types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files",
+      "src_prefix": "/api/enterprise/files",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/categories",
+      "src_prefix": "/api/enterprise/files/categories",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/stats",
+      "src_prefix": "/api/enterprise/files/stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/storage-types",
+      "src_prefix": "/api/enterprise/files/storage-types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/upload",
+      "src_prefix": "/api/enterprise/files/upload",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/{P}",
+      "src_prefix": "/api/enterprise/files",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/{P}/download",
+      "src_prefix": "/api/enterprise/files",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/{P}/restore",
+      "src_prefix": "/api/enterprise/files",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/health",
+      "src_prefix": "/api/enterprise/health",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connector-types",
+      "src_prefix": "/api/enterprise/integration/connector-types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connectors",
+      "src_prefix": "/api/enterprise/integration/connectors",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connectors/{P}",
+      "src_prefix": "/api/enterprise/integration/connectors",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connectors/{P}/sync",
+      "src_prefix": "/api/enterprise/integration/connectors",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connectors/{P}/test",
+      "src_prefix": "/api/enterprise/integration/connectors",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/sync-tasks",
+      "src_prefix": "/api/enterprise/integration/sync-tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/sync-tasks/{P}",
+      "src_prefix": "/api/enterprise/integration/sync-tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/sync-tasks/{P}/logs",
+      "src_prefix": "/api/enterprise/integration/sync-tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/config",
+      "src_prefix": "/api/enterprise/mailer/config",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/history",
+      "src_prefix": "/api/enterprise/mailer/history",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/send",
+      "src_prefix": "/api/enterprise/mailer/send",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/stats",
+      "src_prefix": "/api/enterprise/mailer/stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/templates",
+      "src_prefix": "/api/enterprise/mailer/templates",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/templates/{P}",
+      "src_prefix": "/api/enterprise/mailer/templates",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/test",
+      "src_prefix": "/api/enterprise/mailer/test",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/channels",
+      "src_prefix": "/api/enterprise/message/channels",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/messages",
+      "src_prefix": "/api/enterprise/message/messages",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/messages/{P}",
+      "src_prefix": "/api/enterprise/message/messages",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/messages/{P}/read",
+      "src_prefix": "/api/enterprise/message/messages",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/send",
+      "src_prefix": "/api/enterprise/message/send",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/stats",
+      "src_prefix": "/api/enterprise/message/stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/templates",
+      "src_prefix": "/api/enterprise/message/templates",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs",
+      "src_prefix": "/api/enterprise/operation-logs",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/login",
+      "src_prefix": "/api/enterprise/operation-logs/login",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/modules",
+      "src_prefix": "/api/enterprise/operation-logs/modules",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/operation-types",
+      "src_prefix": "/api/enterprise/operation-logs/operation-types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/stats",
+      "src_prefix": "/api/enterprise/operation-logs/stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/{P}",
+      "src_prefix": "/api/enterprise/operation-logs",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/companies",
+      "src_prefix": "/api/enterprise/org/companies",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/companies/{P}",
+      "src_prefix": "/api/enterprise/org/companies",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/departments",
+      "src_prefix": "/api/enterprise/org/departments",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/departments/tree",
+      "src_prefix": "/api/enterprise/org/departments/tree",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/departments/{P}",
+      "src_prefix": "/api/enterprise/org/departments",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/employees",
+      "src_prefix": "/api/enterprise/org/employees",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/employees/{P}",
+      "src_prefix": "/api/enterprise/org/employees",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/positions",
+      "src_prefix": "/api/enterprise/org/positions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/stats",
+      "src_prefix": "/api/enterprise/org/stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/executions",
+      "src_prefix": "/api/enterprise/scheduler/executions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/handler-types",
+      "src_prefix": "/api/enterprise/scheduler/handler-types",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/stats",
+      "src_prefix": "/api/enterprise/scheduler/stats",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/task-categories",
+      "src_prefix": "/api/enterprise/scheduler/task-categories",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks",
+      "src_prefix": "/api/enterprise/scheduler/tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}",
+      "src_prefix": "/api/enterprise/scheduler/tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}/disable",
+      "src_prefix": "/api/enterprise/scheduler/tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}/enable",
+      "src_prefix": "/api/enterprise/scheduler/tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}/executions",
+      "src_prefix": "/api/enterprise/scheduler/tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}/trigger",
+      "src_prefix": "/api/enterprise/scheduler/tasks",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/templates",
+      "src_prefix": "/api/enterprise/scheduler/templates",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/callback",
+      "src_prefix": "/api/enterprise/sso/callback",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/login",
+      "src_prefix": "/api/enterprise/sso/login",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/logout",
+      "src_prefix": "/api/enterprise/sso/logout",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/protocols",
+      "src_prefix": "/api/enterprise/sso/protocols",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/providers",
+      "src_prefix": "/api/enterprise/sso/providers",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/providers/{P}",
+      "src_prefix": "/api/enterprise/sso/providers",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/scheduler/status",
+      "src_prefix": "/api/scheduler/status",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/system/approval",
+      "src_prefix": "/api/system/approval",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/system/approval/definitions",
+      "src_prefix": "/api/system/approval/definitions",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/system/approval/pending",
+      "src_prefix": "/api/system/approval/pending",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/system/approval/{P}",
+      "src_prefix": "/api/system/approval",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/system/approval/{P}/approve",
+      "src_prefix": "/api/system/approval",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/system/approval/{P}/history",
+      "src_prefix": "/api/system/approval",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/system/approval/{P}/reject",
+      "src_prefix": "/api/system/approval",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "src_files": [],
+      "src_evidence": [],
+      "src_matched_literal": [],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/system/user/{P}/depts",
+      "src_prefix": "/api/system/user",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 9,
+        "any": 9,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/system.api.js:61 export const getUserList = (params) => http.get('/system/user', { params })",
+        "frontend-ui/src/api/system.api.js:62 export const getUserDetail = (id) => http.get(`/system/user/${id}`)",
+        "frontend-ui/src/api/system.api.js:63 export const createUser = (data) => http.post('/system/user', data)"
+      ],
+      "src_matched_literal": [
+        "/system/user"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/tenant",
+      "src_prefix": "/api/tenant",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 6,
+        "any": 6,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/system.api.js:131 export const getTenantList = (params) => http.get('/tenant', { params })",
+        "frontend-ui/src/api/system.api.js:132 export const getTenantDetail = (id) => http.get(`/tenant/${id}`)",
+        "frontend-ui/src/api/system.api.js:133 export const createTenant = (data) => http.post('/tenant', data)"
+      ],
+      "src_matched_literal": [
+        "/tenant"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/tenant/switch/{P}",
+      "src_prefix": "/api/tenant/switch",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/system.api.js:136 export const switchTenant = (id) => http.get(`/tenant/switch/${id}`)"
+      ],
+      "src_matched_literal": [
+        "/tenant/switch"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    },
+    {
+      "path": "/api/tenant/{P}",
+      "src_prefix": "/api/tenant",
+      "src_hits": {
+        "decl": 0,
+        "httpish": 6,
+        "any": 6,
+        "bare": 0
+      },
+      "src_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "src_evidence": [
+        "frontend-ui/src/api/system.api.js:131 export const getTenantList = (params) => http.get('/tenant', { params })",
+        "frontend-ui/src/api/system.api.js:132 export const getTenantDetail = (id) => http.get(`/tenant/${id}`)",
+        "frontend-ui/src/api/system.api.js:133 export const createTenant = (data) => http.post('/tenant', data)"
+      ],
+      "src_matched_literal": [
+        "/tenant"
+      ],
+      "test_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_files": [],
+      "test_evidence": []
+    }
+  ]
+}

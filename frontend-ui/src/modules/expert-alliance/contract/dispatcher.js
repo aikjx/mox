@@ -4,6 +4,7 @@
 //
 // 后端语义：PUT 为**合并式**更新 —— body 里没出现的键保持原值，响应是合并后的完整配置。
 // 因此前端只发改动过的键，而不是整份回写。
+import { expertNameOr } from './graph.js'
 
 /** update_config 的 `let valid = [...]` 清单，顺序即后端声明顺序 */
 export const DISPATCH_STRATEGY = Object.freeze([
@@ -266,7 +267,7 @@ export function successRateNote(status) {
  */
 export function dispatchResetLines(target = {}) {
   const all = !!target.all
-  const who = all ? '注册表里的全部专家' : `「${target.name || target.id || '该专家'}」`
+  const who = all ? '注册表里的全部专家' : `「${expertNameOr(target, target.id || '该专家')}」`
   return [
     all
       ? '把整张注册表的 availability.current_load 逐个写成 0（:817-823 走 registry.values_mut()，含停用与软删除者）。注意状态表只列 enabled 专家（:515-517），所以表内人数不是被重置的人数，回执里的 reset_count 才是'

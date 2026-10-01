@@ -1,0 +1,413 @@
+﻿cargo :    Compiling mox-kb-svc v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\domains\kg\svc\mox-kb-sv
+c)
+所在位置 行:1 字符: 40
++ ... otopograph; cargo test -p mox-platform-gateway-svc > platform\gateway ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling mo...svc\mox-kb-svc):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Compiling mox-platform-gateway-svc v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\gateway\mox-platfo
+rm-gateway-svc)
+warning: unused import: `ExpertGraph`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_rbac.rs:228:43
+    |
+228 |         DEFAULT_TENANT, DispatcherConfig, ExpertGraph, ExpertsSharedState,
+    |                                           ^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rand::RngCore`
+  --> platform\gateway\mox-platform-gateway-svc\src\system\mfa.rs:26:5
+   |
+26 | use rand::RngCore;
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rand::RngCore`
+  --> platform\gateway\mox-platform-gateway-svc\src\system\mfa.rs:26:5
+   |
+26 | use rand::RngCore;
+   |     ^^^^^^^^^^^^^
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:195:14
+    |
+195 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:267:14
+    |
+267 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:353:14
+    |
+353 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:368:14
+    |
+368 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:472:14
+    |
+472 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:524:14
+    |
+524 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:587:14
+    |
+587 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_orchestration.rs:739:14
+    |
+739 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_orchestration.rs:940:14
+    |
+940 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1054:5
+     |
+1054 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+     = note: `#[warn(dropping_references)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+     |
+1054 -     drop(graph);
+1054 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1109:5
+     |
+1109 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1109 -     drop(graph);
+1109 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1154:5
+     |
+1154 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1154 -     drop(graph);
+1154 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1231:5
+     |
+1231 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1231 -     drop(graph);
+1231 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1287:5
+     |
+1287 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1287 -     drop(graph);
+1287 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1325:5
+     |
+1325 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1325 -     drop(graph);
+1325 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:652:5
+    |
+652 |     drop(registry);
+    |     ^^^^^--------^
+    |          |
+    |          argument has type `&HashMap<std::string::String, experts_common::ExpertDescriptor>`
+    |
+help: use `let _ = ...` to ignore the expression or result
+    |
+652 -     drop(registry);
+652 +     let _ = registry;
+    |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:730:5
+    |
+730 |     drop(registry);
+    |     ^^^^^--------^
+    |          |
+    |          argument has type `&HashMap<std::string::String, experts_common::ExpertDescriptor>`
+    |
+help: use `let _ = ...` to ignore the expression or result
+    |
+730 -     drop(registry);
+730 +     let _ = registry;
+    |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:652:5
+    |
+652 |     drop(registry);
+    |     ^^^^^--------^
+    |          |
+    |          argument has type `&std::collections::HashMap<std::string::String, experts_common::ExpertDescriptor>`
+    |
+help: use `let _ = ...` to ignore the expression or result
+    |
+652 -     drop(registry);
+652 +     let _ = registry;
+    |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:730:5
+    |
+730 |     drop(registry);
+    |     ^^^^^--------^
+    |          |
+    |          argument has type `&std::collections::HashMap<std::string::String, experts_common::ExpertDescriptor>`
+    |
+help: use `let _ = ...` to ignore the expression or result
+    |
+730 -     drop(registry);
+730 +     let _ = registry;
+    |
+
+warning: `mox-platform-gateway-svc` (lib) generated 18 warnings (run `cargo fix --lib -p mox-platform-gateway-svc` to a
+pply 9 suggestions)
+warning: `mox-platform-gateway-svc` (lib test) generated 19 warnings (15 duplicates) (run `cargo fix --lib -p mox-platf
+orm-gateway-svc --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 48s
+     Running unittests src\lib.rs (target\debug\deps\mox_platform_gateway_svc-547761399c0df703.exe)
+
+running 176 tests
+test actuator::tests::test_management_path_exempt ... ok
+test admin_storage::tests::unicode_errors_truncate_without_panicking ... ok
+test actuator::tests::test_path_matching_params_and_wildcard ... ok
+test alliance::experts_collaboration::tests::test_classify_intent ... ok
+test alliance::experts_collaboration::tests::test_fuse_answers_empty ... ok
+test alliance::experts_collaboration::tests::test_analyze_complexity ... ok
+test alliance::experts_collaboration::tests::test_generate_expert_answer ... ok
+test alliance::experts_collaboration::tests::test_generate_expert_answer_diversity ... ok
+test alliance::experts_collaboration::tests::fuse_answers_all_vetoed_returns_blocked ... ok
+test actuator::tests::test_match_best_respects_method ... ok
+test actuator::tests::test_route_toggle ... ok
+test alliance::experts_common::tests::test_compute_match_score ... ok
+test alliance::experts_collaboration::tests::fuse_answers_excludes_vetoed_replies ... ok
+test alliance::experts_collaboration::tests::vetoed_report_is_blocked_not_passthrough ... ok
+test alliance::experts_collaboration::tests::test_match_top_experts ... ok
+test alliance::experts_common::tests::test_dispatcher_config_default ... ok
+test actuator::tests::test_log_store_push_query_cap_and_level ... ok
+test alliance::experts_common::tests::test_emit_audit_appends_to_chain ... ok
+test alliance::experts_common::tests::test_expert_descriptor_minimal ... ok
+test alliance::experts_common::tests::test_gen_id ... ok
+test alliance::experts_collaboration::tests::test_generate_expert_answer_llm_fallback ... ok
+test alliance::experts_common::tests::test_text_similarity ... ok
+test alliance::experts_common::tests::test_parse_pagination ... ok
+test alliance::experts_collaboration::tests::test_run_debate ... ok
+test alliance::experts_collaboration::tests::test_fuse_answers ... ok
+test alliance::experts_common::tests::test_build_audit_context_emits ... ok
+test actuator::tests::test_match_best_prefers_specific ... ok
+test alliance::experts_ext::tests::test_resolve_expert_name_rejects_disabled ... ok
+test alliance::experts_ext::tests::test_resolve_expert_name ... ok
+test alliance::experts_ext::tests::test_toggle_favorite_writes_shared_state ... ok
+test alliance::experts_graph::tests::test_bfs_shortest_path_unreachable ... ok
+test alliance::experts_graph::tests::test_bfs_shortest_path_reachable ... ok
+test alliance::experts_dispatcher::tests::test_dispatch_least_load ... ok
+test alliance::experts_dispatcher::tests::test_dispatch_best_match ... ok
+test alliance::experts_dispatcher::tests::test_reset_all ... ok
+test alliance::experts_dispatcher::tests::test_dispatcher_status ... ok
+test alliance::experts_dispatcher::tests::test_reset_expert ... ok
+test alliance::experts_graph::tests::test_compute_graph_stats ... ok
+test alliance::experts_dispatcher::tests::test_consult_integration ... ok
+test alliance::experts_dispatcher::tests::test_dispatch_specified_experts ... ok
+test alliance::experts_dispatcher::tests::test_dispatch_round_robin ... ok
+test alliance::experts_dispatcher::tests::test_update_config_validation ... ok
+test alliance::experts_db::incremental_tests::bump_meta_upsert ... ok
+test alliance::experts_db::incremental_tests::upsert_node_insert_then_update ... ok
+test alliance::experts_db::incremental_tests::delete_node_cascades_edges ... ok
+test alliance::experts_graph::tests::test_graph_structure ... ok
+test alliance::experts_graph::tests::test_find_optimal_team ... ok
+test alliance::experts_graph::tests::test_mutate_graph_rbac_rejects ... ok
+test alliance::experts_graph::tests::test_neighbors ... ok
+test alliance::experts_graph::tests::test_rag_cycle_guard_no_self_loop ... ok
+test alliance::experts_graph::tests::test_rag_empty_graph_returns_empty ... ok
+test alliance::experts_graph::tests::test_detect_communities ... ok
+test alliance::experts_graph::tests::test_create_node_bad_type_400 ... ok
+test alliance::experts_graph::tests::test_rag_top_k_truncation ... ok
+test alliance::experts_graph::tests::test_rag_min_weight_filter_edges ... ok
+test alliance::experts_graph::tests::test_rag_multihop_reaches_third_hop ... ok
+test alliance::experts_graph::tests::test_rag_node_types_filter ... ok
+test alliance::experts_graph::tests::test_rag_max_depth_3_reaches_deep_chain ... ok
+test alliance::experts_graph::tests::test_crud_requires_auth_401 ... ok
+test alliance::experts_db::incremental_tests::edge_upsert_then_renumber_keeps_seq_order ... ok
+test alliance::experts_graph::tests::test_rag_weight_ranking_desc ... ok
+test alliance::experts_graph::tests::test_rebuild_version_increment ... ok
+test alliance::experts_orchestration::tests::test_orchestration_stats_structure ... ok
+test alliance::experts_orchestration::tests::test_orchestrate_flow ... ok
+test alliance::experts_graph::tests::test_validate_node_type_and_weight ... ok
+test alliance::experts_orchestration::tests::test_plugins_structure ... ok
+test alliance::experts_orchestration::tests::test_generate_plan ... ok
+test alliance::experts_orchestration::tests::test_fuse_results_all_strategies ... ok
+test alliance::experts_orchestration::tests::test_topological_sort_cycle_detection ... ok
+test alliance::experts_orchestration::tests::test_execute_plan ... ok
+test alliance::experts_graph::tests::test_rag_handler_ok_returns_results ... ok
+test alliance::experts_orchestration::tests::test_topological_sort_parallel ... ok
+test alliance::experts_orchestration::tests::test_topological_sort_linear ... ok
+test alliance::experts_rbac::tests::test_enforce_admin_allows_admin ... ok
+test alliance::experts_rbac::tests::test_enforce_admin_allows_super_admin ... ok
+test alliance::experts_rbac::tests::test_audit_denied_does_not_panic ... ok
+test alliance::experts_graph::tests::test_rag_handler_seed_not_found_404 ... ok
+test alliance::experts_rbac::tests::test_enforce_admin_or_respond_admin_ok ... ok
+test alliance::experts_rbac::tests::test_enforce_admin_or_respond_non_admin_returns_403 ... ok
+test alliance::experts_rbac::tests::test_admin_roles_constant ... ok
+test alliance::experts_rbac::tests::test_enforce_admin_rejects_anonymous ... ok
+test alliance::experts_rbac::tests::test_enforce_admin_or_respond_anonymous_returns_401 ... ok
+test alliance::experts_rbac::tests::test_enforce_admin_rejects_non_admin ... ok
+test alliance::experts_registry::tests::test_get_expert_not_found ... ok
+test alliance::experts_registry::tests::test_metrics_aggregation ... ok
+test alliance::experts_registry::tests::test_match_search_filtering ... ok
+test alliance::experts_session::tests::test_get_session ... ok
+test alliance::experts_session::tests::test_session_stats ... ok
+test alliance::experts_session::tests::test_list_sessions_pagination ... ok
+test auth::tests::api_auth_extracts_user_from_extensions ... ok
+test alliance::experts_session::tests::test_similar_search ... ok
+test auth::tests::api_auth_rejects_when_no_user_injected ... ok
+test auth::tests::test_api_key_registration ... ok
+test auth::tests::test_public_path ... ok
+test auth::tests::test_validate_token_rejects_alg_none ... ok
+test auth::tests::dev_mode_rejects_arbitrary_bearer_tokens ... ok
+test auth::tests::test_validate_token_rejects_malformed ... ok
+test auth::tests::test_validate_token_rejects_expired ... ok
+test auth::tests::test_validate_token_rejects_tampered_sig ... ok
+test auth::tests::test_validate_token_rejects_wrong_issuer ... ok
+test auth::tests::test_validate_token_rejects_wrong_secret ... ok
+test auth::tests::test_validate_token_valid_hs256 ... ok
+test deployment::tests::host_role_rejects_unknown_or_empty_values ... ok
+test dialogue_sediment::tests::sanitize_key_keeps_safe_chars ... ok
+test dialogue_sediment::tests::transcript_md_builds_markdown ... ok
+test enterprise::api_response::tests::test_pagination_new ... ok
+test enterprise::api_response::tests::test_pagination_offset ... ok
+test enterprise::api_response::tests::test_pagination_paginate ... ok
+test enterprise::api_response::tests::test_validate_enum ... ok
+test enterprise::api_response::tests::test_validate_length ... ok
+test enterprise::api_response::tests::test_validate_required ... ok
+test enterprise::audit::tests::test_archive_idempotent ... ok
+test enterprise::audit::tests::test_archive_marks_old_only ... ok
+test enterprise::audit::tests::test_csv_empty_result ... ok
+test enterprise::audit::tests::test_csv_escaping ... ok
+test enterprise::audit::tests::test_csv_header_and_rows ... ok
+test alliance::experts_graph::tests::test_rag_handler_validation_400 ... ok
+test alliance::experts_registry::tests::test_soft_delete_expert ... ok
+test alliance::experts_session::tests::test_delete_session ... ok
+test alliance::experts_session::tests::test_update_session_merge ... ok
+test alliance::experts_session::tests::test_append_message ... ok
+test alliance::experts_session::tests::test_archive_session ... ok
+test llm_governance::tests::chinese_truncate_is_char_safe ... ok
+test llm_governance::tests::empty_steps_returns_pass ... ok
+test llm_governance::tests::extract_uri_token_handles_db_and_pii ... ok
+test llm_governance::tests::browser_step_passes_without_sensitive ... ok
+test alliance::experts_registry::tests::test_update_expert_merge ... ok
+test alliance::experts_registry::tests::test_create_expert ... ok
+test llm_governance::tests::sensitive_keyword_promotes_to_db_uri ... ok
+test llm_governance::tests::read_only_step_passes ... ok
+test llm_governance::tests::unspecified_write_target_triggers_review ... ok
+test llm_governance::tests::write_to_sensitive_db_is_vetoed ... ok
+test modules::tests::protected_kb_requires_trusted_identity_and_denies_readonly_writes ... ok
+test modules::tests::test_upgrade_produces_mergeable_router ... ok
+test password_hash::tests::legacy_sha256_login_returns_ok_legacy ... ok
+test alliance::experts_session::tests::test_create_session ... ok
+test file_storage::tests::file_storage_requires_identity ... ok
+test proxy::tests::test_client_jwt_replaced_by_service_token ... ok
+test proxy::tests::test_identity_headers_are_stripped_and_reinjected_when_authenticated ... ok
+test file_storage::tests::production_store_does_not_seed_sample_files ... ok
+test proxy::tests::test_identity_headers_fully_stripped_when_unauthenticated ... ok
+test proxy::tests::test_proxy_state_default_target ... ok
+test rate_limit::tests::test_rate_limit_basic ... ok
+test file_storage::tests::malformed_batch_does_not_publish_partial_files ... ok
+test rate_limit::tests::test_rate_limit_disabled ... ok
+test rate_limit::tests::test_rate_limit_reset ... ok
+test scheduler::api::tests::execute_due_tasks_only_runs_implemented ... ok
+test dialogue_sediment::tests::sediment_creates_analyzed_linked_doc ... ok
+test scheduler::api::tests::execute_sso_cleanup_real ... ok
+test scheduler::api::tests::execute_audit_archive_real ... ok
+test scheduler::api::tests::runtime_tasks_registered_and_enabled ... ok
+test scheduler::api::tests::is_due_interval_logic ... ok
+test scheduler::api::tests::unknown_handler_records_failure ... ok
+test sso::api::callback_tests::missing_credentials_returns_422_not_mock_success ... ok
+test sso::api::callback_tests::pending_state_lifecycle ... ok
+test system::mfa::tests::secret_base32_roundtrip ... ok
+test system::mfa::tests::totp_known_vector_rfc6238_sha1 ... ok
+test system::mfa::tests::recovery_code_one_time_use ... ok
+test tests::test_health_json_structure ... ok
+test token_blacklist::tests::expired_revoked_entry_auto_purged ... ok
+test token_blacklist::tests::admin_lists_and_kicks_user_sessions ... ok
+test token_blacklist::tests::revoke_then_reject ... ok
+test file_storage::tests::tenant_owner_and_readonly_policy_applies_to_every_resource_operation ... ok
+test file_storage::tests::file_lifecycle_survives_restart_and_checks_content ... ok
+test modules::tests::test_sediment_shares_kb_state ... ok
+test modules::tests::test_module_states_owns_all_domain_states ... ok
+test modules::tests::test_module_states_shares_single_experts_state ... ok
+test password_hash::tests::transparent_upgrade_target_is_modern ... ok
+test password_hash::tests::pbkdf2_hash_verifies_and_is_salted ... ok
+test tests::actuator_sensitive_endpoints_require_auth ... ok
+test tests::test_gateway_state_creation ... ok
+test alliance::experts_graph::tests::test_create_edge_ok_duplicate_409_missing_endpoint_400 has been running for over 60 seconds
+test alliance::experts_graph::tests::test_create_node_ok_and_duplicate_409 has been running for over 60 seconds
+test alliance::experts_graph::tests::test_delete_node_cascades_edges has been running for over 60 seconds
+test alliance::experts_graph::tests::test_update_delete_edge_by_seq has been running for over 60 seconds
+test alliance::experts_graph::tests::test_update_node_404_and_merge has been running for over 60 seconds

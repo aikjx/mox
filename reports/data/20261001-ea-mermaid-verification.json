@@ -1,0 +1,71 @@
+{
+  "mermaid": "11.17.2",
+  "method": "parse only; no browser visual verification",
+  "results": [
+    {
+      "file": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+      "line": 47,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+      "line": 94,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+      "line": 115,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+      "line": 161,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+      "line": 179,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+      "line": 208,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+      "line": 226,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+      "line": 246,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/18-modular-product-design.md",
+      "line": 32,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/18-modular-product-design.md",
+      "line": 65,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/18-modular-product-design.md",
+      "line": 125,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/18-modular-product-design.md",
+      "line": 173,
+      "pass": true
+    },
+    {
+      "file": "docs/expert-alliance/18-modular-product-design.md",
+      "line": 214,
+      "pass": true
+    }
+  ]
+}

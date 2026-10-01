@@ -118,10 +118,7 @@ where
 ///
 /// 返回的 `Router<GatewayState>` 即「受保护路由组」，
 /// 由 `lib.rs` 与公开的 Actuator/L0 端点合并后再套限流、CORS、可观测中间件。
-pub fn build_module_routers(
-    states: &ModuleStates,
-    gateway: &GatewayState,
-) -> Router<GatewayState> {
+pub fn build_module_routers(states: &ModuleStates, gateway: &GatewayState) -> Router<GatewayState> {
     let experts = states.experts.clone();
 
     let modules = Router::<GatewayState>::new()
@@ -132,7 +129,7 @@ pub fn build_module_routers(
         // 采用 nest 包装而非直接 merge，避免破坏 mox-kb-svc 自身的 /kb/* 集成测试。
         .merge(upgrade(Router::new().nest(
             "/api",
-            mox_kb_svc::handlers::build_kb_router_with_state(states.kb.clone()),
+            protected_kb_router(states.kb.clone()),
         )))
         // —— 联盟任务域（远程优先 + 本地降级）——
         .merge(upgrade(alliance::build_alliance_router()))
@@ -222,9 +219,101 @@ pub fn build_module_routers(
     }))
 }
 
+/// Auth middleware runs outside this adapter. Only its trusted extension supplies identity.
+fn protected_kb_router(state: Arc<mox_kb_svc::KbState>) -> Router {
+    use axum::response::IntoResponse;
+    use tower::ServiceExt;
+    mox_kb_svc::handlers::build_kb_router_with_state(state.clone()).layer(from_fn(
+        move |request: Request, _next: Next| {
+            let state = state.clone();
+            async move {
+                let Some(user) = request.extensions().get::<mox_platform_api::UserInfo>() else {
+                    return axum::http::StatusCode::UNAUTHORIZED.into_response();
+                };
+                let access = mox_kb_svc::access::KnowledgeAccess {
+                    tenant_id: user.tenant_id.clone(),
+                    owner_id: user.id.clone(),
+                    administrator: user
+                        .roles
+                        .iter()
+                        .any(|r| matches!(r.as_str(), "tenant_admin" | "super_admin")),
+                    readonly: user.roles.iter().any(|r| r == "readonly_auditor"),
+                };
+                if !user.enabled || !access.valid() {
+                    return axum::http::StatusCode::FORBIDDEN.into_response();
+                }
+                if !access.allows_request(request.method().as_str(), request.uri().path()) {
+                    return axum::http::StatusCode::FORBIDDEN.into_response();
+                }
+                // Restore the global projection before creating the scoped view; otherwise the first
+                // caller would initialize the shared OnceCell with only their own documents.
+                if state.ensure_projection_ready().await.is_err() {
+                    return axum::http::StatusCode::SERVICE_UNAVAILABLE.into_response();
+                }
+                match mox_kb_svc::handlers::build_kb_router_with_state(Arc::new(
+                    state.scoped(access),
+                ))
+                .oneshot(request)
+                .await
+                {
+                    Ok(response) => response,
+                    Err(never) => match never {},
+                }
+            }
+        },
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn protected_kb_requires_trusted_identity_and_denies_readonly_writes() {
+        use axum::{
+            body::Body,
+            http::{Request, StatusCode},
+        };
+        use tower::ServiceExt;
+        let dir = tempfile::tempdir().unwrap();
+        let app =
+            protected_kb_router(Arc::new(mox_kb_svc::KbState::with_data_dir(dir.path().into())));
+        let request = Request::builder()
+            .uri("/kb/documents")
+            .header("x-tenant-id", "forged")
+            .body(Body::empty())
+            .unwrap();
+        assert_eq!(app.clone().oneshot(request).await.unwrap().status(), StatusCode::UNAUTHORIZED);
+        let user = mox_platform_api::UserInfo {
+            id: "reader".into(),
+            username: "reader".into(),
+            email: String::new(),
+            tenant_id: "a".into(),
+            roles: vec!["readonly_auditor".into()],
+            enabled: true,
+            created_at: String::new(),
+        };
+        for (method, path, status) in [
+            ("GET", "/kb/documents", StatusCode::OK),
+            ("POST", "/kb/search", StatusCode::OK),
+            ("POST", "/kb/documents", StatusCode::FORBIDDEN),
+            ("POST", "/kb/batch-analyze", StatusCode::FORBIDDEN),
+        ] {
+            let mut request = Request::builder()
+                .method(method)
+                .uri(path)
+                .header("content-type", "application/json")
+                .body(Body::from(r#"{"query":"test"}"#))
+                .unwrap();
+            request.extensions_mut().insert(user.clone());
+            assert_eq!(app.clone().oneshot(request).await.unwrap().status(), status);
+        }
+        let mut disabled = user;
+        disabled.enabled = false;
+        let mut request = Request::builder().uri("/kb/documents").body(Body::empty()).unwrap();
+        request.extensions_mut().insert(disabled);
+        assert_eq!(app.oneshot(request).await.unwrap().status(), StatusCode::FORBIDDEN);
+    }
 
     /// 构造测试用注册中心（运行时指标与日志缓冲用最小容量实例，不触碰生产数据）
     fn test_states() -> ModuleStates {

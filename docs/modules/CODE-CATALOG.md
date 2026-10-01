@@ -8,9 +8,9 @@
 
 ## 后端模块
 
-当前 workspace：**143** 个 crate。
+当前 workspace：**149** 个 crate。
 
-### ai（12）
+### ai（14）
 
 | 模块 | 层/目录 | 可执行入口 | workspace 依赖 |
 |---|---|---|---|
@@ -20,14 +20,16 @@
 | [mox-ai-core](<../../platform/domains/ai/core/mox-ai-core/Cargo.toml>) | core | — | runtime: mox-platform-model-core |
 | [mox-ai-expert-core](<../../platform/domains/ai/core/mox-ai-expert-core/Cargo.toml>) | core | — | runtime: mox-ai-expert-proto, mox-ai-flow-core, mox-audit, mox-error, mox-platform-foundation |
 | [mox-ai-expert-proto](<../../platform/domains/ai/proto/mox-ai-expert-proto/Cargo.toml>) | proto | — | runtime: mox-error, mox-platform-foundation |
-| [mox-ai-expert-svc](<../../platform/domains/ai/svc/mox-ai-expert-svc/Cargo.toml>) | svc | mox | runtime: mox-ai-expert-proto, mox-ai-flow-svc, mox-kg-sdk, mox-platform-foundation |
+| [mox-ai-expert-svc](<../../platform/domains/ai/svc/mox-ai-expert-svc/Cargo.toml>) | svc | mox | runtime: mox-ai-expert-core, mox-ai-expert-proto, mox-ai-flow-svc, mox-kg-sdk, mox-platform-foundation, mox-unified-contract |
 | [mox-ai-flow-core](<../../platform/domains/ai/core/mox-ai-flow-core/Cargo.toml>) | core | — | runtime: mox-platform-foundation |
 | [mox-ai-flow-sdk](<../../platform/domains/ai/sdk/mox-ai-flow-sdk/Cargo.toml>) | sdk | — | runtime: mox-ai-flow-core |
 | [mox-ai-flow-svc](<../../platform/domains/ai/svc/mox-ai-flow-svc/Cargo.toml>) | svc | flowopt | runtime: mox-ai-flow-core, mox-platform-foundation |
 | [mox-ai-intent-core](<../../platform/domains/ai/core/mox-ai-intent-core/Cargo.toml>) | core | — | runtime: mox-platform-foundation |
 | [mox-ai-intent-svc](<../../platform/domains/ai/svc/mox-ai-intent-svc/Cargo.toml>) | svc | mox-ai-intent-svc | runtime: mox-ai-api, mox-ai-intent-core, mox-framework, mox-platform-foundation |
+| [mox-codeengine-core](<../../platform/domains/ai/core/mox-codeengine-core/Cargo.toml>) | core | — | runtime: mox-ai-flow-core |
+| [mox-codeengine-svc](<../../platform/domains/ai/svc/mox-codeengine-svc/Cargo.toml>) | svc | codeengine-server | runtime: mox-codeengine-core |
 
-### alliance（13）
+### alliance（16）
 
 | 模块 | 层/目录 | 可执行入口 | workspace 依赖 |
 |---|---|---|---|
@@ -38,11 +40,14 @@
 | [mox-alliance-core](<../../platform/domains/alliance/core/mox-alliance-core/Cargo.toml>) | core | — | runtime: mox-alliance-common-proto, mox-error, mox-platform-foundation |
 | [mox-alliance-executor-core](<../../platform/domains/alliance/core/mox-alliance-executor-core/Cargo.toml>) | core | — | dev: mox-alliance-scheduler-core, mox-alliance-scheduler-proto<br>runtime: mox-ai-expert-proto, mox-alliance-common-proto, mox-alliance-core, mox-alliance-executor-proto, mox-error, mox-platform-foundation |
 | [mox-alliance-executor-proto](<../../platform/domains/alliance/proto/mox-alliance-executor-proto/Cargo.toml>) | proto | — | runtime: mox-alliance-common-proto, mox-error, mox-platform-foundation |
-| [mox-alliance-executor-svc](<../../platform/domains/alliance/svc/mox-alliance-executor-svc/Cargo.toml>) | svc | mox-alliance-executor | runtime: mox-ai-expert-proto, mox-ai-expert-svc, mox-alliance-api, mox-alliance-boot-config, mox-alliance-common-proto, mox-alliance-executor-core, mox-alliance-executor-proto |
-| [mox-alliance-http-sdk](<../../platform/domains/alliance/sdk/mox-alliance-http-sdk/Cargo.toml>) | sdk | — | runtime: mox-alliance-api, mox-alliance-common-proto, mox-alliance-scheduler-core, mox-alliance-scheduler-proto, mox-api-protocol |
-| [mox-alliance-scheduler-core](<../../platform/domains/alliance/core/mox-alliance-scheduler-core/Cargo.toml>) | core | — | runtime: mox-alliance-common-proto, mox-alliance-config-core, mox-alliance-core, mox-alliance-executor-proto, mox-alliance-scheduler-proto, mox-error, mox-platform-foundation |
+| [mox-alliance-executor-svc](<../../platform/domains/alliance/svc/mox-alliance-executor-svc/Cargo.toml>) | svc | mox-alliance-executor | dev: mox-alliance-executor-core<br>runtime: mox-ai-expert-proto, mox-ai-expert-svc, mox-alliance-api, mox-alliance-boot-config, mox-alliance-common-proto, mox-alliance-executor-core, mox-alliance-executor-proto, mox-alliance-scheduler-core, mox-api-crypto |
+| [mox-alliance-http-sdk](<../../platform/domains/alliance/sdk/mox-alliance-http-sdk/Cargo.toml>) | sdk | — | runtime: mox-alliance-api, mox-alliance-common-proto, mox-alliance-scheduler-core, mox-alliance-scheduler-proto, mox-api-crypto, mox-api-protocol |
+| [mox-alliance-registry-core](<../../platform/domains/alliance/core/mox-alliance-registry-core/Cargo.toml>) | core | — | runtime: mox-alliance-registry-proto |
+| [mox-alliance-registry-proto](<../../platform/domains/alliance/proto/mox-alliance-registry-proto/Cargo.toml>) | proto | — | — |
+| [mox-alliance-registry-svc](<../../platform/domains/alliance/svc/mox-alliance-registry-svc/Cargo.toml>) | svc | mox-alliance-registry | dev: mox-alliance-registry-core<br>runtime: mox-alliance-common-proto, mox-alliance-registry-core, mox-alliance-registry-proto, mox-api-crypto |
+| [mox-alliance-scheduler-core](<../../platform/domains/alliance/core/mox-alliance-scheduler-core/Cargo.toml>) | core | — | runtime: mox-alliance-common-proto, mox-alliance-config-core, mox-alliance-core, mox-alliance-executor-proto, mox-alliance-scheduler-proto, mox-api-crypto, mox-error, mox-platform-foundation |
 | [mox-alliance-scheduler-proto](<../../platform/domains/alliance/proto/mox-alliance-scheduler-proto/Cargo.toml>) | proto | — | runtime: mox-alliance-common-proto, mox-error, mox-platform-foundation |
-| [mox-alliance-scheduler-svc](<../../platform/domains/alliance/svc/mox-alliance-scheduler-svc/Cargo.toml>) | svc | mox-alliance-scheduler | runtime: mox-alliance-api, mox-alliance-boot-config, mox-alliance-common-proto, mox-alliance-config-core, mox-alliance-executor-proto, mox-alliance-scheduler-core, mox-alliance-scheduler-proto |
+| [mox-alliance-scheduler-svc](<../../platform/domains/alliance/svc/mox-alliance-scheduler-svc/Cargo.toml>) | svc | mox-alliance-scheduler | runtime: mox-alliance-api, mox-alliance-boot-config, mox-alliance-common-proto, mox-alliance-config-core, mox-alliance-executor-proto, mox-alliance-scheduler-core, mox-alliance-scheduler-proto, mox-api-crypto |
 | [mox-alliance-sdk](<../../platform/domains/alliance/sdk/mox-alliance-sdk/Cargo.toml>) | sdk | — | runtime: mox-alliance-api, mox-alliance-common-proto, mox-alliance-executor-proto, mox-alliance-scheduler-proto, mox-error, mox-platform-foundation |
 
 ### base（7）
@@ -88,7 +93,7 @@
 | [mox-data-norm-core](<../../platform/domains/data/core/mox-data-norm-core/Cargo.toml>) | core | — | runtime: mox-platform-foundation |
 | [mox-data-norm-intent-native](<../../platform/domains/data/sdk/mox-data-norm-intent-native/Cargo.toml>) | sdk | — | runtime: mox-ai-intent-core, mox-data-formula-core, mox-data-norm-core |
 | [mox-data-plane-svc](<../../platform/domains/data/svc/mox-data-plane-svc/Cargo.toml>) | svc | — | — |
-| [mox-data-standards-core](<../../platform/domains/data/core/mox-data-standards-core/Cargo.toml>) | core | — | runtime: mox-cloud-foundation |
+| [mox-data-standards-core](<../../platform/domains/data/core/mox-data-standards-core/Cargo.toml>) | core | — | runtime: mox-api-crypto, mox-cloud-foundation |
 
 ### flow（18）
 
@@ -109,7 +114,7 @@
 | [mox-flow-unified-frontend-core](<../../platform/domains/flow/core/mox-flow-unified-frontend-core/Cargo.toml>) | core | — | — |
 | [mox-flow-unified-meta-core](<../../platform/domains/flow/core/mox-flow-unified-meta-core/Cargo.toml>) | core | — | runtime: mox-flow-unified-storage-core, mox-platform-foundation |
 | [mox-flow-unified-perm-core](<../../platform/domains/flow/core/mox-flow-unified-perm-core/Cargo.toml>) | core | — | — |
-| [mox-flow-unified-platform](<../../platform/domains/flow/core/mox-flow-unified-platform/Cargo.toml>) | core | — | runtime: mox-flow-ai-assistant-core, mox-flow-algo-alliance-core, mox-flow-lowcode-core, mox-flow-unified-arch-core, mox-flow-unified-frontend-core, mox-flow-unified-meta-core, mox-flow-unified-perm-core, mox-flow-unified-process-core, mox-flow-unified-storage-core |
+| [mox-flow-unified-platform](<../../platform/domains/flow/core/mox-flow-unified-platform/Cargo.toml>) | core | — | runtime: mox-event-core, mox-flow-ai-assistant-core, mox-flow-algo-alliance-core, mox-flow-lowcode-core, mox-flow-unified-arch-core, mox-flow-unified-frontend-core, mox-flow-unified-meta-core, mox-flow-unified-perm-core, mox-flow-unified-process-core, mox-flow-unified-storage-core |
 | [mox-flow-unified-process-core](<../../platform/domains/flow/core/mox-flow-unified-process-core/Cargo.toml>) | core | — | — |
 | [mox-flow-unified-storage-core](<../../platform/domains/flow/core/mox-flow-unified-storage-core/Cargo.toml>) | core | — | runtime: mox-platform-foundation |
 
@@ -138,10 +143,10 @@
 | [mox-kg-hub-svc](<../../platform/domains/kg/svc/mox-kg-hub-svc/Cargo.toml>) | svc | — | runtime: mox-kg-algo-core, mox-kg-sdk, mox-platform-foundation, mox-platform-graph-core |
 | [mox-kg-meta-core](<../../platform/domains/kg/core/mox-kg-meta-core/Cargo.toml>) | core | — | runtime: mox-cloud-foundation |
 | [mox-kg-sdk](<../../platform/domains/kg/sdk/mox-kg-sdk/Cargo.toml>) | sdk | — | runtime: mox-kg-algo-core |
-| [mox-kg-server](<../../platform/domains/kg/svc/mox-kg-server/Cargo.toml>) | svc | mox-kg-server | runtime: mox-cache-core, mox-kg-algo-core, mox-kg-core, mox-kg-meta-core, mox-kg-service-svc, mox-server-runtime |
+| [mox-kg-server](<../../platform/domains/kg/svc/mox-kg-server/Cargo.toml>) | svc | mox-kg-server | runtime: mox-cache-core, mox-kg-algo-core, mox-kg-core, mox-kg-meta-core, mox-kg-service-svc, mox-kg-storage-svc, mox-server-runtime |
 | [mox-kg-service-svc](<../../platform/domains/kg/svc/mox-kg-service-svc/Cargo.toml>) | svc | — | runtime: mox-api-protocol, mox-cloud-foundation, mox-framework, mox-kg-algo-core, mox-kg-meta-core, mox-kg-storage-svc |
 | [mox-kg-spark-svc](<../../platform/domains/kg/svc/mox-kg-spark-svc/Cargo.toml>) | svc | — | — |
-| [mox-kg-storage-svc](<../../platform/domains/kg/svc/mox-kg-storage-svc/Cargo.toml>) | svc | — | runtime: mox-cloud-foundation, mox-kg-algo-core, mox-kg-meta-core |
+| [mox-kg-storage-svc](<../../platform/domains/kg/svc/mox-kg-storage-svc/Cargo.toml>) | svc | — | runtime: mox-api-protocol, mox-cloud-foundation, mox-kg-algo-core, mox-kg-meta-core |
 | [mox-kg-streams-svc](<../../platform/domains/kg/svc/mox-kg-streams-svc/Cargo.toml>) | svc | — | runtime: mox-cloud-foundation, mox-kg-storage-svc |
 
 ### market（2）
@@ -151,10 +156,11 @@
 | [mox-market-api](<../../platform/domains/market/api/Cargo.toml>) | api | — | — |
 | [mox-market-template-svc](<../../platform/domains/market/svc/mox-market-template-svc/Cargo.toml>) | svc | — | runtime: mox-platform-foundation |
 
-### platform（42）
+### platform（43）
 
 | 模块 | 层/目录 | 可执行入口 | workspace 依赖 |
 |---|---|---|---|
+| [mox-api-crypto](<../../platform/foundation/mox-api-crypto/Cargo.toml>) | foundation | — | runtime: mox-api-protocol |
 | [mox-api-protocol](<../../platform/foundation/mox-api-protocol/Cargo.toml>) | foundation | — | runtime: mox-error |
 | [mox-arch-test](<../../platform/arch-test/Cargo.toml>) | arch-test | — | — |
 | [mox-audit](<../../platform/foundation/mox-audit/Cargo.toml>) | foundation | — | runtime: mox-error, mox-platform-foundation |
@@ -177,7 +183,7 @@
 | [mox-platform-datastore-core](<../../platform/domains/platform/core/mox-platform-datastore-core/Cargo.toml>) | core | — | — |
 | [mox-platform-enterprise-svc](<../../platform/domains/platform/svc/mox-platform-enterprise-svc/Cargo.toml>) | svc | enterprise-svc | runtime: mox-platform-datastore-core, mox-platform-iam-core, mox-platform-meta-core, mox-platform-orchestrator-core |
 | [mox-platform-foundation](<../../platform/foundation/mox-platform-foundation/Cargo.toml>) | foundation | — | — |
-| [mox-platform-gateway-svc](<../../platform/gateway/mox-platform-gateway-svc/Cargo.toml>) | gateway | mox-server | runtime: mox-ai-expert-svc, mox-ai-flow-svc, mox-alliance-http-sdk, mox-api-protocol, mox-audit, mox-flow-unified-process-core, mox-kb-svc, mox-kg-service-svc, mox-platform-api, mox-platform-iam-core |
+| [mox-platform-gateway-svc](<../../platform/gateway/mox-platform-gateway-svc/Cargo.toml>) | gateway | mox-server | runtime: mox-ai-expert-svc, mox-ai-flow-svc, mox-alliance-http-sdk, mox-api-crypto, mox-api-protocol, mox-audit, mox-auth-core, mox-flow-unified-process-core, mox-kb-svc, mox-kg-service-svc, mox-platform-api, mox-platform-iam-core |
 | [mox-platform-graph-core](<../../platform/domains/platform/core/mox-platform-graph-core/Cargo.toml>) | core | — | — |
 | [mox-platform-iam-core](<../../platform/domains/platform/core/mox-platform-iam-core/Cargo.toml>) | core | — | — |
 | [mox-platform-integration-core](<../../platform/domains/platform/core/mox-platform-integration-core/Cargo.toml>) | core | — | runtime: mox-connector-core, mox-enterprise-core, mox-framework, mox-platform-model-core, mox-plugin-core |
@@ -187,7 +193,7 @@
 | [mox-platform-observability](<../../platform/foundation/mox-platform-observability/Cargo.toml>) | foundation | — | — |
 | [mox-platform-operator-core](<../../platform/domains/platform/core/mox-platform-operator-core/Cargo.toml>) | core | — | runtime: mox-platform-foundation |
 | [mox-platform-orchestrator-core](<../../platform/domains/platform/core/mox-platform-orchestrator-core/Cargo.toml>) | core | — | runtime: mox-platform-datastore-core, mox-platform-iam-core, mox-platform-meta-core |
-| [mox-platform-orchestrator-svc](<../../platform/domains/platform/svc/mox-platform-orchestrator-svc/Cargo.toml>) | svc | operator-server | runtime: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-sdk, mox-api-protocol, mox-data-catalog-svc, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc, mox-flow-optimizer-core, mox-flow-primiflow-svc, mox-kg-algo-core, mox-platform-foundation, mox-platform-meta-core, mox-platform-module-core, mox-platform-system-core |
+| [mox-platform-orchestrator-svc](<../../platform/domains/platform/svc/mox-platform-orchestrator-svc/Cargo.toml>) | svc | operator-server | runtime: mox-ai-agent-svc, mox-ai-expert-svc, mox-ai-flow-sdk, mox-api-protocol, mox-data-catalog-svc, mox-event-core, mox-flow-fusion-svc, mox-flow-operator-core, mox-flow-operator-wasm-svc, mox-flow-optimizer-core, mox-flow-primiflow-svc, mox-kg-algo-core, mox-platform-foundation, mox-platform-meta-core, mox-platform-module-core, mox-platform-system-core |
 | [mox-platform-paths](<../../platform/foundation/mox-platform-paths/Cargo.toml>) | foundation | — | — |
 | [mox-platform-system-core](<../../platform/domains/platform/core/mox-platform-system-core/Cargo.toml>) | core | mox-platform-system-core | runtime: mox-platform-foundation |
 | [mox-platform-test-harness](<../../platform/domains/platform/sdk/mox-platform-test-harness/Cargo.toml>) | sdk | — | runtime: mox-cloud-volume-svc, mox-data-compliance-svc, mox-data-etl-svc, mox-data-plane-svc, mox-kg-fusion-svc, mox-platform-gateway-svc |
@@ -236,7 +242,7 @@
 - [frontend-ui/src/router/modules/system.js](<../../frontend-ui/src/router/modules/system.js>)
 - [frontend-ui/src/router/modules/workflow.js](<../../frontend-ui/src/router/modules/workflow.js>)
 
-### views（72）
+### views（71）
 
 - [frontend-ui/src/views/admin/AdminView.vue](<../../frontend-ui/src/views/admin/AdminView.vue>)
 - [frontend-ui/src/views/admin/panels/AdminAccess.vue](<../../frontend-ui/src/views/admin/panels/AdminAccess.vue>)
@@ -253,6 +259,7 @@
 - [frontend-ui/src/views/admin/panels/AdminMonitor.vue](<../../frontend-ui/src/views/admin/panels/AdminMonitor.vue>)
 - [frontend-ui/src/views/admin/panels/AdminOverview.vue](<../../frontend-ui/src/views/admin/panels/AdminOverview.vue>)
 - [frontend-ui/src/views/admin/panels/AdminRole.vue](<../../frontend-ui/src/views/admin/panels/AdminRole.vue>)
+- [frontend-ui/src/views/admin/panels/AdminSso.vue](<../../frontend-ui/src/views/admin/panels/AdminSso.vue>)
 - [frontend-ui/src/views/admin/panels/AdminStorage.vue](<../../frontend-ui/src/views/admin/panels/AdminStorage.vue>)
 - [frontend-ui/src/views/admin/panels/AdminTenant.vue](<../../frontend-ui/src/views/admin/panels/AdminTenant.vue>)
 - [frontend-ui/src/views/admin/panels/AdminUser.vue](<../../frontend-ui/src/views/admin/panels/AdminUser.vue>)
@@ -262,7 +269,6 @@
 - [frontend-ui/src/views/ai/ChatView.vue](<../../frontend-ui/src/views/ai/ChatView.vue>)
 - [frontend-ui/src/views/ai/InfiniteOptimizerView.vue](<../../frontend-ui/src/views/ai/InfiniteOptimizerView.vue>)
 - [frontend-ui/src/views/ai/Melody2ScoreView.vue](<../../frontend-ui/src/views/ai/Melody2ScoreView.vue>)
-- [frontend-ui/src/views/auth/ForgotPassword.vue](<../../frontend-ui/src/views/auth/ForgotPassword.vue>)
 - [frontend-ui/src/views/auth/Login.vue](<../../frontend-ui/src/views/auth/Login.vue>)
 - [frontend-ui/src/views/auth/Register.vue](<../../frontend-ui/src/views/auth/Register.vue>)
 - [frontend-ui/src/views/expert/AllianceTaskView.vue](<../../frontend-ui/src/views/expert/AllianceTaskView.vue>)
@@ -277,10 +283,6 @@
 - [frontend-ui/src/views/graph/MoxFusionView.vue](<../../frontend-ui/src/views/graph/MoxFusionView.vue>)
 - [frontend-ui/src/views/market/MarketDetailView.vue](<../../frontend-ui/src/views/market/MarketDetailView.vue>)
 - [frontend-ui/src/views/market/MarketView.vue](<../../frontend-ui/src/views/market/MarketView.vue>)
-- [frontend-ui/src/views/misc/BusinessHall.vue](<../../frontend-ui/src/views/misc/BusinessHall.vue>)
-- [frontend-ui/src/views/misc/Forbidden.vue](<../../frontend-ui/src/views/misc/Forbidden.vue>)
-- [frontend-ui/src/views/misc/Login.vue](<../../frontend-ui/src/views/misc/Login.vue>)
-- [frontend-ui/src/views/misc/PortalHome.vue](<../../frontend-ui/src/views/misc/PortalHome.vue>)
 - [frontend-ui/src/views/operators/OperatorsView.vue](<../../frontend-ui/src/views/operators/OperatorsView.vue>)
 - [frontend-ui/src/views/project/Dashboard.vue](<../../frontend-ui/src/views/project/Dashboard.vue>)
 - [frontend-ui/src/views/project/panels/KnowledgeBasePanel.vue](<../../frontend-ui/src/views/project/panels/KnowledgeBasePanel.vue>)
@@ -289,6 +291,9 @@
 - [frontend-ui/src/views/project/ResourcesView.vue](<../../frontend-ui/src/views/project/ResourcesView.vue>)
 - [frontend-ui/src/views/project/TaskView.vue](<../../frontend-ui/src/views/project/TaskView.vue>)
 - [frontend-ui/src/views/project/Workbench.vue](<../../frontend-ui/src/views/project/Workbench.vue>)
+- [frontend-ui/src/views/public/BusinessHall.vue](<../../frontend-ui/src/views/public/BusinessHall.vue>)
+- [frontend-ui/src/views/public/Forbidden.vue](<../../frontend-ui/src/views/public/Forbidden.vue>)
+- [frontend-ui/src/views/public/PortalHome.vue](<../../frontend-ui/src/views/public/PortalHome.vue>)
 - [frontend-ui/src/views/workflow/BrowserView.vue](<../../frontend-ui/src/views/workflow/BrowserView.vue>)
 - [frontend-ui/src/views/workflow/panels/AutomationPanel.vue](<../../frontend-ui/src/views/workflow/panels/AutomationPanel.vue>)
 - [frontend-ui/src/views/workflow/panels/McpPanel.vue](<../../frontend-ui/src/views/workflow/panels/McpPanel.vue>)
@@ -311,14 +316,14 @@
 - [frontend-ui/src/views/workspace/panels/WhiteboardPanel.vue](<../../frontend-ui/src/views/workspace/panels/WhiteboardPanel.vue>)
 - [frontend-ui/src/views/workspace/panels/WorkspaceHeader.vue](<../../frontend-ui/src/views/workspace/panels/WorkspaceHeader.vue>)
 
-### api（24）
+### api（25）
 
 - [frontend-ui/src/api/actuator.api.js](<../../frontend-ui/src/api/actuator.api.js>)
 - [frontend-ui/src/api/ai.api.js](<../../frontend-ui/src/api/ai.api.js>)
-- [frontend-ui/src/api/alliance.js](<../../frontend-ui/src/api/alliance.js>)
-- [frontend-ui/src/api/allianceTaskModel.js](<../../frontend-ui/src/api/allianceTaskModel.js>)
+- [frontend-ui/src/api/alliance.api.js](<../../frontend-ui/src/api/alliance.api.js>)
+- [frontend-ui/src/api/allianceTaskModel.api.js](<../../frontend-ui/src/api/allianceTaskModel.api.js>)
 - [frontend-ui/src/api/allianceTasks.test.js](<../../frontend-ui/src/api/allianceTasks.test.js>)
-- [frontend-ui/src/api/auth.js](<../../frontend-ui/src/api/auth.js>)
+- [frontend-ui/src/api/auth.api.js](<../../frontend-ui/src/api/auth.api.js>)
 - [frontend-ui/src/api/caomei.api.js](<../../frontend-ui/src/api/caomei.api.js>)
 - [frontend-ui/src/api/experts.api.js](<../../frontend-ui/src/api/experts.api.js>)
 - [frontend-ui/src/api/graph.api.js](<../../frontend-ui/src/api/graph.api.js>)
@@ -334,11 +339,12 @@
 - [frontend-ui/src/api/notification.api.js](<../../frontend-ui/src/api/notification.api.js>)
 - [frontend-ui/src/api/operators.api.js](<../../frontend-ui/src/api/operators.api.js>)
 - [frontend-ui/src/api/projects.api.js](<../../frontend-ui/src/api/projects.api.js>)
+- [frontend-ui/src/api/sso.api.js](<../../frontend-ui/src/api/sso.api.js>)
 - [frontend-ui/src/api/system.api.js](<../../frontend-ui/src/api/system.api.js>)
 - [frontend-ui/src/api/workflow.api.js](<../../frontend-ui/src/api/workflow.api.js>)
 - [frontend-ui/src/api/workspace.api.js](<../../frontend-ui/src/api/workspace.api.js>)
 
-### stores（10）
+### stores（11）
 
 - [frontend-ui/src/stores/ai.store.js](<../../frontend-ui/src/stores/ai.store.js>)
 - [frontend-ui/src/stores/alliance.store.js](<../../frontend-ui/src/stores/alliance.store.js>)
@@ -347,13 +353,16 @@
 - [frontend-ui/src/stores/auth.store.test.js](<../../frontend-ui/src/stores/auth.store.test.js>)
 - [frontend-ui/src/stores/index.js](<../../frontend-ui/src/stores/index.js>)
 - [frontend-ui/src/stores/permission.store.js](<../../frontend-ui/src/stores/permission.store.js>)
+- [frontend-ui/src/stores/permission.store.test.js](<../../frontend-ui/src/stores/permission.store.test.js>)
 - [frontend-ui/src/stores/project.store.js](<../../frontend-ui/src/stores/project.store.js>)
 - [frontend-ui/src/stores/ui.store.js](<../../frontend-ui/src/stores/ui.store.js>)
 - [frontend-ui/src/stores/user.store.js](<../../frontend-ui/src/stores/user.store.js>)
 
-### composables（13）
+### composables（16）
 
+- [frontend-ui/src/composables/index.js](<../../frontend-ui/src/composables/index.js>)
 - [frontend-ui/src/composables/projectContext.js](<../../frontend-ui/src/composables/projectContext.js>)
+- [frontend-ui/src/composables/useActiveModule.js](<../../frontend-ui/src/composables/useActiveModule.js>)
 - [frontend-ui/src/composables/useAllianceTasks.js](<../../frontend-ui/src/composables/useAllianceTasks.js>)
 - [frontend-ui/src/composables/useAllianceTasks.test.js](<../../frontend-ui/src/composables/useAllianceTasks.test.js>)
 - [frontend-ui/src/composables/useKnowledgeBase.js](<../../frontend-ui/src/composables/useKnowledgeBase.js>)
@@ -363,6 +372,7 @@
 - [frontend-ui/src/composables/useTheme.test.js](<../../frontend-ui/src/composables/useTheme.test.js>)
 - [frontend-ui/src/composables/workspace/useAlliance.js](<../../frontend-ui/src/composables/workspace/useAlliance.js>)
 - [frontend-ui/src/composables/workspace/useGraphCanvas.js](<../../frontend-ui/src/composables/workspace/useGraphCanvas.js>)
+- [frontend-ui/src/composables/workspace/useGraphCanvas.test.js](<../../frontend-ui/src/composables/workspace/useGraphCanvas.test.js>)
 - [frontend-ui/src/composables/workspace/useTaskOrchestration.js](<../../frontend-ui/src/composables/workspace/useTaskOrchestration.js>)
 - [frontend-ui/src/composables/workspace/useWhiteboard.js](<../../frontend-ui/src/composables/workspace/useWhiteboard.js>)
 - [frontend-ui/src/composables/workspace/useWorkspaceData.js](<../../frontend-ui/src/composables/workspace/useWorkspaceData.js>)
@@ -373,6 +383,7 @@
 
 | 目录 | 顶层说明/构建入口 |
 |---|---|
+| [browser-rpa](<../../projects/browser-rpa>) | [Dockerfile](<../../projects/browser-rpa/Dockerfile>) · [README.md](<../../projects/browser-rpa/README.md>) |
 | [llm-inference-svc](<../../projects/llm-inference-svc>) | [Dockerfile](<../../projects/llm-inference-svc/Dockerfile>) · [README.md](<../../projects/llm-inference-svc/README.md>) |
 | [market-games](<../../projects/market-games>) | 无顶层入口标记，需人工确认归属 |
 | [melody2score](<../../projects/melody2score>) | [README.md](<../../projects/melody2score/README.md>) |

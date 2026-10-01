@@ -1,0 +1,240 @@
+权限颗粒度接线勘察 —— 原始读数档案（2026-09-29）
+仪器：scripts/gate/check-admin-endpoint-guards.py（本轮新增，md5=e5104692933a7c4e / 27325 B / 560 行，LF，无 CRLF）
+扫描根：platform/gateway/mox-platform-gateway-svc/src（.rs 实测 97 个）
+本档案只放读数；定性叙述与分阶段方案见 docs/enterprise/18-权限颗粒度接线勘察与分阶段方案-V1.0.md
+行数=splitlines()，字节=len(bytes)，md5 取前 16 位。
+
+=== [1] --check（rc=0，命中集==台账）9562 B md5=321923d8b251db5b ===
+  首三行读数：
+  | 扫描 97 个 .rs（platform/gateway/mox-platform-gateway-svc/src）
+  | 接线 router 上的 (path,handler) 对=405，敏感前缀对=92，其中已带授权判定=4
+  | 未接线 router 构造函数上的敏感声明=8 条（不计债：零调用者的 build_*_router，逐条见下）
+  UNGATED 行数=88，DEADROUTER 行数=8，BLIND 行数=0，判决行=RESULT PASS（命中集==台账，88 条已登记；身份绑定率见 --identity）
+  逐条 UNGATED（file:行号按本档案内顺序，前缀省略至 src 相对路径）：
+  |   UNGATED[no-guard] /api/admin/users/:id/sessions/:jti|auth_session::admin_revoke_session_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/admin/users/:id/sessions|auth_session::admin_list_sessions_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/security/status|security::security_status <- system/mod.rs
+  |   UNGATED[no-guard] /api/security/validate|security::validate_api_key <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/approval/:id/approve|approval::approve_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/approval/:id/history|approval::approval_history_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/approval/:id/reject|approval::reject_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/approval/:id|approval::approval_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/approval/definitions|approval::approval_definitions_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/approval/pending|approval::pending_approvals_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/approval|approval::create_approval_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/approval|approval::list_approvals_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/config/:id|config::delete_config_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/config/:id|config::get_config_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/config/:id|config::update_config_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/config/key/:key|config::get_config_by_key_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/config/refresh-cache|config::refresh_config_cache_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/config|config::create_config_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/config|config::list_configs_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dept/:id/users|dept::list_dept_users_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dept/:id|dept::delete_dept_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dept/:id|dept::get_dept_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dept/:id|dept::update_dept_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dept/tree|dept::dept_tree <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dept|dept::create_dept_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dept|dept::list_dept <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/data/:id|dict::delete_dict_data_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/data/:id|dict::get_dict_data_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/data/:id|dict::update_dict_data_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/data/type/:dictType|dict::list_dict_data_by_type_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/data|dict::create_dict_data_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/data|dict::list_dict_data_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/type/:id|dict::delete_dict_type_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/type/:id|dict::get_dict_type_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/type/:id|dict::update_dict_type_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/type/all|dict::list_all_dict_types_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/type|dict::create_dict_type_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/dict/type|dict::list_dict_types_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/logininfor/:id|logininfor::delete_login_log_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/logininfor/clean|logininfor::clean_login_logs_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/logininfor/export|logininfor::export_login_logs_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/logininfor|logininfor::list_login_logs_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/menu/:id|menu::delete_menu_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/menu/:id|menu::get_menu_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/menu/:id|menu::update_menu_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/menu/tree|menu::menu_tree <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/menu|menu::create_menu_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/menu|menu::list_menus_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/operlog/:id|operlog::delete_oper_log_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/operlog/:id|operlog::get_oper_log_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/operlog/clean|operlog::clean_oper_logs_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/operlog/export|operlog::export_oper_logs_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/operlog|operlog::list_oper_logs_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/permissions|permission::get_permissions <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/post/:id|post::delete_post_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/post/:id|post::get_post_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/post/:id|post::update_post_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/post/dept/:deptId|post::list_posts_by_dept_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/post|post::create_post_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/post|post::list_posts_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id/copy|role::copy_role_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id/dataPerms|role::get_role_data_perms_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id/dataPerms|role::set_role_data_perms_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id/menuPerms|role::get_role_menu_perms_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id/menuPerms|role::set_role_menu_perms_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id/users|role::list_role_users_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id|role::delete_role_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id|role::get_role <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role/:id|role::update_role_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role|role::create_role_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/role|role::list_roles <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id/changeStatus|user::change_user_status_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id/depts|user::get_user_depts_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id/depts|user::set_user_depts_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id/resetPwd|user::reset_user_pwd_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id/roles|permission::get_user_roles <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id/roles|user::assign_user_roles_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id|user::delete_user_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id|user::get_user_detail_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user/:id|user::update_user_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user|user::create_user_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/system/user|user::list_users_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/tenant/:id|tenant::delete_tenant_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/tenant/:id|tenant::get_tenant_detail <- system/mod.rs
+  |   UNGATED[no-guard] /api/tenant/:id|tenant::update_tenant_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/tenant/switch/:id|tenant::switch_tenant <- system/mod.rs
+  |   UNGATED[no-guard] /api/tenant|tenant::create_tenant_handler <- system/mod.rs
+  |   UNGATED[no-guard] /api/tenant|tenant::list_tenants <- system/mod.rs
+  逐条 DEADROUTER：
+  |   DEADROUTER[build_approval_router] /api/system/approval|list_approvals_handler <- system/approval.rs
+  |   DEADROUTER[build_approval_router] /api/system/approval|create_approval_handler <- system/approval.rs
+  |   DEADROUTER[build_approval_router] /api/system/approval/definitions|approval_definitions_handler <- system/approval.rs
+  |   DEADROUTER[build_approval_router] /api/system/approval/pending|pending_approvals_handler <- system/approval.rs
+  |   DEADROUTER[build_approval_router] /api/system/approval/:id|approval_detail_handler <- system/approval.rs
+  |   DEADROUTER[build_approval_router] /api/system/approval/:id/approve|approve_handler <- system/approval.rs
+  |   DEADROUTER[build_approval_router] /api/system/approval/:id/reject|reject_handler <- system/approval.rs
+  |   DEADROUTER[build_approval_router] /api/system/approval/:id/history|approval_history_handler <- system/approval.rs
+
+=== [2] --selftest（rc=0）888 B md5=7a8940c3b56eee6b ===
+  | PASS G1 已带 require_admin 的敏感端点必须不红  
+  | PASS G2 裸放行的敏感端点必须全部红（3 条）  
+  | PASS G3 匿名 auth 路由属正对照，必须不红  
+  | PASS G4 判集塌缩必须被拒（SCOPE 在语料里 0 条 -> 不可当"干净"）  
+  | PASS G5 混合语料上只咬裸放行那 3 条（函数体不得溢到相邻 fn）  
+  | PASS G6 同名不同体的 handler 必须按声明处解析（已守卫的不得判成裸放行）  
+  | PASS G7 同名两处且都不同目录时必须报 AMBIGUOUS（盲区可见，不许静默取首见）  
+  | PASS G10 未接线 router 的敏感声明必须排除出题（且被按名计入 dead）  
+  | PASS G8 台账不符而失败时必须打印逐条证据（不许静默 rc=1）  
+  | PASS G9 分母塌缩而失败时同样必须打印（不许静默 rc=2）  
+  | SELFTEST PASS (10 例) LEDGER 条目=88 门禁自身 sha=e5104692933a7c4e
+
+=== [3] --identity（rc=0）376 B md5=1b0f418d5e65aeb0 ===
+  |   BOUND /api/security/api-keys|security::list_api_keys <- system/mod.rs
+  |   BOUND /api/security/api-keys|security::create_api_key <- system/mod.rs
+  |   BOUND /api/security/api-keys/:id|security::revoke_api_key <- system/mod.rs
+  |   BOUND /api/security/audit-log|security::audit_log <- system/mod.rs
+  | 敏感 (path,handler) 对=92，其中吃 ApiAuth 身份=4（4/92，未绑=88）
+
+=== [4] --emit-ledger（LEDGER 条目的来源，88 条 + 尾注）5541 B md5=150520a2a2ba491a ===
+  |     "/api/admin/users/:id/sessions/:jti|auth_session::admin_revoke_session_handler",
+  |     "/api/admin/users/:id/sessions|auth_session::admin_list_sessions_handler",
+  |     "/api/security/status|security::security_status",
+  |     "/api/security/validate|security::validate_api_key",
+  |     "/api/system/approval/:id/approve|approval::approve_handler",
+  |     "/api/system/approval/:id/history|approval::approval_history_handler",
+  |     "/api/system/approval/:id/reject|approval::reject_handler",
+  |     "/api/system/approval/:id|approval::approval_detail_handler",
+  |     "/api/system/approval/definitions|approval::approval_definitions_handler",
+  |     "/api/system/approval/pending|approval::pending_approvals_handler",
+  |     "/api/system/approval|approval::create_approval_handler",
+  |     "/api/system/approval|approval::list_approvals_handler",
+  |     "/api/system/config/:id|config::delete_config_handler",
+  |     "/api/system/config/:id|config::get_config_detail_handler",
+  |     "/api/system/config/:id|config::update_config_handler",
+  |     "/api/system/config/key/:key|config::get_config_by_key_handler",
+  |     "/api/system/config/refresh-cache|config::refresh_config_cache_handler",
+  |     "/api/system/config|config::create_config_handler",
+  |     "/api/system/config|config::list_configs_handler",
+  |     "/api/system/dept/:id/users|dept::list_dept_users_handler",
+  |     "/api/system/dept/:id|dept::delete_dept_handler",
+  |     "/api/system/dept/:id|dept::get_dept_detail_handler",
+  |     "/api/system/dept/:id|dept::update_dept_handler",
+  |     "/api/system/dept/tree|dept::dept_tree",
+  |     "/api/system/dept|dept::create_dept_handler",
+  |     "/api/system/dept|dept::list_dept",
+  |     "/api/system/dict/data/:id|dict::delete_dict_data_handler",
+  |     "/api/system/dict/data/:id|dict::get_dict_data_detail_handler",
+  |     "/api/system/dict/data/:id|dict::update_dict_data_handler",
+  |     "/api/system/dict/data/type/:dictType|dict::list_dict_data_by_type_handler",
+  |     "/api/system/dict/data|dict::create_dict_data_handler",
+  |     "/api/system/dict/data|dict::list_dict_data_handler",
+  |     "/api/system/dict/type/:id|dict::delete_dict_type_handler",
+  |     "/api/system/dict/type/:id|dict::get_dict_type_detail_handler",
+  |     "/api/system/dict/type/:id|dict::update_dict_type_handler",
+  |     "/api/system/dict/type/all|dict::list_all_dict_types_handler",
+  |     "/api/system/dict/type|dict::create_dict_type_handler",
+  |     "/api/system/dict/type|dict::list_dict_types_handler",
+  |     "/api/system/logininfor/:id|logininfor::delete_login_log_handler",
+  |     "/api/system/logininfor/clean|logininfor::clean_login_logs_handler",
+  |     "/api/system/logininfor/export|logininfor::export_login_logs_handler",
+  |     "/api/system/logininfor|logininfor::list_login_logs_handler",
+  |     "/api/system/menu/:id|menu::delete_menu_handler",
+  |     "/api/system/menu/:id|menu::get_menu_detail_handler",
+  |     "/api/system/menu/:id|menu::update_menu_handler",
+  |     "/api/system/menu/tree|menu::menu_tree",
+  |     "/api/system/menu|menu::create_menu_handler",
+  |     "/api/system/menu|menu::list_menus_handler",
+  |     "/api/system/operlog/:id|operlog::delete_oper_log_handler",
+  |     "/api/system/operlog/:id|operlog::get_oper_log_detail_handler",
+  |     "/api/system/operlog/clean|operlog::clean_oper_logs_handler",
+  |     "/api/system/operlog/export|operlog::export_oper_logs_handler",
+  |     "/api/system/operlog|operlog::list_oper_logs_handler",
+  |     "/api/system/permissions|permission::get_permissions",
+  |     "/api/system/post/:id|post::delete_post_handler",
+  |     "/api/system/post/:id|post::get_post_detail_handler",
+  |     "/api/system/post/:id|post::update_post_handler",
+  |     "/api/system/post/dept/:deptId|post::list_posts_by_dept_handler",
+  |     "/api/system/post|post::create_post_handler",
+  |     "/api/system/post|post::list_posts_handler",
+  |     "/api/system/role/:id/copy|role::copy_role_handler",
+  |     "/api/system/role/:id/dataPerms|role::get_role_data_perms_handler",
+  |     "/api/system/role/:id/dataPerms|role::set_role_data_perms_handler",
+  |     "/api/system/role/:id/menuPerms|role::get_role_menu_perms_handler",
+  |     "/api/system/role/:id/menuPerms|role::set_role_menu_perms_handler",
+  |     "/api/system/role/:id/users|role::list_role_users_handler",
+  |     "/api/system/role/:id|role::delete_role_handler",
+  |     "/api/system/role/:id|role::get_role",
+  |     "/api/system/role/:id|role::update_role_handler",
+  |     "/api/system/role|role::create_role_handler",
+  |     "/api/system/role|role::list_roles",
+  |     "/api/system/user/:id/changeStatus|user::change_user_status_handler",
+  |     "/api/system/user/:id/depts|user::get_user_depts_handler",
+  |     "/api/system/user/:id/depts|user::set_user_depts_handler",
+  |     "/api/system/user/:id/resetPwd|user::reset_user_pwd_handler",
+  |     "/api/system/user/:id/roles|permission::get_user_roles",
+  |     "/api/system/user/:id/roles|user::assign_user_roles_handler",
+  |     "/api/system/user/:id|user::delete_user_handler",
+  |     "/api/system/user/:id|user::get_user_detail_handler",
+  |     "/api/system/user/:id|user::update_user_handler",
+  |     "/api/system/user|user::create_user_handler",
+  |     "/api/system/user|user::list_users_handler",
+  |     "/api/tenant/:id|tenant::delete_tenant_handler",
+  |     "/api/tenant/:id|tenant::get_tenant_detail",
+  |     "/api/tenant/:id|tenant::update_tenant_handler",
+  |     "/api/tenant/switch/:id|tenant::switch_tenant",
+  |     "/api/tenant|tenant::create_tenant_handler",
+  |     "/api/tenant|tenant::list_tenants",
+  | # 现推命中 88 条 / 敏感对数 92 / 解析对数 405 / .rs 97 / 未接线声明 8（来源：本门禁现量，勿手抄）
+
+=== [5] 反证（纯内存 patch，磁盘未动）===
+  --- guard-verify-final.txt（572 B md5=3d381eec2b6d313c）---
+  | V0 AST 读到的 LEDGER 条数=88（与模块常量一致=True）
+  | V1 emit=88 ledger=88 集合相等=True 顺序一致=True 重复=0
+  | V2 撤一条登记 => rc=1 ['GROWN 1 条新增裸放行（未登记）：/api/tenant|tenant::list_tenants']
+  | V3 塞一条假条目 => rc=1 ['STALE 1 条台账已过期（该端点已有守卫或已不在 SCOPE）：/api/system/nope|nope::missing_handler']
+  | V4 复原后 => rc=0 判决行=['RESULT PASS（命中集==台账，88 条已登记；身份绑定率见 --identity）']
+  | LEDGER 复原校验：长度=88 与盘上常量一致=True
+  --- guard-mutant-final.txt（300 B md5=114cd202ed78a434）---
+  | MUTANT(window=6000) rc=1  FAIL G5 混合语料上只咬裸放行那 3 条（函数体不得溢到相邻 fn）  detail=[] | SELFTEST FAIL (10 例) LEDGER 条目=88 门禁自身 sha=e5104692933a7c4e
+  | RESTORED fn_body rc=0  ['SELFTEST PASS (10 例) LEDGER 条目=88 门禁自身 sha=e5104692933a7c4e']
+
+=== [6] 口径与已知盲区（读数离开这页就不能用）===
+  · 授权判定只认三个记号：require_admin( / check_permission / has_role( —— 别的写法（自写 if role=="admin"）不在网内。
+  · 敏感面只认前缀元组 SCOPE=/api/system,/api/tenant,/api/admin,/api/security,/api/sso；/api/auth 故意排除。
+  · "接线"判据 = router 构造函数名在本 src 树内被自身函数体之外引用过；跨 crate 的调用者看不见（本树内 self 计数即全量）。
+  · handler 体解析顺序：唯一 -> 同目录且模块名吻合 -> 同目录唯一 -> 模块名唯一 -> AMBIGUOUS（显式点名，不静默挑）。
+  · 本档案的 88/92/405 是本轮现量；门禁改动后 sha 会变，旧引用只对当轮有效。

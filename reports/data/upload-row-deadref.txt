@@ -1,0 +1,1 @@
+SFCSCAN files=128 checked=126 skippedNonSetup=2 deadRefFiles=0 structFiles=0 verdict=PASS

@@ -37,14 +37,25 @@ pub fn topological_sort(nodes: &[Node]) -> AllianceResult<TopoSortResult> {
 
     // 初始化
     for node in nodes {
-        node_ids.insert(node.node_id.clone());
+        if node.node_id.trim().is_empty() || !node_ids.insert(node.node_id.clone()) {
+            return Err(AllianceError::invalid_argument(
+                "Empty or duplicate node ID in DAG",
+            ));
+        }
         in_degree.entry(node.node_id.clone()).or_insert(0);
         adjacency.entry(node.node_id.clone()).or_default();
     }
 
     // 构建邻接表和入度
     for node in nodes {
+        let mut dependencies = HashSet::new();
         for dep in &node.dependencies {
+            if !dependencies.insert(dep) {
+                return Err(AllianceError::invalid_argument(format!(
+                    "Node {} has duplicate dependency {}",
+                    node.node_id, dep
+                )));
+            }
             if !node_ids.contains(dep) {
                 return Err(AllianceError::invalid_argument(format!(
                     "Node {} depends on non-existent node {}",
@@ -66,9 +77,10 @@ pub fn topological_sort(nodes: &[Node]) -> AllianceResult<TopoSortResult> {
     let mut layers: Vec<Vec<String>> = Vec::new();
 
     // 入度为 0 的节点入队（第一层）
-    for (id, &deg) in &in_degree {
-        if deg == 0 {
-            queue.push_back(id.clone());
+    // 根节点按声明顺序入队，邻接表亦按声明顺序构建，避免HashMap随机遍历。
+    for node in nodes {
+        if in_degree[&node.node_id] == 0 {
+            queue.push_back(node.node_id.clone());
         }
     }
 
@@ -98,9 +110,7 @@ pub fn topological_sort(nodes: &[Node]) -> AllianceResult<TopoSortResult> {
     }
 
     if order.len() != nodes.len() {
-        return Err(AllianceError::invalid_argument(
-            "Cycle detected in DAG",
-        ));
+        return Err(AllianceError::invalid_argument("Cycle detected in DAG"));
     }
 
     // 重新计算入度（因为上面的 in_degree 已经被修改了）
@@ -246,6 +256,26 @@ mod tests {
             duration_ms: None,
             error_message: None,
         }
+    }
+
+    #[test]
+    fn test_topological_order_is_repeatable() {
+        let nodes = vec![
+            make_node("C", vec![]),
+            make_node("A", vec![]),
+            make_node("B", vec!["C", "A"]),
+        ];
+        for _ in 0..32 {
+            let topo = topological_sort(&nodes).unwrap();
+            assert_eq!(topo.order, vec!["C", "A", "B"]);
+            assert_eq!(topo.layers, vec![vec!["C", "A"], vec!["B"]]);
+        }
+    }
+
+    #[test]
+    fn test_topological_sort_rejects_ambiguous_dependencies() {
+        let nodes = vec![make_node("A", vec![]), make_node("B", vec!["A", "A"])];
+        assert!(topological_sort(&nodes).is_err());
     }
 
     #[test]

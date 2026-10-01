@@ -1,0 +1,41 @@
+== F1 no-arg (locale drifts with browser) : 10 处 ==
+   src/modules/admin-lowcode/engine/widgetRegistry.js:12 (no args)
+   src/views/admin/panels/AdminAccess.vue:124 (no args)
+   src/views/admin/panels/AdminAudit.vue:272 (no args)
+   src/views/admin/panels/AdminConfig.vue:193 (no args)
+   src/views/admin/panels/AdminHitl.vue:168 (no args)
+   src/views/admin/panels/AdminLlm.vue:258 (no args)
+   src/views/admin/panels/AdminLlm.vue:278 (no args)
+   src/views/admin/panels/AdminMenu.vue:314 (no args)
+   src/views/expert/ExpertPlazaView.vue:672 (no args)
+   src/views/project/TaskView.vue:425 (no args)
+== F2 zh-CN+hour12false : 1 处 ==
+   src/utils/time.js:68 'zh-CN', { hour12: false }
+== F3 other option sets : 4 处 ==
+   src/views/admin/panels/AdminLlm.vue:647 'zh-CN', { 
+      month: '2-digit', 
+      day: '2-digit', 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    }
+   src/views/expert/panels/ExpertEnterprisePanel.vue:659 'zh-CN'
+   src/views/market/MarketView.vue:608 'zh-CN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    }
+   src/views/workflow/BrowserView.vue:586 'zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }
+== F4 hand-spliced numeric getters : 6 处 ==
+   src/components/FlowDetailDialog.vue  x1
+   src/components/MessageBubble.vue  x1
+   src/utils/time.js  x1
+   src/views/ai/ChatView.vue  x1
+   src/views/expert/ExpertPlazaView.vue  x1
+   src/views/expert/panels/ExpertEnterprisePanel.vue  x1

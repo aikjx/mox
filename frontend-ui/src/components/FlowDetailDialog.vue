@@ -124,6 +124,7 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { VideoCamera, Document, CopyDocument, RefreshRight, Loading } from '@element-plus/icons-vue'
 import { getLogs } from '@/api'
+import { formatDateTime } from '@/utils'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -179,8 +180,7 @@ function fmtTime(s) {
   if (!s) return '—'
   const d = new Date(s)
   if (Number.isNaN(d.getTime())) return String(s)
-  const p = (x) => String(x).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+  return formatDateTime(d, '—')
 }
 const overview = computed(() => {
   const f = props.flowDetail || {}

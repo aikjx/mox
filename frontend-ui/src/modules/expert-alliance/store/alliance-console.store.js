@@ -4,6 +4,7 @@ import { computed, reactive, ref } from 'vue'
 import { allianceApi } from '@/modules/expert-alliance/api'
 import { isActiveTaskStatus, isTerminalTaskStatus } from '@/modules/expert-alliance/contract'
 import { dispatchInvalid, dispatchPatch, dispatchRows, dispatchRunFindings, dispatchRunProblem, breakerEmptyNote, successRateNote } from '@/modules/expert-alliance/contract'
+import { expertNameOr } from '@/modules/expert-alliance/contract'
 
 export const useAllianceConsoleStore = defineStore('allianceConsole', () => {
   const api = allianceApi
@@ -255,7 +256,7 @@ export const useAllianceConsoleStore = defineStore('allianceConsole', () => {
   /** 状态端点只给 expert_id，姓名按专家目录的缓存补齐，取不到就照实显示 id */
   const loadRows = computed(() => (dispatcherStatus.value?.expertLoads || []).map((l) => ({
     ...l,
-    name: dispatchCandidates.value.find((c) => c.id === l.expertId)?.name || ''
+    name: expertNameOr({ id: l.expertId, name: dispatchCandidates.value.find((c) => c.id === l.expertId)?.name }, '')
   })))
 
   async function loadDispatcherStatus() {

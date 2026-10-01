@@ -2,7 +2,7 @@
 """解析 `cargo test --workspace` 日志，输出每个测试二进制与每个 crate 的通过/失败/忽略数量。
 
 用法:
-    python scripts/parse_test_report.py logs/cargo_test_20260818.log
+    python scripts/tests/parse_test_report.py logs/cargo_test_20260818.log
 
 输出三部分:
   1. 每个测试二进制（harness）的明细

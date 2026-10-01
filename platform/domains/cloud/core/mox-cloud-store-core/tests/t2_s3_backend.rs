@@ -181,7 +181,7 @@ fn handle_conn(
             .filter(|k| k.starts_with(&prefix_filter))
             .cloned()
             .collect();
-        let mut xml = String::from("<ListBucketResult>");
+        let mut xml = String::from("<ListBucketResult><IsTruncated>false</IsTruncated>");
         for k in keys {
             xml.push_str(&format!("<Contents><Key>{}</Key></Contents>", k));
         }
@@ -323,6 +323,7 @@ async fn t2_s3_object_store_http_roundtrip() {
 
     ObjectStore::delete(&store, "kb/doc/a.md").await.unwrap();
     assert!(!ObjectStore::exists(&store, "kb/doc/a.md").await.unwrap());
+    assert!(server.objects.lock().unwrap().is_empty());
     assert!(matches!(
         ObjectStore::get(&store, "kb/doc/a.md").await,
         Err(StoreError::NotFound { .. })

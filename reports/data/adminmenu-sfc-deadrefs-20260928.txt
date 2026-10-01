@@ -1,0 +1,2 @@
+DEADREF src/views/project/ProjectsView.vue :: projectMemberCount
+SFCSCAN files=128 checked=126 skippedNonSetup=2 deadRefFiles=1 structFiles=0 verdict=FAIL

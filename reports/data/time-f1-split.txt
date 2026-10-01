@@ -1,0 +1,15 @@
+F1 族（无参 locale 格式化）收口后余账分类 —— 本轮现场扫描，needle 为 .toLocaleString() 连写
+收口前 10 处的坐标见同目录 time-family-census-after.txt 的 F1 块（4 份逐字符相同副本 + 3 处时间戳 + 3 处数字千分位）。
+分类口径：同行是否出现 new Date / d. 前缀，并逐条人工核对过。
+
+== 时间戳余账 3 处（三份契约各不相同，本轮不动）==
+   modules/admin-lowcode/engine/widgetRegistry.js:12  return d.toLocaleString()
+   views/admin/panels/AdminHitl.vue:168  try { return new Date(ts * 1000).toLocaleString() } catch { return String(ts) }
+   views/project/TaskView.vue:425  created_at: new Date().toLocaleString()
+
+== 数字千分位 3 处（与时间无关的合法用途，不进时间口径账）==
+   views/admin/panels/AdminLlm.vue:258  <div class="stat-value">{{ stats.total_tokens.toLocaleString() }}</div>
+   views/admin/panels/AdminLlm.vue:278  <span class="usage-tokens">{{ data.total_tokens.toLocaleString() }} tokens</span>
+   views/expert/ExpertPlazaView.vue:698  if (s.consult_count != null) heroStats.value[1].value = s.consult_count.toLocaleString()
+
+合计 6 处 = 时间 3 + 数字 3

@@ -8,6 +8,8 @@ last_updated: 2026-09-25
 
 # 专家联盟产品需求文档（PRD）
 
+> 状态：V1.0 目标态，部分结论已被 CURRENT-ARCHITECTURE.md V1.1 取代（见文中 ⚠️ 补记）。
+
 ## 1. 产品定位
 
 ### 1.1 一句话定义
@@ -75,6 +77,8 @@ last_updated: 2026-09-25
 | 进度推送 | WebSocket/SSE 实时推送节点级进度 |
 | 人工干预 | 支持暂停/恢复/跳过/重试/指定专家 |
 | 对应代码 | executor-core/ + 网关 experts_orchestration.rs |
+
+> ⚠️ **V1.1 核对补记（2026-09-29）**：本文此处所述的 `/ws/v1/*` WebSocket 推送在实现中不存在（全 crate `WebSocketUpgrade` 零命中）；实时性由 SSE `GET /api/alliance/tasks/:id/logs/stream` 承担。以 CURRENT-ARCHITECTURE.md V1.1 为准。
 
 ### F-05 结果融合
 

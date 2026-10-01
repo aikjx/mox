@@ -20,10 +20,25 @@ pub struct RegistryClient {
 impl RegistryClient {
     /// 创建新客户端
     pub fn new(base_url: String) -> Self {
-        let http = Client::builder()
-            .timeout(Duration::from_secs(10))
-            .build()
-            .expect("failed to build http client");
+        let mut builder = Client::builder().timeout(Duration::from_secs(10));
+        // 内部服务间鉴权：与下游 svc internal_auth_layer 同源同令牌。
+        // 配置 MOX_INTERNAL_TOKEN 后所有出站请求自动携带 Authorization: Bearer <token>；
+        // 未配置则不注入（下游中间件未配置时放行，向后兼容）。
+        if let Ok(token) = std::env::var("MOX_INTERNAL_TOKEN") {
+            if !token.is_empty() {
+                let mut headers = axum::http::HeaderMap::new();
+                headers.insert(
+                    axum::http::header::AUTHORIZATION,
+                    format!("Bearer {token}").parse().unwrap(),
+                );
+                builder = builder.default_headers(headers);
+            }
+        }
+        let http = builder.build().unwrap_or_else(|e| {
+            // N6 修复：不再 .expect() 恐慌；记录错误后降级为默认 client（无超时/鉴权头）
+            tracing::error!("registry client http build failed: {e}; falling back to default client");
+            Client::new()
+        });
 
         Self { http, base_url }
     }

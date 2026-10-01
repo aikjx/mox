@@ -10,6 +10,7 @@ import {
   EXPERT_AVAILABILITY, EXPERT_TYPE, PRICING_MODEL, VERIFICATION_STATUS,
   availabilityLabel, expertTypeLabel, pricingLabel, verificationLabel
 } from './enums.js'
+import { expertDisplayName } from './graph.js'
 
 /** u64 读数后被 `as u32` 截断（hourly_rate_cents / current_load / max_concurrent 皆如此） */
 export const EXPERT_U32_MAX = 0xffffffff
@@ -232,7 +233,7 @@ function sameWire(f, x, y) {
  * @param {{id?:string,name?:string}} expert
  */
 export function deleteConsequences(expert = {}) {
-  const who = expert.name || expert.id || '该专家'
+  const who = expertDisplayName(expert)
   return [
     `${who} 会从列表、详情、派生指标、能力目录里消失——这四处都在过滤 enabled（experts_registry.rs:177,258,326,565）`,
     '调度器统计、协作选路、编排与最优团队也只看 enabled 专家（experts_dispatcher.rs:518、experts_collaboration.rs:767,997,1083,1374、experts_orchestration.rs:688、experts_graph.rs:475-477）',
@@ -260,6 +261,10 @@ export function deleteResultText(result) {
  *    所以文案只能说"没有角色判定"，不能说"仅管理员可操作"——后端并没有这件事。
  */
 export const EXPERT_WRITE_IDENTITY = Object.freeze({
-  statement: '这三条写请求都带当前登录身份发出；网关对专家写路径没有角色判定，任何已认证身份都能注册 / 编辑 / 停用',
-  evidence: ['config.rs:37', 'modules.rs:186', 'router/index.js:74']
+  statement: '这三条写请求都带当前登录身份发出；网关对专家写路径没有角色判定，任何已认证身份都能注册 / 编辑 / 停用，身份只被写进审计链的行动者字段（没带身份则记为 system）。全域唯一一处 403 在协作面：目标专家已被禁用时拒绝，拒的是对象状态而不是调用方是谁',
+  evidence: ['config.rs:41', 'modules.rs:219', 'router/index.js:74', 'experts_common.rs:585', 'experts_dispatcher.rs:588', 'experts_collaboration.rs:797']
 })
+
+/** 会诊房间凭证状态的取值常量。wire 权威 experts_registry.rs:672-676
+ *  只产出 available / waiting，且由 expert 的 availability.status == "online" 推出（没有第三态）。 */
+export const ROOM_STATUS = Object.freeze({ AVAILABLE: 'available', WAITING: 'waiting' })

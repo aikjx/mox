@@ -1,0 +1,32 @@
+盘上基线 sha：GUARD=2513772f6f898525 PANEL=f7f58a9b33e692ef TASKVIEW=cff5958fe7524b13 ENUMS=c2e32d78f988a768
+未变异基线：rc=0，红格=[]
+M1 ok  说明=模块外自写一份 bookingStatusLabel（真越界）  期望打红=['L1']  实际红=['L1 模块外零自写（登记口除外）']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH
+M2 ok  说明=同前缀的不同名字不许撞车（必须不红，挡住子串针）  期望打红=[]  实际红=[]  rc=0
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH
+M3 ok  说明=把 model/ 从名字集里摘掉＝判定集塌缩（L2 分母与 L1 双向台账各红一格）  期望打红=['L1', 'L2']  实际红=['L1 模块外零自写（登记口除外）', 'L2 分母：模块导出集与扫描集都没塌缩']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH
+M4 ok  说明=撤掉一处收口的接线（只摘 sessionStatusLabel＝用了却没引；L6 的三名针不许跟着红）  期望打红=['L4']  实际红=['L4 两处收口确实从模块取，副本没抄回来']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH
+M5 ok  说明=扫描集清空＝"0 命中"必须与"没有缺陷"不同形  期望打红=['L1', 'L2']  实际红=['L1 模块外零自写（登记口除外）', 'L2 分母：模块导出集与扫描集都没塌缩']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH
+M6 ok  说明=把状态筛选器写回硬编码一档（closed 又筛不到）  期望打红=['L6']  实际红=['L6 会话筛选与展示取自契约表，私表不许抄回来']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH
+M7 ok  说明=客户端二次筛写回不存在的 mode 别名  期望打红=['L6']  实际红=['L6 会话筛选与展示取自契约表，私表不许抄回来']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH
+M8 ok  说明=契约少一档（enterprise 被删＝筛选器跟着少一档，L6b 必须先红）  期望打红=['L6b']  实际红=['L6b 契约取值账：四档三档逐字钉住，标签出口各档行为点名']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH sessions.js=MATCH
+M9 ok  说明=改一档文案不许红（L6b 只钉取值与三档行为，不钉整张表＝不过度钉）  期望打红=[]  实际红=[]  rc=0
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH sessions.js=MATCH
+M10 ok  说明=状态筛选写回内联一档（planning 又筛不到）  期望打红=['L7']  实际红=['L7 联盟任务页：状态档由契约全集推出，文案走出口，四本私表不许回来']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH sessions.js=MATCH
+M11 ok  说明=把第四本状态字典带回来（它换过名字，L1 按名字扫不到，只能按形状钉）  期望打红=['L7']  实际红=['L7 联盟任务页：状态档由契约全集推出，文案走出口，四本私表不许回来']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH sessions.js=MATCH
+M12 ok  说明=融合策略写回硬编码 label（best_of 又印成视图自定的那份文案）  期望打红=['L7']  实际红=['L7 联盟任务页：状态档由契约全集推出，文案走出口，四本私表不许回来']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH sessions.js=MATCH
+M13 ok  说明=契约少一档（TASK_STATUS 删 PLANNING＝筛选器跟着少一档，L7b 必须先红）  期望打红=['L7b']  实际红=['L7b 契约任务状态账：七档取值钉住、每档都有中文（契约少一档＝筛选器跟着少一档）']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH sessions.js=MATCH
+M14 ok  说明=改一档任务文案不许红（L7 钉"有没有档"，不钉中文怎么写＝不过度钉）  期望打红=[]  实际红=[]  rc=0
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertEnterprisePanel.vue=MATCH AllianceTaskView.vue=MATCH enums.js=MATCH __f6_mutant__.vue=MATCH sessions.js=MATCH
+判决：14 枚变异，判据不符 0 枚（BLIND=[]）
+末次盘上 sha：GUARD=2513772f6f898525 PANEL=f7f58a9b33e692ef（PLANT 存在=False）

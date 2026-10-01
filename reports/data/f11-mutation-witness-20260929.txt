@@ -1,0 +1,18 @@
+F11 变异电池（L9：模块内部自写契约同名出口＝L1 扫描集的模块盲区）
+基线盘面：GUARD=e157a81d116a249e PANEL=6bc34c98200e6df6
+本轮真收口：撤 ExpertCollabPanel 的局部 availabilityLabel 三档字典（缺 away），两处站点改走 availabilityLabel(expertDisplayStatus(x.status))
+判据：每枚只打一处，红格必须点名牌 L9；期望 [] 的必须全绿，否则针不承重。
+未变异基线：rc=0，红格=[]，用例分母=13
+G1 ok  说明=把模块内的局部状态字典塞回来（缺 away 档那份）  期望打红=['L9']  实际红=['L9 模块内部自写同名出口：命中集＝登记集双向相等（补 L1 扫描集的模块盲区）']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertCollabPanel.vue=MATCH
+G2 ok  说明=用了 availabilityLabel 却按名撤掉导入  期望打红=['L9']  实际红=['L9 模块内部自写同名出口：命中集＝登记集双向相等（补 L1 扫描集的模块盲区）']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertCollabPanel.vue=MATCH
+G3 ok  说明=一处站点丢掉显示归一那半（availabilityLabel(e.status)）  期望打红=['L9']  实际红=['L9 模块内部自写同名出口：命中集＝登记集双向相等（补 L1 扫描集的模块盲区）']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertCollabPanel.vue=MATCH
+G4 ok  说明=撤掉一条登记（formatTime 其实还在命中）＝命中集⇄登记集双向账必须有牙  期望打红=['L9']  实际红=['L9 模块内部自写同名出口：命中集＝登记集双向相等（补 L1 扫描集的模块盲区）']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertCollabPanel.vue=MATCH
+G5 ok  说明=扫描集塌缩（把 components/ 也当定义主人排除）＝分母格必须红  期望打红=['L9']  实际红=['L9 模块内部自写同名出口：命中集＝登记集双向相等（补 L1 扫描集的模块盲区）']  rc=1
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertCollabPanel.vue=MATCH
+G6 ok  说明=改无关文案不许红（L9 钉取值通道，不钉站点别的字＝不过度钉）  期望打红=[]  实际红=[]  rc=0
+   还原他证：vocabulary-ownership.test.js=MATCH ExpertCollabPanel.vue=MATCH
+判决：6 枚变异，判据不符 0 枚（BLIND/反咬/还原=[]）

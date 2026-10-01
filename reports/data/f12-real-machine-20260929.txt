@@ -1,0 +1,50 @@
+真机渲染取证（F12）— 2026-09-29 03:08–03:11 UTC
+==============================================
+工具：browser-use（无头 Chrome）＋ Vite dev server（本人本轮启动，端口 3020，HTTP 200）
+后端：3080/3100/3200/8000 全 DOWN（curl 实测 000）。因此本文件里的一切列表数据均为
+      「注入数据（非后端）」——由 evaluate_script 写进真实运行中的组件实例/pinia store，
+      页面外壳、路由守卫、Vue 编译、scoped CSS、契约出口函数全部是真的。
+
+注入通道（真实代码路径，非桩）：
+  document.querySelector('#app').__vue_app__ → config.globalProperties.$pinia/$router
+  auth.accessToken 已存在（长度 389，来自 secureStorage，用户既有会话）
+  permission.roles 置为 ['super_admin','tenant_admin']（守卫 requiresRole 需此档）
+  列表数据经由组件实例的 setupState 直接赋值（script-setup 的 proxyRefs setter → ref.value）
+跑完已 reload 到 /login，注入态只存在于内存，已随刷新消失。
+
+—— 1. §5.40（AllianceTaskView.vue:166 DAG 节点副标签）——————————————
+路由：/expert-center/tasks（name=ExpertAllianceTasks，实测 router.currentRoute=/expert-center/tasks）
+注入 dagNodesData＝按 contract.NODE_STATUS 现推的 7 档各一枚 + 1 枚未知档 mystery_state：
+  .dag-node-label : 节点1 节点2 节点3 节点4 节点5 节点6 节点7 未知档
+  .dag-node-sub   : 待执行 就绪 执行中 已完成 失败 已跳过 已取消 mystery_state
+合同同名调用（同一份页面模块，浏览器里 import('/src/.../contract/index.js')）逐字相同：
+  待执行 就绪 执行中 已完成 失败 已跳过 已取消 mystery_state
+⇒ DOM 里 8/8 枚副标签没有一枚印出 wire 的 type（'expert'），未知档原样回显。
+同屏旁证：.dag-legend 只渲染 4 档 = 待执行 执行中 已完成 失败（E2 余账，7 档里 3 档无色板）。
+
+—— 2. §5.41（ExpertCollabPanel.vue:66 专家候选 chip 可用性标签）——————————
+路由：/alliance/collab（name=AllianceCollab）→ 点 el-tabs 的「单专家咨询」页签（.acw-chips 在该页签内）
+注入 expertStore.experts 5 枚（wire status 逐个点名）：
+  .acw-chip 实测文本：
+    甲首席 · 在线        （status=active）
+    乙工程 · 离线        （status=inactive）
+    丙运维 · 忙碌        （status=maintenance）
+    丁值班 · 离开        （status=away）  ← §5.39/§5.41 补的那一档，真机印出中文
+    戊归档 · error       （status=deprecated） ← 新发现，见下
+合同探针（浏览器里现调 expertDisplayStatus→availabilityLabel）：
+  active→online→在线 / inactive→offline→离线 / maintenance→busy→忙碌
+  online→在线 busy→忙碌 offline→离线 away→离开 mystery→mystery
+  deprecated→error→error      ← 落点
+
+—— 3. 新余账（只报不改，登记为 F10 家族第 31 处直印，根因不在界面而在契约）————
+contract 私有表 EXPERT_DISPLAY 把 wire 的 deprecated 映射成 'error'；'error' 不是
+EXPERT_AVAILABILITY 的四档之一（online/busy/offline/away），所以 availabilityLabel 按
+「未知回原值」的既定出口行为原样吐英文串 'error' 上界面。
+出口函数没有错（未知回原值是 §5.39 L7b 钉住的行为），错的是映射表的值域越界。
+不并口径：deprecated 到底是「离线」的一档还是「已停用」的第六档，属产品选择 ⇒ 待裁决。
+
+—— 4. 本轮门禁分母 ——————————————————————————
+本文件为纯取证，未改任何源码/判据；同轮实测门禁分母见
+FRONTEND-MODULE-GOVERNANCE-v1.0.md §5.41「门禁分母」段（全量 vitest 77 文件/1027 例/rc=0、
+vite build rc=0、check-frontend-module.py ERROR=0、check-locale-format-outlets.py rc=0 270 文件、
+check-sfc-dead-refs.mjs files=128 deadRefFiles=0）。

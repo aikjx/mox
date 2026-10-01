@@ -1,6 +1,6 @@
 #!/bin/bash
 # 算子统一系统 v3.0.0 端到端冒烟测试
-# 用法: bash scripts/smoke_test.sh [base_url] [token]
+# 用法: bash scripts/deploy/smoke_test.sh [base_url] [token]
 BASE="${1:-http://localhost:3000}"
 TOKEN="${2:-dev-secret-token}"
 AUTH="Authorization: Bearer $TOKEN"

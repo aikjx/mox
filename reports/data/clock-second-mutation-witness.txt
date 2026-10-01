@@ -1,0 +1,20 @@
+BASELINE src/utils rc=0 failed=0 total=63 | gate rc=0 I2=3 处
+MC1 带秒档丢 second 选项             tests_failed=4/63 gate rc=0 I2=3 build=None restored=IDENTICAL
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > formatClockSecond 与两种旧写法都逐字符相同（pin 与否本来就同字） 48ms
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > 带秒档的形状＝两个冒号 + 六位数字（比分钟档多的正是秒） 7ms
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > 棘轮：带秒选项字面量全库只许出现在登记口 136ms
+MC2 hour 从 2-digit 变 numeric   tests_failed=3/63 gate rc=0 I2=3 build=None restored=IDENTICAL
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > formatClockSecond 与两种旧写法都逐字符相同（pin 与否本来就同字） 39ms
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > 带秒档的形状＝两个冒号 + 六位数字（比分钟档多的正是秒） 3ms
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > 棘轮：带秒选项字面量全库只许出现在登记口 132ms
+MC3 站点退回自写带秒式                  tests_failed=2/63 gate rc=0 I2=4 build=None restored=IDENTICAL
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > 3 个收口站点真的引到了出口（防静默 no-op） 19ms
+        fired: × 时钟档/日期档单出口 > 棘轮：时钟式调用全库只剩登记口（两档 clock 都在 time.js 内） 118ms
+MC4 barrel 不再导出该档              tests_failed=3/63 gate rc=0 I2=3 build=1 restored=IDENTICAL
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > formatClockSecond 与两种旧写法都逐字符相同（pin 与否本来就同字） 8ms
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > 带秒档的形状＝两个冒号 + 六位数字（比分钟档多的正是秒） 1ms
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > 坏值档与改名沿用同一契约（0/负数/非日期串交回调用方文案） 1ms
+        rollup: [31merror during build:
+        rollup: [31msrc/views/project/Workbench.vue (12:28): "formatClockSecond" is not exported by "src/utils/index.js", imp
+MC5 EEP 退回未 pin 的整串            tests_failed=1/63 gate rc=0 I2=4 build=None restored=IDENTICAL
+        fired: × 带秒时钟档与未 pin 完整时刻的收口 > 3 个收口站点真的引到了出口（防静默 no-op） 20ms

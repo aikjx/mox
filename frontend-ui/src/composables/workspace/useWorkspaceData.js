@@ -24,7 +24,7 @@ import {
   getWorkspaceHistory
 } from '@/api'
 import { getProjectMembers } from '@/api'
-import { normalizeProjectMembers } from '@/utils'
+import { formatClockMinute, normalizeProjectMembers } from '@/utils'
 
 // ========== 工具函数 ==========
 function unwrap(res) {
@@ -35,11 +35,6 @@ function unwrap(res) {
     if (res.data && typeof res.data === 'object') return res.data
   }
   return res
-}
-
-function nowTime() {
-  const d = new Date()
-  return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0')
 }
 
 /**
@@ -185,7 +180,7 @@ export function useWorkspaceData(currentProject) {
           type: f.type || f.mime_type || inferFileType(f.name),
           size: f.size || formatSize(f.size_bytes || f.size),
           uploader: f.uploader || f.uploaded_by || '未知',
-          time: f.time || f.created_at || nowTime()
+          time: f.time || f.created_at || formatClockMinute()
         }))
       } else {
         sharedFiles.value = []
@@ -211,7 +206,7 @@ export function useWorkspaceData(currentProject) {
         type: inferFileType(file.name),
         size: formatSize(file.size),
         uploader: '我',
-        time: nowTime()
+        time: formatClockMinute()
       }
       sharedFiles.value.unshift(newFile)
       appendHistory('file', '上传文件', file.name)
@@ -267,7 +262,7 @@ export function useWorkspaceData(currentProject) {
           type: h.type || h.event_type || 'message',
           title: h.title || h.event_title || '事件',
           description: h.description || h.detail || '',
-          time: h.time || h.created_at || nowTime()
+          time: h.time || h.created_at || formatClockMinute()
         }))
       } else {
         historyEvents.value = []
@@ -283,7 +278,7 @@ export function useWorkspaceData(currentProject) {
   }
 
   function appendHistory(type, title, description) {
-    historyEvents.value.unshift({ id: 'h-' + Date.now(), type, title, description, time: nowTime() })
+    historyEvents.value.unshift({ id: 'h-' + Date.now(), type, title, description, time: formatClockMinute() })
     if (historyEvents.value.length > 50) historyEvents.value = historyEvents.value.slice(0, 50)
   }
 

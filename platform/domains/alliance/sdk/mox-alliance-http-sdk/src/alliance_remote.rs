@@ -113,8 +113,22 @@ impl RemoteAllianceClient {
         if scheduler_url.is_none() && executor_url.is_none() {
             return None;
         }
-        let http = reqwest::Client::builder()
-            .timeout(Duration::from_secs(REMOTE_TIMEOUT_SECS))
+        let mut builder = reqwest::Client::builder()
+            .timeout(Duration::from_secs(REMOTE_TIMEOUT_SECS));
+        // 内部服务间鉴权：与下游 scheduler/executor internal_auth_layer 同源同令牌。
+        // 配置 MOX_INTERNAL_TOKEN 后所有出站请求自动携带 Authorization: Bearer <token>；
+        // 未配置则不注入（下游中间件未配置时放行，向后兼容）。
+        if let Ok(token) = std::env::var("MOX_INTERNAL_TOKEN") {
+            if !token.is_empty() {
+                let mut headers = axum::http::HeaderMap::new();
+                headers.insert(
+                    axum::http::header::AUTHORIZATION,
+                    format!("Bearer {token}").parse().unwrap(),
+                );
+                builder = builder.default_headers(headers);
+            }
+        }
+        let http = builder
             .build()
             .ok()?;
         Some(Self {
@@ -610,12 +624,17 @@ pub async fn remote_search_experts(
         .map(|a| {
             a.iter()
                 .map(|e| {
+                    // U2 透明化：透传匹配总分 / 原因 / 逐维演算（上游 scheduler 已带；
+                    // 旧上游不带时这三个键为 Null，前端按「无明细」兜底，不报错）。
                     json!({
                         "expert_id": e["expert_id"],
                         "name": e["name"],
                         "description": e["description"],
                         "domains": e["domains"],
                         "status": e["status"].as_str().map(norm_expert_status).unwrap_or(Value::Null),
+                        "match_score": e.get("match_score").cloned().unwrap_or(Value::Null),
+                        "match_reason": e.get("match_reason").cloned().unwrap_or(Value::Null),
+                        "scores": e.get("scores").cloned().unwrap_or(Value::Null),
                     })
                 })
                 .collect()

@@ -182,10 +182,10 @@
                       v-for="expId in task.expertIds"
                       :key="expId"
                       class="assigned-expert-avatar"
-                      :style="{ background: expertGradient(getExpertById(expId)?.type) }"
+                      :style="{ background: expertGradient(expertVisualKey(getExpertById(expId))) }"
                       :title="getExpertById(expId)?.name"
                     >
-                      {{ expertEmoji(getExpertById(expId)?.type) }}
+                      {{ expertEmoji(expertVisualKey(getExpertById(expId))) }}
                     </div>
                     <button v-if="task.expertIds.length === 0" class="add-expert-btn" @click.stop="$emit('open-assign-dialog', task)">
                       <el-icon><Plus /></el-icon>
@@ -241,8 +241,8 @@
               @dragend="$emit('expert-dragend')"
               :title="expert.name + ' - ' + (expert.capabilities?.join('、') || '')"
             >
-              <div class="chip-avatar gradient-avatar" :style="{ background: expertGradient(expert.type) }">
-                {{ expertEmoji(expert.type) }}
+              <div class="chip-avatar gradient-avatar" :style="{ background: expertGradient(expertVisualKey(expert)) }">
+                {{ expertEmoji(expertVisualKey(expert)) }}
                 <span class="chip-status-dot" :class="'dot-' + expert.status"></span>
               </div>
               <div class="chip-info">
@@ -294,10 +294,10 @@
                       v-for="expId in task.expertIds"
                       :key="expId"
                       class="assigned-expert-chip"
-                      :style="{ borderColor: expertColor(getExpertById(expId)?.type) }"
+                      :style="{ borderColor: expertColor(expertVisualKey(getExpertById(expId))) }"
                     >
-                      <span class="chip-avatar-sm" :style="{ background: expertGradient(getExpertById(expId)?.type) }">
-                        {{ expertEmoji(getExpertById(expId)?.type) }}
+                      <span class="chip-avatar-sm" :style="{ background: expertGradient(expertVisualKey(getExpertById(expId))) }">
+                        {{ expertEmoji(expertVisualKey(getExpertById(expId))) }}
                       </span>
                       <span class="chip-name-sm">{{ getExpertById(expId)?.name }}</span>
                       <button class="chip-remove" @click.stop="$emit('unassign-expert', task.id, expId)">
@@ -420,10 +420,10 @@
                       v-for="expId in task.expertIds.slice(0, 3)"
                       :key="expId"
                       class="timeline-expert-avatar"
-                      :style="{ background: expertGradient(getExpertById(expId)?.type) }"
+                      :style="{ background: expertGradient(expertVisualKey(getExpertById(expId))) }"
                       :title="getExpertById(expId)?.name"
                     >
-                      {{ expertEmoji(getExpertById(expId)?.type) }}
+                      {{ expertEmoji(expertVisualKey(getExpertById(expId))) }}
                     </div>
                     <span v-if="task.expertIds.length > 3" class="timeline-more-experts">
                       +{{ task.expertIds.length - 3 }}

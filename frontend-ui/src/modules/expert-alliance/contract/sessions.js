@@ -45,6 +45,10 @@ export const MESSAGE_ROLES = Object.freeze([
   { value: 'system', label: '系统' },
   { value: 'assistant', label: '助手' }
 ])
+// 键常量由上表派生，不另立第二份事实源（§5.44 同一规矩：视图比较用常量，字面量只出现在这一处）
+export const MESSAGE_ROLE = Object.freeze(
+  Object.fromEntries(MESSAGE_ROLES.map((r) => [r.value.toUpperCase(), r.value]))
+)
 
 /** SessionMessage.msg_type（:228 文档 + :238 default_msg_type）；后端不校验 */
 export const MSG_TYPE_DEFAULT = 'text'
@@ -71,6 +75,54 @@ export function sessionStatusLabel(value) {
   const hit = SESSION_STATUSES.find((s) => s.value === value)
   if (hit) return hit.label
   return str(value) ? `${str(value)}（后端未统计此状态）` : '未知状态'
+}
+
+/**
+ * 会话"最近活跃"取哪个键，只有一个口径：后端创建时把 created_at 与 last_active_at 写成同一时刻
+ * （experts_session.rs:172-173），之后只推进 last_active_at，所以活跃优先、创建兜底。
+ * 界面侧曾读 `session.updated_at` —— 列表与详情的序列化里根本没有这个键
+ * （session_to_list_view:113-129 / ExpertSession:242），于是"活跃度"一直显示的是创建时间。
+ */
+export function sessionActivityAt(session) {
+  return str(session?.lastActiveAt) || str(session?.createdAt)
+}
+
+/**
+ * 协作模式 → 落库的 session_type。工作台新建草稿行时只有协作模式
+ * （route/single/multi/debate/smart/algorithm，见 contract/collab.js）与已选专家数，
+ * 而后端字段词表是 single/multi/debate/enterprise，两套词表不相交：
+ * 翻译只在这里做一次，视图不得再自建 mode→类型 私表。
+ * 'debate' 两边同名是巧合而非同一件事，故按字面量取值，不从 collab.js 引用来避免契约内环。
+ * enterprise 不由本地草稿产出：只有网关编排路径写它（experts_collaboration.rs:1470）。
+ */
+export function sessionTypeForCollabMode(mode, expertCount = 0) {
+  if (str(mode) === 'debate') return 'debate'
+  const n = num(expertCount)
+  return Number.isFinite(n) && n > 1 ? 'multi' : 'single'
+}
+
+/**
+ * session_type → el-tag 配色。分支集合必须与 SESSION_TYPES 逐项对齐：
+ * 多一个键是界面上永不可达的死档，少一个键会让新类型静默掉进兜底。
+ * 越界值给 danger 而不是 info——后端不校验 session_type（create_session:154 直接落库），
+ * 写进去的野值必须在界面上看得见，不许用中性色掩盖。
+ */
+export function sessionTypeTagType(value) {
+  const type = str(value)
+  if (type === 'single') return 'primary'
+  if (type === 'multi') return 'success'
+  if (type === 'debate') return 'warning'
+  if (type === 'enterprise') return 'info'
+  return 'danger'
+}
+
+/**
+ * 会话标题的显示口径。create_session 不校验 title（空 body 也合法），
+ * 所以"标题为空"是后端可达状态，界面不许渲染成一行空白当标题。
+ */
+export function sessionListTitle(session) {
+  const title = str(session?.title)
+  return title || `（无标题）${str(session?.id)}`
 }
 
 export function messageRoleLabel(value) {
@@ -443,3 +495,9 @@ export function activeMinutes(created, lastActive) {
   const minutes = (b - a) / 60000
   return minutes >= 0 ? minutes : null
 }
+
+/** 会话状态取值常量。wire 权威 platform/gateway/mox-platform-gateway-svc/src/alliance/
+ *   experts_common.rs:260（doc 注释 active/archived/closed）与 :286（default_session_status = "active"）
+ *   experts_session.rs:284/285（统计只认 archived/closed）与 :612（归档强写 archived）
+ * 视图比较状态时不许把这三个取值重新打字：判据 L12 的禁串集合就从这里现推。 */
+export const SESSION_STATUS = Object.freeze({ ACTIVE: 'active', ARCHIVED: 'archived', CLOSED: 'closed' })

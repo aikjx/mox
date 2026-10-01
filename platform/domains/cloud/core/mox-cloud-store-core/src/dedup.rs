@@ -184,21 +184,18 @@ pub async fn list_object_refs(data_dir: &Path) -> StoreResult<Vec<(String, Strin
     let mut out = Vec::new();
     let mut stack = vec![data_dir.join("objects")];
     while let Some(dir) = stack.pop() {
-        let mut rd = match tokio::fs::read_dir(&dir).await {
-            Ok(rd) => rd,
-            Err(_) => continue,
+        let mut entries = match tokio::fs::read_dir(&dir).await {
+            Ok(entries) => entries,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(StoreError::Io(format!("object listing failed: {error}"))),
         };
-        while let Ok(Some(ent)) = rd.next_entry().await {
-            if entry_is_dir(&ent).await {
-                stack.push(ent.path());
-            } else if ent.file_name().to_string_lossy().ends_with(".obj") {
-                let raw = match tokio::fs::read(ent.path()).await {
-                    Ok(r) => r,
-                    Err(_) => continue,
-                };
-                if let Ok(meta) = serde_json::from_slice::<crate::fs_backend::ObjectMeta>(&raw) {
-                    out.push((meta.path, meta.sha256));
-                }
+        while let Some(entry) = entries.next_entry().await.map_err(|error| StoreError::Io(error.to_string()))? {
+            let file_type = entry.file_type().await.map_err(|error| StoreError::Io(error.to_string()))?;
+            if file_type.is_dir() { stack.push(entry.path()); }
+            else if file_type.is_file() && entry.file_name().to_string_lossy().ends_with(".obj") {
+                let raw = tokio::fs::read(entry.path()).await.map_err(|error| StoreError::Io(error.to_string()))?;
+                let meta: crate::fs_backend::ObjectMeta = serde_json::from_slice(&raw).map_err(|error| StoreError::Other(format!("object metadata corrupted: {error}")))?;
+                out.push((meta.path,meta.sha256));
             }
         }
     }

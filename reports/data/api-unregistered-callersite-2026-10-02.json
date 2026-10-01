@@ -1,0 +1,4251 @@
+{
+  "generated_at": "2026-10-02 00:07:30+0800",
+  "revision": 6,
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-01 23:41:33+0800",
+      "defect": "语料含 .test.js ⇒ forbidden-revival.test.js 的 planted 合成样例被读成活调用者"
+    },
+    {
+      "rev": "3.5",
+      "at": "2026-10-01 23:51:56+0800",
+      "defect": "驱动在 %TEMP% 起跑＋语料用相对路径 ⇒ 装载即崩，无判决"
+    },
+    {
+      "rev": "3.6",
+      "at": "2026-10-01 23:53:26+0800",
+      "defect": "源档分母硬钉 300（那是两档合计的手感值，实测 271/82）⇒ 断言按手感红"
+    },
+    {
+      "rev": 4,
+      "at": "2026-10-01 23:56:08+0800",
+      "defect": "两档不是超集关系却按名相减，印出「精度 17 / 宽 9」这种加宽反而变窄的数"
+    },
+    {
+      "rev": 5,
+      "at": "2026-10-02 00:04:31+0800",
+      "added": "常量展开（${BASE}/x）：sso.api.js 的 6 条 enterprise/sso 端点由零命中转 LIVE；同一版仍在用\"截到第一个 {P} 的父前缀\"探参数化端点"
+    },
+    {
+      "rev": 6,
+      "at": "2026-10-02 00:07:30+0800",
+      "defect_fixed": "父前缀探针会把**父资源**的调用者算到参数化端点头上：/api/kb/documents/{P}/shares、/api/system/user/{P}/depts、/api/alliance/tasks/{P}/qa 三条在 rev5 判 LIVE，而第二口径 grep 现量前端根本不存在 shares/depts/qa 字面量（AllianceTaskView.vue:422 注释明确写着该端点已随假端点撤除）。rev6 把两档并报送：endpoint（整条路径参数化正则）与 parent（前缀，宽）；判决只取 endpoint，parent−endpoint 的差额点名不静默"
+    }
+  ],
+  "authority_for_mounted_side": "reports/data/api-surface-census-2026-10-02.json",
+  "mounted_not_in_table_len": 140,
+  "corpus_src_files": 271,
+  "corpus_test_files": 82,
+  "constant_expansions_src": 10,
+  "constant_expansions_test": 0,
+  "判据正则": {
+    "decl": "url\\s*:\\s*['`\"]",
+    "httpish": "\\b((?:[\\w$]*(?:[Hh]ttp|[Aa]xios)|request|service|api|instance))\\.(?:get|post|put|patch|delete)\\(\\s*['`\"]",
+    "any": "\\b([\\w$.]*)\\.(?:get|post|put|patch|delete)\\(\\s*['`\"]",
+    "bare": "(?:^|[^\\w.]])((?:get|post|put|patch|del|fetch))\\(\\s*['`\"]"
+  },
+  "endpoint_pattern_样例": "/api/kb/documents/[^/'`\"]+/shares(?:['`\"]|$)",
+  "live_endpoint_count": 21,
+  "live_parent_count": 25,
+  "parent_only_paths": [
+    "/api/alliance/tasks/{P}/qa",
+    "/api/kb/documents/{P}/shares",
+    "/api/kb/documents/{P}/shares/{P}",
+    "/api/system/user/{P}/depts"
+  ],
+  "zero_live_endpoint": 119,
+  "test_only_paths": [
+    "/api/ai/expert-chat"
+  ],
+  "by_domain": {
+    "actuator/api": [
+      2,
+      2,
+      2
+    ],
+    "api/admin": [
+      2,
+      0,
+      0
+    ],
+    "api/ai": [
+      2,
+      1,
+      1
+    ],
+    "api/alliance": [
+      2,
+      1,
+      2
+    ],
+    "api/audit": [
+      1,
+      0,
+      0
+    ],
+    "api/auth": [
+      8,
+      8,
+      8
+    ],
+    "api/enterprise": [
+      109,
+      6,
+      6
+    ],
+    "api/kb": [
+      2,
+      0,
+      2
+    ],
+    "api/scheduler": [
+      1,
+      0,
+      0
+    ],
+    "api/system": [
+      8,
+      0,
+      1
+    ],
+    "api/tenant": [
+      3,
+      3,
+      3
+    ]
+  },
+  "rows": [
+    {
+      "path": "/actuator/api/{P}/disable",
+      "parent_prefix": "/actuator/api",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/actuator.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/actuator.api.js:41 export const disableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/disable`)",
+        "[any] frontend-ui/src/api/actuator.api.js:41 export const disableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/disable`)"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 3,
+        "any": 3,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/actuator.api.js",
+        "frontend-ui/src/composables/useSSE.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/actuator.api.js:39 export const getApiDetail = (id) => actuatorHttp.get(`/api/${encodeURIComponent(id)}`)"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/actuator/api/{P}/enable",
+      "parent_prefix": "/actuator/api",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/actuator.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/actuator.api.js:40 export const enableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/enable`)",
+        "[any] frontend-ui/src/api/actuator.api.js:40 export const enableApi = (id) => actuatorHttp.post(`/api/${encodeURIComponent(id)}/enable`)"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 3,
+        "any": 3,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/actuator.api.js",
+        "frontend-ui/src/composables/useSSE.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/actuator.api.js:39 export const getApiDetail = (id) => actuatorHttp.get(`/api/${encodeURIComponent(id)}`)"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/admin/users/{P}/sessions",
+      "parent_prefix": "/api/admin/users",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/admin/users/{P}/sessions/{P}",
+      "parent_prefix": "/api/admin/users",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/ai/engine/flow-graph",
+      "parent_prefix": "/api/ai/engine/flow-graph",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/ai.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/ai.api.js:66 export const getEngineFlowGraph = () => http.get('/ai/engine/flow-graph')",
+        "[any] frontend-ui/src/api/ai.api.js:66 export const getEngineFlowGraph = () => http.get('/ai/engine/flow-graph')"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/ai.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/ai.api.js:66 export const getEngineFlowGraph = () => http.get('/ai/engine/flow-graph')"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/ai/expert-chat",
+      "parent_prefix": "/api/ai/expert-chat",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "test_endpoint_files": [
+        "frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js"
+      ],
+      "test_endpoint_evidence": [
+        "[httpish] frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js:129 \"http.post('/api/ai/expert-chat', body)\"",
+        "[any] frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js:129 \"http.post('/api/ai/expert-chat', body)\""
+      ]
+    },
+    {
+      "path": "/api/alliance/sediment",
+      "parent_prefix": "/api/alliance/sediment",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/ai.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/ai.api.js:63 export const sedimentDialogue = (payload) => http.post('/alliance/sediment', payload)",
+        "[any] frontend-ui/src/api/ai.api.js:63 export const sedimentDialogue = (payload) => http.post('/alliance/sediment', payload)"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/ai.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/ai.api.js:63 export const sedimentDialogue = (payload) => http.post('/alliance/sediment', payload)"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/alliance/tasks/{P}/qa",
+      "parent_prefix": "/api/alliance/tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 13,
+        "any": 13,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/alliance.api.js",
+        "frontend-ui/src/composables/useSSE.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/alliance.api.js:130 return normalizeTask(await http.post('/alliance/tasks', { title: payload.title ?? payload.name, description: payload.description, "
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/audit/export",
+      "parent_prefix": "/api/audit/export",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/auth/login",
+      "parent_prefix": "/api/auth/login",
+      "endpoint_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "endpoint_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:20 url: '/auth/login',"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "parent_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:20 url: '/auth/login',"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/auth/logout",
+      "parent_prefix": "/api/auth/logout",
+      "endpoint_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "endpoint_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:76 url: '/auth/logout',"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "parent_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:76 url: '/auth/logout',"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/auth/mfa/bind",
+      "parent_prefix": "/api/auth/mfa/bind",
+      "endpoint_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "endpoint_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:103 export function mfaBind(data) { return request({ url: '/auth/mfa/bind', method: 'post', data }) }"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "parent_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:103 export function mfaBind(data) { return request({ url: '/auth/mfa/bind', method: 'post', data }) }"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/auth/mfa/confirm",
+      "parent_prefix": "/api/auth/mfa/confirm",
+      "endpoint_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "endpoint_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:104 export function mfaConfirm(data) { return request({ url: '/auth/mfa/confirm', method: 'post', data }) }"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "parent_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:104 export function mfaConfirm(data) { return request({ url: '/auth/mfa/confirm', method: 'post', data }) }"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/auth/mfa/unbind",
+      "parent_prefix": "/api/auth/mfa/unbind",
+      "endpoint_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "endpoint_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:105 export function mfaUnbind(data) { return request({ url: '/auth/mfa/unbind', method: 'post', data }) }"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "parent_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:105 export function mfaUnbind(data) { return request({ url: '/auth/mfa/unbind', method: 'post', data }) }"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/auth/mfa/verify",
+      "parent_prefix": "/api/auth/mfa/verify",
+      "endpoint_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "endpoint_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:106 export function mfaVerify(data) { return request({ url: '/auth/mfa/verify', method: 'post', data }) }"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "parent_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:106 export function mfaVerify(data) { return request({ url: '/auth/mfa/verify', method: 'post', data }) }"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/auth/refresh",
+      "parent_prefix": "/api/auth/refresh",
+      "endpoint_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "endpoint_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:33 url: '/auth/refresh',"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "parent_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:33 url: '/auth/refresh',"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/auth/register",
+      "parent_prefix": "/api/auth/register",
+      "endpoint_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "endpoint_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:64 url: '/auth/register',"
+      ],
+      "parent_hits": {
+        "decl": 1,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/auth.api.js"
+      ],
+      "parent_evidence": [
+        "[decl] frontend-ui/src/api/auth.api.js:64 url: '/auth/register',"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/audit-logs",
+      "parent_prefix": "/api/enterprise/admin/audit-logs",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/audit-stats",
+      "parent_prefix": "/api/enterprise/admin/audit-stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/departments",
+      "parent_prefix": "/api/enterprise/admin/departments",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/permissions",
+      "parent_prefix": "/api/enterprise/admin/permissions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/roles",
+      "parent_prefix": "/api/enterprise/admin/roles",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/tenants",
+      "parent_prefix": "/api/enterprise/admin/tenants",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/tenants/{P}",
+      "parent_prefix": "/api/enterprise/admin/tenants",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/admin/users/{P}/roles",
+      "parent_prefix": "/api/enterprise/admin/users",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/batch-update",
+      "parent_prefix": "/api/enterprise/config/batch-update",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/config-types",
+      "parent_prefix": "/api/enterprise/config/config-types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/feature-flags",
+      "parent_prefix": "/api/enterprise/config/feature-flags",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/feature-flags/{P}/toggle",
+      "parent_prefix": "/api/enterprise/config/feature-flags",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/groups",
+      "parent_prefix": "/api/enterprise/config/groups",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/items",
+      "parent_prefix": "/api/enterprise/config/items",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/items/{P}",
+      "parent_prefix": "/api/enterprise/config/items",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/items/{P}/rollback/{P}",
+      "parent_prefix": "/api/enterprise/config/items",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/items/{P}/versions",
+      "parent_prefix": "/api/enterprise/config/items",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/refresh-cache",
+      "parent_prefix": "/api/enterprise/config/refresh-cache",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/config/stats",
+      "parent_prefix": "/api/enterprise/config/stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/form/definitions",
+      "parent_prefix": "/api/enterprise/designer/form/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/form/definitions/{P}",
+      "parent_prefix": "/api/enterprise/designer/form/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/form/definitions/{P}/publish",
+      "parent_prefix": "/api/enterprise/designer/form/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/form/field-types",
+      "parent_prefix": "/api/enterprise/designer/form/field-types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/definitions",
+      "parent_prefix": "/api/enterprise/designer/process/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/definitions/{P}",
+      "parent_prefix": "/api/enterprise/designer/process/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/definitions/{P}/publish",
+      "parent_prefix": "/api/enterprise/designer/process/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/templates",
+      "parent_prefix": "/api/enterprise/designer/process/templates",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/process/templates/{P}",
+      "parent_prefix": "/api/enterprise/designer/process/templates",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/report/component-types",
+      "parent_prefix": "/api/enterprise/designer/report/component-types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/report/definitions",
+      "parent_prefix": "/api/enterprise/designer/report/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/report/definitions/{P}",
+      "parent_prefix": "/api/enterprise/designer/report/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/designer/report/definitions/{P}/publish",
+      "parent_prefix": "/api/enterprise/designer/report/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/all",
+      "parent_prefix": "/api/enterprise/dictionary/all",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/items",
+      "parent_prefix": "/api/enterprise/dictionary/items",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/items/{P}",
+      "parent_prefix": "/api/enterprise/dictionary/items",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/items/{P}/{P}",
+      "parent_prefix": "/api/enterprise/dictionary/items",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/types",
+      "parent_prefix": "/api/enterprise/dictionary/types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/dictionary/types/{P}",
+      "parent_prefix": "/api/enterprise/dictionary/types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents",
+      "parent_prefix": "/api/enterprise/document/documents",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}",
+      "parent_prefix": "/api/enterprise/document/documents",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}/activities",
+      "parent_prefix": "/api/enterprise/document/documents",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}/sign",
+      "parent_prefix": "/api/enterprise/document/documents",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}/signatures",
+      "parent_prefix": "/api/enterprise/document/documents",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/documents/{P}/versions",
+      "parent_prefix": "/api/enterprise/document/documents",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/stats",
+      "parent_prefix": "/api/enterprise/document/stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/document/types",
+      "parent_prefix": "/api/enterprise/document/types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files",
+      "parent_prefix": "/api/enterprise/files",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/categories",
+      "parent_prefix": "/api/enterprise/files/categories",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/stats",
+      "parent_prefix": "/api/enterprise/files/stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/storage-types",
+      "parent_prefix": "/api/enterprise/files/storage-types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/upload",
+      "parent_prefix": "/api/enterprise/files/upload",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/{P}",
+      "parent_prefix": "/api/enterprise/files",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/{P}/download",
+      "parent_prefix": "/api/enterprise/files",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/files/{P}/restore",
+      "parent_prefix": "/api/enterprise/files",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/health",
+      "parent_prefix": "/api/enterprise/health",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connector-types",
+      "parent_prefix": "/api/enterprise/integration/connector-types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connectors",
+      "parent_prefix": "/api/enterprise/integration/connectors",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connectors/{P}",
+      "parent_prefix": "/api/enterprise/integration/connectors",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connectors/{P}/sync",
+      "parent_prefix": "/api/enterprise/integration/connectors",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/connectors/{P}/test",
+      "parent_prefix": "/api/enterprise/integration/connectors",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/sync-tasks",
+      "parent_prefix": "/api/enterprise/integration/sync-tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/sync-tasks/{P}",
+      "parent_prefix": "/api/enterprise/integration/sync-tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/integration/sync-tasks/{P}/logs",
+      "parent_prefix": "/api/enterprise/integration/sync-tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/config",
+      "parent_prefix": "/api/enterprise/mailer/config",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/history",
+      "parent_prefix": "/api/enterprise/mailer/history",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/send",
+      "parent_prefix": "/api/enterprise/mailer/send",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/stats",
+      "parent_prefix": "/api/enterprise/mailer/stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/templates",
+      "parent_prefix": "/api/enterprise/mailer/templates",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/templates/{P}",
+      "parent_prefix": "/api/enterprise/mailer/templates",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/mailer/test",
+      "parent_prefix": "/api/enterprise/mailer/test",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/channels",
+      "parent_prefix": "/api/enterprise/message/channels",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/messages",
+      "parent_prefix": "/api/enterprise/message/messages",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/messages/{P}",
+      "parent_prefix": "/api/enterprise/message/messages",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/messages/{P}/read",
+      "parent_prefix": "/api/enterprise/message/messages",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/send",
+      "parent_prefix": "/api/enterprise/message/send",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/stats",
+      "parent_prefix": "/api/enterprise/message/stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/message/templates",
+      "parent_prefix": "/api/enterprise/message/templates",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs",
+      "parent_prefix": "/api/enterprise/operation-logs",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/login",
+      "parent_prefix": "/api/enterprise/operation-logs/login",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/modules",
+      "parent_prefix": "/api/enterprise/operation-logs/modules",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/operation-types",
+      "parent_prefix": "/api/enterprise/operation-logs/operation-types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/stats",
+      "parent_prefix": "/api/enterprise/operation-logs/stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/operation-logs/{P}",
+      "parent_prefix": "/api/enterprise/operation-logs",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/companies",
+      "parent_prefix": "/api/enterprise/org/companies",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/companies/{P}",
+      "parent_prefix": "/api/enterprise/org/companies",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/departments",
+      "parent_prefix": "/api/enterprise/org/departments",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/departments/tree",
+      "parent_prefix": "/api/enterprise/org/departments/tree",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/departments/{P}",
+      "parent_prefix": "/api/enterprise/org/departments",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/employees",
+      "parent_prefix": "/api/enterprise/org/employees",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/employees/{P}",
+      "parent_prefix": "/api/enterprise/org/employees",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/positions",
+      "parent_prefix": "/api/enterprise/org/positions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/org/stats",
+      "parent_prefix": "/api/enterprise/org/stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/executions",
+      "parent_prefix": "/api/enterprise/scheduler/executions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/handler-types",
+      "parent_prefix": "/api/enterprise/scheduler/handler-types",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/stats",
+      "parent_prefix": "/api/enterprise/scheduler/stats",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/task-categories",
+      "parent_prefix": "/api/enterprise/scheduler/task-categories",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks",
+      "parent_prefix": "/api/enterprise/scheduler/tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}",
+      "parent_prefix": "/api/enterprise/scheduler/tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}/disable",
+      "parent_prefix": "/api/enterprise/scheduler/tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}/enable",
+      "parent_prefix": "/api/enterprise/scheduler/tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}/executions",
+      "parent_prefix": "/api/enterprise/scheduler/tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/tasks/{P}/trigger",
+      "parent_prefix": "/api/enterprise/scheduler/tasks",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/scheduler/templates",
+      "parent_prefix": "/api/enterprise/scheduler/templates",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/callback",
+      "parent_prefix": "/api/enterprise/sso/callback",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:37 export const ssoCallback = (payload) => http.post(`/enterprise/sso/callback`, payload)",
+        "[any] frontend-ui/src/api/sso.api.js:37 export const ssoCallback = (payload) => http.post(`/enterprise/sso/callback`, payload)"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:37 export const ssoCallback = (payload) => http.post(`/enterprise/sso/callback`, payload)"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/login",
+      "parent_prefix": "/api/enterprise/sso/login",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:34 export const ssoLogin = (payload) => http.post(`/enterprise/sso/login`, payload)",
+        "[any] frontend-ui/src/api/sso.api.js:34 export const ssoLogin = (payload) => http.post(`/enterprise/sso/login`, payload)"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:34 export const ssoLogin = (payload) => http.post(`/enterprise/sso/login`, payload)"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/logout",
+      "parent_prefix": "/api/enterprise/sso/logout",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:40 export const ssoLogout = (payload) => http.post(`/enterprise/sso/logout`, payload)",
+        "[any] frontend-ui/src/api/sso.api.js:40 export const ssoLogout = (payload) => http.post(`/enterprise/sso/logout`, payload)"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:40 export const ssoLogout = (payload) => http.post(`/enterprise/sso/logout`, payload)"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/protocols",
+      "parent_prefix": "/api/enterprise/sso/protocols",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:16 export const getSsoProtocols = () => http.get(`/enterprise/sso/protocols`)",
+        "[any] frontend-ui/src/api/sso.api.js:16 export const getSsoProtocols = () => http.get(`/enterprise/sso/protocols`)"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:16 export const getSsoProtocols = () => http.get(`/enterprise/sso/protocols`)"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/providers",
+      "parent_prefix": "/api/enterprise/sso/providers",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 2,
+        "any": 2,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:19 export const getSsoProviders = (params) => http.get(`/enterprise/sso/providers`, { params })",
+        "[httpish] frontend-ui/src/api/sso.api.js:25 export const createSsoProvider = (payload) => http.post(`/enterprise/sso/providers`, payload)",
+        "[any] frontend-ui/src/api/sso.api.js:19 export const getSsoProviders = (params) => http.get(`/enterprise/sso/providers`, { params })"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 5,
+        "any": 5,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:19 export const getSsoProviders = (params) => http.get(`/enterprise/sso/providers`, { params })"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/enterprise/sso/providers/{P}",
+      "parent_prefix": "/api/enterprise/sso/providers",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 3,
+        "any": 3,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:22 export const getSsoProvider = (id) => http.get(`/enterprise/sso/providers/${id}`)",
+        "[httpish] frontend-ui/src/api/sso.api.js:28 export const updateSsoProvider = (id, payload) => http.put(`/enterprise/sso/providers/${id}`, payload)",
+        "[httpish] frontend-ui/src/api/sso.api.js:31 export const deleteSsoProvider = (id) => http.delete(`/enterprise/sso/providers/${id}`)"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 5,
+        "any": 5,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/sso.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/sso.api.js:19 export const getSsoProviders = (params) => http.get(`/enterprise/sso/providers`, { params })"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/kb/documents/{P}/shares",
+      "parent_prefix": "/api/kb/documents",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 18,
+        "any": 18,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/graph.api.js",
+        "frontend-ui/src/api/kb.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/graph.api.js:89 http.get('/kb/documents', { silent: true }),"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/kb/documents/{P}/shares/{P}",
+      "parent_prefix": "/api/kb/documents",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 18,
+        "any": 18,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/graph.api.js",
+        "frontend-ui/src/api/kb.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/graph.api.js:89 http.get('/kb/documents', { silent: true }),"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/scheduler/status",
+      "parent_prefix": "/api/scheduler/status",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/system/approval",
+      "parent_prefix": "/api/system/approval",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/system/approval/definitions",
+      "parent_prefix": "/api/system/approval/definitions",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/system/approval/pending",
+      "parent_prefix": "/api/system/approval/pending",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/system/approval/{P}",
+      "parent_prefix": "/api/system/approval",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/system/approval/{P}/approve",
+      "parent_prefix": "/api/system/approval",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/system/approval/{P}/history",
+      "parent_prefix": "/api/system/approval",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/system/approval/{P}/reject",
+      "parent_prefix": "/api/system/approval",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "parent_files": [],
+      "parent_evidence": [],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/system/user/{P}/depts",
+      "parent_prefix": "/api/system/user",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "endpoint_files": [],
+      "endpoint_evidence": [],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 9,
+        "any": 9,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/system.api.js:61 export const getUserList = (params) => http.get('/system/user', { params })"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/tenant",
+      "parent_prefix": "/api/tenant",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 2,
+        "any": 2,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/system.api.js:131 export const getTenantList = (params) => http.get('/tenant', { params })",
+        "[httpish] frontend-ui/src/api/system.api.js:133 export const createTenant = (data) => http.post('/tenant', data)",
+        "[any] frontend-ui/src/api/system.api.js:131 export const getTenantList = (params) => http.get('/tenant', { params })"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 6,
+        "any": 6,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/system.api.js:131 export const getTenantList = (params) => http.get('/tenant', { params })"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/tenant/switch/{P}",
+      "parent_prefix": "/api/tenant/switch",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/system.api.js:136 export const switchTenant = (id) => http.get(`/tenant/switch/${id}`)",
+        "[any] frontend-ui/src/api/system.api.js:136 export const switchTenant = (id) => http.get(`/tenant/switch/${id}`)"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 1,
+        "any": 1,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/system.api.js:136 export const switchTenant = (id) => http.get(`/tenant/switch/${id}`)"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    },
+    {
+      "path": "/api/tenant/{P}",
+      "parent_prefix": "/api/tenant",
+      "endpoint_hits": {
+        "decl": 0,
+        "httpish": 3,
+        "any": 3,
+        "bare": 0
+      },
+      "endpoint_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "endpoint_evidence": [
+        "[httpish] frontend-ui/src/api/system.api.js:132 export const getTenantDetail = (id) => http.get(`/tenant/${id}`)",
+        "[httpish] frontend-ui/src/api/system.api.js:134 export const updateTenant = (id, data) => http.put(`/tenant/${id}`, data)",
+        "[httpish] frontend-ui/src/api/system.api.js:135 export const deleteTenant = (id) => http.delete(`/tenant/${id}`)"
+      ],
+      "parent_hits": {
+        "decl": 0,
+        "httpish": 6,
+        "any": 6,
+        "bare": 0
+      },
+      "parent_files": [
+        "frontend-ui/src/api/system.api.js"
+      ],
+      "parent_evidence": [
+        "[httpish] frontend-ui/src/api/system.api.js:131 export const getTenantList = (params) => http.get('/tenant', { params })"
+      ],
+      "test_endpoint_hits": {
+        "decl": 0,
+        "httpish": 0,
+        "any": 0,
+        "bare": 0
+      },
+      "test_endpoint_files": [],
+      "test_endpoint_evidence": []
+    }
+  ]
+}

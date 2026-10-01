@@ -112,10 +112,14 @@ impl TimeseriesStore {
         if let Ok(users) = iam.list_users("T001") {
             values.insert("users_total".into(), users.len() as f64);
         }
-        // 专家统计
+        // 专家统计（A1 多租户：registry 为 tenant->inner，全局监控跨租户聚合）
         let reg = experts.registry.lock();
-        values.insert("experts_total".into(), reg.len() as f64);
-        let online = reg.values().filter(|e| e.availability.status == "online").count();
+        let total_experts: usize = reg.values().map(|m| m.len()).sum();
+        values.insert("experts_total".into(), total_experts as f64);
+        let online = reg
+            .values()
+            .map(|m| m.values().filter(|e| e.availability.status == "online").count())
+            .sum::<usize>();
         values.insert("experts_online".into(), online as f64);
         drop(reg);
         // 会话统计
@@ -313,15 +317,17 @@ async fn business(State(s): State<Arc<MonitorState>>) -> ApiResponse<Value> {
     let req_2xx = m["requests_2xx"].as_u64().unwrap_or(0);
     let req_4xx = m["requests_4xx"].as_u64().unwrap_or(0);
     let req_5xx = m["requests_5xx"].as_u64().unwrap_or(0);
-    // 真实数据：从 ExpertsSharedState 获取专家统计
+    // 真实数据：从 ExpertsSharedState 获取专家统计（A1：registry 为 tenant->inner，全局 dashboard 跨租户汇总）
     let reg = s.experts.registry.lock();
-    let expert_total = reg.len();
-    let expert_online = reg.values().filter(|e| e.availability.status == "online").count();
-    let expert_busy = reg.values().filter(|e| e.availability.status == "busy").count();
-    let expert_ai = reg.values().filter(|e| e.expert_type == "ai").count();
-    let expert_human = reg.values().filter(|e| e.expert_type == "human").count();
-    let expert_verified = reg.values().filter(|e| e.verification_status == "verified" || e.verification_status == "certified").count();
-    let ratings: Vec<f64> = reg.values().map(|e| e.metrics.avg_rating).filter(|r| *r > 0.0).collect();
+    let all_experts: Vec<_> =
+        reg.values().flat_map(|m| m.values()).collect();
+    let expert_total = all_experts.len();
+    let expert_online = all_experts.iter().filter(|e| e.availability.status == "online").count();
+    let expert_busy = all_experts.iter().filter(|e| e.availability.status == "busy").count();
+    let expert_ai = all_experts.iter().filter(|e| e.expert_type == "ai").count();
+    let expert_human = all_experts.iter().filter(|e| e.expert_type == "human").count();
+    let expert_verified = all_experts.iter().filter(|e| e.verification_status == "verified" || e.verification_status == "certified").count();
+    let ratings: Vec<f64> = all_experts.iter().map(|e| e.metrics.avg_rating).filter(|r| *r > 0.0).collect();
     let expert_avg_rating = if ratings.is_empty() { 0.0 } else { ratings.iter().sum::<f64>() / ratings.len() as f64 };
     drop(reg);
     let session_count = s.experts.sessions.lock().len();

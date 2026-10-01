@@ -2,7 +2,10 @@
 import http from './http'
 
 // ===== 项目中心 =====
-export const getProjects = () => http.get('/projects')
+// `/api/projects` 与 `/api/tasks` 都由网关 misc.rs 的分页 handler 出参（同一套 wire 键），
+// 所以"列表"和"服务端分页"是**同一个 URL**，只差查询串。
+// （这里曾有两条幻影路由：把 paginated 当子路径去叫，一条 404、一条 502，均已删。）
+export const getProjects = (params) => http.get('/projects', { params })
 export const getProjectTypes = () => http.get('/projects/types')
 export const getProjectCatalog = () => http.get('/projects/catalog')
 export const getProjectStats = () => http.get('/projects/stats')
@@ -21,7 +24,6 @@ export const getProjectsByResource = (type, resourceId) =>
 
 // ===== 任务管理 =====
 export const getTasks = (params) => http.get('/tasks', { params })
-export const getTasksPaginated = (params) => http.get('/tasks/paginated', { params })
 export const getTask = (id) => http.get(`/tasks/${encodeURIComponent(id)}`)
 export const createTask = (payload) => http.post('/tasks', payload)
 export const updateTask = (id, payload) => http.put(`/tasks/${encodeURIComponent(id)}`, payload)
@@ -77,10 +79,6 @@ export const downloadProjectDocument = (projectId, docId) =>
 // 需求图谱
 export const getRequirementsGraph = (projectId) =>
   http.get(`/projects/${encodeURIComponent(projectId)}/requirements-graph`)
-
-// 项目服务端分页
-export const getProjectsPaginated = (params) =>
-  http.get('/projects/paginated', { params })
 
 // AI 智能推荐项目配置
 export const aiRecommendProject = (payload) => http.post('/projects/ai-recommend', payload)

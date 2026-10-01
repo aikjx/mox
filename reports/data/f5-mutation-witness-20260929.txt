@@ -1,0 +1,19 @@
+写前图像（本轮唯一还原源）：
+   1bccc9370680ecfa  src/modules/expert-alliance/model/display.js  3084 bytes
+   c77a6af0656fc05c  src/utils/time.js  6363 bytes
+   cbe0edac84ec6506  src/views/admin/panels/AdminUser.vue  27262 bytes
+   5abbc6e8c4d19a65  src/views/admin/panels/AdminDepartment.vue  24700 bytes
+M1 display.js 把 relativeTime 副本抄回来                   rc=1  RED  还原=OK
+M2 display.js 会话行丢掉相对档                               rc=1  RED  还原=OK
+M3 出口的分钟档丢了那个空格                                      rc=1  RED  还原=OK
+M4 AdminUser 撤掉别名（模板里的 formatTime 就没了名字）             rc=1  RED  还原=OK
+M5 AdminDepartment 撤别名并把副本写回来                        rc=1  RED  还原=OK
+C1 对照：新名字 relativeTimeHint 不许被判成副本                   rc=0  GREEN  还原=OK
+
+判决：
+   变异 6 枚，判据不符 0 枚
+   还原他证：
+      MATCH 1bccc9370680ecfa src/modules/expert-alliance/model/display.js
+      MATCH c77a6af0656fc05c src/utils/time.js
+      MATCH cbe0edac84ec6506 src/views/admin/panels/AdminUser.vue
+      MATCH 5abbc6e8c4d19a65 src/views/admin/panels/AdminDepartment.vue

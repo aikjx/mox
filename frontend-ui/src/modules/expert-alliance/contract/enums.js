@@ -356,3 +356,28 @@ export function expertDerivedCells(derived) {
     { label: '效率分', value: percent(d.efficiencyScore, 1), note: '评分 40% + 解决率 30% + 空闲度 30%，由后端算' }
   ]
 }
+
+/**
+ * 调度器熔断器状态。wire 权威：
+ * platform/gateway/mox-platform-gateway-svc/src/alliance/experts_dispatcher.rs:494-509
+ * —— 只有 failure_count > 0 的专家进表，state 由 count >= circuit_breaker_threshold 二分为 open/closed；
+ * half_open 只存在于 scheduler-core 的 llm_router 内部配置（:120 half_open_probes），不在本字段值域内。
+ */
+export const BREAKER_STATE = Object.freeze({ OPEN: 'open', CLOSED: 'closed' })
+
+export const BREAKER_STATE_LABELS = Object.freeze({
+  open: '已熔断',
+  closed: '正常'
+})
+
+export function breakerStateLabel(state) {
+  return Labeled(state, BREAKER_STATE_LABELS)
+}
+
+/**
+ * 任务融合结果状态（字段 fusion_status）。wire 权威：
+ * platform/domains/alliance/sdk/mox-alliance-http-sdk/src/alliance.rs:544（completed|partial）、
+ * :1235（completed|pending）、alliance_remote.rs:969（pending）
+ * —— 三档集合 {pending, partial, completed}，与 TASK_STATUS/NODE_STATUS 只是同串不同域。
+ */
+export const FUSION_STATUS = Object.freeze({ PENDING: 'pending', PARTIAL: 'partial', COMPLETED: 'completed' })

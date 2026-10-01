@@ -1,0 +1,32 @@
+[
+  {
+    "url": "https://docs.dify.ai/en/cloud/use-dify/knowledge/knowledge-pipeline/knowledge-pipeline-orchestration",
+    "verified_on": "2026-10-01",
+    "method": "official documentation read; no product runtime test",
+    "scope": "knowledge pipeline"
+  },
+  {
+    "url": "https://docs.glean.com/administration/search/faq",
+    "verified_on": "2026-10-01",
+    "method": "official documentation read; no product runtime test",
+    "scope": "search permissions"
+  },
+  {
+    "url": "https://docs.glean.com/connectors/crawling-faq",
+    "verified_on": "2026-10-01",
+    "method": "official documentation read; no product runtime test",
+    "scope": "deletion freshness"
+  },
+  {
+    "url": "https://learn.microsoft.com/en-us/azure/search/search-document-level-access-overview",
+    "verified_on": "2026-10-01",
+    "method": "official documentation read; no product runtime test",
+    "scope": "security filters; native ACL previews"
+  },
+  {
+    "url": "https://docs.nextcloud.com/server/latest/admin_manual/file_workflows/access_control.html",
+    "verified_on": "2026-10-01",
+    "method": "official documentation read; no product runtime test",
+    "scope": "latest resolved to upcoming 36; Context Chat exception"
+  }
+]

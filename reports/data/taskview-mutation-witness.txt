@@ -1,0 +1,18 @@
+BASELINE vitest rc=0 failed=0 total=62 | gate rc=0
+BASELINE gate lines: ['[OK] L1/L2/L3 无违规：扫描 270 个文件；无参时间格式化余账 2 处＝登记表；出口写法只在 utils/time.js', '[INFO] L1 余账明细（清零后要删条目而不是写 0）：modules/admin-lowcode/engine/widgetRegistry.js x1, views/admin/panels/AdminHitl.vue x1']
+
+=== 变异电池 ===
+MT1 写侧退回展示串                        tests_failed=3/62      gate rc=1  restored=IDENTICAL
+                                      fired: TaskView created_at 写侧与展示侧口径 > 写侧优先采用服务端回显，只在回显缺席时造 ISO（不再覆盖 newTask.created_at） 16ms            
+                                      fired: TaskView created_at 写侧与展示侧口径 > 写侧禁令：本文件不许再出现浏览器 locale 展示串 3ms            
+                                      fired: formatDateTimeLocaleOr 单出口（F1 族收口） > 棘轮：被禁字面量的余量按文件登记，总数与登记表自证闭合 128ms            
+MT2 展示侧退回直出                        tests_failed=1/62      gate rc=0  restored=IDENTICAL
+                                      fired: TaskView created_at 写侧与展示侧口径 > 展示侧走单出口，且只走 barrel（深路径会被门禁 E6 判 ERROR） 14ms            
+MT3 撤 barrel 导入                    tests_failed=1/62      gate rc=0  restored=IDENTICAL
+                                      fired: TaskView created_at 写侧与展示侧口径 > 展示侧走单出口，且只走 barrel（深路径会被门禁 E6 判 ERROR） 14ms            
+MT4 台账把已清条目加回闸门                    tests_failed=1/62      gate rc=0  restored=IDENTICAL
+                                      fired: TaskView created_at 写侧与展示侧口径 > 闸门台账已随本次收口收缩：TaskView 条目已删，其余条目指向的文件仍在 14ms            
+MT5 F1 棘轮台账写错计数                    tests_failed=1/62      gate rc=0  restored=IDENTICAL
+                                      fired: formatDateTimeLocaleOr 单出口（F1 族收口） > 棘轮：被禁字面量的余量按文件登记，总数与登记表自证闭合 179ms            
+
+ANCHOR/RESTORE problems: none

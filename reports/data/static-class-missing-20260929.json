@@ -1,0 +1,374 @@
+{
+"src/components/AgentFlowPanel.vue": [
+"afp-flow"
+],
+"src/components/FlowDetailDialog.vue": [
+"eg-badge",
+"eg-cond",
+"eg-path",
+"fdd-actions",
+"fdd-body",
+"fdd-btn",
+"fdd-col",
+"fdd-col-count",
+"fdd-col-title",
+"fdd-desc",
+"fdd-dot",
+"fdd-edge",
+"fdd-edges",
+"fdd-header",
+"fdd-name",
+"fdd-name-row",
+"fdd-node",
+"fdd-nodes",
+"fdd-overview",
+"fdd-status",
+"fdd-titles",
+"log",
+"log-loading",
+"log-meta",
+"log-pre",
+"log-toolbar",
+"log-tools",
+"mono",
+"nd-idx",
+"nd-name",
+"nd-st",
+"nd-tool",
+"nd-type",
+"ov-copy",
+"ov-copy-ic",
+"ov-item",
+"ov-label",
+"ov-value",
+"video",
+"video-box",
+"video-meta",
+"video-player",
+"video-tip"
+],
+"src/components/MessageBubble.vue": [
+"'",
+"+",
+"language-'",
+"language-mermaid",
+"mb-dd-copy",
+"mb-dd-divider",
+"mb-dd-item",
+"mb-dd-more",
+"mb-regen",
+"mb-web-item",
+"safeLang"
+],
+"src/components/ProjectPicker.vue": [
+"ai-sug-body",
+"ai-sug-header",
+"ai-sug-item",
+"ai-sug-label",
+"ai-sug-value",
+"ai-suggestion",
+"pp-dot",
+"pp-empty",
+"pp-manage",
+"pp-new",
+"pp-new-dialog",
+"pp-opt",
+"pp-opt-body",
+"pp-opt-desc",
+"pp-opt-name",
+"pp-sb-caret",
+"pp-sb-empty",
+"pp-sb-footer",
+"pp-sb-group",
+"pp-sb-group-label",
+"pp-sb-groups",
+"pp-sb-name",
+"pp-sb-opt",
+"pp-sb-opt-body",
+"pp-sb-opt-desc",
+"pp-sb-opt-name",
+"pp-sb-panel",
+"pp-sb-trigger",
+"pp-select",
+"pp-type-opt",
+"pp-wrap"
+],
+"src/components/SessionSidebar.vue": [
+"brand-text",
+"ver"
+],
+"src/components/SkeletonLoader.vue": [
+"skeleton-desc",
+"skeleton-title",
+"skeleton-value"
+],
+"src/components/ai/ExpertCard.vue": [
+"expert-card__priority"
+],
+"src/components/ai/GateResult.vue": [
+"gate-result__dimension",
+"gate-result__suggestions"
+],
+"src/components/ai/PhasePipeline.vue": [
+"debate-result",
+"intent-result",
+"learn-result",
+"phase-pipeline__detail-content",
+"synthesis-result",
+"team-result"
+],
+"src/components/common/ConfirmDialog.vue": [
+"common-confirm-dialog"
+],
+"src/components/layout/TheTopbar.vue": [
+"quick-create"
+],
+"src/modules/admin-lowcode/engine/SchemaCrudPage.vue": [
+"schema-crud-page"
+],
+"src/modules/expert-alliance/components/ExpertBookingPanel.vue": [
+"ab-table"
+],
+"src/modules/expert-alliance/components/ExpertCapabilityMatrix.vue": [
+"ecm-item-bar"
+],
+"src/modules/expert-alliance/components/GraphCanvas.vue": [
+"agc-edges",
+"agc-nodes"
+],
+"src/modules/expert-alliance/components/SessionStatsPanel.vue": [
+"ssa-bar-label"
+],
+"src/modules/expert-alliance/views/AllianceCollabView.vue": [
+"awb-alert"
+],
+"src/modules/expert-alliance/views/AllianceConsoleView.vue": [
+"ac-filter",
+"ac-fusion",
+"ac-head-text",
+"ac-log-seq",
+"ac-log-time",
+"ack-run-go",
+"acks-dialog",
+"acks-dialog-go",
+"acks-foot-btn"
+],
+"src/modules/expert-alliance/views/AllianceExpertsView.vue": [
+"ax-domain-tag"
+],
+"src/modules/expert-alliance/views/AllianceOrchestrationView.vue": [
+"aov-cell-label"
+],
+"src/modules/governance/views/GovernanceConsoleView.vue": [
+"gv-alert",
+"gv-dim-id",
+"gv-head-text",
+"gv-league",
+"gv-weight-label"
+],
+"src/views/admin/AdminView.vue": [
+"adm"
+],
+"src/views/admin/panels/AdminAccess.vue": [
+"adm-access",
+"toolbar-left"
+],
+"src/views/admin/panels/AdminApi.vue": [
+"stat-row"
+],
+"src/views/admin/panels/AdminAudit.vue": [
+"adm-audit"
+],
+"src/views/admin/panels/AdminConfig.vue": [
+"adm-config"
+],
+"src/views/admin/panels/AdminDepartment.vue": [
+"toolbar-left"
+],
+"src/views/admin/panels/AdminDict.vue": [
+"adm-dict"
+],
+"src/views/admin/panels/AdminHitl.vue": [
+"adm-hitl",
+"toolbar-left"
+],
+"src/views/admin/panels/AdminLlm.vue": [
+"kpi",
+"kpi-bar",
+"kpi-label",
+"kpi-value"
+],
+"src/views/admin/panels/AdminMenu.vue": [
+"adm-menu"
+],
+"src/views/admin/panels/AdminMonitor.vue": [
+"kpi-row"
+],
+"src/views/admin/panels/AdminOverview.vue": [
+"adm-overview"
+],
+"src/views/admin/panels/AdminRole.vue": [
+"muted",
+"perm-tabs"
+],
+"src/views/admin/panels/AdminSso.vue": [
+"protocol-chips"
+],
+"src/views/admin/panels/AdminStorage.vue": [
+"adm-storage"
+],
+"src/views/admin/panels/AdminUser.vue": [
+"toolbar-left"
+],
+"src/views/ai/AlgoLabView.vue": [
+"algo-tabs",
+"code-area",
+"toolbar"
+],
+"src/views/ai/CaomeiView.vue": [
+"compile-panel",
+"flow-col"
+],
+"src/views/ai/ChatView.vue": [
+"session-del",
+"session-sediment"
+],
+"src/views/auth/Register.vue": [
+"register-form-content"
+],
+"src/views/expert/AllianceTaskView.vue": [
+"create-dialog",
+"dag-node-group"
+],
+"src/views/expert/ExpertConfigView.vue": [
+"config-card",
+"expert-bubble",
+"preview-dialog",
+"scenario-detail-card"
+],
+"src/views/expert/ExpertPlazaView.vue": [
+"booking-dialog",
+"booking-el-form",
+"detail-dialog",
+"detail-info-col",
+"detail-skills-col",
+"experts-view",
+"ranking-dialog",
+"ranking-tabs"
+],
+"src/views/expert/panels/ExpertEnterprisePanel.vue": [
+"cb-failures",
+"graph-overview"
+],
+"src/views/expert/panels/ExpertOrchestratorPanel.vue": [
+"main-tabs",
+"result-content",
+"stat-info"
+],
+"src/views/graph/FlowGraph.vue": [
+"trace-list"
+],
+"src/views/market/MarketDetailView.vue": [
+"f-desc",
+"f-prio",
+"f-stat",
+"f-title"
+],
+"src/views/market/MarketView.vue": [
+"empty-cta",
+"toolbar-right",
+"view-mode-switch"
+],
+"src/views/operators/OperatorsView.vue": [
+"detail",
+"op-body",
+"step-info"
+],
+"src/views/project/Dashboard.vue": [
+"bottom-row",
+"log-main",
+"spark",
+"stat-body",
+"stat-row",
+"welcome-left"
+],
+"src/views/project/ProjectsView.vue": [
+"cat-icon-fallback",
+"panel-pagination"
+],
+"src/views/project/ResourcesView.vue": [
+"chart-row",
+"kpi-row"
+],
+"src/views/project/TaskView.vue": [
+"task-dialog",
+"task-drawer"
+],
+"src/views/project/Workbench.vue": [
+"tb-clock",
+"tb-status",
+"tb-title"
+],
+"src/views/project/panels/KnowledgeBasePanel.vue": [
+"entity-freq",
+"graph-entities",
+"graph-summary",
+"header-left",
+"tree-label",
+"tree-panel"
+],
+"src/views/public/Forbidden.vue": [
+"perm-dialog"
+],
+"src/views/workflow/BrowserView.vue": [
+"kpi-row"
+],
+"src/views/workflow/WorkflowView.vue": [
+"mono",
+"muted"
+],
+"src/views/workflow/panels/AutomationPanel.vue": [
+"f"
+],
+"src/views/workflow/panels/PluginsPanel.vue": [
+"topo-links",
+"topo-topics"
+],
+"src/views/workspace/panels/AIAssistantPanel.vue": [
+"ws-ai-capabilities"
+],
+"src/views/workspace/panels/CollaborationPanel.vue": [
+"assistant",
+"ws-discussion-content",
+"ws-files-content"
+],
+"src/views/workspace/panels/ExpertPanel.vue": [
+"ws-session-experts",
+"ws-session-time"
+],
+"src/views/workspace/panels/FilePanel.vue": [
+"ws-files-content-inner"
+],
+"src/views/workspace/panels/GraphCanvasPanel.vue": [
+"ws-graph-section"
+],
+"src/views/workspace/panels/KnowledgeBasePanel.vue": [
+"ws-collapsed-right"
+],
+"src/views/workspace/panels/SmartRouteDialog.vue": [
+"intro-text"
+],
+"src/views/workspace/panels/TaskOrchestrationPanel.vue": [
+"orch-panel-center",
+"orch-panel-left"
+],
+"src/views/workspace/panels/WhiteboardPanel.vue": [
+"wb-note-title",
+"ws-wb-tool-label",
+"ws-whiteboard-content-inner"
+],
+"src/views/workspace/panels/WorkspaceHeader.vue": [
+"ws-header-center",
+"ws-logo-text"
+]
+}

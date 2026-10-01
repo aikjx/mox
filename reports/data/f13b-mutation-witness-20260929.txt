@@ -1,0 +1,32 @@
+F13b 变异电池见证 — 2026-09-29（编排状态档出口收口后复测：视图三站点 :75/:126/:133 + 契约）
+判据文件：src/modules/expert-alliance/contract/vocabulary-ownership.test.js（17 例，本轮只跑该文件）
+被碰文件：orchestration.js / AllianceOrchestrationView.vue / 判据文件本身（未变异）
+快照目录：D:/tmp/f13c-cur（写前图像，拒绝覆盖）
+基线：rc=0 Tests  17 passed (17)
+
+M20 [CAUGHT] plan.steps 站点(:75) 写回直印 wire 原始值
+     文件=AllianceOrchestrationView.vue 判据红=['L11 编排步骤状态档走契约出口：:75 / :126 / :133 三站点不许', '{{ t.usageCount }}'] 期望=['L11 '] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceOrchestrationView.vue 87a1444ec50e5f12→87a1444ec50e5f12 MATCH
+M21 [CAUGHT] 撤掉按名导入通道(:262)
+     文件=AllianceOrchestrationView.vue 判据红=['L11 编排步骤状态档走契约出口：:75 / :126 / :133 三站点不许'] 期望=['L11 '] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceOrchestrationView.vue 87a1444ec50e5f12→87a1444ec50e5f12 MATCH
+M22 [CAUGHT] execute.steps_executed 站点(:133) 写回直印
+     文件=AllianceOrchestrationView.vue 判据红=['L11 编排步骤状态档走契约出口：:75 / :126 / :133 三站点不许', '{{ t.usageCount }}'] 期望=['L11 '] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceOrchestrationView.vue 87a1444ec50e5f12→87a1444ec50e5f12 MATCH
+M23 [CAUGHT] 契约少一档(ORCH_STATUS 删 partial)
+     文件=orchestration.js 判据红=['L11b 编排状态契约账：七档取值逐字钉住、每档都有中文、出口只钉管道 10ms'] 期望=['L11b'] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 orchestration.js ec85648e564c3ba6→ec85648e564c3ba6 MATCH
+M24 [CAUGHT] 文案档名同形(LABELS partial 改成 "partial")
+     文件=orchestration.js 判据红=['L11b 编排状态契约账：七档取值逐字钉住、每档都有中文、出口只钉管道 13ms'] 期望=['L11b'] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 orchestration.js ec85648e564c3ba6→ec85648e564c3ba6 MATCH
+M25 [GREEN(措辞无关)] 只改中文措辞(pending 待执行→排队中，必须不红)
+     文件=orchestration.js 判据红=[] 期望=['-'] 漏=[] / Tests  17 passed (17)
+     还原 orchestration.js ec85648e564c3ba6→ec85648e564c3ba6 MATCH
+M26 [CAUGHT] execute 徽章(:126) 写回直印 store.outcome.status
+     文件=AllianceOrchestrationView.vue 判据红=['L11 编排步骤状态档走契约出口：:75 / :126 / :133 三站点不许', '{{ t.usageCount }}'] 期望=['L11 '] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceOrchestrationView.vue 87a1444ec50e5f12→87a1444ec50e5f12 MATCH
+
+终检 vocabulary-ownership.test.js       e475be7ce59ceff1 MATCH
+终检 orchestration.js                   ec85648e564c3ba6 MATCH
+终检 AllianceOrchestrationView.vue      87a1444ec50e5f12 MATCH
+复跑基线：rc=0 Tests  17 passed (17)

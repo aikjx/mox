@@ -1,0 +1,131 @@
+F19 两轴筛查（可达性 × 形状）2026-09-29 | 驱动器 D:/tmp/f19-screen.py（未落库＝没牙，禁止接 CI）
+口径：frontend-ui/src 的 *.vue，排除 modules/expert-alliance（模块内由 L9/§5.41 管）、排除 .test/.stories。
+命中定义与 F17 同（{{ … }} 内含 <path>.((?:status|state|type|role|kind|mode|msgType|msg_type|phase|level))，整条 mustache 不含函数调用）。
+F17 的两处断针本轮已修：evidence 的 `and False` 死逻辑；imported 谓词改成按导入的具体出口名问。
+实测：扫描文件 107 个 ⇒ 形状命中 55 处 ⇒ 涉及文件 30 个 ⇒ 源文件总读取 361 个
+可达性三通道：template-tag(<Name>／<name-kebab>) / named-import(多行) / default-import / string-:is；`import.meta.glob` 全库出现次数=0
+分桶（R0 先行＝§5.49 的规矩：零 importer 不给按债定价）：
+  R0_零app消费者(孤儿/stories)                 2 处 / 1 文件
+  R0_零importer                           49 处 / 25 文件
+  R3_活界面且本文件无按名出口⇒人工队列                   4 处 / 4 文件
+
+逐条读数（file:line | 字段 | app消费者数 | 通道 | 桶）：
+  components/MessageBubble.vue:164 | mode     | app=0 | default-import                     | R0_零app消费者(孤儿/stories)
+  components/MessageBubble.vue:415 | role     | app=0 | default-import                     | R0_零app消费者(孤儿/stories)
+  components/AgentFlowPanel.vue:72 | role     | app=0 | -                                  | R0_零importer
+  components/AgentFlowPanel.vue:136 | role     | app=0 | -                                  | R0_零importer
+  modules/governance/views/GovernanceConsoleView.vue:137 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminApi.vue:11 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminApi.vue:108 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminApi.vue:151 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminAudit.vue:89 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminAudit.vue:169 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminAudit.vue:223 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminConfig.vue:55 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminDepartment.vue:71 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminDepartment.vue:126 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminDepartment.vue:170 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminDict.vue:34 | type     | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminDict.vue:40 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminDict.vue:59 | type     | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminDict.vue:97 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminMonitor.vue:313 | level    | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminMonitor.vue:397 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminRole.vue:67 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminRole.vue:350 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminSso.vue:37 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminStorage.vue:29 | type     | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminTenant.vue:40 | mode     | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminTenant.vue:58 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminUser.vue:107 | status   | app=0 | -                                  | R0_零importer
+  views/admin/panels/AdminUser.vue:169 | status   | app=0 | -                                  | R0_零importer
+  views/ai/AlgoLabView.vue:52 | kind     | app=0 | -                                  | R0_零importer
+  views/ai/CaomeiView.vue:119 | kind     | app=0 | -                                  | R0_零importer
+  views/expert/AllianceTaskView.vue:104 | status   | app=0 | -                                  | R0_零importer
+  views/expert/AllianceTaskView.vue:232 | role     | app=0 | -                                  | R0_零importer
+  views/expert/ExpertConfigView.vue:273 | level    | app=0 | -                                  | R0_零importer
+  views/expert/ExpertConfigView.vue:276 | type     | app=0 | -                                  | R0_零importer
+  views/expert/ExpertConfigView.vue:523 | type     | app=0 | -                                  | R0_零importer
+  views/expert/ExpertConfigView.vue:1732 | type     | app=0 | -                                  | R0_零importer
+  views/expert/ExpertConfigView.vue:2052 | level    | app=0 | -                                  | R0_零importer
+  views/expert/ExpertConfigView.vue:2055 | type     | app=0 | -                                  | R0_零importer
+  views/expert/panels/ExpertEnterprisePanel.vue:217 | type     | app=0 | -                                  | R0_零importer
+  views/expert/panels/ExpertOrchestratorPanel.vue:110 | status   | app=0 | -                                  | R0_零importer
+  views/expert/panels/ExpertOrchestratorPanel.vue:121 | role     | app=0 | -                                  | R0_零importer
+  views/expert/panels/ExpertOrchestratorPanel.vue:236 | status   | app=0 | -                                  | R0_零importer
+  views/graph/MoxFusionView.vue:38 | type     | app=0 | -                                  | R0_零importer
+  views/project/ProjectsView.vue:437 | status   | app=0 | -                                  | R0_零importer
+  views/project/ResourcesView.vue:46 | type     | app=0 | -                                  | R0_零importer
+  views/project/ResourcesView.vue:52 | status   | app=0 | -                                  | R0_零importer
+  views/project/TaskView.vue:241 | status   | app=0 | -                                  | R0_零importer
+  views/workflow/BrowserView.vue:84 | status   | app=0 | -                                  | R0_零importer
+  views/workflow/WorkflowView.vue:91 | status   | app=0 | -                                  | R0_零importer
+  views/workflow/WorkflowView.vue:141 | type     | app=0 | -                                  | R0_零importer
+  components/expert/RegisterExpertDialog.vue:193 | type     | app=1 | named-import,template-tag          | R3_活界面且本文件无按名出口⇒人工队列
+  views/graph/FlowGraph.vue:42 | type     | app=1 | default-import,template-tag        | R3_活界面且本文件无按名出口⇒人工队列
+  views/project/panels/KnowledgeBasePanel.vue:517 | type     | app=1 | default-import,template-tag        | R3_活界面且本文件无按名出口⇒人工队列
+  views/workspace/panels/TaskOrchestrationPanel.vue:250 | type     | app=1 | template-tag                       | R3_活界面且本文件无按名出口⇒人工队列
+
+R3 人工队列明细（file:line | 表达式 | 该文件导入的出口名）：
+  components/expert/RegisterExpertDialog.vue:193 | EXPERT_TYPES[formData.type] || formData.type | outlets=-
+  views/graph/FlowGraph.vue:42 | n.type | outlets=-
+  views/project/panels/KnowledgeBasePanel.vue:517 | ent.type | outlets=getCategoryLabel,getStatusLabel
+  views/workspace/panels/TaskOrchestrationPanel.vue:250 | EXPERT_TYPES[expert.type] | outlets=-
+
+R0 明细（零 app 消费者；这些位点不在用户看得到的界面上）：
+  components/MessageBubble.vue:164 | msg.artifacts.mode === 'code' ? '代码文件' : (msg.arti | stories=stories/MessageBubble.stories.js
+  components/MessageBubble.vue:415 | sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手 | stories=stories/MessageBubble.stories.js
+  components/AgentFlowPanel.vue:72 | a.role | stories=-
+  components/AgentFlowPanel.vue:136 | a.role | stories=-
+  modules/governance/views/GovernanceConsoleView.vue:137 | row.gate.status | stories=-
+  views/admin/panels/AdminApi.vue:11 | health.status || '未知' | stories=-
+  views/admin/panels/AdminApi.vue:108 | row.status | stories=-
+  views/admin/panels/AdminApi.vue:151 | detail.status | stories=-
+  views/admin/panels/AdminAudit.vue:89 | row.status === 1 ? '成功' : '失败' | stories=-
+  views/admin/panels/AdminAudit.vue:169 | row.status === '1' || row.status === 1 ? '成功' : '失 | stories=-
+  views/admin/panels/AdminAudit.vue:223 | currentOperLog.status === 1 ? '成功' : '失败' | stories=-
+  views/admin/panels/AdminConfig.vue:55 | row.status === 1 ? '正常' : '停用' | stories=-
+  views/admin/panels/AdminDepartment.vue:71 | currentDept.status === 1 ? '启用' : '停用' | stories=-
+  views/admin/panels/AdminDepartment.vue:126 | row.status === 1 ? '启用' : '停用' | stories=-
+  views/admin/panels/AdminDepartment.vue:170 | row.status === 1 ? '启用' : '停用' | stories=-
+  views/admin/panels/AdminDict.vue:34 | row.type | stories=-
+  views/admin/panels/AdminDict.vue:40 | row.status === 1 ? '正常' : '停用' | stories=-
+  views/admin/panels/AdminDict.vue:59 | currentDictType.type | stories=-
+  views/admin/panels/AdminDict.vue:97 | row.status === 1 ? '正常' : '停用' | stories=-
+  views/admin/panels/AdminMonitor.vue:313 | row.level | stories=-
+  views/admin/panels/AdminMonitor.vue:397 | row.status | stories=-
+  views/admin/panels/AdminRole.vue:67 | row.status === 1 ? '启用' : '停用' | stories=-
+  views/admin/panels/AdminRole.vue:350 | row.status === 1 ? '启用' : '停用' | stories=-
+  views/admin/panels/AdminSso.vue:37 | row.status === 'enabled' ? '启用' : '停用' | stories=-
+  views/admin/panels/AdminStorage.vue:29 | p.description || p.desc || p.type || '' | stories=-
+  views/admin/panels/AdminTenant.vue:40 | row.mode === 'physical' ? '物理隔离' : '逻辑隔离' | stories=-
+  views/admin/panels/AdminTenant.vue:58 | row.status === 'active' ? '停用' : '启用' | stories=-
+  views/admin/panels/AdminUser.vue:107 | row.status === 1 ? '停用' : '启用' | stories=-
+  views/admin/panels/AdminUser.vue:169 | detailData.status === 1 ? '启用' : '停用' | stories=-
+  views/ai/AlgoLabView.vue:52 | n.kind || 'task' | stories=-
+  views/ai/CaomeiView.vue:119 | n.kind || 'task' | stories=-
+  views/expert/AllianceTaskView.vue:104 | selectedTask.status === 'paused' ? '继续执行' : '启动任务' | stories=-
+  views/expert/AllianceTaskView.vue:232 | msg.role === 'user' ? '我' : 'AI' | stories=-
+  views/expert/ExpertConfigView.vue:273 | levelLabels[config.profile.level] || '等级' | stories=-
+  views/expert/ExpertConfigView.vue:276 | expertTypes[config.profile.type] || '专家类型' | stories=-
+  views/expert/ExpertConfigView.vue:523 | v.type === 'system' ? '系统' : '自定义' | stories=-
+  views/expert/ExpertConfigView.vue:1732 | v.type === 'system' ? '系统' : '自定义' | stories=-
+  views/expert/ExpertConfigView.vue:2052 | levelLabels[config.profile.level] || '等级' | stories=-
+  views/expert/ExpertConfigView.vue:2055 | expertTypes[config.profile.type] || '专家类型' | stories=-
+  views/expert/panels/ExpertEnterprisePanel.vue:217 | typeLabels[selectedExpert.type] || selectedExpert. | stories=-
+  views/expert/panels/ExpertOrchestratorPanel.vue:110 | result.status === 'success' ? '✅ 执行成功' : '❌ 执行失败' | stories=-
+  views/expert/panels/ExpertOrchestratorPanel.vue:121 | e.role | stories=-
+  views/expert/panels/ExpertOrchestratorPanel.vue:236 | row.result.status | stories=-
+  views/graph/MoxFusionView.vue:38 | n.type | stories=-
+  views/project/ProjectsView.vue:437 | it.status | stories=-
+  views/project/ResourcesView.vue:46 | row.type | stories=-
+  views/project/ResourcesView.vue:52 | row.status === 'healthy' ? '健康' : '告警' | stories=-
+  views/project/TaskView.vue:241 | currentTask.status === 'done' ? '标记为待办' : '标记为完成' | stories=-
+  views/workflow/BrowserView.vue:84 | s.status || 'active' | stories=-
+  views/workflow/WorkflowView.vue:91 | it.status || 'running' | stories=-
+  views/workflow/WorkflowView.vue:141 | t.type | stories=-
+
+仪器自述（用数之前先读）：
+  · 可达性按"组件名"问，不看 prop 是否真被传值 ⇒ R0 是"文件级零消费者"，比 §5.48 的 MessageBubble 结论粗一档。
+  · R3 仍可能是 (c) 跨域同名（值域不属联盟契约），要逐条溯源出参；本轮只负责缩队，不判定。
+  · 只看同一行的中文出口 ⇒ 跨行写法会落进 R3（假阳方向）。

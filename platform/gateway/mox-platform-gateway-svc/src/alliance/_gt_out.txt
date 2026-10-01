@@ -1,0 +1,5 @@
+﻿ok:             graph: Arc::new(Mutex::new(make_test_graph())),
+ok: State(state.clone()),
+ok: state.graph.lock().
+ok:         let g = state.graph.lock();
+ALL DONE

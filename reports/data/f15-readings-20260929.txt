@@ -1,0 +1,81 @@
+F15 消息族 role / msg_type 收口 ＋ L12 覆盖面裁决 —— 读数档案（2026-09-29）
+================================================================
+
+本档案只收**本轮现场测量值**（非回忆）。每个数字点名它由哪个工具读出；
+行数一律用 `len(bytes.decode('utf-8').splitlines())`，字节用 `len(bytes)`，
+两者同尺；md5 为 `hashlib.md5(bytes).hexdigest()[:16]`。
+
+## 1. 被改动的三个文件（写后现状）
+
+量具：`python`（内联脚本，逐文件读二进制）。
+
+| 文件（相对 `frontend-ui/`） | md5(16) | 字节 | 行数 | CRLF | 游离 CR |
+|---|---|---|---|---|---|
+| src/modules/expert-alliance/contract/vocabulary-ownership.test.js | 0d07119459c45de6 | 25808 | 383 | 0 | 0 |
+| src/modules/expert-alliance/components/SessionThreadPanel.vue | 9057855302809c42 | 15258 | 261 | 0 | 0 |
+| src/modules/expert-alliance/contract/sessions.js | 271cf438e52734c0 | 23462 | 503 | 0 | 0 |
+
+md5 轨迹（同一量具）：
+- `vocabulary-ownership.test.js`：`1c189d64d138de65`（§5.44 落盘后）→ `032f5a4f9dfdb97f`（台账补 `paused`）
+  → `83fe066ba3668753`（§5.45 台账清空）→ `0d07119459c45de6`（本轮 L12 覆盖面加宽）
+- `SessionThreadPanel.vue`：`5fb31e978a26685b` → `9057855302809c42`
+- `sessions.js`：新增派生常量 `MESSAGE_ROLE` 后为 `271cf438e52734c0`
+
+## 2. wire 真值（本轮重新量，不复用旧引用）
+
+量具：`grep -n 'role\|msg_type'` 与 `python re.findall` 计数，对象为
+`platform/gateway/mox-platform-gateway-svc/src/alliance/experts_collaboration.rs`。
+
+- `role` 出参取值与行数：`"user"`（:830 :932 :1252）、`"expert"`（:843 :1263）、`"system"`（:943 :1029 :1475）
+  ⇒ 计数 `{'user': 3, 'expert': 2, 'system': 3}`
+- `msg_type` 出参取值与行数：`"text"`（:834 :936 :1256）、`"markdown"`（:847 :947 :1033 :1267 :1479）
+  ⇒ 计数 `{'text': 3, 'markdown': 5}`
+- 契约第 4 档 `assistant` 在该网关文件里**没有**生产者，但在全库有：
+  `platform/domains/ai/svc/mox-ai-expert-svc/src/alliance_ext.rs:351`、
+  `platform/gateway/mox-platform-gateway-svc/src/dialogue_sediment.rs:352/:389`
+  ⇒ 契约表**不是**过度声明（这条若不量就会写成"契约多一档"的假账）。
+- `MSG_TYPES` 的 `code/image/file` 三档在出参硬编码里无生产者，属写入侧（composer 可选、后端不校验），登记不当债。
+
+## 3. 判据与电池
+
+量具：`npx vitest run src/modules/expert-alliance/contract/vocabulary-ownership.test.js`（本档案不转述判决，判决行见 `reports/data/f15-mutation-witness-20260929.txt`）。
+
+- 判据文件用例数：**18 例**（本轮未新增 `it`，只把消息族两张表并进 L12 的**现推**禁串集合 ⇒ 分母不变而覆盖面变宽）
+- 电池 4 枚（P1/P2/P3 必须红、P4 改中文措辞必须不红），报告 **0 不符**，终检三文件 md5 全 MATCH，
+  基线跑前跑后各一次 `18 passed`。
+
+## 4. 门禁分母（本轮现场复跑）
+
+| 门禁 | 命令 | rc | 判决行（逐字） |
+|---|---|---|---|
+| 全量单测 | `npx vitest run --reporter=dot`（后台，输出取尾部） | 0 | `Test Files  77 passed (77)` / `Tests  1034 passed (1034)` / `Duration  30.32s` |
+| 前端构建 | `npx vite build` | 0 | `✓ built in 35.58s` |
+| 模块化门禁 | `python scripts/gate/check-frontend-module.py` | 0 | `--- 前端模块化门禁：ERROR=0 ---` |
+| locale 闸门 | `python scripts/gate/check-locale-format-outlets.py` | 0 | rc=0（无余账变化） |
+| 文档链接 | `python scripts/gate/check-doc-links.py`（单独跑取 rc，不从管道尾巴拿） | **1** | `WARN` 计数 120；本文件唯一 WARN 在 `FRONTEND-MODULE-GOVERNANCE-v1.0.md:137`（存量 `FRONTEND-MODULE.md`），本轮未引入新悬空 |
+
+注：`Tests 1034` 是本轮重新量到的值；上一轮 `head -2` 把这一行截掉了，故此处不引用记忆值。
+
+## 4b. 文档载体（§5.46 写入前后，同一量具）
+
+`docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md`：
+`5ca04529da361122` / 253658 B / 1807 行（写入前，§5.45 已落盘的状态）
+→ `910dea8a4bface60` / 258760 B / 1855 行（§5.46 正文写入后）
+→ `5b44c736e953e750` / 259168 B / 1857 行（**最终值**：补"未入库警告"的 `AM`/`??` 状态码段，+2 行 / +408 B）。
+本档案记的是最终值；中间那次读数是被本档案自己的引用"钉住后又改动"的旧量，按规矩三格全留。
+CRLF=0、游离 CR=0 三版相同 ⇒ 编辑器未改行尾码页。
+每次写入后复跑 `check-doc-links.py`：rc=1（存量），WARN 计数始终 **120**，本文件唯一 WARN 仍在 `:137`
+⇒ 新增两节未引入悬空，也未把 `:137` 那条挪位（它在 §5.46 之前）。
+
+## 5. 未入库声明（状态码本轮现场取，`git status --short -- <按名>`）
+
+- `AM` 索引里有**别人**暂存的旧内容，我的编辑只在工作区：`components/SessionThreadPanel.vue`、
+  `contract/sessions.js`、`docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md`
+- `??` 完全在 git 之外、**无 git 恢复源**（恢复只能靠 `D:/tmp/f15-snap`）：
+  `contract/vocabulary-ownership.test.js`、`reports/data/f15-readings-20260929.txt`、
+  `reports/data/f15-mutation-witness-20260929.txt`
+- `git diff --cached --name-only | wc -l` 实测 **436** ⇒ 索引被并发作者大量占用，本轮**未**执行任何
+  `add`/`commit`/`stash`，也未改动索引中任何条目；引用"暂存态"必须是本轮量的，上一轮的计数已过期。
+
+写前图像：`D:/tmp/f15-snap`（补丁前）、`D:/tmp/f15-cur`（落盘后基线）。
+补丁与电池驱动 `D:/tmp/f15-patch.py`、`D:/tmp/f15-battery.py` **未落库 ⇒ 没有牙，不要接 CI**。

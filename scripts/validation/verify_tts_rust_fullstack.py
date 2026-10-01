@@ -9,7 +9,7 @@
 用法：
   # 1. 下载完权重 + 重启 xiaobai_voice 服务
   # 2. 执行：
-       py -3.12 scripts/verify_tts_rust_fullstack.py
+       py -3.12 scripts/validation/verify_tts_rust_fullstack.py
 
 执行路径：默认会把输出放到 temp/tts_verify/*.log 与 audio_cases/*.wav
 """

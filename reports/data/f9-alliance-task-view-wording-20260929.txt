@@ -1,0 +1,55 @@
+F9 联盟任务页内联状态/策略词表收口 — 2026-09-29
+================================================
+
+对象：`frontend-ui/src/views/expert/AllianceTaskView.vue`（`/alliance-tasks`，联盟任务域主屏）
+写前：sha `a4ec142a4988c09e`，1002 行 / 34767 B，LF + BOM（预像 `D:/tmp/f9-pre/`）
+写后：sha `cff5958fe7524b13`，998 行 / 34667 B（−5 行 / −100 B）
+
+普查来源：F7/F8 的 38 处"与契约逐字相同"名单（`f7-inline-wording-census-20260929.txt`）指到本页 :272-275 与 :374-375；
+逐站点读全文件后又发现两处普查扫不到的（普查只认"引号枚举键＋中文同行"）：
+
+五处内联词表（写前行号）：
+1. :136-139 DAG 图例四档 = 待处理/运行中/已完成/失败（`legend` 与 CSS class 同名，色板只有这四枚）
+2. :272-275 融合策略四个 `el-option` = 加权融合/投票融合/辩论融合/**择优汇总**
+   —— 契约 `FUSION_LABELS.best_of` 是「择优融合」（Rust `types.rs:186-198 fusion_label()` 口径）⇒ **同一个 wire 值两份文案**
+3. :372-376 `statusFilters` 自列 6 档（all/pending/running/paused/completed/failed/cancelled）
+   —— 契约 `TASK_STATUS` 有 **7** 档，**缺 `planning`（规划中）⇒ 这一档的任务在界面上永远筛不到**（与 §5.38 的 `closed` 同型缺陷）
+   —— 且 pending 写「待处理」而契约写「待执行」、running 写「运行中」而契约写「执行中」
+4. :386 `const statusLabel = status => ({...}[status] || status)` —— **第四本任务状态字典**，
+   还带 `ready: '已就绪'`（`ready` 是 NODE_STATUS 的档，任务 wire 上不会出现）与 `unknown: '状态待确认'`（`normalize.js:40`
+   把空值归成 `pending`，永远产不出 `unknown`）⇒ 两键死档
+   名字不叫 `taskStatusLabel` ⇒ §5.37 的 L1（按模块导出名扫定义位点）**天然扫不到**，只能按形状钉
+5. :49 :84 两处展示调用 :386 的那本字典
+
+收口（一律交回契约，视图只留"这一屏画哪几档"）：
+- `import { TASK_STATUS, taskStatusLabel, nodeStatusLabel, fusionLabel } from '@/modules/expert-alliance/contract'`
+- `statusFilters = [{ key: 'all', label: '全部' }, ...Object.values(TASK_STATUS).map(k => ({ key: k, label: taskStatusLabel(k) }))]`
+  ⇒ 筛选条从 7 个 chip 变 **8 个**（新增「规划中」），文案 pending→「待执行」、running→「执行中」与契约对齐
+- `statusLabel` 整行删除，两处调用改 `taskStatusLabel(task.status)`；未知 wire 值的行为不变（旧 `|| status` 与新出口同为原样回显）
+- 融合策略：`FUSION_CHOICES = ['weighted','voting','debate','best_of']` 留在视图（**开放哪几档是产品选择**），
+  文案一律 `:label="fusionLabel(o)"` ⇒ best_of 由「择优汇总」改印契约的「择优融合」
+- DAG 图例：`DAG_LEGEND = ['pending','running','completed','failed']`（CSS class 只有这四枚），文案 `{{ nodeStatusLabel(s) }}`
+
+**有意的展示变更（三处，都要在 §5.39 里点名）**：待处理→待执行、运行中→执行中、择优汇总→择优融合；
+外加一个新增筛选项「规划中」。其余档文案逐字不变。
+
+常驻判据：`modules/expert-alliance/contract/vocabulary-ownership.test.js` 由 9 例扩到 **11 例**
+- L7  任务页四本私表不许回来：四个名字各一枚 `^import` 针（按名独立）＋"筛选条必须由 `Object.values(TASK_STATUS)` 推出"
+      ＋`not.toMatch(/\{ key: '(pending|running|completed)', label: /)`（内联档表形状）
+      ＋`not.toMatch(/^\s*const statusLabel\s*=/m)`（换过名字的第四本字典）＋裸 `statusLabel(` 计数 0
+      ＋`taskStatusLabel(task.status)` 恰两处＋融合档不许写回 `label="…" value="weighted|voting|debate|best_of"`＋两个子集常量各一处
+- L7b 契约任务状态账：`Object.values(TASK_STATUS)` 七档取值逐字钉住、每档都有中文（`label !== key`）、出口行为点名（未知回原值、空回空串）
+
+电池：**14 枚 / 判据不符 0 枚**（`f9-mutation-witness-20260929.txt`，驱动器 scratch 未落库＝没牙）
+M10 状态筛选写回内联一档→[L7]；M11 带回 `const statusLabel`→[L7]；M12 融合策略写回硬编码 label→[L7]；
+M13 契约 `TASK_STATUS` 删 `PLANNING`→[L7b]；M14 改一档中文（`paused: '已暂停X'`）→**必须不红**[]（不过度钉）。
+M1-M9 复跑同前（见 §5.38）。四份被碰文件（GUARD/PANEL/TASKVIEW/ENUMS）每枚跑完逐文件 sha MATCH，植入文件已删。
+
+余账（只报不改）：
+- 融合策略契约有 9 档（voting/weighted/confidence_weighted/concatenation/best_of/stacking/debate/map_reduce/iterative），界面只开放 4 档
+  ⇒ "要不要全开"是产品选择，登记不并；`stacking` 的契约文案本身是「堆叠融合（元学习器）」，若开放要量宽度。
+- DAG 图例只画 4 档，而 `NODE_STATUS` 有 7 档（ready/skipped/cancelled 没有色板）⇒ 节点真进入这三态时图例说明不了颜色，
+  属样式余账（与 [[project-theme-token-namespace-split]] 同族），未动。
+- 写后 :166 `{{ node.type }}` 直印 wire 节点类型（英文）⇒ 展示位点吃了未归一字段，是下一枚候选，本轮只登记。
+- `components/DagViewer.vue:68-74` 也有一份五档 legend 私表，但该组件**只有 `components/index.js:9` 的 re-export、零真 importer**
+  （孤儿，见 [[project-frontend-reachability-ledger]]）⇒ 孤儿不修，等 #20/#26 式退役裁决。

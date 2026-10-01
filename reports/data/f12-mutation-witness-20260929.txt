@@ -1,0 +1,21 @@
+F12 变异电池见证 — 2026-09-29（熔断器状态档出口：契约 BREAKER_STATE/breakerStateLabel + 视图站点）
+判据文件：src/modules/expert-alliance/contract/vocabulary-ownership.test.js（15 例）  被碰文件：enums.js / AllianceConsoleView.vue / 判据文件
+快照目录：D:/tmp/f12-cur（写前图像，拒绝覆盖）
+
+基线：rc=0 Tests  15 passed (15)
+
+M15 [CAUGHT] 写回直印 wire 原始值 → AllianceConsoleView.vue / 期望红=['L10 '] / 漏=[] / Tests 1
+     还原 AllianceConsoleView.vue 23cc21aefe0e8f4d MATCH
+M16 [CAUGHT] 撤掉按名导入通道 → AllianceConsoleView.vue / 期望红=['L10 '] / 漏=[] / Tests 1
+     还原 AllianceConsoleView.vue 23cc21aefe0e8f4d MATCH
+M17 [CAUGHT] 撤掉 open 档的中文文案 → enums.js / 期望红=['L10b'] / 漏=[] / Tests 1
+     还原 enums.js ff8828882a748328 MATCH
+M18 [CAUGHT] 契约少一档 → enums.js / 期望红=['L10b'] / 漏=[] / Tests 1
+     还原 enums.js ff8828882a748328 MATCH
+M19 [CLEAN(green expected) GREEN] 只改中文措辞（必须不红＝没过度钉文案） → enums.js / 期望红=['-'] / 漏=[] / Tests  15 passed
+     还原 enums.js ff8828882a748328 MATCH
+
+终检 vocabulary-ownership.test.js 5c8f05da73331748 MATCH
+终检 enums.js                     ff8828882a748328 MATCH
+终检 AllianceConsoleView.vue      23cc21aefe0e8f4d MATCH
+复跑基线：rc=0 Tests  15 passed (15)

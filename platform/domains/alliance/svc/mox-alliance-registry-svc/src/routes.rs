@@ -11,8 +11,10 @@
 
 use axum::{
     Json, Router,
-    extract::{Path, Query, State},
+    extract::{Path, Query, Request, State},
     http::StatusCode,
+    middleware::{self, Next},
+    response::Response,
     routing::{get, post},
 };
 use std::collections::HashMap;
@@ -31,6 +33,8 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         // ── 旧版静态专家目录 ──
         .route("/health", get(legacy_health))
+        // N7 指标文本化：Prometheus exposition 0.0.4（原本未注册 /metrics，本次新增）
+        .route("/metrics", get(metrics_handler))
         .route("/api/v1/experts", get(list_experts).post(create_expert))
         .route(
             "/api/v1/experts/:id",
@@ -38,6 +42,7 @@ pub fn create_router(state: AppState) -> Router {
         )
         // ── 应用级专家实例注册中心 ──
         .route("/api/registry/health", get(registry_health))
+        .route("/api/registry/overview", get(platform_overview))
         .route(
             "/api/registry/experts",
             get(list_registrations).post(register_expert),
@@ -59,7 +64,79 @@ pub fn create_router(state: AppState) -> Router {
         .layer(axum::middleware::from_fn(
             mox_api_crypto::middleware::crypto_middleware,
         ))
+        // 内部服务间鉴权：防绕过网关直连（MOX_INTERNAL_TOKEN；未配置则放行）
+        .layer(middleware::from_fn(internal_auth_layer))
         .with_state(state)
+}
+
+
+/// N7：写一行 Prometheus 指标（HELP + TYPE + sample）。
+fn prom_metric(o: &mut String, help: &str, ty: &str, name: &str, val: u64) {
+    o.push_str(&format!("# HELP {name} {help}\n# TYPE {name} {ty}\n{name} {val}\n"));
+}
+
+/// N7 指标文本化：Prometheus exposition 0.0.4。
+///
+/// registry 原本未注册 `/metrics`（仅 internal_auth 白名单提到），本次新增。
+/// 直接出文本（无既有 JSON 消费者），命名 `mox_alliance_registry_*`：
+/// 注册中心实例总数 + 静态专家目录条目数。
+async fn metrics_handler(State(state): State<AppState>) -> impl axum::response::IntoResponse {
+    let instances = state.registry.count() as u64;
+    let directory_experts = state
+        .dir_store
+        .list()
+        .map(|v| v.len() as u64)
+        .unwrap_or(0);
+    let mut o = String::new();
+    prom_metric(&mut o, "当前注册中心实例总数（含所有状态：Active/Unhealthy/Draining/Expired）", "gauge", "mox_alliance_registry_instances", instances);
+    prom_metric(&mut o, "静态专家目录条目数（SQLite /api/v1/experts）", "gauge", "mox_alliance_registry_directory_experts", directory_experts);
+    (
+        StatusCode::OK,
+        [("content-type", "text/plain; version=0.0.4; charset=utf-8")],
+        o,
+    )
+}
+
+/// 内部服务间鉴权：校验网关注入的共享令牌（MOX_INTERNAL_TOKEN，主值）。
+///
+/// 下游 svc 不直接对前端暴露，唯一入口是网关(:3080)。本层防止绕过网关直连：
+/// - 配置 MOX_INTERNAL_TOKEN 后，所有非公开路径必须携带 `Authorization: Bearer <token>`；
+/// - 未配置主/备任一（开发/本地默认）则放行，保持向后兼容；
+/// - MOX_DEV_MODE=1 强制跳过；
+/// - 探活/指标端点（/health、/metrics、/leadership、/api/registry/health）始终放行。
+///
+/// 双值滚动（零停机换令牌，P0-C 2026-09-29）：
+/// - 新增可选 `MOX_INTERNAL_TOKEN_ALT`（备用值）。Bearer 等于主值 **或** 备用值即通过。
+/// - 生产滚动流程：① 旧值写入 `MOX_INTERNAL_TOKEN_ALT` → 全集群滚动重启本 svc；
+///   ② 网关出站把 `MOX_INTERNAL_TOKEN` 切到新值，全集群滚动重启网关；
+///   ③ 观察一个周期后移除 `MOX_INTERNAL_TOKEN_ALT`，完成双窗口滚动。
+///   两个窗口内网关旧请求带旧值（命中 ALT）、新请求带新值（命中主值），均不 401。
+async fn internal_auth_layer(req: Request, next: Next) -> Result<Response, StatusCode> {
+    let dev_mode = std::env::var("MOX_DEV_MODE")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(cfg!(debug_assertions));
+    let expected = std::env::var("MOX_INTERNAL_TOKEN").unwrap_or_default();
+    let expected_alt = std::env::var("MOX_INTERNAL_TOKEN_ALT").unwrap_or_default();
+    if dev_mode || (expected.is_empty() && expected_alt.is_empty()) {
+        return Ok(next.run(req).await);
+    }
+    let path = req.uri().path();
+    const PUBLIC: &[&str] = &["/health", "/metrics", "/leadership", "/api/registry/health"];
+    if PUBLIC.iter().any(|p| path.starts_with(p)) {
+        return Ok(next.run(req).await);
+    }
+    let ok = req
+        .headers()
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .map(|t| t == expected || (!expected_alt.is_empty() && t == expected_alt))
+        .unwrap_or(false);
+    if ok {
+        Ok(next.run(req).await)
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    }
 }
 
 // ─── 旧版静态专家目录 ─────────────────────────────────────────────────────
@@ -226,6 +303,18 @@ async fn registry_health(State(state): State<AppState>) -> impl axum::response::
             "instances_active": active,
         })),
     )
+}
+
+/// GET /api/registry/overview — 平台概览（`get_platform_overview` 契约实现）
+///
+/// 直接复用 `mox-alliance-registry-core::inventory_platform_overview` 纯函数，
+/// 从现存实例视图聚合 total/active/domains；total_consultations 暂为 0
+/// （逐次调用遥测待后续接入调用成功率健康引擎填充）。
+async fn platform_overview(
+    State(state): State<AppState>,
+) -> Json<mox_alliance_registry_proto::types::PlatformOverview> {
+    let all = state.registry.all_instances();
+    Json(mox_alliance_registry_core::inventory_platform_overview(&all))
 }
 
 /// POST /api/registry/experts — 注册专家实例

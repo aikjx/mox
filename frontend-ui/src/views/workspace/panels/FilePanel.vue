@@ -65,6 +65,7 @@
 </template>
 
 <script setup>
+import { makeUploadRow } from '@/modules/_kernel/upload-row'
 import { ref } from 'vue'
 import { Upload, Document, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
@@ -82,35 +83,12 @@ function fileIconEmoji(type) {
   return icons[type] || '📄'
 }
 
-function getFileType(filename) {
-  const ext = filename.split('.').pop()?.toLowerCase()
-  if (['pdf'].includes(ext)) return 'pdf'
-  if (['doc', 'docx', 'txt', 'md'].includes(ext)) return 'doc'
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return 'image'
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'excel'
-  if (['ppt', 'pptx'].includes(ext)) return 'ppt'
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'zip'
-  if (['js', 'ts', 'py', 'java', 'go', 'cpp', 'html', 'css', 'vue', 'json'].includes(ext)) return 'code'
-  return 'other'
-}
 
-function formatFileSize(bytes) {
-  if (!bytes) return '未知'
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / 1048576).toFixed(1) + ' MB'
-}
+
+
 
 function handleBeforeFileUpload(file) {
-  const type = getFileType(file.name)
-  const newFile = {
-    id: 'f-' + Date.now(),
-    name: file.name,
-    type: type,
-    size: formatFileSize(file.size),
-    uploader: '我',
-    time: '刚刚'
-  }
+  const newFile = makeUploadRow(file)
   emit('file-uploaded', newFile)
   ElMessage.success(`文件「${file.name}」上传成功`)
   return false

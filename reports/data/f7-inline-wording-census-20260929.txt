@@ -1,0 +1,389 @@
+F7/F8 内联枚举文案普查（inline enum-wording census）— 2026-09-29
+================================================================
+
+仪器：`D:/tmp/f7-inline-wording.mjs`（scratch，未落库＝没牙，别接 CI）
+真值源：`frontend-ui/src/modules/expert-alliance/{contract,model}/**.js` 里的 (wire 值 → 中文文案) 对
+判定形状：同一行里同时出现「引号包住的枚举键」与「中文字面量」，且该键在契约表里有值
+
+分母（本轮实测，不许复用到下一轮）：
+- 契约 (wire→中文) 对来自 80 个键
+- 模块外扫描 219 个文件（.js/.ts/.vue，排除 .test/.stories 与 modules/expert-alliance/）
+- 命中 247 处，分布在 38 个键上
+  - 「文案与契约逐字相同」= 38 处 ⇒ 这些是同一事实的第二本字典（可并/可登记）
+  - 「同键不同文案（已经漂了）」= 209 处 ⇒ 绝大多数是别的域自己的话术（`name`/`title`/`description` 一类），不是词表副本
+
+豁免桶（通用对象键，按名点名「含该引号键的中文行数」，共 18 名）：
+name=39 status=23 code=17 label=16 id=10 value=9 type=9 key=6 text=5 description=5 category=5 role=4 title=2 icon=2 level=2
+
+仪器两代假账（都记进 §5.38，别再犯）：
+1. 第一版按「裸标识符 name:」匹配 ⇒ 104 处全是别的对象的同名字段（跨域同名），零真账；
+   判"独有能力/真是副本"只按标识符命中是双向出错的既有老坑。
+2. 第二版仍 315 处 ⇒ 加了 18 名豁免桶，且**被豁免的计数必须按名打印**，否则读者以为「0 处」。
+
+本轮从 38 处「逐字相同」里揪出的真缺陷全部集中在 `views/expert/panels/ExpertEnterprisePanel.vue`（写前图像 sha dbdd754268ac593c，1310 行 / 60655 B）：
+- :139-140 状态筛选器只列 active/archived 两档 ⇒ 契约有 `closed`（已关闭），**这一档的会话在界面筛不到**
+- :143-146 类型筛选器写了 `smart` / `multi_expert` / `algorithm` ⇒ 不是 `session_type` 的 wire 取值（契约四档 single/multi/debate/enterprise），**选中即筛空**
+- :156 `{{ modeLabels[s.mode] || s.mode }}` ⇒ 本地别名 + 私表；`multi`/`enterprise` 无档 ⇒ **界面直印英文原样**
+- :488 :494 api 垫片把 wire 的 `sessionType` 复制成本地 `mode` ⇒ 第二套字段名
+- :586-588 `modeLabels` 私表（5 档，含两个非 wire 值）
+- :639 客户端二次筛读 `s.mode` ⇒ 筛的是本地别名，wire 加档时这里静默失效
+- :829 详情弹层用 `modeLabels[session.mode] || session.mode` 印模式
+
+修法（全部指向契约，不留第二本字典）：两个 `el-select` 改 `v-for="o in SESSION_STATUSES"` / `v-for="o in SESSION_TYPES"`，展示改 `sessionTypeLabel(s.sessionType)`，垫片不再造 `mode`，筛选改 `s.sessionType`，`modeLabels` 私表删除。
+写后：sha f7f58a9b33e692ef，1306 行 / 60720 B（−4 行；字节 +65 来自两处「为什么」注释）。
+
+常驻判据（同一文件，扩两格）：`contract/vocabulary-ownership.test.js`
+- L6  会话筛选与展示取自契约表：三名逐个 `^import` 针（`sessionStatusLabel` 之外 `sessionTypeLabel`/`SESSION_STATUSES`/`SESSION_TYPES`）＋按 `v-model` 切块后「必须 v-for 契约表」与「不许写回硬编码 el-option 档」＋两张表全局各只出现一次＋`modeLabels` 不许回来＋筛选不许吃 `s.mode`
+- L6b 契约取值账：四档/三档取值逐字钉住，`sessionTypeLabel` 的三档行为点名（未知值原样回显、空值 `未分类`）
+L6 的针**按 select 块切**，不按整文件：`enterpriseForm.mode` 那个下拉是另一套词汇、挂在未挂载的模板桩上，整文件级禁令会把合法站点判成缺陷（假阳第三次复发）。
+
+变异电池：9 枚，判据不符 0 枚（见 `f8-mutation-witness-20260929.txt`）
+- M1 模块外自写 `bookingStatusLabel` → ['L1']
+- M2 同前缀不同名（必须不红，挡子串针） → []
+- M3 名字集只留 contract/ ⇒ 判定集塌缩 → ['L1','L2']（254 < 300 下限，两格都该红）
+- M4 只摘 `sessionStatusLabel` 的 import ⇒ 用了却没引 → ['L4']（L6 三名针不跟着红＝针按名独立）
+- M5 扫描集清空 → ['L1','L2']
+- M6 状态筛选写回硬编码一档 → ['L6']
+- M7 二次筛写回 `s.mode` → ['L6']
+- M8 契约删 `enterprise` 档 → ['L6b']
+- M9 改一档文案（不许红＝不过度钉） → []
+每枚跑完逐文件 sha 还原他证 MATCH。
+
+门禁口径（本轮全绿）：全量 vitest 77 文件 / 1025 例 / rc=0；`vite build` rc=0 / 34.70 s；
+`check-locale-format-outlets.py` rc=0（270 分母，余账 2 处）；`check-frontend-module.py` ERROR=0（WARN 为存量）；
+`check-sfc-dead-refs.mjs` files=128 checked=126 deadRefFiles=0 verdict=PASS。
+
+余账（只报不改，等裁决）：
+- D1 `GateResult.vue:gradeLabel` 短档 vs 契约 `GRADE_LABELS` 长档（「优秀」vs「优秀 · 优质交付」）⇒ 已登记，选档待裁决
+- D2 `MessageBubble.vue:confidenceText` 真 0 印 `0%`，契约 `confidenceText` 印 `—` ⇒ 已登记，口径待裁决
+- D3 `sessionTypeLabel` 与 `sessionStatusLabel` 对未知值行为不对称（原样回显 vs 追加「后端未统计此状态」）⇒ 统一与否待裁决
+- D4 `createExpertSession({ title, mode: 'smart' })` 的 `mode` 是死重量（垫片只转发 `title`）⇒ 删字段还是真发待裁决
+- 209 处「漂」不做批量裁决：其中绝大多数与本域词表无关，逐处要人读；本档案末尾原样附全部读数
+
+---- 原始读数（326 行，逐键列出命中行与快照片段）----
+契约 (wire→中文) 对来自 80 个键 / 模块外扫描 219 个文件 / 命中 247 处（38 个键）
+豁免桶（通用对象键，按名点名的"含该引号键的中文行数"）：name=39 status=23 code=17 label=16 id=10 value=9 type=9 key=6 text=5 description=5 category=5 role=4 title=2 icon=2 level=2
+其中"文案与契约逐字相同"=38，"同键不同文案（已经漂了）"=209
+
+system  29 处  契约文案=[系统]
+    同 composables/workspace/useAlliance.js:86  "系统"  |  collabMessages.value.push({ id: Date.now(), role: 'system', name: '系统', avatar: '⚠️', color: '#f
+    漂 composables/workspace/useAlliance.js:86  "协作调用失败，请稍后重试"  |  collabMessages.value.push({ id: Date.now(), role: 'system', name: '系统', avatar: '⚠️', color: '#f
+    同 composables/workspace/useAlliance.js:98  "系统"  |  collabMessages.value.push({ id: Date.now(), role: 'system', name: '系统', avatar: '⚠️', color: '#f
+    漂 composables/workspace/useAlliance.js:98  "已放弃本次等待，会话记录可在「会话中心」查看"  |  collabMessages.value.push({ id: Date.now(), role: 'system', name: '系统', avatar: '⚠️', color: '#f
+    同 composables/workspace/useTaskOrchestration.js:177  "系统"  |  addOrchMessage?.({ role: 'system', name: '系统', avatar: '📊', color: '#10b981', text: `🎯 **任务编排完
+    漂 composables/workspace/useTaskOrchestration.js:177  "🎯 **任务编排完成**\n\n- 总任务数：${taskOrchestration.subtasks.length}\n- 成功完成：${successCount}\n- 失败：${taskOrchestration.subtasks.length - successCount}\n- 完成率：${Math.round((successCount / taskOrchestration.subtasks.length) * 100)}%"  |  addOrchMessage?.({ role: 'system', name: '系统', avatar: '📊', color: '#10b981', text: `🎯 **任务编排完
+    同 views/expert/ExpertConfigView.vue:523  "系统"  |  {{ v.type === 'system' ? '系统' : '自定义' }}
+    漂 views/expert/ExpertConfigView.vue:523  "自定义"  |  {{ v.type === 'system' ? '系统' : '自定义' }}
+    漂 views/expert/ExpertConfigView.vue:546  "系统提示词"  |  <el-option label="系统提示词" value="system" />
+    漂 views/expert/ExpertConfigView.vue:1719  "系统变量"  |  <el-option label="系统变量" value="system" />
+    同 views/expert/ExpertConfigView.vue:1732  "系统"  |  <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'" effect="plain">{{ v.type =
+    漂 views/expert/ExpertConfigView.vue:1732  "自定义"  |  <el-tag size="small" :type="v.type === 'system' ? 'info' : 'success'" effect="plain">{{ v.type =
+    漂 views/expert/ExpertConfigView.vue:2356  "专家名称"  |  { name: 'expert_name', description: '专家名称', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2357  "专家类型"  |  { name: 'expert_type', description: '专家类型', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2358  "专家等级"  |  { name: 'level', description: '专家等级', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2359  "性格特点"  |  { name: 'personality_traits', description: '性格特点', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2360  "说话风格"  |  { name: 'speech_style', description: '说话风格', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2361  "能力列表"  |  { name: 'capabilities', description: '能力列表', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2362  "用户问题"  |  { name: 'question', description: '用户问题', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2365  "当前日期"  |  { name: 'date', description: '当前日期', type: 'system' }
+    漂 views/expert/ExpertConfigView.vue:2542  "用户名称"  |  { name: 'user_name', description: '用户名称', type: 'system' }
+    漂 views/expert/ExpertConfigView.vue:2626  "编程语言"  |  { name: 'language', description: '编程语言', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2715  "源语言"  |  { name: 'source_lang', description: '源语言', type: 'system' },
+    漂 views/expert/ExpertConfigView.vue:2716  "目标语言"  |  { name: 'target_lang', description: '目标语言', type: 'system' }
+    漂 views/expert/ExpertConfigView.vue:2758  "图谱数据"  |  { name: 'graph_data', description: '图谱数据', type: 'system' }
+    同 views/workspace/ExpertWorkspaceView.vue:447  "系统"  |  collabMessages.value = [{ id: Date.now(), role: 'system', name: '系统', avatar: '📢', color: '#647
+    漂 views/workspace/ExpertWorkspaceView.vue:447  "已进入「${sessionListTitle(session)}」协作会话"  |  collabMessages.value = [{ id: Date.now(), role: 'system', name: '系统', avatar: '📢', color: '#647
+    漂 views/workspace/ExpertWorkspaceView.vue:566  "辩论系统"  |  collabMessages.value.push({ id: Date.now(), role: 'system', name: '辩论系统', avatar: '⚔️', color: '
+    漂 views/workspace/ExpertWorkspaceView.vue:566  "【辩论开始】辩题：${result.topic}"  |  collabMessages.value.push({ id: Date.now(), role: 'system', name: '辩论系统', avatar: '⚔️', color: '
+
+active  23 处  契约文案=[进行中]
+    同 components/ProjectChip.vue:47  "进行中"  |  if (['active', '进行中', 'in_progress'].includes(s)) return 'active'
+    同 constants/nav.config.js:220  "进行中"  |  { key: 'active', label: '进行中', icon: '🔄' },
+    漂 modules/admin-lowcode/pages/tenant.page.js:40  "租户已${next === "  |  ElMessage.success(`租户已${next === 'active' ? '启用' : '停用'}`)
+    漂 modules/admin-lowcode/pages/tenant.page.js:40  "启用"  |  ElMessage.success(`租户已${next === 'active' ? '启用' : '停用'}`)
+    漂 modules/admin-lowcode/pages/tenant.page.js:40  "停用"  |  ElMessage.success(`租户已${next === 'active' ? '启用' : '停用'}`)
+    漂 modules/admin-lowcode/pages/tenant.page.js:61  "活跃"  |  { label: '活跃', value: 'active' },
+    漂 modules/admin-lowcode/pages/tenant.page.js:75  "活跃租户"  |  { label: '活跃租户', icon: '✅', color: '#52C41A', value: (rows) => rows.filter(t => t.status === 'ac
+    漂 modules/admin-lowcode/pages/tenant.page.js:103  "停用"  |  { label: (row) => row.status === 'active' ? '停用' : '启用',
+    漂 modules/admin-lowcode/pages/tenant.page.js:103  "启用"  |  { label: (row) => row.status === 'active' ? '停用' : '启用',
+    漂 modules/admin-lowcode/pages/tenant.page.js:127  "状态"  |  { prop: 'status', label: '状态', type: 'radio', defaultValue: 'active', visibleOnEdit: true,
+    漂 modules/admin-lowcode/pages/tenant.page.js:129  "活跃"  |  { label: '活跃', value: 'active' }, { label: '停用', value: 'inactive' }, { label: '试用', value: 'tri
+    漂 modules/admin-lowcode/pages/tenant.page.js:129  "停用"  |  { label: '活跃', value: 'active' }, { label: '停用', value: 'inactive' }, { label: '试用', value: 'tri
+    漂 modules/admin-lowcode/pages/tenant.page.js:129  "试用"  |  { label: '活跃', value: 'active' }, { label: '停用', value: 'inactive' }, { label: '试用', value: 'tri
+    漂 views/admin/panels/AdminTenant.vue:19  "活跃"  |  <el-option label="活跃" value="active" />
+    漂 views/admin/panels/AdminTenant.vue:58  "停用"  |  <el-button size="small" type="warning" link @click.stop="toggleStatus(row)" v-if="row.code !== '
+    漂 views/admin/panels/AdminTenant.vue:58  "启用"  |  <el-button size="small" type="warning" link @click.stop="toggleStatus(row)" v-if="row.code !== '
+    漂 views/admin/panels/AdminTenant.vue:148  "活跃租户"  |  { key: 'active', label: '活跃租户', value: list.value.filter(t => t.status === 'active').length, ico
+    漂 views/admin/panels/AdminTenant.vue:231  "租户已${newStatus === "  |  ElMessage.success(`租户已${newStatus === 'active' ? '启用' : '停用'}`)
+    漂 views/admin/panels/AdminTenant.vue:231  "启用"  |  ElMessage.success(`租户已${newStatus === 'active' ? '启用' : '停用'}`)
+    漂 views/admin/panels/AdminTenant.vue:231  "停用"  |  ElMessage.success(`租户已${newStatus === 'active' ? '启用' : '停用'}`)
+    同 views/expert/panels/ExpertEnterprisePanel.vue:139  "进行中"  |  <el-option label="进行中" value="active" />
+    漂 views/project/ProjectsView.vue:254  ">进行中 ({{ tasks.filter(t => t.status === "  |  <div class="filter-chip" :class="{ active: taskFilter === 'active' }" @click="taskFilter = 'acti
+    同 views/project/ProjectsView.vue:491  "进行中"  |  { key: 'active', label: '进行中' },
+
+pending  22 处  契约文案=[待执行 / 待确认]
+    漂 components/DagViewer.vue:53  "数据建模"  |  { id: 'node-3', name: '数据建模', status: 'pending', x: 250, y: 150 },
+    漂 components/DagViewer.vue:54  "方案评审"  |  { id: 'node-4', name: '方案评审', status: 'pending', x: 450, y: 100 },
+    漂 components/DagViewer.vue:55  "融合输出"  |  { id: 'node-5', name: '融合输出', status: 'pending', x: 650, y: 100 },
+    同 components/DagViewer.vue:69  "待执行"  |  { status: 'pending', label: '待执行', color: '#909399' },
+    漂 components/FlowDetailDialog.vue:239  "执行中"  |  if (s.includes('run') || s === 'pending' || s === 'waiting') return { cls: 'warning', text: '执行中
+    漂 components/layout/IconSidebar.vue:63  "连接中…"  |  const health = ref({ status: 'pending', label: '连接中…' })
+    漂 composables/workspace/useTaskOrchestration.js:59  "新子任务"  |  const newTask = { id: generateTaskId(), title: '新子任务', description: '请编辑任务描述...', priority: 'med
+    漂 composables/workspace/useTaskOrchestration.js:59  "请编辑任务描述..."  |  const newTask = { id: generateTaskId(), title: '新子任务', description: '请编辑任务描述...', priority: 'med
+    漂 stores/app.store.js:61  "连接中…"  |  const health = ref({ status: 'pending', label: '连接中…' })
+    漂 views/expert/AllianceTaskView.vue:373  "全部"  |  { key: 'all', label: '全部' }, { key: 'pending', label: '待处理' },
+    漂 views/expert/AllianceTaskView.vue:373  "待处理"  |  { key: 'all', label: '全部' }, { key: 'pending', label: '待处理' },
+    漂 views/market/MarketView.vue:72  "待审核"  |  <el-option label="待审核" value="pending" />
+    漂 views/market/MarketView.vue:225  "待审核"  |  <el-option label="待审核" value="pending" />
+    漂 views/project/Dashboard.vue:236  "需求阶段"  |  { key: 'requirement', label: '需求阶段', desc: '需求采集与分析', color: cat(1), progress: 0, status: 'pendi
+    漂 views/project/Dashboard.vue:236  "需求采集与分析"  |  { key: 'requirement', label: '需求阶段', desc: '需求采集与分析', color: cat(1), progress: 0, status: 'pendi
+    漂 views/project/Dashboard.vue:237  "架构阶段"  |  { key: 'architecture', label: '架构阶段', desc: '知识图谱构建', color: cat(2), progress: 0, status: 'pendi
+    漂 views/project/Dashboard.vue:237  "知识图谱构建"  |  { key: 'architecture', label: '架构阶段', desc: '知识图谱构建', color: cat(2), progress: 0, status: 'pendi
+    漂 views/project/Dashboard.vue:238  "开发阶段"  |  { key: 'develop', label: '开发阶段', desc: '算子与工作流', color: cat(3), progress: 0, status: 'pending' }
+    漂 views/project/Dashboard.vue:238  "算子与工作流"  |  { key: 'develop', label: '开发阶段', desc: '算子与工作流', color: cat(3), progress: 0, status: 'pending' }
+    漂 views/project/Dashboard.vue:239  "发布阶段"  |  { key: 'release', label: '发布阶段', desc: '监控与优化', color: cat(4), progress: 0, status: 'pending' }
+    漂 views/project/Dashboard.vue:239  "监控与优化"  |  { key: 'release', label: '发布阶段', desc: '监控与优化', color: cat(4), progress: 0, status: 'pending' }
+    漂 views/project/ProjectsView.vue:256  ">待开始 ({{ tasks.filter(t => t.status === "  |  <div class="filter-chip" :class="{ active: taskFilter === 'pending' }" @click="taskFilter = 'pen
+
+ai  19 处  契约文案=[人工智能 / AI 专家]
+    漂 components/ai/ExpertCard.vue:86  "架构"  |  'architecture': '架构', 'data': '数据', 'ai': 'AI',
+    漂 components/ai/ExpertCard.vue:86  "数据"  |  'architecture': '架构', 'data': '数据', 'ai': 'AI',
+    漂 constants/nav.config.js:16  "AI 助手"  |  { key: 'ai', label: 'AI 助手', icon: 'ChatDotRound', path: '/ai', color: '#ec4899', bg: '#fce7f3' 
+    漂 constants/nav.config.js:35  "能力域"  |  { key: 'capability', label: '能力域', order: 1, items: ['ai', 'graph', 'operators', 'workflow', 'ex
+    漂 constants/nav.config.js:184  "AI助手"  |  { key: 'ai', label: 'AI助手', icon: '🤖', path: '/ai' },
+    漂 constants/operator.constants.js:8  "AI 算子"  |  { key: 'ai', label: 'AI 算子' },
+    漂 modules/ai/index.js:13  "AI 助手"  |  meta: { title: 'AI 助手', module: 'ai', layout: 'default', requiresAuth: true }
+    漂 modules/ai/index.js:19  "分享对话"  |  meta: { title: '分享对话', module: 'ai', layout: 'blank', shareMode: true, bare: true }
+    漂 modules/ai/index.js:25  "需求编译"  |  meta: { title: '需求编译', module: 'ai', layout: 'default', requiresAuth: true }
+    漂 modules/ai/index.js:31  "算法实验室"  |  meta: { title: '算法实验室', module: 'ai', layout: 'default', requiresAuth: true }
+    漂 modules/ai/index.js:37  "无穷维度优化"  |  meta: { title: '无穷维度优化', module: 'ai', layout: 'default', requiresAuth: true }
+    漂 modules/ai/index.js:43  "机器人中心"  |  meta: { title: '机器人中心', module: 'ai', layout: 'default', requiresAuth: true }
+    漂 modules/ai/index.js:49  "旋律转谱"  |  meta: { title: '旋律转谱', module: 'ai', layout: 'default', requiresAuth: true }
+    漂 views/expert/ExpertConfigView.vue:1375  "8.4 图谱 AI 配置"  |  <el-collapse-item name="ai" title="8.4 图谱 AI 配置">
+    漂 views/expert/ExpertPlazaView.vue:663  "AI应用"  |  { key: 'ai', label: 'AI应用', color: '#ec4899' },
+    漂 views/public/PortalHome.vue:126  "（助手暂不可用："  |  chat.value.push({ k: ++k, role: 'ai', text: '（助手暂不可用：' + (e.message || '请求失败') + '）' })
+    漂 views/public/PortalHome.vue:126  "请求失败"  |  chat.value.push({ k: ++k, role: 'ai', text: '（助手暂不可用：' + (e.message || '请求失败') + '）' })
+    漂 views/public/PortalHome.vue:137  "您好，我是企业 AI 助手。可以帮您查算子、办流程、答业务问题。"  |  chat.value.push({ k: ++k, role: 'ai', text: '您好，我是企业 AI 助手。可以帮您查算子、办流程、答业务问题。' })
+    漂 views/workflow/panels/WorkflowFlowsPanel.vue:84  "AI 推理"  |  <el-option label="AI 推理" value="ai" />
+
+assistant  14 处  契约文案=[助手]
+    漂 components/MessageBubble.vue:415  "我"  |  {{ sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手':'系统') }}
+    漂 components/MessageBubble.vue:415  "AI 助手"  |  {{ sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手':'系统') }}
+    漂 components/MessageBubble.vue:415  "系统"  |  {{ sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手':'系统') }}
+    漂 components/MessageBubble.vue:738  "AI 助手"  |  if (props.msg?.role === "assistant") return props.msg?.senderName || "AI 助手";
+    漂 components/MessageBubble.vue:1375  "请继续展开说明刚才的回答："  |  if (props.msg?.role === 'assistant' && content.length > 400) prompt = '请继续展开说明刚才的回答：';
+    漂 composables/workspace/useTaskOrchestration.js:159  "AI专家"  |  addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert
+    漂 composables/workspace/useTaskOrchestration.js:159  "开始执行「${task.title}」..."  |  addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert
+    漂 composables/workspace/useTaskOrchestration.js:165  "AI专家"  |  addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert
+    漂 composables/workspace/useTaskOrchestration.js:165  "✅ **${task.title}** 执行完成\n\n${task.result}"  |  addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert
+    漂 composables/workspace/useTaskOrchestration.js:168  "AI专家"  |  addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert
+    漂 composables/workspace/useTaskOrchestration.js:168  "❌ **${task.title}** 执行失败\n\n执行过程中遇到异常，请检查任务配置或重新分配专家。"  |  addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert
+    漂 views/expert/AllianceTaskView.vue:417  "告诉我你想了解的任务问题，我会结合当前状态提供建议。"  |  const aiMessages = ref([{ role: 'assistant', content: '告诉我你想了解的任务问题，我会结合当前状态提供建议。' }])
+    漂 views/expert/AllianceTaskView.vue:434  "暂时无法分析：${error.message}。可以重试，任务执行不受影响。"  |  } catch (error) { aiMessages.value.push({ role: 'assistant', content: `暂时无法分析：${error.message}。可
+    漂 views/workspace/ExpertWorkspaceView.vue:572  "辩论裁决"  |  if (debateSummary.value) collabMessages.value.push({ id: Date.now() + 999, role: 'assistant', na
+
+running  12 处  契约文案=[执行中]
+    漂 components/AgentFlowPanel.vue:230  "正在执行 ${runningCount.value} 个 Agent"  |  if (overallStatus.value === 'running') return `正在执行 ${runningCount.value} 个 Agent`
+    同 components/AgentFlowPanel.vue:243  "执行中"  |  if (s === 'running') return '执行中'
+    漂 components/AgentTaskRunner.vue:77  "执行中…"  |  { title: '执行中…', status: 'running', tool: '知识图谱查询' }
+    漂 components/AgentTaskRunner.vue:77  "知识图谱查询"  |  { title: '执行中…', status: 'running', tool: '知识图谱查询' }
+    漂 components/ai/PhasePipeline.vue:253  "进行中..."  |  case 'running': return '进行中...'
+    漂 components/DagViewer.vue:52  "架构设计"  |  { id: 'node-2', name: '架构设计', status: 'running', x: 250, y: 50 },
+    同 components/DagViewer.vue:70  "执行中"  |  { status: 'running', label: '执行中', color: '#409EFF' },
+    漂 views/admin/panels/AdminMonitor.vue:1180  "系统状态"  |  { label: '系统状态', value: s.status || '未知', icon: 'CircleCheck', ok: s.status === 'running' },
+    漂 views/admin/panels/AdminMonitor.vue:1180  "未知"  |  { label: '系统状态', value: s.status || '未知', icon: 'CircleCheck', ok: s.status === 'running' },
+    漂 views/ai/InfiniteOptimizerView.vue:284  "CEM 自动迭代直至收敛"  |  if (status.value.status === 'running') return 'CEM 自动迭代直至收敛'
+    漂 views/expert/AllianceTaskView.vue:374  "运行中"  |  { key: 'running', label: '运行中' }, { key: 'paused', label: '已暂停' },
+    漂 views/expert/AllianceTaskView.vue:374  "已暂停"  |  { key: 'running', label: '运行中' }, { key: 'paused', label: '已暂停' },
+
+architecture  11 处  契约文案=[架构]
+    同 components/ai/ExpertCard.vue:86  "架构"  |  'architecture': '架构', 'data': '数据', 'ai': 'AI',
+    漂 components/ai/ExpertCard.vue:86  "数据"  |  'architecture': '架构', 'data': '数据', 'ai': 'AI',
+    漂 components/ProjectPicker.vue:348  "架构开发"  |  { key: 'architecture', label: '架构开发', color: '#6366f1', icon: 'Cpu' },
+    漂 constants/expert.constants.js:41  "架构专家"  |  { key: 'architecture', label: '架构专家', type: 'architecture', icon: 'Grid' },
+    漂 constants/nav.config.js:129  "架构阶段"  |  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟 · 架构融合', color: 'var(--cat-2-fill)', gr
+    漂 constants/nav.config.js:129  "知识图谱 · 专家联盟 · 架构融合"  |  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟 · 架构融合', color: 'var(--cat-2-fill)', gr
+    漂 views/expert/ExpertPlazaView.vue:662  "架构设计"  |  { key: 'architecture', label: '架构设计', color: '#0891b2' },
+    漂 views/expert/panels/ExpertOverviewPanel.vue:273  "架构阶段"  |  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟', hue: 2 },
+    漂 views/expert/panels/ExpertOverviewPanel.vue:273  "知识图谱 · 专家联盟"  |  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟', hue: 2 },
+    漂 views/project/Dashboard.vue:237  "架构阶段"  |  { key: 'architecture', label: '架构阶段', desc: '知识图谱构建', color: cat(2), progress: 0, status: 'pendi
+    漂 views/project/Dashboard.vue:237  "知识图谱构建"  |  { key: 'architecture', label: '架构阶段', desc: '知识图谱构建', color: cat(2), progress: 0, status: 'pendi
+
+data  9 处  契约文案=[数据]
+    漂 components/ai/ExpertCard.vue:86  "架构"  |  'architecture': '架构', 'data': '数据', 'ai': 'AI',
+    同 components/ai/ExpertCard.vue:86  "数据"  |  'architecture': '架构', 'data': '数据', 'ai': 'AI',
+    漂 constants/operator.constants.js:11  "数据算子"  |  { key: 'data', label: '数据算子' },
+    漂 modules/governance/contract/dimensions.js:19  "数据治理"  |  { id: 'data', league: LEAGUE.business, label: '数据治理', note: '来源、血缘、留存' },
+    漂 modules/governance/contract/dimensions.js:19  "来源、血缘、留存"  |  { id: 'data', league: LEAGUE.business, label: '数据治理', note: '来源、血缘、留存' },
+    漂 stores/ai.store.js:34  "数据工程师小数"  |  key: 'data', name: '数据工程师小数', emoji: '🔗',
+    同 views/expert/ExpertConfigView.vue:2205  "数据"  |  { value: 'data', label: '数据' },
+    漂 views/expert/ExpertPlazaView.vue:664  "数据工程"  |  { key: 'data', label: '数据工程', color: '#10b981' },
+    漂 views/workflow/panels/WorkflowFlowsPanel.vue:83  "数据处理"  |  <el-option label="数据处理" value="data" />
+
+failed  9 处  契约文案=[失败]
+    同 components/DagViewer.vue:72  "失败"  |  { status: 'failed', label: '失败', color: '#F56C6C' },
+    漂 composables/workspace/useTaskOrchestration.js:167  "执行过程中遇到问题，需要人工介入。"  |  task.status = 'failed'; task.result = '执行过程中遇到问题，需要人工介入。'
+    漂 composables/workspace/useTaskOrchestration.js:168  "AI专家"  |  addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert
+    漂 composables/workspace/useTaskOrchestration.js:168  "❌ **${task.title}** 执行失败\n\n执行过程中遇到异常，请检查任务配置或重新分配专家。"  |  addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert
+    漂 views/expert/AllianceTaskView.vue:375  "已完成"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+    同 views/expert/AllianceTaskView.vue:375  "失败"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+    漂 views/expert/AllianceTaskView.vue:375  "已取消"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+    漂 views/workflow/BrowserView.vue:697  "运行模板: ${tplName}"  |  addAuditLog('template', `运行模板: ${tplName}`, targetUrl, 'failed', e.message)
+    漂 views/workflow/BrowserView.vue:709  "关闭会话: ${s.id}"  |  addAuditLog('close', `关闭会话: ${s.id}`, s.url || '', 'failed', e.message)
+
+completed  8 处  契约文案=[已完成]
+    漂 components/DagViewer.vue:51  "需求分析"  |  { id: 'node-1', name: '需求分析', status: 'completed', x: 50, y: 50, duration_ms: 1200 },
+    同 components/DagViewer.vue:71  "已完成"  |  { status: 'completed', label: '已完成', color: '#67C23A' },
+    同 components/ProjectChip.vue:48  "已完成"  |  if (['done', 'completed', '已完成'].includes(s)) return 'done'
+    漂 views/expert/AllianceTaskView.vue:224  "结果暂不可用"  |  <el-alert v-else-if="selectedTask.status === 'completed' && !fusionLoading" type="warning" :clos
+    漂 views/expert/AllianceTaskView.vue:224  "执行器未返回结果，可能尚未生成或重启后未恢复。请刷新核对；完成状态本身不代表交付物可用。"  |  <el-alert v-else-if="selectedTask.status === 'completed' && !fusionLoading" type="warning" :clos
+    同 views/expert/AllianceTaskView.vue:375  "已完成"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+    漂 views/expert/AllianceTaskView.vue:375  "失败"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+    漂 views/expert/AllianceTaskView.vue:375  "已取消"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+
+user  8 处  契约文案=[提问用户]
+    漂 components/MessageBubble.vue:415  "我"  |  {{ sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手':'系统') }}
+    漂 components/MessageBubble.vue:415  "AI 助手"  |  {{ sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手':'系统') }}
+    漂 components/MessageBubble.vue:415  "系统"  |  {{ sm.role==='user'?'我':(sm.role==='assistant'?'AI 助手':'系统') }}
+    漂 components/MessageBubble.vue:737  "我"  |  if (props.msg?.role === "user") return props.msg?.senderName || "我";
+    漂 composables/workspace/useAlliance.js:57  "我"  |  collabMessages.value.push({ id: Date.now(), role: 'user', name: '我', avatar: 'U', color: 'linear
+    漂 modules/system/index.js:21  "用户管理"  |  { path: 'user', name: 'AdminUser', component: () => import('@/views/admin/panels/AdminUser.vue')
+    漂 views/admin/AdminView.vue:38  "用户管理"  |  { key: 'user', label: '用户管理', icon: 'User' },
+    漂 views/expert/AllianceTaskView.vue:235  "我"  |  <div class="msg-avatar">{{ msg.role === 'user' ? '我' : 'AI' }}</div>
+
+expert  7 处  契约文案=[专家答复]
+    漂 components/expert/RegisterExpertDialog.vue:309  "专家"  |  { value: 'expert', label: '专家', icon: '🏆' },
+    漂 constants/nav.config.js:139  "注册专家"  |  { key: 'expert',     label: '注册专家',     icon: 'User',        tip: '专家联盟招募',        action: 'even
+    漂 constants/nav.config.js:139  "专家联盟招募"  |  { key: 'expert',     label: '注册专家',     icon: 'User',        tip: '专家联盟招募',        action: 'even
+    漂 constants/nav.config.js:188  "专家联盟"  |  { key: 'expert', label: '专家联盟', icon: '👥', path: '/expert-workspace' },
+    漂 modules/governance/index.js:29  "联盟治理台"  |  { key: 'alliance-governance', label: '联盟治理台', icon: 'Aim', path: '/alliance/governance', section
+    漂 modules/governance/index.js:29  "控制台"  |  { key: 'alliance-governance', label: '联盟治理台', icon: 'Aim', path: '/alliance/governance', section
+    漂 views/workspace/ExpertWorkspaceView.vue:570  "${turn.text}（第 ${turn.round} 轮 ${turn.score.toFixed(2)} 分）"  |  collabMessages.value.push({ id: Date.now() + Math.random(), role: 'expert', name: `${turn.sideLa
+
+enterprise  7 处  契约文案=[企业 / 企业级]
+    漂 constants/nav.config.js:97  "企业管理"  |  { key: 'enterprise', label: '企业管理', path: '/expert-center/enterprise' },
+    漂 modules/admin-lowcode/pages/tenant.page.js:125  "企业版"  |  { label: '企业版', value: 'enterprise' }, { label: '旗舰版', value: 'ultimate' },
+    漂 modules/admin-lowcode/pages/tenant.page.js:125  "旗舰版"  |  { label: '企业版', value: 'enterprise' }, { label: '旗舰版', value: 'ultimate' },
+    漂 views/admin/panels/AdminTenant.vue:83  "企业版"  |  <el-option label="企业版" value="enterprise" />
+    漂 views/admin/panels/AdminTenant.vue:150  "企业版"  |  { key: 'enterprise', label: '企业版', value: list.value.filter(t => t.plan === 'enterprise' || t.pl
+    漂 views/expert/ExpertCenterView.vue:29  "企业管理"  |  <el-tab-pane label="企业管理" name="enterprise" />
+    漂 views/expert/panels/ExpertEnterprisePanel.vue:342  "企业协作"  |  <el-tab-pane label="企业协作" name="enterprise">
+
+security  6 处  契约文案=[安全]
+    漂 components/ai/ExpertCard.vue:85  "代码"  |  'code': '代码', 'security': '安全', 'performance': '性能',
+    同 components/ai/ExpertCard.vue:85  "安全"  |  'code': '代码', 'security': '安全', 'performance': '性能',
+    漂 components/ai/ExpertCard.vue:85  "性能"  |  'code': '代码', 'security': '安全', 'performance': '性能',
+    同 modules/governance/contract/dimensions.js:18  "安全"  |  { id: 'security', league: LEAGUE.business, label: '安全', note: '注入、越权、敏感面' },
+    漂 modules/governance/contract/dimensions.js:18  "注入、越权、敏感面"  |  { id: 'security', league: LEAGUE.business, label: '安全', note: '注入、越权、敏感面' },
+    漂 views/expert/ExpertPlazaView.vue:667  "安全合规"  |  { key: 'security', label: '安全合规', color: '#ef4444' },
+
+debate  5 处  契约文案=[辩论 / 辩论融合]
+    漂 components/ai/PhasePipeline.vue:224  "专家辩论"  |  { key: 'debate', label: '专家辩论', icon: '💬' },
+    同 views/expert/AllianceTaskView.vue:274  "辩论融合"  |  <el-option label="辩论融合" value="debate" />
+    同 views/expert/panels/ExpertEnterprisePanel.vue:146  "辩论"  |  <el-option label="辩论" value="debate" />
+    漂 views/workspace/ExpertWorkspaceView.vue:570  "${turn.text}（第 ${turn.round} 轮 ${turn.score.toFixed(2)} 分）"  |  collabMessages.value.push({ id: Date.now() + Math.random(), role: 'expert', name: `${turn.sideLa
+    漂 views/workspace/panels/CollaborationPanel.vue:221  "专家辩论"  |  <el-option label="专家辩论" value="debate" />
+
+paused  5 处  契约文案=[已暂停]
+    同 constants/nav.config.js:221  "已暂停"  |  { key: 'paused', label: '已暂停', icon: '⏸️' },
+    漂 views/expert/AllianceTaskView.vue:104  "继续执行"  |  <el-icon><VideoPlay /></el-icon> {{ selectedTask.status === 'paused' ? '继续执行' : '启动任务' }}
+    漂 views/expert/AllianceTaskView.vue:104  "启动任务"  |  <el-icon><VideoPlay /></el-icon> {{ selectedTask.status === 'paused' ? '继续执行' : '启动任务' }}
+    漂 views/expert/AllianceTaskView.vue:374  "运行中"  |  { key: 'running', label: '运行中' }, { key: 'paused', label: '已暂停' },
+    同 views/expert/AllianceTaskView.vue:374  "已暂停"  |  { key: 'running', label: '运行中' }, { key: 'paused', label: '已暂停' },
+
+free  5 处  契约文案=[免费]
+    漂 modules/admin-lowcode/pages/tenant.page.js:122  "套餐"  |  { prop: 'plan', label: '套餐', type: 'select', defaultValue: 'free',
+    漂 modules/admin-lowcode/pages/tenant.page.js:124  "免费版"  |  { label: '免费版', value: 'free' }, { label: '专业版', value: 'pro' },
+    漂 modules/admin-lowcode/pages/tenant.page.js:124  "专业版"  |  { label: '免费版', value: 'free' }, { label: '专业版', value: 'pro' },
+    漂 views/admin/panels/AdminTenant.vue:81  "免费版"  |  <el-option label="免费版" value="free" />
+    同 views/expert/ExpertPlazaView.vue:645  "免费"  |  { key: 'free', label: '免费' },
+
+C  5 处  契约文案=[合格 · 有条件通过]
+    漂 views/admin/panels/AdminMenu.vue:166  "路由路径"  |  <el-form-item v-if="form.type === 'C'" label="路由路径" prop="path">
+    漂 views/admin/panels/AdminMenu.vue:169  "组件路径"  |  <el-form-item v-if="form.type === 'C'" label="组件路径" prop="component">
+    漂 views/admin/panels/AdminMenu.vue:172  "路由参数"  |  <el-form-item v-if="form.type === 'C'" label="路由参数" prop="query">
+    漂 views/admin/panels/AdminMenu.vue:181  "是否外链"  |  <el-form-item v-if="form.type === 'C'" label="是否外链" prop="isFrame">
+    漂 views/admin/panels/AdminMenu.vue:188  "是否缓存"  |  <el-form-item v-if="form.type === 'C'" label="是否缓存" prop="isCache">
+
+cancelled  5 处  契约文案=[已取消]
+    漂 views/expert/AllianceTaskView.vue:375  "已完成"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+    漂 views/expert/AllianceTaskView.vue:375  "失败"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+    同 views/expert/AllianceTaskView.vue:375  "已取消"  |  { key: 'completed', label: '已完成' }, { key: 'failed', label: '失败' }, { key: 'cancelled', label: '
+    同 views/project/TaskView.vue:154  "已取消"  |  <el-option label="已取消" value="cancelled" />
+    同 views/project/TaskView.vue:296  "已取消"  |  { key: 'cancelled', label: '已取消' }
+
+rating  5 处  契约文案=[评分优先]
+    漂 views/expert/ExpertPlazaView.vue:517  "好评榜"  |  <el-tab-pane label="好评榜" name="rating">
+    漂 views/expert/ExpertPlazaView.vue:653  "好评"  |  { key: 'rating', label: '好评' },
+    漂 views/market/MarketView.vue:78  "评分最高"  |  <el-option label="评分最高" value="rating" />
+    漂 views/market/MarketView.vue:195  "评分"  |  <el-table-column prop="rating" label="评分" sortable width="110" align="right">
+    漂 views/market/MarketView.vue:346  "初始评分"  |  <el-form-item label="初始评分" prop="rating">
+
+product  4 处  契约文案=[产品]
+    同 components/ai/ExpertCard.vue:87  "产品"  |  'product': '产品', 'business': '业务', 'legal': '法务',
+    漂 components/ai/ExpertCard.vue:87  "业务"  |  'product': '产品', 'business': '业务', 'legal': '法务',
+    漂 components/ai/ExpertCard.vue:87  "法务"  |  'product': '产品', 'business': '业务', 'legal': '法务',
+    漂 stores/ai.store.js:40  "产品经理小策"  |  key: 'product', name: '产品经理小策', emoji: '💡',
+
+general  3 处  契约文案=[通用]
+    漂 constants/expert.constants.js:39  "通用助手"  |  { key: 'general', label: '通用助手', type: null, icon: 'ChatDotRound' },
+    漂 stores/ai.store.js:16  "全能助手小通"  |  key: 'general', name: '全能助手小通', emoji: '✨',
+    漂 stores/ai.store.js:97  ") // 咨询模式："  |  const consultMode = ref('general') // 咨询模式：'general' 或与契约同名的联盟模式
+
+weighted  3 处  契约文案=[加权融合]
+    漂 views/admin/panels/AdminLlm.vue:106  "权重（按权重分配流量）"  |  <el-option label="权重（按权重分配流量）" value="weighted" />
+    漂 views/admin/panels/AdminLlm.vue:130  "权重配置"  |  <el-form-item v-if="routingConfig.strategy === 'weighted'" label="权重配置">
+    同 views/expert/AllianceTaskView.vue:272  "加权融合"  |  <el-option label="加权融合" value="weighted" />
+
+online  3 处  契约文案=[在线]
+    漂 views/ai/Melody2ScoreView.vue:10  "引擎在线"  |  {{ pyStatus === 'online' ? '引擎在线' : '引擎离线' }}
+    漂 views/ai/Melody2ScoreView.vue:10  "引擎离线"  |  {{ pyStatus === 'online' ? '引擎在线' : '引擎离线' }}
+    同 views/expert/ExpertPlazaView.vue:683  "在线"  |  { key: 'online', label: '在线', icon: '💚' }
+
+single  3 处  契约文案=[单专家]
+    同 views/expert/panels/ExpertEnterprisePanel.vue:144  "单专家"  |  <el-option label="单专家" value="single" />
+    漂 views/expert/panels/ExpertEnterprisePanel.vue:355  "单专家咨询"  |  <el-option label="单专家咨询" value="single" />
+    漂 views/workspace/panels/CollaborationPanel.vue:219  "单专家咨询"  |  <el-option label="单专家咨询" value="single" />
+
+closed  3 处  契约文案=[已关闭]
+    漂 views/expert/panels/ExpertEnterprisePanel.vue:848  "正常"  |  return status === 'closed' ? '正常' : status === 'open' ? '熔断中' : '半开'
+    漂 views/expert/panels/ExpertEnterprisePanel.vue:848  "熔断中"  |  return status === 'closed' ? '正常' : status === 'open' ? '熔断中' : '半开'
+    漂 views/expert/panels/ExpertEnterprisePanel.vue:848  "半开"  |  return status === 'closed' ? '正常' : status === 'open' ? '熔断中' : '半开'
+
+round_robin  2 处  契约文案=[轮询]
+    漂 views/admin/panels/AdminLlm.vue:105  "轮询（Round Robin）"  |  <el-option label="轮询（Round Robin）" value="round_robin" />
+    漂 views/expert/panels/ExpertEnterprisePanel.vue:564  "轮询策略"  |  { value: 'round_robin', label: '轮询策略' },
+
+archived  2 处  契约文案=[已归档]
+    同 views/expert/panels/ExpertEnterprisePanel.vue:140  "已归档"  |  <el-option label="已归档" value="archived" />
+    漂 views/project/ProjectsView.vue:492  "暂停"  |  { key: 'archived', label: '暂停' },
+
+skipped  1 处  契约文案=[已跳过]
+    同 components/DagViewer.vue:73  "已跳过"  |  { status: 'skipped', label: '已跳过', color: '#E6A23C' },
+
+file  1 处  契约文案=[文件]
+    漂 composables/workspace/useWorkspaceData.js:212  "上传文件"  |  appendHistory('file', '上传文件', file.name)
+
+D  1 处  契约文案=[不合格 · 阻断]
+    漂 constants/nav.config.js:169  "发起专家辩论"  |  { keys: ['Ctrl', '⇧', 'D'], desc: '发起专家辩论' },
+
+math  1 处  契约文案=[数学与算法]
+    漂 constants/operator.constants.js:7  "数学算子"  |  { key: 'math', label: '数学算子' },
+
+voting  1 处  契约文案=[投票 / 投票融合]
+    同 views/expert/AllianceTaskView.vue:273  "投票融合"  |  <el-option label="投票融合" value="voting" />
+
+best_of  1 处  契约文案=[择优融合]
+    漂 views/expert/AllianceTaskView.vue:275  "择优汇总"  |  <el-option label="择优汇总" value="best_of" />
+
+parallel  1 处  契约文案=[专家联盟]
+    漂 views/expert/ExpertConfigView.vue:2216  "并行模式"  |  { value: 'parallel', label: '并行模式' },
+
+hybrid  1 处  契约文案=[人机协同]
+    漂 views/expert/ExpertConfigView.vue:2217  "混合模式"  |  { value: 'hybrid', label: '混合模式' }
+
+hierarchical  1 处  契约文案=[自主执行]
+    漂 views/graph/GraphView.vue:560  "分层"  |  { key: 'hierarchical', name: '分层', icon: '📊' },
+
+multi  1 处  契约文案=[多专家]
+    漂 views/workspace/panels/CollaborationPanel.vue:220  "多专家协同"  |  <el-option label="多专家协同" value="multi" />

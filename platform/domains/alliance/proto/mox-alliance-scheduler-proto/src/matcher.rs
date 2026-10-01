@@ -4,7 +4,7 @@
 //! 专家匹配器 trait 抽象
 
 use async_trait::async_trait;
-use mox_alliance_common_proto::{AllianceResult, Expert};
+use mox_alliance_common_proto::{AllianceResult, Expert, MatchingWeights};
 use serde::{Deserialize, Serialize};
 
 /// 专家匹配查询
@@ -28,6 +28,11 @@ pub struct MatchedExpert {
     pub match_reason: String,
     /// 各维度评分明细
     pub score_breakdown: MatchScoreBreakdown,
+    /// 本次评分实际使用的权重（默认或该专家的覆盖权重）。
+    /// U2 匹配透明化：随结果带出，便于前端按真实权重逐维演算「为什么匹配」。
+    /// serde(default) 保证旧消费者/旧反序列化不崩。
+    #[serde(default)]
+    pub weights: MatchingWeights,
 }
 
 /// 匹配分数明细

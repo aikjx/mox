@@ -1,0 +1,142 @@
+# F25 L12 第五型针（元素表成员）原始读数（2026-09-29，现场量，勿手抄）
+
+## [0] 第五型反事实普查（D:/tmp/f25-e-shape-census.mjs，未落库＝没牙；注意其值域比判据多算几档）  （源：D:/tmp/f25-e-census.log，13 行）
+    | 禁串来源 contract/enums.js + contract/registry.js + contract/sessions.js 现推，值域 63 个：active,ai,archived,assistant,autonomous,available,away,best_of,busy,cancelled,certified,closed,code,completed,concatenation,confidence_weighted,confirmed,critical,debate,dynamic,enterprise,expert,expert_alliance,failed,file,free,hierarchical,high,human,human_in_loop,hybrid,image,iterative,low,map_reduce,markdown,multi,normal,offline,online,open,paid,parallel,partial,paused,pending,planning,ready,running,sequential,single,single_expert,skipped,stacking,subscription,system,text,unverified,user,verified,voting,waiting,weighted
+    | 与 L12 同口径的扫描集 = 30 个文件
+    |   composables/useAllianceTasks.js:4  n=4 命中档=["pending","planning","ready","running"]
+    |   composables/useAllianceTasks.js:6  n=3 命中档=["pending","ready","paused"]
+    |   composables/useAllianceTasks.js:7  n=1 命中档=["running"]
+    |   composables/useAllianceTasks.js:8  n=5 命中档=["pending","planning","ready","running","paused"]
+    |   views/expert/AllianceTaskView.vue:370  n=4 命中档=["pending","running","completed","failed"]
+    |   views/expert/AllianceTaskView.vue:371  n=4 命中档=["weighted","voting","debate","best_of"]
+    |   views/expert/ExpertConfigView.vue:2632  n=2 命中档=["code"]
+    | ⇒ 第五型（元素表内重新打字）在扫描集内命中 22 处 / 3 个文件
+    | 逐文件：{"composables/useAllianceTasks.js":13,"views/expert/AllianceTaskView.vue":8,"views/expert/ExpertConfigView.vue":1}
+    | 对照：全 src（含所有域）同型命中 29 处 / 8 个文件 ⇒ 扫描集外 7 处
+    | 集外文件：{"components/ai/PhasePipeline.vue":1,"components/MessageBubble.vue":1,"constants/nav.config.js":1,"stories/MessageBubble.stories.js":3,"views/admin/panels/AdminUser.vue":1}
+
+## [1] 加针后首跑（红：15 条命中台账，打印真实 E=6）  （源：D:/tmp/f25-single.log，6 行）
+    | [22m[39m[L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=6
+    | [31m     → 视图字面量比较台账与扫描集不符（多＝新债，少＝台账该删）实测=["modules/expert-alliance/components/ExpertRegistryForm.vue|text","modules/expert-alliance/views/AllianceConsoleView.vue|pending","modules/expert-alliance/views/AllianceConsoleView.vue|running","modules/expert-alliance/views/AllianceOrchestrationView.vue|completed","modules/expert-alliance/views/AllianceOrchestrationView.vue|failed","views/expert/AllianceTaskView.vue|user","views/expert/ExpertConfigView.vue|code","views/expert/ExpertConfigView.vue|failed","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertPlazaView.vue|online"]: expected [ …(15) ] to deeply equal [ …(9) ][39m
+    | [31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+    | [31m[1mAssertionError[22m: 视图字面量比较台账与扫描集不符（多＝新债，少＝台账该删）实测=["modules/expert-alliance/components/ExpertRegistryForm.vue|text","modules/expert-alliance/views/AllianceConsoleView.vue|pending","modules/expert-alliance/views/AllianceConsoleView.vue|running","modules/expert-alliance/views/AllianceOrchestrationView.vue|completed","modules/expert-alliance/views/AllianceOrchestrationView.vue|failed","views/expert/AllianceTaskView.vue|user","views/expert/ExpertConfigView.vue|code","views/expert/ExpertConfigView.vue|failed","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertConfigView.vue|system","views/expert/ExpertPlazaView.vue|online"]: expected [ …(15) ] to deeply equal [ …(9) ][39m
+    | [2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m18 passed[39m[22m[90m (19)[39m
+
+## [2] 中途把 EXEMPT 的收尾 } 写成 ] ⇒ 整文件解析失败、19 例消失（Tests no tests）  （源：D:/tmp/f25-single2.log，4 行）
+    | [31m[1mError[22m: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.[39m
+    | [90m [2m❯[22m TransformPluginContext._formatError node_modules/.pnpm/vite@5.4.21_@types+node@26.3.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:[2m49258:41[22m[39m
+    | [2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [2mno tests[22m
+
+## [3] 收口＋登记后复跑（绿：A=9 E=2）  （源：D:/tmp/f25-single3.log，4 行）
+    | [22m[39m[L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2
+    | [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+    | [2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+    | [2m   Duration [22m 2.52s[2m (transform 114ms, setup 0ms, collect 184ms, tests 335ms, environment 1.11s, prepare 302ms)[22m
+
+## [4] 电池第 1 版（判决解析器被 ANSI 切开 ⇒ 8 枚全 no-verdict-line；rc 列证明闸门行为全对）  （源：D:/tmp/f25-battery.log，14 行）
+    | [OK ] rc=0 期望=green 实读=green failed=0 passed=19 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2 | BASELINE 未变异
+    | [OK ] rc=1 期望=red 实读=red failed=1 passed=0 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=3 | E1 动作表成员被重新打字（activeStates 首元改回字面量）=> 必须红
+    | [OK ] rc=1 期望=red 实读=red failed=1 passed=0 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=3 | E2 图例档名被重新打字（DAG_LEGEND 首元改回字面量）=> 必须红
+    | [OK ] rc=1 期望=red 实读=red failed=1 passed=0 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=3 | E3 可取消档位被重新打字（ConsoleView canCancel 首元）=> 必须红
+    | [OK ] rc=1 期望=red 实读=red failed=1 passed=0 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=3 | E4 编排筛选表被重新打字（OrchestrationView 首元）=> 必须红
+    | [OK ] rc=0 期望=green 实读=green failed=0 passed=19 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2 | E5 契约外的档进元素表（activeStates 加 queued，不属任何登记表）=> 必须不红
+    | [OK ] rc=0 期望=green 实读=green failed=0 passed=19 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2 | E6 只改中文注释（AllianceTaskView 图例说明行）=> 必须不红
+    | [OK ] rc=0 期望=green 实读=green failed=0 passed=19 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2 | 复验基线（还原后必须仍绿）
+    | restored f8fd4bc145c4 f8fd4bc145c4 MATCH src/composables/useAllianceTasks.js
+    | restored 672bede1a0e9 672bede1a0e9 MATCH src/views/expert/AllianceTaskView.vue
+    | restored b025304e7a5d b025304e7a5d MATCH src/modules/expert-alliance/views/AllianceConsoleView.vue
+    | restored fdca0888724a fdca0888724a MATCH src/modules/expert-alliance/views/AllianceOrchestrationView.vue
+    | test md5 after 073c901c0d18 (before 073c901c0d18) MATCH
+    | battery exit=0 不符 0 枚 / 共 8 枚
+
+## [5] 电池第 2 版（剥 ANSI 后逐枚判决）  （源：D:/tmp/f25-battery2.log，14 行）
+    | [OK ] rc=0 期望=green 实读=green failed=0 passed=19 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2 | BASELINE 未变异
+    | [OK ] rc=1 期望=red 实读=red failed=1 passed=0 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=3 | E1 动作表成员被重新打字（activeStates 首元改回字面量）=> 必须红
+    | [OK ] rc=1 期望=red 实读=red failed=1 passed=0 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=3 | E2 图例档名被重新打字（DAG_LEGEND 首元改回字面量）=> 必须红
+    | [OK ] rc=1 期望=red 实读=red failed=1 passed=0 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=3 | E3 可取消档位被重新打字（ConsoleView canCancel 首元）=> 必须红
+    | [OK ] rc=1 期望=red 实读=red failed=1 passed=0 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=3 | E4 编排筛选表被重新打字（OrchestrationView 首元）=> 必须红
+    | [OK ] rc=0 期望=green 实读=green failed=0 passed=19 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2 | E5 契约外的档进元素表（activeStates 加 queued，不属任何登记表）=> 必须不红
+    | [OK ] rc=0 期望=green 实读=green failed=0 passed=19 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2 | E6 只改中文注释（AllianceTaskView 图例说明行）=> 必须不红
+    | [OK ] rc=0 期望=green 实读=green failed=0 passed=19 | [L12 形状] 扫描 30 个文件（.vue＋在册 .js）／五型命中 A=9 B=0 C=0 D=0 E=2 | 复验基线（还原后必须仍绿）
+    | restored f8fd4bc145c4 f8fd4bc145c4 MATCH src/composables/useAllianceTasks.js
+    | restored 672bede1a0e9 672bede1a0e9 MATCH src/views/expert/AllianceTaskView.vue
+    | restored b025304e7a5d b025304e7a5d MATCH src/modules/expert-alliance/views/AllianceConsoleView.vue
+    | restored fdca0888724a fdca0888724a MATCH src/modules/expert-alliance/views/AllianceOrchestrationView.vue
+    | test md5 after 073c901c0d18 (before 073c901c0d18) MATCH
+    | battery exit=0 不符 0 枚 / 共 8 枚
+
+## [6] 解析器干测（真红／真绿／整文件未解析 三形态）  （源：D:/tmp/f25-parser-drytest.log，3 行）
+    | f25-single.log     解析=red   期望=red                                      OK
+    | f25-single3.log    解析=green 期望=green                                    OK
+    | f25-single2.log    解析=None  期望=None（整文件未解析，不许读成绿）                       OK
+
+## [6b] 门禁第 1 次尝试：npx 垫片在 cmd 下找不到 npm-prefix ⇒ 0.3 s rc=1 属调用层失败，不是判决  （源：D:/tmp/f25-full.log，5 行）
+    | node:internal/modules/cjs/loader:1520
+    |   throw err;
+    |   ^
+    | Error: Cannot find module 'D:\a10\aikjx\gitcode\infotopograph\frontend-ui\node_modules\npm\bin\npm-prefix.js'
+    |     at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)
+
+## [7] 门禁读数（第 2 版：node 直执行 node_modules 入口，rc 由 Popen.wait 落盘）  （源：D:/tmp/f25-gates2.txt，3 行）
+    | full rc=0 (33.6 s)
+    | build rc=0 (29.2 s)
+    | （第 1 版遗留：fmodule rc=0 / locale rc=0 / doclinks rc=1＝存量 120 WARN，见 f25-gate-*.log）
+
+## [7b] 门禁读数（第 1 版：三门禁 rc 已显式落盘）  （源：D:/tmp/f25-gates.txt，5 行）
+    | full rc=1 (0.3 s)
+    | build rc=1 (0.2 s)
+    | fmodule rc=0 (1.0 s)
+    | locale rc=0 (0.3 s)
+    | doclinks rc=1 (0.9 s)
+
+## [7c] check-frontend-module  （源：D:/tmp/f25-gate-fmodule.log，12 行）
+    | [INFO ] E1 element-plus 根导入：0 处 ✓
+    | [INFO ] E2 跨目录相对导入：0 处 ✓
+    | [INFO ] E3 barrel 导出名冲突：0 处 ✓
+    | [INFO ] E4 api/store 命名规范：全部符合 ✓
+    | [INFO ] E5 vite.config.js epSubpathResolver 在位 ✓
+    | [INFO ] E6 barreled 目录 @/ 深路径导入：0 处 ✓
+    | [INFO ] E7 @/ 别名导入目标：全部可解析 ✓
+    | [WARN ] 块注释配对异常 26 处（含字符串/CSS 误报可能，需人工甄别）：
+    | [WARN ]   frontend-ui\src\api\actuator.api.js (open=3 close=2)
+    | [WARN ]   frontend-ui\src\api\ai.api.js (open=2 close=1)
+    | [WARN ]   frontend-ui\src\api\http.js (open=8 close=7)
+    | [WARN ]   frontend-ui\src\components\MessageBubble.vue (open=30 close=31)
+
+## [7d] check-locale-format-outlets  （源：D:/tmp/f25-gate-locale.log，4 行）
+    | [OK] L1/L2/L3 无违规：扫描 270 个文件；无参时间格式化余账 2 处＝登记表；出口写法只在 utils/time.js
+    | [INFO] L1 余账明细（清零后要删条目而不是写 0）：modules/admin-lowcode/engine/widgetRegistry.js x1, views/admin/panels/AdminHitl.vue x1
+    | [INFO] I1 数字千分位（与时间无关，不判定，按名点名 3 处）：views/admin/panels/AdminLlm.vue:258 <div class="stat-value">{{ stats.total_tokens.toLocaleString(); views/admin/panels/AdminLlm.vue:278 <span class="usage-tokens">{{ data.total_tokens.toLocaleString(); views/expert/ExpertPlazaView.vue:699 if (s.consult_count != null) heroStats.value[1].value = s.consult_count.toLocaleString()
+    | [INFO] I2 登记口外的带参 toLocale* 直写 3 处（task #25 余账）：views/admin/panels/AdminLlm.vue:647; views/market/MarketView.vue:608; views/workflow/BrowserView.vue:586
+
+## [7e] check-doc-links 判决头（rc=1 属存量；WARN 行数由下方计数器给出）  （源：D:/tmp/f25-gate-doclinks.log，9 行）
+    | [check-doc-links] 扫描文件 364 个，判定引用 2040 条
+    | 跳过：外部链接 19 条，file:// 绝对路径链接 132 条（技术债·应改为仓根相对），占位/非路径 85 条，显式豁免 40 行
+    | 断链总数 42，涉及 8 个文件；TOP 25 文件：
+    |   [ 14] docs/docs-hub/docs-hub.html
+    |   [  8] docs/modules/CODE-CATALOG.md
+    |   [  8] docs/README.md
+    |   [  4] docs/architecture/README.md
+    |   [  3] docs/architecture/architecture-hub.html
+    |   [  3] docs/expert-alliance/CURRENT-ARCHITECTURE.md
+
+## [7e-b] doc-links WARN 逐字计数  （源：D:/tmp/f25-gate-doclinks.log，1 行）
+    | WARN 行数 = 120，ERROR 行数 = 0
+
+## [8] 全量 vitest 判决行  （源：D:/tmp/f25-full2.log，3 行）
+    | [2m Test Files [22m [1m[32m77 passed[39m[22m[90m (77)[39m
+    | [2m      Tests [22m [1m[32m1035 passed[39m[22m[90m (1035)[39m
+    | [2m   Duration [22m 32.44s[2m (transform 14.62s, setup 0ms, collect 175.33s, tests 23.05s, environment 170.80s, prepare 39.62s)[22m
+
+## [9] vite build 判决行  （源：D:/tmp/f25-build2.log，2 行）
+    | [32m✓[39m 4373 modules transformed.
+    | [32m✓ built in 28.02s[39m
+
+
+## [10] doc-links 插后复跑（rc=1 属存量）  （源：D:/tmp/f25-gate-doclinks2.log，4 行）
+    | [check-doc-links] 扫描文件 364 个，判定引用 2040 条
+    | 跳过：外部链接 19 条，file:// 绝对路径链接 132 条（技术债·应改为仓根相对），占位/非路径 85 条，显式豁免 40 行
+    | 断链总数 42，涉及 8 个文件；TOP 25 文件：
+    | WARN 插前=120 插后=120 断链头行插前='断链总数 42，涉及 8 个文件；TOP 25 文件：' 插后='断链总数 42，涉及 8 个文件；TOP 25 文件：'

@@ -8,7 +8,7 @@
       <div class="ax-head-actions">
         <el-tag type="info" effect="plain" size="small">本页在线 {{ store.onlineCount }} / {{ store.experts.length }}</el-tag>
         <el-button :icon="Trophy" @click="rankVisible = true">排行榜</el-button>
-        <el-button type="primary" :icon="Plus" @click="openRegister">注册专家</el-button>
+        <el-button v-role-any="['super_admin', 'tenant_admin']" type="primary" :icon="Plus" @click="openRegister">注册专家</el-button>
         <el-button :icon="Refresh" :loading="store.loading.list" @click="reload">刷新</el-button>
       </div>
     </header>
@@ -119,12 +119,14 @@
           <div v-else class="ax-grid">
             <div v-for="m in store.expertMatches.items" :key="m.id" class="ax-match">
               <div class="ax-match-head">
-                <b>{{ m.name || m.id }}</b>
+                <b>{{ expertNameOr(m, m.id) }}</b>
                 <span class="ax-muted ax-score">匹配分 {{ m.matchScore.toFixed(3) }}</span>
               </div>
               <i class="ax-bar"><i class="ax-bar-fill" :style="{ width: matchBarWidth(m.matchScore) }" /></i>
               <p class="ax-muted">{{ m.description || '（该专家未填写描述）' }}</p>
               <p class="ax-muted">领域：{{ m.domains.join('、') || '—' }} · 状态：{{ availabilityLabel(m.status) }}</p>
+              <!-- U2 匹配透明化：后端带逐维演算时展开「为什么匹配」 -->
+              <MatchExplainPanel :scores="m.scores" :match-score="m.matchScore" :match-reason="m.matchReason" />
               <p class="ax-muted ax-match-id">id {{ m.id }}</p>
             </div>
           </div>
@@ -157,7 +159,7 @@
     </el-tabs>
 
     <!-- 专家详情 -->
-    <el-drawer v-model="detailVisible" :title="detail?.name || '专家详情'" size="480px">
+    <el-drawer v-model="detailVisible" :title="expertNameOr(detail, '专家详情')" size="480px">
       <div v-if="detail" class="ax-detail">
         <el-descriptions :column="1" border size="small">
           <el-descriptions-item label="ID">{{ detail.id }}</el-descriptions-item>
@@ -198,7 +200,7 @@
         </div>
 
         <h4 class="ax-h4">派生指标（后端计算）</h4>
-        <p v-if="store.loading.metrics" class="ax-muted">正在取 {{ detail.name || detail.id }} 的派生指标…</p>
+        <p v-if="store.loading.metrics" class="ax-muted">正在取 {{ expertNameOr(detail, detail.id) }} 的派生指标…</p>
         <template v-else-if="detailMetrics">
           <div class="ax-kpis ax-kpis-derived">
             <div v-for="c in derivedCells" :key="c.label" class="ax-kpi" :title="c.note">
@@ -215,8 +217,8 @@
           </el-button>
           <el-button :icon="Calendar" @click="openBooking(detail)">预约</el-button>
           <el-button type="primary" :icon="ChatDotRound" :disabled="!detail.online" @click="openConsult(detail)">即时咨询</el-button>
-          <el-button :icon="EditPen" @click="openEdit(detail)">编辑</el-button>
-          <el-button :icon="Delete" @click="openDisable(detail)">停用</el-button>
+          <el-button v-role-any="['super_admin', 'tenant_admin']" :icon="EditPen" @click="openEdit(detail)">编辑</el-button>
+          <el-button v-role-any="['super_admin', 'tenant_admin']" :icon="Delete" @click="openDisable(detail)">停用</el-button>
         </div>
         <p class="ax-muted">
           「停用」是软删：后端把 enabled 置 false 并落盘，全网关没有再启用的端点，PUT 也要求 enabled，
@@ -226,7 +228,7 @@
     </el-drawer>
 
     <!-- 预约下单 -->
-    <el-dialog v-model="bookingVisible" :title="`预约 ${bookingExpert?.name || ''}`" width="480px">
+    <el-dialog v-model="bookingVisible" :title="`预约 ${expertNameOr(bookingExpert, '')}`" width="480px">
       <el-form :model="bookingForm" label-width="88px" label-position="left">
         <el-form-item label="咨询主题" required>
           <el-input v-model="bookingForm.topic" maxlength="60" show-word-limit placeholder="一句话说明要解决的问题" />
@@ -248,7 +250,7 @@
     </el-dialog>
 
     <!-- 即时咨询 -->
-    <el-dialog v-model="consultVisible" :title="`即时咨询 · ${consultExpert?.name || ''}`" width="520px">
+    <el-dialog v-model="consultVisible" :title="`即时咨询 · ${expertNameOr(consultExpert, '')}`" width="520px">
       <el-form :model="consultForm" label-width="88px" label-position="left">
         <el-form-item label="话题">
           <el-input v-model="consultForm.topic" maxlength="40" />
@@ -279,7 +281,7 @@
         <el-descriptions-item label="房间号">{{ room.roomId }}</el-descriptions-item>
         <el-descriptions-item label="接入令牌">{{ room.roomToken }}</el-descriptions-item>
         <el-descriptions-item label="接入路径">{{ room.joinUrl }}</el-descriptions-item>
-        <el-descriptions-item label="房间状态">{{ room.status === 'available' ? '专家在线，可进入' : '等待专家上线' }}</el-descriptions-item>
+        <el-descriptions-item label="房间状态">{{ room.status === ROOM_STATUS.AVAILABLE ? '专家在线，可进入' : '等待专家上线' }}</el-descriptions-item>
         <el-descriptions-item label="有效期">{{ room.expiresIn }} 秒</el-descriptions-item>
         <el-descriptions-item label="ICEServer">{{ room.iceServers.join(' · ') }}</el-descriptions-item>
       </el-descriptions>
@@ -287,7 +289,7 @@
     </el-dialog>
 
     <!-- 注册 / 编辑专家 -->
-    <el-dialog v-model="registryVisible" :title="registryMode === 'edit' ? `编辑 ${registryExpert?.name || ''}` : '注册专家'" width="760px" top="6vh">
+    <el-dialog v-model="registryVisible" :title="registryMode === 'edit' ? `编辑 ${expertNameOr(registryExpert, '')}` : '注册专家'" width="760px" top="6vh">
       <ExpertRegistryForm ref="registryForm" :key="registryKey" :expert="registryExpert" />
       <el-alert v-if="store.error.action" class="ax-modal-alert" type="error" show-icon :closable="false"
         :title="registryMode === 'edit' ? '改动未保存' : '专家未注册'" :description="store.error.action" />
@@ -301,7 +303,7 @@
     </el-dialog>
 
     <!-- 停用确认：把后果逐条摆出来，而不是只问一句"确定吗" -->
-    <el-dialog v-model="disableVisible" :title="`停用 ${disableTarget?.name || ''}`" width="560px">
+    <el-dialog v-model="disableVisible" :title="`停用 ${expertNameOr(disableTarget, '')}`" width="560px">
       <ol class="ax-consequences">
         <li v-for="line in disableLines" :key="line">{{ line }}</li>
       </ol>
@@ -324,14 +326,17 @@ import { ExpertCard } from '@/modules/expert-alliance/components'
 import { ExpertBookingPanel } from '@/modules/expert-alliance/components'
 import { ExpertCapabilityMatrix } from '@/modules/expert-alliance/components'
 import { ExpertRankBoard } from '@/modules/expert-alliance/components'
+import { MatchExplainPanel } from '@/modules/expert-alliance/components'
 import { ExpertRegistryForm } from '@/modules/expert-alliance/components'
 import { useAllianceExpertsStore } from '@/modules/expert-alliance/store'
 import {
   EXPERT_AVAILABILITY, EXPERT_TYPE,
   availabilityLabel, expertDerivedCells, expertStatsCells, expertTypeLabel, pricingText, sortLabel, verificationLabel
 } from '@/modules/expert-alliance/contract'
+import { ROOM_STATUS } from '@/modules/expert-alliance/contract'
 import { ENDPOINTS, EXPERT_SORT } from '@/modules/expert-alliance/contract'
 import { deleteConsequences, EXPERT_WRITE_IDENTITY } from '@/modules/expert-alliance/contract'
+import { expertNameOr } from '@/modules/expert-alliance/contract'
 
 const METRICS_ENDPOINT = ENDPOINTS.expertMetrics
 

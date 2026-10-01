@@ -19,6 +19,10 @@ import io
 import os
 import sys
 
+if hasattr(sys.stdout, 'reconfigure'):
+    # Windows 控制台默认 GBK：定价报告的站点表与判据说明是中文，不重配置就直接 UnicodeEncodeError 中断
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 GATE = os.path.join(HERE, 'check-view-hex.py')
 PLACEHOLDER = 'var(--PLACEHOLDER)'

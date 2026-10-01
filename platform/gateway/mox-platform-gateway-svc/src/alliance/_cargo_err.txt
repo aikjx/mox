@@ -1,0 +1,232 @@
+﻿cargo :     Checking mox-platform-gateway-svc v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\gateway\mo
+x-platform-gateway-svc)
+所在位置 行:1 字符: 40
++ ... otopograph; cargo check -p mox-platform-gateway-svc --all-targets > p ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking mo...rm-gateway-svc):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `ExpertGraph`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_rbac.rs:228:43
+    |
+228 |         DEFAULT_TENANT, DispatcherConfig, ExpertGraph, ExpertsSharedState,
+    |                                           ^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rand::RngCore`
+  --> platform\gateway\mox-platform-gateway-svc\src\system\mfa.rs:26:5
+   |
+26 | use rand::RngCore;
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:195:14
+    |
+195 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:267:14
+    |
+267 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:353:14
+    |
+353 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:368:14
+    |
+368 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:472:14
+    |
+472 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:524:14
+    |
+524 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_session.rs:587:14
+    |
+587 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_orchestration.rs:739:14
+    |
+739 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: unused variable: `tenant`
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_orchestration.rs:940:14
+    |
+940 |     TenantId(tenant): TenantId,
+    |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant`
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1054:5
+     |
+1054 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+     = note: `#[warn(dropping_references)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+     |
+1054 -     drop(graph);
+1054 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1109:5
+     |
+1109 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1109 -     drop(graph);
+1109 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1154:5
+     |
+1154 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1154 -     drop(graph);
+1154 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1231:5
+     |
+1231 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1231 -     drop(graph);
+1231 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1287:5
+     |
+1287 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1287 -     drop(graph);
+1287 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1325:5
+     |
+1325 |     drop(graph);
+     |     ^^^^^-----^
+     |          |
+     |          argument has type `&mut experts_common::ExpertGraph`
+     |
+help: use `let _ = ...` to ignore the expression or result
+     |
+1325 -     drop(graph);
+1325 +     let _ = graph;
+     |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:652:5
+    |
+652 |     drop(registry);
+    |     ^^^^^--------^
+    |          |
+    |          argument has type `&HashMap<std::string::String, experts_common::ExpertDescriptor>`
+    |
+help: use `let _ = ...` to ignore the expression or result
+    |
+652 -     drop(registry);
+652 +     let _ = registry;
+    |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:730:5
+    |
+730 |     drop(registry);
+    |     ^^^^^--------^
+    |          |
+    |          argument has type `&HashMap<std::string::String, experts_common::ExpertDescriptor>`
+    |
+help: use `let _ = ...` to ignore the expression or result
+    |
+730 -     drop(registry);
+730 +     let _ = registry;
+    |
+
+warning: `mox-platform-gateway-svc` (lib) generated 18 warnings (run `cargo fix --lib -p mox-platform-gateway-svc` to a
+pply 9 suggestions)
+warning: unused import: `rand::RngCore`
+  --> platform\gateway\mox-platform-gateway-svc\src\system\mfa.rs:26:5
+   |
+26 | use rand::RngCore;
+   |     ^^^^^^^^^^^^^
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:652:5
+    |
+652 |     drop(registry);
+    |     ^^^^^--------^
+    |          |
+    |          argument has type `&std::collections::HashMap<std::string::String, experts_common::ExpertDescriptor>`
+    |
+help: use `let _ = ...` to ignore the expression or result
+    |
+652 -     drop(registry);
+652 +     let _ = registry;
+    |
+
+warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
+   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:730:5
+    |
+730 |     drop(registry);
+    |     ^^^^^--------^
+    |          |
+    |          argument has type `&std::collections::HashMap<std::string::String, experts_common::ExpertDescriptor>`
+    |
+help: use `let _ = ...` to ignore the expression or result
+    |
+730 -     drop(registry);
+730 +     let _ = registry;
+    |
+
+warning: `mox-platform-gateway-svc` (lib test) generated 19 warnings (15 duplicates) (run `cargo fix --lib -p mox-platf
+orm-gateway-svc --tests` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 37.97s

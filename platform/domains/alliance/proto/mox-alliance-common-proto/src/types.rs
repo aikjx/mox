@@ -390,17 +390,125 @@ pub struct CollaborationPlan {
 }
 
 impl CollaborationPlan {
-    /// 检查计划是否有效（无环 + 所有依赖存在）
+    /// 执行接纳与恢复共用的任务绑定校验。
+    pub fn validate_for_task(&self, task_id: Uuid) -> Result<(), String> {
+        if self.task_id != task_id {
+            return Err("Collaboration plan belongs to a different task".into());
+        }
+        self.validate()
+    }
+
+    /// 计划契约统一入口：结构、任务归属、依赖、路由及融合权重。
+    /// 只校验值类型约束；资源授权与能力注册仍由服务/执行适配器负责。
     pub fn validate(&self) -> Result<(), String> {
         use std::collections::HashSet;
 
+        if self.nodes.is_empty() {
+            return Err("Collaboration plan must contain at least one node".into());
+        }
+        if self.version == 0 {
+            return Err("Collaboration plan version must be positive".into());
+        }
         let node_ids: HashSet<&str> = self.nodes.iter().map(|n| n.node_id.as_str()).collect();
+        if node_ids.len() != self.nodes.len() {
+            return Err("Duplicate node ID in collaboration plan".into());
+        }
 
         // 检查所有依赖都存在
         for node in &self.nodes {
+            if node.node_id.trim().is_empty() || node.expert_id.trim().is_empty() {
+                return Err("Node and expert IDs must not be empty".into());
+            }
+            if node.task_id != self.task_id {
+                return Err(format!("Node {} belongs to a different task", node.node_id));
+            }
+            let mut dependencies = HashSet::new();
             for dep in &node.dependencies {
+                if !dependencies.insert(dep) {
+                    return Err(format!(
+                        "Node {} has duplicate dependency {}",
+                        node.node_id, dep
+                    ));
+                }
                 if !node_ids.contains(dep.as_str()) {
-                    return Err(format!("Node {} depends on non-existent node {}", node.node_id, dep));
+                    return Err(format!(
+                        "Node {} depends on non-existent node {}",
+                        node.node_id, dep
+                    ));
+                }
+            }
+        }
+
+        for (expert, weight) in &self.expert_weights {
+            if expert.trim().is_empty() || !weight.is_finite() || *weight < 0.0 {
+                return Err(format!("Invalid fusion weight for expert {}", expert));
+            }
+        }
+
+        // 分支节点必须等待决策节点；否则可能在选路前开始执行副作用。
+        let nodes_by_id: HashMap<&str, &Node> = self
+            .nodes
+            .iter()
+            .map(|node| (node.node_id.as_str(), node))
+            .collect();
+        let mut downstream: HashMap<&str, Vec<&str>> = HashMap::new();
+        for node in &self.nodes {
+            for dependency in &node.dependencies {
+                downstream
+                    .entry(dependency)
+                    .or_default()
+                    .push(&node.node_id);
+            }
+        }
+        let mut decisions = HashSet::new();
+        if !self.dynamic_routes.is_empty() && self.mode != AllianceMode::Dynamic {
+            return Err("Dynamic routes require dynamic mode".into());
+        }
+        for route in &self.dynamic_routes {
+            if !node_ids.contains(route.decision_node.as_str())
+                || !decisions.insert(route.decision_node.as_str())
+            {
+                return Err(format!(
+                    "Missing or duplicate routing decision {}",
+                    route.decision_node
+                ));
+            }
+            if !matches!(
+                route.operator.as_str(),
+                "eq" | "neq" | "gt" | "gte" | "lt" | "lte"
+            ) {
+                return Err(format!("Unsupported routing operator {}", route.operator));
+            }
+            if route.field.split('.').any(|part| part.trim().is_empty()) {
+                return Err("Routing field must contain non-empty path segments".into());
+            }
+            let mut reachable = HashSet::new();
+            let mut pending = vec![route.decision_node.as_str()];
+            while let Some(id) = pending.pop() {
+                if let Some(children) = downstream.get(id) {
+                    for &child in children {
+                        if reachable.insert(child) {
+                            pending.push(child);
+                        }
+                    }
+                }
+            }
+            let mut branches = HashSet::new();
+            for branch in route.true_branch.iter().chain(&route.false_branch) {
+                if !branches.insert(branch) {
+                    return Err(format!(
+                        "Duplicate or overlapping routing branch {}",
+                        branch
+                    ));
+                }
+                if !node_ids.contains(branch.as_str()) {
+                    return Err(format!("Routing branch {} does not exist", branch));
+                }
+                if branch == &route.decision_node || !reachable.contains(branch.as_str()) {
+                    return Err(format!(
+                        "Routing branch {} must depend on decision {}",
+                        branch, route.decision_node
+                    ));
                 }
             }
         }
@@ -423,7 +531,7 @@ impl CollaborationPlan {
         let mut count = 0;
         while let Some(node_id) = queue.pop() {
             count += 1;
-            if let Some(node) = self.nodes.iter().find(|n| n.node_id == node_id) {
+            if let Some(node) = nodes_by_id.get(node_id) {
                 for dep in &node.dependencies {
                     if let Some(deg) = in_degree.get_mut(dep.as_str()) {
                         *deg -= 1;

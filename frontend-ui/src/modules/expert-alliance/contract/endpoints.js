@@ -76,6 +76,15 @@ export const ENDPOINTS = Object.freeze({
   graphCommunities: { registry: 'experts.graph.communities', method: 'GET', path: '/api/expert-graph/communities', nesting: 'flat' },
   optimalTeam: { registry: 'experts.graph.optimal_team', method: 'POST', path: '/api/expert-graph/optimal-team', nesting: 'flat' },
   graphRebuild: { registry: 'experts.graph.rebuild', method: 'POST', path: '/api/expert-graph/rebuild', nesting: 'flat' },
+  // ── 图谱节点级 CRUD（N4，管理写面，后端强制 RBAC graph.mutate；画布 U1 留待接线）──
+  graphNodeCreate: { registry: 'experts.graph.node_create', method: 'POST', path: '/api/expert-graph/nodes', nesting: 'flat' },
+  graphNodeUpdate: { registry: 'experts.graph.node_update', method: 'PUT', path: '/api/expert-graph/nodes/:id', nesting: 'flat' },
+  graphNodeDelete: { registry: 'experts.graph.node_delete', method: 'DELETE', path: '/api/expert-graph/nodes/:id', nesting: 'flat' },
+  graphEdgeCreate: { registry: 'experts.graph.edge_create', method: 'POST', path: '/api/expert-graph/edges', nesting: 'flat' },
+  graphEdgeUpdate: { registry: 'experts.graph.edge_update', method: 'PUT', path: '/api/expert-graph/edges/:seq', nesting: 'flat' },
+  graphEdgeDelete: { registry: 'experts.graph.edge_delete', method: 'DELETE', path: '/api/expert-graph/edges/:seq', nesting: 'flat' },
+  // ── T2 图 RAG：多跳邻域扩展（读面公开；handler 源 alliance/experts_graph.rs 七-C，权重乘积聚合）──
+  graphRagExpand: { registry: 'experts.graph.rag_expand', method: 'POST', path: '/api/expert-graph/rag/expand', nesting: 'flat' },
 
   // ── 广场交互（预约 / 收藏 / 即时咨询 / 咨询室 / 团队）─────────────
   // handler 源：alliance/experts_ext.rs、alliance/experts_registry.rs，信封一律 flat

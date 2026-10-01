@@ -1,0 +1,140 @@
+{
+  "complete": true,
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kb-svc"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 16.68,
+      "log": "reports\\data\\20261001-knowledge-sharing\\01.log",
+      "sha256": "baeff551841668020984ac9f38ae0bbd766c761b9e812eb6766faac6e98f373f",
+      "test_counts": [
+        [
+          17,
+          0,
+          1
+        ],
+        [
+          5,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "protected_kb_requires_trusted_identity_and_denies_readonly_writes"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 73.45,
+      "log": "reports\\data\\20261001-knowledge-sharing\\02.log",
+      "sha256": "f897f3ea5d239a5f46d5d62e98103398c84edd525870f8e4194e0b307eea74f9",
+      "test_counts": [
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "dialogue_sediment::tests"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 2.57,
+      "log": "reports\\data\\20261001-knowledge-sharing\\03.log",
+      "sha256": "df75753e485a22a9ea646aaa522b4b71500e97c198cb505495fe36ce9ead69c1",
+      "test_counts": [
+        [
+          3,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-kb-svc",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 35.11,
+      "log": "reports\\data\\20261001-knowledge-sharing\\04.log",
+      "sha256": "e5ae713761a6c72ae7a77d5711363a9955e47f66735536be14ee9408bfa92885",
+      "test_counts": [],
+      "warning_count": 128
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 1.83,
+      "log": "reports\\data\\20261001-knowledge-sharing\\05.log",
+      "sha256": "8ef0e9c744371dc178ea897fed8921e2b1db992acb170c3682eda6f7619cfa6c",
+      "test_counts": [],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kb-svc",
+        "--test",
+        "t5_resource_access"
+      ],
+      "exit_code": 0,
+      "log": "reports\\data\\20261001-knowledge-sharing\\06-final-sharing-regression.log",
+      "reason": "Added assertions for tag visibility and content rollback after revocation.",
+      "sha256": "2760e9c1090cad9541e857d78b56a5b34f8211fa92f378c5ae4756866e61fc3b",
+      "test_counts": [
+        [
+          4,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0
+    }
+  ],
+  "passed_executions": 34,
+  "distinct_test_cases_passed": 30,
+  "failed": 0,
+  "ignored": 1,
+  "fixture_restoration": "Harness restored exact original bytes with atomic replacement and assertion."
+}

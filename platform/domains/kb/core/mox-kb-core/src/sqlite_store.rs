@@ -20,7 +20,7 @@
 use std::sync::Mutex;
 
 use async_trait::async_trait;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::{Document, DocumentVersion, KbError, KbResult, KbStore, SearchQuery, SearchResult};
 
@@ -45,6 +45,17 @@ CREATE TABLE IF NOT EXISTS kb_doc (
     deleted_at  TEXT,
     payload     TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS kb_version (
+    doc_id TEXT NOT NULL REFERENCES kb_doc(id),
+    version INTEGER NOT NULL,
+    payload TEXT NOT NULL,
+    PRIMARY KEY(doc_id, version)
+);
+
+-- 旧库仅能恢复当前已知快照；不伪造历史版本。
+INSERT OR IGNORE INTO kb_version(doc_id,version,payload)
+SELECT id, json_extract(payload,'$.version'), payload FROM kb_doc;
 
 CREATE TABLE IF NOT EXISTS kb_chunk (
     doc_id    TEXT NOT NULL REFERENCES kb_doc(id) ON DELETE CASCADE,
@@ -79,9 +90,7 @@ impl SqliteKbStore {
         }
         let conn = Connection::open(path).map_err(map_sqlite_err)?;
         conn.execute_batch(SCHEMA_SQL).map_err(map_sqlite_err)?;
-        Ok(Self {
-            conn: Mutex::new(conn),
-        })
+        Ok(Self { conn: Mutex::new(conn) })
     }
 
     /// 默认路径打开：`KB_DB_PATH` 环境变量优先，否则 `data/kb.db`。
@@ -90,9 +99,7 @@ impl SqliteKbStore {
         Self::open(path)
     }
 
-    fn lock_conn(
-        &self,
-    ) -> Result<std::sync::MutexGuard<'_, Connection>, KbError> {
+    fn lock_conn(&self) -> Result<std::sync::MutexGuard<'_, Connection>, KbError> {
         self.conn
             .lock()
             .map_err(|e| KbError::StorageError(format!("SQLite 连接锁中毒: {e}")))
@@ -102,13 +109,38 @@ impl SqliteKbStore {
 #[async_trait]
 impl KbStore for SqliteKbStore {
     async fn save_document(&self, doc: &Document) -> KbResult<()> {
-        let conn = self.lock_conn()?;
+        if doc.id.trim().is_empty() || doc.version == 0 {
+            return Err(KbError::InvalidParam("文档 ID 和正整数版本不能为空".into()));
+        }
+        let mut conn = self.lock_conn()?;
         let tx = conn
-            .unchecked_transaction()
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
             .map_err(map_sqlite_err)?;
 
         let payload = serde_json::to_string(doc)
             .map_err(|e| KbError::StorageError(format!("文档序列化失败: {e}")))?;
+
+        let saved: Option<String> = tx
+            .query_row(
+                "SELECT payload FROM kb_version WHERE doc_id=?1 AND version=?2",
+                params![doc.id, doc.version],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(map_sqlite_err)?;
+        if saved.as_ref().is_some_and(|old| old != &payload) {
+            return Err(KbError::VersionError("版本快照不可覆盖，请先增加版本号".into()));
+        }
+        let latest: Option<u32> = tx
+            .query_row(
+                "SELECT MAX(version) FROM kb_version WHERE doc_id=?1",
+                params![doc.id],
+                |row| row.get(0),
+            )
+            .map_err(map_sqlite_err)?;
+        if latest.is_some_and(|version| doc.version < version) {
+            return Err(KbError::VersionError("不能覆盖为旧版本，请创建新的回滚版本".into()));
+        }
 
         // 1) upsert kb_doc（软删除的文档重新 save 时复活）
         tx.execute(
@@ -121,6 +153,12 @@ impl KbStore for SqliteKbStore {
                  deleted_at = NULL,
                  payload = excluded.payload",
             params![doc.id, doc.title, doc.author, doc.doc_type, doc.created_at, payload],
+        )
+        .map_err(map_sqlite_err)?;
+
+        tx.execute(
+            "INSERT OR IGNORE INTO kb_version(doc_id,version,payload) VALUES (?1,?2,?3)",
+            params![doc.id, doc.version, payload],
         )
         .map_err(map_sqlite_err)?;
 
@@ -153,13 +191,9 @@ impl KbStore for SqliteKbStore {
     async fn get_document(&self, doc_id: &str) -> KbResult<Option<Document>> {
         let conn = self.lock_conn()?;
         let mut stmt = conn
-            .prepare(
-                "SELECT payload FROM kb_doc WHERE id = ?1 AND deleted_at IS NULL",
-            )
+            .prepare("SELECT payload FROM kb_doc WHERE id = ?1 AND deleted_at IS NULL")
             .map_err(map_sqlite_err)?;
-        let mut rows = stmt
-            .query(params![doc_id])
-            .map_err(map_sqlite_err)?;
+        let mut rows = stmt.query(params![doc_id]).map_err(map_sqlite_err)?;
         let row = match rows.next().map_err(map_sqlite_err)? {
             Some(r) => r,
             None => return Ok(None),
@@ -185,8 +219,15 @@ impl KbStore for SqliteKbStore {
                      ORDER BY created_at DESC",
                 )
                 .map_err(map_sqlite_err)?;
+            let rows = stmt.query(params![query.doc_type]).map_err(map_sqlite_err)?;
+            collect_docs(rows)?
+        } else if query.keyword.trim().chars().count() < 3 {
+            // trigram 不索引少于三个字符的关键词；短中文词用字面子串检索。
+            let mut stmt = conn.prepare("SELECT payload FROM kb_doc WHERE deleted_at IS NULL AND (?2 IS NULL OR mime=?2)
+                AND (instr(lower(title),lower(?1))>0 OR instr(lower(json_extract(payload,'$.content')),lower(?1))>0)
+                ORDER BY created_at DESC,id").map_err(map_sqlite_err)?;
             let rows = stmt
-                .query(params![query.doc_type])
+                .query(params![query.keyword.trim(), query.doc_type])
                 .map_err(map_sqlite_err)?;
             collect_docs(rows)?
         } else {
@@ -199,14 +240,13 @@ impl KbStore for SqliteKbStore {
                     "SELECT rowid, bm25(kb_fts) FROM kb_fts WHERE kb_fts MATCH ?1 ORDER BY bm25(kb_fts)",
                 )
                 .map_err(map_sqlite_err)?;
-            let hit_rows = hit_stmt
-                .query(params![match_expr])
-                .map_err(|e| {
-                    KbError::SearchError(format!("FTS 查询失败 ({e})，关键词: {match_expr}"))
-                })?;
+            let hit_rows = hit_stmt.query(params![match_expr]).map_err(|e| {
+                KbError::SearchError(format!("FTS 查询失败 ({e})，关键词: {match_expr}"))
+            })?;
 
             // (doc_id, rank) 列表；同一文档多 chunk 命中时保留最佳（最小）rank
-            let mut best: std::collections::BTreeMap<String, f64> = std::collections::BTreeMap::new();
+            let mut best: std::collections::BTreeMap<String, f64> =
+                std::collections::BTreeMap::new();
             let mut rows = hit_rows;
             while let Some(hit) = rows.next().map_err(map_sqlite_err)? {
                 let rid: i64 = hit.get(0).map_err(map_sqlite_err)?;
@@ -218,10 +258,10 @@ impl KbStore for SqliteKbStore {
                 if let Some(cr) = c_rows.next().map_err(map_sqlite_err)? {
                     let doc_id: String = cr.get(0).map_err(map_sqlite_err)?;
                     match best.get_mut(&doc_id) {
-                        Some(r) if *r <= rank => {}
+                        Some(r) if *r <= rank => {},
                         _ => {
                             best.insert(doc_id, rank);
-                        }
+                        },
                     }
                 }
             }
@@ -240,9 +280,8 @@ impl KbStore for SqliteKbStore {
                            AND (?2 IS NULL OR mime = ?2)",
                     )
                     .map_err(map_sqlite_err)?;
-                let mut d_rows = d_stmt
-                    .query(params![doc_id, query.doc_type])
-                    .map_err(map_sqlite_err)?;
+                let mut d_rows =
+                    d_stmt.query(params![doc_id, query.doc_type]).map_err(map_sqlite_err)?;
                 if let Some(row) = d_rows.next().map_err(map_sqlite_err)? {
                     let payload: String = row.get(0).map_err(map_sqlite_err)?;
                     let doc: Document = serde_json::from_str(&payload)
@@ -253,20 +292,19 @@ impl KbStore for SqliteKbStore {
             docs
         };
 
+        docs.retain(|doc| query.tags.iter().all(|tag| doc.tags.contains(tag)));
         let total = docs.len() as u64;
-        let start = ((query.page.saturating_sub(1)) * query.page_size) as usize;
-        docs.truncate(start + query.page_size as usize);
-        let items = if start < docs.len() {
-            docs.split_off(start)
-        } else {
-            Vec::new()
-        };
+        let page = query.page.max(1);
+        let page_size = query.page_size.clamp(1, 100);
+        let start = ((u64::from(page) - 1) * u64::from(page_size)).min(total) as usize;
+        docs.truncate(start.saturating_add(page_size as usize));
+        let items = if start < docs.len() { docs.split_off(start) } else { Vec::new() };
 
         Ok(SearchResult {
             items,
             total,
-            page: query.page,
-            page_size: query.page_size,
+            page,
+            page_size,
             duration_ms: started.elapsed().as_millis() as u64,
         })
     }
@@ -286,10 +324,33 @@ impl KbStore for SqliteKbStore {
         Ok(())
     }
 
-    async fn list_versions(&self, _doc_id: &str) -> KbResult<Vec<DocumentVersion>> {
-        // 当前模型未落版本快照，与 InMemoryKbStore 行为保持一致：返回空列表。
-        // 后续接入 kb_version 表时只需扩展此实现，trait 签名不变。
-        Ok(Vec::new())
+    async fn list_versions(&self, doc_id: &str) -> KbResult<Vec<DocumentVersion>> {
+        let conn = self.lock_conn()?;
+        let exists: bool = conn
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM kb_doc WHERE id=?1 AND deleted_at IS NULL)",
+                params![doc_id],
+                |row| row.get(0),
+            )
+            .map_err(map_sqlite_err)?;
+        if !exists {
+            return Err(KbError::DocumentNotFound(doc_id.into()));
+        }
+        let mut stmt = conn
+            .prepare("SELECT payload FROM kb_version WHERE doc_id=?1 ORDER BY version")
+            .map_err(map_sqlite_err)?;
+        let docs = collect_docs(stmt.query(params![doc_id]).map_err(map_sqlite_err)?)?;
+        Ok(docs
+            .into_iter()
+            .map(|doc| DocumentVersion {
+                version: doc.version,
+                title: doc.title,
+                content_snapshot: doc.content,
+                changed_by: doc.author,
+                change_note: String::new(),
+                created_at: doc.updated_at,
+            })
+            .collect())
     }
 }
 
@@ -305,9 +366,7 @@ fn fts_phrase(keyword: &str) -> String {
 }
 
 /// 遍历 rows，把 payload 列反序列化为 Document
-fn collect_docs(
-    mut rows: rusqlite::Rows<'_>,
-) -> KbResult<Vec<Document>> {
+fn collect_docs(mut rows: rusqlite::Rows<'_>) -> KbResult<Vec<Document>> {
     let mut out = Vec::new();
     while let Some(row) = rows.next().map_err(map_sqlite_err)? {
         let payload: String = row.get(0).map_err(map_sqlite_err)?;
@@ -325,10 +384,8 @@ mod tests {
 
     /// 建一个唯一的临时库路径（每个测试互不干扰）
     fn tmp_db_path(tag: &str) -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!(
-            "mox_kb_sqlite_{tag}_{}",
-            uuid::Uuid::new_v4().simple()
-        ));
+        let dir = std::env::temp_dir()
+            .join(format!("mox_kb_sqlite_{tag}_{}", uuid::Uuid::new_v4().simple()));
         std::fs::create_dir_all(&dir).expect("创建临时目录");
         dir.join("kb.db")
     }
@@ -351,11 +408,7 @@ mod tests {
             .await
             .expect("搜索不报错");
         assert_eq!(res.total, 0);
-        assert!(store
-            .get_document("nope")
-            .await
-            .unwrap()
-            .is_none());
+        assert!(store.get_document("nope").await.unwrap().is_none());
     }
 
     #[tokio::test]
@@ -376,10 +429,7 @@ mod tests {
 
         // FTS 命中（ASCII 关键词 ≥3 字符，trigram 可索引）
         let res = store
-            .search_documents(&SearchQuery {
-                keyword: "Rust".to_string(),
-                ..Default::default()
-            })
+            .search_documents(&SearchQuery { keyword: "Rust".to_string(), ..Default::default() })
             .await
             .unwrap();
         assert_eq!(res.total, 1, "搜索 Rust 应命中刚写入的文档");
@@ -438,11 +488,7 @@ mod tests {
         // 第二阶段：同一路径重新打开，数据与 FTS 索引都应还在
         {
             let store = SqliteKbStore::open(&path).expect("第二次打开");
-            let fetched = store
-                .get_document(&doc_id)
-                .await
-                .unwrap()
-                .expect("重开后文档仍在");
+            let fetched = store.get_document(&doc_id).await.unwrap().expect("重开后文档仍在");
             assert_eq!(fetched.title, doc.title);
             assert_eq!(fetched.content, doc.content);
 
@@ -457,10 +503,7 @@ mod tests {
             assert_eq!(res.items[0].id, doc_id);
 
             // 空关键词列表也应包含该文档
-            let all = store
-                .search_documents(&SearchQuery::default())
-                .await
-                .unwrap();
+            let all = store.search_documents(&SearchQuery::default()).await.unwrap();
             assert_eq!(all.total, 1);
         }
     }
@@ -477,19 +520,13 @@ mod tests {
         assert!(store.get_document(&doc.id).await.unwrap().is_none());
         // search 不可见
         let res = store
-            .search_documents(&SearchQuery {
-                keyword: "delete".to_string(),
-                ..Default::default()
-            })
+            .search_documents(&SearchQuery { keyword: "delete".to_string(), ..Default::default() })
             .await
             .unwrap();
         assert_eq!(res.total, 0, "软删除后搜索不应命中");
 
         // 重复删除应报 DocumentNotFound
-        assert!(matches!(
-            store.delete_document(&doc.id).await,
-            Err(KbError::DocumentNotFound(_))
-        ));
+        assert!(matches!(store.delete_document(&doc.id).await, Err(KbError::DocumentNotFound(_))));
 
         // 重新 save 同一文档 → 复活
         store.save_document(&doc).await.expect("复活");
@@ -504,6 +541,7 @@ mod tests {
         store.save_document(&doc).await.expect("v1");
         doc.title = "更新后的标题".to_string();
         doc.content = "brand new content about Rust overwrite".to_string();
+        doc.bump_version();
         store.save_document(&doc).await.expect("v2");
 
         let fetched = store.get_document(&doc.id).await.unwrap().unwrap();
@@ -518,22 +556,65 @@ mod tests {
             .unwrap();
         assert_eq!(old.total, 0, "覆盖后旧内容不应再被搜到");
         let new = store
-            .search_documents(&SearchQuery {
-                keyword: "brand".to_string(),
-                ..Default::default()
-            })
+            .search_documents(&SearchQuery { keyword: "brand".to_string(), ..Default::default() })
             .await
             .unwrap();
         assert_eq!(new.total, 1, "覆盖后新内容应可被搜到");
     }
 
     #[tokio::test]
-    async fn test_list_versions_returns_empty_unchanged() {
+    async fn immutable_versions_survive_restart_and_conflicts_rollback() {
         let path = tmp_db_path("versions");
-        let store = SqliteKbStore::open(&path).expect("打开");
-        let doc = sample_doc("版本测试", "version snapshot test");
-        store.save_document(&doc).await.expect("保存");
+        let store = SqliteKbStore::open(&path).unwrap();
+        let mut doc = sample_doc("original", "first snapshot");
+        store.save_document(&doc).await.unwrap();
+        store.save_document(&doc).await.unwrap(); // 幂等重试
+        doc.content = "illegal overwrite".into();
+        assert!(matches!(store.save_document(&doc).await, Err(KbError::VersionError(_))));
+        assert_eq!(store.get_document(&doc.id).await.unwrap().unwrap().content, "first snapshot");
+        doc.bump_version();
+        doc.content = "second snapshot".into();
+        store.save_document(&doc).await.unwrap();
+        drop(store);
+        let store = SqliteKbStore::open(&path).unwrap();
         let versions = store.list_versions(&doc.id).await.unwrap();
-        assert!(versions.is_empty(), "与 InMemory 行为一致：暂无版本快照落库");
+        assert_eq!(versions.len(), 2);
+        assert_eq!(versions[0].version, 1);
+        assert_eq!(versions[0].content_snapshot, "first snapshot");
+        assert_eq!(versions[1].content_snapshot, "second snapshot");
+        assert!(matches!(store.list_versions("missing").await, Err(KbError::DocumentNotFound(_))));
+        store.delete_document(&doc.id).await.unwrap();
+        assert!(matches!(store.list_versions(&doc.id).await, Err(KbError::DocumentNotFound(_))));
+    }
+
+    #[tokio::test]
+    async fn search_honors_tags_and_bounds_extreme_pagination() {
+        let path = tmp_db_path("filters");
+        let store = SqliteKbStore::open(&path).unwrap();
+        let mut doc = sample_doc("Rust", "Rust document");
+        doc.tags = vec!["enterprise".into()];
+        store.save_document(&doc).await.unwrap();
+        let mut query = SearchQuery { tags: vec!["missing".into()], ..Default::default() };
+        assert_eq!(store.search_documents(&query).await.unwrap().total, 0);
+        query.tags = vec!["enterprise".into()];
+        query.page = 0;
+        query.page_size = u32::MAX;
+        let result = store.search_documents(&query).await.unwrap();
+        assert_eq!(result.total, 1);
+        assert_eq!(result.page, 1);
+        assert_eq!(result.page_size, 100);
+        query.page = u32::MAX;
+        assert!(store.search_documents(&query).await.unwrap().items.is_empty());
+    }
+    #[tokio::test]
+    async fn short_chinese_queries_find_content_and_still_exclude_deleted_documents() {
+        let path = tmp_db_path("shortwords");
+        let store = SqliteKbStore::open(path).unwrap();
+        let doc = sample_doc("企业知识", "知识图谱支持检索与追溯");
+        store.save_document(&doc).await.unwrap();
+        let query = SearchQuery { keyword: "图谱".into(), ..Default::default() };
+        assert_eq!(store.search_documents(&query).await.unwrap().total, 1);
+        store.delete_document(&doc.id).await.unwrap();
+        assert_eq!(store.search_documents(&query).await.unwrap().total, 0);
     }
 }

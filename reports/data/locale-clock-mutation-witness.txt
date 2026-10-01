@@ -1,0 +1,11 @@
+备份 3 个被碰文件 -> D:/tmp/locale-clock-mut-pre
+基线: ['Test Files  3 passed (3)', 'Tests  21 passed (21)']
+MB1 时钟档选项丢掉 minute                           rc=1 CAUGHT failed=3(期望 1-2) 红例=['时钟档/日期档单出口 > 时钟档与旧表达式逐字符相同（本档收口不许改任何一个用户看见的字） 36ms', '时钟档/日期档单出口 > 时钟档不带秒：整串只有一个冒号 1ms', '时钟档/日期档单出口 > 棘轮：选项字面量与两档调用式各只许活在登记口 136ms']
+MB2 坏值回落从 invalid 串退化成 null                  rc=1 CAUGHT failed=1(期望 1) 红例=['时钟档/日期档单出口 > 坏值档：解析失败印 Invalid Date，可按调用方改名（原副本就是这个可见行为） 10ms']
+MB3 默认 invalid 串改成空串                         rc=1 CAUGHT failed=1(期望 1) 红例=['时钟档/日期档单出口 > 坏值档：解析失败印 Invalid Date，可按调用方改名（原副本就是这个可见行为） 14ms']
+MB4 island 只撤 ExpertWorkspaceView 的出口引用      rc=1 CAUGHT failed=1(期望 1) 红例=['时钟档/日期档单出口 > 5 个收口文件都真的引到了出口（防驱动器静默 no-op） 16ms']
+MB5 island 只撤 barrel 里的日期档再导出                rc=1 CAUGHT failed=1(期望 1) 红例=['时钟档/日期档单出口 > barrel 出口与直接导入同一对函数 11ms'] || build rc=1 ['error during build:']
+还原复核：
+   D:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/utils/index.js now=58210b4c846a pre=58210b4c846a IDENTICAL
+   D:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/utils/time.js now=223faea18373 pre=223faea18373 IDENTICAL
+   D:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/views/workspace/ExpertWorkspaceView.vue now=f34ea3166637 pre=f34ea3166637 IDENTICAL

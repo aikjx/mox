@@ -1,0 +1,4 @@
+[OK] L1/L2/L3 无违规：扫描 270 个文件；无参时间格式化余账 2 处＝登记表；出口写法只在 utils/time.js
+[INFO] L1 余账明细（清零后要删条目而不是写 0）：modules/admin-lowcode/engine/widgetRegistry.js x1, views/admin/panels/AdminHitl.vue x1
+[INFO] I1 数字千分位（与时间无关，不判定，按名点名 3 处）：views/admin/panels/AdminLlm.vue:258 <div class="stat-value">{{ stats.total_tokens.toLocaleString(); views/admin/panels/AdminLlm.vue:278 <span class="usage-tokens">{{ data.total_tokens.toLocaleString(); views/expert/ExpertPlazaView.vue:698 if (s.consult_count != null) heroStats.value[1].value = s.consult_count.toLocaleString()
+[INFO] I2 登记口外的带参 toLocale* 直写 3 处（task #25 余账）：views/admin/panels/AdminLlm.vue:647; views/market/MarketView.vue:608; views/workflow/BrowserView.vue:586

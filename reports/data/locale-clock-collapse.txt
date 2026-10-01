@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "D:/tmp/locale-clock-collapse.py", line 96, in <module>
+    sys.exit(main())
+  File "D:/tmp/locale-clock-collapse.py", line 76, in main
+    ("日期档调用", b".toLocaleDateString(" + "'zh-CN')"),
+TypeError: can't concat str to bytes

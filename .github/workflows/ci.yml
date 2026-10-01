@@ -20,6 +20,10 @@ jobs:
         run: |
           python -m unittest scripts.tests.test_deployment_architecture -v
           python scripts/gate/verify-ports.py
+          # 脚本路径解析门禁（F33）：代码/CI 里写死的仓内脚本路径必须解析得到，
+          # 迁移脱钩（scripts/x.py → scripts/gate/x.py 那类）未在册即阻断合并。
+          python scripts/gate/check-script-paths.py --selftest
+          python scripts/gate/check-script-paths.py
 
       - name: Verify API registry is up to date (gen + diff gate)
         run: |
@@ -36,6 +40,67 @@ jobs:
         run: python scripts/gate/check-frontend-module.py
         # FE-MOD-GOV-V1.0 门禁：element-plus 根导入 / 跨目录相对导入 / barrel 冲突 /
         # api·store 命名 / epSubpathResolver 在位；任何 ERROR 阻断合并。
+
+  # ===========================================================================
+  # 1.0b 前端质量与治理探针（计划 P2：docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md）
+  #      此前 1,125 个 vitest 用例与 frontend-ui/scripts/gate/ 全部探针在 CI 里一处都没被引用，
+  #      治理装置只在本地 check-all.ps1 里跑——本轮把它们接成独立 job（不塞进已有编号步骤）。
+  #      未本机验证：pnpm install/test/build 三步本轮未在此窗口运行（有并发作者与在跑的服务进程），
+  #      合并前请按方案 §二 P2 的判据本地预跑一遍。
+  # ===========================================================================
+  frontend-governance:
+    name: Frontend quality + governance gates (vitest, build, probes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # 不给 version：让 packageManager 里钉的 pnpm@11.15.1 生效
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend-ui/pnpm-lock.yaml
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: frontend-ui
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests (vitest run)
+        working-directory: frontend-ui
+        run: pnpm run test
+
+      - name: Production build (rollup 才是消费者账的验针)
+        working-directory: frontend-ui
+        run: pnpm run build
+
+      # 以下探针全部按仓根相对路径书写：scripts/gate/check-script-paths.py 会把 CI run 里
+      # 写死的仓内路径拿去盘上解析，裸名或按 step working-directory 解不通的写法一律判红。
+
+      - name: 时间/locale 口径门禁（AGENTS.md 自称 CI 门禁而此前未接）
+        run: |
+          python scripts/gate/check-locale-format-outlets.py --selftest
+          python scripts/gate/check-locale-format-outlets.py
+
+      - name: 前端治理探针（2026-09-30 本机实测 rc=0 的 5 枚）
+        run: |
+          python frontend-ui/scripts/gate/check-api-binding-kinds.py --check
+          python frontend-ui/scripts/gate/check-ep-feedback-imports.py --check
+          python frontend-ui/scripts/gate/check-framework-imports.py --check
+          python frontend-ui/scripts/gate/check-theme-tokens.py --check
+          node frontend-ui/scripts/gate/check-sfc-dead-refs.mjs --selftest
+
+      - name: 明示本轮未接线的门禁（拒绝用 continue-on-error 把盲区包装成绿）
+        run: |
+          echo "BLOCKED frontend-ui/scripts/gate/check-view-hex.py --check：本机实测 rc=1（grown=1 new=1 textasfill=33），存量债未清，接线即整仓 CI 红"
+          echo "BLOCKED frontend-ui/scripts/gate/check-import-reach.mjs --selftest：本机实测 rc=1（stores/index.js 被判可达的形状）"
+          echo "BLOCKED frontend-ui/scripts/gate/check-route-links.mjs --selftest：本机实测 rc=1（/alliance/console 在路由表出现 2 次）"
+          echo "NOT-A-GATE 变异电池（framework-imports 与 view-hex 各自的 mutants 变体、scan_set/role_judgments 两支）与 view-hex 清算计划脚本：慢且非判决，不进 CI"
 
   # ===========================================================================
   # 1.1 Rust 架构门禁 + core 层特性矩阵（模块化 / 归一化守卫）

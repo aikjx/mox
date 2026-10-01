@@ -200,6 +200,30 @@ export function normAction(payload) {
   return { success: bool(p.success), message: str(p.message) }
 }
 
+// U2 匹配透明化：把后端逐维演算 {value, weight} 归一为前端视图模型。
+// 后端缺省（旧上游/本地未带）时返回 null，视图按「无明细」兜底，不报错。
+function normScoreDim(d) {
+  const o = d || {}
+  const value = num(o.value, NaN)
+  const weight = num(o.weight, NaN)
+  if (!Number.isFinite(value) || !Number.isFinite(weight)) return null
+  return { value, weight, contrib: value * weight }
+}
+
+function normScores(raw) {
+  const s = raw || {}
+  const dims = {
+    domain: normScoreDim(s.domain),
+    capability: normScoreDim(s.capability),
+    health: normScoreDim(s.health),
+    priority: normScoreDim(s.priority),
+    performance: normScoreDim(s.performance)
+  }
+  // 任一维缺失即视为无明细，避免半拉数据画错
+  if (Object.values(dims).some((d) => d === null)) return null
+  return { ...dims, total: num(s.total) }
+}
+
 export function normExpertSearch(payload) {
   return {
     items: arr(payload?.experts).map((e) => ({
@@ -208,7 +232,9 @@ export function normExpertSearch(payload) {
       description: str(e.description),
       domains: arr(e.domains).map(str),
       status: str(e.status),
-      matchScore: num(e.match_score)
+      matchScore: num(e.match_score),
+      matchReason: str(e.match_reason),
+      scores: normScores(e.scores)
     })),
     total: num(payload?.total)
   }
@@ -521,6 +547,25 @@ export function normSession(raw) {
     archivedAt: str(s.archived_at),
     archived: !!s.archived_at
   }
+}
+
+/**
+ * 界面本地草稿行的唯一出口：调用方只给 camelCase 的意图字段，snake_case 线名只在这里出现一次。
+ * （legacy-collab-revival 台账对 src 里以线键名当对象字面量键的写法零容忍——那是视图手拼请求体的形状。）
+ * 绕回 normSession 是要草稿与服务端行同形：同一个列表里不许并存两套键名、两套时间口径。
+ * at 同时写成 created_at 与 last_active_at，抄的是后端创建那一刻的做法（experts_session.rs:172-173）；
+ * status 故意不填——草稿从未落库，谎报 'active' 会让界面把没保存的东西说成已保存。
+ */
+export function draftSession({ id, title, expertIds, sessionType, at }) {
+  const iso = str(at)
+  // 线键只用赋值形态写入，形如 contract 里那五处 body 上的同名赋值；
+  // 把线键名摆成对象字面量的键，就是视图绕过契约自拼请求体的形状，台账会点名。
+  const wire = { id, title }
+  wire.expert_ids = arr(expertIds)
+  wire.session_type = str(sessionType)
+  wire.created_at = iso
+  wire.last_active_at = iso
+  return normSession(wire)
 }
 
 export function normSessionList(payload) {

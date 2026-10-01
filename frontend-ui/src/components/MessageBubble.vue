@@ -466,7 +466,7 @@ import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
 import taskLists from "markdown-it-task-lists";
 import { getVoiceHealth } from "@/api";
-import { getToken } from "@/utils";
+import { formatClockMinute, getToken } from "@/utils";
 
 // Lazy mermaid loading (2-5MB): fetched only when a mermaid code block needs rendering
 let _mermaidPromise = null;
@@ -941,7 +941,7 @@ function formatTime(ts) {
     const now = new Date();
     const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
     const pad = (n) => String(n).padStart(2, "0");
-    const tp = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    const tp = formatClockMinute(d);
     if (sameDay) return tp;
     return pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + tp;
   } catch (_) { return ""; }

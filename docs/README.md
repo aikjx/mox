@@ -32,7 +32,7 @@
 |------|----------|------|
 | 接口 ↔ 实现 | [`API-REGISTRY.md`](API-REGISTRY.md)（223 路由 / 46 域） | `python scripts/doc/gen-api-registry.py` |
 | 端口分配 | [`api/PORT-REGISTRY.md`](api/PORT-REGISTRY.md) | `python scripts/gate/verify-ports.py` |
-| 模块与代码目录 | [`modules/CODE-CATALOG.md`](modules/CODE-CATALOG.md) | `python tools/module_catalog.py --check` |
+| 模块与代码目录 | [`modules/CODE-CATALOG.md`](modules/CODE-CATALOG.md) | `python scripts/registry/module_catalog.py --check` |
 | 术语表 | [`enterprise/GLOSSARY.md`](enterprise/GLOSSARY.md) | 人工评审 |
 | 权威链与归一化关系 | [`enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md`](enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md) | 人工评审 |
 | 企业级文档进度 | [`enterprise/00-INDEX.md`](enterprise/00-INDEX.md) | `python scripts/doc/verify-doc-ep038.py` |
@@ -56,7 +56,7 @@
 ### L3 域与模块层
 - **[统一模块导航](modules/README.md)** · [自动生成全仓代码目录](modules/CODE-CATALOG.md) · [产品手册 v3](modules/mox-relgraph-product-handbook-v3.md)
 - [业务处理流程](modules/business-process-flows.md) · [业务流程图集](modules/business-process-flowcharts.md) · [AI 引擎主分析](modules/ai-engine-master-analysis.md)
-- **[专家联盟综合索引](expert-alliance/00-INTEGRATED-INDEX.md)** · [企业级优化](expert-alliance/01-ENTERPRISE-OPTIMIZATION.md) · [专家注册与协议](expert-alliance/expert-registry-and-protocol.md) · [知识图谱 Schema](expert-alliance/knowledge-graph-schema.md) · [v2](expert-alliance/v2/README.md) / [v3](expert-alliance/v3/01-architecture-optimization.md)
+- **[专家联盟统一索引](docs/expert-alliance/INDEX.md#一文档总表)** · [全域架构与流程图谱](docs/expert-alliance/17-docs-architecture-and-flow-atlas.md#scope) · [模块化产品设计](docs/expert-alliance/18-modular-product-design.md#goals) · [当前实现](docs/expert-alliance/CURRENT-ARCHITECTURE.md#一物理代码分布) · [业务主链](docs/expert-alliance/13-end-to-end-business-flow.md#一流程总览)
 
 ### L4 接口与数据层
 - [API 规范](api/API-SPECIFICATION.md) · [传输加密开关](api/API-CRYPTO-TRANSPORT.md) · [端口注册表](api/PORT-REGISTRY.md) · [TCP 规范](api/TCP-SPECIFICATION.md) · [模块清单 Schema](api/mox-module-manifest.schema.json)
@@ -90,7 +90,7 @@
 | 👋 **新手** | [操作手册](architecture/operations-manual.md) → [架构总览](architecture/architecture.md) → [核心能力](CORE-CAPABILITIES.md) |
 | 🏗️ **架构师** | [架构文档中心](architecture/README.md) → [企业级架构](enterprise/02-architecture.md) → [最优架构方案](architecture/OPTIMAL_ARCHITECTURE.md) → [ADR 全量](../deploy/docs/MOX-Architecture-Decision-Records-v1.0.md) |
 | 💻 **开发者** | [Rust 企业开发指南](architecture/rust-enterprise/README.md) → [代码库指南](architecture/13-PLATFORM-CODEBASE-GUIDE.md) → [错误码参考](architecture/04-error-code-reference.md) → [扩展开发指南](architecture/02-extension-guide.md) |
-| 🧠 **AI/专家联盟** | [专家联盟综合索引](expert-alliance/00-INTEGRATED-INDEX.md) → [元架构版专家联盟](architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md) → [AI 统一智能系统架构](architecture/ai/) |
+| 🧠 **AI/专家联盟** | [专家联盟统一索引](docs/expert-alliance/INDEX.md#一文档总表) → [元架构版专家联盟](architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md) → [AI 统一智能系统架构](architecture/ai/) |
 | 🚀 **运维/DevOps** | [部署指南](architecture/deployment-guide.md) → [运维手册](../deploy/docs/ops-manual.md) → [容量规划](../deploy/docs/ha-capacity-tco.md) → [端口注册表](api/PORT-REGISTRY.md) |
 
 ---
@@ -102,7 +102,7 @@
 | 文档链接有效性 | `python scripts/gate/check-doc-links.py` |
 | API 注册表新鲜度 | `python scripts/doc/gen-api-registry.py` |
 | 端口漂移 | `python scripts/gate/verify-ports.py` |
-| 模块清单漂移 | `python tools/module_catalog.py --check` |
+| 模块清单漂移 | `python scripts/registry/module_catalog.py --check` |
 | 企业级文档核对 | `python scripts/doc/verify-doc-ep038.py` |
 | 文档门禁汇总 | `scripts/gate/ci-gate.ps1 -Gate G6` |
 
@@ -120,3 +120,22 @@
 | 归一化统一平台 | 1.0 | 2026-08-30 |
 | 文档体系架构规范 | **1.0** | **2026-09-13** |
 | 文档中心 | 4.0（分层化） | 2026-09-13 |
+
+<a id="lowcode-directory-design"></a>
+## 目录架构设计卡：低代码与动态配置（2026-10-01）
+
+> 目标设计接缝；既有正文按原日期/类型解释，未实施能力不标已完成。
+
+| 设计项 | 本目录约定 |
+|---|---|
+| 输入 | 产品目标、主题权威、现状/目标范围 |
+| 处理与边界 | 维护L0导航、各层来源与目录覆盖，不复制配置schema或完成状态 |
+| 输出 | 读者入口、权威来源和目录推进路径 |
+| 维护角色 | 根目录导航（角色建议，未指派个人） |
+| 配置语义 | [统一规范](docs/standards/lowcode-dynamic-configuration.md#model)，本目录不复制覆盖/生命周期规则 |
+| 本目录设计 | [详细接缝](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories) |
+| 验收 | 类型/依赖/权限/版本/异常/恢复按相关LC-Q条目补证；设计完成与运行验证分开 |
+
+全目录关系见 [目录矩阵](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories)。新增架构文档应符合 [文档设计契约](docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract)，各主题拥有自己的事实主源。
+
+资源知识主题入口：[系统、云盘、知识库、图谱与OSS设计](docs/modules/resource-knowledge/README.md#navigation)。

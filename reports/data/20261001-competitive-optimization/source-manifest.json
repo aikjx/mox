@@ -1,0 +1,50 @@
+[
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/Cargo.toml",
+    "sha256": "32c1a214bb204b4f242f29843b6cdd15ffcdc020c2373d43d4d74b9cb77ed847"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/document.rs",
+    "sha256": "289955eaefea22b82e4bd23c8d464cc071f3e41cafd7c9896e2d2f220d765171"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/model.rs",
+    "sha256": "282f6d45e469e617a33fe3560b39e4bb0f3eaa424cc3466f5ed2cfe3ee0dd8f8"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/search.rs",
+    "sha256": "57f89ae23ec0480027f0760b088f1b7a2cb8ff8eca8dcdc69440ff4d3c344a96"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/src/handlers.rs",
+    "sha256": "c5457cec89df47479baa636eeffe89aa36f606b2168405f7a1abee2bd8fafed5"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/tests/t6_query_cost.rs",
+    "sha256": "32e796dfe1444f726f3c04140b3665022b10a718435da55e7b3e7d1954201a4f"
+  },
+  {
+    "path": "platform/domains/kg/svc/mox-kb-svc/tests/t7_retrieval_citations.rs",
+    "sha256": "259fc8f2c7e12f28144ddf198a54b24d724daf77b8785fe9a6f5e00728bd0d13"
+  },
+  {
+    "path": "docs/modules/resource-knowledge/README.md",
+    "sha256": "434721f8446a3f619c99d9c002c3fa7f0942a7b273f8610f946bb1c7623c52fa"
+  },
+  {
+    "path": "docs/modules/resource-knowledge/COMPETITIVE-DESIGN.md",
+    "sha256": "34054b734773db4270ff37a5f4ad70b805d74d907b9a2c356afc0c6bb5e0039c"
+  },
+  {
+    "path": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+    "sha256": "fcf137a811cb87f04cd596dae4331a578fa1d3c0c78886e2ef39626611aa9549"
+  },
+  {
+    "path": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+    "sha256": "bc6410ce0220520bec45eb1775961a510c3eda22a2fdebcbe6967cb18e532872"
+  },
+  {
+    "path": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "sha256": "e4ceea2d90b8150b56e70c283f3c878642328dc57cf05e6fe39c59a3f477a51a"
+  }
+]

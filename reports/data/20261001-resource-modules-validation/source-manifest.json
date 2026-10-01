@@ -1,0 +1,110 @@
+{
+  "git_head": "962ab70efb2ebc08bfe6b0efe76a26c4d937ca1f",
+  "source_state": "working tree; existing user changes preserved; no commit or deployment",
+  "files": [
+    {
+      "path": "platform/domains/base/mox-base-store-core/src/lib.rs",
+      "sha256": "9747ded2cf7a38c95c0997037d19f143c5eacd44e5416583d7d888be02150080"
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-store-core/Cargo.toml",
+      "sha256": "c19c4b9e936d63a435bbbbc3d249825097caacc07640e68328085585a104ecd9"
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-store-core/src/backend.rs",
+      "sha256": "5a3164344f73b141dfb558985a02685abe94b84f32ea570e1e45774b136cb596"
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-store-core/src/dedup.rs",
+      "sha256": "6fe597e3285512a058ee6e01056fdfb61185ecb9d968277cab001115ba483e18"
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-store-core/src/fs_backend.rs",
+      "sha256": "f9fe667cfd98d1482580059d4798940dbe3e4c3e97c0832e695dbd7bbad9a0ba"
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-store-core/src/s3_backend.rs",
+      "sha256": "9515482ba2d7a11f1ee268a2e98deea072a628fca409b79758252c9e5df84564"
+    },
+    {
+      "path": "platform/domains/cloud/core/mox-cloud-store-core/tests/t2_s3_backend.rs",
+      "sha256": "a6573187fa96d228520c73b58b2e3506ac4def72b82268cf48da0b019d39dd3e"
+    },
+    {
+      "path": "platform/domains/cloud/sdk/mox-cloud-admin-sdk/src/lib.rs",
+      "sha256": "e0a4f4a5d6f06f78f5b6c6974c007f89258db6651a777de0c20fcfdf48ddb0f3"
+    },
+    {
+      "path": "platform/domains/kb/core/mox-kb-core/src/sqlite_store.rs",
+      "sha256": "93a29c16f7d84e8df424f048de2781ae04f3c61c3f0c6fcd3549a29bcfba411b"
+    },
+    {
+      "path": "platform/domains/kb/svc/mox-kb-server/Cargo.toml",
+      "sha256": "016c40bd191e94a0a99aa1e29c4b185c2443a3e73d65435736f7967a6f084697"
+    },
+    {
+      "path": "platform/domains/kb/svc/mox-kb-server/src/main.rs",
+      "sha256": "6a0f4b36b6b54962587059bf38e4a98b7fd9287a0c08c2e68828e777c6aeec1d"
+    },
+    {
+      "path": "platform/domains/kb/svc/mox-kb-server/src/tests.rs",
+      "sha256": "7d70d92ad351acec60a83387a1e546129d9680def0fdd6ffd4622e1795c2cd47"
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/document.rs",
+      "sha256": "a333f1550bc740b65ff6fed17c3c3b082208da01a5ff5f3546bfc888dc24cd9b"
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/handlers.rs",
+      "sha256": "d720eae88107773a21b5d85b642ce68a2c9c027998d0154144b80b43c045ce45"
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/lib.rs",
+      "sha256": "7fc8be4083cbc378922a7591a7eda2a8538a3405003492e62222eedde0013808"
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/link.rs",
+      "sha256": "fe5286253b7624fb3df804a28b3d5a0d8261c77195d0b82ddb44e34bcfb8d84b"
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/src/version.rs",
+      "sha256": "8280ed805940dd963ea6dfb610bba7d243e8381beb11397a46e9e9fc211bf0d7"
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kb-svc/tests/t4_kb_http.rs",
+      "sha256": "acda731db201bc44ab85b21dd07295d16a91656e6bd9e96fd1460f0adf6d48c5"
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kg-storage-svc/src/lib.rs",
+      "sha256": "9052148c0c145e98548e1f03bc162352955a3c0242277d9d25e9ce87cd2b432c"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/admin_storage.rs",
+      "sha256": "e6a4ab1d644e29ef4470367b5ba373793a503b5151477db7483810fd05962020"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/dialogue_sediment.rs",
+      "sha256": "d663917956386083a9549e865808ed8177b0c9218c059c117731f287851c4f12"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/file_storage/api.rs",
+      "sha256": "dd8a74b68e35a10f8bad9351f2253ab74d419413b4509e2bf6204b1dc11966bd"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/file_storage/mod.rs",
+      "sha256": "0e83f373108557854807881446fd3f5d40030c946814535329904871fb567bfc"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/file_storage/repository.rs",
+      "sha256": "668d76e2a2dd249fa09093e7436fe9caa3324a414f0ebec5fe360917e94c563f"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/file_storage/tests.rs",
+      "sha256": "47bcbcf68ceb580575ac035929c36fb6ea300848336db343f118bd5ae2de6327"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "a3b35bf5a07b3d8b448c499a9ab45bd01a1a5b494afb6f3752e955b36fe6752a"
+    }
+  ]
+}

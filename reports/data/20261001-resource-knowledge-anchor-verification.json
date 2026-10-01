@@ -1,0 +1,128 @@
+[
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "line": 27,
+    "target": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "fragment": "scope",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "line": 28,
+    "target": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "fragment": "ownership",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "line": 29,
+    "target": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "fragment": "operations",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "line": 30,
+    "target": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+    "fragment": "flows",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "line": 31,
+    "target": "docs/enterprise/47-资源知识主源与存储适配归一-ADR-19.md",
+    "fragment": "decision",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "line": 33,
+    "target": "docs/standards/lowcode-dynamic-configuration.md",
+    "fragment": "model",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/README.md",
+    "line": 33,
+    "target": "docs/database/DATABASE-ARCHITECTURE.md",
+    "fragment": "resource-knowledge-20261001",
+    "pass": true
+  },
+  {
+    "source": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "line": 10,
+    "target": "docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md",
+    "fragment": "architecture",
+    "pass": true
+  },
+  {
+    "source": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "line": 70,
+    "target": "docs/standards/lowcode-dynamic-configuration.md",
+    "fragment": "dimensions",
+    "pass": true
+  },
+  {
+    "source": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "line": 21,
+    "target": "docs/database/DATABASE-ARCHITECTURE.md",
+    "fragment": "resource-knowledge-20261001",
+    "pass": true
+  },
+  {
+    "source": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "line": 22,
+    "target": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "fragment": "ownership",
+    "pass": true
+  },
+  {
+    "source": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "line": 22,
+    "target": "docs/api/LOWCODE-CONFIGURATION-CONTRACT.md",
+    "fragment": "contract",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+    "line": 70,
+    "target": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
+    "fragment": "providers",
+    "pass": true
+  },
+  {
+    "source": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+    "line": 77,
+    "target": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "fragment": "acceptance",
+    "pass": true
+  },
+  {
+    "source": "docs/enterprise/47-资源知识主源与存储适配归一-ADR-19.md",
+    "line": 26,
+    "target": "docs/modules/resource-knowledge/README.md",
+    "fragment": "map",
+    "pass": true
+  },
+  {
+    "source": "docs/enterprise/47-资源知识主源与存储适配归一-ADR-19.md",
+    "line": 26,
+    "target": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
+    "fragment": "evidence",
+    "pass": true
+  },
+  {
+    "source": "docs/enterprise/47-资源知识主源与存储适配归一-ADR-19.md",
+    "line": 26,
+    "target": "docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md",
+    "fragment": "ownership",
+    "pass": true
+  },
+  {
+    "source": "docs/enterprise/47-资源知识主源与存储适配归一-ADR-19.md",
+    "line": 26,
+    "target": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+    "fragment": "flows",
+    "pass": true
+  }
+]

@@ -1,0 +1,29 @@
+F13 变异电池见证 — 2026-09-29（编排步骤状态档出口：契约 ORCH_STATUS/orchStatusLabel + 视图两站点）
+判据文件：src/modules/expert-alliance/contract/vocabulary-ownership.test.js（17 例，本轮只跑该文件）
+被碰文件：orchestration.js / AllianceOrchestrationView.vue / 判据文件本身（未变异）
+快照目录：D:/tmp/f13-cur（写前图像，拒绝覆盖）
+基线：rc=0 Tests  17 passed (17)
+
+M20 [CAUGHT] plan.steps 站点(:75) 写回直印 wire 原始值
+     文件=AllianceOrchestrationView.vue 判据红=['L11 编排步骤状态档走契约出口：:75 与 :133 两站点不许直印 s.st', '{{ t.usageCount }}'] 期望=['L11 '] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceOrchestrationView.vue 14ee655edaa86bc6→14ee655edaa86bc6 MATCH
+M21 [CAUGHT] 撤掉按名导入通道(:262)
+     文件=AllianceOrchestrationView.vue 判据红=['L11 编排步骤状态档走契约出口：:75 与 :133 两站点不许直印 s.st'] 期望=['L11 '] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceOrchestrationView.vue 14ee655edaa86bc6→14ee655edaa86bc6 MATCH
+M22 [CAUGHT] execute.steps_executed 站点(:133) 写回直印
+     文件=AllianceOrchestrationView.vue 判据红=['L11 编排步骤状态档走契约出口：:75 与 :133 两站点不许直印 s.st', '{{ t.usageCount }}'] 期望=['L11 '] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 AllianceOrchestrationView.vue 14ee655edaa86bc6→14ee655edaa86bc6 MATCH
+M23 [CAUGHT] 契约少一档(ORCH_STATUS 删 partial)
+     文件=orchestration.js 判据红=['L11b 编排状态契约账：七档取值逐字钉住、每档都有中文、出口只钉管道 20ms'] 期望=['L11b'] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 orchestration.js ec85648e564c3ba6→ec85648e564c3ba6 MATCH
+M24 [CAUGHT] 文案档名同形(LABELS partial 改成 "partial")
+     文件=orchestration.js 判据红=['L11b 编排状态契约账：七档取值逐字钉住、每档都有中文、出口只钉管道 20ms'] 期望=['L11b'] 漏=[] / Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     还原 orchestration.js ec85648e564c3ba6→ec85648e564c3ba6 MATCH
+M25 [GREEN(措辞无关)] 只改中文措辞(pending 待执行→排队中，必须不红)
+     文件=orchestration.js 判据红=[] 期望=['-'] 漏=[] / Tests  17 passed (17)
+     还原 orchestration.js ec85648e564c3ba6→ec85648e564c3ba6 MATCH
+
+终检 vocabulary-ownership.test.js       2c81efc0ca9073f5 MATCH
+终检 orchestration.js                   ec85648e564c3ba6 MATCH
+终检 AllianceOrchestrationView.vue      14ee655edaa86bc6 MATCH
+复跑基线：rc=0 Tests  17 passed (17)

@@ -9,6 +9,8 @@ source_of_truth: gateway/src/alliance/*.rs 路由注册
 
 # 专家联盟 API 接口规范
 
+> 状态：V1.0 目标态，部分结论已被 CURRENT-ARCHITECTURE.md V1.1 取代（见文中 ⚠️ 补记）。
+
 ## 1. 通用约定
 
 | 项 | 说明 |
@@ -178,6 +180,8 @@ Content-Type: application/json
 | 路径 | 说明 |
 |------|------|
 | `/ws/v1/experts/tasks/:task_id/progress` | 任务执行进度推送 |
+
+> ⚠️ **V1.1 核对补记（2026-09-29）**：本文此处所述的 `/ws/v1/*` WebSocket 推送在实现中不存在（全 crate `WebSocketUpgrade` 零命中）；实时性由 SSE `GET /api/alliance/tasks/:id/logs/stream` 承担。以 CURRENT-ARCHITECTURE.md V1.1 为准。
 
 ---
 

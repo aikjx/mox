@@ -420,7 +420,7 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 236] = [
+pub static ROUTES: [ApiRoute; 243] = [
     // =====================================================================
     // Actuator 域（L0·Spring Boot 风格管理面·actuator.rs 实现）
     // =====================================================================
@@ -624,6 +624,13 @@ pub static ROUTES: [ApiRoute; 236] = [
     r("experts.graph.communities", "GET", "/api/expert-graph/communities", "L3", "experts", "ready", "协作社区发现"),
     r("experts.graph.optimal_team", "POST", "/api/expert-graph/optimal-team", "L3", "experts", "ready", "最优团队推荐"),
     r("experts.graph.rebuild", "POST", "/api/expert-graph/rebuild", "L3", "experts", "ready", "重建协作图"),
+    r("experts.graph.node_create", "POST", "/api/expert-graph/nodes", "L3", "experts", "ready", "新增图谱节点（管理写面）"),
+    r("experts.graph.node_update", "PUT", "/api/expert-graph/nodes/:id", "L3", "experts", "ready", "更新图谱节点（合并式）"),
+    r("experts.graph.node_delete", "DELETE", "/api/expert-graph/nodes/:id", "L3", "experts", "ready", "删除图谱节点（联动删关联边）"),
+    r("experts.graph.edge_create", "POST", "/api/expert-graph/edges", "L3", "experts", "ready", "新增图谱边（source/target 须存在，重复边 409）"),
+    r("experts.graph.edge_update", "PUT", "/api/expert-graph/edges/:seq", "L3", "experts", "ready", "更新图谱边（按 seq）"),
+    r("experts.graph.edge_delete", "DELETE", "/api/expert-graph/edges/:seq", "L3", "experts", "ready", "删除图谱边（按 seq）"),
+    r("experts.graph.rag_expand", "POST", "/api/expert-graph/rag/expand", "L3", "experts", "ready", "图 RAG 多跳邻域扩展（T2，读面公开，权重乘积聚合）"),
     r("experts.orch.orchestrate", "POST", "/api/experts/orchestrate", "L3", "experts", "ready", "专家编排执行"),
     r("experts.orch.plan_generate", "POST", "/api/experts/plan/generate", "L3", "experts", "ready", "生成协作计划"),
     r("experts.orch.plan_execute", "POST", "/api/experts/plan/execute", "L3", "experts", "ready", "执行协作计划"),

@@ -1,0 +1,8 @@
+备份 4 个被碰文件 -> D:/tmp/time-f1-mut-pre
+基线: ['Tests  13 passed (13)']
+MU1 坏值档回落空串                                    rc=1 CAUGHT failed=1 红例=['formatDateTimeLocaleOr 单出口（F1 族收口） > 坏值档：解析失败印 Invalid Date，与旧副本的可见行为一致 12ms']
+MU2 无值判据收窄成 null/undefined                     rc=1 CAUGHT failed=1 红例=['formatDateTimeLocaleOr 单出口（F1 族收口） > 无值档：falsy 一律回落占位符，默认 - 且可由调用方改名 13ms']
+MU3 默认占位符改成空串                                  rc=1 CAUGHT failed=1 红例=['formatDateTimeLocaleOr 单出口（F1 族收口） > 无值档：falsy 一律回落占位符，默认 - 且可由调用方改名 12ms']
+MU4 AdminMenu 退回写前图像（副本复活）                     rc=1 CAUGHT failed=2 红例=['formatDateTimeLocaleOr 单出口（F1 族收口） > 棘轮：被禁字面量的余量按文件登记，总数与登记表自证闭合 150ms', 'formatDateTimeLocaleOr 单出口（F1 族收口） > 4 个收口点都真的引到了出口，且旧副本体已不在文件里（防驱动器静默 no-op） 33ms']
+MU5 island 只撤 AdminAccess 出口引用（模板裸调）           rc=1 CAUGHT failed=1 红例=['formatDateTimeLocaleOr 单出口（F1 族收口） > 4 个收口点都真的引到了出口，且旧副本体已不在文件里（防驱动器静默 no-op） 31ms'] || deadref rc=1 SFCSCAN files=128 checked=126 skippedNonSetup=2 deadRefFiles=1 structFiles=0 verdict=FAIL
+MU6 island 只撤 barrel 再导出（深路径仍活）                rc=1 CAUGHT failed=1 红例=['formatDateTimeLocaleOr 单出口（F1 族收口） > barrel 出口与直接导入同一个函数 10ms'] || build rc=1 ["src/views/admin/panels/AdminAccess.vue (27:9): Error when using sourcemap for reporting an error: Can't resolve original location of error."]

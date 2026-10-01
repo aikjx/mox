@@ -1,0 +1,118 @@
+{
+  "complete": true,
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-kb-svc"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 13.3,
+      "log": "reports\\data\\20261001-knowledge-resource-access\\01.log",
+      "sha256": "317e32238b4b539f5932f5c95d50270ef36a8bd29a20c63aed1d456b53faca93",
+      "test_counts": [
+        [
+          17,
+          0,
+          1
+        ],
+        [
+          5,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 0
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "protected_kb_requires_trusted_identity_and_denies_readonly_writes"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 45.99,
+      "log": "reports\\data\\20261001-knowledge-resource-access\\02.log",
+      "sha256": "47f3ee02f588e9e19a63bf98a2ddc5128c3b0724e602126e462a457fff6418ef",
+      "test_counts": [
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "dialogue_sediment::tests"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 4.02,
+      "log": "reports\\data\\20261001-knowledge-resource-access\\03.log",
+      "sha256": "50b42017fe44b7fc62e859c06231508ecf23ec2872139e7c69f0076a27ddccc2",
+      "test_counts": [
+        [
+          3,
+          0,
+          0
+        ]
+      ],
+      "warning_count": 2
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-kb-svc",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 15.02,
+      "log": "reports\\data\\20261001-knowledge-resource-access\\04.log",
+      "sha256": "141d28f8235919f6eb9cac1efcf97fe2fc1cd3911d09d1f8ed93e7f95d38e61c",
+      "test_counts": [],
+      "warning_count": 63
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 1.64,
+      "log": "reports\\data\\20261001-knowledge-resource-access\\05.log",
+      "sha256": "9c34ebdbc8e3e816980759b9d93a849ca5460891261543a4709aa81208c2ec01",
+      "test_counts": [],
+      "warning_count": 0
+    }
+  ],
+  "passed": 28,
+  "failed": 0,
+  "ignored": 1,
+  "fixture_restored_exactly_to_pre_turn_index": true,
+  "harness_cleanup_error": "Direct Windows fixture write returned Errno 22; restored identical pre-turn staged baseline with atomic replace after verifying only ts differed."
+}

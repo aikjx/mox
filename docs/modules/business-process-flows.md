@@ -1,5 +1,7 @@
 # 企业级业务处理流程（Business Process Flows）
 
+> **2026-10-01 来源边界补记**：本文件为早期流程实现/图形资料，正文保留历史口径。`crates/`、`frontend/` 和旧总架构章节号不是当前模块路径或运行验收证据。当前全域流程关联见 `docs/expert-alliance/17-docs-architecture-and-flow-atlas.md#flows`；联盟真实任务链见 `docs/expert-alliance/13-end-to-end-business-flow.md#一流程总览`。审批、补偿等目标能力必须按实际模块分别核验。
+
 >
 > **标题**：企业级业务处理流程
 > **版本**：V1.0

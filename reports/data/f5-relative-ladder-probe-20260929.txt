@@ -1,0 +1,26 @@
+已从磁盘取到函数体，11 行，分支串逐字打印：
+   const raw = str(iso)
+   if (!raw) return ''
+   const t = Date.parse(raw)
+   if (!Number.isFinite(t)) return ''
+   const diff = now - t
+   if (diff < 0) return '稍后'
+   if (diff < 60000) return '刚刚'
+   if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`
+   if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`
+   return ''
+EQ  RFC3339 刚刚         盘上="刚刚" 出口="刚刚"
+EQ  RFC3339 N分钟前       盘上="7 分钟前" 出口="7 分钟前"
+EQ  RFC3339 N小时前       盘上="5 小时前" 出口="5 小时前"
+EQ  RFC3339 超一天        盘上="" 出口=""
+EQ  RFC3339 未来         盘上="稍后" 出口="稍后"
+NEQ epoch 毫秒数字串        盘上="" 出口="9 分钟前"
+EQ  Date 对象            盘上="4 分钟前" 出口="4 分钟前"
+EQ  带 Z 的秒级串           盘上="刚刚" 出口="刚刚"
+EQ  无时区串               盘上="8 小时前" 出口="8 小时前"
+EQ  坏串                 盘上="" 出口=""
+EQ  空串                 盘上="" 出口=""
+EQ  null               盘上="" 出口=""
+EQ  undefined          盘上="" 出口=""
+EQ  数字 0               盘上="" 出口=""
+判决：13 同字 / 1 异字（异字必须逐条定价，不许当噪声）

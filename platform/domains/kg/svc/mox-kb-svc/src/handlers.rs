@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -34,6 +34,30 @@ fn ok<T: serde::Serialize>(data: T) -> ApiResponse<Value> {
 /// 错误响应（统一 ApiResponse 信封，code 取 HTTP 状态码）
 fn err(status: StatusCode, _code: &str, message: &str) -> ApiResponse<Value> {
     api_error(status.as_u16() as i32, message)
+}
+
+fn document_error(error: mox_base_store_core::StoreError, id: &str) -> ApiResponse<Value> {
+    match error {
+        mox_base_store_core::StoreError::NotFound { .. } => not_found(id),
+        error => {
+            tracing::error!(error=%error,"knowledge storage request failed");
+            err(StatusCode::INTERNAL_SERVER_ERROR, "kb_storage_failed", "知识库存储操作失败")
+        },
+    }
+}
+fn write_error(error: crate::document::DocumentWriteError, id: &str) -> ApiResponse<Value> {
+    match error {
+        crate::document::DocumentWriteError::Conflict => {
+            err(StatusCode::CONFLICT, "kb_write_conflict", "文档已变化，请刷新后重试")
+        },
+        crate::document::DocumentWriteError::Storage(error) => document_error(error, id),
+    }
+}
+fn invalidate_projection(
+    state: &KbState,
+    id: &str,
+) -> Result<(), mox_kg_storage_svc::StorageError> {
+    GraphLinker.unlink(&state.graph, id).map(|_| ())
 }
 
 /// 文档不存在统一错误
@@ -92,7 +116,10 @@ async fn kb_documents_list(State(state): State<Arc<KbState>>) -> ApiResponse<Val
     }
 }
 
-async fn kb_document_create(State(state): State<Arc<KbState>>, Json(payload): Json<CreateDocReq>) -> ApiResponse<Value> {
+async fn kb_document_create(
+    State(state): State<Arc<KbState>>,
+    Json(payload): Json<CreateDocReq>,
+) -> ApiResponse<Value> {
     let doc = match state
         .docs
         .create(&payload.title, &payload.content, payload.category.as_deref())
@@ -104,7 +131,7 @@ async fn kb_document_create(State(state): State<Arc<KbState>>, Json(payload): Js
                     tags: tags.clone(),
                     ..doc
                 };
-                let _ = state.docs.save(&patched).await;
+                if let Err(error) = state.docs.save(&patched).await { return document_error(error,&patched.id); }
                 doc = patched;
             }
             doc
@@ -114,30 +141,51 @@ async fn kb_document_create(State(state): State<Arc<KbState>>, Json(payload): Js
     ok(json!({ "id": doc.id, "status": "created", "document": doc }))
 }
 
-async fn kb_document_get(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
+async fn kb_document_get(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
     match state.docs.get(&id).await {
         Ok(doc) => ok(doc),
-        Err(_) => not_found(&id),
+        Err(error) => document_error(error,&id),
     }
 }
 
-async fn kb_document_update(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<Value>) -> ApiResponse<Value> {
-    match state.docs.update(&id, &payload).await {
-        Ok(doc) => ok(json!({ "id": id, "status": "updated", "document": doc })),
-        Err(_) => not_found(&id),
+async fn kb_document_update(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+    Json(payload): Json<Value>,
+) -> ApiResponse<Value> {
+    match state.docs.update_checked(&id, &payload).await {
+        Ok(doc) => {
+            if let Err(error) = GraphLinker.unlink(&state.graph, &id) {
+                return err(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "kb_projection_invalidate_failed",
+                    &error.to_string(),
+                );
+            }
+            ok(json!({ "id": id, "status": "updated", "document": doc }))
+        },
+        Err(error) => write_error(error, &id),
     }
 }
 
-async fn kb_document_delete(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
+async fn kb_document_delete(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
     let existed = match state.docs.delete(&id).await {
         Ok(v) => v,
-        Err(e) => return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_delete_failed", &e.to_string()),
+        Err(e) => return document_error(e, &id),
     };
     if !existed {
         return not_found(&id);
     }
     // 反挂图：移除文档子图
-    GraphLinker.unlink(&state.graph, &id);
+    if let Err(e) = GraphLinker.unlink(&state.graph, &id) {
+        return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_unlink_failed", &e.to_string());
+    }
     ok(json!({ "id": id, "status": "deleted" }))
 }
 
@@ -145,22 +193,33 @@ async fn kb_document_delete(State(state): State<Arc<KbState>>, Path(id): Path<St
 // 分析（专家联盟）
 // ====================================================================
 
-async fn kb_document_analyze(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
-    let mut doc = match state.docs.get(&id).await {
+async fn kb_document_analyze(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
+    let mut doc = match state.docs.get_for_write(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
+
+    let expected = doc.clone();
     let result: AnalysisResult = match KbAnalyzer.analyze(&mut doc).await {
         Ok(r) => r,
         Err(e) => return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_analyze_failed", &e.to_string()),
     };
-    if let Err(e) = state.docs.save(&doc).await {
-        return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_analyze_save_failed", &e.to_string());
+    if let Err(e) = state.docs.save_if_unchanged(&expected, &doc).await {
+        return write_error(e, &id);
+    }
+    if let Err(error) = invalidate_projection(&state, &id) {
+        return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_invalidate_failed", &error.to_string());
     }
     ok(result)
 }
 
-async fn kb_batch_analyze(State(state): State<Arc<KbState>>, Json(payload): Json<BatchAnalyzeReq>) -> ApiResponse<Value> {
+async fn kb_batch_analyze(
+    State(state): State<Arc<KbState>>,
+    Json(payload): Json<BatchAnalyzeReq>,
+) -> ApiResponse<Value> {
     let mut analyzed = 0usize;
     let mut failed = Vec::new();
     // 目标：显式 ids 或全量
@@ -168,7 +227,8 @@ async fn kb_batch_analyze(State(state): State<Arc<KbState>>, Json(payload): Json
         Some(ids) => ids.clone(),
         None => {
             let mut ids = Vec::new();
-            for item in state.docs.list().await.unwrap_or_default() {
+            let items = match state.docs.list().await { Ok(items) => items, Err(error) => return document_error(error,"") };
+            for item in items {
                 if let Some(id) = item["id"].as_str() {
                     ids.push(id.to_string());
                 }
@@ -177,16 +237,15 @@ async fn kb_batch_analyze(State(state): State<Arc<KbState>>, Json(payload): Json
         }
     };
     for id in target_ids {
-        match state.docs.get(&id).await {
-            Ok(mut doc) => {
-                if let Ok(_result) = KbAnalyzer.analyze(&mut doc).await {
-                    if state.docs.save(&doc).await.is_ok() {
-                        analyzed += 1;
-                    }
-                }
-            }
-            Err(_) => failed.push(id),
-        }
+        let result = async {
+            let mut doc = state.docs.get_for_write(&id).await?;
+            let expected = doc.clone();
+            KbAnalyzer.analyze(&mut doc).await?;
+            state.docs.save_if_unchanged(&expected,&doc).await.map_err(crate::err_other)?;
+            invalidate_projection(&state,&id).map_err(crate::err_other)?;
+            Ok::<(),mox_base_store_core::StoreError>(())
+        }.await;
+        match result { Ok(()) => analyzed += 1, Err(error) => { tracing::warn!(error=%error,doc_id=%id,"batch analysis failed"); failed.push(id); } }
     }
     ok(json!({ "status": "completed", "analyzed": analyzed, "failed": failed }))
 }
@@ -213,12 +272,29 @@ async fn kb_tags(State(state): State<Arc<KbState>>) -> ApiResponse<Value> {
 // 检索
 // ====================================================================
 
-async fn kb_search(State(state): State<Arc<KbState>>, Json(payload): Json<SearchRequest>) -> ApiResponse<Value> {
+async fn kb_search(
+    State(state): State<Arc<KbState>>,
+    Json(payload): Json<SearchRequest>,
+) -> ApiResponse<Value> {
+    if payload.query.trim().is_empty()
+        || payload.query.chars().count() > 512
+        || !(1..=100).contains(&payload.limit)
+    {
+        return err(
+            StatusCode::BAD_REQUEST,
+            "invalid_search",
+            "查询长度须为 1–512 字符，limit 须为 1–100",
+        );
+    }
     let docs = match KbSearcher.search_docs(&state, &payload).await {
         Ok(h) => h,
         Err(e) => return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_search_failed", &e.to_string()),
     };
-    let graph_hits = KbSearcher::search_graph(&state.graph, &payload.query, payload.limit);
+    let visible = match state.visible_graph().await {
+        Ok(graph) => graph,
+        Err(e) => return document_error(e, "graph"),
+    };
+    let graph_hits = KbSearcher::search_graph(&visible, &payload.query, payload.limit);
     ok(json!({
         "results": docs,
         "graph_hits": graph_hits,
@@ -230,18 +306,24 @@ async fn kb_search(State(state): State<Arc<KbState>>, Json(payload): Json<Search
 // 版本
 // ====================================================================
 
-async fn kb_doc_versions(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
+async fn kb_doc_versions(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
     ok(json!({ "doc_id": id, "versions": KbVersionService::list(&doc) }))
 }
 
-async fn kb_doc_version(State(state): State<Arc<KbState>>, Path((id, ver)): Path<(String, String)>) -> ApiResponse<Value> {
+async fn kb_doc_version(
+    State(state): State<Arc<KbState>>,
+    Path((id, ver)): Path<(String, String)>,
+) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
     match KbVersionService::get(&doc, &ver) {
         Some(v) => ok(json!({ "doc_id": id, "version": v.version, "title": v.title, "content": v.content, "note": v.note, "created_at": v.created_at })),
@@ -249,22 +331,36 @@ async fn kb_doc_version(State(state): State<Arc<KbState>>, Path((id, ver)): Path
     }
 }
 
-async fn kb_doc_create_version(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<VersionNoteReq>) -> ApiResponse<Value> {
-    let mut doc = match state.docs.get(&id).await {
+async fn kb_doc_create_version(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+    Json(payload): Json<VersionNoteReq>,
+) -> ApiResponse<Value> {
+    let mut doc = match state.docs.get_for_write(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
+
+    let expected = doc.clone();
     let created = KbVersionService::create(&mut doc, &payload.note);
-    if let Err(e) = state.docs.save(&doc).await {
-        return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_version_save_failed", &e.to_string());
+    doc.status = crate::model::STATUS_DRAFT.into();
+    if let Err(e) = state.docs.save_if_unchanged(&expected, &doc).await {
+        return write_error(e, &id);
+    }
+    if let Err(error) = invalidate_projection(&state, &id) {
+        return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_invalidate_failed", &error.to_string());
     }
     ok(json!({ "doc_id": id, "version": created.version, "status": "created", "note": created.note }))
 }
 
-async fn kb_doc_compare_versions(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<CompareReq>) -> ApiResponse<Value> {
+async fn kb_doc_compare_versions(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+    Json(payload): Json<CompareReq>,
+) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
     let (v1, v2) = if payload.v1.is_empty() && payload.v2.is_empty() {
         // 缺省：最近两个版本
@@ -282,11 +378,17 @@ async fn kb_doc_compare_versions(State(state): State<Arc<KbState>>, Path(id): Pa
     }
 }
 
-async fn kb_doc_revert_version(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(payload): Json<RevertReq>) -> ApiResponse<Value> {
-    let mut doc = match state.docs.get(&id).await {
+async fn kb_doc_revert_version(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+    Json(payload): Json<RevertReq>,
+) -> ApiResponse<Value> {
+    let mut doc = match state.docs.get_for_write(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
+
+    let expected = doc.clone();
     let version = if payload.version.is_empty() {
         // 缺省：回滚到上一版本
         let all = KbVersionService::list(&doc);
@@ -299,9 +401,10 @@ async fn kb_doc_revert_version(State(state): State<Arc<KbState>>, Path(id): Path
     };
     match KbVersionService::revert(&mut doc, &version) {
         Some(v) => {
-            if let Err(e) = state.docs.save(&doc).await {
-                return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_revert_save_failed", &e.to_string());
+            if let Err(e) = state.docs.save_if_unchanged(&expected, &doc).await {
+                return write_error(e,&id);
             }
+            if let Err(error) = invalidate_projection(&state,&id) { return err(StatusCode::INTERNAL_SERVER_ERROR,"kb_invalidate_failed",&error.to_string()); }
             ok(json!({ "doc_id": id, "status": "reverted", "version": v.version }))
         }
         None => err(StatusCode::NOT_FOUND, "version_not_found", &format!("版本不存在: {version}")),
@@ -312,18 +415,24 @@ async fn kb_doc_revert_version(State(state): State<Arc<KbState>>, Path(id): Path
 // 实体 / 挂图 / 历史 / 统计
 // ====================================================================
 
-async fn kb_doc_entities(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
+async fn kb_doc_entities(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
     ok(json!({ "doc_id": id, "entities": doc.entities, "relations": doc.relations }))
 }
 
-async fn kb_doc_graph_link(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
-    let mut doc = match state.docs.get(&id).await {
+async fn kb_doc_graph_link(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
+    let mut doc = match state.docs.get_for_write(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
     // 若未分析过则先分析，保证挂图有实体/分块
     if doc.entities.is_empty() {
@@ -332,7 +441,10 @@ async fn kb_doc_graph_link(State(state): State<Arc<KbState>>, Path(id): Path<Str
         }
     }
     let chunks = crate::analyze::chunk_doc(&doc);
-    let result: LinkResult = GraphLinker.link(&state.graph, &doc, &chunks);
+    let result: LinkResult = match GraphLinker.link(&state.graph, &doc, &chunks) {
+        Ok(result) => result,
+        Err(e) => return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_link_failed", &e.to_string()),
+    };
     doc.status = crate::model::STATUS_LINKED.into();
     if let Err(e) = state.docs.save(&doc).await {
         return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_link_save_failed", &e.to_string());
@@ -342,7 +454,7 @@ async fn kb_doc_graph_link(State(state): State<Arc<KbState>>, Path(id): Path<Str
         .graph
         .list_nodes()
         .into_iter()
-        .filter(|n| n.id == crate::link::doc_node_id(&doc.id) || n.id.starts_with(&format!("kb-{}-", doc.id)))
+        .filter(|n| n.properties.get("source_doc_id").and_then(Value::as_str) == Some(doc.id.as_str()))
         .map(|n| {
             json!({
                 "id": n.id, "node_type": n.node_type, "label": n.label, "properties": n.properties,
@@ -355,20 +467,39 @@ async fn kb_doc_graph_link(State(state): State<Arc<KbState>>, Path(id): Path<Str
         "graph_nodes": graph_nodes,
         "nodes_added": result.nodes_added,
         "edges_added": result.edges_added,
-        "graph_total_nodes": result.graph_nodes,
-        "graph_total_edges": result.graph_edges,
+        "graph_total_nodes": graph_nodes.len(),
+        "graph_total_edges": result.edges_added,
     }))
 }
 
-async fn kb_doc_graph_unlink(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
-    let removed = GraphLinker.unlink(&state.graph, &id);
+async fn kb_doc_graph_unlink(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
+    let mut doc = match state.docs.get_for_write(&id).await {
+        Ok(doc) => doc,
+        Err(error) => return document_error(error, &id),
+    };
+    doc.status = crate::model::STATUS_ANALYZED.into();
+    if let Err(e) = state.docs.save(&doc).await {
+        return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_unlink_save_failed", &e.to_string());
+    }
+    let removed = match GraphLinker.unlink(&state.graph, &id) {
+        Ok(removed) => removed,
+        Err(e) => {
+            return err(StatusCode::INTERNAL_SERVER_ERROR, "kb_unlink_failed", &e.to_string())
+        },
+    };
     ok(json!({ "doc_id": id, "status": "unlinked", "nodes_removed": removed }))
 }
 
-async fn kb_doc_history(State(state): State<Arc<KbState>>, Path(id): Path<String>) -> ApiResponse<Value> {
+async fn kb_doc_history(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
     let doc = match state.docs.get(&id).await {
         Ok(d) => d,
-        Err(_) => return not_found(&id),
+        Err(error) => return document_error(error,&id),
     };
     let history: Vec<Value> = doc
         .versions
@@ -386,8 +517,9 @@ async fn kb_stats(State(state): State<Arc<KbState>>) -> ApiResponse<Value> {
     match state.docs.stats().await {
         Ok(stats) => {
             let mut s = stats.as_object().cloned().unwrap_or_default();
-            s.insert("graph_nodes".into(), json!(state.graph.node_count()));
-            s.insert("graph_edges".into(), json!(state.graph.edge_count()));
+            let visible = match state.visible_graph().await { Ok(graph) => graph, Err(e) => return document_error(e, "graph") };
+            s.insert("graph_nodes".into(), json!(visible.node_count()));
+            s.insert("graph_edges".into(), json!(visible.edge_count()));
             ok(Value::Object(s))
         }
         Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, "kb_stats_failed", &e.to_string()),
@@ -420,6 +552,65 @@ async fn kb_history(State(state): State<Arc<KbState>>, Query(_params): Query<Has
     ok(history)
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ShareRequest {
+    user_id: String,
+    expected_acl_revision: u64,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ShareRevision {
+    expected_acl_revision: u64,
+}
+fn shares(doc: &KbDocument) -> ApiResponse<Value> {
+    ok(json!({ "readers": doc.readers, "acl_revision": doc.acl_revision }))
+}
+fn share_error(error: crate::access::ShareError, id: &str) -> ApiResponse<Value> {
+    match error {
+        crate::access::ShareError::InvalidRequest => {
+            err(StatusCode::BAD_REQUEST, "invalid_share", "共享接收者无效或超出上限")
+        },
+        crate::access::ShareError::Conflict => {
+            err(StatusCode::CONFLICT, "acl_conflict", "授权版本冲突，请刷新后重试")
+        },
+        crate::access::ShareError::Storage(error) => document_error(error, id),
+    }
+}
+async fn kb_shares(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+) -> ApiResponse<Value> {
+    match state.docs.get_for_write(&id).await {
+        Ok(doc) => shares(&doc),
+        Err(e) => document_error(e, &id),
+    }
+}
+async fn kb_grant(
+    State(state): State<Arc<KbState>>,
+    Path(id): Path<String>,
+    Json(req): Json<ShareRequest>,
+) -> ApiResponse<Value> {
+    match state
+        .docs
+        .change_reader(&id, &req.user_id, true, req.expected_acl_revision)
+        .await
+    {
+        Ok(doc) => shares(&doc),
+        Err(e) => share_error(e, &id),
+    }
+}
+async fn kb_revoke(
+    State(state): State<Arc<KbState>>,
+    Path((id, user_id)): Path<(String, String)>,
+    Query(req): Query<ShareRevision>,
+) -> ApiResponse<Value> {
+    match state.docs.change_reader(&id, &user_id, false, req.expected_acl_revision).await {
+        Ok(doc) => shares(&doc),
+        Err(e) => share_error(e, &id),
+    }
+}
+
 // ====================================================================
 // 路由装配入口（网关 merge 挂接）
 // ====================================================================
@@ -439,6 +630,8 @@ pub fn build_kb_router_with_state(state: Arc<KbState>) -> Router {
     Router::new()
         .route("/kb/documents", get(kb_documents_list).post(kb_document_create))
         .route("/kb/documents/:id", get(kb_document_get).put(kb_document_update).delete(kb_document_delete))
+        .route("/kb/documents/:id/shares", get(kb_shares).post(kb_grant))
+        .route("/kb/documents/:id/shares/:user_id", axum::routing::delete(kb_revoke))
         .route("/kb/documents/:id/analyze", post(kb_document_analyze))
         .route("/kb/batch-analyze", post(kb_batch_analyze))
         .route("/kb/categories", get(kb_categories))
@@ -453,8 +646,30 @@ pub fn build_kb_router_with_state(state: Arc<KbState>) -> Router {
         .route("/kb/documents/:id/history", get(kb_doc_history))
         .route("/kb/stats", get(kb_stats))
         .route("/kb/history", get(kb_history))
+        .layer(axum::middleware::from_fn_with_state(state.clone(), restore_projection))
         .with_state(state)
 }
 
 
-
+async fn restore_projection(
+    State(state): State<Arc<KbState>>,
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    if let Some(access) = state.docs.request_access() {
+        if !access.allows_request(request.method().as_str(), request.uri().path()) {
+            return StatusCode::FORBIDDEN.into_response();
+        }
+    }
+    if let Err(error) = state.ensure_projection_ready().await {
+        tracing::error!(error=%error,"KB projection initialization failed");
+        return err(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "kb_projection_unavailable",
+            "知识投影尚未就绪",
+        )
+        .into_response();
+    }
+    next.run(request).await
+}

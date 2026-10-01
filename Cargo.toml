@@ -161,6 +161,7 @@ members = [
     "platform/domains/alliance/svc/mox-alliance-registry-svc",
     "platform/domains/alliance/svc/mox-alliance-executor-svc",
     "platform/domains/alliance/sdk/mox-alliance-sdk",
+    "platform/domains/alliance/mcp/mox-alliance-mcp-server",
     # === 统一基座域 (base) ===
     "platform/domains/base/mox-base-model-core",
     "platform/domains/base/mox-base-store-core",

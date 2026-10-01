@@ -49,6 +49,13 @@ impl ExpertStore {
                 total_consultations INTEGER
             );"
         )?;
+        // Schema 版本迁移：v1。老库(0)跑完建表后 bump；已迁移库跳过。
+        {
+            let current: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap_or(0);
+            if current < 1 {
+                conn.pragma_update(None, "user_version", 1)?;
+            }
+        }
         Ok(Self {
             conn: Arc::new(std::sync::Mutex::new(conn)),
         })
@@ -71,6 +78,7 @@ impl ExpertStore {
                 total_consultations INTEGER
             );"
         )?;
+        conn.pragma_update(None, "user_version", 1)?;
         Ok(Self {
             conn: Arc::new(std::sync::Mutex::new(conn)),
         })

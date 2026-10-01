@@ -86,7 +86,9 @@ export const EXPERT_ALLIANCE_MODULE = defineModule({
         title: '联盟控制台',
         module: 'expert',
         layout: 'default',
-        requiresAuth: true
+        requiresAuth: true,
+        // 破坏性写面（负载重置 / 调度配置写），与全站 ADMIN_GUARD 同口径
+        requiresRole: ['super_admin', 'tenant_admin']
       }
     },
     {
@@ -108,7 +110,9 @@ export const EXPERT_ALLIANCE_MODULE = defineModule({
         title: '专家协作图谱',
         module: 'expert',
         layout: 'default',
-        requiresAuth: true
+        requiresAuth: true,
+        // 图谱重建为破坏性写（图版本号 +1 落盘），仅管理员
+        requiresRole: ['super_admin', 'tenant_admin']
       }
     },
     {
@@ -130,7 +134,9 @@ export const EXPERT_ALLIANCE_MODULE = defineModule({
         title: '专家编排台',
         module: 'expert',
         layout: 'default',
-        requiresAuth: true
+        requiresAuth: true,
+        // 编排执行/计划生成均为写面；本系统角色模板无 operator 码，沿用全站管理员口径
+        requiresRole: ['super_admin', 'tenant_admin']
       }
     },
     {
@@ -141,7 +147,9 @@ export const EXPERT_ALLIANCE_MODULE = defineModule({
         title: '联盟专家广场',
         module: 'expert',
         layout: 'default',
-        requiresAuth: true
+        requiresAuth: true,
+        // 专家注册/CRUD 为写面，仅管理员
+        requiresRole: ['super_admin', 'tenant_admin']
       }
     }
   ],

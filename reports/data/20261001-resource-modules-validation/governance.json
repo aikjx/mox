@@ -1,0 +1,56 @@
+[
+  {
+    "command": [
+      "python",
+      "scripts/gate/check-doc-links.py"
+    ],
+    "exit_code": 0,
+    "log": "reports/data/20261001-resource-modules-validation/governance-01.log"
+  },
+  {
+    "command": [
+      "python",
+      "scripts/doc/inventory-architecture-docs.py",
+      "--selftest"
+    ],
+    "exit_code": 0,
+    "log": "reports/data/20261001-resource-modules-validation/governance-02.log"
+  },
+  {
+    "command": [
+      "python",
+      "scripts/doc/inventory-architecture-docs.py"
+    ],
+    "exit_code": 0,
+    "log": "reports/data/20261001-resource-modules-validation/governance-03.log"
+  },
+  {
+    "command": [
+      "python",
+      "scripts/doc/inventory-architecture-docs.py",
+      "--check"
+    ],
+    "exit_code": 0,
+    "log": "reports/data/20261001-resource-modules-validation/governance-04.log"
+  },
+  {
+    "command": [
+      "rustfmt",
+      "--edition",
+      "2021",
+      "--check",
+      "platform/gateway/mox-platform-gateway-svc/src/file_storage/api.rs",
+      "platform/gateway/mox-platform-gateway-svc/src/file_storage/mod.rs",
+      "platform/gateway/mox-platform-gateway-svc/src/file_storage/repository.rs",
+      "platform/gateway/mox-platform-gateway-svc/src/file_storage/tests.rs",
+      "platform/domains/kb/svc/mox-kb-server/src/main.rs",
+      "platform/domains/kb/svc/mox-kb-server/src/tests.rs",
+      "platform/domains/kb/core/mox-kb-core/src/sqlite_store.rs",
+      "platform/domains/cloud/core/mox-cloud-store-core/src/backend.rs",
+      "platform/domains/cloud/core/mox-cloud-store-core/src/s3_backend.rs",
+      "platform/domains/kg/svc/mox-kb-svc/src/link.rs"
+    ],
+    "exit_code": 0,
+    "log": "reports/data/20261001-resource-modules-validation/governance-05.log"
+  }
+]

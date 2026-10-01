@@ -1,0 +1,275 @@
+[
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 3,
+    "target": "docs/expert-alliance/INDEX.md",
+    "fragment": "一文档总表",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 7,
+    "target": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "fragment": "scope",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 8,
+    "target": "docs/expert-alliance/18-modular-product-design.md",
+    "fragment": "goals",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 9,
+    "target": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+    "fragment": "一物理代码分布",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 10,
+    "target": "docs/expert-alliance/08-normalized-architecture.md",
+    "fragment": "二模块清单与物理代码分布三目录打通",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 11,
+    "target": "docs/expert-alliance/13-end-to-end-business-flow.md",
+    "fragment": "一流程总览",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 12,
+    "target": "docs/expert-alliance/15-product-spec-standard.md",
+    "fragment": "一规范定位",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 13,
+    "target": "docs/expert-alliance/16-decision-and-state-ledger.md",
+    "fragment": "一总账总表核心交付",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/README.md",
+    "line": 15,
+    "target": "docs/ARCHITECTURE-OF-DOCS.md",
+    "fragment": "ea-navigation-20261001",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 35,
+    "target": "docs/ARCHITECTURE-OF-DOCS.md",
+    "fragment": "3-权威分级与单源ssot",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 36,
+    "target": "docs/architecture/NORMALIZED_ARCHITECTURE.md",
+    "fragment": "2-十二域划分与职责矩阵",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 37,
+    "target": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+    "fragment": "一物理代码分布",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 38,
+    "target": "docs/expert-alliance/16-decision-and-state-ledger.md",
+    "fragment": "一总账总表核心交付",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 39,
+    "target": "docs/API-REGISTRY.md",
+    "fragment": "1-总览",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 40,
+    "target": "docs/api/PORT-REGISTRY.md",
+    "fragment": "第2章-快速速查表开发常用",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 41,
+    "target": "docs/database/DATABASE-ARCHITECTURE.md",
+    "fragment": "1-存储分层总览",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 42,
+    "target": "docs/expert-alliance/14-enterprise-permission-model.md",
+    "fragment": "一权限模型总览",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 43,
+    "target": "docs/expert-alliance/15-product-spec-standard.md",
+    "fragment": "一规范定位",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 74,
+    "target": "docs/architecture/MOX-MODULE-COMPOSITION-v1.md",
+    "fragment": "模块边界",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 87,
+    "target": "docs/architecture/README.md",
+    "fragment": "四领域架构",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 87,
+    "target": "docs/architecture/meta/README.md",
+    "fragment": "文档索引",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 87,
+    "target": "docs/architecture/microservices/README.md",
+    "fragment": "文档导航",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 87,
+    "target": "docs/architecture/frontend/README.md",
+    "fragment": "文档",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 87,
+    "target": "docs/database/README.md",
+    "fragment": "交付物",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 87,
+    "target": "docs/normalization/README.md",
+    "fragment": "1-归一化分类5-类--ssot",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 131,
+    "target": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+    "fragment": "二服务拓扑与端口",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 131,
+    "target": "docs/expert-alliance/13-end-to-end-business-flow.md",
+    "fragment": "一流程总览",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 222,
+    "target": "docs/normalization/BP-INDEX.md",
+    "fragment": "1-统一业务处理流程5-阶段-sop",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 222,
+    "target": "docs/enterprise/37-企业级处理流程规范-V1.0.md",
+    "fragment": "2-企业级处理流程总览",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "line": 293,
+    "target": "docs/expert-alliance/18-modular-product-design.md",
+    "fragment": "roadmap",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/18-modular-product-design.md",
+    "line": 18,
+    "target": "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md",
+    "fragment": "authority",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/18-modular-product-design.md",
+    "line": 83,
+    "target": "docs/architecture/MOX-MODULE-COMPOSITION-v1.md",
+    "fragment": "模块边界",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/18-modular-product-design.md",
+    "line": 83,
+    "target": "docs/enterprise/29-跨域依赖规则与架构一致性治理-ADR-09.md",
+    "fragment": "2-五条核心依赖规则the-five-rules",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/18-modular-product-design.md",
+    "line": 102,
+    "target": "docs/expert-alliance/08-normalized-architecture.md",
+    "fragment": "八状态机与枚举字典统一版",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/18-modular-product-design.md",
+    "line": 117,
+    "target": "docs/API-REGISTRY.md",
+    "fragment": "1-总览",
+    "pass": true
+  },
+  {
+    "source": "docs/expert-alliance/18-modular-product-design.md",
+    "line": 241,
+    "target": "docs/enterprise/45-专家联盟模块化归一与证据治理-ADR-17.md",
+    "fragment": "decision",
+    "pass": true
+  },
+  {
+    "source": "docs/enterprise/45-专家联盟模块化归一与证据治理-ADR-17.md",
+    "line": 6,
+    "target": "docs/enterprise/29-跨域依赖规则与架构一致性治理-ADR-09.md",
+    "fragment": "2-五条核心依赖规则the-five-rules",
+    "pass": true
+  },
+  {
+    "source": "docs/enterprise/45-专家联盟模块化归一与证据治理-ADR-17.md",
+    "line": 6,
+    "target": "docs/enterprise/35-模块化单体到微服务演进预案-ADR-16.md",
+    "fragment": "1-当前架构定位",
+    "pass": true
+  },
+  {
+    "source": "docs/enterprise/45-专家联盟模块化归一与证据治理-ADR-17.md",
+    "line": 34,
+    "target": "docs/expert-alliance/18-modular-product-design.md",
+    "fragment": "roadmap",
+    "pass": true
+  }
+]

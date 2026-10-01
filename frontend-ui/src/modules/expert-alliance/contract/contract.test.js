@@ -1141,7 +1141,7 @@ describe('任务标记完成与分发实跑 ↔ toggle_task_done / dispatch', ()
     expect(remoteDone).toMatch(/current\["status"\]\.as_str\(\) == Some\("completed"\)/)
     expect(remoteDone).toMatch(/409,\s*format!\("任务 \{\} 已完成，远程任务不支持通过网关重新打开"/)
     expect(VIEW).toContain('reopenBlocked')
-    expect(VIEW).toMatch(/current\.value\?\.status === 'completed' && store\.runtime\?\.mode === 'remote'/)
+    expect(VIEW).toMatch(/current\.value\?\.status === TASK_STATUS\.COMPLETED && store\.runtime\?\.mode === 'remote'/)
     expect(VIEW).toMatch(/:title="reopenHint"/)
     expect(VIEW).toMatch(/const reopenHint = computed\([\s\S]*?409'/)
   })
@@ -1206,7 +1206,11 @@ describe('任务标记完成与分发实跑 ↔ toggle_task_done / dispatch', ()
 
   it('无可用专家是 503 而非空结果，实跑不碰任何专家负载，失败留着上次结果', () => {
     expect(dispatch).toMatch(/assigned_ids\.is_empty\(\)[\s\S]{0,60}err\(503, "no available experts for dispatch"/)
-    expect(dispatch).toContain('emit_audit(&state, AuditAction::ExpertDispatch')
+    expect(dispatch).toContain('emit_audit(&state, &actor_from_opt_user(&user), AuditAction::ExpertDispatch')
+    // 行动者不是装饰：未带身份时降级为 system，带身份时记真人 ⇒ 这两处形状变了，界面上"谁做的"就变了
+    expect(dispatch).toContain('OptionalAuthUser(user): OptionalAuthUser')
+    expect(EXPERTS_COMMON_RS).toContain('type Rejection = std::convert::Infallible')
+    expect(EXPERTS_COMMON_RS).toContain('None => AuditActor::system()')
     expect(dispatchTask).not.toMatch(/current_load\s*=[^=]/)
     // 界面写"不会改动任何专家的 current_load"，这句承诺的权威源就是上面那条 not.toMatch
     expect(VIEW).toContain('但不会改动任何专家的 current_load')
@@ -1365,7 +1369,26 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
     // 认证在、授权不在：联盟域 handler 没有一处读调用方身份
     const dir = path.join(ROOT, 'platform/gateway/mox-platform-gateway-svc/src/alliance')
     const alliance = readdirSync(dir).filter((f) => f.endsWith('.rs')).map((f) => readFileSync(path.join(dir, f), 'utf8')).join('\n')
-    expect(alliance, '后端开始做角色判定了，界面提示要改成按角色而不是按身份').not.toMatch(/ApiAuth|Extension<UserInfo>|current_user/)
+    // 认证在、授权不在：联盟 handler 读调用方身份只为写审计 actor，不据身份拒绝。
+    // 判据只看可执行行——experts_common.rs:593 的文档注释里提了一句 auth.rs `ApiAuth`，
+    // 那是"我们为何手写 async_trait 展开"的说明，不是角色判定。
+    const allianceCode = alliance.split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n')
+    expect(allianceCode, '后端开始做角色判定了，界面提示要改成按角色而不是按身份')
+      .not.toMatch(/require_role|has_role|check_permission|ensure_admin|roles\.contains/)
+    expect(allianceCode, '联盟写路径换成强制身份提取器（缺 token 会 401），界面上的身份口径要重测')
+      .not.toMatch(/:\s*ApiAuth\b|Extension<UserInfo>|current_user/)
+    // 403 可以有，但只能落在"对象状态"上而不是"调用方是谁"上：现存唯一一处是协作面对已禁用专家的拒绝。
+    // 逐枚点名 ⇒ 新增一处 403 就必须先来说明它拒的是谁。
+    const forbidden = allianceCode.split('\n').filter((l) => /err\(403/.test(l)).map((l) => l.trim())
+    expect(forbidden, `403 站点数从 1 变成 ${forbidden.length}：每一处都要重新判定它拒的是身份还是对象状态`).toHaveLength(1)
+    expect(forbidden[0]).toContain('已被禁用')
+    // 正对照：真出现角色判定时上面几条必须认得出（否则禁令是死的）
+    const poisoned = 'if has_role(user, "admin") { ... }\nlet u: ApiAuth = ...;\nreturn err(403, "无权修改他人专家");'
+    expect(/require_role|has_role|check_permission/.test(poisoned), '角色判定禁令失能').toBe(true)
+    expect(/:\s*ApiAuth\b/.test(poisoned), '强制身份提取器禁令失能').toBe(true)
+    expect(/无权/.test(poisoned.split('\n')[2]), '按身份拒绝的 403 与按状态拒绝的 403 必须可区分').toBe(true)
+    // 而注释里那句 ApiAuth 确实存在——它不该被算作缺陷，这条把"为什么要剥注释"钉住
+    expect(alliance, 'experts_common.rs 的 ApiAuth 说明文字被改掉了，剥注释这一步不再有必要').toContain('与 auth.rs `ApiAuth` 同策略')
     // 登录与否归外壳路由守卫，模块页不再造一套置灰（那会让人以为模块懂权限）
     expect(src('frontend-ui/src/router/index.js'), '路由不再要求身份，写面提示要重做').toMatch(/if \(!token\) \{/)
     const view = src('frontend-ui/src/modules/expert-alliance/views/AllianceExpertsView.vue')
@@ -1373,7 +1396,36 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
     expect(view, '模块页自己判角色等于替后端编造授权模型').not.toMatch(/isAdmin|hasRole|isLoggedIn/)
     expect(EXPERT_WRITE_IDENTITY.statement).toMatch(/没有角色判定/)
     expect(EXPERT_WRITE_IDENTITY.statement, '提示里出现权限措辞，等于替后端编造角色判定').not.toMatch(/管理员|无权限|权限不足|授权/)
-    for (const ref of EXPERT_WRITE_IDENTITY.evidence) expect(ref, '身份提示缺了后端位置').toMatch(/\.[a-z]+:\d+/)
+    // 证据锚点必须真的指到它声称的那一行：界面会把 file:line 印出来给用户看，行号漂了就是谎。
+    const ANCHOR_FILES = {
+      'config.rs': 'platform/gateway/mox-platform-gateway-svc/src/config.rs',
+      'modules.rs': 'platform/gateway/mox-platform-gateway-svc/src/modules.rs',
+      'router/index.js': 'frontend-ui/src/router/index.js',
+      'experts_common.rs': 'platform/gateway/mox-platform-gateway-svc/src/alliance/experts_common.rs',
+      'experts_dispatcher.rs': 'platform/gateway/mox-platform-gateway-svc/src/alliance/experts_dispatcher.rs',
+      'experts_collaboration.rs': 'platform/gateway/mox-platform-gateway-svc/src/alliance/experts_collaboration.rs'
+    }
+    const ANCHOR_TEXT = {
+      'config.rs:41': 'enabled: true',
+      'modules.rs:219': 'modules.route_layer(',
+      'router/index.js:74': 'if (!token) {',
+      'experts_common.rs:585': 'pub struct OptionalAuthUser',
+      'experts_dispatcher.rs:588': 'AuditAction::ExpertDispatch',
+      'experts_collaboration.rs:797': '已被禁用'
+    }
+    for (const ref of EXPERT_WRITE_IDENTITY.evidence) {
+      expect(ref, '身份提示缺了后端位置').toMatch(/\.[a-z]+:\d+/)
+      const base = ref.slice(0, ref.lastIndexOf(':'))
+      const line = Number(ref.slice(ref.lastIndexOf(':') + 1))
+      const file = ANCHOR_FILES[base]
+      expect(file, `证据 ${ref} 的文件不在锚点表里，等于没人核对它`).toBeTruthy()
+      const at = src(file).split('\n')[line - 1] || ''
+      // 缺锚点文本时不要退化成 toContain(undefined)：那一格的报错会指向错的地方
+      expect(ANCHOR_TEXT[ref], `证据 ${ref} 没登记「这一行该写什么」`).toBeTruthy()
+      expect(at, `证据 ${ref} 指的那一行不含「${ANCHOR_TEXT[ref]}」⇒ 行号漂了`).toContain(ANCHOR_TEXT[ref])
+    }
+    // 分母：登记了锚点的证据条数，与提示里印出的证据数必须同为 5
+    expect(EXPERT_WRITE_IDENTITY.evidence.length).toBe(Object.keys(ANCHOR_TEXT).length)
   })
 
   it('写失败要留在发起它的那个弹窗里，不能只剩一条会自己消失的 toast', () => {

@@ -76,7 +76,7 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Plus, Folder, FolderAdd } from '@element-plus/icons-vue'
-import { registerExpert } from '@/api'
+import { allianceApi } from '@/modules/expert-alliance/api'
 import { EXPERT_TYPES } from '@/constants'
 import { useProject } from '@/composables'
 import ExpertOverviewPanel from './panels/ExpertOverviewPanel.vue'
@@ -127,12 +127,13 @@ async function doRegister() {
   }
   registering.value = true
   try {
-    await registerExpert({
+    // 模块契约 draft 形状：expertType/bio 取代 legacy 的 type/description 别名；
+    // capabilities 字符串简写对齐后端 merge 的硬编码 proficiency=85；systemPrompt 走 metadata，模块契约不挂录入入口
+    await allianceApi.registerExpert({
       name: newExpert.value.name,
-      type: newExpert.value.type,
-      capabilities: (newExpert.value.capabilities_str || '').split(',').map((s) => s.trim()).filter(Boolean),
-      description: newExpert.value.description,
-      systemPrompt: newExpert.value.systemPrompt
+      expertType: newExpert.value.type,
+      bio: newExpert.value.description,
+      capabilities: (newExpert.value.capabilities_str || '').split(',').map((s) => ({ name: s.trim(), proficiency: 85 })).filter((c) => c.name)
     })
     ElMessage.success('注册成功')
     showRegister.value = false

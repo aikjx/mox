@@ -1,0 +1,835 @@
+{
+  "new_documents": 9,
+  "directory_cards": [
+    {
+      "file": "docs/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/standards/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/meta/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/api/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/database/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/database/mox_sys/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/modules/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/frontend/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/expert-alliance/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/ai/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/rust-enterprise/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/graph/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/graph/requests/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/full-dimensional/00-README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/microservices/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/architecture/plugin/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/expert-alliance/scripts/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/normalization/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/normalization/business/BP-GOV-政务审批.md",
+      "count": 1
+    },
+    {
+      "file": "docs/enterprise/00-INDEX.md",
+      "count": 1
+    },
+    {
+      "file": "docs/specifications/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/specifications/tasks/README.md",
+      "count": 1
+    },
+    {
+      "file": "docs/docs-hub/README.md",
+      "count": 1
+    }
+  ],
+  "anchor_results": [
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/architecture/MOX-MODULE-COMPOSITION-v1.md",
+      "fragment": "模块边界",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/database/mox_sys/module-contract.md",
+      "fragment": "1-模块边界",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md",
+      "fragment": "architecture",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/api/LOWCODE-CONFIGURATION-CONTRACT.md",
+      "fragment": "contract",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/database/LOWCODE-CONFIGURATION-STORAGE.md",
+      "fragment": "ownership",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/architecture/frontend/LOWCODE-PAGE-RUNTIME.md",
+      "fragment": "runtime",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "fragment": "assembly",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/lowcode-dynamic-configuration.md",
+      "target": "docs/expert-alliance/19-lowcode-dynamic-configuration.md",
+      "fragment": "recipe",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "scope",
+      "pass": true
+    },
+    {
+      "source": "docs/api/LOWCODE-CONFIGURATION-CONTRACT.md",
+      "target": "docs/API-REGISTRY.md",
+      "fragment": "1-总览",
+      "pass": true
+    },
+    {
+      "source": "docs/api/LOWCODE-CONFIGURATION-CONTRACT.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/database/LOWCODE-CONFIGURATION-STORAGE.md",
+      "target": "docs/database/DATABASE-ARCHITECTURE.md",
+      "fragment": "1-存储分层总览",
+      "pass": true
+    },
+    {
+      "source": "docs/database/LOWCODE-CONFIGURATION-STORAGE.md",
+      "target": "docs/database/mox_sys/module-contract.md",
+      "fragment": "3-数据生命周期",
+      "pass": true
+    },
+    {
+      "source": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "dimensions",
+      "pass": true
+    },
+    {
+      "source": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "target": "docs/expert-alliance/13-end-to-end-business-flow.md",
+      "fragment": "一流程总览",
+      "pass": true
+    },
+    {
+      "source": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "target": "docs/expert-alliance/19-lowcode-dynamic-configuration.md",
+      "fragment": "recipe",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/19-lowcode-dynamic-configuration.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/19-lowcode-dynamic-configuration.md",
+      "target": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+      "fragment": "matching-20261001",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/46-低代码全维配置控制与运行边界-ADR-18.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "dimensions",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/46-低代码全维配置控制与运行边界-ADR-18.md",
+      "target": "docs/enterprise/45-专家联盟模块化归一与证据治理-ADR-17.md",
+      "fragment": "decision",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/46-低代码全维配置控制与运行边界-ADR-18.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "scope",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/standards/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/meta/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/meta/README.md",
+      "target": "docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md",
+      "fragment": "architecture",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/meta/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/meta/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/api/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/api/README.md",
+      "target": "docs/api/LOWCODE-CONFIGURATION-CONTRACT.md",
+      "fragment": "contract",
+      "pass": true
+    },
+    {
+      "source": "docs/api/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/api/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/database/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/database/README.md",
+      "target": "docs/database/LOWCODE-CONFIGURATION-STORAGE.md",
+      "fragment": "ownership",
+      "pass": true
+    },
+    {
+      "source": "docs/database/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/database/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/database/mox_sys/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/database/mox_sys/README.md",
+      "target": "docs/database/LOWCODE-CONFIGURATION-STORAGE.md",
+      "fragment": "ownership",
+      "pass": true
+    },
+    {
+      "source": "docs/database/mox_sys/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/database/mox_sys/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/modules/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/modules/README.md",
+      "target": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "fragment": "assembly",
+      "pass": true
+    },
+    {
+      "source": "docs/modules/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/modules/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/frontend/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/frontend/README.md",
+      "target": "docs/architecture/frontend/LOWCODE-PAGE-RUNTIME.md",
+      "fragment": "runtime",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/frontend/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/frontend/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/README.md",
+      "target": "docs/expert-alliance/19-lowcode-dynamic-configuration.md",
+      "fragment": "recipe",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/ai/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/ai/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "dimensions",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/ai/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/ai/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/rust-enterprise/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/rust-enterprise/README.md",
+      "target": "docs/architecture/MOX-MODULE-COMPOSITION-v1.md",
+      "fragment": "模块边界",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/rust-enterprise/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/rust-enterprise/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/graph/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/graph/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "dimensions",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/graph/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/graph/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/graph/requests/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/graph/requests/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/graph/requests/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/graph/requests/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/full-dimensional/00-README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/full-dimensional/00-README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "acceptance",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/full-dimensional/00-README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/full-dimensional/00-README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/microservices/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/microservices/README.md",
+      "target": "docs/architecture/meta/05-LOWCODE-CONFIGURATION-PLANE.md",
+      "fragment": "architecture",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/microservices/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/microservices/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/plugin/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/plugin/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "dimensions",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/plugin/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/architecture/plugin/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/scripts/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/scripts/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "acceptance",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/scripts/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/expert-alliance/scripts/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/business/BP-GOV-政务审批.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/business/BP-GOV-政务审批.md",
+      "target": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "fragment": "assembly",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/business/BP-GOV-政务审批.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/normalization/business/BP-GOV-政务审批.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/00-INDEX.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/00-INDEX.md",
+      "target": "docs/enterprise/46-低代码全维配置控制与运行边界-ADR-18.md",
+      "fragment": "decision",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/00-INDEX.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/00-INDEX.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/00-INDEX.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "scope",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/00-INDEX.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/enterprise/00-INDEX.md",
+      "target": "docs/enterprise/46-低代码全维配置控制与运行边界-ADR-18.md",
+      "fragment": "decision",
+      "pass": true
+    },
+    {
+      "source": "docs/specifications/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/specifications/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "acceptance",
+      "pass": true
+    },
+    {
+      "source": "docs/specifications/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/specifications/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/specifications/tasks/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/specifications/tasks/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "progress",
+      "pass": true
+    },
+    {
+      "source": "docs/specifications/tasks/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/specifications/tasks/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    },
+    {
+      "source": "docs/docs-hub/README.md",
+      "target": "docs/standards/lowcode-dynamic-configuration.md",
+      "fragment": "model",
+      "pass": true
+    },
+    {
+      "source": "docs/docs-hub/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/docs-hub/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "directories",
+      "pass": true
+    },
+    {
+      "source": "docs/docs-hub/README.md",
+      "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
+      "fragment": "document-contract",
+      "pass": true
+    }
+  ]
+}

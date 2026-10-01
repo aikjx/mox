@@ -520,6 +520,7 @@ impl SimplePlanGenerator {
                 priority_score: 0.5,
                 performance_score: 1.0,
             },
+            weights: mox_alliance_common_proto::MatchingWeights::default(),
         }
     }
 
@@ -600,6 +601,7 @@ mod tests {
                 priority_score: 0.5,
                 performance_score: 0.9,
             },
+            weights: mox_alliance_common_proto::MatchingWeights::default(),
         }
     }
 

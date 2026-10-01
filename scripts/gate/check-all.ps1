@@ -10,7 +10,7 @@
    3) cargo clippy     workspace 静态检查（-D warnings）
    4) cargo test       workspace 单元测试（--lib --tests）
    5) 前端 build       前端构建（可选 --SkipFrontend；pnpm 优先）
-   6) 前端模块化门禁    FE-MOD-GOV-V1.0（element-plus 根导入/相对导入/barrel 冲突/命名/vite 配置/深路径）
+   6) 前端模块化门禁    FE-MOD-GOV-V1.0（element-plus 根导入/相对导入/barrel 冲突/命名/vite 配置/深路径）+ 时间/locale 口径闸门（无参 toLocaleString 棘轮/出口写法唯一性/locale pin/扫描集分母）
    7) 端口漂移校验      PORT-REGISTRY 权威源一致性
   任意一项失败即退出非零，并输出汇总表。
 
@@ -98,10 +98,16 @@ if (-not $SkipFrontend) {
     Add-Result "frontend build" 0 "skipped"
 }
 
-# 6) 前端模块化门禁（FE-MOD-GOV-V1.0，CI 同源）
+# 6) 前端模块化门禁（FE-MOD-GOV-V1.0，CI 同源）+ 时间/locale 口径闸门 + 脚本路径解析门禁（F33）
 Write-Host "`n[6/7] 前端模块化门禁"
 & python "scripts/gate/check-frontend-module.py"
 Add-Result "frontend-module gates" $LASTEXITCODE
+& python "scripts/gate/check-locale-format-outlets.py"
+Add-Result "locale-format outlets gate" $LASTEXITCODE
+& python "scripts/gate/check-script-paths.py" --selftest
+Add-Result "script-paths gate selftest" $LASTEXITCODE
+& python "scripts/gate/check-script-paths.py"
+Add-Result "script-paths gate" $LASTEXITCODE
 
 # 7) 端口漂移校验（PORT-REGISTRY 权威源）
 Write-Host "`n[7/7] 端口漂移校验"
