@@ -3,8 +3,8 @@
  * 职责：图谱数据加载、视口控制、布局切换、节点交互
  */
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getExpertGraph } from '@/api/experts.api.js'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { getExpertGraph } from '@/api'
 
 export function useGraphCanvas(expertColor) {
   const canvasRef = ref(null)

@@ -20,10 +20,11 @@ describe('模块治理体检（四要素台账）', () => {
     }
   })
 
-  it('注册表派生的导航项全部进图标侧栏（导航注册→挂载零漂移）', () => {
-    // 死链判定由 wiring.test.js 全量守护；此处守住「注册表 nav 项必须在 ICON_NAV_GROUPS 可见」
-    const missing = h.navDrift.iconMissingModulePages
-    expect(missing, `图标侧栏缺失注册表模块页: ${missing.join(', ')}`).toEqual([])
+  it('侧栏手写副本清零（导航全部由注册表 collectNav 派生）', () => {
+    // 硬不变量：MODULE_SIDEBAR_CONFIG 里不应再有手抄、非注册表派生的带 path 条目
+    expect(h.navDrift.handwritten, `仍有手写侧栏条目: ${h.navDrift.handwritten.map(i => i.path).join(', ')}`).toEqual([])
+    // 注册表 nav 项必须都挂载进对应侧栏
+    expect(h.navDrift.registeredNotMounted).toEqual([])
   })
 
   it('打印台账（人工核对与归档用）', () => {

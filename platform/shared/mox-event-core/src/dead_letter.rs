@@ -301,6 +301,7 @@ impl DeadLetterQueue {
     }
 
     /// 创建默认配置的死信队列
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Arc<Self> {
         Self::new(DeadLetterConfig::default(), RetryPolicy::default())
     }

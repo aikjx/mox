@@ -1,25 +1,56 @@
 /* ===== 璇玑信息知识图谱关联关系系统 · 深色三栏设计系统 ===== */
+/* 令牌归一规则（2026-09-25）：真值只写在「主题命名空间」里——`--bg-deep-sky`、`-surface`、
+   `-surface-2`、`-raised`、`-row-hover`、`-sidebar-*` 家族、`-input`，`--text-primary` 到
+   `quaternary`，`--border-ghost/soft/normal/focus`，`--brand-*`、`--accent`、`-*-50`、
+   `--radius-sm` 到 `2xl`；三套皮肤（dark、sky、cyberpunk）各自覆写这一套。
+   本文件其余名字一律写成 var() 别名，不再自带色值：换肤时它们自动跟着走。
+   新增表面色请加进主题命名空间并给三套皮肤各写值，别往别名层里塞硬编码——
+   `python scripts/gate/check-theme-tokens.py --check` 会拦裸用的未知名。
+   例外：`--radius`、`--radius-xs`、`--shadow` 家族与字体是几何/排印量，不随皮肤变。
+   写本文件的注释时切记：块注释内部一旦出现星号紧跟斜杠，注释会在那里提前闭合，
+   剩下的中文会变成非法选择器，浏览器于是整条 :root 规则都不吃——静态门禁读文本是查不出来的。 */
 :root {
-  /* ===== 原型设计令牌 ===== */
-  --bg-primary: #0f1117;
-  --bg-secondary: #161821;
-  --bg-tertiary: #1e2130;
-  --bg-card: #242838;
-  --bg-hover: #2a2f45;
-  --border: #2d3148;
-  --border-light: #3a3f5a;
+  /* ===== 外壳名 → 主题命名空间（别名层） ===== */
+  --bg-primary: var(--bg-deep-sky);
+  --bg-secondary: var(--bg-surface);
+  --bg-tertiary: var(--bg-surface-2);
+  --bg-card: var(--bg-raised);
+  /* 行/块悬停走专用的 -row-hover 档，不复用 -sidebar-hover：后者是侧栏那一列的悬停面，
+     sky 下它是深蓝 #075985，压在深蓝正文上只有 1.25:1。 */
+  --bg-hover: var(--bg-row-hover);
+  --border: var(--border-normal);
+  --border-light: var(--border-soft);
   --text-primary: #e8eaed;
-  --text-secondary: #9aa0b4;
-  --text-muted: #6b7280;
+  --text-secondary: #b6bccb;
+  --text-muted: var(--text-tertiary);
   --accent: #6366f1;
-  --accent-light: #818cf8;
-  --accent-dim: rgba(99,102,241,.15);
+  --accent-light: var(--brand-accent);
+  --accent-dim: var(--brand-50);
   --success: #10b981;
-  --success-dim: rgba(16,185,129,.15);
+  --success-dim: var(--success-50);
   --warning: #f59e0b;
-  --warning-dim: rgba(245,158,11,.15);
-  --danger: #ef4444;
-  --danger-dim: rgba(239,68,68,.15);
+  --warning-dim: var(--warning-50);
+  /* 危险色取 #f87171 而非 #ef4444：全仓 31 处 var(--danger) 里 23 处是 `color:`（正文级红字），
+     #ef4444 压在卡面上只有 3.89:1；theme-dark 与下面的 EP 块本来就各自写了 #f87171，此处归一。 */
+  --danger: #f87171;
+  --danger-dim: var(--danger-50);
+  /* 危险色此前一个令牌兼两份工：多数站点拿它当正文级红字，另有几处拿它当**底**压白字。
+     同一个值不可能两边都过 —— 默认皮肤下白字压 #f87171 只有 2.77:1（实测 IconSidebar 角标），
+     而把它换成压得住白字的深红，正文级红字又会跌破 AA。故拆档：--danger 专职文字与描边，
+     --danger-fill 专职色块底，--on-danger 是那块底上的字（霓虹皮肤保留身份色的办法是反过来把字改深）。 */
+  --danger-fill: #dc2626;
+  --on-danger: #ffffff;
+  /* success / warning 同罪：文字档 #10b981 与 #f59e0b 压白字只有 2.54 / 2.15:1，
+     而它们又要当色块底用（标签、状态片）。拆成 填充档 + 底上字 两档，规则同 danger。 */
+  --success-fill: #047857;
+  --on-success: #ffffff;
+  --warning-fill: #b45309;
+  --on-warning: #ffffff;
+  /* info 必须和 success/warning/danger 一样是**可换肤的档位**，不是外壳里的字面量。
+     原先外壳把 --el-color-info 直接写成 #60a5fa（深色外壳的取值），换到 sky 白皮下
+     el-tag type=info 的字就坐在 2.54:1 上（实测「候选专家 0 位」「本页在线」「内存态派生图」三处）。 */
+  --info: #60a5fa;
+  --info-50: rgba(96,165,250,.12);
   --pink: #ec4899;
   --cyan: #06b6d4;
   --purple: #a855f7;
@@ -29,14 +60,88 @@
   --shadow: 0 4px 20px rgba(0,0,0,.3);
   --shadow-lg: 0 10px 40px rgba(0,0,0,.4);
 
+  /* ===== 存量页影子名 → 外壳名（同一套值的第三个写法，实测 337 处裸用） =====
+     这些名字以前全仓没有任何定义，`var(--text-3)` 之类是"计算值时失效"，颜色全靠继承。
+     这里给它们接上别名层，页面不用改就跟着皮肤走；新代码请直接用外壳名，别再写影子名。 */
+  --text-1: var(--text-primary);
+  --text-2: var(--text-secondary);
+  --text-3: var(--text-tertiary);
+  --text-dim: var(--text-quaternary);
+  --text: var(--text-primary);
+  --bg-page: var(--bg-primary);
+  --bg-panel: var(--bg-secondary);
+  --bg-panel-2: var(--bg-tertiary);
+  --border-1: var(--border);
+  --brand-soft: var(--brand-50);
+  --brand-light: var(--brand-accent);
+  --brand-dark: var(--brand-700);
+  --warn: var(--warning);
+  --primary: var(--brand);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
   /* 品牌色（对齐原型） */
-  --brand: #6366f1;
+  /* --brand 的角色是**文字与描边**（和 --danger/--success 同一契约），不是身份色样本：
+     它压在卡面/自身淡染上必须过 AA。#6366f1 在默认皮下压淡染只有 2.90:1，抬起一档；
+     身份色样本仍留在坡道档 --brand-500/#6366f1，实心底留在 --brand-fill。 */
+  --brand: #93a3fd;
   --brand-500: #6366f1;
   --brand-600: #4f46e5;
   --brand-700: #4338ca;
   --brand-50: rgba(99,102,241,.12);
   --brand-100: rgba(99,102,241,.2);
-  --brand-accent: #818cf8;
+  /* 亮档也是文字档（--accent-light 是它的别名，实测 29 处当字用）：#818cf8 压淡染 4.34:1，差一点。 */
+  --brand-accent: #a5b4fc;
+
+  /* 品牌「填充档位」：凡是白字（或任意 on-brand 字）压在一个色块上的地方——主按钮、快捷新建、
+     头像、logo 方块、侧栏计数徽标——都只读这一对，不读 --brand-500/--accent。
+     理由是这两件事在数学上必须一起解：填充色要让字可读，而 --accent 在多数皮肤里是「亮/霓虹」档
+     （dark 的 #22d3ee 压白字只有 1.81:1，cyberpunk 的 #b14aff 只有 3.97:1，sky 的 #06b6d4 只有 2.43:1）。
+     霓虹档想保留霓虹感，就把字改成深色 —— cyberpunk 的 --on-brand 就是它自己的 --brand-50。 */
+  --brand-fill: #4f46e5;
+  --brand-fill-hover: #4338ca;
+  --on-brand: #ffffff;
+  /* accent 家此前只有文字档，没有填充档：把 --accent 直接当底用（角标、进度条、头像）时，
+     白字压在它身上四套皮肤全不过（实测 default 4.47 / dark 1.81 / sky 2.43 / cyberpunk 3.97）。
+     与 --brand-fill 同一拆法：填充档专职做底，--on-accent 是那块底上的字。
+     cyberpunk 的解仍是「身份色留在底上、把字改深」，不是把霓虹紫压暗。 */
+  --accent-fill: #4f46e5;
+  --on-accent: #ffffff;
+
+  /* 分类色板（图表系列、阶段标识、图例圆点）。存量实测这 8 个色值在 src/views 下被手抄了
+     八百多处（#6366f1 出现 133 次，#10b981 出现 73 次……），换肤一律覆写不到，这是第四次复发的
+     同一类病（语义色写在外壳字面量里）。真值收进主题命名空间，皮肤各自调档。
+     用途限制：分类色只做**描边、线、无字色块**。要往色块上压字，走 --x-fill 与 --on-x 那一对，
+     不要拿这里的档当底 —— 白字压 #10b981 只有 2.54:1。 */
+  --cat-1: #6366f1;
+  --cat-2: #06b6d4;
+  --cat-3: #10b981;
+  --cat-4: #f59e0b;
+  --cat-5: #8b5cf6;
+  --cat-6: #ec4899;
+  --cat-7: #0ea5e9;
+  --cat-8: #14b8a6;
+
+  /* 分类色的「压字」三档：把上面那句契约补全 —— 分类色要做色块底、底上要放字，就读这两档。
+     取档规则（不是手感，是量出来的）：--on-cat-n 先试白、再试本皮最深的那层表面，谁到 AA 用谁；
+     两个都不到的（默认皮只有 cat-1 / cat-5：白字压 #6366f1 = 4.47、压 #8b5cf6 = 4.23）
+     才把**底**压暗到够（−6% 一档，压到 ≥4.5 即停），字色档保持白。
+     底档凡是不必压的全是 `var(--cat-n)` 别名 —— 别名不是第二份色值真值。 */
+  --cat-1-fill: #5d60e3;
+  --cat-2-fill: var(--cat-2);
+  --cat-3-fill: var(--cat-3);
+  --cat-4-fill: var(--cat-4);
+  --cat-5-fill: #8356e7;
+  --cat-6-fill: var(--cat-6);
+  --cat-7-fill: var(--cat-7);
+  --cat-8-fill: var(--cat-8);
+  --on-cat-1: #ffffff;
+  --on-cat-2: var(--bg-primary);
+  --on-cat-3: var(--bg-primary);
+  --on-cat-4: var(--bg-primary);
+  --on-cat-5: #ffffff;
+  --on-cat-6: var(--bg-primary);
+  --on-cat-7: var(--bg-primary);
+  --on-cat-8: var(--bg-primary);
 
   /* 次级主色 */
   --accent-cyan: #06b6d4;
@@ -58,13 +163,17 @@
   --bg-sidebar: #161821;
   --bg-sidebar-active: rgba(99,102,241,.15);
   --bg-sidebar-hover: #2a2f45;
+  --bg-row-hover: #2a2f45;
   --bg-input: #242838;
   --bg-input-focus: #1e2130;
 
-  /* 文本四级灰度 */
-  --text-tertiary: #6b7280;
-  --text-quaternary: #4b5563;
-  --text-on-brand: #ffffff;
+  /* 文本四级灰度。外壳最亮的实心面是卡面/输入面 #242838 与悬停面 #2a2f45，后者上 AA(4.5:1)
+     要求前景亮度 ≥ .308 —— 再往下一档 #8b93a7（L=.291，实测 4.29:1）放不下，所以最暗一档停在
+     #9098ad（L=.314，4.58:1）。分家靠"抬"不靠"压"：secondary 从 L=.353 抬到 .502，
+     四级变成 .821 / .502 / .353 / .314，互不相同且每块实心面都过 AA。
+     四档互异由 scripts/gate/check-view-hex.py 的 TEXT TIER 判据钉住（层级差另有字号与字重承担）。 */
+  --text-tertiary: #9aa0b4;
+  --text-quaternary: #9098ad;
 
   /* 边界 */
   --border-ghost: rgba(148,163,184,.06);
@@ -116,20 +225,18 @@
   --el-color-primary-light-3: #a5b4fc;
   --el-color-primary-light-5: #c7d2fe;
   --el-color-primary-light-7: #e0e7ff;
-  --el-color-primary-light-8: #eef2ff;
-  --el-color-primary-light-9: #f5f3ff;
   --el-color-primary-dark-2: #6366f1;
-  --el-color-success: #34d399;
-  --el-color-warning: #fbbf24;
-  --el-color-danger: #f87171;
-  --el-color-info: #60a5fa;
+  --el-color-success: var(--success);
+  --el-color-warning: var(--warning);
+  --el-color-danger: var(--danger);
+  --el-color-info: var(--info);
   --el-bg-color: #161821;
   --el-bg-color-page: #0f1117;
   --el-bg-color-overlay: #242838;
   --el-text-color-primary: #e8eaed;
-  --el-text-color-regular: #9aa0b4;
-  --el-text-color-secondary: #6b7280;
-  --el-text-color-placeholder: #4b5563;
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-quaternary);
   --el-border-color: rgba(148,163,184,.16);
   --el-border-color-light: rgba(148,163,184,.1);
   --el-border-color-lighter: rgba(148,163,184,.06);
@@ -149,10 +256,53 @@
   --el-menu-hover-bg-color: rgba(99,102,241,.1);
   --el-menu-active-color: #818cf8;
 
+  /* EP 的 light-N 语义是「往白里混」，深色外壳下必须换成同色相的暗色淡染，
+     否则 el-tag / el-message 这类读变量的组件会带着近白底坐在深色卡面上。 */
+  --el-color-primary-light-9: rgba(129,140,248,.12);
+  --el-color-primary-light-8: rgba(129,140,248,.2);
+  --el-color-success-light-9: var(--success-50);
+  --el-color-success-light-8: rgba(52,211,153,.2);
+  --el-color-warning-light-9: var(--warning-50);
+  --el-color-warning-light-8: rgba(251,191,36,.2);
+  --el-color-danger-light-9: var(--danger-50);
+  --el-color-danger-light-8: var(--danger-dim);
+  --el-color-info-light-9: var(--info-50);
+  --el-color-info-light-8: rgba(96,165,250,.2);
+
+  /* theme-chalk 里 error 是与 danger 平行的一套字面量（alert、message、notification、check-tag、link、
+     tag 的 error 态读的是 --el-color-error 这一族），只覆写 danger 时 toast 依旧是 #f56c6c 压 #fef0f0，
+     实测 3.16:1。整族别名回 danger，语义红就只剩一个真值源。 */
+  --el-color-error: var(--el-color-danger);
+  --el-color-error-light-3: var(--el-color-danger-light-3);
+  --el-color-error-light-5: var(--el-color-danger-light-5);
+  --el-color-error-light-7: var(--el-color-danger-light-7);
+  --el-color-error-light-8: var(--el-color-danger-light-8);
+  --el-color-error-light-9: var(--el-color-danger-light-9);
+  --el-color-error-dark-2: var(--el-color-danger-dark-2);
+
+  /* EP 的「空白底」令牌在 theme-chalk 里被 28 个组件样式表读取（tag 的 effect=plain、默认与禁用态
+    button、card、popper、input、select、table、pagination、tree…），而 dist 里烤的是 #fff。
+    外壳补全了 fill-color 家族却漏了它，于是深色卡面上坐着一片白芯片与白按钮。 */
+  --el-fill-color-blank: var(--bg-raised);
+
   /* 英雄区渐变 */
   --hero-gradient: radial-gradient(ellipse at top, rgba(99,102,241,.08) 0%, transparent 50%),
                    radial-gradient(ellipse at bottom right, rgba(6,182,212,.06) 0%, transparent 50%);
 }
+
+/* ===== Element Plus 亮色态横幅 · 深色外壳覆写 =====
+ * 上面补的 light-N 只治得住"读变量"的组件。el-alert 的 .is-light 变体在 EP 的 dist CSS 里
+ * 把 #fef0f0 底与 #f56c6c 字烤成了字面量（实测改 --el-color-danger-light-9 后 background 不变），
+ * 于是降级横幅呈浅粉底压浅红字、对比度 2.61:1，只能显式覆写规则。
+ * 文字一律取 --text-primary / --text-secondary：语义交给底色与图标，切到 sky（浅底深字）主题时
+ * 不会出现「浅字压浅底」。 */
+.el-alert--error.is-light { background-color: var(--el-color-danger-light-9) }
+.el-alert--success.is-light { background-color: var(--el-color-success-light-9) }
+.el-alert--warning.is-light { background-color: var(--el-color-warning-light-9) }
+.el-alert--info.is-light { background-color: var(--el-color-info-light-9) }
+.el-alert.is-light,
+.el-alert.is-light .el-alert__title { color: var(--text-primary) }
+.el-alert.is-light .el-alert__description { color: var(--text-secondary) }
 
 * {
   box-sizing: border-box;
@@ -348,13 +498,29 @@ a {
 }
 
 /* ===== Element Plus 深度主题覆盖 ===== */
+/* 主按钮读品牌填充档位：EP 白字配 --accent(#6366f1) 只有 4.47:1、配 hover 的 --accent-light(#818cf8)
+   只有 2.98:1，禁用态更直接烤成 light-5 浅紫底压白字（实测 1.49:1）。
+   字色也跟着档位走（--on-brand），否则霓虹皮肤（cyberpunk 的 #00d4ff）只能靠把底压暗来迁就白字。 */
 .el-button--primary {
-  --el-button-bg-color: var(--accent) !important;
-  --el-button-border-color: var(--accent) !important;
-  --el-button-hover-bg-color: var(--accent-light) !important;
-  --el-button-hover-border-color: var(--accent-light) !important;
-  --el-button-active-bg-color: var(--brand-700) !important;
-  --el-button-active-border-color: var(--brand-700) !important;
+  --el-button-bg-color: var(--brand-fill) !important;
+  --el-button-border-color: var(--brand-fill) !important;
+  --el-button-hover-bg-color: var(--brand-fill-hover) !important;
+  --el-button-hover-border-color: var(--brand-fill-hover) !important;
+  --el-button-active-bg-color: var(--brand-fill-hover) !important;
+  --el-button-active-border-color: var(--brand-fill-hover) !important;
+  --el-button-disabled-bg-color: var(--bg-hover) !important;
+  --el-button-disabled-border-color: var(--border) !important;
+  --el-button-disabled-text-color: var(--text-quaternary) !important;
+}
+
+/* 字色这一对必须排除 link/text 两种形态：它们没有底（EP 的 .el-button.is-text 直接
+   `color: var(--el-button-text-color)`），压在页面底上而不是填充上。
+   这里曾把 !important 的字色写在 .el-button--primary 上，结果 cyberpunk 的"查看全部任务"
+   变成 #001a22 压 #142138（1.11:1）、sky 同处白压白（1.00:1）——档位用错了地方。 */
+.el-button--primary:not(.is-link):not(.is-text) {
+  --el-button-text-color: var(--on-brand) !important;
+  --el-button-hover-text-color: var(--on-brand) !important;
+  --el-button-active-text-color: var(--on-brand) !important;
 }
 
 .el-card {

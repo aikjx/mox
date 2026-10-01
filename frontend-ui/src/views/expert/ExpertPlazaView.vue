@@ -567,7 +567,7 @@
 
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {
   Search, Filter, Grid, Medal, Wallet, Sort, Trophy, ArrowRight,
   Calendar, User, ChatDotRound, Star, Timer, InfoFilled,
@@ -575,6 +575,7 @@ import {
   TrendCharts
 } from '@element-plus/icons-vue'
 import { getExperts, getExpert, getExpertsStats, getMyBookings, toggleExpertFavorite, createBooking, cancelBooking as apiCancelBooking, enterConsultRoom, joinExpertTeam, consultNow } from '@/api'
+import { EXPERT_TYPES, expertColor, expertEmoji, expertGradient } from '@/constants'
 
 // ===== 状态 =====
 const loading = ref(true)
@@ -599,23 +600,9 @@ const rankingTab = ref('consult')
 const reviewFilter = ref('all')
 
 // ===== 专家类型配置 =====
-const expertTypes = {
-  algorithm: { label: '算法专家', color: '#6366f1' },
-  architecture: { label: '架构专家', color: '#0891b2' },
-  data: { label: '数据专家', color: '#10b981' },
-  ai: { label: 'AI专家', color: '#ec4899' },
-  workflow: { label: '工作流专家', color: '#f59e0b' },
-  graph: { label: '知识图谱专家', color: '#06b6d4' },
-  security: { label: '安全专家', color: '#ef4444' },
-  performance: { label: '性能优化专家', color: '#14b8a6' },
-  monitor: { label: '可观测性专家', color: '#f97316' },
-  market: { label: '商业智能专家', color: '#f43f5e' },
-  mcp: { label: 'MCP协议专家', color: '#a855f7' },
-  automation: { label: '自动化专家', color: '#0ea5e9' },
-  requirement: { label: '需求工程专家', color: '#16a34a' },
-  fusion: { label: '融合专家', color: '#7c3aed' },
-  operator: { label: '算子系统专家', color: '#8b5cf6' }
-}
+const expertTypes = Object.fromEntries(
+  Object.entries(EXPERT_TYPES).map(([type, label]) => [type, { label, color: expertColor(type) }])
+)
 
 const levels = [
   { key: 'all', label: '全部' },
@@ -873,20 +860,9 @@ function processExperts(list) {
   })
 }
 
-function getEmojiByType(type) {
-  const map = {
-    algorithm: '🧠', architecture: '🏛️', data: '📊', ai: '🤖',
-    workflow: '⚙️', graph: '🕸️', security: '🔐', performance: '⚡',
-    monitor: '📈', market: '💼', mcp: '🔗', automation: '🤖',
-    requirement: '📋', fusion: '🎯', operator: '🧩'
-  }
-  return map[type] || '👤'
-}
+function getEmojiByType(type) { return expertEmoji(type) }
 
-function getGradientByType(type) {
-  const color = expertTypes[type]?.color || '#6366f1'
-  return `linear-gradient(135deg, ${color}, ${lightenColor(color, 20)})`
-}
+function getGradientByType(type) { return expertGradient(type) }
 
 function lightenColor(hex, percent) {
   const num = parseInt(hex.replace('#', ''), 16)
@@ -1197,8 +1173,8 @@ onMounted(async () => {
   color: var(--text-muted);
 }
 .view-tab.active .tab-count {
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 /* ===== 搜索行 ===== */
@@ -1520,7 +1496,7 @@ onMounted(async () => {
 .level-bronze { background: rgba(205, 127, 50, 0.2); color: #cd7f32; }
 .level-silver { background: rgba(192, 192, 192, 0.2); color: #c0c0c0; }
 .level-gold { background: rgba(255, 215, 0, 0.2); color: #ffd700; }
-.level-diamond { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
+.level-diamond { background: rgba(6, 182, 212, 0.2); color: var(--cat-2); }
 .level-master { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
 .type-tag {
   font-size: 11px;
@@ -1687,8 +1663,8 @@ onMounted(async () => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-fill);
+  color: var(--on-accent);
   display: grid;
   place-items: center;
   font-size: 14px;
@@ -1937,8 +1913,8 @@ onMounted(async () => {
   color: var(--text-secondary);
 }
 :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: var(--accent);
+  background: var(--accent-fill);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 </style>

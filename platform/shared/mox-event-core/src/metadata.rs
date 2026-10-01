@@ -33,6 +33,7 @@ impl EventId {
     }
 
     /// 从字符串创建事件 ID
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str<S: Into<String>>(id: S) -> Self {
         Self(id.into())
     }
@@ -104,6 +105,7 @@ impl TraceId {
     }
 
     /// 从字符串创建追踪 ID
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str<S: Into<String>>(id: S) -> Self {
         Self(id.into())
     }

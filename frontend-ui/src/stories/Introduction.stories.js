@@ -85,7 +85,7 @@ src/
 │   ├── market/      # 算子商城
 │   ├── operators/   # 算子中心
 │   ├── admin/       # 系统管理
-│   └── misc/        # 其他
+│   └── public/      # 游客/裸页面（登录族、门户、业务大厅、403）
 ├── composables/     # 组合式函数
 ├── stores/          # Pinia 状态管理
 ├── api/             # API 层（按领域拆分）

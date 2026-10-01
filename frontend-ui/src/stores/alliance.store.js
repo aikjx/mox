@@ -2,19 +2,22 @@
  * 专家联盟 Store
  *
  * 职责：
- * - 管理联盟分析的完整生命周期（idle → running → phases → done/error）
- * - 维护专家团队、观点、共识度、质量门禁结果
- * - 封装 SSE 连接与事件处理
+ * - 保存一次联盟分析的结果快照（专家、观点、共识度、质量门禁）
  * - 提供历史记录与持久化
+ *
+ * 注意（2026-09-27 归一化）：本 store 的运行面已停用 —— 它原先假设的「整流程流式端点」
+ * 在 Rust 侧从来不存在。执行链路一律走 modules/expert-alliance 的六模式协作契约；
+ * 阶段/审计口径的权威源是 modules/expert-alliance/contract/phases.js（Rust 投影），
+ * 本文件不再自建管线。
  *
  * 与 ai.store 的区别：
  * - ai.store: 通用 AI 对话，单助手/多助手聊天
- * - alliance.store: 专家联盟架构分析，6阶段管线，多专家辩论
+ * - alliance.store: 仅承载联盟分析的历史与结果快照
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useSSE, SSEState } from '@/composables/useSSE'
-import { ElMessage } from 'element-plus'
+import { PHASE_META as CONTRACT_PHASE_META } from '@/modules/expert-alliance/contract'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 // ===== 类型定义 =====
 
@@ -33,16 +36,27 @@ export const AlliancePhase = {
 
 /**
  * 阶段元数据
+ *
+ * 阶段集合与名称的唯一权威源是 Rust PHASE_NAMES，前端投影为模块契约
+ * contract/phases.js；本表只补展示用图标，标签一律取自契约，不再自带一份文案。
  */
-export const PHASE_META = {
-  [AlliancePhase.INTENT]: { label: '意图识别', icon: '🎯', color: '#6366f1' },
-  [AlliancePhase.TEAM]: { label: '组队匹配', icon: '👥', color: '#06b6d4' },
-  [AlliancePhase.DEBATE]: { label: '专家辩论', icon: '💬', color: '#f59e0b' },
-  [AlliancePhase.SYNTHESIZE]: { label: '综合归纳', icon: '📝', color: '#10b981' },
-  [AlliancePhase.GATE]: { label: '质量门禁', icon: '🚦', color: '#ef4444' },
-  [AlliancePhase.LEARN]: { label: '知识学习', icon: '🧠', color: '#8b5cf6' },
-  [AlliancePhase.DONE]: { label: '完成', icon: '✅', color: '#10b981' },
+const PHASE_ICON = {
+  intent: '🎯',
+  team: '👥',
+  debate: '💬',
+  synthesize: '📝',
+  gate: '🚦',
+  learn: '🧠',
+  done: '✅',
 }
+
+export const PHASE_META = Object.freeze(Object.fromEntries(
+  Object.entries(CONTRACT_PHASE_META).map(([id, meta]) => [id, {
+    index: meta.index,
+    label: meta.label,
+    icon: PHASE_ICON[id] || '📌',
+  }])
+))
 
 /**
  * 质量等级
@@ -116,13 +130,9 @@ export const useAllianceStore = defineStore('alliance', () => {
   // 配置
   const config = ref({
     apiBase: '/api',
-    streamEndpoint: '/alliance/stream',
     maxRetries: 3,
     timeoutMs: 120000,
   })
-
-  // SSE 控制器（延迟初始化）
-  let sseController = null
 
   // ===== 计算属性 =====
 
@@ -177,10 +187,6 @@ export const useAllianceStore = defineStore('alliance', () => {
     learnResult.value = null
     events.value = []
     messages.value = []
-    if (sseController) {
-      sseController.disconnect()
-      sseController = null
-    }
   }
 
   /**
@@ -218,225 +224,13 @@ export const useAllianceStore = defineStore('alliance', () => {
       time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     })
 
-    // 构建 SSE 请求
-    const url = `${config.value.apiBase}${config.value.streamEndpoint}`
-    const body = {
-      query: currentQuery.value,
-      team_size: teamSize.value,
-      enable_llm_debate: enableLLMDebate.value,
-      session_id: sessionId.value,
-      context: {
-        project_id: ctx.project_id || null,
-        mode: ctx.mode || 'alliance',
-        ...ctx,
-      },
-    }
-
-    sseController = useSSE({
-      url,
-      method: 'POST',
-      body,
-      maxRetries: config.value.maxRetries,
-      timeoutMs: config.value.timeoutMs,
-      onEvent: handleSSEEvent,
-      onError: handleSSEError,
-      onOpen: () => {
-        console.log('[alliance] SSE connected')
-      },
-      onClose: () => {
-        if (runState.value === 'running') {
-          // 非正常关闭
-          finishAnalysis('error', new Error('SSE connection closed unexpectedly'))
-        }
-      },
-    })
-
-    try {
-      await sseController.connect()
-    } catch (e) {
-      finishAnalysis('error', e)
-    }
-  }
-
-  /**
-   * 处理 SSE 事件
-   */
-  function handleSSEEvent(event) {
-    events.value.push(event)
-
-    const { event: eventType, payload } = event
-    if (!payload) return
-
-    // 更新 trace_id
-    if (payload.trace_id && !traceId.value) {
-      traceId.value = payload.trace_id
-    }
-
-    switch (eventType) {
-      case 'phase_started':
-        handlePhaseStarted(payload)
-        break
-      case 'phase_data':
-        handlePhaseData(payload)
-        break
-      case 'progress':
-        handleProgress(payload)
-        break
-      case 'complete':
-        handleComplete(payload)
-        break
-      case 'error':
-        handleErrorEvent(payload)
-        break
-      default:
-        // 未知事件类型，记录但不处理
-        console.debug('[alliance] Unknown event:', eventType, payload)
-    }
-  }
-
-  /**
-   * 处理阶段开始
-   */
-  function handlePhaseStarted(payload) {
-    const phase = payload.phase
-    currentPhase.value = phase
-    phaseProgress.value[phase] = { current: 0, total: 0, message: '处理中...' }
-
-    const meta = PHASE_META[phase]
-    if (meta) {
-      messages.value.push({
-        id: genId('msg'),
-        role: 'system',
-        name: meta.label,
-        icon: meta.icon,
-        color: meta.color,
-        phase,
-        content: `开始${meta.label}...`,
-        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      })
-    }
-  }
-
-  /**
-   * 处理阶段数据
-   */
-  function handlePhaseData(payload) {
-    const phase = payload.phase
-    const data = payload.payload || payload
-
-    switch (phase) {
-      case AlliancePhase.INTENT:
-        intentResult.value = data
-        addPhaseMessage(phase, `意图分类：${data.intent || 'unknown'}（置信度 ${(data.confidence || 0).toFixed(2)}）`)
-        break
-
-      case AlliancePhase.TEAM:
-        teamResult.value = data
-        experts.value = data.experts || data.team || []
-        addPhaseMessage(phase, `已匹配 ${experts.value.length} 位专家：${experts.value.map(e => e.name || e.id || e).join('、')}`)
-        break
-
-      case AlliancePhase.DEBATE:
-        // 辩论阶段可能有多个专家观点
-        if (data.opinions) {
-          opinions.value = data.opinions
-        } else if (data.expert_id || data.expert_name) {
-          // 单个专家观点
-          const existing = opinions.value.findIndex(o =>
-            o.expert_id === data.expert_id || o.dimension === data.expert_type
-          )
-          const opinion = {
-            expert_id: data.expert_id || data.expert_type || 'unknown',
-            dimension: data.expert_type || data.expert_id || 'unknown',
-            answer: data.content || data.argument || data.answer || '',
-            score: data.score ?? 0.5,
-            confidence: data.confidence ?? 0.5,
-            latency_ms: data.latency_ms || 0,
-          }
-          if (existing >= 0) {
-            opinions.value[existing] = opinion
-          } else {
-            opinions.value.push(opinion)
-          }
-        }
-        if (data.consensus != null) {
-          consensus.value = data.consensus
-        }
-        if (data.debate_rounds != null) {
-          debateRounds.value = data.debate_rounds
-        }
-        break
-
-      case AlliancePhase.SYNTHESIZE:
-        synthesis.value = data.synthesis || data.summary || ''
-        synthesisReasoning.value = data.reasoning || data.synthesis_reasoning || ''
-        addPhaseMessage(phase, '综合归纳完成')
-        break
-
-      case AlliancePhase.GATE:
-        gateResult.value = {
-          grade: data.grade || data.gate_grade,
-          score: data.score || data.gate_score,
-          passed: data.passed ?? (data.grade !== 'D'),
-          dimensions: data.dimensions || {},
-        }
-        const gradeMeta = GRADE_META[gateResult.value.grade]
-        addPhaseMessage(phase, `质量门禁：${gradeMeta?.label || gateResult.value.grade}级（${(gateResult.value.score || 0).toFixed(2)}分）${gateResult.value.passed ? '，通过' : '，阻断'}`)
-        break
-
-      case AlliancePhase.LEARN:
-        learnResult.value = data
-        addPhaseMessage(phase, '知识学习完成')
-        break
-    }
-  }
-
-  /**
-   * 处理进度更新
-   */
-  function handleProgress(payload) {
-    const phase = payload.phase
-    if (phase && phaseProgress.value[phase]) {
-      phaseProgress.value[phase] = {
-        current: payload.current || 0,
-        total: payload.total || 0,
-        message: payload.message || '',
-      }
-    }
-  }
-
-  /**
-   * 处理完成事件
-   */
-  function handleComplete(payload) {
-    if (payload.final_answer || payload.result) {
-      synthesis.value = payload.final_answer || payload.result || synthesis.value
-    }
-    if (payload.gate_passed != null && gateResult.value) {
-      gateResult.value.passed = payload.gate_passed
-    }
-    if (payload.total_ms) {
-      endTime.value = startTime.value + payload.total_ms
-    }
-    finishAnalysis('done')
-  }
-
-  /**
-   * 处理错误事件
-   */
-  function handleErrorEvent(payload) {
-    const error = new Error(payload.message || payload.error || '未知错误')
-    addPhaseMessage('error', `错误：${error.message}`)
-    finishAnalysis('error', error)
-  }
-
-  /**
-   * 处理 SSE 错误
-   */
-  function handleSSEError(err) {
-    console.error('[alliance] SSE error:', err)
-    ElMessage.error(`联盟分析失败：${err.message}`)
-    finishAnalysis('error', err)
+    // 运行面已停用（2026-09-27 归一化）：本 store 原先假设的联盟整流程流式端点在 Rust 侧
+    // 从来不存在（模块 contract/endpoints.js 的 FORBIDDEN_ENDPOINTS 记着这条），
+    // 真接上只会得到一个 404 与卡在 running 的界面。协作请走 modules/expert-alliance
+    // 的六模式契约（/api/experts/*）；任务日志流是 /api/alliance/tasks/:id/logs/stream。
+    const reason = '联盟流式执行端点在后端不存在，本 store 的运行面已停用'
+    finishAnalysis('error', new Error(reason))
+    ElMessage.error(reason)
   }
 
   /**
@@ -471,38 +265,12 @@ export const useAllianceStore = defineStore('alliance', () => {
         time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
       })
     }
-
-    if (sseController) {
-      sseController.disconnect()
-      sseController = null
-    }
   }
 
   /**
-   * 添加阶段消息
-   */
-  function addPhaseMessage(phase, content) {
-    const meta = PHASE_META[phase] || { label: phase, icon: '📌', color: '#6b7280' }
-    messages.value.push({
-      id: genId('msg'),
-      role: 'assistant',
-      name: meta.label,
-      icon: meta.icon,
-      color: meta.color,
-      phase,
-      content,
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-    })
-  }
-
-  /**
-   * 停止分析
+   * 停止分析（运行面已停用，仅落终态）
    */
   function stopAnalysis() {
-    if (sseController) {
-      sseController.disconnect()
-      sseController = null
-    }
     finishAnalysis('error', new Error('用户手动停止'))
   }
 

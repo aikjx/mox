@@ -1,0 +1,368 @@
+===== /api/experts/* unique paths: 43 =====
+  /api/experts
+  /api/experts/:id
+  /api/experts/:id/consult
+  /api/experts/:id/consult-now
+  /api/experts/:id/favorite
+  /api/experts/:id/metrics
+  /api/experts/algorithm-analysis
+  /api/experts/bookings
+  /api/experts/bookings/:id/cancel
+  /api/experts/bookings/:id/consult-room
+  /api/experts/bookings/mine
+  /api/experts/capabilities
+  /api/experts/debate
+  /api/experts/dispatcher/config
+  /api/experts/dispatcher/consult
+  /api/experts/dispatcher/dispatch
+  /api/experts/dispatcher/multi-consult
+  /api/experts/dispatcher/reset-all
+  /api/experts/dispatcher/reset/:id
+  /api/experts/dispatcher/status
+  /api/experts/enterprise/analyze
+  /api/experts/enterprise/consult
+  /api/experts/intelligent-consult
+  /api/experts/metrics
+  /api/experts/multi-consult
+  /api/experts/orchestrate
+  /api/experts/orchestration/history
+  /api/experts/orchestration/plugins
+  /api/experts/orchestration/stats
+  /api/experts/overview
+  /api/experts/plan/execute
+  /api/experts/plan/generate
+  /api/experts/route
+  /api/experts/semantic-search
+  /api/experts/sessions
+  /api/experts/sessions/:id
+  /api/experts/sessions/:id/archive
+  /api/experts/sessions/:id/export
+  /api/experts/sessions/:id/messages
+  /api/experts/sessions/:id/similar-search
+  /api/experts/sessions/stats
+  /api/experts/stats
+  /api/experts/team
+
+===== /api/alliance/* unique paths: 20 =====
+  /api/alliance/experts/search
+  /api/alliance/runtime
+  /api/alliance/stats
+  /api/alliance/tasks
+  /api/alliance/tasks/:id
+  /api/alliance/tasks/:id/cancel
+  /api/alliance/tasks/:id/dag
+  /api/alliance/tasks/:id/execution-status
+  /api/alliance/tasks/:id/fusion
+  /api/alliance/tasks/:id/fusion-result
+  /api/alliance/tasks/:id/logs
+  /api/alliance/tasks/:id/logs/stream
+  /api/alliance/tasks/:id/nodes
+  /api/alliance/tasks/:id/nodes/:node_id
+  /api/alliance/tasks/:id/pause
+  /api/alliance/tasks/:id/plan
+  /api/alliance/tasks/:id/resume
+  /api/alliance/tasks/:id/retry
+  /api/alliance/tasks/:id/status
+  /api/alliance/tasks/:id/toggle-done
+
+===== /api/experts/* rows (method-level): 46 =====
+  actuator.rs:592  GET   /api/experts  [experts.registry.list]
+  actuator.rs:593  POST  /api/experts  [experts.registry.register]
+  actuator.rs:594  GET   /api/experts/capabilities  [experts.registry.capabilities]
+  actuator.rs:595  GET   /api/experts/metrics  [experts.registry.metrics]
+  actuator.rs:596  GET   /api/experts/overview  [experts.registry.overview]
+  actuator.rs:597  GET   /api/experts/stats  [experts.registry.stats]
+  actuator.rs:598  ANY   /api/experts/:id  [experts.registry.detail]
+  actuator.rs:599  GET   /api/experts/:id/metrics  [experts.registry.detail_metrics]
+  actuator.rs:600  GET   /api/experts/bookings/:id/consult-room  [experts.registry.consult_room]
+  actuator.rs:601  POST  /api/experts/team  [experts.registry.team]
+  actuator.rs:602  POST  /api/experts/:id/consult-now  [experts.registry.consult_now]
+  actuator.rs:603  POST  /api/experts/:id/consult  [experts.collab.consult]
+  actuator.rs:604  POST  /api/experts/multi-consult  [experts.collab.multi_consult]
+  actuator.rs:605  POST  /api/experts/debate  [experts.collab.debate]
+  actuator.rs:606  POST  /api/experts/route  [experts.collab.route]
+  actuator.rs:607  POST  /api/experts/intelligent-consult  [experts.collab.intelligent_consult]
+  actuator.rs:608  POST  /api/experts/algorithm-analysis  [experts.collab.algorithm_analysis]
+  actuator.rs:609  POST  /api/experts/enterprise/consult  [experts.collab.enterprise_consult]
+  actuator.rs:610  POST  /api/experts/enterprise/analyze  [experts.collab.enterprise_analyze]
+  actuator.rs:611  GET   /api/experts/dispatcher/config  [experts.dispatch.get_config]
+  actuator.rs:612  PUT   /api/experts/dispatcher/config  [experts.dispatch.update_config]
+  actuator.rs:613  GET   /api/experts/dispatcher/status  [experts.dispatch.status]
+  actuator.rs:614  POST  /api/experts/dispatcher/dispatch  [experts.dispatch.dispatch]
+  actuator.rs:615  POST  /api/experts/dispatcher/consult  [experts.dispatch.consult]
+  actuator.rs:616  POST  /api/experts/dispatcher/multi-consult  [experts.dispatch.multi_consult]
+  actuator.rs:617  POST  /api/experts/dispatcher/reset/:id  [experts.dispatch.reset]
+  actuator.rs:618  POST  /api/experts/dispatcher/reset-all  [experts.dispatch.reset_all]
+  actuator.rs:627  POST  /api/experts/orchestrate  [experts.orch.orchestrate]
+  actuator.rs:628  POST  /api/experts/plan/generate  [experts.orch.plan_generate]
+  actuator.rs:629  POST  /api/experts/plan/execute  [experts.orch.plan_execute]
+  actuator.rs:630  GET   /api/experts/orchestration/stats  [experts.orch.stats]
+  actuator.rs:631  GET   /api/experts/orchestration/plugins  [experts.orch.plugins]
+  actuator.rs:632  GET   /api/experts/orchestration/history  [experts.orch.history]
+  actuator.rs:633  GET   /api/experts/sessions/stats  [experts.session.stats]
+  actuator.rs:634  GET   /api/experts/sessions  [experts.session.list]
+  actuator.rs:635  POST  /api/experts/sessions  [experts.session.create]
+  actuator.rs:636  ANY   /api/experts/sessions/:id  [experts.session.detail]
+  actuator.rs:637  POST  /api/experts/sessions/:id/messages  [experts.session.messages]
+  actuator.rs:638  POST  /api/experts/sessions/:id/similar-search  [experts.session.similar_search]
+  actuator.rs:639  GET   /api/experts/sessions/:id/export  [experts.session.export]
+  actuator.rs:640  POST  /api/experts/sessions/:id/archive  [experts.session.archive]
+  actuator.rs:641  POST  /api/experts/semantic-search  [experts.session.semantic_search]
+  actuator.rs:642  GET   /api/experts/bookings/mine  [experts.ext.bookings_mine]
+  actuator.rs:643  POST  /api/experts/:id/favorite  [experts.ext.favorite]
+  actuator.rs:644  POST  /api/experts/bookings  [experts.ext.bookings_create]
+  actuator.rs:645  PUT   /api/experts/bookings/:id/cancel  [experts.ext.bookings_cancel]
+
+===== /api/alliance/* rows (method-level): 20 =====
+  actuator.rs:518  GET   /api/alliance/runtime  [alliance.runtime]
+  actuator.rs:519  ANY   /api/alliance/tasks  [alliance.tasks.list]
+  actuator.rs:520  ANY   /api/alliance/tasks/:id  [alliance.tasks.detail]
+  actuator.rs:521  POST  /api/alliance/tasks/:id/pause  [alliance.tasks.pause]
+  actuator.rs:522  POST  /api/alliance/tasks/:id/resume  [alliance.tasks.resume]
+  actuator.rs:523  POST  /api/alliance/tasks/:id/cancel  [alliance.tasks.cancel]
+  actuator.rs:524  POST  /api/alliance/tasks/:id/retry  [alliance.tasks.retry]
+  actuator.rs:525  POST  /api/alliance/experts/search  [alliance.experts.search]
+  actuator.rs:526  GET   /api/alliance/tasks/:id/execution-status  [alliance.tasks.execution_status]
+  actuator.rs:527  GET   /api/alliance/tasks/:id/nodes  [alliance.tasks.nodes]
+  actuator.rs:528  ANY   /api/alliance/tasks/:id/nodes/:node_id  [alliance.tasks.node]
+  actuator.rs:529  GET   /api/alliance/tasks/:id/logs  [alliance.tasks.logs]
+  actuator.rs:530  GET   /api/alliance/tasks/:id/logs/stream  [alliance.tasks.logs_stream]
+  actuator.rs:531  GET   /api/alliance/tasks/:id/fusion-result  [alliance.tasks.fusion]
+  actuator.rs:532  GET   /api/alliance/tasks/:id/fusion  [alliance.tasks.fusion_alias]
+  actuator.rs:533  GET   /api/alliance/tasks/:id/dag  [alliance.tasks.dag]
+  actuator.rs:534  PUT   /api/alliance/tasks/:id/toggle-done  [alliance.tasks.toggle_done]
+  actuator.rs:535  GET   /api/alliance/tasks/:id/status  [alliance.tasks.status_poll]
+  actuator.rs:536  GET   /api/alliance/tasks/:id/plan  [alliance.tasks.plan]
+  actuator.rs:537  GET   /api/alliance/stats  [alliance.stats]
+
+
+===== experts_common.rs 450-480 (shared state fields) =====
+450: // =====================================================================
+451: // 六、共享状态：专家注册中心（全域共享，Arc<Mutex<>>）
+452: // =====================================================================
+453: 
+454: /// 专家联盟全域共享状态
+455: #[derive(Clone)]
+456: pub struct ExpertsSharedState {
+457:     /// 专家注册表（ID -> ExpertDescriptor）
+458:     pub registry: Arc<Mutex<HashMap<String, ExpertDescriptor>>>,
+459:     /// 会话存储（ID -> ExpertSession）
+460:     pub sessions: Arc<Mutex<HashMap<String, ExpertSession>>>,
+461:     /// 调度配置
+462:     pub dispatcher_config: Arc<Mutex<DispatcherConfig>>,
+463:     /// 调度记录
+464:     pub dispatch_records: Arc<Mutex<Vec<DispatchRecord>>>,
+465:     /// 能力图谱
+466:     pub graph: Arc<Mutex<ExpertGraph>>,
+467:     /// 编排计划
+468:     pub plans: Arc<Mutex<HashMap<String, CollaborationPlan>>>,
+469:     /// 编排执行历史
+470:     pub orchestration_history: Arc<Mutex<Vec<OrchestrationRecord>>>,
+471:     /// 收藏集（专家ID集合）
+472:     pub favorites: Arc<Mutex<std::collections::HashSet<String>>>,
+473:     /// 审计上下文（专家写操作审计留痕：注册/编辑/禁用/咨询/会话）
+474:     pub audit: Arc<AuditContext>,
+475: }
+476: 
+477: impl ExpertsSharedState {
+478:     pub fn new() -> Self {
+479:         // 启动期一次性迁移：历史 JSON（data/experts_*.json）→ SQLite（data/experts.db）
+480:         // 幂等：SQLite 已有数据则跳过导入；JSON 解析失败则保留原文件不归档
+
+===== experts_common.rs favorites/plans/orchestration_history =====
+468:     pub plans: Arc<Mutex<HashMap<String, CollaborationPlan>>>,
+470:     pub orchestration_history: Arc<Mutex<Vec<OrchestrationRecord>>>,
+472:     pub favorites: Arc<Mutex<std::collections::HashSet<String>>>,
+508:             plans: Arc::new(Mutex::new(HashMap::new())),
+509:             orchestration_history: Arc::new(Mutex::new(Vec::new())),
+510:             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+834:     let a_bigrams: std::collections::HashSet<String> = a_lower
+840:     let b_bigrams: std::collections::HashSet<String> = b_lower
+960:             plans: Arc::new(Mutex::new(HashMap::new())),
+961:             orchestration_history: Arc::new(Mutex::new(Vec::new())),
+962:             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+997:             plans: Arc::new(Mutex::new(HashMap::new())),
+998:             orchestration_history: Arc::new(Mutex::new(Vec::new())),
+999:             favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+
+===== ha.rs reconcile/orphan/leader loop =====
+4: //! 调度器多活（HA）运行面：租约选主 + 只在 leader 上跑的周期对账。
+7: //! 唯一需要单点的是 [`reconcile_active_tasks`]：它扫全表并逐条向执行器求证，
+13: //! MOX_ALLIANCE_HA_MODE=on                   # 开启租约选主与 leader 对账
+14: //! MOX_ALLIANCE_HA_LEASE_MS=10000            # 租约时长；接管时延上界
+15: //! MOX_ALLIANCE_HA_TICK_MS=3000              # 竞选/续约/对账节奏（默认 lease/3）
+16: //! MOX_ALLIANCE_HA_STALL_MS=300000           # 孤儿判定的静默窗口
+22: //! 领导权的权威源若与任务状态的权威源分离，就会出现"副本自认 leader，
+31: //! - 接管时延上界 = `lease`。分区/长停顿的旧 leader 由 fencing 任期兜底
+32: //!   （见 [`leadership`](mox_alliance_scheduler_core::leadership) 模块文档）。
+34: //!   running 任务改写成 interrupted）；异常态收敛改由 leader 的
+35: //!   `TaskSchedulerImpl::reconcile_active_tasks` 逐条向执行器求证完成。
+36: //!   全副本同时宕机时，遗留 running 任务要等一轮对账才可见地转 Failed。
+56:     /// 租约时长：leader 停止续约后，standby 最迟在此时间后接管。
+58:     /// 竞选/续约/对账节奏（应显著小于 `lease`，否则一次抖动就丢主）。
+60:     /// 静默窗口：执行器明确"不认识"且超过此时长无进展的任务才判为孤儿。
+61:     pub stall: Duration,
+83:         let stall_ms = lookup_ms(&get, "MOX_ALLIANCE_HA_STALL_MS", 300_000);
+90:             stall: Duration::from_millis(stall_ms),
+108:             !self.stall.is_zero(),
+126: /// 仅测试用：把选主状态机挂到进程内存的仲裁点上，验证接管逻辑而不依赖 SQLite 文件。
+152:         stall_ms = cfg.stall.as_millis(),
+154:         "调度器 HA 启用：租约选主 + leader 专属对账"
+167:         let stall = cfg.stall;
+170:         let mut was_leader = false;
+187:             if view.leader != was_leader {
+189:                     leader = view.leader,
+194:                 was_leader = view.leader;
+196:             if !view.leader {
+200:             match scheduler.reconcile_active_tasks(stall, chrono::Utc::now()).await {
+203:                     // 租约选主只保证互斥、不保证旧 leader 那一轮不跑完，故这里只观测不追回
+204:                     // （对账写本身幂等，双跑不产生错误状态）。
+205:                     let fenced_out = !lock(&elector).leadership().accepts(view.epoch);
+215:                             "HA 对账一轮完成"
+219:                 Err(e) => warn!("HA 对账失败（下一轮重试）: {e}"),
+225: /// 主动让位：进程收尾时调用，standby 因此不必等满一个租约周期才能接管。
+230:     if !guard.leadership().leader {
+234:         Ok(()) => info!("调度器 HA 已让位：standby 可立即接管"),
+239: /// `GET /leadership` 的响应体：本副本视角 + 仲裁点权威快照。
+242:     let view = guard.leadership();
+246:         "is_leader": view.leader,
+285:         assert_eq!(cfg.stall, Duration::from_millis(300_000));
+305:         assert!(cfg.validate().is_err(), "tick×2 >= lease 与 stall=0 都必须拒绝启动");
+322:         // 两个副本共用一个仲裁点：同域内只允许一个 leader；让位后 standby 立即接管且任期 +1。
+330:         assert!(la.leader && !lb.leader, "同域内只允许一个 leader");
+332:         assert!(!lb.accepts(la.epoch), "standby 不得接受任何任期——否则双主各自写状态");
+335:         // leader 让位 → standby 下一步即接管，无需等租约到期。
+338:         assert!(after.leader);
+339:         assert!(after.epoch > lb.epoch, "接管必须带来更高的任期");
+340:         assert!(!lock(&ea).leadership().accepts(after.epoch), "让位后的旧副本不得再接受新任期");
+344:     async fn reconcile_polls_the_executor_only_on_the_leader() {
+349:             stall: Duration::from_millis(60_000),
+357:         assert!(lock(&ea).step().unwrap().leader, "先让 a 抢到主");
+367:         let leader_polls = bridge_a.polls();
+368:         assert!(leader_polls > 0, "leader 应周期性向执行器求证（轮询 0 次说明对账没跑）");
+375:         // leader 把执行器回报的进度写回了任务；standby 的种子任务原封不动。
+378:         assert!(progress_of(&repo_a, task_a) > 0.0, "leader 应回填进度");
+383:     /// 对账语义本身由 core 的 reconcile 测试覆盖。
+447:     /// 调度器 + 仓库里一条正在跑的活跃任务（standby 与 leader 用同一份种子）。
+493:     async fn spawned_loop_keeps_service_alive_as_leader() {
+498:             stall: Duration::from_millis(50),
+504:         assert!(lock(&elector).leadership().leader, "首个副本应稳定持有领导权");
+505:         assert!(!task.is_finished(), "后台循环不得因一轮对账就退出");
+515:             stall: Duration::from_millis(60_000),
+523:         assert_eq!(before["is_leader"], false, "未竞选前不得自称 leader");
+529:         assert_eq!(after["is_leader"], true);
+534:             "leader 必须暴露租约到期时刻：运维据此判断接管上界"
+539:     /// 两个副本（两条连接，等价两个进程）收敛为一个 leader，leader 消失后对端接管。
+541:     async fn start_on_sqlite_elects_one_leader_and_takes_over() {
+549:             stall: Duration::from_millis(60_000),
+556:         wait_until(|| lock(&ea).leadership().leader || lock(&eb).leadership().leader).await;
+557:         let (va, vb) = (lock(&ea).leadership(), lock(&eb).leadership());
+558:         assert!(!(va.leader && vb.leader), "同一租约域内出现双主即故障：va={va:?} vb={vb:?}");
+559:         assert!(va.leader || vb.leader, "周期职责必须有人承担：va={va:?} vb={vb:?}");
+561:         // 模拟 leader 进程消失：abort 后台循环但不让位，对端只能靠租约到期接管。
+563:             if va.leader { (ta, eb.clone(), va) } else { (tb, ea.clone(), vb) };
+565:         wait_until(|| lock(&alive).leadership().leader).await;
+566:         let taken = lock(&alive).leadership();
+569:             "接管必须抬高任期，让旧 leader 的迟到写被 fencing 拒掉：{taken:?} vs {dead_view:?}"
+
+===== dispatcher.rs unwrap/expect (non-test) =====
+
+===== orchestration.rs .route( calls =====
+968:         .route("/api/experts/orchestrate", post(orchestrate))
+969:         .route("/api/experts/plan/generate", post(generate_plan_handler))
+970:         .route("/api/experts/plan/execute", post(execute_plan_handler))
+971:         .route("/api/experts/orchestration/stats", get(orchestration_stats))
+972:         .route("/api/experts/orchestration/plugins", get(orchestration_plugins))
+973:         .route("/api/experts/orchestration/history", get(orchestration_history))
+
+===== graph.rs .route( calls =====
+909:         .route("/api/expert-graph", get(get_graph))
+910:         .route("/api/expert-graph/stats", get(get_graph_stats))
+911:         .route("/api/expert-graph/neighbors/:id", get(get_neighbors))
+912:         .route("/api/expert-graph/collaborators/:id", get(get_collaborators))
+913:         .route("/api/expert-graph/path/:source/:target", get(get_path))
+914:         .route("/api/expert-graph/communities", get(get_communities))
+915:         .route("/api/expert-graph/optimal-team", post(post_optimal_team))
+916:         .route("/api/expert-graph/rebuild", post(post_rebuild))
+
+===== scheduler-core/metrics.rs (first 80 lines) =====
+1: // Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+2: // Licensed under the MIT License.
+3: 
+4: //! # 联盟可观测性指标（Metrics）
+5: //!
+6: //! 无锁原子计数器，覆盖匹配、LLM 调用、融合、DAG 执行四大维度。
+7: //! 基于 `std::sync::atomic`，无需外部依赖，可跨线程安全共享。
+8: 
+9: use std::sync::atomic::{AtomicU64, Ordering};
+10: 
+11: use serde::Serialize;
+12: 
+13: /// 联盟系统全局指标收集器
+14: ///
+15: /// 所有字段均为原子计数器，支持并发无锁更新。
+16: /// 典型用法：将 `Arc<AllianceMetrics>` 注入调度器 / 匹配器 / 融合引擎。
+17: #[derive(Debug, Default)]
+18: pub struct AllianceMetrics {
+19:     // ── 专家匹配 ──────────────────────────────────────────────────────────
+20:     /// 匹配请求总数
+21:     pub match_requests: AtomicU64,
+22:     /// 匹配错误数
+23:     pub match_errors: AtomicU64,
+24:     /// 匹配延迟总和（微秒）
+25:     pub match_latency_us_sum: AtomicU64,
+26:     /// 匹配延迟计数
+27:     pub match_latency_us_count: AtomicU64,
+28: 
+29:     // ── LLM 调用 ──────────────────────────────────────────────────────────
+30:     /// LLM 调用总数
+31:     pub llm_calls: AtomicU64,
+32:     /// LLM 错误数
+33:     pub llm_errors: AtomicU64,
+34:     /// LLM 延迟总和（毫秒）
+35:     pub llm_latency_ms_sum: AtomicU64,
+36:     /// LLM 延迟计数
+37:     pub llm_latency_ms_count: AtomicU64,
+38: 
+39:     // ── 结果融合 ──────────────────────────────────────────────────────────
+40:     /// 融合调用总数
+41:     pub fusion_calls: AtomicU64,
+42:     /// 融合延迟总和（毫秒）
+43:     pub fusion_latency_ms_sum: AtomicU64,
+44:     /// 融合延迟计数
+45:     pub fusion_latency_ms_count: AtomicU64,
+46: 
+47:     // ── DAG 执行 ──────────────────────────────────────────────────────────
+48:     /// DAG 执行次数
+49:     pub dag_executions: AtomicU64,
+50:     /// DAG 节点执行总次数
+51:     pub dag_node_executions: AtomicU64,
+52: }
+53: 
+54: impl AllianceMetrics {
+55:     /// 创建一个全部归零的指标实例
+56:     pub fn new() -> Self {
+57:         Self::default()
+58:     }
+59: 
+60:     /// 记录一次专家匹配
+61:     ///
+62:     /// - `latency_us`: 匹配耗时（微秒）
+63:     /// - `success`: `true` 表示成功，`false` 计入错误
+64:     pub fn record_match(&self, latency_us: u64, success: bool) {
+65:         self.match_requests.fetch_add(1, Ordering::Relaxed);
+66:         if !success {
+67:             self.match_errors.fetch_add(1, Ordering::Relaxed);
+68:         }
+69:         self.match_latency_us_sum
+70:             .fetch_add(latency_us, Ordering::Relaxed);
+71:         self.match_latency_us_count.fetch_add(1, Ordering::Relaxed);
+72:     }
+73: 
+74:     /// 记录一次 LLM 调用
+75:     ///
+76:     /// - `latency_ms`: 调用耗时（毫秒）
+77:     /// - `success`: `true` 表示成功，`false` 计入错误
+78:     pub fn record_llm_call(&self, latency_ms: u64, success: bool) {
+79:         self.llm_calls.fetch_add(1, Ordering::Relaxed);
+80:         if !success {

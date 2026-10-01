@@ -147,9 +147,9 @@ import {
   Plus, Delete, User, CopyDocument, Refresh, Loading,
   Promotion, VideoPause
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { useAIStore } from '@/stores/ai.store'
-import { renderMarkdown } from '@/utils/markdown'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { useAIStore } from '@/stores'
+import { renderMarkdown } from '@/utils'
 
 const props = defineProps({
   mode: { type: String, default: 'full' }, // 'full' | 'compact'
@@ -237,6 +237,10 @@ watch(
 </script>
 
 <style scoped>
+/* 批次 5 裸色清扫：气泡/代码块/链接/打字指示/错误框/聚焦环原先写死「浅底深字」，只在浅皮成立。
+   底与字成对迁到 --x-dim（淡染底）/ --x（字与描边）/ --x-fill + --on-x（色块底与其上的字），
+   聚焦边框用 --brand-accent（半透明的 --border-focus 压在面板上只有 1.4–3.3:1，看不见），光晕用 --shadow-focus（四皮各有一套）。
+   迁后四皮逐对实测见 reports/markdown/module-governance.md。旧值不在此复述 —— 台账把注释里的字面量也计入。 */
 .ai-chat-panel {
   display: flex;
   flex-direction: column;
@@ -284,7 +288,7 @@ watch(
 
 .assistant-desc {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -333,7 +337,7 @@ watch(
 
 .empty-desc {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin: 0 0 20px;
   max-width: 320px;
 }
@@ -358,7 +362,7 @@ watch(
 
 .suggestion-chip:hover {
   background: var(--accent-dim);
-  color: #6366f1;
+  color: var(--brand-accent);
 }
 
 /* 消息列表 */
@@ -393,6 +397,7 @@ watch(
   font-size: 14px;
 }
 
+/* 底色来自 JS 里的 per-assistant 渐变色，不跟随皮肤 ⇒ 白字是正确配对，刻意保留字面色 */
 .msg-avatar.ai {
   color: #fff;
 }
@@ -420,7 +425,7 @@ watch(
 .msg-sender {
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-bottom: 3px;
   padding-left: 2px;
 }
@@ -434,8 +439,8 @@ watch(
 }
 
 .user-bubble {
-  background: #6366f1;
-  color: #fff;
+  background: var(--brand-fill);
+  color: var(--on-brand);
   border-bottom-right-radius: 3px;
 }
 
@@ -480,12 +485,12 @@ watch(
   border-radius: 3px;
   font-size: 12px;
   font-family: 'SF Mono', 'Fira Code', monospace;
-  color: #be123c;
+  color: var(--text-primary);
 }
 
 .ai-msg-body :deep(pre) {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   padding: 10px 14px;
   border-radius: 6px;
   overflow-x: auto;
@@ -494,13 +499,13 @@ watch(
 
 .ai-msg-body :deep(pre code) {
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text-primary);
   padding: 0;
   font-size: 12px;
 }
 
 .ai-msg-body :deep(a) {
-  color: #6366f1;
+  color: var(--brand-accent);
   text-decoration: none;
 }
 
@@ -509,10 +514,10 @@ watch(
 }
 
 .ai-msg-body :deep(blockquote) {
-  border-left: 3px solid #c7d2fe;
+  border-left: 3px solid var(--el-color-primary-light-5);
   margin: 6px 0;
   padding-left: 10px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .ai-msg-body :deep(table) {
@@ -544,7 +549,7 @@ watch(
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: var(--text-tertiary);
   animation: typing 1.4s infinite ease-in-out;
 }
 
@@ -570,8 +575,8 @@ watch(
 }
 
 .message-row.error .ai-bubble {
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: var(--danger);
+  background: var(--danger-dim);
 }
 
 /* 输入区 */
@@ -593,9 +598,9 @@ watch(
 }
 
 .input-wrap:focus-within {
-  border-color: #6366f1;
+  border-color: var(--brand-accent);
   background: var(--bg-card);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 .chat-input {
@@ -630,7 +635,7 @@ watch(
 .input-hint {
   text-align: center;
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: 6px;
 }
 

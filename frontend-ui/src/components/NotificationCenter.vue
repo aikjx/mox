@@ -79,7 +79,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Bell, Message, List, Warning, Check } from '@element-plus/icons-vue'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '@/api'
 
@@ -196,7 +196,7 @@ onMounted(() => {
 }
 .nc-trigger:hover {
   background: var(--brand-soft);
-  color: var(--brand-dark);
+  color: var(--brand);
 }
 .nc-icon {
   font-size: 18px;
@@ -260,8 +260,8 @@ onMounted(() => {
   padding: 0 5px;
   font-size: 10px;
   font-weight: 700;
-  background: var(--brand);
-  color: #fff;
+  background: var(--brand-fill);
+  color: var(--on-brand);
   border-radius: 9px;
 }
 
@@ -311,7 +311,7 @@ onMounted(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--brand);
+  background: var(--brand-fill); color: var(--on-brand);
   flex-shrink: 0;
 }
 .nc-item-desc {

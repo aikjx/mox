@@ -27,5 +27,8 @@ mox-flow-algo-alliance-core = { path = "../mox-flow-algo-alliance-core" }
 mox-flow-unified-storage-core = { path = "../mox-flow-unified-storage-core" }
 mox-flow-unified-meta-core = { path = "../mox-flow-unified-meta-core" }
 
+# 事件基础设施（归一化第①步：域事件桥接到共享总线权威）
+mox-event-core = { path = "../../../../shared/mox-event-core" }
+
 [lints]
 workspace = true

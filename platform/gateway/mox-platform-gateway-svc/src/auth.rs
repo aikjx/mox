@@ -37,12 +37,15 @@ pub struct AuthMiddleware {
     config: AuthConfig,
     /// In-memory API key store (key_hash -> user_id).
     api_keys: Arc<parking_lot::RwLock<std::collections::HashMap<String, String>>>,
+    /// 令牌黑名单 + 活跃会话注册表（P0-2 登出/踢人）。
+    pub(crate) blacklist: Arc<crate::token_blacklist::TokenBlacklist>,
 }
 
 impl AuthMiddleware {
     /// Create a new auth middleware with the given configuration.
     pub fn new(config: AuthConfig) -> Self {
         Self {
+            blacklist: Arc::new(crate::token_blacklist::TokenBlacklist::new()),
             config,
             api_keys: Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
         }
@@ -121,6 +124,17 @@ impl AuthMiddleware {
             .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
             .unwrap_or_default();
 
+        // P0-2：jti 命中黑名单即拒绝；验签成功登记活跃会话（供管理员列出/踢人）。
+        let jti = claims.get("jti").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        if !jti.is_empty() && self.blacklist.is_revoked(&jti) {
+            return None;
+        }
+        let exp_ts = claims.get("exp").and_then(|v| v.as_i64()).unwrap_or(0);
+        let sub = claims.get("sub").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        if !jti.is_empty() {
+            self.blacklist.record(&jti, &sub, exp_ts);
+        }
+
         Some(UserInfo {
             id: user_id,
             username: claims.get("username").and_then(|v| v.as_str()).unwrap_or("unknown").to_string(),
@@ -136,6 +150,16 @@ impl AuthMiddleware {
     pub fn validate_api_key(&self, api_key: &str) -> Option<String> {
         let hash = hash_api_key(api_key);
         self.api_keys.read().get(&hash).cloned()
+    }
+
+    /// P0-2：吊销指定会话（登出/管理员踢人）。
+    pub fn revoke_session(&self, jti: &str, exp: i64) {
+        self.blacklist.revoke(jti, exp);
+    }
+
+    /// P0-2：列出某用户活跃会话。
+    pub fn list_user_sessions(&self, sub: &str) -> Vec<crate::token_blacklist::SessionRec> {
+        self.blacklist.list_user_sessions(sub)
     }
 }
 
@@ -155,7 +179,7 @@ pub async fn auth_middleware(
         if let Some(token) = auth_str.strip_prefix("Bearer ") {
             // Only the documented loopback development token gets the development identity.
             // Arbitrary invalid tokens must fail even when development mode is enabled.
-            if auth.config.dev_mode && token == "dev-secret-token" {
+            if auth.config.dev_mode && !auth.config.disable_dev_token && token == "dev-secret-token" {
                 auth.validate_token(token).or_else(|| Some(UserInfo {
                     id: "dev-user".into(),
                     username: "dev-user".into(),

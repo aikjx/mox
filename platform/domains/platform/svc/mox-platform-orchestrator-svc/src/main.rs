@@ -58,6 +58,7 @@ use mox_api_protocol::{ApiResponse, api_ok, api_error};
 /// 统一 AI 查询：路由语义（静态→少参数→长路径优先）+ Node sidecar 客户端
 mod ai_router;
 mod api_standard;
+mod llm_persist;
 /// meta.codegen 出码闸门接线（出码必经 ⛨verify + 8 闸门 + I-05 双验收，与 /api/mox/publish 同链）
 mod codegen_gate;
 /// AI 自动化中枢：需求对话 → 蓝图/流程图/代码/测试/RBAC → 沙箱实跑异常自动修复 → 回写
@@ -352,23 +353,35 @@ async fn main() -> anyhow::Result<()> {
     // 初始化AI智能体
     let ai_agent = Arc::new(AIAgent::new());
 
-    // 启动时使用真实环境变量 DEEPSEEK_API_KEY 自动接入 DeepSeek LLM
-    if let Ok(deepseek_key) = std::env::var("DEEPSEEK_API_KEY") {
-        if !deepseek_key.is_empty() {
-            ai_agent
-                .configure_llm(mox_ai_agent_svc::LLMConfig {
-                    api_base: "https://api.deepseek.com/v1".to_string(),
-                    api_key: deepseek_key,
-                    model: "deepseek-chat".to_string(),
-                    temperature: 0.7,
-                    max_tokens: 2048,
-                    enabled: true,
-                })
-                .await;
-            tracing::info!("已通过 DEEPSEEK_API_KEY 启用真实 LLM 接入 (model=deepseek-chat)");
+    // LLM 配置启动加载：持久化文件优先（重启不丢）；无盘文件再回退 env DEEPSEEK_API_KEY
+    match llm_persist::load_persisted_llm_config() {
+        Some(cfg) => {
+            let has_key = !cfg.api_key.is_empty();
+            let model = cfg.model.clone();
+            ai_agent.configure_llm(cfg).await;
+            tracing::info!("已从持久化文件加载 LLM 配置 (model={}, has_api_key={})", model, has_key);
         }
-    } else {
-        tracing::info!("未检测到 DEEPSEEK_API_KEY，AI 对话将使用内置规则引擎（离线降级）");
+        None => {
+            if let Ok(deepseek_key) = std::env::var("DEEPSEEK_API_KEY") {
+                if !deepseek_key.is_empty() {
+                    ai_agent
+                        .configure_llm(mox_ai_agent_svc::LLMConfig {
+                            api_base: "https://api.deepseek.com/v1".to_string(),
+                            api_key: deepseek_key,
+                            model: "deepseek-chat".to_string(),
+                            temperature: 0.7,
+                            max_tokens: 2048,
+                            enabled: true,
+                        })
+                        .await;
+                    tracing::info!("已通过 DEEPSEEK_API_KEY 启用真实 LLM 接入 (model=deepseek-chat)");
+                } else {
+                    tracing::info!("未检测到 DEEPSEEK_API_KEY，AI 对话将使用内置规则引擎（离线降级）");
+                }
+            } else {
+                tracing::info!("未检测到 DEEPSEEK_API_KEY，AI 对话将使用内置规则引擎（离线降级）");
+            }
+        }
     }
 
     // 注册内置插件到AI插件总线
@@ -2278,13 +2291,11 @@ async fn update_llm_config(
         config.enabled = v;
     }
     client.update_config(config.clone());
-    api_ok(serde_json::json!({"success": true, "config": {
-        "api_base": config.api_base,
-        "model": config.model,
-        "temperature": config.temperature,
-        "enabled": config.enabled,
-        "has_api_key": !config.api_key.is_empty()
-    }}))
+    // 持久化落盘（重启不丢）；失败如实 500，不静默丢配置
+    if let Err(e) = llm_persist::persist_llm_config(&config) {
+        return api_error(500, format!("LLM 配置落盘失败: {e}"));
+    }
+    api_ok(serde_json::json!({"success": true, "persisted": true, "config": llm_persist::masked_view(&config)}))
 }
 
 async fn test_llm_connection(State(state): State<Arc<AppState>>) -> ApiResponse<serde_json::Value> {

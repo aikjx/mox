@@ -5,12 +5,12 @@
  * pageSchema 由路由 props 注入，模块级常量 markRaw，避免响应式代理开销。
  */
 import { computed, onMounted, markRaw } from 'vue'
-import DataTable from '@/components/common/DataTable.vue'
-import FormDialog from '@/components/common/FormDialog.vue'
-import SearchForm from '@/components/common/SearchForm.vue'
-import { useCrudPage } from '../composables/useCrudPage.js'
+import { DataTable } from '@/components'
+import { FormDialog } from '@/components'
+import { SearchForm } from '@/components'
+import { useCrudPage } from '@/modules/admin-lowcode/composables'
 import SchemaRenderer from './SchemaRenderer.vue'
-import { assertPageSchema } from '../contract/pageSchema.js'
+import { assertPageSchema } from '@/modules/admin-lowcode/contract'
 
 const props = defineProps({ pageSchema: { type: Object, required: true } })
 

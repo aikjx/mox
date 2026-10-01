@@ -15,7 +15,7 @@ import {
   setCurrentProject,
   ensureProjectContext,
   createAndSelect,
-} from '@/composables/projectContext.js'
+} from '@/composables'
 
 export const useProjectStore = defineStore('project', () => {
   // Getters（基于同一批 refs 派生）

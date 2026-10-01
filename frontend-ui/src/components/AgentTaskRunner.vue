@@ -84,8 +84,8 @@ const completedSteps = computed(() => props.steps.filter(s => s.status === 'done
 
 <style scoped>
 .agent-task-runner {
-  background: var(--bg-surface-2, #f8fafc);
-  border: 1px solid var(--border-soft, #e2e8f0);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 16px;
   margin: 8px 0;
@@ -107,8 +107,8 @@ const completedSteps = computed(() => props.steps.filter(s => s.status === 'done
   flex-shrink: 0;
 }
 .task-icon.running {
-  background: linear-gradient(135deg, var(--brand, #6366f1), var(--accent, #06b6d4));
-  color: #fff;
+  background: linear-gradient(135deg, var(--brand-fill), var(--accent-fill));
+  color: var(--on-brand);
 }
 .task-icon.done {
   background: linear-gradient(135deg, #10b981, #059669);
@@ -125,18 +125,18 @@ const completedSteps = computed(() => props.steps.filter(s => s.status === 'done
 .task-title {
   font-weight: 600;
   font-size: 14px;
-  color: var(--text-primary, #1e293b);
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 .task-status-text {
   font-size: 12px;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
 }
 .task-progress {
   font-size: 12px;
   font-weight: 600;
-  color: var(--brand, #6366f1);
-  background: var(--brand-50, #eef2ff);
+  color: var(--brand);
+  background: var(--brand-50);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -169,14 +169,14 @@ const completedSteps = computed(() => props.steps.filter(s => s.status === 'done
   z-index: 1;
 }
 .step-item.pending .step-dot {
-  background: var(--bg-surface, #fff);
-  border: 2px solid var(--border-soft, #e2e8f0);
-  color: var(--text-quaternary, #94a3b8);
+  background: var(--bg-surface);
+  border: 2px solid var(--border-soft);
+  color: var(--text-quaternary);
 }
 .step-item.running .step-dot {
-  background: var(--brand, #6366f1);
+  background: var(--brand);
   color: #fff;
-  box-shadow: 0 0 0 4px var(--brand-50, #eef2ff);
+  box-shadow: 0 0 0 4px var(--brand-50);
 }
 .step-item.done .step-dot {
   background: #10b981;
@@ -190,7 +190,7 @@ const completedSteps = computed(() => props.steps.filter(s => s.status === 'done
   flex: 1;
   width: 2px;
   min-height: 24px;
-  background: var(--border-soft, #e2e8f0);
+  background: var(--border-soft);
   margin: 4px 0;
 }
 .step-item.done .step-line {
@@ -208,11 +208,11 @@ const completedSteps = computed(() => props.steps.filter(s => s.status === 'done
 .step-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary, #1e293b);
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 .step-item.pending .step-title {
-  color: var(--text-quaternary, #94a3b8);
+  color: var(--text-quaternary);
   font-weight: 500;
 }
 .step-tool {
@@ -220,13 +220,13 @@ const completedSteps = computed(() => props.steps.filter(s => s.status === 'done
 }
 .step-detail {
   font-size: 12px;
-  color: var(--text-secondary, #475569);
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 4px;
 }
 .step-result {
-  background: var(--bg-surface, #fff);
-  border: 1px solid var(--border-ghost, #f1f5f9);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-ghost);
   border-radius: 8px;
   padding: 8px 10px;
   margin-top: 6px;
@@ -234,20 +234,20 @@ const completedSteps = computed(() => props.steps.filter(s => s.status === 'done
 .result-label {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
 }
 .result-content {
   font-size: 12px;
-  color: var(--text-secondary, #475569);
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 .step-error {
   font-size: 12px;
-  color: var(--danger, #ef4444);
-  background: var(--danger-50, #fef2f2);
+  color: var(--danger);
+  background: var(--danger-50);
   padding: 6px 10px;
   border-radius: 6px;
   margin-top: 4px;

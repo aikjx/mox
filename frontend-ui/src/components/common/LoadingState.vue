@@ -54,7 +54,7 @@ defineProps({
 }
 .loading-spinner.large { font-size: 40px; }
 .loading-spinner.pulse { animation: rotate 1.5s linear infinite, pulse 1.5s ease-in-out infinite; }
-.loading-text { margin-top: 12px; font-size: 14px; color: #909399; }
+.loading-text { margin-top: 12px; font-size: 14px; color: var(--text-tertiary); }
 .loading-text.large { font-size: 16px; }
 
 /* 骨架屏 */

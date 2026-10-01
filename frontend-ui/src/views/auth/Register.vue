@@ -114,9 +114,10 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { User, Lock, Message, OfficeBuilding, ArrowLeft } from '@element-plus/icons-vue'
-import authApi from '../../api/auth'
+import { register } from '@/api'
+const authApi = { register }
 
 const router = useRouter()
 
@@ -232,7 +233,7 @@ async function handleRegister() {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   text-decoration: none;
   font-size: 14px;
   margin-bottom: 16px;
@@ -251,7 +252,7 @@ async function handleRegister() {
 
 .form-subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
@@ -278,7 +279,7 @@ async function handleRegister() {
   text-align: center;
   margin-top: 24px;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .login-link {

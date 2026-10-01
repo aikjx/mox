@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专家联盟 · 企业级文档中心</title>
+<style>
+:root {
+  --primary: #1a5f9e;
+  --primary-dark: #124a7a;
+  --primary-light: #e8f0fa;
+  --accent: #0e8a7a;
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --border: #dfe6ef;
+  --text: #1f2d3d;
+  --muted: #6b7a90;
+  --ok: #4caf7d;
+  --warn: #e6a23c;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+}
+.hero {
+  background: linear-gradient(135deg, #0b2d4d 0%, #14507f 55%, #1a6fb0 100%);
+  color: #fff;
+  padding: 48px 0 40px;
+  margin-bottom: 32px;
+}
+.hero .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.hero .kicker { font-size: 12px; letter-spacing: 4px; opacity: 0.7; margin-bottom: 12px; }
+.hero h1 { font-size: 28px; margin-bottom: 12px; }
+.hero p { opacity: 0.88; font-size: 14px; max-width: 800px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+h2 {
+  font-size: 20px;
+  margin: 36px 0 16px;
+  color: var(--primary-dark);
+  border-left: 4px solid var(--primary);
+  padding-left: 12px;
+}
+.layer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.doc-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.doc-card:hover {
+  box-shadow: 0 6px 20px rgba(26, 95, 158, 0.1);
+  transform: translateY(-2px);
+}
+.doc-card .layer-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.tag-product { background: #fef0e6; color: #d46b08; }
+.tag-arch { background: var(--primary-light); color: var(--primary-dark); }
+.tag-business { background: #e6f7f5; color: var(--accent); }
+.tag-data { background: #f3e8ff; color: #7c3aed; }
+.tag-api { background: #fff7e6; color: #d48806; }
+.tag-ops { background: #f0f2f5; color: #595959; }
+.doc-card h3 { font-size: 16px; color: var(--primary-dark); margin-bottom: 8px; }
+.doc-card .desc { font-size: 13px; color: var(--muted); flex: 1; margin-bottom: 12px; }
+.doc-card .meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 12px;
+  border-top: 1px solid #f0f2f5;
+}
+.doc-card a { color: var(--primary); text-decoration: none; font-weight: 600; }
+.doc-card a:hover { text-decoration: underline; }
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-right: 4px;
+}
+.badge-ok { background: #e6f7ee; color: var(--ok); }
+.badge-plan { background: #fff7e6; color: var(--warn); }
+.footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="kicker">MOX PLATFORM · EXPERT ALLIANCE</div>
+    <h1>专家联盟 · 企业级文档中心</h1>
+    <p>多领域专家 Agent 自动协作引擎——任务提交 → 智能匹配 → DAG 编排 → 多专家执行 → 结果融合 → 记忆沉淀。六层文档体系，逐层落地，禁止模糊。</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+<h2>第一层 · 产品层（做什么）</h2>
+<div class="layer-grid">
+  <div class="doc-card">
+    <span class="layer-tag tag-product">P-01 产品需求</span>
+    <h3>产品需求文档（PRD）</h3>
+    <div class="desc">产品定位、核心功能清单、角色权限、关键业务参数、术语表。明确"系统是什么、为谁服务、解决什么问题"。</div>
+    <div class="meta">
+      <span><span class="badge badge-ok">已实现验证</span></span>
+      <a href="01-prd.md">查看文档 →</a>
+    </div>
+  </div>
+</div>
+
+<h2>第二层 · 架构层（怎么搭）</h2>
+<div class="layer-grid">
+  <div class="doc-card">
+    <span class="layer-tag tag-arch">A-01 总体架构</span>
+    <h3>系统总体架构</h3>
+    <div class="desc">六层分层架构、物理代码分布、服务拓扑、调用关系、技术选型、演进路线。Rust Workspace 16 crates 全景。</div>
+    <div class="meta">
+      <span><span class="badge badge-ok">已实现验证</span></span>
+      <a href="02-architecture.md">查看文档 →</a>
+    </div>
+  </div>
+</div>
+
+<h2>第三层 · 业务层（怎么跑）</h2>
+<div class="layer-grid">
+  <div class="doc-card">
+    <span class="layer-tag tag-business">B-01 业务流程</span>
+    <h3>业务处理流程</h3>
+    <div class="desc">端到端主流程、专家匹配流程、计划生成流程、DAG 执行流程、结果融合流程、异常处理、专家注册流程。7大核心流程全链路。</div>
+    <div class="meta">
+      <span><span class="badge badge-ok">已实现验证</span></span>
+      <a href="03-business-flow.md">查看文档 →</a>
+    </div>
+  </div>
+  <div class="doc-card">
+    <span class="layer-tag tag-business">B-02 状态机</span>
+    <h3>状态机与业务规则</h3>
+    <div class="desc">任务状态机、节点状态机、专家状态机、审批状态机。匹配评分权重、Dynamic 决策规则、融合策略、重试降级规则。</div>
+    <div class="meta">
+      <span><span class="badge badge-ok">已实现验证</span></span>
+      <a href="04-state-machine.md">查看文档 →</a>
+    </div>
+  </div>
+</div>
+
+<h2>第四层 · 数据层（存什么）</h2>
+<div class="layer-grid">
+  <div class="doc-card">
+    <span class="layer-tag tag-data">D-01 数据模型</span>
+    <h3>数据模型与字典</h3>
+    <div class="desc">Task / Node / CollaborationPlan / Expert 核心实体的完整字段定义。7种协作模式、9种融合策略、动态路由规则。</div>
+    <div class="meta">
+      <span><span class="badge badge-ok">已实现验证</span></span>
+      <a href="05-data-model.md">查看文档 →</a>
+    </div>
+  </div>
+</div>
+
+<h2>第五层 · 接口层（怎么调）</h2>
+<div class="layer-grid">
+  <div class="doc-card">
+    <span class="layer-tag tag-api">I-01 API规范</span>
+    <h3>API 接口规范</h3>
+    <div class="desc">50 个 REST API 端点清单：专家注册 / 协作编排 / 编排引擎 / 任务分发 / 知识图谱 / 会话管理 / 扩展功能。含请求示例。</div>
+    <div class="meta">
+      <span><span class="badge badge-ok">已实现验证</span></span>
+      <a href="06-api-spec.md">查看文档 →</a>
+    </div>
+  </div>
+</div>
+
+<h2>第六层 · 运维层（怎么部署）</h2>
+<div class="layer-grid">
+  <div class="doc-card">
+    <span class="layer-tag tag-ops">O-01 部署运维</span>
+    <h3>部署与运维架构</h3>
+    <div class="desc">4 个进程部署清单、本地开发启动、Docker Compose 配置、生产级演进路线、可观测性指标、配置参考。</div>
+    <div class="meta">
+      <span><span class="badge badge-plan">规划蓝图</span></span>
+      <a href="07-deployment.md">查看文档 →</a>
+    </div>
+  </div>
+</div>
+
+
+<h2>第七层 · 全维索引（前后端·测试·文档五维对应）</h2>
+<div class="layer-grid">
+  <div class="doc-card">
+    <span class="layer-tag tag-ops">M-01 全维矩阵</span>
+    <h3>专家联盟全维功能矩阵</h3>
+    <div class="desc">功能域 × 前端视图/组件 × store × api 方法 × 端点 × 后端 handler 源 × 测试 × 文档章节八维对齐；含规模统计与验证记录（vitest 22/22、门禁 E1-E7 ERROR=0）。</div>
+    <div class="meta">
+      <span><span class="badge badge-plan">权威索引</span></span>
+      <a href="08-function-matrix.md">查看文档 →</a>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p><strong>文档版本：</strong>v1.0.0 | <strong>对应系统版本：</strong>MOX Expert Alliance v3.0 | <strong>更新日期：</strong>2026-09-25</p>
+  <p style="margin-top:8px;">历史文档已归档至 <code>_archive/</code> 目录（v1/v2/v3 三代设计稿）</p>
+</div>
+
+</div>
+</body>
+</html>

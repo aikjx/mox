@@ -166,7 +166,7 @@ onMounted(() => {
   width: 36px;
 }
 .progress-dot.done {
-  background: #a5b4fc;
+  background: var(--el-color-primary-light-3);
 }
 
 .onboarding-content {

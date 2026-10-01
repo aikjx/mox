@@ -11,11 +11,10 @@
  * - 可组合：返回 ref + 方法，调用方按需解构
  */
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {
   getUnreadCount,
   getWorkspaceKpi,
-  getProjectMembers,
   getProjectPhases,
   getProjectFiles,
   uploadProjectFile,
@@ -23,7 +22,9 @@ import {
   getFileDownload,
   saveWhiteboard,
   getWorkspaceHistory
-} from '@/api/workspace.api.js'
+} from '@/api'
+import { getProjectMembers } from '@/api'
+import { normalizeProjectMembers } from '@/utils'
 
 // ========== 工具函数 ==========
 function unwrap(res) {
@@ -118,19 +119,7 @@ export function useWorkspaceData(currentProject) {
     try {
       const pid = currentProject?.value
       const res = await getProjectMembers(pid)
-      const list = unwrap(res)
-      if (Array.isArray(list) && list.length) {
-        collabMembers.value = list.map((m, idx) => ({
-          id: m.id || m.user_id || `member-${idx}`,
-          name: m.name || m.username || '成员',
-          avatar: m.avatar || (m.name ? m.name.charAt(0) : '👤'),
-          color: m.color || 'linear-gradient(135deg, #6366f1, #06b6d4)',
-          status: m.status || 'active',
-          role: m.role || (m.role === 'host' ? 'host' : 'expert')
-        }))
-      } else {
-        collabMembers.value = []
-      }
+      collabMembers.value = normalizeProjectMembers(unwrap(res))
     } catch (e) {
       console.warn('[workspace] 加载项目成员失败:', e?.message)
       membersError.value = e?.message || '项目成员加载失败'

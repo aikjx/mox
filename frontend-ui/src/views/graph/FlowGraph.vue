@@ -65,7 +65,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import * as echarts from '@/echarts'
 import { Share, Refresh, Connection, Warning } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { getGraph } from '@/api'
 import { NODE_TYPE_COLORS } from '@/types'
 
@@ -346,13 +346,13 @@ defineExpose({ reload, showTrace })
 }
 .placeholder.error .err-icon {
   font-size: 36px;
-  color: #f59e0b;
+  color: var(--cat-4);
   margin-bottom: 10px;
 }
 .placeholder.error .err-text {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #0f172a);
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 .placeholder.error .err-detail {

@@ -11,9 +11,8 @@
  * 使用方式：
  * ```js
  * const { connect, disconnect, isConnected, lastEvent, events } = useSSE({
- *   url: '/api/alliance/stream',
- *   method: 'POST',
- *   body: { query: '...' },
+ *   url: '/api/alliance/tasks/t-1/logs/stream',
+ *   method: 'GET',
  *   onEvent: (event) => console.log(event),
  *   onError: (err) => console.error(err),
  *   maxRetries: 3,

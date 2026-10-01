@@ -16,7 +16,7 @@
  * <el-button v-role-any="['admin', 'manager']">管理操作</el-button>
  */
 
-import { usePermissionStore } from '@/stores/permission.store'
+import { usePermissionStore } from '@/stores'
 
 /**
  * 检查权限并决定是否移除元素

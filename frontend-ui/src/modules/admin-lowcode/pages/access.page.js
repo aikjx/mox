@@ -4,7 +4,8 @@
  */
 import { markRaw, h } from 'vue'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { getApiKeys, createApiKey, revokeApiKey } from '@/api'
 
 // 后端行结构 { id,name,apiKey,status:"active"|"revoked",scopes,createdAt,lastUsed }

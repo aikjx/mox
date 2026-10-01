@@ -107,7 +107,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Promotion } from '@element-plus/icons-vue'
 import { mcpListTools, mcpCall } from '@/api'
 
@@ -218,9 +218,9 @@ onMounted(loadTools)
 <style scoped>
 .mcp { padding: 4px; }
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.section-title { font-size: 14px; font-weight: 700; color: var(--text, #1e293b); margin: 4px 0 12px; }
+.section-title { font-size: 14px; font-weight: 700; color: var(--text); margin: 4px 0 12px; }
 .kv { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px dashed #eef1f6; font-size: 13px; }
-.k { width: 80px; color: #94a3b8; flex-shrink: 0; }
+.k { width: 80px; color: var(--text-tertiary); flex-shrink: 0; }
 .v { color: var(--text-secondary); }
 .code { font-family: ui-monospace, monospace; background: var(--bg-tertiary); padding: 2px 6px; border-radius: 5px; font-size: 12px; }
 .mcp-alert { margin-top: 12px; }
@@ -229,10 +229,10 @@ onMounted(loadTools)
 .tool-filter { margin-bottom: 10px; }
 .tool-list { max-height: 360px; overflow: auto; }
 .tool-item { padding: 10px 12px; border: 1px solid #eef1f6; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: .15s; }
-.tool-item:hover { border-color: #c7d2fe; background: #fafbff; }
-.tool-item.active { border-color: #6366f1; background: var(--accent-dim); }
+.tool-item:hover { border-color: var(--el-color-primary-light-5); background: #fafbff; }
+.tool-item.active { border-color: var(--cat-1); background: var(--accent-dim); }
 .tool-name { font-size: 13px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
-.tool-desc { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+.tool-desc { font-size: 12px; color: var(--text-tertiary); margin-top: 3px; }
 .tool-tester { margin-top: 14px; border-top: 1px dashed #eef1f6; padding-top: 12px; }
 .code-block.result { background: #0f172a; max-height: 260px; }
 </style>

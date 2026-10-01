@@ -37,8 +37,8 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { ElMessage } from 'element-plus'
-import SessionSidebar from '@/components/SessionSidebar.vue'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { SessionSidebar } from '@/components'
 import ChatView from '@/views/ai/ChatView.vue'
 import FlowGraph from '@/views/graph/FlowGraph.vue'
 import { getStatus, executeFlow, getGraph, getFlows, createExpertSession, getExpertSessions } from '@/api'

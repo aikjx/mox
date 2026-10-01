@@ -233,14 +233,14 @@ fn verify_short_lived(secret: &str, token: &str) -> Option<Value> {
 // ======================== 请求体 ========================
 
 #[derive(Deserialize)]
-struct AuthReauthReq {
+pub struct AuthReauthReq {
     username: Option<String>,
     password: Option<String>,
     tenant_id: Option<String>,
 }
 
 #[derive(Deserialize)]
-struct ConfirmReq {
+pub struct ConfirmReq {
     username: Option<String>,
     password: Option<String>,
     code: Option<String>,
@@ -248,7 +248,7 @@ struct ConfirmReq {
 }
 
 #[derive(Deserialize)]
-pub(crate) struct VerifyReq {
+pub struct VerifyReq {
     mfa_token: Option<String>,
     code: Option<String>,
 }

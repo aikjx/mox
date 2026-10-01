@@ -3,7 +3,7 @@
  * 禁止运行时字符串模板编译；新增列类型只在这里注册一次，所有页面共享。
  */
 import { h } from 'vue'
-import { ElTag } from 'element-plus'
+import { ElTag } from 'element-plus/es/components/tag/index'
 
 function fmtTime(t) {
   if (!t) return '-'

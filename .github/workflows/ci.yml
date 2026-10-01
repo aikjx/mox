@@ -26,6 +26,17 @@ jobs:
           python scripts/doc/gen-api-registry.py
           git diff --exit-code -- docs/API-REGISTRY.md
 
+  frontend-module:
+    name: Frontend module governance gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run frontend module governance gates
+        run: python scripts/gate/check-frontend-module.py
+        # FE-MOD-GOV-V1.0 门禁：element-plus 根导入 / 跨目录相对导入 / barrel 冲突 /
+        # api·store 命名 / epSubpathResolver 在位；任何 ERROR 阻断合并。
+
   # ===========================================================================
   # 1.1 Rust 架构门禁 + core 层特性矩阵（模块化 / 归一化守卫）
   #     - 层级依赖 / 跨域 API / 无环 / core 零 IO / 跨 crate 符号去重

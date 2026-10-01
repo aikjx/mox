@@ -9,6 +9,8 @@ cargo build                 # 构建 workspace 默认 members
 cargo test                  # 运行单元测试（默认 members）
 cargo clippy --all-targets  # lint（CI 门禁，workspace.lints 已配置）
 python scripts/gate/verify-ports.py   # 端口漂移校验（CI 门禁）
+python scripts/gate/check-frontend-module.py  # 前端模块化门禁（CI 门禁；规范见 docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md）
+scripts/gate/check-all.ps1            # 一键质量检查（7 项：secret/fmt/clippy/test/前端构建/前端门禁/端口）
 docker-compose up -d --build     # 一键部署
 ./start.sh --dry-run             # 启动前预检
 scripts/startup/start-mox-enterprise.ps1 # 企业级四进程一键启动（编排器3001/联盟调度3100/执行3200/模块化网关3080）
@@ -22,7 +24,7 @@ python tools/alliance-demo/alliance_demo.py             # 专家联盟端到端�
 ## 架构速览
 
 - **6 层架构**：`platform/foundation` → `domains/*/api` → `domains/*/proto`（gRPC 契约）→ `domains/*/core`（纯计算）→ `domains/*/svc`（服务）→ `platform/gateway`（3080 唯一入口）。
-- **workspace 143 crates**，域驱动：kg / ai / flow / data / cloud / voice / market / alliance / kb / base / project / platform。
+- **workspace 149 crates**，域驱动：kg / ai / flow / data / cloud / voice / market / alliance / kb / base / project / platform。
 - 前端 `frontend-ui/`（Vite Vue3，dev 3020）；子项目在 `projects/`。
 - 旧 Python 版服务已归档至 `platform/legacy/`（**勿用**，Rust 为唯一实现）。
 
@@ -37,6 +39,6 @@ python tools/alliance-demo/alliance_demo.py             # 专家联盟端到端�
 
 ## 高频注意点
 
-- 修改 workspace 配置后 `cargo check` 以根 `Cargo.toml`（143 members）为准，缺失目录会导致构建失败。
+- 修改 workspace 配置后 `cargo check` 以根 `Cargo.toml`（149 members）为准，缺失目录会导致构建失败。
 - 共享报告资源改动会波及全部 `reports/html/*`，修改后运行引用校验（`src/href` 指向 `reports/_shared/` 必须可解析）。
 - Windows 下文本文件为 UTF-8（部分带 BOM）；PowerShell 读取中文显示乱码属正常显示问题，勿据此改写文件。

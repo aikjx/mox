@@ -8,7 +8,8 @@
  * - serverPagination: true：api.list({pageNum,pageSize,...filters})，返回 {list,total}
  */
 import { ref, shallowRef, reactive, computed, markRaw } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 function normalizeList(data) {
   if (Array.isArray(data)) return data

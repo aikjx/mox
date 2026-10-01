@@ -47,7 +47,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { WarningFilled, Warning, CircleCheckFilled, InfoFilled } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -110,7 +110,7 @@ function handleClosed() {
 .confirm-icon.info { color: #409eff; }
 .confirm-text { flex: 1; }
 .confirm-message { font-size: 14px; color: #303133; line-height: 1.6; }
-.confirm-description { font-size: 12px; color: #909399; margin-top: 8px; }
+.confirm-description { font-size: 12px; color: var(--text-tertiary); margin-top: 8px; }
 .confirm-input { margin-top: 16px; }
 .confirm-footer { display: flex; justify-content: flex-end; gap: 8px; }
 </style>

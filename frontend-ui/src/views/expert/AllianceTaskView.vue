@@ -287,10 +287,10 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Plus, VideoPlay, VideoPause, Close, Share, Document, MagicStick, ChatDotRound, User, Calendar, Timer, Clock, Search } from '@element-plus/icons-vue'
 import * as api from '@/api'
-import { useAllianceTasks, taskActions } from '@/composables/useAllianceTasks'
+import { useAllianceTasks, taskActions } from '@/composables'
 
 const taskState = useAllianceTasks(api)
 const { tasks, selectedTask, tasksLoading, tasksError, logs, fusionResult, dagNodesData, dagEdgesData,
@@ -574,7 +574,7 @@ onBeforeUnmount(dispose)
 }
 .progress-fill-mini {
   height: 100%;
-  background: var(--accent);
+  background: var(--accent-fill); color: var(--on-accent);
   border-radius: 2px;
   transition: width 0.3s;
 }
@@ -728,7 +728,7 @@ onBeforeUnmount(dispose)
   border-radius: 50%;
 }
 .legend-dot.pending { background: var(--text-muted); }
-.legend-dot.running { background: var(--accent); }
+.legend-dot.running { background: var(--accent-fill); color: var(--on-accent); }
 .legend-dot.completed { background: var(--success); }
 .legend-dot.failed { background: var(--danger); }
 
@@ -862,7 +862,7 @@ onBeforeUnmount(dispose)
   font-weight: 700;
   flex-shrink: 0;
 }
-.ai-msg.assistant .msg-avatar { background: var(--accent); color: #fff; }
+.ai-msg.assistant .msg-avatar { background: var(--accent-fill); color: var(--on-accent); }
 .ai-msg.user .msg-avatar { background: var(--success); color: #fff; }
 .msg-bubble {
   max-width: 80%;

@@ -4,7 +4,7 @@
  */
 import { markRaw } from 'vue'
 import { Plus, Refresh, RefreshRight } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {
   getConfigList, createConfig, updateConfig, deleteConfig, refreshConfigCache,
 } from '@/api'

@@ -141,8 +141,8 @@ import {
   Fold, Expand, Plus, Search, ArrowDown, QuestionFilled, Setting, SwitchButton
 } from '@element-plus/icons-vue'
 import { NAV_MODULES, NAV_GROUPS, QUICK_CREATE_COMMANDS, SUB_MODULES, HIDDEN_MODULES, MODULE_SIDEBAR_CONFIG } from '@/constants'
-import NotificationCenter from '@/components/NotificationCenter.vue'
-import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
+import { NotificationCenter } from '@/components'
+import { ThemeSwitcher } from '@/components'
 
 defineProps({
   collapsed: { type: Boolean, default: false },
@@ -166,7 +166,7 @@ const ALL_MODULES = computed(() => {
   Object.values(SUB_MODULES).forEach(subs => {
     subs.forEach(s => {
       if (!list.find(m => m.path === s.path)) {
-        list.push({ key: s.key, label: s.label, path: s.path, color: '#6366f1', bg: '#eef2ff' })
+        list.push({ key: s.key, label: s.label, path: s.path, color: 'var(--on-cat-1)', bg: 'var(--cat-1-fill)' })
       }
     })
   })
@@ -324,8 +324,8 @@ defineExpose({ focusSearch })
 .topbar {
   height: 52px;
   flex-shrink: 0;
-  background: var(--bg-secondary, #161821);
-  border-bottom: 1px solid var(--border, #2d3148);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -348,7 +348,7 @@ defineExpose({ focusSearch })
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-secondary, #9aa0b4);
+  color: var(--text-secondary, var(--text-tertiary));
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -358,8 +358,8 @@ defineExpose({ focusSearch })
 }
 
 .topbar-icon-btn:hover {
-  background: var(--bg-hover, #2a2f45);
-  color: var(--text-primary, #e8eaed);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 /* 自定义面包屑 */
@@ -374,21 +374,21 @@ defineExpose({ focusSearch })
 }
 
 .crumb-module {
-  color: var(--text-secondary, #9aa0b4);
+  color: var(--text-secondary, var(--text-tertiary));
   cursor: pointer;
   transition: color 0.15s;
 }
 .crumb-module:hover {
-  color: var(--accent-light, #818cf8);
+  color: var(--accent-light);
 }
 
 .crumb-sep {
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .crumb-current {
-  color: var(--text-primary, #e8eaed);
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -409,8 +409,8 @@ defineExpose({ focusSearch })
   padding: 0 10px;
   border-radius: 8px;
   width: 200px;
-  background: var(--bg-card, #242838);
-  border: 1px solid var(--border, #2d3148);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   transition: all 0.2s ease;
   cursor: text;
   position: relative;
@@ -419,12 +419,12 @@ defineExpose({ focusSearch })
 .global-search.focused,
 .global-search:hover {
   width: 320px;
-  border-color: var(--accent, #6366f1);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(99,102,241,.1);
 }
 
 .search-icon {
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   font-size: 15px;
 }
 
@@ -434,19 +434,19 @@ defineExpose({ focusSearch })
   border: 0;
   background: transparent;
   font-size: 13px;
-  color: var(--text-primary, #e8eaed);
+  color: var(--text-primary);
 }
 
 .search-input::placeholder {
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
 }
 
 .kbd {
   font-size: 10px;
   padding: 2px 6px;
-  background: var(--bg-tertiary, #1e2130);
-  color: var(--text-muted, #6b7280);
-  border: 1px solid var(--border, #2d3148);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
   border-radius: 4px;
   flex-shrink: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -458,8 +458,8 @@ defineExpose({ focusSearch })
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: var(--bg-secondary, #161821);
-  border: 1px solid var(--border, #2d3148);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: var(--shadow-lg, 0 10px 40px rgba(0,0,0,.4));
   max-height: 380px;
@@ -474,7 +474,7 @@ defineExpose({ focusSearch })
 .cmd-section-title {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   padding: 8px 10px 4px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -506,20 +506,20 @@ defineExpose({ focusSearch })
 }
 
 .cmd-body { flex: 1; min-width: 0; }
-.cmd-title { font-weight: 600; font-size: 13px; color: var(--text-primary, #e8eaed); }
-.cmd-desc { font-size: 11px; color: var(--text-muted, #6b7280); margin-top: 1px; }
-.cmd-action { font-size: 11px; color: var(--accent-light, #818cf8); font-weight: 600; flex-shrink: 0; }
+.cmd-title { font-weight: 600; font-size: 13px; color: var(--text-primary); }
+.cmd-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.cmd-action { font-size: 11px; color: var(--accent-light); font-weight: 600; flex-shrink: 0; }
 
 .cmd-empty {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px 10px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
-.cmd-empty .el-icon { color: var(--accent, #6366f1); }
+.cmd-empty .el-icon { color: var(--accent); }
 
 /* 快捷新建按钮 */
 .quick-create-btn {
@@ -528,12 +528,15 @@ defineExpose({ focusSearch })
   padding: 0 14px;
   font-weight: 500;
   font-size: 13px;
-  background: var(--accent, #6366f1) !important;
-  border-color: var(--accent, #6366f1) !important;
+  /* 原来是 var(--accent) 当底 + EP 的白字：dark 的 #22d3ee 压白字只有 1.81:1、
+     cyberpunk 的 #b14aff 只有 3.97:1、sky 的 #06b6d4 只有 2.43:1。填充与字色成对走档位。 */
+  background: var(--brand-fill) !important;
+  border-color: var(--brand-fill) !important;
+  color: var(--on-brand) !important;
 }
 .quick-create-btn:hover {
-  background: #5558e3 !important;
-  border-color: #5558e3 !important;
+  background: var(--brand-fill-hover) !important;
+  border-color: var(--brand-fill-hover) !important;
 }
 
 .qc-item {
@@ -543,9 +546,9 @@ defineExpose({ focusSearch })
   min-width: 200px;
 }
 
-.qc-item .el-icon { color: var(--accent-light, #818cf8); }
-.qc-label { flex: 1; font-weight: 500; font-size: 13px; color: var(--text-primary, #e8eaed); }
-.qc-tip { font-size: 11px; color: var(--text-muted, #6b7280); }
+.qc-item .el-icon { color: var(--accent-light); }
+.qc-label { flex: 1; font-weight: 500; font-size: 13px; color: var(--text-primary); }
+.qc-tip { font-size: 11px; color: var(--text-muted); }
 
 /* 用户菜单 */
 .user-menu {
@@ -558,30 +561,32 @@ defineExpose({ focusSearch })
 }
 
 .user-menu:hover {
-  background: var(--bg-hover, #2a2f45);
+  background: var(--bg-hover);
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #6366f1, #ec4899) !important;
+  /* 原来烤死 linear-gradient(#6366f1,#ec4899)：换肤不跟着变，且白字只有 4.47:1 */
+  background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-hover)) !important;
+  color: var(--on-brand) !important;
   font-weight: 700;
   font-size: 13px;
 }
 
 .user-dropdown-header {
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border, #2d3148);
+  border-bottom: 1px solid var(--border);
   margin-bottom: 4px;
 }
 
 .ud-name {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #e8eaed);
+  color: var(--text-primary);
 }
 
 .ud-role {
   font-size: 12px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 

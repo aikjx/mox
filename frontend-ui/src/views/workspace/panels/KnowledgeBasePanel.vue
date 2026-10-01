@@ -168,7 +168,7 @@ import {
   Search, ArrowLeft, ArrowRight, Folder, FolderOpened,
   Link, Document, Upload, Edit
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 const props = defineProps({
   collapsed: { type: Boolean, default: false },

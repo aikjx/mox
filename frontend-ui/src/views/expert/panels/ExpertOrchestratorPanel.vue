@@ -70,7 +70,7 @@
                     v-for="(step, idx) in currentPlan.steps"
                     :key="step.id"
                     :timestamp="`Step ${idx + 1}`"
-                    :color="'#' + (['67C23A','409EFF','E6A23C','F56C6C','909399'][idx % 5])"
+                    :color="`var(${stepDotTokens[idx % stepDotTokens.length]})`"
                   >
                     <div class="step-card">
                       <div class="step-desc">{{ step.description }}</div>
@@ -92,7 +92,7 @@
               </div>
               <div class="pipeline-guide">
                 <div v-for="p in pipelineInfo" :key="p.name" class="pipeline-card">
-                  <div class="pipeline-name" :style="{ color: p.color }">{{ p.label }}</div>
+                  <div class="pipeline-name" :style="{ color: `var(${p.token})` }">{{ p.label }}</div>
                   <div class="pipeline-steps">{{ p.steps }}</div>
                   <div class="pipeline-desc">{{ p.desc }}</div>
                 </div>
@@ -130,7 +130,7 @@
         <div class="plugins-list">
           <div v-for="plugin in plugins" :key="plugin.name" class="plugin-card">
             <div class="plugin-icon">
-              <el-icon :size="32" color="#409EFF"><Link /></el-icon>
+              <el-icon :size="32"><Link /></el-icon>
             </div>
             <div class="plugin-info">
               <div class="plugin-name">{{ plugin.name }}</div>
@@ -195,7 +195,7 @@
               <div class="status-dist">
                 <div v-for="(count, status) in stats?.byStatus" :key="status" class="status-bar-row">
                   <span class="status-name">{{ status }}</span>
-                  <el-progress :percentage="((count / (stats?.totalTurns || 1)) * 100).toFixed(0)" :color="status === 'success' ? '#67C23A' : '#F56C6C'" />
+                  <el-progress :percentage="((count / (stats?.totalTurns || 1)) * 100).toFixed(0)" :color="status === 'success' ? 'var(--success)' : 'var(--danger)'" />
                   <span class="status-count">{{ count }}</span>
                 </div>
               </div>
@@ -256,11 +256,11 @@ import { ref, computed, onMounted } from 'vue'
 import {
   Refresh, Promotion, Document, Link, CircleCheck, Timer, Grid, Lightning
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {
   expertOrchestrate, expertGeneratePlan,
   getOrchestrationStats, getOrchestrationPlugins, getOrchestrationHistory
-} from '@/api/index.js'
+} from '@/api'
 
 const loading = ref(false)
 const running = ref(false)
@@ -280,12 +280,15 @@ const plugins = ref([])
 const stats = ref(null)
 const history = ref([])
 
+// 两张表都只存档位名：色值真值在主题命名空间里，这里再抄一份十六进制就是第二份真值（换肤时静默失配）。
 const pipelineInfo = [
-  { name: 'standard', label: '标准流程', steps: '感知→记忆→规划→执行→反思→学习', desc: '完整的6步全流程，适合通用场景', color: '#409EFF' },
-  { name: 'plan_act', label: 'Plan/Act', steps: '感知→规划→记忆→执行→反思→学习', desc: '双模式执行，先生成计划再逐步执行', color: '#67C23A' },
-  { name: 'fast_path', label: '快速路径', steps: '感知→执行→反思', desc: '精简3步，适合简单问题快速响应', color: '#E6A23C' },
-  { name: 'deep_analysis', label: '深度分析', steps: '多轮迭代分析', desc: '支持多轮迭代，适合复杂分析任务', color: '#9C27B0' }
+  { name: 'standard', label: '标准流程', steps: '感知→记忆→规划→执行→反思→学习', desc: '完整的6步全流程，适合通用场景', token: '--info' },
+  { name: 'plan_act', label: 'Plan/Act', steps: '感知→规划→记忆→执行→反思→学习', desc: '双模式执行，先生成计划再逐步执行', token: '--success' },
+  { name: 'fast_path', label: '快速路径', steps: '感知→执行→反思', desc: '精简3步，适合简单问题快速响应', token: '--warning' },
+  { name: 'deep_analysis', label: '深度分析', steps: '多轮迭代分析', desc: '支持多轮迭代，适合复杂分析任务', token: '--cat-5' }
 ]
+
+const stepDotTokens = ['--success', '--info', '--warning', '--danger', '--text-tertiary']
 
 const successRate = computed(() => {
   if (!stats.value?.byStatus) return 0
@@ -463,12 +466,12 @@ onMounted(() => {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, var(--brand), var(--cat-5));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .page-subtitle {
-  color: #909399;
+  color: var(--text-tertiary);
   font-size: 13px;
   margin: 4px 0 0 0;
 }
@@ -484,7 +487,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-soft);
 }
 .panel-head h3 {
   margin: 0;
@@ -501,9 +504,9 @@ onMounted(() => {
 }
 .pipeline-card {
   padding: 12px;
-  background: #f8f9fa;
+  background: var(--bg-tertiary);
   border-radius: 8px;
-  border-left: 3px solid #409EFF;
+  border-left: 3px solid var(--info);
 }
 .pipeline-name {
   font-weight: 600;
@@ -511,17 +514,17 @@ onMounted(() => {
 }
 .pipeline-steps {
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary);
   margin: 4px 0;
 }
 .pipeline-desc {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-tertiary);
 }
 .plan-section {
   margin-top: 20px;
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--bg-tertiary);
   border-radius: 8px;
 }
 .plan-section h4 {
@@ -551,7 +554,7 @@ onMounted(() => {
 }
 .step-duration {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-tertiary);
 }
 .result-section {
   margin-top: 20px;
@@ -562,12 +565,12 @@ onMounted(() => {
   border: 2px solid;
 }
 .result-card.success {
-  background: #f0f9eb;
-  border-color: #67C23A;
+  background: var(--success-dim);
+  border-color: var(--success);
 }
 .result-card.error {
-  background: #fef0f0;
-  border-color: #F56C6C;
+  background: var(--danger-dim);
+  border-color: var(--danger);
 }
 .result-header {
   display: flex;
@@ -577,11 +580,11 @@ onMounted(() => {
 }
 .result-time {
   font-size: 13px;
-  color: #606266;
+  color: var(--text-secondary);
 }
 .result-checkpoints {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-tertiary);
 }
 .result-json {
   background: var(--bg-card);
@@ -625,7 +628,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ecf5ff;
+  background: var(--info-50);
+  color: var(--info);
   border-radius: 12px;
 }
 .plugin-info {
@@ -634,16 +638,16 @@ onMounted(() => {
 .plugin-name {
   font-weight: 600;
   font-size: 15px;
-  color: #303133;
+  color: var(--text-primary);
 }
 .plugin-desc {
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary);
   margin: 4px 0;
 }
 .plugin-version {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-tertiary);
 }
 .plugin-status {
   flex-shrink: 0;
@@ -669,29 +673,29 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: #ecf5ff;
-  color: #409EFF;
+  background: var(--info-50);
+  color: var(--info);
 }
 .stat-card.success .stat-icon {
-  background: #f0f9eb;
-  color: #67C23A;
+  background: var(--success-dim);
+  color: var(--success);
 }
 .stat-card.info .stat-icon {
-  background: #f4f4f5;
-  color: #909399;
+  background: var(--bg-hover);
+  color: var(--text-tertiary);
 }
 .stat-card.warning .stat-icon {
-  background: #fdf6ec;
-  color: #E6A23C;
+  background: var(--warning-dim);
+  color: var(--warning);
 }
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #303133;
+  color: var(--text-primary);
 }
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-tertiary);
   margin-top: 4px;
 }
 .status-dist {
@@ -707,7 +711,7 @@ onMounted(() => {
 .status-name {
   width: 80px;
   font-size: 13px;
-  color: #606266;
+  color: var(--text-secondary);
   text-transform: capitalize;
 }
 .status-bar-row .el-progress {
@@ -717,7 +721,7 @@ onMounted(() => {
   width: 50px;
   text-align: right;
   font-size: 13px;
-  color: #303133;
+  color: var(--text-primary);
   font-weight: 500;
 }
 </style>

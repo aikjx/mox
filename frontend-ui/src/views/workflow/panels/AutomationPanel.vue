@@ -156,9 +156,9 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { InfoFilled } from '@element-plus/icons-vue'
-import ProjectChip from '@/components/ProjectChip.vue'
+import { ProjectChip } from '@/components'
 import {
   automationChat,
   automationRefine,
@@ -321,14 +321,14 @@ async function saveCode() {
   background: linear-gradient(135deg, #eef2ff 0%, #ecfeff 100%);
   border-radius: 12px;
   margin-bottom: 12px;
-  border: 1px solid #e0e7ff;
+  border: 1px solid var(--el-color-primary-light-7);
 }
 .auto-project-hint {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #6366f1;
+  color: var(--cat-1);
   flex: 1;
 }
 .auto {

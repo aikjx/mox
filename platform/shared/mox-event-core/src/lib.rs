@@ -24,6 +24,7 @@ pub mod bus;
 pub mod subscriber;
 pub mod dead_letter;
 pub mod metadata;
+pub mod scheduler;
 
 // ── 重导出 ────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ pub use bus::{EventBus, MemoryEventBus, BusConfig};
 pub use subscriber::{Subscriber, SubscriberId, HandlerResult, EventHandler};
 pub use dead_letter::{DeadLetterQueue, DeadLetterEntry, RetryPolicy};
 pub use metadata::{EventMetadata, EventId, EventSource};
+pub use scheduler::{EventScheduler, SchedulerConfig, SchedulerStats, ScheduledTaskId, ScheduledTaskInfo, ScheduleKind};
 
 // ── Crate 元数据 ──────────────────────────────────────────────────────────
 

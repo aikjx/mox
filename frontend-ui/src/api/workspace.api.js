@@ -8,8 +8,7 @@ export const getUnreadCount = () => http.get('/notifications/unread-count')
 export const getWorkspaceKpi = () => http.get('/workspace/kpi')
 
 // ===== 项目成员 =====
-export const getProjectMembers = (projectId) =>
-  http.get(`/projects/${encodeURIComponent(projectId)}/members`)
+// 成员读写统一由 projects.api.js 提供（见 @/api/projects.api.js 的 getProjectMembers）
 
 // ===== 项目阶段 =====
 export const getProjectPhases = (projectId) =>

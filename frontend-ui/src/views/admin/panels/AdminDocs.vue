@@ -37,7 +37,7 @@
 
 <script setup>
 import { ref, computed, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Search } from '@element-plus/icons-vue'
 import * as api from '@/api'
 
@@ -124,7 +124,7 @@ async function tryIt(a) {
 }
 .method.get {
   background: var(--success-50);
-  color: #047857;
+  color: var(--success);
 }
 .method.post {
   background: var(--accent-dim);
@@ -160,7 +160,7 @@ async function tryIt(a) {
 .res {
   margin-top: 10px;
   background: #0b1020;
-  color: #a5b4fc;
+  color: var(--el-color-primary-light-3);
   padding: 10px;
   border-radius: 8px;
   font-size: 11px;

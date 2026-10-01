@@ -1,11 +1,50 @@
 ﻿import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import Components from 'unplugin-vue-components/vite'
 
 // 双保险 RBAC 令牌：VITE_OUS_API_TOKEN（dev时前端可用）+ OUS_API_TOKEN（vite proxy进程级注入）
 // 关键（2026-08-26）：Vite 在 vite.config.js 求值完成后才运行 dotenv，
 // 所以必须用官方 API `loadEnv(mode, dir, prefixes)` 显式加载 .env.{mode}.local / .env.{mode} / .env.local / .env。
 // `prefixes=''` 表示加载所有变量（不按 VITE_ 前缀过滤），便于 process.env 级代理注入。
+// element-plus 子路径按需 resolver（替代官方 ElementPlusResolver）：
+// 官方 resolver 生成 element-plus/es 根 barrel 导入，而 es/index.mjs 为 import+export 结构，
+// rollup tree-shake 失效、全部组件都会打进首屏 vendor-element。此处改为直接导入
+// element-plus/es/components/<kebab>/index（附属组件从父组件目录导出），样式按组件引入。
+function epSubpathResolver() {
+  const kebab = (s) => s.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '')
+  // 附属组件 -> 父组件目录（该目录 index.mjs 导出附属组件名）
+  const PARENT = {
+    TableColumn: 'table', FormItem: 'form', Option: 'select', OptionGroup: 'select', TabPane: 'tabs',
+    BreadcrumbItem: 'breadcrumb', DropdownMenu: 'dropdown', DropdownItem: 'dropdown',
+    ButtonGroup: 'button', CollapseItem: 'collapse', RadioButton: 'radio', RadioGroup: 'radio',
+    TimelineItem: 'timeline', DescriptionsItem: 'descriptions', Step: 'steps', CheckboxGroup: 'checkbox',
+  }
+  const DIR = { Loading: 'loading', Popover: 'popover', InfiniteScroll: 'infinite-scroll' }
+  return [
+    {
+      type: 'component',
+      resolve(name) {
+        if (!/^El[A-Z]/.test(name)) return null
+        if (/^ElIcon.+/.test(name)) return { name: name.replace(/^ElIcon/, ''), from: '@element-plus/icons-vue' }
+        const base = name.slice(2)
+        const dir = PARENT[base] || kebab(base)
+        const from = 'element-plus/es/components/' + dir + '/index'
+        return { name, from, sideEffects: ['element-plus/es/components/' + dir + '/style/css'] }
+      },
+    },
+    {
+      type: 'directive',
+      resolve(name) {
+        const dir = DIR[name]
+        if (!dir) return null
+        const importName = { loading: 'ElLoadingDirective', popover: 'ElPopoverDirective', 'infinite-scroll': 'ElInfiniteScroll' }[dir]
+        return { name: importName, from: 'element-plus/es/components/' + dir + '/index', sideEffects: ['element-plus/es/components/' + dir + '/style/css'] }
+      },
+    },
+  ]
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   // 合并到 process.env（方便后续 process.env.GATEWAY_URL 之类写法直取）
@@ -19,7 +58,10 @@ export default defineConfig(({ mode }) => {
   console.log('[vite-config] GATEWAY_URL=', process.env.GATEWAY_URL || 'default :3080')
 
   return {
-    plugins: [vue()],
+    plugins: [
+      vue(),
+      Components({ resolvers: [epSubpathResolver()], dts: false }),
+    ],
     define: {
       ...(_TOKEN ? {
         'import.meta.env.VITE_OUS_API_TOKEN': JSON.stringify(_TOKEN),
@@ -181,15 +223,14 @@ export default defineConfig(({ mode }) => {
               // 重型依赖独立分包
               if (id.includes('echarts') || id.includes('zrender')) return 'vendor-echarts'
               if (id.includes('element-plus') || id.includes('@element-plus')) return 'vendor-element'
-              if (id.includes('@element-plus/icons-vue')) return 'vendor-icons'
               if (id.includes('vue') || id.includes('vue-router') || id.includes('pinia')) return 'vendor-vue'
               if (id.includes('mermaid')) return 'vendor-mermaid'
               if (id.includes('vexflow')) return 'vendor-vexflow'
               if (id.includes('markdown-it')) return 'vendor-markdown'
               if (id.includes('axios')) return 'vendor-axios'
 
-              // 通用依赖
-              return 'vendor'
+              // 通用依赖：不强制归组，由 rollup 按引用方自动分 chunk（避免懒加载库依赖被拉进首屏）
+              return undefined
             }
           }
         }

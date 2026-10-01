@@ -14,6 +14,7 @@
 //! 时钟一律可注入（对齐 `RegistryStore::reap_expired_at` 约定），便于确定性单测。
 
 pub mod aggregation;
+pub mod metrics_agg;
 
 pub use aggregation::{
     AggregatedRenewal, AggregationHealth, CellAggregator, GroupDigest, MemberStatus, NodeBeat,

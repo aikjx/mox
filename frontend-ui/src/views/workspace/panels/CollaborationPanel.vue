@@ -137,7 +137,7 @@
                   <el-icon v-else-if="msg.status === 'failed'"><Warning /></el-icon>
                 </span>
                 <span v-if="msg.phase" class="ws-collab-msg-phase">
-                  <el-tag size="small" effect="plain" :type="phaseTagType(msg.phase)">{{ phaseLabel(msg.phase) }}</el-tag>
+                  <el-tag size="small" effect="plain" :type="phaseTagType(msg.phase)">{{ alliancePhaseLabel(msg.phase) }}</el-tag>
                 </span>
                 <span class="ws-collab-msg-time">{{ msg.time }}</span>
               </div>
@@ -294,13 +294,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   Promotion, ChatLineSquare, RefreshRight, ArrowDown, ArrowUp,
   CircleCheckFilled, FolderOpened, Download, Loading, Warning,
   Upload, Paperclip, Share, CollectionTag, Close
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+// 7 阶段文案单源：contract/phases.js 是 Rust PHASE_NAMES 的前端投影，面板不再另抄一份
+import { phaseLabel as alliancePhaseLabel } from '@/modules/expert-alliance/contract'
 import WhiteboardPanel from './WhiteboardPanel.vue'
 import FilePanel from './FilePanel.vue'
 import HistoryPanel from './HistoryPanel.vue'
@@ -312,7 +314,6 @@ const props = defineProps({
   activeSession: { type: Object, default: null },
   currentPhaseLabel: { type: String, default: '准备中' },
   collabMessages: { type: Array, default: () => [] },
-  typingExperts: { type: Array, default: () => [] },
   projectPhases: { type: Array, default: () => [] },
   currentProjectPhase: { type: Number, default: 0 },
   collabTabs: { type: Array, default: () => [] },
@@ -350,6 +351,17 @@ const emit = defineEmits([
 const filesBarExpanded = ref(true)
 const dragOver = ref(false)
 
+// 「谁在思考」由消息流自己推导：某专家最后一条带状态的消息仍是 thinking 才算在打字。
+// 执行链完成时是追加一条 done 消息、不回改旧的 thinking，所以只能看"最后一条"而非"存在一条"。
+const typingExperts = computed(() => {
+  const latest = new Map()
+  for (const m of props.collabMessages || []) {
+    if (m?.role !== 'assistant' || !m.status) continue
+    latest.set(m.name, m)
+  }
+  return [...latest.values()].filter((m) => m.status === 'thinking')
+})
+
 function memberStatusText(status) {
   const map = { active: '在线', busy: '忙碌', offline: '离线', idle: '空闲' }
   return map[status] || '在线'
@@ -358,20 +370,6 @@ function memberStatusText(status) {
 function msgStatusText(status) {
   const map = { sent: '已发送', thinking: '正在思考', done: '已完成', failed: '失败' }
   return map[status] || ''
-}
-
-function phaseLabel(phase) {
-  const alliancePhases = [
-    { key: 'intent', label: '意图识别' },
-    { key: 'team', label: '组队匹配' },
-    { key: 'debate', label: '专家辩论' },
-    { key: 'synthesize', label: '综合归纳' },
-    { key: 'gate', label: '质量把关' },
-    { key: 'learn', label: '知识学习' },
-    { key: 'done', label: '完成' }
-  ]
-  const p = alliancePhases.find(p => p.key === phase)
-  return p?.label || phase
 }
 
 function phaseTagType(phase) {

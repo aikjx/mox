@@ -461,7 +461,7 @@ import {
   RefreshLeft, Promotion, MagicStick, Plus, Fold, Edit, Delete,
   Clock, Close, CircleCheckFilled
 } from '@element-plus/icons-vue'
-import { EXPERT_TYPES } from '@/constants/expert.constants'
+import { EXPERT_TYPES, expertColor, expertGradient, expertEmoji } from '@/constants'
 
 const props = defineProps({
   taskOrchestration: { type: Object, required: true },
@@ -553,49 +553,4 @@ function subtaskPriorityGradient(priority) {
   return gradients[priority] || gradients.medium
 }
 
-function expertColor(type) {
-  const colors = {
-    algorithm: '#6366f1', architecture: '#6366f1', data: '#10b981',
-    ai: '#ec4899', workflow: '#f59e0b', graph: '#06b6d4',
-    security: '#ef4444', performance: '#f97316', monitor: '#14b8a6',
-    market: '#8b5cf6', mcp: '#0ea5e9', automation: '#84cc16',
-    requirement: '#f43f5e', fusion: '#a855f7', operator: '#64748b',
-    custom: '#64748b'
-  }
-  return colors[type] || '#6366f1'
-}
-
-function expertGradient(type) {
-  const gradients = {
-    algorithm: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    architecture: 'linear-gradient(135deg, #6366f1, #06b6d4)',
-    data: 'linear-gradient(135deg, #10b981, #14b8a6)',
-    ai: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
-    workflow: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-    graph: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
-    security: 'linear-gradient(135deg, #ef4444, #f97316)',
-    performance: 'linear-gradient(135deg, #f97316, #f59e0b)',
-    monitor: 'linear-gradient(135deg, #14b8a6, #10b981)',
-    market: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-    mcp: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
-    automation: 'linear-gradient(135deg, #84cc16, #10b981)',
-    requirement: 'linear-gradient(135deg, #f43f5e, #ec4899)',
-    fusion: 'linear-gradient(135deg, #a855f7, #7c3aed)',
-    operator: 'linear-gradient(135deg, #64748b, #475569)',
-    custom: 'linear-gradient(135deg, #64748b, #475569)'
-  }
-  return gradients[type] || 'linear-gradient(135deg, #7c3aed, #06b6d4)'
-}
-
-function expertEmoji(type) {
-  const emojis = {
-    algorithm: '🧮', architecture: '🏗️', data: '🔗',
-    ai: '🤖', workflow: '⚡', graph: '🕸️',
-    security: '🔒', performance: '🚀', monitor: '📊',
-    market: '📈', mcp: '🔌', automation: '🤖',
-    requirement: '📋', fusion: '🔀', operator: '⚙️',
-    custom: '👤'
-  }
-  return emojis[type] || '👤'
-}
 </script>

@@ -1,6 +1,8 @@
 <!--
   多专家咨询对话框
-  职责：问题输入、专家选择、咨询模式、结果展示（对比/列表）
+  职责：问题输入、专家选择、结果展示（对比/列表）、融合结论。
+  行数据一律来自 model/collabLists 的投影，视图不碰后端字段名；
+  契约里没有的「并行/串行模式」不再作为选项出现（MultiConsultBody 无此字段，发了即丢）。
 -->
 <template>
   <el-dialog
@@ -25,42 +27,29 @@
         />
       </el-form-item>
 
-      <el-form-item label="选择专家" required>
+      <el-form-item label="选择专家">
         <div class="consult-expert-picker">
           <div class="consult-expert-list">
             <div
-              v-for="exp in activeExperts"
+              v-for="exp in pickableExperts"
               :key="exp.id"
               class="consult-expert-chip"
               :class="{ selected: selectedExpertIds.includes(exp.id) }"
               @click="$emit('toggle-expert', exp.id)"
             >
-              <span class="chip-avatar" :style="{ background: expertColor(exp.type) }">
-                {{ expertEmoji(exp.type) }}
+              <span class="chip-avatar" :style="{ background: expertColor(expertVisualKey(exp)) }">
+                {{ expertEmoji(expertVisualKey(exp)) }}
               </span>
               <span class="chip-name">{{ exp.name }}</span>
+              <span class="chip-status">{{ availabilityLabel(exp.status) }}</span>
               <el-icon v-if="selectedExpertIds.includes(exp.id)" class="chip-check"><CircleCheckFilled /></el-icon>
             </div>
           </div>
           <div class="consult-expert-count">
             已选 <b>{{ selectedExpertIds.length }}</b> 位专家
+            <span class="consult-count-hint">（不选则由后端按问题匹配度自动挑选）</span>
           </div>
         </div>
-      </el-form-item>
-
-      <el-form-item label="咨询模式">
-        <el-radio-group :model-value="mode" class="consult-mode-group" @update:model-value="emit('update:mode', $event)">
-          <el-radio-button value="parallel">
-            <span class="mode-icon-inline">⚡</span>
-            并行模式
-            <span class="mode-hint">（同时回答）</span>
-          </el-radio-button>
-          <el-radio-button value="serial">
-            <span class="mode-icon-inline">🔄</span>
-            串行模式
-            <span class="mode-hint">（依次回答）</span>
-          </el-radio-button>
-        </el-radio-group>
       </el-form-item>
 
       <el-form-item label="结果展示">
@@ -88,24 +77,26 @@
       <!-- 对比视图 -->
       <div v-if="compareView" class="compare-view">
         <div class="compare-grid">
-          <div
-            v-for="(result, idx) in results"
-            :key="idx"
-            class="compare-card"
-          >
-            <div class="compare-card-head" :style="{ borderTopColor: expertColor(result.expert?.type) }">
+          <div v-for="row in results" :key="row.key" class="compare-card">
+            <div class="compare-card-head" :style="{ borderTopColor: rowColor(row) }">
               <div class="compare-expert">
-                <span class="compare-avatar" :style="{ background: expertColor(result.expert?.type) }">
-                  {{ expertEmoji(result.expert?.type) }}
+                <span class="compare-avatar" :style="{ background: rowColor(row) }">
+                  {{ expertEmoji(rowVisualKey(row)) }}
                 </span>
-                <span class="compare-name">{{ result.expert?.name || '专家' }}</span>
+                <span class="compare-name">{{ row.name }}</span>
               </div>
-              <el-tag size="small" type="primary" effect="light" v-if="result.confidence">
-                置信度 {{ (result.confidence * 100).toFixed(0) }}%
+              <el-tag size="small" type="primary" effect="light" v-if="row.confidence">
+                置信度 {{ confidenceText(row.confidence) }}
               </el-tag>
             </div>
             <div class="compare-card-body">
-              <div class="compare-content">{{ result.response }}</div>
+              <div class="compare-content">{{ row.text }}</div>
+              <div class="row-badges">
+                <el-tag size="small" :type="row.blocked ? 'danger' : (row.modelBacked ? 'success' : 'warning')" effect="plain">
+                  {{ row.sourceText }}
+                </el-tag>
+                <el-tag v-if="row.blocked" size="small" type="danger" effect="dark">已被治理闸门拦截</el-tag>
+              </div>
             </div>
           </div>
         </div>
@@ -113,38 +104,52 @@
 
       <!-- 列表视图 -->
       <div v-else class="list-view">
-        <div
-          v-for="(result, idx) in results"
-          :key="idx"
-          class="result-item-card"
-        >
+        <div v-for="row in results" :key="row.key" class="result-item-card">
           <div class="result-item-head">
-            <span class="result-avatar" :style="{ background: expertColor(result.expert?.type) }">
-              {{ expertEmoji(result.expert?.type) }}
+            <span class="result-avatar" :style="{ background: rowColor(row) }">
+              {{ expertEmoji(rowVisualKey(row)) }}
             </span>
-            <span class="result-name">{{ result.expert?.name || '专家' }}</span>
-            <el-tag v-if="result.confidence" size="small" type="primary" effect="light">
-              置信度 {{ (result.confidence * 100).toFixed(0) }}%
+            <span class="result-name">{{ row.name }}</span>
+            <el-tag v-if="row.confidence" size="small" type="primary" effect="light">
+              置信度 {{ confidenceText(row.confidence) }}
             </el-tag>
-            <span v-if="result.duration_ms" class="result-duration">{{ (result.duration_ms / 1000).toFixed(1) }}s</span>
+            <el-tag size="small" :type="row.blocked ? 'danger' : (row.modelBacked ? 'success' : 'warning')" effect="plain">
+              {{ row.sourceText }}
+            </el-tag>
           </div>
-          <div class="result-item-body">{{ result.response }}</div>
+          <div class="result-item-body">{{ row.text }}</div>
         </div>
+      </div>
+
+      <!-- 融合结论：共识度取自两两相似度，单专家时无从比对 -->
+      <div v-if="fusion && fusion.summary" class="fusion-block">
+        <div class="fusion-head">融合结论</div>
+        <p class="fusion-summary">{{ fusion.summary }}</p>
+        <dl class="fusion-meta">
+          <div><dt>共识度</dt><dd>{{ consensusText(fusion, results.length) }}</dd></div>
+          <div v-if="fusion.dominantView"><dt>主导观点</dt><dd>{{ fusion.dominantView }}</dd></div>
+          <div v-if="fusion.confidence"><dt>融合置信度</dt><dd>{{ confidenceText(fusion.confidence) }}</dd></div>
+          <div v-if="fusion.blocked || fusion.vetoed"><dt>治理</dt><dd>该结论已被治理闸门标记</dd></div>
+        </dl>
       </div>
     </div>
 
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="$emit('close')" :disabled="submitting">关闭</el-button>
-        <el-button
-          type="primary"
-          :loading="submitting"
-          :disabled="!canStart"
-          @click="$emit('start')"
-        >
-          <el-icon><Connection /></el-icon>
-          <span>开始咨询</span>
-        </el-button>
+        <el-tooltip :disabled="!problem" :content="problem" placement="top">
+          <span>
+            <el-button
+              type="primary"
+              :loading="submitting"
+              :disabled="!!problem"
+              @click="$emit('start')"
+            >
+              <el-icon><Connection /></el-icon>
+              <span>开始咨询</span>
+            </el-button>
+          </span>
+        </el-tooltip>
       </div>
     </template>
   </el-dialog>
@@ -153,47 +158,77 @@
 <script setup>
 import { computed } from 'vue'
 import { CircleCheckFilled, DocumentCopy, Connection } from '@element-plus/icons-vue'
+import {
+  availabilityLabel, confidenceText, consensusText
+} from '@/modules/expert-alliance/contract'
+import { expertPickable, expertVisualKey } from '@/modules/expert-alliance/model'
+import { expertColor, expertEmoji } from '@/constants'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
   question: { type: String, default: '' },
   selectedExpertIds: { type: Array, default: () => [] },
-  mode: { type: String, default: 'parallel' },
+  problem: { type: String, default: '' },
   compareView: { type: Boolean, default: false },
   results: { type: Array, default: () => [] },
+  fusion: { type: Object, default: null },
   submitting: { type: Boolean, default: false },
   experts: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['close', 'start', 'toggle-expert', 'update:question', 'update:mode', 'update:compareView'])
+const emit = defineEmits(['close', 'start', 'toggle-expert', 'update:question', 'update:compareView'])
 
-const activeExperts = computed(() => props.experts.filter(e => e.status === 'active'))
+const pickableExperts = computed(() => props.experts.filter(expertPickable))
+const expertById = computed(() => new Map(props.experts.map((e) => [e.id, e])))
 
-const canStart = computed(() =>
-  props.question.trim() && props.selectedExpertIds.length >= 1
-)
-
-function expertColor(type) {
-  const colors = {
-    algorithm: '#6366f1', architecture: '#6366f1', data: '#10b981',
-    ai: '#ec4899', workflow: '#f59e0b', graph: '#06b6d4',
-    security: '#ef4444', performance: '#f97316', monitor: '#14b8a6',
-    market: '#8b5cf6', mcp: '#0ea5e9', automation: '#84cc16',
-    requirement: '#f43f5e', fusion: '#a855f7', operator: '#64748b',
-    custom: '#64748b'
-  }
-  return colors[type] || '#6366f1'
+// 投影行只带 id/名字，配色要回查花名册那一行的领域键
+function rowVisualKey(row) {
+  return expertVisualKey(expertById.value.get(row.id)) || row.name
 }
-
-function expertEmoji(type) {
-  const emojis = {
-    algorithm: '🧮', architecture: '🏗️', data: '🔗',
-    ai: '🤖', workflow: '⚡', graph: '🕸️',
-    security: '🔒', performance: '🚀', monitor: '📊',
-    market: '📈', mcp: '🔌', automation: '🤖',
-    requirement: '📋', fusion: '🔀', operator: '⚙️',
-    custom: '👤'
-  }
-  return emojis[type] || '👤'
+function rowColor(row) {
+  return expertColor(rowVisualKey(row))
 }
 </script>
+
+<style scoped>
+.chip-status,
+.consult-count-hint {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+}
+.row-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.fusion-block {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+}
+.fusion-head {
+  font-size: 13px;
+  font-weight: 600;
+}
+.fusion-summary {
+  margin: 6px 0;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.fusion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  font-size: 12px;
+}
+.fusion-meta dt {
+  color: var(--el-text-color-secondary);
+  display: inline;
+}
+.fusion-meta dd {
+  display: inline;
+  margin: 0 0 0 4px;
+}
+</style>

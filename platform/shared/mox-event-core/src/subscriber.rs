@@ -12,6 +12,7 @@
 
 use crate::event::{Event, EventType};
 use crate::metadata::EventMetadata;
+use async_trait::async_trait;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -117,13 +118,10 @@ pub type AsyncHandler<E> = Arc<
 ///     }
 /// }
 /// ```
+#[async_trait]
 pub trait EventHandler<E: Event>: Send + Sync {
     /// 处理事件
-    fn handle<'a>(
-        &'a self,
-        event: E,
-        metadata: EventMetadata,
-    ) -> Pin<Box<dyn Future<Output = HandlerResult> + Send + 'a>>;
+    async fn handle(&self, event: E, metadata: EventMetadata) -> HandlerResult;
 }
 
 /// 订阅者配置

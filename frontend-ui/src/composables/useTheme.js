@@ -3,7 +3,7 @@
  * 底层已迁移至 Pinia app.store，此文件为向后兼容的 composable 封装
  *
  * 用法：
- *   import { useTheme } from '@/composables/useTheme'
+ *   import { useTheme } from '@/composables'
  *   const { theme, setTheme, toggleTheme } = useTheme()
  *
  * 推荐新代码直接使用：
@@ -13,7 +13,7 @@
  */
 
 import { computed } from 'vue'
-import { useAppStore, availableThemes } from '@/stores/app.store'
+import { useAppStore, availableThemes } from '@/stores'
 
 // 监听者集合（兼容旧 API）
 const _listeners = new Set()

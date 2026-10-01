@@ -175,7 +175,7 @@ function formatLatency(ms) {
 
 .gate-result__score-unit {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin-left: 2px;
 }
 
@@ -197,7 +197,7 @@ function formatLatency(ms) {
 
 .gate-result__latency {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .gate-result__dimensions {
@@ -226,7 +226,7 @@ function formatLatency(ms) {
 
 .gate-result__dimension-name {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .gate-result__dimension-value {

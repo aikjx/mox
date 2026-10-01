@@ -1,0 +1,12 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/a10/aikjx/gitcode/infotopograph/frontend-ui[39m
+
+ [31m❯[39m src/views/admin/panels/AdminLlm.smoke.test.js [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 99[2mms[22m[39m
+[31m   [31m×[31m AdminLlm 冒烟[2m > [22m浅挂载不崩：组件模块可加载并完成初始渲染[90m 97[2mms[22m[31m[39m
+[31m     → catFill is not defined[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m   Start at [22m 14:38:58
+[2m   Duration [22m 5.73s[2m (transform 345ms, setup 0ms, collect 941ms, tests 99ms, environment 2.91s, prepare 729ms)[22m
+

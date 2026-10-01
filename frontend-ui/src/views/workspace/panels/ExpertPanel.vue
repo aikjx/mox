@@ -52,27 +52,27 @@
             :class="{ active: activeExpert?.id === expert.id, selected: isExpertSelected(expert.id) }"
             @click="$emit('expert-click', expert)"
           >
-            <div class="ws-expert-avatar gradient-avatar" :style="{ background: expertGradient(expert.type) }">
-              {{ expertEmoji(expert.type) }}
-              <span class="ws-expert-status-dot" :class="'dot-' + expert.status" :title="expertStatusText(expert.status)"></span>
+            <div class="ws-expert-avatar gradient-avatar" :style="{ background: expertGradient(visualKey(expert)) }">
+              {{ expertEmoji(visualKey(expert)) }}
+              <span class="ws-expert-status-dot" :class="'dot-' + statusClass(expert)" :title="statusText(expert)"></span>
             </div>
             <div class="ws-expert-info">
               <div class="ws-expert-name-row">
                 <span class="ws-expert-name">{{ expert.name }}</span>
-                <span v-if="expert.metrics?.success_rate" class="ws-expert-rate" :style="{ color: expertColor(expert.type) }">
-                  {{ (expert.metrics.success_rate * 100).toFixed(0) }}%
+                <span v-if="expert.metrics?.resolutionRate" class="ws-expert-rate" :style="{ color: expertColor(visualKey(expert)) }">
+                  {{ (expert.metrics.resolutionRate * 100).toFixed(0) }}%
                 </span>
               </div>
-              <div class="ws-expert-role">{{ EXPERT_TYPES[expert.type] || expert.type }}</div>
-              <div v-if="expert.capabilities?.length" class="ws-expert-tags">
-                <span v-for="cap in expert.capabilities.slice(0, 2)" :key="cap" class="ws-cap-tag" :style="{ borderColor: expertColor(expert.type) + '40', color: expertColor(expert.type) }">{{ cap }}</span>
+              <div class="ws-expert-role">{{ expertTitleText(expert) }}</div>
+              <div v-if="capabilityTags(expert).length" class="ws-expert-tags">
+                <span v-for="cap in capabilityTags(expert)" :key="cap" class="ws-cap-tag" :style="{ borderColor: expertColor(visualKey(expert)) + '40', color: expertColor(visualKey(expert)) }">{{ cap }}</span>
               </div>
             </div>
             <div v-if="isExpertSelected(expert.id)" class="ws-expert-check">
               <el-icon><CircleCheckFilled /></el-icon>
             </div>
-            <div v-else class="ws-expert-status-badge" :class="'badge-' + expert.status">
-              {{ expertStatusText(expert.status) }}
+            <div v-else class="ws-expert-status-badge" :class="'badge-' + statusClass(expert)">
+              {{ statusText(expert) }}
             </div>
           </div>
           <el-empty v-if="filteredExperts.length === 0 && expertsLoading" description="加载中…" :image-size="40" />
@@ -168,8 +168,8 @@
         :title="expert.name"
         @click="$emit('expand-and-select', expert)"
       >
-        <div class="ws-collapsed-avatar-inner" :style="{ background: expertColor(expert.type) }">
-          {{ expertEmoji(expert.type) }}
+        <div class="ws-collapsed-avatar-inner" :style="{ background: expertColor(visualKey(expert)) }">
+          {{ expertEmoji(visualKey(expert)) }}
         </div>
       </button>
       <el-divider class="ws-collapsed-divider" />
@@ -183,7 +183,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Search, ArrowLeft, ArrowRight, Plus, Compass, CircleCheckFilled } from '@element-plus/icons-vue'
-import { EXPERT_TYPES } from '@/constants/expert.constants'
+import { EXPERT_TYPES, expertColor, expertGradient, expertEmoji } from '@/constants'
+import { availabilityLabel } from '@/modules/expert-alliance/contract'
+import { expertStatusClass, expertVisualKey } from '@/modules/expert-alliance/model'
 
 const props = defineProps({
   collapsed: { type: Boolean, default: false },
@@ -206,21 +208,33 @@ defineEmits([
 const filterType = ref('')
 const searchKeyword = ref('')
 
+// 行来自 model/normalize 的 normExpert：配色按领域、状态按可用性词表，二者都不再由视图猜字段名
+const visualKey = (expert) => expertVisualKey(expert)
+const statusClass = (expert) => expertStatusClass(expert)
+const statusText = (expert) => availabilityLabel(expert?.status)
+const expertTitleText = (expert) =>
+  expert?.title || EXPERT_TYPES[expertVisualKey(expert)] || expert?.expertType || '专家'
+const capabilityTags = (expert) => {
+  const caps = (expert?.capabilities || []).map((c) => c?.name).filter(Boolean)
+  return (caps.length ? caps : expert?.domains || []).slice(0, 2)
+}
+
 const onlineExpertCount = computed(() =>
-  props.experts.filter(e => e.status === 'active').length
+  props.experts.filter((e) => e.online).length
 )
 
 const filteredExperts = computed(() => {
   let list = props.experts
   if (filterType.value) {
-    list = list.filter(e => e.type === filterType.value)
+    list = list.filter(e => expertVisualKey(e) === filterType.value)
   }
   if (searchKeyword.value) {
     const kw = searchKeyword.value.toLowerCase()
     list = list.filter(e =>
       (e.name || '').toLowerCase().includes(kw) ||
-      (e.type || '').toLowerCase().includes(kw) ||
-      (e.capabilities || []).some(c => (c || '').toLowerCase().includes(kw))
+      (e.expertType || '').toLowerCase().includes(kw) ||
+      (e.domains || []).some(d => (d || '').toLowerCase().includes(kw)) ||
+      (e.skills || []).some(s => (s || '').toLowerCase().includes(kw))
     )
   }
   return list
@@ -228,57 +242,6 @@ const filteredExperts = computed(() => {
 
 function isExpertSelected(id) {
   return props.selectedExpertIds.includes(id)
-}
-
-function expertColor(type) {
-  const colors = {
-    algorithm: '#6366f1', architecture: '#6366f1', data: '#10b981',
-    ai: '#ec4899', workflow: '#f59e0b', graph: '#06b6d4',
-    security: '#ef4444', performance: '#f97316', monitor: '#14b8a6',
-    market: '#8b5cf6', mcp: '#0ea5e9', automation: '#84cc16',
-    requirement: '#f43f5e', fusion: '#a855f7', operator: '#64748b',
-    custom: '#64748b'
-  }
-  return colors[type] || '#6366f1'
-}
-
-function expertGradient(type) {
-  const gradients = {
-    algorithm: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    architecture: 'linear-gradient(135deg, #6366f1, #06b6d4)',
-    data: 'linear-gradient(135deg, #10b981, #14b8a6)',
-    ai: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
-    workflow: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-    graph: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
-    security: 'linear-gradient(135deg, #ef4444, #f97316)',
-    performance: 'linear-gradient(135deg, #f97316, #f59e0b)',
-    monitor: 'linear-gradient(135deg, #14b8a6, #10b981)',
-    market: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-    mcp: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
-    automation: 'linear-gradient(135deg, #84cc16, #10b981)',
-    requirement: 'linear-gradient(135deg, #f43f5e, #ec4899)',
-    fusion: 'linear-gradient(135deg, #a855f7, #7c3aed)',
-    operator: 'linear-gradient(135deg, #64748b, #475569)',
-    custom: 'linear-gradient(135deg, #64748b, #475569)'
-  }
-  return gradients[type] || 'linear-gradient(135deg, #7c3aed, #06b6d4)'
-}
-
-function expertEmoji(type) {
-  const emojis = {
-    algorithm: '🧮', architecture: '🏗️', data: '🔗',
-    ai: '🤖', workflow: '⚡', graph: '🕸️',
-    security: '🔒', performance: '🚀', monitor: '📊',
-    market: '📈', mcp: '🔌', automation: '🤖',
-    requirement: '📋', fusion: '🔀', operator: '⚙️',
-    custom: '👤'
-  }
-  return emojis[type] || '👤'
-}
-
-function expertStatusText(status) {
-  const map = { active: '在线', busy: '忙碌', offline: '离线', idle: '空闲' }
-  return map[status] || '在线'
 }
 
 function formatTime(ts) {

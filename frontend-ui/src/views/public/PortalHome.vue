@@ -1,0 +1,192 @@
+<template>
+  <div class="portal">
+    <!-- 顶部导航 -->
+    <header class="nav">
+      <div class="brand">
+        <span class="logo">🧠</span>
+        <span class="name">智算企业门户</span>
+        <span class="sub">Powered by 璇玑信息知识图谱关联关系系统</span>
+      </div>
+      <nav class="menu">
+        <a @click="go('/')">首页</a>
+        <a @click="go('/hall')">业务大厅</a>
+        <a @click="go('/workbench')">智能工作台</a>
+        <a @click="go('/login')" class="login">登录</a>
+      </nav>
+    </header>
+
+    <!-- 首屏 -->
+    <section class="hero">
+      <div class="hero-text">
+        <h1>用统一算子引擎，<br />驱动企业全部业务流程</h1>
+        <p>六大公理内核 · 璇玑架构处理 · 一次编排、处处运行（云/本地、云/本地 LLM、浏览器/桌面）</p>
+        <div class="hero-actions">
+          <el-button type="primary" size="large" round @click="go('/hall')">进入业务大厅</el-button>
+          <el-button size="large" round @click="go('/workbench')">打开智能工作台</el-button>
+        </div>
+        <div class="hero-stats">
+          <div><b>6</b><span>数学公理内核</span></div>
+          <div><b>13+</b><span>业务处理流程</span></div>
+          <div><b>4</b><span>全形态运行</span></div>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hc-head">⚡ 实时能力</div>
+        <ul>
+          <li>AI 智能对话（流式）</li>
+          <li>业务流程可视化编排</li>
+          <li>知识图谱分析</li>
+          <li>浏览器自动化 / 算子执行</li>
+        </ul>
+        <el-button text type="primary" @click="openChat">向 AI 助手提问 →</el-button>
+      </div>
+    </section>
+
+    <!-- 能力卡片 -->
+    <section class="features">
+      <div class="feat" v-for="f in features" :key="f.t" @click="go(f.to)">
+        <el-icon><component :is="f.icon" /></el-icon>
+        <h3>{{ f.t }}</h3>
+        <p>{{ f.d }}</p>
+      </div>
+    </section>
+
+    <!-- AI 客服浮窗 -->
+    <transition name="fade">
+      <div class="chat-fab" v-if="!chatOpen" @click="chatOpen = true">💬</div>
+    </transition>
+    <transition name="slide">
+      <div class="chat-panel" v-if="chatOpen">
+        <div class="cp-head">
+          <span>AI 企业助手</span>
+          <el-icon @click="chatOpen = false"><Close /></el-icon>
+        </div>
+        <div class="cp-body" ref="cpBody">
+          <div v-for="m in chat" :key="m.k" :class="['b', m.role]">
+            {{ m.text }}
+          </div>
+          <div v-if="chatLoading" class="b ai typing">推理中…</div>
+        </div>
+        <div class="cp-input">
+          <el-input v-model="draft" placeholder="咨询业务、查算子、办流程…" @keyup.enter="send" />
+          <el-button type="primary" @click="send">发送</el-button>
+        </div>
+      </div>
+    </transition>
+
+    <footer class="foot">
+      璇玑信息知识图谱关联关系系统 · 企业级 AI 门户演示 · 当前形态：{{ runMode }}
+    </footer>
+  </div>
+</template>
+
+<script setup>
+import { Close } from "@element-plus/icons-vue";
+import { ref, nextTick, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { aiChat } from '@/api'
+
+const router = useRouter()
+const go = (p) => router.push(p)
+
+const features = [
+  { t: 'AI 对话', d: '基于会话日志溯源的统一智能体', icon: 'ChatDotRound', to: '/workbench' },
+  { t: '业务大厅', d: '调用 / 执行业务流程与算子', icon: 'Files', to: '/hall' },
+  { t: '流程编排', d: '拖拽式 DAG + 实时类型校验', icon: 'Share', to: '/workbench' },
+  { t: '知识图谱', d: 'PageRank / 社群发现可视化', icon: 'Connection', to: '/workbench' },
+  { t: '璇玑', d: '最高权限架构处理模式', icon: 'UserFilled', to: '/workbench' },
+  { t: '全形态', d: '云/本地 · 浏览器/桌面', icon: 'Monitor', to: '/' },
+]
+
+const chatOpen = ref(false)
+const chat = ref([])
+const draft = ref('')
+const chatLoading = ref(false)
+const cpBody = ref(null)
+let k = 0
+
+const runMode =
+  (typeof window !== 'undefined' && (localStorage.getItem('OUS_RUN_MODE') || 'local')) + ' + ' +
+  (localStorage.getItem('OUS_LLM_MODE') || 'local')
+
+async function send() {
+  const text = draft.value.trim()
+  if (!text || chatLoading.value) return
+  chat.value.push({ k: ++k, role: 'user', text })
+  draft.value = ''
+  chatLoading.value = true
+  await nextTick()
+  cpBody.value?.scrollTo({ top: 1e9 })
+  try {
+    const resp = await aiChat({ message: text })
+    if (!resp) throw new Error('服务器无响应')
+    const out = (resp.reply || resp.response || resp.message || '（无回复）').toString()
+    chat.value.push({ k: ++k, role: 'ai', text: out })
+  } catch (e) {
+    chat.value.push({ k: ++k, role: 'ai', text: '（助手暂不可用：' + (e.message || '请求失败') + '）' })
+  } finally {
+    chatLoading.value = false
+    await nextTick()
+    cpBody.value?.scrollTo({ top: 1e9 })
+  }
+}
+
+function openChat() {
+  chatOpen.value = true
+  if (!chat.value.length) {
+    chat.value.push({ k: ++k, role: 'ai', text: '您好，我是企业 AI 助手。可以帮您查算子、办流程、答业务问题。' })
+  }
+}
+
+onMounted(() => {
+  if (!localStorage.getItem('OUS_RUN_MODE')) localStorage.setItem('OUS_RUN_MODE', 'local')
+  if (!localStorage.getItem('OUS_LLM_MODE')) localStorage.setItem('OUS_LLM_MODE', 'local')
+})
+</script>
+
+<style scoped>
+/* 这一页原先自带一套深蓝底 + 亮字（18 处字面量），与四套皮肤无关：
+   sky（白皮）用户进来仍是黑门户，而页内的 el-button type=primary 跟着皮肤变，形成半深半白。
+   底与字一起迁（只迁字会跌进"深字压深底"），实测新对：主字 8.87–16.78、次字 8.55–12.14、
+   辅助 5.03–6.92、brand 5.57–10.58，四皮全部过 AA。旧值不在这里复述——台账把注释里的字面量也计入。 */
+.portal { min-height: 100vh; background: linear-gradient(160deg, var(--bg-primary), var(--bg-secondary)); color: var(--text-primary); }
+.nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo { font-size: 26px; }
+.name { font-size: 20px; font-weight: 700; }
+.sub { font-size: 12px; color: var(--text-tertiary); margin-left: 6px; }
+.menu a { margin-left: 22px; cursor: pointer; color: var(--text-secondary); font-size: 14px; }
+.menu a.login { color: var(--brand); font-weight: 600; }
+.hero { display: flex; gap: 40px; padding: 60px 40px; align-items: center; }
+.hero-text h1 { font-size: 38px; line-height: 1.3; margin: 0 0 16px; }
+.hero-text p { color: var(--text-secondary); max-width: 520px; }
+.hero-actions { margin: 24px 0; }
+.hero-stats { display: flex; gap: 30px; margin-top: 30px; }
+.hero-stats div { display: flex; flex-direction: column; }
+.hero-stats b { font-size: 28px; color: var(--brand); }
+.hero-stats span { font-size: 12px; color: var(--text-tertiary); }
+/* 卡面原先是"白色半透明蒙版"，白皮下等于不存在 ⇒ 换成表面档位 + 描边档位。 */
+.hero-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 320px; }
+.hc-head { font-weight: 600; margin-bottom: 12px; }
+.hero-card ul { padding-left: 18px; color: var(--text-secondary); line-height: 2; }
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 20px 40px 50px; }
+.feat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; cursor: pointer; transition: .2s; }
+.feat:hover { border-color: var(--brand); transform: translateY(-3px); }
+.feat .el-icon { font-size: 26px; color: var(--brand); }
+.feat h3 { margin: 10px 0 6px; }
+.feat p { color: var(--text-tertiary); font-size: 13px; }
+/* fab 是色块底 ⇒ 只读填充档，并配上那块底专属的字色；拿文字档当底会踩 text-as-fill。 */
+.chat-fab { position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px; border-radius: 50%; background: var(--brand-fill); color: var(--on-brand); display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.chat-panel { position: fixed; right: 24px; bottom: 24px; width: 340px; height: 460px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
+.cp-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-light); font-weight: 600; }
+.cp-body { flex: 1; overflow: auto; padding: 12px; }
+.b { margin-bottom: 10px; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; max-width: 85%; }
+/* 淡染底与文字档是成对契约（brand 压 brand-50 实测 5.36–10.13），单迁一边就跌破 AA。 */
+.b.user { background: var(--brand-50); color: var(--brand); margin-left: auto; }
+.b.ai { background: var(--bg-tertiary); }
+.b.typing { color: var(--text-tertiary); font-style: italic; }
+.cp-input { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border-light); }
+.foot { text-align: center; padding: 24px; color: var(--text-tertiary); font-size: 12px; }
+.fade-enter-active, .fade-leave-active { transition: opacity .2s; }
+.slide-enter-active, .slide-leave-active { transition: all .25s; }
+</style>

@@ -239,7 +239,7 @@ def main():
     reg_route_count = None
     try:
         gen = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "gen-api-registry.py")],
+            [sys.executable, str(ROOT / "scripts" / "doc" / "gen-api-registry.py")],
             cwd=str(ROOT), check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         reg_new = reg_path.read_text(encoding="utf-8", errors="ignore")

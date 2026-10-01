@@ -22,6 +22,7 @@ my-projects
 # ---- 日志与临时文件 ----
 *.log
 *.out
+.sessions_tmp
 *.err
 logs/
 /log/               # 标准产物归档目录（保留 .gitkeep 与 README）

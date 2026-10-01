@@ -160,7 +160,7 @@ function getPriorityType(priority) {
 
 .expert-card__dimension {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin-top: 1px;
 }
 
@@ -183,7 +183,7 @@ function getPriorityType(priority) {
 
 .expert-card__stat-label {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .expert-card__stat-value {

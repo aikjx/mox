@@ -228,8 +228,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Folder, FolderOpened, Cpu, MagicStick, Share, Shop, Link, Connection, Monitor, User, DataBoard, DataAnalysis, Setting, Aim, ArrowDown, Search } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { useProject } from '@/composables/projectContext.js'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { useProject } from '@/composables'
 import { getProjectTypes, aiRecommendProject } from '@/api'
 
 const props = defineProps({
@@ -355,3 +355,4 @@ onMounted(async () => {
     ElMessage.error('项目类型加载失败：' + (e.message || '未知错误'))
   }
 })
+</script>

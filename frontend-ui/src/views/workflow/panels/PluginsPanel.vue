@@ -114,7 +114,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Right, Promotion } from '@element-plus/icons-vue'
 import { getAiPlugins, registerAiPlugin, sendPluginMessage, getPluginTopology } from '@/api'
 
@@ -309,8 +309,8 @@ onMounted(() => { load(); loadTopology() })
 }
 .msg.out {
   align-self: flex-end;
-  background: var(--brand);
-  color: #fff;
+  background: var(--brand-fill);
+  color: var(--on-brand);
 }
 .msg.in {
   align-self: flex-start;

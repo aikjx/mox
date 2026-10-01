@@ -94,7 +94,7 @@ KG 动态 SQL 架构（`docs/architecture/07-KG-DYNAMIC-SQL-ARCHITECTURE.md`）�
 
 ## 四、关键事实（数据基准 2026-09-06）
 
-- Rust workspace **143 crates** · 6 层架构 · 12 业务域
+- Rust workspace **149 crates** · 6 层架构 · 12 业务域
 - 网关 **98 条路由 / 7 域** · 唯一入口 **8080**
 - kg 域 **2 个核心 crate**：图算法（algo）+ Raft 元数据（meta）
 - 可观测性：`/metrics` + 11 档延迟直方图 + Actuator 管理面 + Grafana 面板

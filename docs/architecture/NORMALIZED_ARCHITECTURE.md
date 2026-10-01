@@ -3,7 +3,7 @@
 > 版本：v2.0（归一化重写版）　·　数据基准日：**2026-09-16**　·　权威等级：🟢 本层归一化架构唯一权威
 > 本稿以**当前代码**为准重写，取代旧 v1.0 中"48 crate / 8 域"的迁移态基线。
 > 硬事实（全部经代码核对，禁止再沿用旧值）：
-> - workspace **143 个 crate**，**12 个业务域**；
+> - workspace **149 个 crate**，**12 个业务域**；
 > - 唯一 HTTP 入口网关 **mox-server :3080**（crate `mox-platform-gateway-svc`）；
 > - 企业默认**四进程**：gateway:3080 / operator-server:3001 / alliance-scheduler:3100 / alliance-executor:3200；
 > - 六层单向依赖：`foundation → api → proto → core → svc → gateway:3080`。
@@ -26,22 +26,22 @@ MOX 是 **Rust 原生的企业级 AI 服务平台**：把知识图谱、专家�
 
 | 项 | 数值 | 来源 |
 |---|---|---|
-| workspace crate 总数 | **143** | 根 `Cargo.toml` `[workspace].members` |
+| workspace crate 总数 | **149** | 根 `Cargo.toml` `[workspace].members` |
 | 业务域 | **12** | `platform/domains/*` |
 | 企业默认进程 | **4** | `scripts/startup/start-mox-enterprise.ps1` |
 | 已登记 API 路由 | **223** | `docs/API-REGISTRY.md`（ROUTES 生成） |
 
-### 1.2 构成分解（143 去向）
+### 1.2 构成分解（149 去向）
 
 | 分组 | crate 数 | 说明 |
 |---|---:|---|
-| 12 业务域合计 | **121** | 见 §2 域矩阵 |
-| `platform/foundation/` 横切基座 | 8 | foundation / cloud-foundation / observability / paths / error / audit / api-protocol / framework |
+| 12 业务域合计 | **126** | 见 §2 域矩阵 |
+| `platform/foundation/` 横切基座 | 9 | framework / cloud-foundation / platform-observability / platform-paths / error / audit / api-protocol / api-crypto / platform-foundation |
 | `platform/domains/foundation/` | 2 | rbac-engine / pipeline-framework |
 | `platform/shared/` 统一契约与运行时 | 10 | unified-contract / unified-algo-core / config / auth / observability / cache / server-runtime / resilience / event / lock |
 | `platform/gateway/` | 1 | `mox-platform-gateway-svc`（唯一入口） |
 | `platform/arch-test/` | 1 | 架构约束测试 |
-| **合计** | **143** | |
+| **合计** | **149** | |
 
 > 业务域与"基座层"严格区分：`foundation / shared / gateway` 是横切基础设施，不参与业务域计数，也不被算作第 13 个业务域。
 
@@ -281,7 +281,7 @@ L5 gateway      唯一入口 mox-server :3080（mox-platform-gateway-svc），�
 |---|---:|---|
 | 网关 `:8080` → `:3080` | 10 处 | 全改 3080（历史对照表里的除外） |
 | `五进程` → `四进程` | 1 处（SYSTEM-OVERVIEW.md:77） | 改四进程表 |
-| `48/60+/73 crate` → `143` | 13 处 | 改 143 |
+| `48/60+/73 crate` → `149` | 13 处 | 改 149（2026-09-24 按 cargo metadata 复点；v2.0 原记 143） |
 | `8 域/八大域` → `12 域` | 25 处 | 改 12 域 |
 | KB 独立进程 `:8104` | SYSTEM-OVERVIEW.md:67/83 | 改为"默认内嵌网关，可选 3414" |
 | 旧 Python 栈 `:8600/:8601` | 4 篇整篇过期 | 头部标注 LEGACY |

@@ -135,7 +135,6 @@
           :active-session="activeSession"
           :current-phase-label="currentPhaseLabel"
           :collab-messages="collabMessages"
-          :typing-experts="typingExperts"
           :project-phases="projectPhases"
           :current-project-phase="currentProjectPhase"
           :collab-tabs="collabTabs"
@@ -221,9 +220,10 @@
     <DebateDialog
       v-model:visible="showDebateDialog"
       v-model:topic="debateConfig.topic"
-      v-model:mode="debateConfig.mode"
       v-model:rounds="debateConfig.rounds"
       :selected-expert-ids="debateConfig.selectedExpertIds"
+      :problem="debateProblem"
+      :note="debateNote"
       :status="debateStatus"
       :submitting="debateSubmitting"
       :experts="experts"
@@ -236,10 +236,11 @@
     <MultiConsultDialog
       v-model:visible="showMultiConsultDialog"
       v-model:question="multiConsultConfig.question"
-      v-model:mode="multiConsultConfig.mode"
       v-model:compare-view="multiConsultCompareView"
       :selected-expert-ids="multiConsultConfig.selectedExpertIds"
+      :problem="multiConsultProblem"
       :results="multiConsultResults"
+      :fusion="multiConsultFusion"
       :submitting="multiConsultSubmitting"
       :experts="experts"
       @close="showMultiConsultDialog = false"
@@ -252,7 +253,9 @@
       v-model:visible="showSmartRouteDialog"
       v-model:question="smartRouteQuestion"
       v-model:max-experts="smartRouteMaxExperts"
+      :problem="smartRouteProblem"
       :loading="smartRoutingLoading"
+      :candidates="smartRouteRows"
       :result="smartRouteResult"
       @close="showSmartRouteDialog = false"
       @do-route="doSmartRoute"
@@ -270,18 +273,25 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { runAllianceFullSSE, getAllianceCapabilities } from '@/api/alliance'
+import { allianceApi } from '@/modules/expert-alliance/api'
+// 协作流一律走模块契约：入参字段名、上下界、结果口径都只在契约层出现一次。
+// 视图自己拼 body 就是 defects 的产地——后端字段是 topic 时发 question 会吃 422，
+// 发 camelCase 的 maxExperts 会被 serde 静默丢弃。
+import { COLLAB_MODE, collabControlValue, collabProblem, collabTemplateNote, collabMode as collabModeOf } from '@/modules/expert-alliance/contract'
 import {
-  getExperts, getExpertSessions, expertDebate,
-  multiExpertConsult, routeExperts
-} from '@/api/experts.api.js'
-import RegisterExpertDialog from '@/components/expert/RegisterExpertDialog.vue'
+  collabCandidateItems, collabContributionItems, collabDebateTurns, collabResultNote,
+  expertPickable, expertVisualKey
+} from '@/modules/expert-alliance/model'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+import { expertColor, expertEmoji } from '@/constants'
+import { getExpertSessions } from '@/api'
+import { RegisterExpertDialog } from '@/components'
 import {
   kbListDocuments, kbGetCategories, kbGetTags,
   kbSearch, kbGetVersions, kbCreateDocument
-} from '@/api/kb.api.js'
-import { getProjects } from '@/api/projects.api.js'
+} from '@/api'
+import { getProjects } from '@/api'
 import '@/styles/workspace.css'
 
 // 子组件导入
@@ -298,11 +308,11 @@ import MultiConsultDialog from './panels/MultiConsultDialog.vue'
 import SmartRouteDialog from './panels/SmartRouteDialog.vue'
 
 // Composables 导入
-import { useWhiteboard } from '@/composables/workspace/useWhiteboard.js'
-import { useGraphCanvas } from '@/composables/workspace/useGraphCanvas.js'
-import { useTaskOrchestration } from '@/composables/workspace/useTaskOrchestration.js'
-import { useAlliance } from '@/composables/workspace/useAlliance.js'
-import { useWorkspaceData } from '@/composables/workspace/useWorkspaceData.js'
+import { useWhiteboard } from '@/composables'
+import { useGraphCanvas } from '@/composables'
+import { useTaskOrchestration } from '@/composables'
+import { useAlliance } from '@/composables'
+import { useWorkspaceData } from '@/composables'
 
 // ========== 布局状态 ==========
 const leftCollapsed = ref(false)
@@ -384,14 +394,6 @@ const selectedExpertIds = ref([])
 const notifications = ref([])
 
 // 专家工具函数
-function expertColor(type) {
-  const colors = { algorithm: '#6366f1', architecture: '#6366f1', data: '#10b981', ai: '#ec4899', workflow: '#f59e0b', graph: '#06b6d4', security: '#ef4444', performance: '#f97316', monitor: '#14b8a6', market: '#8b5cf6', mcp: '#0ea5e9', automation: '#84cc16', requirement: '#f43f5e', fusion: '#a855f7', operator: '#64748b', custom: '#64748b' }
-  return colors[type] || '#6366f1'
-}
-function expertEmoji(type) {
-  const emojis = { algorithm: '🧮', architecture: '🏗️', data: '🔗', ai: '🤖', workflow: '⚡', graph: '🕸️', security: '🔒', performance: '🚀', monitor: '📊', market: '📈', mcp: '🔌', automation: '🤖', requirement: '📋', fusion: '🔀', operator: '⚙️', custom: '👤' }
-  return emojis[type] || '👤'
-}
 function selectExpert(expert) { activeExpert.value = expert }
 function handleExpertClick(expert) {
   selectExpert(expert)
@@ -403,10 +405,10 @@ function handleExpertClick(expert) {
 async function loadExperts() {
   expertsLoading.value = true
   try {
-    const res = await getExperts({ project_id: currentProject.value, status: 'active' })
-    if (res && Array.isArray(res.data)) experts.value = res.data
-    else if (res && Array.isArray(res)) experts.value = res
-    else experts.value = []
+    // 后端不读 project_id，也没有 status=active 这一档（availability 只有 online/busy/offline/away），
+    // 旧代码带这两个查询条件只会拿到空表。
+    const { items } = await allianceApi.listExperts()
+    experts.value = items
   } catch (e) { experts.value = []; ElMessage.error(e?.message || '加载专家列表失败') }
   finally { expertsLoading.value = false }
 }
@@ -472,9 +474,7 @@ function handleKeydown(e) {
 // ========== 注册专家回调 ==========
 function onExpertRegistered(expertData) {
   ElMessage.success(`专家「${expertData.name || '新专家'}」注册成功`)
-  if (expertData && !experts.value.find(e => e.id === expertData.id)) {
-    experts.value.unshift({ id: expertData.id, name: expertData.name, type: expertData.type, status: 'active', capabilities: expertData.capabilities || [], metrics: expertData.metrics || { total_consults: 0, success_rate: 0.95 } })
-  }
+  // 列表整体重取：视图不拼第第二套行形状，注册响应与列表行的差异交给归一化层
   loadExperts()
 }
 
@@ -488,19 +488,31 @@ const multiConsultSubmitting = ref(false)
 const smartRoutingLoading = ref(false)
 
 // ========== 辩论 ==========
-const debateConfig = reactive({ topic: '', selectedExpertIds: [], mode: 'adversarial', rounds: 3 })
+// 输入键与后端 wire 的对应、轮数上下界、发起前的可发条件全部取自契约层，
+// 视图不再自带一份「adversarial/roundtable」这类后端结构体里不存在的字段。
+const debateDef = collabModeOf(COLLAB_MODE.DEBATE)
+const debateNote = collabTemplateNote(debateDef)
+const debateDefaults = Object.fromEntries(collabControlValue(debateDef, {}).map((c) => [c.wire, c.value]))
+const debateConfig = reactive({ topic: '', selectedExpertIds: [], rounds: debateDefaults.rounds })
 const debateStatus = ref('preparing')
-const debateMessages = ref([])
+const debateTurns = ref([])
 const debateSummary = ref('')
-const canStartDebate = computed(() => debateConfig.topic.trim() && debateConfig.selectedExpertIds.length >= 2)
+const debateProblem = computed(() => collabProblem(debateDef, debateConfig))
+const canStartDebate = computed(() => !debateProblem.value)
+
+const expertById = computed(() => new Map(experts.value.map((e) => [e.id, e])))
+// 辩论参与者只带 id/name/side，配色要落回花名册那一行才与全站的色系一致
+function debateSpeakerExpert(result, side) {
+  const p = (result?.participants || []).find((x) => x.side === side)
+  return p ? expertById.value.get(p.id) : null
+}
 
 function openDebateDialog() {
   debateConfig.topic = ''
   debateConfig.selectedExpertIds = [...selectedExpertIds.value]
-  debateConfig.mode = 'adversarial'
-  debateConfig.rounds = 3
+  debateConfig.rounds = debateDefaults.rounds
   debateStatus.value = 'preparing'
-  debateMessages.value = []
+  debateTurns.value = []
   debateSummary.value = ''
   showDebateDialog.value = true
 }
@@ -514,50 +526,54 @@ async function startDebate() {
   if (!canStartDebate.value) return
   debateSubmitting.value = true
   debateStatus.value = 'ongoing'
-  debateMessages.value = []
+  debateTurns.value = []
   debateSummary.value = ''
   try {
-    const result = await expertDebate({ question: debateConfig.topic, expert_ids: debateConfig.selectedExpertIds, rounds: debateConfig.rounds, mode: debateConfig.mode })
-    const history = result?.history || result?.data?.history || []
-    history.forEach((round, roundIdx) => {
-      const results = round.results || []
-      results.forEach(r => {
-        if (r.success) debateMessages.value.push({ id: Date.now() + roundIdx * 100 + Math.random(), expert: r.expert, response: r.response, round: roundIdx + 1, confidence: r.confidence })
-      })
+    const result = await allianceApi.collaborate(COLLAB_MODE.DEBATE, {
+      topic: debateConfig.topic,
+      expertIds: debateConfig.selectedExpertIds,
+      rounds: debateConfig.rounds
     })
-    debateSummary.value = result?.final_synthesis || result?.data?.final_synthesis || ''
+    debateTurns.value = collabDebateTurns(result)
+    debateSummary.value = result.verdict.summary
     debateStatus.value = 'summarized'
-    appendDebateToCollab()
-    ElMessage.success(`辩论完成，共 ${debateConfig.rounds} 轮`)
+    appendDebateToCollab(result)
+    ElMessage.success(`辩论完成，共 ${result.rounds} 轮，${result.verdict.winner || '未见'}占优`)
   } catch (e) { debateStatus.value = 'preparing'; ElMessage.error(`辩论服务调用失败：${e?.message || '未知错误'}`) }
   finally { debateSubmitting.value = false }
 }
 
-function appendDebateToCollab() {
+function appendDebateToCollab(result) {
   if (!activeSession.value) {
     const newSess = { id: 'sess-' + Date.now(), title: debateConfig.topic.slice(0, 20) + '…', expert_count: debateConfig.selectedExpertIds.length, mode: 'debate', created_at: Date.now(), updated_at: Date.now() }
     sessions.value.unshift(newSess)
     selectSession(newSess)
   }
-  collabMessages.value.push({ id: Date.now(), role: 'system', name: '辩论系统', avatar: '⚔️', color: '#ef4444', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: `【辩论开始】主题：${debateConfig.topic}` })
-  debateMessages.value.forEach(msg => {
-    collabMessages.value.push({ id: Date.now() + Math.random(), role: 'expert', name: msg.expert?.name || '专家', avatar: expertEmoji(msg.expert?.type), color: expertColor(msg.expert?.type), phase: 'debate', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: msg.response })
+  const now = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  collabMessages.value.push({ id: Date.now(), role: 'system', name: '辩论系统', avatar: '⚔️', color: '#ef4444', time: now(), text: `【辩论开始】辩题：${result.topic}` })
+  debateTurns.value.forEach(turn => {
+    const speaker = debateSpeakerExpert(result, turn.side)
+    const key = expertVisualKey(speaker)
+    collabMessages.value.push({ id: Date.now() + Math.random(), role: 'expert', name: `${turn.sideLabel}·${turn.name}`, avatar: expertEmoji(key), color: expertColor(key), phase: 'debate', time: now(), text: `${turn.text}（第 ${turn.round} 轮 ${turn.score.toFixed(2)} 分）` })
   })
-  if (debateSummary.value) collabMessages.value.push({ id: Date.now() + 999, role: 'assistant', name: '辩论总结', avatar: '📝', color: '#10b981', phase: 'synthesize', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: debateSummary.value })
+  if (debateSummary.value) collabMessages.value.push({ id: Date.now() + 999, role: 'assistant', name: '辩论裁决', avatar: '📝', color: '#10b981', phase: 'synthesize', time: now(), text: `${debateSummary.value}${collabResultNote(result)}` })
   scrollMessagesToBottom()
 }
 
 // ========== 多专家咨询 ==========
-const multiConsultConfig = reactive({ question: '', selectedExpertIds: [], mode: 'parallel' })
+const multiDef = collabModeOf(COLLAB_MODE.MULTI)
+const multiConsultConfig = reactive({ question: '', selectedExpertIds: [] })
 const multiConsultResults = ref([])
+const multiConsultFusion = ref(null)
 const multiConsultCompareView = ref(false)
-const canStartMultiConsult = computed(() => multiConsultConfig.question.trim() && multiConsultConfig.selectedExpertIds.length >= 1)
+const multiConsultProblem = computed(() => collabProblem(multiDef, multiConsultConfig))
+const canStartMultiConsult = computed(() => !multiConsultProblem.value)
 
 function openMultiConsultDialog() {
   multiConsultConfig.question = ''
   multiConsultConfig.selectedExpertIds = [...selectedExpertIds.value]
-  multiConsultConfig.mode = 'parallel'
   multiConsultResults.value = []
+  multiConsultFusion.value = null
   multiConsultCompareView.value = false
   showMultiConsultDialog.value = true
 }
@@ -571,53 +587,62 @@ async function startMultiConsult() {
   if (!canStartMultiConsult.value) return
   multiConsultSubmitting.value = true
   multiConsultResults.value = []
+  multiConsultFusion.value = null
   try {
-    const result = await multiExpertConsult({ question: multiConsultConfig.question, expert_ids: multiConsultConfig.selectedExpertIds, mode: multiConsultConfig.mode })
-    const results = result?.results || result?.data?.results || []
-    multiConsultResults.value = results.filter(r => r.success).map(r => ({ expert: r.expert, response: r.response, confidence: r.confidence, duration_ms: r.duration_ms }))
+    const result = await allianceApi.collaborate(COLLAB_MODE.MULTI, {
+      question: multiConsultConfig.question,
+      expertIds: multiConsultConfig.selectedExpertIds
+    })
+    // 后端回的键是 experts，旧代码读 results/successful 那两个键在本仓库任何实现里都不存在
+    multiConsultResults.value = collabContributionItems(result)
+    multiConsultFusion.value = result.fusion
     ElMessage.success(`咨询完成，共 ${multiConsultResults.value.length} 位专家参与`)
   } catch (e) { ElMessage.error(`多专家咨询服务调用失败：${e?.message || '未知错误'}`) }
   finally { multiConsultSubmitting.value = false }
 }
 
 // ========== 智能路由匹配 ==========
+const routeDef = collabModeOf(COLLAB_MODE.ROUTE)
+const routeDefaults = Object.fromEntries(collabControlValue(routeDef, {}).map((c) => [c.wire, c.value]))
 const smartRouteQuestion = ref('')
 const smartRouteResult = ref(null)
-const smartRouteMaxExperts = ref(3)
+const smartRouteMaxExperts = ref(routeDefaults.max_experts)
+const smartRouteRows = computed(() => collabCandidateItems(smartRouteResult.value))
+const smartRouteProblem = computed(() => collabProblem(routeDef, { question: smartRouteQuestion.value }))
 
 function openSmartRouteDialog() {
   smartRouteQuestion.value = ''
   smartRouteResult.value = null
-  smartRouteMaxExperts.value = 3
+  smartRouteMaxExperts.value = routeDefaults.max_experts
   showSmartRouteDialog.value = true
 }
 
 async function doSmartRoute() {
-  if (!smartRouteQuestion.value.trim()) return
+  if (smartRouteProblem.value) return
   smartRoutingLoading.value = true
   smartRouteResult.value = null
   try {
-    const result = await routeExperts({ question: smartRouteQuestion.value, maxExperts: smartRouteMaxExperts.value })
-    smartRouteResult.value = result?.data || result
-    ElMessage.success('智能匹配完成')
+    smartRouteResult.value = await allianceApi.collaborate(COLLAB_MODE.ROUTE, {
+      question: smartRouteQuestion.value,
+      maxExperts: smartRouteMaxExperts.value
+    })
+    ElMessage.success(`智能匹配完成，候选 ${smartRouteRows.value.length} 位`)
   } catch (e) {
     ElMessage.error(e?.message || '智能路由服务调用失败')
   } finally { smartRoutingLoading.value = false }
 }
 
 function selectRoutedExpert(item) {
-  const id = item.id || item.expert_id
+  const id = item?.id
   if (!id) return
   if (!selectedExpertIds.value.includes(id)) selectedExpertIds.value.push(id)
-  ElMessage.success(`已选择专家「${item.name || item.expert_name}」`)
+  ElMessage.success(`已选择专家「${item.name || '专家'}」`)
 }
 
 function selectAllRoutedExperts() {
-  const items = smartRouteResult.value?.selected || []
   let added = 0
-  items.forEach(item => {
-    const id = item.id || item.expert_id
-    if (id && !selectedExpertIds.value.includes(id)) { selectedExpertIds.value.push(id); added++ }
+  smartRouteRows.value.forEach(item => {
+    if (item.id && !selectedExpertIds.value.includes(item.id)) { selectedExpertIds.value.push(item.id); added++ }
   })
   if (added > 0) ElMessage.success(`已添加 ${added} 位推荐专家`)
   else ElMessage.info('推荐专家均已选中')
@@ -805,14 +830,16 @@ async function createDoc() {
 }
 
 // ========== AI 助手 ==========
+// 能力清单取自 GET /api/experts/capabilities（只统计 enabled 专家，后端按 capability id 升序）。
+// 原实现读的是编排器独占端点、且取该端点从未产出的一个键，所以界面一直落在写死文案上；
+// 被禁端点已于 2026-09-27 归一化撤除（见模块 contract/endpoints.js）。
 const allianceCapabilitiesList = ref([])
 
 async function loadAllianceCapabilities() {
   try {
-    const caps = await getAllianceCapabilities()
-    if (caps?.intent_classes_7) allianceCapabilitiesList.value = caps.intent_classes_7
-    else allianceCapabilitiesList.value = ['7 类意图识别', '专家智能匹配', '多轮交叉辩论', '综合方案归纳', '质量闸门把关', '知识增量学习', '14 维度评估']
-  } catch (e) { allianceCapabilitiesList.value = ['7 类意图识别', '专家智能匹配', '多轮交叉辩论', '综合方案归纳', '质量闸门把关', '知识增量学习', '14 维度评估'] }
+    const caps = await allianceApi.listExpertCapabilities()
+    allianceCapabilitiesList.value = caps.items.map((c) => `${c.name}·${c.expertCount} 位专家`)
+  } catch (e) { allianceCapabilitiesList.value = [] }
 }
 
 function openAIAssistant() { aiAssistantOpen.value = !aiAssistantOpen.value }

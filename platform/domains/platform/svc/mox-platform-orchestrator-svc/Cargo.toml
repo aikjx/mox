@@ -58,6 +58,8 @@ async-trait = { workspace = true }
 tokio-tungstenite = { workspace = true }
 futures-util = { workspace = true }
 reqwest = { workspace = true }
+# 事件基础设施（归一化第①步：OUSS 域事件桥接到共享总线权威）
+mox-event-core = { workspace = true }
 
 [dev-dependencies]
 # No workspace service crate is declared here. Cross-crate contract constants are verified

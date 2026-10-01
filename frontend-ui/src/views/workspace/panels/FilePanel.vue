@@ -67,7 +67,7 @@
 <script setup>
 import { ref } from 'vue'
 import { Upload, Document, Download } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 const props = defineProps({
   sharedFiles: { type: Array, default: () => [] }

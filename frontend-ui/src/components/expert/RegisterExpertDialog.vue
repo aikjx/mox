@@ -253,10 +253,10 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Warning } from '@element-plus/icons-vue'
-import { EXPERT_TYPES } from '@/constants/expert.constants'
-import { registerExpert } from '@/api/experts.api.js'
+import { EXPERT_TYPES, expertColor, expertEmoji } from '@/constants'
+import { registerExpert } from '@/api'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false }
@@ -311,29 +311,9 @@ const experienceLevels = [
 ]
 
 // ========== 辅助函数 ==========
-function typeEmoji(type) {
-  const emojis = {
-    algorithm: '🧮', architecture: '🏗️', data: '🔗',
-    ai: '🤖', workflow: '⚡', graph: '🕸️',
-    security: '🔒', performance: '🚀', monitor: '📊',
-    market: '📈', mcp: '🔌', automation: '🤖',
-    requirement: '📋', fusion: '🔀', operator: '⚙️',
-    custom: '👤'
-  }
-  return emojis[type] || '👤'
-}
+function typeEmoji(type) { return expertEmoji(type) }
 
-function typeColor(type) {
-  const colors = {
-    algorithm: '#6366f1', architecture: '#0891b2', data: '#10b981',
-    ai: '#ec4899', workflow: '#f59e0b', operator: '#8b5cf6',
-    graph: '#06b6d4', security: '#ef4444', performance: '#14b8a6',
-    monitor: '#f97316', market: '#f43f5e', mcp: '#a855f7',
-    automation: '#0ea5e9', requirement: '#16a34a', fusion: '#7c3aed',
-    custom: '#64748b'
-  }
-  return colors[type] || colors.custom
-}
+function typeColor(type) { return expertColor(type) }
 
 function tagTypeByLevel(level) {
   const map = {
@@ -475,6 +455,10 @@ watch(() => props.modelValue, (val) => {
 </script>
 
 <style scoped>
+/* 原先整版把「浅色皮的淡染底 + 深字对」写死在组件里，所以对换肤全盲，且深色三皮下是真跌破：
+   错误框的近白底配深红字只在浅皮成立，选中态的深靛字压在深蓝底上不足 2:1。
+   底与字一起迁到 --x-dim（淡染底）/ --x（字与描边）/ --x-fill + --on-x（色块底与其上的字）三档，
+   迁后四皮逐对实测见 reports/markdown/module-governance.md。旧值不在此复述 —— 台账把注释里的字面量也计入。 */
 .register-expert-dialog :deep(.el-dialog__body) {
   padding-top: 8px;
 }
@@ -499,7 +483,7 @@ watch(() => props.modelValue, (val) => {
   height: 32px;
   border-radius: 50%;
   background: var(--bg-tertiary);
-  color: #64748b;
+  color: var(--text-tertiary);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -508,23 +492,23 @@ watch(() => props.modelValue, (val) => {
   transition: all 0.3s ease;
 }
 .step-item.active .step-dot {
-  background: linear-gradient(135deg, #6366f1, #0ea5e9);
-  color: #fff;
+  background: var(--brand-fill);
+  color: var(--on-brand);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
 }
 .step-item.done .step-dot {
-  background: #10b981;
-  color: #fff;
+  background: var(--success-fill);
+  color: var(--on-success);
 }
 .step-label {
   margin-left: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-tertiary);
   white-space: nowrap;
 }
-.step-item.active .step-label { color: #6366f1; }
-.step-item.done .step-label { color: #10b981; }
+.step-item.active .step-label { color: var(--brand-accent); }
+.step-item.done .step-label { color: var(--success); }
 .step-line {
   flex: 1;
   height: 2px;
@@ -532,7 +516,7 @@ watch(() => props.modelValue, (val) => {
   margin: 0 12px;
   min-width: 30px;
 }
-.step-item.done .step-line { background: #10b981; }
+.step-item.done .step-line { background: var(--success-fill); }
 
 .step-content {
   min-height: 320px;
@@ -586,7 +570,7 @@ watch(() => props.modelValue, (val) => {
 }
 .emoji-preset.active {
   background: var(--accent-dim);
-  box-shadow: inset 0 0 0 2px #6366f1;
+  box-shadow: inset 0 0 0 2px var(--brand-accent);
 }
 
 /* 领域选择 */
@@ -610,9 +594,9 @@ watch(() => props.modelValue, (val) => {
   background: var(--bg-tertiary);
 }
 .domain-tag.active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(14, 165, 233, 0.08));
-  color: #4338ca;
-  border-color: #c7d2fe;
+  background: var(--accent-dim);
+  color: var(--brand-accent);
+  border-color: var(--brand-accent);
   font-weight: 600;
 }
 
@@ -638,11 +622,11 @@ watch(() => props.modelValue, (val) => {
 }
 .preset-label {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 .preset-tag {
   font-size: 11.5px;
-  color: #6366f1;
+  color: var(--brand-accent);
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 4px;
@@ -671,9 +655,9 @@ watch(() => props.modelValue, (val) => {
   align-items: center;
   gap: 10px;
   padding: 20px;
-  background: linear-gradient(135deg, #fafbff, #f0fdf4);
+  background: var(--accent-dim);
   border-radius: 12px;
-  border: 1px solid #e0e7ff;
+  border: 1px solid var(--border);
 }
 .confirm-avatar {
   width: 64px;
@@ -705,7 +689,7 @@ watch(() => props.modelValue, (val) => {
   font-size: 13px;
 }
 .info-label {
-  color: #64748b;
+  color: var(--text-tertiary);
   font-weight: 500;
 }
 .info-value {
@@ -715,17 +699,17 @@ watch(() => props.modelValue, (val) => {
 .desc-value {
   line-height: 1.6;
 }
-.muted { color: #94a3b8; }
+.muted { color: var(--text-tertiary); }
 
 .submit-error {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger);
   border-radius: 8px;
-  color: #b91c1c;
+  color: var(--danger);
   font-size: 13px;
 }
 

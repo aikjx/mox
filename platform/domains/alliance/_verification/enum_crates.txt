@@ -1,0 +1,122 @@
+=== TOP: _verification ===
+=== TOP: api ===
+  [crate-at-top] Cargo.toml: D:\a10\aikjx\gitcode\infotopograph\platform\domains\alliance\api\Cargo.toml
+  - src | Cargo.toml=False lib.rs=False main.rs=False
+=== TOP: core ===
+  - mox-alliance-boot-config | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-boot-config"
+      lib.rs modules (5):
+        pub mod config_store;
+        pub mod experts;
+        pub mod nacos_config;
+        pub mod naming;
+        mod tests {
+  - mox-alliance-config-core | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-config-core"
+      lib.rs modules (6):
+        pub mod engine;
+        pub mod error;
+        pub mod events;
+        pub mod store;
+        pub mod validator;
+        pub mod examples;
+  - mox-alliance-core | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-core"
+      lib.rs modules (3):
+        pub mod dag;
+        pub mod fusion;
+        pub mod utils;
+  - mox-alliance-executor-core | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-executor-core"
+      lib.rs modules (6):
+        pub mod condition;
+        pub mod dag_engine;
+        pub mod expert_executor;
+        pub mod fusion;
+        pub mod mock_executor;
+        pub mod state_sink;
+  - mox-alliance-registry-core | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-registry-core"
+      lib.rs modules (1):
+        pub mod aggregation;
+  - mox-alliance-scheduler-core | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-scheduler-core"
+      lib.rs modules (13):
+        pub mod matcher;
+        pub mod matching;
+        pub mod modular_matcher;
+        pub mod planner;
+        pub mod scheduler;
+        pub mod llm_router;
+        pub mod executor_bridge;
+        pub mod registry;
+        pub mod synchronizer;
+        pub mod config_sync;
+        pub mod storage;
+        pub mod leadership;
+        pub mod metrics;
+=== TOP: proto ===
+  - mox-alliance-common-proto | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-common-proto"
+      lib.rs modules (6):
+        pub mod constants;
+        pub mod error;
+        pub mod events;
+        pub mod naming;
+        pub mod traits;
+        pub mod types;
+  - mox-alliance-executor-proto | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-executor-proto"
+      lib.rs modules (3):
+        pub mod dag_engine;
+        pub mod node_executor;
+        pub mod types;
+  - mox-alliance-registry-proto | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-registry-proto"
+      lib.rs modules (3):
+        pub mod errors;
+        pub mod traits;
+        pub mod types;
+  - mox-alliance-scheduler-proto | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-scheduler-proto"
+      lib.rs modules (3):
+        pub mod matcher;
+        pub mod scheduler;
+        pub mod types;
+=== TOP: sdk ===
+  - mox-alliance-http-sdk | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-http-sdk"
+      lib.rs modules (2):
+        pub mod alliance;
+        pub mod alliance_remote;
+  - mox-alliance-sdk | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-sdk"
+      lib.rs modules (1):
+        pub mod client;
+=== TOP: svc ===
+  - mox-alliance-executor-svc | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-executor-svc"
+      lib.rs modules (4):
+        pub mod app_state;
+        pub mod routes;
+        pub mod server;
+        pub mod state_sink;
+  - mox-alliance-registry-svc | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-registry-svc"
+      lib.rs modules (7):
+        pub mod app_state;
+        pub mod contract;
+        pub mod health_probe;
+        pub mod models;
+        pub mod routes;
+        pub mod server;
+        pub mod storage;
+  - mox-alliance-scheduler-svc | Cargo.toml=True lib.rs=True main.rs=False
+      crate-name: name = "mox-alliance-scheduler-svc"
+      lib.rs modules (4):
+        pub mod app_state;
+        pub mod ha;
+        pub mod routes;
+        pub mod server;
+=== TOP: tools ===
+  - rnacos | Cargo.toml=False lib.rs=False main.rs=False

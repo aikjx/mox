@@ -66,6 +66,7 @@
 | `alliance-architecture-fix-report-20260831.html` / `alliance-architecture-review-20260831.html` | 架构修复与评审 |
 | `alliance-verification-report-round3~6-*.html` | round3~6 验证报告 |
 | `mox-expert-alliance-processing-mode.md` · `mox-algorithm-alliance-flow.md` | 处理模式与流程 |
+| `20260927_expert-alliance-full-dimensional-validation.md` | 全维度现状验证 + 人审 gate/专家指标两处纯逻辑增量 |
 
 ### 归一化与治理
 

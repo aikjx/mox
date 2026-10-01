@@ -3,7 +3,9 @@
  * 职责：任务智能拆解、子任务CRUD、专家分配、任务执行、甘特图布局
  */
 import { ref, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { EXPERT_AVAILABILITY } from '@/modules/expert-alliance/contract'
+import { expertPickable, expertVisualKey } from '@/modules/expert-alliance/model'
 
 export function useTaskOrchestration(experts, expertColor, expertEmoji, addHistoryEvent, addOrchMessage) {
   const taskOrchestration = reactive({
@@ -119,16 +121,14 @@ export function useTaskOrchestration(experts, expertColor, expertEmoji, addHisto
       await new Promise(resolve => setTimeout(resolve, 1000))
       let assignedCount = 0
       taskOrchestration.subtasks.forEach(task => {
-        const matchingExperts = experts?.value?.filter(e => e.type === task.suggestedExpertType && e.status !== 'offline') || []
-        if (matchingExperts.length > 0) {
-          const bestExpert = matchingExperts.sort((a, b) => expertLoad(a.id) - expertLoad(b.id))[0]
+        // 领域键匹配（配色/筛选同一套词表），停用专家不参与分配
+        const pickable = (experts?.value || []).filter(expertPickable)
+        const onlinePool = pickable.filter(e => e.status !== EXPERT_AVAILABILITY.OFFLINE)
+        const matchingExperts = onlinePool.filter(e => expertVisualKey(e) === task.suggestedExpertType)
+        const candidates = matchingExperts.length > 0 ? matchingExperts : onlinePool
+        if (candidates.length > 0) {
+          const bestExpert = candidates.sort((a, b) => expertLoad(a.id) - expertLoad(b.id))[0]
           if (!task.expertIds.includes(bestExpert.id)) { task.expertIds = [bestExpert.id]; assignedCount++ }
-        } else {
-          const available = experts?.value?.filter(e => e.status !== 'offline') || []
-          if (available.length > 0) {
-            const bestExpert = available.sort((a, b) => expertLoad(a.id) - expertLoad(b.id))[0]
-            if (!task.expertIds.includes(bestExpert.id)) { task.expertIds = [bestExpert.id]; assignedCount++ }
-          }
         }
       })
       ElMessage.success(`已智能分配 ${assignedCount} 个任务`)
@@ -156,13 +156,13 @@ export function useTaskOrchestration(experts, expertColor, expertEmoji, addHisto
       if (!depsCompleted) { task.status = 'waiting'; continue }
       task.status = 'inProgress'; task.startTime = Date.now()
       const expert = getExpertById(task.expertIds[0])
-      addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert?.type) || '🤖', color: expertColor?.(expert?.type) || '#6366f1', text: `开始执行「${task.title}」...`, status: 'thinking', phase: 'orchestration' })
+      addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expertVisualKey(expert)) || '🤖', color: expertColor?.(expertVisualKey(expert)) || '#6366f1', text: `开始执行「${task.title}」...`, status: 'thinking', phase: 'orchestration' })
       await new Promise(resolve => setTimeout(resolve, Math.min(task.estimatedTime * 50, 2000)))
       const success = Math.random() > 0.1
       if (success) {
         task.status = 'completed'; task.endTime = Date.now()
         task.result = `「${task.title}」执行完成，结果符合预期。\n核心产出：${task.description}的详细方案和实现代码。`
-        addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert?.type) || '🤖', color: expertColor?.(expert?.type) || '#6366f1', text: `✅ **${task.title}** 执行完成\n\n${task.result}`, status: 'done', phase: 'orchestration' })
+        addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expertVisualKey(expert)) || '🤖', color: expertColor?.(expertVisualKey(expert)) || '#6366f1', text: `✅ **${task.title}** 执行完成\n\n${task.result}`, status: 'done', phase: 'orchestration' })
       } else {
         task.status = 'failed'; task.result = '执行过程中遇到问题，需要人工介入。'
         addOrchMessage?.({ role: 'assistant', name: expert?.name || 'AI专家', avatar: expertEmoji?.(expert?.type) || '🤖', color: '#ef4444', text: `❌ **${task.title}** 执行失败\n\n执行过程中遇到异常，请检查任务配置或重新分配专家。`, status: 'failed', phase: 'orchestration' })

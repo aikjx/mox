@@ -76,6 +76,7 @@
 </template>
 
 <script setup>
+import { Refresh } from "@element-plus/icons-vue";
 import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import * as echarts from '@/echarts'

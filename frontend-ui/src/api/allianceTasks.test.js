@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('./http', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
 import http from './http'
-import { createAllianceTask, getAllianceTasks, getAllianceTaskDag, getAllianceTaskLogs, getAllianceTaskStatus, getAllianceFusionResult } from './alliance'
+import { createAllianceTask, getAllianceTasks, getAllianceTaskDag, getAllianceTaskLogs, getAllianceTaskStatus, getAllianceFusionResult } from './alliance.api'
 
 describe('alliance gateway contracts', () => {
   beforeEach(() => vi.clearAllMocks())

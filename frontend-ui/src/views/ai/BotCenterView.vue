@@ -66,10 +66,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { VideoCamera, Document } from '@element-plus/icons-vue'
 import { getFlows, getFlow } from '@/api'
-import FlowDetailDialog from '@/components/FlowDetailDialog.vue'
+import { FlowDetailDialog } from '@/components'
 
 const route = useRoute()
 const flows = ref([])
@@ -189,12 +189,12 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 .q-video {
-  --el-button-bg-color: #eef2ff;
-  --el-button-border-color: #c7d2fe;
-  --el-button-text-color: #4f46e5;
-  --el-button-hover-bg-color: #e0e7ff;
-  --el-button-hover-border-color: #a5b4fc;
-  --el-button-hover-text-color: #4338ca;
+  --el-button-bg-color: var(--brand-50);
+  --el-button-border-color: var(--el-color-primary-light-5);
+  --el-button-text-color: var(--brand);
+  --el-button-hover-bg-color: var(--el-color-primary-light-7);
+  --el-button-hover-border-color: var(--el-color-primary-light-3);
+  --el-button-hover-text-color: var(--brand);
 }
 .q-log {
   --el-button-bg-color: #fff7ed;

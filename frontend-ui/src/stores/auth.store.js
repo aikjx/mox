@@ -5,9 +5,10 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import authApi from '../api/auth'
-import { registerAuthTokenGetter } from '../api/http'
-import { getToken, removeToken } from '../utils/secureStorage'
+import { login, refreshToken, getCurrentUser, register, logout } from '@/api'
+const authApi = { login, refreshToken, getCurrentUser, register, logout }
+import { registerAuthTokenGetter } from '@/api'
+import { getToken, removeToken } from '@/utils'
 
 // 本地存储键名
 const TOKEN_KEY = 'mox_access_token'

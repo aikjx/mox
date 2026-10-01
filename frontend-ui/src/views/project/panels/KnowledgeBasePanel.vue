@@ -780,7 +780,8 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import {
   Plus, Search, Refresh, View, Edit, Delete, MagicStick,
   Share, Document, Folder, CollectionTag, Clock, Check, Close,
@@ -788,7 +789,7 @@ import {
   List, Grid, Loading, PriceTag, Collection
 } from '@element-plus/icons-vue'
 import * as api from '@/api'
-import { useProject } from '@/composables/projectContext.js'
+import { useProject } from '@/composables'
 
 // ========== State ==========
 const documents = ref([])
@@ -873,29 +874,29 @@ const statCards = computed(() => [
     label: '文档总数',
     value: stats.value.total ?? 0,
     icon: 'Document',
-    color: '#6366f1',
-    bg: '#eef2ff'
+    color: 'var(--on-cat-1)',
+    bg: 'var(--cat-1-fill)'
   },
   {
     label: '分类数',
     value: stats.value.categories ?? 0,
     icon: 'Folder',
-    color: '#06b6d4',
-    bg: '#ecfeff'
+    color: 'var(--on-cat-2)',
+    bg: 'var(--cat-2-fill)'
   },
   {
     label: '版本总数',
     value: stats.value.versions ?? 0,
     icon: 'Clock',
-    color: '#10b981',
-    bg: '#ecfdf5'
+    color: 'var(--on-cat-3)',
+    bg: 'var(--cat-3-fill)'
   },
   {
     label: '已分析',
     value: stats.value.analyzed ?? 0,
     icon: 'MagicStick',
-    color: '#f59e0b',
-    bg: '#fffbeb'
+    color: 'var(--on-cat-4)',
+    bg: 'var(--cat-4-fill)'
   }
 ])
 
@@ -1803,9 +1804,9 @@ watch(detailVisible, (v) => {
 }
 
 .tag-item.active {
-  background: var(--brand) !important;
-  color: #fff !important;
-  border-color: var(--brand) !important;
+  background: var(--brand-fill) !important;
+  color: var(--on-brand) !important;
+  border-color: var(--brand-fill) !important;
 }
 
 .tag-count {
@@ -1847,8 +1848,8 @@ watch(detailVisible, (v) => {
 }
 
 .badge-count {
-  background: var(--danger);
-  color: #fff;
+  background: var(--danger-fill);
+  color: var(--on-danger);
   font-size: 10px;
   padding: 1px 6px;
   border-radius: 10px;
@@ -2234,8 +2235,8 @@ watch(detailVisible, (v) => {
   width: 50px;
   height: 50px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--brand-light), var(--accent));
-  color: #fff;
+  background: linear-gradient(135deg, var(--brand-fill), var(--accent-fill));
+  color: var(--on-brand);
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -2429,16 +2430,16 @@ watch(detailVisible, (v) => {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--brand);
-  border: 3px solid #fff;
+  background: var(--brand-fill); color: var(--on-brand);
+  border: 3px solid var(--on-brand);
   box-shadow: 0 0 0 2px var(--brand);
 }
 
-.history-dot.update { background: var(--brand); box-shadow: 0 0 0 2px var(--brand-soft); }
-.history-dot.create { background: var(--success); box-shadow: 0 0 0 2px #ecfdf5; }
-.history-dot.analyze { background: var(--warning); box-shadow: 0 0 0 2px #fffbeb; }
-.history-dot.delete { background: var(--danger); box-shadow: 0 0 0 2px #fef2f2; }
-.history-dot.link { background: #7c3aed; box-shadow: 0 0 0 2px #ede9fe; }
+.history-dot.update { background: var(--brand-fill); color: var(--on-brand); box-shadow: 0 0 0 2px var(--brand-soft); }
+.history-dot.create { background: var(--success); box-shadow: 0 0 0 2px var(--success); }
+.history-dot.analyze { background: var(--warning); box-shadow: 0 0 0 2px var(--warning); }
+.history-dot.delete { background: var(--danger); box-shadow: 0 0 0 2px var(--danger); }
+.history-dot.link { background: var(--violet); box-shadow: 0 0 0 2px var(--violet); }
 
 .history-content {
   padding: 10px 14px;
@@ -2638,11 +2639,13 @@ watch(detailVisible, (v) => {
   height: 12px;
   border-radius: 3px;
   display: inline-block;
+  box-sizing: border-box;
 }
 
-.legend-added { background: #dcfce7; }
-.legend-removed { background: #fef2f2; }
-.legend-changed { background: #fef3c7; }
+/* 淡染底在四皮下与卡面只差 1.04–1.24:1，色块必须靠描边才认得出边界 */
+.legend-added { background: var(--success-dim); border: 1px solid var(--success); }
+.legend-removed { background: var(--danger-dim); border: 1px solid var(--danger); }
+.legend-changed { background: var(--warning-dim); border: 1px solid var(--warning); }
 
 /* Edit Dialog */
 .edit-dialog-footer {
@@ -2658,13 +2661,13 @@ watch(detailVisible, (v) => {
 }
 
 :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #1e1b4b, #312e81);
+  background: var(--brand-50);
   margin-right: 0;
   padding: 16px 20px;
 }
 
 :deep(.el-dialog__title) {
-  color: #fff;
+  color: var(--brand);
   font-weight: 700;
 }
 
@@ -2708,7 +2711,7 @@ watch(detailVisible, (v) => {
 }
 
 .kb-view ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--text-3);
 }
 
 .kb-view ::-webkit-scrollbar-track {

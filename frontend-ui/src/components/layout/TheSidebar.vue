@@ -28,10 +28,11 @@
               v-for="item in section.items"
               :key="item.key"
               class="ms-sidebar-item"
-              :class="{ active: activeItemKey === item.key }"
-              @click="activeItemKey = item.key"
+              :class="{ active: activeItemKey === item.key, navigable: !!item.path }"
+              @click="onItemActivate(item)"
             >
-              <span class="ms-item-icon">{{ item.icon }}</span>
+              <span v-if="isIconComponent(item.icon)" class="ms-item-icon ep-icon"><component :is="item.icon" /></span>
+              <span v-else class="ms-item-icon">{{ item.icon }}</span>
               <span class="ms-item-label">{{ item.label }}</span>
               <span v-if="item.count != null" class="ms-item-count">{{ item.count }}</span>
             </div>
@@ -43,9 +44,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { MODULE_SIDEBAR_CONFIG } from '@/constants'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useActiveModule } from '@/composables'
 
 defineProps({
   collapsed: { type: Boolean, default: false },
@@ -54,33 +55,24 @@ defineProps({
 
 defineEmits(['toggle-collapse'])
 
-const route = useRoute()
-const activeItemKey = ref('')
+const router = useRouter()
+const { route, config: currentModule } = useActiveModule()
 
-// 模块匹配
-const currentModuleKey = computed(() => {
-  const p = route.path
-  if (p.startsWith('/dashboard')) return 'dashboard'
-  if (p.startsWith('/projects')) return 'projects'
-  if (p.startsWith('/tasks')) return 'tasks'
-  if (p.startsWith('/expert-workspace') || p.startsWith('/expert-center') || p.startsWith('/expert-plaza')) return 'expert'
-  if (p.startsWith('/ai')) return 'ai'
-  if (p.startsWith('/graph')) return 'graph'
-  if (p.startsWith('/operators')) return 'operators'
-  if (p.startsWith('/workflow')) return 'workflow'
-  if (p.startsWith('/market')) return 'market'
-  if (p.startsWith('/admin')) return 'admin'
-  return 'dashboard'
+// 高亮态由路由派生，不再依赖点击本地状态（点过就消失的问题即此）
+const activeItemKey = computed(() => {
+  const items = currentModule.value.sections.flatMap(s => s.items || [])
+  return items.find(i => i.path && i.path === route.path)?.key ?? ''
 })
 
-const currentModule = computed(() => {
-  return MODULE_SIDEBAR_CONFIG[currentModuleKey.value] || MODULE_SIDEBAR_CONFIG.dashboard
-})
+function onItemActivate(item) {
+  if (!item.path || item.path === route.path) return
+  router.push(item.path)
+}
 
-// 路由变化时重置 active item
-watch(currentModuleKey, () => {
-  activeItemKey.value = ''
-})
+// 旧配置用 emoji，模块登记的 nav 用 Element Plus 图标名（main.js 已全局注册）
+function isIconComponent(icon) {
+  return typeof icon === 'string' && /^[A-Z][A-Za-z]+$/.test(icon)
+}
 
 function focusTopbarSearch() {
   // 触发全局搜索快捷键
@@ -95,8 +87,8 @@ defineExpose({ refreshHealth: () => {} })
 .module-sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: var(--bg-tertiary, #1e2130);
-  border-right: 1px solid var(--border, #2d3148);
+  background: var(--bg-tertiary);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -124,7 +116,7 @@ defineExpose({ refreshHealth: () => {} })
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--border, #2d3148);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -136,13 +128,13 @@ defineExpose({ refreshHealth: () => {} })
 .ms-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #e8eaed);
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
 .ms-subtitle {
   font-size: 11px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -151,8 +143,8 @@ defineExpose({ refreshHealth: () => {} })
   height: 28px;
   border: none;
   border-radius: 6px;
-  background: var(--bg-card, #242838);
-  color: var(--text-secondary, #9aa0b4);
+  background: var(--bg-card);
+  color: var(--text-secondary, var(--text-tertiary));
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -160,8 +152,8 @@ defineExpose({ refreshHealth: () => {} })
   transition: all 0.15s ease;
 }
 .ms-collapse-btn:hover {
-  background: var(--bg-hover, #2a2f45);
-  color: var(--text-primary, #e8eaed);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 .ms-collapse-icon {
   font-size: 16px;
@@ -176,37 +168,37 @@ defineExpose({ refreshHealth: () => {} })
   gap: 8px;
   padding: 8px 12px;
   margin: 12px 16px;
-  background: var(--bg-card, #242838);
-  border: 1px solid var(--border, #2d3148);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
 .ms-search:hover {
-  border-color: var(--accent, #6366f1);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(99,102,241,.1);
 }
 
 .ms-search-icon {
   font-size: 14px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .ms-search-placeholder {
   font-size: 12px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   flex: 1;
 }
 
 .ms-search-kbd {
   font-size: 10px;
   padding: 2px 5px;
-  background: var(--bg-tertiary, #1e2130);
-  border: 1px solid var(--border, #2d3148);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   flex-shrink: 0;
 }
@@ -222,14 +214,14 @@ defineExpose({ refreshHealth: () => {} })
   width: 4px;
 }
 .ms-nav::-webkit-scrollbar-thumb {
-  background: var(--border, #2d3148);
+  background: var(--border);
   border-radius: 2px;
 }
 
 .ms-section-title {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 8px 12px 6px;
@@ -248,17 +240,21 @@ defineExpose({ refreshHealth: () => {} })
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 13px;
-  color: var(--text-secondary, #9aa0b4);
-  cursor: pointer;
+  color: var(--text-secondary, var(--text-tertiary));
+  cursor: default;
   transition: all 0.15s ease;
 }
+/* 只有带 path 的条目可跳转；无 path 的旧配置项此前伪装成可点，是 FE-05 缺陷 */
+.ms-sidebar-item.navigable {
+  cursor: pointer;
+}
 .ms-sidebar-item:hover {
-  background: var(--bg-hover, #2a2f45);
-  color: var(--text-primary, #e8eaed);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 .ms-sidebar-item.active {
   background: var(--accent-dim, rgba(99,102,241,.15));
-  color: var(--accent-light, #818cf8);
+  color: var(--accent-light);
   font-weight: 500;
 }
 
@@ -281,13 +277,14 @@ defineExpose({ refreshHealth: () => {} })
   margin-left: auto;
   font-size: 11px;
   padding: 1px 6px;
-  background: var(--bg-card, #242838);
+  background: var(--bg-card);
   border-radius: 10px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 .ms-sidebar-item.active .ms-item-count {
-  background: var(--accent, #6366f1);
-  color: #fff;
+  /* 徽标是"字压在色块上"，走填充档位那一对；--accent 在多数皮肤里是亮档，压白字只有 1.8~4:1 */
+  background: var(--brand-fill);
+  color: var(--on-brand);
 }
 </style>

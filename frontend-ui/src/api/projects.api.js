@@ -44,7 +44,9 @@ export const getProjectActivities = (projectId, params) =>
 export const getProjectDocuments = (projectId, params) =>
   http.get(`/projects/${encodeURIComponent(projectId)}/documents`, { params })
 
-// 项目成员管理
+// 项目成员管理（读 + 三个写动作同属项目域）
+export const getProjectMembers = (projectId, params) =>
+  http.get(`/projects/${encodeURIComponent(projectId)}/members`, { params })
 export const addProjectMember = (projectId, data) =>
   http.post(`/projects/${encodeURIComponent(projectId)}/members`, data)
 export const updateProjectMember = (projectId, memberId, data) =>

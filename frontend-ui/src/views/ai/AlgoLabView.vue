@@ -138,9 +138,9 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Cpu, Right, Promotion } from '@element-plus/icons-vue'
-import { useProject } from '@/composables/projectContext.js'
+import { useProject } from '@/composables'
 import { analyzeAlgorithm, getAlgorithmTypes, analyzeSpiral } from '@/api'
 
 const router = useRouter()
@@ -251,18 +251,22 @@ onMounted(loadTypes)
 </script>
 
 <style scoped>
+/* 节点种类章与结论框原先写死一套「淡染底 + 深字」的浅色皮专用色表（三处章各一种 hue），
+   在深色三皮下是卡片上三块白斑。迁到 --x-dim + --x（外壳淡染章的既有写法，见 AllianceTaskView 的优先级章）。
+   AI 章的字取 --brand-accent 而非 --accent：后者在默认皮/浅皮下压淡染底只有 3.49 / 2.28:1，跌破 AA。
+   旧值不在此复述 —— 裸 hex 台账把注释里的字面量一并计入。 */
 .algo-page { display: flex; flex-direction: column; gap: 14px; }
 .page-head { margin-bottom: 4px; }
 .page-title { font-size: 20px; font-weight: 800; margin: 0; }
 .page-sub { color: var(--text-3); font-size: 13px; margin: 4px 0 0; }
-.panel { background: var(--bg-card, #fff); border: 1px solid var(--border); border-radius: 12px; }
+.panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
 .card-pad { padding: 16px; }
 .toolbar-actions { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
 .type-select { width: 200px; }
 .result { margin-top: 16px; }
 .result-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .result-title { font-size: 15px; font-weight: 700; margin: 0; }
-.summary { color: var(--text-2, #555); font-size: 13px; margin-bottom: 12px; }
+.summary { color: var(--text-2); font-size: 13px; margin-bottom: 12px; }
 .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .panel.sub { padding: 12px; }
 .sub-label { font-size: 12px; color: var(--text-3); margin-bottom: 8px; }
@@ -273,11 +277,11 @@ onMounted(loadTypes)
 }
 .an-kind {
   font-size: 11px; padding: 1px 6px; border-radius: 5px;
-  background: var(--bg-page, #f5f7fa); color: var(--text-3);
+  background: var(--bg-page); color: var(--text-3);
 }
-.k-gate { background: #fff3e0; color: #b26a00; }
-.k-send { background: #e8f5e9; color: #2e7d32; }
-.k-ai { background: #f3e5f5; color: #6a1b9a; }
+.k-gate { background: var(--warning-dim); color: var(--warning); }
+.k-send { background: var(--success-dim); color: var(--success); }
+.k-ai { background: var(--accent-dim); color: var(--brand-accent); }
 .an-name { font-weight: 600; }
 .aedge { font-family: var(--font-mono, monospace); font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
 .a-arrow { color: var(--text-3); font-size: 12px; }
@@ -290,13 +294,13 @@ onMounted(loadTypes)
 .algo-tag { font-size: 12px; }
 .spiral-inputs { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .verdict {
-  background: #fdf6ec; border: 1px solid #f5dab1; color: #b26a00;
+  background: var(--warning-dim); border: 1px solid var(--warning); color: var(--warning);
   border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px;
 }
 .kine { font-size: 12px; margin: 0; white-space: pre-wrap; }
 .check { font-size: 13px; padding: 4px 0; }
-.check.good { color: #2e7d32; }
-.check.bad { color: #c62828; }
+.check.good { color: var(--success); }
+.check.bad { color: var(--danger); }
 .plain-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.8; }
 .mono { font-family: var(--font-mono, monospace); }
 </style>

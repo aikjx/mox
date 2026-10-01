@@ -420,7 +420,7 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 223] = [
+pub static ROUTES: [ApiRoute; 236] = [
     // =====================================================================
     // Actuator 域（L0·Spring Boot 风格管理面·actuator.rs 实现）
     // =====================================================================
@@ -590,6 +590,7 @@ pub static ROUTES: [ApiRoute; 223] = [
     // Experts 域（L3·专家智能体集群·experts_*.rs 七个模块实现）
     // =====================================================================
     r("experts.registry.list", "GET", "/api/experts", "L3", "experts", "ready", "专家列表（注册中心）"),
+    r("experts.registry.register", "POST", "/api/experts", "L3", "experts", "ready", "专家注册（name 缺失或 id 冲突返回 400，落盘并写审计）"),
     r("experts.registry.capabilities", "GET", "/api/experts/capabilities", "L3", "experts", "ready", "专家能力清单"),
     r("experts.registry.metrics", "GET", "/api/experts/metrics", "L3", "experts", "ready", "专家运行指标"),
     r("experts.registry.overview", "GET", "/api/experts/overview", "L3", "experts", "ready", "专家体系总览"),
@@ -607,6 +608,8 @@ pub static ROUTES: [ApiRoute; 223] = [
     r("experts.collab.algorithm_analysis", "POST", "/api/experts/algorithm-analysis", "L3", "experts", "ready", "算法分析"),
     r("experts.collab.enterprise_consult", "POST", "/api/experts/enterprise/consult", "L3", "experts", "ready", "企业级咨询"),
     r("experts.collab.enterprise_analyze", "POST", "/api/experts/enterprise/analyze", "L3", "experts", "ready", "企业级分析"),
+    r("experts.dispatch.get_config", "GET", "/api/experts/dispatcher/config", "L3", "experts", "ready", "调度配置读取"),
+    r("experts.dispatch.update_config", "PUT", "/api/experts/dispatcher/config", "L3", "experts", "ready", "调度配置更新（合并式，strategy/阈值/重试/超时越界返回 400）"),
     r("experts.dispatch.status", "GET", "/api/experts/dispatcher/status", "L3", "experts", "ready", "调度器状态"),
     r("experts.dispatch.dispatch", "POST", "/api/experts/dispatcher/dispatch", "L3", "experts", "ready", "任务分发"),
     r("experts.dispatch.consult", "POST", "/api/experts/dispatcher/consult", "L3", "experts", "ready", "调度咨询"),
@@ -629,6 +632,8 @@ pub static ROUTES: [ApiRoute; 223] = [
     r("experts.orch.history", "GET", "/api/experts/orchestration/history", "L3", "experts", "ready", "编排历史"),
     r("experts.session.stats", "GET", "/api/experts/sessions/stats", "L3", "experts", "ready", "会话统计"),
     r("experts.session.list", "GET", "/api/experts/sessions", "L3", "experts", "ready", "会话列表（分页+状态/类型/专家/用户过滤+搜索）"),
+    r("experts.session.create", "POST", "/api/experts/sessions", "L3", "experts", "ready", "创建会话（字段全可选，缺省 session_type=single、status=active）"),
+    r("experts.session.detail", "ANY", "/api/experts/sessions/:id", "L3", "experts", "ready", "会话详情（含完整 messages）/合并式更新/删除"),
     r("experts.session.messages", "POST", "/api/experts/sessions/:id/messages", "L3", "experts", "ready", "发送会话消息"),
     r("experts.session.similar_search", "POST", "/api/experts/sessions/:id/similar-search", "L3", "experts", "ready", "会话相似检索"),
     r("experts.session.export", "GET", "/api/experts/sessions/:id/export", "L3", "experts", "ready", "导出会话"),
@@ -700,6 +705,22 @@ pub static ROUTES: [ApiRoute; 223] = [
     r("misc.ai_flow_update", "PUT", "/api/ai/flows/:id", "L5", "misc", "ready", "AI 流程更新"),
     r("misc.tasks", "GET", "/api/tasks", "L5", "misc", "ready", "任务列表（通用）"),
     r("misc.projects", "GET", "/api/projects", "L5", "misc", "ready", "项目列表（通用）"),
+
+    // =====================================================================
+    // Storage 管理面（L5·存储状态/提供方·admin_storage.rs 实时投影 CloudState 真实磁盘）
+    // =====================================================================
+    r("storage.status", "GET", "/api/storage/status", "L5", "storage", "ready", "存储状态（StorageBackend 投影：local 实时读盘 + s3 可达性）"),
+    r("storage.providers", "GET", "/api/storage/providers", "L5", "storage", "ready", "真实可用后端清单（local 恒在 + s3 若配置 MOX_S3_*）"),
+    r("storage.switch", "POST", "/api/storage/switch", "L5", "storage", "ready", "切换提供方（local 幂等；s3 需 env 配置且探测可达，否则 409/502）"),
+    r("storage.modules", "GET", "/api/modules", "L5", "storage", "ready", "已加载域/模块清单（投影自 DOMAINS 自描述注册表）"),
+
+    // =====================================================================
+    // LLM 管理面·只读族（L3·admin_llm.rs 实时投影 MOX_LLM_* env，Key 脱敏）
+    // =====================================================================
+    r("llm.providers", "GET", "/api/llm/providers", "L3", "llm", "ready", "LLM Provider 清单（env 驱动，has_key 表达是否配置，Key 不回传）"),
+    r("llm.provider_presets", "GET", "/api/llm/providers/presets", "L3", "llm", "ready", "已知公开 Provider 预设（静态参考数据：官方 Base URL/模型）"),
+    r("llm.health", "GET", "/api/llm/health", "L3", "llm", "ready", "LLM 配置概况（是否配置 Provider/路由策略，不发网络请求）"),
+    r("llm.routing", "GET", "/api/llm/routing", "L3", "llm", "ready", "LLM 路由策略配置（env 投影）"),
 ];
 
 /// 判断路径是否属于管理面（管理端点不允许被停用，防止自锁）

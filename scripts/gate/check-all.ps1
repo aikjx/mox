@@ -9,7 +9,9 @@
    2) cargo fmt        格式检查（--check）
    3) cargo clippy     workspace 静态检查（-D warnings）
    4) cargo test       workspace 单元测试（--lib --tests）
-   5) 前端 build       前端构建（可选 --SkipFrontend）
+   5) 前端 build       前端构建（可选 --SkipFrontend；pnpm 优先）
+   6) 前端模块化门禁    FE-MOD-GOV-V1.0（element-plus 根导入/相对导入/barrel 冲突/命名/vite 配置/深路径）
+   7) 端口漂移校验      PORT-REGISTRY 权威源一致性
   任意一项失败即退出非零，并输出汇总表。
 
 .EXAMPLE
@@ -37,60 +39,74 @@ function Add-Result([string]$Name, [int]$Code, [string]$Note = "") {
 Write-Host "=== 璇玑 一键质量检查 ===" -ForegroundColor Cyan
 
 # 1) secret-scan
-Write-Host "`n[1/5] secret-scan（敏感信息门禁）"
+Write-Host "`n[1/7] secret-scan（敏感信息门禁）"
 & python "scripts/ci/secret-scan.py" --path $Root
 Add-Result "secret-scan" $LASTEXITCODE
 
 # 2) cargo fmt
 if (Get-Command cargo -ErrorAction SilentlyContinue) {
-    Write-Host "`n[2/5] cargo fmt --check"
+    Write-Host "`n[2/7] cargo fmt --check"
     & cargo fmt --all -- --check
     Add-Result "cargo fmt" $LASTEXITCODE
 } else {
-    Write-Host "`n[2/5] 无 cargo，跳过 fmt"
+    Write-Host "`n[2/7] 无 cargo，跳过 fmt"
     Add-Result "cargo fmt" 0 "skipped"
 }
 
 # 3) cargo clippy
 if (-not $SkipClippy -and (Get-Command cargo -ErrorAction SilentlyContinue)) {
-    Write-Host "`n[3/5] cargo clippy（workspace，-D warnings）"
+    Write-Host "`n[3/7] cargo clippy（workspace，-D warnings）"
     & cargo clippy --workspace --all-targets -- -D warnings
     Add-Result "cargo clippy" $LASTEXITCODE
 } else {
-    Write-Host "`n[3/5] 跳过 clippy"
+    Write-Host "`n[3/7] 跳过 clippy"
     Add-Result "cargo clippy" 0 "skipped"
 }
 
 # 4) cargo test
 if (-not $SkipTest -and (Get-Command cargo -ErrorAction SilentlyContinue)) {
-    Write-Host "`n[4/5] cargo test（workspace --lib --tests）"
+    Write-Host "`n[4/7] cargo test（workspace --lib --tests）"
     & cargo test --workspace --lib --tests -q
     Add-Result "cargo test" $LASTEXITCODE
 } else {
-    Write-Host "`n[4/5] 跳过 test"
+    Write-Host "`n[4/7] 跳过 test"
     Add-Result "cargo test" 0 "skipped"
 }
 
 # 5) 前端构建
 if (-not $SkipFrontend) {
     if (Test-Path "frontend-ui/package.json") {
-        Write-Host "`n[5/5] 前端 build"
+        Write-Host "`n[5/7] 前端 build（pnpm 优先）"
         Push-Location "frontend-ui"
         try {
             if (-not (Test-Path "node_modules")) {
-                Write-Host "      node_modules 缺失，先 npm install"
-                & npm install --no-audit --no-fund
+                Write-Host "      node_modules 缺失，先 pnpm install"
+                & pnpm install --no-audit --no-fund
             }
-            & npm run build
+            if (Get-Command pnpm -ErrorAction SilentlyContinue) {
+                & pnpm build
+            } else {
+                & npm run build
+            }
             Add-Result "frontend build" $LASTEXITCODE
         } finally { Pop-Location }
     } else {
         Add-Result "frontend build" 0 "no package.json"
     }
 } else {
-    Write-Host "`n[5/5] 跳过前端构建"
+    Write-Host "`n[5/7] 跳过前端构建"
     Add-Result "frontend build" 0 "skipped"
 }
+
+# 6) 前端模块化门禁（FE-MOD-GOV-V1.0，CI 同源）
+Write-Host "`n[6/7] 前端模块化门禁"
+& python "scripts/gate/check-frontend-module.py"
+Add-Result "frontend-module gates" $LASTEXITCODE
+
+# 7) 端口漂移校验（PORT-REGISTRY 权威源）
+Write-Host "`n[7/7] 端口漂移校验"
+& python "scripts/gate/verify-ports.py"
+Add-Result "port drift gate" $LASTEXITCODE
 
 Write-Host "`n=== 汇总 ===" -ForegroundColor Cyan
 $fails = @($results | Where-Object { $_.Code -ne 0 })

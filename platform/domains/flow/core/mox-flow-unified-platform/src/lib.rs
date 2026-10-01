@@ -25,6 +25,7 @@ pub mod platform_lifecycle;
 pub mod platform_status;
 pub mod cross_orchestrator;
 pub mod event_bus;
+pub mod event_bridge;
 pub mod config_center;
 pub mod audit;
 pub mod circuit_breaker;

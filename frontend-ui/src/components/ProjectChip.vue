@@ -24,7 +24,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowRight } from '@element-plus/icons-vue'
-import { useProject } from '@/composables/projectContext.js'
+import { useProject } from '@/composables'
 
 const router = useRouter()
 const { currentProject, onChange, ensureProjectContext } = useProject()
@@ -99,7 +99,7 @@ const statusLabel = computed(() => {
   flex: 0 0 auto;
 }
 .pc-body { flex: 1 1 auto; min-width: 0; }
-.pc-label { font-size: 11px; color: #94a3b8; letter-spacing: 0.4px; line-height: 1; margin-bottom: 3px; }
+.pc-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.4px; line-height: 1; margin-bottom: 3px; }
 .pc-name {
   font-size: 13px; color: var(--text-primary); font-weight: 600;
   line-height: 1.25;
@@ -114,6 +114,6 @@ const statusLabel = computed(() => {
   flex: 0 0 auto;
 }
 .pc-status.active { background: var(--accent-dim); color: #4338ca; }
-.pc-status.done   { background: var(--success-50); color: #047857; }
+.pc-status.done   { background: var(--success-50); color: var(--success); }
 .pc-status.warn   { background: #fff7ed; color: #c2410c; }
 </style>

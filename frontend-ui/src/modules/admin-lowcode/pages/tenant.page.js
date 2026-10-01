@@ -4,7 +4,8 @@
  */
 import { markRaw } from 'vue'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import {
   getTenantList, createTenant, updateTenant, deleteTenant, switchTenant,
 } from '@/api'

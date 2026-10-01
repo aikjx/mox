@@ -26,7 +26,7 @@
 <script setup>
 import { computed } from 'vue'
 import { ArrowDown, Check } from '@element-plus/icons-vue'
-import { useTheme } from '@/composables/useTheme'
+import { useTheme } from '@/composables'
 
 const { theme, setTheme, availableThemes } = useTheme()
 

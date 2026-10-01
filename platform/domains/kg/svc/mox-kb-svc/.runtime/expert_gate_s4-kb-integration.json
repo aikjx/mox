@@ -1,8 +1,8 @@
 {
   "stage": "s4-kb-integration",
-  "ts": "2026-09-03T01:20:40.956895300+00:00",
+  "ts": "2026-09-25T12:12:16.617355900+00:00",
   "verdict": "FAIL",
-  "overall_score": 0.6,
+  "overall_score": 0.5,
   "dimensions": [
     {
       "name": "design",
@@ -100,7 +100,7 @@
     "data_consistent": true
   },
   "expert_steps": [
-    "[ExpertServiceImpl] 未传入 FlowGraph，跳过璇玑 14 维分析（空报告）"
+    "专家联盟待注入，门禁走本地自评降级"
   ],
   "written_to": ".runtime\\expert_gate_s4-kb-integration.json"
 }

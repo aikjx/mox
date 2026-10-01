@@ -20,7 +20,9 @@ const api = vi.hoisted(() => ({
   createApiKey: vi.fn(),
   revokeApiKey: vi.fn(),
 }))
-vi.mock('@/api', () => api)
+// 部分 mock：整表自写会让采集期替**别人家**的账 —— `@/composables` → `projectContext` 在采集期就调
+// `registerProjectIdGetter`（`src/api/index.js:6`），漏它本文件连一条用例都收不到（实测整跑里是 Failed Suite）。
+vi.mock(import('@/api'), async (importOriginal) => ({ ...(await importOriginal()), ...api }))
 
 // —— ElMessage / ElMessageBox 替身：捕获调用即可，不弹真实气泡 ——
 const msgs = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), warning: vi.fn() }))

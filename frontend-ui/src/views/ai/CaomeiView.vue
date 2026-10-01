@@ -139,9 +139,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { MagicStick, Right } from '@element-plus/icons-vue'
-import { useProject } from '@/composables/projectContext.js'
+import { useProject } from '@/composables'
 import { caomeiCompile, caomeiRefine, caomeiTemplates, marketList } from '@/api'
 
 const requirement = ref('')
@@ -316,7 +316,7 @@ onMounted(() => {
 .page-actions { display: flex; gap: 8px; }
 .name-input { width: 180px; }
 .tag-select { width: 180px; }
-.panel { background: var(--bg-card, #fff); border: 1px solid var(--border); border-radius: 12px; }
+.panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
 .card-pad { padding: 16px; }
 .compile-actions { display: flex; gap: 10px; margin-top: 12px; }
 .blueprint-wrap { display: flex; flex-direction: column; gap: 14px; }
@@ -325,17 +325,17 @@ onMounted(() => {
 .blueprint-id { font-size: 12px; color: var(--text-3); }
 .stats { display: flex; gap: 28px; }
 .bp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.bp-label { font-size: 13px; font-weight: 700; margin: 0 0 10px; color: var(--text-2, #555); }
+.bp-label { font-size: 13px; font-weight: 700; margin: 0 0 10px; color: var(--text-2); }
 .entity-list, .feat-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .entity {
-  background: var(--brand-bg, #eef4ff);
-  color: var(--brand, #3b6fe0);
+  background: var(--brand-50);
+  color: var(--brand);
   border-radius: 8px;
   padding: 4px 10px;
   font-size: 13px;
 }
 .feat {
-  background: var(--bg-page, #f5f7fa);
+  background: var(--bg-page);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 4px 10px;
@@ -350,7 +350,7 @@ onMounted(() => {
 }
 .fn-kind {
   font-size: 11px; padding: 1px 6px; border-radius: 6px;
-  background: var(--bg-page, #f5f7fa); color: var(--text-3);
+  background: var(--bg-page); color: var(--text-3);
 }
 .k-gate { background: #fff3e0; color: #b26a00; }
 .k-send { background: #e8f5e9; color: #2e7d32; }
@@ -366,8 +366,8 @@ onMounted(() => {
 .mono { font-family: var(--font-mono, monospace); }
 .muted { color: var(--text-3); font-size: 12px; }
 .tpl-overview {
-  background: var(--brand-soft, #eef4ff);
-  border: 1px dashed var(--brand, #3b6fe0);
+  background: var(--brand-soft);
+  border: 1px dashed var(--brand);
   border-radius: 10px;
   padding: 12px;
   margin-bottom: 12px;
@@ -383,5 +383,5 @@ onMounted(() => {
 }
 .tpl-name { font-weight: 700; font-size: 14px; }
 .tpl-meta { font-size: 12px; color: var(--text-3); margin: 2px 0 6px; }
-.tpl-summary { font-size: 13px; color: var(--text-2, #555); margin-bottom: 6px; }
+.tpl-summary { font-size: 13px; color: var(--text-2); margin-bottom: 6px; }
 </style>

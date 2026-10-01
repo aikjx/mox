@@ -108,8 +108,8 @@ function selectAssistant(id) {
 
 <style scoped>
 .assistant-selector {
-  background: var(--bg-surface, #fff);
-  border: 1px solid var(--border-soft, #e2e8f0);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
   border-radius: 14px;
   padding: 16px;
 }
@@ -120,12 +120,12 @@ function selectAssistant(id) {
 .selector-title {
   font-weight: 700;
   font-size: 15px;
-  color: var(--text-primary, #1e293b);
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 .selector-subtitle {
   font-size: 12px;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
 }
 
 .assistant-list {
@@ -139,19 +139,19 @@ function selectAssistant(id) {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--border-ghost, #f1f5f9);
+  border: 1px solid var(--border-ghost);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
   position: relative;
 }
 .assistant-card:hover {
-  border-color: var(--border-soft, #e2e8f0);
-  background: var(--bg-surface-2, #f8fafc);
+  border-color: var(--border-soft);
+  background: var(--bg-surface-2);
 }
 .assistant-card.active {
-  border-color: var(--brand, #6366f1);
-  background: var(--brand-50, #eef2ff);
+  border-color: var(--brand);
+  background: var(--brand-50);
 }
 
 .assistant-avatar {
@@ -173,12 +173,12 @@ function selectAssistant(id) {
 .assistant-name {
   font-weight: 600;
   font-size: 13px;
-  color: var(--text-primary, #1e293b);
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 .assistant-desc {
   font-size: 11px;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
   margin-bottom: 6px;
 }
 .assistant-tags {
@@ -194,7 +194,7 @@ function selectAssistant(id) {
 }
 
 .assistant-check {
-  color: var(--brand, #6366f1);
+  color: var(--brand);
   font-size: 18px;
   flex-shrink: 0;
 }

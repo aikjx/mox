@@ -18,9 +18,9 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
-import http from '@/api/http'
-import { NAV_MODULES, NAV_GROUPS } from '@/constants/nav.config'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { http } from '@/api'
+import { NAV_MODULES, NAV_GROUPS } from '@/constants'
 
 // ===== 常量 =====
 
@@ -48,9 +48,12 @@ const DATA_SCOPE_LABELS = {
   [DATA_SCOPE.CUSTOM]: '自定义数据权限',
 }
 
-// 超级管理员角色标识
+// 管理员角色标识（后端 enterprise/tenant.rs 预置 role_code：super_admin / tenant_admin；
+// 'admin' 为历史遗留别名，保留向后兼容旧 localStorage 缓存）。
 const ADMIN_ROLE = 'admin'
 const SUPER_ADMIN_ROLE = 'super_admin'
+const TENANT_ADMIN_ROLE = 'tenant_admin'
+const ADMIN_ROLES = [ADMIN_ROLE, SUPER_ADMIN_ROLE, TENANT_ADMIN_ROLE]
 
 // ===== 存储辅助函数 =====
 
@@ -120,10 +123,8 @@ export const usePermissionStore = defineStore('permission', () => {
 
   // ===== Getters =====
 
-  /** 是否超级管理员 */
-  const isAdmin = computed(() => {
-    return roles.value.includes(ADMIN_ROLE) || roles.value.includes(SUPER_ADMIN_ROLE)
-  })
+  /** 是否管理员（含历史别名 admin、super_admin、tenant_admin） */
+  const isAdmin = computed(() => ADMIN_ROLES.some((r) => roles.value.includes(r)))
 
   /** 数据权限中文名称 */
   const dataScopeLabel = computed(() => {
@@ -226,12 +227,17 @@ export const usePermissionStore = defineStore('permission', () => {
   }
 
   /**
-   * 设置角色列表
-   * @param {string[]} roleList 角色数组
+   * 设置角色列表。归一化为角色码字符串数组：
+   * 后端 /api/system/permissions 的 roles 是 [{id,code,name}] 对象数组，
+   * 此处只取 .code；同时兼容历史/旧缓存里直接给字符串数组的情况。
+   * @param {Array<string|{code:string}>} roleList 角色数组
    */
   function setRoles(roleList) {
-    roles.value = Array.isArray(roleList) ? roleList : []
-    _safeSet(ROLES_KEY, roles.value)
+    const normalized = Array.isArray(roleList)
+      ? roleList.map((r) => (typeof r === 'string' ? r : r?.code)).filter(Boolean)
+      : []
+    roles.value = normalized
+    _safeSet(ROLES_KEY, normalized)
   }
 
   /**

@@ -65,6 +65,7 @@ architecture/
 ├─ rust-enterprise/                 # Rust 企业级开发指南（6 层/8 域）
 ├─ graph/                           # 关图产物与需求基线（mmd/json/requests）
 ├─ plugin/                          # VSCode 插件架构与兼容性
+├─ frontend/                        # 前端架构（外壳分层 / 导航单源 / 样式令牌契约）
 ├─ full-dimensional/                # 全维 TraceMatrix 与需求基线
 └─ assets/                          # 结构化产物（bench_results_round7 / APPROVAL-FLOWS / architecture-metrics）
 ```

@@ -1,6 +1,8 @@
 <!--
   专家辩论对话框
-  职责：辩题输入、专家选择、辩论模式配置、发起辩论
+  职责：辩题输入、专家选择、轮数设置、发起辩论。
+  字段口径来自 @/modules/expert-alliance/contract：这里只发 topic/expert_ids/rounds，
+  轮数上下界与参与上限都取自契约，视图不再自带一份后端结构体里不存在的「辩论模式」。
 -->
 <template>
   <el-dialog
@@ -29,44 +31,36 @@
         <div class="debate-expert-picker">
           <div class="debate-expert-list">
             <div
-              v-for="exp in activeExperts"
+              v-for="exp in pickableExperts"
               :key="exp.id"
               class="debate-expert-chip"
               :class="{ selected: selectedExpertIds.includes(exp.id) }"
               @click="$emit('toggle-expert', exp.id)"
             >
-              <span class="chip-avatar" :style="{ background: expertColor(exp.type) }">
-                {{ expertEmoji(exp.type) }}
+              <span class="chip-avatar" :style="{ background: expertColor(expertVisualKey(exp)) }">
+                {{ expertEmoji(expertVisualKey(exp)) }}
               </span>
               <span class="chip-name">{{ exp.name }}</span>
+              <span class="chip-status">{{ availabilityLabel(exp.status) }}</span>
               <el-icon v-if="selectedExpertIds.includes(exp.id)" class="chip-check"><CircleCheckFilled /></el-icon>
             </div>
           </div>
           <div class="debate-expert-count">
-            已选 <b>{{ selectedExpertIds.length }}</b> 位专家（至少 2 位）
+            已选 <b>{{ selectedExpertIds.length }}</b> 位专家（至少 {{ DEBATE_MIN_PARTICIPANTS }} 位）
           </div>
+          <div v-if="capacityText" class="debate-capacity">{{ capacityText }}</div>
         </div>
       </el-form-item>
 
-      <el-form-item label="辩论模式">
-        <div class="debate-mode-picker">
-          <div
-            v-for="opt in modeOptions"
-            :key="opt.value"
-            class="debate-mode-card"
-            :class="{ active: mode === opt.value }"
-            @click="$emit('update:mode', opt.value)"
-          >
-            <div class="mode-icon">{{ opt.icon }}</div>
-            <div class="mode-name">{{ opt.label }}</div>
-            <div class="mode-desc">{{ opt.desc }}</div>
-          </div>
-        </div>
-      </el-form-item>
-
-      <el-form-item v-if="mode === 'adversarial'" label="辩论轮次">
-        <el-input-number :model-value="rounds" :min="1" :max="10" size="small" @update:model-value="emit('update:rounds', $event)" />
-        <span class="form-hint">轮</span>
+      <el-form-item label="辩论轮次">
+        <el-input-number
+          :model-value="rounds"
+          :min="roundsBound.min"
+          :max="roundsBound.max"
+          size="small"
+          @update:model-value="emit('update:rounds', $event)"
+        />
+        <span class="form-hint">轮（后端按轮次模板生成正反方论点）</span>
       </el-form-item>
 
       <el-form-item label="辩论状态">
@@ -76,18 +70,24 @@
       </el-form-item>
     </el-form>
 
+    <p v-if="note" class="debate-note">{{ note }}</p>
+
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="$emit('close')" :disabled="submitting">取消</el-button>
-        <el-button
-          type="primary"
-          :loading="submitting"
-          :disabled="!canStart"
-          @click="$emit('start')"
-        >
-          <el-icon><Flag /></el-icon>
-          <span>开始辩论</span>
-        </el-button>
+        <el-tooltip :disabled="!problem" :content="problem" placement="top">
+          <span>
+            <el-button
+              type="primary"
+              :loading="submitting"
+              :disabled="!!problem"
+              @click="$emit('start')"
+            >
+              <el-icon><Flag /></el-icon>
+              <span>开始辩论</span>
+            </el-button>
+          </span>
+        </el-tooltip>
       </div>
     </template>
   </el-dialog>
@@ -96,25 +96,32 @@
 <script setup>
 import { computed } from 'vue'
 import { CircleCheckFilled, Flag } from '@element-plus/icons-vue'
+import {
+  COLLAB_MODE, DEBATE_MIN_PARTICIPANTS, availabilityLabel,
+  collabMode, debateCapacityText
+} from '@/modules/expert-alliance/contract'
+import { expertPickable, expertVisualKey } from '@/modules/expert-alliance/model'
+import { expertColor, expertEmoji } from '@/constants'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
   topic: { type: String, default: '' },
   selectedExpertIds: { type: Array, default: () => [] },
-  mode: { type: String, default: 'adversarial' },
+  problem: { type: String, default: '' },
+  note: { type: String, default: '' },
   rounds: { type: Number, default: 3 },
   status: { type: String, default: 'preparing' },
   submitting: { type: Boolean, default: false },
   experts: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['close', 'start', 'toggle-expert', 'update:topic', 'update:mode', 'update:rounds'])
+const emit = defineEmits(['close', 'start', 'toggle-expert', 'update:topic', 'update:rounds'])
 
-const activeExperts = computed(() => props.experts.filter(e => e.status === 'active'))
-
-const canStart = computed(() =>
-  props.topic.trim() && props.selectedExpertIds.length >= 2
-)
+const def = collabMode(COLLAB_MODE.DEBATE)
+const roundsBound = computed(() => def.controls.find((c) => c.wire === 'rounds'))
+const capacityText = computed(() => debateCapacityText(props.selectedExpertIds.length))
+// 停用专家后端一律 403，离线只是响应慢，不该被藏起来
+const pickableExperts = computed(() => props.experts.filter(expertPickable))
 
 const statusLabel = computed(() => {
   const map = { preparing: '准备中', ongoing: '进行中', summarized: '已总结' }
@@ -125,33 +132,21 @@ const statusTagType = computed(() => {
   const map = { preparing: 'info', ongoing: 'warning', summarized: 'success' }
   return map[props.status] || 'info'
 })
-
-const modeOptions = [
-  { value: 'adversarial', label: '对抗式辩论', icon: '⚔️', desc: '专家分正反两方，针锋相对' },
-  { value: 'roundtable', label: '圆桌式讨论', icon: '圆桌', desc: '多位专家平等交流，各抒己见' }
-]
-
-function expertColor(type) {
-  const colors = {
-    algorithm: '#6366f1', architecture: '#6366f1', data: '#10b981',
-    ai: '#ec4899', workflow: '#f59e0b', graph: '#06b6d4',
-    security: '#ef4444', performance: '#f97316', monitor: '#14b8a6',
-    market: '#8b5cf6', mcp: '#0ea5e9', automation: '#84cc16',
-    requirement: '#f43f5e', fusion: '#a855f7', operator: '#64748b',
-    custom: '#64748b'
-  }
-  return colors[type] || '#6366f1'
-}
-
-function expertEmoji(type) {
-  const emojis = {
-    algorithm: '🧮', architecture: '🏗️', data: '🔗',
-    ai: '🤖', workflow: '⚡', graph: '🕸️',
-    security: '🔒', performance: '🚀', monitor: '📊',
-    market: '📈', mcp: '🔌', automation: '🤖',
-    requirement: '📋', fusion: '🔀', operator: '⚙️',
-    custom: '👤'
-  }
-  return emojis[type] || '👤'
-}
 </script>
+
+<style scoped>
+.debate-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.chip-status {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+}
+.debate-capacity {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--el-color-warning);
+}
+</style>

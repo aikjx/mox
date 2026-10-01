@@ -1,6 +1,6 @@
 # 前端模块清单 (Module Manifest)
 
-> 生成时间：2026-09-03
+> 生成时间：2026-09-03 ｜ 最近更新：2026-09-23（补登 `src/modules/` 模块化前端与联盟控制台）
 > 项目：InfoTopograph Frontend UI
 > 框架：Vue 3 + Vite + Element Plus + Pinia
 
@@ -10,9 +10,10 @@
 
 | 路由路径 | 组件名 | 文件路径 | 业务域 | 依赖 API 模块 |
 |---------|--------|---------|--------|-------------|
-| `/login` | Login | `views/misc/Login.vue` | 认证 | `system.api.js` |
-| `/portal` | Portal | `views/misc/PortalHome.vue` | 门户 | - |
-| `/hall` | BusinessHall | `views/misc/BusinessHall.vue` | 门户 | `market.api.js` |
+| `/login` | Login | `views/auth/Login.vue` | 认证 | `auth.js`（经 `auth.store.js`） |
+| `/register` | Register | `views/auth/Register.vue` | 认证 | `auth.js` |
+| `/portal` | Portal | `views/public/PortalHome.vue` | 门户 | - |
+| `/hall` | BusinessHall | `views/public/BusinessHall.vue` | 门户 | `market.api.js` |
 | `/dashboard` | Dashboard | `views/project/Dashboard.vue` | 项目域 | `projects.api.js`, `workspace.api.js` |
 | `/projects` | Projects | `views/project/ProjectsView.vue` | 项目域 | `projects.api.js` |
 | `/tasks` | Tasks | `views/project/TaskView.vue` | 项目域 | `projects.api.js`, `workspace.api.js` |
@@ -28,9 +29,14 @@
 | `/infinite-optimizer` | InfiniteOptimizer | `views/ai/InfiniteOptimizerView.vue` | AI 域 | `ai.api.js`, `operators.api.js` |
 | `/melody2score` | Melody2Score | `views/ai/Melody2ScoreView.vue` | AI 域 | `melody.api.js` |
 | `/expert-center` | ExpertCenter | `views/expert/ExpertCenterView.vue` | 专家域 | `experts.api.js` |
-| `/expert-plaza` | ExpertPlaza | `views/expert/ExpertPlazaView.vue` | 专家域 | `experts.api.js` |
+| `/expert-plaza` | ExpertPlaza | `views/expert/ExpertPlazaView.vue` | 专家域（⚠️存量待退役，已由 `modules/expert-alliance/views/AllianceExpertsView.vue` 覆盖；其排行榜依赖后端不存在的 `goodRate`/`monthGrowth` 等字段，新页改为真实指标重排，非 1:1 移植） | `experts.api.js` |
 | `/expert-config` | ExpertConfig | `views/expert/ExpertConfigView.vue` | 专家域 | `experts.api.js` |
-| `/alliance-task` | AllianceTask | `views/expert/AllianceTaskView.vue` | 专家域 | `alliance.js`, `experts.api.js` |
+| `/alliance/console` | AllianceConsole | `modules/expert-alliance/views/AllianceConsoleView.vue` | 专家域（模块化） | `modules/expert-alliance/api/alliance.api.js` |
+| `/alliance/experts` | AllianceExperts | `modules/expert-alliance/views/AllianceExpertsView.vue` | 专家域（模块化：发现/预约/收藏/即时咨询/真实指标排行榜） | `modules/expert-alliance/api/alliance.api.js` |
+| `/alliance/collab` | AllianceCollab | `modules/expert-alliance/views/AllianceCollabView.vue` | 专家域（模块化：六模式智能协作工作台，取代存量两处抄本与控制台内嵌弹窗） | `modules/expert-alliance/api/alliance.api.js` |
+| `/alliance/graph` | AllianceGraph | `modules/expert-alliance/views/AllianceGraphView.vue` | 专家域（模块化：`experts.graph.*` 八端点的图谱面 —— SVG 确定性布局 + 节点检视 + 统计/社区/路径 + 最优团队；存量消费方 `/expert-center/enterprise` 与 `useGraphCanvas.js` 的逐字段差异见 `FRONTEND-MODULE.md` §7.3） | `modules/expert-alliance/api/alliance.api.js` |
+| `/alliance/sessions` | AllianceSessions | `modules/expert-alliance/views/AllianceSessionsView.vue` | 专家域（模块化：`experts.session.*` + 全域检索共 11 个端点的会话面 —— 列表过滤/分页 + 线程与追加 + 元信息差分编辑与归档/删除/导出 + 会话统计 + 全域字面检索；存量「会话中心」只挂了 11 个端点里的 3 个，且读 `mode`/`updated_at` 两个不存在的键、用 `dangerouslyUseHTMLString` 拼详情弹窗（存储型 XSS 面），逐字段差异见 `FRONTEND-MODULE.md` §7.4） | `modules/expert-alliance/api/alliance.api.js` |
+| `/expert-center/tasks` | ExpertAllianceTasks | `views/expert/AllianceTaskView.vue` | 专家域（存量） | `alliance.js`, `experts.api.js` |
 | `/expert-workspace` | ExpertWorkspace | `views/workspace/ExpertWorkspaceView.vue` | 工作台 | `alliance.js`, `experts.api.js`, `kb.api.js`, `projects.api.js`, `graph.api.js` |
 | `/graph` | Graph | `views/graph/GraphView.vue` | 图谱域 | `graph.api.js` |
 | `/flow-graph` | FlowGraph | `views/graph/FlowGraph.vue` | 图谱域 | `graph.api.js`, `workflow.api.js` |
@@ -41,7 +47,7 @@
 | `/workflow` | Workflow | `views/workflow/WorkflowView.vue` | 工作流 | `workflow.api.js` |
 | `/workflow/browser` | Browser | `views/workflow/BrowserView.vue` | 工作流 | `workflow.api.js` |
 | `/admin` | Admin | `views/admin/AdminView.vue` | 管理域 | `system.api.js`, `monitor.api.js`, `actuator.api.js` |
-| `/403` | Forbidden | `views/misc/Forbidden.vue` | 通用 | - |
+| `/403` | Forbidden | `views/public/Forbidden.vue` | 通用 | - |
 
 ---
 
@@ -73,7 +79,7 @@
 
 | 组件名 | 文件路径 | 用途 |
 |--------|---------|------|
-| RegisterExpertDialog | `components/expert/RegisterExpertDialog.vue` | 专家注册对话框 |
+| RegisterExpertDialog | `components/expert/RegisterExpertDialog.vue` | 专家注册对话框（**存量**：唯一消费者是 `views/workspace/ExpertWorkspaceView.vue`。权威实现已在模块内 —— `modules/expert-alliance/components/ExpertRegistryForm.vue`，控件由后端白名单生成，勿再往这份加功能） |
 
 ### 2.4 ai/ AI 组件
 
@@ -130,12 +136,12 @@
 |--------|----------------|-----------|
 | `http.js` | http 实例、请求/响应拦截器 | 基础 HTTP 封装 |
 | `index.js` | API 统一导出入口 | - |
-| `alliance.js` | `runAllianceFullSSE`, `getAllianceCapabilities` | `/api/alliance` 专家联盟 SSE |
-| `experts.api.js` | `getExperts`, `getExpertGraph`, `getExpertSessions`, `expertDebate`, `multiExpertConsult`, `routeExperts`, `registerExpert` | `/api/experts` 专家管理 |
+| `alliance.api.js` | 29 个导出（`allianceGetExperts` / `getAllianceTaskLogs` / `cancelAllianceTask` …）| ⚠️存量待迁移：任务域（`/api/alliance/tasks/*`）仍由此文件取数；**三条被禁端点已随 2026-09-27 归一化删除**（`runAllianceFullSSE`→`/api/ai/engine/alliance/full`、`getAllianceCapabilities`→`/ai/engine/alliance/capabilities` 均不在网关 :3080 契约内且零消费者，`getAllianceStats`→`/api/alliance/stats` 为后端恒零桩）；联盟协作/专家/KPI 取数一律改用 `modules/expert-alliance/api/alliance.api.js` |
+| `experts.api.js` | `getExperts`, `getExpertGraph`, `getExpertSessions`, `expertDebate`, `multiExpertConsult`, `routeExperts`, `registerExpert` | `/api/experts` 专家管理。⚠️存量：`:20-34` 有 11 个会话端点导出（含 `listExpertSessions` 这个 `@deprecated` 别名），但全库只有 `getExpertSessions` / `createExpertSession` 被调用过 —— detail / stats / update / delete / messages / similar-search / semantic-search / export / archive 九个导出**零消费者**；会话取数改用 `modules/expert-alliance/api/alliance.api.js`，差异见 `FRONTEND-MODULE.md` §7.4 |
 | `kb.api.js` | `kbListDocuments`, `kbGetCategories`, `kbGetTags`, `kbSearch`, `kbGetVersions` | `/api/kb` 知识库 |
 | `projects.api.js` | `getProjects` | `/api/projects` 项目管理 |
 | `graph.api.js` | 图谱数据操作 | `/api/graph` 知识图谱 |
-| `ai.api.js` | AI 对话、会话管理 | `/api/ai` AI 助手 |
+| `ai.api.js` | AI 对话、会话管理 | `/api/ai` AI 助手。⚠️存量：`aiExpertChat`（`/api/ai/expert-chat`）已随 2026-09-27 归一化删除——该分支读 `results`/`summary` 两个子 handler 从不产出的键，`content` 恒退化为兜底串；联盟协作一律走 `modules/expert-alliance/api` 的六模式契约（`/api/experts/*`） |
 | `llm.api.js` | LLM 模型管理 | `/api/llm` 大模型 |
 | `workflow.api.js` | 工作流定义/执行 | `/api/workflow` 工作流 |
 | `operators.api.js` | 算子注册/管理 | `/api/operators` 算子库 |
@@ -196,6 +202,10 @@ frontend-ui/
 │   ├── composables/           # 组合式函数（逻辑复用）
 │   │   └── workspace/         # 工作台专用 composables
 │   ├── constants/             # 常量定义
+│   ├── modules/               # 模块化前端（自包含业务模块，见 §9）
+│   │   ├── index.js           # 模块登记入口（路由与导航由此派生）
+│   │   ├── _kernel/           # envelope.js 信封归一 + module-registry.js 模块内核
+│   │   └── expert-alliance/   # 专家联盟模块：contract / model / api / store / components / views + 测试
 │   ├── router/                # 路由配置
 │   ├── stores/                # Pinia 状态管理
 │   ├── styles/                # 全局样式与设计 token
@@ -207,7 +217,7 @@ frontend-ui/
 │   │   ├── expert/            # 专家域
 │   │   ├── graph/             # 图谱域
 │   │   ├── market/            # 市场域
-│   │   ├── misc/              # 通用页面（登录、门户、403）
+│   │   ├── public/            # 游客/裸页面（门户、业务大厅、403）
 │   │   ├── operators/         # 算子域
 │   │   ├── project/           # 项目域
 │   │   ├── workflow/          # 工作流域
@@ -231,6 +241,7 @@ frontend-ui/
 | `components/` | 全局可复用组件，`common/` 为无业务逻辑的基础组件 |
 | `composables/` | 组合式函数，封装可复用的状态逻辑，`workspace/` 为工作台专用 |
 | `views/` | 页面级组件，按业务域组织子目录；复杂页面使用 `panels/` 子目录拆分 |
+| `modules/` | 自包含业务模块（契约+模型+API+store+视图+测试同目录），路由与导航由模块登记派生 |
 | `stores/` | Pinia 全局状态管理 |
 | `router/` | 路由配置与导航守卫 |
 | `styles/` | 全局样式、CSS 变量、设计 token |
@@ -304,6 +315,34 @@ PageHeader → 无内部组件依赖
 4. **组件无业务逻辑**：`components/common/` 下的组件为纯展示/交互组件，通过 props 配置，不包含业务逻辑
 5. **样式模块化**：大组件的 scoped 样式提取为独立 CSS 文件，便于子组件共享
 6. **Mock 数据隔离**：降级用的 Mock 数据独立存放，不与业务逻辑混编
+7. **契约归一化**：跨语言契约（阶段/枚举/门限/端点）以 Rust 源码与 `docs/API-REGISTRY.md` 为权威，前端侧由 `src/modules/*/contract/*.test.js` 强制对齐，禁止在页面里散落字面量
+
+---
+
+## 9. 模块化前端（`src/modules/`）
+
+> 权威说明：`docs/expert-alliance/FRONTEND-MODULE.md`（EA-DOC-FE-MODULE，🟢）
+
+| 模块 | 版本 | 页面 | 契约测试 | 状态 |
+|------|------|------|---------|------|
+| `expert-alliance` | 1.0.0 | `/alliance/console` 联盟控制台（含调度配置表单、调度状态与负载重置、DAG 页签） · `/alliance/experts` 联盟专家广场 · `/alliance/collab` 智能协作工作台 · `/alliance/graph` 专家协作图谱 · `/alliance/sessions` 专家会话中心 · `/alliance/orchestration` 专家编排台（逐字段带来源角标） | 契约、用例与变异电池规模**以 `FRONTEND-MODULE.md` §8 为唯一权威，本行不复述数字**（此处曾写死「跨语言契约 94 例 / 模块 432 例 15 文件 / 全量 515 例 / 电池 78 个」，两批落地后即与实现态不符——同一坑已在索引 V3.1 用「不复述以免腐烂」的口径避掉） | 🟢 已上线；§7 第 1 批（专家广场 + 平台 KPI + 真实指标排行榜）与第 2 批（六模式智能协作）均已落地并与 :3080 真实联调；第 3 批把 `experts.graph.*` 八个已登记端点做成图谱面（含调度配置：网关此前只有 api、无界面），第 4 批把 `experts.session.*` 十一个端点做成会话面 —— 两批落地期间 :3080 停机（`curl` 均 `000` 连接被拒）→ **四面均无实跑证据，会话页从未对真数据渲染过**，核对清单登记在 `FRONTEND-MODULE.md` §8；本批另由契约测试暴露两处后端治理缺口：`GET/PUT /api/experts/dispatcher/config` 与 `POST /api/experts` 三条路由早已挂载却漏登记 `actuator.rs` `ROUTES`，现已补三行（225 → 228）并重生成 `docs/API-REGISTRY.md`；两域 74 条 ready 路由的挂载情况由 `contract/endpoints.js` 的 `UNMOUNTED_ROUTES` 台账锁死（三档计数与覆盖率以 `FRONTEND-MODULE.md` §3.2 为唯一权威，本行不复算；编排台挂载后台账 backlog 已归零，且“backlog 长出一条即判红”是门禁而不是排期，逐条理由给后端行号）；退役核对见 §7.1（广场）/ §7.2（协作，6 处请求/响应缺陷逐条）/ §7.3（图谱，含存量 `findOptimalTeam({question,size})` 被 serde 全丢、`type_distribution` 与 `Math.random()` 坐标等 9 条）/ §7.4（会话，11 条：三处消费方只挂 2/11 端点、响应形态各猜一遍致协作会话面板恒空、`mode`/`type`/`project_id` 假字段、列表投影当详情、HTML 拼接弹窗、本地假搜索与假统计、伪造本地会话顶上），存量 `ExpertPlazaView.vue` / `ExpertCenterView.vue` / `ExpertWorkspaceView.vue` 与 `ExpertEnterprisePanel.vue` 的会话块待用户确认后删除；§7.5 已把「存量联盟面独有能力」逐条分档（A 档联盟域内缺失 / B 档非联盟域须搬家 / C 档前端自造），其中 A 档第一行——专家注册 + 编辑 + 停用面——已于 2026-09-24 落地（17 项控件全部由 `merge_expert_from_value` 的白名单生成，含 `as u32` 截断、`proficiency` 越界整条丢弃、软删单向不可逆三处静默陷阱的界面留痕），故 `/expert-config` 的退役前提已成立，仍只等用户点名 |
+
+### 9.1 新增一个模块页面的步骤
+
+1. `modules/<域>/contract/` 补齐契约（若涉及新枚举/端点，同步写断言到 `contract.test.js`，让 Rust/`API-REGISTRY` 成为裁判）。
+2. `model/normalize.js` 增一个 `normXxx`，`api/*.api.js` 增一个方法（不发 `ElMessage`，错误冒泡）。
+3. 在 `modules/<域>/index.js` 的 `routes`/`nav` 追加一条（`meta.{title,module,layout}` 必填，`layout ∈ {default, blank}`；nav 图标用 Element Plus 组件名，不得写 emoji、不得带 `count`/`badge`）。
+4. 在 `src/modules/index.js` 追加 `import './<域>/index.js'` —— 仅新模块需要。
+5. `npx vitest run src/modules && npx vite build`。路由与侧栏无需手改。
+
+### 9.2 内核提供的保证
+
+| 位置 | 保证 |
+|------|------|
+| `_kernel/envelope.js` | `{code,msg,data}` 与 alliance 族双层壳的幂等剥离；`code!==0` 一律 `ApiError` |
+| `_kernel/module-registry.js` | `defineModule` 校验描述完整性与模块重名；`collectRoutes`/`collectNav` 派生路由与导航 |
+| `composables/useActiveModule.js` | 模块归属单源（`meta.module` 优先，路径前缀回退） |
+| `modules/wiring.test.js` | 装配守卫：模块路由先于通配兜底、nav 已挂载、侧栏 `path` 均有真实路由、无编造计数 |
 
 ---
 

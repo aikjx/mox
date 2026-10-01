@@ -1,10 +1,40 @@
 /**
  * 联盟协作 Composable
- * 职责：SSE 联盟协作、消息管理、阶段控制
+ * 职责：工作台协作对话的消息流与阶段指示；取数一律经 expert-alliance 模块契约。
+ *
+ * 迁移说明（2026-09-27）：原先直连编排器 :3001 独占的联盟全流程 SSE 已撤销——
+ * 该端点不在网关 :3080 契约内（模块 `contract/endpoints.js` 的 FORBIDDEN_ENDPOINTS 明令禁止），
+ * 从浏览器调用恒 404，七阶段"进度"也就从未真按帧推进过。现改走模块登记的六模式原生端点，
+ * 阶段指示只在拿到结果后置为终态，不再臆造中间进度。
  */
 import { ref, computed, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
-import { runAllianceFullSSE } from '@/api/alliance'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { allianceApi } from '@/modules/expert-alliance/api'
+import {
+  PHASE_IDS, collabMode as collabModeDef, collabProblem, phaseLabel
+} from '@/modules/expert-alliance/contract'
+import { collabChatSpeaker, collabChatText, collabChatPhase } from '@/modules/expert-alliance/model'
+
+// 阶段序列与文案由 Rust 单源投影（contract/phases.js），此处不再另写一份
+const DONE_PHASE = PHASE_IDS.indexOf('done')
+
+function timeText() {
+  return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+}
+
+/** 归一化结果 → 一条聊天消息：正文口径由模块的 model/collabChat.js 单源决定 */
+function resultMessage(result) {
+  return {
+    id: Date.now() + Math.random(),
+    role: 'expert',
+    name: collabChatSpeaker(result),
+    avatar: '🤝',
+    color: '#6366f1',
+    time: timeText(),
+    phase: collabChatPhase(result),
+    text: collabChatText(result)
+  }
+}
 
 export function useAlliance(expertColor, expertEmoji, selectedExpertIds, currentProject, collabMode, activeSession, newCollaboration) {
   const collabMessages = ref([])
@@ -12,73 +42,59 @@ export function useAlliance(expertColor, expertEmoji, selectedExpertIds, current
   const allianceRunning = ref(false)
   const currentPhaseIndex = ref(-1)
   const messagesScrollRef = ref(null)
-  let allianceAbortController = null
-
-  const alliancePhases = [
-    { key: 'intent', label: '意图识别' }, { key: 'team', label: '组队匹配' },
-    { key: 'debate', label: '专家辩论' }, { key: 'synthesize', label: '综合归纳' },
-    { key: 'gate', label: '质量把关' }, { key: 'learn', label: '知识学习' },
-    { key: 'done', label: '完成' }
-  ]
 
   const currentPhaseLabel = computed(() => {
+    if (allianceRunning.value) return '处理中'
     if (currentPhaseIndex.value < 0) return '准备中'
-    return alliancePhases[currentPhaseIndex.value]?.label || '处理中'
+    return phaseLabel(PHASE_IDS[currentPhaseIndex.value])
   })
-
-  function selectedExpertNames() {
-    // 需要从外部传入 experts，这里用 selectedExpertIds 占位
-    return selectedExpertIds.value.length + ' 位专家'
-  }
 
   async function sendCollabMsg() {
     if (!collabInput.value.trim() || allianceRunning.value) return
     const text = collabInput.value.trim()
     collabInput.value = ''
-    collabMessages.value.push({ id: Date.now(), role: 'user', name: '我', avatar: 'U', color: 'linear-gradient(135deg, #6366f1, #06b6d4)', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text })
+    collabMessages.value.push({ id: Date.now(), role: 'user', name: '我', avatar: 'U', color: 'linear-gradient(135deg, #6366f1, #06b6d4)', time: timeText(), text })
     scrollMessagesToBottom()
     if (!activeSession.value) newCollaboration?.()
     await runAlliance(text)
   }
 
   async function runAlliance(query) {
+    const def = collabModeDef(collabMode.value)
+    if (!def) {
+      ElMessage.error('未知协作模式：' + collabMode.value)
+      return null
+    }
+    const input = { [def.field]: query, expertIds: [...selectedExpertIds.value] }
+    const blocked = collabProblem(def, input)
+    if (blocked) {
+      ElMessage.warning(blocked)
+      return null
+    }
     allianceRunning.value = true
-    currentPhaseIndex.value = 0
+    currentPhaseIndex.value = -1
     try {
-      await runAllianceFullSSE(
-        { query, session_id: activeSession.value?.id, enable_llm_debate: collabMode.value === 'debate', team_size: selectedExpertIds.value.length || 3, context: { project_id: currentProject.value, mode: collabMode.value, selected_experts: JSON.stringify(selectedExpertIds.value) } },
-        (frame) => { handleAllianceFrame(frame) }
-      )
+      const result = await allianceApi.collaborate(def.key, input)
+      collabMessages.value.push(resultMessage(result))
+      scrollMessagesToBottom()
+      currentPhaseIndex.value = DONE_PHASE
+      return result
     } catch (e) {
-      console.warn('[alliance] SSE 调用失败:', e)
-      ElMessage.error('联盟协作调用失败：' + (e?.message || '未知错误'))
-      collabMessages.value.push({ id: Date.now(), role: 'system', name: '系统', avatar: '⚠️', color: '#f59e0b', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: '协作调用失败，请稍后重试' })
+      console.warn('[alliance] 协作调用失败:', e)
+      ElMessage.error('联盟协作调用失败：' + (e?.msg || e?.message || '未知错误'))
+      collabMessages.value.push({ id: Date.now(), role: 'system', name: '系统', avatar: '⚠️', color: '#f59e0b', time: timeText(), text: '协作调用失败，请稍后重试' })
+      return null
     }
     finally {
       allianceRunning.value = false
-      currentPhaseIndex.value = alliancePhases.length - 1
       setTimeout(() => { currentPhaseIndex.value = -1 }, 2000)
     }
   }
 
-  function handleAllianceFrame(frame) {
-    const phaseIdx = alliancePhases.findIndex(p => p.key === frame.phase)
-    if (phaseIdx >= 0) currentPhaseIndex.value = phaseIdx
-    if (frame.payload) {
-      let msg = null
-      if (frame.phase === 'intent') msg = { id: Date.now() + Math.random(), role: 'assistant', name: '意图分析', avatar: '🎯', color: '#6366f1', phase: 'intent', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: frame.payload.intent || frame.payload.summary || '正在分析您的问题意图…' }
-      else if (frame.phase === 'team') { const experts = frame.payload.experts || frame.payload.team || []; msg = { id: Date.now() + Math.random(), role: 'assistant', name: '组队匹配', avatar: '👥', color: '#06b6d4', phase: 'team', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: `已匹配 ${experts.length} 位专家：${experts.map(e => e.name || e).join('、')}` } }
-      else if (frame.phase === 'debate') msg = { id: Date.now() + Math.random(), role: 'expert', name: frame.payload.expert_name || '专家发言', avatar: (frame.payload.expert_name || '专')[0], color: expertColor?.(frame.payload.expert_type), phase: 'debate', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: frame.payload.content || frame.payload.argument || '' }
-      else if (frame.phase === 'synthesize') msg = { id: Date.now() + Math.random(), role: 'assistant', name: '综合归纳', avatar: '📝', color: '#10b981', phase: 'synthesize', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: frame.payload.summary || frame.payload.synthesis || '正在综合各方观点…' }
-      else if (frame.phase === 'done') msg = { id: Date.now() + Math.random(), role: 'assistant', name: '协作完成', avatar: '✅', color: '#10b981', phase: 'done', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: frame.payload.final_answer || frame.payload.result || '协作完成，以上是综合结果。' }
-      if (msg && msg.text) { collabMessages.value.push(msg); scrollMessagesToBottom() }
-    }
-  }
-
   function stopAlliance() {
+    // 原生端点是请求-响应式，浏览器侧只能放弃这次等待，后端会话仍留痕
     allianceRunning.value = false
-    if (allianceAbortController) { allianceAbortController.abort(); allianceAbortController = null }
-    collabMessages.value.push({ id: Date.now(), role: 'system', name: '系统', avatar: '⚠️', color: '#f59e0b', time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), text: '协作已被用户停止' })
+    collabMessages.value.push({ id: Date.now(), role: 'system', name: '系统', avatar: '⚠️', color: '#f59e0b', time: timeText(), text: '已放弃本次等待，会话记录可在「会话中心」查看' })
   }
 
   function scrollMessagesToBottom() {
@@ -86,7 +102,7 @@ export function useAlliance(expertColor, expertEmoji, selectedExpertIds, current
   }
 
   function appendMessage(msg) {
-    collabMessages.value.push({ id: Date.now() + Math.random(), time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), ...msg })
+    collabMessages.value.push({ id: Date.now() + Math.random(), time: timeText(), ...msg })
     scrollMessagesToBottom()
   }
 

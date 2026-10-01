@@ -108,7 +108,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { moxOptimize, moxPublish } from '@/api'
 
 // 蓝图文本由用户输入或从后端加载，初始为空
@@ -199,9 +199,9 @@ async function publish() {
 .panel { min-height: 100%; }
 .mt { margin-top: 10px; }
 .node-tag { margin: 0 6px 6px 0; }
-.edge-line { font-size: 12px; color: #909399; line-height: 1.6; }
+.edge-line { font-size: 12px; color: var(--text-tertiary); line-height: 1.6; }
 .gate-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .gate-reason { font-size: 12px; color: #67C23A; }
 .gate-reason.fail { color: #F56C6C; }
-.hint { font-size: 11px; color: #909399; margin-left: 6px; }
+.hint { font-size: 11px; color: var(--text-tertiary); margin-left: 6px; }
 </style>

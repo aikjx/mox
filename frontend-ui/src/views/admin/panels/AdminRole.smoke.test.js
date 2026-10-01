@@ -12,7 +12,9 @@ const api = vi.hoisted(() => ({
   getRoleDataPerms: vi.fn(), assignRoleDataPerms: vi.fn(), getRoleUsers: vi.fn(),
   copyRole: vi.fn(), getMenuTree: vi.fn(), getDeptTree: vi.fn(), ROLE_TEMPLATES: [],
 }))
-vi.mock('@/api', () => api)
+// 部分 mock：整表自写会让采集期替**别人家**的账（`registerProjectIdGetter` / `http` 等由
+// `projectContext.js` 与 `expert-alliance` 在采集期就要），漏一个 ⇒ Failed Suite、零用例。
+vi.mock(import('@/api'), async (importOriginal) => ({ ...(await importOriginal()), ...api }))
 
 globalThis.ElMessage = { error: vi.fn(), success: vi.fn(), warning: vi.fn() }
 globalThis.ElMessageBox = { confirm: vi.fn(), alert: vi.fn() }

@@ -1,0 +1,11 @@
+// expert-alliance contract 统一出口（FE-MOD-GOV §4 模块内部 barrel）
+export * from './collab'
+export * from './dispatcher'
+export * from './endpoints'
+export * from './enums'
+export * from './graph'
+export * from './mode'
+export * from './orchestration'
+export * from './phases'
+export * from './registry'
+export * from './sessions'

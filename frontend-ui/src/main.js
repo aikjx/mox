@@ -1,23 +1,19 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElLoading } from 'element-plus/es/components/loading/index'
+// element-plus 按需化：基础变量 + 函数式/指令样式显式引入（须先于 global.css 主题覆写）
+import 'element-plus/es/components/base/style/css'
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/message-box/style/css'
+import 'element-plus/es/components/loading/style/css'
 import App from './App.vue'
 import router from './router'
 import './styles/global.css'
 import './styles/themes/index.css'  // 三大主题：dark / sky / cyberpunk
-import { setupPermissionDirectives } from '@/directives/permission'
+import { setupPermissionDirectives } from '@/directives'
 
 const app = createApp(App)
-
-// ===== 图标注册（全量注册，开发期便利）=====
-// 生产优化建议：使用 unplugin-icons 按需自动导入，减少约 30KB gzip
-// 配置见 vite.config.js 中可启用 IconsResolver
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
 
 // ===== Pinia 状态管理 =====
 const pinia = createPinia()
@@ -34,7 +30,9 @@ pinia.use(({ store }) => {
 
 app.use(router)
 app.use(pinia)
-app.use(ElementPlus)
+
+// ===== v-loading 指令（按需引入，函数式 API 不会被模板解析器覆盖）=====
+app.directive('loading', ElLoading.directive)
 
 // ===== 权限指令注册 =====
 setupPermissionDirectives(app)

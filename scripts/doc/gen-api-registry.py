@@ -42,7 +42,7 @@ by_dom = {}
 for e in entries:
     by_dom.setdefault(e[4], []).append(e)
 
-order = ['actuator', 'platform', 'kg', 'ai', 'kb', 'alliance', 'system', 'experts', 'monitor', 'projects', 'workspace', 'notification', 'misc']
+order = ['actuator', 'platform', 'kg', 'ai', 'kb', 'alliance', 'system', 'experts', 'monitor', 'projects', 'workspace', 'notification', 'misc', 'storage', 'llm']
 
 IMPL = {
     'actuator': '`platform/gateway/mox-platform-gateway-svc/src/actuator.rs`',
@@ -58,6 +58,8 @@ IMPL = {
     'workspace': '`platform/gateway/mox-platform-gateway-svc/src/workspace.rs`',
     'notification': '`platform/gateway/mox-platform-gateway-svc/src/notification.rs`',
     'misc': '`platform/gateway/mox-platform-gateway-svc/src/misc.rs`',
+    'storage': '`platform/gateway/mox-platform-gateway-svc/src/admin_storage.rs`（实时投影 CloudState 真实磁盘）',
+    'llm': '`platform/gateway/mox-platform-gateway-svc/src/admin_llm.rs`（实时投影 MOX_LLM_* env，Key 脱敏）',
 }
 
 lines = []

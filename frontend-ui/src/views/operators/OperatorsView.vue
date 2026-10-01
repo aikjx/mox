@@ -213,7 +213,7 @@
 import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from '@/echarts'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Search, Coordinate, InfoFilled, Plus, Promotion } from '@element-plus/icons-vue'
 import { OPERATOR_CATEGORIES } from '@/types'
 import { getOperators, registerOperator, executeWorkflow } from '@/api'
@@ -452,8 +452,8 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 8px rgba(79,70,229,0.35);
 }
 .flow-step.done .step-num {
-  background: #10b981;
-  color: #fff;
+  background: var(--cat-3-fill);
+  color: var(--on-cat-3);
 }
 .step-title {
   font-size: 13px;
@@ -532,7 +532,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 .op-check.on {
-  background: var(--brand);
+  background: var(--brand-fill); color: var(--on-brand);
   border-color: var(--brand);
 }
 .op-name {
@@ -576,8 +576,8 @@ onBeforeUnmount(() => {
   color: var(--brand);
 }
 .cat.on {
-  background: var(--brand);
-  color: #fff;
+  background: var(--brand-fill);
+  color: var(--on-brand);
 }
 .cmp-chart {
   width: 100%;
@@ -628,7 +628,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   background: var(--brand-soft);
-  color: var(--brand-dark);
+  color: var(--brand);
   padding: 3px 8px;
   border-radius: 7px;
   font-size: 12px;

@@ -22,7 +22,7 @@
  * - GET  /actuator/logs/tail            SSE 实时日志流（?limit 回放条数）
  */
 import { actuatorHttp } from './http'
-import { getToken } from '@/utils/secureStorage'
+import { getToken } from '@/utils'
 
 // ===== 管理面基础 =====
 // 前缀归一化（RC-1）：actuatorHttp 的 baseURL 已为 '/actuator'，此处路径**不得**再带

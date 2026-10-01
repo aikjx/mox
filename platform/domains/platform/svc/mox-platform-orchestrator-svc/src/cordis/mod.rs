@@ -15,6 +15,7 @@ use std::sync::Arc;
 pub mod bundle;
 pub mod context;
 pub mod event_bus;
+pub mod event_bridge;
 pub mod lifecycle;
 pub mod profile;
 pub mod seam;

@@ -8,7 +8,7 @@ import {
   setToken,
   getToken,
   removeToken,
-} from '@/utils/secureStorage'
+} from '@/utils'
 
 const USER_KEY = 'mox-user'
 const TOKEN_KEY = 'mox-token'

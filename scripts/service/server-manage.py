@@ -1073,8 +1073,15 @@ class ServiceManager:
             pass
         return True
 
-    def _preflight(self, key: str, svc: dict, cwd: Path) -> bool:
-        """启动前统一预检：二进制 → 工作目录 → npm 依赖 → depends_on 健康。"""
+    def _preflight(self, key: str, svc: dict, cwd: Path, strict: bool = False) -> bool:
+        """启动前统一预检：二进制 → 工作目录 → npm 依赖 → depends_on 健康。
+
+        depends_on 健康策略（非严格模式为管理面板『启动所有』默认）：
+        - RUNNING/STARTING：直接通过；
+        - DEGRADED：先尝试自愈（清理占端口进程后重启该依赖），自愈后通过；
+        - STOPPED/自愈失败：非严格模式降级为告警并继续，严格模式才硬阻断。
+        这样任一依赖的瞬时异常都不会把整组启动拖垮（避免『都启动不了』）。
+        """
         if not cwd.exists():
             log(f"[ERROR] 服务 '{key}' 工作目录不存在: {cwd}")
             return False
@@ -1084,23 +1091,38 @@ class ServiceManager:
         if not self._ensure_npm_deps(svc, cwd):
             log(f"[ERROR] 服务 '{key}' 依赖未就绪，启动中止")
             return False
-        # depends_on 必须健康
+        # depends_on 必须健康（非严格模式下：自愈 + 告警，绝不硬阻断整组启动）
         for dep in svc.get("depends_on") or []:
             st = self.get_status(dep)
-            if st["state"] not in ("RUNNING", "STARTING"):
-                log(
-                    f"[ERROR] 服务 '{key}' 依赖的 '{dep}' 未就绪 (state={st['state']})，中止启动"
-                )
-                return False
-            if st["state"] == "STARTING":
-                # 短等一下
-                for _ in range(20):
-                    time.sleep(0.2)
-                    if self.get_status(dep)["state"] == "RUNNING":
-                        break
+            if st["state"] in ("RUNNING", "STARTING"):
+                # 已在运行 / 启动中，等待其进入 RUNNING 即可
+                if st["state"] == "STARTING":
+                    for _ in range(20):
+                        time.sleep(0.2)
+                        if self.get_status(dep)["state"] == "RUNNING":
+                            break
                 if self.get_status(dep)["state"] != "RUNNING":
-                    log(f"[ERROR] 依赖 '{dep}' 仍未进入 RUNNING，中止")
+                    if strict:
+                        log(f"[ERROR] 依赖 '{dep}' 仍未进入 RUNNING，中止")
+                        return False
+                    log(f"[WARN] 依赖 '{dep}' 仍处于 STARTING，继续启动（非严格模式）")
+                continue
+            # DEGRADED：先尝试自愈（清理占端口进程后重启），再判定
+            if st["state"] == "DEGRADED":
+                log(f"[WARN] 服务 '{key}' 依赖的 '{dep}' 处于 DEGRADED，尝试自愈后继续")
+                self.start(dep, strict=False)
+                st = self.get_status(dep)
+            # 自愈后或原本 STOPPED
+            if st["state"] not in ("RUNNING", "STARTING"):
+                if strict:
+                    log(
+                        f"[ERROR] 服务 '{key}' 依赖的 '{dep}' 未就绪 (state={st['state']})，中止启动"
+                    )
                     return False
+                log(
+                    f"[WARN] 服务 '{key}' 依赖的 '{dep}' 未就绪 (state={st['state']})，"
+                    f"继续启动（非严格模式；'{key}' 可能需依赖就绪后才能正常工作）"
+                )
         return True
 
     # --- 操作 -------------------------------------------------------------- #
@@ -1171,7 +1193,7 @@ class ServiceManager:
             if port:
                 free_port(port, aggressive=True)
 
-        if not self._preflight(key, svc, cwd):
+        if not self._preflight(key, svc, cwd, strict=strict):
             return False
 
         ensure_dirs()
@@ -1306,7 +1328,15 @@ class ServiceManager:
         self.start_all_sorted(auto_only=True, strict=strict)
 
     def start_all_configured(self, strict: bool = False) -> bool:
-        """启动所有已配置服务（忽略 auto_start 标记）——用于管理面板『启动所有』按钮。"""
+        """启动所有已配置服务（忽略 auto_start 标记）——用于管理面板『启动所有』按钮。
+
+        入口先清理陈旧 pid 文件（记录了 pid 但进程已死 / 端口无人占），避免
+        get_status 把它们误判为 DEGRADED，进而触发依赖链硬阻断导致「都启动不了」。
+        """
+        try:
+            self.clean_stale_pidfiles()
+        except Exception as e:
+            log(f"[WARN] 清理陈旧 pid 文件异常（忽略）: {e}")
         return self.start_all_sorted(auto_only=False, strict=strict)
 
     def stop_all_sorted(self, force: bool = False):

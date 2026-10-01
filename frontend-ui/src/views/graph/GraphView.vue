@@ -215,28 +215,28 @@
                   </div>
                 </div>
                 <div class="qa-item" @click="runQuickAnalysis('community')">
-                  <div class="qa-icon" style="background:#ecfeff;color:#06b6d4">🧩</div>
+                  <div class="qa-icon" style="background:#ecfeff">🧩</div>
                   <div class="qa-info">
                     <div class="qa-title">社区发现</div>
                     <div class="qa-desc">自动聚类分组</div>
                   </div>
                 </div>
                 <div class="qa-item" @click="runQuickAnalysis('path')">
-                  <div class="qa-icon" style="background:#ecfdf5;color:#10b981">🛤️</div>
+                  <div class="qa-icon" style="background:#ecfdf5">🛤️</div>
                   <div class="qa-info">
                     <div class="qa-title">最短路径</div>
                     <div class="qa-desc">两节点关联分析</div>
                   </div>
                 </div>
                 <div class="qa-item" @click="runQuickAnalysis('pagerank')">
-                  <div class="qa-icon" style="background:#fef3c7;color:#d97706">📊</div>
+                  <div class="qa-icon" style="background:#fef3c7">📊</div>
                   <div class="qa-info">
                     <div class="qa-title">PageRank</div>
                     <div class="qa-desc">节点重要性排名</div>
                   </div>
                 </div>
                 <div class="qa-item" @click="runQuickAnalysis('activation')">
-                  <div class="qa-icon" style="background:#fce7f3;color:#ec4899">🔥</div>
+                  <div class="qa-icon" style="background:#fce7f3">🔥</div>
                   <div class="qa-info">
                     <div class="qa-title">激活传播</div>
                     <div class="qa-desc">影响扩散模拟</div>
@@ -281,11 +281,11 @@
         <svg v-if="showSkeleton" class="skeleton-svg" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet">
           <defs>
             <radialGradient id="gvGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25" />
-              <stop offset="100%" stop-color="#0b1020" stop-opacity="0" />
+              <stop offset="0%" class="sk-glow-start" stop-opacity="0.25" />
+              <stop offset="100%" class="sk-glow-end" stop-opacity="0" />
             </radialGradient>
           </defs>
-          <rect width="800" height="520" fill="#0b1020" rx="12" />
+          <rect width="800" height="520" class="sk-backdrop" rx="12" />
           <circle cx="400" cy="260" r="220" fill="url(#gvGlow)" />
           <g stroke="rgba(148,163,184,0.18)" stroke-width="1" fill="none">
             <line v-for="(_, i) in 20" :key="'sk-e'+i"
@@ -296,7 +296,7 @@
             <circle :cx="400 + 180*Math.cos(i*Math.PI/6 + 0.2)" :cy="260 + 120*Math.sin(i*Math.PI/6 + 0.2)"
               :r="n.r" :fill="n.c" opacity="0.92" />
           </g>
-          <text x="400" y="500" text-anchor="middle" fill="#94a3b8" font-size="13" letter-spacing="2">
+          <text x="400" y="500" text-anchor="middle" class="sk-caption" font-size="13" letter-spacing="2">
             {{ stageLabel }} · {{ stageProgress }}%
           </text>
         </svg>
@@ -347,12 +347,13 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, nextTick, shallowRef, markRaw, reactive } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick, shallowRef, markRaw, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 // [P1-1 渐进加载 · 先画布后力学] 静态仅依赖轻量类型/API；3D 重库 ForceGraph3D 改为动态 import 后按需拆分异步 chunk（≈1.2MB 单独下载，不阻塞首帧）
 import { NODE_TYPE_COLORS } from '@/types'
-import { useProject } from '@/composables/projectContext.js'
+import { themeRevision, tokenColor } from '@/constants'
+import { useProject } from '@/composables'
 import {
   getAggregatedGraph,
   getGraphStats,
@@ -722,6 +723,9 @@ const stageLabel = computed(() => ({
 const showSkeleton = computed(() => ['skeleton', 'fetch', 'module'].includes(loadStage.value))
 
 // 骨架 12 节点（按 typeColors 调色，纯视觉占位）
+// WebGL 画布不吃 CSS 变量：换肤后必须把新底色重新喂给渲染器，否则页面换了皮、画布还停在旧色
+watch(themeRevision, () => { if (fg) fg.backgroundColor(tokenColor('bg-primary')) })
+
 const _ntColors = Object.values(typeColors)
 const skelNodes = Array.from({ length: 12 }, (_, i) => ({
   r: 6 + ((i * 7) % 10),
@@ -1358,7 +1362,7 @@ async function reload() {
 
 function initGraph(ForceGraph3D, g) {
   fg = ForceGraph3D()(graphEl.value)
-    .backgroundColor('#0b1020')
+    .backgroundColor(tokenColor('bg-primary'))
     .graphData({ nodes: g.nodes, links: g.edges })
     .nodeLabel((n) => `${n.label} (${n.node_type})`)
     .nodeColor((n) => n.color || typeColors[n.node_type] || '#64748b')
@@ -1541,7 +1545,7 @@ onBeforeUnmount(() => {
 .graph-canvas {
   width: 100%;
   height: 520px;
-  background: #0b1020;
+  background: var(--bg-primary);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -1562,8 +1566,8 @@ onBeforeUnmount(() => {
   padding: 2px 9px;
   font-weight: 500;
   border-radius: 999px;
-  background: rgba(99, 102, 241, 0.10);
-  color: #818cf8;
+  background: var(--brand-50);
+  color: var(--brand-accent);
   font-size: 12px;
   letter-spacing: 0.3px;
 }
@@ -1572,8 +1576,8 @@ onBeforeUnmount(() => {
   padding: 2px 9px;
   font-weight: 600;
   border-radius: 999px;
-  background: rgba(34, 197, 94, 0.10);
-  color: #22c55e;
+  background: var(--success-50);
+  color: var(--success);
   font-size: 12px;
   letter-spacing: 0.3px;
 }
@@ -1599,7 +1603,7 @@ onBeforeUnmount(() => {
 }
 .stage-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1 0%, #22d3ee 100%);
+  background: linear-gradient(90deg, var(--cat-1) 0%, var(--cat-2) 100%);
   border-radius: 4px;
   transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1608,7 +1612,7 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 .stage-hints span {
   opacity: 0.55;
@@ -1616,7 +1620,7 @@ onBeforeUnmount(() => {
 }
 .stage-hints span.active {
   opacity: 1;
-  color: #818cf8;
+  color: var(--brand-accent);
   font-weight: 600;
 }
 .legend {
@@ -1633,8 +1637,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #cbd5e1;
-  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
   padding: 2px 7px;
   border-radius: 6px;
 }
@@ -1698,7 +1702,7 @@ onBeforeUnmount(() => {
 .lp-title {
   font-size: 14px;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--text-primary);
 }
 .lp-body {
   padding: 12px 14px;
@@ -1717,7 +1721,7 @@ onBeforeUnmount(() => {
   align-items: center;
   font-size: 12px;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
 .lp-value {
@@ -1725,7 +1729,7 @@ onBeforeUnmount(() => {
   right: 0;
   top: 0;
   font-size: 11px;
-  color: #6366f1;
+  color: var(--cat-1);
   font-weight: 700;
 }
 .lp-section .el-slider {
@@ -1745,7 +1749,7 @@ onBeforeUnmount(() => {
 
 /* 下拉菜单项激活态 */
 .el-dropdown-menu__item.active {
-  color: var(--brand-primary, #6366f1);
+  color: var(--cat-1);
   font-weight: 600;
   background: var(--brand-soft, rgba(99, 102, 241, 0.08));
 }
@@ -1777,7 +1781,7 @@ onBeforeUnmount(() => {
 .gt-title-wrap { display: flex; align-items: center; gap: 12px; }
 .gt-icon {
   width: 40px; height: 40px; border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  background: linear-gradient(135deg, var(--cat-1), var(--cat-2));
   display: grid; place-items: center;
   font-size: 20px;
   flex-shrink: 0;
@@ -1984,7 +1988,7 @@ onBeforeUnmount(() => {
 }
 .lo-icon { font-size: 20px; }
 .lo-name { font-size: 11px; color: var(--text-2); font-weight: 500; }
-.layout-option.active .lo-name { color: var(--brand-dark); font-weight: 600; }
+.layout-option.active .lo-name { color: var(--brand); font-weight: 600; }
 
 /* 样式调节行 */
 .style-row {
@@ -2126,7 +2130,7 @@ onBeforeUnmount(() => {
   flex: 1;
   position: relative;
   min-width: 0;
-  background: #0b1020;
+  background: var(--bg-primary);
 }
 
 .skeleton-svg {
@@ -2167,11 +2171,11 @@ onBeforeUnmount(() => {
 .gs-value {
   font-size: 16px;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--text-primary);
 }
 .gs-label {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 .gs-divider {
@@ -2237,5 +2241,11 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   overflow-x: auto;
 }
+
+/* 骨架图的颜色走 CSS 规则：SVG 呈现属性里 var() 解析不了，挂 class 才跟着换肤走 */
+.skeleton-svg .sk-glow-start { stop-color: var(--cat-1); }
+.skeleton-svg .sk-glow-end { stop-color: var(--bg-primary); }
+.skeleton-svg .sk-backdrop { fill: var(--bg-primary); }
+.skeleton-svg .sk-caption { fill: var(--text-tertiary); }
 </style>
 

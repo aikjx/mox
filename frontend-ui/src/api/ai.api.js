@@ -53,8 +53,10 @@ export const aiPublishArtifactsToKb = (payload) => http.post('/ai/publish-kb', p
 // 需求↔数据库 ER 图生成
 export const aiGenerateErd = (payload) => http.post('/ai/generate-erd', payload)
 
-// AI 专家对话
-export const aiExpertChat = (payload) => http.post('/ai/expert-chat', payload)
+// 专家对话导出（原 POST 网关侧的 ai/expert-chat 路由）已随 2026-09-27 归一化删除：
+// 该路径的 multi/debate 分支读 results、summary 两个子 handler 从不产出的键，
+// 正文恒退化为兜底串；联盟咨询一律直连模块契约的 /api/experts/* 原生端点。
+// 见 modules/expert-alliance/contract/endpoints.js 的 FORBIDDEN_ENDPOINTS。
 
 // ===== 对话沉淀 =====
 // 读取对话核心内容 → 自动归类：知识图谱 / 云盘 / 知识库

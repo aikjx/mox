@@ -400,7 +400,9 @@ flowchart TB
 | 业务流程图·知识图谱 | `/flow-graph`（FlowGraph.vue） | 力导向知识图谱 + 实时处理轨迹 | `GET /graph` |
 | **专家联盟·流程编排** | `/expert-enterprise` 流程编排 tab | AI 流程图谱（4 类节点/4 类边/聚焦视图）+ 六阶段流水线 + 激活扩散公式 | `GET /ai/engine/flow-graph` |
 | 专家联盟·能力图谱 | `/expert-enterprise` 能力图谱 tab | 专家协作网络 + 社群 + 最优团队 | `GET /expert-graph` |
-| 专家联盟·仪表盘 | `/expert-enterprise` 仪表盘 tab | KPI + 社群划分 + 调度引擎 + 熔断器 | `/expert-graph/stats` `/experts/dispatcher/status` |
+| 专家联盟·仪表盘 | `/expert-enterprise` 仪表盘 tab | KPI + 社群划分 + 调度引擎读数；**「熔断器」这一格是假字段消费**（下表注 ①） | `/expert-graph/stats` `/experts/dispatcher/status` |
+
+> **注 ①（2026-09-24 源码复核）**：该 tab 的熔断器区读的是 `dispatcherStatus.circuit_breaker?.states`、`dispatcher.recent_dispatches` 与逐项的 `cb.status`（`frontend-ui/src/views/expert/panels/ExpertEnterprisePanel.vue:106-118`），而网关的 `dispatcher_status` 出参里**没有这三个键**（它是扁平的十个 `snake_case` 键，熔断信息对应的 `circuit_breakers` 因后端无写侧而恒为 `[]`）——于是这一格永远为空，`:605` 那个「open 熔断器数」KPI 也恒为 `0`。真实形状与处置的权威源是 `docs/expert-alliance/FRONTEND-MODULE.md` §5（已知后端事实）与 §8（D 系列变异体，其中 D10 守的就是「界面不许读后端不返回的键」）；已挂载的对应面在联盟控制台 `.acks-card`。
 
 ### 9.6 Node 层代码结构重组（api-server.js 域驱动拆分 · 2026-08-22 收口）
 

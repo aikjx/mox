@@ -36,7 +36,7 @@ const ALL_MODULES = computed(() => {
   Object.values(SUB_MODULES).forEach(subs => {
     subs.forEach(s => {
       if (!list.find(m => m.path === s.path)) {
-        list.push({ key: s.key, label: s.label, path: s.path, color: '#6366f1', bg: '#eef2ff' })
+        list.push({ key: s.key, label: s.label, path: s.path })
       }
     })
   })
@@ -69,9 +69,9 @@ function closeTab(path) {
   white-space: nowrap; transition: all var(--transition);
 }
 .tab:hover { background: var(--bg-page); }
-.tab.active { background: var(--brand-soft); color: var(--brand-dark); font-weight: 600; }
+.tab.active { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
 .tab-close { font-size: 12px; border-radius: 50%; }
-.tab-close:hover { background: var(--bg-tertiary); color: #fff; }
+.tab-close:hover { background: var(--bg-tertiary); color: var(--text-primary); }
 
 @media (max-width: 768px) {
   .tabs { display: none; }

@@ -140,7 +140,7 @@ function onStepClick(idx) {
   display: grid;
   place-items: center;
   background: var(--bg-card);
-  color: #94a3b8;
+  color: var(--text-tertiary);
   border: 1.5px solid #cbd5e1;
   font-weight: 700;
   font-size: 12px;
@@ -164,8 +164,8 @@ function onStepClick(idx) {
 .pp-meta { display: flex; flex-direction: column; min-width: 0; padding-top: 3px; flex: 1; }
 .pp-name { font-size: 13.5px; font-weight: 600; color: var(--text-secondary); line-height: 1.2; white-space: nowrap; }
 .pp-step.active .pp-name { color: #4f46e5; }
-.pp-step.done .pp-name { color: #047857; }
-.pp-desc { margin-top: 3px; font-size: 11.5px; color: #94a3b8; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+.pp-step.done .pp-name { color: var(--success); }
+.pp-desc { margin-top: 3px; font-size: 11.5px; color: var(--text-tertiary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
 
 /* 连接线：相邻 step 从 orb 中心到 orb 中心 */
 .pp-connector {
@@ -223,7 +223,7 @@ function onStepClick(idx) {
   font-size: 12.5px;
 }
 .ph-current {
-  color: #64748b;
+  color: var(--text-tertiary);
   font-size: 12px;
   font-weight: 400;
 }
@@ -289,14 +289,14 @@ function onStepClick(idx) {
 .pipeline.compact .pp-short {
   margin-top: 2px;
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
 }
-.pipeline.compact .pp-step.done .pp-short { color: #10b981; }
+.pipeline.compact .pp-step.done .pp-short { color: var(--success); }
 .pipeline.compact .pp-step.active .pp-short { color: #6366f1; }
 
 /* 紧凑模式连接线位置调整（竖排后，线在圆点右侧水平方向） */

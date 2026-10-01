@@ -13,11 +13,48 @@ html[data-theme="dark"] {
   --brand-50: #1e1b4b;
   --brand-100: #312e81;
   --brand-accent: #a5b4fc;
+  /* 填充档位取靛蓝的可读段：#6366f1 压白字只有 4.47:1，#4f46e5 / #4338ca 到 6.29 / 7.90 */
+  --brand-fill: #4f46e5;
+  --brand-fill-hover: #4338ca;
+  --on-brand: #ffffff;
+
+  /* 分类色板：深色壳走 400 档，压在 --bg-raised #1e293b 上做描边/线/无字色块都够亮 */
+  --cat-1: #818cf8;
+  --cat-2: #22d3ee;
+  --cat-3: #34d399;
+  --cat-4: #fbbf24;
+  --cat-5: #a78bfa;
+  --cat-6: #f472b6;
+  --cat-7: #38bdf8;
+  --cat-8: #2dd4bf;
+
+  /* 压字三档（规则见 global.css 的同名块）。这一皮的 8 档全是亮色，白字最高只有 2.98:1，
+     所以整皮一律取自己的最深表面当墨，且没有任何一档需要压暗底 ⇒ fill 全是别名。
+     实测 6.46 – 11.53:1。 */
+  --cat-1-fill: var(--cat-1);
+  --cat-2-fill: var(--cat-2);
+  --cat-3-fill: var(--cat-3);
+  --cat-4-fill: var(--cat-4);
+  --cat-5-fill: var(--cat-5);
+  --cat-6-fill: var(--cat-6);
+  --cat-7-fill: var(--cat-7);
+  --cat-8-fill: var(--cat-8);
+  --on-cat-1: var(--bg-primary);
+  --on-cat-2: var(--bg-primary);
+  --on-cat-3: var(--bg-primary);
+  --on-cat-4: var(--bg-primary);
+  --on-cat-5: var(--bg-primary);
+  --on-cat-6: var(--bg-primary);
+  --on-cat-7: var(--bg-primary);
+  --on-cat-8: var(--bg-primary);
 
   /* 次级主色 · 晴空青（暗色增强饱和度） */
   --accent: #22d3ee;
   --accent-50: #083344;
   --accent-100: #0e7490;
+  /* 晴空青太亮，压不住白字（#22d3ee 压白 1.81:1）→ 底用它的 800 档 */
+  --accent-fill: #0e7490;
+  --on-accent: #ffffff;
 
   /* 语义色 · 暗色柔和版 */
   --success: #34d399;
@@ -26,6 +63,12 @@ html[data-theme="dark"] {
   --warning-50: #451a03;
   --danger: #f87171;
   --danger-50: #450a0a;
+  --danger-fill: #dc2626;                /* 白字压它 4.83:1；文字档 #f87171 压白字只有 2.77 */
+  --on-danger: #ffffff;
+  --success-fill: #047857;
+  --on-success: #ffffff;
+  --warning-fill: #b45309;
+  --on-warning: #ffffff;
   --violet: #a78bfa;
   --violet-50: #2e1065;
 
@@ -37,6 +80,7 @@ html[data-theme="dark"] {
   --bg-sidebar:  #030712;               /* 导航深色侧栏（更深） */
   --bg-sidebar-active: #1e293b;
   --bg-sidebar-hover: #111827;
+  --bg-row-hover: #263449;               /* 行/块悬停：比卡面亮一档，tertiary 在其上 4.90:1 */
   --bg-input:  #1e293b;
   --bg-input-focus: #0f172a;
 
@@ -44,8 +88,7 @@ html[data-theme="dark"] {
   --text-primary:   #f1f5f9;             /* 标题 */
   --text-secondary: #cbd5e1;             /* 正文 */
   --text-tertiary:  #94a3b8;             /* 辅助 */
-  --text-quaternary:#64748b;             /* 占位/静音 */
-  --text-on-brand:  #0f172a;
+  --text-quaternary:#7f90a8;             /* 占位/静音：卡面 4.50、悬停面 3.87（EP 禁用态文字就落在这两面上） */
 
   /* ===== 边界 · 暗色系 ===== */
   --border-ghost:   rgba(148, 163, 184, 0.08);

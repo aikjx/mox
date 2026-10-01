@@ -2,8 +2,11 @@
 // 支持两种模式：global（全局对话）、project（项目内对话）
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { aiChat, getChatHistory, aiExpertChat } from '@/api'
-import { getToken } from '@/utils/secureStorage'
+import { aiChat, getChatHistory } from '@/api'
+import { allianceApi } from '@/modules/expert-alliance/api'
+import { COLLAB_MODES, collabMode as collabModeDef, collabProblem } from '@/modules/expert-alliance/contract'
+import { collabChatText } from '@/modules/expert-alliance/model'
+import { getToken } from '@/utils'
 
 const STORAGE_PREFIX = 'mox.ai.v2'
 
@@ -47,14 +50,23 @@ export const ASSISTANTS = {
   }
 }
 
-// 咨询模式
-export const CONSULT_MODES = {
-  smart: { key: 'smart', label: '智能路由', desc: 'AI 自动分析，选择最优协作模式' },
-  single: { key: 'single', label: '单专家', desc: '指定一位专家深度咨询' },
-  multi: { key: 'multi', label: '多专家协同', desc: '多位专家并行协作，输出综合方案' },
-  debate: { key: 'debate', label: '专家辩论', desc: '多轮交叉辩论，碰撞最优解' },
-  algorithm: { key: 'algorithm', label: '算法分析', desc: '复杂度分析、算法推荐、数据结构选型' }
-}
+// 咨询模式表：联盟六模式的键/文案/输入框提示全部由模块契约 COLLAB_MODES 投影，此处不再手抄。
+// 'general' 是本 store 特有的一档（通用助手对话，不进联盟契约），契约里没有对应模式。
+// 原先这里是第 3 份手写副本，且把 'smart' 标成"智能路由"，与契约里 route=智能路由 相互矛盾。
+export const CONSULT_MODES = Object.freeze({
+  general: {
+    key: 'general',
+    label: '通用助手',
+    desc: '不与专家联盟协作，直接和所选助手对话',
+    placeholder: '输入你的问题，按所选助手人格直接回答…'
+  },
+  ...Object.fromEntries(COLLAB_MODES.map((m) => [m.key, {
+    key: m.key,
+    label: m.label,
+    desc: m.outcome || m.placeholder,
+    placeholder: m.placeholder
+  }]))
+})
 
 function genId(prefix = 'id') {
   return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8)
@@ -82,7 +94,7 @@ export const useAIStore = defineStore('ai', () => {
   const streamController = ref(null)
   const currentScope = ref('global') // 'global' | 'project'
   const currentProjectId = ref(null)
-  const consultMode = ref('smart') // 专家联盟咨询模式
+  const consultMode = ref('general') // 咨询模式：'general' 或与契约同名的联盟模式
   const selectedExpertIds = ref([]) // 已选专家 ID
 
   // ===== Getters =====
@@ -104,7 +116,10 @@ export const useAIStore = defineStore('ai', () => {
     [...messages.value].reverse().find(m => m.role === 'user')
   )
 
-  const currentConsultMode = computed(() => CONSULT_MODES[consultMode.value] || CONSULT_MODES.smart)
+  const currentConsultMode = computed(() => CONSULT_MODES[consultMode.value] || CONSULT_MODES.general)
+
+  /** 联盟模式判定：契约认识的键才走联盟契约，其余（含 'general' 与助手人格）走通用对话 */
+  const allianceDef = computed(() => collabModeDef(consultMode.value))
 
   // ===== Actions =====
 
@@ -377,6 +392,10 @@ export const useAIStore = defineStore('ai', () => {
 
   // 调用对话 API（非流式）
   async function callChatAPI(text) {
+    const def = allianceDef.value
+    if (def) return await callAllianceCollab(def, text)
+
+    // 通用对话：助手人格只是 systemPrompt 的选择，不等于联盟专家，绝不因此改道联盟契约
     const payload = {
       message: text,
       session_id: currentSessionId.value,
@@ -389,13 +408,20 @@ export const useAIStore = defineStore('ai', () => {
         .filter(m => m.role === 'user' || m.role === 'assistant')
         .map(m => ({ role: m.role, content: m.content }))
     }
-
-    // 专家模式走专家对话 API
-    if (consultMode.value !== 'smart' || currentAssistant.value !== 'general') {
-      payload.expert_type = currentAssistant.value
-      return await aiExpertChat(payload)
-    }
     return await aiChat(payload)
+  }
+
+  /**
+   * 联盟咨询：入参组装与校验一律经模块契约（contract/collab.js），返回沿用聊天框的 content 口径。
+   * 契约的六个模式都是单轮请求（除 route 的 constraints 外没有可读的历史字段），
+   * 所以这里不再像旧实现那样塞 messages——后端根本不看，塞了只会让人以为多轮生效了。
+   */
+  async function callAllianceCollab(def, text) {
+    const input = { [def.field]: text, expertIds: [...selectedExpertIds.value] }
+    const problem = collabProblem(def, input)
+    if (problem) throw new Error(problem)
+    const result = await allianceApi.collaborate(def.key, input)
+    return { content: collabChatText(result), mode: def.key, consult_mode: def.key, result }
   }
 
   // 流式对话
@@ -415,9 +441,17 @@ export const useAIStore = defineStore('ai', () => {
     }
 
     try {
-      const endpoint = (consultMode.value !== 'smart' || currentAssistant.value !== 'general')
-        ? '/api/ai/expert-chat'
-        : '/api/ai/chat'
+      const def = allianceDef.value
+      if (def) {
+        // 联盟六个模式在网关侧都是请求-响应式（没有对应 SSE），所以整段一次性写入，
+        // 不再像旧实现那样去 fetch 被禁的专家对话端点（其 multi/debate 分支读的是
+        // 子 handler 从不产出的键，返回正文恒为兜底串）。
+        const allianceResult = await callAllianceCollab(def, text)
+        const target = messages.value.find(m => m.id === aiMsgId)
+        if (target) target.content = allianceResult.content
+        return
+      }
+      const endpoint = '/api/ai/chat'
 
       const token = getToken()
                 || import.meta.env?.VITE_API_TOKEN
@@ -619,6 +653,7 @@ export const useAIStore = defineStore('ai', () => {
     hasMessages,
     lastUserMessage,
     currentConsultMode,
+    allianceDef,
     // Actions
     setScope,
     newSession,

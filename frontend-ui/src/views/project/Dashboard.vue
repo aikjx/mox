@@ -123,7 +123,7 @@
           :class="{ active: p.status === 'active', done: p.status === 'done' }"
         >
           <div class="phase-step">
-            <div class="phase-dot" :style="{ background: p.status === 'done' ? '#10b981' : p.status === 'active' ? p.color : '#cbd5e1' }">
+            <div class="phase-dot" :class="`is-${p.status}`">
               <el-icon v-if="p.status === 'done'"><Select /></el-icon>
               <span v-else>{{ i + 1 }}</span>
             </div>
@@ -199,7 +199,8 @@ import { Select, CaretTop, CaretBottom, MagicStick, Cpu, Share, ChatDotRound, Op
 import * as echarts from '@/echarts'
 import { APP_VERSION, NAV_MODULES } from '@/types'
 import { getStatus, getLogs, getProjectPhaseProgress } from '@/api'
-import { useProject } from '@/composables/projectContext.js'
+import { useProject } from '@/composables'
+import { cat } from '@/constants'
 
 const { currentProject } = useProject()
 const router = useRouter()
@@ -231,10 +232,10 @@ async function loadPhaseProgress() {
 const projectPhases = computed(() => {
   const phase = currentProject.value?.phase || 'requirement'
   const phases = [
-    { key: 'requirement', label: '需求阶段', desc: '需求采集与分析', color: '#6366f1', progress: 0, status: 'pending' },
-    { key: 'architecture', label: '架构阶段', desc: '知识图谱构建', color: '#06b6d4', progress: 0, status: 'pending' },
-    { key: 'develop', label: '开发阶段', desc: '算子与工作流', color: '#10b981', progress: 0, status: 'pending' },
-    { key: 'release', label: '发布阶段', desc: '监控与优化', color: '#f59e0b', progress: 0, status: 'pending' }
+    { key: 'requirement', label: '需求阶段', desc: '需求采集与分析', color: cat(1), progress: 0, status: 'pending' },
+    { key: 'architecture', label: '架构阶段', desc: '知识图谱构建', color: cat(2), progress: 0, status: 'pending' },
+    { key: 'develop', label: '开发阶段', desc: '算子与工作流', color: cat(3), progress: 0, status: 'pending' },
+    { key: 'release', label: '发布阶段', desc: '监控与优化', color: cat(4), progress: 0, status: 'pending' }
   ]
   // 根据当前阶段模拟进度
   const phaseOrder = ['requirement', 'architecture', 'develop', 'release']
@@ -485,7 +486,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 26px 30px;
-  background: linear-gradient(125deg, #4f46e5 0%, #6366f1 42%, #06b6d4 100%);
+  background: linear-gradient(125deg, #4f46e5 0%, var(--cat-1) 42%, var(--cat-2) 100%);
   color: #fff;
   overflow: hidden;
   position: relative;
@@ -584,11 +585,11 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  background: linear-gradient(135deg, var(--cat-6-fill), var(--cat-5-fill));
   display: grid;
   place-items: center;
   font-size: 20px;
-  color: #fff;
+  color: var(--on-cat-6);
 }
 .aiqc-name {
   font-weight: 700;
@@ -684,9 +685,9 @@ onBeforeUnmount(() => {
 }
 .aiqc-input :deep(.el-button) {
   border-radius: 8px;
-  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  background: linear-gradient(135deg, var(--cat-6-fill), var(--cat-5-fill));
   border: none;
-  color: #fff;
+  color: var(--on-cat-6);
 }
 .aiqc-input :deep(.el-button:hover) {
   opacity: 0.9;
@@ -774,9 +775,22 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #fff;
   font-weight: 700;
   font-size: 13px;
+}
+/* 底与字成对取档。旧写法三种状态共用 color: #fff，把文字档和 --bg-row-hover 当底：
+   白字压 #cbd5e1 只有 1.48:1、压 var(--cat-3) 只有 2.54:1、压 var(--cat-4) 只有 2.15:1。 */
+.phase-dot.is-done {
+  background: var(--success-fill);
+  color: var(--on-success);
+}
+.phase-dot.is-active {
+  background: var(--brand-fill);
+  color: var(--on-brand);
+}
+.phase-dot.is-pending {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
 }
 .phase-line {
   width: 2px;
@@ -786,7 +800,7 @@ onBeforeUnmount(() => {
   margin-top: 4px;
 }
 .phase-line.done {
-  background: #10b981;
+  background: var(--cat-3-fill);
 }
 .phase-info {
   flex: 1;
@@ -881,11 +895,10 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  color: #fff;
   font-size: 13px;
 }
-.log-badge.ok { background: var(--success); }
-.log-badge.fail { background: var(--danger); }
+.log-badge.ok { background: var(--success-fill); color: var(--on-success); }
+.log-badge.fail { background: var(--danger-fill); color: var(--on-danger); }
 .log-flow { font-size: 13px; font-weight: 600; }
 .log-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 </style>

@@ -1,7 +1,7 @@
 ﻿import { createRouter, createWebHashHistory } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { useAuthStore } from '@/stores/auth.store'
-import { usePermissionStore } from '@/stores/permission.store'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { useAuthStore } from '@/stores'
+import { usePermissionStore } from '@/stores'
 
 import publicRoutes from "./modules/public.js"
 import projectRoutes from "./modules/project.js"
@@ -14,6 +14,12 @@ import operatorsRoutes from "./modules/operators.js"
 import systemRoutes from "./modules/system.js"
 import fallbackRoutes from "./modules/fallback.js"
 
+// 模块化前端的唯一入口：路由与导航由 src/modules/index.js 登记的模块描述派生。
+import { collectRoutes as collectModuleRoutes } from '@/modules'
+
+// 必须在 fallbackRoutes 之前 spread，否则通配路由吞掉模块页面。
+const moduleRoutes = collectModuleRoutes()
+
 const routes = [
   ...publicRoutes,
   ...projectRoutes,
@@ -24,6 +30,7 @@ const routes = [
   ...marketRoutes,
   ...operatorsRoutes,
   ...systemRoutes,
+  ...moduleRoutes,
   ...fallbackRoutes,
 ]
 
@@ -40,7 +47,7 @@ const router = createRouter({
 const DEFAULT_TITLE = '璇玑系统 · Mox Graph System'
 
 // 不需要登录即可访问的页面白名单
-const WHITE_LIST = ['/login', '/portal', '/hall', '/share', '/s/', '/403']
+const WHITE_LIST = ['/login', '/register', '/portal', '/hall', '/share', '/s/', '/403']
 
 function isInWhiteList(path) {
   return WHITE_LIST.some(p => path === p || path.startsWith(p))

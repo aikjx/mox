@@ -1,0 +1,1421 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/a10/aikjx/gitcode/infotopograph/frontend-ui[39m
+
+node.exe : [90mstderr[2m | src/views/admin/panels/AdminTenant.smoke.test.js[2m > [22m[2mAdminTenant 冒烟[2m > [22m
+[2m渲染不崩：挂载后列表数据落地，新建租户入口存在
+所在位置 行:1 字符: 1
++ & "C:\Users\mo\AppData\Local\DoubaoWork\User Data\sandbox_runtime\bas ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...列表数据落地，新建租户入口存在:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+ [32m✓[39m src/views/admin/panels/AdminTenant.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 129[2mms[22m[39m
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminTenant ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/views/admin/panels/AdminApi.smoke.test.js[2m > [22m[2mAdminApi 冒烟[2m > [22m[2m渲染不崩：挂载后加载 AP
+I 映射，存在按钮入口
+[22m[39m[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminApi ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/views/admin/panels/AdminApi.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 110[2mms[22m[39m
+[90mstderr[2m | src/views/admin/panels/AdminStorage.smoke.test.js[2m > [22m[2mAdminStorage 冒烟[2m > [22m[2m渲染不崩：
+挂载后并行加载存储状态，存在按钮入口
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminStorage ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/views/admin/panels/AdminStorage.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 110[2mms[22m[39m
+[90mstderr[2m | src/views/admin/panels/AdminOverview.smoke.test.js[2m > [22m[2mAdminOverview 冒烟[2m > [22m[2m渲染不
+崩：挂载后加载各状态摘要
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminOverview ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/views/admin/panels/AdminOverview.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 134[2mms[22m[39m
+[90mstderr[2m | src/views/admin/panels/AdminLogs.smoke.test.js[2m > [22m[2mAdminLogs 冒烟[2m > [22m[2m渲染不崩：挂载后加载 
+logger 列表与在线日志
+[22m[39m[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminLogs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/views/admin/panels/AdminLogs.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 100[2mms[22m[39m
+[90mstderr[2m | src/views/admin/panels/AdminDict.smoke.test.js[2m > [22m[2mAdminDict 冒烟[2m > [22m[2m渲染不崩：挂载后加载字
+典类型，存在按钮入口
+[22m[39m[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input-number
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input-number
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input-number
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminDict ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/views/admin/panels/AdminDict.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 113[2mms[22m[39m
+[90mstderr[2m | src/views/admin/panels/AdminConfig.smoke.test.js[2m > [22m[2mAdminConfig 冒烟[2m > [22m[2m渲染不崩：挂载
+后加载配置列表，新增入口存在
+[22m[39m[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+ [32m✓[39m src/views/admin/panels/AdminConfig.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 112[2mms[22m[39m
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminConfig ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/views/admin/panels/AdminAccess.smoke.test.js[2m > [22m[2mAdminAccess(旧) 冒烟[2m > [22m[2m渲染不崩
+：挂载后加载 API 凭证，存在按钮入口
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-checkbox
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-checkbox-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-checkbox
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-checkbox-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-checkbox
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-checkbox-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminAccess ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/views/admin/panels/AdminAccess.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 122[2mms[22m[39m
+[90mstderr[2m | src/views/admin/panels/AdminHitl.smoke.test.js[2m > [22m[2mAdminHitl 冒烟[2m > [22m[2m渲染不崩：挂载后出现 
+HITL 面板关键元素
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminHitl ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminHitl ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-alert
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminHitl ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminHitl ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminHitl ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminHitl ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminHitl ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminHitl ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/views/admin/panels/AdminMenu.smoke.test.js[2m > [22m[2mAdminMenu 冒烟[2m > [22m[2m渲染不崩：挂载后加载菜
+单树，存在按钮入口
+[22m[39m[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tree-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input-number
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tree-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input-number
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-switch
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tree-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-radio-group
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input-number
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-form
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminMenu ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/views/admin/panels/AdminAudit.smoke.test.js[2m > [22m[2mAdminAudit 冒烟[2m > [22m[2m渲染不崩：挂载后加
+载操作日志，存在按钮入口
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-date-picker
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-date-picker
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-option
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-select
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-date-picker
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+ [32m✓[39m src/views/admin/panels/AdminHitl.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 100[2mms[22m[39m
+ [32m✓[39m src/views/admin/panels/AdminMenu.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 134[2mms[22m[39m
+ [32m✓[39m src/views/admin/panels/AdminAudit.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 156[2mms[22m[39m
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-pagination
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-empty
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions-item
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-descriptions
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-dialog
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve directive: loading 
+  at <AdminAudit ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [31m❯[39m src/views/admin/panels/AdminDepartment.smoke.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m src/views/admin/panels/AdminRole.smoke.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m src/views/admin/panels/AdminUser.smoke.test.js [2m([22m[2m0 test[22m[2m)[22m
+[90mstderr[2m | src/views/admin/panels/AdminDocs.smoke.test.js[2m > [22m[2mAdminDocs 冒烟[2m > [22m[2m渲染不崩：端点目录渲染
+，存在搜索框与端点条目
+[22m[39m[Vue warn]: Failed to resolve component: el-input
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AdminDocs ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/views/admin/panels/AdminDocs.smoke.test.js [2m([22m[2m1 test[22m[2m)[22m[90m 87[2mms[22m[39m

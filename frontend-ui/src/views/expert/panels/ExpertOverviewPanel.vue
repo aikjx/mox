@@ -24,7 +24,7 @@
               :class="{ active: currentPhase === p.key }"
               @click="currentPhase = p.key"
             >
-              <div class="phase-index" :style="{ background: p.color }">{{ idx + 1 }}</div>
+              <div class="phase-index" :style="{ background: catFill(p.hue), color: catInk(p.hue) }">{{ idx + 1 }}</div>
               <div class="phase-info">
                 <div class="phase-name">{{ p.label }}</div>
                 <div class="phase-desc">{{ p.desc }}</div>
@@ -197,7 +197,7 @@
             <div v-for="p in phases" :key="p.key" class="phase-progress-row">
               <div class="pp-name">{{ p.label }}</div>
               <div class="pp-bar">
-                <div class="pp-fill" :style="{ width: phaseProgress[p.key] + '%', background: p.color }"></div>
+                <div class="pp-fill" :style="{ width: phaseProgress[p.key] + '%', background: catFill(p.hue) }"></div>
               </div>
               <div class="pp-val">{{ phaseProgress[p.key] }}%</div>
             </div>
@@ -239,24 +239,27 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {
   Search, CircleCheckFilled, ArrowRight, Refresh
 } from '@element-plus/icons-vue'
-import { useAIStore, CONSULT_MODES } from '@/stores/ai.store'
-import AIChatPanel from '@/components/ai/AIChatPanel.vue'
-import { EXPERT_TYPES } from '@/constants/expert.constants'
-import { getExperts, getExpertGraph, getExpertOverview } from '@/api/experts.api.js'
+import { useAIStore, CONSULT_MODES } from '@/stores'
+import { AIChatPanel } from '@/components'
+import { EXPERT_TYPES, expertColor, expertEmoji } from '@/constants'
+import { catFill, catInk, catFillColor, catInkColor, withAlpha, themeRevision } from '@/constants'
+import { getExperts, getExpertGraph, getExpertOverview } from '@/api'
 
 const router = useRouter()
 const aiStore = useAIStore()
 
 // ===== 阶段 =====
+// hue 是分类色档位号，色值真值只在主题命名空间里。
+// 需求/架构/开发/发布 = 1..4 档，四档在默认皮下与迁移前的四个字面量逐一对应（换肤后跟皮肤走）。
 const phases = [
-  { key: 'requirement', label: '需求阶段', desc: 'AI 对话 · 需求编译', color: '#6366f1' },
-  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟', color: '#06b6d4' },
-  { key: 'develop', label: '开发阶段', desc: '算子 · 工作流 · 自动化', color: '#10b981' },
-  { key: 'release', label: '发布阶段', desc: '监控 · 文档 · 管理', color: '#f59e0b' }
+  { key: 'requirement', label: '需求阶段', desc: 'AI 对话 · 需求编译', hue: 1 },
+  { key: 'architecture', label: '架构阶段', desc: '知识图谱 · 专家联盟', hue: 2 },
+  { key: 'develop', label: '开发阶段', desc: '算子 · 工作流 · 自动化', hue: 3 },
+  { key: 'release', label: '发布阶段', desc: '监控 · 文档 · 管理', hue: 4 }
 ]
 
 const currentPhase = ref('architecture')
@@ -265,15 +268,11 @@ const currentPhase = ref('architecture')
 const consultModes = CONSULT_MODES
 
 const currentPlaceholder = computed(() => {
-  const mode = aiStore.consultMode
-  const placeholders = {
-    smart: '描述你的问题，AI 将自动选择最优专家协作模式…',
-    single: '选择左侧专家后，输入你的问题进行一对一咨询…',
-    multi: '已选 ' + aiStore.selectedExpertIds.length + ' 位专家，输入问题开始协同分析…',
-    debate: '输入辩题，多位专家将展开多轮交叉辩论…',
-    algorithm: '描述你的算法问题，AI 将分析复杂度并推荐方案…'
-  }
-  return placeholders[mode] || '输入你的问题…'
+  // 文案权威源：模块契约 COLLAB_MODES 的 placeholder（经 CONSULT_MODES 投影）。
+  // 本视图只补「已选几位专家」这个当轮事实，不再自带一张模式文案表。
+  const base = aiStore.currentConsultMode.placeholder
+  const picked = aiStore.selectedExpertIds.length
+  return picked > 0 ? `已选 ${picked} 位专家 · ${base}` : base
 })
 
 // ===== 专家数据（API 驱动） =====
@@ -341,30 +340,6 @@ const topExperts = computed(() =>
 
 function typeLabel(type) {
   return EXPERT_TYPES[type] || type
-}
-
-function expertColor(type) {
-  const colors = {
-    algorithm: '#6366f1', architecture: '#6366f1', data: '#10b981',
-    ai: '#ec4899', workflow: '#f59e0b', graph: '#06b6d4',
-    security: '#ef4444', performance: '#f97316', monitor: '#14b8a6',
-    market: '#8b5cf6', mcp: '#0ea5e9', automation: '#84cc16',
-    requirement: '#f43f5e', fusion: '#a855f7', operator: '#64748b',
-    custom: '#64748b'
-  }
-  return colors[type] || '#6366f1'
-}
-
-function expertEmoji(type) {
-  const emojis = {
-    algorithm: '🧮', architecture: '🏗️', data: '🔗',
-    ai: '🤖', workflow: '⚡', graph: '🕸️',
-    security: '🔒', performance: '🚀', monitor: '📊',
-    market: '📈', mcp: '🔌', automation: '🤖',
-    requirement: '📋', fusion: '🔀', operator: '⚙️',
-    custom: '👤'
-  }
-  return emojis[type] || '👤'
 }
 
 function isSelected(id) {
@@ -448,6 +423,9 @@ async function loadOverview() {
   }
 }
 
+// 换肤不会自己重绘画布：底与字都是运行时读进来的档位，revision 一变就得重画
+watch(themeRevision, () => { if (graphData.value.nodes.length) drawGraph() })
+
 function drawGraph() {
   const canvas = canvasRef.value
   if (!canvas) return
@@ -480,31 +458,30 @@ function drawGraph() {
     }
   })
 
-  // 画节点
-  const colors = {
-    actor: '#6366f1', goal: '#ec4899', usecase: '#06b6d4',
-    data: '#10b981', tech: '#f59e0b', end: '#8b5cf6'
-  }
+  // 画节点：六类节点各占一个分类色档位（默认皮下与旧字面量等价）
+  const NODE_HUE = { actor: 1, goal: 6, usecase: 2, data: 3, tech: 4, end: 5 }
 
   nodes.forEach(n => {
     const x = centerX + (n.x - 200) * scale
     const y = centerY + (n.y - 130) * scale
     const r = n.type === 'goal' ? 22 : 18
+    const hue = NODE_HUE[n.type] || 1
+    const fill = catFillColor(hue)
 
     // 光晕
     ctx.beginPath()
     ctx.arc(x, y, r + 4, 0, Math.PI * 2)
-    ctx.fillStyle = (colors[n.type] || '#6366f1') + '20'
+    ctx.fillStyle = withAlpha(fill, 0.125)
     ctx.fill()
 
     // 节点
     ctx.beginPath()
     ctx.arc(x, y, r, 0, Math.PI * 2)
-    ctx.fillStyle = colors[n.type] || '#6366f1'
+    ctx.fillStyle = fill
     ctx.fill()
 
-    // 标签
-    ctx.fillStyle = '#fff'
+    // 标签：字色与底是同一条 AA 契约的两档
+    ctx.fillStyle = catInkColor(hue)
     ctx.font = '10px sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -598,12 +575,12 @@ watch(currentPhase, () => {
 
 .card-sub {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .count-badge {
   background: var(--accent-dim);
-  color: #6366f1;
+  color: var(--cat-1);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 11px;
@@ -647,7 +624,7 @@ watch(currentPhase, () => {
   border-radius: 6px;
   display: grid;
   place-items: center;
-  color: #fff;
+  /* 字色随底档成对给在 :style 上（catFill / catInk），这里写死白会在暗底皮上跌破 AA */
   font-size: 12px;
   font-weight: 700;
   flex-shrink: 0;
@@ -666,12 +643,12 @@ watch(currentPhase, () => {
 }
 
 .phase-item.active .phase-name {
-  color: #4f46e5;
+  color: var(--brand);
 }
 
 .phase-desc {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -713,7 +690,7 @@ watch(currentPhase, () => {
 
 .expert-item.selected {
   background: var(--success-dim);
-  border-left: 3px solid #10b981;
+  border-left: 3px solid var(--cat-3);
   padding-left: 9px;
 }
 
@@ -741,7 +718,7 @@ watch(currentPhase, () => {
 
 .expert-type {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -761,7 +738,7 @@ watch(currentPhase, () => {
 }
 
 .expert-check {
-  color: #10b981;
+  color: var(--cat-3);
   font-size: 16px;
 }
 
@@ -772,7 +749,7 @@ watch(currentPhase, () => {
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
   background: var(--bg-tertiary);
 }
 
@@ -808,7 +785,7 @@ watch(currentPhase, () => {
 .mode-tab {
   padding: 5px 10px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
@@ -821,14 +798,14 @@ watch(currentPhase, () => {
 
 .mode-tab.active {
   background: var(--bg-card);
-  color: #4f46e5;
+  color: var(--brand);
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .mode-hint {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .chat-container {
@@ -879,7 +856,7 @@ watch(currentPhase, () => {
 
 .stat-label {
   font-size: 10px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 /* 进度卡片 */
@@ -914,7 +891,7 @@ watch(currentPhase, () => {
 .ring-fg {
   fill: none;
   stroke: url(#ringGrad);
-  stroke: #6366f1;
+  stroke: var(--cat-1);
   stroke-width: 8;
   stroke-linecap: round;
   stroke-dasharray: 326.7;
@@ -939,7 +916,7 @@ watch(currentPhase, () => {
 
 .ring-label {
   font-size: 10px;
-  color: #64748b;
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -959,7 +936,7 @@ watch(currentPhase, () => {
 
 .pp-name {
   width: 56px;
-  color: #64748b;
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
@@ -1021,12 +998,14 @@ watch(currentPhase, () => {
   font-size: 11px;
   font-weight: 700;
   background: var(--bg-tertiary);
-  color: #64748b;
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
-.rank-idx.rank-1 { background: #fef3c7; color: #d97706; }
-.rank-idx.rank-2 { background: #e0f2fe; color: #0284c7; }
+/* rank-1/2 有「浅底 + 同族字」的现成档位（四皮实测 5.2–9.0:1）；rank-3 的品红没有档位可配
+   —— 色板里只有 --cat-6 这一个饱和档，没有配套的浅底，硬迁就是拿 AA 换台账数字。 */
+.rank-idx.rank-1 { background: var(--warning-dim); color: var(--warning); }
+.rank-idx.rank-2 { background: var(--info-50); color: var(--info); }
 .rank-idx.rank-3 { background: #fce7f3; color: #db2777; }
 
 .rank-avatar {
@@ -1053,7 +1032,7 @@ watch(currentPhase, () => {
 
 .rank-type {
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: 1px;
 }
 
@@ -1065,13 +1044,13 @@ watch(currentPhase, () => {
 .score-val {
   font-size: 13px;
   font-weight: 700;
-  color: #10b981;
+  color: var(--cat-3);
   line-height: 1.2;
 }
 
 .score-label {
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 /* 响应式 */

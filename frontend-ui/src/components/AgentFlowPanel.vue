@@ -158,7 +158,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {
   Cpu, Expand, Fold, Share, Check, Close, Loading, ArrowDown,
   Document, CopyDocument, List
@@ -270,7 +270,7 @@ function copyCode() {
   width: 340px;
   min-width: 340px;
   max-width: 400px;
-  background: var(--bg-surface-2, #fafbfe);
+  background: var(--bg-surface-2);
   border-left: 1px solid var(--border-soft, rgba(15, 23, 42, 0.09));
   display: flex;
   flex-direction: column;
@@ -299,29 +299,29 @@ function copyCode() {
 .afp-logo {
   width: 34px; height: 34px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand, #6366f1), var(--accent, #06b6d4));
+  background: linear-gradient(135deg, var(--brand-fill), var(--accent-fill));
   display: grid; place-items: center;
-  color: #fff; font-size: 16px;
+  color: var(--on-brand); font-size: 16px;
   flex-shrink: 0;
 }
 .afp-title-text { min-width: 0; }
 .afp-name {
   font-size: 13px; font-weight: 700;
-  color: var(--text-primary, #0b1120);
+  color: var(--text-primary);
   letter-spacing: -0.2px;
 }
-.afp-sub { font-size: 10px; color: var(--text-tertiary, #64748b); margin-top: 2px; }
+.afp-sub { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
 .afp-header-actions { display: flex; gap: 6px; }
 .afp-icon-btn {
   width: 28px; height: 28px;
   border: none; background: transparent;
   border-radius: 7px;
   display: grid; place-items: center;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.2s;
 }
-.afp-icon-btn:hover { background: rgba(99, 102, 241, 0.1); color: var(--brand, #6366f1); }
+.afp-icon-btn:hover { background: rgba(99, 102, 241, 0.1); color: var(--brand); }
 
 /* ===== 视图切换 Tabs ===== */
 .afp-tabs {
@@ -338,22 +338,22 @@ function copyCode() {
   border-radius: 8px;
   background: transparent;
   font-size: 11px;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.2s;
 }
-.afp-tab:hover { background: rgba(99, 102, 241, 0.06); color: var(--brand, #6366f1); }
+.afp-tab:hover { background: rgba(99, 102, 241, 0.06); color: var(--brand); }
 .afp-tab.active {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.12));
-  color: var(--brand, #6366f1);
+  color: var(--brand);
   font-weight: 600;
 }
 .afp-tab-count {
   min-width: 16px; height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: var(--brand, #6366f1);
-  color: #fff;
+  background: var(--brand-fill);
+  color: var(--on-brand);
   font-size: 9px;
   display: grid; place-items: center;
 }
@@ -377,20 +377,20 @@ function copyCode() {
 .empty-icon {
   width: 56px; height: 56px;
   border-radius: 18px;
-  background: var(--bg-surface-3, #f1f5f9);
+  background: var(--bg-tertiary);
   display: grid; place-items: center;
-  color: var(--text-quaternary, #94a3b8);
+  color: var(--text-tertiary);
   font-size: 24px;
   margin-bottom: 14px;
 }
 .empty-title {
   font-size: 13px; font-weight: 600;
-  color: var(--text-secondary, #334155);
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
 .empty-desc {
   font-size: 11px;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
   line-height: 1.7;
   max-width: 220px;
 }
@@ -402,16 +402,16 @@ function copyCode() {
 .node-dot {
   width: 26px; height: 26px;
   border-radius: 50%;
-  background: var(--bg-surface-3, #e2e8f0);
-  border: 2px solid var(--text-quaternary, #94a3b8);
+  background: var(--bg-tertiary);
+  border: 2px solid var(--text-quaternary);
   display: grid; place-items: center;
   font-size: 11px; font-weight: 700;
-  color: var(--text-quaternary, #94a3b8);
+  color: var(--text-tertiary);
   z-index: 1;
   transition: all 0.3s;
 }
 .node-dot.running, .agent-node.running .node-dot {
-  background: linear-gradient(135deg, var(--brand, #6366f1), var(--accent, #06b6d4));
+  background: linear-gradient(135deg, var(--brand), var(--accent));
   border-color: transparent;
   color: #fff;
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
@@ -431,9 +431,9 @@ function copyCode() {
   width: 2px;
   flex: 1;
   min-height: 24px;
-  background: linear-gradient(180deg, var(--text-quaternary, #94a3b8), rgba(99, 102, 241, 0.4));
+  background: linear-gradient(180deg, var(--text-quaternary), rgba(99, 102, 241, 0.4));
 }
-.connector-arrow { color: var(--text-quaternary, #94a3b8); font-size: 12px; margin: 2px 0; }
+.connector-arrow { color: var(--text-quaternary); font-size: 12px; margin: 2px 0; }
 
 .node-card {
   flex: 1;
@@ -441,12 +441,12 @@ function copyCode() {
   margin-bottom: 14px;
   padding: 12px;
   border-radius: 12px;
-  background: var(--bg-surface, #fff);
+  background: var(--bg-surface);
   border: 1px solid var(--border-soft, rgba(15, 23, 42, 0.09));
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .node-card.running {
-  border-color: var(--brand, #6366f1);
+  border-color: var(--brand);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.14);
 }
 .node-card.done { border-color: rgba(16, 185, 129, 0.35); }
@@ -462,17 +462,17 @@ function copyCode() {
 .node-agent-meta { flex: 1; min-width: 0; }
 .node-agent-name {
   font-size: 12px; font-weight: 700;
-  color: var(--text-primary, #0b1120);
+  color: var(--text-primary);
 }
 .node-agent-role {
   font-size: 10px;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 .node-status-tag { flex-shrink: 0; }
 .node-desc {
   font-size: 11px;
-  color: var(--text-secondary, #334155);
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-top: 10px;
 }
@@ -484,8 +484,8 @@ function copyCode() {
   font-size: 10px;
   padding: 3px 8px;
   border-radius: 6px;
-  background: var(--bg-surface-3, #f1f5f9);
-  color: var(--text-tertiary, #64748b);
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
 }
 .node-result {
   margin-top: 10px;
@@ -495,20 +495,20 @@ function copyCode() {
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 .node-result-label { font-size: 10px; font-weight: 600; color: #059669; margin-bottom: 3px; }
-.node-result-text { font-size: 11px; color: var(--text-secondary, #334155); line-height: 1.6; }
+.node-result-text { font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
 
 /* ===== 代码视图 ===== */
 .afp-code { display: flex; flex-direction: column; }
 .code-toolbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 12px;
-  background: var(--bg-deep, #0b1120);
+  background: var(--bg-primary);
   border-radius: 10px 10px 0 0;
 }
 .code-filename {
   display: flex; align-items: center; gap: 6px;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace;
 }
 .code-copy {
@@ -526,13 +526,13 @@ function copyCode() {
 .code-block {
   margin: 0;
   padding: 12px;
-  background: var(--bg-deep, #0b1120);
+  background: var(--bg-primary);
   border-radius: 0 0 10px 10px;
   overflow-x: auto;
   font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace;
   font-size: 11px;
   line-height: 1.7;
-  color: #a5b4fc;
+  color: var(--el-color-primary-light-3);
   white-space: pre;
 }
 .code-block::-webkit-scrollbar { height: 4px; }
@@ -549,19 +549,19 @@ function copyCode() {
 .d-summary-item {
   padding: 10px 6px;
   border-radius: 10px;
-  background: var(--bg-surface, #fff);
+  background: var(--bg-surface);
   border: 1px solid var(--border-soft, rgba(15, 23, 42, 0.09));
   text-align: center;
 }
 .d-summary-num {
   font-size: 18px; font-weight: 800;
-  color: var(--brand, #6366f1);
+  color: var(--brand);
 }
 .d-summary-num.running { color: #06b6d4; }
 .d-summary-num.error { color: #ef4444; }
 .d-summary-label {
   font-size: 10px;
-  color: var(--text-tertiary, #64748b);
+  color: var(--text-tertiary);
   margin-top: 3px;
 }
 .detail-list { display: flex; flex-direction: column; gap: 8px; }
@@ -569,17 +569,17 @@ function copyCode() {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: var(--bg-surface, #fff);
+  background: var(--bg-surface);
   border: 1px solid var(--border-soft, rgba(15, 23, 42, 0.09));
 }
 .d-emoji { font-size: 16px; }
 .d-name {
   font-size: 12px; font-weight: 600;
-  color: var(--text-primary, #0b1120);
+  color: var(--text-primary);
   flex: 1;
 }
-.d-role { font-size: 10px; color: var(--text-tertiary, #64748b); }
-.d-cost { font-size: 10px; color: var(--brand, #6366f1); font-weight: 600; }
+.d-role { font-size: 10px; color: var(--text-tertiary); }
+.d-cost { font-size: 10px; color: var(--brand); font-weight: 600; }
 
 /* ===== 底部 ===== */
 .afp-footer {
@@ -588,15 +588,15 @@ function copyCode() {
   border-top: 1px solid var(--border-soft, rgba(15, 23, 42, 0.07));
   font-size: 11px;
 }
-.footer-status { display: flex; align-items: center; gap: 6px; color: var(--text-tertiary, #64748b); }
+.footer-status { display: flex; align-items: center; gap: 6px; color: var(--text-tertiary); }
 .footer-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: #94a3b8;
 }
-.footer-status.running .footer-dot { background: var(--brand, #6366f1); animation: pulse 1.5s infinite; }
+.footer-status.running .footer-dot { background: var(--brand); animation: pulse 1.5s infinite; }
 .footer-status.done .footer-dot { background: #10b981; }
 .footer-status.error .footer-dot { background: #ef4444; }
-.footer-cost { color: var(--brand, #6366f1); font-weight: 600; }
+.footer-cost { color: var(--brand); font-weight: 600; }
 
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

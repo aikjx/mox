@@ -121,7 +121,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { VideoCamera, Document, CopyDocument, RefreshRight, Loading } from '@element-plus/icons-vue'
 import { getLogs } from '@/api'
 
@@ -404,10 +404,10 @@ async function copy(text) {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.fdd-status.success { background: var(--success-50); color: #047857; }
-.fdd-status.danger { background: #fef2f2; color: #b91c1c; }
-.fdd-status.warning { background: var(--warning-50); color: #b45309; }
-.fdd-status.info { background: var(--accent-dim); color: #4338ca; }
+.fdd-status.success { background: var(--success-50); color: var(--success); }
+.fdd-status.danger { background: var(--danger-50); color: var(--danger); }
+.fdd-status.warning { background: var(--warning-50); color: var(--warning); }
+.fdd-status.info { background: var(--accent-dim); color: var(--brand); }
 .fdd-dot {
   width: 6px;
   height: 6px;
@@ -436,26 +436,29 @@ async function copy(text) {
   font-weight: 600;
 }
 .fdd-btn.video {
-  --el-button-bg-color: #eef2ff;
-  --el-button-border-color: #c7d2fe;
-  --el-button-text-color: #4f46e5;
-  --el-button-hover-bg-color: #e0e7ff;
-  --el-button-hover-border-color: #a5b4fc;
-  --el-button-hover-text-color: #4338ca;
-  --el-button-active-bg-color: #e0e7ff;
-  --el-button-active-border-color: #a5b4fc;
-  --el-button-active-text-color: #4338ca;
+  --el-button-bg-color: var(--brand-50);
+  --el-button-border-color: var(--el-color-primary-light-5);
+  --el-button-text-color: var(--brand);
+  --el-button-hover-bg-color: var(--el-color-primary-light-7);
+  --el-button-hover-border-color: var(--el-color-primary-light-3);
+  --el-button-hover-text-color: var(--brand);
+  --el-button-active-bg-color: var(--el-color-primary-light-7);
+  --el-button-active-border-color: var(--el-color-primary-light-3);
+  --el-button-active-text-color: var(--brand);
 }
 .fdd-btn.log {
-  --el-button-bg-color: #fff7ed;
-  --el-button-border-color: #fed7aa;
-  --el-button-text-color: #ea580c;
-  --el-button-hover-bg-color: #ffedd5;
-  --el-button-hover-border-color: #fdba74;
-  --el-button-hover-text-color: #c2410c;
-  --el-button-active-bg-color: #ffedd5;
-  --el-button-active-border-color: #fdba74;
-  --el-button-active-text-color: #c2410c;
+  /* 四套皮下 #fff7ed 底 / #ea580c 字实测只有 3.35:1（11px 粗体也过不去 4.5），
+     而 hover 若把底压深一档（--el-color-warning-light-8）在默认皮下只剩 4.32，
+     所以这里让 hover/active 的反馈走**描边**、底色固定在 12% 淡染上。 */
+  --el-button-bg-color: var(--warning-50);
+  --el-button-border-color: var(--el-color-warning-light-8);
+  --el-button-text-color: var(--warning);
+  --el-button-hover-bg-color: var(--warning-50);
+  --el-button-hover-border-color: var(--warning);
+  --el-button-hover-text-color: var(--warning);
+  --el-button-active-bg-color: var(--warning-50);
+  --el-button-active-border-color: var(--warning);
+  --el-button-active-text-color: var(--warning);
 }
 
 /* 概览信息条 */
@@ -535,7 +538,7 @@ async function copy(text) {
 }
 .fdd-col-count {
   background: var(--brand-soft);
-  color: var(--brand-dark);
+  color: var(--brand);
   font-size: 11px;
   font-weight: 700;
   padding: 1px 8px;
@@ -577,14 +580,14 @@ async function copy(text) {
   flex-shrink: 0;
   line-height: 18px;
 }
-.nd-type--green { background: var(--success-50); color: #059669; }
+.nd-type--green { background: var(--success-50); color: var(--success); }
 .nd-type--gray { background: var(--bg-tertiary); color: var(--text-secondary); }
-.nd-type--blue { background: #eff6ff; color: #2563eb; }
-.nd-type--indigo { background: var(--accent-dim); color: #4f46e5; }
+.nd-type--blue { background: var(--info-50); color: var(--info); }
+.nd-type--indigo { background: var(--accent-dim); color: var(--brand); }
 .nd-type--violet { background: #f5f3ff; color: #7c3aed; }
-.nd-type--cyan { background: var(--accent-50); color: #0891b2; }
+.nd-type--cyan { background: var(--accent-50); color: var(--cat-2); }
 .nd-type--orange { background: #fff7ed; color: #ea580c; }
-.nd-type--amber { background: var(--warning-50); color: #d97706; }
+.nd-type--amber { background: var(--warning-50); color: var(--warning); }
 .nd-type--teal { background: #f0fdfa; color: #0d9488; }
 .nd-type--slate { background: var(--bg-tertiary); color: var(--text-secondary); }
 .nd-type--pink { background: #fdf2f8; color: #db2777; }
@@ -617,10 +620,10 @@ async function copy(text) {
   font-weight: 600;
   flex-shrink: 0;
 }
-.nd-st.success { color: #047857; }
-.nd-st.danger { color: #b91c1c; }
-.nd-st.warning { color: #b45309; }
-.nd-st.info { color: #64748b; }
+.nd-st.success { color: var(--success); }
+.nd-st.danger { color: var(--danger); }
+.nd-st.warning { color: var(--warning); }
+.nd-st.info { color: var(--text-tertiary); }
 
 .fdd-edge {
   display: flex;
@@ -637,7 +640,7 @@ async function copy(text) {
   height: 18px;
   border-radius: 50%;
   background: var(--brand-soft);
-  color: var(--brand-dark);
+  color: var(--brand);
   font-size: 10px;
   font-weight: 700;
   display: inline-flex;
@@ -656,7 +659,7 @@ async function copy(text) {
 .eg-cond {
   font-size: 10px;
   font-weight: 700;
-  color: #b45309;
+  color: var(--warning);
   background: var(--warning-50);
   padding: 1px 6px;
   border-radius: 5px;
@@ -697,7 +700,7 @@ async function copy(text) {
 }
 .log-pre {
   background: #0b1020;
-  color: #a5b4fc;
+  color: var(--el-color-primary-light-3);
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 12px;
   line-height: 1.7;
@@ -751,7 +754,7 @@ async function copy(text) {
   padding: 16px 22px 14px;
   margin-right: 0;
   border-bottom: 1px solid var(--border-light);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: var(--bg-panel-2);
 }
 .fdd-dialog .el-dialog__headerbtn {
   top: 16px;

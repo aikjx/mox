@@ -235,9 +235,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { VideoPlay, Check, DataAnalysis, Promotion } from '@element-plus/icons-vue'
 import * as echarts from '@/echarts'
+import { catFillColor, themeRevision, tokenColor } from '@/constants'
 import * as api from '@/api'
 
 const router = useRouter()
@@ -348,23 +349,23 @@ function initConvChart() {
       data: ['最优', '种群均值'],
       right: 10,
       top: 0,
-      textStyle: { fontSize: 12, color: '#64748b' },
+      textStyle: { fontSize: 12, color: tokenColor('text-secondary') },
     },
     xAxis: {
       type: 'category',
       name: '迭代轮次',
       nameLocation: 'middle',
       nameGap: 25,
-      nameTextStyle: { fontSize: 11, color: '#94a3b8' },
-      axisLabel: { fontSize: 11, color: '#94a3b8' },
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      nameTextStyle: { fontSize: 11, color: tokenColor('text-tertiary') },
+      axisLabel: { fontSize: 11, color: tokenColor('text-tertiary') },
+      axisLine: { lineStyle: { color: tokenColor('border-normal') } },
     },
     yAxis: {
       type: 'value',
       min: 0,
       max: 1,
-      axisLabel: { fontSize: 11, color: '#94a3b8', formatter: (v) => v.toFixed(2) },
-      splitLine: { lineStyle: { color: '#e2e8f0' } },
+      axisLabel: { fontSize: 11, color: tokenColor('text-tertiary'), formatter: (v) => v.toFixed(2) },
+      splitLine: { lineStyle: { color: tokenColor('border-normal') } },
     },
     dataZoom: [
       {
@@ -379,10 +380,10 @@ function initConvChart() {
         end: 100,
         height: 20,
         bottom: 5,
-        borderColor: '#3a3f5a',
+        borderColor: tokenColor('border-soft'),
         fillerColor: 'rgba(8, 145, 178, 0.12)',
-        handleStyle: { color: '#0891b2' },
-        textStyle: { fontSize: 10, color: '#94a3b8' },
+        handleStyle: { color: catFillColor(2) },
+        textStyle: { fontSize: 10, color: tokenColor('text-tertiary') },
       },
     ],
     series: [
@@ -392,8 +393,8 @@ function initConvChart() {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { color: '#0891b2', width: 2.5 },
-        itemStyle: { color: '#0891b2' },
+        lineStyle: { color: catFillColor(2), width: 2.5 },
+        itemStyle: { color: catFillColor(2) },
         data: [],
       },
       {
@@ -402,8 +403,8 @@ function initConvChart() {
         smooth: true,
         symbol: 'circle',
         symbolSize: 4,
-        lineStyle: { color: '#a78bfa', width: 1.5, type: 'dashed' },
-        itemStyle: { color: '#a78bfa' },
+        lineStyle: { color: catFillColor(5), width: 1.5, type: 'dashed' },
+        itemStyle: { color: catFillColor(5) },
         data: [],
       },
     ],
@@ -446,13 +447,13 @@ function initSensChart() {
       type: 'value',
       min: -1,
       max: 1,
-      axisLabel: { fontSize: 11, color: '#94a3b8', formatter: (v) => v.toFixed(1) },
-      splitLine: { lineStyle: { color: '#e2e8f0' } },
+      axisLabel: { fontSize: 11, color: tokenColor('text-tertiary'), formatter: (v) => v.toFixed(1) },
+      splitLine: { lineStyle: { color: tokenColor('border-normal') } },
     },
     yAxis: {
       type: 'category',
       inverse: true,
-      axisLabel: { fontSize: 12, color: '#334155', fontWeight: 600 },
+      axisLabel: { fontSize: 12, color: tokenColor('text-secondary'), fontWeight: 600 },
       axisLine: { show: false },
       axisTick: { show: false },
     },
@@ -621,6 +622,15 @@ onUnmounted(() => {
   }
 })
 
+// 画布不跟 CSS 变量走：换肤时把两张图整个拆掉重建，色才和皮肤同步（只 resize 会留着旧色当新图）
+watch(themeRevision, async () => {
+  await nextTick()
+  if (convChartInst) { convChartInst.dispose(); convChartInst = null }
+  if (sensChartInst) { sensChartInst.dispose(); sensChartInst = null }
+  if (convergenceData.value && convergenceData.value.length) { initConvChart(); renderConvChart() }
+  if (sensitivity.value && sensitivity.value.length) { initSensChart(); renderSensChart() }
+})
+
 // 监听数据变化，更新图表
 watch(convergenceData, async (val) => {
   if (val && val.length) {
@@ -642,34 +652,34 @@ watch(sensitivity, async (val) => {
 .infinite-optimizer { display: flex; flex-direction: column; gap: 18px; }
 .page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
 .page-head h2 { margin: 0 0 6px; font-size: 22px; }
-.sub { margin: 0; color: #64748b; font-size: 13px; }
+.sub { margin: 0; color: var(--text-tertiary); font-size: 13px; }
 .head-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 .badge {
   font-size: 11.5px; padding: 3px 10px; border-radius: 999px;
-  background: var(--accent-dim); color: #4f46e5; border: 1px solid #e0e7ff; font-weight: 600;
+  background: var(--accent-dim); color: var(--brand); border: 1px solid var(--el-color-primary-light-7); font-weight: 600;
 }
 .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .kpi {
-  background: var(--bg-panel, #fff); border: 1px solid var(--border, #e2e8f0);
+  background: var(--bg-panel); border: 1px solid var(--border);
   border-radius: 12px; padding: 14px 16px;
 }
-.kpi-label { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+.kpi-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 6px; }
 .kpi-value { font-size: 26px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.kpi-value.st-running { color: #0891b2; }
-.kpi-value.st-completed { color: #16a34a; }
-.kpi-value.st-failed { color: #dc2626; }
-.kpi-hint { font-size: 11.5px; color: #94a3b8; margin-top: 4px; }
-.panel { background: var(--bg-panel, #fff); border: 1px solid var(--border, #e2e8f0); border-radius: 12px; }
+.kpi-value.st-running { color: var(--cat-2); }
+.kpi-value.st-completed { color: var(--success); }
+.kpi-value.st-failed { color: var(--danger); }
+.kpi-hint { font-size: 11.5px; color: var(--text-tertiary); margin-top: 4px; }
+.panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; }
 .card-pad { padding: 18px 20px; }
 .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .section-head-right { display: flex; align-items: center; gap: 10px; }
 .section-title { margin: 0; font-size: 15px; }
-.mini-hint { font-size: 12px; color: #94a3b8; }
+.mini-hint { font-size: 12px; color: var(--text-tertiary); }
 .ctrl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .ctrl-item { display: flex; flex-direction: column; gap: 6px; }
 .ctrl-item label { font-size: 12.5px; color: var(--text-secondary); font-weight: 600; }
 .method-desc {
-  font-size: 12.5px; color: #64748b; line-height: 1.8; margin: 14px 0 0;
+  font-size: 12.5px; color: var(--text-tertiary); line-height: 1.8; margin: 14px 0 0;
   padding: 10px 14px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;
 }
 .two-col { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; }
@@ -677,13 +687,13 @@ watch(sensitivity, async (val) => {
 .sens-chart { height: 300px; }
 .chart-empty {
   display: flex; align-items: center; justify-content: center; height: 180px;
-  color: #94a3b8; font-size: 13px; background: var(--bg-tertiary); border-radius: 8px;
+  color: var(--text-tertiary); font-size: 13px; background: var(--bg-tertiary); border-radius: 8px;
 }
 .legend { display: flex; gap: 12px; }
-.lg { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 4px; }
+.lg { font-size: 12px; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px; }
 .lg::before { content: ''; width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
-.lg-best::before { background: #0891b2; }
-.lg-mean::before { background: #a78bfa; }
+.lg-best::before { background: var(--cat-2-fill); }
+.lg-mean::before { background: var(--cat-5-fill); }
 .best-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
 .best-item {
   padding: 12px 14px; background: var(--accent-50); border: 1px solid #a5f3fc; border-radius: 10px;
@@ -697,15 +707,15 @@ watch(sensitivity, async (val) => {
 .w-row { display: grid; grid-template-columns: 130px 1fr 56px; gap: 10px; align-items: center; font-size: 12.5px; }
 .w-name { color: var(--text-secondary); }
 .w-track { height: 10px; background: var(--bg-tertiary); border-radius: 5px; overflow: hidden; }
-.w-bar { height: 100%; background: linear-gradient(90deg, #6366f1, #0891b2); border-radius: 5px; }
+.w-bar { height: 100%; background: linear-gradient(90deg, var(--cat-1-fill), var(--cat-2-fill)); border-radius: 5px; }
 .w-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 600; }
 .cmp-table :deep(.row-dim) { opacity: 0.55; }
-.dim { color: #94a3b8; font-size: 12px; }
+.dim { color: var(--text-tertiary); font-size: 12px; }
 .bench-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.bench-item { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: #fafbfd; }
-.bench-cat { font-size: 12px; color: #0891b2; font-weight: 700; margin-bottom: 6px; }
+.bench-item { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--bg-tertiary); }
+.bench-cat { font-size: 12px; color: var(--cat-2); font-weight: 700; margin-bottom: 6px; }
 .bench-prompt { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 6px; }
-.bench-meta { font-size: 11px; color: #94a3b8; }
+.bench-meta { font-size: 11px; color: var(--text-tertiary); }
 @media (max-width: 1100px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .ctrl-grid { grid-template-columns: repeat(2, 1fr); }

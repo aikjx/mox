@@ -35,6 +35,7 @@
 //! 本 crate 通过 [`ExecutorBridge`](executor_bridge::ExecutorBridge) 把执行委派给
 //! `mox-alliance-executor-svc`，不在进程内实例化执行引擎。
 
+pub mod approval_gate;
 pub mod matcher;
 pub mod matching;
 pub mod modular_matcher;

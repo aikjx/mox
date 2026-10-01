@@ -9,15 +9,23 @@ export default [
     meta: { title: '登录', bare: true }
   },
   {
+    // 网关已匿名开放 POST /api/auth/register（config.rs public_paths），
+    // 页面 Register.vue 的表单字段与该端点契约一致，故此处同为 bare 游客页。
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/auth/Register.vue'),
+    meta: { title: '注册', bare: true }
+  },
+  {
     path: '/portal',
     name: 'Portal',
-    component: () => import('@/views/misc/PortalHome.vue'),
+    component: () => import('@/views/public/PortalHome.vue'),
     meta: { title: '门户', bare: true }
   },
   {
     path: '/hall',
     name: 'BusinessHall',
-    component: () => import('@/views/misc/BusinessHall.vue'),
+    component: () => import('@/views/public/BusinessHall.vue'),
     meta: { title: '业务大厅', bare: true }
   },
 

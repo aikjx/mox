@@ -6,13 +6,13 @@
 
 | 指标 | 值 |
 | --- | --- |
-| 注册路由总数 | **223 条**（全部 ready，全部有真实实现） |
+| 注册路由总数 | **236 条**（全部 ready，全部有真实实现） |
 | 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |
 | 域描述符（业务规划） | **46 个**：ready 46（见 §3） |
 | 网关外进程 | 5 个：kg-hub / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
 | 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |
 
-## 2. 逐域注册表（223 条）
+## 2. 逐域注册表（236 条）
 
 按域分组，实现位置逐一标注；`ANY` 表示该方法+参数可匹配多方法（GET/POST/PUT/DELETE）。
 
@@ -174,13 +174,14 @@
 | `system.security.api_key_validate` | POST | `/api/security/validate` | L5 | 校验 API Key 明文 |
 | `system.security.audit_log` | GET | `/api/security/audit-log` | L5 | 审计日志（SQLite 读取） |
 
-### experts（49 条）
+### experts（54 条）
 
 实现：`experts_registry/collaboration/dispatcher/graph/orchestration/session/ext.rs` 七模块
 
 | ID | 方法 | 路径 | 层 | 说明 |
 | --- | --- | --- | --- | --- |
 | `experts.registry.list` | GET | `/api/experts` | L3 | 专家列表（注册中心） |
+| `experts.registry.register` | POST | `/api/experts` | L3 | 专家注册（name 缺失或 id 冲突返回 400，落盘并写审计） |
 | `experts.registry.capabilities` | GET | `/api/experts/capabilities` | L3 | 专家能力清单 |
 | `experts.registry.metrics` | GET | `/api/experts/metrics` | L3 | 专家运行指标 |
 | `experts.registry.overview` | GET | `/api/experts/overview` | L3 | 专家体系总览 |
@@ -198,6 +199,8 @@
 | `experts.collab.algorithm_analysis` | POST | `/api/experts/algorithm-analysis` | L3 | 算法分析 |
 | `experts.collab.enterprise_consult` | POST | `/api/experts/enterprise/consult` | L3 | 企业级咨询 |
 | `experts.collab.enterprise_analyze` | POST | `/api/experts/enterprise/analyze` | L3 | 企业级分析 |
+| `experts.dispatch.get_config` | GET | `/api/experts/dispatcher/config` | L3 | 调度配置读取 |
+| `experts.dispatch.update_config` | PUT | `/api/experts/dispatcher/config` | L3 | 调度配置更新（合并式，strategy/阈值/重试/超时越界返回 400） |
 | `experts.dispatch.status` | GET | `/api/experts/dispatcher/status` | L3 | 调度器状态 |
 | `experts.dispatch.dispatch` | POST | `/api/experts/dispatcher/dispatch` | L3 | 任务分发 |
 | `experts.dispatch.consult` | POST | `/api/experts/dispatcher/consult` | L3 | 调度咨询 |
@@ -220,6 +223,8 @@
 | `experts.orch.history` | GET | `/api/experts/orchestration/history` | L3 | 编排历史 |
 | `experts.session.stats` | GET | `/api/experts/sessions/stats` | L3 | 会话统计 |
 | `experts.session.list` | GET | `/api/experts/sessions` | L3 | 会话列表（分页+状态/类型/专家/用户过滤+搜索） |
+| `experts.session.create` | POST | `/api/experts/sessions` | L3 | 创建会话（字段全可选，缺省 session_type=single、status=active） |
+| `experts.session.detail` | ANY | `/api/experts/sessions/:id` | L3 | 会话详情（含完整 messages）/合并式更新/删除 |
 | `experts.session.messages` | POST | `/api/experts/sessions/:id/messages` | L3 | 发送会话消息 |
 | `experts.session.similar_search` | POST | `/api/experts/sessions/:id/similar-search` | L3 | 会话相似检索 |
 | `experts.session.export` | GET | `/api/experts/sessions/:id/export` | L3 | 导出会话 |
@@ -306,6 +311,28 @@
 | `misc.ai_flow_update` | PUT | `/api/ai/flows/:id` | L5 | AI 流程更新 |
 | `misc.tasks` | GET | `/api/tasks` | L5 | 任务列表（通用） |
 | `misc.projects` | GET | `/api/projects` | L5 | 项目列表（通用） |
+
+### storage（4 条）
+
+实现：`platform/gateway/mox-platform-gateway-svc/src/admin_storage.rs`（实时投影 CloudState 真实磁盘）
+
+| ID | 方法 | 路径 | 层 | 说明 |
+| --- | --- | --- | --- | --- |
+| `storage.status` | GET | `/api/storage/status` | L5 | 存储状态（StorageBackend 投影：local 实时读盘 + s3 可达性） |
+| `storage.providers` | GET | `/api/storage/providers` | L5 | 真实可用后端清单（local 恒在 + s3 若配置 MOX_S3_*） |
+| `storage.switch` | POST | `/api/storage/switch` | L5 | 切换提供方（local 幂等；s3 需 env 配置且探测可达，否则 409/502） |
+| `storage.modules` | GET | `/api/modules` | L5 | 已加载域/模块清单（投影自 DOMAINS 自描述注册表） |
+
+### llm（4 条）
+
+实现：`platform/gateway/mox-platform-gateway-svc/src/admin_llm.rs`（实时投影 MOX_LLM_* env，Key 脱敏）
+
+| ID | 方法 | 路径 | 层 | 说明 |
+| --- | --- | --- | --- | --- |
+| `llm.providers` | GET | `/api/llm/providers` | L3 | LLM Provider 清单（env 驱动，has_key 表达是否配置，Key 不回传） |
+| `llm.provider_presets` | GET | `/api/llm/providers/presets` | L3 | 已知公开 Provider 预设（静态参考数据：官方 Base URL/模型） |
+| `llm.health` | GET | `/api/llm/health` | L3 | LLM 配置概况（是否配置 Provider/路由策略，不发网络请求） |
+| `llm.routing` | GET | `/api/llm/routing` | L3 | LLM 路由策略配置（env 投影） |
 
 ## 3. 业务域描述符（46 域·routes.rs DOMAINS）
 

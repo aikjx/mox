@@ -3,7 +3,7 @@
  * 职责：便签、文本框、连线、自由画笔的状态管理与交互逻辑
  */
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 export function useWhiteboard(addHistoryEvent) {
   const whiteboardRef = ref(null)

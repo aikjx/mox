@@ -8,9 +8,10 @@
  */
 
 import { ref, reactive, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import * as api from '@/api'
-import { useProject } from '@/composables/projectContext.js'
+import { useProject } from '@/composables'
 import {
   mapDoc,
   DOC_TYPES,
@@ -23,7 +24,7 @@ import {
   truncateText,
   getTagSize,
   simpleMarkdownRender
-} from '@/utils/knowledgeBase.utils.js'
+} from '@/utils'
 
 export function useKnowledgeBase() {
   const { currentProject } = useProject()

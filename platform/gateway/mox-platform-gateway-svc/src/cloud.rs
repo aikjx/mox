@@ -30,6 +30,9 @@ use std::{
     sync::Arc,
 };
 
+use crate::storage_backend::{BucketInfo, ObjectMeta, StorageBackend};
+use async_trait::async_trait;
+
 /// 存储状态：根目录
 #[derive(Clone)]
 pub struct CloudState {
@@ -63,8 +66,7 @@ impl CloudState {
     }
 
     /// 程序化写入对象（S3 语义对齐；供对话沉淀等模块直接落盘，返回存储绝对路径）
-    pub fn put_object_text(&self, bucket: &str, key: &str, content: &str) -> Result<String, String> {
-        let p = self
+    pub fn put_object_text(&self, bucket: &str, key: &str, content: &str) -> Result<String, String> {        let p = self
             .object_path(bucket, key)
             .ok_or_else(|| "非法 bucket/key（仅字母/数字/_/-/.，≤128，不含路径分隔符）".to_string())?;
         if let Some(parent) = p.parent() {
@@ -73,11 +75,114 @@ impl CloudState {
         fs::write(&p, content.as_bytes()).map_err(|e| format!("写入对象失败: {e}"))?;
         Ok(p.to_string_lossy().to_string())
     }
+
+    /// 存储根目录（只读）——管理面「存储状态/提供方清单」投影用，禁止从此方法回写。
+    pub fn root_dir(&self) -> &std::path::Path {
+        self.root.as_ref()
+    }
 }
 
 impl Default for CloudState {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// =============================================================================
+// StorageBackend trait 实现（本地磁盘后端——/cloud/v1/* 与管理面共用同一实现）
+// =============================================================================
+
+#[async_trait]
+impl StorageBackend for CloudState {
+    fn id(&self) -> &str { "local" }
+    fn kind(&self) -> &str { "disk" }
+    fn describe(&self) -> Value {
+        json!({
+            "id": "local", "name": "local", "type": "disk",
+            "description": "本地磁盘对象存储（S3 兼容语义；根目录 data/storage，可用 MOX_STORAGE_ROOT 覆盖）",
+            "root": self.root.to_string_lossy(), "available": true,
+        })
+    }
+
+    async fn list_buckets(&self) -> Result<Vec<BucketInfo>, String> {
+        let mut out = Vec::new();
+        if let Ok(entries) = fs::read_dir(self.root.as_ref()) {
+            for e in entries.flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    let (object_count, used_bytes) = fs::read_dir(&p)
+                        .map(|it| it.flatten().fold((0u64, 0u64), |(o, b), x| {
+                            if x.path().is_file() {
+                                (o + 1, b + x.metadata().map(|m| m.len()).unwrap_or(0))
+                            } else { (o, b) }
+                        }))
+                        .unwrap_or((0, 0));
+                    if let Some(name) = e.file_name().to_str() {
+                        out.push(BucketInfo { name: name.to_string(), object_count, used_bytes });
+                    }
+                }
+            }
+        }
+        out.sort_by(|a, b| a.name.cmp(&b.name));
+        Ok(out)
+    }
+
+    async fn create_bucket(&self, name: &str) -> Result<(), String> {
+        let p = self.bucket_path(name).ok_or_else(|| "非法 bucket 名称".to_string())?;
+        fs::create_dir_all(&p).map_err(|e| format!("创建 bucket 失败: {e}"))
+    }
+
+    async fn delete_bucket(&self, name: &str) -> Result<(), String> {
+        let p = self.bucket_path(name).ok_or_else(|| "非法 bucket 名称".to_string())?;
+        if !p.is_dir() { return Err("not_found".to_string()); }
+        let has_objects = fs::read_dir(&p).map(|it| it.flatten().next().is_some()).unwrap_or(true);
+        if has_objects { return Err("conflict_nonempty".to_string()); }
+        fs::remove_dir(&p).map_err(|e| format!("删除 bucket 失败: {e}"))
+    }
+
+    async fn list_objects(&self, bucket: &str) -> Result<Vec<ObjectMeta>, String> {
+        let p = self.bucket_path(bucket).ok_or_else(|| "非法 bucket 名称".to_string())?;
+        if !p.is_dir() { return Err("not_found".to_string()); }
+        let mut out = Vec::new();
+        if let Ok(entries) = fs::read_dir(&p) {
+            for e in entries.flatten() {
+                let path = e.path();
+                if path.is_file() {
+                    if let Some(key) = e.file_name().to_str() {
+                        let size = e.metadata().map(|m| m.len()).unwrap_or(0);
+                        out.push(ObjectMeta { key: key.to_string(), size });
+                    }
+                }
+            }
+        }
+        out.sort_by(|a, b| a.key.cmp(&b.key));
+        Ok(out)
+    }
+
+    async fn put_object(&self, bucket: &str, key: &str, body: Vec<u8>) -> Result<u64, String> {
+        let p = self.object_path(bucket, key).ok_or_else(|| "非法 bucket/key".to_string())?;
+        if let Some(parent) = p.parent() {
+            fs::create_dir_all(parent).map_err(|e| format!("创建对象目录失败: {e}"))?;
+        }
+        let size = body.len() as u64;
+        fs::write(&p, &body).map_err(|e| format!("写入对象失败: {e}"))?;
+        Ok(size)
+    }
+
+    async fn get_object(&self, bucket: &str, key: &str) -> Result<Vec<u8>, String> {
+        let p = self.object_path(bucket, key).ok_or_else(|| "非法 bucket/key".to_string())?;
+        if !p.is_file() { return Err("not_found".to_string()); }
+        fs::read(&p).map_err(|e| format!("读取对象失败: {e}"))
+    }
+
+    async fn delete_object(&self, bucket: &str, key: &str) -> Result<(), String> {
+        let p = self.object_path(bucket, key).ok_or_else(|| "非法 bucket/key".to_string())?;
+        if !p.is_file() { return Err("not_found".to_string()); }
+        fs::remove_file(&p).map_err(|e| format!("删除对象失败: {e}"))
+    }
+
+    async fn health(&self) -> Result<Value, String> {
+        Ok(json!({"reachable": true, "root": self.root.to_string_lossy()}))
     }
 }
 

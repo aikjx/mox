@@ -1,0 +1,1119 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/a10/aikjx/gitcode/infotopograph/frontend-ui[39m
+
+ [32m✓[39m src/modules/expert-alliance/contract/registry.test.js [2m([22m[2m32 tests[22m[2m)[22m[90m 41[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/style.test.js [2m([22m[2m21 tests[22m[2m)[22m[33m 590[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/contract/mode.test.js [2m([22m[2m18 tests[22m[2m)[22m[90m 43[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/contract/orchestration.test.js [2m([22m[2m48 tests[22m[2m)[22m[90m 77[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/contract/sessions.test.js [2m([22m[2m37 tests[22m[2m)[22m[90m 93[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/contract/graph.test.js [2m([22m[2m27 tests[22m[2m)[22m[90m 104[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/contract/contract.test.js [2m([22m[2m101 tests[22m[2m)[22m[33m 1372[2mms[22m[39m
+   [33m[2m✓[22m[39m 端点清单 ↔ docs/API-REGISTRY.md[2m > [22m禁用端点在模块代码中不得复活（endpoints.js 的禁用清单除外） [33m762[2mms[22m[39m
+node.exe : [90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22
+m[2m基础渲染[2m > [22m[2m应渲染任务标题
+所在位置 行:1 字符: 1
++ & "C:\Users\mo\AppData\Local\DoubaoWork\User Data\sandbox_runtime\bas ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...[22m[2m应渲染任务标题:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner title="测试任务" status="running" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+]  ... > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner title="测试任务" status="running" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+]  ... > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m基础渲染[
+2m > [22m[2m应渲染所有步骤
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m基础渲染[
+2m > [22m[2m每个步骤应显示标题
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m步骤状态显示
+[2m > [22m[2mdone 状态的步骤应有 done 类
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m步骤状态显示
+[2m > [22m[2mrunning 状态的步骤应有 running 类
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m步骤状态显示
+[2m > [22m[2mpending 状态的步骤应有 pending 类
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m步骤状态显示
+[2m > [22m[2merror 状态的步骤应有 error 类
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'失败的步骤'[39m, status: [32m'error'[39m, error: [32m'连接超时'[39m } ] statu
+s="error" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'失败的步骤'[39m, status: [32m'error'[39m, error: [32m'连接超时'[39m } ] statu
+s="error" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m任务状态显示
+[2m > [22m[2mrunning 状态应显示"AI 正在执行中"
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="running" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="running" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m任务状态显示
+[2m > [22m[2mdone 状态应显示"已完成"和步数
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="done" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="done" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m任务状态显示
+[2m > [22m[2merror 状态应显示"执行出错"
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="error" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="error" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m任务状态显示
+[2m > [22m[2mrunning 状态应显示进度计数
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="running" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="running" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m任务状态显示
+[2m > [22m[2m非 running 状态不应显示进度计数
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="done" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="done" steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m步骤详情显示
+[2m > [22m[2m有 detail 字段且状态为 done/running 的步骤应显示 detail
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m步骤详情显示
+[2m > [22m[2mpending 状态的步骤不应显示 detail
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m步骤详情显示
+[2m > [22m[2mdone 状态的步骤应显示 result
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m步骤详情显示
+[2m > [22m[2m有 tool 的步骤应显示工具标签
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  {
+    title: [32m'理解需求'[39m,
+    status: [32m'done'[39m,
+    tool: [32m'NLP 解析'[39m,
+    detail: [32m'提取核心目标'[39m,
+    result: [32m'识别3个目标'[39m
+  },
+  { title: [32m'任务拆解'[39m, status: [32m'done'[39m, tool: [32m'规划引擎'[39m, detail: [32m'拆分为5个子任务'[39m },
+  { title: [32m'技术选型'[39m, status: [32m'running'[39m, tool: [32m'知识检索'[39m },
+  { title: [32m'架构设计'[39m, status: [32m'pending'[39m, tool: [1mnull[22m },
+  { title: [32m'结果整理'[39m, status: [32m'pending'[39m, tool: [1mnull[22m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m响应式更新（
+Bug 修复验证）[2m > [22m[2msteps 数组变化时 UI 应同步更新
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'pending'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'pending'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m响应式更新（
+Bug 修复验证）[2m > [22m[2m步骤从 pending 变为 running 时 UI 应同步更新
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'running'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'pending'[39m }
+ [32m✓[39m src/modules/expert-alliance/components/plaza-components.test.js [2m([22m[2m21 tests[22m[2m)[22m[33m 517[2mms[22m[39m
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'running'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'running'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'running'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m响应式更新（
+Bug 修复验证）[2m > [22m[2m所有步骤完成后状态变为 done
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="running" steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'running'[39m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="running" steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'running'[39m }
+] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="done" steps= [ { title: [32m'步骤1'[39m, status: [32m'done'[39m }, { title: [32m'步骤2'
+[39m, status: [32m'done'[39m } ] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner status="done" steps= [ { title: [32m'步骤1'[39m, status: [32m'done'[39m }, { title: [32m'步骤2'
+[39m, status: [32m'done'[39m } ] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m响应式更新（
+Bug 修复验证）[2m > [22m[2m步骤添加 detail 后 UI 应显示
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'步骤1'[39m, status: [32m'running'[39m } ] status="running" ref="VTU_COMP
+ONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'步骤1'[39m, status: [32m'running'[39m } ] status="running" ref="VTU_COMP
+ONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'步骤1'[39m, status: [32m'running'[39m, detail: [32m'正在处理中...'[39m } ] 
+status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+ [32m✓[39m src/components/AgentTaskRunner.test.js [2m([22m[2m22 tests[22m[2m)[22m[33m 375[2mms[22m[39m
+ [32m✓[39m src/constants/expert.constants.test.js [2m([22m[2m11 tests[22m[2m)[22m[33m 931[2mms[22m[39m
+   [33m[2m✓[22m[39m 视图/组件不许再抄一份本地实现[2m > [22msrc/views + src/components 扫描集合非空且零命中 [33m906[2mms[22m[39m
+  at <AgentTaskRunner steps= [ { title: [32m'步骤1'[39m, status: [32m'running'[39m, detail: [32m'正在处理中...'[39m } ] 
+status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m防止 Bug
+ 回归的专项测试[2m > [22m[2m验证：直接修改 props 对象的嵌套属性需要完整替换才能触发更新
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'测试步骤'[39m, status: [32m'pending'[39m } ] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'测试步骤'[39m, status: [32m'pending'[39m } ] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'测试步骤'[39m, status: [32m'done'[39m } ] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [ { title: [32m'测试步骤'[39m, status: [32m'done'[39m } ] ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AgentTaskRunner.test.js[2m > [22m[2mAgentTaskRunner 任务执行可视化组件[2m > [22m[2m防止 Bug
+ 回归的专项测试[2m > [22m[2m验证：步骤进度计数应随步骤状态实时更新
+[22m[39m[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'pending'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'pending'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'pending'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'pending'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'running'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'running'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'pending'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'running'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'running'[39m }
+] status="running" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'done'[39m }
+] status="done" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AgentTaskRunner steps= [
+  { title: [32m'步骤1'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤2'[39m, status: [32m'done'[39m },
+  { title: [32m'步骤3'[39m, status: [32m'done'[39m }
+] status="done" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/modules/expert-alliance/api/alliance.api.test.js [2m([22m[2m58 tests[22m[2m)[22m[90m 157[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/components/collab-panel.test.js [2m([22m[2m17 tests[22m[2m)[22m[33m 639[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/store/alliance-experts.store.test.js [2m([22m[2m40 tests[22m[2m)[22m[90m 128[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/store/alliance-sessions.store.test.js [2m([22m[2m30 tests[22m[2m)[22m[90m 131[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/contract/dispatcher.test.js [2m([22m[2m45 tests[22m[2m)[22m[90m 113[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/model/rank.test.js [2m([22m[2m10 tests[22m[2m)[22m[90m 65[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/model/dag.test.js [2m([22m[2m11 tests[22m[2m)[22m[90m 19[2mms[22m[39m
+ [32m✓[39m src/utils/projectMember.utils.test.js [2m([22m[2m12 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m src/api/allianceTasks.test.js [2m([22m[2m8 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m基础渲染
+[2m > [22m[2m应渲染所有助手卡片
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m基础渲染
+[2m > [22m[2m应显示标题和副标题
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2mv-mo
+del 双向绑定（Bug 修复验证）[2m > [22m[2m初始选中状态应与 modelValue prop 一致
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2mv-mo
+del 双向绑定（Bug 修复验证）[2m > [22m[2m初始选中 general 时应高亮全能助手
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2mv-mo
+del 双向绑定（Bug 修复验证）[2m > [22m[2m点击不同助手卡片应触发 update:modelValue 事件
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2mv-mo
+del 双向绑定（Bug 修复验证）[2m > [22m[2m点击不同助手应触发 change 事件并携带完整助手信息
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2mv-mo
+del 双向绑定（Bug 修复验证）[2m > [22m[2m父组件更新 modelValue 后选中状态应同步更新
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="analyst" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="analyst" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2mv-mo
+del 双向绑定（Bug 修复验证）[2m > [22m[2m点击当前已选中的卡片仍应触发事件
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m助手卡片
+内容[2m > [22m[2m每个卡片应显示头像、名称、描述和标签
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m助手卡片
+内容[2m > [22m[2m选中的卡片应显示勾选图标
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m助手卡片
+内容[2m > [22m[2m未选中的卡片不应显示勾选图标
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m样式类名
+[2m > [22m[2m选中的卡片应有 active 类
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m样式类名
+[2m > [22m[2m切换选中后 active 类应正确移动
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="analyst" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+ [32m✓[39m src/components/AssistantSelector.test.js [2m([22m[2m16 tests[22m[2m)[22m[33m 433[2mms[22m[39m
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="analyst" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m防止 B
+ug 回归的专项测试[2m > [22m[2m初始选中状态应由 modelValue prop 决定，而非硬编码的 architect
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="data" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="data" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m防止 B
+ug 回归的专项测试[2m > [22m[2mv-model 应实现真正的双向绑定
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+ [32m✓[39m src/composables/useAllianceTasks.test.js [2m([22m[2m7 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+  at <AssistantSelector modelValue="architect" onUpdate:modelValue=fn<onUpdate:modelValue> ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" onUpdate:modelValue=fn<onUpdate:modelValue> ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" onUpdate:modelValue=fn<onUpdate:modelValue> ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="general" onUpdate:modelValue=fn<onUpdate:modelValue> ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | src/components/AssistantSelector.test.js[2m > [22m[2mAssistantSelector 助手选择器组件[2m > [22m[2m防止 B
+ug 回归的专项测试[2m > [22m[2mchange 事件应携带完整的助手对象信息
+[22m[39m[Vue warn]: Failed to resolve component: el-tag
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: el-icon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <AssistantSelector modelValue="architect" ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m src/constants/palette.test.js [2m([22m[2m11 tests[22m[2m)[22m[33m 438[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/store/alliance-collab.store.test.js [2m([22m[2m16 tests[22m[2m)[22m[90m 68[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/store/alliance-graph.store.test.js [2m([22m[2m15 tests[22m[2m)[22m[90m 64[2mms[22m[39m
+[90mstderr[2m | src/composables/useTheme.test.js[2m > [22m[2museTheme 主题管理[2m > [22m[2m主题切换 setTheme[2m > [22
+m[2m切换到无效主题应忽略并保持当前主题
+[22m[39m[appStore] 未知主题: invalid-theme
+
+ [32m✓[39m src/composables/useTheme.test.js [2m([22m[2m19 tests[22m[2m)[22m[90m 81[2mms[22m[39m
+ [31m❯[39m src/stores/auth.store.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [32m✓[39m src/modules/wiring.test.js [2m([22m[2m6 tests[22m[2m)[22m[90m 20[2mms[22m[39m
+ [32m✓[39m src/modules/expert-alliance/module.test.js [2m([22m[2m6 tests[22m[2m)[22m[90m 16[2mms[22m[39m
+ [32m✓[39m src/api/http.test.js [2m([22m[2m2 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [32m✓[39m src/modules/admin-lowcode/contract/pageSchema.test.js [2m([22m[2m7 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Suites 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/stores/auth.store.test.js[2m [ src/stores/auth.store.test.js ][22m
+[31m[1mError[22m: Failed to resolve import "../api/auth" from "src/stores/auth.store.test.js". Does the file exist?
+[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/a10/aikjx/gitcode/infotopograph/frontend-ui/src/stores/auth.store.test.js[39m:4:38
+[33m  2  |  vi.mock('../api/http', () => ({ registerAuthTokenGetter: vi.fn() }))
+  3  |  const __vi_import_0__ = await import('pinia')
+  4  |  const __vi_import_1__ = await import('../api/auth')
+     |                                       ^
+  5  |  const __vi_import_2__ = await import('../api/http')
+  6  |  const __vi_import_3__ = await import('./auth.store')[39m
+[90m [2m❯[22m TransformPluginContext._formatError node_modules/.pnpm/vite@5.4.21_@types+node@26.3.0/node_modules/vit
+e/dist/node/chunks/dep-BK3b2jBa.js:[2m49258:41[22m[39m
+[90m [2m❯[22m TransformPluginContext.error node_modules/.pnpm/vite@5.4.21_@types+node@26.3.0/node_modules/vite/dist/
+node/chunks/dep-BK3b2jBa.js:[2m49253:16[22m[39m
+[90m [2m❯[22m normalizeUrl node_modules/.pnpm/vite@5.4.21_@types+node@26.3.0/node_modules/vite/dist/node/chunks/dep-
+BK3b2jBa.js:[2m64307:23[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/vite@5.4.21_@types+node@26.3.0/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:
+[2m64439:39[22m[39m
+[90m [2m❯[22m TransformPluginContext.transform node_modules/.pnpm/vite@5.4.21_@types+node@26.3.0/node_modules/vite/d
+ist/node/chunks/dep-BK3b2jBa.js:[2m64366:7[22m[39m
+[90m [2m❯[22m PluginContainer.transform node_modules/.pnpm/vite@5.4.21_@types+node@26.3.0/node_modules/vite/dist/nod
+e/chunks/dep-BK3b2jBa.js:[2m49099:18[22m[39m
+[90m [2m❯[22m loadAndTransform node_modules/.pnpm/vite@5.4.21_@types+node@26.3.0/node_modules/vite/dist/node/chunks/
+dep-BK3b2jBa.js:[2m51978:27[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m29 passed[39m[22m[90m (30)[39m
+[2m      Tests [22m [1m[32m674 passed[39m[22m[90m (674)[39m
+[2m   Start at [22m 09:15:05
+[2m   Duration [22m 109.01s[2m (transform 7.88s, setup 0ms, collect 163.34s, tests 6.61s, environment 872.53s, prepare 176.94s)[22m
+

@@ -3,7 +3,7 @@ export default [  // 403 无权限页面
   {
     path: '/403',
     name: 'Forbidden',
-    component: () => import('@/views/misc/Forbidden.vue'),
+    component: () => import('@/views/public/Forbidden.vue'),
     meta: { title: '无访问权限', bare: true }
   },
 

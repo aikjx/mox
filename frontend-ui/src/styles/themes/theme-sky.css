@@ -6,25 +6,74 @@
 
 html[data-theme="sky"] {
   /* ===== 品牌 · 天蓝主色（科技蓝） ===== */
-  --brand: #0ea5e9;
+  /* 浅色皮下「文字档」必须往深走：#0ea5e9 压 #f0f9ff 只有 2.60:1，#0369a1 到 5.57:1。
+     身份亮色由 --brand-500(#0ea5e9) 与 --brand-fill(#0369a1) 各自承担。 */
+  --brand: #0369a1;
   --brand-500: #0ea5e9;
   --brand-600: #0284c7;
   --brand-700: #0369a1;
   --brand-50: #f0f9ff;
   --brand-100: #e0f2fe;
-  --brand-accent: #38bdf8;
+  /* sky 是浅色皮肤：「亮档」（原 #38bdf8）在这里的角色反过来了 —— 它被 75 处当**文字色**用
+     （--accent-light），压在 #f0f9ff 上只有 2.01:1。浅色皮肤的亮档必须往深走一档才还能当字。 */
+  --brand-accent: #0369a1;
+  /* 填充档：#0284c7 压白字只有 4.10:1，#0369a1 / #075985 分别到 5.51 / 7.56 */
+  --brand-fill: #0369a1;
+  --brand-fill-hover: #075985;
+  --on-brand: #ffffff;
+
+  /* 分类色板：白皮下默认档的 500 系太浅（#10b981 压白只有 2.54:1，做描边也不到 3:1），整体压到 600/700 档 */
+  --cat-1: #4f46e5;
+  --cat-2: #0e7490;
+  --cat-3: #059669;
+  --cat-4: #b45309;
+  --cat-5: #7c3aed;
+  --cat-6: #db2777;
+  --cat-7: #0284c7;
+  --cat-8: #0d9488;
+
+  /* 压字三档（规则见 global.css 的同名块）。这一皮是亮底深字，8 档本就够深，白字大多直接达标；
+     只有 cat-3 / cat-7 / cat-8 差一点（压白字 3.77 / 4.10 / 3.74），所以这三档压暗底、字保持白，
+     压完 4.71 / 4.56 / 4.69。其余五档 fill 是别名，这一皮画布上的线条与色板顶点值不变。 */
+  --cat-1-fill: var(--cat-1);
+  --cat-2-fill: var(--cat-2);
+  --cat-3-fill: #04845c;
+  --cat-4-fill: var(--cat-4);
+  --cat-5-fill: var(--cat-5);
+  --cat-6-fill: var(--cat-6);
+  --cat-7-fill: #027cbb;
+  --cat-8-fill: #0b8278;
+  --on-cat-1: #ffffff;
+  --on-cat-2: #ffffff;
+  --on-cat-3: #ffffff;
+  --on-cat-4: #ffffff;
+  --on-cat-5: #ffffff;
+  --on-cat-6: #ffffff;
+  --on-cat-7: #ffffff;
+  --on-cat-8: #ffffff;
 
   /* 次级主色 · 冰青 */
   --accent: #06b6d4;
   --accent-50: #ecfeff;
   --accent-100: #cffafe;
+  /* 白皮下青做底必须压深：#06b6d4 压白 2.43:1，#0e7490 压白 5.36:1 */
+  --accent-fill: #0e7490;
+  --on-accent: #ffffff;
 
   /* 语义色 · 天蓝系柔和版 */
-  --success: #10b981;
+  --success: #047857;                     /* 浅皮下正文级绿：#10b981 压 #ecfdf5 只有 2.3:1 */
   --success-50: #ecfdf5;
-  --warning: #f59e0b;
+  --warning: #92400e;                     /* 同上，琥珀要压得住近白底才读得到：#b45309 压白 5.02 尚可，压在 #e0f2fe 这类淡染上只剩 4.38 */
   --warning-50: #fffbeb;
-  --danger: #ef4444;
+  --info: #0369a1;                        /* 白皮下 5.93:1；外壳默认的 #60a5fa 在这里只有 2.54 */
+  --info-50: #e0f2fe;
+  --danger: #b91c1c;                      /* 浅皮下文字档＝填充档同值：压白 6.47，被白压也 6.47 */
+  --danger-fill: #b91c1c;
+  --on-danger: #ffffff;
+  --success-fill: #047857;
+  --on-success: #ffffff;
+  --warning-fill: #b45309;
+  --on-warning: #ffffff;                      /* 正文级红字：#ef4444 压白底只有 3.76:1，这里 5.9:1（同 #13 对默认皮肤的取舍） */
   --danger-50: #fef2f2;
   --violet: #6366f1;
   --violet-50: #eef2ff;
@@ -37,15 +86,15 @@ html[data-theme="sky"] {
   --bg-sidebar:  #0c4a6e;               /* 导航侧栏 - 深天蓝 */
   --bg-sidebar-active: #0369a1;
   --bg-sidebar-hover: #075985;
+  --bg-row-hover: #e0f2fe;               /* 行/块悬停：浅皮不能借侧栏深蓝档（1.25:1），这里比卡面略深一档 */
   --bg-input:  #f0f9ff;
   --bg-input-focus: #ffffff;
 
   /* ===== 文本 · 四级灰度（蓝天系） ===== */
   --text-primary:   #0c4a6e;             /* 标题 - 深蓝 */
   --text-secondary: #164e63;             /* 正文 - 靛青 */
-  --text-tertiary:  #0891b2;             /* 辅助 - 天蓝 */
-  --text-quaternary:#7dd3fc;             /* 占位/静音 - 淡蓝 */
-  --text-on-brand:  #ffffff;
+  --text-tertiary:  #0e7490;             /* 辅助 - 青（原 #0891b2 压白底只有 3.68:1，现在是 5.36:1） */
+  --text-quaternary:#0891b2;             /* 占位/静音 - 淡青（原 #7dd3fc 压白底 1.45:1，等于看不见） */
 
   /* ===== 边界 · 天蓝系 ===== */
   --border-ghost:   rgba(14, 165, 233, 0.08);
@@ -102,7 +151,9 @@ html[data-theme="sky"] {
   --hero-gradient: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 30%, #ffffff 100%);
 
   /* ===== Element Plus CSS 变量覆盖 ===== */
-  --el-color-primary: var(--brand-500);
+  /* EP 的 primary 既当字色（tabs 选中、link）又当底：浅色皮肤下先保证它当字能读，
+     当底那一侧由 --brand-fill / --on-brand 这一对独立接管（见 global.css 的主按钮覆盖）。 */
+  --el-color-primary: var(--brand-fill);
   --el-color-primary-light-3: var(--brand-400, var(--brand-500));
   --el-color-primary-light-5: var(--brand-300, var(--brand-500));
   --el-color-primary-light-7: var(--brand-200, var(--brand-100));

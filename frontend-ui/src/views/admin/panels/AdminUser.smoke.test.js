@@ -12,8 +12,15 @@ const api = vi.hoisted(() => ({
   deleteUser: vi.fn(), resetUserPwd: vi.fn(), changeUserStatus: vi.fn(),
   getUserRoles: vi.fn(), assignUserRoles: vi.fn(), getDeptTree: vi.fn(),
   getPostList: vi.fn(), getRoleList: vi.fn(), uploadUserAvatar: vi.fn(),
+  // `@/api` 另再导出这两个注册钩子（src/api/index.js:6），@/composables → projectContext 在采集期就调用；
+  // 缺它们本文件在 collect 阶段就报错（真原因曾被 _smoke.js 的全局桩掩盖过一次）。
+  registerProjectIdGetter: vi.fn(), registerAuthTokenGetter: vi.fn(),
+  // expert-alliance 模块在采集期就 `createAllianceApi(http)`（alliance.api.js:398），需要 http 命名导出
+  http: { request: vi.fn(async () => ({})) },
 }))
-vi.mock('@/api', () => api)
+// 部分 mock：面板用到的端点逐条替死，其余命名导出（auth.store 采集期要 login/refreshToken/…）
+// 走真实模块。整表自写会让"漏一个导出"变成采集期报错，且报的是 store 的账不是面板的账。
+vi.mock(import('@/api'), async (importOriginal) => ({ ...(await importOriginal()), ...api }))
 
 // 面板 script 里 ElMessage/ElMessageBox 是全局自由变量（成功路径不触发），兜底为 no-op
 globalThis.ElMessage = { error: vi.fn(), success: vi.fn(), warning: vi.fn() }

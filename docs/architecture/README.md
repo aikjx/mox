@@ -17,6 +17,7 @@
 | `graph/` | 信息关联关系图（关图）产物与需求基线 | [graph/requests/README.md](./graph/requests/README.md) |
 | `full-dimensional/` | 全维 TraceMatrix 与需求基线 | [full-dimensional/00-README.md](./full-dimensional/00-README.md) |
 | `plugin/` | VSCode 插件架构与兼容性 | [plugin/](./plugin/) |
+| `frontend/` | 前端架构（外壳分层 / 导航单源 / 样式令牌契约） | [frontend/README.md](./frontend/README.md) |
 | `assets/` | 结构化产物（基准数据 / 审批流 / 架构度量） | [assets/](./assets/) |
 
 编号系列 `02~14` 为**同层内规范文档**（扩展/错误码/归一化/RPC/KG-SQL/低代码/性能/DSQL/门户/运行时/代码库/全地图）。
@@ -29,12 +30,13 @@
 |------|------|------|
 | 架构总览 v3.0 | [`architecture.md`](./architecture.md) | **权威入口**：AI 驱动平台架构总览（对话中心 + 四向弹框 + Agent 运行时 + 技术底座） |
 | 操作说明手册 v2.0 | [`operations-manual.md`](./operations-manual.md) | 快速开始 / 平台使用 / 数据导入导出 / 应用发布 / 运维监控 |
-| 归一化架构 🟢 | [`NORMALIZED_ARCHITECTURE.md`](./NORMALIZED_ARCHITECTURE.md) | **归一化唯一权威**（v2.0，2026-09-16）：143 crate / 12 域 / 六层 / 四进程 / 网关 :3080；含域矩阵、请求闭环、完成度矩阵 |
+| 归一化架构 🟢 | [`NORMALIZED_ARCHITECTURE.md`](./NORMALIZED_ARCHITECTURE.md) | **归一化唯一权威**（v2.1，2026-09-24）：149 crate / 12 域 / 六层 / 四进程 / 网关 :3080；含域矩阵、请求闭环、完成度矩阵 |
 | 最优架构方案 | [`OPTIMAL_ARCHITECTURE.md`](./OPTIMAL_ARCHITECTURE.md) | 性能 / 可维护性 / 扩展性平衡选型 |
 | 领域优先布局 | [`DOMAIN_FIRST_LAYOUT.md`](./DOMAIN_FIRST_LAYOUT.md) | 领域优先目录布局设计 |
 | 仓库全地图 | [`14-REPOSITORY-FULL-MAP.md`](./14-REPOSITORY-FULL-MAP.md) | 代码仓库全景地图 |
 | 统一基线 | [`MOX-UNIFIED-ENTERPRISE-BASELINE-v1.0.md`](./MOX-UNIFIED-ENTERPRISE-BASELINE-v1.0.md) | 企业级统一基线 v1.0 |
 | 模块组合 | [`MOX-MODULE-COMPOSITION-v1.md`](./MOX-MODULE-COMPOSITION-v1.md) | 模块组合与装配关系 |
+| 前端布局重构方案 | [`frontend/FRONTEND-LAYOUT-REFACTOR-PLAN-v1.0.md`](./frontend/FRONTEND-LAYOUT-REFACTOR-PLAN-v1.0.md) | FE-LAY-REF-V1.0：外壳/导航/样式三类机制缺失的 12 条证据与 P0~P2 计划 🟡 |
 | 元架构总纲 | [`meta/00-COSMIC-META-ARCHITECTURE.md`](./meta/00-COSMIC-META-ARCHITECTURE.md) | 设计哲学、9 大能力域、5 级扩展点 |
 | 元架构索引 | [`meta/README.md`](./meta/README.md) | 元架构文档导航 |
 | 全域顶层总设计 | [`../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md) | 三联盟模式全域顶层设计 |

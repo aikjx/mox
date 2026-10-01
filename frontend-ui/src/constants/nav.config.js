@@ -246,16 +246,8 @@ export const MODULE_SIDEBAR_CONFIG = {
   },
   expert: {
     title: '专家联盟', subtitle: '专家协作与管理',
-    sections: [
-      { title: '工作台', items: [
-        { key: 'workspace', label: '联盟工作台', icon: '🖥️', path: '/expert-workspace' },
-        { key: 'plaza', label: '专家广场', icon: '👥', path: '/expert-plaza' },
-      ]},
-      { title: '管理', items: [
-        { key: 'center', label: '联盟管理', icon: '🛠️', path: '/expert-center' },
-        { key: 'config', label: '专家配置', icon: '🎛️', path: '/expert-config' },
-      ]},
-    ]
+    // 工作台/管理/控制台三组条目全部由 expert-alliance/index.js 的 collectNav 自动挂载，勿手抄。
+    sections: []
   },
   ai: { title: 'AI助手', subtitle: '智能对话', sections: [] },
   graph: { title: '知识图谱', subtitle: '可视化探索', sections: [] },

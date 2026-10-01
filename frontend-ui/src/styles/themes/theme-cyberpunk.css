@@ -13,19 +13,63 @@ html[data-theme="cyberpunk"] {
   --brand-50: #001a22;
   --brand-100: #003344;
   --brand-accent: #4de2ff;
+  /* 霓虹皮肤不靠"把底压暗"来迁就白字：底留 #00d4ff / #00b8e6（正是这套皮肤的身份色），
+     把压在它上面的字换成皮肤自己的最深档 --brand-50 ⇒ 实测 10.10 与 7.71。 */
+  --brand-fill: #00d4ff;
+  --brand-fill-hover: #00b8e6;
+  --on-brand: #001a22;
+
+  /* 分类色板：霓虹皮走高饱和霓虹档，压极深底 --bg-raised #142138 做描边/色块都够亮 */
+  --cat-1: #00d4ff;
+  --cat-2: #00ffc8;
+  --cat-3: #7dff5e;
+  --cat-4: #ffaa00;
+  --cat-5: #b14aff;
+  --cat-6: #ff2d95;
+  --cat-7: #4dabff;
+  --cat-8: #00e5b0;
+
+  /* 压字三档（规则见 global.css 的同名块）。霓虹皮是这一契约存在的理由：8 档压白字最低 1.29:1
+     （cat-3 #7dff5e），白字在这里等于看不见，所以整皮取自己的最深表面当墨（4.99 – 15.41:1），
+     底一律不压暗 —— 霓虹感是它的身份，压暗就不是这套皮肤了。fill 全是别名。 */
+  --cat-1-fill: var(--cat-1);
+  --cat-2-fill: var(--cat-2);
+  --cat-3-fill: var(--cat-3);
+  --cat-4-fill: var(--cat-4);
+  --cat-5-fill: var(--cat-5);
+  --cat-6-fill: var(--cat-6);
+  --cat-7-fill: var(--cat-7);
+  --cat-8-fill: var(--cat-8);
+  --on-cat-1: var(--bg-primary);
+  --on-cat-2: var(--bg-primary);
+  --on-cat-3: var(--bg-primary);
+  --on-cat-4: var(--bg-primary);
+  --on-cat-5: var(--bg-primary);
+  --on-cat-6: var(--bg-primary);
+  --on-cat-7: var(--bg-primary);
+  --on-cat-8: var(--bg-primary);
 
   /* 次级主色 · 霓虹紫 */
   --accent: #b14aff;
   --accent-50: #1a0a2e;
   --accent-100: #331155;
+  /* 霓虹紫留在填充档（这是它的身份色），底上的字改成该皮自己的近黑 */
+  --accent-fill: #b14aff;
+  --on-accent: #050a14;
 
   /* 语义色 · 霓虹系 ===== */
   --success: #00ffc8;
   --success-50: #00221a;
   --warning: #ffaa00;
   --warning-50: #2a1a00;
-  --danger: #ff2d55;
+  --danger: #ff5c7a;                      /* 文字档：#ff2d55 压卡面 4.41、压行悬停面只有 3.83 */
   --danger-50: #2a0010;
+  --danger-fill: #ff2d55;                 /* 身份色不丢：它退到填充档 */
+  --on-danger: #001a22;                   /* 霓虹底压深字 4.92:1（白字压 #ff2d55 只有 3.65） */
+  --success-fill: #00ffc8;               /* 身份色留在填充档，字改深皮自己的最暗档 */
+  --on-success: #050a14;
+  --warning-fill: #ffaa00;
+  --on-warning: #050a14;
   --violet: #b14aff;
   --violet-50: #1a0a2e;
 
@@ -37,6 +81,7 @@ html[data-theme="cyberpunk"] {
   --bg-sidebar:  #03060d;               /* 导航侧栏 - 更深 */
   --bg-sidebar-active: #0f1a2e;
   --bg-sidebar-hover: #0b1220;
+  --bg-row-hover: #1a2c4a;               /* 行/块悬停：比卡面亮一档，tertiary 在其上 4.80:1 */
   --bg-input:  #0f1a2e;
   --bg-input-focus: #0b1220;
 
@@ -44,8 +89,7 @@ html[data-theme="cyberpunk"] {
   --text-primary:   #e8f4ff;             /* 标题 - 亮青白 */
   --text-secondary: #b8d4e8;             /* 正文 - 淡青白 */
   --text-tertiary:  #7a9bb8;             /* 辅助 - 钢蓝 */
-  --text-quaternary:#4a6478;             /* 占位/静音 - 暗钢蓝 */
-  --text-on-brand:  #050a14;
+  --text-quaternary:#5c7d99;             /* 占位/静音：卡面 3.72、悬停面 3.23（原 #4a6478 只有 2.60） */
 
   /* ===== 边界 · 霓虹边 ===== */
   --border-ghost:   rgba(0, 212, 255, 0.08);
@@ -214,7 +258,7 @@ html[data-theme="cyberpunk"] ::-webkit-scrollbar-thumb:hover {
 html[data-theme="cyberpunk"] .btn-primary {
   background: var(--gradient-brand);
   border: 1px solid var(--brand);
-  color: var(--text-on-brand);
+  color: var(--on-brand);
   box-shadow: var(--glow-cyan);
   transition: all var(--dur-2) var(--ease);
 }

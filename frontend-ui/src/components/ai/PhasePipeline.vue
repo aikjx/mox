@@ -301,9 +301,9 @@ function formatLatency(ms) {
 }
 
 function getConsensusColor(consensus) {
-  if (consensus >= 0.8) return '#10b981'
-  if (consensus >= 0.6) return '#f59e0b'
-  return '#ef4444'
+  if (consensus >= 0.8) return 'var(--success)'
+  if (consensus >= 0.6) return 'var(--warning)'
+  return 'var(--danger)'
 }
 
 function formatAnswer(answer) {
@@ -328,13 +328,13 @@ function formatMarkdown(text) {
 .phase-pipeline {
   width: 100%;
   padding: 16px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid #e4e3dd;
+  border: 1px solid var(--border);
 }
 
 .phase-pipeline--running {
-  border-color: #6366f1;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -370,23 +370,23 @@ function formatMarkdown(text) {
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
-  background: #f4f3ee;
-  color: #9ca3af;
-  border: 2px solid #e4e3dd;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  border: 2px solid var(--border);
   transition: all 0.3s ease;
   z-index: 1;
 }
 
 .phase-pipeline__node--done .phase-pipeline__icon {
-  background: #10b981;
-  color: #fff;
-  border-color: #10b981;
+  background: var(--success-fill);
+  color: var(--on-success);
+  border-color: var(--success-fill);
 }
 
 .phase-pipeline__node--running .phase-pipeline__icon {
-  background: #6366f1;
-  color: #fff;
-  border-color: #6366f1;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  border-color: var(--accent-fill);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
@@ -398,8 +398,8 @@ function formatMarkdown(text) {
 .phase-pipeline__spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border: 2px solid transparent;
+  border-top-color: var(--on-accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -416,18 +416,18 @@ function formatMarkdown(text) {
 .phase-pipeline__name {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-tertiary);
   white-space: nowrap;
 }
 
 .phase-pipeline__node--done .phase-pipeline__name,
 .phase-pipeline__node--running .phase-pipeline__name {
-  color: #1a1b1c;
+  color: var(--text-primary);
 }
 
 .phase-pipeline__latency {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -438,21 +438,21 @@ function formatMarkdown(text) {
   left: 50%;
   width: 100%;
   height: 2px;
-  background: #e4e3dd;
+  background: var(--border);
   z-index: 0;
 }
 
 .phase-pipeline__connector--active {
-  background: #10b981;
+  background: var(--success-fill);
 }
 
 /* 阶段详情 */
 .phase-pipeline__detail {
   margin-top: 16px;
   padding: 16px;
-  background: #f9fafb;
+  background: var(--bg-tertiary);
   border-radius: 8px;
-  border: 1px solid #e4e3dd;
+  border: 1px solid var(--border);
 }
 
 .phase-pipeline__detail-header {
@@ -461,7 +461,7 @@ function formatMarkdown(text) {
   gap: 8px;
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e4e3dd;
+  border-bottom: 1px solid var(--border);
 }
 
 .phase-pipeline__detail-icon {
@@ -471,7 +471,7 @@ function formatMarkdown(text) {
 .phase-pipeline__detail-title {
   font-size: 15px;
   font-weight: 600;
-  color: #1a1b1c;
+  color: var(--text-primary);
   flex: 1;
 }
 
@@ -482,13 +482,13 @@ function formatMarkdown(text) {
 }
 
 .status--running {
-  background: #eef2ff;
-  color: #6366f1;
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .status--done {
-  background: #ecfdf5;
-  color: #10b981;
+  background: var(--success-dim);
+  color: var(--success);
 }
 
 /* Intent 结果 */
@@ -500,18 +500,18 @@ function formatMarkdown(text) {
 
 .intent-result__label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   min-width: 80px;
 }
 
 .intent-result__value {
   font-size: 13px;
-  color: #1a1b1c;
+  color: var(--text-primary);
 }
 
 .intent-result__value--primary {
   font-weight: 600;
-  color: #6366f1;
+  color: var(--accent);
 }
 
 .intent-result__tags {
@@ -527,7 +527,7 @@ function formatMarkdown(text) {
   align-items: center;
   margin-bottom: 12px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .team-result__experts {
@@ -552,7 +552,7 @@ function formatMarkdown(text) {
 
 .debate-result__label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .debate-result__value {
@@ -573,9 +573,9 @@ function formatMarkdown(text) {
 
 .opinion-item {
   padding: 12px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 8px;
-  border: 1px solid #e4e3dd;
+  border: 1px solid var(--border);
 }
 
 .opinion-item__header {
@@ -588,7 +588,7 @@ function formatMarkdown(text) {
 .opinion-item__expert {
   font-size: 13px;
   font-weight: 600;
-  color: #6366f1;
+  color: var(--accent);
 }
 
 .opinion-item__scores {
@@ -599,12 +599,12 @@ function formatMarkdown(text) {
 .opinion-item__score,
 .opinion-item__confidence {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .opinion-item__answer {
   font-size: 13px;
-  color: #374151;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -612,7 +612,7 @@ function formatMarkdown(text) {
   font-size: 13px;
   font-weight: 600;
   margin: 8px 0 4px;
-  color: #1a1b1c;
+  color: var(--text-primary);
 }
 
 .opinion-item__answer :deep(li) {
@@ -624,21 +624,21 @@ function formatMarkdown(text) {
 .synthesis-result__markdown {
   font-size: 13px;
   line-height: 1.7;
-  color: #374151;
+  color: var(--text-secondary);
 }
 
 .synthesis-result__markdown :deep(h3) {
   font-size: 15px;
   font-weight: 600;
   margin: 16px 0 8px;
-  color: #1a1b1c;
+  color: var(--text-primary);
 }
 
 .synthesis-result__markdown :deep(h4) {
   font-size: 14px;
   font-weight: 600;
   margin: 12px 0 6px;
-  color: #1a1b1c;
+  color: var(--text-primary);
 }
 
 .synthesis-result__markdown :deep(li) {
@@ -647,7 +647,7 @@ function formatMarkdown(text) {
 }
 
 .synthesis-result__markdown :deep(strong) {
-  color: #1a1b1c;
+  color: var(--text-primary);
 }
 
 /* Done 结果 */

@@ -41,7 +41,7 @@ L1  Foundation   mox-platform-foundation / mox-cloud-foundation
 
 ```
 infotopograph/
-├── platform/           # 后端主体（Rust workspace，143 crates）
+├── platform/           # 后端主体（Rust workspace，149 crates）
 │   ├── domains/        #   业务域（kg/ai/flow/data/cloud/voice/market/alliance/base…）
 │   ├── foundation/     #   基础层（error/audit/paths/observability…）
 │   ├── gateway/        #   网关（mox-platform-gateway-svc，3080 唯一入口）

@@ -92,8 +92,8 @@ onMounted(() => {
 .icon-sidebar {
   width: 64px;
   flex-shrink: 0;
-  background: var(--bg-secondary, #161821);
-  border-right: 1px solid var(--border, #2d3148);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -106,7 +106,7 @@ onMounted(() => {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: linear-gradient(135deg, var(--brand-fill), var(--brand-fill-hover));
   display: grid;
   place-items: center;
   margin-top: 12px;
@@ -121,7 +121,7 @@ onMounted(() => {
   box-shadow: 0 6px 16px rgba(99,102,241,.5);
 }
 .icon-logo-text {
-  color: #fff;
+  color: var(--on-brand);
   font-weight: 700;
   font-size: 18px;
   line-height: 1;
@@ -145,7 +145,7 @@ onMounted(() => {
 /* 分组标签（竖排） */
 .icon-group-label {
   font-size: 9px;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
   writing-mode: vertical-rl;
   text-orientation: upright;
   letter-spacing: 2px;
@@ -169,18 +169,18 @@ onMounted(() => {
   display: grid;
   place-items: center;
   cursor: pointer;
-  color: var(--text-secondary, #9aa0b4);
+  color: var(--text-secondary, var(--text-tertiary));
   transition: all 0.15s ease;
   position: relative;
   text-decoration: none;
 }
 .icon-nav-item:hover {
-  background: var(--bg-hover, #2a2f45);
-  color: var(--text-primary, #e8eaed);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 .icon-nav-item.active {
   background: var(--accent-dim, rgba(99,102,241,.15));
-  color: var(--accent-light, #818cf8);
+  color: var(--accent-light);
 }
 .icon-nav-item.active::before {
   content: '';
@@ -191,7 +191,7 @@ onMounted(() => {
   width: 3px;
   height: 24px;
   border-radius: 0 3px 3px 0;
-  background: var(--accent, #6366f1);
+  background: var(--accent);
 }
 
 .icon-nav-emoji {
@@ -209,8 +209,8 @@ onMounted(() => {
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: var(--danger, #ef4444);
-  color: #fff;
+  background: var(--danger-fill);
+  color: var(--on-danger);
   font-size: 10px;
   font-weight: 600;
   display: grid;
@@ -226,7 +226,7 @@ onMounted(() => {
   gap: 6px;
   padding: 8px 0 12px;
   flex-shrink: 0;
-  border-top: 1px solid var(--border, #2d3148);
+  border-top: 1px solid var(--border);
   width: 100%;
   margin-top: auto;
 }
@@ -235,18 +235,18 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--warning, #f59e0b);
+  background: var(--warning);
   margin-bottom: 2px;
 }
 .icon-health-dot.ok {
-  background: var(--success, #10b981);
+  background: var(--success);
   box-shadow: 0 0 0 3px rgba(16,185,129,.2);
 }
 .icon-health-dot.down {
-  background: var(--danger, #ef4444);
+  background: var(--danger-fill);
   box-shadow: 0 0 0 3px rgba(239,68,68,.2);
 }
 .icon-health-dot.pending {
-  background: var(--warning, #f59e0b);
+  background: var(--warning);
 }
 </style>

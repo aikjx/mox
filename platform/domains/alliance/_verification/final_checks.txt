@@ -1,0 +1,152 @@
+===== Files in gateway/src/alliance/ =====
+  experts_collaboration.rs  (93361 bytes)
+  experts_common.rs  (37376 bytes)
+  experts_db.rs  (28718 bytes)
+  experts_dispatcher.rs  (42612 bytes)
+  experts_ext.rs  (15989 bytes)
+  experts_graph.rs  (44279 bytes)
+  experts_orchestration.rs  (51090 bytes)
+  experts_registry.rs  (38357 bytes)
+  experts_session.rs  (35156 bytes)
+  mod.rs  (1035 bytes)
+  registry_client.rs  (3045 bytes)
+
+===== api/Cargo.toml =====
+[package]
+name = "mox-alliance-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "专家联盟 · API 层（HTTP DTO + 客户端 SDK + 事件通知）"
+
+[dependencies]
+mox-alliance-common-proto = { workspace = true }
+mox-alliance-scheduler-proto = { workspace = true }
+mox-alliance-executor-proto = { workspace = true }
+mox-platform-foundation = { workspace = true }
+mox-error = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true, features = ["serde", "v4"] }
+chrono = { workspace = true, features = ["serde"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[features]
+default = []
+
+[lints]
+workspace = true
+
+
+===== dispatcher.rs unwrap/expect ALL occurrences =====
+  938:         let data = resp.data.unwrap();
+  1039:         let data = resp.data.unwrap();
+  1048:         assert_eq!(registry.get("exp-ai-001").unwrap().availability.current_load, 0);
+  1084:         let data = resp.data.unwrap();
+  1091:         assert_eq!(data["expert_loads"].as_array().unwrap().len(), 3);
+  1141:         let data = resp.data.unwrap();
+  1142:         assert!(data["dispatch_id"].as_str().unwrap().starts_with("disp-"));
+  1146:         assert!(data["answer"]["confidence"].as_f64().unwrap() > 0.0);
+  1163:         let data = resp.data.unwrap();
+  1165:         assert_eq!(data["reset_expert_ids"].as_array().unwrap().len(), 3);
+
+===== dispatcher.rs circuit_breakers / engine_status / running literal =====
+  132:     let fc_guard = get_failure_counts();
+  133:     if let Some(map) = fc_guard.as_ref() {
+  140:     drop(fc_guard);
+  462:         .filter(|r| r.status == "dispatched" || r.status == "running")
+  493:     let fc_guard = get_failure_counts();
+  494:     let circuit_breakers: Vec<Value> = if let Some(map) = fc_guard.as_ref() {
+  513:     drop(fc_guard);
+  536:         "engine_status": "running",
+  542:         "circuit_breakers": circuit_breakers,
+  776:         let fc_guard = get_failure_counts();
+  777:         let prev_failures = fc_guard
+  794:         let mut fc_guard = ensure_failure_map();
+  795:         if let Some(map) = fc_guard.as_mut() {
+  828:         let mut fc_guard = ensure_failure_map();
+  829:         if let Some(map) = fc_guard.as_mut() {
+  1029:             let mut fc_guard = ensure_failure_map();
+  1030:             if let Some(map) = fc_guard.as_mut() {
+  1085:         assert_eq!(data["engine_status"], "running");
+
+===== experts_registry.rs availability.status / health =====
+  77:     if let Some(vs) = body.get("verification_status").and_then(|v| v.as_str()) {
+  78:         exp.verification_status = vs.to_string();
+  125:     // availability 子字段合并
+  126:     if let Some(av) = body.get("availability").and_then(|v| v.as_object()) {
+  127:         if let Some(s) = av.get("status").and_then(|v| v.as_str()) {
+  128:             exp.availability.status = s.to_string();
+  131:             exp.availability.last_active = la.to_string();
+  134:             exp.availability.avg_response_minutes = arm;
+  137:             exp.availability.current_load = cl as u32;
+  140:             exp.availability.max_concurrent = mc as u32;
+  180:     let online = enabled.iter().filter(|e| e.availability.status == "online").count();
+  181:     let busy = enabled.iter().filter(|e| e.availability.status == "busy").count();
+  182:     let offline = enabled.iter().filter(|e| e.availability.status == "offline").count();
+  192:         enabled.iter().map(|e| e.availability.avg_response_minutes).sum::<f64>() / total as f64
+
+===== favorites persistence across gateway alliance =====
+
+===== graph.rs write operations (insert/update/delete node) =====
+
+===== executor_bridge.rs crypto/SM4 lines =====
+  110:     /// 一键传输加密（与服务端同源开关 MOX_API_CRYPTO）：POST 请求带协商头，
+  111:     /// 开关开启时请求体整体密封为 {"crypto":…}，由执行器中间件透明解密
+  112:     fn crypto_post(
+  120:         for (h, hv) in mox_api_crypto::client::outbound_headers() {
+  123:         Ok(match mox_api_crypto::client::seal_request(&v) {
+  124:             Some(sealed) => rb.json(&sealed),
+  129:     /// 解析 HTTP 响应为 AllianceResult（密文应答经 client::open_response 透明解密）
+  139:         let decoded = mox_api_crypto::client::open_response(&bytes);
+  203:             .crypto_post(&url, &request_body)?
+  240:         let response = self.crypto_post(&url, &body)?.send()
+  333:         let response = self.crypto_post(&url, &body)?.send()
+  353:         let response = self.crypto_post(&url, &body)?.send()
+
+===== gateway/src/alliance line counts =====
+  experts_collaboration.rs       2227 lines
+  experts_common.rs              1014 lines
+  experts_db.rs                  721 lines
+  experts_dispatcher.rs          1173 lines
+  experts_ext.rs                 366 lines
+  experts_graph.rs               1099 lines
+  experts_orchestration.rs       1236 lines
+  experts_registry.rs            1009 lines
+  experts_session.rs             959 lines
+  mod.rs                         28 lines
+  registry_client.rs             92 lines
+  TOTAL: 9924 lines
+
+===== auth public_paths / which paths skip auth =====
+  config.rs:14:     /// Whether authentication is enabled.
+  config.rs:15:     pub enabled: bool,
+  config.rs:17:     pub jwt_secret: String,
+  config.rs:20:     /// Public paths that don't require authentication.
+  config.rs:22:     pub public_paths: Vec<String>,
+  config.rs:26:     #[serde(default = "default_dev_mode")]
+  config.rs:27:     pub dev_mode: bool,
+  config.rs:30: fn default_dev_mode() -> bool {
+  config.rs:37:             enabled: true,
+  config.rs:38:             // 占位值：启动时由 resolve_jwt_secret() 从 JWT_SECRET 环境变量覆盖。
+  config.rs:40:             jwt_secret: "change-me-in-production".into(),
+  config.rs:45:             public_paths: vec![
+  config.rs:47:                 "/api/auth/login".into(),
+  config.rs:48:                 "/api/auth/register".into(),
+  config.rs:49:                 "/api/auth/refresh".into(),
+  config.rs:55:             dev_mode: default_dev_mode(),
+  config.rs:66:     pub fn resolve_jwt_secret(&mut self) {
+  config.rs:69:                 self.jwt_secret = secret;
+  config.rs:77:                     self.jwt_secret = "dev-only-insecure-secret".into();
+  config.rs:78:                     self.dev_mode = true;
+  config.rs:89:             self.dev_mode = false;
+  config.rs:91:             self.dev_mode = true;
+  config.rs:100:     /// Whether rate limiting is enabled.
+  config.rs:101:     pub enabled: bool,
+  config.rs:113:             enabled: true,
+  config.rs:153:     pub auth: AuthConfig,
+  config.rs:183:             auth: AuthConfig::default(),

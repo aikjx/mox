@@ -169,6 +169,7 @@ impl MemoryEventBus {
     }
 
     /// 创建默认配置的内存事件总线
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Arc<Self> {
         Self::new(BusConfig::default())
     }
