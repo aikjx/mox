@@ -72,6 +72,7 @@ mox-audit = { workspace = true, default-features = false }
 
 # 业务域反向代理（网关→编排器适配层，L6 归一化收敛）
 reqwest = { workspace = true }
+lettre = { version = "=0.11.23", default-features = false, features = ["builder", "smtp-transport", "rustls-tls"] }
 
 [features]
 default = []

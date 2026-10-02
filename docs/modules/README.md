@@ -4,6 +4,8 @@
 
 ## 按功能查找
 
+平台与前端当前开发状态、真实链路及未完成项见[真实实现验收台账](docs/modules/REAL-IMPLEMENTATION-STATUS.md)。
+
 | 功能 | 后端归属 | 前端页面 | 路由模块 |
 |---|---|---|---|
 | 项目、任务与资源 | project / data | project | project |

@@ -1,20 +1,10 @@
-﻿cargo :     Checking mox-platform-gateway-svc v3.0.0-ai-powered (D:\a10\aikjx\gitcode\infotopograph\platform\gateway\mo
-x-platform-gateway-svc)
+﻿cargo : warning: unused import: `rand::RngCore`
 所在位置 行:1 字符: 40
-+ ... otopograph; cargo check -p mox-platform-gateway-svc --all-targets > p ...
++ ... otopograph; cargo test -p mox-platform-gateway-svc --test tenant_expe ...
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (    Checking mo...rm-gateway-svc):String) [], RemoteException
+    + CategoryInfo          : NotSpecified: (warning: unused import: `rand::RngCore`:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
  
-warning: unused import: `ExpertGraph`
-   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_rbac.rs:228:43
-    |
-228 |         DEFAULT_TENANT, DispatcherConfig, ExpertGraph, ExpertsSharedState,
-    |                                           ^^^^^^^^^^^
-    |
-    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rand::RngCore`
   --> platform\gateway\mox-platform-gateway-svc\src\system\mfa.rs:26:5
    |
 26 | use rand::RngCore;
@@ -94,73 +84,73 @@ help: use `let _ = ...` to ignore the expression or result
      |
 
 warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
-    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1109:5
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1110:5
      |
-1109 |     drop(graph);
+1110 |     drop(graph);
      |     ^^^^^-----^
      |          |
      |          argument has type `&mut experts_common::ExpertGraph`
      |
 help: use `let _ = ...` to ignore the expression or result
      |
-1109 -     drop(graph);
-1109 +     let _ = graph;
+1110 -     drop(graph);
+1110 +     let _ = graph;
      |
 
 warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
-    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1154:5
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1156:5
      |
-1154 |     drop(graph);
+1156 |     drop(graph);
      |     ^^^^^-----^
      |          |
      |          argument has type `&mut experts_common::ExpertGraph`
      |
 help: use `let _ = ...` to ignore the expression or result
      |
-1154 -     drop(graph);
-1154 +     let _ = graph;
+1156 -     drop(graph);
+1156 +     let _ = graph;
      |
 
 warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
-    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1231:5
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1234:5
      |
-1231 |     drop(graph);
+1234 |     drop(graph);
      |     ^^^^^-----^
      |          |
      |          argument has type `&mut experts_common::ExpertGraph`
      |
 help: use `let _ = ...` to ignore the expression or result
      |
-1231 -     drop(graph);
-1231 +     let _ = graph;
+1234 -     drop(graph);
+1234 +     let _ = graph;
      |
 
 warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
-    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1287:5
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1291:5
      |
-1287 |     drop(graph);
+1291 |     drop(graph);
      |     ^^^^^-----^
      |          |
      |          argument has type `&mut experts_common::ExpertGraph`
      |
 help: use `let _ = ...` to ignore the expression or result
      |
-1287 -     drop(graph);
-1287 +     let _ = graph;
+1291 -     drop(graph);
+1291 +     let _ = graph;
      |
 
 warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
-    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1325:5
+    --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_graph.rs:1330:5
      |
-1325 |     drop(graph);
+1330 |     drop(graph);
      |     ^^^^^-----^
      |          |
      |          argument has type `&mut experts_common::ExpertGraph`
      |
 help: use `let _ = ...` to ignore the expression or result
      |
-1325 -     drop(graph);
-1325 +     let _ = graph;
+1330 -     drop(graph);
+1330 +     let _ = graph;
      |
 
 warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
@@ -193,40 +183,26 @@ help: use `let _ = ...` to ignore the expression or result
 
 warning: `mox-platform-gateway-svc` (lib) generated 18 warnings (run `cargo fix --lib -p mox-platform-gateway-svc` to a
 pply 9 suggestions)
-warning: unused import: `rand::RngCore`
-  --> platform\gateway\mox-platform-gateway-svc\src\system\mfa.rs:26:5
-   |
-26 | use rand::RngCore;
-   |     ^^^^^^^^^^^^^
+warning: unused import: `Router`
+ --> platform\gateway\mox-platform-gateway-svc\tests\tenant_expert_isolation.rs:4:24
+  |
+4 | use axum::{middleware, Router};
+  |                        ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
-warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
-   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:652:5
-    |
-652 |     drop(registry);
-    |     ^^^^^--------^
-    |          |
-    |          argument has type `&std::collections::HashMap<std::string::String, experts_common::ExpertDescriptor>`
-    |
-help: use `let _ = ...` to ignore the expression or result
-    |
-652 -     drop(registry);
-652 +     let _ = registry;
-    |
+warning: `mox-platform-gateway-svc` (test "tenant_expert_isolation") generated 1 warning (run `cargo fix --test "tenant
+_expert_isolation" -p mox-platform-gateway-svc` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.87s
+     Running tests\tenant_expert_isolation.rs (target\debug\deps\tenant_expert_isolation-7286b19557f136bf.exe)
 
-warning: calls to `std::mem::drop` with a reference instead of an owned value does nothing
-   --> platform\gateway\mox-platform-gateway-svc\src\alliance\experts_dispatcher.rs:730:5
-    |
-730 |     drop(registry);
-    |     ^^^^^--------^
-    |          |
-    |          argument has type `&std::collections::HashMap<std::string::String, experts_common::ExpertDescriptor>`
-    |
-help: use `let _ = ...` to ignore the expression or result
-    |
-730 -     drop(registry);
-730 +     let _ = registry;
-    |
+running 1 test
+[A1-E2E] tenant-a POST /api/experts -> {"code":0,"msg":"ok","data":{"created":true,"expert":{"availability":{"avg_response_minutes":5.0,"current_load":0,"last_active":"2026-10-01T16:47:34Z","max_concurrent":5,"status":"online"},"avatar":"","bio":"","capabilities":[],"created_at":"2026-10-01T16:47:34Z","domains":["e2e"],"enabled":true,"expert_type":"ai","hourly_rate_cents":0,"id":"e2e-a-expert","languages":["zh-CN","en"],"metadata":{},"metrics":{"avg_rating":0.0,"first_response_accuracy":0.0,"rating_count":0,"resolution_rate":0.0,"today_consultations":0,"total_consultations":0,"total_service_minutes":0},"name":"架构师·甲","organization":"","pricing_model":"free","skills":["rust"],"tags":[],"timezone":"Asia/Shanghai","title":"E2E 测试专家","type":"custom","updated_at":"2026-10-01T16:47:34Z","verification_status":"verified"},"id":"e2e-a-expert"}}
+[A1-E2E] tenant-b POST /api/experts -> {"code":0,"msg":"ok","data":{"created":true,"expert":{"availability":{"avg_response_minutes":5.0,"current_load":0,"last_active":"2026-10-01T16:47:34Z","max_concurrent":5,"status":"online"},"avatar":"","bio":"","capabilities":[],"created_at":"2026-10-01T16:47:34Z","domains":["e2e"],"enabled":true,"expert_type":"ai","hourly_rate_cents":0,"id":"e2e-b-expert","languages":["zh-CN","en"],"metadata":{},"metrics":{"avg_rating":0.0,"first_response_accuracy":0.0,"rating_count":0,"resolution_rate":0.0,"today_consultations":0,"total_consultations":0,"total_service_minutes":0},"name":"数据师·乙","organization":"","pricing_model":"free","skills":["rust"],"tags":[],"timezone":"Asia/Shanghai","title":"E2E 测试专家","type":"custom","updated_at":"2026-10-01T16:47:34Z","verification_status":"verified"},"id":"e2e-b-expert"}}
+[A1-E2E] tenant-a GET /api/experts -> {"code":0,"msg":"ok","data":{"experts":[{"availability":{"avg_response_minutes":5.0,"current_load":0,"last_active":"2026-10-01T16:47:34Z","max_concurrent":5,"status":"online"},"avatar":"","bio":"","capabilities":[],"created_at":"2026-10-01T16:47:34Z","domains":["e2e"],"enabled":true,"expert_type":"ai","hourly_rate_cents":0,"id":"e2e-a-expert","languages":["zh-CN","en"],"metadata":{},"metrics":{"avg_rating":0.0,"first_response_accuracy":0.0,"rating_count":0,"resolution_rate":0.0,"today_consultations":0,"total_consultations":0,"total_service_minutes":0},"name":"架构师·甲","organization":"","pricing_model":"free","skills":["rust"],"tags":[],"timezone":"Asia/Shanghai","title":"E2E 测试专家","type":"custom","updated_at":"2026-10-01T16:47:34Z","verification_status":"verified"}],"page":1,"page_size":20,"total":1}}
+[A1-E2E] tenant-b GET /api/experts -> {"code":0,"msg":"ok","data":{"experts":[{"availability":{"avg_response_minutes":5.0,"current_load":0,"last_active":"2026-10-01T16:47:34Z","max_concurrent":5,"status":"online"},"avatar":"","bio":"","capabilities":[],"created_at":"2026-10-01T16:47:34Z","domains":["e2e"],"enabled":true,"expert_type":"ai","hourly_rate_cents":0,"id":"e2e-b-expert","languages":["zh-CN","en"],"metadata":{},"metrics":{"avg_rating":0.0,"first_response_accuracy":0.0,"rating_count":0,"resolution_rate":0.0,"today_consultations":0,"total_consultations":0,"total_service_minutes":0},"name":"数据师·乙","organization":"","pricing_model":"free","skills":["rust"],"tags":[],"timezone":"Asia/Shanghai","title":"E2E 测试专家","type":"custom","updated_at":"2026-10-01T16:47:34Z","verification_status":"verified"}],"page":1,"page_size":20,"total":1}}
+[A1-E2E] tenant-a GET /api/experts/e2e-b-expert -> 404 Not Found
+test two_tenants_create_experts_and_cannot_see_each_other ... ok
 
-warning: `mox-platform-gateway-svc` (lib test) generated 19 warnings (15 duplicates) (run `cargo fix --lib -p mox-platf
-orm-gateway-svc --tests` to apply 1 suggestion)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 37.97s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+

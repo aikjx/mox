@@ -142,6 +142,13 @@ last_updated: 2026-09-29
 | `MOX_S3_ENDPOINT` / `MOX_S3_BUCKET` / `MOX_S3_ACCESS_KEY_ID` / `MOX_S3_SECRET_ACCESS_KEY` | 未设=S3 后端不启用 | `gateway/src/storage_backend.rs:88-91` |
 | `MOX_S3_REGION` | `us-east-1` | `storage_backend.rs:95` |
 
+### 2.6.1 多租户（A1，2026-10-01 阶段一）
+
+- **无新环境变量**：租户由可信 JWT 身份的 `tenant_id` 声明下发（auth 中间件注入），单租户部署所有用户 `tenant_id=default`，与现状零回归。
+- **请求头 `X-Tenant-Id`**：仅作一致性校验——若携带，必须等于当前身份的 `tenant_id`，否则网关返回 **403**（防越权换租户）；不携带则取身份自带租户。无有效身份一律 **401**。
+- **SQLite**：单文件 `data/experts.db`，schema 自动升到 v2（含 `tenant_id` 复合键），无需运维介入；多租户数据同库行级隔离，非每租户独立文件。
+- 阶段二（配额/密钥/SSO-SAML）落地前，不引入新部署开关。
+
 ### 2.7 生产档推荐 env 块（直接复制）
 
 ```dotenv

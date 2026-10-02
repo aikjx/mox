@@ -1052,6 +1052,7 @@ async fn post_graph_node(
     graph.version += 1;
     graph.built_at = now_iso();
     drop(graph);
+    drop(all_g); // 显式释放 graph 锁，避免下方重锁自死锁
 
     crate::alliance::experts_db::upsert_graph_node(tenant.as_str(), &node);
     let all_g = state.graph.lock();
@@ -1107,6 +1108,7 @@ async fn put_graph_node(
     graph.version += 1;
     graph.built_at = now_iso();
     drop(graph);
+    drop(all_g); // 显式释放 graph 锁，避免下方重锁自死锁
 
     crate::alliance::experts_db::upsert_graph_node(tenant.as_str(), &node_clone);
     let all_g = state.graph.lock();
@@ -1152,6 +1154,7 @@ async fn delete_graph_node(
     graph.built_at = now_iso();
     let edges_snapshot: Vec<GraphEdge> = graph.edges.clone();
     drop(graph);
+    drop(all_g); // 显式释放 graph 锁，避免下方重锁自死锁
 
     crate::alliance::experts_db::delete_graph_node_cascade(tenant.as_str(), &id);
     crate::alliance::experts_db::replace_graph_edges(tenant.as_str(), &edges_snapshot);
@@ -1229,6 +1232,7 @@ async fn post_graph_edge(
     graph.version += 1;
     graph.built_at = now_iso();
     drop(graph);
+    drop(all_g); // 显式释放 graph 锁，避免下方重锁自死锁
 
     crate::alliance::experts_db::upsert_graph_edge(tenant.as_str(), seq, &edge);
     let all_g = state.graph.lock();
@@ -1285,6 +1289,7 @@ async fn put_graph_edge(
     graph.version += 1;
     graph.built_at = now_iso();
     drop(graph);
+    drop(all_g); // 显式释放 graph 锁，避免下方重锁自死锁
 
     crate::alliance::experts_db::upsert_graph_edge(tenant.as_str(), seq, &edge_clone);
     let all_g = state.graph.lock();
@@ -1323,6 +1328,7 @@ async fn delete_graph_edge(
     graph.built_at = now_iso();
     let edges_snapshot: Vec<GraphEdge> = graph.edges.clone();
     drop(graph);
+    drop(all_g); // 显式释放 graph 锁，避免下方重锁自死锁
 
     // 删除后剩余边下标前移，重排 seq 保持 seq==下标
     crate::alliance::experts_db::replace_graph_edges(tenant.as_str(), &edges_snapshot);

@@ -4,9 +4,7 @@
 
 设计入口：[能力地图](docs/modules/resource-knowledge/README.md#map)。目标边界遵循[统一架构](docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md#scope)、[数据契约](docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md)与[流程规范](docs/modules/resource-knowledge/BUSINESS-FLOWS.md)。本台账是实施状态权威源，设计中的状态机与 API 草案不代表当前已实现。
 
-当前集成阻塞（2026-10-02）：知识库包 32 项测试及相关前端 36 项测试通过；专家联盟租户分区迁移尚在同步修改，网关编译失败，网关回归测试未执行成功。知识库包通过不能替代网关或全工作区验收。证据见 `reports/data/20261001-competitive-optimization/summary.json`，保留失败记录并复测，不回退租户隔离设计或降低门禁。
-
-发布前 P0：静态复核发现专家联盟 `TenantId` 从 `X-Tenant-Id` 读取，而现有认证中间件仅注入可信 `UserInfo`，未把该头与认证租户绑定。租户分区存储不等同于请求授权；需要改为从可信身份提取租户，并通过伪造请求头、跨租户读写/图谱/调度、重启及缺失身份测试。会话/作业/历史/收藏/审计也必须分别验收。此发现基于当时源码，网关编译阻塞，未声称已完成运行时攻击测试；证据及源码摘要见 `reports/data/20261001-competitive-optimization/gateway-tenant-review.json`。
+最新集成进展（2026-10-02）：上轮专家联盟租户迁移的编译阻塞已解除，网关 all-targets 检查与 Clippy 通过（仍有存量告警）。专家租户现从可信 UserInfo 提取，伪造头 403、缺失身份 401；真实双租户专家创建/列表/详情隔离通过。本轮真实链路及尚未完成的全域授权，统一见[平台与前端验收台账](docs/modules/REAL-IMPLEMENTATION-STATUS.md)。原失败证据保留历史日期，不把局部修复计为全系统验收。
 
 <a id="status"></a>
 ## 模块状态

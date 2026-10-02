@@ -176,6 +176,7 @@ scope: 依据 10-enterprise-maturity-review.md 的 P0 阻断项与 TOP 差距、
 - **依赖**：P0 的 N2 审计身份 + G3 角色权限（多租户 = 在用户/角色之上加一层租户维度）；P0 N1 下游鉴权（下游 svc 要能识别 tenant）；中心化凭证（飞书 aily 借鉴：Agent 不持密钥，系统统一托管）。
 - **落地路径**：① 数据模型引入 tenant_id（P0 schema 迁移框架内一并加）；② 所有查询按租户过滤，行级权限；③ 配额：每租户专家数、并发数（接 T1 信号量）、LLM 调用量计量；④ 密钥按租户隔离托管（对齐飞书 aily 中心化凭证）；⑤ SSO/SAML 对接（n8n/Dify 借鉴）作为租户入口。
 - **依据**：11-我们弱③、Dify/n8n/Airflow 多团队借鉴；10-D2/N2/G3；08 §十（SSO/多租户原属目标态未列项）。
+- **落地状态（2026-10-01）**：🟡 阶段一已闭环——落地路径①②已做（数据模型 tenant_id + schema v2 迁移、所有查询按租户过滤、内存态 registry/graph per-tenant、TenantId 提取器取可信身份 tenant_id、审计带 tenant），两真实租户建专家/查询互不可见 E2E 已证。**③配额 / ④密钥隔离 / ⑤SSO-SAML / 会话-任务-执行器分区 / 租户内 RBAC = 阶段二（方案稿，未硬做）**。详见 backend-fix-report A1 节。
 
 ### 4.2 A2　模块化微服务深化（fusion 独立 / memory 独立）
 

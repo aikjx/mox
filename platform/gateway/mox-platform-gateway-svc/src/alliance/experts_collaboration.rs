@@ -19,9 +19,11 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 
 use super::experts_common::*;
+use mox_ai_expert_svc::{
+    llm::consultant::strict_llm_consultant_from_env,
+    types::{ConsultQuery, ConsultReport},
+};
 use mox_api_protocol::ApiResponse;
-use mox_ai_expert_svc::expert_traits::llm_consultant;
-use mox_ai_expert_svc::types::{ConsultQuery, ConsultReport};
 
 // =====================================================================
 // 一、请求体定义
@@ -143,7 +145,8 @@ struct EnterpriseAnalyzeBody {
 // =====================================================================
 
 /// 根据专家领域/技能/头衔生成有意义的结构化回复（模板兜底，同步）
-pub fn generate_expert_answer_template(expert: &ExpertDescriptor, question: &str) -> Value {
+#[cfg(test)]
+fn generate_expert_answer_template(expert: &ExpertDescriptor, question: &str) -> Value {
     let domains = expert.domains.join("、");
     let skills = expert.skills.join("、");
     let title = if expert.title.is_empty() { "资深专家" } else { &expert.title };
@@ -183,18 +186,18 @@ pub fn generate_expert_answer_template(expert: &ExpertDescriptor, question: &str
 // 二-乙、真实 LLM 接入（已知限制 #1 修复）
 // =====================================================================
 
-/// 真实 LLM 接入版专家回复生成。
-///
-/// 归一化修复：优先调用 mox-ai-expert-svc 的 `llm_consultant()`（配置
-/// `MOX_LLM_API_KEY` 时走 ReAct + 工具调用的真实模型，否则回退本地 `mox_optimize`
-/// 引擎）。当 LLM 不可用或仅得到本地空报告时，降级到 `generate_expert_answer_template`，
-/// 保证前端永不拿不到回复（禁止卡顿 / 优雅降级）。
+/// Only a configured real provider may produce an answer; failures remain failures.
 pub async fn generate_expert_answer(expert: &ExpertDescriptor, question: &str) -> Value {
+    let unavailable = |reason: &str| {
+        json!({
+            "status": "failed", "source": "unavailable", "analysis": "", "solution": "",
+            "references": [], "confidence": 0.0, "error": reason,
+        })
+    };
+    let Some(consultant) = strict_llm_consultant_from_env() else {
+        return unavailable("Real LLM provider is not configured");
+    };
     let persona = build_expert_persona(expert);
-
-    // llm_consultant() 在未配置 Key 时返回本地 mox_optimize 引擎；
-    // 本地引擎无 FlowGraph 时会产出空报告，下方按哨兵串降级到模板
-    let consultant = llm_consultant();
     let query = ConsultQuery {
         id: gen_id("consult"),
         query: question.to_string(),
@@ -205,20 +208,10 @@ pub async fn generate_expert_answer(expert: &ExpertDescriptor, question: &str) -
         .into_iter()
         .collect(),
     };
-
-    if let Ok(report) = consultant.consult(&query).await {
-        // 本地引擎在无 FlowGraph 时会返回空报告（"跳过璇玑 14 维分析"），须降级到模板
-        let is_empty_local = report
-            .steps
-            .first()
-            .map(|s| s.contains("未传入 FlowGraph") || s.contains("跳过璇玑"))
-            .unwrap_or(false);
-        if !is_empty_local {
-            return map_report_to_answer(&report, expert, &persona, question);
-        }
+    match consultant.consult(&query).await {
+        Ok(report) => map_report_to_answer(&report, expert, &persona, question),
+        Err(_) => unavailable("Real LLM request failed"),
     }
-
-    generate_expert_answer_template(expert, question)
 }
 
 /// 构造专家人格上下文，注入 LLM 系统 / 用户提示
@@ -317,17 +310,8 @@ fn map_report_to_answer(
         conclusion
     };
 
-    let references: Vec<String> = expert
-        .domains
-        .iter()
-        .take(3)
-        .map(|d| {
-            format!(
-                "《{}领域工程实践指南》—— 璇玑 RelGraph 专家联盟知识库",
-                d
-            )
-        })
-        .collect();
+    // ConsultReport has no verified source locator; never invent references from domains.
+    let references: Vec<String> = Vec::new();
 
     // 后验治理 Warn 透传：仅附 governance_warnings，不拦截
     let governance_warnings = if post_hoc.decision == crate::llm_governance::GovernanceDecision::Warn {
@@ -801,8 +785,11 @@ async fn consult_expert(
         }
     };
 
-    // 生成专家回复（真实 LLM，降级到模板）
+    // 调用真实提供方；失败不创建成功会话
     let answer = generate_expert_answer(&expert, &body.question).await;
+    if answer["status"] == "failed" {
+        return err(503, "真实 LLM 提供方不可用，未生成结果");
+    }
 
     // 创建/追加会话
     let session_id = body.session_id.unwrap_or_else(|| gen_id("sess"));
@@ -912,6 +899,9 @@ async fn multi_consult(
     )
     .await;
 
+    if expert_answers.iter().any(|(_, answer, _)| answer["status"] == "failed") {
+        return err(503, "真实 LLM 咨询失败，未融合或保存假结果");
+    }
     // 结果融合
     let fused = fuse_answers(&expert_answers);
 
@@ -1202,6 +1192,9 @@ async fn intelligent_consult(
 
     // 生成带上下文的咨询回复（真实 LLM，降级到模板）
     let base_answer = generate_expert_answer(&best_expert, &body.question).await;
+    if base_answer["status"] == "failed" {
+        return err(503, "真实 LLM 提供方不可用，未生成结果");
+    }
     let context_enhancement = if let Some(ctx) = &body.context {
         format!("结合上下文「{}」，进一步细化方案：优先处理上下文中标注的关键约束，确保方案与现有系统兼容。", ctx)
     } else {
@@ -1723,6 +1716,7 @@ async fn expert_chat_dispatch(
                 }
             };
             let answer = generate_expert_answer(&expert, &body.message).await;
+    if answer["status"] == "failed" { return err(503, "真实 LLM 提供方不可用，未生成结果"); }
             let analysis = answer.get("analysis").and_then(|v| v.as_str()).unwrap_or("");
             let solution = answer.get("solution").and_then(|v| v.as_str()).unwrap_or("");
             let content = format!("{}\n\n{}", analysis, solution);
@@ -1896,6 +1890,17 @@ pub fn build_experts_collaboration_router(state: Arc<ExpertsSharedState>) -> Rou
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn report_without_verified_sources_has_no_references() {
+        let expert = make_test_expert("source-test", "Expert", "Architecture", vec!["architecture"], vec!["Rust"]);
+        let report = ConsultReport {
+            report_id: "source-report".into(), steps: vec!["[结论] 分析现有架构".into()],
+            score: 0.5, vetoed: false, reason: None,
+        };
+        let answer = map_report_to_answer(&report, &expert, "persona", "分析架构");
+        assert!(answer["references"].as_array().unwrap().is_empty());
+    }
 
     fn make_test_expert(id: &str, name: &str, title: &str, domains: Vec<&str>, skills: Vec<&str>) -> ExpertDescriptor {
         let mut exp = ExpertDescriptor::minimal(id.into(), name.into());
@@ -2145,16 +2150,13 @@ mod tests {
             vec!["Rust"],
         );
         let answer = generate_expert_answer(&expert, "如何设计微服务架构？").await;
-        // 结构契约必须成立（LLM 路径含 source="llm"，模板降级路径则不含）
-        let analysis = answer["analysis"].as_str().expect("analysis 应为字符串");
-        let solution = answer["solution"].as_str().expect("solution 应为字符串");
-        assert!(!analysis.is_empty(), "analysis 不应为空");
-        assert!(!solution.is_empty(), "solution 不应为空");
-        let confidence = answer["confidence"].as_f64().expect("confidence 应为数字");
-        assert!((0.0..=1.0).contains(&confidence), "confidence 应在 0-1 之间");
-        // 任一路径均可：模板降级（含专家名）或真实 LLM（source=llm）
-        let ok = analysis.contains("架构师·LLM") || answer.get("source").and_then(|v| v.as_str()) == Some("llm");
-        assert!(ok, "应走模板降级或真实 LLM 路径");
+        if strict_llm_consultant_from_env().is_none() {
+            assert_eq!(answer["status"], "failed");
+            assert_eq!(answer["solution"], "");
+            assert_eq!(answer["source"], "unavailable");
+        } else {
+            assert!(answer["source"] == "llm" || answer["status"] == "failed");
+        }
     }
 
     // 测试：治理契约 —— ConsultReport.vetoed=true 时下游必须强制拦截，不得透传正文

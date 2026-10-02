@@ -3,8 +3,8 @@
 > 层定位：L2 架构层 · 状态：**待评审**（本文件只提出计划与验收判据，未改任何生产码）
 > 上层入口：[文档中心](../README.md) · 结构规范：[ARCHITECTURE-OF-DOCS.md](../ARCHITECTURE-OF-DOCS.md)
 > 本层索引：[README.md](./README.md) · 端口权威：[PORT-REGISTRY.md](../api/PORT-REGISTRY.md)
-> 仪器：`scripts/gate/check-api-surface.py`（P1a 普查器）· 账：`reports/data/api-surface-census-2026-09-30.json`（立项图像）、`reports/data/api-surface-census-2026-10-01.json`（宽化后复跑）与 `reports/data/api-surface-census-2026-10-02.json`（并发作者再动装配后的第三次复跑）
-> 调用者侧账（§1.3）：`reports/data/api-unregistered-callersite-2026-10-01.json`（rev4，含词频第二口径）与 `reports/data/api-unregistered-callersite-2026-10-02.json`（rev6，判决口径）
+> 仪器：`scripts/gate/check-api-surface.py`（P1a 普查器）· `scripts/gate/classify-unregistered-endpoints.py`（§1.3 调用者分类器，已落库含 `--selftest`，故意未接 CI）· 账：`reports/data/api-surface-census-2026-09-30.json`（立项图像）、`reports/data/api-surface-census-2026-10-01.json`（宽化后复跑）与 `reports/data/api-surface-census-2026-10-02.json`（并发作者再动装配后的第三次复跑）
+> 调用者侧账（§1.3）：`reports/data/api-unregistered-callersite-2026-10-01.json`（rev4，含词频第二口径）、`reports/data/api-unregistered-callersite-2026-10-02.json`（rev6，判决口径，驱动未落库）与 `reports/data/api-unregistered-callersite-2026-10-02-landed.json`（rev7，落库门禁复算，判决与 rev6 逐条相等）
 
 ---
 
@@ -13,7 +13,9 @@
 网关的对外 API 清单今天有**两个互不相同的源**：
 
 1. **声明侧**：`platform/gateway/mox-platform-gateway-svc/src/actuator.rs:423` 的
-   `pub static ROUTES: [ApiRoute; 242]`；
+   `pub static ROUTES: [ApiRoute; 243]`（这一档长度本轮就动过一次：`236 → 242 → 243`，
+   所以引用它请引普查工件键 `routes_declared_len` 与它的 `generated_at`，不要引本文这句话——
+   本文下面 §1.1 那张表就是这个数的逐次读数）；
    `docs/API-REGISTRY.md` 由 `scripts/doc/gen-api-registry.py` 从这张表生成，CI 有 `gen + git diff --exit-code` 门禁
    （`.github/workflows/ci.yml` 的 "Verify API registry is up to date" 步骤）。
 2. **装配侧**：`build_gateway_router` → `build_host_router` → `modules::build_module_routers` → 各域 builder，
@@ -77,6 +79,13 @@ CI 门禁只保证 **1 == 文档**，从来不检验 **1 == 2**。生成脚本�
 变成 `[domain_router, protected_kb_router]`，即并发作者新加了一个"签名返回 Router 但名字不像 builder"的 KB 受保护路由装配节点，
 普查器靠签名口径把它走进了账本。**所以 138 从来不是规律，只是那两个小时窗口的读数**；
 引用本节任何一个差额前都要重跑 `--census`，并把 `generated_at` 一起抄下来。
+
+**同一窗口内的第四次复跑（时刻 `2026-10-02 00:57:48+0800`，JSON 只写仓库外临时路径，没动在册工件）**：
+20 个键除 `generated_at` 全等，`mounted_not_in_table` 那 140 条**逐条相同**（对称差为空集），
+`in_table_not_mounted` 仍空、`unresolved` 仍空、壳计数仍 26。
+这条见证的意义不是"140 是规律"（上一段刚说过它两小时前还是 138），而是：
+§1.3 那台新落库的分类器读的挂载侧权威（00:01:19 那份工件）在 §1.3 写完的当刻**没有过期**，
+两份账读的确实是同一张装配图像——比较口径＝`mounted_not_in_table` 集合的对称差，逐条比而不是比长度。
 按 10-02 图像重算下面结论句的比例：140 / 375 ≈ **37.3%**（漏账比例对窗口不敏感，138/370 与 138/373 都是 37% 量级）。
 
 140 条的构成按前三段路径由 `reports/data/api-unregistered-callersite-2026-10-02.json` 的 `by_domain` 键复算，
@@ -131,6 +140,9 @@ CI 门禁只保证 **1 == 文档**，从来不检验 **1 == 2**。生成脚本�
 `reports/data/api-unregistered-callersite-2026-10-02.json`（rev6，`generated_at` = `2026-10-02 00:07:30+0800`），
 它的挂载侧权威由工件键 `authority_for_mounted_side` 指向 `reports/data/api-surface-census-2026-10-02.json`
 （同一窗口，不会出现"今天的差额配昨天的调用者"这种错配）。
+同一份挂载权威在 `2026-10-02 00:52:16+0800` 由**已落库的门禁**复算了一遍，落在
+`reports/data/api-unregistered-callersite-2026-10-02-landed.json`（工件键 `instrument` 点名驱动脚本、`revision` 7）；
+两份的判决集合逐条相等，本节表格因此可以按"两台仪器同一读数"引，而不是按我的手感引。
 
 量法写全，是为了让评审能复算，而不是信我的绿：
 
@@ -138,7 +150,7 @@ CI 门禁只保证 **1 == 文档**，从来不检验 **1 == 2**。生成脚本�
 |---|---|---|
 | 语料分档 | `frontend-ui/src` 下 `.js/.ts/.vue/.jsx/.tsx`，**测试档与非测试档分开**（实测 271 / 82 个文件，工件键 `corpus_src_files` / `corpus_test_files`） | 禁令台账里有一枚合成样例：`frontend-ui/src/modules/expert-alliance/contract/forbidden-revival.test.js:129` 的 planted 数组含 `http.post('/api/ai/expert-chat', body)`。它证明的是"这条端点被明令禁止复活"，不是"有人还在调它"。不分档就把它读成活调用者（rev1 犯过，登记在工件 `revisions` 键） |
 | `baseURL` 双形态 | 业务实例 `frontend-ui/src/api/http.js:13` 写作 `baseURL: '/api'`；Actuator 独立实例是 `frontend-ui/src/api/http.js:324` 的 `createHttpInstance('/actuator')` | 前端字面量是 `/auth/login`，挂载侧是 `/api/auth/login`：只按全路径探会把绝大多数端点判成"无人调用"，这条规则登记在 rev4 工件 `reports/data/api-unregistered-callersite-2026-10-01.json` 的键 `baseurl_relative_rule`（原文："两种形态都探"；rev6 没带这个键，属于工件自述的一处退步，登记在此）。反过来 `/actuator/api/{P}/enable`（同族 `disable`）两条在前端写作 `/api/${id}/enable`（`frontend-ui/src/api/actuator.api.js:40`），恰是靠这档才命中 |
-| 调用位点四类 | 工件键 `判据正则` 存着四条正则原文：`url: '…'` 声明式、"接收者名以 http／axios／request／service／api／instance 收尾"的动词调用、任意 `.getX(`、裸 `get('…')` | 判决取四类中除 `any` 之外的三类（`decl ∪ httpish ∪ bare`），**`any` 只报数不判活**——它会把 `map.get('/some/key')` 这种 Map 取值算成调用（该形状有对照样例盯着） |
+| 调用位点四类 | 工件键 `判据正则` 存着四条正则原文：`url: '…'` 声明式、"接收者名以 http／axios／request／service／api／instance 收尾"的动词调用、任意 `.getX(`、裸 `get('…')` | 判决取四类中除 `any` 之外的三类（`decl ∪ httpish ∪ bare`），**`any` 只报数不判活**——它会把 `map.get('/some/key')` 这种 Map 取值算成调用（该形状有对照样例盯着）。裸调用这一档在 rev6 上是**坏的**：正则字符类多一枚字面右方括号，于是只有落在文件 0 号位的调用才开火，而真实代码里 `fetch(` 前面永远是空白或箭头符号 ⇒ rev6 的 `bare` 读数恒 0（判决未受影响，逐条对读见下文"牙"一节），落库版已修并配夹具针 |
 | 常量展开 | 同文件 `const NAME = '/x/y'` 之后把 `` `${NAME}/z` `` 补成 `/x/y/z` 再探（src 档展开 10 处＝工件键 `constant_expansions_src`，test 档 0） | 这一刀是**判决性**的：载体 `frontend-ui/src/api/sso.api.js:13` 的 `const BASE = '/enterprise/sso'` 让 6 条 `/api/enterprise/sso/*` 端点从不命中全部转 LIVE（例证 `frontend-ui/src/api/sso.api.js:16` 的 ``http.get(`${BASE}/protocols`)``） |
 | 参数化端点不许用父前缀判 | 整条路径翻成参数化正则（工件键 `endpoint_pattern_样例` 存了一条实样），末段锚在引号或行尾 | 截到第一个 `{P}` 去探＝把**父资源**的调用者算到子端点头上。rev5 判 LIVE 的 `/api/kb/documents/{P}/shares`、`/api/system/user/{P}/depts`、`/api/alliance/tasks/{P}/qa` 三条正是这种假阳。rev6 把两档并报送（`live_endpoint_count` 21 对 `live_parent_count` 25），多出的 4 条逐条点名在 `parent_only_paths`，不静默。其中 qa 那条有第二口径反证：`frontend-ui/src/views/expert/AllianceTaskView.vue:422` 的注释明写"后端 registry 无 POST /alliance/tasks/:id/qa（原 askAllianceTaskQa 已随假端点撤除）" |
 
@@ -158,13 +170,53 @@ CI 门禁只保证 **1 == 文档**，从来不检验 **1 == 2**。生成脚本�
 rev6 没有复算这一键，所以引用它请连"它是上一版工件的读数"一起引。
 
 **这台仪器的牙（如实登记）**：
-- 分类驱动**没有落库**（它在仓库外的临时目录里，文件名 `unreg_classify_rev6.py`），因此**没牙、不许接 CI**；
-  它的复算入口是 `python <该文件> reports/data/api-surface-census-2026-10-02.json reports/data/api-unregistered-callersite-2026-10-02.json`（cwd 必须是仓根，工件路径是相对路径；语料遍历用的是绝对根，这是 rev3.5 崩过一次之后改的）。
+- **rev6 的驱动没有落库**（仓库外临时目录的 `unreg_classify_rev6.py`），当时**没牙、不许接 CI**；
+  它当时的复算入口是 `python <该文件> reports/data/api-surface-census-2026-10-02.json reports/data/api-unregistered-callersite-2026-10-02.json`（cwd 必须是仓根，工件路径是相对路径；语料遍历用的是绝对根，这是 rev3.5 崩过一次之后改的）。
 - 装机器件自带三道装载期断言（非空判据正则集、`frontend-ui/src/api/auth.api.js` 必须在语料里、`/auth/login` 正对照必须开火），
   任一不满足即 rc=1 且不写工件；rev3.6 那次还撞出"分母硬钉 300"的手感断言，已改成结构断言。
-- 转成常驻门禁（含 `--selftest`）是本轮之后的活：把上面五行"环节"每一行都配一枚变异体——
-  合档语料 ⇒ `/api/ai/expert-chat` 必须转 LIVE；撤 `baseURL` 双形态 ⇒ auth 8 条必须全掉；撤常量展开 ⇒ sso 6 条必须全掉；
-  退回父前缀探针 ⇒ `parent_only_paths` 必须变空（即 4 条假阳被静默收下）。四枚中任何一枚打不红，就是针坏而不是账稳。
+
+**已落库为常驻门禁（本节写完的同一轮，取代上一段"转成常驻门禁是本轮之后的活"）**：
+`scripts/gate/classify-unregistered-endpoints.py`。三种模式——`--selftest`（夹具＋变异体）、
+`--census PATH --check`（只验仪器自身不变量，债务按咨询口径打印、rc 不由债务决定）、
+`--census PATH --json PATH`（产账，产账前先跑八条不变量，任一红即拒绝写出）。
+复算入口（cwd＝仓根）：
+
+```
+python scripts/gate/classify-unregistered-endpoints.py --selftest
+python scripts/gate/classify-unregistered-endpoints.py --census reports/data/api-surface-census-2026-10-02.json --check --show-lists
+python scripts/gate/classify-unregistered-endpoints.py --census reports/data/api-surface-census-2026-10-02.json --json reports/data/api-unregistered-callersite-2026-10-02-landed.json
+```
+
+落库这一刀**当场抓出一枚 rev6 的针洞**，这就是"没落库的仪器不算证据"的实证：
+
+- 缺陷：`bare` 那类正则的字符类写成了 `[^\w.]]`——类本身在第一个 `]` 就闭合，多出来的那枚成了**字面 `]`**，
+  于是整条判据实际要求 `]fetch(` 这种形状；唯一还能开火的路径是 `(?:^|…)` 的 `^` 支，即**只有位于文件 0 号的裸调用才被数到**。
+  真实前端代码里 `fetch(` 前面永远是空白或 `=>`，所以 rev6 的 `bare` 档在真语料上恒为 0。
+- 影响面量出来了，不是猜的（两份工件对读：rev6 时刻 `2026-10-02 00:07:30+0800`，
+  落库版时刻 `2026-10-02 00:52:16+0800`，同向对比脚本读数只在 stdout）：
+  **判决一条没变**——`mounted_not_in_table_len` 140、`live_endpoint_count` 21、`live_parent_count` 25、
+  `zero_live_endpoint` 119、`test_only_paths` 1 条、语料 271／82、展开 10／0 全等，
+  端点档 LIVE **集合**逐条相等（`parent_only_paths` 四条同）；变的是宽档的 `bare` 计数
+  （`/actuator/api/{P}/enable` 与同族 `disable` 各 0→2，`/api/alliance/tasks/{P}/qa` 的 parent 档 0→1）。
+  ⇒ 上一节那张判决表**不需要改写**，但 rev6 报出的 `bare` 读数不可引用。
+- 顺带量出**第四种调用形态**（此前任何档都没真数过它）：两处直接用 `fetch()` 打绝对 `/api/…` 字面量、绕过 `http` 实例的位点——
+  `frontend-ui/src/api/alliance.api.js:58`（`/api/experts/debate`）与 `:151`（`/api/alliance/tasks/${id}/logs/stream`，流式）。
+  这两条路径都不在本次那 140 条里（现量：按 `/api/experts`、`/api/alliance/tasks` 前缀在未在册清单里各查得 0 条与 1 条，
+  那 1 条即 qa 那条父前缀假阳），所以它们不是"漏判的活调用者"，而是一条**登记**：
+  以后凡是绕过 `http` 实例的调用，只可能靠 `bare` 档进账，`bare` 坏掉就等于这一族整体隐身。
+- 夹具里钉死了这一枚：`--selftest` 的 T1 现含 9 例形状，其中
+  `const f = () => fetch('/misc/bare-call')`（`fetch` 不在 0 号位）期望 `bare = 1`——把正则改回 `[^\w.]]` 这格必红。
+
+`--selftest` 的 15 例（9 正对照／不变量＋6 变异体）逐例读数同样只在 stdout，复算命令即上面第一条；
+本节先前要求的那四枚变异体已全部落地并各自开火：合档语料 ⇒ `/api/ai/expert-chat` 转 LIVE（M1）、
+撤 `baseURL` 双形态 ⇒ auth／sso／actuator 四档掉回数点名（M2）、撤常量展开 ⇒ sso 模板拼接判零命中（M3）、
+退回父前缀判决 ⇒ `parent_only` 变空且 4 条假阳被静默收下（M4）；另两枚是本轮新增的判据面：
+撤尾锚 ⇒ `/alliance/tasks/${id}/logs` 的调用者被算到列表端点头上（M5）、把 `any` 放进判决 ⇒ Map 取值算成调用者（M6）。
+变异体是"撤通道"型的参数翻转（不是改源码），所以它们证明的是**判决挂在通道上**，不是"源码永不变坏"。
+
+**仍未接线**：这道门禁故意不进 `scripts/gate/check-all.ps1`、不进 CI——
+判决口径要等裁决点 2 与 4 落定，否则门禁会把待裁决项判成缺陷（`--check` 因此只把仪器自身不变量决定 rc，
+债务条数按咨询口径打印）。
 
 ### 1.4 装配侧自己也有"两个源"：从未被挂上的 builder（比"未在册"更严重一档）
 
@@ -191,7 +243,9 @@ rev6 没有复算这一键，所以引用它请连"它是上一版工件的读�
 死 builder 里的 22 处该删不该接，属裁决点 2 的邻域：**approvers 那 7 处直接删**（有等价挂载），
 `api_permission`／`batch_operation` 那 15 处要么补 `.merge()` 接线（＝新功能上线，需产品点头），要么连模块一起退役。
 
-**这台仪器的牙**：与 §1.3 同——驱动未落库 ⇒ 没牙、不许接 CI。它的形状判据有两处已知盲区要登记：
+**这台仪器的牙**：这台**驱动仍未落库**（仓库外临时目录的 `dead_builders_scan.py`）⇒ 没牙、不许接 CI；
+§1.3 那台的驱动本轮已经落库，并且落库当场抓出一枚 rev6 的正则针洞（见该节"牙"一节），
+所以"未落库的仪器不算证据"这句在本仓不是口号，是有账面后果的。它的形状判据有两处已知盲区要登记：
 (a) 分母按名字后缀筛（`router|routes`），所以 69 个名字里含 `protected_kb_router` 这类"不像 builder 但确实返回 Router"的函数，
    而 `fn endpoints_api() -> Router` 这种不带后缀的名字**根本不在这把尺子的语料里**——它与 §三 那行"按签名在册"是同一课，
    常驻化时必须复用普查器的签名判据而不是另起一套名字判据；

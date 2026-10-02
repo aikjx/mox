@@ -13,7 +13,7 @@
 //! 核心算法：
 //! - Kahn 拓扑排序（DAG 执行调度，含环检测）
 //! - DAG 计划生成（基于 task_type 的步骤组合与依赖链）
-//! - 模拟执行引擎（按拓扑顺序逐步执行并融合结果）
+//! - 真实模型咨询 DAG（模型不可用/治理拒绝即失败，不生成固定结论）
 
 use super::experts_common::*;
 use mox_alliance_http_sdk::FusionStrategy;
@@ -217,62 +217,6 @@ pub fn generate_plan(
 // 三、核心算法：计划执行引擎
 // =====================================================================
 
-/// 模拟单步执行，生成基于步骤类型和专家领域的结果
-fn simulate_step_execution(step: &PlanStep, experts: &[ExpertDescriptor]) -> Value {
-    let expert_info = step.expert_id.as_ref().and_then(|eid| {
-        experts.iter().find(|e| e.id == *eid).map(|e| json!({
-            "id": e.id,
-            "name": e.name,
-            "title": e.title,
-        }))
-    });
-
-    let (summary, key_findings) = match step.step_type.as_str() {
-        "intake" => (
-            format!("完成「{}」：已解析任务需求与约束条件", step.name),
-            vec!["需求范围已明确", "关键约束已识别", "成功标准已定义"],
-        ),
-        "research" => (
-            format!("完成「{}」：已收集相关资料与技术方案", step.name),
-            vec!["已检索相关文献", "技术方案对比完成", "最佳实践已整理"],
-        ),
-        "analysis" => (
-            format!("完成「{}」：已完成深度分析与根因定位", step.name),
-            vec!["核心问题已定位", "影响因素已量化", "分析模型已验证"],
-        ),
-        "consult" => (
-            format!("完成「{}」：专家已提供专业咨询建议", step.name),
-            vec!["专家建议已记录", "可行性评估完成", "风险点已标注"],
-        ),
-        "review" => (
-            format!("完成「{}」：交叉评审已完成，方案通过验证", step.name),
-            vec!["评审意见已汇总", "方案一致性已确认", "改进建议已提出"],
-        ),
-        "synthesize" => (
-            format!("完成「{}」：已融合所有专家意见生成最终方案", step.name),
-            vec!["多源意见已融合", "最终方案已生成", "执行路径已明确"],
-        ),
-        "validate" => (
-            format!("完成「{}」：方案验证通过，可进入执行阶段", step.name),
-            vec!["验证用例全部通过", "性能指标达标", "边界条件已覆盖"],
-        ),
-        _ => (
-            format!("完成「{}」", step.name),
-            vec!["步骤执行完成"],
-        ),
-    };
-
-    json!({
-        "step_id": step.step_id,
-        "step_type": step.step_type,
-        "summary": summary,
-        "key_findings": key_findings,
-        "expert": expert_info,
-        "confidence": 0.85,
-        "executed_at": now_iso(),
-    })
-}
-
 /// 将任意形态的融合策略字符串解析为协议层 `FusionStrategy` 枚举。
 ///
 /// 兼容三类输入，防止新旧命名漂移：
@@ -439,93 +383,91 @@ fn fuse_results(step_results: &[Value], fusion_strategy: &str) -> Value {
     })
 }
 
-/// 执行已有计划（按 DAG 拓扑顺序）
-/// 使用 Kahn 算法排序，逐步模拟执行，更新步骤状态与时间戳。
-/// 返回执行结果 Value。
-pub fn execute_plan(plan: &mut CollaborationPlan, step_ids: Option<Vec<String>>) -> Value {
+/// Execute actual model analysis in dependency order. No fabricated evidence or timing.
+/// This is a consultation DAG; external actions require a separate verified tool executor.
+pub async fn execute_plan(
+    plan: &mut CollaborationPlan,
+    step_ids: Option<Vec<String>>,
+    experts: &[ExpertDescriptor],
+) -> Value {
     let start = std::time::Instant::now();
     let execution_id = gen_id("exec");
-
-    // 拓扑排序
-    let order = match topological_sort(&plan.steps) {
-        Ok(o) => o,
-        Err(e) => {
-            return json!({
-                "plan_id": plan.plan_id,
-                "execution_id": execution_id,
-                "status": "failed",
-                "error": format!("topological sort failed: {}", e),
-                "steps_executed": [],
-                "steps_total": plan.steps.len(),
-                "overall_status": "failed",
-                "duration_ms": 0,
-            });
-        }
-    };
-
-    // 过滤要执行的步骤
-    let execute_set: Option<std::collections::HashSet<String>> = step_ids.map(|ids| ids.into_iter().collect());
-
-    plan.status = "running".to_string();
-    plan.updated_at = now_iso();
-
-    let mut steps_executed: Vec<Value> = Vec::new();
-    let mut step_results: Vec<Value> = Vec::new();
-    let mut completed_count = 0usize;
-
-    for step_id in &order {
-        let should_execute = execute_set.as_ref().map(|set| set.contains(step_id)).unwrap_or(true);
-        if !should_execute {
-            continue;
-        }
-        // 找到并执行该步骤
-        if let Some(step) = plan.steps.iter_mut().find(|s| s.step_id == *step_id) {
-            let step_started = now_iso();
-            step.status = "running".to_string();
-            step.started_at = Some(step_started.clone());
-
-            // 模拟执行（需要专家信息，从 plan metadata 或空列表）
-            let result = simulate_step_execution(step, &[]);
-            step.result = Some(result.clone());
-            step.status = "completed".to_string();
+    let order = topological_sort(&plan.steps);
+    let selected = step_ids.map(|ids| ids.into_iter().collect::<std::collections::HashSet<_>>());
+    let mut error = order.as_ref().err().cloned();
+    if selected.as_ref().is_some_and(|ids| {
+        ids.is_empty() || ids.iter().any(|id| !plan.steps.iter().any(|step| &step.step_id == id))
+    }) {
+        error = Some("Unknown or empty step selection".into());
+    }
+    if plan.steps.is_empty() || experts.is_empty() {
+        error = Some("A nonempty plan and real enabled experts are required".into());
+    }
+    let mut executed = Vec::new();
+    let mut results = Vec::new();
+    plan.status = "running".into();
+    if error.is_none() {
+        for id in order.unwrap_or_default() {
+            if selected.as_ref().is_some_and(|ids| !ids.contains(&id)) {
+                continue;
+            }
+            let index = plan.steps.iter().position(|step| step.step_id == id).unwrap();
+            if plan.steps[index].depends_on.iter().any(|dependency| {
+                !plan.steps.iter().any(|step| {
+                    &step.step_id == dependency
+                        && step.status == "completed"
+                        && step.result.is_some()
+                })
+            }) {
+                error = Some(format!("Dependencies are not completed: {id}"));
+                break;
+            }
+            let expert = match &plan.steps[index].expert_id {
+                Some(id) => experts.iter().find(|expert| &expert.id == id && expert.enabled),
+                None => experts.iter().find(|expert| expert.enabled),
+            };
+            let Some(expert) = expert else {
+                error = Some(format!("Assigned expert is unavailable: {id}"));
+                break;
+            };
+            let step = &mut plan.steps[index];
+            step.status = "running".into();
+            step.started_at = Some(now_iso());
+            let step_start = std::time::Instant::now();
+            let question = format!("Task: {}\nAnalysis step: {}\n{}\nPrevious real responses: {}\nProvide analysis only. Never claim external actions, tests, searches or deployment have been performed without evidence.",
+                plan.description, step.name, step.description, json!(results));
+            let answer =
+                super::experts_collaboration::generate_expert_answer(expert, &question).await;
+            let failed = answer["status"] == "failed" || answer["vetoed"] == true;
             step.completed_at = Some(now_iso());
-
-            let duration_ms = 10 + (completed_count as u64) * 5; // 模拟耗时
-            steps_executed.push(json!({
-                "step_id": step.step_id,
-                "name": step.name,
-                "status": "completed",
-                "result": result,
-                "duration_ms": duration_ms,
-            }));
-            step_results.push(result);
-            completed_count += 1;
+            step.status = if failed { "failed" } else { "completed" }.into();
+            step.result = Some(answer.clone());
+            executed.push(json!({"step_id": id, "name": step.name, "status": step.status,
+                "duration_ms": step_start.elapsed().as_millis() as u64, "result": answer}));
+            if failed {
+                error = Some("Real consultation failed or governance rejected the response".into());
+                break;
+            }
+            results.push(json!({"summary": answer["solution"], "key_findings": [answer["analysis"]],
+                "confidence": answer["confidence"], "source": answer["source"], "evidence_kind": "model_response"}));
         }
     }
-
-    let all_completed = completed_count == plan.steps.len()
-        || execute_set.is_some(); // 部分执行也算完成指定部分
-    let overall_status = if all_completed { "completed" } else { "partial" };
-
-    if all_completed && execute_set.is_none() {
-        plan.status = "completed".to_string();
+    let all_completed = plan.steps.iter().all(|step| step.status == "completed");
+    plan.status = if error.is_some() {
+        "failed"
+    } else if all_completed {
+        "completed"
+    } else {
+        "partial"
     }
+    .into();
     plan.updated_at = now_iso();
-
-    let final_result = fuse_results(&step_results, &plan.fusion_strategy);
-    let duration_ms = start.elapsed().as_millis() as u64;
-
-    json!({
-        "plan_id": plan.plan_id,
-        "execution_id": execution_id,
-        "status": overall_status,
-        "steps_executed": steps_executed,
-        "steps_total": plan.steps.len(),
-        "overall_status": overall_status,
-        "completed_at": now_iso(),
-        "duration_ms": duration_ms,
-        "final_result": final_result,
-    })
+    let final_result =
+        if error.is_none() { Some(fuse_results(&results, &plan.fusion_strategy)) } else { None };
+    json!({"plan_id": plan.plan_id, "execution_id": execution_id, "status": plan.status,
+        "overall_status": plan.status, "steps_executed": executed, "steps_total": plan.steps.len(),
+        "error": error, "duration_ms": start.elapsed().as_millis() as u64,
+        "final_result": final_result, "evidence_kind": "model_response"})
 }
 
 // =====================================================================
@@ -605,8 +547,9 @@ async fn orchestrate(
     // 生成计划
     let mut plan = generate_plan(&body.task, &task_type, &matched_experts, &fusion_strategy);
 
-    // 执行计划
-    let exec_result = execute_plan(&mut plan, None);
+    plan.metadata.insert("tenant_id".into(), json!(tenant));
+    // 执行真实咨询 DAG
+    let exec_result = execute_plan(&mut plan, None, &matched_experts).await;
 
     // 存入 plans
     {
@@ -620,9 +563,9 @@ async fn orchestrate(
         execution_id: exec_result["execution_id"].as_str().unwrap_or("unknown").to_string(),
         plan_id: plan.plan_id.clone(),
         task_type: task_type.clone(),
-        status: "completed".to_string(),
+        status: plan.status.clone(),
         expert_ids: matched_experts.iter().map(|e| e.id.clone()).collect(),
-        steps_completed: plan.steps.len() as u32,
+        steps_completed: plan.steps.iter().filter(|step| step.status == "completed").count() as u32,
         steps_total: plan.steps.len() as u32,
         result_summary: exec_result["final_result"]["summary"].as_str().unwrap_or("").to_string(),
         result: Some(exec_result["final_result"].clone()),
@@ -658,8 +601,8 @@ async fn orchestrate(
             "steps": plan_steps_summary,
         },
         "execution": {
-            "status": "completed",
-            "steps_completed": plan.steps.len(),
+            "status": plan.status,
+            "steps_completed": plan.steps.iter().filter(|step| step.status == "completed").count(),
             "steps_total": plan.steps.len(),
             "duration_ms": duration_ms,
         },
@@ -697,7 +640,8 @@ async fn generate_plan_handler(
         }
     };
 
-    let plan = generate_plan(&body.task, &task_type, &experts, &fusion_strategy);
+    let mut plan = generate_plan(&body.task, &task_type, &experts, &fusion_strategy);
+    plan.metadata.insert("tenant_id".into(), json!(tenant));
 
     // 存入 plans
     {
@@ -739,13 +683,31 @@ async fn execute_plan_handler(
     TenantId(tenant): TenantId,
     Json(body): Json<ExecutePlanBody>,
 ) -> ApiResponse<Value> {
-    let mut plans = state.plans.lock();
-    let plan = match plans.get_mut(&body.plan_id) {
-        Some(p) => p,
-        None => return err(404, format!("plan not found: {}", body.plan_id)),
+    let mut plan = {
+        let mut plans = state.plans.lock();
+        let Some(plan) = plans.get_mut(&body.plan_id) else {
+            return err(404, "plan not found");
+        };
+        if plan.metadata.get("tenant_id").and_then(Value::as_str) != Some(tenant.as_str()) {
+            return err(404, "plan not found");
+        }
+        if plan.status == "running" {
+            return err(409, "plan is already running");
+        }
+        plan.status = "running".into();
+        plan.clone()
     };
-
-    let result = execute_plan(plan, body.step_ids);
+    let experts = {
+        let all = state.registry.lock();
+        all.get(tenant.as_str())
+            .into_iter()
+            .flat_map(|registry| registry.values())
+            .filter(|expert| expert.enabled && plan.expert_ids.contains(&expert.id))
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+    let result = execute_plan(&mut plan, body.step_ids, &experts).await;
+    state.plans.lock().insert(plan.plan_id.clone(), plan.clone());
 
     // 记录历史
     let record = OrchestrationRecord {
@@ -754,7 +716,7 @@ async fn execute_plan_handler(
         task_type: plan.metadata.get("task_type").and_then(|v| v.as_str()).unwrap_or("general").to_string(),
         status: result["overall_status"].as_str().unwrap_or("unknown").to_string(),
         expert_ids: plan.expert_ids.clone(),
-        steps_completed: result["steps_executed"].as_array().map(|a| a.len() as u32).unwrap_or(0),
+        steps_completed: plan.steps.iter().filter(|step| step.status == "completed").count() as u32,
         steps_total: plan.steps.len() as u32,
         result_summary: result["final_result"]["summary"].as_str().unwrap_or("").to_string(),
         result: Some(result["final_result"].clone()),
@@ -762,7 +724,6 @@ async fn execute_plan_handler(
         completed_at: Some(now_iso()),
         duration_ms: result["duration_ms"].as_u64().unwrap_or(0),
     };
-    drop(plans); // 释放锁
     {
         let mut history = state.orchestration_history.lock();
         history.push(record);
@@ -772,9 +733,22 @@ async fn execute_plan_handler(
 }
 
 /// 4. GET /api/experts/orchestration/stats — 编排统计
-async fn orchestration_stats(State(state): State<Arc<ExpertsSharedState>>) -> ApiResponse<Value> {
-    let plans = state.plans.lock();
-    let history = state.orchestration_history.lock();
+async fn orchestration_stats(
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+) -> ApiResponse<Value> {
+    let all_plans = state.plans.lock();
+    let plans: HashMap<_, _> = all_plans
+        .iter()
+        .filter(|(_, plan)| {
+            plan.metadata.get("tenant_id").and_then(Value::as_str) == Some(tenant.as_str())
+        })
+        .collect();
+    let all_history = state.orchestration_history.lock();
+    let history: Vec<_> = all_history
+        .iter()
+        .filter(|record| plans.contains_key(&record.plan_id))
+        .collect();
 
     let total_plans = plans.len();
     let plans_draft = plans.values().filter(|p| p.status == "draft").count();
@@ -842,95 +816,8 @@ async fn orchestration_stats(State(state): State<Arc<ExpertsSharedState>>) -> Ap
 
 /// 5. GET /api/experts/orchestration/plugins — 编排插件列表
 async fn orchestration_plugins() -> ApiResponse<Value> {
-    let plugins = vec![
-        json!({
-            "id": "expert-matcher",
-            "name": "专家匹配器",
-            "version": "2.0.0",
-            "description": "基于 TF-IDF + Jaccard 相似度的智能专家匹配引擎",
-            "type": "step",
-            "capabilities": ["auto_match", "score_ranking", "filter_by_skill", "filter_by_domain"],
-            "status": "active",
-            "config_schema": {
-                "match_threshold": {"type": "number", "default": 0.3, "min": 0.0, "max": 1.0},
-                "max_candidates": {"type": "integer", "default": 10, "min": 1, "max": 100},
-            },
-        }),
-        json!({
-            "id": "dag-scheduler",
-            "name": "DAG 调度器",
-            "version": "2.0.0",
-            "description": "基于 Kahn 拓扑排序的 DAG 步骤调度引擎，支持环检测与并行执行",
-            "type": "step",
-            "capabilities": ["topological_sort", "cycle_detection", "parallel_execution", "dependency_resolution"],
-            "status": "active",
-            "config_schema": {
-                "max_parallel": {"type": "integer", "default": 4, "min": 1, "max": 16},
-                "retry_on_failure": {"type": "boolean", "default": false},
-            },
-        }),
-        json!({
-            "id": "fusion-weighted",
-            "name": "加权融合器",
-            "version": "2.0.0",
-            "description": "按专家匹配度与评分加权融合多源结果",
-            "type": "fusion",
-            "capabilities": ["weighted_average", "confidence_calibration", "expert_weighting"],
-            "status": "active",
-            "config_schema": {
-                "rating_weight": {"type": "number", "default": 0.5, "min": 0.0, "max": 1.0},
-                "match_weight": {"type": "number", "default": 0.5, "min": 0.0, "max": 1.0},
-            },
-        }),
-        json!({
-            "id": "fusion-majority",
-            "name": "多数投票融合器",
-            "version": "2.0.0",
-            "description": "基于多数投票的结果融合，适用于分类与决策场景",
-            "type": "fusion",
-            "capabilities": ["majority_vote", "tie_breaking", "conflict_detection"],
-            "status": "active",
-            "config_schema": {
-                "quorum": {"type": "number", "default": 0.5, "min": 0.0, "max": 1.0},
-                "tie_break_strategy": {"type": "string", "enum": ["first", "highest_rated", "random"], "default": "highest_rated"},
-            },
-        }),
-        json!({
-            "id": "result-validator",
-            "name": "结果验证器",
-            "version": "2.0.0",
-            "description": "对编排结果进行一致性、完整性与质量校验",
-            "type": "step",
-            "capabilities": ["consistency_check", "completeness_check", "quality_scoring", "anomaly_detection"],
-            "status": "active",
-            "config_schema": {
-                "min_confidence": {"type": "number", "default": 0.6, "min": 0.0, "max": 1.0},
-                "strict_mode": {"type": "boolean", "default": false},
-            },
-        }),
-        json!({
-            "id": "notification-webhook",
-            "name": "Webhook 通知器",
-            "version": "2.0.0",
-            "description": "编排生命周期事件的 Webhook 通知插件",
-            "type": "notification",
-            "capabilities": ["plan_created", "step_completed", "execution_finished", "failure_alert"],
-            "status": "active",
-            "config_schema": {
-                "webhook_url": {"type": "string", "format": "uri"},
-                "events": {"type": "array", "items": {"type": "string"}},
-                "retry_count": {"type": "integer", "default": 3, "min": 0, "max": 10},
-            },
-        }),
-    ];
-
-    let categories = vec!["step", "fusion", "notification"];
-
-    ok(json!({
-        "plugins": plugins,
-        "total": plugins.len(),
-        "categories": categories,
-    }))
+    ok(json!({"plugins": [], "total": 0, "categories": [],
+        "available": false, "reason": "No executable plugin registry is connected"}))
 }
 
 /// 6. GET /api/experts/orchestration/history — 编排执行历史
@@ -944,8 +831,18 @@ async fn orchestration_history(
     let status_filter = params.get("status").cloned();
     let task_type_filter = params.get("task_type").cloned();
 
+    let visible_plans = state
+        .plans
+        .lock()
+        .values()
+        .filter(|plan| {
+            plan.metadata.get("tenant_id").and_then(Value::as_str) == Some(tenant.as_str())
+        })
+        .map(|plan| plan.plan_id.clone())
+        .collect::<std::collections::HashSet<_>>();
     let history = state.orchestration_history.lock();
     let mut filtered: Vec<&OrchestrationRecord> = history.iter()
+        .filter(|record| visible_plans.contains(&record.plan_id))
         .filter(|r| status_filter.as_ref().map(|s| r.status == *s).unwrap_or(true))
         .filter(|r| task_type_filter.as_ref().map(|t| r.task_type == *t).unwrap_or(true))
         .collect();
@@ -1101,63 +998,24 @@ mod tests {
         assert!(idx_s4 > idx_s3);
     }
 
-    /// 测试3：plan 执行 — 验证步骤状态更新与结果生成
-    #[test]
-    fn test_execute_plan() {
-        let experts = make_test_experts();
-        let mut plan = generate_plan("测试任务", "analysis", &experts, "weighted");
-        assert_eq!(plan.status, "draft");
-
-        let result = execute_plan(&mut plan, None);
-
-        assert_eq!(result["overall_status"], "completed");
-        assert_eq!(result["status"], "completed");
-        let steps_executed = result["steps_executed"].as_array().unwrap();
-        assert_eq!(steps_executed.len(), plan.steps.len());
-        // 每步都有结果
-        for step_result in steps_executed {
-            assert_eq!(step_result["status"], "completed");
-            assert!(step_result["result"].is_object());
-        }
-        // 最终结果存在
-        assert!(result["final_result"].is_object());
-        assert!(result["final_result"]["summary"].is_string());
-        assert!(result["final_result"]["confidence"].is_number());
-        // 计划状态已更新
-        assert_eq!(plan.status, "completed");
-        // 所有步骤状态为 completed
-        assert!(plan.steps.iter().all(|s| s.status == "completed"));
-        assert!(plan.steps.iter().all(|s| s.completed_at.is_some()));
+    #[tokio::test]
+    async fn test_execute_plan() {
+        let mut plan = generate_plan("测试任务", "analysis", &[], "weighted");
+        let result = execute_plan(&mut plan, None, &[]).await;
+        assert_eq!(result["overall_status"], "failed");
+        assert_eq!(plan.status, "failed");
+        assert!(result["final_result"].is_null());
+        assert!(plan.steps.iter().all(|step| step.status != "completed"));
     }
 
-    /// 测试4：orchestrate 一键编排 — 验证完整流程（纯函数组合验证）
-    #[test]
-    fn test_orchestrate_flow() {
+    #[tokio::test]
+    async fn test_orchestrate_flow() {
         let experts = make_test_experts();
-        // 模拟 orchestrate 的核心流程：匹配 -> 生成计划 -> 执行 -> 融合
-        let task = "分析系统架构瓶颈";
-        let task_type = "analysis";
-        let fusion = "weighted";
-
-        // 匹配
-        let scored: Vec<(&ExpertDescriptor, f64)> = experts.iter()
-            .map(|e| (e, compute_match_score(task, e)))
-            .collect();
-        assert!(!scored.is_empty());
-
-        // 生成计划
-        let mut plan = generate_plan(task, task_type, &experts, fusion);
-        assert!(!plan.steps.is_empty());
-
-        // 执行
-        let result = execute_plan(&mut plan, None);
-        assert_eq!(result["overall_status"], "completed");
-
-        // 验证融合结果（旧式 "weighted" 经 parse 解析为 Weighted，输出新式展示串）
-        let final_result = &result["final_result"];
-        assert_eq!(final_result["fusion_strategy"], "weighted_voting");
-        assert!(final_result["confidence"].as_f64().unwrap() > 0.0);
-        assert!(!final_result["key_findings"].as_array().unwrap().is_empty());
+        let mut plan = generate_plan("分析系统架构瓶颈", "analysis", &experts, "weighted");
+        let result = execute_plan(&mut plan, Some(vec!["nonexistent-step".into()]), &experts).await;
+        assert_eq!(result["overall_status"], "failed");
+        assert!(result["steps_executed"].as_array().unwrap().is_empty());
+        assert!(result["final_result"].is_null());
     }
 
     /// 测试5：fuse_results 结构完整性 + 旧式串兼容

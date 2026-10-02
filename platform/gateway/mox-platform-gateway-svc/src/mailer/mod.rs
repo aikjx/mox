@@ -1,14 +1,18 @@
 //! 邮件服务模块
 //!
 //! 支持：SMTP邮件发送 / HTML邮件 / 附件 / 邮件模板 / 邮件队列
-//! 基于标准库TCP实现SMTP协议，无需额外依赖
+//! 使用 lettre 的真实 SMTP、必需 TLS/STARTTLS、认证和 MIME 编码。
 
 pub mod api;
 
+use base64::Engine;
+use lettre::{
+    message::{header::ContentType, Attachment, Mailbox, MultiPart, SinglePart},
+    transport::smtp::authentication::Credentials,
+    Message as MimeMessage, SmtpTransport, Transport,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, Write};
-use std::net::TcpStream;
 
 /// SMTP配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -185,7 +189,7 @@ pub fn render_template(template: &str, vars: &HashMap<String, String>) -> String
     result
 }
 
-/// SMTP客户端（简化实现）
+/// 真实 SMTP 客户端；成功表示上游 SMTP 接受，不表示收件人已阅读。
 pub struct SmtpClient {
     config: SmtpConfig,
 }
@@ -195,80 +199,82 @@ impl SmtpClient {
         Self { config }
     }
 
-    /// 发送邮件（简化SMTP实现，生产环境建议使用lettre库）
     pub fn send(&self, message: &EmailMessage) -> Result<SendResult, String> {
-        let now = chrono::Utc::now().to_rfc3339();
-
-        // Mock模式：如果host是example.com，直接返回成功
-        if self.config.host == "smtp.example.com" || self.config.password.is_empty() {
-            return Ok(SendResult {
-                success: true,
-                message_id: message.message_id.clone(),
-                error: None,
-                sent_at: now,
-            });
+        let config = &self.config;
+        if config.host.trim().is_empty() || config.host == "smtp.example.com" {
+            return Err("SMTP server is not configured".into());
         }
-
-        // 真实SMTP发送（简化实现）
-        let address = format!("{}:{}", self.config.host, self.config.port);
-        let mut stream = TcpStream::connect(&address)
-            .map_err(|e| format!("连接SMTP服务器失败: {}", e))?;
-
-        let mut reader = BufReader::new(stream.try_clone().map_err(|e| e.to_string())?);
-
-        // 读取欢迎信息
-        let mut response = String::new();
-        reader.read_line(&mut response).map_err(|e| e.to_string())?;
-
-        // EHLO
-        writeln!(stream, "EHLO mox.local").map_err(|e| e.to_string())?;
-        response.clear();
-        reader.read_line(&mut response).map_err(|e| e.to_string())?;
-
-        // MAIL FROM
-        writeln!(stream, "MAIL FROM:<{}>", self.config.from_address).map_err(|e| e.to_string())?;
-        response.clear();
-        reader.read_line(&mut response).map_err(|e| e.to_string())?;
-
-        // RCPT TO
-        for to in &message.to {
-            writeln!(stream, "RCPT TO:<{}>", to).map_err(|e| e.to_string())?;
-            response.clear();
-            reader.read_line(&mut response).map_err(|e| e.to_string())?;
+        if config.username.is_empty() != config.password.is_empty() {
+            return Err("SMTP username and password must be configured together".into());
         }
-
-        // DATA
-        writeln!(stream, "DATA").map_err(|e| e.to_string())?;
-        response.clear();
-        reader.read_line(&mut response).map_err(|e| e.to_string())?;
-
-        // 邮件内容
-        let from_name = self.config.from_name.as_deref().unwrap_or("MOX");
-        writeln!(stream, "From: {} <{}>", from_name, self.config.from_address).map_err(|e| e.to_string())?;
-        writeln!(stream, "To: {}", message.to.join(", ")).map_err(|e| e.to_string())?;
-        writeln!(stream, "Subject: {}", message.subject).map_err(|e| e.to_string())?;
-        writeln!(stream, "MIME-Version: 1.0").map_err(|e| e.to_string())?;
-        writeln!(stream, "Content-Type: text/html; charset=UTF-8").map_err(|e| e.to_string())?;
-        writeln!(stream).map_err(|e| e.to_string())?;
-
-        if let Some(html) = &message.html_body {
-            writeln!(stream, "{}", html).map_err(|e| e.to_string())?;
-        } else if let Some(text) = &message.text_body {
-            writeln!(stream, "{}", text).map_err(|e| e.to_string())?;
+        if config.port == 0 || !(1..=120).contains(&config.timeout_seconds) {
+            return Err("Invalid SMTP port or timeout (1..120 seconds)".into());
         }
-
-        writeln!(stream, ".").map_err(|e| e.to_string())?;
-        response.clear();
-        reader.read_line(&mut response).map_err(|e| e.to_string())?;
-
-        // QUIT
-        writeln!(stream, "QUIT").map_err(|e| e.to_string())?;
-
+        if config.use_tls == config.use_starttls {
+            return Err("Select exactly one of TLS or required STARTTLS".into());
+        }
+        if message.to.is_empty() || message.subject.trim().is_empty() {
+            return Err("Recipient and subject are required".into());
+        }
+        if message.headers.as_ref().is_some_and(|headers| !headers.is_empty()) {
+            return Err("Custom SMTP headers are not supported".into());
+        }
+        let mut builder = MimeMessage::builder()
+            .from(Mailbox::new(
+                config.from_name.clone(),
+                config.from_address.parse().map_err(|_| "Invalid sender address")?,
+            ))
+            .subject(&message.subject);
+        for recipient in &message.to {
+            builder = builder.to(recipient.parse().map_err(|_| "Invalid recipient address")?);
+        }
+        for recipient in message.cc.iter().flatten() {
+            builder = builder.cc(recipient.parse().map_err(|_| "Invalid CC address")?);
+        }
+        for recipient in message.bcc.iter().flatten() {
+            builder = builder.bcc(recipient.parse().map_err(|_| "Invalid BCC address")?);
+        }
+        let body = match (&message.text_body, &message.html_body) {
+            (Some(text), Some(html)) => MultiPart::alternative()
+                .singlepart(SinglePart::plain(text.clone()))
+                .singlepart(SinglePart::html(html.clone())),
+            (Some(text), None) => MultiPart::mixed().singlepart(SinglePart::plain(text.clone())),
+            (None, Some(html)) => MultiPart::mixed().singlepart(SinglePart::html(html.clone())),
+            (None, None) => return Err("Email body is required".into()),
+        };
+        let mut mime = MultiPart::mixed().multipart(body);
+        for attachment in message.attachments.iter().flatten() {
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(&attachment.content_base64)
+                .map_err(|_| "Invalid attachment base64")?;
+            let content_type = ContentType::parse(&attachment.content_type)
+                .map_err(|_| "Invalid attachment content type")?;
+            mime = mime
+                .singlepart(Attachment::new(attachment.filename.clone()).body(bytes, content_type));
+        }
+        let email = builder.multipart(mime).map_err(|_| "Invalid MIME message")?;
+        let transport = if config.use_tls {
+            SmtpTransport::relay(&config.host)
+        } else {
+            SmtpTransport::starttls_relay(&config.host)
+        }
+        .map_err(|_| "Invalid SMTP TLS configuration")?;
+        let mut transport = transport
+            .port(config.port)
+            .timeout(Some(std::time::Duration::from_secs(config.timeout_seconds)));
+        if !config.username.is_empty() {
+            transport = transport
+                .credentials(Credentials::new(config.username.clone(), config.password.clone()));
+        }
+        transport
+            .build()
+            .send(&email)
+            .map_err(|error| format!("SMTP delivery failed: {error}"))?;
         Ok(SendResult {
             success: true,
             message_id: message.message_id.clone(),
             error: None,
-            sent_at: now,
+            sent_at: chrono::Utc::now().to_rfc3339(),
         })
     }
 }

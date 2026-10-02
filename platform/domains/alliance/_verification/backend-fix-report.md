@@ -847,3 +847,57 @@ POST /optimal-team）+ POST /rebuild。落库函数 `save_graph_conn`（experts_
 
 - 只改 `13-end-to-end-business-flow.md`（文档）与本报告（追加节）；未改任何 `.rs`/`.vue`/路由/权重。
 - 未跑 cargo/vitest（无代码改动）；事实均对照既有修复报告与 `experts_graph.rs`/`directives/permission.js` 实读核证。
+
+
+---
+
+## A1 多租户（2026-10-01）——租户级数据隔离 + 权限隔离（阶段一已落地）
+
+### 租户模型设计与决策理由
+
+| 维度 | 决策 | 理由（第一性） |
+|---|---|---|
+| 租户注入 | 从可信身份 `UserInfo.tenant_id`（auth 中间件注入 extensions）取租户；`X-Tenant-Id` 头仅做**一致性校验**（须与身份一致，否则 403） | 企业 SaaS 硬安全：租户不可被请求头伪造。前端 JWT 体系不动；无头/无身份→401 而非静默降级，避免越权。单租户部署时所有身份 `tenant_id=default`，行为与现状零回归 |
+| 存储 | SQLite 单文件加 `tenant_id TEXT NOT NULL DEFAULT 'default'` 列，复合主键 `(tenant_id, …)`；非每租户独立库文件 | 复用 N3 已有 schema 迁移框架与 WAL；无连接池/文件管理负担；复合索引满足行级过滤 |
+| schema | `PRAGMA user_version` 由 v1 升 **v2**；存量 v1 库经 `migrate_v1_to_v2()`「建新表→拷贝→删旧表→改名」重建，既有行归 `default` | 保留历史数据兼容；新库由 init_schema 直接建 v2 形状 |
+| 内存态 | `ExpertsSharedState.registry` → `HashMap<TenantId, HashMap<Id, ExpertDescriptor>>`；`graph` → `HashMap<TenantId, ExpertGraph>` | 绕过内存态即绕过隔离，必须分区；读面用静态空投影 `empty_registry()/empty_graph()` 展平，下游 `.values()/.get()` 零改动 |
+| 写面清库 | 原 `DELETE FROM 整表`+重插改为 `DELETE WHERE tenant_id=?` 后只插本租户口 | 多租户下整表 DELETE 会清掉别租户数据，是隔离红线 |
+| RBAC | `ADMIN_ROLES=[super_admin, tenant_admin]` 保持全局；数据过滤按租户；租户内角色为阶段二 | 平台级管理语义不变；enforce_admin 透传 tenant 进审计 |
+| 审计 | `emit_audit` 新增 `tenant: &str` 参，替换原硬编码 `"experts-alliance"`（experts_common.rs:640 附近）；审计 Resource 带 `tenant_id` | 审计可按租户追溯 |
+
+### 阶段一改动文件:行号（关键）
+
+- `alliance/experts_db.rs`：四张表（experts/graph_nodes/graph_edges/graph_meta）加 tenant_id 复合键；`migrate_v1_to_v2()`；所有读写函数（list/get/upsert/delete/save_registry/save_graph/upsert_graph_node/upsert_graph_edge）加 tenant 参与 WHERE 过滤；save_* 改按租户 DELETE。
+- `alliance/experts_common.rs`：`TenantId` 提取器（FromRequestParts，:58-98）；`DEFAULT_TENANT="default"`（:41）；`ExpertsSharedState.registry/graph` per-tenant（:540-609）；`emit_audit` 加 tenant（:728）；`empty_registry/empty_graph` 静态空投影。
+- `alliance/experts_rbac.rs`：enforce/audit_denied 透传 tenant。
+- `alliance/experts_registry.rs` / `experts_graph.rs` / `experts_dispatcher.rs` / `experts_collaboration.rs` / `experts_orchestration.rs` / `experts_session.rs` / `experts_ext.rs`：handler 签名接 `TenantId`，读面按租户取内层；自由函数 `dispatch_task` 加 tenant 首参。
+- `monitor.rs`：专家指标改跨租户聚合（全局 dashboard 语义）。
+- 新增测试：`experts_registry.rs`（3 个租户隔离单测）；`tests/tenant_expert_isolation.rs`（真实 TCP E2E）；既有 `tests/trusted_tenant_http.rs`（租户绑定真实 HTTP，2 测）。
+
+### 真实验证证据（禁止 mock）
+
+证据落盘：`platform/domains/alliance/_verification/a1-e2e-evidence.txt`。
+起真实生产路由器（JWT 中间件 + 租户提取器 + 真实 SQLite），两真实身份各带 `tenant_admin`：
+
+- `tenant-a` POST `/api/experts` → 200，创建 `e2e-a-expert`（架构师·甲）。
+- `tenant-b` POST `/api/experts` → 200，创建 `e2e-b-expert`（数据师·乙）。
+- `tenant-a` GET `/api/experts` → `total:1`，列表**仅含 e2e-a-expert**，不含 e2e-b-expert。
+- `tenant-b` GET `/api/experts` → `total:1`，列表**仅含 e2e-b-expert**，不含 e2e-a-expert。
+- `tenant-a` GET `/api/experts/e2e-b-expert` → **404**（跨租户不可见）。
+- 无 token GET → **401**；tenant-a token 配 `x-tenant-id: tenant-b` → **403**（头伪造被拒）。
+
+单测补充：两租户列表互不可见、默认租户回归（seed_expert 进 default，具名租户看不到）、提取器（无头取身份 tenant / 头与身份冲突 403 / 无身份 401）。
+
+### 测试结果
+
+- `cargo check -p mox-platform-gateway-svc --all-targets`：干净（0 error）。
+- `cargo test -p mox-platform-gateway-svc`：lib 179 passed + 集成 13+7+8+3+1+2，**0 failed**。
+- 修复过程中发现并消除一处 per-tenant 改造引入的自死锁：graph CRUD handler 中 `drop(graph)` 只释放内层引用、外层 `all_g` MutexGuard 仍持有即重锁自身 → 补 `drop(all_g)`。
+
+### 阶段二（方案稿，未硬做，诚实标注）
+
+1. **任务/会话/执行器租户隔离**：当前 `sessions`/`dispatch_records`/`plans`/`orchestration_history` 仍为全局内存态（handler 已接 tenant 但未分区存储）；预约 `resolve_expert_name` 暂跨租户全局查找。需将这些 Map 改 per-tenant 并按租户过滤。
+2. **租户配额**：每租户专家数/并发调度/存储上限，接 dispatcher_config。
+3. **密钥隔离**：每租户独立 API Key / 模型密钥。
+4. **SSO/SAML**：租户级身份源对接，替换单 JWT；`UserInfo.tenant_id` 由 SAML 断言下发。
+5. **租户内 RBAC**：tenant_admin 仅管本租户资源（当前 ADMIN_ROLES 全局）。

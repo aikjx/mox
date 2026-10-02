@@ -531,7 +531,7 @@
               <div class="config-card glass-card">
                 <div class="card-header">
                   <h3 class="card-title"><span class="title-badge">测试</span>Prompt 测试面板</h3>
-                  <el-tag size="small" type="warning" effect="plain">模拟运行</el-tag>
+                  <el-tag size="small" type="warning" effect="plain">本地模板预览</el-tag>
                 </div>
                 <div class="card-body">
                   <div class="prompt-test">
@@ -2079,6 +2079,8 @@ import {
   Folder, Connection, Loading, CircleClose, Close, Clock, Star
 } from '@element-plus/icons-vue'
 import { EXPERT_TYPES } from '@/constants'
+import { getOperators } from '@/api'
+import { allianceApi } from '@/modules/expert-alliance/api/alliance.api'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
@@ -2110,22 +2112,13 @@ const navItems = [
   { key: 'aiModules', icon: '🧩', label: 'AI能力模块配置' }
 ]
 
-// 可用算子列表（模拟）
-const availableOperators = [
-  { key: 'text_analyze', name: '文本分析算子' },
-  { key: 'knowledge_retrieve', name: '知识检索算子' },
-  { key: 'code_review', name: '代码审查算子' },
-  { key: 'data_process', name: '数据处理算子' },
-  { key: 'graph_traverse', name: '图谱遍历算子' },
-  { key: 'reasoning_chain', name: '思维链算子' },
-  { key: 'summary_gen', name: '摘要生成算子' },
-  { key: 'quality_check', name: '质量检查算子' }
-]
+// 可用算子来自真实服务注册表。
+const availableOperators = ref([])
 
 // ========== 状态 ==========
 const activeTab = ref('profile')
 const activeSceneTab = ref('daily')
-const selectedExpertId = ref('default')
+const selectedExpertId = ref('')
 const selectedScenario = ref(null)
 const configVersion = ref('1.0.0')
 const isDirty = ref(false)
@@ -2232,12 +2225,8 @@ const llmModelOptions = {
   custom: ['custom-model']
 }
 
-// 模拟专家列表
-const expertList = ref([
-  { id: 'default', name: '默认专家' },
-  { id: 'arch', name: '架构师小明' },
-  { id: 'algo', name: '算法专家' }
-])
+// 专家来自当前认证租户的注册表。
+const expertList = ref([])
 
 // ========== 配置数据结构 ==========
 const defaultConfig = {
@@ -3003,7 +2992,7 @@ function beforeAvatarUpload(file) {
     ElMessage.warning('只能上传图片文件!')
     return false
   }
-  // 模拟上传
+  // 本地图片预览；随配置草稿保存，不宣称已上传云盘
   const reader = new FileReader()
   reader.onload = (e) => {
     config.profile.avatar = e.target.result
@@ -3086,7 +3075,7 @@ function runPromptTest() {
       const scene = config.prompts.scenes.find(s => s.key === testScene.value)
       prompt = scene?.prompt || ''
     }
-    // 模拟变量替换
+    // 本地模板变量展开，不执行模型或算子
     prompt = prompt
       .replace(/\{\{expert_name\}\}/g, config.profile.name)
       .replace(/\{\{expert_type\}\}/g, expertTypes[config.profile.type] || config.profile.type)
@@ -3489,16 +3478,22 @@ function onFileChange(e) {
 }
 
 // --- 专家管理 ---
-function createNewExpert() {
+async function createNewExpert() {
   const name = '新专家_' + (expertList.value.length + 1)
-  const id = 'expert_' + Date.now().toString(36)
-  expertList.value.push({ id, name })
-  selectedExpertId.value = id
-  // 重置配置为默认
-  Object.assign(config, JSON.parse(JSON.stringify(defaultConfig)))
-  config.profile.name = name
-  ElMessage.success('已创建新专家配置')
+  try {
+    const result = await allianceApi.registerExpert({ name, expertType: 'ai' })
+    if (!result.created || !result.expert?.id) throw new Error('服务未确认专家已创建')
+    const expert = result.expert
+    expertList.value.push(expert)
+    selectedExpertId.value = expert.id
+    Object.assign(config, JSON.parse(JSON.stringify(defaultConfig)))
+    config.profile.name = expert.name
+    ElMessage.success('专家已注册；高级配置仍为待保存草稿')
+  } catch (error) {
+    ElMessage.error(error.message || '专家注册失败')
+  }
 }
+
 
 function copyFromTemplate() {
   ElMessage.error('模板复制接口暂不可用，请稍后重试')
@@ -3611,8 +3606,25 @@ function disconnectGraph() {
   ElMessage.info('已断开图谱连接')
 }
 
+watch(selectedExpertId, id => {
+  const expert = expertList.value.find(item => item.id === id)
+  if (!expert) return
+  config.profile.name = expert.name
+  config.profile.type = expert.expertType || 'ai'
+  config.profile.avatar = expert.avatar || ''
+  config.profile.description = expert.bio || ''
+})
+
 // ========== 初始化 ==========
-onMounted(() => {
+onMounted(async () => {
+  const results = await Promise.allSettled([allianceApi.listExperts({ pageSize: 100 }), getOperators()])
+  if (results[0].status === 'fulfilled') {
+    expertList.value = results[0].value.items
+  } else { ElMessage.error('专家列表读取失败') }
+  if (results[1].status === 'fulfilled' && Array.isArray(results[1].value)) {
+    availableOperators.value = results[1].value.map(operator => ({ key: operator.id, name: operator.name }))
+  } else { ElMessage.error('算子目录读取失败') }
+
   // 默认选中第一个场景
   if (config.scenarios.length) {
     selectedScenario.value = config.scenarios[0].id

@@ -34,16 +34,13 @@ use axum::http::StatusCode;
 // 零、多租户：租户标识（A1，2026-10-01）
 // =====================================================================
 
-/// 默认租户标识：请求未带 `X-Tenant-Id`（或空值）时归入此租户。
-///
-/// 硬约束：无头请求行为与改造前（单租户）完全一致——存量内置专家、历史 SQLite
-/// 数据均归 `default`，保证零回归。
+/// 历史数据及内置专家所属租户；请求授权必须来自可信认证身份。
 pub const DEFAULT_TENANT: &str = "default";
 
 /// 租户标识（A1 多租户行级隔离的第一性硬能力）。
 ///
-/// 来源：HTTP 请求头 `X-Tenant-Id`。无头 / 空串 → [`DEFAULT_TENANT`]。
-/// 取值校验：`[A-Za-z0-9_-]`，长度 ≤ 64；非法 → 400。
+/// 来源：认证中间件注入的 `UserInfo`。缺失身份返回 401，禁用/非法身份返回 403。
+/// 兼容请求头仅能与认证租户一致，不能选择另一个租户。
 /// 内存态注册表/图谱与 SQLite `tenant_id` 列均以此为分区键。
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TenantId(pub String);
@@ -59,7 +56,7 @@ impl<S> FromRequestParts<S> for TenantId
 where
     S: Send + Sync + 'static,
 {
-    // 非法头 → 400；合法/无头 → Ok
+    // 不允许未装配认证的路由从客户端请求头获得租户权限。
     type Rejection = (StatusCode, &'static str);
 
     // 手写 async_trait 展开签名（与 OptionalAuthUser / auth.rs ApiAuth 同策略）
@@ -75,24 +72,23 @@ where
         S: 'async_trait,
     {
         Box::pin(async move {
-            let raw = parts
-                .headers
-                .get("x-tenant-id")
-                .and_then(|v| v.to_str().ok())
-                .map(|s| s.trim().to_string());
-            match raw {
-                None => Ok(TenantId(DEFAULT_TENANT.to_string())),
-                Some(v) if v.is_empty() => Ok(TenantId(DEFAULT_TENANT.to_string())),
-                Some(v) if v.len() <= 64
-                    && v.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') =>
-                {
-                    Ok(TenantId(v))
-                }
-                _ => Err((
-                    StatusCode::BAD_REQUEST,
-                    "invalid X-Tenant-Id: allowed chars [A-Za-z0-9_-], max length 64",
-                )),
+            let user = parts.extensions.get::<UserInfo>()
+                .ok_or((StatusCode::UNAUTHORIZED, "trusted identity required"))?;
+            let tenant = &user.tenant_id;
+            if !user.enabled || user.id.trim().is_empty() || tenant.is_empty()
+                || tenant.len() > 64
+                || !tenant.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+            {
+                return Err((StatusCode::FORBIDDEN, "invalid trusted identity"));
             }
+            if let Some(header) = parts.headers.get("x-tenant-id") {
+                let requested = header.to_str()
+                    .map_err(|_| (StatusCode::BAD_REQUEST, "invalid tenant header"))?;
+                if requested != tenant {
+                    return Err((StatusCode::FORBIDDEN, "tenant header conflicts with identity"));
+                }
+            }
+            Ok(TenantId(tenant.clone()))
         })
     }
 }

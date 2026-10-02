@@ -945,6 +945,113 @@ mod tests {
         reg.insert(id.into(), exp);
     }
 
+    // ---- A1 多租户隔离专门测试（2026-10-01）----
+
+    /// 直接向指定租户的内层注册表播种专家（绕过 handler，验证内存态分区）。
+    fn seed_expert_in_tenant(state: &Arc<ExpertsSharedState>, tenant: &str, id: &str, name: &str) {
+        let mut all = state.registry.lock();
+        let reg = all.entry(tenant.to_string()).or_default();
+        let exp = ExpertDescriptor::minimal(id.into(), name.into());
+        reg.insert(id.into(), exp);
+    }
+
+    /// 两租户真实互不可见：a 建专家，b 查列表查不到，反之亦然。
+    #[tokio::test]
+    async fn test_tenant_isolation_list_experts_cross_tenant_invisible() {
+        let state = make_test_state();
+        // tenant-a 有一个专家
+        seed_expert_in_tenant(&state, "tenant-a", "exp-a-1", "架构师·甲");
+        // tenant-b 有一个专家
+        seed_expert_in_tenant(&state, "tenant-b", "exp-b-1", "数据师·乙");
+
+        // tenant-a 列表：只见 exp-a-1，不见 exp-b-1
+        let qa: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let resp_a = list_experts(State(state.clone()), TenantId("tenant-a".into()), Query(qa)).await;
+        let ids_a: Vec<String> = resp_a.data.unwrap()["experts"].as_array().unwrap().iter()
+            .map(|e| e["id"].as_str().unwrap().to_string()).collect();
+        assert!(ids_a.contains(&"exp-a-1".to_string()), "tenant-a 应看到本租户专家");
+        assert!(!ids_a.contains(&"exp-b-1".to_string()), "tenant-a 绝不能看到 tenant-b 的专家");
+
+        // tenant-b 列表：只见 exp-b-1，不见 exp-a-1
+        let qb: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let resp_b = list_experts(State(state.clone()), TenantId("tenant-b".into()), Query(qb)).await;
+        let ids_b: Vec<String> = resp_b.data.unwrap()["experts"].as_array().unwrap().iter()
+            .map(|e| e["id"].as_str().unwrap().to_string()).collect();
+        assert!(ids_b.contains(&"exp-b-1".to_string()));
+        assert!(!ids_b.contains(&"exp-a-1".to_string()), "tenant-b 绝不能看到 tenant-a 的专家");
+
+        // 默认租户（无头回归）：两个租户的专家都不可见
+        let qd: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let resp_d = list_experts(State(state.clone()), TenantId("default".into()), Query(qd)).await;
+        let total_d = resp_d.data.unwrap()["total"].as_i64().unwrap();
+        assert_eq!(total_d, 0, "默认租户不应看到 tenant-a/b 的专家");
+    }
+
+    /// 默认租户回归：直接向 default 播种，list 可见，且与具名租户互不污染。
+    #[tokio::test]
+    async fn test_tenant_default_tenant_regression() {
+        let state = make_test_state();
+        seed_expert(&state, "exp-def-1", "默认专家·丙", vec!["general"]);
+
+        let q: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let resp = list_experts(State(state.clone()), TenantId("default".into()), Query(q)).await;
+        let ids: Vec<String> = resp.data.unwrap()["experts"].as_array().unwrap().iter()
+            .map(|e| e["id"].as_str().unwrap().to_string()).collect();
+        assert!(ids.contains(&"exp-def-1".to_string()), "默认租户应看到 seed_expert 播种的专家");
+
+        // 另一个租户看不到 default 的专家
+        let q2: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let resp2 = list_experts(State(state.clone()), TenantId("someone-else".into()), Query(q2)).await;
+        assert_eq!(resp2.data.unwrap()["total"].as_i64().unwrap(), 0);
+    }
+
+    /// TenantId 提取器：无头=default；合法头解析；非法字符拒绝。
+    #[tokio::test]
+    async fn test_tenant_id_extractor_default_and_validation() {
+        use crate::alliance::experts_common::{TenantId, DEFAULT_TENANT};
+        use axum::http::Request;
+        // 提取器从可信 UserInfo（auth 中间件注入 extensions）取 tenant_id，
+        // X-Tenant-Id 头仅做一致性校验（不可借此越权换租户）。
+        fn trusted_user(tenant: &str) -> mox_platform_api::UserInfo {
+            mox_platform_api::UserInfo {
+                id: "u-ext".into(),
+                username: "ext".into(),
+                email: "ext@test.local".into(),
+                tenant_id: tenant.into(),
+                roles: vec!["tenant_admin".into()],
+                enabled: true,
+                created_at: "2026-10-01T00:00:00Z".into(),
+            }
+        }
+
+        // 无 X-Tenant-Id 头 → 取身份自带 tenant（default）
+        let req = Request::builder().body(axum::body::Body::empty()).unwrap();
+        let (mut parts, _) = req.into_parts();
+        parts.extensions.insert(trusted_user(DEFAULT_TENANT));
+        let tid = <TenantId as axum::extract::FromRequestParts<()>>::from_request_parts(&mut parts, &mut ()).await.unwrap();
+        assert_eq!(tid.0, DEFAULT_TENANT);
+
+        // 头与身份一致 → 通过
+        let req = Request::builder().header("x-tenant-id", "acme-corp_01").body(axum::body::Body::empty()).unwrap();
+        let (mut parts, _) = req.into_parts();
+        parts.extensions.insert(trusted_user("acme-corp_01"));
+        let tid = <TenantId as axum::extract::FromRequestParts<()>>::from_request_parts(&mut parts, &mut ()).await.unwrap();
+        assert_eq!(tid.0, "acme-corp_01");
+
+        // 头与身份冲突 → 拒绝（防越权换租户）
+        let req = Request::builder().header("x-tenant-id", "other-tenant").body(axum::body::Body::empty()).unwrap();
+        let (mut parts, _) = req.into_parts();
+        parts.extensions.insert(trusted_user("acme-corp_01"));
+        let res = <TenantId as axum::extract::FromRequestParts<()>>::from_request_parts(&mut parts, &mut ()).await;
+        assert!(res.is_err(), "头与身份冲突应被拒绝");
+
+        // 无可信身份 → 401
+        let req = Request::builder().body(axum::body::Body::empty()).unwrap();
+        let (mut parts, _) = req.into_parts();
+        let res = <TenantId as axum::extract::FromRequestParts<()>>::from_request_parts(&mut parts, &mut ()).await;
+        assert!(res.is_err(), "无可信身份应被拒绝");
+    }
+
     // 测试 1：创建专家（POST /api/experts）
     #[tokio::test]
     async fn test_create_expert() {

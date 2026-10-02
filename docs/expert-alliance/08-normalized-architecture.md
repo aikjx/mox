@@ -423,7 +423,8 @@ docs/expert-alliance/
 | 审计哈希链 + 真实 Actor（N2） | experts_common.rs:521-574 NDJSON 哈希链；:587-626 OptionalAuthUser 提取器注入 11 写 handler | gateway alliance 97 | ✅ |
 | 管理写面 RBAC（N12/G-2） | experts_rbac.rs（ADMIN_ROLES + RbacAction），7 handler 强制 super_admin/tenant_admin | gateway alliance 73（64+9） | ✅ |
 | SM4 全链路加密（6 挂载点） | gateway/lib.rs:332、scheduler/routes.rs:36、executor/routes.rs:93、registry/routes.rs:60、executor_bridge.rs:112、alliance_remote.rs:156 | 报告 BVR §2.1(6) | ✅（生产必开 MOX_API_CRYPTO=sm4） |
-| SQLite schema 版本（N3） | PRAGMA user_version=1 三点接入（experts_db.rs / scheduler-core/storage.rs / registry-svc/storage.rs） | gateway alliance 97 | ✅ |
+| SQLite schema 版本（N3） | PRAGMA user_version 三点接入（experts_db.rs / scheduler-core/storage.rs / registry-svc/storage.rs）；**A1 起 experts 库升 v2**（四表加 tenant_id 复合键 + v1→v2 迁移） | gateway alliance 97 → 179 | ✅ |
+| 多租户数据/权限隔离（A1 阶段一） | TenantId 提取器 experts_common.rs:58-98（取可信身份 tenant_id，X-Tenant-Id 头一致性校验，无头/无身份→401/403）；registry/graph 内存态 per-tenant；experts_db 四表 tenant_id WHERE 过滤；emit_audit 带 tenant | 两真实租户建专家/查询互不可见 E2E（a1-e2e-evidence.txt）；单测 179 | 🟡 阶段一（配额/密钥/SSO/会话任务分区=阶段二） |
 | JSON→SQLite 一次性迁移 | experts_db.rs:604 | gateway alliance 97 | ✅ |
 | 调度器 HA 选主+fencing | leadership.rs:110/194、storage.rs:890 SqliteLeaseStore、ha.rs:200 leader 对账 | scheduler-core 115 | ✅（须 HA_MODE=on 且 STORAGE_MODE=sqlite） |
 | 注册中心 3400 + 10:1:1 聚合 | registry-svc + aggregation.rs:11/489 | 三 svc 66 | ✅ |

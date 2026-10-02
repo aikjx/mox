@@ -2,13 +2,13 @@
   "schema": "docs-architecture-corpus/v1",
   "method": "Deterministic extraction; explicit references only; no semantic or readiness inference",
   "stats": {
-    "files": 598,
-    "text_files": 570,
-    "mermaid_sources": 170,
-    "references": 3353,
-    "internal_edges": 1839,
+    "files": 599,
+    "text_files": 571,
+    "mermaid_sources": 171,
+    "references": 3358,
+    "internal_edges": 1844,
     "by_lifecycle": {
-      "active-candidate": 366,
+      "active-candidate": 367,
       "archive": 127,
       "evidence": 105
     },
@@ -22,7 +22,7 @@
       "enterprise": 74,
       "expert-alliance": 77,
       "graphify-out": 1,
-      "modules": 41,
+      "modules": 42,
       "normalization": 8,
       "specifications": 73,
       "standards": 14,
@@ -12843,8 +12843,8 @@
     },
     {
       "id": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
-      "bytes": 23925,
-      "sha256": "e73ad68194aac72d9ecba330819aa5741c7cb276daff24fec2a4465b3e81ff76",
+      "bytes": 47911,
+      "sha256": "21eb95031d92c81faffbe43151240d1de068e325a8adda94bb509019c8370dc7",
       "lifecycle": "active-candidate",
       "family": "architecture",
       "text": true,
@@ -12855,63 +12855,73 @@
           "depth": 1
         },
         {
-          "line": 10,
+          "line": 11,
           "title": "一、为什么要做这件事（本轮实测，非引用）",
           "depth": 2
         },
         {
-          "line": 25,
+          "line": 28,
           "title": "1.1 本轮量出来的差额",
           "depth": 3
         },
         {
-          "line": 98,
+          "line": 131,
           "title": "1.2 这不是\"代码没写完\"",
           "depth": 3
         },
         {
-          "line": 105,
+          "line": 136,
+          "title": "1.3 挂载未在册那 140 条的调用者账（裁决点 2 的决策辅助）",
+          "depth": 3
+        },
+        {
+          "line": 212,
+          "title": "1.4 装配侧自己也有\"两个源\"：从未被挂上的 builder（比\"未在册\"更严重一档）",
+          "depth": 3
+        },
+        {
+          "line": 248,
           "title": "二、分阶段计划（每阶段自带验收判据；不跨阶段夹带重构）",
           "depth": 2
         },
         {
-          "line": 107,
+          "line": 248,
           "title": "P1a 普查器（已完成，本轮落库）",
           "depth": 3
         },
         {
-          "line": 117,
+          "line": 261,
           "title": "P1 路由单源化（下一步，需评审通过后开工）",
           "depth": 3
         },
         {
-          "line": 139,
+          "line": 285,
           "title": "P2 前端治理装置接入 CI（本轮已接线，待维护者提交）",
           "depth": 3
         },
         {
-          "line": 186,
+          "line": 332,
           "title": "P3 文档权威收敛",
           "depth": 3
         },
         {
-          "line": 207,
+          "line": 351,
           "title": "P4 工作树收口（**需用户点名，勿代跑**）",
           "depth": 3
         },
         {
-          "line": 226,
+          "line": 372,
           "title": "P5 网关巨型 crate（结构性，仅登记不排期）",
           "depth": 3
         },
         {
-          "line": 237,
+          "line": 379,
           "title": "三、普查器的覆盖面账：已收干的与仍盲的（不许被读成\"没有缺陷\"）",
           "depth": 2
         },
         {
-          "line": 256,
-          "title": "四、评审需要的三个裁决点",
+          "line": 403,
+          "title": "四、评审需要的四个裁决点",
           "depth": 2
         }
       ],
@@ -12950,7 +12960,7 @@
           "exists": true
         },
         {
-          "line": 16,
+          "line": 19,
           "target": "docs/API-REGISTRY.md",
           "kind": "code",
           "evidence_type": "EXTRACTED",
@@ -12958,7 +12968,7 @@
           "exists": true
         },
         {
-          "line": 135,
+          "line": 287,
           "target": "docs/API-REGISTRY.md",
           "kind": "code",
           "evidence_type": "EXTRACTED",
@@ -12966,7 +12976,7 @@
           "exists": true
         },
         {
-          "line": 181,
+          "line": 334,
           "target": "docs/expert-alliance/_archive/v1/FRONTEND-MODULE.md",
           "kind": "code",
           "evidence_type": "EXTRACTED",
@@ -12974,7 +12984,7 @@
           "exists": true
         },
         {
-          "line": 182,
+          "line": 335,
           "target": "docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md",
           "kind": "code",
           "evidence_type": "EXTRACTED",
@@ -12982,7 +12992,7 @@
           "exists": true
         },
         {
-          "line": 188,
+          "line": 341,
           "target": "docs/CORE-CAPABILITIES.md",
           "kind": "code",
           "evidence_type": "EXTRACTED",
@@ -12990,7 +13000,7 @@
           "exists": true
         },
         {
-          "line": 189,
+          "line": 342,
           "target": "docs/api/PORT-REGISTRY.md",
           "kind": "code",
           "evidence_type": "EXTRACTED",
@@ -12998,7 +13008,7 @@
           "exists": true
         },
         {
-          "line": 190,
+          "line": 343,
           "target": "docs/_archive/",
           "kind": "code",
           "evidence_type": "EXTRACTED",
@@ -13006,7 +13016,7 @@
           "exists": true
         },
         {
-          "line": 201,
+          "line": 354,
           "target": "docs/CORE-CAPABILITIES.md",
           "kind": "code",
           "evidence_type": "EXTRACTED",
@@ -13021,9 +13031,9 @@
         "一、为什么要做这件事（本轮实测，非引用）",
         "二、分阶段计划（每阶段自带验收判据；不跨阶段夹带重构）",
         "三、普查器的覆盖面账：已收干的与仍盲的（不许被读成\"没有缺陷\"）",
-        "四、评审需要的三个裁决点"
+        "四、评审需要的四个裁决点"
       ],
-      "excerpt": "> 层定位：L2 架构层 · 状态：**待评审**（本文件只提出计划与验收判据，未改任何生产码） > 上层入口：[文档中心](../README.md) · 结构规范：[ARCHITECTURE-OF-DOCS.md](../ARCHITECTURE-OF-DOCS.md) > 本层索引：[README.md](./README.md) · 端口权威：[PORT-REGISTRY.md](../api/PORT-REGISTRY.md) > 仪器：`scripts/gate/check-api-surface.py`（P1a 普查器）· 账：`reports/data/api-surface-census-2026-09-30.js"
+      "excerpt": "> 层定位：L2 架构层 · 状态：**待评审**（本文件只提出计划与验收判据，未改任何生产码） > 上层入口：[文档中心](../README.md) · 结构规范：[ARCHITECTURE-OF-DOCS.md](../ARCHITECTURE-OF-DOCS.md) > 本层索引：[README.md](./README.md) · 端口权威：[PORT-REGISTRY.md](../api/PORT-REGISTRY.md) > 仪器：`scripts/gate/check-api-surface.py`（P1a 普查器）· `scripts/gate/classify-unregistered-endpoints.py"
     },
     {
       "id": "docs/architecture/app-store-architecture.md",
@@ -43513,8 +43523,8 @@
     },
     {
       "id": "docs/expert-alliance/08-normalized-architecture.md",
-      "bytes": 50468,
-      "sha256": "3a2d23317d6e22c580430d2c460420231d4a43e5b9915c2bb89e1b157bc1569b",
+      "bytes": 51008,
+      "sha256": "5d4c907fa075a57b9af29d5bf52bc6cb3a0aaea5e2c05ec04d8587ad3f5dbcce",
       "lifecycle": "active-candidate",
       "family": "expert-alliance",
       "text": true,
@@ -43665,17 +43675,17 @@
           "depth": 3
         },
         {
-          "line": 426,
+          "line": 427,
           "title": "13.6 MCP 接入（T3）",
           "depth": 3
         },
         {
-          "line": 430,
+          "line": 431,
           "title": "13.7 前端契约与 UI（U1/U2 + 收敛）",
           "depth": 3
         },
         {
-          "line": 443,
+          "line": 444,
           "title": "13.8 残留缺口与设计取舍（如实标注）",
           "depth": 3
         }
@@ -43753,8 +43763,8 @@
     },
     {
       "id": "docs/expert-alliance/09-deployment-templates.md",
-      "bytes": 34927,
-      "sha256": "95aa43b7893af4953cfcc955560c64dd99df734f2b50d29293108e0f3b67466e",
+      "bytes": 35669,
+      "sha256": "7b6dbe6f1109d7f73a8d1154553d5935b7add2934293b4789c19bce98b0b597f",
       "lifecycle": "active-candidate",
       "family": "expert-alliance",
       "text": true,
@@ -43811,126 +43821,131 @@
         },
         {
           "line": 141,
+          "title": "2.6.1 多租户（A1，2026-10-01 阶段一）",
+          "depth": 3
+        },
+        {
+          "line": 148,
           "title": "2.7 生产档推荐 env 块（直接复制）",
           "depth": 3
         },
         {
-          "line": 142,
+          "line": 148,
           "title": "2.8 本地/开发档推荐 env 块",
           "depth": 3
         },
         {
-          "line": 142,
+          "line": 148,
           "title": "三、docker-compose 模板（单机 / 内网试点）",
           "depth": 2
         },
         {
-          "line": 159,
+          "line": 166,
           "title": "四、k8s 模板（多副本 / 生产集群）",
           "depth": 2
         },
         {
-          "line": 160,
+          "line": 167,
           "title": "4.1 ConfigMap（非敏感）",
           "depth": 3
         },
         {
-          "line": 161,
+          "line": 168,
           "title": "4.2 Secret（敏感，base64 占位）",
           "depth": 3
         },
         {
-          "line": 167,
+          "line": 174,
           "title": "4.3 Deployments（×4）",
           "depth": 3
         },
         {
-          "line": 180,
+          "line": 187,
           "title": "4.4 Services",
           "depth": 3
         },
         {
-          "line": 194,
+          "line": 201,
           "title": "五、前端部署",
           "depth": 2
         },
         {
-          "line": 194,
+          "line": 201,
           "title": "5.1 构建",
           "depth": 3
         },
         {
-          "line": 200,
+          "line": 207,
           "title": "5.2 nginx 反向代理（含 SSE 长连接）",
           "depth": 3
         },
         {
-          "line": 207,
+          "line": 214,
           "title": "六、部署后一致性检查清单",
           "depth": 2
         },
         {
-          "line": 209,
+          "line": 216,
           "title": "6.1 进程存活",
           "depth": 3
         },
         {
-          "line": 213,
+          "line": 220,
           "title": "6.2 指标端点格式差异（易踩）",
           "depth": 3
         },
         {
-          "line": 217,
+          "line": 224,
           "title": "6.3 HA 选主",
           "depth": 3
         },
         {
-          "line": 218,
+          "line": 225,
           "title": "6.4 内部鉴权链路（200 vs 401）",
           "depth": 3
         },
         {
-          "line": 222,
+          "line": 229,
           "title": "6.5 SM4 加密是否生效",
           "depth": 3
         },
         {
-          "line": 229,
+          "line": 236,
           "title": "6.6 存储模式验证",
           "depth": 3
         },
         {
-          "line": 233,
+          "line": 240,
           "title": "6.7 审计日志",
           "depth": 3
         },
         {
-          "line": 238,
+          "line": 245,
           "title": "七、生产安全基线",
           "depth": 2
         },
         {
-          "line": 277,
+          "line": 284,
           "title": "八、变量冲突与废弃说明（与 07/08 差异）",
           "depth": 2
         },
         {
-          "line": 278,
+          "line": 285,
           "title": "8.1 本文相对 08 §五 的补全（08 缺、代码有）",
           "depth": 3
         },
         {
-          "line": 324,
+          "line": 331,
           "title": "8.2 与 07-deployment.md 的差异（以代码为准）",
           "depth": 3
         },
         {
-          "line": 342,
+          "line": 349,
           "title": "8.3 文档幽灵 / 废弃变量",
           "depth": 3
         },
         {
-          "line": 356,
+          "line": 363,
           "title": "九、变更记录",
           "depth": 2
         }
@@ -43978,7 +43993,7 @@
           "exists": true
         },
         {
-          "line": 668,
+          "line": 675,
           "target": "scripts/verify-deploy.sh",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -43986,7 +44001,7 @@
           "exists": true
         },
         {
-          "line": 668,
+          "line": 675,
           "target": "scripts/verify-deploy.ps1",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -43994,7 +44009,7 @@
           "exists": true
         },
         {
-          "line": 668,
+          "line": 675,
           "target": "scripts/README.md",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -44512,8 +44527,8 @@
     },
     {
       "id": "docs/expert-alliance/12-innovation-roadmap.md",
-      "bytes": 38644,
-      "sha256": "a19a7525fca5ceadffbc1f170dd25101cb94a654f783078766fb3826ae0b51ec",
+      "bytes": 39146,
+      "sha256": "f847b8e281070e6c97cb6405eb5905f42d92e44b9fd829306f5838d880b094df",
       "lifecycle": "active-candidate",
       "family": "expert-alliance",
       "text": true,
@@ -44609,62 +44624,62 @@
           "depth": 3
         },
         {
-          "line": 180,
+          "line": 181,
           "title": "4.2 A2　模块化微服务深化（fusion 独立 / memory 独立）",
           "depth": 3
         },
         {
-          "line": 189,
+          "line": 190,
           "title": "4.3 A3　事件溯源（任务 / 审计可重放）",
           "depth": 3
         },
         {
-          "line": 198,
+          "line": 199,
           "title": "4.4 A4　图数据库引入（关系层从 SQLite 升级）",
           "depth": 3
         },
         {
-          "line": 209,
+          "line": 210,
           "title": "五、新模式升级",
           "depth": 2
         },
         {
-          "line": 211,
+          "line": 212,
           "title": "5.1 M1　私有化交付产品化（信创 / 气隙离线部署包）",
           "depth": 3
         },
         {
-          "line": 220,
+          "line": 221,
           "title": "5.2 M2　生态开放（MCP Server / 插件 SDK / 开放 API）",
           "depth": 3
         },
         {
-          "line": 229,
+          "line": 230,
           "title": "5.3 M3　专家市场（技能上架 / 订阅 / 分成）",
           "depth": 3
         },
         {
-          "line": 238,
+          "line": 239,
           "title": "5.4 M4　SaaS 订阅",
           "depth": 3
         },
         {
-          "line": 249,
+          "line": 250,
           "title": "六、依赖关系与里程碑",
           "depth": 2
         },
         {
-          "line": 251,
+          "line": 252,
           "title": "6.1 依赖关系（P0 必须前置）",
           "depth": 3
         },
         {
-          "line": 257,
+          "line": 258,
           "title": "6.2 三阶段里程碑",
           "depth": 3
         },
         {
-          "line": 292,
+          "line": 293,
           "title": "七、结论",
           "depth": 2
         }
@@ -45363,8 +45378,8 @@
     },
     {
       "id": "docs/expert-alliance/16-decision-and-state-ledger.md",
-      "bytes": 38404,
-      "sha256": "892483e4bd2ef804530d9837d6bdedf8800c144f137bcae8833a50e8b1942d85",
+      "bytes": 38803,
+      "sha256": "ac2d8581c0b1419cd285378d7f4e353bf2ba3a5f00099cbd5d49be8a8b8415c3",
       "lifecycle": "active-candidate",
       "family": "expert-alliance",
       "text": true,
@@ -60776,8 +60791,8 @@
     },
     {
       "id": "docs/modules/NO-MOCK-POLICY.md",
-      "bytes": 6479,
-      "sha256": "7080eb6d0aa9234ee109902127d9801c655387e4e625b25fbc99b3c123855fc3",
+      "bytes": 6711,
+      "sha256": "7345d2619f70ffae9a16b6238f57683261a67c50f10d590712c395b713610b25",
       "lifecycle": "active-candidate",
       "family": "modules",
       "text": true,
@@ -60818,38 +60833,47 @@
           "depth": 2
         },
         {
-          "line": 49,
+          "line": 51,
           "title": "3.1 后端（已移除）",
           "depth": 3
         },
         {
-          "line": 62,
+          "line": 64,
           "title": "3.2 前端（已移除）",
           "depth": 3
         },
         {
-          "line": 76,
+          "line": 78,
           "title": "4. 新代码评审 Checklist",
           "depth": 2
         },
         {
-          "line": 90,
+          "line": 92,
           "title": "5. 降级策略规范",
           "depth": 2
         },
         {
-          "line": 103,
+          "line": 105,
           "title": "6. 验证命令",
           "depth": 2
         },
         {
-          "line": 106,
+          "line": 108,
           "title": "7. 例外审批",
           "depth": 2
         }
       ],
       "diagrams": [],
-      "references": [],
+      "references": [
+        {
+          "line": 49,
+          "target": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+          "kind": "link",
+          "evidence_type": "EXTRACTED",
+          "resolved_id": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+          "exists": true
+        }
+      ],
       "decode_replacements": 0,
       "title": "禁止使用 Mock 规范（NO-MOCK-POLICY）",
       "topics": [
@@ -61028,8 +61052,8 @@
     },
     {
       "id": "docs/modules/README.md",
-      "bytes": 4474,
-      "sha256": "4ae7dbf55c0ef4764fe46cd4a0bfdbd2fe1778b7156d8f4dc44dfa918e485c40",
+      "bytes": 4614,
+      "sha256": "f5cc27ffa0c5338a751edeb62c73a1a804fb2d2373bda6909321a83fabcfb459",
       "lifecycle": "active-candidate",
       "family": "modules",
       "text": true,
@@ -61045,22 +61069,22 @@
           "depth": 2
         },
         {
-          "line": 24,
+          "line": 26,
           "title": "新功能落位规则",
           "depth": 2
         },
         {
-          "line": 33,
+          "line": 35,
           "title": "持续维护",
           "depth": 2
         },
         {
-          "line": 42,
+          "line": 44,
           "title": "目录架构设计卡：低代码与动态配置（2026-10-01）",
           "depth": 2
         },
         {
-          "line": 59,
+          "line": 61,
           "title": "资源知识主题设计",
           "depth": 2
         }
@@ -61092,7 +61116,15 @@
           "exists": true
         },
         {
-          "line": 55,
+          "line": 7,
+          "target": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+          "kind": "link",
+          "evidence_type": "EXTRACTED",
+          "resolved_id": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+          "exists": true
+        },
+        {
+          "line": 57,
           "target": "docs/standards/lowcode-dynamic-configuration.md#model",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61100,7 +61132,7 @@
           "exists": true
         },
         {
-          "line": 56,
+          "line": 58,
           "target": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md#assembly",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61108,7 +61140,7 @@
           "exists": true
         },
         {
-          "line": 59,
+          "line": 61,
           "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#directories",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61116,7 +61148,7 @@
           "exists": true
         },
         {
-          "line": 59,
+          "line": 61,
           "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md#document-contract",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61124,7 +61156,7 @@
           "exists": true
         },
         {
-          "line": 63,
+          "line": 65,
           "target": "docs/modules/resource-knowledge/README.md#map",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61143,6 +61175,77 @@
         "资源知识主题设计"
       ],
       "excerpt": "本页说明功能应放在哪里；[全仓代码目录](CODE-CATALOG.md)列出实际模块、依赖、可执行入口和前端文件。[API 注册表](../API-REGISTRY.md)维护接口映射，[端口注册表](../api/PORT-REGISTRY.md)维护部署端口。"
+    },
+    {
+      "id": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "bytes": 5039,
+      "sha256": "5424125819b224c6fe639e46fc347e2a6b16dc33670a0f83e337543eb1d33502",
+      "lifecycle": "active-candidate",
+      "family": "modules",
+      "text": true,
+      "headings": [
+        {
+          "line": 1,
+          "title": "平台与前端真实实现及验收台账",
+          "depth": 1
+        },
+        {
+          "line": 5,
+          "title": "范围与方法",
+          "depth": 2
+        },
+        {
+          "line": 11,
+          "title": "模块状态与退出条件",
+          "depth": 2
+        },
+        {
+          "line": 26,
+          "title": "真实业务链路",
+          "depth": 2
+        },
+        {
+          "line": 29,
+          "title": "验收规则",
+          "depth": 2
+        }
+      ],
+      "diagrams": [
+        {
+          "line": 28,
+          "section": "真实业务链路",
+          "syntax": "mermaid",
+          "source": "flowchart TD\n  UI[\"Vue 与统一 API\"] --> AUTH[\"JWT 验签 / 可信身份\"]\n  AUTH --> TENANT[\"租户与资源权限\"]\n  TENANT --> REG[\"专家注册 / SQLite\"]\n  TENANT --> DAG[\"咨询 DAG / 依赖检查\"]\n  DAG --> PROVIDER{\"真实模型可用？\"}\n  PROVIDER -->|是| MODEL[\"模型响应：仅代表分析\"]\n  PROVIDER -->|否| FAILED[\"失败；无模板答案\"]\n  MODEL --> GOVERN[\"治理检查 / 失败停止\"]\n  GOVERN --> RESULT[\"实际状态 / 实测耗时\"]\n  TENANT --> SMTP[\"最新配置 / TLS / MIME\"]\n  SMTP --> RECEIPT{\"SMTP 接受？\"}\n  RECEIPT -->|是| ACCEPTED[\"接受不等于最终投递\"]\n  RECEIPT -->|否| FAILED\n  TENANT --> SYNC[\"未接通的同步 / 外部消息：501\"]\n  RESULT --> UI\n  FAILED --> UI\n  SYNC --> UI"
+        }
+      ],
+      "references": [
+        {
+          "line": 3,
+          "target": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+          "kind": "link",
+          "evidence_type": "EXTRACTED",
+          "resolved_id": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+          "exists": true
+        },
+        {
+          "line": 9,
+          "target": "docs/modules/NO-MOCK-POLICY.md",
+          "kind": "link",
+          "evidence_type": "EXTRACTED",
+          "resolved_id": "docs/modules/NO-MOCK-POLICY.md",
+          "exists": true
+        }
+      ],
+      "decode_replacements": 0,
+      "title": "平台与前端真实实现及验收台账",
+      "topics": [
+        "平台与前端真实实现及验收台账",
+        "范围与方法",
+        "模块状态与退出条件",
+        "真实业务链路",
+        "验收规则"
+      ],
+      "excerpt": "> REAL-IMPL-01 · 2026-10-02。范围为 platform 与 frontend-ui。设计、构建成功、拒绝 mock 均不能代替完整功能验收。资源知识详细状态仍以[资源知识台账](docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md)为权威。"
     },
     {
       "id": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
@@ -61485,8 +61588,8 @@
     },
     {
       "id": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
-      "bytes": 15995,
-      "sha256": "fcf137a811cb87f04cd596dae4331a578fa1d3c0c78886e2ef39626611aa9549",
+      "bytes": 15485,
+      "sha256": "c32b45d3174bcad50764b3a9cf48f5d0a95251a510ea30b2ee11a51c2177a8da",
       "lifecycle": "active-candidate",
       "family": "modules",
       "text": true,
@@ -61497,54 +61600,54 @@
           "depth": 1
         },
         {
-          "line": 12,
+          "line": 10,
           "title": "模块状态",
           "depth": 2
         },
         {
-          "line": 25,
+          "line": 23,
           "title": "已落地链路与待归一边界",
           "depth": 2
         },
         {
-          "line": 31,
+          "line": 29,
           "title": "当前接口与兼容性",
           "depth": 2
         },
         {
-          "line": 53,
+          "line": 51,
           "title": "R2 增量：知识资源授权",
           "depth": 2
         },
         {
-          "line": 63,
+          "line": 61,
           "title": "R2 增量：只读共享与撤权",
           "depth": 2
         },
         {
-          "line": 69,
+          "line": 67,
           "title": "条件编辑与过期加工保护",
           "depth": 2
         },
         {
-          "line": 77,
+          "line": 75,
           "title": "统计 IO 优化与文本引用",
           "depth": 2
         },
         {
-          "line": 87,
+          "line": 85,
           "title": "后续实施顺序与退出条件",
           "depth": 2
         },
         {
-          "line": 99,
+          "line": 97,
           "title": "验收证据",
           "depth": 2
         }
       ],
       "diagrams": [
         {
-          "line": 27,
+          "line": 25,
           "section": "已落地链路与待归一边界",
           "syntax": "mermaid",
           "source": "flowchart LR\n  U[\"可信网关身份\"] --> F[\"文件资源 API\"]\n  F --> M[\"文件元数据 SQLite\"]\n  F --> B[\"本地文件字节与 SHA-256\"]\n  U --> K[\"网关 KB API：租户与所有者授权\"]\n  K --> C[\"FS / 远端对象：真实云端待验收\"]\n  C --> D[\"文档、版本和逻辑 key 索引\"]\n  D --> A[\"同步知识分析\"]\n  A --> G[\"有来源的原子文档图投影\"]\n  D --> R[\"首次请求重建已挂图文档\"]\n  R --> G\n  S[\"独立 KB API：主源归一待实施\"] --> Q[\"SQLite / FTS5 / 版本快照\"]"
@@ -61584,7 +61687,15 @@
           "exists": true
         },
         {
-          "line": 54,
+          "line": 7,
+          "target": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+          "kind": "link",
+          "evidence_type": "EXTRACTED",
+          "resolved_id": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+          "exists": true
+        },
+        {
+          "line": 52,
           "target": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61592,7 +61703,7 @@
           "exists": true
         },
         {
-          "line": 69,
+          "line": 67,
           "target": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61600,7 +61711,7 @@
           "exists": true
         },
         {
-          "line": 81,
+          "line": 79,
           "target": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md#implemented",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61608,7 +61719,7 @@
           "exists": true
         },
         {
-          "line": 89,
+          "line": 87,
           "target": "docs/modules/resource-knowledge/COMPETITIVE-DESIGN.md",
           "kind": "link",
           "evidence_type": "EXTRACTED",
@@ -61616,13 +61727,13 @@
           "exists": true
         },
         {
-          "line": 110,
+          "line": 108,
           "target": "https://www.alibabacloud.com/help/en/oss/developer-reference/compatibility-with-amazon-s3",
           "kind": "link",
           "evidence_type": "EXTRACTED"
         },
         {
-          "line": 110,
+          "line": 108,
           "target": "https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html",
           "kind": "link",
           "evidence_type": "EXTRACTED"
@@ -93062,49 +93173,49 @@
     {
       "source": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
       "target": "docs/API-REGISTRY.md",
-      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:16",
+      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:19",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
       "target": "docs/API-REGISTRY.md",
-      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:135",
+      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:287",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
       "target": "docs/expert-alliance/_archive/v1/FRONTEND-MODULE.md",
-      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:181",
+      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:334",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
       "target": "docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md",
-      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:182",
+      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:335",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
       "target": "docs/CORE-CAPABILITIES.md",
-      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:188",
+      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:341",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
       "target": "docs/api/PORT-REGISTRY.md",
-      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:189",
+      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:342",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md",
       "target": "docs/CORE-CAPABILITIES.md",
-      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:201",
+      "source_location": "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:354",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
@@ -99138,21 +99249,21 @@
     {
       "source": "docs/expert-alliance/09-deployment-templates.md",
       "target": "docs/expert-alliance/scripts/verify-deploy.sh",
-      "source_location": "docs/expert-alliance/09-deployment-templates.md:668",
+      "source_location": "docs/expert-alliance/09-deployment-templates.md:675",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/expert-alliance/09-deployment-templates.md",
       "target": "docs/expert-alliance/scripts/verify-deploy.ps1",
-      "source_location": "docs/expert-alliance/09-deployment-templates.md:668",
+      "source_location": "docs/expert-alliance/09-deployment-templates.md:675",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/expert-alliance/09-deployment-templates.md",
       "target": "docs/expert-alliance/scripts/README.md",
-      "source_location": "docs/expert-alliance/09-deployment-templates.md:668",
+      "source_location": "docs/expert-alliance/09-deployment-templates.md:675",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
@@ -101418,6 +101529,13 @@
       "evidence_type": "EXTRACTED"
     },
     {
+      "source": "docs/modules/NO-MOCK-POLICY.md",
+      "target": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "source_location": "docs/modules/NO-MOCK-POLICY.md:49",
+      "relation": "REFERENCES",
+      "evidence_type": "EXTRACTED"
+    },
+    {
       "source": "docs/modules/README.md",
       "target": "docs/modules/CODE-CATALOG.md",
       "source_location": "docs/modules/README.md:3",
@@ -101440,36 +101558,57 @@
     },
     {
       "source": "docs/modules/README.md",
+      "target": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "source_location": "docs/modules/README.md:7",
+      "relation": "REFERENCES",
+      "evidence_type": "EXTRACTED"
+    },
+    {
+      "source": "docs/modules/README.md",
       "target": "docs/standards/lowcode-dynamic-configuration.md",
-      "source_location": "docs/modules/README.md:55",
+      "source_location": "docs/modules/README.md:57",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/modules/README.md",
       "target": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
-      "source_location": "docs/modules/README.md:56",
+      "source_location": "docs/modules/README.md:58",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/modules/README.md",
       "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
-      "source_location": "docs/modules/README.md:59",
+      "source_location": "docs/modules/README.md:61",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/modules/README.md",
       "target": "docs/normalization/DIRECTORY-ARCHITECTURE-PLAN.md",
-      "source_location": "docs/modules/README.md:59",
+      "source_location": "docs/modules/README.md:61",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/modules/README.md",
       "target": "docs/modules/resource-knowledge/README.md",
-      "source_location": "docs/modules/README.md:63",
+      "source_location": "docs/modules/README.md:65",
+      "relation": "REFERENCES",
+      "evidence_type": "EXTRACTED"
+    },
+    {
+      "source": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "target": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "source_location": "docs/modules/REAL-IMPLEMENTATION-STATUS.md:3",
+      "relation": "REFERENCES",
+      "evidence_type": "EXTRACTED"
+    },
+    {
+      "source": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "target": "docs/modules/NO-MOCK-POLICY.md",
+      "source_location": "docs/modules/REAL-IMPLEMENTATION-STATUS.md:9",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
@@ -101608,29 +101747,36 @@
     },
     {
       "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "target": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:7",
+      "relation": "REFERENCES",
+      "evidence_type": "EXTRACTED"
+    },
+    {
+      "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
       "target": "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md",
-      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:54",
+      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:52",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
       "target": "docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md",
-      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:69",
+      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:67",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
       "target": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
-      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:81",
+      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:79",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },
     {
       "source": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
       "target": "docs/modules/resource-knowledge/COMPETITIVE-DESIGN.md",
-      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:89",
+      "source_location": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md:87",
       "relation": "REFERENCES",
       "evidence_type": "EXTRACTED"
     },

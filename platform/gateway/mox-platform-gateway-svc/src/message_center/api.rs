@@ -2,17 +2,15 @@
 //!
 //! 支持站内信 / 邮件 / 短信 / 飞书 / 钉钉 / 企业微信 等多渠道消息推送
 
-use crate::message_center::*;
-use axum::response::IntoResponse;
+use crate::{alliance::experts_common::TenantId, auth::ApiAuth, message_center::*};
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::Response,
+    response::{IntoResponse, Response},
     Json,
 };
 use serde_json::json;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
 /// 消息中心状态
@@ -48,7 +46,7 @@ impl Default for MessageCenterState {
 pub async fn list_channels_handler() -> Response {
     let channels = supported_channels();
     let result: Vec<serde_json::Value> = channels.iter().map(|c| {
-        json!({ "code": c.as_str(), "name": c.display_name() })
+        json!({ "code": c.as_str(), "name": c.display_name(), "available": *c == MessageChannel::InApp })
     }).collect();
     Json(json!({ "code": 0, "data": result, "total": result.len() })).into_response()
 }
@@ -56,10 +54,15 @@ pub async fn list_channels_handler() -> Response {
 /// GET /api/enterprise/message/messages —— 获取消息列表
 pub async fn list_messages_handler(
     State(state): State<Arc<MessageCenterState>>,
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
     Query(params): Query<HashMap<String, String>>,
 ) -> Response {
     let messages = state.messages.read().await;
-    let mut list: Vec<&Message> = messages.values().collect();
+    let mut list: Vec<&Message> = messages
+        .values()
+        .filter(|message| message.tenant_id == tenant && message.receiver_ids.contains(&user.id))
+        .collect();
     if let Some(receiver) = params.get("receiver_id") {
         list.retain(|m| m.receiver_ids.contains(receiver));
     }
@@ -76,20 +79,52 @@ pub async fn list_messages_handler(
 /// GET /api/enterprise/message/messages/:id —— 获取消息详情
 pub async fn get_message_handler(
     State(state): State<Arc<MessageCenterState>>,
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
     Path(id): Path<String>,
 ) -> Response {
     let messages = state.messages.read().await;
     match messages.get(&id) {
-        Some(m) => Json(json!({ "code": 0, "data": m })).into_response(),
-        None => (StatusCode::NOT_FOUND, Json(json!({ "code": 404, "message": "消息不存在" }))).into_response(),
+        Some(m) if m.tenant_id == tenant && m.receiver_ids.contains(&user.id) => Json(json!({ "code": 0, "data": m })).into_response(),
+        _ => (StatusCode::NOT_FOUND, Json(json!({ "code": 404, "message": "消息不存在" }))).into_response(),
     }
 }
 
 /// POST /api/enterprise/message/send —— 发送消息
 pub async fn send_message_handler(
     State(state): State<Arc<MessageCenterState>>,
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
     Json(req): Json<SendMessageRequest>,
 ) -> Response {
+    if req.channels.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"code": 400, "message": "发送渠道不能为空"})),
+        )
+            .into_response();
+    }
+    if req.channels.iter().any(|channel| *channel != MessageChannel::InApp)
+        || req.scheduled_at.is_some()
+    {
+        return (
+            StatusCode::NOT_IMPLEMENTED,
+            Json(json!({"code": 501,
+            "message": "外部渠道或定时发送适配器未接入，未发送消息"})),
+        )
+            .into_response();
+    }
+    let receivers: std::collections::HashSet<_> =
+        req.receiver_ids.clone().unwrap_or_default().into_iter().collect();
+    // User directory routing has not been connected: only a verified self inbox is available.
+    if receivers.len() != 1 || !receivers.contains(&user.id) {
+        return (
+            StatusCode::NOT_IMPLEMENTED,
+            Json(json!({"code": 501,
+            "message": "跨用户收件人目录校验未接入；当前仅支持当前用户站内收件箱"})),
+        )
+            .into_response();
+    }
     let message_id = format!("msg_{}", uuid::Uuid::new_v4().simple());
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -115,14 +150,14 @@ pub async fn send_message_handler(
 
     let message = Message {
         message_id: message_id.clone(),
-        tenant_id: "default".to_string(),
+        tenant_id: tenant,
         message_type: req.message_type,
         title,
         content,
         html_content: req.html_content,
         priority: req.priority.unwrap_or(MessagePriority::Normal),
         channels: req.channels,
-        sender_id: "system".to_string(),
+        sender_id: user.id.clone(),
         receiver_ids: req.receiver_ids.unwrap_or_default(),
         receiver_emails: req.receiver_emails,
         receiver_phones: req.receiver_phones,
@@ -136,30 +171,23 @@ pub async fn send_message_handler(
         sent_at: None,
     };
 
-    // 模拟发送（实际实现中需要调用各渠道API）
+    // A committed local inbox entry is not an external-channel delivery receipt.
     let mut msg = message.clone();
     msg.status = MessageStatus::Sent;
     msg.sent_at = Some(chrono::Utc::now().to_rfc3339());
     state.messages.write().await.insert(message_id.clone(), msg);
-
-    // 记录发送记录
     let record = MessageSendRecord {
         record_id: format!("rec_{}", uuid::Uuid::new_v4().simple()),
-        message_id: message_id.clone(),
-        receiver_id: "user_001".to_string(),
-        channel: MessageChannel::InApp,
-        status: MessageStatus::Sent,
-        error_message: None,
-        retry_count: 0,
-        sent_at: Some(chrono::Utc::now().to_rfc3339()),
-        read_at: None,
+        message_id: message_id.clone(), receiver_id: user.id, channel: MessageChannel::InApp,
+        status: MessageStatus::Sent, error_message: None, retry_count: 0,
+        sent_at: Some(chrono::Utc::now().to_rfc3339()), read_at: None,
         created_at: chrono::Utc::now().to_rfc3339(),
     };
     state.send_records.write().await.push(record);
 
     Json(json!({
         "code": 0,
-        "message": "消息发送成功",
+        "message": "当前用户站内消息已写入；本地内存收件箱，尚未提供重启恢复",
         "data": { "message_id": message_id }
     })).into_response()
 }
@@ -167,12 +195,20 @@ pub async fn send_message_handler(
 /// POST /api/enterprise/message/messages/:id/read —— 标记消息已读
 pub async fn mark_read_handler(
     State(state): State<Arc<MessageCenterState>>,
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
     Path(id): Path<String>,
 ) -> Response {
     let mut messages = state.messages.write().await;
-    if let Some(msg) = messages.get_mut(&id) {
+    if let Some(msg) = messages
+        .get_mut(&id)
+        .filter(|message| message.tenant_id == tenant && message.receiver_ids.contains(&user.id))
+    {
         msg.status = MessageStatus::Read;
         msg.updated_at = chrono::Utc::now().to_rfc3339();
+    } else {
+        return (StatusCode::NOT_FOUND, Json(json!({"code": 404, "message": "消息不存在"})))
+            .into_response();
     }
     Json(json!({ "code": 0, "message": "标记已读成功" })).into_response()
 }
@@ -189,11 +225,17 @@ pub async fn list_templates_handler(
 /// GET /api/enterprise/message/stats —— 获取消息统计
 pub async fn message_stats_handler(
     State(state): State<Arc<MessageCenterState>>,
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
 ) -> Response {
     let messages = state.messages.read().await;
     let mut stats = MessageStats::default();
-    stats.total = messages.len() as i64;
-    for msg in messages.values() {
+    let visible: Vec<_> = messages
+        .values()
+        .filter(|message| message.tenant_id == tenant && message.receiver_ids.contains(&user.id))
+        .collect();
+    stats.total = visible.len() as i64;
+    for msg in visible {
         match msg.status {
             MessageStatus::Sent => stats.sent += 1,
             MessageStatus::Read => stats.read += 1,

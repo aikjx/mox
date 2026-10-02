@@ -218,53 +218,17 @@ pub async fn trigger_sync_handler(
     };
     drop(connectors);
 
-    let task_id = format!("sync_{}", uuid::Uuid::new_v4().simple());
-    let now = chrono::Utc::now().to_rfc3339();
-
-    let task = SyncTask {
-        task_id: task_id.clone(),
-        connector_id: id.clone(),
-        tenant_id: "default".to_string(),
-        name: format!("{}-{}", config.name, req.entity),
-        entity: req.entity.clone(),
-        status: SyncTaskStatus::Running,
-        direction: req.direction.unwrap_or(config.sync_config.direction.clone()),
-        mode: req.mode.unwrap_or(config.sync_config.mode.clone()),
-        trigger_type: "manual".to_string(),
-        started_at: Some(now.clone()),
-        finished_at: None,
-        total_count: 0,
-        success_count: 0,
-        failed_count: 0,
-        skipped_count: 0,
-        error_message: None,
-        log_path: None,
-        created_by: None,
-        created_at: now,
-    };
-
-    state.sync_tasks.write().await.insert(task_id.clone(), task);
-
-    // 异步执行同步（模拟）
-    let state_clone = state.clone();
-    let task_id_clone = task_id.clone();
-    tokio::spawn(async move {
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-        if let Some(t) = state_clone.sync_tasks.write().await.get_mut(&task_id_clone) {
-            t.status = SyncTaskStatus::Success;
-            t.finished_at = Some(chrono::Utc::now().to_rfc3339());
-            t.total_count = 100;
-            t.success_count = 98;
-            t.failed_count = 2;
-            t.skipped_count = 0;
-        }
-    });
-
-    Json(json!({
-        "code": 0,
-        "message": "同步任务已启动",
-        "data": { "task_id": task_id }
-    })).into_response()
+    // No target transaction, cursor or receipt is wired into this route yet.
+    // Never turn a timer or a successful source query into synchronization success.
+    let _ = (config, req);
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        Json(json!({
+            "code": 501, "message": "同步目标事务与持久化作业未接入，未启动同步任务",
+            "data": { "available": false }
+        })),
+    )
+        .into_response()
 }
 
 /// GET /api/integration/sync-tasks —— 获取同步任务列表

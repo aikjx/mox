@@ -134,9 +134,9 @@
             <div class="phase-desc">{{ p.desc }}</div>
             <div class="phase-bar-wrap">
               <div class="phase-bar-bg">
-                <div class="phase-bar-fill" :style="{ width: p.progress + '%', background: p.color }"></div>
+                <div class="phase-bar-fill" :style="{ width: (p.progress ?? 0) + '%', background: p.color }"></div>
               </div>
-              <span class="phase-pct">{{ p.progress }}%</span>
+              <span class="phase-pct">{{ p.progress === null ? '未获取' : p.progress + '%' }}</span>
             </div>
           </div>
         </div>
@@ -202,6 +202,7 @@ import { APP_VERSION, NAV_MODULES } from '@/types'
 import { getStatus, getLogs, getProjectPhaseProgress } from '@/api'
 import { useProject } from '@/composables'
 import { cat } from '@/constants'
+import { reportedPhaseProgress } from './phase-progress.js'
 
 const { currentProject } = useProject()
 const router = useRouter()
@@ -223,6 +224,7 @@ const phaseProgressData = ref(null)
 
 async function loadPhaseProgress() {
   const pid = currentProject.value?.id
+  phaseProgressData.value = null
   if (!pid) return
   try {
     const data = await getProjectPhaseProgress(pid)
@@ -231,32 +233,13 @@ async function loadPhaseProgress() {
 }
 
 const projectPhases = computed(() => {
-  const phase = currentProject.value?.phase || 'requirement'
   const phases = [
     { key: 'requirement', label: '需求阶段', desc: '需求采集与分析', color: cat(1), progress: 0, status: 'pending' },
     { key: 'architecture', label: '架构阶段', desc: '知识图谱构建', color: cat(2), progress: 0, status: 'pending' },
     { key: 'develop', label: '开发阶段', desc: '算子与工作流', color: cat(3), progress: 0, status: 'pending' },
     { key: 'release', label: '发布阶段', desc: '监控与优化', color: cat(4), progress: 0, status: 'pending' }
   ]
-  // 根据当前阶段模拟进度
-  const phaseOrder = ['requirement', 'architecture', 'develop', 'release']
-  const curIdx = phaseOrder.indexOf(phase)
-  return phases.map((p, i) => {
-    // 优先使用后端返回的阶段进度
-    if (phaseProgressData.value && phaseProgressData.value.phases) {
-      const backendPhase = phaseProgressData.value.phases.find(ph => ph.key === p.key || ph.name === p.key)
-      if (backendPhase) {
-        return { ...p, progress: backendPhase.progress ?? 0, status: backendPhase.status || 'pending' }
-      }
-    }
-    if (i < curIdx) {
-      return { ...p, progress: 100, status: 'done' }
-    } else if (i === curIdx) {
-      const realProgress = phaseProgressData.value?.current_progress ?? 65
-      return { ...p, progress: realProgress, status: 'active' }
-    }
-    return p
-  })
+  return reportedPhaseProgress(phases, phaseProgressData.value)
 })
 
 // AI 快速对话

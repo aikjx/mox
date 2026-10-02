@@ -17,7 +17,6 @@ pub struct MailerState {
     pub smtp_config: Arc<RwLock<SmtpConfig>>,
     pub templates: Arc<RwLock<HashMap<String, EmailTemplate>>>,
     pub send_history: Arc<RwLock<Vec<SendResult>>>,
-    pub smtp_client: Arc<SmtpClient>,
 }
 
 impl MailerState {
@@ -32,7 +31,6 @@ impl MailerState {
             smtp_config: Arc::new(RwLock::new(config.clone())),
             templates: Arc::new(RwLock::new(templates)),
             send_history: Arc::new(RwLock::new(Vec::new())),
-            smtp_client: Arc::new(SmtpClient::new(config)),
         }
     }
 
@@ -45,6 +43,27 @@ impl Default for MailerState {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Snapshot the current configuration per send; blocking SMTP runs off the Tokio reactor.
+async fn deliver_current(state: &MailerState, message: EmailMessage) -> Result<SendResult, String> {
+    let config = state.smtp_config.read().await.clone();
+    let id = message.message_id.clone();
+    let result = tokio::task::spawn_blocking(move || SmtpClient::new(config).send(&message))
+        .await
+        .map_err(|_| "SMTP worker failed".to_string())
+        .and_then(|result| result);
+    let recorded = match &result {
+        Ok(sent) => sent.clone(),
+        Err(error) => SendResult {
+            success: false,
+            message_id: id,
+            error: Some(error.clone()),
+            sent_at: String::new(),
+        },
+    };
+    state.send_history.write().await.push(recorded);
+    result
 }
 
 /// POST /api/enterprise/mailer/send —— 发送邮件
@@ -95,23 +114,11 @@ pub async fn send_email_handler(
         priority: req.priority,
     };
 
-    // 发送邮件（异步执行，避免阻塞）
-    let client = state.smtp_client.clone();
-    let history = state.send_history.clone();
-    let msg = message.clone();
-
-    tokio::spawn(async move {
-        let result = client.send(&msg);
-        let mut history = history.write().await;
-        history.push(result.unwrap_or_else(|e| SendResult {
-            success: false,
-            message_id: msg.message_id.clone(),
-            error: Some(e),
-            sent_at: chrono::Utc::now().to_rfc3339(),
-        }));
-    });
-
-    success_with_message("邮件已提交发送", json!({ "message_id": message_id }))
+    let result = deliver_current(&state, message).await;
+    match result {
+        Ok(result) => success_with_message("SMTP 已接受邮件", json!(result)),
+        Err(error) => internal_error(&error),
+    }
 }
 
 /// GET /api/enterprise/mailer/config —— 获取SMTP配置
@@ -160,8 +167,7 @@ pub async fn send_test_email_handler(
         priority: Some("normal".to_string()),
     };
 
-    let client = state.smtp_client.clone();
-    let result = client.send(&message);
+    let result = deliver_current(&state, message).await;
 
     match result {
         Ok(r) => success_with_message("测试邮件发送成功", json!(r)),

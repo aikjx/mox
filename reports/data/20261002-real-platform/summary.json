@@ -1,0 +1,185 @@
+{
+  "date": "2026-10-02 Asia/Shanghai",
+  "scope": [
+    "platform",
+    "frontend-ui"
+  ],
+  "all_enterprise_modules_complete": false,
+  "mock_business_services_in_new_tests": false,
+  "results": [
+    {
+      "log": "reports\\data\\20261002-real-platform\\final-real-regression.log",
+      "sha256": "fb00fd96f9e62a81a17c6fa16d00dd4974723e540524ba812b91fe6bda01c360",
+      "rust_counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ],
+        [
+          "3",
+          "0",
+          "0"
+        ],
+        [
+          "1",
+          "0",
+          "0"
+        ],
+        [
+          "3",
+          "0",
+          "0"
+        ],
+        [
+          "2",
+          "0",
+          "0"
+        ]
+      ],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\tenant-expert-isolation.log",
+      "sha256": "24c43199439d3ba36baf7aa88b4d1f7f9483294d8bd95e71edbb0773aa7176b7",
+      "rust_counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\references-green.log",
+      "sha256": "62b0884ea4a77b9c2081e400e4aafe4c1cc365458924ee68bb5222aa61abf96d",
+      "rust_counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\gateway-all-targets.log",
+      "sha256": "e6000636e93fd174a83a5002855bf6c4fd122651e721972fc0c01563a925fb53",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\clippy.log",
+      "sha256": "4856ba07e268c0f540084e07bbadd9cb67ba07314ddb04149eeeb1c139a018d6",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\frontend-phase.log",
+      "sha256": "bcaaf4cc3d88e92f8da695f23192aab43016478091c8aa2d6773237807a30648",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\final-frontend-build.log",
+      "sha256": "4f31d55a4c33840c9925818a22bc84d4d23666641c8e78fc78284b17de0bad23",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\frontend-gate-fixed.log",
+      "sha256": "c5b4728226f32a51cfa1bc43fd637154da2f9e8470b6e94e53fe1d5a8f3c440c",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\doc-links.log",
+      "sha256": "1649e6725112072d0fdf48ad17673e78b2f05cb26441d21cdb241e602b04da5b",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\locale-gate.log",
+      "sha256": "72f3ef915e9d9253c6e63117a43b50edbdaf3a70ce447fa7647aa5925033c983",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\script-selftest.log",
+      "sha256": "5f848e8cbcfb1d193996c1b883a1ceca3f76a6b0339904da5f2ef75476b1aada",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\script-paths.log",
+      "sha256": "08ea4bffff79a39089f040c2c1dc8603a6663e5c6f32e00c8881404eb11d07c9",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\ports.log",
+      "sha256": "0a331a08ba1ad7c310de9dce9c81a4f4bdae2c770960a24a212b87c5f314732e",
+      "rust_counts": [],
+      "complete_marker_present": true,
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\docs-inventory-check.log",
+      "sha256": "f6a94aa41161d9e4ff188677a516332740a990a9a1c67855fe0dfe6dd7c63bd6",
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\final-frontend-gate.log",
+      "sha256": "c5b4728226f32a51cfa1bc43fd637154da2f9e8470b6e94e53fe1d5a8f3c440c",
+      "exit_code": 0
+    },
+    {
+      "log": "reports\\data\\20261002-real-platform\\orchestration-unit.log",
+      "exit_code": 0,
+      "sha256": "058afa76a22ca7c9a426e08b6ffaa4f3f1b7fa021645512875f6874724b0f24c",
+      "rust_counts": [
+        [
+          "9",
+          "0",
+          "0"
+        ]
+      ]
+    }
+  ],
+  "expected_red_logs": [
+    "tenant-red.log",
+    "smtp-red.log",
+    "consultation-red.log",
+    "orchestration-red.log",
+    "references-red.log"
+  ],
+  "limitations": [
+    "No configured live LLM, OSS or SMTP acceptance test",
+    "No authenticated browser E2E: gateway 3080 was not listening",
+    "Current self inbox and plan state are volatile",
+    "No complete workspace, load, crash-recovery or security audit acceptance"
+  ],
+  "rust_regression_passed": 12,
+  "rust_regression_failed": 0,
+  "frontend_pure_tests_passed": 4,
+  "browser": {
+    "url": "http://127.0.0.1:3020/#/login?redirect=/dashboard",
+    "observed": "Real login page and unauthenticated navigation rejection; service error shown",
+    "business_e2e_passed": false,
+    "blocker": "gateway 3080 was not listening; no fake login/backend used"
+  },
+  "rust_orchestration_unit_passed": 9
+}

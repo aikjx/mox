@@ -91,7 +91,7 @@
 | U2 | 专家画像与匹配透明化（逐维打分可视化） | 新UI | P1 | **已闭环（2026-10-01）**。代码证据：scheduler-proto/matcher.rs `MatchedExpert.weights`；scheduler-core/modular_matcher.rs:286 带出实际权重；api/dto.rs `ExpertScoreView{domain,capability,health,priority,performance 各 {value,weight},total}`；scheduler-svc/routes.rs `/experts/search` 透出；http-sdk alliance.rs（本地降级）+ alliance_remote.rs（远程优先）两路径均透传。前端 `MatchExplainPanel.vue` 逐维条形图+权重标注+总分演算。**权重表（主路径默认）**：domain 0.35 / capability 0.30 / priority(=rating 权重) 0.20 / performance 0.10 / **health 0.05**；健康分 is_healthy?1.0:0.2，非硬过滤。**口径纠错**：旧账「健康度 0.15」系 bio/备用 matcher 权重误植，主路径实为 0.05。测试：scheduler-core 115 + scheduler-svc/http-sdk 38 全绿。 | 12 §3.2；15 U2；依据 10-#12、11-弱② |
 | U3 | 图谱可视化增强（力导向/分层/虚拟渲染） | 新UI | P2 | 规划中 P2（在 U1 选栈后） | 12 §3.3；依据 10-#40/G7/G8/G9/D10 |
 | U4 | 实时协作（多人围观/评论标注） | 新UI | P2 | 规划中 P2（依赖 A1/T4） | 12 §3.4；依据 11-Coze 借鉴 |
-| A1 | 多租户隔离（数据/配额/密钥 + SSO） | 新架构 | P1 | 规划中 P1（依赖 P0-N2/G3/N1） | 12 §4.1；依据 11-弱③ |
+| A1 | 多租户隔离（数据/配额/密钥 + SSO） | 新架构 | P1 | 🟡 **部分闭环（阶段一）2026-10-01**：数据模型+内存态按租户隔离、TenantId 提取器（取可信身份 tenant_id，X-Tenant-Id 头一致性校验）、审计带 tenant；两真实租户建专家/查询互不可见 E2E 已证（a1-e2e-evidence.txt）。**配额/密钥/SSO-SAML/会话-任务-执行器分区/租户内 RBAC = 阶段二（方案稿）**。依赖 P0-N2/G3/N1 均已闭环 | 12 §4.1；依据 11-弱③；backend-fix-report A1 节 |
 | A2 | 模块化微服务深化（fusion / memory 独立，网关无状态化） | 新架构 | P2 | 规划中 P2（解决 N11 sticky） | 12 §4.2；依据 08 §十 P2、10-#9/#26/N11 |
 | A3 | 事件溯源（任务/审计可重放，审计送 SIEM） | 新架构 | P2 | 规划中 P2（依赖 T4 事件模型） | 12 §4.3；依据 10-#19/#28/#29/D4 |
 | A4 | 图数据库引入（关系层从 SQLite 升级） | 新架构 | P2 | 规划中 P2（关键约束：须可气隙/嵌入式，守住国密气隙卖点） | 12 §4.4；依据 10-#11/N4/D7 |

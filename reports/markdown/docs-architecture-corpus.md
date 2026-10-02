@@ -4,7 +4,7 @@
 
 这是全量结构摘录与显式引用图，不是逐篇语义审查或生产认证。目标态、自称权威和归档文件均不自动升级为现状事实。JSON 保留文件 SHA-256、所有章节、Mermaid 图源和逐行引用，供反向检索。非文本文件仅登记元数据；HTML 中脚本动态绘图和普通文本框图未算入 Mermaid 分母。
 
-文件 598；可读文本 570；Mermaid 图源 170；显式引用 3353。
+文件 599；可读文本 571；Mermaid 图源 171；显式引用 3358。
 
 | 分类 | 文件数 |
 |---|---:|
@@ -17,7 +17,7 @@
 | enterprise | 74 |
 | expert-alliance | 77 |
 | graphify-out | 1 |
-| modules | 41 |
+| modules | 42 |
 | normalization | 8 |
 | specifications | 73 |
 | standards | 14 |
@@ -168,7 +168,7 @@
 | [AI 统一智能系统架构（AUS）— L4 编排层 Agentic 闭环深度优化](../../docs/architecture/ai/ai-unified-intelligent-system-architecture.html) | active-candidate | AI 统一智能系统架构（AUS）；1. 概述与目标；2. 记忆与知识体系（为何“存了≠能用”）；3. 分层架构总览（L1–L4）；4. 能力层与工具生态（L3）；5. 关键模块详解；6. 感知与接入（L1）；7. 安全与治理；8. 数据层；9. 部署与运行形态；10. 评测与回归（Eval）；11. 总结与路线图 | 0 |
 | [AI 统一智能系统架构（AI Architecture）](../../docs/architecture/ai/README.md) | active-candidate | AI 统一智能系统架构（AI Architecture）；一、本目录内容；二、相关文档；目录架构设计卡：低代码与动态配置（2026-10-01） | 0 |
 | [算子统一系统（OUS）架构优化方案：引入 L4 Agentic 闭环与形式化状态机](../../docs/architecture/AI-UNIFIED-OPTIMIZATION-PLAN.md) | active-candidate | 算子统一系统（OUS）架构优化方案：引入 L4 Agentic 闭环与形式化状态机；1. 架构演进总结与对比；2. OUS L4 编排层优化设计；3. 代码落地计划；4. 总结 | 0 |
-| [API 表面单源化与企业级收口计划 v0.1（API-SURFACE-PLAN-V0.1）](../../docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md) | active-candidate | API 表面单源化与企业级收口计划 v0.1（API-SURFACE-PLAN-V0.1）；一、为什么要做这件事（本轮实测，非引用）；二、分阶段计划（每阶段自带验收判据；不跨阶段夹带重构）；三、普查器的覆盖面账：已收干的与仍盲的（不许被读成"没有缺陷"）；四、评审需要的三个裁决点 | 0 |
+| [API 表面单源化与企业级收口计划 v0.1（API-SURFACE-PLAN-V0.1）](../../docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md) | active-candidate | API 表面单源化与企业级收口计划 v0.1（API-SURFACE-PLAN-V0.1）；一、为什么要做这件事（本轮实测，非引用）；二、分阶段计划（每阶段自带验收判据；不跨阶段夹带重构）；三、普查器的覆盖面账：已收干的与仍盲的（不许被读成"没有缺陷"）；四、评审需要的四个裁决点 | 0 |
 | [MOX 应用商店与发布系统 — 全维设计](../../docs/architecture/app-store-architecture.md) | active-candidate | MOX 应用商店与发布系统 — 全维设计；一、核心概念；二、全维；三、发布流程（全维一键）；四、子系统运行时；五、独立发布（脱离MOX运行）；六、应用商店分类体系；七、安全机制；八、API 接口；九、一键工具清单；十、人人有系统，企业快发布 | 0 |
 | [璇玑 RelGraph · 算子统一系统（OUS）企业级架构文档](../../docs/architecture/ARCHITECTURE-ENTERPRISE.md) | active-candidate | 璇玑 RelGraph · 算子统一系统（OUS）企业级架构文档；文档变更记录；目录；1. 项目概述；2. 架构设计原则；3. 系统总体架构；4. 后端平台架构（platform）；5. 前端架构（frontend-ui）；6. 文档体系架构（docs）；7. 核心模块详细设计；8. 数据模型设计；9. API 设计规范；10. 安全架构；11. 可观测性架构；12. 部署架构；13. 开发规范 | 0 |
 | [璇玑 · 架构文档中心 — Architecture Documentation Hub](../../docs/architecture/architecture-hub.html) | active-candidate | 璇玑 · 架构文档中心 | 0 |
@@ -474,6 +474,7 @@
 | [禁止使用 Mock 规范（NO-MOCK-POLICY）](../../docs/modules/NO-MOCK-POLICY.md) | active-candidate | 禁止使用 Mock 规范（NO-MOCK-POLICY）；1. 核心原则；2. 禁止清单；3. 已移除的 Mock 清单（历史记录）；4. 新代码评审 Checklist；5. 降级策略规范；6. 验证命令；7. 例外审批 | 0 |
 | [PrimiFlow 全域原语智能自动化平台 —— 完整设计蓝图](../../docs/modules/PrimiFlow-%E8%AE%BE%E8%AE%A1%E8%93%9D%E5%9B%BE.md) | active-candidate | PrimiFlow 全域原语智能自动化平台 —— 完整设计蓝图；〇、定位：PrimiFlow 不是新仓库，而是 OUS 的「大脑层」；一、整套系统用到的全部算法清单（分层）；二、完整落地架构分层（从前端交互 → 内核引擎 → 数据层）；三、全链路文档自生成体系；四、技术栈；五、算法清单汇总映射表；六、五向可追溯绑定方案；七、实施路线与里程碑；八、关键不变量与验收标准 | 0 |
 | [功能与模块导航](../../docs/modules/README.md) | active-candidate | 功能与模块导航；按功能查找；新功能落位规则；持续维护；目录架构设计卡：低代码与动态配置（2026-10-01）；资源知识主题设计 | 0 |
+| [平台与前端真实实现及验收台账](../../docs/modules/REAL-IMPLEMENTATION-STATUS.md) | active-candidate | 平台与前端真实实现及验收台账；范围与方法；模块状态与退出条件；真实业务链路；验收规则 | 1 |
 | [资源知识业务流程与失败恢复](../../docs/modules/resource-knowledge/BUSINESS-FLOWS.md) | active-candidate | 资源知识业务流程与失败恢复；当前实现链路与失败出口；1. 上传与云盘管理（RK-BP01）；2. 文件/内联内容进入知识空间（RK-BP02）；3. 挂图、知识问答与专家联盟（RK-BP03）；4. 对话沉淀（RK-BP04）；5. 撤权、回收与彻底删除（RK-BP05）；6. 提供方启用与迁移（RK-BP06）；7. 首个验收样例 | 5 |
 | [竞品参考与企业能力改进设计](../../docs/modules/resource-knowledge/COMPETITIVE-DESIGN.md) | active-candidate | 竞品参考与企业能力改进设计；逐项核验与设计映射；本轮实现的设计改进；全维改进优先级与验证方法 | 0 |
 | [资源知识全维交付检查](../../docs/modules/resource-knowledge/DELIVERY-MATRIX.md) | active-candidate | 资源知识全维交付检查 | 0 |
