@@ -1,0 +1,273 @@
+{
+  "status": "increment_implemented_with_unresolved_existing_contract_failures",
+  "rust_real_event_tests": 7,
+  "node_transport_and_parser_tests": 4,
+  "existing_contract_tests": {
+    "passed": 116,
+    "failed": 4
+  },
+  "checks_passed": 14,
+  "checks_failed": 1,
+  "diagrams": 2,
+  "acceptance_requirements": 7,
+  "new_service_mocks": 0,
+  "full_enterprise_ready": false,
+  "browser_full_e2e": false,
+  "view_event_subscription_integrated": false,
+  "cross_instance_event_delivery": false,
+  "outbox_atomicity": false,
+  "webhook_production_hardening": false,
+  "remote_ci_run": false,
+  "checks": [
+    {
+      "name": "rust_events_final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "alliance_stream_contract",
+        "--test",
+        "sse_event_stream_e2e",
+        "--test",
+        "t4_event_bus_e2e",
+        "--",
+        "--test-threads=1"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_events_final.log"
+    },
+    {
+      "name": "node_events",
+      "command": [
+        "node",
+        "--test",
+        "--test-timeout=10000",
+        "frontend-ui/src/modules/expert-alliance/contract/event-stream.node-test.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "node_events.log"
+    },
+    {
+      "name": "frontend_build_final",
+      "command": [
+        "npm.cmd",
+        "run",
+        "build"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph\\frontend-ui",
+      "exit_code": 0,
+      "log": "frontend_build_final.log"
+    },
+    {
+      "name": "frontend_module_release",
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_module_release.log"
+    },
+    {
+      "name": "framework",
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-framework-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "framework.log"
+    },
+    {
+      "name": "api_bindings",
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-api-binding-kinds.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "api_bindings.log"
+    },
+    {
+      "name": "capabilities",
+      "command": [
+        "python",
+        "scripts/registry/enterprise_capabilities.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "capabilities.log"
+    },
+    {
+      "name": "paths_selftest",
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_selftest.log"
+    },
+    {
+      "name": "paths",
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "alliance_stream_contract",
+        "--test",
+        "sse_event_stream_e2e",
+        "--test",
+        "t4_event_bus_e2e"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy.log"
+    },
+    {
+      "name": "format",
+      "command": [
+        "rustfmt",
+        "--check",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/alliance_stream_contract.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log"
+    },
+    {
+      "name": "diff_release",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        ".github/workflows/ci.yml",
+        "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+        "docs/expert-alliance/INDEX.md",
+        "docs/expert-alliance/16-decision-and-state-ledger.md",
+        "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+        "frontend-ui/src/modules/expert-alliance/composables/useAllianceEventStream.js",
+        "frontend-ui/src/modules/expert-alliance/contract/index.js",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff_release.log"
+    },
+    {
+      "name": "diagrams",
+      "command": [
+        "node",
+        "reports/data/20261002-alliance-event-contract/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log"
+    },
+    {
+      "name": "doc_links_final",
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "doc_links_final.log"
+    },
+    {
+      "name": "contract_tests_release",
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "exec",
+        "--",
+        "vitest",
+        "run",
+        "--config",
+        "frontend-ui/vite.config.js",
+        "frontend-ui/src/modules/expert-alliance/contract/contract.test.js",
+        "frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 1,
+      "log": "contract_tests_release.log"
+    }
+  ],
+  "source_manifest": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "21107a80cdece94d257225dbc647ecb2373b4254313950ef4e0c5ec4c493e347"
+    },
+    {
+      "path": "docs/expert-alliance/21-event-delivery-contract.md",
+      "sha256": "bbf33f141c18259f93eafacd6c4efa366c0bbf1fc7e42813d40bcdf67809aa48"
+    },
+    {
+      "path": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+      "sha256": "0c4bbc5a6744e25ca35a6d44833e3c77deb9e4fa36d927537253e0c63425cbde"
+    },
+    {
+      "path": "docs/expert-alliance/INDEX.md",
+      "sha256": "c16bed934793b0c38556ed0cb225cf4d77a0005297437ea1f80d48a570192f0b"
+    },
+    {
+      "path": "docs/expert-alliance/16-decision-and-state-ledger.md",
+      "sha256": "4edac2570b5b73a053696c584e992fc1fc23581a4291c010617f4358d7746ec9"
+    },
+    {
+      "path": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "sha256": "254f6d4fd21af08625658edaa803b0e9862fc2e3505c30bc8124c752e222908d"
+    },
+    {
+      "path": "frontend-ui/src/modules/expert-alliance/contract/event-stream.js",
+      "sha256": "108e36a877e2727cf72f774fef20ba9517e6f81cd1d6f400324f57304e21bfe4"
+    },
+    {
+      "path": "frontend-ui/src/modules/expert-alliance/contract/event-stream.node-test.mjs",
+      "sha256": "60a1e9ff06c20a19f71dd56afe884bee7c3c99e2649df7c96e13f14582927fc6"
+    },
+    {
+      "path": "frontend-ui/src/modules/expert-alliance/contract/index.js",
+      "sha256": "2cc3a3e0b74669fd32e34c788f91271970c52daad780811ade4651a53f35b332"
+    },
+    {
+      "path": "frontend-ui/src/modules/expert-alliance/composables/useAllianceEventStream.js",
+      "sha256": "83861b8c1b86ff6eb8dd63846244c8dd37474ba7baded7b0905b35c19ff18766"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs",
+      "sha256": "2fc760dc328c9202e8be2c2833be51be8c9d4d62f642be1b4dbc1659e0d8e58a"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/tests/alliance_stream_contract.rs",
+      "sha256": "5edd55aa1cddac89a1c754eb957bfe9de4f43d2620242efd9b1a57769a870497"
+    }
+  ]
+}

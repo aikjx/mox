@@ -30,9 +30,10 @@
 
 | 事实 | 唯一权威 | 校验 |
 |------|----------|------|
-| 接口 ↔ 实现 | [`API-REGISTRY.md`](API-REGISTRY.md)（223 路由 / 46 域） | `python scripts/doc/gen-api-registry.py` |
+| 接口 ↔ 实现 | [`API-REGISTRY.md`](API-REGISTRY.md)（数量由注册主源生成） | `python scripts/doc/gen-api-registry.py` |
 | 端口分配 | [`api/PORT-REGISTRY.md`](api/PORT-REGISTRY.md) | `python scripts/gate/verify-ports.py` |
 | 模块与代码目录 | [`modules/CODE-CATALOG.md`](modules/CODE-CATALOG.md) | `python scripts/registry/module_catalog.py --check` |
+| 企业功能需求、模块关系与流程 | [`modules/enterprise-capabilities/README.md`](modules/enterprise-capabilities/README.md)；登记源生成模块卡 | `python scripts/registry/enterprise_capabilities.py --check` |
 | 术语表 | [`enterprise/GLOSSARY.md`](enterprise/GLOSSARY.md) | 人工评审 |
 | 权威链与归一化关系 | [`enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md`](enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md) | 人工评审 |
 | 企业级文档进度 | [`enterprise/00-INDEX.md`](enterprise/00-INDEX.md) | `python scripts/doc/verify-doc-ep038.py` |

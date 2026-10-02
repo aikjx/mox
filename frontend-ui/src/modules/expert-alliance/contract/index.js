@@ -2,6 +2,7 @@
 export * from './collab'
 export * from './dispatcher'
 export * from './endpoints'
+export * from './event-stream'
 export * from './enums'
 export * from './graph'
 export * from './mode'

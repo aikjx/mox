@@ -256,13 +256,13 @@ export function deleteResultText(result) {
  * 1. 业务路由统一挂 auth_middleware，而 AuthConfig::default() 的 enabled 为 true
  *    （config.rs:37、modules.rs:186）⇒ 写请求必须带身份，匿名请求在中间件层就 401；
  *    外壳的路由守卫已经保证了进得来这一页就一定有身份（router/index.js:74），所以界面不再重复置灰。
- * 2. 联盟域 handler 的签名里没有任何身份抽取器 ⇒ **只认证、不授权**：
+ * 2. 专家注册/编辑/停用 handler 没有角色判定；可选身份用于租户及审计：
  *    任何持令牌的调用方都能注册 / 编辑 / 停用，且停用不可逆。
  *    所以文案只能说"没有角色判定"，不能说"仅管理员可操作"——后端并没有这件事。
  */
 export const EXPERT_WRITE_IDENTITY = Object.freeze({
   statement: '这三条写请求都带当前登录身份发出；网关对专家写路径没有角色判定，任何已认证身份都能注册 / 编辑 / 停用，身份只被写进审计链的行动者字段（没带身份则记为 system）。全域唯一一处 403 在协作面：目标专家已被禁用时拒绝，拒的是对象状态而不是调用方是谁',
-  evidence: ['config.rs:41', 'modules.rs:234', 'router/index.js:74', 'experts_common.rs:585', 'experts_dispatcher.rs:588', 'experts_collaboration.rs:797']
+  evidence: ['config.rs:41', 'modules.rs:234', 'router/index.js:74', 'experts_common.rs:750', 'experts_dispatcher.rs:596', 'experts_collaboration.rs:783']
 })
 
 /** 会诊房间凭证状态的取值常量。wire 权威 experts_registry.rs:672-676

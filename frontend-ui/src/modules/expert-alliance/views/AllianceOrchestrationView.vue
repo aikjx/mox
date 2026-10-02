@@ -15,6 +15,25 @@
 
     <el-alert v-if="store.volatility" type="info" :closable="false" show-icon :title="store.volatility" />
 
+    <section v-if="store.liveEvents.length" class="aov-card aov-live">
+      <h2 class="aov-h">
+        实时事件流
+        <span class="aov-live-dot"></span>
+        <el-tag size="small" type="success" effect="plain">SSE · 免轮询</el-tag>
+      </h2>
+      <ul class="aov-events">
+        <li v-for="ev in store.liveEvents" :key="ev.id || ev.receivedAt" class="aov-event">
+          <code class="aov-event-kind">{{ ev.kind }}</code>
+          <span v-if="ev.planId" class="aov-event-plan">
+            计划 {{ ev.planId }}<template v-if="ev.from"> · {{ ev.from }} → {{ ev.to }}</template>
+            <template v-if="ev.title"> · {{ ev.title }}</template>
+          </span>
+          <span v-else-if="ev.expertId" class="aov-event-plan">专家 {{ expertNames[ev.expertId] || ev.expertId }}</span>
+          <span class="aov-event-time">{{ ev.occurredAt || ev.receivedAt }}</span>
+        </li>
+      </ul>
+    </section>
+
     <div class="aov-body">
       <section class="aov-card">
         <h2 class="aov-h">编排输入</h2>
@@ -256,13 +275,14 @@
 <script setup>
 // 编排台：装配 + 来源标注。所有规则、键集、常量清单都在 contract/orchestration.js，
 // 本文件不重复后端边界，只把它算好的判据渲染出来。
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { FUSION_STRATEGY } from '@/modules/expert-alliance/contract'
 import { ORCH_PROVENANCE } from '@/modules/expert-alliance/contract'
 import { expertNameOr, orchStatusLabel, ORCH_STATUS } from '@/modules/expert-alliance/contract'
 import { useAllianceOrchStore } from '@/modules/expert-alliance/store'
 import { useAllianceExpertsStore } from '@/modules/expert-alliance/store'
+import { useAllianceEventStream } from '@/modules/expert-alliance/composables/useAllianceEventStream'
 
 const store = useAllianceOrchStore()
 const expertStore = useAllianceExpertsStore()
@@ -289,10 +309,21 @@ function refreshReads() {
   store.loadHistory(1)
 }
 
+// T4 SSE 真实挂载：订阅本租户业务事件帧（PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled）。
+// onEvent 把帧交给 store.applyAllianceEvent → liveEvents 立即可见 + 带 plan_id 的帧防抖真拉统计/历史，
+// 取代轮询。事件流是 best-effort 实时提示，连接失败不打扰用户（读数仍可手动「刷新读数」）。
+const eventStream = useAllianceEventStream({
+  onEvent: (kind, envelope) => store.applyAllianceEvent(kind, envelope),
+  onError: () => {}
+})
+
 onMounted(() => {
   refreshReads()
   if (!expertStore.experts.length) expertStore.loadExperts()
+  eventStream.start()
 })
+
+onUnmounted(() => eventStream.stop())
 </script>
 
 <style scoped>
@@ -332,6 +363,13 @@ onMounted(() => {
 .aov-step-meta { font-size: 11px; color: var(--text-secondary); }
 .aov-fusion { display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px dashed var(--border); border-radius: var(--radius-sm); }
 .aov-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-secondary); }
+.aov-live { flex-direction: column; }
+.aov-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; }
+.aov-events { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-primary); }
+.aov-event { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.aov-event-kind { font-size: 11px; color: var(--accent-light); }
+.aov-event-plan { font-size: 12px; color: var(--text-secondary); }
+.aov-event-time { font-size: 11px; color: var(--text-secondary); margin-left: auto; }
 .aov-cells { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 .aov-cell { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--text-secondary); }
 .aov-cell-value { font-size: 16px; color: var(--text-primary); }

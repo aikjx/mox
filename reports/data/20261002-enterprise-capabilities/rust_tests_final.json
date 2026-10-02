@@ -1,0 +1,19 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "inbox_http",
+    "--test",
+    "inbox_persistence",
+    "--test",
+    "delivery_truth",
+    "--test",
+    "trusted_tenant_http"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "rust_tests_final.log"
+}

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python",
+    "scripts/gate/check-doc-formulas.py",
+    "--selftest"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "formula_selftest.log"
+}

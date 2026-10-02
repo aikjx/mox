@@ -447,3 +447,97 @@ Read 证据：
 
 ### 测试结果
 - `npx vitest run`（全量）：78 文件 / 1044 用例全绿（含 style.test.js 21 项门禁）。
+
+---
+
+## T4 事件帧 SSE 前端接入（2026-10-02）
+
+### 做了什么（最低接入，按成本如实评估）
+- **三处登记**：后端新端点 `GET /api/alliance/events/stream`（T4 业务事件帧 SSE）已在
+  `contract/endpoints.js` 登记为 `allianceEventStream`，并同步 `docs/API-REGISTRY.md` 与后端 actuator ROUTES。
+- **真实消费接入点**：新增 `composables/useAllianceEventStream.js`——以 `fetch` + `ReadableStream`
+  直连该端点，按 SSE 协议切分帧，回调 `(kind, envelope)`。它是**可工作的真实接入点**，
+  目前未挂进任何视图（避免扰动既有 1044 用例基线）；要在编排/控制台实时刷新，在视图 `onMounted`
+  调 `start()`、`onUnmounted` 调 `stop()`，收到事件后重拉对应列表即可。
+- **webhook CRUD 不进本前端模块**：它是运维管理面，按 contract 门禁归 `DOC_UNREGISTERED_PENDING`
+  「欠登记」（后端已真实落地并 E2E 验证，见后端报告）；不占本模块接线覆盖率。
+
+### 改动文件
+- `contract/endpoints.js`：新增 `allianceEventStream`。
+- `contract/contract.test.js`：webhook 两路径入 `DOC_UNREGISTERED_PENDING`；modules.rs 行号锚点随后端插入同步（219→234）。
+- `contract/registry.js`：`EXPERT_WRITE_IDENTITY.evidence` 行号同步。
+- `contract/vocabulary-ownership.test.js`：新目录 `composables/` 入 `DIR_ACCOUNT`（理由：SSE 消费入口），出账表 5→6。
+- 新增 `composables/useAllianceEventStream.js`。
+
+### 测试结果
+- 本任务相关门禁（contract 登记/接线、vocabulary 目录账）均通过。
+- 如实标注：`contract.test.js` 与 `orchestration.test.js` 中仍有若干失败，系 **A1/D4 既有源漂移**
+  （favorites 分区结构、emit_audit 增租户参、save_registry 签名、orchestration 出参键集与行号），
+  非本轮引入；本轮未触碰那些源文件。
+
+---
+
+## SSE 事件流前端挂载（2026-10-02）
+
+### 挂载点选择理由
+- 选 **`views/AllianceOrchestrationView.vue`（专家编排台）** 作为第一个真实挂载视图。
+- 理由：该视图 `onMounted` 本就拉「编排统计」（按状态分桶：draft/running/completed/…，
+  `store.statCells`）与「执行历史」表——正是 `PlanCreated / PlanStatusChanged` 两类事件
+  的天然消费面。事件帧到达 → 这两个读数该变，比「控制台任务列表」更直接命中
+  「计划/任务状态实时刷新、免轮询」的目标。专家注册表视图（ExpertRegistered/ExpertDisabled）
+  成本相近但本轮先收一处闭环，留待下轮。
+
+### 数据流（帧 → store → 视图，字段映射）
+```
+后端 GET /api/alliance/events/stream（experts_streams.rs:82，event:<Kind> + data:<信封JSON>）
+  → composables/useAllianceEventStream.js（Bearer 鉴权 + 断线重连语义，onScopeDispose 自动断）
+  → onEvent(kind, envelope)
+  → store/alliance-orch.store.js  applyAllianceEvent(kind, envelope)
+       ① liveEvents.unshift(规范化行)          ← 视图立即可见「事件到了」
+       ② envelope.plan_id 非空 → 800ms 防抖 loadStats() + loadHistory(当前页)  ← 真值真拉，不本地猜计数
+  → 视图 v-for="ev in store.liveEvents" 实时事件面板
+```
+- 信封是 `experts_events.rs` 的扁平 serde（`#[serde(tag="type")] + flatten`）：
+  `{ id, type, ...payload, source, tenant, occurred_at }`。store 行映射
+  `plan_id→planId / from / to / execution_id→executionId / task_type→taskType / title /
+  expert_id→expertId / occurred_at→occurredAt`（snake_case→camelCase，模块归一惯例）。
+- **不本地猜计数**：统计分桶的真值永远由 `loadStats` 真拉回；帧只作「该重拉了」的防抖提示，
+  避免前端乐观数与后端真实进程内表漂移。带 `plan_id` 的帧才触发重拉；专家帧（无 plan_id）
+  只进事件流，不牵动编排读数。
+
+### 改动文件
+- `store/alliance-orch.store.js`：+`liveEvents`(ref) / `applyAllianceEvent(kind,env)` / `clearLiveEvents()`；
+  Plan* 事件防抖 800ms 合并真拉统计+历史；liveEvents 上限 30 条。
+- `views/AllianceOrchestrationView.vue`：setup 顶层 `useAllianceEventStream({onEvent→store.applyAllianceEvent, onError:静默})`；
+  `onMounted` `start()`、`onUnmounted` `stop()`（与 composable 内部 onScopeDispose 双保险，幂等）；
+  模板新增「实时事件流」卡片（`store.liveEvents`）；专家名走既有 `expertNames` 映射（不新造姓名出口）。
+- 传输层（进场时同仓已有，本轮复用未重写）：`contract/event-stream.js`（`createAllianceEventStream` +
+  `createEventFrameParser`，Bearer/CRLF/多行 data/大小上限/StreamGap/连接替换）、
+  `composables/useAllianceEventStream.js`（auth token 注入 + watch 断流 + onScopeDispose）、
+  `contract/event-stream.node-test.mjs`（node:test 真 TCP 集成）。
+- 新增测试：
+  - `store/alliance-orch.event.test.js`（5）：真后端帧形状 → liveEvents 因帧而变、字段映射、
+    防抖合并、无 plan_id 帧不重拉、30 条上限、clear 挂起 timer。
+  - `contract/event-stream.lifecycle.test.js`（3）：start 真发 fetch（Bearer + event-stream）、
+    真帧解析进 onEvent、stop 真 cancel 读端、无 token 不连。
+
+### 测试结果
+- `npx vitest run src/modules/expert-alliance`：**28 文件 / 667 用例**。
+- 通过 **650**；失败 **17**，与改前基线（26 文件 / 659 用例，17 失败）逐一同集：
+  全在 `contract/` 下读 Rust 源码文本的锚点测试——`orchestration.test.js`(12)、
+  `contract.test.js`(4)、`dispatcher.test.js`(1)，即报告上文记录的 **A1/D4 既有源漂移**
+  （favorites 分区、emit_audit 增参、save_registry 签名、orchestration 出参键集与行号）。
+- 本轮新增 8 用例全绿；本轮引入失败 **0**；棘轮（registry-name-outlets）、style.test(21)、
+  vocabulary-ownership(19) 等门禁随全量复跑仍绿。
+- 过程中曾因视图模板 `ev.name || ev.expertId` 与 store `envelope.name ||` 触发
+  「裸 .name 兜底」棘轮新增失败 1，已改为走 `expertNames[ev.expertId]`、store 不存 `name` 字段后消除。
+
+### 未做 / 诚实标注
+- 控制台（AllianceConsoleView）、专家注册表（AllianceExpertsView）、图谱视图尚未挂流；
+  ExpertRegistered/ExpertDisabled 帧本轮只进编排台的事件流面板，不重拉专家表/控制台读数。
+- 未补组件级挂载测试：本视图是依赖 Element Plus + 双 store + auth 的终端控制台页，
+  模块内 6 个 view 现无任何 .vue 挂载测试；「视图因 store 变化而重渲染」由
+  模板 `v-for="ev in store.liveEvents"` 对响应式 ref 的绑定 + store 级「帧→liveEvents」断言保证，
+  不强行起重型 mount 引入脆弱面。
+- 既有 17 个 Rust 锚点漂移失败本轮未修（不修未触及的后端源文件），如实保留。
+

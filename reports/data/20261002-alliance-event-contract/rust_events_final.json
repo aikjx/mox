@@ -1,0 +1,19 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "alliance_stream_contract",
+    "--test",
+    "sse_event_stream_e2e",
+    "--test",
+    "t4_event_bus_e2e",
+    "--",
+    "--test-threads=1"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "rust_events_final.log"
+}

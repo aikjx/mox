@@ -1,0 +1,504 @@
+{
+  "status": "completed_for_documented_increment",
+  "captured_at_utc": "2026-10-02T14:47:22.366140+00:00",
+  "module_count": 26,
+  "explicit_requirement_count": 78,
+  "mermaid_diagrams_parsed": 35,
+  "checks": {
+    "catalog_ci_tests": {
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "scripts.tests.test_enterprise_capabilities",
+        "-v"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "catalog_ci_tests.log"
+    },
+    "capabilities_final": {
+      "command": [
+        "python",
+        "scripts/registry/enterprise_capabilities.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "capabilities_final.log"
+    },
+    "diagram_parse": {
+      "command": [
+        "node",
+        "reports/data/20261002-enterprise-capabilities/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagram_parse.log"
+    },
+    "code_catalog": {
+      "command": [
+        "python",
+        "scripts/registry/module_catalog.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "code_catalog.log"
+    },
+    "rust_tests_final": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "inbox_http",
+        "--test",
+        "inbox_persistence",
+        "--test",
+        "delivery_truth",
+        "--test",
+        "trusted_tenant_http"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_tests_final.log"
+    },
+    "frontend_contract": {
+      "command": [
+        "node",
+        "--test",
+        "frontend-ui/src/modules/message-center/contract/send.node-test.mjs",
+        "frontend-ui/src/utils/api-key.node-test.mjs",
+        "frontend-ui/src/utils/audit.node-test.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_contract.log"
+    },
+    "frontend_components": {
+      "command": [
+        "node",
+        "frontend-ui/node_modules/vitest/vitest.mjs",
+        "run",
+        "--root",
+        "frontend-ui",
+        "--config",
+        "vitest.config.js",
+        "src/components/common/DataTable.pagination.test.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_components.log"
+    },
+    "frontend_build": {
+      "command": [
+        "npm.cmd",
+        "run",
+        "build"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph\\frontend-ui",
+      "exit_code": 0,
+      "log": "frontend_build.log"
+    },
+    "clippy_final": {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--all-targets"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy_final.log"
+    },
+    "frontend_module": {
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_module.log"
+    },
+    "locale": {
+      "command": [
+        "python",
+        "scripts/gate/check-locale-format-outlets.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "locale.log"
+    },
+    "api_bindings": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-api-binding-kinds.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "api_bindings.log"
+    },
+    "feedback_imports": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-ep-feedback-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "feedback_imports.log"
+    },
+    "framework_imports": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-framework-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "framework_imports.log"
+    },
+    "theme_tokens": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-theme-tokens.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "theme_tokens.log"
+    },
+    "formula_ci_final": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-formulas.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "formula_ci_final.log"
+    },
+    "surface_selftest_utf8": {
+      "command": [
+        "python",
+        "scripts/gate/check-api-surface.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "surface_selftest_utf8.log"
+    },
+    "paths_selftest": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_selftest.log"
+    },
+    "paths_ci_verified": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_ci_verified.log"
+    },
+    "ports": {
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ports.log"
+    },
+    "doc_links_release": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py",
+        "--repo"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "doc_links_release.log"
+    },
+    "scoped_format": {
+      "command": [
+        "rustfmt",
+        "--check",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "platform/gateway/mox-platform-gateway-svc/src/message_center/api.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "scoped_format.log"
+    },
+    "scoped_diff_ci_final": {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        ".github/workflows/ci.yml",
+        "docs/README.md",
+        "docs/CORE-CAPABILITIES.md",
+        "docs/modules/README.md",
+        "docs/modules/CODE-CATALOG.md",
+        "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+        "docs/modules/message-center/README.md",
+        "docs/modules/enterprise-capabilities",
+        "docs/specifications/tasks/20261002-enterprise-module-normalization",
+        "scripts/registry/enterprise_capabilities.py",
+        "scripts/registry/module_catalog.py",
+        "scripts/tests/test_enterprise_capabilities.py",
+        "frontend-ui/src/api/index.js",
+        "frontend-ui/src/api/message.api.js",
+        "frontend-ui/src/modules/index.js",
+        "frontend-ui/src/modules/message-center",
+        "platform/gateway/mox-platform-gateway-svc/src/message_center/api.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+        "reports/markdown/20261002-enterprise-capabilities.md"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "scoped_diff_ci_final.log"
+    }
+  },
+  "final_checks_passed": 23,
+  "rust_real_storage_http_tests_passed": 21,
+  "node_contract_tests_passed": 12,
+  "actual_component_tests_passed": 2,
+  "registry_invariant_tests_passed": 6,
+  "prior_attempts_retained": {
+    "capabilities": {
+      "command": [
+        "python",
+        "scripts/registry/enterprise_capabilities.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "capabilities.log"
+    },
+    "catalog_tests": {
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests",
+        "-p",
+        "test_enterprise_capabilities.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "catalog_tests.log"
+    },
+    "catalog_tests_final": {
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests",
+        "-p",
+        "test_enterprise_capabilities.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "catalog_tests_final.log"
+    },
+    "clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--all-targets"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy.log"
+    },
+    "doc_links": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py",
+        "--repo"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 1,
+      "log": "doc_links.log"
+    },
+    "doc_links_complete": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py",
+        "--repo"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "doc_links_complete.log"
+    },
+    "doc_links_final": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py",
+        "--repo"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 1,
+      "log": "doc_links_final.log"
+    },
+    "formula_selftest": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-formulas.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "formula_selftest.log"
+    },
+    "paths_check": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_check.log"
+    },
+    "paths_ci_final": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 1,
+      "log": "paths_ci_final.log"
+    },
+    "rust_red": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "inbox_http",
+        "message_text_limits_reject_without_writes_and_accept_unicode_boundaries"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 101,
+      "log": "rust_red.log"
+    },
+    "rust_tests": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "inbox_http",
+        "--test",
+        "inbox_persistence",
+        "--test",
+        "delivery_truth",
+        "--test",
+        "trusted_tenant_http"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 101,
+      "log": "rust_tests.log"
+    },
+    "scoped_diff": {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "docs/CORE-CAPABILITIES.md",
+        "docs/modules/README.md",
+        "docs/modules/CODE-CATALOG.md",
+        "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+        "docs/modules/message-center/README.md",
+        "docs/modules/enterprise-capabilities",
+        "docs/specifications/tasks/20261002-enterprise-module-normalization",
+        "scripts/registry/enterprise_capabilities.py",
+        "scripts/registry/module_catalog.py",
+        "scripts/tests/test_enterprise_capabilities.py",
+        "frontend-ui/src/api/index.js",
+        "frontend-ui/src/api/message.api.js",
+        "frontend-ui/src/modules/index.js",
+        "frontend-ui/src/modules/message-center",
+        "platform/gateway/mox-platform-gateway-svc/src/message_center/api.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+        "reports/markdown/20261002-enterprise-capabilities.md"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 2,
+      "log": "scoped_diff.log"
+    },
+    "scoped_diff_final": {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "docs/CORE-CAPABILITIES.md",
+        "docs/modules/README.md",
+        "docs/modules/CODE-CATALOG.md",
+        "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+        "docs/modules/message-center/README.md",
+        "docs/modules/enterprise-capabilities",
+        "docs/specifications/tasks/20261002-enterprise-module-normalization",
+        "scripts/registry/enterprise_capabilities.py",
+        "scripts/registry/module_catalog.py",
+        "scripts/tests/test_enterprise_capabilities.py",
+        "frontend-ui/src/api/index.js",
+        "frontend-ui/src/api/message.api.js",
+        "frontend-ui/src/modules/index.js",
+        "frontend-ui/src/modules/message-center",
+        "platform/gateway/mox-platform-gateway-svc/src/message_center/api.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+        "reports/markdown/20261002-enterprise-capabilities.md"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "scoped_diff_final.log"
+    },
+    "surface_selftest": {
+      "command": [
+        "python",
+        "scripts/gate/check-api-surface.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 1,
+      "log": "surface_selftest.log"
+    }
+  },
+  "business_service_mocks_added": false,
+  "component_stubs_added": false,
+  "all_modules_functionally_complete": false,
+  "full_enterprise_ready": false,
+  "browser_full_e2e_verified": false,
+  "remote_ci_executed": false,
+  "cross_host_verified": false,
+  "external_oss_model_success_verified": false,
+  "cross_page_send_recovery_implemented": false
+}

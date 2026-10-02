@@ -339,3 +339,7 @@ exp-architecture-001 架构师·玄枢 ｜ exp-ai-001 AI算法·灵玑 ｜ exp-d
 | 状态语义 | ExpertStatus::Active 为调度模型字段 | 与网关availability四值登记字段不同 |
 
 §1.2 旧核对补记中的0.3/0.15来自备用matcher，保留其历史证据，不能作为主路径参数。权重可配置，主路径默认值也不是所有环境固定值。已同步08矩阵、13流程与15-U2验收；不改运行时算法或配置。
+
+## 十一、2026-10-02 事件订阅增量复核
+
+事件主题事实与边界见 [事件交付与恢复契约](21-event-delivery-contract.md)。本轮仅核验该链路：原生 fetch 使用完整 `/api` 路径与现有认证 store 的 Bearer；请求和 reader 可以取消；SSE 带真实事件 ID，积压发送 `StreamGap` 提醒重新查询。事件总线仍为进程内有界广播，事件日志仍为异步 best-effort；没有 outbox、历史重放或跨实例保证。订阅 composable 尚未接入业务视图；Webhook 授权、出站目标策略、签名和持久投递仍待实现，不依据旧收官统计声称这些门槛已完成。

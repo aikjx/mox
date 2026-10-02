@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python",
+    "scripts/gate/check-script-paths.py"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "paths_check.log"
+}

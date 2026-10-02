@@ -1,0 +1,30 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--check",
+    "--",
+    ".github/workflows/ci.yml",
+    "docs/README.md",
+    "docs/CORE-CAPABILITIES.md",
+    "docs/modules/README.md",
+    "docs/modules/CODE-CATALOG.md",
+    "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+    "docs/modules/message-center/README.md",
+    "docs/modules/enterprise-capabilities",
+    "docs/specifications/tasks/20261002-enterprise-module-normalization",
+    "scripts/registry/enterprise_capabilities.py",
+    "scripts/registry/module_catalog.py",
+    "scripts/tests/test_enterprise_capabilities.py",
+    "frontend-ui/src/api/index.js",
+    "frontend-ui/src/api/message.api.js",
+    "frontend-ui/src/modules/index.js",
+    "frontend-ui/src/modules/message-center",
+    "platform/gateway/mox-platform-gateway-svc/src/message_center/api.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+    "reports/markdown/20261002-enterprise-capabilities.md"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "scoped_diff_ci_final.log"
+}

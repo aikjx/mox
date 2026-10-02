@@ -120,7 +120,7 @@ docs/expert-alliance/
 | 22 | **存储迁移（JSON→SQLite）** | experts_db.rs:604 migrate_json_to_sqlite()，导入后 rename 归档 | — | 05 §9 | ✅（一次性，无版本迁移机制） |
 | 23 | **SQLite schema 版本管理** | **grep `PRAGMA user_version/schema_version` 零命中** | — | — | 🔴 缺口（N3） |
 | 24 | **SSE 日志流** | GET /api/alliance/tasks/:id/logs/stream（actuator.rs:530） | AllianceConsoleView.vue:690 useSSE composable（fetch-stream + 4s 轮询回退） | CURRENT §6.1 补记 | ✅ |
-| 24+1 | **进程内事件总线（T4，2026-10-02）** | experts_events.rs `tokio::sync::broadcast`；事件模型 PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled（带 tenant）；消费者落 `alliance_event_log`（schema v4） | 暂无外发（SSE 事件帧/webhook/跨副本广播 = 后续） | 12 §2.4；backend-fix-report T4 节 | 🟡 进程内闭环已落地 |
+| 24+1 | **进程内事件总线（T4，2026-10-02）** | experts_events.rs `tokio::sync::broadcast`；事件模型 PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled（带 tenant）；消费者落 `alliance_event_log`（schema v4）；对外 SSE `GET /api/alliance/events/stream`（experts_streams.rs）+ webhook | `composables/useAllianceEventStream.js`（Bearer）；**已挂载 AllianceOrchestrationView**：帧→alliance-orch.store.applyAllianceEvent→liveEvents + 带 plan_id 帧防抖真拉统计/历史；控制台/专家表视图留待；跨副本广播 = 后续 | 12 §2.4；backend-fix-report T4 节 | 🟡 进程内闭环已落地，前端消费编排台已接、余视图留待 |
 | 25 | **WebSocket** | **全 crate WebSocketUpgrade 零命中** | 前端 useSSE 而非 WS | 06 §4 幻影 | 🔴 文档幻觉（代码无） |
 | 26 | **会话管理** | 表 sessions/session_messages（experts_db.rs:108,124），SQLite 落盘 | allianceSessions store + SessionsView + Session×4 Panel | 03 §2 | ✅（单进程内恢复） |
 | 27 | **语义搜索** | POST /api/experts/semantic-search | allianceSessions store + SemanticSearchPanel | 01 F-05 | ✅ |

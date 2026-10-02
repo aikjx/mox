@@ -34,6 +34,12 @@ export const useAllianceOrchStore = defineStore('allianceOrch', () => {
   const loading = reactive({ run: false, plan: false, execute: false, stats: false, history: false })
   const error = reactive({ run: '', plan: '', execute: '', stats: '', history: '' })
 
+  // ── T4 SSE 实时事件面（experts_streams.rs → useAllianceEventStream）──
+  // 这里只把真实到达的帧原样记一份（视图可见「事件到了」），绝不本地猜算计划计数——
+  // 统计/历史的真值永远由 loadStats/loadHistory 真拉回，帧只作「该重拉了」的提示。
+  const liveEvents = ref([])
+  let statsTimer = null
+
   // 一次页面动作只留一条最近结果：编排与计划互不覆盖，视图分别绑定三个 ref
   const wire = computed(() => ({
     task: form.task,
@@ -208,11 +214,54 @@ export const useAllianceOrchStore = defineStore('allianceOrch', () => {
     error.execute = ''
   }
 
+  /**
+   * 接收一帧 T4 业务事件（来自 useAllianceEventStream 的 onEvent）。
+   *
+   * 帧信封是 experts_events.rs 的扁平 serde：{ id, type, ...payload, source, tenant, occurred_at }。
+   * - 带 plan_id 的帧（PlanCreated / PlanStatusChanged）→ 防抖 800ms 真拉统计与历史（合并突发帧）；
+   * - 不带 plan_id 的帧（ExpertRegistered / ExpertDisabled）→ 只入事件流，不牵动编排读数。
+   * 返回规范化后的那一行，便于单测断言「store 因帧而变」。
+   */
+  function applyAllianceEvent(kind, envelope = {}) {
+    const ev = {
+      id: envelope.id || '',
+      kind,
+      planId: envelope.plan_id || '',
+      from: envelope.from || '',
+      to: envelope.to || '',
+      executionId: envelope.execution_id || '',
+      taskType: envelope.task_type || '',
+      title: envelope.title || '',
+      expertId: envelope.expert_id || '',
+      source: envelope.source || '',
+      occurredAt: envelope.occurred_at || '',
+      receivedAt: new Date().toISOString()
+    }
+    liveEvents.value.unshift(ev)
+    if (liveEvents.value.length > 30) liveEvents.value.length = 30
+
+    if (ev.planId) {
+      if (statsTimer) clearTimeout(statsTimer)
+      statsTimer = setTimeout(() => {
+        statsTimer = null
+        loadStats()
+        loadHistory(history.value.page)
+      }, 800)
+    }
+    return ev
+  }
+
+  function clearLiveEvents() {
+    liveEvents.value = []
+    if (statsTimer) { clearTimeout(statsTimer); statsTimer = null }
+  }
+
   return {
-    form, filters, orchestration, plan, execution, stats, history, loading, error,
+    form, filters, orchestration, plan, execution, stats, history, loading, error, liveEvents,
     wire, validation, runnable, executable, hasPlan, steps, outcome,
     disclaimer, volatility, fallbackNote, taskTypeTables, topologyNote, expertNotes,
     simulatedLegend, provenance, statCells, zeroCounterNotes, statusSplit, historyPages, historyAnomaly,
-    runOrchestrate, generatePlan, executePlan, loadStats, loadHistory, setHistoryFilter, toggleExpert, reset
+    runOrchestrate, generatePlan, executePlan, loadStats, loadHistory, setHistoryFilter, toggleExpert, reset,
+    applyAllianceEvent, clearLiveEvents
   }
 })

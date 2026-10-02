@@ -27,6 +27,83 @@ struct Server {
 }
 
 #[tokio::test]
+async fn message_text_limits_reject_without_writes_and_accept_unicode_boundaries() {
+    use mox_platform_iam_core::IamRepository;
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("inbox.db");
+    let iam = Arc::new(IamRepository::new(Arc::new(parking_lot::Mutex::new(
+        rusqlite::Connection::open(directory.path().join("iam.db")).unwrap(),
+    ))));
+    iam.init_schema().unwrap();
+    let tenant = iam.create_tenant("text", "Text", None, None).unwrap().tenant_id;
+    let user = iam
+        .create_user(&tenant, "user", "user", None, None, None, false)
+        .unwrap()
+        .user_id;
+    let server = start_state(Arc::new(MessageCenterState::with_db_path(path).with_iam(iam))).await;
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({"message_type":"custom","title":"real","content":"text","channels":["in_app"],"receiver_ids":[user]});
+    for (field, value) in [
+        ("title", serde_json::json!(" ")),
+        ("title", serde_json::json!("😀".repeat(201))),
+        ("content", serde_json::json!(" \n ")),
+        ("content", serde_json::json!("汉".repeat(10001))),
+        ("receiver_ids", serde_json::json!([""])),
+        ("receiver_ids", serde_json::json!(["x".repeat(129)])),
+    ] {
+        let mut invalid = body.clone();
+        invalid[field] = value;
+        let response = client
+            .post(format!("{}/send", server.url))
+            .bearer_auth(token(&tenant, &user))
+            .json(&invalid)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 400, "field {field}");
+    }
+    let list = client
+        .get(format!("{}/messages", server.url))
+        .bearer_auth(token(&tenant, &user))
+        .send()
+        .await
+        .unwrap()
+        .json::<serde_json::Value>()
+        .await
+        .unwrap();
+    assert_eq!(list["code"], 0);
+    assert_eq!(list["total"], 0);
+    let mut valid = body;
+    valid["title"] = serde_json::json!("😀".repeat(200));
+    valid["content"] = serde_json::json!("汉".repeat(10000));
+    let mut ids = Vec::new();
+    for _ in 0..2 {
+        let response = client
+            .post(format!("{}/send", server.url))
+            .bearer_auth(token(&tenant, &user))
+            .header("Idempotency-Key", "unicode-limit")
+            .json(&valid)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 200);
+        ids.push(response.json::<serde_json::Value>().await.unwrap()["data"]["message_id"].clone());
+    }
+    assert_eq!(ids[0], ids[1]);
+    let list = client
+        .get(format!("{}/messages", server.url))
+        .bearer_auth(token(&tenant, &user))
+        .send()
+        .await
+        .unwrap()
+        .json::<serde_json::Value>()
+        .await
+        .unwrap();
+    assert_eq!(list["code"], 0);
+    assert_eq!(list["total"], 1);
+}
+
+#[tokio::test]
 async fn audit_query_is_filtered_bounded_and_authorized_in_actual_storage() {
     use mox_platform_iam_core::IamRepository;
     use serde_json::{json, Value};

@@ -58,7 +58,7 @@ def render(rows):
             lines.append("| {} | {} | {} | {} |".format(link(row["path"], row["name"]), row["layer"], ", ".join(row["bins"]) or "—", deps))
         lines.append("")
     lines += ["## 前端入口与功能文件", "", "页面文件不等于已注册路由；实际挂载关系以路由源码为准。", ""]
-    for folder, patterns in [("router", ("*.js", "*.ts")), ("views", ("*.vue",)), ("api", ("*.js", "*.ts")), ("stores", ("*.js", "*.ts")), ("composables", ("*.js", "*.ts"))]:
+    for folder, patterns in [("router", ("*.js", "*.ts")), ("views", ("*.vue",)), ("api", ("*.js", "*.ts")), ("stores", ("*.js", "*.ts")), ("composables", ("*.js", "*.ts")), ("modules", ("*.vue", "*.js", "*.ts"))]:
         base = ROOT / "frontend-ui/src" / folder
         paths = sorted({p for pattern in patterns for p in base.rglob(pattern) if p.is_file()})
         lines += ["### {}（{}）".format(folder, len(paths)), ""]

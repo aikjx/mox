@@ -151,6 +151,17 @@ pub async fn send_message_handler(
         )
             .into_response();
     }
+    if req
+        .receiver_ids
+        .as_ref()
+        .is_some_and(|ids| ids.iter().any(|id| id.trim().is_empty() || id.chars().count() > 128))
+    {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"code":400,"message":"收件人 ID 必须非空且不超过 128 个字符"})),
+        )
+            .into_response();
+    }
     let receivers: std::collections::BTreeSet<_> =
         req.receiver_ids.clone().unwrap_or_default().into_iter().collect();
     // Standalone instances without IAM retain only the trusted self-inbox capability.
@@ -215,6 +226,13 @@ pub async fn send_message_handler(
     } else {
         (req.title, req.content)
     };
+    if title.trim().is_empty()
+        || title.chars().count() > 200
+        || content.trim().is_empty()
+        || content.chars().count() > 10000
+    {
+        return (StatusCode::BAD_REQUEST, Json(json!({"code":400,"message":"标题须非空且不超过 200 个字符；正文须非空且不超过 10000 个字符"}))).into_response();
+    }
 
     let message = Message {
         message_id: message_id.clone(),

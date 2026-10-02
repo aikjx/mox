@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python",
+    "scripts/registry/enterprise_capabilities.py",
+    "--check"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "capabilities.log"
+}

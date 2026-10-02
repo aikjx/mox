@@ -1,0 +1,1010 @@
+{
+  "version": 1,
+  "purpose": "功能需求与逻辑依赖主源；实现状态以各模块 authority 为准，不从注册记录推断完成",
+  "modules": [
+    {
+      "id": "EM-01",
+      "name": "共享基座与契约",
+      "domains": [
+        "base",
+        "foundation"
+      ],
+      "owners": [
+        "platform/foundation",
+        "platform/shared",
+        "platform/domains/base",
+        "platform/domains/foundation"
+      ],
+      "authority": "docs/modules/CODE-CATALOG.md",
+      "priority": "P0",
+      "depends_on": [],
+      "owns": "统一标识、错误、配置接口、存储与服务运行基元",
+      "flow": [
+        "接收类型化输入",
+        "校验版本与约束",
+        "调用基础能力",
+        "返回实际结果"
+      ],
+      "requirements": [
+        {
+          "id": "EM-01-R01",
+          "acceptance": "标识与错误具有明确类型，不以字符串隐式改变租户或状态"
+        },
+        {
+          "id": "EM-01-R02",
+          "acceptance": "配置与秘密引用分离，缺失依赖明确失败"
+        },
+        {
+          "id": "EM-01-R03",
+          "acceptance": "基础能力测试覆盖重启、并发和实际存储故障"
+        }
+      ],
+      "gap": "代码存在不证明所有调用者已迁入统一契约"
+    },
+    {
+      "id": "EM-02",
+      "name": "可信身份与业务权限",
+      "domains": [
+        "platform"
+      ],
+      "owners": [
+        "platform/domains/platform/core/mox-platform-iam-core",
+        "platform/gateway/mox-platform-gateway-svc/src/auth.rs"
+      ],
+      "authority": "docs/modules/iam/README.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-01"
+      ],
+      "owns": "用户、租户、有效角色与业务权限主源",
+      "flow": [
+        "验证凭证",
+        "读取实际启用身份",
+        "计算同租户有效权限",
+        "允许或拒绝资源操作"
+      ],
+      "requirements": [
+        {
+          "id": "EM-02-R01",
+          "acceptance": "逐出口从可信身份绑定租户，伪造头或跨租户输入拒绝"
+        },
+        {
+          "id": "EM-02-R02",
+          "acceptance": "权限授予、撤销、继承和循环处理以同一策略执行"
+        },
+        {
+          "id": "EM-02-R03",
+          "acceptance": "管理变更与审计原子提交，旧凭证撤权场景必须验证"
+        }
+      ],
+      "gap": "目录、菜单和数据权限及跨主机撤权尚待全面闭合"
+    },
+    {
+      "id": "EM-03",
+      "name": "API Key 生命周期",
+      "domains": [
+        "platform"
+      ],
+      "owners": [
+        "platform/domains/platform/core/mox-platform-iam-core/src/api_keys.rs"
+      ],
+      "authority": "docs/modules/iam/API-KEYS.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-02"
+      ],
+      "owns": "密钥哈希、身份绑定、过期和撤销",
+      "flow": [
+        "实际管理员请求",
+        "事务创建或撤销",
+        "实时校验密钥与身份",
+        "返回回执或拒绝"
+      ],
+      "requirements": [
+        {
+          "id": "EM-03-R01",
+          "acceptance": "只在创建回执展示原始密钥，持久化使用哈希"
+        },
+        {
+          "id": "EM-03-R02",
+          "acceptance": "密钥鉴权校验实际用户、租户、过期和支持的业务范围"
+        },
+        {
+          "id": "EM-03-R03",
+          "acceptance": "轮换、速率与配额须由真实运行策略执行"
+        }
+      ],
+      "gap": "动态 scopes、轮换和跨主机吞吐未全面验收"
+    },
+    {
+      "id": "EM-04",
+      "name": "安全审计",
+      "domains": [
+        "platform"
+      ],
+      "owners": [
+        "platform/domains/platform/core/mox-platform-iam-core/src/audit_query.rs"
+      ],
+      "authority": "docs/modules/iam/AUDIT.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-02"
+      ],
+      "owns": "IAM 审计查询契约及其可见范围",
+      "flow": [
+        "实际管理员查询",
+        "同一读快照授权与过滤",
+        "计数并读取单页",
+        "返回真实记录"
+      ],
+      "requirements": [
+        {
+          "id": "EM-04-R01",
+          "acceptance": "过滤、排序、分页和计数保持同一可信租户快照"
+        },
+        {
+          "id": "EM-04-R02",
+          "acceptance": "缺失状态保留未知，不补成功码或零耗时"
+        },
+        {
+          "id": "EM-04-R03",
+          "acceptance": "多来源映射、敏感字段、保留恢复与完整性链逐项验收"
+        }
+      ],
+      "gap": "保留归档、自由文本治理和全历史完整性未完成"
+    },
+    {
+      "id": "EM-05",
+      "name": "统一网关与宿主",
+      "domains": [
+        "platform"
+      ],
+      "owners": [
+        "platform/gateway/mox-platform-gateway-svc"
+      ],
+      "authority": "docs/API-REGISTRY.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-01",
+        "EM-02"
+      ],
+      "owns": "路由装配、协议适配、认证及统一错误出口",
+      "flow": [
+        "接收真实请求",
+        "中间件认证与限流",
+        "委派领域命令或查询",
+        "记录并返回实际状态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-05-R01",
+          "acceptance": "静态注册与真实挂载分开统计，端口只引用注册表"
+        },
+        {
+          "id": "EM-05-R02",
+          "acceptance": "领域算法不继续堆入宿主，跨模块经契约调用"
+        },
+        {
+          "id": "EM-05-R03",
+          "acceptance": "未实现能力明确拒绝，健康结果来自实际依赖探测"
+        }
+      ],
+      "gap": "存量内联业务、动态路由普查和全域 readiness 尚待治理"
+    },
+    {
+      "id": "EM-06",
+      "name": "专家注册与能力目录",
+      "domains": [
+        "alliance",
+        "ai"
+      ],
+      "owners": [
+        "platform/domains/alliance/svc/mox-alliance-registry-svc",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance"
+      ],
+      "authority": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-02",
+        "EM-05"
+      ],
+      "owns": "专家身份、能力与可用性登记；不拥有执行结果",
+      "flow": [
+        "受权专家登记",
+        "校验能力契约",
+        "持久化注册与版本",
+        "查询或禁用专家"
+      ],
+      "requirements": [
+        {
+          "id": "EM-06-R01",
+          "acceptance": "区分目录能力与可执行、健康、已部署能力"
+        },
+        {
+          "id": "EM-06-R02",
+          "acceptance": "注册、修改、禁用按租户与权限裁决"
+        },
+        {
+          "id": "EM-06-R03",
+          "acceptance": "运行租约、健康变更及版本引用可追踪"
+        }
+      ],
+      "gap": "不得把种子专家或目录登记解释为真实工具已部署"
+    },
+    {
+      "id": "EM-07",
+      "name": "专家匹配与组队",
+      "domains": [
+        "alliance"
+      ],
+      "owners": [
+        "platform/domains/alliance/core/mox-alliance-scheduler-core"
+      ],
+      "authority": "docs/expert-alliance/08-normalized-architecture.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-06"
+      ],
+      "owns": "候选筛选、评分、约束与可解释组队",
+      "flow": [
+        "规范化任务约束",
+        "筛选受权可用候选",
+        "计算评分与组队",
+        "返回理由和无解状态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-07-R01",
+          "acceptance": "先校验硬约束再评分，不让高分绕过权限与能力限制"
+        },
+        {
+          "id": "EM-07-R02",
+          "acceptance": "评分版本、权重与证据固定，稳定同分排序"
+        },
+        {
+          "id": "EM-07-R03",
+          "acceptance": "无可用专家、预算不足与组合不可行明确返回失败"
+        }
+      ],
+      "gap": "质量最优性需真实样本、基准和消融验证，不能宣称完美算法"
+    },
+    {
+      "id": "EM-08",
+      "name": "任务调度与状态",
+      "domains": [
+        "alliance"
+      ],
+      "owners": [
+        "platform/domains/alliance/svc/mox-alliance-scheduler-svc"
+      ],
+      "authority": "docs/expert-alliance/16-decision-and-state-ledger.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-07"
+      ],
+      "owns": "任务接纳、计划、领取、租约及调度状态",
+      "flow": [
+        "幂等接纳任务",
+        "冻结计划与配置版本",
+        "领取与租约续期",
+        "记录执行回执和终态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-08-R01",
+          "acceptance": "任务与幂等键持久化，重复请求不生成第二任务"
+        },
+        {
+          "id": "EM-08-R02",
+          "acceptance": "租约与 fencing 防止过期执行者提交状态"
+        },
+        {
+          "id": "EM-08-R03",
+          "acceptance": "取消、超时、重试、崩溃恢复和跨实例一致性真实验证"
+        }
+      ],
+      "gap": "按既有总账逐项核验，不把同主机多连接外推为跨主机"
+    },
+    {
+      "id": "EM-09",
+      "name": "任务执行与工具",
+      "domains": [
+        "alliance"
+      ],
+      "owners": [
+        "platform/domains/alliance/svc/mox-alliance-executor-svc"
+      ],
+      "authority": "docs/expert-alliance/13-end-to-end-business-flow.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-08",
+        "EM-12"
+      ],
+      "owns": "受控工具执行、真实回执、取消与资源预算",
+      "flow": [
+        "校验任务令牌与版本",
+        "执行真实注册工具",
+        "采集输出和副作用回执",
+        "提交受 fencing 保护的结果"
+      ],
+      "requirements": [
+        {
+          "id": "EM-09-R01",
+          "acceptance": "模型文本与工具执行事实分开记录"
+        },
+        {
+          "id": "EM-09-R02",
+          "acceptance": "工具输入、资源访问和外部副作用受权且限额"
+        },
+        {
+          "id": "EM-09-R03",
+          "acceptance": "未知外部结果先对账，不能简单重试声称恰好一次"
+        }
+      ],
+      "gap": "真实工具覆盖、隔离、故障恢复和外部结果对账仍需证据"
+    },
+    {
+      "id": "EM-10",
+      "name": "专家协作与结果融合",
+      "domains": [
+        "ai",
+        "alliance"
+      ],
+      "owners": [
+        "platform/domains/ai/core/mox-ai-alliance-engine"
+      ],
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-07",
+        "EM-11"
+      ],
+      "owns": "咨询 DAG、依赖、分析结果和融合证据",
+      "flow": [
+        "校验咨询 DAG",
+        "逐依赖调用真实提供方",
+        "治理检查与失败停止",
+        "融合分析并标注来源"
+      ],
+      "requirements": [
+        {
+          "id": "EM-10-R01",
+          "acceptance": "DAG 环、缺依赖和失败传播有确定语义"
+        },
+        {
+          "id": "EM-10-R02",
+          "acceptance": "真实提供方不可用即失败，禁止模板答案冒充推理"
+        },
+        {
+          "id": "EM-10-R03",
+          "acceptance": "融合结果带来源与实测时间，人工决定和外部执行另行授权"
+        }
+      ],
+      "gap": "真实模型质量、成本、取消与工具证据未全面验收"
+    },
+    {
+      "id": "EM-11",
+      "name": "模型提供方",
+      "domains": [
+        "ai"
+      ],
+      "owners": [
+        "platform/domains/ai",
+        "platform/domains/platform/core"
+      ],
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-02"
+      ],
+      "owns": "模型协议、秘密引用、限额、真实调用及提供方错误",
+      "flow": [
+        "读取受权模型绑定",
+        "校验预算与请求",
+        "调用真实模型服务",
+        "记录实际响应或失败"
+      ],
+      "requirements": [
+        {
+          "id": "EM-11-R01",
+          "acceptance": "配置缺失、超时、提供方拒绝不回退假成功"
+        },
+        {
+          "id": "EM-11-R02",
+          "acceptance": "令牌消耗与费用区分估算、实测和未知"
+        },
+        {
+          "id": "EM-11-R03",
+          "acceptance": "密钥不进入页面、日志和导出包，变更有版本及回滚"
+        }
+      ],
+      "gap": "本机缺乏成功推理凭据时只能记录未验收"
+    },
+    {
+      "id": "EM-12",
+      "name": "算子与插件运行时",
+      "domains": [
+        "flow",
+        "platform"
+      ],
+      "owners": [
+        "platform/domains/flow",
+        "platform/domains/platform/core"
+      ],
+      "authority": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-01",
+        "EM-02"
+      ],
+      "owns": "类型化能力、插件生命周期和受控执行接缝",
+      "flow": [
+        "解析能力引用",
+        "校验版本权限与输入",
+        "调用已注册执行器",
+        "返回类型化真实输出"
+      ],
+      "requirements": [
+        {
+          "id": "EM-12-R01",
+          "acceptance": "安装、注册和实际可执行状态分开"
+        },
+        {
+          "id": "EM-12-R02",
+          "acceptance": "未知能力与不兼容类型在执行前拒绝"
+        },
+        {
+          "id": "EM-12-R03",
+          "acceptance": "运行隔离、网络范围、秘密注入和卸载依赖可验证"
+        }
+      ],
+      "gap": "无执行适配器时明确 unavailable，不生成占位结果"
+    },
+    {
+      "id": "EM-13",
+      "name": "低代码与全维配置",
+      "domains": [
+        "platform"
+      ],
+      "owners": [
+        "frontend-ui/src/modules/admin-lowcode",
+        "platform/shared/mox-config-core"
+      ],
+      "authority": "docs/standards/lowcode-dynamic-configuration.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-02",
+        "EM-12"
+      ],
+      "owns": "页面定义、受控引用、配置验证、发布与版本",
+      "flow": [
+        "编辑类型化配置草稿",
+        "校验依赖与权限",
+        "冻结并发布版本",
+        "运行绑定与回滚"
+      ],
+      "requirements": [
+        {
+          "id": "EM-13-R01",
+          "acceptance": "远程配置仅数据，不 eval 或任意远程 import"
+        },
+        {
+          "id": "EM-13-R02",
+          "acceptance": "任务冻结 release，配置变更不能悄悄改变在途任务"
+        },
+        {
+          "id": "EM-13-R03",
+          "acceptance": "只读模式、身份切换、并发编辑和失败回滚均有证据"
+        }
+      ],
+      "gap": "本地 PageSchema 已存在，不等于远程 JSON 发布链已实现"
+    },
+    {
+      "id": "EM-14",
+      "name": "业务工作流",
+      "domains": [
+        "flow"
+      ],
+      "owners": [
+        "platform/domains/flow"
+      ],
+      "authority": "docs/enterprise/33-持久化工作流引擎设计文档-ADR-14.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-12",
+        "EM-13"
+      ],
+      "owns": "流程实例、审批与命令分流、重试补偿",
+      "flow": [
+        "启动冻结版本的流程",
+        "验证节点与审批权限",
+        "持久化推进或等待",
+        "补偿并交付终态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-14-R01",
+          "acceptance": "状态推进与作业意图原子记录，重启可继续"
+        },
+        {
+          "id": "EM-14-R02",
+          "acceptance": "人工审批身份、授权和重复决定明确裁决"
+        },
+        {
+          "id": "EM-14-R03",
+          "acceptance": "补偿不是撤销已发生外部事实，未知回执须先对账"
+        }
+      ],
+      "gap": "设计 ADR 与各存量引擎实际语言能力必须逐项对齐"
+    },
+    {
+      "id": "EM-15",
+      "name": "对象存储与 OSS",
+      "domains": [
+        "cloud"
+      ],
+      "owners": [
+        "platform/domains/cloud"
+      ],
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-02"
+      ],
+      "owns": "对象字节、位置、ETag、提供方适配及完整性",
+      "flow": [
+        "校验对象访问与绑定",
+        "执行实际对象 IO",
+        "校验完整性与回执",
+        "记录位置或待对账状态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-15-R01",
+          "acceptance": "真实 PUT HEAD GET RANGE LIST DELETE 与重启验证"
+        },
+        {
+          "id": "EM-15-R02",
+          "acceptance": "ETag、签名和提供方差异来自实测能力矩阵"
+        },
+        {
+          "id": "EM-15-R03",
+          "acceptance": "切换与迁移不丢旧对象，未知写结果可对账"
+        }
+      ],
+      "gap": "历史模拟 HTTP 验证不作为真实 OSS 成功往返"
+    },
+    {
+      "id": "EM-16",
+      "name": "云盘文件资源",
+      "domains": [
+        "cloud"
+      ],
+      "owners": [
+        "platform/domains/cloud",
+        "frontend-ui/src/views"
+      ],
+      "authority": "docs/modules/resource-knowledge/README.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-15"
+      ],
+      "owns": "目录、文件、版本引用、分享与回收",
+      "flow": [
+        "受权上传并取得对象回执",
+        "提交文件版本元数据",
+        "移动分享或回收",
+        "撤权并保留可追踪版本"
+      ],
+      "requirements": [
+        {
+          "id": "EM-16-R01",
+          "acceptance": "移动只变目录元数据，不重写对象字节"
+        },
+        {
+          "id": "EM-16-R02",
+          "acceptance": "共享撤权、回收恢复与知识源版本引用一致"
+        },
+        {
+          "id": "EM-16-R03",
+          "acceptance": "孤儿对象、元数据失败与配额提交可对账"
+        }
+      ],
+      "gap": "文件、知识、对象三个事实不得合成不可追溯一张大表"
+    },
+    {
+      "id": "EM-17",
+      "name": "知识目录与版本",
+      "domains": [
+        "kb",
+        "cloud"
+      ],
+      "owners": [
+        "platform/domains/kb",
+        "platform/domains/cloud/core/mox-cloud-kb-core"
+      ],
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-15"
+      ],
+      "owns": "知识空间、文档、源版本、发布与 ACL",
+      "flow": [
+        "提交受权知识源",
+        "校验预期内容版本",
+        "归档并更新版本",
+        "发布或共享可见内容"
+      ],
+      "requirements": [
+        {
+          "id": "EM-17-R01",
+          "acceptance": "明确唯一可写主源及历史模型迁移映射"
+        },
+        {
+          "id": "EM-17-R02",
+          "acceptance": "内容版本 CAS 与 ACL 检查覆盖所有写路径"
+        },
+        {
+          "id": "EM-17-R03",
+          "acceptance": "分享撤权、删除和旧引用的可见性实际验证"
+        }
+      ],
+      "gap": "跨进程 CAS 与多套历史知识模型迁移仍待完成"
+    },
+    {
+      "id": "EM-18",
+      "name": "知识加工作业",
+      "domains": [
+        "kb",
+        "ai"
+      ],
+      "owners": [
+        "platform/domains/kb",
+        "platform/domains/ai"
+      ],
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-17",
+        "EM-11"
+      ],
+      "owns": "解析 OCR 分块抽取索引的版本化作业",
+      "flow": [
+        "冻结源版本与加工配置",
+        "领取租约并执行解析",
+        "校验源与权限仍有效",
+        "提交投影或拒绝旧作业"
+      ],
+      "requirements": [
+        {
+          "id": "EM-18-R01",
+          "acceptance": "作业持久化并带源版本、配置版本、generation 与预算"
+        },
+        {
+          "id": "EM-18-R02",
+          "acceptance": "取消或过期作业不能覆盖新版内容或 ACL"
+        },
+        {
+          "id": "EM-18-R03",
+          "acceptance": "真实 OCR 模型与索引失败、重试和重建均可追踪"
+        }
+      ],
+      "gap": "同实例锁内快照比较不能替代跨进程租约"
+    },
+    {
+      "id": "EM-19",
+      "name": "知识图谱与事实治理",
+      "domains": [
+        "kg",
+        "kb"
+      ],
+      "owners": [
+        "platform/domains/kg"
+      ],
+      "authority": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-17",
+        "EM-18"
+      ],
+      "owns": "实体关系、来源证据、确认状态与图投影",
+      "flow": [
+        "获取受权版本化来源",
+        "抽取或提交事实候选",
+        "确认事实并写投影",
+        "失效删除与重建对账"
+      ],
+      "requirements": [
+        {
+          "id": "EM-19-R01",
+          "acceptance": "图关系保留源版本及证据，不覆盖交易或文件主源"
+        },
+        {
+          "id": "EM-19-R02",
+          "acceptance": "写权限、人工确认和来源删除级联一致"
+        },
+        {
+          "id": "EM-19-R03",
+          "acceptance": "投影可重建且 generation 拒绝旧加工覆盖"
+        }
+      ],
+      "gap": "图算法结果与业务事实准确性分开验收"
+    },
+    {
+      "id": "EM-20",
+      "name": "授权检索与 RAG",
+      "domains": [
+        "kb",
+        "kg",
+        "ai"
+      ],
+      "owners": [
+        "platform/domains/kb",
+        "platform/domains/kg"
+      ],
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-17",
+        "EM-19",
+        "EM-11"
+      ],
+      "owns": "关键词向量图候选、授权排序及稳定引用",
+      "flow": [
+        "规范化检索问题",
+        "授权范围内召回候选",
+        "排序并核对版本引用",
+        "生成回答与实际证据"
+      ],
+      "requirements": [
+        {
+          "id": "EM-20-R01",
+          "acceptance": "候选召回先授权，失效和未发布内容不能进入结果"
+        },
+        {
+          "id": "EM-20-R02",
+          "acceptance": "引用绑定真实文档版本及文本偏移或文件页码"
+        },
+        {
+          "id": "EM-20-R03",
+          "acceptance": "召回率、引用准确性、延迟与成本由真实样本评测"
+        }
+      ],
+      "gap": "文本引用不等于向量、精确 chunk 或模型问答已验收"
+    },
+    {
+      "id": "EM-21",
+      "name": "数据目录与企业集成",
+      "domains": [
+        "data"
+      ],
+      "owners": [
+        "platform/domains/data"
+      ],
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-02",
+        "EM-14"
+      ],
+      "owns": "连接器、映射、游标、目标提交与对账",
+      "flow": [
+        "读取受权真实源",
+        "规范化映射与增量游标",
+        "提交目标真实事务",
+        "保存回执并重试对账"
+      ],
+      "requirements": [
+        {
+          "id": "EM-21-R01",
+          "acceptance": "未接通源和目标时返回未实现，不造同步数量"
+        },
+        {
+          "id": "EM-21-R02",
+          "acceptance": "目标提交与游标推进有明确原子边界及重放策略"
+        },
+        {
+          "id": "EM-21-R03",
+          "acceptance": "权限删除变更、失败重试与差异对账实际验证"
+        }
+      ],
+      "gap": "OA ERP 同步当前未接通完整源目标事务"
+    },
+    {
+      "id": "EM-22",
+      "name": "消息中心与通知",
+      "domains": [
+        "platform"
+      ],
+      "owners": [
+        "platform/gateway/mox-platform-gateway-svc/src/message_center",
+        "frontend-ui/src/components/NotificationCenter.vue",
+        "frontend-ui/src/modules/message-center"
+      ],
+      "authority": "docs/modules/message-center/README.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-02"
+      ],
+      "owns": "站内消息、独立收件回执与发送幂等；通知为读适配",
+      "flow": [
+        "受权发送与幂等请求",
+        "真实 IAM 检查全部收件人",
+        "事务提交消息与独立回执",
+        "读取与标记已读"
+      ],
+      "requirements": [
+        {
+          "id": "EM-22-R01",
+          "acceptance": "全部收件人事务提交，冲突和存储失败不报成功"
+        },
+        {
+          "id": "EM-22-R02",
+          "acceptance": "前端按实际 message_id 确认，未知网络结果沿原幂等键重试"
+        },
+        {
+          "id": "EM-22-R03",
+          "acceptance": "外部渠道必须 outbox 与真实提供方回执，限流容量和保留可验证"
+        }
+      ],
+      "gap": "跨主机、外部渠道、容量及浏览器完整流程尚待验收"
+    },
+    {
+      "id": "EM-23",
+      "name": "项目与成果交付",
+      "domains": [
+        "project"
+      ],
+      "owners": [
+        "platform/domains/project",
+        "frontend-ui/src/views/project"
+      ],
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "priority": "P1",
+      "depends_on": [
+        "EM-08",
+        "EM-17",
+        "EM-22"
+      ],
+      "owns": "业务项目、里程碑、成果与交付引用",
+      "flow": [
+        "创建受权项目目标",
+        "关联任务与资源版本",
+        "汇总实际完成证据",
+        "交付成果并记录接受"
+      ],
+      "requirements": [
+        {
+          "id": "EM-23-R01",
+          "acceptance": "进度只来自实际阶段与回执，未知不补固定比例"
+        },
+        {
+          "id": "EM-23-R02",
+          "acceptance": "项目归属及资源引用不能绕过领域 ACL"
+        },
+        {
+          "id": "EM-23-R03",
+          "acceptance": "接受、退回与重新交付有版本化决定和审计"
+        }
+      ],
+      "gap": "实际阶段推进与跨请求时序证据尚待补齐"
+    },
+    {
+      "id": "EM-24",
+      "name": "市场与模板包",
+      "domains": [
+        "market"
+      ],
+      "owners": [
+        "platform/domains/market"
+      ],
+      "authority": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "priority": "P2",
+      "depends_on": [
+        "EM-12",
+        "EM-13"
+      ],
+      "owns": "业务包与模板清单、版本、依赖及安装引用",
+      "flow": [
+        "检查包来源与许可",
+        "验证依赖和类型引用",
+        "受权安装指定版本",
+        "升级回滚或退出"
+      ],
+      "requirements": [
+        {
+          "id": "EM-24-R01",
+          "acceptance": "模板预览不表示安装发布或执行成功"
+        },
+        {
+          "id": "EM-24-R02",
+          "acceptance": "安装不复制 IAM 存储或重建第二配置规范"
+        },
+        {
+          "id": "EM-24-R03",
+          "acceptance": "升级迁移与退出保留交易事实并检查在途引用"
+        }
+      ],
+      "gap": "真实包发布安装、许可和迁移未逐出口验收"
+    },
+    {
+      "id": "EM-25",
+      "name": "语音与独立产品",
+      "domains": [
+        "voice"
+      ],
+      "owners": [
+        "platform/domains/voice",
+        "projects"
+      ],
+      "authority": "docs/modules/CODE-CATALOG.md",
+      "priority": "P2",
+      "depends_on": [
+        "EM-02",
+        "EM-11"
+      ],
+      "owns": "产品级 ASR TTS 媒体处理契约及受权输入输出",
+      "flow": [
+        "校验媒体权限与格式",
+        "调用真实媒体提供方",
+        "处理取消与资源清理",
+        "返回实际制品及状态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-25-R01",
+          "acceptance": "上传格式大小时长与资源预算受控"
+        },
+        {
+          "id": "EM-25-R02",
+          "acceptance": "真实 ASR TTS 或媒体生成输出可验证，不用预置制品冒充"
+        },
+        {
+          "id": "EM-25-R03",
+          "acceptance": "取消、重试、制品 ACL 和成本有实际运行证据"
+        }
+      ],
+      "gap": "独立项目存在不等于已纳入统一网关和验收"
+    },
+    {
+      "id": "EM-26",
+      "name": "运营与分布式交付",
+      "domains": [
+        "platform"
+      ],
+      "owners": [
+        "platform/gateway/mox-platform-gateway-svc/src/actuator.rs",
+        "deploy",
+        "scripts/startup"
+      ],
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "priority": "P0",
+      "depends_on": [
+        "EM-05",
+        "EM-04"
+      ],
+      "owns": "依赖探测、trace、容量、灾备、发布和回滚",
+      "flow": [
+        "探测实际运行依赖",
+        "采集 trace 指标与异常",
+        "按 SLO 告警和降级",
+        "灰度回滚或恢复验真"
+      ],
+      "requirements": [
+        {
+          "id": "EM-26-R01",
+          "acceptance": "readiness 不从静态 ready 标记或 HTTP 200 推断"
+        },
+        {
+          "id": "EM-26-R02",
+          "acceptance": "跨主机故障转移和恢复必须真实部署演练"
+        },
+        {
+          "id": "EM-26-R03",
+          "acceptance": "延迟容量成本安全和升级回滚具有可重复基准"
+        }
+      ],
+      "gap": "当前局部验证不能证明全系统生产或跨主机就绪"
+    }
+  ]
+}

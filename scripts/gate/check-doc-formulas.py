@@ -1004,12 +1004,17 @@ def _read_code(path):
 # 而仪器这个词的真实外延是"仓里所有写得动正则的代码"。本通道把同一套判据打在扫描集外的
 # 候选仪器上，命中即判"第二把尺在集外"（点名到文件与行号），并印出自己跳过了哪些目录。
 RECO_OUTSIDE_ROOTS = ("scripts", "tools", "frontend-ui/scripts", "platform", "domains", ".github")
-RECO_OUTSIDE_NESTED = frozenset(["node_modules", "dist", "build", "target", "coverage",
-                                 "__pycache__", "_verification", "assets"])
+RECO_GENERATED_NESTED = frozenset(["node_modules", "dist", "build", "target", "coverage",
+                                 "__pycache__", "assets"])
+# 从前这里手写了一份 `_verification`（10-02 22:15 普查 nested-skip-recon-2026-10-02-2215.txt：
+# 目录账派生名与它恰好只重一名，就是它）。现在那份排除只由 DIR_ACCOUNT 条目名派生——
+# 目录账撤条目时代码语料跟着放出来，不会留下一份静默的副本；合并对今天的语料零代价（候选集相同）。
+RECO_OUTSIDE_NESTED = RECO_GENERATED_NESTED | prune_dirs()
 RECO_OUTSIDE_EXT = (".py", ".mjs", ".js", ".ts")
 
 
-def reco_outside_paths(repo=REPO):
+def reco_outside_paths(repo=REPO, nested=None):
+    ne = RECO_OUTSIDE_NESTED if nested is None else nested
     have = {rel for rel, _ in reco_items(repo)}
     cand, skip_dirs = set(), 0
     for r in RECO_OUTSIDE_ROOTS:
@@ -1017,7 +1022,7 @@ def reco_outside_paths(repo=REPO):
         if not os.path.isdir(base):
             continue
         for dirpath, dirnames, filenames in os.walk(base):
-            drop = [d for d in dirnames if d.startswith(".") or d in RECO_OUTSIDE_NESTED]
+            drop = [d for d in dirnames if d.startswith(".") or d in ne]
             skip_dirs += len(drop)
             dirnames[:] = [d for d in dirnames if d not in drop]
             for f in filenames:
@@ -1045,6 +1050,52 @@ def reco_outside_audit(repo=REPO, items=None, skip_dirs=0):
     rep["skip_dirs"] = skip_dirs
     rep["bad"] = bad
     return rep
+
+
+def reco_exclusion_verdict(rows, out_files, nested, generated):
+    """第八本账（嵌套排除的代价）：名单每名都要有反事实读数，读出的代价要能点名隐身。
+
+    三条塌缩红＋一条隐身红＋一条第二源红。全部只吃参数与 prune_dirs()，不碰磁盘，
+    因此 夹具L 能从 bad 累加器里取到模板并由内存对照逐条打红。
+    """
+    bad = []
+    dup = sorted(set(generated) & set(prune_dirs()))
+    if dup:
+        bad.append("代码名单重打了目录账的名字 %s（一个事实一个源：那份排除只能由 DIR_ACCOUNT 条目名派生）"
+                   % "／".join(dup))
+    if not nested:
+        bad.append("嵌套排除名单塌缩（0 个名字＝没有边界声明，代价账无从谈起）")
+    elif len(rows) != len(set(nested)):
+        bad.append("排除代价账塌缩（名单 %d 名／反事实读数 %d 行，缺的那几名今天没有代价记录）"
+                   % (len(set(nested)), len(rows)))
+    if out_files < 1:
+        bad.append("排除代价账分母塌缩（集外候选读到 0 份，此时逐名读数与隐身判据都在空集上恒真）")
+    for name, exposed, hits, where, dirs in rows:
+        if hits:
+            bad.append("嵌套排除挡住了自带算术记号的候选 %s（放出 %d 份、命中 %d 处：%s）"
+                       % (name, exposed, hits, where))
+    return bad
+
+
+def reco_exclusion_account(repo=REPO):
+    """逐名反事实：撤掉名单里的一名再走一遍集外代码语料，量它挡住几份候选、其中有没有算术记号。
+
+    不改全局（名单当参数喂进 reco_outside_paths），所以这台仪器不会留下被自己改写过的痕迹。
+    """
+    base, skip0 = reco_outside_paths(repo)
+    base_set = set(base)
+    nested = set(RECO_OUTSIDE_NESTED)
+    rows = []
+    for name in sorted(nested):
+        paths, skip = reco_outside_paths(repo, frozenset(nested - {name}))
+        exposed = sorted(set(paths) - base_set)
+        hits, where = 0, ""
+        if exposed:
+            rep = reco_audit([(p, _read_code(os.path.join(repo, p))) for p in exposed])
+            hits = len(rep["foreign"])
+            where = "／".join("%s:%d" % (h["path"], h["line"]) for h in rep["foreign"][:3])
+        rows.append((name, len(exposed), hits, where, skip0 - skip))
+    return rows, len(base), skip0
 
 
 def reco_weak_sites(src):
@@ -1125,7 +1176,15 @@ def cmd_recognizer(args):
               % (h["path"], h["line"], h["channel"], h["pattern"]))
     for p, ln in out["unparsable"][:5]:
         print("     集外解析失败（出账，不判红：集外文件不是在册仪器）%s:%s" % (p, ln))
-    bad = bad + out["bad"]
+    rows, n_base, n_skip = reco_exclusion_account()
+    ex_bad = reco_exclusion_verdict(rows, n_base, RECO_OUTSIDE_NESTED, RECO_GENERATED_NESTED)
+    dead = sorted(r[0] for r in rows if not r[1] and not r[4])
+    ign = ["%s:%d 份/%d 处命中" % (r[0], r[1], r[2]) for r in rows if r[1]]
+    print("    嵌套排除代价账 %d 名（每名撤掉再走一遍）｜真挡住候选文件的 %s｜从不点火（既不放文件也不减目录）%s"
+          % (len(rows), " ".join(ign) or "无", " ".join(dead) or "无"))
+    print("    名单来源：构建派生字面量 %d 个 + 目录账派生名 %d 个（prune_dirs 现推，代码侧不再手写第二份）｜集外基线 %d 份｜少走目录 %d 个"
+          % (len(RECO_GENERATED_NESTED), len(prune_dirs()), n_base, n_skip))
+    bad = bad + out["bad"] + ex_bad
     if bad:
         print("RECOGNIZER FAIL：%s" % "／".join(bad))
         return 1
@@ -2015,6 +2074,63 @@ def cmd_selftest(args):
                                 + v31_collapse + v31_overlap])) == 5,
                    "②%s ｜③%s ｜④%s ｜⑤%s ｜⑥%s" % (
                        v31_leak, v31_stale, v31_why, v31_collapse, v31_overlap)))
+    def _v33_dup():
+        acc = list(DIR_ACCOUNT) + [("docs/**/node_modules",
+                                    "只为把『名单不许重打』这条通道接到目录账上的合成条目")]
+        orig = globals()["DIR_ACCOUNT"]
+        try:
+            globals()["DIR_ACCOUNT"] = acc
+            return reco_exclusion_verdict([("node_modules", 0, 0, "", 0)], 5,
+                                          ["node_modules"], ["node_modules"])
+        finally:
+            globals()["DIR_ACCOUNT"] = orig
+
+    e_rows, e_base, e_skip = reco_exclusion_account()
+    e_bad = reco_exclusion_verdict(e_rows, e_base, RECO_OUTSIDE_NESTED, RECO_GENERATED_NESTED)
+    e_derived = sorted(set(prune_dirs()) & set(RECO_OUTSIDE_NESTED))
+    e_only = set(reco_outside_paths(REPO, RECO_GENERATED_NESTED)[0])
+    e_all = set(reco_outside_paths(REPO, RECO_OUTSIDE_NESTED)[0])
+    e_hidden = sorted(e_all ^ e_only)
+    # 合并的代价不写成"候选集相同"：那个基线要重打目录账的名字才是第二源。这里只判方向——
+    # 新挡掉的份数照印，但挡掉的里面不许有一把尺。
+    e_hidden_hits = (len(reco_audit([(p, _read_code(os.path.join(REPO, p))) for p in e_hidden])["foreign"])
+                     if e_hidden else 0)
+    e33_hidden = reco_exclusion_verdict([("a", 1, 2, "scripts/x/a.py:3", 1)], 5, ["a"], [])
+    e33_short = reco_exclusion_verdict([("a", 0, 0, "", 0)], 5, ["a", "b"], [])
+    e33_zero = reco_exclusion_verdict([("a", 0, 0, "", 0)], 0, ["a"], [])
+    e33_empty = reco_exclusion_verdict([], 5, [], RECO_GENERATED_NESTED)
+    e33_dup = _v33_dup()
+    checks.append(("夹具X 第八本账（嵌套排除代价账）在真语料上必须四件都成立：① 名单每名都有一行反事实"
+                   "读数（行数＝名单长度）；② 代价账整条零红；③ 目录账派生名确实进了代码名单（交集＝prune_dirs 全体）"
+                   "而代码侧那份字面量与目录账不相交（重打＝第二源）；"
+                   "④ 并入目录账派生名的代价必须可见且不含尺：只走构建派生字面量与走并好的名单，"
+                   "两副名单集外候选的对称差＝合并新挡掉的那几份（份数由这一格现印，不进散文），"
+                   "其中不许有任何自带算术记号的文件——合并只许挡掉派生副本，不许挡掉一把尺"
+                   "（22:15 普查量的『并入前后候选集逐份相同』是对**旧的字面量名单**做的对照，"
+                   "仪器内无法在不重打目录账名字的前提下复现那个基线，而重打它正是本轮要退役的第二源，"
+                   "所以这里判的是方向，不是那次的差额）",
+                   len(e_rows) == len(set(RECO_OUTSIDE_NESTED)) and e_base > 0
+                   and e_bad == [] and set(e_derived) == set(prune_dirs())
+                   and RECO_GENERATED_NESTED.isdisjoint(prune_dirs()) and e_hidden_hits == 0,
+                   "名单 %d 名／集外基线 %d 份／少走目录 %d 个｜逐名（名单, 放出份数, 算术命中, 少走的目录）%s｜"
+                   "目录账派生名 %s｜合并新挡 %d 份／其中算术命中 %d 处｜代价账红 %s" % (
+                       len(set(RECO_OUTSIDE_NESTED)), e_base, e_skip,
+                       [(r[0], r[1], r[2], r[4]) for r in e_rows],
+                       e_derived, len(e_hidden), e_hidden_hits, e_bad)))
+    checks.append(("变异体33 第八本账的五条通道各钉一枚且各只红自己那条：① 撤掉某个名字会放出带算术记号的"
+                   "候选只红隐身并点名文件行号；② 名单少一行只红账塌缩；③ 集外候选读到 0 份只红分母塌缩"
+                   "（第 35 型：0 份时逐名读数与隐身判据都在空集上恒真）；④ 名单整体为空只红名单塌缩；"
+                   "⑤ 目录账的名字被重打在代码侧字面量里只红第二源——五枚红的前缀两两不同，"
+                   "任何一枚多红别家就说明两条通道共用一条判据",
+                   len(e33_hidden) == 1 and e33_hidden[0].startswith("嵌套排除挡住了自带算术记号的候选")
+                   and len(e33_short) == 1 and e33_short[0].startswith("排除代价账塌缩")
+                   and len(e33_zero) == 1 and e33_zero[0].startswith("排除代价账分母塌缩")
+                   and len(e33_empty) == 1 and e33_empty[0].startswith("嵌套排除名单塌缩")
+                   and len(e33_dup) == 1 and e33_dup[0].startswith("代码名单重打了目录账的名字")
+                   and len(set([r.split("（")[0] for r in e33_hidden + e33_short + e33_zero
+                                + e33_empty + e33_dup])) == 5,
+                   "①%s ｜②%s ｜③%s ｜④%s ｜⑤%s" % (
+                       e33_hidden, e33_short, e33_zero, e33_empty, e33_dup)))
     BATTERY = [
         ("第二把尺", lambda: reco_verdict(reco_audit(
             [HOME_STUB, ("scripts/gate/second_fw.py", SECOND_FW)]))),
@@ -2026,6 +2142,15 @@ def cmd_selftest(args):
         ("集外候选读到 0 份代码文件", lambda: reco_outside_audit(items=[])["bad"]),
         ("第二把尺在扫描集外", lambda: reco_outside_audit(
             items=[("scripts/probes/planted2.py", SECOND_FW)])["bad"]),
+        ("代码名单重打了目录账的名字", _v33_dup),
+        ("嵌套排除名单塌缩", lambda: reco_exclusion_verdict([], 5, [], RECO_GENERATED_NESTED)),
+        ("排除代价账塌缩", lambda: reco_exclusion_verdict(
+            [("a", 0, 0, "", 0)], 5, ["a", "b"], [])),
+        ("排除代价账分母塌缩", lambda: reco_exclusion_verdict(
+            [("a", 0, 0, "", 0)], 0, ["a"], [])),
+        ("嵌套排除挡住了自带算术记号的候选", lambda: reco_exclusion_verdict(
+            [("a", 1, 2, "scripts/x/a.py:3", 1)], 5, ["a"], [])),
+
         ("集外主张不闭合", lambda: outside_verdict(_scan_paths([unc_p]))),
         ("集外探针读到 0 份 .md", _doc_outside_collapse),
         ("理由不合格", lambda: dircheck_verdict([], [("空理由", "")])),

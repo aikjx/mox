@@ -95,6 +95,12 @@ jobs:
           python frontend-ui/scripts/gate/check-theme-tokens.py --check
           node frontend-ui/scripts/gate/check-sfc-dead-refs.mjs --selftest
 
+      - name: 企业功能需求与真实命令契约
+        run: |
+          python scripts/registry/enterprise_capabilities.py --check
+          python -m unittest scripts.tests.test_enterprise_capabilities -v
+          node --test frontend-ui/src/modules/message-center/contract/send.node-test.mjs frontend-ui/src/utils/api-key.node-test.mjs frontend-ui/src/utils/audit.node-test.mjs frontend-ui/src/modules/expert-alliance/contract/event-stream.node-test.mjs
+
       - name: 核心公式识别器的牙（只验仪器自己有没有坏，不替维护者选字形口径）
         run: |
           # --selftest 判的是"这台仪器有针"：夹具L 把门禁自己源码里的每条红模板对上一枚内存对照

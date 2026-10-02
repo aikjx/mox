@@ -1,0 +1,15 @@
+{
+  "command": [
+    "rustfmt",
+    "--check",
+    "--edition",
+    "2021",
+    "--config",
+    "skip_children=true",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/alliance_stream_contract.rs"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "format.log"
+}

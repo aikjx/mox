@@ -1,0 +1,45 @@
+§1.8o 发布态载体（第八本账：嵌套排除代价账 ＋ 名单去重）｜生成时刻 2026-10-02 23:13:25｜本文件 reports/data/selftest-formula-2026-10-02-2313.txt
+仪器图像 scripts/gate/check-doc-formulas.py：147958 B／md5 a2a070a9e7a4／CRLF 0｜本轮退役前备份 138766 B／md5 74ec3415a773
+文档图像 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md：175571 B／md5 a6d4c6c121fe／行数 1465（运行结束复测：相同）
+上一张载体 selftest-formula-2026-10-02-2120.txt（md5 d37fb2d5c81b，35571 B）按内容现取的数：例数 56／红模板 39
+前置普查工件 nested-skip-recon-2026-10-02-2215.txt（md5 ba861460120c，5533 B）：四份名单的点火面与交集在那里，本载体不复述
+本轮例数 58／FAIL 0／红模板 44／未覆盖 ／死键 
+
+── A/B 同刻对照：退役前的名单图像 vs 并到目录账之后的图像（同一时刻各走一遍集外代码语料）──
+   旧（字面量含 _verification）：候选 99 份／少走目录 15 个／位点 224／集外算术命中 0／盲区 33
+   新（RECO_GENERATED ∪ prune_dirs）：候选 99 份／少走目录 15 个／位点 224／集外算术命中 0／盲区 33
+   候选集逐份相同＝True｜三项读数相同＝True
+
+── 名单现量（只从 --recognizer 自己的行取，不在本驱动里数目录）──
+   名单来源：构建派生字面量 7 个 + 目录账派生名 3 个（prune_dirs 现推，代码侧不再手写第二份）｜集外基线 99 份｜少走目录 15 个
+   嵌套排除代价账 10 名（每名撤掉再走一遍）｜真挡住候选文件的 _verification:7 份/0 处命中｜从不点火（既不放文件也不减目录）_archive _data assets build coverage dist node_modules target
+   集外仪器候选 99 份（根 scripts／tools／frontend-ui/scripts／platform／domains／.github／按名跳过 15 个构建与派生目录）｜集外位点 224 处、盲区 33 处｜集外自带算术记号 0 处
+
+── 同轮复跑 ──
+   [A] --selftest rc=0｜--dircheck rc=0｜--dir-account rc=0（单行）｜--recognizer rc=0｜--census rc=0
+       两口径头行逐字节相同＝True
+   [B] api-surface --selftest rc=0｜--ledger rc=0｜check-script-paths --check rc=0｜governance MCP --selftest rc=0｜doc-links rc=0
+       doc-links 总体 206（WARN 串出现 120 次；总体由该仪器自己的行取，取不到就只印串次数）
+       --ledger 末行：LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+       api-surface --selftest 末行：SELFTEST 总 43 例，FAIL 0 例
+
+── MUST 判定（18 条）──
+   满足 调用层活着：selftest 取到例数且 recognizer 有输出
+   满足 selftest rc=0 且 FAIL 0
+   满足 例数＝上张载体 +2（夹具X＋变异体33）
+   满足 红模板＝上张载体 +5（新红全有针）
+   满足 红模板↔针 双向为空
+   满足 dircheck rc=0
+   满足 dir-account rc=0 且单行
+   满足 两口径头行逐字节相同
+   满足 recognizer rc=0
+   满足 census rc=0
+   满足 A/B 候选集逐份相同（合并没改覆盖面）
+   满足 A/B 位点／算术命中／盲区三项相同
+   满足 盘上现图像就是 A/B 的 B 侧（同源，不是两份代码）
+   满足 旧图像里那份 _verification 字面量确实已退役
+   满足 姊妹门禁全 rc=0
+   满足 doc-links rc=0
+   满足 census 违反 0／不闭合 0
+   满足 文档图像运行内未动
+MUST 判定：全部满足（18 条）

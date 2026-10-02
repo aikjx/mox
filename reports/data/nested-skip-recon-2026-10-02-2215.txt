@@ -1,0 +1,72 @@
+§1.8o 前置普查 v2（只读内存反事实，未改任何仓库文件）｜生成时刻 2026-10-02 22:20:44｜本文件 reports/data/nested-skip-recon-2026-10-02-2215.txt
+承接 reports/data/nested-skip-recon-2026-10-02-2210.txt（md5 82ef75e5be6f／4804 B，跑于 22:10，那张没有"吞并方向"段与逐份集合相同这一列）
+驱动 D:/tmp/18o-measure/measure_nested_lists.py：9117 B／md5 a80445427348（工件里这个数是驱动图像，跑一次不会变）
+仪器图像 scripts/gate/check-doc-formulas.py：138766 B／md5 74ec3415a773
+状态：本普查未落成判决形态、未接 CI、未进 check-all.ps1 ⇒ 没牙、别接 CI；它只回答"名单各自挡住了什么"。
+引用规约：下面每个数都由这台驱动现算，谁复述谁重跑；正文里没有一个数字来自 shell。
+
+== 名单图像（按名点名，不猜）==
+   OUTSIDE_NESTED           n=8  ais build coverage dist node_modules screenshots target third_party
+   OUTSIDE_SKIP             n=11  ais build coverage data dist docs log node_modules target third_party workspace
+   RECO_OUTSIDE_NESTED      n=8  __pycache__ _verification assets build coverage dist node_modules target
+   prune_dirs(DIR_ACCOUNT)  n=3  _archive _data _verification
+== 两两交集 ==
+   OUTSIDE_NESTED ∩ OUTSIDE_SKIP = 7 ais build coverage dist node_modules target third_party
+   OUTSIDE_NESTED ∩ RECO_OUTSIDE_NESTED = 5 build coverage dist node_modules target
+   OUTSIDE_NESTED ∩ prune_dirs(DIR_ACCOUNT) = 0 
+   OUTSIDE_SKIP ∩ RECO_OUTSIDE_NESTED = 5 build coverage dist node_modules target
+   OUTSIDE_SKIP ∩ prune_dirs(DIR_ACCOUNT) = 0 
+   RECO_OUTSIDE_NESTED ∩ prune_dirs(DIR_ACCOUNT) = 1 _verification
+
+== RECO_OUTSIDE_NESTED 逐名点火（代码语料）==
+   基线：集外候选 97 份／跳过目录 14 个
+   -__pycache__    候选 97→97  放出 0 份  skip_dirs 14→4
+   -_verification  候选 97→104  放出 7 份  skip_dirs 14→13  ←放出 7 份，其中算术命中 0／判分位点 8
+        放出: platform/domains/alliance/_verification/batch_grep.py
+        放出: platform/domains/alliance/_verification/enum_crates.py
+        放出: platform/domains/alliance/_verification/final_checks.py
+        放出: platform/domains/alliance/_verification/grep_helper.py
+        放出: platform/domains/alliance/_verification/n7_append_report.py
+        放出: platform/domains/alliance/_verification/routes_count.py
+        放出: platform/domains/alliance/_verification/targeted_files.py
+   -assets         候选 97→97  放出 0 份  skip_dirs 14→14  ←从不点火（既不放文件也不减目录）
+   -build          候选 97→97  放出 0 份  skip_dirs 14→14  ←从不点火（既不放文件也不减目录）
+   -coverage       候选 97→97  放出 0 份  skip_dirs 14→14  ←从不点火（既不放文件也不减目录）
+   -dist           候选 97→97  放出 0 份  skip_dirs 14→14  ←从不点火（既不放文件也不减目录）
+   -node_modules   候选 97→97  放出 0 份  skip_dirs 14→14  ←从不点火（既不放文件也不减目录）
+   -target         候选 97→97  放出 0 份  skip_dirs 14→14  ←从不点火（既不放文件也不减目录）
+
+   MUST 有牙：逐名放出非空的名字 1 个 → _verification
+
+== 整体清空 RECO_OUTSIDE_NESTED ==
+   候选 97→104（+7）／skip_dirs 14→3
+   基线：判分位点 222／算术命中 12／集外命中 0／盲区 32／解析失败 0
+   清空：判分位点 230／算术命中 12／集外命中 0／盲区 36／解析失败 0
+   新暴露的集外命中：0 无
+   新增 7 份候选按"被哪个名字挡住"归组：
+      _verification                   7 份
+
+== 吞并方向（prune_dirs 的名字并入代码语料名单会少读几份候选）==
+   +_archive       候选 97→97  新吞 0 份  skip_dirs 14→14  ←今天不吞任何东西（合并是零代价）
+   +_data          候选 97→97  新吞 0 份  skip_dirs 14→14  ←今天不吞任何东西（合并是零代价）
+   +_verification  候选 97→97  新吞 0 份  skip_dirs 14→14  ←今天不吞任何东西（合并是零代价）
+   全并（RECO ∪ prune_dirs）：候选 97→97／skip_dirs 14→14／候选集与基线逐份相同=True
+
+== OUTSIDE_NESTED 逐名点火（集外 .md 语料）==
+   基线：集外桶 18 个／.md 308 份／跳过目录 12 个
+   -ais            .md 308→308  放出 0 份  skip_dirs 12→12  ←从不点火
+   -build          .md 308→308  放出 0 份  skip_dirs 12→12  ←从不点火
+   -coverage       .md 308→308  放出 0 份  skip_dirs 12→12  ←从不点火
+   -dist           .md 308→308  放出 0 份  skip_dirs 12→11
+   -node_modules   .md 308→363  放出 55 份  skip_dirs 12→50
+        放出: D:/a10/aikjx/gitcode/infotopograph\frontend-ui\node_modules\3d-force-graph\README.md
+        放出: D:/a10/aikjx/gitcode/infotopograph\frontend-ui\node_modules\@playwright\test\README.md
+        放出: D:/a10/aikjx/gitcode/infotopograph\frontend-ui\node_modules\@rollup\rollup-win32-x64-msvc\README.md
+        放出: …另 52 份
+   -screenshots    .md 308→308  放出 0 份  skip_dirs 12→8
+   -target         .md 308→308  放出 0 份  skip_dirs 12→12  ←从不点火
+   -third_party    .md 308→308  放出 0 份  skip_dirs 12→12  ←从不点火
+
+== 还原与"没动代码"见证 ==
+   仪器图像 前 74ec3415a773/138766 B → 后 74ec3415a773/138766 B｜相同=True
+   本驱动未写盘：VERDICT=NO REPO FILE CHANGED

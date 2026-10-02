@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python",
+    "scripts/gate/check-api-surface.py",
+    "--selftest"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "surface_selftest_utf8.log"
+}

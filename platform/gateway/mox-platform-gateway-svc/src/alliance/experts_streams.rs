@@ -27,15 +27,13 @@
 //!
 //! 租户隔离：SSE 帧流在服务端按连接租户过滤，**绝不**跨租户下发；webhook 同样按租户隔离。
 
-use std::convert::Infallible;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::{
     extract::{Path, State},
     response::{
-        IntoResponse, Response,
         sse::{Event, KeepAlive, Sse},
+        IntoResponse, Response,
     },
     routing::{delete, get, post},
     Json, Router,
@@ -45,7 +43,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::sync::broadcast;
 
-use mox_api_protocol::{ApiResponse, api_error, api_ok};
+use mox_api_protocol::{api_error, api_ok, ApiResponse};
 
 use super::experts_common::{ExpertsSharedState, TenantId};
 
@@ -77,18 +75,24 @@ pub async fn alliance_events_stream(
                             continue;
                         }
                         let name = ev.kind.type_name().to_string();
-                        let data = serde_json::to_string(&ev).unwrap_or_else(|_| "{}".to_string());
+                        let Ok(data) = serde_json::to_string(&ev) else {
+                            tracing::error!(event_id = %ev.id, "alliance event serialization failed");
+                            continue;
+                        };
                         return Some((
-                            Ok(Event::default().event(name).data(data)),
+                            Ok(Event::default().id(ev.id).event(name).data(data)),
                             (rx, t),
                         ));
-                    }
-                    Err(broadcast::error::RecvError::Lagged(n)) => {
+                    },
+                    Err(broadcast::error::RecvError::Lagged(_)) => {
                         return Some((
-                            Ok(Event::default().comment(format!("lagged {n}, dropped older events"))),
+                            // Global lag must not disclose other tenants' event counts.
+                            Ok(Event::default()
+                                .event("StreamGap")
+                                .data(r#"{"reason":"lagged","action":"refresh"}"#)),
                             (rx, t),
                         ));
-                    }
+                    },
                     Err(broadcast::error::RecvError::Closed) => return None,
                 }
             }

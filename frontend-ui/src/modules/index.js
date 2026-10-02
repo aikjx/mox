@@ -10,6 +10,7 @@ import './workflow/index.js'
 import './market/index.js'
 import './operators/index.js'
 import './system/index.js'
+import './message-center/index.js'
 
 export { listModules, getModule, collectRoutes, collectNav } from './_kernel/module-registry.js'
 export { NAV_ICONS, navIcon, navIconNames, registerNavIcons } from './_kernel/nav-icons.js'

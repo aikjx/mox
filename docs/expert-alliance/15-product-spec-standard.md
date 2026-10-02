@@ -128,7 +128,7 @@ scope: 把 10 号成熟度评审的 🟡/🔴 差距项翻译成「可验收的�
   3. nginx 反代已配 `proxy_buffering off / proxy_read_timeout 3600s`（09 §5.2），SSE 不被攒包。
 - **对标**：#24 SSE 日志流、G5 外部任务视图手写 reader、#25 WS 幻觉（已闭环，实时性以 SSE 为准）。
 - **分级**：P1。
-- **T4 事件帧流（2026-10-02 新增，独立通道）**：业务事件另走 `GET /api/alliance/events/stream`（按租户，`event:<Kind>+data:<信封>`），与本 O3 的「任务日志流」**刻意分立**——O3 管任务执行日志帧，事件帧管域业务事件（PlanCreated/ExpertRegistered 等），不合并以免改变既有日志流消费方的帧语义；前端消费接入点 `composables/useAllianceEventStream.js`。外部系统另可经 webhook 订阅真实 HTTP POST 投递。nginx 三件套对两通道同适用。
+- **T4 事件帧流（2026-10-02 新增，独立通道）**：业务事件另走 `GET /api/alliance/events/stream`（按租户，`event:<Kind>+data:<信封>`），与本 O3 的「任务日志流」**刻意分立**——O3 管任务执行日志帧，事件帧管域业务事件（PlanCreated/ExpertRegistered 等），不合并以免改变既有日志流消费方的帧语义；前端消费接入点 `composables/useAllianceEventStream.js`。外部系统另可经 webhook 订阅真实 HTTP POST 投递。nginx 三件套对两通道同适用。**前端挂载（2026-10-02）**：编排台 `AllianceOrchestrationView` 已真实订阅该流，`PlanCreated/PlanStatusChanged` 帧 → store → 实时事件面板 + 计划统计/历史免轮询刷新；控制台/专家表视图仍留待。
 
 #### O4 审计 NDJSON + HMAC
 - **规范要求**：写操作审计以 NDJSON 行落盘，每行带 HMAC 签名 + 哈希链；审计 actor 为**真实用户身份**（从 ApiAuth 注入），不得硬编码 `system`。

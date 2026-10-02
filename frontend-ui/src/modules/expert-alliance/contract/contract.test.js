@@ -440,8 +440,15 @@ describe('专家域枚举 ↔ experts_common.rs / experts_ext.rs', () => {
     const mine = EXPERTS_EXT_RS.match(/async fn my_bookings\([\s\S]*?\n\}/)
     expect(mine, '未找到 my_bookings handler').not.toBeNull()
     expect(mine[0]).not.toMatch(/user_id\s*==/)
-    // 收藏集是进程内 HashSet，重启即失，前端不得当作持久偏好渲染成"已同步"
-    expect(EXPERTS_COMMON_RS).toMatch(/pub favorites: Arc<Mutex<std::collections::HashSet<String>>>/)
+    // 收藏按租户共享，SQLite 是真源；不是每个登录用户的个人偏好。
+    expect(EXPERTS_COMMON_RS).toMatch(/pub favorites: Arc<Mutex<HashMap<String, std::collections::HashSet<String>>>>/)
+    const favorite = EXPERTS_EXT_RS.match(/async fn toggle_expert_favorite\([\s\S]*?\n\}/)?.[0]
+    expect(favorite, '收藏 handler 必须存在').toBeTruthy()
+    expect(favorite).toContain('u.tenant_id.clone()')
+    expect(favorite).toContain('load_favorites_by_tenant(&tenant)')
+    expect(favorite).toContain('favs.entry(tenant.clone()).or_default()')
+    expect(favorite).toContain('delete_favorite(&tenant, &id)')
+    expect(favorite).toContain('upsert_favorite(&tenant, &id)')
   })
 
   it('可取消判定与后端拒绝条件互斥', () => {
@@ -1210,7 +1217,7 @@ describe('任务标记完成与分发实跑 ↔ toggle_task_done / dispatch', ()
 
   it('无可用专家是 503 而非空结果，实跑不碰任何专家负载，失败留着上次结果', () => {
     expect(dispatch).toMatch(/assigned_ids\.is_empty\(\)[\s\S]{0,60}err\(503, "no available experts for dispatch"/)
-    expect(dispatch).toContain('emit_audit(&state, &actor_from_opt_user(&user), AuditAction::ExpertDispatch')
+    expect(dispatch).toContain('emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::ExpertDispatch')
     // 行动者不是装饰：未带身份时降级为 system，带身份时记真人 ⇒ 这两处形状变了，界面上"谁做的"就变了
     expect(dispatch).toContain('OptionalAuthUser(user): OptionalAuthUser')
     expect(EXPERTS_COMMON_RS).toContain('type Rejection = std::convert::Infallible')
@@ -1310,7 +1317,7 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
   })
 
   it('软删会落盘，重启也回不来', () => {
-    expect(REMOVE).toContain('save_registry(&reg);')
+    expect(REMOVE).toContain('save_registry(tenant.as_str(), reg);')
     const DB = src('platform/gateway/mox-platform-gateway-svc/src/alliance/experts_db.rs')
     expect(DB).toMatch(/enabled\s+INTEGER NOT NULL DEFAULT 1/)
     expect(DB).toMatch(/e\.enabled as i64/)
@@ -1413,9 +1420,9 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
       'config.rs:41': 'enabled: true',
       'modules.rs:234': 'modules.route_layer(',
       'router/index.js:74': 'if (!token) {',
-      'experts_common.rs:585': 'pub struct OptionalAuthUser',
-      'experts_dispatcher.rs:588': 'AuditAction::ExpertDispatch',
-      'experts_collaboration.rs:797': '已被禁用'
+      'experts_common.rs:750': 'pub struct OptionalAuthUser',
+      'experts_dispatcher.rs:596': 'AuditAction::ExpertDispatch',
+      'experts_collaboration.rs:783': '已被禁用'
     }
     for (const ref of EXPERT_WRITE_IDENTITY.evidence) {
       expect(ref, '身份提示缺了后端位置').toMatch(/\.[a-z]+:\d+/)
