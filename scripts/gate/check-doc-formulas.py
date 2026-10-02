@@ -426,6 +426,73 @@ def dircheck_verdict(dirs, account=None):
     return bad
 
 
+# 针的等式**不许手写**——源码里出现 `6 ＝ 1 ＋ 4 ＋ 1` 这种整串，就是第二把尺（夹具K 会拿它当别家命中）。
+# 所以等式从唯一算源的两个常量现拼：形状照样是等式，源码里却看不到记号。
+_NEEDLE_CLOSED = "6 %s 1 %s 4 %s 1" % (FL.EQ_FW, FL.ADD_FW, FL.ADD_FW)
+_NEEDLE_UNCLOSED = "9 %s 1 %s 4 %s 1" % (FL.EQ_FW, FL.ADD_FW, FL.ADD_FW)
+
+
+def _suspect_key(rel, b):
+    """嫌疑的身份＝「哪份文档、第几行、前 40 字」。读账给判决时按这个键认人，不许按条数认。"""
+    return "%s:%d:%s" % (rel, b.get("line"), (b.get("span") or "")[:40])
+
+
+def blind_read_corpus_verdict(total, files):
+    """第九本账的分母兜底（第 35 型）：全集读到盲区 0 条时，「盲区读账干净」是空集上的全称判据，
+    不构成判决。这一格**只红一次**——按文档红会把每份本就没有盲区项的干净文档都打成红，
+    那不是兜底，是把分母当成了红。"""
+    bad = []
+    if total:
+        return bad
+    bad.append("盲区读账分母塌缩：全集 %d 份 .md 读到盲区 0 条（0 条时「读账干净」不构成判决——"
+               "先查扫描集是否为空，别读成仓里没有未判项）" % len(files))
+    return bad
+
+
+def _unblind_variants(span):
+    """只摘遮蔽物（加粗／反引号／引号／ASCII 等号），**不动数字、不动算符、不下判决**——
+    动数字或自己写判据就是第二把尺；摘完之后仍由唯一算源 `formula_ledger.scan_text` 判，
+    所以这一本账没有第二源，只是把同一把尺举到遮蔽物外面去。"""
+    s = span
+    for ch in ("*", "`", '"', "“", "”", "「", "」", "『", "』"):
+        s = s.replace(ch, "")
+    return [span, s, s.replace("=", FL.EQ_FW)]
+
+
+def blind_read_verdict(rel, blind, adjudicated=None):
+    """第九本账（盲区读账）：盲区不是缺陷，把盲区读成「没有缺陷」才是缺陷。
+    所以这一本只做三件事：
+      ① 分母塌缩兜底（第 35 型：盲区 0 条时「读账干净」不构成判决）；
+      ② 把「长得像等式」（带 ＝ 且带算符）的盲区项逐条点名，并给一个判决——
+         解除遮蔽后交回唯一算源再判一次，判得出主张就是真算术，判不出就是非算术；
+      ③ 真算术而不闭合 ⇒ 那是盲区里藏着的错账，红。
+    给不出判决的嫌疑不许静默（未点名＝没读），也不许拿「盲区 N 条」当成读过。"""
+    adj = {} if adjudicated is None else dict(adjudicated)
+    bad = []
+    for b in blind:
+        span = b.get("span") or ""
+        if not FL.EQ_FW_RE.search(span) or not (FL.ADD_RE.search(span) or FL.MUL_RE.search(span)):
+            continue  # 结构项按 reason 进分档账，不进这一本
+        key = _suspect_key(rel, b)
+        verdict = adj.get(key)
+        if verdict is None:
+            bad.append("盲区嫌疑未点名：%s（%s 这条盲区项带 ＝ 且带算符，读账却没给它判决——"
+                       "不许把嫌疑汇总成一个数）" % (span[:60], rel))
+            continue
+        if verdict != "真算术":
+            continue
+        hit = None
+        for v in _unblind_variants(span):
+            r = FL.scan_text(v)
+            if r["claims"]:
+                hit = r
+                break
+        if hit is not None and hit["violations"]:
+            bad.append("盲区嫌疑未闭合：%s（%s 解除遮蔽后仍是算术主张且不闭合，各侧取值 %s——"
+                       "盲区里藏着的错账）" % (span[:60], rel, hit["violations"][0]["vals"]))
+    return bad
+
+
 def exclusion_verdict(md_paths, dirs, account=None):
     """第七本账（出账执行账）：一条出账条目要同时满足两件事，各一条红，外加一格塌缩自证。
        ① 它真的排掉了东西（跟踪面里 0 命中＝这条目今天什么都不排，要删条目而不是留理由）；
@@ -2214,6 +2281,12 @@ def cmd_selftest(args):
         ("扫描集与集外宇宙桶名重叠", lambda: dir_account_audit(["docs/architecture"], 5, None,
                                                                [("docs", 3)], ua_ov,
                                                                g_synth, ga_synth)[0]),
+        ("盲区读账分母塌缩", lambda: blind_read_corpus_verdict(0, ["docs/a.md"])),
+        ("盲区嫌疑未点名", lambda: blind_read_verdict(
+            "docs/a.md", [dict(line=3, span=_NEEDLE_CLOSED)], {})),
+        ("盲区嫌疑未闭合", lambda: blind_read_verdict(
+            "docs/a.md", [dict(line=3, span=_NEEDLE_UNCLOSED)],
+            {_suspect_key("docs/a.md", dict(line=3, span=_NEEDLE_UNCLOSED)): "真算术"})),
     ]
     clean_dir = dircheck_verdict(["docs/architecture"], [("架构目录", "L2 架构文，一条主题一个目录")])
     covered, dead, errs = {}, [], []
@@ -2241,6 +2314,41 @@ def cmd_selftest(args):
     return 1 if fails else 0
 
 
+def cmd_blindread(args):
+    """第九本账的出版口：把盲区**读**出来——读＝逐条点名＋给判决，不是印一个分档数。
+    分档数（glued=…／latin=…）回答的是「盲区有多少」，回答不了「盲区里有没有藏着错账」，
+    所以嫌疑要解除遮蔽后交回唯一算源再判一次，判成真算术而不闭合的红在这里出。"""
+    paths = walk_md(args.root)
+    total, by_reason, suspects, bad = 0, {}, [], []
+    for p in paths:
+        rel, sp = _scan_file(p)
+        total += len(sp["blind"])
+        for b in sp["blind"]:
+            by_reason[b["reason"]] = by_reason.get(b["reason"], 0) + 1
+        adj = {}
+        for b in sp["blind"]:
+            span = b.get("span") or ""
+            if not FL.EQ_FW_RE.search(span) or not (FL.ADD_RE.search(span) or FL.MUL_RE.search(span)):
+                continue
+            verdict = "非算术"
+            for v in _unblind_variants(span):
+                if FL.scan_text(v)["claims"]:
+                    verdict = "真算术"
+                    break
+            adj[_suspect_key(rel, b)] = verdict
+            suspects.append((rel, b.get("line"), span[:70], verdict))
+        bad += blind_read_verdict(rel, sp["blind"], adj)
+    bad += blind_read_corpus_verdict(total, paths)
+    print("盲区读账 扫描 .md %d 份／盲区 %d 条／嫌疑 %d 条" % (len(paths), total, len(suspects)))
+    print("盲区分档 " + "／".join("%s=%d" % (k, by_reason[k]) for k in sorted(by_reason)))
+    for rel, line, span, verdict in suspects:
+        print("嫌疑 %s:%d 「%s」判决 %s" % (rel, line, span, verdict))
+    for b in bad:
+        print("FAIL %s" % b)
+    print("BLINDREAD 盲区 %d 条，嫌疑 %d 条，红 %d 条" % (total, len(suspects), len(bad)))
+    return 1 if bad else 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="全 docs/ 核心公式普查与复算")
     ap.add_argument("--census", action="store_true")
@@ -2248,6 +2356,7 @@ def main(argv=None):
     ap.add_argument("--dircheck", action="store_true")
     ap.add_argument("--dir-account", action="store_true", dest="dir_account")
     ap.add_argument("--recognizer", action="store_true")
+    ap.add_argument("--blindread", action="store_true")
     ap.add_argument("--json", dest="json")
     ap.add_argument("--root", action="append", default=None)
     args = ap.parse_args(argv)
@@ -2259,6 +2368,8 @@ def main(argv=None):
         return cmd_dircheck(args)
     if args.recognizer:
         return cmd_recognizer(args)
+    if args.blindread:
+        return cmd_blindread(args)
     return cmd_census(args)
 
 
