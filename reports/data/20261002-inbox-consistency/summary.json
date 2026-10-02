@@ -1,0 +1,124 @@
+{
+  "batch": "20261002-inbox-consistency",
+  "created_at": "2026-10-02T02:11:58.595964+00:00",
+  "checks": [
+    {
+      "name": "doc-links",
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py",
+        "--repo"
+      ],
+      "exit_code": 0,
+      "log": "doc-links-final.log",
+      "initial_exit_code": 1
+    },
+    {
+      "name": "module-catalog",
+      "command": [
+        "python",
+        "scripts/registry/module_catalog.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "module-catalog.log"
+    },
+    {
+      "name": "script-paths-selftest",
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "exit_code": 0,
+      "log": "script-paths-selftest.log"
+    },
+    {
+      "name": "script-paths",
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "exit_code": 0,
+      "log": "script-paths-final.log"
+    },
+    {
+      "name": "frontend-gate",
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "exit_code": 0,
+      "log": "frontend-gate.log"
+    },
+    {
+      "name": "ports",
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "exit_code": 0,
+      "log": "ports.log"
+    },
+    {
+      "name": "registry-consistency",
+      "command": [
+        "python",
+        "scripts/tests/test_api_registry_generation.py"
+      ],
+      "exit_code": 0,
+      "log": "registry-consistency.log"
+    },
+    {
+      "name": "rust-regressions",
+      "exit_code": 0,
+      "log": "final-tests.log",
+      "passed_tests": 12
+    },
+    {
+      "name": "concurrent-first-open-repeat",
+      "exit_code": 0,
+      "log": "concurrency-repeat.log",
+      "repeats": 5
+    },
+    {
+      "name": "gateway-clippy-all-targets",
+      "exit_code": 0,
+      "log": "clippy-final.log",
+      "warnings_present": true
+    },
+    {
+      "name": "flow-syntax",
+      "exit_code": 0,
+      "log": "mermaid.log",
+      "visual_qa": false
+    },
+    {
+      "name": "diff-check",
+      "exit_code": 0,
+      "log": "diff-check.log"
+    }
+  ],
+  "all_final_checks_passed": true,
+  "rust_regression_tests": 12,
+  "python_registry_tests": 1,
+  "concurrency_repeat_runs": 5,
+  "broken_links_initial": 40,
+  "broken_links_final": 0,
+  "doc_path_warnings": 215,
+  "port_warnings": 284,
+  "registered_http_routes_rendered": 243,
+  "verification": "Real file SQLite, production JWT middleware and two actual TCP HTTP services; no substituted business providers",
+  "all_enterprise_modules_complete": false,
+  "cross_host_cluster_verified": false,
+  "browser_e2e_verified": false,
+  "smtp_llm_oss_success_verified": false,
+  "committed_or_deployed": false,
+  "limits": [
+    "same-host SQLite only",
+    "service reconstruction is not power-loss testing",
+    "external delivery and recipient directory unimplemented",
+    "full frontend business E2E unverified",
+    "existing lint, document-path and port warnings remain"
+  ]
+}

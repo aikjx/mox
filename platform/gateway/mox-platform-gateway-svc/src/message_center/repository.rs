@@ -1,4 +1,4 @@
-//! Transactional self-inbox storage. SQLite supports same-host processes, not a multi-host cluster.
+//! Transactional scoped inbox storage. SQLite supports same-host processes, not a multi-host cluster.
 use super::{Message, MessageSendRecord, MessageStats, MessageStatus};
 use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
 use std::path::PathBuf;
@@ -6,6 +6,7 @@ use std::path::PathBuf;
 #[derive(Debug)]
 pub enum StoreError {
     Conflict,
+    Forbidden,
     Unavailable(String),
 }
 impl From<rusqlite::Error> for StoreError {
@@ -36,7 +37,7 @@ impl InboxRepository {
         if let Some(parent) = self.path.parent().filter(|p| !p.as_os_str().is_empty()) {
             std::fs::create_dir_all(parent).map_err(|e| StoreError::Unavailable(e.to_string()))?;
         }
-        let conn = Connection::open(&self.path)?;
+        let mut conn = Connection::open(&self.path)?;
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         // Concurrent first-open can return SQLITE_BUSY without invoking busy_timeout.
         // Retry only initialization locks; never replay a business transaction here.
@@ -73,7 +74,27 @@ impl InboxRepository {
             CREATE TABLE IF NOT EXISTS inbox_receipts (
             tenant TEXT NOT NULL, receiver TEXT NOT NULL, message_id TEXT NOT NULL, payload TEXT NOT NULL,
             PRIMARY KEY(tenant, receiver, message_id),
-            FOREIGN KEY(tenant, receiver, message_id) REFERENCES inbox_messages(tenant, receiver, id));")?;
+            FOREIGN KEY(tenant, receiver, message_id) REFERENCES inbox_messages(tenant, receiver, id));
+            CREATE TABLE IF NOT EXISTS inbox_dispatch_keys (
+                tenant TEXT NOT NULL, sender TEXT NOT NULL, key TEXT NOT NULL,
+                message_id TEXT NOT NULL, fingerprint TEXT NOT NULL,
+                PRIMARY KEY(tenant,sender,key));
+            CREATE TABLE IF NOT EXISTS inbox_schema_migrations (version INTEGER PRIMARY KEY);")?;
+        let migrated: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM inbox_schema_migrations WHERE version=2)",
+            [],
+            |r| r.get(0),
+        )?;
+        if !migrated {
+            let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            tx.execute_batch(
+                "INSERT OR IGNORE INTO inbox_dispatch_keys
+                SELECT tenant,receiver,idempotency_key,id,fingerprint FROM inbox_messages
+                WHERE idempotency_key IS NOT NULL AND json_extract(payload,'$.sender_id')=receiver;
+                INSERT OR IGNORE INTO inbox_schema_migrations VALUES (2);",
+            )?;
+            tx.commit()?;
+        }
         Ok(conn)
     }
 
@@ -85,39 +106,62 @@ impl InboxRepository {
         key: Option<&str>,
         fingerprint: &str,
     ) -> Result<String, StoreError> {
+        self.send_many(message, std::slice::from_ref(receipt), key, fingerprint)
+    }
+
+    pub fn send_many(
+        &self,
+        message: &Message,
+        receipts: &[MessageSendRecord],
+        key: Option<&str>,
+        fingerprint: &str,
+    ) -> Result<String, StoreError> {
+        if receipts.is_empty() || receipts.len() > 100 {
+            return Err(StoreError::Unavailable("Invalid delivery batch".into()));
+        }
         let mut conn = self.open()?;
         let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
         if let Some(key) = key {
             let existing: Option<(String, String)> = tx.query_row(
-                "SELECT id, fingerprint FROM inbox_messages WHERE tenant=?1 AND receiver=?2 AND idempotency_key=?3",
-                params![message.tenant_id, receipt.receiver_id, key], |r| Ok((r.get(0)?, r.get(1)?))).optional()?;
+                "SELECT message_id, fingerprint FROM inbox_dispatch_keys WHERE tenant=?1 AND sender=?2 AND key=?3",
+                params![message.tenant_id, message.sender_id, key], |r| Ok((r.get(0)?, r.get(1)?))).optional()?;
             if let Some((id, prior)) = existing {
                 return if prior == fingerprint { Ok(id) } else { Err(StoreError::Conflict) };
             }
         }
-        tx.execute(
-            "INSERT INTO inbox_messages VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
-            params![
-                message.tenant_id,
-                receipt.receiver_id,
-                message.message_id,
-                message.created_at,
-                enum_name(&message.message_type)?,
-                enum_name(&message.status)?,
-                serde_json::to_string(message)?,
-                key,
-                fingerprint
-            ],
-        )?;
-        tx.execute(
-            "INSERT INTO inbox_receipts VALUES (?1,?2,?3,?4)",
-            params![
-                message.tenant_id,
-                receipt.receiver_id,
-                message.message_id,
-                serde_json::to_string(receipt)?
-            ],
-        )?;
+        for receipt in receipts {
+            let mut personal = message.clone();
+            personal.receiver_ids = vec![receipt.receiver_id.clone()];
+            tx.execute(
+                "INSERT INTO inbox_messages VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+                params![
+                    message.tenant_id,
+                    receipt.receiver_id,
+                    message.message_id,
+                    message.created_at,
+                    enum_name(&message.message_type)?,
+                    enum_name(&message.status)?,
+                    serde_json::to_string(&personal)?,
+                    Option::<&str>::None,
+                    fingerprint
+                ],
+            )?;
+            tx.execute(
+                "INSERT INTO inbox_receipts VALUES (?1,?2,?3,?4)",
+                params![
+                    message.tenant_id,
+                    receipt.receiver_id,
+                    message.message_id,
+                    serde_json::to_string(receipt)?
+                ],
+            )?;
+        }
+        if let Some(key) = key {
+            tx.execute(
+                "INSERT INTO inbox_dispatch_keys VALUES (?1,?2,?3,?4,?5)",
+                params![message.tenant_id, message.sender_id, key, message.message_id, fingerprint],
+            )?;
+        }
         tx.commit()?;
         Ok(message.message_id.clone())
     }
@@ -210,6 +254,48 @@ impl InboxRepository {
             params![tenant, receiver, id, serde_json::to_string(&receipt)?])?;
         tx.commit()?;
         Ok(true)
+    }
+
+    pub fn mark_all_read(&self, tenant: &str, receiver: &str) -> Result<usize, StoreError> {
+        let mut conn = self.open()?;
+        let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        let now = chrono::Utc::now().to_rfc3339();
+        let receipts = tx.execute(
+            "UPDATE inbox_receipts SET payload=json_set(payload,'$.status','read','$.read_at',?3)
+            WHERE tenant=?1 AND receiver=?2 AND message_id IN
+            (SELECT id FROM inbox_messages WHERE tenant=?1 AND receiver=?2 AND status='sent')",
+            params![tenant, receiver, now],
+        )?;
+        let messages = tx.execute("UPDATE inbox_messages SET status='read', payload=json_set(payload,'$.status','read','$.updated_at',?3)
+            WHERE tenant=?1 AND receiver=?2 AND status='sent'", params![tenant,receiver,now])?;
+        if messages != receipts {
+            return Err(StoreError::Unavailable("Inbox receipt integrity failure".into()));
+        }
+        tx.commit()?;
+        Ok(messages)
+    }
+
+    pub fn unread_counts(
+        &self,
+        tenant: &str,
+        receiver: &str,
+    ) -> Result<std::collections::BTreeMap<String, i64>, StoreError> {
+        let conn = self.open()?;
+        let mut query = conn.prepare("SELECT CASE message_type WHEN 'task' THEN 'task' WHEN 'alert' THEN 'alert' ELSE 'message' END AS category, COUNT(*)
+            FROM inbox_messages WHERE tenant=?1 AND receiver=?2 AND status='sent' GROUP BY category")?;
+        let rows = query.query_map(params![tenant, receiver], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+        })?;
+        let mut result = std::collections::BTreeMap::from([
+            ("message".into(), 0),
+            ("task".into(), 0),
+            ("alert".into(), 0),
+        ]);
+        for row in rows {
+            let (kind, count) = row?;
+            result.insert(kind, count);
+        }
+        Ok(result)
     }
 
     pub fn stats(&self, tenant: &str, receiver: &str) -> Result<MessageStats, StoreError> {

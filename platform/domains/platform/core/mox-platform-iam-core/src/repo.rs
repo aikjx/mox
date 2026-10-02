@@ -4,14 +4,14 @@
 // GitCode 镜像: https://gitcode.com/aikjx/mox
 
 use crate::model::*;
-use anyhow::Context;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::Utc;
-use dashmap::DashMap;
 use parking_lot::Mutex;
 use rusqlite::{params, Connection};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use uuid::Uuid;
 
 pub static DDL_SQL: &str = include_str!("ddl.sql");
@@ -37,14 +37,12 @@ pub enum IamRepoError {
 #[derive(Clone)]
 pub struct IamRepository {
     pub conn: Arc<Mutex<Connection>>,
-    perm_cache: DashMap<(String, String), Vec<String>>,
 }
 
 impl IamRepository {
     pub fn new(conn: Arc<Mutex<Connection>>) -> Self {
         Self {
             conn,
-            perm_cache: DashMap::new(),
         }
     }
 
@@ -505,75 +503,8 @@ impl IamRepository {
     }
 
     pub fn get_user_permissions(&self, tenant_id: &str, user_id: &str) -> Result<Vec<String>> {
-        let cache_key = (tenant_id.to_string(), user_id.to_string());
-        if let Some(cached) = self.perm_cache.get(&cache_key) {
-            return Ok(cached.value().clone());
-        }
         let conn = self.conn.lock();
-        let mut stmt =
-            conn.prepare("SELECT role_id FROM iam_user_role WHERE tenant_id=?1 AND user_id=?2")?;
-        let direct_role_ids: Vec<String> = stmt
-            .query_map(params![tenant_id, user_id], |r| r.get(0))?
-            .collect::<std::result::Result<Vec<_>, _>>()?;
-
-        let mut stmt_user = conn.prepare(
-            "SELECT is_superuser, dept_id FROM iam_user WHERE tenant_id=?1 AND user_id=?2",
-        )?;
-        let mut user_rows = stmt_user.query(params![tenant_id, user_id])?;
-        let mut is_super = 0i64;
-        if let Some(row) = user_rows.next()? {
-            is_super = row.get(0)?;
-        }
-        drop(user_rows);
-
-        if is_super == 1 {
-            let mut all_stmt = conn.prepare(
-                "SELECT perm_code FROM iam_permission WHERE tenant_id IN (?1, 'system') AND status='active'",
-            )?;
-            let perms: Vec<String> = all_stmt
-                .query_map(params![tenant_id], |r| r.get(0))?
-                .collect::<std::result::Result<Vec<_>, _>>()?;
-            drop(all_stmt);
-            drop(stmt_user);
-            drop(stmt);
-            drop(conn);
-            self.perm_cache.insert(cache_key, perms.clone());
-            return Ok(perms);
-        }
-
-        let all_role_ids =
-            self.collect_parent_role_ids_inner(tenant_id, &direct_role_ids, &conn)?;
-
-        let mut perms: HashSet<String> = HashSet::new();
-        if !all_role_ids.is_empty() {
-            let placeholders: Vec<String> = all_role_ids.iter().map(|_| "?".to_string()).collect();
-            let sql = format!(
-                "SELECT p.perm_code FROM iam_permission p \
-                 JOIN iam_role_permission rp ON p.perm_id=rp.perm_id \
-                 WHERE rp.tenant_id IN (?1, 'system') AND rp.role_id IN ({}) \
-                 AND p.status='active'",
-                placeholders.join(",")
-            );
-            let mut stmt_perm = conn.prepare(&sql)?;
-            let mut params_vec: Vec<&dyn rusqlite::ToSql> = vec![&tenant_id];
-            for r in &all_role_ids {
-                params_vec.push(r);
-            }
-            let rows = stmt_perm.query_map(rusqlite::params_from_iter(params_vec.iter()), |r| {
-                r.get::<_, String>(0)
-            })?;
-            for pc in rows {
-                perms.insert(pc?);
-            }
-            drop(stmt_perm);
-        }
-
-        let perm_vec: Vec<String> = perms.into_iter().collect();
-        drop(stmt_user);
-        drop(stmt);
-        drop(conn);
-        self.perm_cache.insert(cache_key, perm_vec.clone());
-        Ok(perm_vec)
+        Ok(crate::permission_policy::permissions(&conn, tenant_id, user_id)?)
     }
 
     fn collect_parent_role_ids_inner(
@@ -1627,17 +1558,31 @@ impl IamRepository {
         role_ids: &[String],
     ) -> Result<()> {
         let ts = now_iso();
-        let conn = self.conn.lock();
-        conn.execute(
+        anyhow::ensure!(role_ids.len() <= 200, "too many roles");
+        let mut conn = self.conn.lock();
+        let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let user_exists: bool = tx.query_row(
+            "SELECT EXISTS(SELECT 1 FROM iam_user WHERE tenant_id=?1 AND user_id=?2)",
+            params![tenant_id, user_id],
+            |r| r.get(0),
+        )?;
+        anyhow::ensure!(user_exists, "user not in tenant");
+        let role_ids: std::collections::BTreeSet<_> = role_ids.iter().collect();
+        for rid in &role_ids {
+            let valid: bool = tx.query_row("SELECT EXISTS(SELECT 1 FROM iam_role WHERE role_id=?1 AND tenant_id IN (?2,'system') AND status='active')",params![rid,tenant_id],|r|r.get(0))?;
+            anyhow::ensure!(valid, "role not available in tenant");
+        }
+        tx.execute(
             "DELETE FROM iam_user_role WHERE tenant_id=?1 AND user_id=?2",
             params![tenant_id, user_id],
         )?;
         for rid in role_ids {
-            conn.execute(
+            tx.execute(
                 "INSERT INTO iam_user_role (ur_id,tenant_id,user_id,role_id,assigned_by,assigned_at,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7)",
                 params![new_id(), tenant_id, user_id, rid, None::<String>, Some(&ts), ts],
             )?;
         }
+        tx.commit()?;
         Ok(())
     }
 

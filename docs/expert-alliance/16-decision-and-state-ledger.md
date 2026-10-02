@@ -61,11 +61,11 @@
 | D1 | SQLite 无 schema 版本迁移 | N3 | 前置底线 P0 | 已闭环（=P0-A） | 12 §1.1；BFR §三 | R1 2026-09-27 |
 | D2 | 审计 Actor 硬编码 system + 前端控制台无角色按钮级权限 | N2+G3 | 前置底线 P0 | 已闭环（=P0-B） | 12 §1.1；BFR §二；FFR 任务3 | R1 2026-09-27 |
 | D3 | WS 文档幻觉未修订（代码无 WS，06 文档宣称有） | #25 | 前置底线 P0 | 已闭环（=P0-D，纯文档） | 12 §1.1；DVR §9（01/02/03/06 共 5 处补记+4 处横幅，原文不改） | R3 2026-09-29 |
-| D4 | 进程内三项（favorites/plans/orchestration_history）重启即失 | 已知缺口 | 设计取舍→P1 落盘 | 设计取舍（升级时点见 §二） | BVR 摘要#13/#14/#15（experts_common.rs:468/470/472）；FVR §4.2/4.3 前端文案已合规；08 §十 P1；12 §1.1 | 设计取舍，落盘规划 P1 |
+| D4 | 进程内三项（favorites/plans/orchestration_history）重启即失 | 已知缺口 | P1 落盘 | **已闭环（2026-10-02，schema v3 三表落盘 + 启动读回，两租户隔离 E2E 已证）** | experts_db.rs 新增 collaboration_plans/orchestration_history/favorites（tenant_id 复合主键）；写后 upsert/insert，new() 启动 load_all_*；证据 _verification/d4-e2e-evidence.txt；tests/d4_crash_recovery.rs；lib 180 / 集成全绿 | R? 2026-10-02 |
 | D5 | DAG 并行无护栏（信号量/重放） | N8 | P1 差距 | 信号量已闭环（T1a 2026-09-30）；重放随 A3 规划中 P1 | 12 §1.1；12 §2.1 T1；本账 §一.1 N8 | 信号量 R4 2026-09-30 |
 | D6 | 指标三进程格式不统一 | N7 | P1 差距 | 已闭环（2026-09-30，Accept 协商 Prometheus 文本） | 12 §1.1；本账 §一.1 N7 | R4 2026-09-30 |
 | D7 | 图谱节点级无 CRUD，只能全量 rebuild | N4/#11 | 🔴 硬缺口 | 已闭环（2026-09-30，增量 CRUD；图RAG T2 的前置已就绪） | 12 §1.1；BVR §三 N4；本账 §一.1 N4、BFR §N4 | R4 2026-09-30 |
-| D8 | registry 主动探活默认关闭 | N5 | P1 差距 | 设计取舍（生产显式开启） | 12 §1.1；BVR §三 N5 | 设计取舍 |
+| D8 | registry 主动探活默认关闭 | N5 | P1 差距 | **已闭环（2026-10-02，默认改开；env `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off` 可关回退被动租约）** | app_state.rs:61 `health_probe_enabled:false→true`；health_probe.rs 注释+断言同步；registry-svc 28 全绿（probe_default_config_enables_task_d8） | R? 2026-10-02 |
 | D9 | SSE 未统一 + store 无测试 | G5+G6 | P1 差距 | 留待未来 P2 | 12 §1.1；FVR §5 G5/G6 | 规划中 P2 |
 | D10 | 图谱可视化三套栈未归一 | G9 | P2 | 规划中 P2（=U1/U3 前置） | 12 §1.1；FVR §5 G9 | 规划中 P2 |
 
@@ -85,14 +85,14 @@
 | T1 | DAG 并行度信号量与重试/重放 | 新技术 | P1 | 信号量（T1a）已闭环 2026-09-30；重放随 A3 规划中 P1 | 12 §2.1；依据 10-D5/N8/#15、11-弱⑦；本账 §一.1 N8 |
 | T2 | 图 RAG（知识图谱增强检索） | 新技术 | P1 | **已闭环（部分）**：2026-10-01 图谱纯检索落地（内存态加权多跳扩展，`POST /api/expert-graph/rag/expand`，权重乘积聚合，向量融合待 #27）；实现选择由规划期「SQLite 递归 CTE」改为内存态（state 无连接句柄，语义等价，A4 图库迁入时换查询实现） | 12 §2.2；依据 11-强①、10-#10/#11/N4/D7；本轮见 backend-fix-report.md「T2 图 RAG（2026-10-01）」 |
 | T3 | MCP 协议接入（Server 先行、Client 跟进；由 P3 提前） | 新技术 | P1 | **部分闭环**（2026-10-01 MCP Server 已落地：stdio 自实现 + 3 真实工具；Client/凭证托管留待） | 12 §2.3；依据 11-弱⑧；依赖 P0-N1/N2 |
-| T4 | 事件驱动架构（任务状态事件流，公共骨干） | 新技术 | P1 | 规划中 P1 | 12 §2.4；依据 10-#24/D9、11-弱② |
+| T4 | 事件驱动架构（任务状态事件流，公共骨干） | 新技术 | P1 | 🟡 **部分闭环（进程内总线，2026-10-02）**：`tokio::sync::broadcast` 进程内事件总线 + 事件模型（PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled，带 tenant），真实 handler emit、消费者落 `alliance_event_log`（schema v4），E2E 真实验证通过（t4-e2e-evidence.txt）。**未做（后续）**：SSE 升级「日志帧+事件帧」双通道、外部系统 webhook/SSE 订阅端点、跨进程/多副本广播。**勘误**：任务书曾把「事件驱动」误挂 M1；实际 M1=私有化交付产品化（见下行），事件驱动即本行 T4 | 12 §2.4；依据 10-#24/D9、11-弱②；backend-fix-report T4 节 |
 | T5 | 流式编排（边执行边交付） | 新技术 | P2 | 规划中 P2（依赖 T4） | 12 §2.5；依据 10-#6/#9 |
 | U1 | 画布式可视化编排（拖拽 DAG） | 新UI | P1 | **已闭环（MVP：能力图谱画布编辑，2026-10-01）**——在既有手写 SVG `GraphCanvas.vue` 上增强（不引 VueFlow/LogicFlow，守 G9 三栈归一、不做第四套渲染栈）：节点拖拽（视觉坐标只活前端 dragPositions，不入库）、Inspector 节点改/删（v-role-any 管理写面）、新增节点、点两节点连线（选 edge_type）、选中节点「展开邻域」走 T2 `expandGraphNeighborhood` 幂等并入。**未做（诚实标注）**：DAG 编排导出/预演、实时多人回显、虚拟滚动（G7 仍 P2）、拖拽坐标持久化。G9 三套栈归一与 U3 力导向/分层仍留待 | 12 §3.1；FFR「U1 画布 MVP（2026-10-01）」；本账 §五 2026-10-01 行；vitest 1044 全绿 |
 | U2 | 专家画像与匹配透明化（逐维打分可视化） | 新UI | P1 | **已闭环（2026-10-01）**。代码证据：scheduler-proto/matcher.rs `MatchedExpert.weights`；scheduler-core/modular_matcher.rs:286 带出实际权重；api/dto.rs `ExpertScoreView{domain,capability,health,priority,performance 各 {value,weight},total}`；scheduler-svc/routes.rs `/experts/search` 透出；http-sdk alliance.rs（本地降级）+ alliance_remote.rs（远程优先）两路径均透传。前端 `MatchExplainPanel.vue` 逐维条形图+权重标注+总分演算。**权重表（主路径默认）**：domain 0.35 / capability 0.30 / priority(=rating 权重) 0.20 / performance 0.10 / **health 0.05**；健康分 is_healthy?1.0:0.2，非硬过滤。**口径纠错**：旧账「健康度 0.15」系 bio/备用 matcher 权重误植，主路径实为 0.05。测试：scheduler-core 115 + scheduler-svc/http-sdk 38 全绿。 | 12 §3.2；15 U2；依据 10-#12、11-弱② |
 | U3 | 图谱可视化增强（力导向/分层/虚拟渲染） | 新UI | P2 | 规划中 P2（在 U1 选栈后） | 12 §3.3；依据 10-#40/G7/G8/G9/D10 |
 | U4 | 实时协作（多人围观/评论标注） | 新UI | P2 | 规划中 P2（依赖 A1/T4） | 12 §3.4；依据 11-Coze 借鉴 |
-| A1 | 多租户隔离（数据/配额/密钥 + SSO） | 新架构 | P1 | 🟡 **部分闭环（阶段一）2026-10-01**：数据模型+内存态按租户隔离、TenantId 提取器（取可信身份 tenant_id，X-Tenant-Id 头一致性校验）、审计带 tenant；两真实租户建专家/查询互不可见 E2E 已证（a1-e2e-evidence.txt）。**配额/密钥/SSO-SAML/会话-任务-执行器分区/租户内 RBAC = 阶段二（方案稿）**。依赖 P0-N2/G3/N1 均已闭环 | 12 §4.1；依据 11-弱③；backend-fix-report A1 节 |
-| A2 | 模块化微服务深化（fusion / memory 独立，网关无状态化） | 新架构 | P2 | 规划中 P2（解决 N11 sticky） | 12 §4.2；依据 08 §十 P2、10-#9/#26/N11 |
+| A1 | 多租户隔离（数据/配额/密钥 + SSO） | 新架构 | P1 | 🟢 **阶段二续（2026-10-02）**：阶段一数据/内存态按租户隔离、TenantId 提取器、审计带 tenant、两租户 E2E 已证（a1-e2e-evidence.txt）。**配额子项已闭环**：单租户专家数上限 `MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT`（默认 1000，env 覆盖），`create_expert` 超限真实 **409** + 结构化 `quota/used`，按租户独立计数，低配额 E2E 已证（a1-quota-e2e-evidence.txt）。**SSO 子项=方案稿/待真实 IdP**：OAuth2/OIDC 授权码交换已真实实现（reqwest 直连 token_endpoint），但本机无真实 IdP 凭据/无本地 Keycloak，端到端真实验证缺 IdP，不做假对接；SAML/CAS/LDAP 仍 501。**密钥托管 / 会话-任务-执行器分区 / 租户内 RBAC 细化 / 租户级配额配置表 = 阶段三（方案稿）**。依赖 P0-N2/G3/N1 均已闭环 | 12 §4.1；依据 11-弱③；backend-fix-report A1 阶段二节 |
+| A2 | 模块化微服务深化（fusion / memory 独立，网关无状态化） | 新架构 | P2 | 🟡 **部分闭环（阶段一：冷数据外移为 SQLite 唯一真相，2026-10-02）**：D4 已落盘的三项冷数据（collaboration_plans / orchestration_history / favorites）读路径由「内存为主」改为**按租户实时查 SQLite**（写穿 + busy 重试），两个活实例共享同一文件时 A 写穿、B 不重启即读到，跨实例一致 + 租户隔离 E2E 已证（a2-e2e-evidence.txt）。**registry/graph 高频态外移、执行器 task 状态、分布式通知/失效广播、多副本写冲突策略、memory/fusion 独立 = 阶段二（方案稿）** | 12 §4.2；依据 08 §十 P2、10-#9/#26/N11；backend-fix-report A2 节 |
 | A3 | 事件溯源（任务/审计可重放，审计送 SIEM） | 新架构 | P2 | 规划中 P2（依赖 T4 事件模型） | 12 §4.3；依据 10-#19/#28/#29/D4 |
 | A4 | 图数据库引入（关系层从 SQLite 升级） | 新架构 | P2 | 规划中 P2（关键约束：须可气隙/嵌入式，守住国密气隙卖点） | 12 §4.4；依据 10-#11/N4/D7 |
 | M1 | 私有化交付产品化（信创/气隙离线包 + 一键自检） | 新模式 | P1 | 规划中 P1（投入产出比最高） | 12 §5.1；依据 11-强②③、10-#21、09 生产模板 |
@@ -106,15 +106,17 @@
 
 > 每条给「取舍内容 + 理由 + 何时升级 / 文档出处」。
 
-1. **进程内三项（favorites / plans / orchestration_history）重启即失**
-   - 现状：三者均为网关进程内 `HashSet/HashMap/Vec`，无表、无持久化。证据：BVR 摘要#13/#14/#15（experts_common.rs:468 `plans`、:470 `history`、:472 `favorites`）；experts_db.rs 无对应表。
-   - 理由：内网试点、单副本、零外部依赖气隙定位下的最小实现；前端文案已诚实限定为「仅本次进程 / 本会话」（FVR §4.2/4.3：AllianceOrchestrationView.vue:152/179、alliance-experts.store.js:22-25）。
-   - 何时升级：**D4 → P1 落盘**（08 §十 存储 P1；12 §6.2 阶段一「顺手补 D4 进程内三项落盘」）；远期随 A3 事件溯源化为不可变事件流。
+1. **进程内三项（favorites / plans / orchestration_history）重启即失** ✅ 已闭环（2026-10-02，D4）
+   - 历史现状：三者曾为网关进程内 `HashSet/HashMap/Vec`，无表、无持久化。证据：BVR 摘要#13/#14/#15。
+   - **已落地**：schema 升 v3（PRAGMA user_version 2→3），新增 `collaboration_plans` / `orchestration_history` / `favorites` 三表（均带 `tenant_id` 复合主键，与 A1 多租户行级隔离一致）；写后立即 upsert/insert（best-effort，与既有 sessions/graph 同约定），`ExpertsSharedState::new()` 启动 `load_all_*` 读回。favorites 内存态随之按租户分区（`HashMap<tenant, HashSet<expert_id>>`）。
+   - 真实验证：tests/d4_crash_recovery.rs 走「写入→模拟崩溃重启→读回逐字段一致」闭环，并证 tenant-a 看不到 tenant-b 的 plan/收藏；证据 _verification/d4-e2e-evidence.txt。单租户(default)行为零回归。
+   - 遗留（诚实标注）：sessions 此前仅「单进程内可恢复」（N11，多副本不共享）；三项落盘同样是网关本地 SQLite，多副本/A2 memory 独立前不跨进程共享。远期随 A3 事件溯源化为不可变事件流。
+   - **更新（A2 阶段一，2026-10-02）**：三项冷数据「多副本不跨进程共享」遗留**已解**——读路径改为按租户实时查 SQLite（唯一真相），两活实例共享同一文件时 A 写穿、B 不重启即一致（a2-e2e-evidence.txt）。sessions（N11）与 registry/graph 高频态仍留阶段二。
 
-2. **专家健康字段是登记值，非探活结果**
-   - 现状：`availability.status` 从注册请求 body 写入（online/busy/offline/away），registry 主动探活默认关闭。证据：BVR 摘要#27（experts_registry.rs:127-128）；BVR §三 N5（app_state.rs:56 `health_probe_enabled:false`）。
-   - 语义与前端约束：前端不得把「在线」写成「健康检测通过」，`online` 仅作可用性枚举标签；FVR §4.1 已核验模块内未踩线（ExpertCollabPanel.vue:270、ExpertCard.vue:118 合规）。真正健康判断走 scheduler matcher 健康度 0.15 加权（非过滤）。
-   - 何时升级：生产部署显式设 `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=true`（BFR §八 设计取舍，不改默认值）。
+2. **专家健康字段是登记值，非探活结果** ✅ 探活默认开已闭环（2026-10-02，D8；登记值语义不变）
+   - 现状：`availability.status` 从注册请求 body 写入（online/busy/offline/away）。证据：BVR 摘要#27（experts_registry.rs:127-128）。
+   - **已落地（D8）**：registry `Config::default().health_probe_enabled` 由 `false` 改 **`true`**（app_state.rs:61）——默认即启动后台主动探测，提前标记「仍心跳但业务端点不可用」的实例为 Unhealthy 并在恢复时自动回册。env 覆盖保留：`MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off` 可关闭，回退「仅被动心跳租约」。
+   - 语义与前端约束：前端仍不得把 `online` 写成「健康检测通过」，`online` 仅作可用性枚举标签；真正健康判断走 scheduler matcher 健康度加权（非硬过滤）。探活端点公开白名单（/health、/metrics、/leadership、/api/registry/health）不鉴权，本次改默认值不触及路由。
 
 3. **两套熔断器状态不共享（网关 dispatcher vs 下游 scheduler）**
    - 现状：scheduler-core/llm_router.rs:477 是真实熔断（threshold=5/60s）；网关 dispatcher.rs:494/794/828 是另一独立内存 map。证据：BVR §三 N10。

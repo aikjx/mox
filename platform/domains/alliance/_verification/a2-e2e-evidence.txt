@@ -1,0 +1,105 @@
+================================================================================
+A2 无状态化阶段一（冷数据外移为 SQLite 唯一真相）—— 真实验证证据
+日期：2026-10-02
+工程：D:\a10\aikjx\gitcode\infotopograph
+================================================================================
+
+【说明】本证据来自真实端到端测试（禁止 mock）。与 D4「写入→模拟崩溃重启→读回」不同，
+A2 证的是更强的性质：两个独立活实例共享同一份真实 SQLite，实例 B 不重启、不刷新
+本地内存缓存，直接走新读路径就能读到实例 A 刚写穿的行——补齐 D4 遗留「多副本不跨
+进程共享」边界。
+测试文件：platform/gateway/mox-platform-gateway-svc/tests/a2_multi_instance_consistency.rs
+测试用例：a2_two_live_instances_share_sqlite_a_writes_b_reads_without_reload
+
+--------------------------------------------------------------------------------
+一、被测形态（两个活实例 = 两个副本/两个进程的等价模拟）
+--------------------------------------------------------------------------------
+- 独立临时库：MOX_EXPERTS_DB_PATH=<tempdir>/experts.db（env 经全局 Mutex 串行化，与
+  其他改 env 的集成测试隔离；tempdir 自动清理）。
+- inst_a = ExpertsSharedState::new()，inst_b = ExpertsSharedState::new()：
+  两个独立 ExpertsSharedState 对象，各自持有独立内存镜像（plans/history/favorites），
+  但都 open 同一份 SQLite 文件（WAL：journal_mode=WAL + busy_timeout=5s + synchronous=NORMAL）。
+- inst_b 启动时库内尚无 tenant-a 数据，其内存镜像为空。
+
+--------------------------------------------------------------------------------
+二、实例 A 写穿（与生产 handler 完全一致：先更内存镜像，再写穿 SQLite）
+--------------------------------------------------------------------------------
+tenant-a：
+  - plan:    a2-plan-1（title="A2协作计划·a2-plan-1", status=completed, expert_ids=[exp-a-1]）
+             写内存 plans + experts_db::upsert_plan("tenant-a", &plan)
+  - history: a2-exec-1 -> plan a2-plan-1, status=completed, duration_ms=123
+             写内存 history + experts_db::insert_history_record("tenant-a", &rec)
+  - favorite: exp-a-fav
+             写内存 favorites + experts_db::upsert_favorite("tenant-a", "exp-a-fav")
+
+--------------------------------------------------------------------------------
+三、对照组（关键：先证明 B 的内存镜像里没有 A 的数据）
+--------------------------------------------------------------------------------
+  - inst_b.plans.lock().get("a2-plan-1") == None   （B 自启动后未 reload，内存无 A 的 plan）
+  - inst_b.favorites[tenant-a] 不含 exp-a-fav
+  => 若读路径仍走内存镜像（D4 旧语义），下面所有断言必然失败。
+
+--------------------------------------------------------------------------------
+四、实例 B 不重启、直接走 A2 新读路径（SQLite 唯一真相）—— 真实断言结果
+--------------------------------------------------------------------------------
+[按租户读 plans]  experts_db::load_plans_by_tenant("tenant-a")
+  - contains_key("a2-plan-1") == true        ✅ 读到 A 刚写穿的 plan
+  - title == "A2协作计划·a2-plan-1"           ✅ 逐字段一致
+  - status == "completed"                     ✅
+
+[单点读 plan]     experts_db::get_plan("tenant-a", "a2-plan-1")
+  - Some(plan) 且 expert_ids == [exp-a-1]    ✅（execute_plan_handler 读路径）
+
+[按租户读 history] experts_db::load_history_by_tenant("tenant-a")
+  - len == 1；execution_id == "a2-exec-1"；duration_ms == 123   ✅
+
+[按租户读 favorites] experts_db::load_favorites_by_tenant("tenant-a")
+  - contains("exp-a-fav") == true             ✅
+
+--------------------------------------------------------------------------------
+五、租户隔离（B 读 tenant-b 看不到 tenant-a 的任何数据）
+--------------------------------------------------------------------------------
+  - load_plans_by_tenant("tenant-b")     为空   ✅
+  - load_history_by_tenant("tenant-b")   为空   ✅
+  - load_favorites_by_tenant("tenant-b")为空   ✅
+  - get_plan("tenant-b", "a2-plan-1") == None  ✅（跨租户单点读 404，租户过滤下推到 SQL）
+
+--------------------------------------------------------------------------------
+六、双向一致性（B 再写，A 实时读到）
+--------------------------------------------------------------------------------
+  - experts_db::upsert_favorite("tenant-b", "exp-b-fav")
+  - load_favorites_by_tenant("tenant-b").contains("exp-b-fav") == true   ✅
+
+--------------------------------------------------------------------------------
+七、测试命令与真实输出
+--------------------------------------------------------------------------------
+命令：
+  cargo test -p mox-platform-gateway-svc --test a2_multi_instance_consistency
+
+输出（真实）：
+  running 1 test
+  test a2_two_live_instances_share_sqlite_a_writes_b_reads_without_reload ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s
+
+--------------------------------------------------------------------------------
+八、回归测试结果（同一工作树）
+--------------------------------------------------------------------------------
+gateway lib 单测：  cargo test -p mox-platform-gateway-svc --lib
+                    => 180 passed; 0 failed（与 D4 基线 180 完全一致，零回归）
+gateway 集成：      cargo test -p mox-platform-gateway-svc --tests
+  a2_multi_instance_consistency 1 passed（本次新增，跨实例一致性证据）
+  d4_crash_recovery             1 passed（D4 崩溃恢复零回归）
+  experts_db_persistence        8 passed（sessions/registry/graph/bookings 落盘零回归）
+  tenant_expert_isolation       1 passed（A1 多租户隔离零回归）
+  alliance_remote_integration  13 / inbox_http 4 / inbox_persistence 6 / delivery_truth 3 /
+  domain_grouping 7 / consultation_no_fallback 1 / orchestration_no_fallback 1 /
+  smtp_real_transport 3 / trusted_tenant_http 2  全部 0 failed
+cargo check -p mox-platform-gateway-svc --lib => exit 0
+  （仅既有 drop-on-ref / unused-var / unused-import 警告，与本次改动无关；本次新增代码无新警告）。
+
+================================================================================
+结论：A2 阶段一三项冷数据（plans / orchestration_history / favorites）读路径已改为
+实时查 SQLite（唯一真相），两个活实例共享同一文件时 A 写穿、B 不重启即读到，且租户
+隔离与双向一致均有真实断言。单实例下读 SQLite 与写穿后内存镜像一致，行为等价、零回归。
+registry/graph 高频态与执行器/通知/写冲突策略留阶段二（方案稿）。
+================================================================================

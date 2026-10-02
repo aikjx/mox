@@ -21,12 +21,12 @@ export const getPlugins = () => http.get('/plugins')
 // ===== 系统管理区（安全凭证 / 审计日志 / 存储 / 模块）=====
 // 凭证：创建返回一次性明文 key（后端仅存哈希），吊销按 id
 export const getSecurityStatus = () => http.get('/security/status')
-export const getApiKeys = () => http.get('/security/api-keys')
-export const createApiKey = (payload) => http.post('/security/api-keys', payload)
-export const revokeApiKey = (id) => http.delete(`/security/api-keys/${encodeURIComponent(id)}`)
-export const validateApiKey = (apiKey) => http.post('/security/validate', { api_key: apiKey })
-// 审计：支持 action / actor / since / limit 过滤
-export const getAuditLogs = (params) => http.get('/security/audit-log', { params })
+export const getApiKeys = (params) => http.get('/security/api-keys', { params, silent: true })
+export const createApiKey = (payload) => http.post('/security/api-keys', payload, { _retry: 0 })
+export const revokeApiKey = (id) => http.delete(`/security/api-keys/${encodeURIComponent(id)}`, { _retry: 0 })
+export const validateApiKey = (apiKey) => http.post('/security/validate', { api_key: apiKey }, { _retry: 0 })
+// IAM 审计：有界分页，action/actor 精确匹配，since/until 为 RFC3339 时间。
+export const getAuditLogs = (params) => http.get('/security/audit-log', { params, silent: true })
 // 存储与模块
 export const getStorageProviders = () => http.get('/storage/providers')
 export const switchStorageProvider = (provider) => http.post('/storage/switch', { provider })
@@ -80,6 +80,12 @@ export const getRoleDataPerms = (id) => http.get(`/system/role/${id}/dataPerms`)
 export const assignRoleDataPerms = (id, data) => http.put(`/system/role/${id}/dataPerms`, data)
 export const getRoleUsers = (id, params) => http.get(`/system/role/${id}/users`, { params })
 export const copyRole = (id, data) => http.post(`/system/role/${id}/copy`, data)
+
+// IAM 数据库权限主源；不同于 enterprise/api-permission 的内存目录。
+export const getIamPermissionCatalog = () => http.get('/system/iam/permissions', { silent: true })
+export const registerMessageSendPermission = () => http.post('/system/iam/permissions/message-send', null, { silent: true, _retry: 0 })
+export const getIamRolePermissions = (id) => http.get(`/system/iam/roles/${encodeURIComponent(id)}/permissions`, { silent: true })
+export const replaceIamRolePermissions = (id, data) => http.put(`/system/iam/roles/${encodeURIComponent(id)}/permissions`, data, { silent: true, _retry: 0 })
 
 // 菜单管理
 export const getMenuTree = (params) => http.get('/system/menu/tree', { params })

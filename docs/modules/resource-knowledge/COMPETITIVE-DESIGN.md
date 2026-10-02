@@ -17,7 +17,7 @@
 
 官方来源分别为 [Dify 流水线](https://docs.dify.ai/en/cloud/use-dify/knowledge/knowledge-pipeline/knowledge-pipeline-orchestration)、[Glean 搜索权限](https://docs.glean.com/administration/search/faq)、[Glean 删除与抓取](https://docs.glean.com/connectors/crawling-faq)、[Azure 查询授权](https://learn.microsoft.com/en-us/azure/search/search-document-level-access-overview)、[Nextcloud 文件访问规则](https://docs.nextcloud.com/server/latest/admin_manual/file_workflows/access_control.html)。资料核验日期不代表全部功能的发布日期；Azure preview、Nextcloud upcoming 不作为稳定生产能力已验收证据。
 
-增量来源：[n8n 官方队列模式文档源码](https://github.com/n8n-io/n8n-docs/blob/main/docs/deploy/host-n8n/configure-n8n/scaling/enable-queue-mode.md)、[Temporal Activity 执行](https://docs.temporal.io/activity-execution)。上述限制是部署及一致性取舍，不是对产品整体优劣的实测结论；本仓库也未完成对应集群能力。站内箱事务落地见[消息中心](docs/modules/message-center/README.md)。
+增量来源：[n8n 官方队列模式文档源码](https://github.com/n8n-io/n8n-docs/blob/main/docs/deploy/host-n8n/configure-n8n/scaling/enable-queue-mode.md)、[Temporal Activity 执行](https://docs.temporal.io/activity-execution)。上述限制是部署及一致性取舍，不是对产品整体优劣的实测结论；本仓库也未完成对应集群能力。站内箱事务落地见[消息中心](../../README.md)。
 
 ## 本轮实现的设计改进
 
@@ -39,4 +39,4 @@
 | P1 | 真实 OSS 和对象迁移 | PUT/HEAD/GET/RANGE/LIST/DELETE、STS、位置切换、旧对象可读 |
 | P2 | 企业运行治理 | 审计、trace、容量/成本、灾备、升级/回滚、实际 SLO 与安全审查 |
 
-全维检查逐项复用[20 维交付检查](docs/modules/resource-knowledge/DELIVERY-MATRIX.md)，退出条件沿用台账 R2–R7。持久化索引仍需后续开发，当前 O(n) 扫描虽减少重复 IO，仍不是大规模查询架构的最终形态。
+全维检查逐项复用[20 维交付检查](./DELIVERY-MATRIX.md)，退出条件沿用台账 R2–R7。持久化索引仍需后续开发，当前 O(n) 扫描虽减少重复 IO，仍不是大规模查询架构的最终形态。

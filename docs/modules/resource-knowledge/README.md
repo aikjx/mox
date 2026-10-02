@@ -29,8 +29,8 @@
 | 命令、查询、错误与提供方能力 | [接口契约](docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md#operations) |
 | 当前端到端链路及状态权威 | [实施台账](docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md#status) · [实际业务流程](docs/modules/resource-knowledge/BUSINESS-FLOWS.md#implemented) |
 | 用户任务、异常与恢复 | [业务流程](docs/modules/resource-knowledge/BUSINESS-FLOWS.md#flows) |
-| 竞品参考与优化验收设计 | [分项竞品设计](docs/modules/resource-knowledge/COMPETITIVE-DESIGN.md) |
-| 全维交付检查与证据导航 | [20 维交付检查](docs/modules/resource-knowledge/DELIVERY-MATRIX.md) |
+| 竞品参考与优化验收设计 | [分项竞品设计](./COMPETITIVE-DESIGN.md) |
+| 全维交付检查与证据导航 | [20 维交付检查](./DELIVERY-MATRIX.md) |
 | 决策取舍与接受条件 | [ADR-19](docs/enterprise/47-资源知识主源与存储适配归一-ADR-19.md#decision) |
 
 配置语义复用[低代码标准](docs/standards/lowcode-dynamic-configuration.md#model)，运行持久化复核入口见[数据库现状](docs/database/DATABASE-ARCHITECTURE.md#resource-knowledge-20261001)。历史方案保留原日期和参考等级，不据此宣称向量服务、远程OSS或统一检索已部署。

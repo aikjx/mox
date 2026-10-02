@@ -1,0 +1,57 @@
+================================================================================
+A1 阶段二 · 租户专家数配额 —— 真实端到端证据（禁止 mock）
+日期：2026-10-02
+测试：tests/a1_quota_tenant.rs :: tenant_expert_quota_enforced_per_tenant
+================================================================================
+
+【环境构造（真实，无桩）】
+- 真实生产路由器 build_experts_registry_router(state) + 真实 JWT 中间件
+  （HS256，AuthConfig{enabled=true, dev_mode=false}）。
+- 真实 ExpertsSharedState::new() + 真实 SQLite（独立临时库 MOX_EXPERTS_DB_PATH=<temp>/mox_a1quota_<pid>.db）。
+- 真实 TCP 监听 127.0.0.1:0 + 真实 reqwest 客户端。
+- 低配额 env：MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT=2（每次 create_expert 实时读取）。
+- 两个真实管理员身份：tenant-a / tenant-b（均 tenant_admin 角色，HS256 JWT）。
+
+【真实交互流水（stdout 原样摘录）】
+
+[A1-QUOTA-E2E] tenant-a POST /api/experts qa-ok-1 -> HTTP 200
+  body={"code":0,"msg":"ok","data":{"created":true,"expert":{...,"id":"qa-ok-1","name":"租户A专家·1",...}}}
+
+[A1-QUOTA-E2E] tenant-a POST /api/experts qa-ok-2 -> HTTP 200
+  body={"code":0,"msg":"ok","data":{"created":true,"expert":{...,"id":"qa-ok-2","name":"租户A专家·2",...}}}
+
+[A1-QUOTA-E2E] tenant-a POST /api/experts qa-overflow-1 -> HTTP 409
+  body={"code":409,"msg":"租户专家数已达上限（quota=2, used=2）",
+        "data":{"error":"quota_exceeded","limit":2,"quota":2,"resource":"expert",
+                "tenant":"tenant-a","used":2}}
+
+[A1-QUOTA-E2E] tenant-b POST /api/experts qb-ok-1 -> HTTP 200
+  body={"code":0,"msg":"ok","data":{"created":true,...,"id":"qb-ok-1","name":"租户B专家·1"}}
+
+[A1-QUOTA-E2E] tenant-b POST /api/experts qb-ok-2 -> HTTP 200
+  body={"code":0,"msg":"ok","data":{"created":true,...,"id":"qb-ok-2","name":"租户B专家·2"}}
+
+[A1-QUOTA-E2E] tenant-b POST /api/experts qb-overflow-1 -> HTTP 409
+  body={"code":409,"msg":"租户专家数已达上限（quota=2, used=2）",
+        "data":{"error":"quota_exceeded","limit":2,"quota":2,"resource":"expert",
+                "tenant":"tenant-b","used":2}}
+
+[A1-QUOTA-E2E] tenant-a GET /api/experts ->
+  body={"code":0,"msg":"ok","data":{"experts":[{...qa-ok-2...},{...qa-ok-1...}],
+        "page":1,"page_size":20,"total":2}}
+
+【断言结论（逐条对应任务要求）】
+1. 配额=2 下，tenant-a 真实建 2 个专家成功（HTTP 200）。          ✔
+2. tenant-a 第 3 个专家被真实 HTTP 409 拒绝（非示例、非 mock）。  ✔
+3. 409 响应体 data 含结构化配额信息：
+   error=quota_exceeded, resource=expert, tenant=tenant-a,
+   quota=2, used=2, limit=2。                                     ✔
+4. 配额按租户独立：tenant-b 在 tenant-a 已用满后仍可建 2 个成功，
+   其第 3 个同样 409（tenant-b），两租户互不挤占。                 ✔
+5. 被 409 拒绝的专家未落库：tenant-a GET total=2，不含 qa-overflow-1。 ✔
+6. env 真实生效：同一服务进程内 env=2 即生效，无需重启。           ✔
+
+【测试二进制结果】
+running 1 test
+test tenant_expert_quota_enforced_per_tenant ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s

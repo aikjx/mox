@@ -1,7 +1,7 @@
 # 自研 AI 代码引擎 · 开发专家联盟处理模式（CODEENGINE-ALLIANCE-V1.1）
 
 > 权威源：本文件描述 `mox-codeengine-core` / `mox-codeengine-svc` 两 crate 的设计与契约。
-> 联盟总体架构见 [CURRENT-ARCHITECTURE.md](./CURRENT-ARCHITECTURE.md)；处理模式定义见 [README.md](./README.md)。
+> 联盟总体架构见 [CURRENT-ARCHITECTURE.md](../../CURRENT-ARCHITECTURE.md)；处理模式定义见 [README.md](./README.md)。
 
 ## 1. 定位
 

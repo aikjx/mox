@@ -23,7 +23,7 @@ pub fn domain_router(role: HostRole, gateway: &GatewayState) -> Router<GatewaySt
         HostRole::Kg => upgrade(crate::http_adapter::build_kg_ai_router()),
         HostRole::Cloud => upgrade(crate::cloud::build_cloud_router()),
         HostRole::Kb => upgrade(Router::new().nest("/api", mox_kb_svc::handlers::build_kb_router())),
-        HostRole::Iam => crate::system::build_system_router()
+        HostRole::Iam => crate::system::build_system_router(gateway.iam.clone())
             .merge(crate::system::build_security_router())
             .merge(crate::rbac::build_rbac_router())
             .nest("/api/enterprise/sso", crate::sso::api::build_sso_router()),

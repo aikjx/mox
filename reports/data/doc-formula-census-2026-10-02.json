@@ -1,0 +1,3057 @@
+{
+ "generated_at": "2026-10-02 20:36:26+0800",
+ "scan_roots": [
+  "docs"
+ ],
+ "recognizer": "scripts/gate/formula_ledger.py",
+ "files": 370,
+ "claims": 7,
+ "violations": 0,
+ "blind": 8706,
+ "quoted": 6,
+ "blind_reasons": {
+  "glued": 5256,
+  "latin": 1407,
+  "noise": 930,
+  "code": 179,
+  "no_fw_eq": 669,
+  "ascii_eq": 264,
+  "increment": 1
+ },
+ "per_doc": {
+  "docs/API-REGISTRY.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "latin": 1,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/ARCHITECTURE-OF-DOCS.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "code": 1,
+    "latin": 1,
+    "noise": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/CORE-CAPABILITIES.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/ROADMAP-DOMAINS.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "no_fw_eq": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/api/API-CRYPTO-TRANSPORT.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 6,
+    "latin": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/api/PORT-REGISTRY.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3,
+    "latin": 2,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/architecture/06-rpc-integration-guide.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/07-KG-DYNAMIC-SQL-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 6,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/08-FULL-DIMENSION-LOWCODE-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 24
+   },
+   "quoted": 0
+  },
+  "docs/architecture/09-ROCKSDB-PERFORMANCE-OPTIMIZATION.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 9
+   },
+   "quoted": 0
+  },
+  "docs/architecture/10-DSQL-CORE-FULL-DIMENSIONAL-VALIDATION.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7,
+    "noise": 5,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/architecture/11-ENTERPRISE-WEBSITE-LOWCODE-IMPLEMENTATION.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "glued": 9
+   },
+   "quoted": 0
+  },
+  "docs/architecture/14-REPOSITORY-FULL-MAP.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 5,
+    "noise": 5,
+    "glued": 5,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/15-EVENT-TRIGGER-APPROVAL-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md": {
+   "claims": 6,
+   "violations": 0,
+   "blind": {
+    "glued": 25,
+    "code": 18,
+    "noise": 42,
+    "ascii_eq": 4,
+    "no_fw_eq": 18,
+    "latin": 9
+   },
+   "quoted": 5
+  },
+  "docs/architecture/ARCHITECTURE-ENTERPRISE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 9
+   },
+   "quoted": 0
+  },
+  "docs/architecture/ARCHITECTURE_DESIGN_v3.1.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "glued": 34,
+    "latin": 3,
+    "noise": 8
+   },
+   "quoted": 0
+  },
+  "docs/architecture/ARCHITECTURE_OPTIMIZATION.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 2,
+    "glued": 11
+   },
+   "quoted": 0
+  },
+  "docs/architecture/ARCHITECTURE_SAAS_PRIVATE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 3,
+    "glued": 6,
+    "noise": 2,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/BUSINESS-FLOWS.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/DOMAIN_FIRST_LAYOUT.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3
+   },
+   "quoted": 0
+  },
+  "docs/architecture/MODULARITY.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/NORMALIZED_ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 2,
+    "glued": 2,
+    "noise": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/OPTIMAL_ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "latin": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/SYSTEM-OVERVIEW.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/app-store-architecture.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/architecture/architecture.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "ascii_eq": 1,
+    "no_fw_eq": 1,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/data-exchange-spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/frontend/FRONTEND-LAYOUT-REFACTOR-PLAN-v1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 5,
+    "noise": 3,
+    "no_fw_eq": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md": {
+   "claims": 1,
+   "violations": 0,
+   "blind": {
+    "glued": 172,
+    "noise": 38,
+    "latin": 59,
+    "code": 25,
+    "no_fw_eq": 29,
+    "ascii_eq": 3,
+    "increment": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/frontend/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/full-dimensional/00-README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/architecture/full-dimensional/GOVERNANCE_CONSOLE_API_READY_20260816.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 3,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/full-dimensional/guantu-skeleton.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7,
+    "noise": 1,
+    "latin": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/full-dimensional/mox-requirement-baseline.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/meta/00-COSMIC-META-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/architecture/meta/02-EXPERT-ALLIANCE-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/meta/03-DATABASE-DESIGN-SPEC.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 2,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/meta/04-EXPERT-ALLIANCE-v3-MODULAR.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 25,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/meta/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/architecture/microservices/01-service-boundaries.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "no_fw_eq": 2,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/microservices/02-communication.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 14
+   },
+   "quoted": 0
+  },
+  "docs/architecture/microservices/03-data.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7
+   },
+   "quoted": 0
+  },
+  "docs/architecture/microservices/04-deployment.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4
+   },
+   "quoted": 0
+  },
+  "docs/architecture/microservices/05-observability-security-resilience.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4
+   },
+   "quoted": 0
+  },
+  "docs/architecture/microservices/06-roadmap.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 5
+   },
+   "quoted": 0
+  },
+  "docs/architecture/microservices/07-massive-scale-100k-nodes.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 6,
+    "glued": 34,
+    "no_fw_eq": 4,
+    "noise": 4,
+    "ascii_eq": 1,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/microservices/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/operations-manual.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "ascii_eq": 1,
+    "glued": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/plugin/PLUGIN-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/plugin/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/01-architecture-overview.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 5
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/02-business-flow.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 69
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/03-module-inventory.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/04-api-gateway-routes.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/05-kg-algorithm-core.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 11
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/06-ai-engine-api.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/07-build-and-test.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/08-business-function-relation.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4
+   },
+   "quoted": 0
+  },
+  "docs/architecture/rust-enterprise/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1,
+    "glued": 3
+   },
+   "quoted": 0
+  },
+  "docs/database/DATABASE-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 2,
+    "no_fw_eq": 1,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/database/MOX企业级数据库模板.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/database/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/database/STORAGE-OPTIMAL-DESIGN.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 1,
+    "latin": 1,
+    "glued": 3
+   },
+   "quoted": 0
+  },
+  "docs/database/mox_sys/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/database/mox_sys/cross-database.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/database/mox_sys/governance.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/00-INDEX.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 112,
+    "latin": 27,
+    "ascii_eq": 9,
+    "no_fw_eq": 24,
+    "code": 7,
+    "noise": 28
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/01-requirements.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 21,
+    "no_fw_eq": 2,
+    "noise": 4
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/02-architecture.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 22,
+    "no_fw_eq": 1,
+    "code": 1,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/04-business-processing.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 4,
+    "glued": 19,
+    "latin": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/05-iteration-roadmap.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 26,
+    "latin": 5,
+    "noise": 3,
+    "no_fw_eq": 3,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/06-requirements-architecture-map.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 13,
+    "no_fw_eq": 1,
+    "noise": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/07-MOX需求明确书.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7,
+    "noise": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/08-MOX自动化处理明确书.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "noise": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/09-企业级MOX维度完成归档.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/10-企业级交付清单.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 8,
+    "no_fw_eq": 5,
+    "noise": 7,
+    "code": 2,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/11-MOX测试验证优化修复报告.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 2,
+    "noise": 1,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/12-RBAC审计全链路闭环验收报告.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/13-禁伪代码真并行零死代码闭环验收报告.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3,
+    "noise": 2,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/14-MOX愿景核心架构与业务流程总纲.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 3,
+    "glued": 21,
+    "latin": 2,
+    "code": 2,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/15-产品规范标准-人人爱用全自动MOX-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "glued": 12,
+    "no_fw_eq": 4,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/16-P9判重闸门落地与关图治理缺陷修复验收报告.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "no_fw_eq": 1,
+    "glued": 4,
+    "noise": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/17-算子系统MOX分析与归一化设计.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 146,
+    "no_fw_eq": 12,
+    "latin": 13,
+    "noise": 16,
+    "ascii_eq": 1,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/19-架构师架构重新设计主控提示词与必读文档清单-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 35,
+    "noise": 11,
+    "latin": 12,
+    "no_fw_eq": 8,
+    "code": 1,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 2,
+    "glued": 44,
+    "no_fw_eq": 11,
+    "noise": 19,
+    "latin": 13,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/21-璇玑（Aura）软件研发数字孪生中台-企业级需求规格说明书-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 231,
+    "code": 10,
+    "noise": 16,
+    "no_fw_eq": 42,
+    "latin": 48,
+    "ascii_eq": 11
+   },
+   "quoted": 1
+  },
+  "docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 261,
+    "no_fw_eq": 49,
+    "noise": 53,
+    "latin": 45,
+    "ascii_eq": 10,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/23-竞品MOX功能对比与可用性判定报告-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 62,
+    "latin": 21,
+    "no_fw_eq": 23,
+    "ascii_eq": 3,
+    "code": 1,
+    "noise": 16
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/24-全资源模块化与知识图谱贯通-企业级开发完成总控-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 62,
+    "code": 3,
+    "latin": 34,
+    "no_fw_eq": 15,
+    "ascii_eq": 10,
+    "noise": 23
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/25-AI引擎真实基准评测报告-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 22,
+    "latin": 9,
+    "noise": 12,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 44,
+    "glued": 134,
+    "code": 6,
+    "no_fw_eq": 40,
+    "noise": 25,
+    "ascii_eq": 12
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/27-企业级测试与评测主控提示词与MOX自动化测试报告-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "ascii_eq": 27,
+    "noise": 57,
+    "glued": 220,
+    "no_fw_eq": 55,
+    "latin": 75,
+    "code": 3
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 19,
+    "no_fw_eq": 2,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/29-跨域依赖规则与架构一致性治理-ADR-09.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1,
+    "glued": 17
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/30-网关瘦身审计与方案文档-ADR-11.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "glued": 4
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/31-可观测性体系设计文档-ADR-12.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "glued": 14
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/32-API层契约设计文档-ADR-13.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "ascii_eq": 7,
+    "latin": 1,
+    "glued": 3
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/33-持久化工作流引擎设计文档-ADR-14.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/34-voice域独立化分析与决策报告-ADR-15.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/35-模块化单体到微服务演进预案-ADR-16.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 1,
+    "glued": 2,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/36-架构违规修复执行计划.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 9,
+    "noise": 2,
+    "no_fw_eq": 1,
+    "latin": 3
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/37-企业级处理流程规范-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 10,
+    "no_fw_eq": 2,
+    "latin": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/38-企业级管理系统架构与业务处理流程文档-V2.1.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 17
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/39-开发专家联盟-架构诊断与SaaS化最优方案-V1.1.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 4,
+    "no_fw_eq": 4,
+    "latin": 15,
+    "glued": 38,
+    "code": 1,
+    "ascii_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/40-MOX总任务中心-全AI工具全软件系统统一控制架构-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1,
+    "glued": 5,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/41-MOX商场中心-全AI系统MCP插件统一搜集分类一键下载企业级管理-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/42-MOX平台代码审计与验证报告-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 3,
+    "glued": 9,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/43-DOC-EP-038文档代码事实自动核对报告.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "latin": 6
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/44-权限颗粒度接线勘察与分阶段方案-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "noise": 2,
+    "latin": 2,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/ARCHITECTURE-MIGRATION.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 8,
+    "latin": 2,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/DOC-NORMALIZATION-REPORT.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 5,
+    "glued": 3,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/ENTERPRISE-COMPLEX-TEST-PLAN.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 10
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/ENTERPRISE-FEATURES-COMPLETION-REPORT.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/ENTERPRISE-FINAL-COMPLETION-REPORT.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/ENTERPRISE-P0-MODULES-COMPLETION.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/ENTERPRISE-READINESS-ASSESSMENT.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 9,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/ENTERPRISE_OPTIMIZATION_v3.2.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 5,
+    "glued": 12,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/GLOSSARY.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 45,
+    "latin": 7,
+    "no_fw_eq": 7,
+    "ascii_eq": 3,
+    "noise": 5
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/MATURITY-ASSESSMENT.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 11,
+    "latin": 3
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/enterprise-architecture-analysis.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "latin": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/01-prd.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/02-architecture.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/03-business-flow.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/04-state-machine.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 5,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/05-data-model.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "glued": 2,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/07-deployment.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/08-function-matrix.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3,
+    "no_fw_eq": 1,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/08-normalized-architecture.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 19,
+    "no_fw_eq": 8,
+    "glued": 21,
+    "noise": 2,
+    "code": 3,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/09-deployment-templates.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "latin": 1,
+    "code": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/10-enterprise-maturity-review.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 14,
+    "latin": 4,
+    "ascii_eq": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/11-competitive-benchmark.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 1,
+    "latin": 3,
+    "glued": 4,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/12-innovation-roadmap.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 23,
+    "no_fw_eq": 3,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/13-end-to-end-business-flow.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7,
+    "no_fw_eq": 2,
+    "latin": 5,
+    "code": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/14-enterprise-permission-model.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "glued": 3,
+    "code": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/15-product-spec-standard.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7,
+    "code": 2,
+    "latin": 2,
+    "ascii_eq": 1,
+    "no_fw_eq": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/16-decision-and-state-ledger.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 42,
+    "noise": 4,
+    "no_fw_eq": 5,
+    "latin": 8,
+    "ascii_eq": 3
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/17-docs-architecture-and-flow-atlas.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 3
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/18-modular-product-design.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 19
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/CURRENT-ARCHITECTURE.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "no_fw_eq": 1,
+    "glued": 3
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/INDEX.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 9,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/_backup/INDEX-v1.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 6,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/expert-alliance/scripts/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/CODE-CATALOG.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/NO-MOCK-POLICY.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/PrimiFlow-设计蓝图.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/ai-engine-master-analysis.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/ai-flow-graph-design.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 24,
+    "latin": 6,
+    "no_fw_eq": 1,
+    "noise": 2,
+    "code": 2
+   },
+   "quoted": 0
+  },
+  "docs/modules/algorithm-verification.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 8,
+    "code": 1,
+    "latin": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/business-process-flowcharts.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 2,
+    "latin": 1,
+    "glued": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/business-process-flows.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/infinite-dimension-optimization.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 8,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/market-module.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/mathematical-foundation.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "latin": 3
+   },
+   "quoted": 0
+  },
+  "docs/modules/mox-expert-alliance-fusion-flows.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7
+   },
+   "quoted": 0
+  },
+  "docs/modules/mox-expert-business-requirements.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 11,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/mox-expert-normalization.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/modules/mox-expert-product.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3
+   },
+   "quoted": 0
+  },
+  "docs/modules/mox-relgraph-product-handbook-v3.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 12,
+    "glued": 47,
+    "no_fw_eq": 7,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/专家联盟-MOX业务流程归一化手册-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 79,
+    "no_fw_eq": 6,
+    "noise": 27,
+    "code": 2,
+    "latin": 28,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/专家联盟AI对话需求文档-V2.0-架构优化版.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7
+   },
+   "quoted": 0
+  },
+  "docs/modules/专家联盟V2.0-集成对齐分析报告.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 8,
+    "latin": 4,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/modules/对话开发系统-MOX分析与业务流程图.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 14,
+    "latin": 8,
+    "no_fw_eq": 1,
+    "noise": 1,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/modules/架构开发联盟知识库融合设计方案.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 16
+   },
+   "quoted": 0
+  },
+  "docs/modules/璇玑-MOX需求业务处理流程图-归一化企业级.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7,
+    "code": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/normalization/API-INDEX.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/normalization/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/normalization/TPL-INDEX.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/normalization/VAL-INDEX.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/GR-STD-信息关联关系图开发规范-V1.0.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "latin": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/OUS-业务功能规划与架构数据关系分析.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1,
+    "noise": 4,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/PT-Primi-架构规范-V1.0-完整版.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3,
+    "noise": 4,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-10task-scoring-checklist/review.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 25,
+    "latin": 12,
+    "noise": 5,
+    "ascii_eq": 4
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-10task-scoring-checklist/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 22,
+    "noise": 25,
+    "latin": 18,
+    "no_fw_eq": 1,
+    "code": 2,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-10task-scoring-checklist/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 6,
+    "glued": 23,
+    "latin": 19,
+    "ascii_eq": 3,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-compare-top-oss-ai-products-optimize/T10-comparison-matrix.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 79,
+    "noise": 2,
+    "latin": 2,
+    "no_fw_eq": 3
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-compare-top-oss-ai-products-optimize/T10-gap-analysis.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 51,
+    "ascii_eq": 1,
+    "latin": 3,
+    "noise": 5,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-compare-top-oss-ai-products-optimize/T12-summary.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 21,
+    "noise": 1,
+    "no_fw_eq": 1,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-compare-top-oss-ai-products-optimize/review.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 8,
+    "glued": 22,
+    "ascii_eq": 1,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-compare-top-oss-ai-products-optimize/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 10,
+    "latin": 9,
+    "glued": 37,
+    "no_fw_eq": 2,
+    "ascii_eq": 10,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-compare-top-oss-ai-products-optimize/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 42,
+    "no_fw_eq": 6,
+    "latin": 9,
+    "noise": 5,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-ready-build-verify/T9-enterprise-acceptance-report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 9,
+    "no_fw_eq": 4,
+    "glued": 6,
+    "code": 2,
+    "noise": 4
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-ready-build-verify/review.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 2,
+    "code": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-ready-build-verify/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 26,
+    "latin": 13,
+    "no_fw_eq": 4,
+    "ascii_eq": 2,
+    "noise": 10
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-ready-build-verify/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 22,
+    "latin": 8,
+    "ascii_eq": 4,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-real-code-normalize-and-verify/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "code": 2,
+    "noise": 5,
+    "latin": 4,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-enterprise-real-code-normalize-and-verify/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "latin": 4,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-cloud-graph-standardized-selfdev/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 51,
+    "latin": 20,
+    "no_fw_eq": 3,
+    "ascii_eq": 3,
+    "noise": 10
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-cloud-graph-standardized-selfdev/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 48,
+    "glued": 110,
+    "no_fw_eq": 8,
+    "noise": 13,
+    "ascii_eq": 10,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-full-enterprise-architecture/review2.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 24,
+    "no_fw_eq": 5,
+    "glued": 69,
+    "code": 2,
+    "noise": 2,
+    "ascii_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-full-enterprise-architecture/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 12,
+    "glued": 38,
+    "noise": 7,
+    "code": 2,
+    "ascii_eq": 4
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-full-enterprise-architecture/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 36,
+    "latin": 12,
+    "noise": 12,
+    "ascii_eq": 6,
+    "no_fw_eq": 1,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-storage-distributed-ai-unified-query/review.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 27,
+    "latin": 7,
+    "code": 3,
+    "noise": 3,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-storage-distributed-ai-unified-query/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 3,
+    "glued": 23,
+    "ascii_eq": 3
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-storage-distributed-ai-unified-query/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 10
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 19,
+    "latin": 10,
+    "glued": 27,
+    "no_fw_eq": 6,
+    "ascii_eq": 4
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 26,
+    "no_fw_eq": 10,
+    "noise": 16,
+    "latin": 15,
+    "code": 4,
+    "ascii_eq": 5
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-rust-ais-normalization-full-develop/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 10,
+    "glued": 16,
+    "latin": 15,
+    "code": 1,
+    "ascii_eq": 6
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-rust-ais-normalization-full-develop/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 38,
+    "noise": 11,
+    "latin": 15,
+    "no_fw_eq": 2,
+    "ascii_eq": 5,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-t4-dependency-governance-workspace/review.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 9,
+    "noise": 2,
+    "latin": 5
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-t4-dependency-governance-workspace/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3,
+    "latin": 2,
+    "ascii_eq": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260823-t4-dependency-governance-workspace/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7,
+    "latin": 5,
+    "noise": 2,
+    "ascii_eq": 1,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-ais-grade-fusion/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 36,
+    "latin": 6,
+    "no_fw_eq": 4,
+    "noise": 9,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-ais-grade-fusion/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 27,
+    "glued": 42,
+    "noise": 4,
+    "no_fw_eq": 9,
+    "ascii_eq": 1,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 86,
+    "latin": 47,
+    "ascii_eq": 18,
+    "noise": 12,
+    "no_fw_eq": 5,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 29,
+    "glued": 40,
+    "ascii_eq": 5,
+    "noise": 4,
+    "code": 4,
+    "no_fw_eq": 5
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-t17-sdk-ef-ops/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 18,
+    "latin": 10,
+    "ascii_eq": 1,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-t17-sdk-ef-ops/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 11,
+    "no_fw_eq": 2,
+    "glued": 10,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-t4-cloud-drive-m1-acceptance/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 9,
+    "no_fw_eq": 3,
+    "code": 1,
+    "noise": 3,
+    "ascii_eq": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-v2.1-t22-t23-t24-t25-simd-graph-gm-glacier/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 45,
+    "noise": 2,
+    "no_fw_eq": 3,
+    "code": 1,
+    "latin": 7,
+    "ascii_eq": 3
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260824-v2.1-t22-t23-t24-t25-simd-graph-gm-glacier/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 39,
+    "no_fw_eq": 4,
+    "ascii_eq": 1,
+    "latin": 9,
+    "noise": 5
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260825-ai-chat-actions-full-layout/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "no_fw_eq": 6,
+    "latin": 1,
+    "noise": 6
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260825-ai-chat-actions-full-layout/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 6,
+    "noise": 2,
+    "glued": 12,
+    "code": 2,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260825-mox-all-core-rust-max-algo/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 7,
+    "no_fw_eq": 1,
+    "glued": 15,
+    "latin": 3
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260825-mox-all-core-rust-max-algo/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 22,
+    "latin": 6,
+    "no_fw_eq": 2,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260825-rust-expert-alliance-platform/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 33,
+    "latin": 9,
+    "no_fw_eq": 4,
+    "noise": 7,
+    "code": 3,
+    "ascii_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260825-rust-expert-alliance-platform/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 30,
+    "latin": 19,
+    "code": 1,
+    "noise": 3,
+    "no_fw_eq": 2,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260825-xiaobai-voice-integration/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 24,
+    "noise": 10,
+    "no_fw_eq": 1,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260825-xiaobai-voice-integration/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 22,
+    "latin": 4,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260826-xiaobai-mox-full-arch/alliance-fr13-fr5-integration.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 2,
+    "glued": 9,
+    "noise": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260826-xiaobai-mox-full-arch/check_list.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 104,
+    "latin": 4,
+    "noise": 1,
+    "no_fw_eq": 2,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260826-xiaobai-mox-full-arch/oss-model-analysis.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 37,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260826-xiaobai-mox-full-arch/spec.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 261,
+    "latin": 11,
+    "no_fw_eq": 4,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/specifications/tasks/20260826-xiaobai-mox-full-arch/tasks.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 96,
+    "glued": 171,
+    "code": 4,
+    "noise": 12,
+    "ascii_eq": 12,
+    "no_fw_eq": 4
+   },
+   "quoted": 0
+  },
+  "docs/standards/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/standards/ai-native-architecture-standard.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 2,
+    "noise": 3,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/standards/engine-universe.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 1,
+    "glued": 2,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/standards/expert-alliance-flow-standard.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "noise": 1,
+    "no_fw_eq": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/standards/expert-alliance-normalization-mode.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 3,
+    "glued": 4,
+    "no_fw_eq": 1,
+    "noise": 5
+   },
+   "quoted": 0
+  },
+  "docs/standards/expert-alliance-port-norm.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 2,
+    "noise": 2,
+    "ascii_eq": 1,
+    "glued": 5,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/standards/feature-flags-v2.1.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1,
+    "glued": 4
+   },
+   "quoted": 0
+  },
+  "docs/standards/project-atlas.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 1,
+    "no_fw_eq": 7,
+    "glued": 5,
+    "latin": 3
+   },
+   "quoted": 0
+  },
+  "docs/standards/project-registry-v2.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 3,
+    "glued": 7
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260823_cloud_drive_and_relgraph_selfdev_plan.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 70,
+    "latin": 13,
+    "noise": 31,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260825_ai_actions_full_layout_plan.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 3,
+    "no_fw_eq": 8,
+    "glued": 8,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260902_hybrid_architecture_phase1_verification_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 2,
+    "no_fw_eq": 1,
+    "latin": 1,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260902_hybrid_architecture_route_a_design.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 5,
+    "glued": 14,
+    "code": 2,
+    "no_fw_eq": 1,
+    "noise": 4
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_cloud_7crates_quality_hardening_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 10
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 5,
+    "glued": 7,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 13,
+    "no_fw_eq": 2,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_hybrid_architecture_phase3_verification_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 6,
+    "no_fw_eq": 6,
+    "latin": 2,
+    "glued": 4
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_mox_cloud_kernel_test_coverage_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 29,
+    "noise": 12,
+    "no_fw_eq": 3,
+    "latin": 12,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase4_architecture_decoupling.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 3,
+    "glued": 1,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase4_verification_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 8,
+    "glued": 16,
+    "ascii_eq": 5,
+    "no_fw_eq": 2,
+    "noise": 5
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase5_e2e_test_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase5_performance_benchmark_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "glued": 10
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase5_quality_audit_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase5_test_coverage_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 16,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase5_verification_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 16,
+    "latin": 2,
+    "no_fw_eq": 3,
+    "noise": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase6_performance_optimization_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 4,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase6_stability_hardening_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3,
+    "latin": 1,
+    "code": 1,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260903_moxfs_phase6_verification_report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "noise": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260905_alliance_modular_usable_acceptance.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 6
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260905_unified_baseline_dependency_governance.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 8,
+    "latin": 2,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260906_module_contract_governance.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 6
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/20260927_expert-alliance-full-dimensional-validation.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/31-ac-compliance-report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 5,
+    "latin": 4,
+    "ascii_eq": 1,
+    "no_fw_eq": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/README.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 3
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/ai-engine-modularization-normalization.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 4,
+    "glued": 7,
+    "latin": 3,
+    "no_fw_eq": 5,
+    "code": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/alliance-auto-analysis.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 3,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/cloud-split-assessment.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 3
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/db-inventory.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 3,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/doc-landscape.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 7,
+    "latin": 4,
+    "no_fw_eq": 3,
+    "noise": 3
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/domain-matrix.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 1,
+    "glued": 2,
+    "latin": 3,
+    "code": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/gap-deployment.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 3,
+    "code": 1,
+    "latin": 4,
+    "glued": 5
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/gap-obs-resilience.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/gap-persistence-security.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 3,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/llm-real-wiring-plan.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 1,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/mox-architecture-review-optimization.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 6,
+    "no_fw_eq": 1,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/runtime-e2e-acceptance.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/rustfs-modularity-benchmark.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "no_fw_eq": 1,
+    "noise": 2,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/_norm_research/topology-flow.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 1,
+    "code": 2,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/audits/PRODUCTION_READINESS_ASSESSMENT_v3.4.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/audits/SECURITY_AUDIT_v3.4.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/enterprise-10task-acceptance-report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 2,
+    "glued": 2,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/enterprise-optimal-business-flow.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 14,
+    "latin": 5,
+    "noise": 1,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/enterprise-optimization-round-2_plan.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2,
+    "latin": 5,
+    "noise": 5
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/enterprise-ux-optimization-plan.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 3,
+    "noise": 3,
+    "latin": 1,
+    "code": 2,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/expert-alliance-code-alignment-20260831.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 2,
+    "glued": 13,
+    "no_fw_eq": 1,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/expert-alliance-doc-inventory-20260831.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 34,
+    "latin": 3,
+    "code": 1,
+    "noise": 4
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/expert-alliance-normalization-report-20260831.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 50,
+    "noise": 1,
+    "latin": 5
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/expert-alliance-phase4-report-20260901.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "code": 1,
+    "latin": 2,
+    "glued": 5,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/expert-alliance-phase5-report-20260901.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "noise": 3,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/mox-algorithm-alliance-flow.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 6,
+    "noise": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/mox-expert-alliance-processing-mode.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 2,
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/mox-vs-opensource-comparison-report.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 3,
+    "glued": 15,
+    "latin": 5,
+    "noise": 4,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/normalization-execution-archive-20260831.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/normalization-execution-groupA-20260831.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 16,
+    "noise": 5,
+    "ascii_eq": 15,
+    "latin": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/normalization-execution-groupB-20260831.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 11,
+    "noise": 2
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/perf-algorithm-data-structure-optimization_plan.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 12,
+    "no_fw_eq": 1,
+    "latin": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/perf-algorithm-optimization-contrast-report_20260824-080732.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "no_fw_eq": 3,
+    "latin": 11,
+    "glued": 27,
+    "noise": 1,
+    "ascii_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/pub-api-baseline.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "glued": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/rust-binding-contract.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 2,
+    "no_fw_eq": 1
+   },
+   "quoted": 0
+  },
+  "docs/working-reports/server-manage-normalization-20260901.md": {
+   "claims": 0,
+   "violations": 0,
+   "blind": {
+    "latin": 3,
+    "glued": 1
+   },
+   "quoted": 0
+  }
+ },
+ "unclosed": [],
+ "outside": {
+  "files": 307,
+  "dirs": 18,
+  "root_files": 5,
+  "skip_dirs": 12,
+  "claims": 1,
+  "violations": 0,
+  "blind": 1942,
+  "quoted": 0,
+  "claim_files": [
+   [
+    "reports/markdown/locale-family-collapse-20260929.md",
+    1
+   ]
+  ]
+ }
+}

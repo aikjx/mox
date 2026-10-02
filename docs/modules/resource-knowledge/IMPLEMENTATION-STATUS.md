@@ -2,9 +2,9 @@
 
 > RK-IMPL-01 · 2026-10-01 · 持续实施。目标是七个逻辑模块全部通过企业验收；当前完成首批持久化、授权、版本、投影与存储适配修复，**没有宣称全部模块或生产上线完成**。
 
-设计入口：[能力地图](docs/modules/resource-knowledge/README.md#map)。目标边界遵循[统一架构](docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md#scope)、[数据契约](docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md)与[流程规范](docs/modules/resource-knowledge/BUSINESS-FLOWS.md)。本台账是实施状态权威源，设计中的状态机与 API 草案不代表当前已实现。
+设计入口：[能力地图](docs/modules/resource-knowledge/README.md#map)。目标边界遵循[统一架构](docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md#scope)、[数据契约](../../database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md)与[流程规范](../../architecture/BUSINESS-FLOWS.md)。本台账是实施状态权威源，设计中的状态机与 API 草案不代表当前已实现。
 
-最新集成进展（2026-10-02）：上轮专家联盟租户迁移的编译阻塞已解除，网关 all-targets 检查与 Clippy 通过（仍有存量告警）。专家租户现从可信 UserInfo 提取，伪造头 403、缺失身份 401；真实双租户专家创建/列表/详情隔离通过。本轮真实链路及尚未完成的全域授权，统一见[平台与前端验收台账](docs/modules/REAL-IMPLEMENTATION-STATUS.md)。原失败证据保留历史日期，不把局部修复计为全系统验收。
+最新集成进展（2026-10-02）：上轮专家联盟租户迁移的编译阻塞已解除，网关 all-targets 检查与 Clippy 通过（仍有存量告警）。专家租户现从可信 UserInfo 提取，伪造头 403、缺失身份 401；真实双租户专家创建/列表/详情隔离通过。本轮真实链路及尚未完成的全域授权，统一见[平台与前端验收台账](../REAL-IMPLEMENTATION-STATUS.md)。原失败证据保留历史日期，不把局部修复计为全系统验收。
 
 <a id="status"></a>
 ## 模块状态
@@ -49,7 +49,7 @@ flowchart LR
 - 网关 KB 响应沿用既有统一协议 `{code,msg,data}`，集成测试已从过期 `success` 字段改为检查真实 `code` 与 HTTP 状态。文档正文/标题编辑自动建下一版本；旧实体和投影失效。版本切换、回滚和重新分析也撤销旧投影。
 - `StoreConfig::from_env()` 为知识存储与 cloud-admin SDK 的共享装配入口。FS 不依赖远端配置；S3/MinIO/OSS 必须显式配置 endpoint、bucket 与凭据。配置缺失、未知后端、凭据别名冲突、非法布尔值直接失败，不回退到另一个数据目录。
 - 凭据权威变量为 `MOX_S3_ACCESS_KEY_ID` / `MOX_S3_SECRET_ACCESS_KEY`，兼容旧 `MOX_S3_ACCESS_KEY` / `MOX_S3_SECRET_KEY`；两组同时设置必须相同。`MOX_S3_FORCE_PATH_STYLE` 默认 S3/MinIO=true、OSS=false；OSS=true 被拒绝。endpoint 应为区域服务地址，virtual-hosted 由客户端添加 bucket 子域。
-- 网关旧 storage-admin 尚未接入统一读写路由。请求切到 S3 即便健康探测成功也返回 409，不能把探测结果报告为切换成功。此处尚未开发的切换流程继续遵循[对象位置与配置边界](docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md)。
+- 网关旧 storage-admin 尚未接入统一读写路由。请求切到 S3 即便健康探测成功也返回 409，不能把探测结果报告为切换成功。此处尚未开发的切换流程继续遵循[对象位置与配置边界](../../architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md)。
 - 对象 `list_keys(prefix)` 的默认实现为明确的“不支持”错误；不能把未知后端返回空数组作为真实列表。FS/S3/InMemory 已提供实现；其他对象装饰器需在启用为知识后端前实现该契约。
 
 ## R2 增量：知识资源授权
@@ -64,7 +64,7 @@ flowchart LR
 
 ## R2 增量：只读共享与撤权
 
-网关 KB 已提供用户只读共享、撤权和 ACL 版本冲突保护，接口契约见 [资源知识 API 契约](docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md)。当前主源增加 readers 和 acl_revision，旧 JSON 默认无共享、授权版本为 0。接收者身份必须与文档处于同一租户，不能通过共享获得写入或管理权限；超级管理员也不跨租户。普通内容修改、分析与回滚不能修改 ACL；旧副本保存会核对当前 ACL，防止撤权后授权被恢复。
+网关 KB 已提供用户只读共享、撤权和 ACL 版本冲突保护，接口契约见 [资源知识 API 契约](../../api/RESOURCE-KNOWLEDGE-CONTRACT.md)。当前主源增加 readers 和 acl_revision，旧 JSON 默认无共享、授权版本为 0。接收者身份必须与文档处于同一租户，不能通过共享获得写入或管理权限；超级管理员也不跨租户。普通内容修改、分析与回滚不能修改 ACL；旧副本保存会核对当前 ACL，防止撤权后授权被恢复。
 
 共享读取共用所有文档出口及图谱过滤规则。修改授权在共享文档状态锁内检查 expected_acl_revision，变化才递增版本；重复操作在版本匹配时幂等。撤权提交后的新请求不可见，已经开始的读取可能完成。进程内并发授权只有一个相同预期版本的请求成功，其他返回 409；跨进程 CAS 尚未实现。
 
@@ -84,7 +84,7 @@ flowchart LR
 
 检索新增版本化文本 citation，Unicode 偏移映射回原文字符；同分按 ID 稳定排序，空白/过长查询或 limit 越界返回 400。正文未命中时引用版本化标题，未版本化摘要不作为稳定来源。全文、向量、文件页码、精确 chunk 引用与真实问答引用仍需 R5。
 
-优化测量、权限回归和证据见 `reports/data/20261001-competitive-optimization/`；竞品文档事实与后续设计映射见[竞品参考](docs/modules/resource-knowledge/COMPETITIVE-DESIGN.md)。原先全量扫描重复 IO 已减少，但跨进程写入 CAS、增量事务索引、图投影重建成本与大规模性能仍未验收。
+优化测量、权限回归和证据见 `reports/data/20261001-competitive-optimization/`；竞品文档事实与后续设计映射见[竞品参考](./COMPETITIVE-DESIGN.md)。原先全量扫描重复 IO 已减少，但跨进程写入 CAS、增量事务索引、图投影重建成本与大规模性能仍未验收。
 
 <a id="sequence"></a>
 ## 后续实施顺序与退出条件

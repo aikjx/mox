@@ -1,0 +1,527 @@
+# 夹具T／变异体29（目录账独立口径 --dir-account）读数载体 ｜现跑 2026-10-02 18:42:05+0800 ｜仓根 D:\a10\aikjx\gitcode\infotopograph
+## A 段：真语料命令（含新模式 --dir-account）
+=== python scripts/gate/check-doc-formulas.py --selftest
+--- rc=0
+PASS 夹具A 真语料七型标识符/行号/型号/分号表格全不判红也不成主张（假阳＝人绕过闸门的代价）  误红 [] ／ 误成主张 [] ／ 落档 ['glued']
+PASS 夹具B 三枚真主张（带标签七项／带乘法两段／三段和）必须各认成 1 条主张且闭合  未认成 [] ／ 误判不闭合 []
+PASS 夹具C 把 375 改成 374 ⇒ 唯一一条不闭合必须点出来（不是全红也不是没红）  主张 1 违反 1 「374 ＝ 带分支标签 359 ＋ 公共面 16」取值 [374, 375]
+PASS 夹具D 「…」 里的旧错值是引文：按名点名，绝不进违反账  引文 1 主张 0 违反 0
+PASS 夹具E 七型盲区各自落进自己那一格，且每型恰有一枚夹具（盲区型与夹具数不等＝有一型从没被复验过）  错档 [] ／ 夹具 7 注册 7
+PASS 夹具G 反引号内的示意等式不出账也不判红（否则同一个事实被两把尺各数一次）  主张 0 违反 0 落档 []
+PASS 夹具F 扫描集非空且盲区 reason 全在注册表内（空集上的全称判据会把零证据印成满把握）  文件 372 主张 6 违反 0 盲区 9148 引文 6 ／ 未注册 reason []
+PASS 变异体1 撤「粘连即非数」 ⇒ 编号 `A1` 的 1 被当成操作数并误红（标识符读成数＝假阳，代价是人绕过闸门）  撤后 主张 1 违反 1 落档 [] 「1 ＝ 3 ＋ 4」
+PASS 变异体2 撤句子终止符 ⇒ 分号两侧被接成一条链并误红（跨句连读必然算错）  撤后 主张 1 违反 1 落档 [] 「60 ＋ 12；乙 ＝ 90 ＋ 8」
+PASS 变异体3 撤引文通道 ⇒ 登记旧错值的那句被判成主张不闭合（分不清引文与主张时主张不可信）  撤后 主张 1 违反 1 落档 [] 「71 ＝ 60 ＋ 30」
+PASS 变异体4 撤乘号通道 ⇒ 带 × 的真主张要么碎裂要么取值错（乘法不是装饰）  撤后 主张 0 违反 0 落档 ['increment'] 「-」
+PASS 变异体5 把链内跨度限到 6 字符 ⇒ 带标签的长链被切碎（分母会静默变小）  撤后 主张 0 违反 0 落档 [] 「-」
+PASS 变异体6 撤「紧邻加号＝增量记号」 ⇒ 「946 ＝ +1 文件 ＋9 例」被当成主张并误红  撤后 主张 1 违反 1 落档 [] 「946 ＝ +1 文件 ＋9」
+PASS 变异体7 撤代码段遮蔽 ⇒ 跨反引号的链把示例里的数字当操作数并误红（拆出的数比账上多一个 12）  撤后 主张 1 违反 1 落档 [] 「60 ＋ `（重叠 12 条）` ＋ 30 ＝ 90」
+PASS 变异体9 撤代码段遮蔽（同一条通道，另一种失效方向）⇒ 示意等式被登成第二条活账，同一个事实两个源  撤后 主张 1 违反 0 落档 [] 「-」
+PASS 变异体8 撤非等式符号遮蔽 ⇒ 「50 ＝ 甲 ≥ 20 ＋ 30」被判成一条闭合主张（假阴：不闭合也读不出来）  撤后 主张 1 违反 0 落档 [] 「-」
+PASS 夹具H 仪器目录现量：算术尺只住在归宿文件里，判决集非空、无解析失败、归宿自己在扫描集内  仪器 31 份 位点 380 处 算术命中 12（归宿 12／别家 0）盲区 85 解析失败 0 ｜ 红因 []
+PASS 夹具I 词汇只命名一次：三根针的模式串由 FL.EQ_FW／ADD_FW 拼出后仍与手写基准逐字节相同  EQ '＝' ADD '[+＋]' ANY '[=＝+＋×≥≤<>~→]'
+PASS 变异体10 别家在三处不同位置自造算术尺（re-call 字面量／具名常量再 compile／ASCII 转义加号）都要点名到文件与行号，而端口尺与计数尺不许误报（误报的代价是人绕过闸门）  全角 ['scripts/gate/second_fw.py'] 具名 ['scripts/gate/second_named.py'] ASCII ['scripts/gate/second_ascii.py'] ｜  benign 误报 0 出账 4 ｜ 红因 []
+PASS 变异体11 把归宿文件从扫描集里撤掉：全称判据会立刻变成空集上的真话（别家 0 处却什么都没测），所以归宿在不在场必须自己成一条判决  无归宿时的红因 ['第二把尺 1 处', '归宿文件不在扫描集（此时 foreign 必为空，全称判据是空的）']
+PASS 变异体12 撤词汇判定 ⇒ 别家照样「零红」：证明红来自 FL 的词汇而不是文件清单  撤后 命中 0 别家 0 位点 1
+PASS 变异体13 撤「已编译模式走接收者」这条通道：判决集必须真的少一个位点。这条通道买的是盲区诚实（早先一版把 arg0 当模式，115 处全落盲区而归宿账照样全绿），不是新增红  有通道 2 位点／撤后 1 位点（撤后盲区 0）
+PASS 变异体14 撤串接折叠 ⇒ 归宿文件自己的 ADD_RE／ANY_OP_RE（模式串由词汇常量拼出）读不出，算术命中必须真的变少：把词汇收成一处命名曾让这把尺变盲，这条通道就是为此补的  折叠 12 处／撤后 0 处（撤后盲区 102 配 85）
+PASS 变异体15 弱尺通道（非 Python 仪器整行找记号）：.mjs 里自造等式尺必须点名，而 ASCII key=value 形态不许误报；真语料那几份非 Python 仪器命中 0 是『看过了』不是『没看』  命中 ['frontend-ui/scripts/gate/second.mjs'] ／ benign 0 ／ 真语料非 Python 3 份弱尺命中 0
+PASS 夹具J 扫描集边界自署：集外探针必须真的读到东西（顶层目录＋仓根 .md），集内集外不许重叠（重叠＝同一本账复算两遍，两份都会漂），集外只在「自己不闭合」时判红  集外文件 310（目录 18／仓根 5／按名跳过 10）主张 1 不闭合 0 点名 ['reports/markdown/locale-family-collapse-20260929.md']
+PASS 变异体16 集外真文件（写在仓库外的临时目录，跑完即删）一条闭合一条不闭合：两份都必须被读到（claims=2，否则红可能来自没读），而红只许点不闭合那一份  主张 2 红 1 点名 unclosed.md
+PASS 变异体17 把集外枚举清空（模拟第三方目录被顺手跳过／列名写错那种塌缩）：全称判据在空集上恒真，所以分母塌了必须自己成一条红  塌缩红因 ['集外探针读到 0 份 .md（分母塌了，不是集外干净）'] ／ 现量红因 []
+PASS 夹具K 识别器扫描集**自己**的边界：『其余 N 份无一把自带』的宇宙是三条 glob，集外那些写得动正则的代码要按同一套判据复算——候选分母要非零、按名跳过的目录数要印出来、集外命中必须为 0，而归宿文件在这条通道里也要在场（否则又是空集上的全称判据）；两本分母还须不相交（相交＝同一份仪器在册与集外各数一遍，PASS 句的和就是假总数）  集外候选 97 份／按名跳过目录 14 个／集外位点 222 盲区 32／归宿命中 12 别家 0／集内集外交集 0 份
+PASS 变异体18 在**真实集外目录形状**里放一枚自造等式尺（`scripts/**` 下的 .py，不在三条 glob 内）：集外通道必须点名到文件，否则夹具K 那句『集外 0 处』只是没看  点名 ['scripts/maintenance/probes/planted.py'] ／ 红 ['第二把尺在扫描集外 scripts/maintenance/probes/planted.py:3 通道 re-call:Constant'] ｜ 塌缩对照 ['集外候选读到 0 份代码文件（分母塌了，不是集外干净）']
+PASS 变异体19 带 BOM 的仪器必须读得动（读码走 utf-8-sig）：BOM 留在串首时 `ast.parse` 报「invalid character in identifier」⇒ 那台仪器整份落进『解析失败』，它自带的第二把尺从此隐身（本仓真有这样一份：`scripts/ci/ci.py` 首字节是 BOM）  BOM 已剥离 True ／ 解析失败 0 ／ 点名 ['scripts/gate/bom_gate.py']
+PASS 夹具M CI 接线账：『接了 CI』的宇宙取自 check-script-paths.py 的 run 块判据（不自写第二把尺），真 ci.yml 必须让名单里两台仪器都带上 --selftest；分母从对象推（可执行脚本种类 ≥ 名单长度），兄弟门禁装载失败要印出来而不是安静退化成没有红；另钉两枚正对照（续行写法／复合命令写法）  run 块 token 17 条（收窄后执行 15 条／打印语句里 2 条）／脚本种类 13／名单 2 台／真语料红 []／续行对照 []／复合命令对照 []／装载 OK
+PASS 变异体20 注释里的写法不算接线：名单仪器只写进 run 块的 shell 注释时，复用来的注释剥离通道必须让它落到『未接线』（否则一行注释就能把『接了 CI』骗过去），且两台都不许隐身  剥注释后可执行 token 1 条／未接线红 2 条／全部红 ['CI 未接线 scripts/gate/check-doc-formulas.py：名单里的仪器没出现在任何一条 run 命令里', 'CI 未接线 scripts/gate/check-api-surface.py：名单里的仪器没出现在任何一条 run 命令里']
+PASS 变异体21 `echo` 里的命令串不算接线（本仓 ci.yml 三条 BLOCKED 行正是这个形状）：复用尺按空白切词、分不出打印与执行，不收窄则一行 echo 就能把『已接线』糊出来；被撤下的 token 要按名印出来，且同一宇宙在**撤掉收窄**后必须读成已接线（证明针穿的是这条通道）  原始 token 2／执行 1／打印里 1（['scripts/gate/check-doc-formulas.py']）／红 2 条／撤窄对照 []
+PASS 夹具N 通道依赖实测：宣称一条判决『待裁决点 6』之前，先把托管词汇表中性化看它会不会变——目录账（扫描集牙齿）必须不变，同机植入的那枚真读字形表的判决必须变；后者不变则前者一文不值（反事实只在内存里换 globals()[FL]，不写盘）  目录账不变 True／植入判决变 True／中性化前 ['fw=1', 'hw=1'] → 后 ['fw=0', 'hw=0']
+PASS 变异体22 把中性化换成恒等（替身＝同一个 FL）：植入判决从此不会变，夹具N 的『必须变』那半边失守 ⇒ 那一格必须判红。这枚钉的是『反事实通道有没有牙』，不是目录账自己  恒等替身：目录账不变 True／植入判决变 False
+PASS 夹具O 文档声称的『CI 门禁』逐条对账：名单来源换成 AGENTS.md 自己（同一行既有标记又挂着脚本路径），每条声称都必须在某份 workflow 的真 run 命令里出现；分母塌了自成一条红；没有脚本路径可挂的标记行按行号印出来——那种形状本格是盲的，不许让『全绿』冒充『都核实了』。『已接线』是下界：只保证某份 workflow 里有一条 run 命令执行它，不保证那份 workflow 在当前分支或 `paths:` 过滤下真会触发——落点按名印出来，触发条件去读那个文件  workflow 5 份／执行脚本种类 15／声称 10 条／未接线红 []／无路径可核的行 [10]／后缀挡下的 token ['docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md', 'docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md']／落点 [('verify-ports.py', ['ci.yml']), ('check-frontend-module.py', ['ci.yml']), ('check-locale-format-outlets.py', ['ci.yml']), ('check-script-paths.py', ['ci.yml']), ('check-doc-formulas.py', ['ci.yml']), ('check-api-surface.py', ['ci.yml']), ('check-api-binding-kinds.py', ['ci.yml']), ('check-ep-feedback-imports.py', ['ci.yml']), ('check-framework-imports.py', ['ci.yml']), ('check-theme-tokens.py', ['ci.yml'])]
+PASS 变异体23 声称只住在 echo 文案里时必须读成『未接线』（与 夹具M 同族的双向性——一行 echo 不许把文档口径的『CI 门禁』骗过去），且被挡下的那条要按名印出来。另钉『执行宇宙恰 1 条』：块没被读到时宇宙也是空的，『未接线』会在空集上恒真——那证明的是仪器没电，不是通道有牙  合成宇宙：执行 ['scripts/gate/other.py']／打印里 [(3, 'scripts/gate/planted_claim.py', 'echo')]／红 ['CI 声称未接线 scripts/gate/planted_claim.py：文档写着标记却没有一条 run 命令执行它（文档行 1）']
+PASS 变异体24 把标记通道撤掉（换一个文档里不存在的词）⇒ 声称账必须当场塌成一条红，而不是安静地印『0 条声称、全部核实』：这一格钉的是标记本身有没有咬住文档  撤标记后：声称 0 条／红 ['CI 声称账塌缩：挂着脚本路径的「CI 门禁」行 0 条（标记命中却无路径 0 行／后缀挡下 0 处），分母塌了必须自己成一条红']／真标记下声称 10 条
+PASS 变异体25 后缀边界（`.mjs` 不在复用尺的 SCRIPT_SUFFIX 里）必须落在『响亮地红』那一侧：挂着标记却挂不上可核路径的行，只能进盲区账按行号印出来，绝不能被算成一条已核实的声称  合成行：声称 0 条／无路径可核的行 [1]／后缀挡下 ['scripts/gate/check-dead.mjs']／红 ['CI 声称账塌缩：挂着脚本路径的「CI 门禁」行 0 条（标记命中却无路径 1 行／后缀挡下 1 处），分母塌了必须自己成一条红']
+PASS 夹具Q 反向账：CI 每次真在跑、且住在 */gate/ 目录下的脚本必须在 AGENTS.md 点得名——正向账（夹具O）问『声称的有没有跑』，本格问『跑的有没有写』，只钉一侧时另一侧漂移是静默的（指南少一格，新人照少一格的口径跑，而那条门禁自己照样天天绿）；目录名是口径，落在该目录外的执行对象只数不判，免得把 /gate/ 读成执行宇宙的全部  gate 目录内执行脚本 10 份／未登记 []／执行宇宙合计 15 份（目录外 5 份不在本格射程）
+PASS 变异体26 反向账的两条通道各钉一枚：① 门禁脚本在 CI 跑而指南没写时必须点名到那份路径，而同宇宙里住在 gate 目录外的脚本**不许**被一起点名（口径过宽＝假阳，代价是人绕过指南）；② 执行宇宙里没有 gate 脚本时必须读成『塌缩』而不是『零条未登记＝齐备』  合成宇宙①：gate 内 ['scripts/gate/a.py']／红 ['门禁脚本未登记在维护指南 scripts/gate/a.py：CI 天天执行它，AGENTS.md 里却点不到'] ｜合成宇宙②：gate 内 []／红 ['反向账塌缩：CI 执行宇宙里没有一份住在 /gate/ 目录下的脚本（分母塌了，不是门禁齐备）']
+PASS 夹具R 第三本账：AGENTS.md 宣传的『一键质量检查』必须与 CI 真跑的 gate 集合同账，且项数只许有一个算源——分母写成字面量 N 次就是 N 个第二源，漏改的那几处不报错、只是安静地印错数（后果恰好是『本地一键全绿、CI 却红』）；一键里一条 gate 都没执行时必须读成塌缩，而不是『零份未进＝齐备』  gate 宇宙 10 份／一键实际执行 10 份／$Total＝8／文档项数 8／红 []
+PASS 变异体27 一键账的四条通道各钉一枚：① 一条 gate 都没执行＝塌缩；② 分母写成字面量＝不合一（哪怕它自洽、gate 也都已执行——那种『看起来全绿』也要红，否则下一位加步骤的人没有仪器提醒）；③ 文档项数与 $Total 不符＝两数一起点名；④ 反对照：单源且项数相符时必须零红（收紧判据必须留 clean 侧，不然『红一切』也能自证绿）  ①红 ['一键账塌缩：CI 的 gate 宇宙有 1 份，而「一键质量检查」里一条都没执行（分母塌了，不是覆盖齐全）', 'CI 门禁未进一键 scripts/gate/a.py：CI 每次真跑它，本地一键却敲不到（本地全绿可以藏着一条 CI 红）'] ｜②红 ["一键分母不合一：段标签的分母是 ['7']，必须是唯一一个变量 $Total（同一个数写 N 次＝N 个第二源）"] ｜③红 ['一键项数与文档不符：AGENTS.md 写着 9 项而脚本 $Total＝2'] ｜④（必须 clean）红 []
+PASS 夹具S 第四维：CI 与一键必须**以同一组参数**跑同一条 gate。只比路径时，一键里的 `--selftest`（只测仪器自己、一眼不看仓库）就能顶掉 CI 里的 `--check`（判仓库）——本地全绿照样藏着一条 CI 红，缺陷与 夹具R 同族，只是这次藏在参数里；未进一键的路径由 夹具R 出红，本格不重复出第二条（同一个缺陷两条红时，改其一会让人以为两条都好了）  CI 侧 (路径,参数) 组 17／落在双账里的 12 组／涉及 10 份路径／红 []
+PASS 变异体28 参数账的五条通道各钉一枚：① 同路径不同参数＝不合一；② 反对照：参数逐词相同必须零红（收紧不允变成『红一切』）；③ 双账交集为空＝塌缩，不许读成『0 组不合一＝参数同账』；④ **裸跑也是一个参数组**——写成 `if args:` 就把它跳过了，那正是本地全绿藏 CI 红的形状；⑤ 参数宇宙必须继承 echo 收窄与分隔词截断（echo 里的写法不算，同一行把同一条路径敲两遍要各成一组，且段落止于分隔词，不许把后半串的参数扒到前一段上）  ①红 ['一键参数不合一 scripts/gate/a.py：CI 以「--check」执行它（ci.yml 行 3），一键里同路径只有 --selftest（本地全绿藏着一条 CI 红：CI 真跑的那组参数在本地没人敲过）'] ｜②（必须 clean）红 [] ｜③红 ['一键参数账塌缩：CI 执行的 gate 有 2 份、一键收录 1 份，却一条参数组都没解析出来（分母塌了，不是参数同账）'] ｜④红 ['一键参数不合一 scripts/gate/a.py：CI 以「(裸跑，无参数)」执行它（ci.yml 行 4），一键里同路径只有 --check（本地全绿藏着一条 CI 红：CI 真跑的那组参数在本地没人敲过）'] ｜⑤组 [('scripts/gate/a.py', ('--check',), 'ci.yml', 2), ('scripts/gate/a.py', (), 'ci.yml', 2)]
+PASS 夹具T 目录账的独立口径在真语料上必须自己站得住：只出目录账那半条（不碰集外账，那半条吃字形、整块待裁决点 6）、分母现量且不塌、判决为空。这一格是『可一键接』的证据：没有它，想接目录账的人只能整块等裁决，或者更糟——把 --dircheck 当目录账接进去，让一条天天红的字形账替一条本来能绿的账背锅  --dir-account 真语料｜目录 55／账 3／文件 372／行数 1／红 []
+PASS 变异体29 独立口径的五条通道各钉一枚：① 同一份集外数据在两个口径里必须一个有一个没有（若 account_only 只是纸面参数，两份输出同形，这条立刻红）；② 分母行只许一处生成——两条口径的头一行逐字节相同，其中『账 N 条』必须等于 len(DIR_ACCOUNT)（现推不是抄）；③ 扫描集塌缩必须自己出一条红并把两个数点名（空集上的全称判据＝把零证据印成满把握）；④ 反对照：合法目录＋非零文件数必须零红，而归档目录那一枚必须有红在场（收紧不允变成『红一切』）；⑤ 这条口径不读词汇表——把 FL 换成永不开火的替身，含一条真红的目录账输出必须逐字节不变（『不变』的证据是那红在场，不是空串对空串）  ①全量红 ['集外主张不闭合 docs/planted.md:1 「在册 5 ＝ 2 ＋ 2」各侧取值 [5, 4]']／口径内红 [] ｜②头 ['1', '3', '12'] ｜③['目录账分母塌缩：扫描目录 0 个／文件 0 个（扫描集为空时『目录账 3 条』不构成判决）'] ｜④clean []／在场 ['归档目录出现在扫描集里'] ｜⑤同形 True
+PASS 夹具L 每条判决都要有针：红模板从本文件源码现取（不写清单），逐条要求一枚内存对照能打红它——新增一条红而没配对照＝当场多出一格未覆盖，撤掉对照＝当场多出一格死键  红模板 27 条 ／ 未覆盖 [] ／ 死键 [] ／ 异常 [] ／ 合法目录账不误报 []
+SELFTEST 总 48 例，FAIL 0 例
+
+=== python scripts/gate/check-doc-formulas.py --recognizer
+--- rc=0
+识别器单归宿：扫描仪器 31 份（含归宿 1 份 ⇒ 判分母 30 份；Python 28 份走 AST／其余 3 份走弱尺：整行含全角记号即算）｜模式位点 380 处（盲区 85 处：模式在运行时构造或跨模块导入）
+    算术记号命中 12 处：归宿文件 12 ／ 别家 0
+    等式形但不判 13 处（ASCII key=value／计数尺；本尺认全角记号，这是假阴方向，登记不隐藏）
+     出账 scripts/gate/check-doc-formulas.py:489 re-call:Constant 「\$Total\s*=\s*(\d+)」
+     出账 scripts/gate/check-doc-formulas.py:510 method:ONE_CLICK_TOTAL_DEF 「\$Total\s*=\s*(\d+)」
+     出账 scripts/gate/verify-ports.py:163 re-call:Constant 「setTimeout|timeout\?|sampleRate|sample_?rate|['\」
+     出账 scripts/gate/verify-ports.py:213 re-call:Constant 「(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]|::」
+    集外仪器候选 97 份（根 scripts／tools／frontend-ui/scripts／platform／domains／.github／按名跳过 14 个构建与派生目录）｜集外位点 222 处、盲区 32 处｜集外自带算术记号 0 处
+RECOGNIZER PASS（算术尺只在 scripts/gate/formula_ledger.py 里定义，除归宿外在册 30 份与集外候选 97 份无一把自带；两本分母同一次现推、按构造不相交）
+
+=== python scripts/gate/check-doc-formulas.py --dircheck
+--- rc=0
+扫描目录 55 个｜目录账 3 条｜分母现量 文件 372 个
+扫描集外 .md 310 个（顶层目录 18 个＋仓根 5 份，按名跳过 10 个第三方/构建目录）｜主张 1 条（不闭合 0）｜盲区 2011 条｜引文 1 条
+     集外主张 reports/markdown/locale-family-collapse-20260929.md：1 条（集外无台账，只判自不闭合）
+
+=== python scripts/gate/check-doc-formulas.py --dir-account
+--- rc=0
+扫描目录 55 个｜目录账 3 条｜分母现量 文件 372 个
+
+=== python scripts/gate/check-api-surface.py --ledger
+--- rc=0
+现量时刻 2026-10-02 18:41:17+0800｜扫描 .rs 1382 个｜角色取值 All,Kg,Cloud,Kb,Iam（读自 platform/gateway/mox-platform-gateway-svc/src/deployment.rs:6）
+
+公式           现量等式                                                 判定
+ASM-CLOSE    72 ＝ 60 ＋ 12                                         闭合
+ASM-ANTI     72 ≠ 60 ＋ 32（=92）                                    闭合
+DECL-PARSE   246 ＝ 246                                            闭合
+M-PART       375 ＝ 233 ＋ 2 ＋ 140                                  闭合
+T-PART       238 ＝ 233 ＋ 3 ＋ 2                                    闭合
+TAG-COMMON   375 ＝ 359 ＋ 16                                       闭合
+TAG-DJ       0 ＝ 0                                                闭合
+ONLY-ALL     375 ＝ 248 ＋ 127 ＋ 0                                  闭合
+NEVER-0      0 ＝ 0                                                闭合
+LBL-PART     111 ＝ 111 ＋ 0 ＋ 0                                    闭合
+TWIN-NONE    0 ＝ 0                                                闭合
+LBL-SUM      111 ＝ 111                                            闭合
+LBL-DJ       0 ＝ 0                                                闭合
+UNREG-CROSS  140 ＝ 140                                            闭合
+XCHAN-DJ     0 ＝ 0                                                闭合
+BUCKET-All   375 ＝ 375 ＋ 0                                        闭合
+SUBST-All    375 ＝ 375                                            闭合
+PRUNE-All    3 ≥ 2                                                闭合
+BUCKET-Kg    375 ＝ 29 ＋ 346                                       闭合
+SUBST-Kg     29 ＝ 29                                              闭合
+PRUNE-Kg     7 ≥ 6                                                闭合
+BUCKET-Cloud 375 ＝ 20 ＋ 355                                       闭合
+SUBST-Cloud  20 ＝ 20                                              闭合
+PRUNE-Cloud  7 ≥ 6                                                闭合
+BUCKET-Kb    375 ＝ 34 ＋ 341                                       闭合
+SUBST-Kb     34 ＝ 34                                              闭合
+PRUNE-Kb     7 ≥ 6                                                闭合
+BUCKET-Iam   375 ＝ 92 ＋ 283                                       闭合
+SUBST-Iam    92 ＝ 92                                              闭合
+PRUNE-Iam    7 ≥ 6                                                闭合
+ID-UNIQ      公式 id 不许撞车（撞了后写的会顶掉先写的而总账自洽）                         闭合
+INFO 漂移 census:in_table_not_mounted（live 名 t_not_mounted）工件 0 ／ live 3 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:indexed_by_signature（live 名 indexed_by_signature）工件 31 ／ live 32 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:passthrough_shells（live 名 passthrough）工件 26 ／ live 28 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:routes_declared_len（live 名 routes_declared_len）工件 243 ／ live 246 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:routes_parsed（live 名 routes_parsed）工件 243 ／ live 246 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:scanned_files（live 名 scanned_files）工件 1375 ／ live 1382 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:unresolved（live 名 unresolved_counts）工件 {} ／ live {'builder 函数同名多定义: router': 2} —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 matrix:routes_declared_len（live 名 routes_declared_len）工件 243 ／ live 246 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 matrix:scanned_files（live 名 scanned_files）工件 1376 ／ live 1382 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 surface:routes_declared_len（live 名 routes_declared_len）工件 243 ／ live 246 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 surface:scanned_files（live 名 scanned_files）工件 1376 ／ live 1382 —— 工件是那一刻的图像，语料在并发作者手里天天动
+引用对账 55 条：一致 44、漂移 11、引用不成立 0
+散文算术审计：复算 5 条主张（红 0），盲区 84 条按 reason 出账（ascii_eq=4／code=12／glued=15／latin=6／no_fw_eq=15／noise=32），引文 5 条按名点名（引文不是账）
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:60 「71 ＝ 60 ＋ 30」
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:359 「角色专属＝0 条」
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:458 「71 ＝ 60 ＋ 30」
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:481 「71 ＝ 60 ＋ 30」
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:585 「50 ＝ 甲 ≥ 20 ＋ 30」
+PASS 文档镜像：托管块与现渲染逐字节相同（41 行）
+LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+
+=== python scripts/gate/check-script-paths.py --check
+--- rc=0
+[check-script-paths] 仓根 D:\a10\aikjx\gitcode\infotopograph
+枚举文件 3565 份（2336 个不同 basename）｜代码语料 231 份｜CI 语料 5 份｜判定引用 1884 条
+覆盖面（当轮实测，含不判定项）：EXISTS 728 ｜MOVED 4 ｜CI run 引用 19 ｜裸文件名 464 ｜同名在无关目录 298 ｜仓内无同名 371
+覆盖面合计核对：扫描引用 1896 − 显式豁免 12（跳过不判）＝覆盖面各档之和＝判定引用 1884｜遮蔽不成对 13 处按文件计、不是引用，不进分母
+判决分流：MOVED 4＝执行面 4（未在册 0）＋用法文本 0 ｜CI run 判缺 2（未在册 0）｜显式豁免标记 12 处（行尾 script-paths: ignore）｜遮蔽区间不成对 13 处（少遮蔽不多吞）
+
+已在册豁免 6 处（逐条见 LEDGER；收口＝删条目）
+
+[OK] 执行面路径全部解析得到或已在册，台账与当前命中一致
+
+=== python scripts/gate/check-doc-links.py
+--- rc=0
+[check-doc-links] 扫描文件 402 个，判定引用 2416 条
+跳过：外部链接 38 条，file:// 绝对路径链接 132 条（技术债·应改为仓根相对），占位/非路径 87 条，显式豁免 45 行
+
+告警·反引号路径引用不存在（206，加 --strict 可视为错误）：
+  [WARN]   docs/api/PORT-REGISTRY.md:235 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/architecture/ARCHITECTURE-ENTERPRISE.md:1039 -> docs/expert-alliance/v3/01-architecture-optimization.md
+  [WARN]   docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md:137 -> docs/architecture/frontend/FRONTEND-MODULE.md
+  [WARN]   docs/architecture/full-dimensional/00-README.md:6 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/architecture/full-dimensional/00-README.md:19 -> docs/_archive/2026-08-16/璇玑-全维分析-TraceMatrix-六维绑定追溯.md
+  [WARN]   docs/architecture/full-dimensional/00-README.md:20 -> docs/_archive/2026-08-16/璇玑-全维分析需求-测试分析验证报告.md
+  [WARN]   docs/architecture/full-dimensional/00-README.md:21 -> docs/_archive/2026-08-16/璇玑-全维分析需求业务处理流程图.md
+  [WARN]   docs/enterprise/00-INDEX.md:116 -> docs/璇玑-MOX需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/00-INDEX.md:122 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:10 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:289 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:364 -> docs/enterprise/11-全维测试验证优化修复报告.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:798 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:799 -> docs/enterprise/15-产品规范标准-人人爱用全自动全维-V1.0.md
+  [WARN]   docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md:807 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:26 -> docs/enterprise/15-产品规范标准-人人爱用全自动全维-V1.0.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:27 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:38 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:42 -> docs/enterprise/17-算子系统全维分析与归一化设计.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:49 -> docs/enterprise/08-全维自动化处理明确书.md
+  [WARN]   docs/enterprise/20-后端功能开发专家主控提示词与必读文档清单-V1.0.md:50 -> docs/enterprise/11-全维测试验证优化修复报告.md
+  [WARN]   docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md:354 -> docs/enterprise/22-归一化总控卡.md
+  [WARN]   docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md:391 -> docs/enterprise/VOICE-DOMAIN-ANALYSIS.md
+  [WARN]   docs/enterprise/28-MOX分析与文档归一化报告-V1.0.md:443 -> docs/enterprise/MICROSERVICES-EVOLUTION.md
+  [WARN]   docs/enterprise/37-企业级处理流程规范-V1.0.md:72 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/enterprise/37-企业级处理流程规范-V1.0.md:463 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/enterprise/37-企业级处理流程规范-V1.0.md:468 -> docs/enterprise/08-全维自动化处理明确书.md
+  [WARN]   docs/enterprise/_data/test-report-20260824/t4-enterprise-test-report-20260824.md:336 -> docs/enterprise/_data/test-report-20260824/screenshots/17-clippy-fail.png
+  [WARN]   docs/enterprise/DOC-NORMALIZATION-REPORT.md:31 -> docs/mox-expert-mox-fusion-flows.md
+  [WARN]   docs/enterprise/DOC-NORMALIZATION-REPORT.md:78 -> docs/guantu-skeleton.md
+  [WARN]   docs/enterprise/DOC-NORMALIZATION-REPORT.md:79 -> docs/mox-requirement-baseline.md
+  [WARN]   docs/enterprise/DOC-NORMALIZATION-REPORT.md:146 -> docs/market-module.md
+  [WARN]   docs/enterprise/GLOSSARY.md:35 -> docs/璇玑-MOX需求业务处理流程图-归一化企业级.md
+  [WARN]   docs/enterprise/MOX-AI驱动MOX平台-企业级设计-MOX分析-v3.0.md:292 -> docs/对话开发系统-MOX分析与业务流程图.md
+  [WARN]   docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md:92 -> docs/璇玑-全维需求业务处理流程图-归一化企业级.html/.md
+  [WARN]   docs/enterprise/璇玑-信息化系统开发验收报告-V1.0.md:94 -> docs/璇玑-全维流水线.mmd
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:70 -> docs/standards/expert-alliance-port-norm.md:171,231
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:71 -> docs/architecture/microservices/07-massive-scale-100k-nodes.md:86,124
+  [WARN]   docs/expert-alliance/_verification/docs-verification-report.md:130 -> docs/database/DATABASE-ARCHITECTURE.md:7-9
+  [WARN]   docs/modules/business-process-flowcharts.md:407 -> docs/expert-alliance/FRONTEND-MODULE.md
+  [WARN]   docs/normalization/API-INDEX.md:68 -> docs/normalization/api/
+  [WARN]   docs/normalization/ARC-INDEX.md:66 -> docs/normalization/arch/
+  [WARN]   docs/normalization/README.md:7 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/normalization/README.md:24 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/normalization/TPL-INDEX.md:50 -> docs/normalization/template/
+  [WARN]   docs/normalization/VAL-INDEX.md:13 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/normalization/VAL-INDEX.md:37 -> docs/NO-MOCK-POLICY.md
+  [WARN]   docs/normalization/VAL-INDEX.md:56 -> docs/normalization/verify/
+  [WARN]   docs/specifications/tasks/20260823-mox-full-enterprise-architecture/tasks.md:288 -> docs/project-atlas.md
+  [WARN]   docs/specifications/tasks/20260823-mox-storage-distributed-ai-unified-query/tasks.md:169 -> docs/enterprise/18-mox-storage-ai-unified-query-report.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:6 -> docs/architecture/architecture.md(v7)
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:6 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:6 -> docs/mox-mox-product-handbook-v3.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:54 -> docs/specs
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:54 -> docs/full-dimensional
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:67 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:75 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:76 -> docs/enterprise/08-全维自动化处理明确书.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/spec.md:151 -> docs/specifications/GR-STD
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:40 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:41 -> docs/mox-mox-product-handbook-v3.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:120 -> docs/enterprise/14-全维愿景核心架构与业务流程总纲.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:249 -> docs/enterprise/07-全维需求明确书.md
+  [WARN]   docs/specifications/tasks/20260823-mox-top-master-doc-restructure/tasks.md:274 -> docs/enterprise/08-全维自动化处理明确书.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:154 -> docs/enterprise/28-信创适配清单-V1.0.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:155 -> docs/enterprise/29-企业级部署手册-V1.0.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:274 -> docs/enterprise/28-信创适配清单-V1.0.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:275 -> docs/enterprise/29-企业级部署手册-V1.0.md
+  [WARN]   docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md:318 -> docs/enterprise/28-信创适配清单-V1.0.md
+  [WARN]   docs/specifications/tasks/20260825-mox-all-core-rust-max-algo/tasks.md:321 -> docs/standards/mox-formulas-rust.md
+  [WARN]   docs/specifications/tasks/20260825-mox-all-core-rust-max-algo/tasks.md:336 -> docs/standards/mox-formulas-rust.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:10 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:36 -> docs/DOC-NORMALIZATION-REPORT.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:77 -> docs/expert-alliance/v2/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:78 -> docs/expert-alliance/v3/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:79 -> docs/expert-alliance/architecture/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:102 -> docs/expert-alliance/v2/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:250 -> docs/expert-alliance/EA-001-专家联盟架构总纲-V1.0.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:302 -> docs/expert-alliance/v2/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:303 -> docs/expert-alliance/architecture/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:340 -> docs/expert-alliance/architecture/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:573 -> docs/expert-alliance/architecture/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:718 -> docs/expert-alliance/00-INDEX.md
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:863 -> docs/expert-alliance/v2/
+  [WARN]   docs/standards/expert-alliance-normalization-mode.md:1011 -> docs/expert-alliance/00-INDEX.md
+  [WARN]   docs/standards/expert-alliance-port-norm.md:10 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/standards/expert-alliance-port-norm.md:10 -> docs/expert-alliance/02-DUAL-PLATFORM-RELATIONSHIP.md
+  [WARN]   docs/standards/expert-alliance-port-norm.md:121 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/standards/expert-alliance-port-norm.md:137 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/standards/PR-TYPES.md:4 -> docs/architecture/crate-boundaries.md
+  [WARN]   docs/standards/PR-TYPES.md:44 -> docs/working-reports/_norm_research/compat-cleanup-register.md
+  [WARN]   docs/working-reports/20260902_hybrid_architecture_phase1_verification_report.md:251 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/20260903_hybrid_architecture_phase2_verification_report.md:444 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md:516 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/20260903_hybrid_architecture_phase3_architecture_analysis.md:520 -> docs/domains-code-review.md
+  [WARN]   docs/working-reports/_norm_research/mox-architecture-review-optimization.md:131 -> docs/working-reports/_norm_research/compat-cleanup-register.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:268 -> docs/architecture/overview.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:269 -> docs/architecture/crate-boundaries.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:270 -> docs/architecture/ecstore-module-split-plan.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:271 -> docs/architecture/storage-control-data-plane.md
+  [WARN]   docs/working-reports/_norm_research/rustfs-modularity-benchmark.md:272 -> docs/architecture/global-state-crate-split-plan.md
+  [WARN]   docs/working-reports/enterprise-optimization-round-2_plan.md:33 -> docs/enterprise/ac-compliance-report.md
+  [WARN]   docs/working-reports/enterprise-optimization-round-2_plan.md:71 -> docs/enterprise/ac-compliance-report.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:403 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:416 -> docs/expert-alliance/v2/01-architecture.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:431 -> docs/expert-alliance/v3/01-architecture-optimization.md
+  [WARN]   docs/working-reports/expert-alliance-code-alignment-20260831.md:661 -> docs/expert-alliance/CODE-FACTS.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:66 -> docs/expert-alliance/00-INTEGRATED-INDEX.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:67 -> docs/expert-alliance/01-ENTERPRISE-OPTIMIZATION.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:69 -> docs/expert-alliance/expert-registry-and-protocol.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:70 -> docs/expert-alliance/knowledge-graph-schema.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:71 -> docs/expert-alliance/v2/00-requirements.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:72 -> docs/expert-alliance/v2/01-architecture.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:73 -> docs/expert-alliance/v2/02-domain-model.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:74 -> docs/expert-alliance/v2/03-business-flow.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:75 -> docs/expert-alliance/v2/04-api-design.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:76 -> docs/expert-alliance/v2/05-data-architecture.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:77 -> docs/expert-alliance/v2/06-security-observability.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:78 -> docs/expert-alliance/v2/07-roadmap.md
+  [WARN]   docs/working-reports/expert-alliance-doc-inventory-20260831.md:79 -> docs/expert-alliance/v2/README.md
+
+⚠ 明细已截断：打印 120 条／总体 206 条。对两份被截断的打印集做集合差会凭空造出「消失」的条目，要比较总体请调大 --max-detail 或直接读上面那行总数。
+[OK] 未发现断链
+
+## B 段：拆分前后 --dircheck 逐字节相同；两条口径的分母行同源
+DIRCHECK rc=0 IDENTICAL=True｜拆分前像 362 B／拆分后 362 B
+HEAD-EQUAL=True（--dircheck 头行 对 --dir-account 头行）
+扫描目录 55 个｜目录账 3 条｜分母现量 文件 372 个
+扫描目录 55 个｜目录账 3 条｜分母现量 文件 372 个
+ACCOUNT rc=0 LINES=1
+
+## C 段：撤通道见证（哪一格因哪枚变异变红，逐格点名）
+SAB baseline｜rc=0｜红格=[]｜SELFTEST 总 48 例，FAIL 0 例
+SAB 变异A｜rc=1｜红格=[夹具T, 变异体29]｜account_only 是纸面参数＝拆分前的形状｜SELFTEST 总 48 例，FAIL 2 例
+SAB 变异B｜rc=1｜红格=[变异体29, 夹具L]｜撤掉分母塌缩那条红｜SELFTEST 总 48 例，FAIL 2 例
+SAB 变异C｜rc=1｜红格=[变异体29]｜分母行出现第二源｜SELFTEST 总 48 例，FAIL 1 例
+被审文件三轮内存变异后仍为 102614 B／md5 c3d3300f0c0a（未写盘）
+## D 段：PowerShell 侧
+=== check-all.ps1 语法复算（本轮未改 runner，复算只为证明它仍解析得过）
+--- rc=0
+PS-PARSE errors=0
+
+=== 第 6 段（自 check-all.ps1 现抽 → C:\Users\mo\AppData\Local\Temp\mox-sec6-carrier-k.ps1）
+--- rc=0
+[INFO ] E1 element-plus 根导入：0 处 ✓
+[INFO ] E2 跨目录相对导入：0 处 ✓
+[INFO ] E3 barrel 导出名冲突：0 处 ✓
+[INFO ] E4 api/store 命名规范：全部符合 ✓
+[INFO ] E5 vite.config.js epSubpathResolver 在位 ✓
+[INFO ] E6 barreled 目录 @/ 深路径导入：0 处 ✓
+[INFO ] E7 @/ 别名导入目标：全部可解析 ✓
+[WARN ] 块注释配对异常 26 处（含字符串/CSS 误报可能，需人工甄别）：
+[WARN ]   frontend-ui\src\api\actuator.api.js (open=3 close=2)
+[WARN ]   frontend-ui\src\api\ai.api.js (open=2 close=1)
+[WARN ]   frontend-ui\src\api\http.js (open=8 close=7)
+[WARN ]   frontend-ui\src\components\MessageBubble.vue (open=30 close=31)
+[WARN ]   frontend-ui\src\components\ai\PhasePipeline.vue (open=11 close=12)
+[WARN ]   frontend-ui\src\constants\nav.config.js (open=2 close=0)
+[WARN ]   frontend-ui\src\modules\health-check.js (open=2 close=0)
+[WARN ]   frontend-ui\src\modules\admin-lowcode\index.js (open=1 close=0)
+--- 前端模块化门禁：ERROR=0 ---
+  [PASS] frontend-module gates 
+[PASS] L1 无参 + 同行 new Date：fired=True want=True :: unpinned=1
+[PASS] L1 无参 + 别名 Date 变量：fired=True want=True :: unpinned=1
+[PASS] L2 登记口外重复时钟档选项：fired=True want=True :: L2 OUTLET_LITERAL a/views/Z.vue:1 在登记口之外重复了出口写法片段 `{ hour: '2-digit', minute: '2-digit' }`
+[PASS] L2 登记口外重复完整 F2 写法：fired=True want=True :: L2 OUTLET_LITERAL a/views/W.vue 出现出口写法串 `toLocaleString('zh-CN', { hour12: false })`
+[PASS] L3 pin 到别的 locale：fired=True want=True :: L3 LOCALE_PIN a/views/V.vue:1 pin 到了 `en-US` 而非 zh-CN
+[PASS] 合法：登记口自身：fired=False want=False 
+[PASS] 合法：数字千分位无参：fired=False want=False 
+[PASS] 合法：pin 到 zh-CN 的日期档：fired=False want=False 
+[PASS] 合法：带秒档自己写 hour12（不是登记口写法）：fired=False want=False 
+[PASS] L4 空判集必须被拒（不存在的仓库根）：rc=1 want=1
+[PASS] L4 真仓库扫描集 = 273 个文件（下限 100）
+SELFTEST PASS（0 例未落地）
+  [PASS] locale-format outlets gate selftest 
+[OK] L1/L2/L3 无违规：扫描 273 个文件；无参时间格式化余账 2 处＝登记表；出口写法只在 utils/time.js
+[INFO] L1 余账明细（清零后要删条目而不是写 0）：modules/admin-lowcode/engine/widgetRegistry.js x1, views/admin/panels/AdminHitl.vue x1
+[INFO] I1 数字千分位（与时间无关，不判定，按名点名 3 处）：views/admin/panels/AdminLlm.vue:258 <div class="stat-value">{{ stats.total_tokens.toLocaleString(); views/admin/panels/AdminLlm.vue:278 <span class="usage-tokens">{{ data.total_tokens.toLocaleString(); views/expert/ExpertPlazaView.vue:699 if (s.consult_count != null) heroStats.value[1].value = s.consult_count.toLocaleString()
+[INFO] I2 登记口外的带参 toLocale* 直写 3 处（task #25 余账）：views/admin/panels/AdminLlm.vue:649; views/market/MarketView.vue:610; views/workflow/BrowserView.vue:588
+  [PASS] locale-format outlets gate 
+[selftest] 夹具枚举文件 11 份（10 个不同 basename）｜格 53 枚
+  [PASS] 分类 scripts/gate/real_gate.py
+  [PASS] 分类 scripts/real_gate.py
+  [PASS] 分类 types.rs
+  [PASS] 分类 tools/guantu_gate.py
+  [PASS] 分类 nope/nosuch-9f3q.py
+  [PASS] 分类 keep.py
+  [PASS] 分类 src/api/http.js
+  [PASS] 角色 # 用法: bash scripts/zz-smok
+  [PASS] 角色 python scripts/zz-ci.py  #
+  [PASS] 角色 $CMD = "& (Join-Path $ROOT
+  [PASS] 角色 $GRAY = Join-Path $ROOT "s
+  [PASS] 角色 if (Test-Path $GRAY) { $ok
+  [PASS] 角色 Write-Host "run scripts/zz
+  [PASS] 三引号串内的用法行判 TEXT
+  [PASS] 三引号串外的同形态行判 EXEC
+  [PASS] PS 注释块 <# #> 内行判 TEXT
+  [PASS] PS here-string 内行判 TEXT
+  [PASS] PS 块注释与 here-string 之后的行判 EXEC
+  [PASS] 遮蔽不成对时不吞后文并计数
+  [PASS] 带 ignore 标记的行被跳过，同文件不带标记的行仍判
+  [PASS] line_kept 对无标记行返回真、对行尾带标记的行返回假
+  [PASS] collect 端到端：带 ignore 的那行没进执行面，另一行按 MOVED/EXEC 进
+  [PASS] collect 端到端：跳过量按名计数（不许记在暗账里）
+  [PASS] 仓根散落的启动脚本进扫描集（入口层不许放在覆盖面外）
+  [PASS] 覆盖面行印出的各数之和＝判定引用（行与分母同源，漏印一档即红）
+  [PASS] 合计核对行在真夹具上必须闭合（不许 ⚠）
+  [PASS] 多出一档没登记进覆盖面表时必须点名该档（新档位不许只进分母不进账）
+  [PASS] 夹具 collect 必须把分类器每一档都判到（档位表与分类器实吐一比一，CI 档另由 demo.yml 供）
+  [PASS] 别名 @/ 展开成 frontend-ui/src/
+  [PASS] URL 整段遮蔽后不留仓内候选
+  [PASS] run: 块与 run: | 多行都提取到（3 条）
+  [PASS] 按仓根解析不到的 2 条判缺
+  [PASS] CI 注释：run: | 块里整行 # 的路径不进执行面
+  [PASS] CI 注释：命令行尾 ` #…` 之后的路径不进执行面
+  [PASS] CI 注释：行尾注释剥离后命令本体仍留
+  [PASS] CI 词法②：排除模式与带引号 token 不当作执行面
+  [PASS] CI 词法：真正的脚本实参仍被提取
+  [PASS] CI 词法①：数据/文档文件不算被执行对象
+  [PASS] CI 词法②：绝对路径不被切片成仓内候选
+  [PASS] CI 承重点：run 块后的更深缩进映射键不当作执行面
+  [PASS] 处数相符的在册项不报错且计入豁免
+  [PASS] 处数少了要判台账不一致
+  [PASS] 未在册的执行面必须进 BROKEN 集
+  [PASS] 在册却已不再命中的条目要判过期
+  [PASS] 理由字数不足要判台账不合格
+  [PASS] 台账每条四键齐全
+  [PASS] 台账键不重复
+  [PASS] 台账 hits 必须为正（不许写 0 蒙过）
+  [PASS] 分流行把两支未在册按 role 分开数（CI 不许混进执行面）
+  [PASS] 两支之和≠MOVED 时必须印不等式而不是照常分流
+  [PASS] 全零语料仍要印出判决分流行（段落缺席≠通道通电）
+  [PASS] 上限小于总体时必须印截断告示
+  [PASS] 未截断时不得印截断告示
+SELFTEST PASS=53 FAIL=0
+  [PASS] script-paths gate selftest 
+[check-script-paths] 仓根 D:\a10\aikjx\gitcode\infotopograph
+枚举文件 3565 份（2336 个不同 basename）｜代码语料 231 份｜CI 语料 5 份｜判定引用 1884 条
+覆盖面（当轮实测，含不判定项）：EXISTS 728 ｜MOVED 4 ｜CI run 引用 19 ｜裸文件名 464 ｜同名在无关目录 298 ｜仓内无同名 371
+覆盖面合计核对：扫描引用 1896 − 显式豁免 12（跳过不判）＝覆盖面各档之和＝判定引用 1884｜遮蔽不成对 13 处按文件计、不是引用，不进分母
+判决分流：MOVED 4＝执行面 4（未在册 0）＋用法文本 0 ｜CI run 判缺 2（未在册 0）｜显式豁免标记 12 处（行尾 script-paths: ignore）｜遮蔽区间不成对 13 处（少遮蔽不多吞）
+
+已在册豁免 6 处（逐条见 LEDGER；收口＝删条目）
+
+[OK] 执行面路径全部解析得到或已在册，台账与当前命中一致
+  [PASS] script-paths gate 
+SECTION6 steps=5 fails=0
+
+=== 第 8 段（自 check-all.ps1 现抽 → C:\Users\mo\AppData\Local\Temp\mox-sec8-carrier-k.ps1）
+--- rc=0
+PASS 夹具A 真语料七型标识符/行号/型号/分号表格全不判红也不成主张（假阳＝人绕过闸门的代价）  误红 [] ／ 误成主张 [] ／ 落档 ['glued']
+PASS 夹具B 三枚真主张（带标签七项／带乘法两段／三段和）必须各认成 1 条主张且闭合  未认成 [] ／ 误判不闭合 []
+PASS 夹具C 把 375 改成 374 ⇒ 唯一一条不闭合必须点出来（不是全红也不是没红）  主张 1 违反 1 「374 ＝ 带分支标签 359 ＋ 公共面 16」取值 [374, 375]
+PASS 夹具D 「…」 里的旧错值是引文：按名点名，绝不进违反账  引文 1 主张 0 违反 0
+PASS 夹具E 七型盲区各自落进自己那一格，且每型恰有一枚夹具（盲区型与夹具数不等＝有一型从没被复验过）  错档 [] ／ 夹具 7 注册 7
+PASS 夹具G 反引号内的示意等式不出账也不判红（否则同一个事实被两把尺各数一次）  主张 0 违反 0 落档 []
+PASS 夹具F 扫描集非空且盲区 reason 全在注册表内（空集上的全称判据会把零证据印成满把握）  文件 372 主张 6 违反 0 盲区 9148 引文 6 ／ 未注册 reason []
+PASS 变异体1 撤「粘连即非数」 ⇒ 编号 `A1` 的 1 被当成操作数并误红（标识符读成数＝假阳，代价是人绕过闸门）  撤后 主张 1 违反 1 落档 [] 「1 ＝ 3 ＋ 4」
+PASS 变异体2 撤句子终止符 ⇒ 分号两侧被接成一条链并误红（跨句连读必然算错）  撤后 主张 1 违反 1 落档 [] 「60 ＋ 12；乙 ＝ 90 ＋ 8」
+PASS 变异体3 撤引文通道 ⇒ 登记旧错值的那句被判成主张不闭合（分不清引文与主张时主张不可信）  撤后 主张 1 违反 1 落档 [] 「71 ＝ 60 ＋ 30」
+PASS 变异体4 撤乘号通道 ⇒ 带 × 的真主张要么碎裂要么取值错（乘法不是装饰）  撤后 主张 0 违反 0 落档 ['increment'] 「-」
+PASS 变异体5 把链内跨度限到 6 字符 ⇒ 带标签的长链被切碎（分母会静默变小）  撤后 主张 0 违反 0 落档 [] 「-」
+PASS 变异体6 撤「紧邻加号＝增量记号」 ⇒ 「946 ＝ +1 文件 ＋9 例」被当成主张并误红  撤后 主张 1 违反 1 落档 [] 「946 ＝ +1 文件 ＋9」
+PASS 变异体7 撤代码段遮蔽 ⇒ 跨反引号的链把示例里的数字当操作数并误红（拆出的数比账上多一个 12）  撤后 主张 1 违反 1 落档 [] 「60 ＋ `（重叠 12 条）` ＋ 30 ＝ 90」
+PASS 变异体9 撤代码段遮蔽（同一条通道，另一种失效方向）⇒ 示意等式被登成第二条活账，同一个事实两个源  撤后 主张 1 违反 0 落档 [] 「-」
+PASS 变异体8 撤非等式符号遮蔽 ⇒ 「50 ＝ 甲 ≥ 20 ＋ 30」被判成一条闭合主张（假阴：不闭合也读不出来）  撤后 主张 1 违反 0 落档 [] 「-」
+PASS 夹具H 仪器目录现量：算术尺只住在归宿文件里，判决集非空、无解析失败、归宿自己在扫描集内  仪器 31 份 位点 380 处 算术命中 12（归宿 12／别家 0）盲区 85 解析失败 0 ｜ 红因 []
+PASS 夹具I 词汇只命名一次：三根针的模式串由 FL.EQ_FW／ADD_FW 拼出后仍与手写基准逐字节相同  EQ '＝' ADD '[+＋]' ANY '[=＝+＋×≥≤<>~→]'
+PASS 变异体10 别家在三处不同位置自造算术尺（re-call 字面量／具名常量再 compile／ASCII 转义加号）都要点名到文件与行号，而端口尺与计数尺不许误报（误报的代价是人绕过闸门）  全角 ['scripts/gate/second_fw.py'] 具名 ['scripts/gate/second_named.py'] ASCII ['scripts/gate/second_ascii.py'] ｜  benign 误报 0 出账 4 ｜ 红因 []
+PASS 变异体11 把归宿文件从扫描集里撤掉：全称判据会立刻变成空集上的真话（别家 0 处却什么都没测），所以归宿在不在场必须自己成一条判决  无归宿时的红因 ['第二把尺 1 处', '归宿文件不在扫描集（此时 foreign 必为空，全称判据是空的）']
+PASS 变异体12 撤词汇判定 ⇒ 别家照样「零红」：证明红来自 FL 的词汇而不是文件清单  撤后 命中 0 别家 0 位点 1
+PASS 变异体13 撤「已编译模式走接收者」这条通道：判决集必须真的少一个位点。这条通道买的是盲区诚实（早先一版把 arg0 当模式，115 处全落盲区而归宿账照样全绿），不是新增红  有通道 2 位点／撤后 1 位点（撤后盲区 0）
+PASS 变异体14 撤串接折叠 ⇒ 归宿文件自己的 ADD_RE／ANY_OP_RE（模式串由词汇常量拼出）读不出，算术命中必须真的变少：把词汇收成一处命名曾让这把尺变盲，这条通道就是为此补的  折叠 12 处／撤后 0 处（撤后盲区 102 配 85）
+PASS 变异体15 弱尺通道（非 Python 仪器整行找记号）：.mjs 里自造等式尺必须点名，而 ASCII key=value 形态不许误报；真语料那几份非 Python 仪器命中 0 是『看过了』不是『没看』  命中 ['frontend-ui/scripts/gate/second.mjs'] ／ benign 0 ／ 真语料非 Python 3 份弱尺命中 0
+PASS 夹具J 扫描集边界自署：集外探针必须真的读到东西（顶层目录＋仓根 .md），集内集外不许重叠（重叠＝同一本账复算两遍，两份都会漂），集外只在「自己不闭合」时判红  集外文件 310（目录 18／仓根 5／按名跳过 10）主张 1 不闭合 0 点名 ['reports/markdown/locale-family-collapse-20260929.md']
+PASS 变异体16 集外真文件（写在仓库外的临时目录，跑完即删）一条闭合一条不闭合：两份都必须被读到（claims=2，否则红可能来自没读），而红只许点不闭合那一份  主张 2 红 1 点名 unclosed.md
+PASS 变异体17 把集外枚举清空（模拟第三方目录被顺手跳过／列名写错那种塌缩）：全称判据在空集上恒真，所以分母塌了必须自己成一条红  塌缩红因 ['集外探针读到 0 份 .md（分母塌了，不是集外干净）'] ／ 现量红因 []
+PASS 夹具K 识别器扫描集**自己**的边界：『其余 N 份无一把自带』的宇宙是三条 glob，集外那些写得动正则的代码要按同一套判据复算——候选分母要非零、按名跳过的目录数要印出来、集外命中必须为 0，而归宿文件在这条通道里也要在场（否则又是空集上的全称判据）；两本分母还须不相交（相交＝同一份仪器在册与集外各数一遍，PASS 句的和就是假总数）  集外候选 97 份／按名跳过目录 14 个／集外位点 222 盲区 32／归宿命中 12 别家 0／集内集外交集 0 份
+PASS 变异体18 在**真实集外目录形状**里放一枚自造等式尺（`scripts/**` 下的 .py，不在三条 glob 内）：集外通道必须点名到文件，否则夹具K 那句『集外 0 处』只是没看  点名 ['scripts/maintenance/probes/planted.py'] ／ 红 ['第二把尺在扫描集外 scripts/maintenance/probes/planted.py:3 通道 re-call:Constant'] ｜ 塌缩对照 ['集外候选读到 0 份代码文件（分母塌了，不是集外干净）']
+PASS 变异体19 带 BOM 的仪器必须读得动（读码走 utf-8-sig）：BOM 留在串首时 `ast.parse` 报「invalid character in identifier」⇒ 那台仪器整份落进『解析失败』，它自带的第二把尺从此隐身（本仓真有这样一份：`scripts/ci/ci.py` 首字节是 BOM）  BOM 已剥离 True ／ 解析失败 0 ／ 点名 ['scripts/gate/bom_gate.py']
+PASS 夹具M CI 接线账：『接了 CI』的宇宙取自 check-script-paths.py 的 run 块判据（不自写第二把尺），真 ci.yml 必须让名单里两台仪器都带上 --selftest；分母从对象推（可执行脚本种类 ≥ 名单长度），兄弟门禁装载失败要印出来而不是安静退化成没有红；另钉两枚正对照（续行写法／复合命令写法）  run 块 token 17 条（收窄后执行 15 条／打印语句里 2 条）／脚本种类 13／名单 2 台／真语料红 []／续行对照 []／复合命令对照 []／装载 OK
+PASS 变异体20 注释里的写法不算接线：名单仪器只写进 run 块的 shell 注释时，复用来的注释剥离通道必须让它落到『未接线』（否则一行注释就能把『接了 CI』骗过去），且两台都不许隐身  剥注释后可执行 token 1 条／未接线红 2 条／全部红 ['CI 未接线 scripts/gate/check-doc-formulas.py：名单里的仪器没出现在任何一条 run 命令里', 'CI 未接线 scripts/gate/check-api-surface.py：名单里的仪器没出现在任何一条 run 命令里']
+PASS 变异体21 `echo` 里的命令串不算接线（本仓 ci.yml 三条 BLOCKED 行正是这个形状）：复用尺按空白切词、分不出打印与执行，不收窄则一行 echo 就能把『已接线』糊出来；被撤下的 token 要按名印出来，且同一宇宙在**撤掉收窄**后必须读成已接线（证明针穿的是这条通道）  原始 token 2／执行 1／打印里 1（['scripts/gate/check-doc-formulas.py']）／红 2 条／撤窄对照 []
+PASS 夹具N 通道依赖实测：宣称一条判决『待裁决点 6』之前，先把托管词汇表中性化看它会不会变——目录账（扫描集牙齿）必须不变，同机植入的那枚真读字形表的判决必须变；后者不变则前者一文不值（反事实只在内存里换 globals()[FL]，不写盘）  目录账不变 True／植入判决变 True／中性化前 ['fw=1', 'hw=1'] → 后 ['fw=0', 'hw=0']
+PASS 变异体22 把中性化换成恒等（替身＝同一个 FL）：植入判决从此不会变，夹具N 的『必须变』那半边失守 ⇒ 那一格必须判红。这枚钉的是『反事实通道有没有牙』，不是目录账自己  恒等替身：目录账不变 True／植入判决变 False
+PASS 夹具O 文档声称的『CI 门禁』逐条对账：名单来源换成 AGENTS.md 自己（同一行既有标记又挂着脚本路径），每条声称都必须在某份 workflow 的真 run 命令里出现；分母塌了自成一条红；没有脚本路径可挂的标记行按行号印出来——那种形状本格是盲的，不许让『全绿』冒充『都核实了』。『已接线』是下界：只保证某份 workflow 里有一条 run 命令执行它，不保证那份 workflow 在当前分支或 `paths:` 过滤下真会触发——落点按名印出来，触发条件去读那个文件  workflow 5 份／执行脚本种类 15／声称 10 条／未接线红 []／无路径可核的行 [10]／后缀挡下的 token ['docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md', 'docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md']／落点 [('verify-ports.py', ['ci.yml']), ('check-frontend-module.py', ['ci.yml']), ('check-locale-format-outlets.py', ['ci.yml']), ('check-script-paths.py', ['ci.yml']), ('check-doc-formulas.py', ['ci.yml']), ('check-api-surface.py', ['ci.yml']), ('check-api-binding-kinds.py', ['ci.yml']), ('check-ep-feedback-imports.py', ['ci.yml']), ('check-framework-imports.py', ['ci.yml']), ('check-theme-tokens.py', ['ci.yml'])]
+PASS 变异体23 声称只住在 echo 文案里时必须读成『未接线』（与 夹具M 同族的双向性——一行 echo 不许把文档口径的『CI 门禁』骗过去），且被挡下的那条要按名印出来。另钉『执行宇宙恰 1 条』：块没被读到时宇宙也是空的，『未接线』会在空集上恒真——那证明的是仪器没电，不是通道有牙  合成宇宙：执行 ['scripts/gate/other.py']／打印里 [(3, 'scripts/gate/planted_claim.py', 'echo')]／红 ['CI 声称未接线 scripts/gate/planted_claim.py：文档写着标记却没有一条 run 命令执行它（文档行 1）']
+PASS 变异体24 把标记通道撤掉（换一个文档里不存在的词）⇒ 声称账必须当场塌成一条红，而不是安静地印『0 条声称、全部核实』：这一格钉的是标记本身有没有咬住文档  撤标记后：声称 0 条／红 ['CI 声称账塌缩：挂着脚本路径的「CI 门禁」行 0 条（标记命中却无路径 0 行／后缀挡下 0 处），分母塌了必须自己成一条红']／真标记下声称 10 条
+PASS 变异体25 后缀边界（`.mjs` 不在复用尺的 SCRIPT_SUFFIX 里）必须落在『响亮地红』那一侧：挂着标记却挂不上可核路径的行，只能进盲区账按行号印出来，绝不能被算成一条已核实的声称  合成行：声称 0 条／无路径可核的行 [1]／后缀挡下 ['scripts/gate/check-dead.mjs']／红 ['CI 声称账塌缩：挂着脚本路径的「CI 门禁」行 0 条（标记命中却无路径 1 行／后缀挡下 1 处），分母塌了必须自己成一条红']
+PASS 夹具Q 反向账：CI 每次真在跑、且住在 */gate/ 目录下的脚本必须在 AGENTS.md 点得名——正向账（夹具O）问『声称的有没有跑』，本格问『跑的有没有写』，只钉一侧时另一侧漂移是静默的（指南少一格，新人照少一格的口径跑，而那条门禁自己照样天天绿）；目录名是口径，落在该目录外的执行对象只数不判，免得把 /gate/ 读成执行宇宙的全部  gate 目录内执行脚本 10 份／未登记 []／执行宇宙合计 15 份（目录外 5 份不在本格射程）
+PASS 变异体26 反向账的两条通道各钉一枚：① 门禁脚本在 CI 跑而指南没写时必须点名到那份路径，而同宇宙里住在 gate 目录外的脚本**不许**被一起点名（口径过宽＝假阳，代价是人绕过指南）；② 执行宇宙里没有 gate 脚本时必须读成『塌缩』而不是『零条未登记＝齐备』  合成宇宙①：gate 内 ['scripts/gate/a.py']／红 ['门禁脚本未登记在维护指南 scripts/gate/a.py：CI 天天执行它，AGENTS.md 里却点不到'] ｜合成宇宙②：gate 内 []／红 ['反向账塌缩：CI 执行宇宙里没有一份住在 /gate/ 目录下的脚本（分母塌了，不是门禁齐备）']
+PASS 夹具R 第三本账：AGENTS.md 宣传的『一键质量检查』必须与 CI 真跑的 gate 集合同账，且项数只许有一个算源——分母写成字面量 N 次就是 N 个第二源，漏改的那几处不报错、只是安静地印错数（后果恰好是『本地一键全绿、CI 却红』）；一键里一条 gate 都没执行时必须读成塌缩，而不是『零份未进＝齐备』  gate 宇宙 10 份／一键实际执行 10 份／$Total＝8／文档项数 8／红 []
+PASS 变异体27 一键账的四条通道各钉一枚：① 一条 gate 都没执行＝塌缩；② 分母写成字面量＝不合一（哪怕它自洽、gate 也都已执行——那种『看起来全绿』也要红，否则下一位加步骤的人没有仪器提醒）；③ 文档项数与 $Total 不符＝两数一起点名；④ 反对照：单源且项数相符时必须零红（收紧判据必须留 clean 侧，不然『红一切』也能自证绿）  ①红 ['一键账塌缩：CI 的 gate 宇宙有 1 份，而「一键质量检查」里一条都没执行（分母塌了，不是覆盖齐全）', 'CI 门禁未进一键 scripts/gate/a.py：CI 每次真跑它，本地一键却敲不到（本地全绿可以藏着一条 CI 红）'] ｜②红 ["一键分母不合一：段标签的分母是 ['7']，必须是唯一一个变量 $Total（同一个数写 N 次＝N 个第二源）"] ｜③红 ['一键项数与文档不符：AGENTS.md 写着 9 项而脚本 $Total＝2'] ｜④（必须 clean）红 []
+PASS 夹具S 第四维：CI 与一键必须**以同一组参数**跑同一条 gate。只比路径时，一键里的 `--selftest`（只测仪器自己、一眼不看仓库）就能顶掉 CI 里的 `--check`（判仓库）——本地全绿照样藏着一条 CI 红，缺陷与 夹具R 同族，只是这次藏在参数里；未进一键的路径由 夹具R 出红，本格不重复出第二条（同一个缺陷两条红时，改其一会让人以为两条都好了）  CI 侧 (路径,参数) 组 17／落在双账里的 12 组／涉及 10 份路径／红 []
+PASS 变异体28 参数账的五条通道各钉一枚：① 同路径不同参数＝不合一；② 反对照：参数逐词相同必须零红（收紧不允变成『红一切』）；③ 双账交集为空＝塌缩，不许读成『0 组不合一＝参数同账』；④ **裸跑也是一个参数组**——写成 `if args:` 就把它跳过了，那正是本地全绿藏 CI 红的形状；⑤ 参数宇宙必须继承 echo 收窄与分隔词截断（echo 里的写法不算，同一行把同一条路径敲两遍要各成一组，且段落止于分隔词，不许把后半串的参数扒到前一段上）  ①红 ['一键参数不合一 scripts/gate/a.py：CI 以「--check」执行它（ci.yml 行 3），一键里同路径只有 --selftest（本地全绿藏着一条 CI 红：CI 真跑的那组参数在本地没人敲过）'] ｜②（必须 clean）红 [] ｜③红 ['一键参数账塌缩：CI 执行的 gate 有 2 份、一键收录 1 份，却一条参数组都没解析出来（分母塌了，不是参数同账）'] ｜④红 ['一键参数不合一 scripts/gate/a.py：CI 以「(裸跑，无参数)」执行它（ci.yml 行 4），一键里同路径只有 --check（本地全绿藏着一条 CI 红：CI 真跑的那组参数在本地没人敲过）'] ｜⑤组 [('scripts/gate/a.py', ('--check',), 'ci.yml', 2), ('scripts/gate/a.py', (), 'ci.yml', 2)]
+PASS 夹具T 目录账的独立口径在真语料上必须自己站得住：只出目录账那半条（不碰集外账，那半条吃字形、整块待裁决点 6）、分母现量且不塌、判决为空。这一格是『可一键接』的证据：没有它，想接目录账的人只能整块等裁决，或者更糟——把 --dircheck 当目录账接进去，让一条天天红的字形账替一条本来能绿的账背锅  --dir-account 真语料｜目录 55／账 3／文件 372／行数 1／红 []
+PASS 变异体29 独立口径的五条通道各钉一枚：① 同一份集外数据在两个口径里必须一个有一个没有（若 account_only 只是纸面参数，两份输出同形，这条立刻红）；② 分母行只许一处生成——两条口径的头一行逐字节相同，其中『账 N 条』必须等于 len(DIR_ACCOUNT)（现推不是抄）；③ 扫描集塌缩必须自己出一条红并把两个数点名（空集上的全称判据＝把零证据印成满把握）；④ 反对照：合法目录＋非零文件数必须零红，而归档目录那一枚必须有红在场（收紧不允变成『红一切』）；⑤ 这条口径不读词汇表——把 FL 换成永不开火的替身，含一条真红的目录账输出必须逐字节不变（『不变』的证据是那红在场，不是空串对空串）  ①全量红 ['集外主张不闭合 docs/planted.md:1 「在册 5 ＝ 2 ＋ 2」各侧取值 [5, 4]']／口径内红 [] ｜②头 ['1', '3', '12'] ｜③['目录账分母塌缩：扫描目录 0 个／文件 0 个（扫描集为空时『目录账 3 条』不构成判决）'] ｜④clean []／在场 ['归档目录出现在扫描集里'] ｜⑤同形 True
+PASS 夹具L 每条判决都要有针：红模板从本文件源码现取（不写清单），逐条要求一枚内存对照能打红它——新增一条红而没配对照＝当场多出一格未覆盖，撤掉对照＝当场多出一格死键  红模板 27 条 ／ 未覆盖 [] ／ 死键 [] ／ 异常 [] ／ 合法目录账不误报 []
+SELFTEST 总 48 例，FAIL 0 例
+  [PASS] doc-formulas gate selftest 
+PASS 夹具逐条命中  缺=[] 多=[]
+PASS 变异体1 撤 nest 前缀必须改变结果  现 ['/e/deep', '/ns', '/root', '/w', '/z']
+PASS 变异体2 断 let 绑定必须点名  unresolved=['let 绑定名查不到且非函数引用: health_unused_x']
+PASS 变异体3 外壳换写法仍解析  现 ['/api/w', '/e/deep', '/ns', '/root', '/z']
+PASS 正对照 注释内的 route 不算挂载  现 ['/f']
+PASS 死 let 绑定不计入对外表面  现 [('/live', frozenset({'GET'}))] unresolved=[]
+PASS 跨 let 引用沿 env 累积解析  现 [('/leaf', frozenset({'GET'})), ('/m/i', frozenset({'GET'}))] unresolved=[]
+PASS 模块路径头名不与 let 变量混淆  现 [('/leaf2', frozenset({'GET'}))] unresolved=[]
+PASS 参数写法归一  got /a/{P} /a/{P} /a/{P}
+PASS 条件装配两支都要走  现 ['/all-only', '/api/kbdoc', '/kg', '/top'] unresolved=[]
+PASS 变异体4 只跟第一支必须漏掉 else 支  现 ['/all-only', '/top']
+PASS 变异体5 只按名字在册必须漏掉非 build_* 节点  现 ['/all-only', '/top']
+PASS 兜底入兜底账而不是盲区  现 ['/api/projects/{**}', '/api/{**}', '/plain'] 兜底 2 壳 1 unresolved=[]
+PASS 变异体6 撤兜底识别必须落盲区而不是静默少一条  兜底 0 unresolved=['无法归类的表达式']
+PASS 兜底配对只认单段参数，多段留余账点名  配对=['/api/projects/{P}', '/api/{P}'] 余账=['/api/x/{P}']
+PASS 形参名不与同名的别处函数混为一谈  现 ['/q'] unresolved=[] 壳 1
+PASS 变异体7 撤调用位点判据必须把别处的树挂进来  现 ['/foreign-not-mounted', '/q']
+PASS 变异体8 撤壳豁免必须把壳读成盲区（豁免是有账的）  unresolved=['无法归类的表达式'] 壳 0 现 ['/q']
+PASS 角色维夹具逐条归属（含跨函数继承与嵌套 match 第二维）  路径 7 条，矩阵不符 -，臂 5 归不了属 2
+PASS 变异体9 撤逐臂判据 ⇒ 矩阵必须整张空（而挂载集合一条不少）  非空格 - 路径 7 条
+PASS 变异体10 撤跨函数继承 ⇒ 臂里调的 builder 体内挂载丢角色  iam/deep [] iam/deep2 [] cloud-a ['CloudTier::A', 'HostRole::Cloud'] kg ['HostRole::Kg']
+PASS 变异体11 撤臂枚举 ⇒ 矩阵与臂账同时清空（枚举是矩阵的唯一来源）  臂 0 归不了属 0 非空格 -
+PASS 变异体12 只取最内层臂 ⇒ 嵌套 match 的外层维被读丢  cloud-a ['CloudTier::A']（应为两维齐全才对）
+PASS 变异体13 撤模式边界 ⇒ 外层臂把嵌套 match 的臂名一起吃进来  cloud-x ['CloudTier::A', 'HostRole::Cloud']（无标签维本应只剩 HostRole::Cloud）路径 7 条
+PASS 变异体14 撤接收者展开 ⇒ let 绑定的 match 各臂整棵树消失  现 ['/api/kbdoc', '/common'] 矩阵 {'/api/kbdoc': set(), '/common': set()}
+PASS 同 site／不同 site／根本没有 三档要把「角色是路径的属性」与「端点专属该角色」分开  同 ['/api/kbdoc'] 不同 [] 根本没有 5 条（配 role_only 5）kbdoc ['HostRole::Kb']
+PASS 变异体15 撤同 site 判据 ⇒ 同档清空而挂载一条没少（分账读的就是这条判据）  同 [] 不同 ['/api/kbdoc'] 根本没有 5 条（应与基线 5 同）路径 7 条
+PASS 分支夹具逐档归属：All 档含注册表支不含单角色臂，Kb 档含 kbdoc 不含 iam-only  分档不符 - 标签不符 - 分支 2 盲区 1
+PASS 夹具上两条通道（标签求值 vs 钉死取值走树）必须给出同一批分档  分歧 -
+PASS 复合条件（`&&`）归不出约束必须按名进盲区账，不许静默当没有分支  盲区 ['role == HostRole::All && role != HostRole::Kb']
+PASS else-if 链：外层否定罩住整条链，链尾那一支不许出现在 All 档  不符 -
+PASS 变异体16 撤分支枚举 ⇒ 分支标签整族消失，`if role == All` 的支挂进单角色档（挂载一条没少）  分支 0 泄漏单角色档 - 总数 7
+PASS 变异体17 把负支读成正支 ⇒ 单角色档条目凭空消失而挂载账不动  Kb 档 ['/common', '/never-mount', '/top'] 全档并集含 kbdoc False All 档 4 条 挂载 7 条
+PASS 变异体18 撤剪枝区间 ⇒ 钉死取值五档塌成一档（分档账会退化成总账）  各档 {'All': 7, 'Kg': 7, 'Cloud': 7, 'Kb': 7, 'Iam': 7} 剪枝 0 次／去重 0 段
+PASS 变异体19 撤标签分族（分支挤进臂通道）⇒ 分支账归零而臂账被顶掉  分支账非空格 0 臂账 ['=HostRole::All']
+PASS 变异体20 撤整条 else-if 链的罩住 ⇒ 链尾那支凭空出现在 All 档  变异后 All 档 ['/all2', '/other2'] ／ 基线 All 档 ['/all2']
+PASS 变异体21 改一个被两行引用的加数 ⇒ 恰好那两行同时红（不是全部红也不是只有一行）  基线红 [] ／ 改 m_only_mount 红 ['M-PART', 'UNREG-CROSS'] ／ 改 branch_tagged 红 ['TAG-COMMON']
+PASS 变异体22 公式 id 撞车 ⇒ 后写的顶掉先写的必须显形（条数自洽不等于没顶）  基线撞车 [] ／ 复制首行 ['ASM-CLOSE']（条数 21 配 22）
+PASS 变异体23 散文算术审计的两个失效方向：漏抓假加法／把引文当主张，都要红；代码段里的示意等式不许成第二条账；真文档必须零不闭合**且判集非空**  植假 [2]（第 2 行）引文 [3] 主张 2 条 盲区 [('code', 1)] ｜ 真文档 1216 行复算，主张 5 条，不闭合 0 条
+PASS 变异体26 托管块换算差一行会把块外真主张整条吞掉（块内坏账反被漏掉不报红）⇒ 正算必须 1 条主张零红、错算必须显形为分母归零  正算 主张 1 红 0 ／ 错算(整块下移一行) 主张 0 红 0
+PASS 变异体27 散文算术审计确实走共享识别器：拧 `formula_ledger` 的引文旋钮，本模式的判决跟着翻（引文变主张且判红），本地不留第二把尺  拧后 引文 0 条 红 2 第 [2, 3] 行
+PASS 变异体24 托管块比对：同文本必须报零差，改一个数字必须点出那一行的下标，多一行必须算差（集合差 ≠ 逐位差）  同 [] 改数字 [0] 加长 [4] 截短 [3]
+PASS 变异体25 渲染留未替换占位符必须判红（逐字节相同的镜像照样把错处印进文档），而反对照那行的重叠数必须由本行的值现推  植入后红 ['DECL-PARSE'] ／ ASM-ANTI 说明「重叠 2 条 ⇒ 只按名字会读小」
+SELFTEST 总 43 例，FAIL 0 例
+  [PASS] api-surface gate selftest 
+导出表：23 个 api 模块 / 465 个具名导出 / 其中 462 个是函数型（判据分子的上界）
+判集规模：355 个文件被扫 / 检出 318 处 src/api 具名导入，其中函数型 313 处
+结论：0 处「函数型导入绑定取属性」（判据＝必须为 0）
+  豁免 E-shadow   3 处：stores/auth.store.js:login, stores/auth.store.js:logout, stores/auth.store.js:refreshToken
+  豁免 E-mock     2 处：stores/auth.store.test.js:L25:registerAuthTokenGetter.mock, stores/auth.store.test.js:L28:registerAuthTokenGetter.mock
+  豁免 E-fnprop   0 处
+verdict=PASS（零容忍：函数型导出被当对象用 0 处）
+  [PASS] api binding kinds gate 
+缺 import 的非测试文件：0 个 / 0 处；测试文件另计 1 个（不参与账目）
+对照：clean 侧 6/6 通过，flag 侧 通过（合成样例判出 ['ElMessage']；语料现量缺 import 0 个文件／0 处）
+verdict=PASS (探针：债务多少不改 rc)
+  [PASS] EP feedback imports gate 
+非测试源文件「用而未绑」：0 个 / 0 处（判据＝必须为 0）
+测试文件命中（单列，不计账；正则字面量已遮蔽，见 §11.15）：0 个 / 0 处
+verdict=PASS (探针：非测试源文件 0 处用而未绑)
+  [PASS] framework imports gate 
+断链令牌：现存 0 / 基线 0，新增 0，已清 0
+（不计入：组件本地赋值 7 个、只带兜底的钩子 3 个；定义面含 EP 自带变量表 139 个名字）
+CHECK new=0 verdict=PASS
+  [PASS] theme tokens gate 
+SECTION8 steps=6 fails=0
+
+=== 未设 PYTHONIOENCODING 时的成对 rc（编码守卫承重）
+--- rc=0
+SELFTEST �?48 例，FAIL 0 �?
+doc-formulas-noenv rc=0
+
+=== check-api-surface.py 无守卫（已知缺口 task #14）
+--- rc=0
+api-surface-noenv rc=1
+UnicodeEncodeError: 'gbk' codec can't encode character '\u21d2' in position 16: illegal multibyte sequence

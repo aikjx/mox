@@ -95,6 +95,21 @@ jobs:
           python frontend-ui/scripts/gate/check-theme-tokens.py --check
           node frontend-ui/scripts/gate/check-sfc-dead-refs.mjs --selftest
 
+      - name: 核心公式识别器的牙（只验仪器自己有没有坏，不替维护者选字形口径）
+        run: |
+          # --selftest 判的是"这台仪器有针"：夹具L 把门禁自己源码里的每条红模板对上一枚内存对照
+          # （红清单从源码 AST 现取，不写清单），夹具M 把"这台仪器有没有真接进 CI"钉成判决，
+          # 夹具O 反向对账：名单来源换成 AGENTS.md 自己——凡是它标了「CI 门禁」又挂着脚本路径的行，
+          # 逐条要求在某个 workflow 的真 run 命令里出现（挂不上路径的行只印行号，不冒充已核实）。
+          # --ledger 单一算源与文档镜像那侧的对照住在 scripts/gate/check-api-surface.py 自己的电池里。
+          # 例数一律不抄进这段说明——它只由各自 stdout 末行"SELFTEST 总 N 例，FAIL M 例"现印；
+          # 抄一遍就是开第二个权威源：改一格判据它就静默腐烂，而没有任何针会为它红。
+          # 本机实测 2026-10-02 16:37：check-doc-formulas --selftest rc=0（2.6 s），check-api-surface --selftest rc=0（0.8 s）。
+          python scripts/gate/check-doc-formulas.py --selftest
+          python scripts/gate/check-api-surface.py --selftest
+          echo "NOT-WIRED scripts/gate/check-doc-formulas.py --census/--dircheck/--recognizer：裁决点 6（ASCII 等号族字形口径三选一）未裁，" \
+               "接进去等于替维护者选定字形；覆盖面与分母由这三条模式自署，但不进 rc。识别器的集外边界读数见 --recognizer 判决行。"
+
       - name: 明示本轮未接线的门禁（拒绝用 continue-on-error 把盲区包装成绿）
         run: |
           echo "BLOCKED frontend-ui/scripts/gate/check-view-hex.py --check：本机实测 rc=1（grown=1 new=1 textasfill=33），存量债未清，接线即整仓 CI 红"

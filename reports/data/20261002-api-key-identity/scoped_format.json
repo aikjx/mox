@@ -1,0 +1,17 @@
+{
+  "command": [
+    "rustfmt",
+    "--edition",
+    "2021",
+    "--config",
+    "skip_children=true",
+    "--check",
+    "platform/domains/platform/core/mox-platform-iam-core/src/api_keys.rs",
+    "platform/domains/platform/core/mox-platform-iam-core/src/permission_admin.rs",
+    "platform/gateway/mox-platform-gateway-svc/src/system/security.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "scoped_format.log"
+}

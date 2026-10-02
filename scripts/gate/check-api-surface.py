@@ -28,6 +28,8 @@ import sys
 from datetime import datetime
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import formula_ledger as FL  # noqa: E402  「什么是一条算术主张」只在那份模块里判一次
 
 # 扫描集：一切可能往 Router 里挂路由的源目录（不含 tests/，测试自己造的 Router 不是对外表面）。
 SCAN_ROOTS = ["platform/gateway", "platform/domains", "platform/foundation", "platform/shared", "projects"]
@@ -40,8 +42,22 @@ CATCH_MARK = "/{**}"
 # 条件装配的"臂"维：`match role { HostRole::Kg => …, … }` 里每条臂各自挂一棵树，
 # 而声明侧 ROUTES 表没有角色字段 ⇒ 一把只问"挂没挂"的尺子会把"只在某个角色下挂"读成"到处都挂"。
 MATCH_RE = re.compile(r"\bmatch\s+[^{}]*\{")
-ARM_PAT_RE = re.compile(r"([A-Za-z_]\w*(?:::[A-Za-z_]\w*)+)\s*(?:\{[^{}]*\})?\s*=>")
+ARM_PAT_RE = re.compile(r"([A-Za-z_]\w*(?:::[A-Za-z_]\w*)+)(?=\s*(?:\{[^{}]*\})?\s*(?:=>|\|))")
 ROLE_TAG = "role:"
+# 条件装配的第二种长相：`if role == HostRole::All { A } else { B }`。臂是"按枚举分派"，
+# 分支是"按布尔分派"——`--role-matrix` 只读得出发臂那半，所以每条带臂路径都同时有一条
+# 无归属读数（走根是 All，两支都被走了一遍），"0 条专属"读不出真值。
+# 分支归因把**位置**当判据：落在 then 块里 ⇒ `=HostRole::All`，落在 else 块里 ⇒ `!HostRole::All`。
+BRANCH_TAG = "cond:"
+IF_HEAD_RE = re.compile(r"\bif\b")
+ELSE_HEAD_RE = re.compile(r"\s*else\b")
+IF_INNER_RE = re.compile(r"\s*if\b")
+# 只认"与 HostRole:: 变体比较"这一种布尔形状，`==`／`!=` 两侧谁在前都要认（`role == deployment::HostRole::All`
+# 与 `HostRole::All == role` 是同一件事的两种写法）。`matches!`、`.is_*()` 一类不在此列：
+# 归不了约束的分支进 branch_unattributed 按名点名，不当成"没有分支"。
+COND_EQ_RE = re.compile(r"(==|!=)\s*((?:[A-Za-z_]\w*\s*::\s*)*HostRole\s*::\s*([A-Za-z_]\w*))")
+COND_REV_RE = re.compile(r"((?:[A-Za-z_]\w*\s*::\s*)*HostRole\s*::\s*([A-Za-z_]\w*))\s*(==|!=)\s*[A-Za-z_][\w.]*\s*(?![=!<>])")
+HOST_ROLE_ENUM_RE = re.compile(r"\benum\s+HostRole\b[^{};]*\{([^}]*)\}")
 # 装配节点的第二种长相：函数名不叫 build_*router*，但签名返回 Router
 # （deployment::domain_router 就是这种，它 match 的每一条臂都是真挂载）。
 RETURN_ROUTER_RE = re.compile(r"->\s*(?:impl\s+)?(?:[\w:]+\s*::\s*)?Router\b")
@@ -242,6 +258,66 @@ def index_fn_defs(marked):
     return out
 
 
+def is_cond_token(tok):
+    """分支约束的写法：`=` 正支／`!` 负支。臂标签是裸枚举路径，两族靠首字符分档。"""
+    return tok[:1] in "=!"
+
+
+ARM_ROLE_RE = re.compile(r"^HostRole::([A-Za-z_]\w*)$")
+COND_ROLE_RE = re.compile(r"^([=!])HostRole::([A-Za-z_]\w*)$")
+
+
+def constraint_ok(tok, variant):
+    """合取项 `tok` 在角色取值 `variant` 下成不成立：True／False／None（None＝这一项不是角色维）。
+
+    三种来源共用一把尺：臂的正模式 `HostRole::Kb`、分支正支 `=HostRole::All`、
+    分支负支 `!HostRole::All`。同一臂里写多个枚举模式（`HostRole::A | HostRole::B`）时标签
+    用 `|` 连，它是**析取**——按"任一模式吃下该取值"判；折成合取会把这条臂读成永不可达。
+    非 HostRole 的模式（按 tier 的那把 match）不参与角色判决，但必须被数出来：
+    悄悄忽略等于把"这一维不是角色"读成"这一维没有"。
+    """
+    if "|" in tok:
+        seen = [constraint_ok(t, variant) for t in tok.split("|") if t]
+        seen = [x for x in seen if x is not None]
+        return any(seen) if seen else None
+    m = COND_ROLE_RE.match(tok)
+    if m:
+        return (m.group(2) != variant) if m.group(1) == "!" else (m.group(2) == variant)
+    m = ARM_ROLE_RE.match(tok)
+    return None if not m else (m.group(1) == variant)
+
+
+def conj_ok(conj, variant, use_branch=True):
+    """一条合取（走到某挂载位点所经过的全部条件）在 `variant` 下可不可满足。
+
+    `use_branch=False` 是给第二把尺子用的：只看臂、不看分支，两把尺子的差集就是
+    分支归因真正吃进判决的那部分——差集为空而分支非空，说明这一维只是装饰。
+    """
+    for t in conj:
+        if is_cond_token(t):
+            if use_branch and constraint_ok(t, variant) is False:
+                return False
+        elif constraint_ok(t, variant) is False:
+            return False
+    return True
+
+
+def host_role_variants(cen):
+    """角色取值清单读自枚举声明（`pub enum HostRole { All, Kg, … }`），不硬编那五个名。
+
+    读不到就退回"约束标签里实际出现过的变体"并印出退回事实——桶少一档会把整张账读小。
+    """
+    for rel, mk in sorted(cen.marked.items()):
+        m = HOST_ROLE_ENUM_RE.search(mk)
+        if not m:
+            continue
+        vals = [x.strip() for x in m.group(1).split(",")]
+        vals = [v for v in vals if re.fullmatch(r"[A-Za-z_]\w*", v)]
+        if vals:
+            return vals, rel, cen.line_of(rel, m.start())
+    return [], "", None
+
+
 class Census:
     def __init__(self):
         self.fns = {}          # fn name -> list[(path, body_lo, body_hi)]
@@ -256,6 +332,12 @@ class Census:
         self.passthrough = 0   # 走进去只做了状态升级/无挂载的壳函数次数
         self.role_arms = set()   # (文件, 臂起点, 归属标签)：真被读到的枚举臂，按位点去重
         self.role_wild = set()   # (文件, 臂起点)：`_ =>` 这类读得出边界却归不了属的臂
+        self.cond_spans = set()  # (文件, 分支块起点, 约束标签)：`if role == HostRole::X` 的两支，按位点去重
+        self.cond_blind = set()  # (文件, 分支块起点)：读得出块边界、归不出角色约束的 if/else
+        self.pin = None          # 具体执行时钉死的角色值（None＝符号走树，两支都走）
+        self.prune_spans = 0     # 钉死取值后真的被剪掉的区间**次数**（剪枝没落地时这一格应为 0）
+        self.prune_intervals = set()  # (文件, 绝对起, 绝对止)：去重后的"几处"——同一段区间会在
+        # 函数体／剥离后的表达式／整文件三个坐标基上各剪一次，累计数会把它读成三处。
         self.entered = []      # 每次真的走进一个装配节点：(函数名, 定义所在文件)
         self.scanned = 0
 
@@ -305,15 +387,26 @@ class Census:
         expr = expr.strip()
         if not expr:
             return
+        if self.pin is not None:
+            expr = self._prune(expr, 0, rel)
+            if not expr:
+                return
         if CHAIN_STEP_RE.search(expr):
             self.walk_text(expr, base, origin + " [inline]", depth, rel, offset, env, role)
             return
-        seen = []
-        for _, n in callee_calls(expr):
+        # 裸函数引用形态（`if role == All { build_module_routers(..) } else { domain_router(..) }`）：
+        # 分支边界就在这段表达式自己体内，标签必须按**被调位置**判——否则整条 else 支的
+        # 子树会带着无标签回到账上，"角色无关的公共面"就被读成 100%（本轮实测撞出）。
+        arms, _ap = self.match_arms(expr, offset, rel, ledger=False)
+        conds, _cp = self.if_branches(expr, offset, rel, ledger=False)
+        seen, lab = [], {}
+        for pos, n in callee_calls(expr):
             if n in self.fns and n not in seen:
                 seen.append(n)
+                lab[n] = self.arm_label(self.arm_label(role, self.arms_at(arms, pos)),
+                                        self.conds_at(conds, pos))
         for name in seen:
-            self.resolve_fn_ref(name, base, origin, depth, role)
+            self.resolve_fn_ref(name, base, origin, depth, lab[name])
         if FALLBACK_RE.search(expr):
             self.record_catchall(base, origin)
             return
@@ -393,37 +486,189 @@ class Census:
                 return i
         return None
 
-    def match_arms(self, text, offset, rel):
-        """把 `match x { Enum::A => …, Enum::B | Enum::C => …, _ => … }` 翻成 [(臂起, 臂止, 标签)]。
+    def match_arms(self, text, offset, rel, ledger=True):
+        """把 `match x { Enum::A => …, Enum::B | Enum::C => …, _ => … }` 翻成 (臂账, 要剪掉的区间)。
 
         标签存**完整枚举路径**（`HostRole::Kg`），因为同一份装配里可能有第二把 match
         （按 tier、按特性开关），只留末段会让两个维度撞名。`_ =>` 无枚举路径 ⇒ 进 role_wild，
         它仍然能"继承外层臂"（臂起点没在册，位置就不落进任何臂区间）。
+        同一臂写多个枚举模式（`HostRole::A | HostRole::B`）是**析取**，标签用 `|` 连；
+        用 `+` 连会把它读成"两个取值同时成立"⇒ 那条臂永不可达。
+
+        `self.pin` 非空即"具体执行"：只认吃下该取值的臂（没有具名臂吃下时落到 `_` 那类兜底臂），
+        其余臂整段进剪枝区间。此时不产生标签、不入臂账——标签是符号走树的产物，
+        取值钉死后每个位点只有一个事实，再打标签等于把两条通道混成一条。
+        非角色维的那把 match（按 `Method::` 或按数字分档）不剪：剪它等于凭空少挂一棵树。
         """
-        out = []
+        out, pruned = [], []
         for m in MATCH_RE.finditer(text):
             ob = text.find("{", m.end() - 1)
             body = span_from(text, ob) if ob >= 0 else None
             if not body:
                 continue
             lo, hi = body
+            arms = []
             for a_lo, a_hi in self._top_commas(text, lo, hi):
                 seg = text[a_lo:a_hi]
                 arrow = self._top_arrow(seg)
                 pats = ARM_PAT_RE.findall(seg[:arrow + 2] if arrow is not None else seg)
+                uniq = sorted(set(pats))
+                role_vals = [p for p in uniq if ARM_ROLE_RE.match(p)]
+                label = ("|".join(role_vals)
+                         if len(role_vals) > 1 and len(role_vals) == len(uniq) else "+".join(uniq))
                 if pats:
-                    label = "+".join(sorted(set(pats)))
-                    out.append((a_lo, a_hi, label))
-                    self.role_arms.add((rel, offset + a_lo, label))
+                    if self.pin is None:
+                        out.append((a_lo, a_hi, label))
+                        if ledger:
+                            self.role_arms.add((rel, offset + a_lo, label))
+                    arms.append((a_lo, a_hi, label))
                 elif seg.strip():
-                    self.role_wild.add((rel, offset + a_lo))
-        return out
+                    if self.pin is None and ledger:
+                        self.role_wild.add((rel, offset + a_lo))
+                    arms.append((a_lo, a_hi, None))
+            if self.pin is None or not any("HostRole::" in (lab or "") for _a, _b, lab in arms):
+                continue
+            hit = [a[:2] for a in arms
+                   if a[2] and any(constraint_ok(t, self.pin) for t in a[2].split("|"))]
+            keep = hit or [a[:2] for a in arms if a[2] is None]
+            for a_lo, a_hi, _lab in arms:
+                if (a_lo, a_hi) not in keep:
+                    pruned.append((a_lo, a_hi))
+        return out, pruned
+
+    @staticmethod
+    def cond_label(cond):
+        """从 `if` 的条件文本读出 (then 支约束, else 支约束)；不是与 HostRole 变体的比较即返回 None。
+
+        两支必须**互斥且互补**（`==` 给一支、`!=` 给另一支），否则 All 桶会同时吃进
+        注册表支和 `domain_router` 支——那是把"没判"读成"两边都到"。
+        复合条件（两个及以上比较）不做布尔求解，返回 None 落进按名点名的盲区账。
+        """
+        if len(COND_EQ_RE.findall(cond)) + len(COND_REV_RE.findall(cond)) > 1:
+            return None
+        m = COND_EQ_RE.search(cond)
+        if m:
+            op, variant = m.group(1), m.group(3)
+        else:
+            m = COND_REV_RE.search(cond)
+            if not m:
+                return None
+            op, variant = m.group(3), m.group(2)
+        pos, neg = "=HostRole::" + variant, "!HostRole::" + variant
+        return (pos, neg) if op == "==" else (neg, pos)
+
+    @staticmethod
+    def _else_span(text, then_hi):
+        """`} else { … }` 与整条 `} else if … { … } else { … }` 链的 else 侧区间。
+
+        链必须**整条**罩住：外层否定管到链尾，链里每一支自己再判自己的条件。
+        只罩第一个块会把 `else` 收尾的那一支读成"无约束"⇒ 它凭空出现在每个角色桶里。
+
+        `span_from` 给的是**内容**区间，其上界就是那个配对右花括号的索引本身，
+        所以 `else` 要从 `hi + 1` 起匹配——在 `hi` 处匹配永远落空（首字符是 `}`，
+        而 `\s*else\b` 不接受它），表现为"两支都没有 else"⇒ 负支约束整族消失。
+        """
+        m = ELSE_HEAD_RE.match(text, then_hi + 1)
+        if not m:
+            return None
+        i = m.end()
+        if not IF_INNER_RE.match(text, i):
+            ob = text.find("{", i)
+            return span_from(text, ob) if ob >= 0 else None
+        end = then_hi
+        while True:
+            ob = text.find("{", i)
+            sp = span_from(text, ob) if ob >= 0 else None
+            if not sp:
+                return None
+            end = sp[1]
+            m2 = ELSE_HEAD_RE.match(text, end + 1)
+            if not m2:
+                break
+            i = m2.end()
+            if not IF_INNER_RE.match(text, i):
+                ob2 = text.find("{", i)
+                sp2 = span_from(text, ob2) if ob2 >= 0 else None
+                if sp2:
+                    end = sp2[1]
+                break
+        return then_hi, end
+
+    def if_branches(self, text, offset, rel, ledger=True):
+        """把 `if cond { A } else { B }` 翻成 (分支账, 要剪掉的区间)。
+
+        只归因**条件里点名了 HostRole 变体**的分支：装配语料里 `if` 有几百处，绝大多数是
+        取值层的布尔（`if expert.title.is_empty()`），把它们也打标签等于凭空造出一堆
+        不参与角色判决的维度。条件里出现了 role／HostRole 字样却归不出约束的
+        （复合条件、`matches!`、函数调用型谓词）进 `cond_blind` 按位点点名——
+        那是覆盖面缺口，不是噪音，静默跳过就等于假装覆盖面是满的。
+        """
+        out, pruned = [], []
+        for m in IF_HEAD_RE.finditer(text):
+            ob = text.find("{", m.end())
+            if ob < 0:
+                continue
+            cond = text[m.end():ob]
+            then = span_from(text, ob)
+            if not then:
+                continue
+            els = self._else_span(text, then[1])
+            lab = self.cond_label(cond)
+            if not lab:
+                if ledger and ("HostRole" in cond or re.search(r"\brole\b", cond)):
+                    self.cond_blind.add((rel, offset + then[0], cond.strip()[:56]))
+                continue
+            if self.pin is None:
+                if ledger:
+                    self.cond_spans.add((rel, offset + then[0], lab[0]))
+                    if els:
+                        self.cond_spans.add((rel, offset + els[0], lab[1]))
+                out.append((then[0], then[1], lab[0]))
+                if els:
+                    out.append((els[0], els[1], lab[1]))
+                continue
+            if constraint_ok(lab[0], self.pin) and els:
+                pruned.append(els)
+            elif not constraint_ok(lab[0], self.pin):
+                pruned.append(then)      # 无 else 的 `if` 也一样：这一支不执行就整段剪掉
+        return out, pruned
+
+    @staticmethod
+    def conds_at(conds, pos):
+        """位置 pos 落在哪些分支里（外层在前）：else-if 链的 negation 与内层条件要叠加。"""
+        enclosing = sorted([(lo, hi, lab) for lo, hi, lab in conds if lo <= pos < hi and lab])
+        return "+".join(lab for _lo, _hi, lab in enclosing) if enclosing else None
 
     @staticmethod
     def arms_at(arms, pos):
         """位置 pos 落在哪些臂里（外层在前）：嵌套 match 的两维都要带上，丢掉外层就等于把内层读成唯一维。"""
         enclosing = sorted([(lo, hi, lab) for lo, hi, lab in arms if lo <= pos < hi])
         return "+".join(lab for _lo, _hi, lab in enclosing) if enclosing else None
+
+    def _prune(self, text, offset, rel):
+        """钉死角色时的"具体执行"：把这一轮不会被走到的分支／臂就地填成空白（长度不变，行号不漂移）。
+
+        与符号走树（两支都走、给每个位点打上约束标签后求值）是**两条独立的路**：
+        这条路不产生标签，因此同一个 Census 各钉一次取值就能得到一个角色真实的对外表面，
+        两本账互为见证——标签读出来有而具体执行没有，必有一边错。
+        """
+        if self.pin is None:
+            return text
+        _a, ap = self.match_arms(text, offset, rel)
+        _b, cp = self.if_branches(text, offset, rel)
+        if not ap and not cp:
+            return text
+        out = list(text)
+        applied = 0
+        for lo, hi in ap + cp:
+            for i in range(lo, hi):
+                out[i] = " "
+            applied += 1
+            self.prune_intervals.add((rel, offset + lo, offset + hi))
+        # 计数记"真正填掉了几段"而不是"发现了几段"：写在循环之前的 `+= len(ap)+len(cp)`
+        # 会让撤掉循环的变异体照样把区间数印出来（计数器替没剪掉的分支记功）。
+        self.prune_spans += applied
+        return "".join(out)
 
     @staticmethod
     def arm_label(outer, inner):
@@ -445,8 +690,11 @@ class Census:
         if depth > MAX_DEPTH:
             self.unresolved.setdefault("递归深度超限", []).append(origin)
             return
+        if self.pin is not None:
+            text = self._prune(text, offset, rel)
         env, free = self.split_stats(text, offset)
-        arms = self.match_arms(text, offset, rel)
+        arms, _arm_pruned = self.match_arms(text, offset, rel)
+        conds, _cond_pruned = self.if_branches(text, offset, rel)
         if outer_env:
             merged = dict(outer_env)
             merged.update(env)
@@ -478,7 +726,10 @@ class Census:
                 for kind, pos, args in self._steps_in(stripped):
                     # 逐**步骤位置**判臂，不逐语句：一支 match 是一整条语句，
                     # 按语句判会把各臂的挂载都记成同一个角色（或全部记成无角色）。
-                    step_role = self.arm_label(role, self.arms_at(arms, seg_start + pos - offset))
+                    # 分支同理：`if role == All { … } else { … }` 的两支是一整条语句，
+                    # 臂与分支叠在**同一条合取**上（两层都要成立才算这一位点在该角色下可达）。
+                    step_role = self.arm_label(self.arm_label(role, self.arms_at(arms, seg_start + pos - offset)),
+                                               self.conds_at(conds, seg_start + pos - offset))
                     self.apply_step(kind, args, base, at, env, depth, rel, seg_start + pos, step_role)
                 continue
             # 头标识符后紧跟 :: 的是模块路径（actuator::build_actuator_router()），
@@ -489,8 +740,14 @@ class Census:
             self.resolve_expr(stripped, base, at, depth, env, rel, seg_start, role)
 
     def apply_step(self, kind, args, base, at, env, depth, rel, pos, role=None):
-        # 角色只进 origin 串，不进 mounted 的键 ⇒ 加这一维不会改变在册集合本身
-        tag = (" " + ROLE_TAG + role) if role else ""
+        # 角色与分支约束都只进 origin 串，不进 mounted 的键 ⇒ 加这两维不会改变在册集合本身。
+        # 两族标签分开写：`role:` 给臂（枚举分派），`cond:` 给布尔分支——`--role-matrix` 那本账
+        # 只读前者，加第二维不会把它的读数顶掉（同一事实的两把尺子必须能各自复算）。
+        toks = [t for t in (role or "").split("+") if t]
+        rt = [t for t in toks if not is_cond_token(t)]
+        ct = [t for t in toks if is_cond_token(t)]
+        tag = (" " + ROLE_TAG + "+".join(rt)) if rt else ""
+        tag += (" " + BRANCH_TAG + "+".join(ct)) if ct else ""
         here = (rel + ":" + str(self.line_of(rel, pos)) if rel else at) + tag
         parts = split_args(args)
         if kind == "route":
@@ -605,6 +862,42 @@ class Census:
                         labels.update(t for t in tok[len(ROLE_TAG):].split("+") if t)
         return per
 
+    def branch_matrix(self):
+        """{归一路径: set(分支约束标签)}：与 role_matrix 同构而**各读各的标签**，用来做第二把尺。
+
+        两个视图（这里的路径→标签集，和 origin_conjunctions 的路径→合取列表）必须由同一批
+        origin 串解出同一个路径集合，否则说明其中一个读数器把某族标签吃漏了。
+        """
+        per = {}
+        for (p, _ms), origins in self.mounted.items():
+            toks = per.setdefault(normalize(p), set())
+            for o in origins:
+                for tok in o.split():
+                    if tok.startswith(BRANCH_TAG):
+                        toks.update(t for t in tok[len(BRANCH_TAG):].split("+") if t)
+        return per
+
+    def run_as(self, variant):
+        """把角色钉成具体取值再走一遍树：这一条路不产生标签，走到的就是该取值下真会被装配的表面。
+
+        根函数写死为 `build_host_router`——它是角色参数真正进来的那一层。融合部署的入口
+        `build_gateway_router` 只是 `build_host_router(state, HostRole::All)` 的薄壳，
+        从它走会把钉死的取值又换回 All，五档塌成一档（这一条假设由 `--role-surface` 的
+        "五档是否各不相同"现量见证，不靠注释自证）。
+        """
+        self.pin = variant
+        hits = self.fns.get("build_host_router")
+        if not hits:
+            self.unresolved.setdefault("找不到装配根", []).append("build_host_router")
+            return self
+        rel, lo, hi = hits[0]
+        self.stack.append((rel, lo))
+        try:
+            self.walk_body(rel, lo, hi, "", "root:build_host_router[%s]" % variant, 0)
+        finally:
+            self.stack.pop()
+        return self
+
     def run_roots(self):
         """从唯一的装配根出发。build_gateway_router 就是 build_host_router(All) 的薄壳，
         两个都当根会把同一棵树走两遍，把 UNRESOLVED 与耗时一起翻倍。"""
@@ -691,7 +984,7 @@ def api_route_has_role_field():
     if not os.path.isfile(path):
         return None, rel, None
     src = read_text(path)
-    m = re.search(r"struct ApiRoute\b[^{]*\{(.*)\}", src, re.S)
+    m = re.search(r"struct ApiRoute\b[^{]*\{(.*?)\n\}", src, re.S)
     if not m:
         return None, rel, None
     fields = re.findall(r"^\s*(?:#\[[^\]]*\]\s*)?pub\s+(\w+)\s*:", m.group(1), re.M)
@@ -732,20 +1025,242 @@ def mounted_by_path(cen):
 
 
 def site_twins(agg, mounted_paths):
-    """有归属的路径里，无归属读数是否来自**同一个挂载位点**。
+    """有归属的路径按"无归属读数落在哪个位点"分三档：同 site ／ 不同 site ／ 根本没有。
 
-    同一个 site 出现两种读数＝这个位点被两条走树路径各到过一次，其中一条不带臂
-    （All 走模块注册表那条就是典型）。它说明"角色是路径的属性，不是位点的属性"，
-    因此不能把"每条有归属路径都有无归属孪生"直接读成"没有端点专属某个角色"。"""
-    same, diff = set(), set()
+    同 site ＝ 同一个挂载语句被两条走树路径各到过一次，一条带臂一条不带（真语料里
+    All 走模块注册表、单角色走 `domain_router` 臂就是这个形状：位点相同，前缀也相同）。
+    不同 site ＝ 另有一处装配在挂它。根本没有 ＝ 只有臂里这一处，才是"专属该角色"。
+    两档合成一档会把"读不到第二处"和"确实没有第二处"混成同一个数。"""
+    same, diff, none_ = set(), set(), set()
     for p in agg["labeled"]:
         lab_sites, unlab_sites = set(), set()
         for _raw, _ms, origins in mounted_paths[p]:
             for o in origins:
                 site = o.split(" ")[0]
                 (unlab_sites if ROLE_TAG not in o else lab_sites).add(site)
-        (same if lab_sites & unlab_sites else diff).add(p)
-    return same, diff
+        if not unlab_sites:
+            none_.add(p)
+        elif lab_sites & unlab_sites:
+            same.add(p)
+        else:
+            diff.add(p)
+    return same, diff, none_
+
+
+def origin_conjunctions(cen, mounted_paths):
+    """{归一路径: [合取,...]}：每条 origin 还原成"走到这个位点所经过的全部条件"。
+
+    臂标签与分支标签**并置在同一条合取**里（两层都成立这一位点才在该取值下可达），
+    但保留 origin 逐条的粒度——多条路径挂同一件事是**析取**，折成一条合取会把
+    "两处装配之一挂"读成"两处同时挂"（永不可达）。
+    """
+    per = {}
+    for p, items in mounted_paths.items():
+        cons = per.setdefault(p, [])
+        for _raw, _ms, origins in items:
+            for o in origins:
+                toks = set()
+                for tok in o.split():
+                    if tok.startswith(ROLE_TAG) or tok.startswith(BRANCH_TAG):
+                        head = tok.split(":", 1)[1]
+                        toks.update(t for t in head.split("+") if t)
+                cons.append(frozenset(toks))
+    return per
+
+
+def read_buckets(per, variants, use_branch=True):
+    """按约束标签求值分档：`use_branch=False` 是第二把尺（只看臂），两把尺的差集＝分支归因吃进判决的量。"""
+    buckets = {v: set() for v in variants}
+    for v in variants:
+        for p, cons in per.items():
+            if any(conj_ok(c, v, use_branch) for c in cons):
+                buckets[v].add(p)
+    return buckets
+
+
+def surface_as(variant, cen):
+    """第二通道：复用同一份已索引语料，把角色钉成具体取值走一遍树（不产生标签）。
+
+    索引一次、走树 N＋1 次——重新 load 会把耗时按档数乘上去，而两通道必须读同一批文件，
+    否则"并发作者在这两次读之间改了源码"会伪装成分档分歧。
+    """
+    c2 = Census()
+    c2.marked, c2.fns, c2.scanned = cen.marked, cen.fns, cen.scanned
+    c2.run_as(variant)
+    return {normalize(p) for (p, _ms) in c2.mounted}, c2
+
+
+def cmd_role_surface(args):
+    """按角色分桶的独立对外表面账：标签求值与具体执行各算一遍，两本账互为见证。只读不判。"""
+    cen = Census().load(SCAN_ROOTS)
+    cen.run_roots()
+    mounted_paths = mounted_by_path(cen)
+    per = origin_conjunctions(cen, mounted_paths)
+    bm = cen.branch_matrix()
+    agg = role_aggregates(cen, mounted_paths)
+    variants, vrel, vline = host_role_variants(cen)
+    backfilled = False
+    if not variants:
+        variants = sorted({m for cons in per.values() for c in cons for t in c
+                           for m in re.findall(r"HostRole::(\w+)", t)})
+        backfilled = True
+    buckets = read_buckets(per, variants)
+    arm_only = read_buckets(per, variants, use_branch=False)
+    subst, subst_cen = {}, {}
+    for v in variants:
+        s, c2 = surface_as(v, cen)
+        subst[v], subst_cen[v] = s, c2
+    total = set(mounted_paths)
+    common = {p for p, cons in per.items() if any(not c for c in cons)}
+    only_all = {p for p in total if p in buckets.get("All", set())
+                and not any(p in buckets[v] for v in variants if v != "All")}
+    only_single = {}
+    for v in variants:
+        only_single[v] = {p for p in buckets[v] if not any(p in buckets[w] for w in variants if w != v)}
+    never = sorted(p for p in total if not any(p in buckets[v] for v in variants))
+    n_decl, table, rel = read_routes_table()
+    table_paths = {normalize(p) for _m, p in (table or [])}
+    ca_paired = {e for e, _ in cen.catchall
+                 if any(t == ca_prefix(e) or t == ca_prefix(e) + "/{P}" for t in table_paths)}
+    cond_paths = {p for p, v in bm.items() if v}
+    conj_cond_paths = {p for p, cons in per.items() if any(any(is_cond_token(t) for t in c) for c in cons)}
+    nonrole = sorted({t for cons in per.values() for c in cons for t in c
+                      if not is_cond_token(t) and not ARM_ROLE_RE.match(t)})
+    branch_bites = {v: sorted(arm_only[v] - buckets[v]) for v in variants}
+    chan_diff = {v: sorted(buckets[v] ^ subst[v]) for v in variants}
+    subst_faces = {frozenset(subst[v]) for v in subst}
+    bucket_union = set().union(*[buckets[v] for v in variants]) if variants else set()
+    print("扫描 .rs 文件数 = %d（索引 1 次，走树 %d 次：符号 1 ＋ 钉死取值 %d）"
+          % (cen.scanned, 1 + len(variants), len(variants)))
+    print("角色取值账：%s（读自 %s:%s%s）"
+          % (",".join(variants) or "读不到", vrel or "-", vline or "-",
+             "；声明读不到，退回约束标签里出现过的变体" if backfilled else ""))
+    print("分支区间入账 = %d 处 / 归不出约束的角色分支（盲区，按名点名）= %d 处"
+          % (len(cen.cond_spans), len(cen.cond_blind)))
+    for rel_, pos_, excerpt in sorted(cen.cond_blind)[:args.show]:
+        print("    盲区 %s:%d  %s" % (rel_, cen.line_of(rel_, pos_) if rel_ in cen.marked else 0, excerpt))
+    print("带分支约束标签的归一路径 = %d 条（合取视图 %d 条，两视图必须同集合）"
+          % (len(cond_paths), len(conj_cond_paths)))
+    print("公共面（至少一条挂载读数不带任何条件）= %d 条，占总数 %d 条的 %.1f%%"
+          % (len(common), len(total), 100.0 * len(common) / len(total) if total else 0.0))
+    print("非角色维的臂标签（不参与分档判决，只点名）= %d 个：%s"
+          % (len(nonrole), ", ".join(nonrole[:args.show]) or "-"))
+    print("")
+    print("%-8s %10s %10s %10s %10s %10s" % ("角色", "标签档", "臂-only", "钉死档", "仅此档", "未在册"))
+    for v in variants:
+        unreg = len([p for p in buckets[v] if p not in table_paths and p not in ca_paired])
+        print("%-8s %10d %10d %10d %10d %10d"
+              % (v, len(buckets[v]), len(arm_only[v]), len(subst[v]), len(only_single[v]), unreg))
+    print("")
+    for v in variants:
+        d_branch, d_chan = branch_bites[v], chan_diff[v]
+        print("%s：分支判据吃掉 %d 条（撤了就会多算进来）%s ｜ 两通道分歧 %d 条%s"
+              % (v, len(d_branch), "（例：%s）" % ", ".join(d_branch[:3]) if d_branch else "",
+                 len(d_chan), "（例：%s）" % ", ".join(d_chan[:3]) if d_chan else ""))
+        if d_chan:
+            free = sorted(set(d_chan) & common)
+            print("    其中属公共面（无条件读数，两通道都该有 ⇒ 仪器坏）= %d 条：%s"
+                  % (len(free), ", ".join(free[:4]) or "-"))
+    print("任何角色都到不了的归一路径 = %d 条：%s" % (len(never), ", ".join(never[:args.show]) or "-"))
+    print("只在 All 下可达（融合部署独占）= %d 条；与 --role-matrix 的「独占＝%d 条」不是同一个事实："
+          "那边按臂标签算，这边按分档算。" % (len(only_all), len(agg["role_only"])))
+    n_all_sub = len(subst.get("All", set()))
+    print("对照 ROUTES 表（%s，声明 %s 条）：钉死 All 走树得 %d 条、标签 All 档 %d 条、未在册总账 %d 条"
+          % (rel, n_decl, n_all_sub, len(buckets.get("All", set())),
+             len([p for p in total if p not in table_paths and p not in ca_paired])))
+    bad = 0
+    l0 = {"/health", "/api/v1/status", "/api/v1/domains", "/metrics"}
+    checks = [
+        ("语料与角色取值账非空（仪器有电，不是空账）",
+         cen.scanned > 0 and len(variants) > 0 and len(cen.cond_spans) > 0,
+         "文件 %d 取值 %d 分支 %d" % (cen.scanned, len(variants), len(cen.cond_spans))),
+        ("分支归因真的落到挂载位点（不落到挂载上的分支不进判决）",
+         len(cond_paths) > 0,
+         "带分支标签的路径 %d 条，分支区间 %d 处" % (len(cond_paths), len(cen.cond_spans))),
+        ("两个标签视图必须给出同一个路径集合（分支通道）",
+         cond_paths == conj_cond_paths,
+         "矩阵视图 %d 配合取视图 %d，对称差 %s" % (
+             len(cond_paths), len(conj_cond_paths),
+             sorted(cond_paths ^ conj_cond_paths)[:4] or "-")),
+        ("公共面必须出现在每一个角色档（拿标签剪枝分桶就是把这条剪没）",
+         bool(variants) and all(common <= buckets[v] for v in variants) and len(common) > 0,
+         "公共面 %d 条，档 %d 个，缺席 %s" % (
+             len(common), len(variants),
+             [v for v in variants if not common <= buckets[v]] or "-")),
+        ("同一批公共面在钉死取值通道里也必须每档都在（两通道同一判据）",
+         bool(variants) and all(common <= subst[v] for v in variants),
+         "缺席 %s" % ([v for v in variants if not common <= subst[v]] or "-")),
+        ("L0 四条公共面必须落在 All 档（融合部署的默认对外面）",
+         l0 <= buckets.get("All", set()) and l0 <= subst.get("All", set()),
+         "标签 All %d 条，钉死 All %d 条，缺 %s" % (
+             len(buckets.get("All", set())), n_all_sub, sorted(l0 - buckets.get("All", set())) or "-")),
+        ("分支判据只能收窄不能放宽：带分支的档 ⊆ 只看臂的档",
+         all(buckets[v] <= arm_only[v] for v in variants),
+         "放宽 %s" % ({v: len(buckets[v] - arm_only[v]) for v in variants
+                       if buckets[v] - arm_only[v]} or "-")),
+        ("每一档都必须算得出来（少一档＝整张账读小）",
+         len(buckets) == len(variants) and all(len(buckets[v]) >= 0 for v in variants),
+         "算出 %d 档 / 枚举 %d 个" % (len(buckets), len(variants))),
+        ("分支判据必须真的吃进判决（至少一档的臂-only 与带分支两把尺不同）",
+         any(branch_bites[v] for v in variants),
+         "各档被分支判据吃掉 %s" % {v: len(branch_bites[v]) for v in variants}),
+        ("每一档都必须非空（钉死取值走空＝剪枝剪错了整棵树）",
+         bool(variants) and all(subst[v] for v in variants) and all(buckets[v] for v in variants),
+         "钉死 %s ／ 标签 %s" % ({v: len(subst[v]) for v in variants},
+                                {v: len(buckets[v]) for v in variants})),
+        ("分档闭合：各档并集 ＋ 任何角色都到不了 ＝ 归一总数",
+         bucket_union | set(never) == total and not (bucket_union & set(never)),
+         "并集 %d ＋ 永不可达 %d 配 总数 %d（交 %d）" % (
+             len(bucket_union), len(never), len(total), len(bucket_union & set(never)))),
+        ("钉死取值的各档不许塌成同一档（剪枝真落地）",
+         bool(subst) and len(subst_faces) == len(subst),
+         "%d 档里去重得 %d 个不同面；剪枝 %d 次（同一区间会在函数体／表达式／整文件三个坐标基上各剪一次），按坐标去重后 %d 段" % (
+             len(subst), len(subst_faces),
+             sum(c2.prune_spans for c2 in subst_cen.values()),
+             sum(len(c2.prune_intervals) for c2 in subst_cen.values()))),
+    ]
+    for name, ok, detail in checks:
+        print("%-4s %s  %s" % ("PASS" if ok else "FAIL", name, detail))
+        bad += 0 if ok else 1
+    if args.json:
+        payload = {
+            "generated_at": datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S%z"),
+            "instrument": "scripts/gate/check-api-surface.py --role-surface",
+            "scan_roots": list(SCAN_ROOTS),
+            "scanned_files": cen.scanned,
+            "mounted_normalized": len(total),
+            "role_variants": variants,
+            "role_variants_source": {"file": vrel, "line": vline, "backfilled_from_labels": bool(backfilled)},
+            "branch_spans": len(cen.cond_spans),
+            "prune_occurrences_by_variant": {v: subst_cen[v].prune_spans for v in variants},
+            "prune_distinct_intervals_by_variant": {v: len(subst_cen[v].prune_intervals)
+                                                    for v in variants},
+            "branch_blind": sorted("%s:%d %s" % (r, p, e) for r, p, e in cen.cond_blind),
+            "branch_tagged_paths": len(cond_paths),
+            "common_surface_paths": sorted(common),
+            "non_role_arm_tokens": nonrole,
+            "buckets_tag": {v: sorted(buckets[v]) for v in variants},
+            "buckets_tag_arm_only": {v: len(arm_only[v]) for v in variants},
+            "buckets_substituted": {v: sorted(subst[v]) for v in variants},
+            "only_single_bucket": {v: sorted(only_single[v]) for v in variants},
+            "only_all_bucket": sorted(only_all),
+            "bucket_delta_never_reachable": sorted(never),
+            "unregistered_by_bucket": {v: len([p for p in buckets[v]
+                                               if p not in table_paths and p not in ca_paired])
+                                       for v in variants},
+            "routes_declared_len": n_decl,
+            "mounted_not_in_table_same_caliber": len([p for p in total
+                                                      if p not in table_paths and p not in ca_paired]),
+            "cross_channel_symmetric_diff": {v: sorted(buckets[v] ^ subst[v]) for v in variants},
+            "branch_judgment_removed": {v: sorted(arm_only[v] - buckets[v]) for v in variants},
+            "instrument_invariants_failed": [n for n, ok, _d in checks if not ok],
+        }
+        with open(args.json, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False, indent=2)
+        print("JSON 已写出 " + args.json)
+    print("ROLE-SURFACE %s（失败 %d 项；本模式故意不判决——分档是账，门禁口径仍挂在裁决点）"
+          % ("PASS" if bad == 0 else "FAIL", bad))
+    return 0 if bad == 0 else 1
 
 
 def cmd_role_matrix(args):
@@ -769,10 +1284,11 @@ def cmd_role_matrix(args):
     print("带角色归属的归一路径 = %d 条 / 无归属 = %d 条 / 总 = %d 条"
           % (len(agg["labeled"]), len(agg["unlabeled"]), len(mounted_paths)))
     print("其中「只在某角色下可达」（没有任何无归属位点）= %d 条" % len(agg["role_only"]))
-    print("有归属路径的无归属孪生按位点分档：同一 site 两种读数 %d 条 ／ 不同 site %d 条"
-          % (len(twins[0]), len(twins[1])))
+    print("有归属路径的无归属读数分档：同 site %d ／ 不同 site %d ／ 根本没有 %d"
+          % (len(twins[0]), len(twins[1]), len(twins[2])))
     print("    同 site ＝ 该位点被两条走树路径各到过一次（一条带臂、一条不带），"
-          "读成「角色是路径的属性」；不同 site 才要去看是不是第二处装配。")
+          "读成「角色是路径的属性」；不同 site 才要去看是不是第二处装配；"
+          "根本没有才是该端点只在这个角色的臂里挂过。")
     print("每个臂标签可达的路径数（可达数／独占数）：")
     for lab in sorted(agg["per_label"]):
         print("    %-24s 可达 %3d ／ 独占 %3d" % (lab, len(agg["per_label"][lab]), len(agg["exclusive"][lab])))
@@ -787,9 +1303,13 @@ def cmd_role_matrix(args):
     role_fields, arel, all_fields = api_route_has_role_field()
     print("在册账能不能承载这一维：`ApiRoute`（%s）字段 = %s；含 role 的字段 = %s"
           % (arel, ",".join(all_fields or []) or "读不到", role_fields if role_fields is not None else "文件缺失"))
-    print("与 ROUTES 表交叉：挂载未在册的 %d 条里带角色归属 %d 条"
-          % (len(set(mounted_paths) - table_paths),
-             len([p for p in set(mounted_paths) - table_paths if p in agg["labeled"]])))
+    # 与普查账同口径：兜底前缀与表内 <前缀>/{P} 是同一件事的两种写法，不减配对项就会比
+    # --census 报出的差额多两条，同一本账两把尺子（本轮实测 142 配 140）。
+    ca_paired = {e for e, _ in cen.catchall
+                 if any(t == ca_prefix(e) or t == ca_prefix(e) + "/{P}" for t in table_paths)}
+    only_mount = sorted(set(mounted_paths) - table_paths - ca_paired)
+    print("与 ROUTES 表交叉：挂载未在册 %d 条（与 --census 同口径，已减兜底配对 %d 条），其中带角色归属 %d 条"
+          % (len(only_mount), len(ca_paired), len([p for p in only_mount if p in agg["labeled"]])))
     bad = 0
     checks = [
         ("语料非空且臂读得出（仪器有电，不是空账）",
@@ -807,10 +1327,24 @@ def cmd_role_matrix(args):
         ("角色专属集合必须是有归属集合的子集",
          agg["role_only"] <= agg["labeled"],
          "专属 %d ／ 有归属 %d" % (len(agg["role_only"]), len(agg["labeled"]))),
-        ("同 site 与不同 site 两档必须覆盖全部有归属路径（分解不许留余）",
-         twins[0] | twins[1] == agg["labeled"] and not (twins[0] & twins[1]),
-         "同 %d ＋ 不同 %d 配 有归属 %d，交集 %d" % (
-             len(twins[0]), len(twins[1]), len(agg["labeled"]), len(twins[0] & twins[1]))),
+        ("同 site／不同 site／根本没有 三档必须不重不漏地覆盖有归属路径",
+         twins[0] | twins[1] | twins[2] == agg["labeled"]
+         and not (twins[0] & twins[1]) and not (twins[0] & twins[2])
+         and not (twins[1] & twins[2]),
+         "%d ＋ %d ＋ %d 配 有归属 %d（并集 %d）" % (
+             len(twins[0]), len(twins[1]), len(twins[2]), len(agg["labeled"]),
+             len(twins[0] | twins[1] | twins[2]))),
+        ("「根本没有无归属读数」必须与 role_only 独立算得同一个集合",
+         twins[2] == agg["role_only"],
+         "分档 %d 配 role_only %d，对称差 %s" % (
+             len(twins[2]), len(agg["role_only"]),
+             sorted(twins[2] ^ agg["role_only"])[:4] or "-")),
+        ("差额口径与普查账一致：未减配对项的差额减去配对项等于本行的差额",
+         len(set(mounted_paths) - table_paths) - len({e for e in ca_paired
+                                                      if e in set(mounted_paths) - table_paths}) == len(only_mount),
+         "%d − 落在差额里的配对 %d 配 %d" % (
+             len(set(mounted_paths) - table_paths),
+             len({e for e in ca_paired if e in set(mounted_paths) - table_paths}), len(only_mount))),
     ]
     for name, ok, detail in checks:
         print("%-4s %s  %s" % ("PASS" if ok else "FAIL", name, detail))
@@ -825,6 +1359,8 @@ def cmd_role_matrix(args):
             "role_arms_named": len(cen.role_arms),
             "role_arms_wild": len(cen.role_wild),
             "routes_declared_len": n_decl,
+            "mounted_not_in_table_same_caliber": len(only_mount),
+            "mounted_not_in_table_labeled": len([p for p in only_mount if p in agg["labeled"]]),
             "api_route_fields": all_fields,
             "api_route_role_fields": role_fields,
             "labeled_paths": len(agg["labeled"]),
@@ -832,6 +1368,7 @@ def cmd_role_matrix(args):
             "role_only_paths": sorted(agg["role_only"]),
             "same_site_twin_count": len(twins[0]),
             "different_site_twin_paths": sorted(twins[1]),
+            "no_twin_paths": sorted(twins[2]),
             "multi_dim_paths": sorted(p for p in agg["labeled"] if len(agg["labels"][p]) > 1),
             "reachable_by_label": {k: len(v) for k, v in sorted(agg["per_label"].items())},
             "exclusive_by_label": {k: len(v) for k, v in sorted(agg["exclusive"].items())},
@@ -844,6 +1381,9 @@ def cmd_role_matrix(args):
     print("ROLE-MATRIX %s（失败 %d 项；本模式故意不判决——归属是注解，不是门禁）"
           % ("PASS" if bad == 0 else "FAIL", bad))
     return 0 if bad == 0 else 1
+
+
+def cmd_census(args):
     cen = Census().load(SCAN_ROOTS)
     cen.run_roots()
     n_decl, table, rel = read_routes_table()
@@ -920,6 +1460,531 @@ def cmd_role_matrix(args):
             json.dump(payload, fh, ensure_ascii=False, indent=2)
         print("JSON 已写出 " + args.json)
     return 0
+
+
+# ====================== 台账闭合（--ledger）：核心公式的单一算源 ======================
+# 规矩：文档里写下加号就必须算加法，而且每个数都要挂在"印出它的那份工件"的同一个键上。
+# §1.1–§1.6 的公式此前散在散文里，逐条人工复算（第 33 条就是复算时抓到两处不闭合）。本模式把
+# 这批公式收成一张表，三层各有牙：
+#   L1 结构闭合：在**一份活的图像**上现量复算每条等式的左值与加数（含"某数不是加数"的反对照）。
+#   L2 引用对账：把每个数对回 reports/data/ 下被引用的工件键。键找不到＝引用不成立（红）；
+#                值不同＝语料漂移（按名点名并附工件 generated_at，判 INFO 不判红——并发作者天天动源）。
+#   L3 文档镜像：方案文档里的托管块必须等于现渲染（逐字节）；托管块之外的散文里写的加法必须自己成立。
+
+LEDGER_DOC_PATH = "docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md"
+LEDGER_BEGIN = "<!-- LEDGER:BEGIN 本块由 scripts/gate/check-api-surface.py --ledger --write 现量生成，勿手改（改公式改脚本） -->"
+LEDGER_END = "<!-- LEDGER:END -->"
+LEDGER_ART_PREFIX = {"census": "api-surface-census-",
+                     "surface": "api-role-surface-",
+                     "matrix": "api-role-matrix-"}
+# (工件, 工件里的键, live 命名空间里的名字, 比较法)  —— "set" 比的是排序后的成员，其余比值（list/dict 取长度）
+LEDGER_CROSS = [
+    ("census", "scanned_files", "scanned_files", "v"),
+    ("census", "assembly_nodes_indexed", "assembly_nodes_indexed", "v"),
+    ("census", "indexed_by_name", "indexed_by_name", "v"),
+    ("census", "indexed_by_signature", "indexed_by_signature", "v"),
+    ("census", "entered_total", "entered_total", "v"),
+    ("census", "entered_unique", "entered_unique", "v"),
+    ("census", "entered_signature_only", "entered_sig_only", "v"),
+    ("census", "passthrough_shells", "passthrough", "v"),
+    ("census", "routes_declared_len", "routes_declared_len", "v"),
+    ("census", "routes_parsed", "routes_parsed", "v"),
+    ("census", "mounted_literal", "mounted_literal", "v"),
+    ("census", "mounted_normalized", "mounted_normalized", "v"),
+    ("census", "mounted_not_in_table", "m_only_mount", "v"),
+    ("census", "in_table_not_mounted", "t_not_mounted", "v"),
+    ("census", "in_table_explained_by_catch_all", "t_explained", "v"),
+    ("census", "catch_all_paired_with_table", "ca_paired_n", "v"),
+    ("census", "unresolved", "unresolved_counts", "v"),
+    ("surface", "scanned_files", "scanned_files", "v"),
+    ("surface", "mounted_normalized", "mounted_normalized", "v"),
+    ("surface", "routes_declared_len", "routes_declared_len", "v"),
+    ("surface", "branch_spans", "branch_spans", "v"),
+    ("surface", "branch_tagged_paths", "branch_tagged", "v"),
+    ("surface", "common_surface_paths", "common_surface", "v"),
+    ("surface", "only_all_bucket", "only_all", "v"),
+    ("surface", "bucket_delta_never_reachable", "never", "v"),
+    ("surface", "non_role_arm_tokens", "nonrole", "v"),
+    ("surface", "branch_blind", "branch_blind", "v"),
+    ("surface", "buckets_tag", "bucket_counts", "v"),
+    ("surface", "buckets_substituted", "subst_counts", "v"),
+    ("surface", "buckets_tag_arm_only", "arm_only_counts", "v"),
+    ("surface", "only_single_bucket", "only_single_counts", "v"),
+    ("surface", "unregistered_by_bucket", "unreg_counts", "v"),
+    ("surface", "branch_judgment_removed", "removed_counts", "v"),
+    ("surface", "cross_channel_symmetric_diff", "xdiff_counts", "v"),
+    ("surface", "prune_occurrences_by_variant", "prune_occ_counts", "v"),
+    ("surface", "prune_distinct_intervals_by_variant", "prune_dist_counts", "v"),
+    ("surface", "role_variants", "role_variants", "set"),
+    ("surface", "instrument_invariants_failed", "surface_failed", "v"),
+    ("matrix", "scanned_files", "scanned_files", "v"),
+    ("matrix", "mounted_normalized", "mounted_normalized", "v"),
+    ("matrix", "routes_declared_len", "routes_declared_len", "v"),
+    ("matrix", "role_arms_named", "role_arms_named", "v"),
+    ("matrix", "role_arms_wild", "role_arms_wild", "v"),
+    ("matrix", "labeled_paths", "labeled", "v"),
+    ("matrix", "unlabeled_paths", "unlabeled", "v"),
+    ("matrix", "same_site_twin_count", "twin_same", "v"),
+    ("matrix", "different_site_twin_paths", "twin_diff", "v"),
+    ("matrix", "no_twin_paths", "twin_none", "v"),
+    ("matrix", "role_only_paths", "role_only", "v"),
+    ("matrix", "multi_dim_paths", "multi_dim", "v"),
+    ("matrix", "exclusive_by_label", "excl_counts", "v"),
+    ("matrix", "mounted_not_in_table_same_caliber", "m_only_mount", "v"),
+    ("matrix", "mounted_not_in_table_labeled", "unreg_labeled", "v"),
+    ("matrix", "api_route_role_fields", "api_route_role_fields", "set"),
+    ("matrix", "instrument_invariants_failed", "matrix_failed", "v"),
+]
+
+
+def newest_artifact(prefix):
+    """按名字前缀挑最新的读数工件：工件名自带日期，硬编今天那份明天就红。"""
+    d = os.path.join(REPO, "reports", "data")
+    if not os.path.isdir(d):
+        return None
+    cand = [n for n in os.listdir(d) if n.startswith(prefix) and n.endswith(".json")]
+    if not cand:
+        return None
+    return max(cand, key=lambda n: os.path.getmtime(os.path.join(d, n)))
+
+
+def art_scalar(v):
+    if isinstance(v, dict):
+        return {k: art_scalar(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple, set)):
+        return len(v)
+    return v
+
+
+def art_get(art, dotted):
+    cur = art
+    for seg in dotted.split("."):
+        if not isinstance(cur, dict) or seg not in cur:
+            return None, False
+        cur = cur[seg]
+    return cur, True
+
+
+def ledger_spec(variants):
+    """公式清单。每条只写"名字"，值一律由 ledger_eval 从同一个命名空间取 ⇒
+    同一个数在两行里必须同步，改错一处会让两行同时红（这就是"单一算源"的牙）。"""
+    core = [
+        ("ASM-CLOSE", "在册装配节点 ＝ 按名字在册 ＋ 只靠签名新增", "sum",
+         "assembly_nodes_indexed", ["indexed_by_name", "signature_only"],
+         "census:assembly_nodes_indexed／indexed_by_name／indexed_by_signature"),
+        ("ASM-ANTI", "反对照：按签名匹配的总数**不是**加数（与按名字那批有重叠）", "ne-sum",
+         "assembly_nodes_indexed", ["indexed_by_name", "indexed_by_signature"],
+         "重叠 %s 条 ⇒ 只按名字会读小"),
+        ("DECL-PARSE", "ROUTES 表声明长度 ＝ 真解析出的条目数", "eq",
+         "routes_declared_len", ["routes_parsed"], "census:routes_declared_len／routes_parsed"),
+        ("M-PART", "归一挂载面 ＝ 在册∩挂载 ＋ 兜底前缀覆盖 ＋ 挂载未在册", "sum",
+         "mounted_normalized", ["m_in_table", "m_ca_only", "m_only_mount"],
+         "census:mounted_normalized／mounted_not_in_table"),
+        ("T-PART", "ROUTES 表的不同路径数 ＝ 在册∩挂载 ＋ 在册未挂载 ＋ 由兜底解释", "sum",
+         "routes_paths_distinct", ["m_in_table", "t_not_mounted", "t_explained"],
+         "注意分母是**去重后的路径**，不是条目数（一条路径多_method_算两次）"),
+        ("TAG-COMMON", "归一挂载面 ＝ 带分支约束标签 ＋ 公共面", "sum",
+         "mounted_normalized", ["branch_tagged", "common_surface"],
+         "surface:branch_tagged_paths／common_surface_paths"),
+        ("TAG-DJ", "上面那两档必须互斥（同一位点既能无条件挂又被分支罩住＝读重）", "is0",
+         "tag_common_inter", [], "两集交集现量"),
+        ("ONLY-ALL", "归一挂载面 ＝ 只在 All 档 ＋ 跨多档 ＋ 任何角色都到不了", "sum",
+         "mounted_normalized", ["only_all", "multi_bucket", "never"],
+         "surface:only_all_bucket／bucket_delta_never_reachable"),
+        ("NEVER-0", "任何角色都到不了的路径现在必须为 0（不为 0 就是分档漏了一档）", "is0",
+         "never", [], "surface:bucket_delta_never_reachable"),
+        ("LBL-PART", "有归属路径 ＝ 同 site 双读数 ＋ 不同 site ＋ 根本没有", "sum",
+         "labeled", ["twin_same", "twin_diff", "twin_none"],
+         "matrix:same_site_twin_count／different_site_twin_paths／no_twin_paths"),
+        ("TWIN-NONE", "「根本没有无归属读数」必须与 role_only 独立算得同一个数", "eq",
+         "twin_none", ["role_only"], "matrix:no_twin_paths／role_only_paths"),
+        ("LBL-SUM", "有归属路径 ＝ 各臂独占数之和（前提：跨两维以上的路径为 0）", "eq",
+         "labeled", ["excl_sum"], "matrix:labeled_paths／exclusive_by_label"),
+        ("LBL-DJ", "跨两维以上必须为 0，否则 LBL-SUM 会把同一条路径数两遍", "is0",
+         "multi_dim", [], "matrix:multi_dim_paths"),
+        ("UNREG-CROSS", "未在册差额在两台仪器上必须同一个数（普查账 ＝ 分档 All 档）", "eq",
+         "unreg_all", ["m_only_mount"], "surface:unregistered_by_bucket.All ＝ census:mounted_not_in_table"),
+        ("XCHAN-DJ", "标签通道与钉死取值通道的分歧必须为 0（两本账互为见证）", "is0",
+         "xdiff_sum", [], "surface:cross_channel_symmetric_diff"),
+    ]
+    per = []
+    for v in variants:
+        per += [
+            ("BUCKET-%s" % v, "%s 档：只看臂的档 ＝ 带分支的档 ＋ 分支判据吃掉的条数" % v, "sum",
+             "arm_%s" % v, ["bucket_%s" % v, "removed_%s" % v], "surface:buckets_tag_arm_only／branch_judgment_removed"),
+            ("SUBST-%s" % v, "%s 档：标签求值得到的面 ＝ 钉死取值走树得到的面" % v, "eq",
+             "bucket_%s" % v, ["subst_%s" % v], "surface:buckets_tag／buckets_substituted"),
+            ("PRUNE-%s" % v, "%s 档：剪枝出现次数 ≥ 按坐标去重后的段数" % v, "ge",
+             "prune_occ_%s" % v, ["prune_dist_%s" % v], "surface:prune_occurrences_by_variant／prune_distinct_intervals_by_variant"),
+        ]
+    return core + per
+
+
+def ledger_eval(spec, num):
+    rows = []
+    for rid, title, kind, lhs, rhs, cite in spec:
+        if lhs not in num or any(k not in num for k in rhs):
+            missing = [k for k in [lhs] + list(rhs) if k not in num]
+            rows.append(dict(rid=rid, title=title, kind=kind, cite=cite, ok=False,
+                             eqs="命名空间缺键：%s" % ",".join(missing), lhs=None, rhs=[]))
+            continue
+        l = num[lhs]
+        vals = [num[k] for k in rhs]
+        if kind == "sum":
+            ok, eqs = l == sum(vals), "%s ＝ %s" % (l, " ＋ ".join(str(x) for x in vals))
+        elif kind == "eq":
+            ok, eqs = l == vals[0], "%s ＝ %s" % (l, vals[0])
+        elif kind == "ne-sum":
+            ok, eqs = l != sum(vals), "%s ≠ %s（=%d）" % (l, " ＋ ".join(str(x) for x in vals), sum(vals))
+            # 说明里的重叠数也必须从这一行的值现推（候选和 − 并集），手写就成了第二个源
+            if "%s" in cite:
+                cite = cite % (sum(vals) - l)
+        elif kind == "ge":
+            ok, eqs = l >= vals[0], "%s ≥ %s" % (l, vals[0])
+        else:  # is0
+            ok, eqs = l == 0, "%s ＝ 0" % l
+        rows.append(dict(rid=rid, title=title, kind=kind, cite=cite, ok=ok, eqs=eqs,
+                         lhs=l, rhs=vals))
+    # 渲染不许把没替换的占位符印进文档：这类缺陷逐字节稳定的镜像判据看不见（两次渲染同样错），
+    # 只有把它当成一条判决才不会被"读表格的人"独享。
+    for r in rows:
+        if "%s" in r["cite"] or "%s" in r["title"]:
+            r["ok"] = False
+            r["eqs"] = "渲染留未替换占位符 ⇒ %s" % r["cite"]
+    return rows
+
+
+def ledger_block(rows, meta):
+    # 块内不许有墙钟：把"本次运行时刻"写进必须逐字节相同的见证，等于要求两次运行同一秒结束
+    # （§49 那类不可能满足的判据）。时刻只出现在 stdout 与末行的工件署名上。
+    out = [LEDGER_BEGIN,
+           "",
+           "本表由 `%s --ledger --write` 在一份活的图像上现量复算，**不在表里的加法不算账**。" % "scripts/gate/check-api-surface.py",
+           "扫描 .rs %d 个｜公式 %d 条（红 %d）｜引用对账 %d 条：一致 %d、漂移 %d、引用不成立 %d。" % (
+               meta["scanned_files"], len(rows),
+               sum(0 if r["ok"] else 1 for r in rows),
+               meta["cross_total"], meta["cross_ok"], meta["cross_drift"], meta["cross_unresolved"]),
+           "读数的三个来源工件：%s" % "、".join(
+               "%s（%s 生成）" % (p, g) for p, g in zip(meta["arts"], meta["arts_gen"])),
+           "",
+           "| 公式 | 现量等式 | 判定 | 说明／引用 |",
+           "|---|---|---|---|"]
+    for r in rows:
+        out.append("| `%s` %s | %s | %s | %s |" % (
+            r["rid"], r["title"], r["eqs"], "闭合" if r["ok"] else "**不闭合**", r["cite"]))
+    out += ["", "漂移只说明语料动了（并发作者天天改源），不说明账错：红判据是"
+                "「等式不闭合」「引用键找不到」「托管块与现渲染不一致」三种。", LEDGER_END]
+    return out
+
+
+def ledger_block_span(lines):
+    try:
+        i = next(k for k, ln in enumerate(lines) if ln.startswith(LEDGER_BEGIN[:24]))
+    except StopIteration:
+        return None
+    for j in range(i, len(lines)):
+        if lines[j].strip() == LEDGER_END:
+            return (i, j)
+    return None
+
+
+def audit_prose_arith(lines, span):
+    """托管块之外，散文里写出的加法必须自己成立。识别与复算全在 `formula_ledger.py`：
+    本模式**不再自带一份尺子**（一台仪器里两把尺＝同一本账必然漂移）。
+    「…」／“…” 里的是**引文**（登记"某轮曾印错成什么"），不是本文件的账 ⇒ 不复算，但要按名点名，
+    免得哪天把引文当现量读；落不进主张的形状按 reason 出账（盲区不是缺陷，读成"没有缺陷"才是）。
+    `span` 是 `ledger_block_span` 给的 **0 基**闭区间，而 `scan_text` 按 **1 基**行号跳块 ⇒
+    这里必须 +1：不换算的后果是托管表的最后一行被当散文复算（同一个数被两把尺各数一次）。"""
+    sp = FL.scan_text("\n".join(lines), blank_lines=(span[0] + 1, span[1] + 1) if span else ())
+    viol = [(v["line"], v["span"], v["vals"]) for v in sp["violations"]]
+    quoted = [(q["line"], q["span"]) for q in sp["quoted"]]
+    return viol, quoted, len(sp["claims"]), sp["blind"]
+
+
+def render_ledger_md(rows, meta):
+    return "\n".join(ledger_block(rows, meta)) + "\n"
+
+
+def ledger_dups(rows):
+    """公式 id 撞车＝后写的顶掉先写的，而总账条数照样自洽 ⇒ id 唯一性本身是一条判据。"""
+    ids = [r["rid"] for r in rows]
+    return sorted({i for i in ids if ids.count(i) > 1})
+
+
+def block_diff(cur_lines, new_lines):
+    """托管块逐行比对：集合差 ≠ 逐位差，所以按**下标**列差异，长度不同也要各自算到。"""
+    return [k for k in range(max(len(cur_lines), len(new_lines)))
+            if (cur_lines[k] if k < len(cur_lines) else None)
+            != (new_lines[k] if k < len(new_lines) else None)]
+
+
+def cmd_ledger(args):
+    cen = Census().load(SCAN_ROOTS)
+    cen.run_roots()
+    mounted = mounted_by_path(cen)
+    per = origin_conjunctions(cen, mounted)
+    bm = cen.branch_matrix()
+    agg = role_aggregates(cen, mounted)
+    twins = site_twins(agg, mounted)
+    variants, vrel, vline = host_role_variants(cen)
+    buckets = read_buckets(per, variants)
+    arm_only = read_buckets(per, variants, use_branch=False)
+    subst, scen = {}, {}
+    for v in variants:
+        s, c2 = surface_as(v, cen)
+        subst[v], scen[v] = s, c2
+    total = set(mounted)
+    common = {p for p, cons in per.items() if any(not c for c in cons)}
+    tagged = {p for p, vv in bm.items() if vv}
+    n_decl, table, rel = read_routes_table()
+    table_paths = {normalize(p) for _m, p in (table or [])}
+    ca_paired = {e for e, _ in cen.catchall
+                 if any(t == ca_prefix(e) or t == ca_prefix(e) + "/{P}" for t in table_paths)}
+    in_table = total & table_paths
+    only_mount = sorted(total - table_paths - ca_paired)
+    ca_only = sorted((total - table_paths) & ca_paired)
+    by_ca, still = catch_all_covered(sorted(table_paths - total), cen.catchall)
+    only_all = {p for p in buckets.get("All", set())
+                if not any(p in buckets[w] for w in variants if w != "All")}
+    never = sorted(p for p in total if not any(p in buckets[v] for v in variants))
+    multi_bucket = total - only_all - set(never)
+    only_single = {v: {p for p in buckets[v] if not any(p in buckets[w] for w in variants if w != v)}
+                   for v in variants}
+    unreg = {v: [p for p in buckets[v] if p not in table_paths and p not in ca_paired] for v in variants}
+    removed = {v: arm_only[v] - buckets[v] for v in variants}
+    xdiff = {v: buckets[v] ^ subst[v] for v in variants}
+    excl = agg["exclusive"]
+    multi = sorted(p for p in agg["labeled"] if len(agg["labels"][p]) > 1)
+
+    num = {
+        "scanned_files": cen.scanned,
+        "branch_spans": len(cen.cond_spans),
+        "assembly_nodes_indexed": len(cen.fns),
+        "indexed_by_name": cen.n_builder,
+        "indexed_by_signature": cen.n_router,
+        "signature_only": len(cen.fns) - cen.n_builder,
+        "entered_total": len(cen.entered),
+        "entered_unique": len({n for n, _ in cen.entered}),
+        "entered_sig_only": len([n for n, _ in cen.entered if not n.startswith("build_")]),
+        "passthrough": cen.passthrough,
+        "unresolved_n": sum(len(v) for v in cen.unresolved.values()),
+        "ca_paired_n": len(ca_paired),
+        "routes_declared_len": int(n_decl or 0),
+        "routes_parsed": len(table or []),
+        "routes_paths_distinct": len(table_paths),
+        "mounted_literal": len(cen.mounted),
+        "mounted_normalized": len(total),
+        "m_in_table": len(in_table),
+        "m_ca_only": len(ca_only),
+        "m_only_mount": len(only_mount),
+        "unreg_labeled": len([p for p in only_mount if p in agg["labeled"]]),
+        "t_not_mounted": len(still),
+        "t_explained": len(by_ca),
+        "branch_tagged": len(tagged),
+        "common_surface": len(common),
+        "tag_common_inter": len(tagged & common),
+        "only_all": len(only_all),
+        "multi_bucket": len(multi_bucket),
+        "never": len(never),
+        "labeled": len(agg["labeled"]),
+        "unlabeled": len(agg["unlabeled"]),
+        "twin_same": len(twins[0]),
+        "twin_diff": len(twins[1]),
+        "twin_none": len(twins[2]),
+        "role_only": len(agg["role_only"]),
+        "multi_dim": len(multi),
+        "excl_sum": sum(len(excl[k]) for k in excl),
+        "unreg_all": len(unreg.get("All", [])),
+        "xdiff_sum": sum(len(xdiff[v]) for v in xdiff),
+        "role_arms_named": len(cen.role_arms),
+        "role_arms_wild": len(cen.role_wild),
+        "nonrole": len({t for cons in per.values() for c in cons for t in c
+                        if not is_cond_token(t) and not ARM_ROLE_RE.match(t)}),
+        "branch_blind": len(cen.cond_blind),
+    }
+    for v in variants:
+        num["bucket_%s" % v] = len(buckets[v])
+        num["arm_%s" % v] = len(arm_only[v])
+        num["subst_%s" % v] = len(subst[v])
+        num["removed_%s" % v] = len(removed[v])
+        num["prune_occ_%s" % v] = scen[v].prune_spans
+        num["prune_dist_%s" % v] = len(scen[v].prune_intervals)
+    allv = dict(num)
+    allv.update({
+        "bucket_counts": {v: len(buckets[v]) for v in variants},
+        "subst_counts": {v: len(subst[v]) for v in variants},
+        "arm_only_counts": {v: len(arm_only[v]) for v in variants},
+        "only_single_counts": {v: len(only_single[v]) for v in variants},
+        "unreg_counts": {v: len(unreg[v]) for v in variants},
+        "removed_counts": {v: len(removed[v]) for v in variants},
+        "xdiff_counts": {v: len(xdiff[v]) for v in variants},
+        "prune_occ_counts": {v: num["prune_occ_%s" % v] for v in variants},
+        "prune_dist_counts": {v: num["prune_dist_%s" % v] for v in variants},
+        "excl_counts": {k: len(excl[k]) for k in excl},
+        "role_variants": list(variants),
+        "unresolved_counts": {k: len(v) for k, v in cen.unresolved.items()},
+    })
+    role_fields, arel, _all_fields = api_route_has_role_field()
+    allv["api_route_role_fields"] = list(role_fields or [])
+    # 这两项由 --role-surface / --role-matrix 各自写进工件，本模式不复算 ⇒ 只能钉"必须为 0"。
+    num["surface_failed"] = allv["surface_failed"] = 0
+    num["matrix_failed"] = allv["matrix_failed"] = 0
+
+    spec = ledger_spec(variants)
+    rows = ledger_eval(spec, num)
+    dup = ledger_dups(rows)
+    meta = {"generated_at": datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S%z"),
+            "scanned_files": cen.scanned}
+
+    print("现量时刻 %s｜扫描 .rs %d 个｜角色取值 %s（读自 %s:%s）"
+          % (meta["generated_at"], cen.scanned, ",".join(variants) or "读不到", vrel or "-", vline or "-"))
+    arts, arts_gen, cross_res = [], [], []
+    loaded = {}
+    for tag in ("census", "surface", "matrix"):
+        name = newest_artifact(LEDGER_ART_PREFIX[tag])
+        if name is None:
+            print("FAIL 引用找不到工件 %s*.json（%s 这一路的每个数都没了来源）"
+                  % (LEDGER_ART_PREFIX[tag], tag))
+            arts.append(LEDGER_ART_PREFIX[tag] + "*（缺）")
+            arts_gen.append("-")
+            continue
+        path = "reports/data/" + name
+        arts.append(path)
+        try:
+            with open(os.path.join(REPO, path.replace("/", os.sep)), encoding="utf-8") as fh:
+                art = json.load(fh)
+        except ValueError as exc:
+            print("FAIL 工件 %s 解析不了：%s" % (path, exc))
+            arts_gen.append("-")
+            continue
+        loaded[tag] = art
+        arts_gen.append(str(art.get("generated_at", "?")))
+    for tag, key, lname, how in LEDGER_CROSS:
+        art = loaded.get(tag)
+        if art is None:
+            cross_res.append(("unresolved", tag, key, lname, "工件未加载"))
+            continue
+        raw, found = art_get(art, key)
+        if not found:
+            cross_res.append(("unresolved", tag, key, lname, "键不存在"))
+            continue
+        if lname not in allv:
+            cross_res.append(("unresolved", tag, key, lname, "live 命名空间缺键"))
+            continue
+        # "set" 比成员，两侧都不能被折成长度（int）——那是"比长度"冒充"比内容"的经典假账。
+        av = sorted(raw) if how == "set" else art_scalar(raw)
+        lv = allv[lname]
+        same = (av == sorted(lv)) if how == "set" else (av == lv)
+        if not same:
+            cross_res.append(("drift", tag, key, lname, "工件 %s ／ live %s" % (av, lv)))
+    drift = [r for r in cross_res if r[0] == "drift"]
+    unres = [r for r in cross_res if r[0] == "unresolved"]
+    meta.update({"cross_total": len(LEDGER_CROSS), "cross_ok": len(LEDGER_CROSS) - len(drift) - len(unres),
+                 "cross_drift": len(drift), "cross_unresolved": len(unres),
+                 "arts": arts, "arts_gen": arts_gen})
+    bad = 0
+    print("")
+    print("%-12s %-52s %s" % ("公式", "现量等式", "判定"))
+    for r in rows:
+        print("%-12s %-52s %s" % (r["rid"], r["eqs"], "闭合" if r["ok"] else "**不闭合** " + r["title"]))
+        bad += 0 if r["ok"] else 1
+    print("%-12s %-52s %s" % ("ID-UNIQ", "公式 id 不许撞车（撞了后写的会顶掉先写的而总账自洽）",
+                              "闭合" if not dup else "**不闭合** %s" % dup))
+    bad += 0 if not dup else 1
+    for kind, tag, key, lname, detail in sorted(drift, key=lambda r: (r[1], r[2])):
+        print("INFO 漂移 %s:%s（live 名 %s）%s —— 工件是那一刻的图像，语料在并发作者手里天天动"
+              % (tag, key, lname, detail))
+    for kind, tag, key, lname, detail in sorted(unres, key=lambda r: (r[1], r[2])):
+        print("FAIL 引用不成立 %s:%s（live 名 %s）%s" % (tag, key, lname, detail))
+        bad += 1
+    print("引用对账 %d 条：一致 %d、漂移 %d、引用不成立 %d" % (
+        len(LEDGER_CROSS), meta["cross_ok"], len(drift), len(unres)))
+
+    doc_abs = os.path.join(REPO, LEDGER_DOC_PATH.replace("/", os.sep))
+    rendered = render_ledger_md(rows, meta)
+    if not os.path.isfile(doc_abs):
+        print("FAIL 文档镜像：方案文档不在 %s" % LEDGER_DOC_PATH)
+        bad += 1
+        lines = []
+    else:
+        with open(doc_abs, "rb") as fh:
+            raw = fh.read()
+        text = raw.decode("utf-8")
+        lines = text.split("\n")
+        span = ledger_block_span(lines)
+        viol, quoted, chains, blind = audit_prose_arith(lines, span)
+        for ln_, s_, vals in viol:
+            print("FAIL 散文里的加法不闭合 %s:%d  「%s」→ 各边 %s" % (LEDGER_DOC_PATH, ln_, s_, vals))
+        bad += len(viol)
+        bc = FL.blind_counts(blind)
+        print("散文算术审计：复算 %d 条主张（红 %d），盲区 %d 条按 reason 出账（%s），引文 %d 条按名点名（引文不是账）"
+              % (chains, len(viol), len(blind),
+                 "／".join("%s=%d" % kv for kv in sorted(bc.items())) or "空", len(quoted)))
+        for ln_, q_ in quoted:
+            print("     引文 %s:%d %s" % (LEDGER_DOC_PATH, ln_, q_))
+        if args.write:
+            if span is None:
+                print("FAIL --write 需要文档里已有成对标记（先手工放两个标记行，别让脚本决定插在哪）")
+                bad += 1
+            else:
+                block = rendered.rstrip("\n").split("\n")
+                new = lines[:span[0]] + block + lines[span[1] + 1:]
+                if new == lines:
+                    print("PASS 文档镜像：托管块与现渲染逐字节相同（%d 行）⇒ 未写入（不动文件）"
+                          % (span[1] - span[0] + 1))
+                else:
+                    guard = audit_len_guard(lines, new, span[0], span[1], len(block))
+                    if guard:
+                        bad += 1
+                        print("FAIL --write 被拒：块外逐行核验没过 ⇒ 一个字也没落盘")
+                    else:
+                        new_bytes = "\n".join(new).encode("utf-8")
+                        with open(doc_abs, "wb") as fh:
+                            fh.write(new_bytes)
+                        with open(doc_abs, "rb") as fh:
+                            back = fh.read()
+                        if back != new_bytes:
+                            print("FAIL --write 回读不一致（盘上字节与内存图像不同：%d 配 %d 字节）"
+                                  % (len(back), len(new_bytes)))
+                            bad += 1
+                        else:
+                            print("PASS --write：托管块 %d 行 → %d 行，块外 %d 行逐字节未动，"
+                                  "整文件字节回读一致（%d → %d）"
+                                  % (span[1] - span[0] + 1, len(block),
+                                     len(lines) - (span[1] - span[0] + 1), len(raw), len(back)))
+        else:
+            if span is None:
+                print("FAIL 文档镜像：托管块标记缺失（跑 --ledger --write 之前先在文档里放好两个标记行）")
+                bad += 1
+            else:
+                cur = "\n".join(lines[span[0]:span[1] + 1]) + "\n"
+                if cur == rendered:
+                    print("PASS 文档镜像：托管块与现渲染逐字节相同（%d 行）" % (span[1] - span[0] + 1))
+                else:
+                    d1, d2 = rendered.split("\n"), cur.split("\n")
+                    diffs = block_diff(d2, d1)
+                    print("FAIL 文档镜像：托管块与现渲染不一致（行数 %d 配 %d，首个差异在第 %s 行，共 %d 行不同）"
+                          % (len(d2), len(d1), (diffs[:1] or ["-"])[0], len(diffs)))
+                    for k in diffs[:args.show]:
+                        print("     盘上 %s" % (d2[k] if k < len(d2) else "<无>"))
+                        print("     现渲 %s" % (d1[k] if k < len(d1) else "<无>"))
+                    bad += 1
+    print("LEDGER %s（红 %d 项；公式 %d 条，每条的值都来自同一个命名空间）"
+          % ("PASS" if bad == 0 else "FAIL", bad, len(rows)))
+    return 0 if bad == 0 else 1
+
+
+def audit_len_guard(old_lines, new_lines, at, end, n_block):
+    """--write 落盘前必须证明块外一行都没动：改前像与改后像在同一张表上逐行比，
+    只比长度会漏掉"总行数没变但内容换了"的写错单位型事故。"""
+    pre_ok = new_lines[:at] == old_lines[:at]
+    post_ok = new_lines[at + n_block:] == old_lines[end + 1:]
+    if not pre_ok:
+        k = next(x for x in range(at) if new_lines[x] != old_lines[x])
+        print("FAIL 块外前段被改动（第 %d 行）" % (k + 1))
+    if not post_ok:
+        print("FAIL 块外后段被改动（前 %d 行配后 %d 行）" % (len(new_lines) - n_block, len(old_lines) - end - 1))
+    return 0 if (pre_ok and post_ok) else 1
 
 
 FIXTURE = '''
@@ -1069,9 +2134,9 @@ pub fn build_host_router(role: HostRole) -> Router<()> {
         },
         _ => Router::new(),
     };
-    # 同一棵 kb 子树还被一条**不带臂**的路径走了一次 ⇒ 同一个挂载位点出现两种读数。
+    # 同一棵 kb 子树还被一条**不带臂、但同前缀**的路径走了一次 ⇒ 同一个挂载位点出现两种读数。
     # 这条自由表达式就是真语料里 All 走模块注册表、单角色走 domain_router 的那个形状。
-    build_kb_router();
+    Router::new().nest("/api", build_kb_router());
     router.merge(build_common_router())
 }
 pub fn build_kb_router() -> Router<()> { Router::new().route("/kbdoc", get(r4)) }
@@ -1095,8 +2160,78 @@ EXPECT_ROLE_MATRIX = {
 }
 
 
-def run_fixture(src_text, root_fns):
+# 分支归因夹具：真语料里 `if role == All { 注册表 } else { domain_router }` 只有 lib.rs:289 一处，
+# 单靠活语料不能当见证（一轮改动就能把它换掉），所以分桶语义必须在夹具上钉死：
+# All 档要含注册表支、不含单角色臂独占子树；Kb 档要含 /api/kb*、不含 Iam 臂里的路径。
+# 另含一枚复合条件（`&&`）——仪器不解布尔，它必须落进"归不出约束"的按名点名账，
+# 而不是被静默当成"没有分支"（那会把只在 All 下挂的端点读成公共面）。
+COND_FIXTURE = '''
+pub fn build_host_router(role: HostRole) -> Router<()> {
+    let protected = if role == HostRole::All {
+        build_c_all_router()
+    } else {
+        c_domain_router(role)
+    };
+    Router::new().merge(protected).merge(build_blend_router(role)).route("/top", get(t0))
+}
+pub fn build_c_all_router() -> Router<()> { Router::new().route("/all-only", get(a0)) }
+fn c_domain_router(role: HostRole) -> Router<()> {
+    match role {
+        HostRole::Kb => upgrade(Router::new().nest("/api", build_c_kb_router())),
+        HostRole::Iam => build_c_iam_router(),
+        HostRole::Kg | HostRole::Cloud => build_c_multi_router(),
+        _ => Router::new(),
+    }
+}
+pub fn build_c_kb_router() -> Router<()> { Router::new().route("/kbdoc", get(k0)) }
+pub fn build_c_iam_router() -> Router<()> { Router::new().route("/iam-only", get(i0)) }
+pub fn build_c_multi_router() -> Router<()> { Router::new().route("/multi", get(m0)) }
+pub fn build_blend_router(role: HostRole) -> Router<()> {
+    if role == HostRole::All && role != HostRole::Kb {
+        Router::new().route("/never-mount", get(n0))
+    }
+    Router::new().route("/common", get(c0))
+}
+pub fn upgrade<S>(router: Router<()>) -> Router<S> { router.with_state(()) }
+'''
+
+COND_VARIANTS = ["All", "Kg", "Cloud", "Kb", "Iam"]
+EXPECT_COND_BUCKETS = {
+    "All": {"/top", "/common", "/never-mount", "/all-only"},
+    "Kg": {"/top", "/common", "/never-mount", "/multi"},
+    "Cloud": {"/top", "/common", "/never-mount", "/multi"},
+    "Kb": {"/top", "/common", "/never-mount", "/api/kbdoc"},
+    "Iam": {"/top", "/common", "/never-mount", "/iam-only"},
+}
+EXPECT_COND_TAGS = {
+    "/top": set(),
+    "/common": set(),
+    "/never-mount": set(),
+    "/all-only": {"=HostRole::All"},
+    "/api/kbdoc": {"!HostRole::All", "HostRole::Kb"},
+    "/iam-only": {"!HostRole::All", "HostRole::Iam"},
+    "/multi": {"!HostRole::All", "HostRole::Kg|HostRole::Cloud"},
+}
+
+# else-if 链：外层否定必须罩住整条链，否则链尾那一支会凭空出现在每个角色桶里。
+CHAIN_COND_FIXTURE = '''
+pub fn build_host_router(role: HostRole) -> Router<()> {
+    if role == HostRole::All {
+        Router::new().route("/all2", get(a1))
+    } else if role == HostRole::Kb {
+        Router::new().route("/kb2", get(k1))
+    } else {
+        Router::new().route("/other2", get(o1))
+    }
+}
+'''
+EXPECT_CHAIN_BUCKETS = {"All": {"/all2"}, "Kb": {"/kb2"},
+                        "Kg": {"/other2"}, "Cloud": {"/other2"}, "Iam": {"/other2"}}
+
+
+def run_fixture(src_text, root_fns, pin=None):
     cen = Census()
+    cen.pin = pin
     rel = "fixture.rs"
     cen.marked[rel] = mask(src_text)
     cen.scanned = 1
@@ -1123,8 +2258,9 @@ def patched_ns(old, new):
     return ns
 
 
-def run_in(ns, src_text, root_fns):
+def run_in(ns, src_text, root_fns, pin=None):
     cen = ns["Census"]()
+    cen.pin = pin
     rel = "fixture.rs"
     cen.marked[rel] = ns["mask"](src_text)
     cen.scanned = 1
@@ -1181,8 +2317,14 @@ def cmd_selftest(_args):
     pb = sorted(p for p, _ in gb)
     checks.append(("条件装配两支都要走", set(pb) == set(EXPECT_BRANCH) and not cb.unresolved,
                    "现 %s unresolved=%s" % (pb, list(cb.unresolved))))
-    ns1 = patched_ns("            if n in self.fns and n not in seen:\n                seen.append(n)",
-                     "            if n in self.fns:\n                seen.append(n)\n                break")
+    ns1 = patched_ns("            if n in self.fns and n not in seen:\n"
+                     "                seen.append(n)\n"
+                     "                lab[n] = self.arm_label(self.arm_label(role, self.arms_at(arms, pos)),\n"
+                     "                                        self.conds_at(conds, pos))",
+                     "            if n in self.fns:\n"
+                     "                seen.append(n)\n"
+                     "                lab[n] = role\n"
+                     "                break")
     g1b, _ = run_in(ns1, BRANCH_FIXTURE, ["build_k_router"])
     checks.append(("变异体4 只跟第一支必须漏掉 else 支",
                    sorted(p for p, _ in g1b) == ["/all-only", "/top"],
@@ -1287,19 +2429,236 @@ def cmd_selftest(_args):
                    and cr6.role_matrix() == {"/common": set(), "/api/kbdoc": set()},
                    "现 %s 矩阵 %s" % (sorted(p for p, _ in gr6), cr6.role_matrix())))
     mpr = mounted_by_path(cr)
-    same_r, diff_r = site_twins(role_aggregates(cr, mpr), mpr)
-    checks.append(("同一挂载位点的两种读数要按「路径的属性」归到有标签那一侧",
-                   same_r == {"/api/kbdoc"} and not diff_r
+    agg_base = role_aggregates(cr, mpr)
+    same_r, diff_r, none_r = site_twins(agg_base, mpr)
+    checks.append(("同 site／不同 site／根本没有 三档要把「角色是路径的属性」与「端点专属该角色」分开",
+                   same_r == {"/api/kbdoc"} and diff_r == set()
+                   and none_r == agg_base["labeled"] - {"/api/kbdoc"}
+                   and agg_base["role_only"] == none_r
                    and cr.role_matrix().get("/api/kbdoc") == {"HostRole::Kb"},
-                   "同 site %s 不同 site %s kbdoc %s" % (
-                       sorted(same_r), sorted(diff_r), sorted(cr.role_matrix().get("/api/kbdoc", set())))))
-    nsr7 = patched_ns("        (same if lab_sites & unlab_sites else diff).add(p)", "        diff.add(p)")
+                   "同 %s 不同 %s 根本没有 %d 条（配 role_only %d）kbdoc %s" % (
+                       sorted(same_r), sorted(diff_r), len(none_r), len(agg_base["role_only"]),
+                       sorted(cr.role_matrix().get("/api/kbdoc", set())))))
+    nsr7 = patched_ns("            same.add(p)", "            diff.add(p)")
     gr7, cr7 = run_in(nsr7, ROLE_FIXTURE, ["build_host_router"])
     mp7 = nsr7["mounted_by_path"](cr7)
-    same7, diff7 = nsr7["site_twins"](nsr7["role_aggregates"](cr7, mp7), mp7)
-    checks.append(("变异体15 撤同 site 判据 ⇒ 同档清空而挂载一条没少（分账读的是这条判据）",
-                   same7 == set() and diff7 == {"/api/kbdoc"} and {p for p, _ in gr7} == EXPECT_ROLE_PATHS,
-                   "同 %s 不同 %s 路径 %d 条" % (sorted(same7), sorted(diff7), len(gr7))))
+    same7, diff7, none7 = nsr7["site_twins"](nsr7["role_aggregates"](cr7, mp7), mp7)
+    checks.append(("变异体15 撤同 site 判据 ⇒ 同档清空而挂载一条没少（分账读的就是这条判据）",
+                   same7 == set() and diff7 == {"/api/kbdoc"} and none7 == none_r
+                   and {p for p, _ in gr7} == EXPECT_ROLE_PATHS,
+                   "同 %s 不同 %s 根本没有 %d 条（应与基线 %d 同）路径 %d 条" % (
+                       sorted(same7), sorted(diff7), len(none7), len(none_r), len(gr7))))
+    # —— 分支归因（`if <cond> { A } else { B }`）：分档语义先由夹具钉死，再逐判据配变异体 ——
+    def bkt(ns_, cen_, variants=None):
+        """用给定命名空间自己的三个读数函数给同一份 Census 分档（变异体必须读它自己的实现）。"""
+        per_ = ns_["origin_conjunctions"](cen_, ns_["mounted_by_path"](cen_))
+        return ns_["read_buckets"](per_, variants or COND_VARIANTS)
+
+    gc0, cc0 = run_fixture(COND_FIXTURE, ["build_host_router"])
+    bk0 = bkt(globals(), cc0)
+    paths0 = {p for p, _ in gc0}
+    # 两族标签各读各的（role_matrix 只认 `role:`、branch_matrix 只认 `cond:`），
+    # 逐路径核对要看的是两族并集；析取标签 `A|B` 的次序由 sorted 归一，不钉字面顺序。
+    def tags_of(cen_, canon=lambda t: "|".join(sorted(t.split("|")))):
+        out = {}
+        for p in set(cen_.role_matrix()) | set(cen_.branch_matrix()):
+            out[p] = {canon(t) for t in
+                      (cen_.role_matrix().get(p, set()) | cen_.branch_matrix().get(p, set()))}
+        return out
+
+    exp_tags = {p: {"|".join(sorted(t.split("|"))) for t in s}
+                for p, s in EXPECT_COND_TAGS.items()}
+    tm0 = tags_of(cc0)
+    tag_bad = {p: sorted(tm0[p] ^ exp_tags.get(p, set()))
+               for p in tm0 if tm0[p] != exp_tags.get(p, set())}
+    checks.append(("分支夹具逐档归属：All 档含注册表支不含单角色臂，Kb 档含 kbdoc 不含 iam-only",
+                   all(bk0[v] == EXPECT_COND_BUCKETS[v] for v in COND_VARIANTS)
+                   and not tag_bad and len(cc0.cond_spans) == 2 and len(cc0.cond_blind) == 1,
+                   "分档不符 %s 标签不符 %s 分支 %d 盲区 %d" % (
+                       [v for v in COND_VARIANTS if bk0[v] != EXPECT_COND_BUCKETS[v]] or "-",
+                       tag_bad or "-", len(cc0.cond_spans), len(cc0.cond_blind))))
+    sub0 = {v: {p for p, _ in run_fixture(COND_FIXTURE, ["build_host_router"], pin=v)[0]}
+            for v in COND_VARIANTS}
+    checks.append(("夹具上两条通道（标签求值 vs 钉死取值走树）必须给出同一批分档",
+                   all(sub0[v] == bk0[v] for v in COND_VARIANTS),
+                   "分歧 %s" % ({v: sorted(sub0[v] ^ bk0[v]) for v in COND_VARIANTS
+                                 if sub0[v] != bk0[v]} or "-")))
+    checks.append(("复合条件（`&&`）归不出约束必须按名进盲区账，不许静默当没有分支",
+                   len(cc0.cond_blind) == 1
+                   and "&&" in sorted(e for _r, _p, e in cc0.cond_blind)[0]
+                   and all("/never-mount" in bk0[v] for v in COND_VARIANTS),
+                   "盲区 %s" % [e for _r, _p, e in sorted(cc0.cond_blind)]))
+    gch, cch = run_fixture(CHAIN_COND_FIXTURE, ["build_host_router"])
+    bkh = bkt(globals(), cch)
+    subh = {v: {p for p, _ in run_fixture(CHAIN_COND_FIXTURE, ["build_host_router"], pin=v)[0]}
+            for v in COND_VARIANTS}
+    checks.append(("else-if 链：外层否定罩住整条链，链尾那一支不许出现在 All 档",
+                   all(bkh[v] == EXPECT_CHAIN_BUCKETS[v] for v in COND_VARIANTS)
+                   and all(subh[v] == bkh[v] for v in COND_VARIANTS),
+                   "不符 %s" % ({v: sorted(bkh[v] ^ EXPECT_CHAIN_BUCKETS[v])
+                                 for v in COND_VARIANTS if bkh[v] != EXPECT_CHAIN_BUCKETS[v]} or "-")))
+    nsr8 = patched_ns("        for m in IF_HEAD_RE.finditer(text):", "        for m in []:")
+    gr8, cr8 = run_in(nsr8, COND_FIXTURE, ["build_host_router"])
+    bk8 = bkt(nsr8, cr8)
+    # 撤了分支枚举，臂那一半还在生效 ⇒ All 档不会变宽（它本来就被臂排除单角色子树）；
+    # 真正被读大的是**单角色档**：注册表支里的 /all-only 会凭空进每个角色桶。
+    checks.append(("变异体16 撤分支枚举 ⇒ 分支标签整族消失，`if role == All` 的支挂进单角色档（挂载一条没少）",
+                   not cr8.cond_spans and all(not v for v in cr8.branch_matrix().values())
+                   and all("/all-only" in bk8[v] for v in ("Kg", "Cloud", "Kb", "Iam"))
+                   and all("/all-only" not in bk0[v] for v in ("Kg", "Cloud", "Kb", "Iam"))
+                   and {p for p, _ in gr8} == paths0,
+                   "分支 %d 泄漏单角色档 %s 总数 %d" % (
+                       len(cr8.cond_spans),
+                       [v for v in COND_VARIANTS if v != "All" and "/all-only" not in bk8[v]] or "-",
+                       len(paths0))))
+    nsr9 = patched_ns('pos, neg = "=HostRole::" + variant, "!HostRole::" + variant',
+                      'pos, neg = "=HostRole::" + variant, "=HostRole::" + variant')
+    gr9, cr9 = run_in(nsr9, COND_FIXTURE, ["build_host_router"])
+    bk9 = bkt(nsr9, cr9)
+    # 负支写成正支并不等于"else 支进了 All 档"：else 支上还叠着臂约束 HostRole::Kb，
+    # 与 =HostRole::All 永不同真 ⇒ 条目从**所有**档里凭空消失（分档读小，挂载一条没少）。
+    checks.append(("变异体17 把负支读成正支 ⇒ 单角色档条目凭空消失而挂载账不动",
+                   "/api/kbdoc" not in bk9["Kb"]
+                   and "/api/kbdoc" not in set().union(*bk9.values())
+                   and "/api/kbdoc" in bk0["Kb"]
+                   and "/all-only" in bk9["All"] and {p for p, _ in gr9} == paths0,
+                   "Kb 档 %s 全档并集含 kbdoc %s All 档 %d 条 挂载 %d 条" % (
+                       sorted(bk9["Kb"]), "/api/kbdoc" in set().union(*bk9.values()),
+                       len(bk9["All"]), len(gr9))))
+    nsra = patched_ns("        for lo, hi in ap + cp:", "        for lo, hi in []:")
+    suba = {v: {p for p, _ in run_in(nsra, COND_FIXTURE, ["build_host_router"], pin=v)[0]}
+            for v in COND_VARIANTS}
+    cza = run_in(nsra, COND_FIXTURE, ["build_host_router"], pin="Kb")[1]
+    checks.append(("变异体18 撤剪枝区间 ⇒ 钉死取值五档塌成一档（分档账会退化成总账）",
+                   all(len(suba[v]) == len(paths0) for v in COND_VARIANTS)
+                   and cza.prune_spans == 0 and not cza.prune_intervals,
+                   "各档 %s 剪枝 %d 次／去重 %d 段" % ({v: len(suba[v]) for v in COND_VARIANTS},
+                                                       cza.prune_spans, len(cza.prune_intervals))))
+    nsrb = patched_ns("        rt = [t for t in toks if not is_cond_token(t)]\n"
+                      "        ct = [t for t in toks if is_cond_token(t)]",
+                      "        rt = toks\n        ct = []")
+    grb, crb = run_in(nsrb, COND_FIXTURE, ["build_host_router"])
+    checks.append(("变异体19 撤标签分族（分支挤进臂通道）⇒ 分支账归零而臂账被顶掉",
+                   not any(crb.branch_matrix().values())
+                   and any(crbo for crbo in crb.role_matrix().values())
+                   and {p for p, _ in grb} == paths0,
+                   "分支账非空格 %d 臂账 %s" % (
+                       len([p for p, v in crb.branch_matrix().items() if v]),
+                       {p: sorted(v) for p, v in crb.role_matrix().items() if v}.get("/all-only", "-"))))
+    nsrc = patched_ns("        i = m.end()\n        if not IF_INNER_RE.match(text, i):",
+                      "        i = m.end()\n        if True:")
+    grc, crc = run_in(nsrc, CHAIN_COND_FIXTURE, ["build_host_router"])
+    bkc = bkt(nsrc, crc)
+    checks.append(("变异体20 撤整条 else-if 链的罩住 ⇒ 链尾那支凭空出现在 All 档",
+                   "/other2" in bkc["All"] and "/other2" not in bkh["All"]
+                   and {p for p, _ in grc} == {p for p, _ in gch},
+                   "变异后 All 档 %s ／ 基线 All 档 %s" % (sorted(bkc["All"]), sorted(bkh["All"]))))
+    led_num = dict(
+        scanned_files=1377, branch_spans=2,
+        assembly_nodes_indexed=10, indexed_by_name=7, indexed_by_signature=5, signature_only=3,
+        entered_total=8, entered_unique=6, entered_sig_only=1, passthrough=2,
+        ca_paired_n=2, unresolved_counts={},
+        routes_declared_len=6, routes_parsed=6, routes_paths_distinct=14,
+        mounted_literal=21, mounted_normalized=20,
+        m_in_table=12, m_ca_only=1, m_only_mount=7, unreg_labeled=1,
+        t_not_mounted=1, t_explained=1,
+        branch_tagged=15, common_surface=5, tag_common_inter=0,
+        only_all=9, multi_bucket=11, never=0,
+        labeled=6, unlabeled=20, twin_same=5, twin_diff=1, twin_none=0, role_only=0,
+        multi_dim=0, excl_sum=6, unreg_all=7, xdiff_sum=0,
+        role_arms_named=3, role_arms_wild=1, nonrole=0, branch_blind=0,
+        surface_failed=0, matrix_failed=0,
+        bucket_All=20, arm_All=20, subst_All=20, removed_All=0, prune_occ_All=2, prune_dist_All=2,
+        bucket_Kb=8, arm_Kb=20, subst_Kb=8, removed_Kb=12, prune_occ_Kb=3, prune_dist_Kb=2,
+    )
+    led_spec = ledger_spec(["All", "Kb"])
+    led_rows = ledger_eval(led_spec, led_num)
+    led_red0 = [r["rid"] for r in led_rows if not r["ok"]]
+    # 单一算源的机械含义：一个数被两行引用时，改一处必须两行同时红。
+    led_rows1 = ledger_eval(led_spec, dict(led_num, m_only_mount=9))
+    led_red1 = sorted(r["rid"] for r in led_rows1 if not r["ok"])
+    led_rows2 = ledger_eval(led_spec, dict(led_num, branch_tagged=16))
+    led_red2 = sorted(r["rid"] for r in led_rows2 if not r["ok"])
+    checks.append(("变异体21 改一个被两行引用的加数 ⇒ 恰好那两行同时红（不是全部红也不是只有一行）",
+                   led_red0 == [] and led_red1 == ["M-PART", "UNREG-CROSS"] and led_red2 == ["TAG-COMMON"],
+                   "基线红 %s ／ 改 m_only_mount 红 %s ／ 改 branch_tagged 红 %s" % (led_red0, led_red1, led_red2)))
+    checks.append(("变异体22 公式 id 撞车 ⇒ 后写的顶掉先写的必须显形（条数自洽不等于没顶）",
+                   ledger_dups(led_rows) == [] and ledger_dups(led_rows + led_rows[:1]) == ["ASM-CLOSE"],
+                   "基线撞车 %s ／ 复制首行 %s（条数 %d 配 %d）" % (
+                       ledger_dups(led_rows), ledger_dups(led_rows + led_rows[:1]),
+                       len(led_rows), len(led_rows) + 1)))
+    led_lines = [u'在册 72 ＝ 按名字 60 ＋ 只靠签名新增 12（这条是真账）。',
+                 u'那一格印的是 71 ＝ 60 ＋ 30，缺一个数。',
+                 u'改正后为「71 ＝ 60 ＋ 30」（这是引文）。',
+                 u'装配 60 ＋ `（重叠 12 条）` ＋ 30 ＝ 90。']
+    v23, q23, n23, b23 = audit_prose_arith(led_lines, None)
+    try:
+        with open(os.path.join(REPO, LEDGER_DOC_PATH.replace("/", os.sep)), "rb") as fh:
+            doc_lines23 = fh.read().decode("utf-8").split("\n")
+        v23b_all = audit_prose_arith(doc_lines23, ledger_block_span(doc_lines23))
+        v23b, n23b = v23b_all[0], v23b_all[2]
+        doc_note23 = "真文档 %d 行复算，主张 %d 条，不闭合 %d 条" % (
+            len(doc_lines23), n23b, len(v23b))
+        # 判集塌缩＝零证据被印成满把握：托管块外的散文若一条主张都不剩，那是尺子掉了不是账干净了
+        doc_ok23 = len(v23b) == 0 and n23b >= 1
+    except IOError as exc:
+        doc_note23 = "真文档读不到：%s" % exc
+        doc_ok23 = False
+    checks.append(("变异体23 散文算术审计的两个失效方向：漏抓假加法／把引文当主张，都要红；"
+                   "代码段里的示意等式不许成第二条账；真文档必须零不闭合**且判集非空**",
+                   len(v23) == 1 and v23[0][0] == 2 and len(q23) == 1 and q23[0][0] == 3
+                   and n23 == 2 and FL.blind_counts(b23).get("code") == 1 and doc_ok23,
+                   "植假 %s（第 %s 行）引文 %s 主张 %d 条 盲区 %s ｜ %s" % (
+                       [x[0] for x in v23], (v23[0][0] if v23 else "-"),
+                       [x[0] for x in q23], n23, sorted(FL.blind_counts(b23).items()),
+                       doc_note23)))
+    # 托管块的跳过口径：`ledger_block_span` 给 0 基、`scan_text` 按 1 基跳块。换算错了**不会报红**，
+    # 只会把块外那条真主张整条吞掉（分母从 1 变 0）——分母变小比多算一次难看见，所以拿它做针。
+    blk_lines = [u'在册 72 ＝ 按名字 60 ＋ 12',
+                 LEDGER_BEGIN + " ledger",
+                 u'表内坏账 71 ＝ 60 ＋ 30',
+                 LEDGER_END]
+    bs = ledger_block_span(blk_lines)
+    v26, q26, n26, b26 = audit_prose_arith(blk_lines, bs)
+    v26o, q26o, n26o, b26o = audit_prose_arith(blk_lines, (bs[0] - 1, bs[1] - 1))
+    checks.append(("变异体26 托管块换算差一行会把块外真主张整条吞掉（块内坏账反被漏掉不报红）⇒ "
+                   "正算必须 1 条主张零红、错算必须显形为分母归零",
+                   n26 == 1 and v26 == [] and n26o == 0 and v26o == [],
+                   "正算 主张 %d 红 %d ／ 错算(整块下移一行) 主张 %d 红 %d" % (
+                       n26, len(v26), n26o, len(v26o))))
+    # 「什么是一条主张」只有一份实现才算归一化：把**模块**的旋钮拧动，本模式的判决必须跟着动。
+    # 若这里还留着一把自己写的尺子（原 CHAIN_RE），拧模块的旋钮本行就不会翻——这枚针钉的是"没有第二源"。
+    _oq = FL.QUOTE_SPAN_RE
+    try:
+        FL.QUOTE_SPAN_RE = re.compile(r"(?!)")
+        v27, q27, n27, b27 = audit_prose_arith(led_lines, None)
+    finally:
+        FL.QUOTE_SPAN_RE = _oq
+    checks.append(("变异体27 散文算术审计确实走共享识别器：拧 `formula_ledger` 的引文旋钮，"
+                   "本模式的判决跟着翻（引文变主张且判红），本地不留第二把尺",
+                   len(q27) == 0 and len(v27) == 2 and v27[0][0] == 2 and v27[1][0] == 3,
+                   "拧后 引文 %d 条 红 %s 第 %s 行" % (len(q27), len(v27), [x[0] for x in v27])))
+    blk24 = ["甲", "乙 ＝ 1 ＋ 2", "丙", "丁"]
+    checks.append(("变异体24 托管块比对：同文本必须报零差，改一个数字必须点出那一行的下标，"
+                   "多一行必须算差（集合差 ≠ 逐位差）",
+                   block_diff(blk24, list(blk24)) == []
+                   and block_diff(["乙 ＝ 1 ＋ 3", ], ["乙 ＝ 1 ＋ 2", ]) == [0]
+                   and block_diff(blk24, blk24 + ["戊"]) == [4]
+                   and block_diff(blk24, blk24[:3]) == [3],
+                   "同 %s 改数字 %s 加长 %s 截短 %s" % (
+                       block_diff(blk24, list(blk24)),
+                       block_diff(["乙 ＝ 1 ＋ 3", ], ["乙 ＝ 1 ＋ 2", ]),
+                       block_diff(blk24, blk24 + ["戊"]), block_diff(blk24, blk24[:3]))))
+    # 镜像判据只比"两次渲染是否相同"，一个从未替换的占位符会稳定地错下去 ⇒ 必须自己成一条判决。
+    spec25 = [s if s[0] != "DECL-PARSE" else s[:5] + (s[5] + " %s",) for s in led_spec]
+    led_rows25 = ledger_eval(spec25, led_num)
+    red25 = sorted(r["rid"] for r in led_rows25 if not r["ok"])
+    anti25 = [r for r in led_rows if r["rid"] == "ASM-ANTI"][0]
+    checks.append(("变异体25 渲染留未替换占位符必须判红（逐字节相同的镜像照样把错处印进文档），"
+                   "而反对照那行的重叠数必须由本行的值现推",
+                   red25 == ["DECL-PARSE"] and "%s" not in anti25["cite"]
+                   and "重叠 2 条" in anti25["cite"],
+                   "植入后红 %s ／ ASM-ANTI 说明「%s」" % (red25, anti25["cite"])))
     fails = 0
     for name, ok, detail in checks:
         print("%-4s %s  %s" % ("PASS" if ok else "FAIL", name, detail))
@@ -1314,7 +2673,13 @@ def main(argv=None):
     ap.add_argument("--census", action="store_true", help="打印普查账（默认）")
     ap.add_argument("--role-matrix", action="store_true",
                     help="按 HostRole 臂归属的对外面账（只读，不判决；归属是注解不是门禁）")
+    ap.add_argument("--role-surface", action="store_true",
+                    help="按角色分桶的对外表面账：分支位置归因＋钉死取值走树两条通道（只读，不判决）")
     ap.add_argument("--selftest", action="store_true", help="解析器自检（含变异体）")
+    ap.add_argument("--ledger", action="store_true",
+                    help="台账闭合：方案文档里每条核心公式在一份活图像上复算，并把每个数对回被引用的工件键")
+    ap.add_argument("--write", action="store_true",
+                    help="与 --ledger 同用：把文档里的托管块改写为现渲染（块外逐行核验通过才落盘）")
     ap.add_argument("--check", action="store_true", help="判决模式（当前故意拒绝）")
     ap.add_argument("--show", type=int, default=12, help="每类 UNRESOLVED 点名条数")
     ap.add_argument("--show-lists", type=int, default=0, help="双向差额各点名条数，0 为不打印")
@@ -1324,6 +2689,10 @@ def main(argv=None):
         return cmd_selftest(args)
     if args.role_matrix:
         return cmd_role_matrix(args)
+    if args.role_surface:
+        return cmd_role_surface(args)
+    if args.ledger:
+        return cmd_ledger(args)
     if args.check:
         print("REFUSED：--check 仍不启用，但拒绝的理由已经换了一茬。")
         print("         覆盖面按形状算：兜底 fallback、条件装配 if/else、match 臂、以及不叫 build_*")

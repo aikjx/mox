@@ -52,7 +52,7 @@ IMPL = {
     'ai': '`platform/domains/kg/svc/mox-kg-service-svc/src/http_adapter.rs`',
     'kb': '`platform/domains/kg/svc/mox-kb-svc/src/handlers.rs`（nest `/api`）+ `kb_ext.rs`',
     'alliance': '`platform/domains/alliance/sdk/mox-alliance-http-sdk/src/alliance.rs`',
-    'system': '`platform/gateway/mox-platform-gateway-svc/src/system.rs`',
+    'system': '`platform/gateway/mox-platform-gateway-svc/src/system/mod.rs`',
     'experts': '`experts_registry/collaboration/dispatcher/graph/orchestration/session/ext.rs` 七模块',
     'monitor': '`platform/gateway/mox-platform-gateway-svc/src/monitor.rs`',
     'projects': '`platform/gateway/mox-platform-gateway-svc/src/projects_ext.rs`',

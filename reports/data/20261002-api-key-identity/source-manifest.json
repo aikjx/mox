@@ -1,0 +1,66 @@
+[
+  {
+    "path": "platform/domains/platform/core/mox-platform-iam-core/src/api_keys.rs",
+    "sha256": "7cbf0640fdf28ed3626126bdc2d3e2b2669673a0458bea68a3d87a606bc0bc88"
+  },
+  {
+    "path": "platform/domains/platform/core/mox-platform-iam-core/src/permission_admin.rs",
+    "sha256": "24b2a19eb557c9b6c8ccea9c0205f25a4ed048dcdfae02a2b0d0ab3b5d2b405b"
+  },
+  {
+    "path": "platform/domains/platform/core/mox-platform-iam-core/src/lib.rs",
+    "sha256": "aee279886413e97c90ae81dd95448c71677763503a7fece3e5db2e1f7e8e32d7"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/auth.rs",
+    "sha256": "27f86eb2e6a589b3dca90126f5d9368d846b3f9c6a30aee9b56a6ff9792959ea"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/system/security.rs",
+    "sha256": "8818ca6f0e20ba0636bf393b630c617698171e0fe6f1c3785a61342179005972"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/system/mod.rs",
+    "sha256": "bc177a89b02a8dd4f5285b668490653ccea110b5822060ea55cc73987e92aef7"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/lib.rs",
+    "sha256": "42d8d49de0061b7b65828eb5063d582d36ccc290f3e63d0c79b6688103c529aa"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_db.rs",
+    "sha256": "3a2c2c2a1e3b3672db1e5aa7421ec0b68ac3687628203baf8eb151222522e8ad"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+    "sha256": "b022846c9ba1915f280ad450d6e487118821213adca2e1845e14f6191f9d51d5"
+  },
+  {
+    "path": "frontend-ui/src/api/system.api.js",
+    "sha256": "693b76cefc98714dcd82cc315e10125e0e9cdc7e5df957c380dd3b5e3a45721e"
+  },
+  {
+    "path": "frontend-ui/src/views/admin/panels/AdminAccess.vue",
+    "sha256": "b11e9acf1dc4fc70ae6e75bc4eb8f8f91932c4dd7feab131295f7bc8a56d5ca6"
+  },
+  {
+    "path": "frontend-ui/src/views/admin/panels/AdminAccess.smoke.test.js",
+    "sha256": "2092cab641e2996196fe74f5847bbcbffa1958ba32c7556036882f59da0db41b"
+  },
+  {
+    "path": "docs/modules/iam/API-KEYS.md",
+    "sha256": "1992c0314db2082516cc40679c93e87db3978b57e41a905ec7753ffa4d2b12ff"
+  },
+  {
+    "path": "docs/modules/iam/README.md",
+    "sha256": "29ec62f93a1ca10da3384a493fa1a61c97823e8aca1810d27c5dbe9b44cbe39b"
+  },
+  {
+    "path": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+    "sha256": "0a9205a12fc5e693729b27e6003bbcfc443938546d2c53acefdda7dea0591974"
+  },
+  {
+    "path": "reports/markdown/20261002-api-key-identity.md",
+    "sha256": "80566ef02d0db61cc34147542d2c9ffe78987b0c224ef54528290eac30001a88"
+  }
+]

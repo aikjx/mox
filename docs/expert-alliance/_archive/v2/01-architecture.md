@@ -11,7 +11,7 @@ source_of_truth: V2.0目标架构设计（未落地）
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-全维需求分析](docs/expert-alliance/v2/00-requirements.md)
+> 前置：[00-全维需求分析](./00-requirements.md)
 
 
 > ⚠️ **文档状态声明**  
@@ -498,4 +498,4 @@ Phase 6（W25+）：持续优化
 
 ---
 
-*下一篇：[02-归一化领域模型](docs/expert-alliance/v2/02-domain-model.md)*
+*下一篇：[02-归一化领域模型](./02-domain-model.md)*

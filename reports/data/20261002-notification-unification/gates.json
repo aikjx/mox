@@ -1,0 +1,22 @@
+[
+  {
+    "name": "frontend-gate",
+    "exit_code": 0,
+    "log": "frontend-gate.log"
+  },
+  {
+    "name": "locale-gate",
+    "exit_code": 0,
+    "log": "locale-gate.log"
+  },
+  {
+    "name": "doc-links",
+    "exit_code": 0,
+    "log": "doc-links.log"
+  },
+  {
+    "name": "module-catalog",
+    "exit_code": 0,
+    "log": "module-catalog.log"
+  }
+]

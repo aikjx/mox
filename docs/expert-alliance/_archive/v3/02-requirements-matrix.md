@@ -10,7 +10,7 @@ source_of_truth: V3.0架构优化需求矩阵
 
 > 版本：v3.0 | 日期：2026-08-26
 >
-> 前置：[01-架构优化分析](docs/expert-alliance/v3/01-architecture-optimization.md)
+> 前置：[01-架构优化分析](./01-architecture-optimization.md)
 
 
 > ⚠️ 本文档为 V3 架构愿景参考，非实现契约。当前实现以代码（platform/domains/alliance/）和 EA-NORM-001 §6 为准。
@@ -176,4 +176,4 @@ source_of_truth: V3.0架构优化需求矩阵
 
 ---
 
-*下一篇：[03-全维业务流程图](docs/expert-alliance/v3/03-business-flow-diagrams.md)*
+*下一篇：[03-全维业务流程图](./03-business-flow-diagrams.md)*

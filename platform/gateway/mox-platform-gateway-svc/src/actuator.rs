@@ -420,7 +420,7 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 243] = [
+pub static ROUTES: [ApiRoute; 249] = [
     // =====================================================================
     // Actuator 域（L0·Spring Boot 风格管理面·actuator.rs 实现）
     // =====================================================================
@@ -535,6 +535,10 @@ pub static ROUTES: [ApiRoute; 243] = [
     r("alliance.tasks.status_poll", "GET", "/api/alliance/tasks/:id/status", "L4", "alliance", "ready", "任务状态轮询（供前端轮询）"),
     r("alliance.tasks.plan", "GET", "/api/alliance/tasks/:id/plan", "L4", "alliance", "ready", "协作计划查询"),
     r("alliance.stats", "GET", "/api/alliance/stats", "L4", "alliance", "ready", "联盟统计（专家/任务/成功率）"),
+    // —— T4 事件总线对外出口（experts_streams.rs；按租户；与既有任务日志流独立）——
+    r("alliance.events.stream", "GET", "/api/alliance/events/stream", "L4", "alliance", "ready", "T4 业务事件帧 SSE 流（按租户，event:<Kind>+data:<信封>）"),
+    r("alliance.events.webhooks", "ANY", "/api/alliance/events/webhooks", "L4", "alliance", "ready", "Webhook 订阅登记/列表（内存，重启即失）"),
+    r("alliance.events.webhook_detail", "DELETE", "/api/alliance/events/webhooks/:id", "L4", "alliance", "ready", "删除本租户 webhook 订阅"),
 
     // =====================================================================
     // System 域（L5·系统管理+安全·system.rs 实现·IAM SQLite 真实数据链路）
@@ -554,6 +558,9 @@ pub static ROUTES: [ApiRoute; 243] = [
     r("system.user.change_status", "PUT", "/api/system/user/:id/changeStatus", "L5", "system", "ready", "用户状态切换（启用/停用）"),
     r("system.user.roles", "ANY", "/api/system/user/:id/roles", "L5", "system", "ready", "用户角色查询/分配"),
     r("system.role.list", "ANY", "/api/system/role", "L5", "system", "ready", "角色列表/创建"),
+    r("system.iam.permissions", "GET", "/api/system/iam/permissions", "L5", "system", "ready", "真实 IAM 权限目录：本租户超级管理员"),
+    r("system.iam.message_send", "POST", "/api/system/iam/permissions/message-send", "L5", "system", "ready", "事务登记 message:send 权限点与审计"),
+    r("system.iam.role_permissions", "ANY", "/api/system/iam/roles/:id/permissions", "L5", "system", "ready", "真实 IAM 角色直接授权读取/版本检查替换"),
     r("system.role.detail", "ANY", "/api/system/role/:id", "L5", "system", "ready", "角色详情/更新/删除"),
     r("system.role.menu_perms", "ANY", "/api/system/role/:id/menuPerms", "L5", "system", "ready", "角色菜单权限查询/设置"),
     r("system.role.data_perms", "ANY", "/api/system/role/:id/dataPerms", "L5", "system", "ready", "角色数据权限查询/设置"),

@@ -154,3 +154,24 @@ async fn pagination_and_snake_case_filters_use_persisted_scope() {
     assert_ne!(first[0].message_id, second[0].message_id);
     assert_eq!(state.repository.list("b", "u", 50, 0, None, None).unwrap().1, 0);
 }
+
+#[tokio::test]
+async fn legacy_self_inbox_key_migrates_without_duplicate_delivery() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("inbox.db");
+    let state = Arc::new(MessageCenterState::with_db_path(path.clone()));
+    let original = id(send(state.clone(), "a", "u", "legacy-key", "actual").await).await;
+    // Reconstruct the prior schema's dedupe representation in the actual database.
+    let conn = rusqlite::Connection::open(&path).unwrap();
+    conn.execute_batch(
+        "DROP TABLE inbox_schema_migrations; DROP TABLE inbox_dispatch_keys;
+        UPDATE inbox_messages SET idempotency_key='legacy-key';",
+    )
+    .unwrap();
+    drop(conn);
+    drop(state);
+    let migrated = Arc::new(MessageCenterState::with_db_path(path));
+    assert_eq!(id(send(migrated.clone(), "a", "u", "legacy-key", "actual").await).await, original);
+    assert_eq!(migrated.repository.stats("a", "u").unwrap().total, 1);
+    assert_eq!(send(migrated, "a", "u", "legacy-key", "changed").await.status().as_u16(), 409);
+}

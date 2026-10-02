@@ -1,7 +1,0 @@
-无法将 [ref] 应用于不存在的变量。
-所在位置 行:1 字符: 1
-+ $t=[System.Management.Automation.Language.Parser]::ParseFile('D:\a10\ ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (err:VariablePath) []，RuntimeException
-    + FullyQualifiedErrorId : NonExistingVariableReference
- 

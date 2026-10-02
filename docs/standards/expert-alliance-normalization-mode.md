@@ -1054,13 +1054,13 @@ docs/expert-alliance/
 [开发专家联盟](docs/enterprise/GLOSSARY.md#term-expert-alliance)负责工程落地与稳定性。
 
 <!-- 引用通用规范 -->
-目录职责划分遵循 [DOC-GOV-V1.0](docs/DOC-NORMALIZATION-REPORT.md) §2.1。
+目录职责划分遵循 [DOC-GOV-V1.0](../enterprise/DOC-NORMALIZATION-REPORT.md) §2.1。
 
 <!-- 引用企业级文档 -->
-三联盟模式定义见 [TOP-MASTER](docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)。
+三联盟模式定义见 [TOP-MASTER](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)。
 
 <!-- 引用流程标准 -->
-六阶段处理流程遵循 [EAF-STD-001](docs/standards/expert-alliance-flow-standard.md) §4。
+六阶段处理流程遵循 [EAF-STD-001](./expert-alliance-flow-standard.md) §4。
 ```
 
 #### C.2 错误引用示例（禁止）

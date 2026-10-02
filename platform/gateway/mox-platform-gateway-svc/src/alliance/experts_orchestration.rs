@@ -16,6 +16,7 @@
 //! - 真实模型咨询 DAG（模型不可用/治理拒绝即失败，不生成固定结论）
 
 use super::experts_common::*;
+use super::experts_events::{self, AllianceEventKind};
 use mox_alliance_http_sdk::FusionStrategy;
 use mox_api_protocol::ApiResponse;
 use axum::{
@@ -548,6 +549,17 @@ async fn orchestrate(
     let mut plan = generate_plan(&body.task, &task_type, &matched_experts, &fusion_strategy);
 
     plan.metadata.insert("tenant_id".into(), json!(tenant));
+    // T4：计划创建事件（draft，由 orchestrate 内 generate_plan 产生）
+    experts_events::emit(
+        &state,
+        AllianceEventKind::PlanCreated {
+            plan_id: plan.plan_id.clone(),
+            task_type: task_type.clone(),
+            title: plan.title.clone(),
+        },
+        tenant.as_str(),
+        "orchestrate",
+    );
     // 执行真实咨询 DAG
     let exec_result = execute_plan(&mut plan, None, &matched_experts).await;
 
@@ -556,6 +568,21 @@ async fn orchestrate(
         let mut plans = state.plans.lock();
         plans.insert(plan.plan_id.clone(), plan.clone());
     }
+    // D4：写后立即落盘（崩溃可恢复），租户取请求身份
+    upsert_plan(tenant.as_str(), &plan);
+
+    // T4：计划状态推进事件（running -> 终态 completed/failed/partial）
+    experts_events::emit(
+        &state,
+        AllianceEventKind::PlanStatusChanged {
+            plan_id: plan.plan_id.clone(),
+            from: "running".into(),
+            to: plan.status.clone(),
+            execution_id: exec_result["execution_id"].as_str().map(|s| s.to_string()),
+        },
+        tenant.as_str(),
+        "orchestrate",
+    );
 
     // 记录历史
     let duration_ms = start.elapsed().as_millis() as u64;
@@ -573,6 +600,8 @@ async fn orchestrate(
         completed_at: Some(now_iso()),
         duration_ms,
     };
+    // D4：先落盘再入内存（best-effort，失败不阻断业务）
+    insert_history_record(tenant.as_str(), &record);
     {
         let mut history = state.orchestration_history.lock();
         history.push(record);
@@ -648,6 +677,20 @@ async fn generate_plan_handler(
         let mut plans = state.plans.lock();
         plans.insert(plan.plan_id.clone(), plan.clone());
     }
+    // D4：写后立即落盘
+    upsert_plan(tenant.as_str(), &plan);
+
+    // T4：计划创建事件（draft）
+    experts_events::emit(
+        &state,
+        AllianceEventKind::PlanCreated {
+            plan_id: plan.plan_id.clone(),
+            task_type: task_type.clone(),
+            title: plan.title.clone(),
+        },
+        tenant.as_str(),
+        "generate_plan_handler",
+    );
 
     let experts_summary: Vec<Value> = experts.iter().map(|e| json!({
         "id": e.id,
@@ -683,20 +726,29 @@ async fn execute_plan_handler(
     TenantId(tenant): TenantId,
     Json(body): Json<ExecutePlanBody>,
 ) -> ApiResponse<Value> {
-    let mut plan = {
-        let mut plans = state.plans.lock();
-        let Some(plan) = plans.get_mut(&body.plan_id) else {
-            return err(404, "plan not found");
-        };
-        if plan.metadata.get("tenant_id").and_then(Value::as_str) != Some(tenant.as_str()) {
-            return err(404, "plan not found");
-        }
-        if plan.status == "running" {
-            return err(409, "plan is already running");
-        }
-        plan.status = "running".into();
-        plan.clone()
+    // A2：plan 读路径实时查 SQLite（按租户下推过滤），跨实例即一致；
+    // 不再读本实例内存镜像（它可能落后于其他副本刚写穿的行）。
+    let mut plan = match crate::alliance::experts_db::get_plan(tenant.as_str(), &body.plan_id) {
+        Some(p) => p,
+        None => return err(404, "plan not found"),
     };
+    if plan.status == "running" {
+        return err(409, "plan is already running");
+    }
+    // T4：记录进入 running 前的原状态（draft/completed/failed…）
+    let from_status = plan.status.clone();
+    plan.status = "running".into();
+    experts_events::emit(
+        &state,
+        AllianceEventKind::PlanStatusChanged {
+            plan_id: body.plan_id.clone(),
+            from: from_status,
+            to: "running".into(),
+            execution_id: None,
+        },
+        tenant.as_str(),
+        "execute_plan_handler",
+    );
     let experts = {
         let all = state.registry.lock();
         all.get(tenant.as_str())
@@ -708,6 +760,21 @@ async fn execute_plan_handler(
     };
     let result = execute_plan(&mut plan, body.step_ids, &experts).await;
     state.plans.lock().insert(plan.plan_id.clone(), plan.clone());
+    // D4：计划状态变更后立即落盘
+    upsert_plan(tenant.as_str(), &plan);
+
+    // T4：执行终态事件（running -> completed/failed/partial）
+    experts_events::emit(
+        &state,
+        AllianceEventKind::PlanStatusChanged {
+            plan_id: body.plan_id.clone(),
+            from: "running".into(),
+            to: plan.status.clone(),
+            execution_id: result["execution_id"].as_str().map(|s| s.to_string()),
+        },
+        tenant.as_str(),
+        "execute_plan_handler",
+    );
 
     // 记录历史
     let record = OrchestrationRecord {
@@ -724,6 +791,8 @@ async fn execute_plan_handler(
         completed_at: Some(now_iso()),
         duration_ms: result["duration_ms"].as_u64().unwrap_or(0),
     };
+    // D4：先落盘再入内存
+    insert_history_record(tenant.as_str(), &record);
     {
         let mut history = state.orchestration_history.lock();
         history.push(record);
@@ -734,21 +803,15 @@ async fn execute_plan_handler(
 
 /// 4. GET /api/experts/orchestration/stats — 编排统计
 async fn orchestration_stats(
-    State(state): State<Arc<ExpertsSharedState>>,
+    State(_state): State<Arc<ExpertsSharedState>>,
     TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
-    let all_plans = state.plans.lock();
-    let plans: HashMap<_, _> = all_plans
-        .iter()
-        .filter(|(_, plan)| {
-            plan.metadata.get("tenant_id").and_then(Value::as_str) == Some(tenant.as_str())
-        })
-        .collect();
-    let all_history = state.orchestration_history.lock();
-    let history: Vec<_> = all_history
-        .iter()
-        .filter(|record| plans.contains_key(&record.plan_id))
-        .collect();
+    // A2：读路径实时查 SQLite（按租户下推过滤），跨实例即一致；
+    // history 表自带 tenant_id 列，直接按租户读，等价于旧「按本租户可见 plan 过滤」语义。
+    let plans: HashMap<String, CollaborationPlan> =
+        crate::alliance::experts_db::load_plans_by_tenant(tenant.as_str());
+    let history: Vec<OrchestrationRecord> =
+        crate::alliance::experts_db::load_history_by_tenant(tenant.as_str());
 
     let total_plans = plans.len();
     let plans_draft = plans.values().filter(|p| p.status == "draft").count();
@@ -823,7 +886,7 @@ async fn orchestration_plugins() -> ApiResponse<Value> {
 /// 6. GET /api/experts/orchestration/history — 编排执行历史
 async fn orchestration_history(
     Query(params): Query<HashMap<String, String>>,
-    State(state): State<Arc<ExpertsSharedState>>,
+    State(_state): State<Arc<ExpertsSharedState>>,
     TenantId(tenant): TenantId,
 ) -> ApiResponse<Value> {
     let page: usize = params.get("page").and_then(|v| v.parse().ok()).unwrap_or(1);
@@ -831,28 +894,21 @@ async fn orchestration_history(
     let status_filter = params.get("status").cloned();
     let task_type_filter = params.get("task_type").cloned();
 
-    let visible_plans = state
-        .plans
-        .lock()
-        .values()
-        .filter(|plan| {
-            plan.metadata.get("tenant_id").and_then(Value::as_str) == Some(tenant.as_str())
-        })
-        .map(|plan| plan.plan_id.clone())
-        .collect::<std::collections::HashSet<_>>();
-    let history = state.orchestration_history.lock();
-    let mut filtered: Vec<&OrchestrationRecord> = history.iter()
-        .filter(|record| visible_plans.contains(&record.plan_id))
-        .filter(|r| status_filter.as_ref().map(|s| r.status == *s).unwrap_or(true))
-        .filter(|r| task_type_filter.as_ref().map(|t| r.task_type == *t).unwrap_or(true))
-        .collect();
+    // A2：历史读路径实时查 SQLite（按租户下推），跨实例即一致；
+    // 不再读本实例内存镜像，也无需先查本租户可见 plan 集合（history 行自带 tenant_id）。
+    let mut history: Vec<OrchestrationRecord> =
+        crate::alliance::experts_db::load_history_by_tenant(tenant.as_str());
+    history.retain(|r| {
+        status_filter.as_ref().map(|s| r.status == *s).unwrap_or(true)
+            && task_type_filter.as_ref().map(|t| r.task_type == *t).unwrap_or(true)
+    });
 
     // 按 created_at 降序
-    filtered.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    history.sort_by(|a, b| b.created_at.cmp(&a.created_at));
 
-    let total = filtered.len();
+    let total = history.len();
     let offset = (page.saturating_sub(1)) * page_size;
-    let records: Vec<&OrchestrationRecord> = filtered.into_iter().skip(offset).take(page_size).collect();
+    let records: Vec<&OrchestrationRecord> = history.iter().skip(offset).take(page_size).collect();
 
     ok(json!({
         "records": records,

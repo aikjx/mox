@@ -75,6 +75,7 @@ scope: 对 08-normalized-architecture.md §三「全维功能矩阵（40 项）�
 - **差距**：企业级收藏必须随用户/登录持久化。
 - **建议**：P1 落盘（并入网关 SQLite 或用户维度表），08 §十存储行已列。
 - **分级**：🟡（进程内，08 §六列"进程内三项"之一）
+- **✅ 闭环（2026-10-02，D4）**：已落盘 `favorites(tenant_id, expert_id)` 表（schema v3），写后 upsert/delete，启动按租户分区读回；内存态随之按租户分区。重启即失→可恢复，两租户隔离 E2E 已证（_verification/d4-e2e-evidence.txt）。
 
 ### 4. 专家预约 booking
 - **现状**：experts_ext.rs + 表 bookings（experts_db.rs:158）SQLite 落盘；前端 ExpertBookingPanel（矩阵 #4）。
@@ -173,6 +174,7 @@ scope: 对 08-normalized-architecture.md §三「全维功能矩阵（40 项）�
 - **差距**：默认关导致 #2 的"登记值"长期失真。
 - **建议**：P1 生产档设 `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=1`（09 §2.7 已入推荐块），文档标注默认值。
 - **分级**：🟡（N5，默认关闭；09 已给生产默认）
+- **✅ 闭环（2026-10-02，D8）**：`health_probe_enabled` 默认值 `false→true`（app_state.rs:61），无需运维显式设 env 即启动主动探测；env `=0/false/no/off` 可关回退被动租约。探活结果回流前端仍为遗留（🟡），不属本次范围。
 
 ### 18. 调度器多活（HA）
 - **现状**：leadership.rs:110 LeaseStore/:194 LeaderElector/storage.rs:890 SqliteLeaseStore + fencing epoch + leader 对账（ha.rs:200）；需 `MOX_ALLIANCE_HA_MODE=on`（矩阵 #18）。
@@ -250,6 +252,7 @@ scope: 对 08-normalized-architecture.md §三「全维功能矩阵（40 项）�
 - **差距**：计划不能跨重启追溯。
 - **建议**：P1 落盘并入 scheduler 任务节点表。
 - **分级**：🟡（进程内，08 §六"进程内三项"之一）
+- **✅ 闭环（2026-10-02，D4）**：已落盘 `collaboration_plans(tenant_id, plan_id)` 表（schema v3，完整计划存 data_json），写后 upsert，启动读回。重启后 plan_id 不再 404（同进程重启）；跨 scheduler 任务节点表迁移仍为远期。
 
 ### 29. 编排历史 orchestration_history
 - **现状**：experts_common.rs:470 进程内 Vec；前端空态写"本页没有记录"+"仅本次进程"角标（矩阵 #29）。
@@ -257,6 +260,7 @@ scope: 对 08-normalized-architecture.md §三「全维功能矩阵（40 项）�
 - **差距**：企业级必须有编排审计历史。
 - **建议**：P1 落盘。
 - **分级**：🟡（进程内，文案合规是加分项）
+- **✅ 闭环（2026-10-02，D4）**：已落盘 `orchestration_history(tenant_id, execution_id)` 表（schema v3），追加后 insert，启动按写入时序读回。重启后编排历史不再归零，可作审计追溯。
 
 ### 30. 熔断（网关侧）
 - **现状**：experts_dispatcher.rs:494 circuit_breakers 独立内存 map；前端 dispatcherStatus 消费（矩阵 #30）。
@@ -380,11 +384,11 @@ scope: 对 08-normalized-architecture.md §三「全维功能矩阵（40 项）�
 | D1 | **SQLite 无 schema 版本迁移**，加列即崩 | 任何一次 schema 演进都可能让生产库起不来 | 22,23,11,28,29 | 引入 PRAGMA user_version + 版本迁移脚本（N3） | P0 |
 | D2 | **审计无用户身份 + 前端无角色权限** | 合规审计无法定责，破坏性写面对所有登录用户开放 | 19,20,38 | ApiAuth 注入 AuditActor；补 requiresRole + v-permission（N2/G3） | P0 |
 | D3 | **Webhook/WS 文档幻觉未修订** | 运维按 06 配置 WS 必踩坑，文档可信度受损 | 25,8,7 | 修订 01/02/03/06 的 WS 表述，统一以 SSE 为准 | P1 |
-| D4 | **进程内三项重启即失**（favorites/plans/history） | 用户数据重启丢失，编排不可追溯 | 3,28,29 | 落盘到网关 SQLite / scheduler 任务节点表 | P1 |
+| D4 | **进程内三项重启即失**（favorites/plans/history）✅已闭环 2026-10-02 | 用户数据重启丢失，编排不可追溯 | 3,28,29 | ~~落盘到网关 SQLite~~ **已落盘网关 SQLite 三表（schema v3，按租户），E2E 已证**；并入 scheduler 任务节点表仍远期 | P1 ✅ |
 | D5 | **DAG 并行无信号量上限** | LLM 配额被打爆、成本失控 | 14,15,6 | dag_engine 加 Semaphore + 每专家限流（N8） | P1 |
 | D6 | **指标三进程格式不统一** | Prometheus 无法直接抓取，可观测性断链 | 33,5,32,18 | scheduler/executor 补 Prometheus 文本端点（N7） | P1 |
 | D7 | **图谱只能全量 rebuild、无节点 CRUD** | 图谱是只读快照，专家变更不自动同步 | 10,11,40 | 补节点/边增量写，专家 CRUD 联动维护（N4） | P2 |
-| D8 | **探活默认关闭，登记值易误读** | 专家"在线"实际不通，排障误判 | 2,17,16 | 生产档默认 PROBE_ENABLED=1；前端标签说明登记值语义（N5） | P1 |
+| D8 | **探活默认关闭，登记值易误读** ✅已闭环 2026-10-02（默认开） | 专家"在线"实际不通，排障误判 | 2,17,16 | ~~生产档默认 PROBE_ENABLED=1~~ **默认已开（env 可关）**；前端标签说明登记值语义（N5）仍遗留 | P1 ✅ |
 | D9 | **前端 store 无测试 + SSE 未统一** | 状态层重构无安全网；外部任务视图手写 reader | 39,24,36 | 补 console/orch store 单测；统一 useSSE（G6/G5） | P1 |
 | D10 | **大列表无虚拟滚动、图谱三套渲染栈** | 专家/图谱规模化后前端卡顿 | 40,10,36 | 引入虚拟滚动；归一化 GraphCanvas（G7/G9） | P2 |
 | D11 | **内部令牌单值比对，轮换需重启** | 密钥轮换窗口风险，企业级密钥治理不足 | 20,21 | 支持双 token 滚动；密钥走 ExternalSecret | P2 |

@@ -106,6 +106,7 @@ const props = defineProps({
   showPagination: { type: Boolean, default: true },
   total: { type: Number, default: 0 },
   pageSizes: { type: Array, default: () => [10, 20, 50, 100] },
+  initialPageSize: { type: Number, default: null },
   emptyIcon: { type: String, default: '📭' },
   emptyText: { type: String, default: '暂无数据' },
   emptyActionText: { type: String, default: '' },
@@ -119,7 +120,7 @@ const emit = defineEmits([
 
 const tableRef = ref(null)
 const currentPage = ref(1)
-const pageSize = ref(props.pageSizes[0] || 10)
+const pageSize = ref(props.initialPageSize || props.pageSizes[0] || 10)
 
 const pagedData = computed(() => {
   if (props.serverPagination) return props.data

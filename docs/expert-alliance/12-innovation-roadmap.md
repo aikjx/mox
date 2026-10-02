@@ -110,6 +110,7 @@ scope: 依据 10-enterprise-maturity-review.md 的 P0 阻断项与 TOP 差距、
 - **依赖**：P0 的 N3（事件要落库才能回放）；与 T5 流式编排、A3 事件溯源共用事件模型，建议同一套事件 schema。
 - **落地路径**：① 定义 TaskLifecycleEvent / NodeLifecycleEvent 结构化事件（type、timestamp、task_id、node_id、actor、payload）；② 网关侧发布，SSE 升级为「日志帧 + 事件帧」双通道；③ 提供事件订阅端点（webhook 或 SSE）供外部系统消费；④ 事件落库（与 A3 共用），支持按 task 回放。
 - **依据**：10-#24（SSE 单向日志流）、D9/G5；11-我们弱②（可观测/tracing 短板）；LangGraph 借鉴点①（run 级结构化事件 + 时间线）、Airflow 3.0 事件驱动。
+- **落地状态（2026-10-02）**：**部分落地（进程内闭环）**。已建 `tokio::sync::broadcast` 进程内事件总线 + 事件模型（PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled，带 tenant），真实 handler emit、消费者落 `alliance_event_log`（schema v4），E2E 真实验证通过。**未做（后续）**：SSE 升级为「日志帧+事件帧」双通道、外部系统 webhook/SSE 订阅端点、跨进程/多副本广播——需在总线之上再加外发层。详见 `platform/domains/alliance/_verification/backend-fix-report.md` T4 节。
 
 ### 2.5 T5　流式编排（边执行边交付）
 
@@ -176,7 +177,7 @@ scope: 依据 10-enterprise-maturity-review.md 的 P0 阻断项与 TOP 差距、
 - **依赖**：P0 的 N2 审计身份 + G3 角色权限（多租户 = 在用户/角色之上加一层租户维度）；P0 N1 下游鉴权（下游 svc 要能识别 tenant）；中心化凭证（飞书 aily 借鉴：Agent 不持密钥，系统统一托管）。
 - **落地路径**：① 数据模型引入 tenant_id（P0 schema 迁移框架内一并加）；② 所有查询按租户过滤，行级权限；③ 配额：每租户专家数、并发数（接 T1 信号量）、LLM 调用量计量；④ 密钥按租户隔离托管（对齐飞书 aily 中心化凭证）；⑤ SSO/SAML 对接（n8n/Dify 借鉴）作为租户入口。
 - **依据**：11-我们弱③、Dify/n8n/Airflow 多团队借鉴；10-D2/N2/G3；08 §十（SSO/多租户原属目标态未列项）。
-- **落地状态（2026-10-01）**：🟡 阶段一已闭环——落地路径①②已做（数据模型 tenant_id + schema v2 迁移、所有查询按租户过滤、内存态 registry/graph per-tenant、TenantId 提取器取可信身份 tenant_id、审计带 tenant），两真实租户建专家/查询互不可见 E2E 已证。**③配额 / ④密钥隔离 / ⑤SSO-SAML / 会话-任务-执行器分区 / 租户内 RBAC = 阶段二（方案稿，未硬做）**。详见 backend-fix-report A1 节。
+- **落地状态（2026-10-02 阶段二续）**：🟢 阶段一①②已闭环（tenant_id + schema v2、查询按租户过滤、registry/graph per-tenant、TenantId 提取器、审计带 tenant，两租户 E2E 已证）。**③配额（专家数）已闭环**：`MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT`（默认 1000），`create_expert` 超限真实 409 + `quota/used`，按租户独立，低配额 E2E 已证（a1-quota-e2e-evidence.txt）。**⑤SSO=方案稿/待真实 IdP**：OAuth2/OIDC 授权码交换已真实实现（reqwest 直连 token_endpoint），但本机无真实 IdP 凭据/无本地 Keycloak，端到端真实验证缺 IdP，不做假对接；SAML/CAS/LDAP 仍 501。**③并发/LLM 计量配额、④密钥隔离、租户级配额配置表、会话-任务-执行器分区、租户内 RBAC = 阶段三（方案稿）**。详见 backend-fix-report A1 阶段二节。
 
 ### 4.2 A2　模块化微服务深化（fusion 独立 / memory 独立）
 

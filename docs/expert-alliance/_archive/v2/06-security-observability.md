@@ -11,7 +11,7 @@ source_of_truth: V2.0目标架构安全与可观测性（未落地）
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md)
+> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md)
 
 
 > ⚠️ **文档状态声明**  
@@ -350,4 +350,4 @@ gateway.request
 
 ---
 
-*下一篇：[07-实施路线图](docs/expert-alliance/v2/07-roadmap.md)*
+*下一篇：[07-实施路线图](./07-roadmap.md)*

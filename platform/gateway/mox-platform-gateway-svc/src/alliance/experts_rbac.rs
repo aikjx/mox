@@ -229,7 +229,7 @@ mod tests {
     };
     use mox_audit::{AuditContext, MultiSink, NoopSink};
     use parking_lot::Mutex;
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
     use std::sync::Arc;
 
     fn make_admin_user() -> UserInfo {
@@ -263,8 +263,9 @@ mod tests {
             graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(HashSet::new())),
+            favorites: Arc::new(Mutex::new(HashMap::new())),
             audit: Arc::new(audit),
+            events: Arc::new(crate::alliance::experts_events::EventBus::new(16)),
         })
     }
 

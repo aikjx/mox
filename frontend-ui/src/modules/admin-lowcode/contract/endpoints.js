@@ -16,10 +16,10 @@ export const ENDPOINTS = {
   },
   security: {
     // 访问凭证（access.page.js）族，与 system.api.js 对齐
-    list: 'GET /system/access',
-    create: 'POST /system/access',
-    update: 'PUT /system/access/:id',
-    remove: 'DELETE /system/access/:id',
+    list: 'GET /security/api-keys',
+    create: 'POST /security/api-keys',
+    remove: 'DELETE /security/api-keys/:id',
+    audit: 'GET /security/audit-log',
   },
 }
 

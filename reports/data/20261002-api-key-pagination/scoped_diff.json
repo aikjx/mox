@@ -1,0 +1,23 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--check",
+    "--",
+    "platform/domains/platform/core/mox-platform-iam-core/src/ddl.sql",
+    "platform/gateway/mox-platform-gateway-svc/src/system/security.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+    "frontend-ui/src/utils",
+    "frontend-ui/src/api/system.api.js",
+    "frontend-ui/src/views/admin/panels/AdminAccess.vue",
+    "frontend-ui/src/views/admin/panels/AdminAccess.smoke.test.js",
+    "frontend-ui/src/modules/admin-lowcode/composables/useCrudPage.js",
+    "frontend-ui/src/modules/admin-lowcode/pages/access.page.js",
+    "frontend-ui/src/modules/admin-lowcode/schema-crud-page.smoke.test.js",
+    "docs/modules/iam/API-KEYS.md",
+    "docs/modules/REAL-IMPLEMENTATION-STATUS.md"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "scoped_diff.log"
+}

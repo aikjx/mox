@@ -1,0 +1,39 @@
+{
+  "created_at": "2026-10-02T02:31:47.778962+00:00",
+  "rust_tests_passed": 13,
+  "backend_test_exit_code": 0,
+  "clippy_all_targets_exit_code": 0,
+  "clippy_warnings_remain": true,
+  "gates": [
+    {
+      "name": "frontend-gate",
+      "exit_code": 0,
+      "log": "frontend-gate.log"
+    },
+    {
+      "name": "locale-gate",
+      "exit_code": 0,
+      "log": "locale-gate.log"
+    },
+    {
+      "name": "doc-links",
+      "exit_code": 0,
+      "log": "doc-links.log"
+    },
+    {
+      "name": "module-catalog",
+      "exit_code": 0,
+      "log": "module-catalog.log"
+    }
+  ],
+  "no_substituted_business_providers": true,
+  "browser_e2e_verified": false,
+  "cross_user_delivery_complete": false,
+  "all_enterprise_modules_complete": false,
+  "legacy_unowned_notifications_migrated": false,
+  "frontend_build_exit_code": 0,
+  "diff_check_exit_code": 0,
+  "all_final_checks_passed": true,
+  "empty_directory_cleanup": "blocked by automatic policy; directory retained",
+  "owned_rust_format_exit_code": 0
+}

@@ -35,7 +35,7 @@ use crate::{
     GatewayState,
     actuator::{LogStore, RuntimeMetrics},
     alliance::{self, experts_collaboration, experts_common, experts_dispatcher, experts_ext,
-        experts_graph, experts_orchestration, experts_registry, experts_session},
+        experts_graph, experts_orchestration, experts_registry, experts_session, experts_streams},
     cloud::CloudState,
     dialogue_sediment, kb_ext, misc,
     monitor, notification, projects_ext, proxy, system, workspace,
@@ -85,6 +85,20 @@ impl ModuleStates {
     /// - 各域状态构造时读取各自的 JSON 持久化文件；专家共享状态还会完成
     ///   启动期 JSON→SQLite 一次性迁移、内置专家种子化、能力图谱首次构建（均幂等）。
     pub fn new(runtime: Arc<RuntimeMetrics>, logs: Arc<LogStore>, iam: Arc<mox_platform_iam_core::IamRepository>) -> Self {
+        Self::with_inbox(
+            runtime,
+            logs,
+            iam,
+            Arc::new(crate::message_center::api::MessageCenterState::new()),
+        )
+    }
+
+    pub fn with_inbox(
+        runtime: Arc<RuntimeMetrics>,
+        logs: Arc<LogStore>,
+        iam: Arc<mox_platform_iam_core::IamRepository>,
+        inbox: Arc<crate::message_center::api::MessageCenterState>,
+    ) -> Self {
         let experts = Arc::new(experts_common::ExpertsSharedState::new());
         let kb = Arc::new(mox_kb_svc::KbState::from_env());
         let cloud = CloudState::new();
@@ -95,7 +109,7 @@ impl ModuleStates {
             projects: Arc::new(projects_ext::ProjectsState::new()),
             misc: Arc::new(misc::MiscState::new()),
             kb_ext: Arc::new(kb_ext::KbExtState::new()),
-            notification: Arc::new(notification::NotificationState::new()),
+            notification: Arc::new(notification::NotificationState::with_inbox(inbox)),
             kb: kb.clone(),
             cloud: cloud.clone(),
             sediment: dialogue_sediment::SedimentState::new(kb, cloud, experts.clone()),
@@ -134,7 +148,7 @@ pub fn build_module_routers(states: &ModuleStates, gateway: &GatewayState) -> Ro
         // —— 联盟任务域（远程优先 + 本地降级）——
         .merge(upgrade(alliance::build_alliance_router()))
         // —— 系统管理 + 安全域（IAM SQLite 真实链路，已回收为受保护路由）——
-        .merge(system::build_system_router())
+        .merge(system::build_system_router(gateway.iam.clone()))
         .merge(system::build_security_router())
         // —— 业务域兜底反代（必须排在具体域之后）——
         
@@ -186,7 +200,11 @@ pub fn build_module_routers(states: &ModuleStates, gateway: &GatewayState) -> Ro
             experts.clone(),
         )))
         .merge(upgrade(experts_orchestration::build_experts_orchestration_router(
-            experts,
+            experts.clone(),
+        )))
+        // —— T4 事件总线对外出口：SSE 事件帧 + webhook 订阅（按租户，与既有日志流独立）——
+        .merge(upgrade(experts_streams::build_experts_streams_router(
+            experts.clone(),
         )))
         // —— 杂项与通知 ——
         .merge(upgrade(misc::build_misc_router(states.misc.clone())))

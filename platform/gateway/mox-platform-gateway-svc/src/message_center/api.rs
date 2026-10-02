@@ -18,6 +18,7 @@ use tokio::sync::RwLock;
 /// 消息中心状态
 pub struct MessageCenterState {
     pub repository: InboxRepository,
+    pub iam: Option<Arc<mox_platform_iam_core::IamRepository>>,
     pub templates: Arc<RwLock<HashMap<String, MessageTemplate>>>,
     pub channel_configs: Arc<RwLock<HashMap<String, ChannelConfig>>>,
 }
@@ -34,9 +35,15 @@ impl MessageCenterState {
         }
         Self {
             repository: InboxRepository::new(path),
+            iam: None,
             templates: Arc::new(RwLock::new(templates)),
             channel_configs: Arc::new(RwLock::new(HashMap::new())),
         }
+    }
+
+    pub fn with_iam(mut self, iam: Arc<mox_platform_iam_core::IamRepository>) -> Self {
+        self.iam = Some(iam);
+        self
     }
 }
 
@@ -81,7 +88,7 @@ pub async fn list_messages_handler(
     };
     let kind = params.get("message_type").cloned();
     let status = params.get("status").cloned();
-    match run_store(&state, move |store| {
+    match run_user_store(&state, tenant.clone(), user.id.clone(), move |store| {
         store.list(&tenant, &user.id, limit, offset, kind.as_deref(), status.as_deref())
     })
     .await
@@ -101,7 +108,11 @@ pub async fn get_message_handler(
     ApiAuth(user): ApiAuth,
     Path(id): Path<String>,
 ) -> Response {
-    match run_store(&state, move |store| store.get(&tenant, &user.id, &id)).await {
+    match run_user_store(&state, tenant.clone(), user.id.clone(), move |store| {
+        store.get(&tenant, &user.id, &id)
+    })
+    .await
+    {
         Ok(Some(message)) => Json(json!({"code":0,"data":message})).into_response(),
         Ok(None) => missing_message(),
         Err(error) => storage_error(error),
@@ -114,7 +125,7 @@ pub async fn send_message_handler(
     TenantId(tenant): TenantId,
     ApiAuth(user): ApiAuth,
     headers: HeaderMap,
-    Json(req): Json<SendMessageRequest>,
+    Json(mut req): Json<SendMessageRequest>,
 ) -> Response {
     if req.channels.is_empty() {
         return (
@@ -133,16 +144,27 @@ pub async fn send_message_handler(
         )
             .into_response();
     }
-    let receivers: std::collections::HashSet<_> =
+    if req.receiver_ids.as_ref().is_none_or(|ids| ids.is_empty() || ids.len() > 100) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"code":400,"message":"收件人数量必须为 1–100"})),
+        )
+            .into_response();
+    }
+    let receivers: std::collections::BTreeSet<_> =
         req.receiver_ids.clone().unwrap_or_default().into_iter().collect();
-    // User directory routing has not been connected: only a verified self inbox is available.
-    if receivers.len() != 1 || !receivers.contains(&user.id) {
+    // Standalone instances without IAM retain only the trusted self-inbox capability.
+    if state.iam.is_none() && (receivers.len() != 1 || !receivers.contains(&user.id)) {
         return (
             StatusCode::NOT_IMPLEMENTED,
             Json(json!({"code": 501,
             "message": "跨用户收件人目录校验未接入；当前仅支持当前用户站内收件箱"})),
         )
             .into_response();
+    }
+    // Preserve the original self-send request fingerprint for pre-v2 retries, including duplicates.
+    if receivers.len() != 1 || !receivers.contains(&user.id) {
+        req.receiver_ids = Some(receivers.iter().cloned().collect());
     }
     let key = match headers.get("idempotency-key") {
         Some(value) => match value.to_str() {
@@ -225,7 +247,7 @@ pub async fn send_message_handler(
     let record = MessageSendRecord {
         record_id: format!("rec_{}", uuid::Uuid::new_v4().simple()),
         message_id: message_id.clone(),
-        receiver_id: user.id,
+        receiver_id: user.id.clone(),
         channel: MessageChannel::InApp,
         status: MessageStatus::Sent,
         error_message: None,
@@ -234,8 +256,28 @@ pub async fn send_message_handler(
         read_at: None,
         created_at: chrono::Utc::now().to_rfc3339(),
     };
+    let records: Vec<_> = receivers
+        .into_iter()
+        .map(|receiver_id| {
+            let mut record = record.clone();
+            record.record_id = format!("rec_{}", uuid::Uuid::new_v4().simple());
+            record.receiver_id = receiver_id;
+            record
+        })
+        .collect();
+    let iam = state.iam.clone();
     let message_id = match run_store(&state, move |store| {
-        store.send(&msg, &record, key.as_deref(), &fingerprint)
+        let deliver = || store.send_many(&msg, &records, key.as_deref(), &fingerprint);
+        match iam {
+            Some(iam) => super::authorization::authorize_delivery(
+                &iam,
+                &msg.tenant_id,
+                &msg.sender_id,
+                &msg.receiver_ids,
+                deliver,
+            ),
+            None => deliver(),
+        }
     })
     .await
     {
@@ -245,7 +287,7 @@ pub async fn send_message_handler(
 
     Json(json!({
         "code": 0,
-        "message": "当前用户站内消息与回执已事务提交",
+        "message": "站内消息与全部收件人回执已事务提交",
         "data": { "message_id": message_id }
     }))
     .into_response()
@@ -258,7 +300,11 @@ pub async fn mark_read_handler(
     ApiAuth(user): ApiAuth,
     Path(id): Path<String>,
 ) -> Response {
-    match run_store(&state, move |store| store.mark_read(&tenant, &user.id, &id)).await {
+    match run_user_store(&state, tenant.clone(), user.id.clone(), move |store| {
+        store.mark_read(&tenant, &user.id, &id)
+    })
+    .await
+    {
         Ok(true) => Json(json!({"code":0,"message":"已读状态已持久化"})).into_response(),
         Ok(false) => missing_message(),
         Err(error) => storage_error(error),
@@ -278,7 +324,11 @@ pub async fn message_stats_handler(
     TenantId(tenant): TenantId,
     ApiAuth(user): ApiAuth,
 ) -> Response {
-    match run_store(&state, move |store| store.stats(&tenant, &user.id)).await {
+    match run_user_store(&state, tenant.clone(), user.id.clone(), move |store| {
+        store.stats(&tenant, &user.id)
+    })
+    .await
+    {
         Ok(stats) => Json(json!({"code":0,"data":stats})).into_response(),
         Err(error) => storage_error(error),
     }
@@ -302,7 +352,7 @@ where
         .route("/stats", get(message_stats_handler))
 }
 
-async fn run_store<T: Send + 'static>(
+pub(crate) async fn run_store<T: Send + 'static>(
     state: &MessageCenterState,
     operation: impl FnOnce(InboxRepository) -> Result<T, StoreError> + Send + 'static,
 ) -> Result<T, StoreError> {
@@ -312,8 +362,33 @@ async fn run_store<T: Send + 'static>(
         .map_err(|error| StoreError::Unavailable(error.to_string()))?
 }
 
-fn storage_error(error: StoreError) -> Response {
+pub(crate) async fn run_user_store<T: Send + 'static>(
+    state: &MessageCenterState,
+    tenant: String,
+    user: String,
+    operation: impl FnOnce(InboxRepository) -> Result<T, StoreError> + Send + 'static,
+) -> Result<T, StoreError> {
+    let iam = state.iam.clone();
+    run_store(state, move |store| match iam {
+        Some(iam) => super::authorization::authorize_delivery(
+            &iam,
+            &tenant,
+            &user,
+            std::slice::from_ref(&user),
+            || operation(store),
+        ),
+        None => operation(store),
+    })
+    .await
+}
+
+pub(crate) fn storage_error(error: StoreError) -> Response {
     match error {
+        StoreError::Forbidden => (
+            StatusCode::FORBIDDEN,
+            Json(json!({"code":403,"message":"发送身份、权限或收件人不可用"})),
+        )
+            .into_response(),
         StoreError::Conflict => {
             (StatusCode::CONFLICT, Json(json!({"code":409,"message":"幂等键已用于不同发送请求"})))
                 .into_response()

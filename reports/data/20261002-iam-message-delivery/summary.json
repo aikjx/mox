@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-02",
+  "status": "scoped_checks_passed",
+  "mock_business_services": false,
+  "checks": {
+    "ports": {
+      "command": "python scripts/gate/verify-ports.py",
+      "exit_code": 0,
+      "log": "ports.log"
+    },
+    "frontend_module": {
+      "command": "python scripts/gate/check-frontend-module.py",
+      "exit_code": 0,
+      "log": "frontend-gate.log"
+    },
+    "locale": {
+      "command": "python scripts/gate/check-locale-format-outlets.py",
+      "exit_code": 0,
+      "log": "locale-gate.log"
+    },
+    "rust_tests": {
+      "exit_code": 0,
+      "passed": 15,
+      "failed": 0,
+      "log": "tests-final.log",
+      "command": "cargo test -p mox-platform-gateway-svc --test inbox_http --test inbox_persistence --test delivery_truth --test trusted_tenant_http"
+    },
+    "clippy": {
+      "exit_code": 0,
+      "log": "clippy-final.log",
+      "command": "cargo clippy -p mox-platform-gateway-svc --all-targets",
+      "existing_warnings_retained": true
+    },
+    "doc_links": {
+      "exit_code": 0,
+      "log": "doc-links-final.log",
+      "command": "python scripts/gate/check-doc-links.py --repo",
+      "existing_path_warnings": 215
+    },
+    "scoped_format": {
+      "exit_code": 0,
+      "command": "rustfmt --check --edition 2021 --config skip_children=true (seven scoped Rust files)"
+    },
+    "scoped_diff_check": {
+      "exit_code": 0,
+      "command": "git diff --check (message, notification, tests, module docs)"
+    }
+  },
+  "concurrent_http_requests": 12,
+  "actual_iam_connections": 2,
+  "full_enterprise_ready": false,
+  "browser_login_e2e_verified": false,
+  "cross_host_cluster_verified": false,
+  "external_provider_positive_delivery_verified": false,
+  "remaining": [
+    "IAM permission administration API/UI normalization",
+    "send UI",
+    "per-tenant and per-sender rate/retention quotas",
+    "cross-host storage and failover",
+    "external outbox providers",
+    "browser login and load SLO"
+  ],
+  "source_manifest": "source-manifest.json"
+}

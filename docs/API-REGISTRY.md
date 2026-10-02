@@ -8,13 +8,13 @@
 
 | 指标 | 值 |
 | --- | --- |
-| 静态表注册路由数 | **243 条**（注册元数据数量，不是已验收功能数量） |
+| 静态表注册路由数 | **246 条**（注册元数据数量，不是已验收功能数量） |
 | 静态表中的域分组 | 20 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc / storage / llm / cloud / graph / melody / rbac / voice |
 | 域描述符（业务规划） | **46 个**：ready 46（见 §3） |
 | 网关外进程 | 5 个：kg-hub / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
 | 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |
 
-## 2. 逐域注册表（243 条）
+## 2. 逐域注册表（246 条）
 
 按域分组，实现位置逐一标注；`ANY` 表示该方法+参数可匹配多方法（GET/POST/PUT/DELETE）。
 
@@ -123,9 +123,9 @@
 | `alliance.tasks.plan` | GET | `/api/alliance/tasks/:id/plan` | L4 | 协作计划查询 |
 | `alliance.stats` | GET | `/api/alliance/stats` | L4 | 联盟统计（专家/任务/成功率） |
 
-### system（46 条）
+### system（49 条）
 
-实现：`platform/gateway/mox-platform-gateway-svc/src/system.rs`
+实现：`platform/gateway/mox-platform-gateway-svc/src/system/mod.rs`
 
 | ID | 方法 | 路径 | 层 | 说明 |
 | --- | --- | --- | --- | --- |
@@ -144,6 +144,9 @@
 | `system.user.change_status` | PUT | `/api/system/user/:id/changeStatus` | L5 | 用户状态切换（启用/停用） |
 | `system.user.roles` | ANY | `/api/system/user/:id/roles` | L5 | 用户角色查询/分配 |
 | `system.role.list` | ANY | `/api/system/role` | L5 | 角色列表/创建 |
+| `system.iam.permissions` | GET | `/api/system/iam/permissions` | L5 | 真实 IAM 权限目录：本租户超级管理员 |
+| `system.iam.message_send` | POST | `/api/system/iam/permissions/message-send` | L5 | 事务登记 message:send 权限点与审计 |
+| `system.iam.role_permissions` | ANY | `/api/system/iam/roles/:id/permissions` | L5 | 真实 IAM 角色直接授权读取/版本检查替换 |
 | `system.role.detail` | ANY | `/api/system/role/:id` | L5 | 角色详情/更新/删除 |
 | `system.role.menu_perms` | ANY | `/api/system/role/:id/menuPerms` | L5 | 角色菜单权限查询/设置 |
 | `system.role.data_perms` | ANY | `/api/system/role/:id/dataPerms` | L5 | 角色数据权限查询/设置 |

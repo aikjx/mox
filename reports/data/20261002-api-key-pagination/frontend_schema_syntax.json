@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "--check",
+    "frontend-ui/src/modules/admin-lowcode/contract/pageSchema.js"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "frontend_schema_syntax.log"
+}

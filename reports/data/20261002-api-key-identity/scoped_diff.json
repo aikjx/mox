@@ -1,0 +1,24 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--check",
+    "--",
+    "platform/domains/platform/core/mox-platform-iam-core/src/api_keys.rs",
+    "platform/domains/platform/core/mox-platform-iam-core/src/permission_admin.rs",
+    "platform/domains/platform/core/mox-platform-iam-core/src/lib.rs",
+    "platform/gateway/mox-platform-gateway-svc/src/auth.rs",
+    "platform/gateway/mox-platform-gateway-svc/src/system/security.rs",
+    "platform/gateway/mox-platform-gateway-svc/src/system/mod.rs",
+    "platform/gateway/mox-platform-gateway-svc/src/lib.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+    "frontend-ui/src/api/system.api.js",
+    "frontend-ui/src/views/admin/panels/AdminAccess.vue",
+    "docs/modules/iam",
+    "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+    "reports/markdown/20261002-api-key-identity.md"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "scoped_diff.log"
+}

@@ -24,7 +24,7 @@ use axum::{
     routing::{delete, get, post, put}, Router,
 };
 use mox_platform_iam_core::{
-    IamDepartment, IamMenu, IamRole, IamUser, SysApiKey, SysConfig, SysDictData, SysDictType,
+    IamDepartment, IamMenu, IamRole, IamUser, SysConfig, SysDictData, SysDictType,
     SysLoginLog, SysOperLog, SysPost,
 };
 use serde_json::{Map, Value, json};
@@ -52,6 +52,7 @@ pub mod operlog;
 pub mod logininfor;
 pub mod security;
 pub mod permission;
+pub mod iam_permissions;
 pub mod tenant;
 pub mod approval;
 pub mod auth_session;
@@ -338,24 +339,10 @@ pub(crate) fn login_log_json(l: &SysLoginLog) -> Value {
 }
 
 
-pub(crate) fn api_key_json(k: &SysApiKey) -> Value {
-    let masked = format!("{}***", &k.api_key[..8.min(k.api_key.len())]);
-    json!({
-        "id": k.key_id,
-        "name": k.name,
-        "apiKey": masked,
-        "userId": k.user_id,
-        "scopes": k.scopes,
-        "status": k.status,
-        "createdAt": k.created_at,
-        "revokedAt": k.revoked_at,
-    })
-}
-
 // ----- 部门 Dept -----
 
 
-pub fn build_system_router() -> Router<GatewayState> {
+pub fn build_system_router(iam: std::sync::Arc<mox_platform_iam_core::IamRepository>) -> Router<GatewayState> {
     Router::new()
         .route("/api/auth/me", get(permission::current_user_handler))
         .route("/api/auth/login", post(auth_session::login_handler))
@@ -534,6 +521,8 @@ pub fn build_system_router() -> Router<GatewayState> {
         .route("/api/system/approval/:id/approve", post(approval::approve_handler))
         .route("/api/system/approval/:id/reject", post(approval::reject_handler))
         .route("/api/system/approval/:id/history", get(approval::approval_history_handler))
+        .merge(iam_permissions::router::<GatewayState>())
+        .route_layer(axum::middleware::from_fn_with_state(iam, iam_permissions::guard_legacy_admin))
 }
 
 

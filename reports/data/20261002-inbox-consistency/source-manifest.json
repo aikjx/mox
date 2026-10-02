@@ -1,0 +1,86 @@
+{
+  "git_head": "d377a1a9fe933879b433937e60880d2e2842da0a",
+  "created_at": "2026-10-02T02:11:58.595964+00:00",
+  "sources": [
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/message_center/api.rs",
+      "sha256": "7d7184389c041454ae64dd2cf0d7c329f58939e1ef8bf0f68d77e61be4c91e06"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/message_center/mod.rs",
+      "sha256": "7a071a0261afe0088fd7f9fa753cb98a86dbb005a91c2caa0f1e60e1be2b0cec"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/message_center/repository.rs",
+      "sha256": "2193ff8ecebd0564c756d0c30812a67b6f1839ae2c1ad0d7a347633828f78451"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/enterprise_features.rs",
+      "sha256": "02a9b5029ac42d2f219956f845e7ec78b4080be588a134c8112041fcc0360102"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/tests/inbox_persistence.rs",
+      "sha256": "6647a0b0abd6bc4321c58244d5ef22977f7a664de5a6da4d6be3097c32e0330b"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+      "sha256": "250df354aa3442935ff2583c20b8d98e4c4c1815e6de7829acd4c387526cee28"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/tests/delivery_truth.rs",
+      "sha256": "72a0a831e80a74ee6279fbc61b7dd2118dc3b8bacba6602e991d5d77402f45a8"
+    },
+    {
+      "path": "scripts/doc/gen-api-registry.py",
+      "sha256": "6ed623819238a315336b5f8700b531d3075ecea2a745ab6bb052cb4d075523a1"
+    },
+    {
+      "path": "scripts/tests/test_api_registry_generation.py",
+      "sha256": "963b08a558ae5ec43f6820f177426e6c80a32dec4f34657b3c87f8bc532d00a5"
+    },
+    {
+      "path": "scripts/registry/module_catalog.py",
+      "sha256": "999831bb82b36c18125b37127a808219ec8d639353d39ee06c61c8394a38750e"
+    },
+    {
+      "path": "docs/modules/message-center/README.md",
+      "sha256": "57b050b2dc4afb527864e95d663575c3699e28f01df235489c0a77d726629049"
+    },
+    {
+      "path": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "sha256": "06b73252981e4361248a913d588018203af1ddb8d7e4c831c8a1b3b6fbf7ce41"
+    },
+    {
+      "path": "docs/modules/README.md",
+      "sha256": "56968552488c83a6dd78ca125ad97097fbcffe4b0e8a83834fb1deaccc134c43"
+    },
+    {
+      "path": "docs/modules/CODE-CATALOG.md",
+      "sha256": "b237fde8c5f73e090f39ad92008d8b695744413e2513d7395de09408793e8a26"
+    },
+    {
+      "path": "docs/API-REGISTRY.md",
+      "sha256": "c6a1d81be72af6d62cb88cd430af6925a776ea47145f2c379d716dc09867719b"
+    },
+    {
+      "path": "docs/modules/resource-knowledge/COMPETITIVE-DESIGN.md",
+      "sha256": "3b04009e6e1c1911465e2dd5df29f9987c98988e8c7b18fc4c32bdfa405baccb"
+    },
+    {
+      "path": "deploy/docs/DOCUMENT-INDEX.md",
+      "sha256": "b95788163d7270377a6855355154b96217fa1a77c57fdbc5db6f67157826468d"
+    },
+    {
+      "path": "reports/docs_gov_recon.md",
+      "sha256": "66dd341d2c356dac923d73606acd7fec17c7ef3f8705f5765e74a4753dfbf28b"
+    },
+    {
+      "path": "frontend-ui/design/chip-website/index.html",
+      "sha256": "06c8c2594cff34f2e50355aa9375085c803ae01917904f6e42a9ad54bd6c5809"
+    },
+    {
+      "path": "reports/markdown/20261002-inbox-consistency.md",
+      "sha256": "b0c1bf112e11cd9e16b452de57f4c9bc9797bbe922fb475ea19b4284c26fc978"
+    }
+  ]
+}

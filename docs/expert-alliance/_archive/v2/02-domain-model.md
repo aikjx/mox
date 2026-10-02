@@ -11,7 +11,7 @@ source_of_truth: V2.0目标架构领域模型（未落地）
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md)
+> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md)
 
 
 > ⚠️ **文档状态声明**  
@@ -646,4 +646,4 @@ pub enum ErrorCode {
 
 ---
 
-*下一篇：[03-全路径业务流程](docs/expert-alliance/v2/03-business-flow.md)*
+*下一篇：[03-全路径业务流程](./03-business-flow.md)*

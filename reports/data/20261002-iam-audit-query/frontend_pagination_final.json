@@ -1,0 +1,15 @@
+{
+  "command": [
+    "node",
+    "frontend-ui/node_modules/vitest/vitest.mjs",
+    "run",
+    "--root",
+    "frontend-ui",
+    "--config",
+    "vitest.config.js",
+    "src/components/common/DataTable.pagination.test.js"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "frontend_pagination_final.log"
+}

@@ -1,0 +1,70 @@
+[
+  {
+    "path": "platform/domains/platform/core/mox-platform-iam-core/src/api_keys.rs",
+    "sha256": "01bb0c28a72f3b5395ab3eb1637ab459a68321bb3f85e939e7fb401c9c946fca"
+  },
+  {
+    "path": "platform/domains/platform/core/mox-platform-iam-core/src/ddl.sql",
+    "sha256": "18bd01a815e8513b91b5d90defa5c59a3560f91f516ad19b14618216427d550e"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/system/security.rs",
+    "sha256": "2081a0308ef25d8d14c58cc1a36eb77772224360e4be890dbd436263602387d1"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+    "sha256": "4aac2c6242b4dc93f52fff357b519c57fa84671517d8f1463ca07f0134141fc2"
+  },
+  {
+    "path": "frontend-ui/src/api/system.api.js",
+    "sha256": "95ddbd16ddbc65b947e847767df66f86914aae9ab88a3dd40963b0ca96de6a9a"
+  },
+  {
+    "path": "frontend-ui/src/utils/api-key.js",
+    "sha256": "13ef79ac97f6f4307affa8422fc2b7f6709b5c6d08b8bbc7c3aef6d522712439"
+  },
+  {
+    "path": "frontend-ui/src/utils/api-key.node-test.mjs",
+    "sha256": "3dc438cd3940bfc530e20fc81b5a59e1f3da0b1a78393a0d8f10d5e29839a47d"
+  },
+  {
+    "path": "frontend-ui/src/utils/index.js",
+    "sha256": "c1b279867b09bca85055a19f728deaff1eb6402bf5377742f446a1f4e34b232a"
+  },
+  {
+    "path": "frontend-ui/src/views/admin/panels/AdminAccess.vue",
+    "sha256": "023ee43ffee859a7b4d5f90500a01bfca3c67b82c19fd310d2c8ed8b9f545d64"
+  },
+  {
+    "path": "frontend-ui/src/views/admin/panels/AdminAccess.smoke.test.js",
+    "sha256": "fdbe8327542099ff2665006b531bc93f7692482e58282abc148453a42009efce"
+  },
+  {
+    "path": "frontend-ui/src/modules/admin-lowcode/pages/access.page.js",
+    "sha256": "7adfedae9492118546be4c04db839e2f99b3b5f312680c1c0df2b93c7eefe72c"
+  },
+  {
+    "path": "frontend-ui/src/modules/admin-lowcode/composables/useCrudPage.js",
+    "sha256": "b938b2d36df1bee0b08faef71dc4b9cbe81b8b274829f4e023760cc712d02f2e"
+  },
+  {
+    "path": "frontend-ui/src/modules/admin-lowcode/contract/pageSchema.js",
+    "sha256": "1f41e58c3d666e2fc68bead90029c71b2428612cb4a1f81bf16f58b9917f4bfc"
+  },
+  {
+    "path": "frontend-ui/src/modules/admin-lowcode/schema-crud-page.smoke.test.js",
+    "sha256": "236174f589f0e4e9cc22aaf73ebb5764b1da3fded08cd0bc0c19d06145a0a610"
+  },
+  {
+    "path": "docs/modules/iam/API-KEYS.md",
+    "sha256": "3962ba5f1e9d2a1d681a6418af687d6a4fb0ce11ff1ba2cf61630cdc89ab7e41"
+  },
+  {
+    "path": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+    "sha256": "35ba78aaecec8099538bf41378666a925c85c90d2c7c1a0014bcc4e453e9930f"
+  },
+  {
+    "path": "reports/markdown/20261002-api-key-pagination.md",
+    "sha256": "0e4bd308f0b60e7ccce5163d9819ed049944fcd30a6f4cea40c09e38dce6e90a"
+  }
+]

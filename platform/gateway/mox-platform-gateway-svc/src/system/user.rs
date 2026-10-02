@@ -236,16 +236,15 @@ pub(crate) async fn assign_user_roles_handler(
         Ok(t) => t,
         Err(e) => return err(&format!("tenant resolve: {e}")),
     };
-    let role_ids: Vec<String> = body
+    let Some(role_values) = body
         .get("roleIds")
         .and_then(|v| v.as_array())
         .or_else(|| body.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| v.as_str().map(String::from))
-                .collect()
-        })
-        .unwrap_or_default();
+    else { return mox_api_protocol::api_error(400, "roleIds 必须为字符串数组"); };
+    if role_values.len() > 200 || role_values.iter().any(|value| value.as_str().is_none_or(str::is_empty)) {
+        return mox_api_protocol::api_error(400, "roleIds 无效或超过 200 项");
+    }
+    let role_ids: Vec<String> = role_values.iter().filter_map(|value| value.as_str().map(str::to_owned)).collect();
     match s.iam.set_user_roles(&tenant, &id, &role_ids) {
         Ok(_) => ok(json!(null)),
         Err(e) => err(&format!("assign roles: {e}")),
@@ -253,4 +252,3 @@ pub(crate) async fn assign_user_roles_handler(
 }
 
 // ----- 角色 Role -----
-

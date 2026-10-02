@@ -1,0 +1,46 @@
+[
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/notification.rs",
+    "sha256": "6ffd56c2621d772644736062a299e8d967a9f50a4bbd49428d3c5014892ec7f4"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/message_center/api.rs",
+    "sha256": "cf2aec354de5f2bbf5df71c099e06688b5d39ed46e7dafc0c2708e82bef78c71"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/message_center/repository.rs",
+    "sha256": "963c8000954798f3d2e0c0ef1e6c63cdaf6ebbf87e79e7221486ab17488ef23b"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/modules.rs",
+    "sha256": "3cfa5fc6897101f47e31485ed937718ccb68e92288a5282496a56f9adc130485"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/src/lib.rs",
+    "sha256": "83db3510fa9bfa9bb1ea0a89746c0f72f6dc52f91454ff419f43bba41932ebb7"
+  },
+  {
+    "path": "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+    "sha256": "f983fd036995c62ae578edc3c8bf2d55def134206e7877feb05df17e35bc5dc8"
+  },
+  {
+    "path": "frontend-ui/src/components/NotificationCenter.vue",
+    "sha256": "0426b93ee42af01ed3baf96979abe2688f8fd526b5bcd58bab24530fb0cb7aca"
+  },
+  {
+    "path": "frontend-ui/src/api/notification.api.js",
+    "sha256": "2cb79c26d82249ee3ae8ec2a3dd88930972c92185f5a1e1ffb620e7b0d5c389f"
+  },
+  {
+    "path": "docs/modules/message-center/README.md",
+    "sha256": "fcba1338e15bb928a014ecd7a6f12ce1eef67e8b5ef6a2f2b358ea9dbab8a2fa"
+  },
+  {
+    "path": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+    "sha256": "1b89699f207e6e54d3bce03688c9b2c1fc08088e09ac83355115ee323c81c1d8"
+  },
+  {
+    "path": "reports/markdown/20261002-notification-unification.md",
+    "sha256": "70b7f331ca79d9b497b89bf47a71cef72e73396ce2292c10dde58ba54c91280a"
+  }
+]

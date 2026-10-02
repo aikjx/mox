@@ -35,7 +35,8 @@ type HmacSha256 = Hmac<Sha256>;
 /// Authentication middleware that validates requests before they reach handlers.
 pub struct AuthMiddleware {
     config: AuthConfig,
-    /// In-memory API key store (key_hash -> user_id).
+    iam: Option<Arc<mox_platform_iam_core::IamRepository>>,
+    /// Standalone registration helper; never used by HTTP authentication.
     api_keys: Arc<parking_lot::RwLock<std::collections::HashMap<String, String>>>,
     /// 令牌黑名单 + 活跃会话注册表（P0-2 登出/踢人）。
     pub(crate) blacklist: Arc<crate::token_blacklist::TokenBlacklist>,
@@ -47,8 +48,14 @@ impl AuthMiddleware {
         Self {
             blacklist: Arc::new(crate::token_blacklist::TokenBlacklist::new()),
             config,
+            iam: None,
             api_keys: Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
         }
+    }
+
+    pub fn with_iam(mut self, iam: Arc<mox_platform_iam_core::IamRepository>) -> Self {
+        self.iam = Some(iam);
+        self
     }
 
     /// Register an API key for a user.
@@ -198,12 +205,23 @@ pub async fn auth_middleware(
     } else {
         // Try API key
         if let Some(api_key) = request.headers().get("X-API-Key") {
-            let key = api_key.to_str().unwrap_or("");
-            auth.validate_api_key(key).map(|user_id| UserInfo {
-                id: user_id,
-                username: "api-user".into(),
-                email: String::new(),
-                tenant_id: "default".into(),
+            let key = api_key.to_str().unwrap_or("").to_string();
+            let iam = auth.iam.clone().ok_or(StatusCode::UNAUTHORIZED)?;
+            let principal = tokio::task::spawn_blocking(move || iam.authenticate_api_key(&key))
+                .await
+                .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+                .map_err(|error| {
+                    tracing::error!(%error, "API key authentication storage failed");
+                    StatusCode::SERVICE_UNAVAILABLE
+                })?;
+            if principal.is_some() && !api_key_route_allowed(request.method(), request.uri().path()) {
+                return Err(StatusCode::FORBIDDEN);
+            }
+            principal.map(|principal| UserInfo {
+                id: principal.id,
+                username: principal.username,
+                email: principal.email,
+                tenant_id: principal.tenant_id,
                 roles: vec!["api".into()],
                 enabled: true,
                 created_at: String::new(),
@@ -224,6 +242,34 @@ pub async fn auth_middleware(
     }
 }
 
+/// Only audited inbox workflows accept machine credentials; administrative APIs require JWT.
+pub fn api_key_route_allowed(method: &axum::http::Method, path: &str) -> bool {
+    use axum::http::Method;
+    if method == Method::GET {
+        return path == "/api/notifications"
+            || path == "/api/notifications/unread-count"
+            || matches!(
+                path,
+                "/api/enterprise/message/messages" | "/api/enterprise/message/stats"
+            )
+            || path
+                .strip_prefix("/api/enterprise/message/messages/")
+                .is_some_and(|id| !id.is_empty() && !id.contains('/'));
+    }
+    if method == Method::POST {
+        return path == "/api/enterprise/message/send"
+            || path
+                .strip_prefix("/api/enterprise/message/messages/")
+                .and_then(|id| id.strip_suffix("/read"))
+                .is_some_and(|id| !id.is_empty() && !id.contains('/'));
+    }
+    method == Method::PUT
+        && (path == "/api/notifications/read-all"
+            || path
+                .strip_prefix("/api/notifications/")
+                .and_then(|id| id.strip_suffix("/read"))
+                .is_some_and(|id| !id.is_empty() && !id.contains('/')))
+}
 /// 路由级鉴权 extractor（P1-04）。
 ///
 /// 从 `auth_middleware` 注入到请求扩展的 `UserInfo` 中提取当前用户身份，
@@ -318,6 +364,33 @@ mod tests {
         assert!(auth.is_public_path("/health"));
         assert!(auth.is_public_path("/api/auth/login"));
         assert!(!auth.is_public_path("/api/data/records"));
+    }
+
+    #[test]
+    fn machine_credentials_require_exact_workflow_method_and_path() {
+        use axum::http::Method;
+        for (method, path) in [
+            (Method::GET, "/api/notifications"),
+            (Method::GET, "/api/enterprise/message/messages/id"),
+            (Method::POST, "/api/enterprise/message/send"),
+            (Method::POST, "/api/enterprise/message/messages/id/read"),
+            (Method::PUT, "/api/notifications/id/read"),
+            (Method::PUT, "/api/notifications/read-all"),
+        ] {
+            assert!(api_key_route_allowed(&method, path), "{method} {path}");
+        }
+        for (method, path) in [
+            (Method::GET, "/api/system/iam/permissions"),
+            (Method::POST, "/api/security/api-keys"),
+            (Method::GET, "/api/notifications-archive"),
+            (Method::POST, "/api/notifications/read-all"),
+            (Method::DELETE, "/api/enterprise/message/messages/id"),
+            (Method::GET, "/api/enterprise/message/messages/id/read"),
+            (Method::POST, "/api/enterprise/message/messages/a/b/read"),
+            (Method::GET, "/api/enterprise/message/messages/"),
+        ] {
+            assert!(!api_key_route_allowed(&method, path), "{method} {path}");
+        }
     }
 
     #[test]

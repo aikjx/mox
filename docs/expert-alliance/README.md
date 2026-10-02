@@ -33,4 +33,4 @@
 
 业务代码增量：[20统一计划与执行](docs/expert-alliance/20-normalized-plan-execution.md#flow)，关联协议、调度、执行与恢复职责。
 
-上游知识与制品来源设计：[资源知识能力地图](docs/modules/resource-knowledge/README.md#map)；联盟消费授权证据，不接管文件或知识主源。当前链路与交付断点见[实际业务流程](docs/modules/resource-knowledge/BUSINESS-FLOWS.md#implemented)及[全维交付检查](docs/modules/resource-knowledge/DELIVERY-MATRIX.md)。
+上游知识与制品来源设计：[资源知识能力地图](docs/modules/resource-knowledge/README.md#map)；联盟消费授权证据，不接管文件或知识主源。当前链路与交付断点见[实际业务流程](docs/modules/resource-knowledge/BUSINESS-FLOWS.md#implemented)及[全维交付检查](../modules/resource-knowledge/DELIVERY-MATRIX.md)。

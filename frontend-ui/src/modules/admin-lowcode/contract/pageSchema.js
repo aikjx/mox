@@ -29,11 +29,16 @@ export function validatePageSchema(schema) {
     return ['pageSchema 必须是对象']
   }
   if (!schema.key) errors.push('缺少 key')
+  if (schema.readOnly !== undefined && typeof schema.readOnly !== 'boolean') errors.push('readOnly 必须为布尔值')
+  if (schema.readOnly && (schema.form || schema.toolbar?.some(t => ['create', 'edit', 'delete'].includes(t.action)) || schema.list?.rowActions?.length)) errors.push('只读页面不能定义表单或写入动作')
+  for (const key of ['identityScope', 'onIdentityChange']) {
+    if (schema[key] !== undefined && typeof schema[key] !== 'function') errors.push(`${key} 必须是函数`)
+  }
 
   if (!schema.api || typeof schema.api !== 'object') {
     errors.push('缺少 api 绑定')
   } else {
-    for (const k of REQUIRED_API_KEYS) {
+    for (const k of schema.readOnly ? ['list'] : REQUIRED_API_KEYS) {
       if (typeof schema.api[k] !== 'function') errors.push(`api.${k} 必须是函数`)
     }
   }

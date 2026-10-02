@@ -1880,8 +1880,9 @@ mod tests {
             graph: Arc::new(Mutex::new(HashMap::from([("default".to_string(), make_test_graph())]))),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            favorites: Arc::new(Mutex::new(std::collections::HashMap::new())),
             audit: Arc::new(audit),
+            events: Arc::new(crate::alliance::experts_events::EventBus::new(16)),
         })
     }
 

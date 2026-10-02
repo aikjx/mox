@@ -11,7 +11,7 @@ source_of_truth: V2.0目标架构数据架构（未落地）
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md)
+> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md)
 
 
 > ⚠️ **文档状态声明**  
@@ -499,4 +499,4 @@ migrations/
 
 ---
 
-*下一篇：[06-安全与可观测性](docs/expert-alliance/v2/06-security-observability.md)*
+*下一篇：[06-安全与可观测性](./06-security-observability.md)*

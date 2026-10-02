@@ -12,9 +12,9 @@
 > 并定义流程之间的**输入输出映射关系**与**跨流程关联边**，实现「流程即图谱」。
 >
 > **权威链（L0 → L1 → L2 → 本文档）**：
-> 🟢 L0 → [`18-全域顶层总设计-三联盟模式-V1.0.md`](docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)（TOP-MASTER）
-> 🟢 L1 → [`22-全文档归一化总控卡-V1.0.md`](docs/enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md)（治理枢纽）
-> 🟢 L2 → [`04-business-processing.md`](docs/enterprise/04-business-processing.md)（10 BP 标准） + [`EAF-STD-01 专家联盟流程标准`](docs/standards/expert-alliance-flow-standard.md)
+> 🟢 L0 → [`18-全域顶层总设计-三联盟模式-V1.0.md`](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)（TOP-MASTER）
+> 🟢 L1 → [`22-全文档归一化总控卡-V1.0.md`](../enterprise/22-全文档归一化总控卡与权威链单源映射表-V1.0.md)（治理枢纽）
+> 🟢 L2 → [`04-business-processing.md`](../enterprise/04-business-processing.md)（10 BP 标准） + [`EAF-STD-01 专家联盟流程标准`](../standards/expert-alliance-flow-standard.md)
 >
 > **版本**：v1.0 (ENT) · 最后更新 **2026-08-25**
 > **主责联盟**：三联盟联合（产品·流程定义 | 算法·流程求解 | 开发·流程实现）
@@ -237,9 +237,9 @@ graph TD
 
 ## 4. 璇玑系统 10 大标准业务流程（BP-01~10）
 
-> **完整 6 字段卡**：见 [`docs/enterprise/04-business-processing.md`](docs/enterprise/04-business-processing.md) §3
+> **完整 6 字段卡**：见 [`docs/enterprise/04-business-processing.md`](../enterprise/04-business-processing.md) §3
 > **参考实现**：`platform/domains/mox-system/src/{orchestrator,services,model,rbac}.rs`
-> **配套流程图**：见 [`mox-expert-alliance-fusion-flows.md`](docs/modules/mox-expert-alliance-fusion-flows.md)
+> **配套流程图**：见 [`mox-expert-alliance-fusion-flows.md`](./mox-expert-alliance-fusion-flows.md)
 
 ### 4.1 BP-1~7 主链路（端到端组织协作闭环）
 

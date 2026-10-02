@@ -1,0 +1,110 @@
+{
+  "Cargo.lock": {
+    "sha256": "bae750176cc3415b939f77ea06650156234d2dd6ab16a33e751df43e3879d44c",
+    "bytes": 271047
+  },
+  "platform/domains/platform/core/mox-platform-iam-core/Cargo.toml": {
+    "sha256": "0cea42dc509b99a1d567c5442c00ce256aae8fe6909ea29b81448103c1fc3541",
+    "bytes": 578
+  },
+  "platform/domains/platform/core/mox-platform-iam-core/src/lib.rs": {
+    "sha256": "6abcb1c42b50154c15b24f5ef5687705854a7d0efcccf44b80d9c43640d70fee",
+    "bytes": 6372
+  },
+  "platform/domains/platform/core/mox-platform-iam-core/src/repo.rs": {
+    "sha256": "61837ef5658c0e83a3449ea682cbebed82653721e189d2199b6c4fe096a33331",
+    "bytes": 121429
+  },
+  "platform/domains/platform/core/mox-platform-iam-core/src/permission_admin.rs": {
+    "sha256": "f401afaaf0c508f16ba28b687694b01677a8982d8153d3e248a1423ef678fe57",
+    "bytes": 9625
+  },
+  "platform/domains/platform/core/mox-platform-iam-core/src/permission_policy.rs": {
+    "sha256": "d583f96632ff4cd8452ad68977ce59294bbedb18e3809271aedb64fc819d0816",
+    "bytes": 1689
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/system/iam_permissions.rs": {
+    "sha256": "e82d0b954204f97f67249499cd4792cb75de94ebf641faec50411b572dc5a117",
+    "bytes": 6265
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/system/mod.rs": {
+    "sha256": "a0cd4b9fec764bc08e1c1dbd8414247e0a878d71c1e37dae50a2085cfdce5a45",
+    "bytes": 19791
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/system/user.rs": {
+    "sha256": "2e9f2d0f125b34acf913679a531b69db0a7d807b60750c243536af649377df57",
+    "bytes": 8578
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/system/permission.rs": {
+    "sha256": "df77585811bcbcd91195a4b36fa331702c513100fe3d798901a8e5016cf741dc",
+    "bytes": 2561
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/rbac.rs": {
+    "sha256": "c130908ca50354b8ce0bf12ef55611748b08e91aa3b3828daeefb8ba601bebfe",
+    "bytes": 4473
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/modules.rs": {
+    "sha256": "f345421b499377f16e16731d88c50bea27a2bab09a04742b34fbbad9077b4ca5",
+    "bytes": 18451
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/deployment.rs": {
+    "sha256": "8d004799239afc33869291af151ed74ac3785db9728959b1e6b36e52da3026f4",
+    "bytes": 2190
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/actuator.rs": {
+    "sha256": "70a352980a02c0091f8c94248410d4065f2346c19769297e6e6609471b02e75d",
+    "bytes": 71799
+  },
+  "platform/gateway/mox-platform-gateway-svc/src/message_center/authorization.rs": {
+    "sha256": "c2376de6ff253525c71f8511343edcc6301862e76b7a0f42e97e2cc226e8c9ec",
+    "bytes": 1974
+  },
+  "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs": {
+    "sha256": "eea769f549855d28f3251451182d7cc1abc76cfd2b9a20a78c6323a6570339f7",
+    "bytes": 34750
+  },
+  "frontend-ui/src/api/system.api.js": {
+    "sha256": "06af3c59b21c151f78d81bdfdde60ad5a30602ff87b24f55bcfd2c83cd923b2e",
+    "bytes": 10755
+  },
+  "frontend-ui/src/components/index.js": {
+    "sha256": "80f558f4f5e5036f8606b70a5fd03f120438ba9ed4588b953f43f59ba281e2e9",
+    "bytes": 2353
+  },
+  "frontend-ui/src/components/IamPermissionDialog.vue": {
+    "sha256": "2b70976d097d648f51d8ce7e2718355d8af6b700bdce3ef51bc841ca59d49bfd",
+    "bytes": 5293
+  },
+  "frontend-ui/src/views/admin/panels/AdminRole.vue": {
+    "sha256": "f41afd9328302b00773b87ed34fff326f5792332868d55b948acab3eb9d38c53",
+    "bytes": 37280
+  },
+  "scripts/doc/gen-api-registry.py": {
+    "sha256": "afea528eb573d31dfd075bb94be830bc2ad1834f41c64dc24b7ed932432fe372",
+    "bytes": 12053
+  },
+  "docs/API-REGISTRY.md": {
+    "sha256": "d038a1ef6b19215cbfe6d5bc72a6e04d85a5cc07ecddd80d929471dbff5e2676",
+    "bytes": 36590
+  },
+  "docs/modules/README.md": {
+    "sha256": "4be06d6167da385ce4ab4c3c2bf535ac661dfbbc18e0233d772f49fc6abe7e82",
+    "bytes": 4948
+  },
+  "docs/modules/REAL-IMPLEMENTATION-STATUS.md": {
+    "sha256": "06ac322634cb6f7fa2c36c994fefdbe390d2da589730c3419c9d7262454d8f4b",
+    "bytes": 6523
+  },
+  "docs/modules/iam/README.md": {
+    "sha256": "171d775eed7eb63583b0fbbec5c429998e793de423073e12444041379105d110",
+    "bytes": 7057
+  },
+  "docs/modules/message-center/README.md": {
+    "sha256": "bca58315f9cde323482dac4f6b2428699b66e57273eb32b735736334093e5e71",
+    "bytes": 13392
+  },
+  "reports/markdown/20261002-iam-permission-admin.md": {
+    "sha256": "df8befaa8036222517fdbc5f588cee0793bb7724bc444d4b248aed2298512360",
+    "bytes": 2408
+  }
+}

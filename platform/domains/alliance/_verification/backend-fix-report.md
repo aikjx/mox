@@ -901,3 +901,301 @@ POST /optimal-team）+ POST /rebuild。落库函数 `save_graph_conn`（experts_
 3. **密钥隔离**：每租户独立 API Key / 模型密钥。
 4. **SSO/SAML**：租户级身份源对接，替换单 JWT；`UserInfo.tenant_id` 由 SAML 断言下发。
 5. **租户内 RBAC**：tenant_admin 仅管本租户资源（当前 ADMIN_ROLES 全局）。
+
+
+---
+
+## D4 进程内三项落盘 + D8 探活默认开（2026-10-02）
+
+### 背景
+
+- D4：`ExpertsSharedState` 的 `plans` / `orchestration_history` / `favorites` 三项此前为纯内存态（experts_common.rs），进程崩溃即丢；sessions/graph 已有 SQLite 落盘，三项是最后缺口（16 号台账 D4）。
+- D8：registry-svc `Config::default().health_probe_enabled` 为 `false`（app_state.rs），主动探活需生产显式设 env（16 号 N5/D8 登记为「设计取舍」）。
+
+### D4 落盘方案
+
+| 维度 | 决策 | 理由 |
+|---|---|---|
+| schema | `PRAGMA user_version` v2 → **v3**；新增三表 `collaboration_plans` / `orchestration_history` / `favorites`，均 `(tenant_id, …)` 复合主键 | 复用 N3 迁移框架 + A1 租户行级隔离；三表此前无历史数据，v2→v3 仅 `CREATE TABLE IF NOT EXISTS` + bump 版本号，无需数据搬迁 |
+| 写时持久化 | 每次写操作后立即 upsert/insert 单条（`upsert_plan` / `insert_history_record` / `upsert_favorite` / `delete_favorite`），best-effort（失败仅 log_err，不阻断业务） | 数据量小，单条 upsert 避免全量重写；与既有 sessions/graph 持久化同约定 |
+| 启动加载 | `ExpertsSharedState::new()` 调 `load_all_plans / load_all_history / load_all_favorites` 一次读回全部租户分区，重建内存态 | 崩溃恢复 = 重启走同一启动路径 |
+| 内存态 | plans/history 保持 A1 既有「全局扁平 + handler 按 metadata.tenant_id 过滤」读面（plan_id/execution_id 为全局 UUID 不冲突）；**favorites 改按租户分区** `HashMap<tenant, HashSet<expert_id>>`（原扁平 HashSet 无法跨租户隔离） | 读面最小改动；favorites 无租户维度，分区是唯一正确解 |
+| favorites 租户来源 | handler 取 `OptionalAuthUser` 的 `tenant_id`；无身份（无头请求）归 `default` | 不新增 401/403，单租户 default 行为零回归；生产经鉴权中间件注入真实租户 |
+
+### 改动文件:行号（关键）
+
+- `alliance/experts_db.rs`：import 加 `CollaborationPlan/OrchestrationRecord/HashSet`；`SCHEMA_VERSION=3`；init_schema 加三表；新增 `upsert_plan_conn/upsert_plan/load_all_plans`、`insert_history_record_conn/insert_history_record/load_all_history`、`upsert_favorite_conn/upsert_favorite/delete_favorite_conn/delete_favorite/load_all_favorites`。
+- `alliance/experts_common.rs`：`favorites` 字段类型 `HashSet<String>` → `HashMap<String, HashSet<String>>`；`new()` 三项改 `load_all_*()` 启动加载；新增 7 个 pub 包装函数；2 个测试构造点改 `HashMap::new()`。
+- `alliance/experts_orchestration.rs`：3 处 plan 存入后 `upsert_plan(tenant, &plan)`；2 处 history push 前 `insert_history_record(tenant, &record)`（orchestrate / generate_plan_handler / execute_plan_handler）。
+- `alliance/experts_ext.rs`：`toggle_expert_favorite` 接 `OptionalAuthUser` 派生租户，分区写入 + upsert/delete_favorite 落盘；原直接调 handler 的单测改为验证内存分区（DB 闭环交集成测试）。
+- 其余 5 模块测试构造点（dispatcher/graph/rbac/registry/session）favorites 改 `HashMap::new()`。
+- 新增集成测试 `tests/d4_crash_recovery.rs`。
+- D8：`registry-svc/src/app_state.rs` `health_probe_enabled: false → true`（含注释/from_env 文档）；`health_probe.rs` 模块注释 + 测试 `probe_default_config_enables_task_d8`（原断言默认关的用例已改判）。
+
+### 真实验证证据（禁止 mock）
+
+证据落盘：`platform/domains/alliance/_verification/d4-e2e-evidence.txt`。
+真实 SQLite（独立临时库）+ 真实 `ExpertsSharedState::new()` 启动路径，走「写入 → 模拟崩溃重启（drop state）→ 读回」闭环：
+
+- 首次 new() 三项均空；写入 tenant-a（plan-a1/plan-a2 + exec-a1 + 收藏 exp-a-1/exp-a-2）与 tenant-b（plan-b1 + 收藏 exp-b-1）。
+- drop state1 后二次 new()：plans 恢复 3 个且 plan-a1 逐字段一致（title/status/steps/metadata.tenant_id/expert_ids）；history 恢复 1 条（execution_id/plan_id/status/duration_ms）；favorites 按租户分区恢复。
+- **租户隔离**：tenant-a 只见 2 plan（不含 plan-b1），tenant-b 只见 1 plan（不含 plan-a1/a2）；favorites 跨租户互不可见。
+- 三次 new() 幂等：plans 仍 3（不翻倍）、history 仍 1。
+
+### 测试结果
+
+- `cargo check -p mox-platform-gateway-svc --lib`：exit 0（仅既有 drop-on-ref/unused 警告，无新增）。
+- `cargo test -p mox-platform-gateway-svc --lib`：**180 passed / 0 failed**（A1 基线 179，+favorites 分区单测等净增）。
+- `cargo test -p mox-platform-gateway-svc --tests`：`experts_db_persistence` 8 / `tenant_expert_isolation` 1 / `d4_crash_recovery` 1 等全部 **0 failed**（既有 sessions/registry/graph 落盘路径零回归）。
+- `cargo test -p mox-alliance-registry-svc`：**17 lib + 11 集成 = 28 passed / 0 failed**；`probe_default_config_enables_task_d8` 通过。
+
+### D8 说明
+
+探活端点公开白名单（routes.rs `/health` `/metrics` `/leadership` `/api/registry/health`）不鉴权，与 `health_probe_enabled` 无关——改默认值不触及路由鉴权。默认开后启动后台探测任务（server.rs:39），提前标记「仍心跳但业务不可用」实例为 Unhealthy 并在恢复时自动回册；env `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off` 可关回退被动租约。
+
+### 不做 / 诚实标注
+
+- plans/history 落盘是网关本地 SQLite，**多副本/A2 memory 独立前不跨进程共享**（同 N11 会话边界）；并入 scheduler `ea_task_node` 表仍远期。
+- favorites 仅按租户分区落盘，未接用户维度/跨设备同步；登记值语义（availability.status）不改，探活结果回流前端仍为遗留。
+- 回退：三表保留不影响旧路径；恢复默认 = app_state.rs 改回 false + new() 改回 `HashMap/Vec::new()`。
+
+
+---
+
+## A2 无状态化阶段一：冷数据外移为「SQLite 唯一真相」（2026-10-02）
+
+### 背景与目标
+
+- D4 已把 `collaboration_plans` / `orchestration_history` / `favorites` 三项落 SQLite，但语义是「**内存为主 + SQLite 备份**」：多副本各持内存副本，A 写穿 SQLite 后，B 不重启、不刷新本地缓存就读不到（D4 诚实标注的遗留：「多副本/A2 memory 独立前不跨进程共享」）。
+- A2 阶段一目标：把这三项**冷/低频数据**的读面也改为实时查 SQLite，立 SQLite 为**唯一真相**，补齐跨实例一致性 / HA 读一致性；registry/graph 高频态保持进程内（留阶段二）。
+
+### 设计决策（含理由）
+
+| 维度 | 决策 | 理由 |
+|---|---|---|
+| 路径选择 | SQLite 作为唯一真相（**写穿 + 读路径实时查 SQLite**），**不引入外部存储**（不上新 Redis/DB/对象存储） | 守气隙/最小侵入/零新依赖：三项表 D4 已建、写穿已就绪，WAL 多连接可见性天然支持跨副本读；引入外部存储会破坏气隙卖点且新增运维面，成本远超收益。 |
+| 外移对象 | **仅三项冷数据**（plans / history / favorites）；registry/graph **保持进程内不外移** | 写热点说明：registry 是每次咨询/匹配的热读（`compute_match_score` 逐专家打分）、graph 是多跳遍历大对象，二者读 QPS 高、对象大，逐请求查 SQLite 会放大延迟与连接开销；plans/history/favorites 是冷/低频读（统计、历史列表、收藏开关），短连接本地文件亚毫秒级，可接受。外移选择遵循「先冷后热」，最小化风险。 |
+| 写路径 | 保持 D4 写穿（单条 upsert/insert/delete，best-effort 失败仅 log 不阻断业务）；**补 busy/locked 应用层重试循环**（≤5 次退避） | WAL 下读写不互斥，仅多写者争锁；`busy_timeout=5s` 已是第一道等待，应用层再做有限次重试，降低多副本共享同一文件时写穿的瞬时失败率。非锁类错误（如序列化失败）不重试，按既有约定记录即返回。 |
+| 读路径 | 三个读 handler 改为**按租户实时查 SQLite**（`load_plans_by_tenant` / `get_plan` / `load_history_by_tenant` / `load_favorites_by_tenant`）；favorites toggle 的 `is_fav` 判定也改为查 SQLite | 低频读成本可接受；实时查库即跨实例一致，**无需失效广播**（读侧不去维护与其他副本的缓存一致性）。本实例写后仍同步更新本地内存镜像（保持即时读与既有 handler 形状），但读面权威来源是 SQLite。 |
+| 内存态定位 | `plans`/`orchestration_history`/`favorites` 内存镜像降级为「本实例最近写入的即时读缓存 + 启动加载重建」，不再是权威源 | 单实例下读 SQLite == 写穿后内存镜像，行为等价；保留镜像以兼容既有 handler 构造形状与启动路径，改动最小、可回退。 |
+| 租户隔离 | 租户过滤**下推到 SQL**（`WHERE tenant_id=? [AND plan_id=?]`） | `get_plan` 跨租户自然 None（404）；history 行 D4 写入时即带 `tenant_id`，直接按租户查，等价于旧「按本租户可见 plan 过滤 history」语义。 |
+
+### 改动文件:行号（关键）
+
+- `alliance/experts_db.rs`：
+  - 新增 `retry_write`（busy/locked ≤5 次退避重试，非锁错误直接 log）；
+  - 四个写穿函数 `upsert_plan` / `insert_history_record` / `upsert_favorite` / `delete_favorite` 改走 `retry_write`；
+  - 新增四个按租户实时读函数：`load_plans_by_tenant` / `get_plan`(tenant,plan_id) / `load_history_by_tenant` / `load_favorites_by_tenant`。
+- `alliance/experts_orchestration.rs`：
+  - `execute_plan_handler`：plan 读取由 `state.plans.get_mut`（内存）改为 `experts_db::get_plan(tenant, plan_id)`（SQLite，租户下推）；
+  - `orchestration_stats`：plans/history 由内存过滤改为 `load_plans_by_tenant` / `load_history_by_tenant`（`state` 参数改 `_state`）；
+  - `orchestration_history` handler：历史由「先查本租户可见 plan 集合再过滤内存 history」改为直接 `load_history_by_tenant` 后本地 retain/status/分页（`state` 改 `_state`）。
+- `alliance/experts_ext.rs`：`toggle_expert_favorite` 的 `is_fav` 判定由本地内存镜像改为 `load_favorites_by_tenant(tenant)`（SQLite 唯一真相），再回写本地镜像 + 写穿方向不变。
+- 新增集成测试 `tests/a2_multi_instance_consistency.rs`。
+
+### 跨实例 E2E 证据（禁止 mock）
+
+证据落盘：`platform/domains/alliance/_verification/a2-e2e-evidence.txt`。
+两个独立活实例（各自 `ExpertsSharedState::new()`，各自独立内存镜像）共享同一份真实 SQLite（临时文件，WAL）：
+
+- **对照组**：先断言 inst_b 内存镜像里**没有** inst_a 刚写的 plan/收藏（B 自启动后未 reload）——证明读路径若走内存必然读不到。
+- inst_a 真实写穿 plan(a2-plan-1) + history(a2-exec-1) + favorite(exp-a-fav)（tenant-a）。
+- **inst_b 不重启**，直接走新读路径：按租户读到 a2-plan-1（title/expert_ids 逐字段一致）、`get_plan` 单点命中、history 1 条（duration_ms=123）、favorite 含 exp-a-fav。
+- **租户隔离**：B 读 tenant-b 的 plans/history/favorites 全空，`get_plan("tenant-b","a2-plan-1")` 为 None（跨租户 404）。
+- **双向一致**：B 写 tenant-b 收藏后，A 实时读到。
+
+### 测试结果
+
+- `cargo check -p mox-platform-gateway-svc --lib`：exit 0（仅既有 drop-on-ref/unused-var/unused-import 警告，与本次改动无关；本次新增代码无新警告）。
+- `cargo test -p mox-platform-gateway-svc --lib`：**180 passed / 0 failed**（与 D4 基线 180 完全一致，单实例零回归）。
+- `cargo test -p mox-platform-gateway-svc --tests`：a2_multi_instance_consistency **1**（新增）/ d4_crash_recovery 1 / experts_db_persistence 8 / tenant_expert_isolation 1 / alliance_remote 13 / inbox_http 4 / inbox_persistence 6 / delivery_truth 3 / domain_grouping 7 / 其余 0 failed。
+
+### 阶段二（方案稿，诚实标注，本轮不硬做）
+
+- registry（per-tenant HashMap）/ graph（per-tenant 大图）高频态外移：读 QPS 高、对象大，需先引入读缓存 + 失效机制或专用图库（A4 气隙嵌入式约束），不盲目外移。
+- 执行器 task 状态、dispatcher 熔断/调度记录的跨副本共享。
+- 分布式通知 / 缓存失效广播（阶段一读路径实时查库规避了此需求，但高频态外移后必需）。
+- 多副本写冲突策略：当前 SQLite 单写者 + WAL + busy_timeout + 应用重试够用；若写并发上升需上事务级乐观锁/版本号，或迁 scheduler 任务表（远期）。
+- sessions（N11）仍单进程内可恢复，多副本共享留待 memory 独立 / A3 事件溯源。
+
+---
+
+## T4 事件驱动（2026-10-02）：进程内事件总线 + 最小真实价值闭环
+
+### 背景与现状核证
+
+工程此前**零事件机制**（grep broadcast/subscribe/EventBus/notify_ 零命中）：审计为直接调用
+`emit_audit`，SSE 为单向日志流。本轮从零建立进程内广播总线，落地 T4 卡片（§2.4：任务状态
+变更事件流 pending→running→completed/failed、节点启停）的第一性闭环，对齐 Airflow 3.0 事件
+驱动 / LangGraph 状态机事件。
+
+> 勘误：任务书把「事件驱动」误挂在「12 号 M1」。实际 M1=私有化交付产品化（信创/气隙离线包）；
+> 事件驱动为 **T4**。本节与文档均以 T4 为准。
+
+### 事件模型（experts_events.rs）
+
+`AllianceEventKind` 枚举（**按真实 emit 点收敛，不为枚举而枚举**）+ `AllianceEvent` 信封
+（id=evt-uuid + type + payload + source + tenant(A1) + occurred_at=RFC3339）：
+
+| 变体 | 真实 emit 点 |
+|---|---|
+| PlanCreated | generate_plan_handler / orchestrate |
+| PlanStatusChanged | execute_plan_handler / orchestrate（draft→running→completed/failed/partial）|
+| ExpertRegistered | create_expert |
+| ExpertDisabled | delete_expert |
+
+### 总线选型理由
+
+选 `tokio::sync::broadcast`：① tokio features=`full`（见 Cargo.toml）已含 sync::broadcast，
+**零新依赖**；② 一对多广播，天然支持「事件日志消费者 + 未来 SSE 事件帧 + 外部系统订阅」多下游；
+③ 生产路径 send 非阻塞、无消费者返回 Err 被忽略，**失败不阻断业务**（与审计 best-effort 一致）；
+④ 有界 channel + Lagged 追赶，慢消费者不反压写路径。总线挂 `ExpertsSharedState.events`。
+
+### 闭环选择（价值×成本）
+
+- **A 计划/任务状态主线**（落地）：价值=即 T4 §2.4 卡片本身（前端免轮询 / 外部系统订阅生命周期
+  联动 / 可观测数据骨干）；成本=emit 点已在 orchestration handler 定位，消费者=新增一张表。
+- B 专家注册事件→审计增强：价值=边际（审计链已覆盖）；成本=create/delete_expert 各一行 emit。
+  作为 A 的旁路真实 emit 点一并接入（消费者通用，零额外成本），不作主闭环。
+
+### 改动文件:行号（关键）
+
+- `src/alliance/mod.rs`：注册 `pub mod experts_events;`
+- `src/alliance/experts_events.rs`：新建（EventBus / AllianceEvent / Kind + `spawn_event_log_consumer` + 单测）
+- `src/alliance/experts_common.rs`：`ExpertsSharedState` 新增 `events` 字段；`new()` 建总线并挂消费者；补 2 处测试构造
+- `src/alliance/experts_db.rs`：`SCHEMA_VERSION 3→4`；`init_schema` 加 `alliance_event_log` 表；
+  `insert_event_log(_conn)` / `load_event_log_by_tenant` / `EventLogRow`
+- `src/alliance/experts_orchestration.rs`：orchestrate / generate_plan_handler / execute_plan_handler 真实 emit
+- `src/alliance/experts_registry.rs`：create_expert / delete_expert 真实 emit；补 `make_test_state`
+- `src/alliance/{dispatcher,session,rbac,graph,ext}.rs`：补 `events` 测试构造（编译适配）
+- `tests/t4_event_bus_e2e.rs`：新建 E2E（禁止 mock）
+
+### 真实验证证据（禁止 mock）
+
+`tests/t4_event_bus_e2e.rs`：真实 tokio 运行时 + 真实 `ExpertsSharedState::new()` + 真实 SQLite
+（独立临时库）+ 真实 TCP + 生产 JWT 认证中间件。链路：
+1. POST `/api/experts/plan/generate`（真实 generate_plan_handler）→ emit PlanCreated；
+2. POST `/api/experts/plan/execute`（真实 execute_plan_handler）→ 新租户无专家快速失败，
+   draft→running→failed → emit 两次 PlanStatusChanged；
+3. 事件经 broadcast 总线被 `new()` 启动时挂的**真实消费者**订阅 → 真实落 `alliance_event_log`；
+4. 轮询读回断言：event_type/tenant/occurred_at/plan_id 齐备；跨租户隔离（另一租户读不到）。
+旁路：POST `/api/experts`（tenant_admin JWT）→ create_expert → ExpertRegistered 落库。
+
+```
+running 2 tests
+test t4_expert_register_event_is_emitted_over_real_http ... ok
+test t4_plan_lifecycle_events_flow_into_event_log_end_to_end ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+EXITCODE=0
+```
+
+证据落盘：`_verification/t4-e2e-evidence.txt`。
+
+### 测试结果
+
+- lib 单测：180（A2 后）→ **187**（+7 事件总线/序列化/收发单测），0 failed。
+- 集成：新增 t4 2 个 E2E，全绿；既有审计 / 单租户 / 多实例一致性零回归。
+- `cargo check`：干净通过（仅既有 unused 警告，非本次引入）。
+
+### 诚实标注：已落地 vs 后续
+
+- 已落地：进程内 broadcast 总线 + 事件模型 + 事件日志消费者落库 + 真实 E2E。
+- 后续（方案稿）：跨进程/多副本广播、SSE 事件帧推送、外部系统 Webhook 订阅——需在总线之上再加
+  外发层，本阶段仅进程内闭环。审计链照旧直接调用不变，事件消费者为增量能力。
+
+---
+
+## A1 阶段二：租户配额 + SSO 可测性评估（2026-10-02）
+
+### 一、本轮范围
+
+- **落地（真实，禁止 mock）**：多租户资源治理的第一个真实可测维度——**单租户专家数上限配额**。
+- **评估（如实）**：SSO 子项的真实可落地性，核证既有 `sso/api.rs` OIDC 实现，判定本机是否具备端到端真实验证条件。
+- **不改**：租户隔离/RBAC/审计链/内部鉴权既有行为；单租户（default）默认行为零回归。
+
+### 二、配额模型与维度选择理由
+
+阶段一选「租户专家数上限」而非一次铺开多维度，依据是**治理价值 × 真实可数 × 改动成本**排序：
+
+| 维度 | 是否本轮做 | 理由 |
+|------|-----------|------|
+| **租户专家数（registry 行数）** | 做 | registry 已是干净的 per-tenant `HashMap<tenant, HashMap<expert_id,_>>`，`reg.len()` 即真实占用数，`create_expert` 单点拦截，成本最低、价值最直接（防单租户无限注册专家记录） |
+| DAG 计划/任务数 | 后续 | `plans: HashMap<plan_id, plan>` 是全局扁平表，租户靠 `plan.metadata["tenant_id"]` 运行期过滤；按租户计数需全表扫描 + 语义确认，成本/收益不如专家数，本轮如实不做 |
+| 会话数 | 后续 | `sessions` 全局扁平，且会话天然短生命周期，配额治理价值低 |
+| 图谱节点数 | 后续 | 图谱由注册表推导，专家数配额已间接约束；独立计数价值低 |
+| LLM 调用量 / 并发配额 | 阶段三 | 接 T1 信号量 + 计量，属另一子系统 |
+
+**超限语义**：HTTP **409 Conflict**（资源占用冲突，非 400 参数错、非 429 限流语义——本配额是「创建资源」类冲突，409 最贴切）。
+
+### 三、配置来源（避免过度工程）
+
+- **代码默认 + env 覆盖**，不落库：`MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT`，默认 **1000**。
+- 默认 1000 不误伤现有单租户：内置种子专家仅 10 个，且经 `ExpertsSharedState::new()` **直接写入内层注册表**（不经 `create_expert` handler），不受配额约束。
+- **不落租户级配置表**：租户级配额差异属阶段三/管理 UI；本轮统一全局上限 + env，避免引入表与迁移。
+- 读取时机：管理写面每次 `create_expert` 实时读取（非热路径），**env 修改即时生效、无需重启**；env 缺失/非正整数一律回退默认。
+
+### 四、组件与计数口径
+
+- `QuotaGuard`（函数式，遵循任务「或函数」的最小改动取向，未给 `ExpertsSharedState` 加字段、未动 8 处测试构造）：
+  - `check_expert_quota_with(used, limit, tenant)`：纯函数，可单测；超限返回已构造好的 409 响应。
+  - `check_expert_quota(used, tenant)`：生产入口，env 取上限后委托纯函数。
+- **计数口径**：该租户内层注册表全部记录数 `reg.len()`。软删除（enabled=false）专家记录仍占槽位——其 id 已被 `create_expert` 的 id 冲突检查永久保留、不可复用，故按「注册表专家记录数」计最诚实、最可复算。
+- **与既有链共存**：校验在 handler 内、租户已解析后执行；顺序为 RBAC → name/id 校验 → id 冲突(400) → **配额(409)** → insert。管理写面 RBAC 不变；拒绝照旧落审计链（`quota.denied`，`AuditOutcome::Failure`）。
+
+### 五、改动文件:行号
+
+- `src/alliance/experts_common.rs:114-165`：新增「零-B 多租户配额治理」节——`DEFAULT_QUOTA_EXPERTS_PER_TENANT=1000`、`quota_experts_per_tenant()`、`check_expert_quota_with()`、`check_expert_quota()`。
+- `src/alliance/experts_common.rs:1199-1214`：新增纯函数单测 `test_check_expert_quota_with_threshold`（used<limit 放行；used>=limit 返回 409 且 body 含 quota/used/tenant）。
+- `src/alliance/experts_registry.rs:381-396`：`create_expert` 在 id 冲突检查后接入 `check_expert_quota(reg.len(), tenant)`，拒绝时发 `quota.denied` 审计并返回 409。
+- `tests/a1_quota_tenant.rs`：新建 E2E（禁止 mock）。
+
+### 六、E2E 真实验证证据（禁止 mock）
+
+真实生产路由器 + 真实 JWT(HS256) 中间件 + 真实 `ExpertsSharedState::new()` + 真实 SQLite（独立临时库）+ 真实 TCP + reqwest。低配额 env `MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT=2`：
+
+```
+[A1-QUOTA-E2E] tenant-a POST /api/experts qa-ok-1       -> HTTP 200
+[A1-QUOTA-E2E] tenant-a POST /api/experts qa-ok-2       -> HTTP 200
+[A1-QUOTA-E2E] tenant-a POST /api/experts qa-overflow-1 -> HTTP 409
+  body={"code":409,"msg":"租户专家数已达上限（quota=2, used=2）",
+        "data":{"error":"quota_exceeded","limit":2,"quota":2,"resource":"expert","tenant":"tenant-a","used":2}}
+[A1-QUOTA-E2E] tenant-b POST /api/experts qb-ok-1       -> HTTP 200
+[A1-QUOTA-E2E] tenant-b POST /api/experts qb-ok-2       -> HTTP 200
+[A1-QUOTA-E2E] tenant-b POST /api/experts qb-overflow-1-> HTTP 409
+  body={...,"data":{...,"tenant":"tenant-b","quota":2,"used":2}}
+[A1-QUOTA-E2E] tenant-a GET /api/experts -> {"data":{...,"total":2}}（被拒专家未落库）
+running 1 test
+test tenant_expert_quota_enforced_per_tenant ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+结论：真实租户真实建 2 成功 → 第 3 个被真实 **409** 拒绝（响应体含 quota/used）→ 另一租户配额独立不受影响 → 被拒记录未落库。证据落盘：`_verification/a1-quota-e2e-evidence.txt`。
+
+### 七、SSO 可落地性评估（如实，不造假对接）
+
+**核证既有实现（先读码）**：`src/sso/api.rs`
+- OAuth2/OIDC 授权码交换 `exchange_oauth2_code` 为**真实实现**：reqwest（15s 超时）`POST provider.token_endpoint`，Basic 认证 + form body（RFC 6749 §4.1.3：grant_type=authorization_code/code/redirect_uri）；非 2xx → 502；缺 client_id/secret/token_endpoint → **422 不造桩成功**；OIDC 再 GET `userinfo_endpoint` 取 sub/email。
+- 回调 `callback_handler`：provider 存在且 enabled → state 一次性消费（10 分钟过期、防 CSRF）→ 协议分支（saml/cas/ldap = **501**）→ oauth2/oidc 交换 → 按 email 在默认租户 IAM 映射（无映射 **409**，不自动建号、不绕 RBAC）→ 复用密码登录同一套 `issue_tokens` 签平台 JWT。
+- **配置来源**：provider 为**内存态** `SsoState.providers: HashMap<String,SsoProvider>`，由 `builtin_provider_templates()` 种子 + HTTP CRUD（list/create/update/delete provider、login、callback）；**无持久化**（重启重置），client_id/secret/token_endpoint 均来自 provider 记录。
+
+**本机可测性结论**：本机为本地开发 Windows 环境，provider 模板的 client_id/client_secret 为空、无外部 IdP 凭据、无本地 Keycloak/Okta 等 OIDC 服务在跑。因此——
+- OIDC **协议实现已在且真实**，但「授权码换 token → 取 userinfo → IAM 映射 → 签平台 JWT」的**端到端真实验证缺一个真实可达的 IdP**。
+- 本轮**不造假对接、不 mock 一个假 token 端点冒充成功**。现有单测已如实覆盖：缺凭据 → 422（不访问外网、不造桩成功）、pending state 一次性生命周期。
+
+**SSO 接入方案稿（待真实 IdP，诚实标注）**：
+1. **对接点（已就绪，无需新协议层）**：用既有 `POST /api/enterprise/sso/providers` 建一个 `protocol=oidc, status=enabled` 的 provider，填真实 `client_id/client_secret/auth_endpoint/token_endpoint/userinfo_endpoint/redirect_uri`；前端跳 `login` 拿 `auth_url` → 用户在 IdP 登录 → 回跳带 code → `POST /callback` 换平台 JWT。
+2. **可测条件（缺一不可）**：① 一个真实 OIDC IdP——本地起 Keycloak（docker，建 realm/client/测试用户）或 Okta/Auth0 测试租户凭据；② 该 IdP 预建一个 email 与平台 IAM 用户一致的账号（否则 409 未映射）；③ redirect_uri 与 IdP 登记一致。
+3. **SAML/CAS/LDAP 改动点（当前 501 → 真实 handler）**：`callback_handler` 协议分支新增 SAML Response 解析（验签）、CAS ticket 校验（`/serviceValidate`）、LDAP bind；provider 配置需补 IdP metadata/证书。本轮如实保持 501。
+4. **后续工程项**：provider 内存态 → 持久化表（多副本/重启保留）、密钥加密存储、租户级 SSO 策略（当前固定 default 租户映射）。
+
+### 八、测试结果
+
+- `cargo test`：**全绿，0 failed**（lib 189 passed；新增 `test_check_expert_quota_with_threshold` 1 个纯函数单测 + 集成 `a1_quota_tenant` 1 个 E2E）。既有审计/单租户/多租户隔离/多实例一致性零回归。
+- `cargo check`：干净通过；新增代码无新 warning（仅既有 unused import/drop-ref 警告，非本轮引入）。
+- 单租户默认行为：默认配额 1000，default 租户 10 个种子专家直写注册表、不经 handler，零回归。
+
+### 九、诚实标注：已落地 vs 方案稿 vs 待真实 IdP
+
+- **已落地（真实）**：租户专家数配额（env 可配、超限真实 409 + 结构化 quota/used、按租户独立、拒绝落审计）+ 低配额 E2E 真实证据。
+- **方案稿（未硬做）**：DAG 计划/任务数、会话、图谱节点配额；租户级配额配置表/管理 UI；LLM 调用量/并发配额（接 T1）；SAML/CAS/LDAP 真实 handler；provider 持久化与加密。
+- **待真实 IdP**：OIDC 端到端真实验证——协议代码已就绪，缺本地 Keycloak/Okta 测试凭据，拿到后即可按 §七方案稿真跑，本轮不造假。

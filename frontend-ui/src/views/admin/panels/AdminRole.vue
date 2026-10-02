@@ -71,11 +71,12 @@
         <el-table-column prop="createdAt" label="创建时间" width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right" align="center">
+        <el-table-column label="操作" width="420" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="openRoleForm(row)">编辑</el-button>
             <el-button type="primary" link size="small" @click="openMenuPermDialog(row)">菜单权限</el-button>
             <el-button type="primary" link size="small" @click="openDataPermDialog(row)">数据权限</el-button>
+            <el-button type="primary" link size="small" @click="iamRole = row; iamVisible = true">业务权限</el-button>
             <el-dropdown trigger="click" @command="(cmd) => handleMoreAction(cmd, row)">
               <el-button type="primary" link size="small">
                 更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
@@ -109,6 +110,7 @@
       </div>
     </div>
 
+    <IamPermissionDialog v-model:visible="iamVisible" :role="iamRole" />
     <!-- 角色表单对话框 -->
     <FormDialog
       v-model:visible="roleFormVisible"
@@ -404,7 +406,9 @@ import {
   getMenuTree, getDeptTree,
   ROLE_TEMPLATES
 } from '@/api'
-import { FormDialog } from '@/components'
+import { FormDialog, IamPermissionDialog } from '@/components'
+const iamVisible = ref(false)
+const iamRole = ref(null)
 import { navIcon } from '@/modules/_kernel/nav-icons'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'

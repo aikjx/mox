@@ -1,0 +1,24 @@
+§1.8n 等价性收据（三口径同轮内存反事实，一行盘未写）｜生成 2026-10-02 20:48:50｜载体 reports/data/diraccount-delta-2026-10-02-2048.txt
+仪器 138766 B／md5 74ec3415a773／CRLF 0
+目录账条目名现切的派生剪枝集：['_archive', '_data', '_verification']（条目 3 条）
+
+口径 A 无剪枝：ROOTS 417 份／集外 311 份／合计 728
+口径 B 旧形状复现（ROOTS 只剪 _archive，集外不剪）：ROOTS 372 份／集外 311 份／合计 683
+口径 C 本轮派生剪枝：ROOTS 370 份／集外 307 份／合计 677
+对照读数：载体 2003 第 13 行 文件 372／第 78 行 集外 311＝旧口径应当等于 B；
+          载体 2040 第 24 行 文件 370／第 85 行 集外 307＝本轮口径应当等于 C
+声明从未执行时会多读进来的份数（A→C）：51 份，其中目录名归属 ['docs', 'frontend-ui', 'platform']
+
+B→C 本轮真实移出判决面的 6 份（盲区／主张／不闭合／引文）：
+  docs/enterprise/_data/test-report-20260824/t4-enterprise-test-report-20260824.md：459／0／0／0
+  docs/expert-alliance/_verification/docs-verification-report.md：20／0／0／0
+  frontend-ui/src/modules/expert-alliance/_verification/frontend-fix-report.md：2／0／0／0
+  frontend-ui/src/modules/expert-alliance/_verification/frontend-verification-report.md：4／0／0／0
+  platform/domains/alliance/_verification/backend-fix-report.md：57／0／0／1
+  platform/domains/alliance/_verification/backend-verification-report.md：20／0／0／0
+合计：盲区 562／主张 0／不闭合 0／引文 1｜本轮新增进判决面（C 有 B 无）0 份
+跨载体盲区差（ROOTS 侧）478＝本轮量 562 是否一致：False（不一致＝两轮之间正文被并发作者动过，以本轮 479 为准）
+集外引文：载体 2003 第 78 行 1 条 → 载体 2040 第 85 行 0 条，本轮掉出判决面的引文合计 1
+红模板：载体 2003 第 73 行 None 条 → 载体 2040 第 73 行 39 条
+
+MUST 判定：口径 B 复现上一轮载体的 ROOTS 读数（旧形状被逐数复原，不是我在猜）=True｜口径 B 复现上一轮载体的集外读数=True｜口径 C 复现本轮载体的两个读数=True｜本轮真实移出判决面恰 6 份=True｜C 没有把任何一份读成新增（剪枝只减不增）=True｜移出的每一份，其目录名都在派生剪枝集里（因果只走这一条通道）=True｜移出的份里主张合计 0 且不闭合合计 0 ⇒ 等式判决一条没丢=True｜移出的引文数与两份载体的集外引文差相等 ⇒ 引文这一维本轮确实动了一条，必须登记而不是隐瞒=True｜两个口径的分母都非空（塌了就不是判决）=True｜派生剪枝集＝目录账条目名的切法（无第二个源）=True｜每条目录账条目在跟踪面里命中 >0（没有哑条目）=True

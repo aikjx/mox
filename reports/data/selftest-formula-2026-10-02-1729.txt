@@ -1,0 +1,186 @@
+=== python scripts/gate/check-doc-formulas.py --selftest
+--- rc=0
+PASS 夹具A 真语料七型标识符/行号/型号/分号表格全不判红也不成主张（假阳＝人绕过闸门的代价）  误红 [] ／ 误成主张 [] ／ 落档 ['glued']
+PASS 夹具B 三枚真主张（带标签七项／带乘法两段／三段和）必须各认成 1 条主张且闭合  未认成 [] ／ 误判不闭合 []
+PASS 夹具C 把 375 改成 374 ⇒ 唯一一条不闭合必须点出来（不是全红也不是没红）  主张 1 违反 1 「374 ＝ 带分支标签 359 ＋ 公共面 16」取值 [374, 375]
+PASS 夹具D 「…」 里的旧错值是引文：按名点名，绝不进违反账  引文 1 主张 0 违反 0
+PASS 夹具E 七型盲区各自落进自己那一格，且每型恰有一枚夹具（盲区型与夹具数不等＝有一型从没被复验过）  错档 [] ／ 夹具 7 注册 7
+PASS 夹具G 反引号内的示意等式不出账也不判红（否则同一个事实被两把尺各数一次）  主张 0 违反 0 落档 []
+PASS 夹具F 扫描集非空且盲区 reason 全在注册表内（空集上的全称判据会把零证据印成满把握）  文件 371 主张 6 违反 0 盲区 9131 引文 6 ／ 未注册 reason []
+PASS 变异体1 撤「粘连即非数」 ⇒ 编号 `A1` 的 1 被当成操作数并误红（标识符读成数＝假阳，代价是人绕过闸门）  撤后 主张 1 违反 1 落档 [] 「1 ＝ 3 ＋ 4」
+PASS 变异体2 撤句子终止符 ⇒ 分号两侧被接成一条链并误红（跨句连读必然算错）  撤后 主张 1 违反 1 落档 [] 「60 ＋ 12；乙 ＝ 90 ＋ 8」
+PASS 变异体3 撤引文通道 ⇒ 登记旧错值的那句被判成主张不闭合（分不清引文与主张时主张不可信）  撤后 主张 1 违反 1 落档 [] 「71 ＝ 60 ＋ 30」
+PASS 变异体4 撤乘号通道 ⇒ 带 × 的真主张要么碎裂要么取值错（乘法不是装饰）  撤后 主张 0 违反 0 落档 ['increment'] 「-」
+PASS 变异体5 把链内跨度限到 6 字符 ⇒ 带标签的长链被切碎（分母会静默变小）  撤后 主张 0 违反 0 落档 [] 「-」
+PASS 变异体6 撤「紧邻加号＝增量记号」 ⇒ 「946 ＝ +1 文件 ＋9 例」被当成主张并误红  撤后 主张 1 违反 1 落档 [] 「946 ＝ +1 文件 ＋9」
+PASS 变异体7 撤代码段遮蔽 ⇒ 跨反引号的链把示例里的数字当操作数并误红（拆出的数比账上多一个 12）  撤后 主张 1 违反 1 落档 [] 「60 ＋ `（重叠 12 条）` ＋ 30 ＝ 90」
+PASS 变异体9 撤代码段遮蔽（同一条通道，另一种失效方向）⇒ 示意等式被登成第二条活账，同一个事实两个源  撤后 主张 1 违反 0 落档 [] 「-」
+PASS 变异体8 撤非等式符号遮蔽 ⇒ 「50 ＝ 甲 ≥ 20 ＋ 30」被判成一条闭合主张（假阴：不闭合也读不出来）  撤后 主张 1 违反 0 落档 [] 「-」
+PASS 夹具H 仪器目录现量：算术尺只住在归宿文件里，判决集非空、无解析失败、归宿自己在扫描集内  仪器 31 份 位点 370 处 算术命中 12（归宿 12／别家 0）盲区 82 解析失败 0 ｜ 红因 []
+PASS 夹具I 词汇只命名一次：三根针的模式串由 FL.EQ_FW／ADD_FW 拼出后仍与手写基准逐字节相同  EQ '＝' ADD '[+＋]' ANY '[=＝+＋×≥≤<>~→]'
+PASS 变异体10 别家在三处不同位置自造算术尺（re-call 字面量／具名常量再 compile／ASCII 转义加号）都要点名到文件与行号，而端口尺与计数尺不许误报（误报的代价是人绕过闸门）  全角 ['scripts/gate/second_fw.py'] 具名 ['scripts/gate/second_named.py'] ASCII ['scripts/gate/second_ascii.py'] ｜  benign 误报 0 出账 4 ｜ 红因 []
+PASS 变异体11 把归宿文件从扫描集里撤掉：全称判据会立刻变成空集上的真话（别家 0 处却什么都没测），所以归宿在不在场必须自己成一条判决  无归宿时的红因 ['第二把尺 1 处', '归宿文件不在扫描集（此时 foreign 必为空，全称判据是空的）']
+PASS 变异体12 撤词汇判定 ⇒ 别家照样「零红」：证明红来自 FL 的词汇而不是文件清单  撤后 命中 0 别家 0 位点 1
+PASS 变异体13 撤「已编译模式走接收者」这条通道：判决集必须真的少一个位点。这条通道买的是盲区诚实（早先一版把 arg0 当模式，115 处全落盲区而归宿账照样全绿），不是新增红  有通道 2 位点／撤后 1 位点（撤后盲区 0）
+PASS 变异体14 撤串接折叠 ⇒ 归宿文件自己的 ADD_RE／ANY_OP_RE（模式串由词汇常量拼出）读不出，算术命中必须真的变少：把词汇收成一处命名曾让这把尺变盲，这条通道就是为此补的  折叠 12 处／撤后 0 处（撤后盲区 99 配 82）
+PASS 变异体15 弱尺通道（非 Python 仪器整行找记号）：.mjs 里自造等式尺必须点名，而 ASCII key=value 形态不许误报；真语料那几份非 Python 仪器命中 0 是『看过了』不是『没看』  命中 ['frontend-ui/scripts/gate/second.mjs'] ／ benign 0 ／ 真语料非 Python 3 份弱尺命中 0
+PASS 夹具J 扫描集边界自署：集外探针必须真的读到东西（顶层目录＋仓根 .md），集内集外不许重叠（重叠＝同一本账复算两遍，两份都会漂），集外只在「自己不闭合」时判红  集外文件 309（目录 18／仓根 5／按名跳过 10）主张 1 不闭合 0 点名 ['reports/markdown/locale-family-collapse-20260929.md']
+PASS 变异体16 集外真文件（写在仓库外的临时目录，跑完即删）一条闭合一条不闭合：两份都必须被读到（claims=2，否则红可能来自没读），而红只许点不闭合那一份  主张 2 红 1 点名 unclosed.md
+PASS 变异体17 把集外枚举清空（模拟第三方目录被顺手跳过／列名写错那种塌缩）：全称判据在空集上恒真，所以分母塌了必须自己成一条红  塌缩红因 ['集外探针读到 0 份 .md（分母塌了，不是集外干净）'] ／ 现量红因 []
+PASS 夹具K 识别器扫描集**自己**的边界：『其余 N 份无一把自带』的宇宙是三条 glob，集外那些写得动正则的代码要按同一套判据复算——候选分母要非零、按名跳过的目录数要印出来、集外命中必须为 0，而归宿文件在这条通道里也要在场（否则又是空集上的全称判据）；两本分母还须不相交（相交＝同一份仪器在册与集外各数一遍，PASS 句的和就是假总数）  集外候选 98 份／按名跳过目录 14 个／集外位点 222 盲区 32／归宿命中 12 别家 0／集内集外交集 0 份
+PASS 变异体18 在**真实集外目录形状**里放一枚自造等式尺（`scripts/**` 下的 .py，不在三条 glob 内）：集外通道必须点名到文件，否则夹具K 那句『集外 0 处』只是没看  点名 ['scripts/maintenance/probes/planted.py'] ／ 红 ['第二把尺在扫描集外 scripts/maintenance/probes/planted.py:3 通道 re-call:Constant'] ｜ 塌缩对照 ['集外候选读到 0 份代码文件（分母塌了，不是集外干净）']
+PASS 变异体19 带 BOM 的仪器必须读得动（读码走 utf-8-sig）：BOM 留在串首时 `ast.parse` 报「invalid character in identifier」⇒ 那台仪器整份落进『解析失败』，它自带的第二把尺从此隐身（本仓真有这样一份：`scripts/ci/ci.py` 首字节是 BOM）  BOM 已剥离 True ／ 解析失败 0 ／ 点名 ['scripts/gate/bom_gate.py']
+PASS 夹具M CI 接线账：『接了 CI』的宇宙取自 check-script-paths.py 的 run 块判据（不自写第二把尺），真 ci.yml 必须让名单里两台仪器都带上 --selftest；分母从对象推（可执行脚本种类 ≥ 名单长度），兄弟门禁装载失败要印出来而不是安静退化成没有红；另钉两枚正对照（续行写法／复合命令写法）  run 块 token 17 条（收窄后执行 15 条／打印语句里 2 条）／脚本种类 13／名单 2 台／真语料红 []／续行对照 []／复合命令对照 []／装载 OK
+PASS 变异体20 注释里的写法不算接线：名单仪器只写进 run 块的 shell 注释时，复用来的注释剥离通道必须让它落到『未接线』（否则一行注释就能把『接了 CI』骗过去），且两台都不许隐身  剥注释后可执行 token 1 条／未接线红 2 条／全部红 ['CI 未接线 scripts/gate/check-doc-formulas.py：名单里的仪器没出现在任何一条 run 命令里', 'CI 未接线 scripts/gate/check-api-surface.py：名单里的仪器没出现在任何一条 run 命令里']
+PASS 变异体21 `echo` 里的命令串不算接线（本仓 ci.yml 三条 BLOCKED 行正是这个形状）：复用尺按空白切词、分不出打印与执行，不收窄则一行 echo 就能把『已接线』糊出来；被撤下的 token 要按名印出来，且同一宇宙在**撤掉收窄**后必须读成已接线（证明针穿的是这条通道）  原始 token 2／执行 1／打印里 1（['scripts/gate/check-doc-formulas.py']）／红 2 条／撤窄对照 []
+PASS 夹具N 通道依赖实测：宣称一条判决『待裁决点 6』之前，先把托管词汇表中性化看它会不会变——目录账（扫描集牙齿）必须不变，同机植入的那枚真读字形表的判决必须变；后者不变则前者一文不值（反事实只在内存里换 globals()[FL]，不写盘）  目录账不变 True／植入判决变 True／中性化前 ['fw=1', 'hw=1'] → 后 ['fw=0', 'hw=0']
+PASS 变异体22 把中性化换成恒等（替身＝同一个 FL）：植入判决从此不会变，夹具N 的『必须变』那半边失守 ⇒ 那一格必须判红。这枚钉的是『反事实通道有没有牙』，不是目录账自己  恒等替身：目录账不变 True／植入判决变 False
+PASS 夹具O 文档声称的『CI 门禁』逐条对账：名单来源换成 AGENTS.md 自己（同一行既有标记又挂着脚本路径），每条声称都必须在某份 workflow 的真 run 命令里出现；分母塌了自成一条红；没有脚本路径可挂的标记行按行号印出来——那种形状本格是盲的，不许让『全绿』冒充『都核实了』。『已接线』是下界：只保证某份 workflow 里有一条 run 命令执行它，不保证那份 workflow 在当前分支或 `paths:` 过滤下真会触发——落点按名印出来，触发条件去读那个文件  workflow 5 份／执行脚本种类 15／声称 4 条／未接线红 []／无路径可核的行 [10]／后缀挡下的 token ['docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md']／落点 [('verify-ports.py', ['ci.yml']), ('check-frontend-module.py', ['ci.yml']), ('check-locale-format-outlets.py', ['ci.yml']), ('check-script-paths.py', ['ci.yml'])]
+PASS 变异体23 声称只住在 echo 文案里时必须读成『未接线』（与 夹具M 同族的双向性——一行 echo 不许把文档口径的『CI 门禁』骗过去），且被挡下的那条要按名印出来。另钉『执行宇宙恰 1 条』：块没被读到时宇宙也是空的，『未接线』会在空集上恒真——那证明的是仪器没电，不是通道有牙  合成宇宙：执行 ['scripts/gate/other.py']／打印里 [(3, 'scripts/gate/planted_claim.py', 'echo')]／红 ['CI 声称未接线 scripts/gate/planted_claim.py：文档写着标记却没有一条 run 命令执行它（文档行 1）']
+PASS 变异体24 把标记通道撤掉（换一个文档里不存在的词）⇒ 声称账必须当场塌成一条红，而不是安静地印『0 条声称、全部核实』：这一格钉的是标记本身有没有咬住文档  撤标记后：声称 0 条／红 ['CI 声称账塌缩：挂着脚本路径的「CI 门禁」行 0 条（标记命中却无路径 0 行／后缀挡下 0 处），分母塌了必须自己成一条红']／真标记下声称 4 条
+PASS 变异体25 后缀边界（`.mjs` 不在复用尺的 SCRIPT_SUFFIX 里）必须落在『响亮地红』那一侧：挂着标记却挂不上可核路径的行，只能进盲区账按行号印出来，绝不能被算成一条已核实的声称  合成行：声称 0 条／无路径可核的行 [1]／后缀挡下 ['scripts/gate/check-dead.mjs']／红 ['CI 声称账塌缩：挂着脚本路径的「CI 门禁」行 0 条（标记命中却无路径 1 行／后缀挡下 1 处），分母塌了必须自己成一条红']
+PASS 夹具L 每条判决都要有针：红模板从本文件源码现取（不写清单），逐条要求一枚内存对照能打红它——新增一条红而没配对照＝当场多出一格未覆盖，撤掉对照＝当场多出一格死键  红模板 15 条 ／ 未覆盖 [] ／ 死键 [] ／ 异常 [] ／ 合法目录账不误报 []
+SELFTEST 总 40 例，FAIL 0 例
+
+=== python scripts/gate/check-doc-formulas.py --recognizer
+--- rc=0
+识别器单归宿：扫描仪器 31 份（含归宿 1 份 ⇒ 判分母 30 份；Python 28 份走 AST／其余 3 份走弱尺：整行含全角记号即算）｜模式位点 370 处（盲区 82 处：模式在运行时构造或跨模块导入）
+    算术记号命中 12 处：归宿文件 12 ／ 别家 0
+    等式形但不判 11 处（ASCII key=value／计数尺；本尺认全角记号，这是假阴方向，登记不隐藏）
+     出账 scripts/gate/verify-ports.py:163 re-call:Constant 「setTimeout|timeout\?|sampleRate|sample_?rate|['\」
+     出账 scripts/gate/verify-ports.py:213 re-call:Constant 「(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]|::」
+     出账 scripts/gate/verify-ports.py:214 re-call:Constant 「(?i)(?:--port|--PORT)\s*[= ]\s*(\d{2,5})」
+     出账 scripts/gate/verify-ports.py:215 re-call:Constant 「[\"']?port[\"']?\s*[:=]\s*[\"']?(\d{2,5})[\"']?」
+    集外仪器候选 98 份（根 scripts／tools／frontend-ui/scripts／platform／domains／.github／按名跳过 14 个构建与派生目录）｜集外位点 222 处、盲区 32 处｜集外自带算术记号 0 处
+RECOGNIZER PASS（算术尺只在 scripts/gate/formula_ledger.py 里定义，除归宿外在册 30 份与集外候选 98 份无一把自带；两本分母同一次现推、按构造不相交）
+
+=== python scripts/gate/check-doc-formulas.py --dircheck
+--- rc=0
+扫描目录 55 个｜目录账 3 条｜分母现量 文件 371 个
+扫描集外 .md 309 个（顶层目录 18 个＋仓根 5 份，按名跳过 10 个第三方/构建目录）｜主张 1 条（不闭合 0）｜盲区 2009 条｜引文 1 条
+     集外主张 reports/markdown/locale-family-collapse-20260929.md：1 条（集外无台账，只判自不闭合）
+
+=== python scripts/gate/check-doc-formulas.py --census
+--- rc=0
+扫描 .md 371 个｜主张 6 条（不闭合 0）｜盲区 9131 条｜引文 6 条
+盲区分档 ascii_eq=276／code=180／glued=5496／increment=1／latin=1521／no_fw_eq=701／noise=956
+主张 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md：5 条（不闭合 0）
+主张 docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md：1 条（不闭合 0）
+扫描集外 .md 309 个（顶层目录 18 个＋仓根 5 份，按名跳过 10 个第三方/构建目录）｜主张 1 条（不闭合 0）｜盲区 2009 条｜引文 1 条
+集外主张 reports/markdown/locale-family-collapse-20260929.md：1 条
+
+=== python scripts/gate/check-api-surface.py --selftest
+--- rc=0
+PASS 夹具逐条命中  缺=[] 多=[]
+PASS 变异体1 撤 nest 前缀必须改变结果  现 ['/e/deep', '/ns', '/root', '/w', '/z']
+PASS 变异体2 断 let 绑定必须点名  unresolved=['let 绑定名查不到且非函数引用: health_unused_x']
+PASS 变异体3 外壳换写法仍解析  现 ['/api/w', '/e/deep', '/ns', '/root', '/z']
+PASS 正对照 注释内的 route 不算挂载  现 ['/f']
+PASS 死 let 绑定不计入对外表面  现 [('/live', frozenset({'GET'}))] unresolved=[]
+PASS 跨 let 引用沿 env 累积解析  现 [('/leaf', frozenset({'GET'})), ('/m/i', frozenset({'GET'}))] unresolved=[]
+PASS 模块路径头名不与 let 变量混淆  现 [('/leaf2', frozenset({'GET'}))] unresolved=[]
+PASS 参数写法归一  got /a/{P} /a/{P} /a/{P}
+PASS 条件装配两支都要走  现 ['/all-only', '/api/kbdoc', '/kg', '/top'] unresolved=[]
+PASS 变异体4 只跟第一支必须漏掉 else 支  现 ['/all-only', '/top']
+PASS 变异体5 只按名字在册必须漏掉非 build_* 节点  现 ['/all-only', '/top']
+PASS 兜底入兜底账而不是盲区  现 ['/api/projects/{**}', '/api/{**}', '/plain'] 兜底 2 壳 1 unresolved=[]
+PASS 变异体6 撤兜底识别必须落盲区而不是静默少一条  兜底 0 unresolved=['无法归类的表达式']
+PASS 兜底配对只认单段参数，多段留余账点名  配对=['/api/projects/{P}', '/api/{P}'] 余账=['/api/x/{P}']
+PASS 形参名不与同名的别处函数混为一谈  现 ['/q'] unresolved=[] 壳 1
+PASS 变异体7 撤调用位点判据必须把别处的树挂进来  现 ['/foreign-not-mounted', '/q']
+PASS 变异体8 撤壳豁免必须把壳读成盲区（豁免是有账的）  unresolved=['无法归类的表达式'] 壳 0 现 ['/q']
+PASS 角色维夹具逐条归属（含跨函数继承与嵌套 match 第二维）  路径 7 条，矩阵不符 -，臂 5 归不了属 2
+PASS 变异体9 撤逐臂判据 ⇒ 矩阵必须整张空（而挂载集合一条不少）  非空格 - 路径 7 条
+PASS 变异体10 撤跨函数继承 ⇒ 臂里调的 builder 体内挂载丢角色  iam/deep [] iam/deep2 [] cloud-a ['CloudTier::A', 'HostRole::Cloud'] kg ['HostRole::Kg']
+PASS 变异体11 撤臂枚举 ⇒ 矩阵与臂账同时清空（枚举是矩阵的唯一来源）  臂 0 归不了属 0 非空格 -
+PASS 变异体12 只取最内层臂 ⇒ 嵌套 match 的外层维被读丢  cloud-a ['CloudTier::A']（应为两维齐全才对）
+PASS 变异体13 撤模式边界 ⇒ 外层臂把嵌套 match 的臂名一起吃进来  cloud-x ['CloudTier::A', 'HostRole::Cloud']（无标签维本应只剩 HostRole::Cloud）路径 7 条
+PASS 变异体14 撤接收者展开 ⇒ let 绑定的 match 各臂整棵树消失  现 ['/api/kbdoc', '/common'] 矩阵 {'/api/kbdoc': set(), '/common': set()}
+PASS 同 site／不同 site／根本没有 三档要把「角色是路径的属性」与「端点专属该角色」分开  同 ['/api/kbdoc'] 不同 [] 根本没有 5 条（配 role_only 5）kbdoc ['HostRole::Kb']
+PASS 变异体15 撤同 site 判据 ⇒ 同档清空而挂载一条没少（分账读的就是这条判据）  同 [] 不同 ['/api/kbdoc'] 根本没有 5 条（应与基线 5 同）路径 7 条
+PASS 分支夹具逐档归属：All 档含注册表支不含单角色臂，Kb 档含 kbdoc 不含 iam-only  分档不符 - 标签不符 - 分支 2 盲区 1
+PASS 夹具上两条通道（标签求值 vs 钉死取值走树）必须给出同一批分档  分歧 -
+PASS 复合条件（`&&`）归不出约束必须按名进盲区账，不许静默当没有分支  盲区 ['role == HostRole::All && role != HostRole::Kb']
+PASS else-if 链：外层否定罩住整条链，链尾那一支不许出现在 All 档  不符 -
+PASS 变异体16 撤分支枚举 ⇒ 分支标签整族消失，`if role == All` 的支挂进单角色档（挂载一条没少）  分支 0 泄漏单角色档 - 总数 7
+PASS 变异体17 把负支读成正支 ⇒ 单角色档条目凭空消失而挂载账不动  Kb 档 ['/common', '/never-mount', '/top'] 全档并集含 kbdoc False All 档 4 条 挂载 7 条
+PASS 变异体18 撤剪枝区间 ⇒ 钉死取值五档塌成一档（分档账会退化成总账）  各档 {'All': 7, 'Kg': 7, 'Cloud': 7, 'Kb': 7, 'Iam': 7} 剪枝 0 次／去重 0 段
+PASS 变异体19 撤标签分族（分支挤进臂通道）⇒ 分支账归零而臂账被顶掉  分支账非空格 0 臂账 ['=HostRole::All']
+PASS 变异体20 撤整条 else-if 链的罩住 ⇒ 链尾那支凭空出现在 All 档  变异后 All 档 ['/all2', '/other2'] ／ 基线 All 档 ['/all2']
+PASS 变异体21 改一个被两行引用的加数 ⇒ 恰好那两行同时红（不是全部红也不是只有一行）  基线红 [] ／ 改 m_only_mount 红 ['M-PART', 'UNREG-CROSS'] ／ 改 branch_tagged 红 ['TAG-COMMON']
+PASS 变异体22 公式 id 撞车 ⇒ 后写的顶掉先写的必须显形（条数自洽不等于没顶）  基线撞车 [] ／ 复制首行 ['ASM-CLOSE']（条数 21 配 22）
+PASS 变异体23 散文算术审计的两个失效方向：漏抓假加法／把引文当主张，都要红；代码段里的示意等式不许成第二条账；真文档必须零不闭合**且判集非空**  植假 [2]（第 2 行）引文 [3] 主张 2 条 盲区 [('code', 1)] ｜ 真文档 1059 行复算，主张 5 条，不闭合 0 条
+PASS 变异体26 托管块换算差一行会把块外真主张整条吞掉（块内坏账反被漏掉不报红）⇒ 正算必须 1 条主张零红、错算必须显形为分母归零  正算 主张 1 红 0 ／ 错算(整块下移一行) 主张 0 红 0
+PASS 变异体27 散文算术审计确实走共享识别器：拧 `formula_ledger` 的引文旋钮，本模式的判决跟着翻（引文变主张且判红），本地不留第二把尺  拧后 引文 0 条 红 2 第 [2, 3] 行
+PASS 变异体24 托管块比对：同文本必须报零差，改一个数字必须点出那一行的下标，多一行必须算差（集合差 ≠ 逐位差）  同 [] 改数字 [0] 加长 [4] 截短 [3]
+PASS 变异体25 渲染留未替换占位符必须判红（逐字节相同的镜像照样把错处印进文档），而反对照那行的重叠数必须由本行的值现推  植入后红 ['DECL-PARSE'] ／ ASM-ANTI 说明「重叠 2 条 ⇒ 只按名字会读小」
+SELFTEST 总 43 例，FAIL 0 例
+
+=== python scripts/gate/check-api-surface.py --ledger
+--- rc=0
+现量时刻 2026-10-02 17:30:13+0800｜扫描 .rs 1380 个｜角色取值 All,Kg,Cloud,Kb,Iam（读自 platform/gateway/mox-platform-gateway-svc/src/deployment.rs:6）
+
+公式           现量等式                                                 判定
+ASM-CLOSE    72 ＝ 60 ＋ 12                                         闭合
+ASM-ANTI     72 ≠ 60 ＋ 32（=92）                                    闭合
+DECL-PARSE   246 ＝ 246                                            闭合
+M-PART       375 ＝ 233 ＋ 2 ＋ 140                                  闭合
+T-PART       238 ＝ 233 ＋ 3 ＋ 2                                    闭合
+TAG-COMMON   375 ＝ 359 ＋ 16                                       闭合
+TAG-DJ       0 ＝ 0                                                闭合
+ONLY-ALL     375 ＝ 248 ＋ 127 ＋ 0                                  闭合
+NEVER-0      0 ＝ 0                                                闭合
+LBL-PART     111 ＝ 111 ＋ 0 ＋ 0                                    闭合
+TWIN-NONE    0 ＝ 0                                                闭合
+LBL-SUM      111 ＝ 111                                            闭合
+LBL-DJ       0 ＝ 0                                                闭合
+UNREG-CROSS  140 ＝ 140                                            闭合
+XCHAN-DJ     0 ＝ 0                                                闭合
+BUCKET-All   375 ＝ 375 ＋ 0                                        闭合
+SUBST-All    375 ＝ 375                                            闭合
+PRUNE-All    3 ≥ 2                                                闭合
+BUCKET-Kg    375 ＝ 29 ＋ 346                                       闭合
+SUBST-Kg     29 ＝ 29                                              闭合
+PRUNE-Kg     7 ≥ 6                                                闭合
+BUCKET-Cloud 375 ＝ 20 ＋ 355                                       闭合
+SUBST-Cloud  20 ＝ 20                                              闭合
+PRUNE-Cloud  7 ≥ 6                                                闭合
+BUCKET-Kb    375 ＝ 34 ＋ 341                                       闭合
+SUBST-Kb     34 ＝ 34                                              闭合
+PRUNE-Kb     7 ≥ 6                                                闭合
+BUCKET-Iam   375 ＝ 92 ＋ 283                                       闭合
+SUBST-Iam    92 ＝ 92                                              闭合
+PRUNE-Iam    7 ≥ 6                                                闭合
+ID-UNIQ      公式 id 不许撞车（撞了后写的会顶掉先写的而总账自洽）                         闭合
+INFO 漂移 census:in_table_not_mounted（live 名 t_not_mounted）工件 0 ／ live 3 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:indexed_by_signature（live 名 indexed_by_signature）工件 31 ／ live 32 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:passthrough_shells（live 名 passthrough）工件 26 ／ live 28 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:routes_declared_len（live 名 routes_declared_len）工件 243 ／ live 246 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:routes_parsed（live 名 routes_parsed）工件 243 ／ live 246 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:scanned_files（live 名 scanned_files）工件 1375 ／ live 1380 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 census:unresolved（live 名 unresolved_counts）工件 {} ／ live {'builder 函数同名多定义: router': 2} —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 matrix:routes_declared_len（live 名 routes_declared_len）工件 243 ／ live 246 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 matrix:scanned_files（live 名 scanned_files）工件 1376 ／ live 1380 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 surface:routes_declared_len（live 名 routes_declared_len）工件 243 ／ live 246 —— 工件是那一刻的图像，语料在并发作者手里天天动
+INFO 漂移 surface:scanned_files（live 名 scanned_files）工件 1376 ／ live 1380 —— 工件是那一刻的图像，语料在并发作者手里天天动
+引用对账 55 条：一致 44、漂移 11、引用不成立 0
+散文算术审计：复算 5 条主张（红 0），盲区 70 条按 reason 出账（ascii_eq=4／code=10／glued=12／latin=5／no_fw_eq=15／noise=24），引文 5 条按名点名（引文不是账）
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:60 「71 ＝ 60 ＋ 30」
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:359 「角色专属＝0 条」
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:458 「71 ＝ 60 ＋ 30」
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:481 「71 ＝ 60 ＋ 30」
+     引文 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md:580 「50 ＝ 甲 ≥ 20 ＋ 30」
+PASS 文档镜像：托管块与现渲染逐字节相同（41 行）
+LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+
+=== python scripts/gate/check-script-paths.py --check
+--- rc=0
+[check-script-paths] 仓根 D:\a10\aikjx\gitcode\infotopograph
+枚举文件 3546 份（2319 个不同 basename）｜代码语料 232 份｜CI 语料 5 份｜判定引用 1835 条
+覆盖面（当轮实测，含不判定项）：EXISTS 722 ｜MOVED 4 ｜CI run 引用 19 ｜裸文件名 464 ｜同名在无关目录 298 ｜仓内无同名 328
+覆盖面合计核对：扫描引用 1847 − 显式豁免 12（跳过不判）＝覆盖面各档之和＝判定引用 1835｜遮蔽不成对 13 处按文件计、不是引用，不进分母
+判决分流：MOVED 4＝执行面 4（未在册 0）＋用法文本 0 ｜CI run 判缺 2（未在册 0）｜显式豁免标记 12 处（行尾 script-paths: ignore）｜遮蔽区间不成对 13 处（少遮蔽不多吞）
+
+已在册豁免 6 处（逐条见 LEDGER；收口＝删条目）
+
+[OK] 执行面路径全部解析得到或已在册，台账与当前命中一致

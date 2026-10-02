@@ -3,7 +3,7 @@
     <div class="panel card-pad">
       <div class="toolbar">
         <div class="toolbar-left">
-          <span class="badge primary">访问凭证即系统身份：后端仅存 SHA-256 哈希，明文仅创建时展示一次</span>
+          <span class="badge primary">凭证绑定当前管理员，开放收件箱与通知；新凭证仅存哈希，明文仅展示一次</span>
         </div>
         <div class="toolbar-right">
           <el-button :icon="Refresh" :loading="loading" @click="load">刷新</el-button>
@@ -13,20 +13,23 @@
 
       <el-table :data="keys" v-loading="loading" stripe style="width: 100%">
         <el-table-column prop="name" label="凭证名称" min-width="160" />
-        <el-table-column label="权限" width="220">
+        <el-table-column label="开放流程" width="220">
           <template #default="{ row }">
-            <el-tag v-for="p in row.permissions" :key="p" size="small" style="margin-right: 6px">{{ p }}</el-tag>
+            <el-tag size="small">收件箱与通知</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180">
           <template #default="{ row }">{{ fmtTime(row.createdAt) }}</template>
         </el-table-column>
         <el-table-column prop="lastUsed" label="最近使用" width="180">
-          <template #default="{ row }">{{ row.lastUsed ? fmtTime(row.lastUsed) : '从未使用' }}</template>
+          <template #default="{ row }">{{ row.last_used_at ? fmtTime(row.last_used_at) : '从未使用' }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="到期时间" width="180">
+          <template #default="{ row }">{{ row.expires_at ? fmtTime(row.expires_at) : '未设定' }}</template>
+        </el-table-column>
+        <el-table-column label="基础配置状态" width="180">
           <template #default="{ row }">
-            <span class="badge" :class="row.active ? 'success' : 'warning'">{{ row.active ? '活跃' : '已吊销' }}</span>
+            <span class="badge" :class="row.eligibility === 'eligible' ? 'success' : 'warning'">{{ apiKeyEligibilityLabel(row.eligibility) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="110" fixed="right">
@@ -43,6 +46,9 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :total="total" :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next" @current-change="load" @size-change="changePageSize" />
+      <p class="muted">基础配置状态来自数据库快照；重复凭证及实际业务权限仍须由每次鉴权确认。</p>
     </div>
 
     <div class="panel card-pad">
@@ -57,24 +63,20 @@
         <el-button type="primary" :loading="validating" @click="handleValidate">校验</el-button>
         <span v-if="validateResult" class="badge" :class="validateResult.valid ? 'success' : 'warning'">
           {{ validateResult.valid
-            ? `有效 · ${validateResult.name} · 权限：${(validateResult.permissions || []).join(', ') || '无'}`
+            ? `有效 · 用户 ${validateResult.user_id} · 收件箱与通知`
             : `无效 · ${validateResult.reason || '未知原因'}` }}
         </span>
       </div>
     </div>
 
     <!-- 新建凭证 -->
-    <el-dialog v-model="createVisible" title="新建访问凭证" width="480px">
+    <el-dialog v-model="createVisible" title="新建访问凭证" width="min(640px, calc(100vw - 32px))">
       <el-form label-width="90px">
         <el-form-item label="凭证名称" required>
           <el-input v-model="createForm.name" placeholder="例如：运维巡检客户端" maxlength="64" />
         </el-form-item>
-        <el-form-item label="权限">
-          <el-checkbox-group v-model="createForm.permissions">
-            <el-checkbox value="read">read（读取）</el-checkbox>
-            <el-checkbox value="write">write（写入）</el-checkbox>
-            <el-checkbox value="admin">admin（管理）</el-checkbox>
-          </el-checkbox-group>
+        <el-form-item label="有效期">
+          <el-input v-model="createForm.expires_at" placeholder="可选 RFC3339，例如 2027-01-01T00:00:00+08:00" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -84,7 +86,7 @@
     </el-dialog>
 
     <!-- 明文展示（仅一次） -->
-    <el-dialog v-model="keyVisible" title="凭证已创建（明文仅此一次展示）" width="560px">
+    <el-dialog v-model="keyVisible" title="凭证已创建（明文仅此一次展示）" width="min(640px, calc(100vw - 32px))">
       <el-alert
         type="warning"
         :closable="false"
@@ -101,8 +103,9 @@
 </template>
 
 <script setup>
-import { formatDateTimeLocaleOr as fmtTime } from '@/utils'
-import { ref, reactive, onMounted } from 'vue'
+import { formatDateTimeLocaleOr as fmtTime, parseApiKeyPage, apiKeyEligibilityLabel } from '@/utils'
+import { ref, reactive, watch, onBeforeUnmount } from 'vue'
+import { useAuthStore } from '@/stores'
 import { Refresh, Plus, Delete, CopyDocument } from '@element-plus/icons-vue'
 import { getApiKeys, createApiKey, revokeApiKey, validateApiKey } from '@/api'
 import { ElMessage } from 'element-plus/es/components/message/index'
@@ -110,10 +113,16 @@ import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const loading = ref(false)
 const keys = ref([])
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const auth = useAuthStore()
+let generation = 0
+let listRequest = 0
 
 const createVisible = ref(false)
 const creating = ref(false)
-const createForm = reactive({ name: '', permissions: ['read'] })
+const createForm = reactive({ name: '', expires_at: '' })
 
 const keyVisible = ref(false)
 const createdKey = ref('')
@@ -123,30 +132,35 @@ const validating = ref(false)
 const validateResult = ref(null)
 
 async function load() {
+  const scope = generation
+  const request = ++listRequest
   loading.value = true
   try {
-    const data = await getApiKeys()
-    // 后端行结构：{ id, name, apiKey(脱敏), status: "active"|"revoked", scopes, createdAt, revokedAt, userId }
-    // 归一化为面板期望：active(布尔) / permissions(数组)，与 security::list_api_keys 返回对齐
-    keys.value = (Array.isArray(data) ? data : []).map(r => ({
-      ...r,
-      active: r.active != null ? !!r.active : r.status === 'active',
-      permissions: r.permissions || r.scopes || []
-    }))
+    const data = await getApiKeys({ page: page.value, page_size: pageSize.value })
+    if (scope !== generation || request !== listRequest) return
+    const result = parseApiKeyPage(data)
+    keys.value = result.items
+    total.value = result.total
   } catch (e) {
+    if (scope !== generation || request !== listRequest) return
+    keys.value = []
+    total.value = 0
     ElMessage.error('加载凭证列表失败：' + e.message)
   } finally {
-    loading.value = false
+    if (scope === generation && request === listRequest) loading.value = false
   }
 }
+function changePageSize() { page.value = 1; load() }
 
 function openCreate() {
   createForm.name = ''
-  createForm.permissions = ['read']
+  createForm.expires_at = ''
   createVisible.value = true
 }
 
 async function handleCreate() {
+  if (creating.value) return
+  const scope = generation
   if (!createForm.name.trim()) {
     ElMessage.warning('请输入凭证名称')
     return
@@ -155,17 +169,20 @@ async function handleCreate() {
   try {
     const data = await createApiKey({
       name: createForm.name.trim(),
-      permissions: createForm.permissions.length ? createForm.permissions : ['read']
+      expires_at: createForm.expires_at.trim() || null
     })
+    if (scope !== generation) return
     // 后端创建返回 { id, name, api_key(明文仅此一次), active, createdAt }
     createdKey.value = data?.api_key || data?.key || ''
+    if (!createdKey.value) throw new Error('未收到实际凭证，请刷新核对创建结果')
     createVisible.value = false
     keyVisible.value = true
+    page.value = 1
     await load()
   } catch (e) {
-    ElMessage.error('创建失败：' + e.message)
+    if (scope === generation) ElMessage.error('创建未确认成功，请刷新核对：' + e.message)
   } finally {
-    creating.value = false
+    if (scope === generation) creating.value = false
   }
 }
 
@@ -179,21 +196,26 @@ async function copyKey() {
 }
 
 async function handleRevoke(row) {
+  const scope = generation
   try {
     await ElMessageBox.confirm(
       `确定吊销凭证「${row.name}」吗？吊销后使用该凭证的请求将立即失效。`,
       '吊销确认',
       { type: 'warning' }
     )
+    if (scope !== generation) return
     await revokeApiKey(row.id)
+    if (scope !== generation) return
     ElMessage.success(`凭证「${row.name}」已吊销`)
     await load()
   } catch (e) {
-    if (e !== 'cancel' && e?.message) ElMessage.error('吊销失败：' + e.message)
+    if (scope === generation && e !== 'cancel' && e?.message) ElMessage.error('吊销未确认成功：' + e.message)
   }
 }
 
 async function handleValidate() {
+  if (validating.value) return
+  const scope = generation
   const key = validateKeyText.value.trim()
   if (!key) {
     ElMessage.warning('请输入待校验的 Key 明文')
@@ -201,15 +223,35 @@ async function handleValidate() {
   }
   validating.value = true
   try {
-    validateResult.value = await validateApiKey(key)
+    const result = await validateApiKey(key)
+    if (scope === generation) validateResult.value = result
   } catch (e) {
-    validateResult.value = { valid: false, reason: e.message }
+    if (scope === generation) {
+      validateResult.value = null
+      ElMessage.error('校验未完成：' + e.message)
+    }
   } finally {
-    validating.value = false
+    if (scope === generation) validating.value = false
   }
 }
 
-onMounted(load)
+watch(() => [auth.accessToken, auth.userId, auth.tenantId], () => {
+  generation++
+  keys.value = []
+  page.value = 1
+  total.value = 0
+  createdKey.value = ''
+  validateKeyText.value = ''
+  validateResult.value = null
+  keyVisible.value = false
+  createVisible.value = false
+  creating.value = false
+  validating.value = false
+  if (auth.accessToken) load()
+  else loading.value = false
+}, { immediate: true, flush: 'sync' })
+watch(keyVisible, visible => { if (!visible) createdKey.value = '' })
+onBeforeUnmount(() => { generation++; listRequest++; createdKey.value = '' })
 </script>
 
 <style scoped>

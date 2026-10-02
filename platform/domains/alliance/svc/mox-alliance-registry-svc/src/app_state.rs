@@ -36,7 +36,8 @@ pub struct Config {
     pub snapshot_path: Option<String>,
     /// 后台过期回收任务间隔（毫秒）
     pub reap_interval_ms: u64,
-    /// 是否启用后台主动健康探测（默认关闭，仅被动心跳租约）
+    /// 是否启用后台主动健康探测（D8：默认开启，提前摘除「仍心跳但业务不可用」实例；
+    /// 生产可由 `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off` 关闭回退被动租约）
     pub health_probe_enabled: bool,
     /// 主动探测周期（毫秒）
     pub health_probe_interval_ms: u64,
@@ -56,9 +57,10 @@ impl Default for Config {
             database_path: "./data/registry.db".to_string(), // allow: dev-default-prod-overridden
             snapshot_path: Some("./data/registry_instances.json".to_string()),
             reap_interval_ms: 5_000,
-            // 主动探测默认关闭：保持「仅被动心跳租约」的历史行为，
-            // 开启后才会启动后台探测任务（见 server.rs）。
-            health_probe_enabled: false,
+            // D8（2026-10-02）：主动探测默认开启——提前标记「仍心跳但业务端点不可用」的
+            // 实例为 Unhealthy，恢复时自动回册；env MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0
+            // 可关闭，回退历史「仅被动心跳租约」行为。
+            health_probe_enabled: true,
             health_probe_interval_ms: 30_000,
             health_probe_timeout_ms: 5_000,
             // 健康阈值单一来源的 svc 侧默认值（与 registry-core `HealthThresholds::DEFAULT` 对齐）。
@@ -75,7 +77,7 @@ impl Config {
     /// - `MOX_ALLIANCE_REGISTRY_DB`：SQLite 路径
     /// - `MOX_ALLIANCE_REGISTRY_SNAPSHOT`：实例快照路径；设为空串则纯内存
     /// - `MOX_ALLIANCE_REGISTRY_REAP_MS`：回收任务间隔（毫秒）
-    /// - `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED`：主动健康探测开关（`1`/`true`/`yes` 开启）
+    /// - `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED`：主动健康探测开关（D8 默认开；`0`/`false`/`no`/`off` 关闭，其余真值开启）
     /// - `MOX_ALLIANCE_REGISTRY_PROBE_INTERVAL_MS`：探测周期（毫秒，须为正）
     /// - `MOX_ALLIANCE_REGISTRY_PROBE_TIMEOUT_MS`：单次探测超时（毫秒，须为正）
     pub fn from_env() -> Self {

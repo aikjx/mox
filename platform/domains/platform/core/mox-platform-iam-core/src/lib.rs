@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
+// Copyright (c) 2026 璇玑 RelGraph · 算子统一系统 (OUS) · 三联盟
 // Licensed under the MIT License.
 // GitHub 主仓: https://github.com/aikjx/mox.git
 // GitCode 镜像: https://gitcode.com/aikjx/mox
@@ -7,6 +7,10 @@ pub mod ddl {
     pub const SQL: &str = include_str!("ddl.sql");
 }
 pub mod model;
+pub mod api_keys;
+pub mod audit_query;
+pub mod permission_admin;
+pub mod permission_policy;
 pub mod repo;
 
 pub use model::{

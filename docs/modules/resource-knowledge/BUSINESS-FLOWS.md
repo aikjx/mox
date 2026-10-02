@@ -61,7 +61,7 @@ flowchart LR
 
 ### 全链路导航
 
-需求与边界 → [模块能力地图](docs/modules/resource-knowledge/README.md#map) → [模块架构](docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md#scope) → [数据所有权](docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md#ownership) → [API 契约](docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md#operations) → 本文业务处理与失败出口 → [实施状态及证据](docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md#status) → [全维交付检查](docs/modules/resource-knowledge/DELIVERY-MATRIX.md)。状态、验收数字与运行证据仅维护在实施台账和 reports，不在设计图中复制另一份完成率。
+需求与边界 → [模块能力地图](docs/modules/resource-knowledge/README.md#map) → [模块架构](docs/architecture/RESOURCE-KNOWLEDGE-ARCHITECTURE.md#scope) → [数据所有权](docs/database/RESOURCE-KNOWLEDGE-DATA-CONTRACT.md#ownership) → [API 契约](docs/api/RESOURCE-KNOWLEDGE-CONTRACT.md#operations) → 本文业务处理与失败出口 → [实施状态及证据](docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md#status) → [全维交付检查](./DELIVERY-MATRIX.md)。状态、验收数字与运行证据仅维护在实施台账和 reports，不在设计图中复制另一份完成率。
 
 <a id="flows"></a>
 ## 1. 上传与云盘管理（RK-BP01）

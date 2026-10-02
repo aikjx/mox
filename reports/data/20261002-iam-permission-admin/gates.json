@@ -1,0 +1,27 @@
+{
+  "doc_links": {
+    "exit_code": 0,
+    "command": "python scripts/gate/check-doc-links.py --repo",
+    "log": "doc_links.log"
+  },
+  "ports": {
+    "exit_code": 0,
+    "command": "python scripts/gate/verify-ports.py",
+    "log": "ports.log"
+  },
+  "frontend_module": {
+    "exit_code": 1,
+    "command": "python scripts/gate/check-frontend-module.py",
+    "log": "frontend_module.log"
+  },
+  "locale": {
+    "exit_code": 0,
+    "command": "python scripts/gate/check-locale-format-outlets.py",
+    "log": "locale.log"
+  },
+  "registry": {
+    "exit_code": 0,
+    "command": "python -m unittest scripts.tests.test_api_registry_generation",
+    "log": "registry.log"
+  }
+}

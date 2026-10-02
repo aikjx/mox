@@ -12,7 +12,13 @@ python scripts/gate/verify-ports.py   # 端口漂移校验（CI 门禁）
 python scripts/gate/check-frontend-module.py  # 前端模块化门禁（CI 门禁；规范见 docs/architecture/frontend/FRONTEND-MODULE-GOVERNANCE-v1.0.md）
 python scripts/gate/check-locale-format-outlets.py  # 时间/locale 口径闸门（CI 门禁，§5.32；无参 toLocaleString 棘轮 + 出口写法唯一性 + locale pin + 扫描集分母）
 python scripts/gate/check-script-paths.py           # 脚本路径解析门禁（CI 门禁，§5.62；代码/CI/仓根脚本里写死的仓内路径必须解析得到，先跑 --selftest 再跑体检）
-scripts/gate/check-all.ps1            # 一键质量检查（7 项：secret/fmt/clippy/test/前端构建/前端门禁/端口）
+python scripts/gate/check-doc-formulas.py --selftest   # 核心公式识别器的针（CI 门禁；口径与裁决点见 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md，其 --census/--dircheck/--recognizer 因裁决点 6 未裁故意不进 rc）
+python scripts/gate/check-api-surface.py --selftest     # 网关对外表面普查＋核心公式单一算源台账（CI 门禁；--ledger 判文档托管块与现渲染逐字节相同，普查判决模式未接 CI）
+python frontend-ui/scripts/gate/check-api-binding-kinds.py --check  # @/api 的函数型导出被当对象取属性调用（CI 门禁，零容忍；api 层在测试里是桩，全量 vitest 看不见这一类 TypeError）
+python frontend-ui/scripts/gate/check-ep-feedback-imports.py --check # Element Plus 反馈 API 缺 import（CI 门禁；探针不是棘轮，只有判据自身失效才打红）
+python frontend-ui/scripts/gate/check-framework-imports.py --check  # vue/vue-router/pinia 具名导出用而未绑（CI 门禁，零容忍；缺绑即首屏 ReferenceError）
+python frontend-ui/scripts/gate/check-theme-tokens.py --check        # 主题令牌覆盖审计与孤儿名棘轮（CI 门禁；存量登记在 ORPHAN_BASELINE）
+scripts/gate/check-all.ps1            # 一键质量检查（8 项：secret/fmt/clippy/test/前端构建/前端门禁/端口/其余闸门同账）——本地一键，项数由脚本里的 $Total 单源，由 scripts/gate/check-doc-formulas.py 的 夹具R 逐条对账
 docker-compose up -d --build     # 一键部署
 ./start.sh --dry-run             # 启动前预检
 scripts/startup/start-mox-enterprise.ps1 # 企业级四进程一键启动（编排器3001/联盟调度3100/执行3200/模块化网关3080）

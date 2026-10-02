@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-02",
+  "status": "scoped_checks_passed",
+  "checks": {
+    "doc_links": {
+      "exit_code": 0,
+      "command": "python scripts/gate/check-doc-links.py --repo",
+      "log": "doc_links.log"
+    },
+    "ports": {
+      "exit_code": 0,
+      "command": "python scripts/gate/verify-ports.py",
+      "log": "ports.log"
+    },
+    "frontend_module": {
+      "exit_code": 0,
+      "command": "python scripts/gate/check-frontend-module.py",
+      "log": "frontend_module-final.log"
+    },
+    "locale": {
+      "exit_code": 0,
+      "command": "python scripts/gate/check-locale-format-outlets.py",
+      "log": "locale.log"
+    },
+    "registry": {
+      "exit_code": 0,
+      "command": "python -m unittest scripts.tests.test_api_registry_generation",
+      "log": "registry.log"
+    },
+    "gateway_tests": {
+      "exit_code": 0,
+      "log": "tests-final.log",
+      "command": "cargo test -p mox-platform-gateway-svc --test inbox_http --test inbox_persistence --test delivery_truth --test trusted_tenant_http",
+      "passed": 17
+    },
+    "iam_core_tests": {
+      "exit_code": 0,
+      "log": "iam-core-tests-final.log",
+      "command": "cargo test -p mox-platform-iam-core",
+      "passed": 2
+    },
+    "clippy": {
+      "exit_code": 0,
+      "log": "clippy-final.log",
+      "command": "cargo clippy -p mox-platform-gateway-svc -p mox-platform-iam-core --all-targets"
+    },
+    "frontend_build": {
+      "exit_code": 0,
+      "command": "npm run build (frontend-ui)",
+      "log": "frontend-build-final.log"
+    },
+    "scoped_format": {
+      "exit_code": 0,
+      "log": "fmt-final.log",
+      "scope": "new IAM modules, gateway permission/RBAC/message authorization and HTTP tests; legacy unrelated formatting preserved"
+    },
+    "scoped_diff": {
+      "exit_code": 0,
+      "log": "diff-check.log"
+    }
+  },
+  "rust_tests_passed": 19,
+  "registry_tests_passed": 1,
+  "real_password_login_verified": true,
+  "actual_jwt_tcp_sqlite_verified": true,
+  "actual_independent_iam_connections": 2,
+  "mock_business_services": false,
+  "browser_full_business_e2e_verified": false,
+  "full_enterprise_ready": false,
+  "cross_host_cluster_verified": false,
+  "retained_warnings": {
+    "doc_path_warnings": 215,
+    "clippy_existing_warnings": true,
+    "frontend_build_existing_warnings": true
+  },
+  "remaining": [
+    "legacy management transaction and revocation ordering",
+    "menu and data permission normalization",
+    "remaining management security boundaries",
+    "permission catalog scaling and retention",
+    "browser UI complete workflow",
+    "cross-host cluster and SLO"
+  ],
+  "source_manifest": "source-manifest.json"
+}

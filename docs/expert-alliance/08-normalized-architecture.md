@@ -120,6 +120,7 @@ docs/expert-alliance/
 | 22 | **存储迁移（JSON→SQLite）** | experts_db.rs:604 migrate_json_to_sqlite()，导入后 rename 归档 | — | 05 §9 | ✅（一次性，无版本迁移机制） |
 | 23 | **SQLite schema 版本管理** | **grep `PRAGMA user_version/schema_version` 零命中** | — | — | 🔴 缺口（N3） |
 | 24 | **SSE 日志流** | GET /api/alliance/tasks/:id/logs/stream（actuator.rs:530） | AllianceConsoleView.vue:690 useSSE composable（fetch-stream + 4s 轮询回退） | CURRENT §6.1 补记 | ✅ |
+| 24+1 | **进程内事件总线（T4，2026-10-02）** | experts_events.rs `tokio::sync::broadcast`；事件模型 PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled（带 tenant）；消费者落 `alliance_event_log`（schema v4） | 暂无外发（SSE 事件帧/webhook/跨副本广播 = 后续） | 12 §2.4；backend-fix-report T4 节 | 🟡 进程内闭环已落地 |
 | 25 | **WebSocket** | **全 crate WebSocketUpgrade 零命中** | 前端 useSSE 而非 WS | 06 §4 幻影 | 🔴 文档幻觉（代码无） |
 | 26 | **会话管理** | 表 sessions/session_messages（experts_db.rs:108,124），SQLite 落盘 | allianceSessions store + SessionsView + Session×4 Panel | 03 §2 | ✅（单进程内恢复） |
 | 27 | **语义搜索** | POST /api/experts/semantic-search | allianceSessions store + SemanticSearchPanel | 01 F-05 | ✅ |
@@ -195,9 +196,9 @@ docs/expert-alliance/
 | 预约 booking | 表 bookings（:158） | — | **baseline 未覆盖** | 否 |
 | 协作任务 | **无表** | scheduler-core/storage（SQLite WAL 或 JSON）+ executor state_sink（data/alliance_tasks.db） | ea_task + ea_task_node + ea_task_edge（:229-231） | sqlite 模式否；file 模式是 |
 | 融合结果 | **无表** | executor state_sink 保留行 `__fusion_output__` | ea_task_result（:232） | sqlite 模式否 |
-| 专家收藏 favorites | **无表**（进程内 HashSet，experts_common.rs:472） | — | 无 | **是** |
-| 编排计划 plans | **无表**（进程内 HashMap，:468） | — | 并入 ea_task_node | **是** |
-| 编排历史 | **无表**（进程内 Vec，:470） | — | 无 | **是** |
+| 专家收藏 favorites | 表 favorites（schema v3，D4 2026-10-02；tenant_id+expert_id 复合主键） | — | 无 | 否（D4 落盘，按租户分区） |
+| 编排计划 plans | 表 collaboration_plans（schema v3，D4；tenant_id+plan_id 复合主键，完整计划存 data_json） | — | 并入 ea_task_node | 否（D4 落盘；**A2 阶段一读路径实时查库=唯一真相，跨副本一致**） |
+| 编排历史 | 表 orchestration_history（schema v3，D4；tenant_id+execution_id 复合主键） | — | 无 | 否（D4 落盘，启动按时序读回；**A2 按租户实时查库**） |
 | 审计日志 | **无表**（NDJSON 文件 data/audit/experts-audit.ndjson，:563） | — | 无 | 否（文件落盘） |
 | 租约（HA） | — | scheduler-core/storage.rs:939 `alliance_leader_lease` 表（SQLite） | 无 | 否 |
 | 案例库 | 无 | 无 | ea_case（:228） | —（目标态领先） |
@@ -206,6 +207,7 @@ docs/expert-alliance/
 > 1. 05-data-model.md:18,206,207 称 plans/tasks 在 experts_db.rs SQLite——**代码不属实**；任务在 scheduler/executor 侧，plans 进程内。
 > 2. baseline.sql 是 **MySQL 8.3 目标模板**（ENGINE=InnoDB/utf8mb4），不是 PostgreSQL 现状；as-built 是嵌入式 SQLite。
 > 3. **"进程内即失"三项**（favorites/plans/orchestration_history）的前端文案已合规（"仅本次会话"/"仅本次进程"角标），但能力上确属缺口，P1 应落盘。
+> 4. **A2 无状态化阶段一（2026-10-02）**：三项冷数据已以网关 SQLite 为**唯一真相**——写穿（busy 重试）+ 读路径按租户实时查库，两副本共享同一 experts.db 时 A 写穿、B 不重启即一致（a2-e2e-evidence.txt）。registry/graph 高频态仍各副本进程内（阶段二外移），sessions 多活 sticky（N11）仍留待 memory 独立。
 
 ---
 
@@ -284,7 +286,7 @@ docs/expert-alliance/
 | # | 缺口 | 代码证据 | 归一化建议 |
 |---|------|---------|-----------|
 | ~~N4~~ | ~~图谱无节点级 CRUD，只能全量 rebuild~~（✅ 2026-09-30 闭环） | experts_graph.rs 原 8 只读 + rebuild；现新增 6 写端点 + experts_db.rs 增量 UPSERT/级联删 | 已补 POST/PUT/DELETE /nodes[/:id]、/edges[/:seq]，RBAC `graph.mutate`；详见 BFR §N4 | ✅ 已闭环 |
-| N5 | registry 主动健康探测默认关闭 | registry-svc/app_state.rs:56 `health_probe_enabled: false` | 生产默认开启或文档明确标注需显式设 true |
+| N5 | registry 主动健康探测默认关闭 ✅已闭环 2026-10-02（D8） | registry-svc/app_state.rs `health_probe_enabled` 已 `false→true` | 默认已开；env `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off` 可关回退被动租约 |
 | N6 | registry_client.rs:26 生产 `.expect()` 恐慌点 | `gateway/src/alliance/registry_client.rs:26` `.build().expect(...)` | 改为返回 Result 并降级为 None |
 | N7 | scheduler/executor /metrics 是 JSON 非 Prometheus 文本 | scheduler/routes.rs:112 `Json(state.metrics.snapshot())`；gateway 侧是 Prometheus 文本（o11y.rs:21） | 补 Prometheus 文本格式端点 |
 | N8 | DAG 执行器并行度无信号量上限 | grep `max_parallel/concurrency/Semaphore` 在 dag_engine.rs 零命中；靠 tokio 自然调度 | dag_engine 加 Semaphore 限并发，防打爆 LLM 配额 |
@@ -314,7 +316,7 @@ docs/expert-alliance/
 | **传输加密** | ✅ MOX_API_CRYPTO=sm4 一键开关，6 处挂载点已落地 | 生产密钥注入 + 前端协商 | P0（已完成代码，待生产化） | 文档明确生产必改 `MOX_AUDIT_HMAC_SECRET` |
 | **注册中心独立** | ✅ registry-svc:3400 + proto 契约层 + 10:1:1 聚合 | — | ✅ 已完成 | — |
 | **调度器多活** | ✅ 租约选主+fencing+leader 对账（需 HA_MODE=on） | 跨机仲裁后端（换 PG/etcd LeaseStore） | P1 | 保持现状，文档标注开关 |
-| **存储** | 🟡 嵌入式 SQLite WAL（生产应设 STORAGE_MODE=sqlite）；favorites/plans/history 进程内 | PostgreSQL + Redis + pgvector；进程内三项落盘 | P1 | ①生产默认 sqlite；②补 favorites/plans/history 落盘；③引入 schema 版本迁移（N3） |
+| **存储** | 🟡 嵌入式 SQLite WAL（生产应设 STORAGE_MODE=sqlite）；~~favorites/plans/history 进程内~~ **D4 已落盘（schema v3 三表，2026-10-02）** | PostgreSQL + Redis + pgvector | P1 | ①生产默认 sqlite；②~~补 favorites/plans/history 落盘~~ ✅ 已完成；③引入 schema 版本迁移（N3，已至 v3） |
 | **下游鉴权** | 🔴 三 svc 无 JWT | 统一 JWT/签名校验 | P0 | 高优先补（N1） |
 | **审计用户身份** | 🔴 Actor 硬编码 system | 从 ApiAuth 注入真实用户 | P1 | 补（N2） |
 | **前端 API 收敛** | 🔴 两套客户端并行 | 收敛到模块 allianceApi，删除 legacy | P1 | 清理 G1/G2/G3/G4 |
@@ -425,10 +427,11 @@ docs/expert-alliance/
 | SM4 全链路加密（6 挂载点） | gateway/lib.rs:332、scheduler/routes.rs:36、executor/routes.rs:93、registry/routes.rs:60、executor_bridge.rs:112、alliance_remote.rs:156 | 报告 BVR §2.1(6) | ✅（生产必开 MOX_API_CRYPTO=sm4） |
 | SQLite schema 版本（N3） | PRAGMA user_version 三点接入（experts_db.rs / scheduler-core/storage.rs / registry-svc/storage.rs）；**A1 起 experts 库升 v2**（四表加 tenant_id 复合键 + v1→v2 迁移） | gateway alliance 97 → 179 | ✅ |
 | 多租户数据/权限隔离（A1 阶段一） | TenantId 提取器 experts_common.rs:58-98（取可信身份 tenant_id，X-Tenant-Id 头一致性校验，无头/无身份→401/403）；registry/graph 内存态 per-tenant；experts_db 四表 tenant_id WHERE 过滤；emit_audit 带 tenant | 两真实租户建专家/查询互不可见 E2E（a1-e2e-evidence.txt）；单测 179 | 🟡 阶段一（配额/密钥/SSO/会话任务分区=阶段二） |
+| 租户专家数配额（A1 阶段二） | quota_experts_per_tenant/check_expert_quota experts_common.rs:122-165（env `MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT` 默认1000）；create_expert 超限真实 409 + data.quota/used，experts_registry.rs:383；quota.denied 审计 | 低配额 E2E：租户建2成功→第3个409，租户间独立（a1-quota-e2e-evidence.txt） | ✅ 专家数维度已闭环（并发/LLM计量配额、租户级配置表=阶段三；SSO 待真实 IdP） |
 | JSON→SQLite 一次性迁移 | experts_db.rs:604 | gateway alliance 97 | ✅ |
 | 调度器 HA 选主+fencing | leadership.rs:110/194、storage.rs:890 SqliteLeaseStore、ha.rs:200 leader 对账 | scheduler-core 115 | ✅（须 HA_MODE=on 且 STORAGE_MODE=sqlite） |
 | 注册中心 3400 + 10:1:1 聚合 | registry-svc + aggregation.rs:11/489 | 三 svc 66 | ✅ |
-| 注册中心主动探活（默认关） | registry-svc/app_state.rs:56 health_probe_enabled=false | — | 🟡 设计取舍（N5：生产显式设 MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=true） |
+| 注册中心主动探活（默认关）✅已闭环 D8 2026-10-02 | registry-svc/app_state.rs health_probe_enabled 已 false→true | registry-svc 28 | ✅（默认开；env=0/false/no/off 可关） |
 | /metrics Prometheus 文本（N7） | 三 svc routes.rs 按 Accept 协商（scheduler:168/184/201、executor:176/197、registry:37/83-99） | 三 svc 66 | ✅（2026-09-30） |
 | registry_client .expect 降级（N6） | registry_client.rs:37-41 unwrap_or_else | gateway alliance 64 | ✅ |
 | actuator ROUTES 全量注册 | actuator.rs:423 `[ApiRoute; 243]` | 代码实计 243 | ✅ |
@@ -453,7 +456,7 @@ docs/expert-alliance/
 
 | 项 | 位置/证据 | 状态 |
 |---|---|---|
-| 进程内三项 favorites/plans/history 落盘（D4） | experts_common.rs:468/470/472 | 🟡 P1 落盘规划 |
+| 进程内三项 favorites/plans/history 落盘（D4）✅已闭环 2026-10-02 | experts_db.rs 三表（schema v3）+ experts_common.rs new() 启动读回；E2E 见 _verification/d4-e2e-evidence.txt | ✅ |
 | SSE 未统一（G5） | AllianceTaskView 手写 reader vs Console useSSE | 🟡 P2 |
 | console/orch store 无独立测试（G6） | alliance-console.store.js / alliance-orch.store.js 无 .test.js | 🟡 P2 |
 | 大列表虚拟滚动（G7） | 全仓 virtual/VirtualScroll 零命中，GraphCanvas 手写 SVG 全量渲染 | 🟡 P2 |

@@ -11,7 +11,7 @@ source_of_truth: 参考
 
 > 版本：v1.0 | 日期：2026-08-26
 >
-> 前置：[专家联盟总览](docs/expert-alliance/README.md)
+> 前置：[专家联盟总览](./README.md)
 
 ---
 
@@ -585,4 +585,4 @@ impl ToolExecutor {
 
 ---
 
-*下一篇：[知识图谱关联关系设计](docs/expert-alliance/knowledge-graph-schema.md)*
+*下一篇：[知识图谱关联关系设计](./knowledge-graph-schema.md)*

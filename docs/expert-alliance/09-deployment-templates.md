@@ -142,12 +142,21 @@ last_updated: 2026-09-29
 | `MOX_S3_ENDPOINT` / `MOX_S3_BUCKET` / `MOX_S3_ACCESS_KEY_ID` / `MOX_S3_SECRET_ACCESS_KEY` | 未设=S3 后端不启用 | `gateway/src/storage_backend.rs:88-91` |
 | `MOX_S3_REGION` | `us-east-1` | `storage_backend.rs:95` |
 
-### 2.6.1 多租户（A1，2026-10-01 阶段一）
+### 2.6.1 多租户（A1，2026-10-01 阶段一；2026-10-02 阶段二配额）
 
-- **无新环境变量**：租户由可信 JWT 身份的 `tenant_id` 声明下发（auth 中间件注入），单租户部署所有用户 `tenant_id=default`，与现状零回归。
+- **租户来源**：可信 JWT 身份的 `tenant_id` 声明下发（auth 中间件注入），单租户部署所有用户 `tenant_id=default`，与现状零回归。
 - **请求头 `X-Tenant-Id`**：仅作一致性校验——若携带，必须等于当前身份的 `tenant_id`，否则网关返回 **403**（防越权换租户）；不携带则取身份自带租户。无有效身份一律 **401**。
 - **SQLite**：单文件 `data/experts.db`，schema 自动升到 v2（含 `tenant_id` 复合键），无需运维介入；多租户数据同库行级隔离，非每租户独立文件。
-- 阶段二（配额/密钥/SSO-SAML）落地前，不引入新部署开关。
+
+#### 租户配额（A1 阶段二，2026-10-02）
+
+| 变量 | 默认 | 含义 | 代码位置 |
+|------|------|------|----------|
+| `MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT` | `1000` | 单租户可注册专家数上限；超限 `POST /api/experts` 返回 **409**（响应体 `data.quota/used`）。管理写面每次创建时读取，env 修改即时生效；缺失/非正整数回退默认，单租户零回归 | `gateway/src/alliance/experts_common.rs:122,128`；`experts_registry.rs:383` |
+
+- 默认 `1000` 不误伤现有单租户（内置种子专家仅 10 个，且经启动直写注册表、不经 handler，不受配额约束）。
+- 配额按租户独立计数（per-tenant 内层注册表 `len()`）；软删除专家记录仍占槽位（id 冲突检查永久保留）。
+- **未引入**：租户级配置表/管理 UI（阶段三）、DAG 计划/任务数配额、会话/图谱节点配额——见 backend-fix-report A1 阶段二节的维度取舍理由。
 
 ### 2.7 生产档推荐 env 块（直接复制）
 
@@ -409,6 +418,13 @@ spec:
           persistentVolumeClaim: { claimName: mox-gateway-data }
         - name: logs
           persistentVolumeClaim: { claimName: mox-gateway-logs }
+# A2 无状态化阶段一（2026-10-02）：gateway 多副本共享同一 experts.db 的 HA 语义
+# 前提：所有副本的 MOX_EXPERTS_DB_PATH 指向同一共享卷路径（如 /var/lib/mox/experts.db，
+#       即上面 mox-gateway-data PVC，RWX 或 Recreate 避免双写同一文件）。
+# 形态：plans/orchestration_history/favorites 三项冷数据已以 SQLite 为唯一真相——
+#       任一副本写穿，其余副本不重启即经读路径实时查库读到（跨实例一致），无需 sticky。
+# 边界：registry/graph 高频态仍各副本进程内（阶段二外移）；sessions 仍单副本内可恢复（N11）。
+#       sqlite 单写者约束下，写竞争由 WAL + busy_timeout(5s) + 应用层重试兜底。
 ---
 # ---- scheduler（HA 多副本示例）----
 apiVersion: apps/v1
@@ -679,7 +695,7 @@ tail -f /var/log/mox/experts-audit.ndjson
 1. **内部令牌 `MOX_INTERNAL_TOKEN`**：长度 ≥32 hex（`openssl rand -hex 32`）。网关出站（`registry_client.rs:27`、`alliance_remote.rs:121`）与三 svc 入站（`routes.rs:73/130/82`）必须**同值**。轮换用"双 token 滚动"：先在网关配 `old,new`（如中间件支持多值），再逐 svc 切 `new`，最后撤 `old`。当前代码为单值精确比对（`routes.rs:87`），滚动期需短暂重启窗口，务必在低峰。
 2. **SM4 加密生产必开**：`MOX_API_CRYPTO=sm4` 且**必须显式注入 `MOX_API_CRYPTO_KEY`（32 hex）**。未注入会回退内置开发密钥 `mox-dev-sm4-key!`（`config.rs:54`）并打 WARN——生产出现该 WARN 即视为事故。
 3. **存储**：`sqlite` + WAL（`storage.rs:426`）。单写者约束下，多副本 HA 用共享卷 + `Recreate`，busy 等待 `MOX_ALLIANCE_SQLITE_BUSY_MS`（默认 5000ms）。
-4. **登记状态 ≠ 探活**：`availability.status`（`online/busy/offline/away`）是**登记值**，不是健康探测结果（08 §八）。真正的主动探活在 registry-svc 侧，默认关闭——生产务必设 `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=1`。健康检查语义：k8s/nginx 探 `/health` 只代表进程活着，不代表下游依赖健康；gateway `/health` 恒 200，依赖状态看 body 的 `dependencies`。
+4. **登记状态 ≠ 探活**：`availability.status`（`online/busy/offline/away`）是**登记值**，不是健康探测结果（08 §八）。真正的主动探活在 registry-svc 侧——**2026-10-02 起默认开启**（`Config::default().health_probe_enabled=true`，D8），无需显式配置即启动后台主动探测；如需回退「仅被动心跳租约」，设 `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off`。下方模板里显式写 `=1` 仅为自文档化、与默认一致。健康检查语义：k8s/nginx 探 `/health` 只代表进程活着，不代表下游依赖健康；gateway `/health` 恒 200，依赖状态看 body 的 `dependencies`。
 5. **审计**：`MOX_AUDIT_HMAC_SECRET` **必改默认值**（默认 `mox-experts-alliance-audit`，`experts_common.rs:574`）。日志落盘 `MOX_AUDIT_LOG_PATH`，按 NDJSON 行归档，建议配 logrotate 按天/按大小切割。
 6. **网络隔离**：:3100/:3200/:3400 仅 ClusterIP / 内网，绝不绑 NodePort/公网（下游无 JWT，08 缺口 N1，靠网络兜底）。
 

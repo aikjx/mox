@@ -28,7 +28,7 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
-use crate::alliance::experts_common::ExpertsSharedState;
+use crate::alliance::experts_common::{ExpertsSharedState, OptionalAuthUser, DEFAULT_TENANT};
 
 // =====================================================================
 // 领域模型 + 持久化
@@ -134,16 +134,33 @@ async fn my_bookings(State(s): State<Arc<ExpertsState>>) -> ApiResponse<Value> {
 async fn toggle_expert_favorite(
     Path(id): Path<String>,
     State(s): State<Arc<ExpertsState>>,
+    OptionalAuthUser(user): OptionalAuthUser,
 ) -> ApiResponse<Value> {
-    // 收藏集合归一化：全域唯一真源为 ExpertsSharedState.favorites
+    // 收藏集合归一化：全域唯一真源为 ExpertsSharedState.favorites（D4 按租户分区）。
+    // 租户取可信身份；无身份（无头请求）归 default，与历史行为零回归。
+    let tenant = user
+        .as_ref()
+        .map(|u| u.tenant_id.clone())
+        .unwrap_or_else(|| DEFAULT_TENANT.to_string());
+    // A2：is_fav 判定以 SQLite 为唯一真相（按租户实时查），跨实例即一致——
+    // 否则本实例启动时加载的内存镜像看不到其他副本刚写穿的收藏，会把方向 toggle 反。
+    let is_fav = crate::alliance::experts_db::load_favorites_by_tenant(&tenant).contains(&id);
+    // 再回写本实例内存镜像，保持即时读与既有 handler 形状（与 SQLite 写穿后一致）。
     let mut favs = s.shared.favorites.lock();
-    let is_fav = favs.contains(&id);
+    let set = favs.entry(tenant.clone()).or_default();
     if is_fav {
-        favs.remove(&id);
+        set.remove(&id);
     } else {
-        favs.insert(id.clone());
+        set.insert(id.clone());
     }
+    drop(set);
     drop(favs);
+    // D4：写后立即落盘（租户隔离，best-effort）
+    if is_fav {
+        crate::alliance::experts_db::delete_favorite(&tenant, &id);
+    } else {
+        crate::alliance::experts_db::upsert_favorite(&tenant, &id);
+    }
     ok(json!({
         "expert_id": id,
         "favorite": !is_fav,
@@ -305,7 +322,7 @@ mod tests {
     use super::*;
     use crate::alliance::experts_common::*;
     use mox_audit::{AuditContext, MultiSink, NoopSink};
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
 
     /// 构造无 IO 的全域共享状态（审计走 NoopSink，不落盘）
     fn test_shared(experts: Vec<ExpertDescriptor>) -> Arc<ExpertsSharedState> {
@@ -323,10 +340,11 @@ mod tests {
             graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(HashSet::new())),
+            favorites: Arc::new(Mutex::new(HashMap::new())),
             audit: Arc::new(
                 AuditContext::new(Arc::new(MultiSink::new().with_sink(Box::new(NoopSink)))),
             ),
+            events: Arc::new(crate::alliance::experts_events::EventBus::new(16)),
         })
     }
 
@@ -352,23 +370,33 @@ mod tests {
             .contains("disabled"));
     }
 
-    /// 回归：收藏必须落在全域共享态，而不是本模块私有集合
+    /// 回归：收藏必须落在全域共享态（D4 按租户分区），而不是本模块私有集合。
     ///
-    /// 直接构造 `ExpertsState`（不经 `new()`），避免单元测试触碰真实 SQLite。
-    #[tokio::test]
-    async fn test_toggle_favorite_writes_shared_state() {
+    /// HTTP handler 的 SQLite 写后落盘 + 崩溃恢复闭环由集成测试 `d4_crash_recovery`
+    /// 覆盖；此处仅验证内存态分区结构（不经 `new()`，避免单元测试触碰真实 SQLite）。
+    #[test]
+    fn test_favorites_partitioned_in_shared_state() {
         let shared = test_shared(vec![ExpertDescriptor::minimal("exp-1".into(), "甲".into())]);
-        let s = Arc::new(ExpertsState {
-            bookings: Arc::new(Mutex::new(Vec::new())),
-            shared: shared.clone(),
-        });
-        assert!(s.shared.favorites.lock().is_empty());
+        assert!(shared.favorites.lock().is_empty());
 
-        toggle_expert_favorite(Path("exp-1".to_string()), State(s.clone())).await;
-        assert!(s.shared.favorites.lock().contains("exp-1"));
+        // 模拟两租户各自收藏——同一 expert_id 在不同租户下必须互不干扰
+        shared
+            .favorites
+            .lock()
+            .entry("tenant-a".into())
+            .or_default()
+            .insert("exp-1".into());
+        shared
+            .favorites
+            .lock()
+            .entry("tenant-b".into())
+            .or_default()
+            .insert("exp-2".into());
 
-        // 再次调用为取消
-        toggle_expert_favorite(Path("exp-1".to_string()), State(s.clone())).await;
-        assert!(s.shared.favorites.lock().is_empty());
+        let favs = shared.favorites.lock();
+        assert!(favs.get("tenant-a").unwrap().contains("exp-1"));
+        assert!(!favs.get("tenant-a").unwrap().contains("exp-2"));
+        assert!(favs.get("tenant-b").unwrap().contains("exp-2"));
+        assert!(!favs.get("tenant-b").unwrap().contains("exp-1"));
     }
 }

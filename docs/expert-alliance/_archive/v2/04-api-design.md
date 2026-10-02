@@ -11,7 +11,7 @@ source_of_truth: V2.0目标架构API设计（未落地）
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 前置：[00-需求分析](docs/expert-alliance/v2/00-requirements.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md) | [03-业务流程](docs/expert-alliance/v2/03-business-flow.md)
+> 前置：[00-需求分析](./00-requirements.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md) | [03-业务流程](./03-business-flow.md)
 
 
 > ⚠️ **文档状态声明**  
@@ -759,4 +759,4 @@ JSON-RPC / REST 请求
 
 ---
 
-*下一篇：[05-数据架构](docs/expert-alliance/v2/05-data-architecture.md)*
+*下一篇：[05-数据架构](./05-data-architecture.md)*

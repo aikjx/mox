@@ -24,6 +24,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::experts_common::*;
+use super::experts_events::{self, AllianceEventKind};
 use super::experts_rbac::{RbacAction, enforce_admin_or_respond};
 use mox_api_protocol::ApiResponse;
 use mox_audit::{AuditAction, AuditOutcome};
@@ -377,6 +378,26 @@ async fn create_expert(
         return err(400, format!("expert id already exists: {}", id));
     }
 
+    // A1 阶段二：租户专家数配额治理——超限真实 409（冲突语义），
+    // 响应体 data 含 quota/used；拒绝照旧落审计链（quota.denied）。
+    if let Err(resp) = check_expert_quota(reg.len(), tenant.as_str()) {
+        emit_audit(
+            &s,
+            &actor_from_opt_user(&user),
+            tenant.as_str(),
+            AuditAction::Unknown("quota.denied".into()),
+            "expert",
+            &id,
+            AuditOutcome::Failure,
+            Some(&format!(
+                "quota={}, used={}",
+                quota_experts_per_tenant(),
+                reg.len()
+            )),
+        );
+        return resp;
+    }
+
     let mut exp = ExpertDescriptor::minimal(id.clone(), name);
     merge_expert_from_value(&mut exp, &body);
     exp.created_at = now_iso();
@@ -386,6 +407,14 @@ async fn create_expert(
     save_registry(tenant.as_str(), reg);
 
     emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.register".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", exp.name)));
+
+    // T4：专家注册事件（与审计并存，事件流视角；best-effort 不阻断业务）
+    experts_events::emit(
+        &s,
+        AllianceEventKind::ExpertRegistered { expert_id: id.clone(), name: exp.name.clone() },
+        tenant.as_str(),
+        "create_expert",
+    );
 
     ok(json!({
         "expert": expert_json(&exp),
@@ -446,6 +475,13 @@ async fn delete_expert(
             exp.metadata.insert("deleted_at".into(), json!(now_iso()));
             save_registry(tenant.as_str(), reg);
             emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.disable".into()), "expert", &id, AuditOutcome::Success, Some("soft_delete"));
+            // T4：专家禁用/软删除事件
+            experts_events::emit(
+                &s,
+                AllianceEventKind::ExpertDisabled { expert_id: id.clone() },
+                tenant.as_str(),
+                "delete_expert",
+            );
             ok(json!({
                 "id": id,
                 "deleted": true,
@@ -915,8 +951,9 @@ mod tests {
             graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            favorites: Arc::new(Mutex::new(std::collections::HashMap::new())),
             audit: crate::alliance::experts_common::build_audit_context(),
+            events: Arc::new(crate::alliance::experts_events::EventBus::new(16)),
         })
     }
 

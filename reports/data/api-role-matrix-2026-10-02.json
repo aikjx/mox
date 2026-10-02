@@ -1,0 +1,384 @@
+{
+  "generated_at": "2026-10-02 10:14:47+0800",
+  "instrument": "scripts/gate/check-api-surface.py --role-matrix",
+  "scan_roots": [
+    "platform/gateway",
+    "platform/domains",
+    "platform/foundation",
+    "platform/shared",
+    "projects"
+  ],
+  "scanned_files": 1376,
+  "mounted_normalized": 375,
+  "role_arms_named": 5,
+  "role_arms_wild": 2,
+  "routes_declared_len": 243,
+  "mounted_not_in_table_same_caliber": 140,
+  "mounted_not_in_table_labeled": 29,
+  "api_route_fields": [
+    "id",
+    "method",
+    "path",
+    "layer",
+    "domain",
+    "status",
+    "description",
+    "enabled"
+  ],
+  "api_route_role_fields": [],
+  "labeled_paths": 111,
+  "unlabeled_paths": 375,
+  "role_only_paths": [],
+  "same_site_twin_count": 111,
+  "different_site_twin_paths": [],
+  "no_twin_paths": [],
+  "multi_dim_paths": [],
+  "reachable_by_label": {
+    "HostRole::Cloud": 4,
+    "HostRole::Iam": 76,
+    "HostRole::Kb": 18,
+    "HostRole::Kg": 13
+  },
+  "exclusive_by_label": {
+    "HostRole::Cloud": 4,
+    "HostRole::Iam": 76,
+    "HostRole::Kb": 18,
+    "HostRole::Kg": 13
+  },
+  "matrix": {
+    "/ai/engine/analyze": [
+      "HostRole::Kg"
+    ],
+    "/ai/engine/capabilities": [
+      "HostRole::Kg"
+    ],
+    "/ai/engine/metrics": [
+      "HostRole::Kg"
+    ],
+    "/ai/engine/process": [
+      "HostRole::Kg"
+    ],
+    "/api/admin/users/{P}/sessions": [
+      "HostRole::Iam"
+    ],
+    "/api/admin/users/{P}/sessions/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/login": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/logout": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/me": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/mfa/bind": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/mfa/confirm": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/mfa/unbind": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/mfa/verify": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/refresh": [
+      "HostRole::Iam"
+    ],
+    "/api/auth/register": [
+      "HostRole::Iam"
+    ],
+    "/api/enterprise/sso/callback": [
+      "HostRole::Iam"
+    ],
+    "/api/enterprise/sso/login": [
+      "HostRole::Iam"
+    ],
+    "/api/enterprise/sso/logout": [
+      "HostRole::Iam"
+    ],
+    "/api/enterprise/sso/protocols": [
+      "HostRole::Iam"
+    ],
+    "/api/enterprise/sso/providers": [
+      "HostRole::Iam"
+    ],
+    "/api/enterprise/sso/providers/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/kb/batch-analyze": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/categories": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/analyze": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/entities": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/graph-link": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/history": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/shares": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/shares/{P}": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/versions": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/versions/compare": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/versions/revert": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/documents/{P}/versions/{P}": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/history": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/search": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/stats": [
+      "HostRole::Kb"
+    ],
+    "/api/kb/tags": [
+      "HostRole::Kb"
+    ],
+    "/api/security/api-keys": [
+      "HostRole::Iam"
+    ],
+    "/api/security/api-keys/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/security/audit-log": [
+      "HostRole::Iam"
+    ],
+    "/api/security/status": [
+      "HostRole::Iam"
+    ],
+    "/api/security/validate": [
+      "HostRole::Iam"
+    ],
+    "/api/system/approval": [
+      "HostRole::Iam"
+    ],
+    "/api/system/approval/definitions": [
+      "HostRole::Iam"
+    ],
+    "/api/system/approval/pending": [
+      "HostRole::Iam"
+    ],
+    "/api/system/approval/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/approval/{P}/approve": [
+      "HostRole::Iam"
+    ],
+    "/api/system/approval/{P}/history": [
+      "HostRole::Iam"
+    ],
+    "/api/system/approval/{P}/reject": [
+      "HostRole::Iam"
+    ],
+    "/api/system/config": [
+      "HostRole::Iam"
+    ],
+    "/api/system/config/key/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/config/refresh-cache": [
+      "HostRole::Iam"
+    ],
+    "/api/system/config/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dept": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dept/tree": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dept/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dept/{P}/users": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dict/data": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dict/data/type/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dict/data/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dict/type": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dict/type/all": [
+      "HostRole::Iam"
+    ],
+    "/api/system/dict/type/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/logininfor": [
+      "HostRole::Iam"
+    ],
+    "/api/system/logininfor/clean": [
+      "HostRole::Iam"
+    ],
+    "/api/system/logininfor/export": [
+      "HostRole::Iam"
+    ],
+    "/api/system/logininfor/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/menu": [
+      "HostRole::Iam"
+    ],
+    "/api/system/menu/tree": [
+      "HostRole::Iam"
+    ],
+    "/api/system/menu/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/operlog": [
+      "HostRole::Iam"
+    ],
+    "/api/system/operlog/clean": [
+      "HostRole::Iam"
+    ],
+    "/api/system/operlog/export": [
+      "HostRole::Iam"
+    ],
+    "/api/system/operlog/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/permissions": [
+      "HostRole::Iam"
+    ],
+    "/api/system/post": [
+      "HostRole::Iam"
+    ],
+    "/api/system/post/dept/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/post/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/role": [
+      "HostRole::Iam"
+    ],
+    "/api/system/role/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/role/{P}/copy": [
+      "HostRole::Iam"
+    ],
+    "/api/system/role/{P}/dataPerms": [
+      "HostRole::Iam"
+    ],
+    "/api/system/role/{P}/menuPerms": [
+      "HostRole::Iam"
+    ],
+    "/api/system/role/{P}/users": [
+      "HostRole::Iam"
+    ],
+    "/api/system/user": [
+      "HostRole::Iam"
+    ],
+    "/api/system/user/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/system/user/{P}/changeStatus": [
+      "HostRole::Iam"
+    ],
+    "/api/system/user/{P}/depts": [
+      "HostRole::Iam"
+    ],
+    "/api/system/user/{P}/resetPwd": [
+      "HostRole::Iam"
+    ],
+    "/api/system/user/{P}/roles": [
+      "HostRole::Iam"
+    ],
+    "/api/tenant": [
+      "HostRole::Iam"
+    ],
+    "/api/tenant/switch/{P}": [
+      "HostRole::Iam"
+    ],
+    "/api/tenant/{P}": [
+      "HostRole::Iam"
+    ],
+    "/cloud/v1/buckets": [
+      "HostRole::Cloud"
+    ],
+    "/cloud/v1/buckets/{P}": [
+      "HostRole::Cloud"
+    ],
+    "/cloud/v1/buckets/{P}/objects": [
+      "HostRole::Cloud"
+    ],
+    "/cloud/v1/buckets/{P}/objects/{P}": [
+      "HostRole::Cloud"
+    ],
+    "/graph/v1/communities": [
+      "HostRole::Kg"
+    ],
+    "/graph/v1/overview": [
+      "HostRole::Kg"
+    ],
+    "/graph/v1/stats": [
+      "HostRole::Kg"
+    ],
+    "/kg/v1/centrality": [
+      "HostRole::Kg"
+    ],
+    "/kg/v1/communities": [
+      "HostRole::Kg"
+    ],
+    "/kg/v1/neighborhood": [
+      "HostRole::Kg"
+    ],
+    "/kg/v1/path": [
+      "HostRole::Kg"
+    ],
+    "/kg/v1/shortest-path": [
+      "HostRole::Kg"
+    ],
+    "/kg/v1/stats": [
+      "HostRole::Kg"
+    ],
+    "/rbac/v1/current": [
+      "HostRole::Iam"
+    ],
+    "/rbac/v1/permissions": [
+      "HostRole::Iam"
+    ],
+    "/rbac/v1/roles": [
+      "HostRole::Iam"
+    ]
+  },
+  "instrument_invariants_failed": []
+}

@@ -7,7 +7,7 @@
  * - serverPagination: false（默认，小数据量）：api.list() 一次拉全量，客户端过滤
  * - serverPagination: true：api.list({pageNum,pageSize,...filters})，返回 {list,total}
  */
-import { ref, shallowRef, reactive, computed, markRaw } from 'vue'
+import { ref, shallowRef, reactive, computed, markRaw, watch, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
@@ -32,6 +32,8 @@ export function useCrudPage(pageSchema) {
   const page = ref(1)
   const pageSize = ref(schema.list?.defaultPageSize || 10)
   const total = ref(0)
+  let scopeVersion = 0
+  let listRequest = 0
   // 搜索变更时强制 DataTable 重挂载（重置其内部分页状态）
   const searchNonce = ref(0)
 
@@ -56,6 +58,8 @@ export function useCrudPage(pageSchema) {
   }
 
   async function loadList() {
+    const scope = scopeVersion
+    const request = ++listRequest
     loading.value = true
     try {
       if (serverMode) {
@@ -64,18 +68,38 @@ export function useCrudPage(pageSchema) {
           pageSize: pageSize.value,
           ...serverFilterParams(),
         })
+        if (scope !== scopeVersion || request !== listRequest) return
         rows.value = normalizeList(data)
         total.value = data?.total ?? rows.value.length
       } else {
         const data = await schema.api.list()
+        if (scope !== scopeVersion || request !== listRequest) return
         rows.value = normalizeList(data)
       }
     } catch (e) {
+      if (scope !== scopeVersion || request !== listRequest) return
+      rows.value = []
+      total.value = 0
       ElMessage.error('加载列表失败: ' + (e?.message || e))
     } finally {
-      loading.value = false
+      if (scope === scopeVersion && request === listRequest) loading.value = false
     }
   }
+  if (typeof schema.identityScope === 'function') {
+    watch(schema.identityScope, () => {
+      scopeVersion++
+      rows.value = []
+      total.value = 0
+      page.value = 1
+      searchNonce.value++
+      dialogVisible.value = false
+      editingRow.value = null
+      submitting.value = false
+      schema.onIdentityChange?.()
+      loadList()
+    }, { flush: 'sync' })
+  }
+  onBeforeUnmount(() => { scopeVersion++; listRequest++; schema.onIdentityChange?.() })
 
   // 客户端过滤（小数据集）：关键字按 name/code 模糊，其余字段精确匹配
   const filteredRows = computed(() => {
@@ -114,16 +138,21 @@ export function useCrudPage(pageSchema) {
   }
 
   function openCreate() {
+    if (schema.readOnly) return
     editingRow.value = null
     dialogVisible.value = true
   }
 
   function openEdit(row) {
+    if (schema.readOnly) return
     editingRow.value = row
     dialogVisible.value = true
   }
 
   async function onSubmit(formData) {
+    if (schema.readOnly) return
+    if (submitting.value) return
+    const scope = scopeVersion
     submitting.value = true
     try {
       const payload = schema.form?.buildPayload
@@ -131,46 +160,55 @@ export function useCrudPage(pageSchema) {
         : { ...formData }
       if (isEdit.value) {
         await schema.api.update(editingRow.value.id, payload)
+        if (scope !== scopeVersion) return
         ElMessage.success('更新成功')
         dialogVisible.value = false
         await loadList()
       } else {
         const created = await schema.api.create(payload)
+        if (scope !== scopeVersion) return
         ElMessage.success('创建成功')
         dialogVisible.value = false
         await loadList()
         // 创建后钩子（如 Access：明文 key 仅此一次，需弹窗展示）
+        if (scope !== scopeVersion) return
         if (typeof schema.form?.afterCreate === 'function') {
           await schema.form.afterCreate(created, { reload: loadList })
         }
       }
     } catch (e) {
-      ElMessage.error('操作失败: ' + (e?.message || e))
+      if (scope === scopeVersion) ElMessage.error('操作失败: ' + (e?.message || e))
     } finally {
-      submitting.value = false
+      if (scope === scopeVersion) submitting.value = false
     }
   }
 
   async function onDelete(row, action) {
+    if (schema.readOnly) return
+    const scope = scopeVersion
     const msg = typeof action?.confirm === 'function'
       ? action.confirm(row)
       : (action?.confirm || `确定删除「${row.name || row.code || ''}」？`)
     try {
       await ElMessageBox.confirm(msg, '删除确认', { type: 'warning' })
+      if (scope !== scopeVersion) return
       await schema.api.remove(row.id)
+      if (scope !== scopeVersion) return
       ElMessage.success('删除成功')
       await loadList()
     } catch (e) {
-      if (e !== 'cancel' && e?.message) ElMessage.error('删除失败: ' + e.message)
+      if (scope === scopeVersion && e !== 'cancel' && e?.message) ElMessage.error('删除失败: ' + e.message)
     }
   }
 
   // 行动作分发：内置 edit/delete，其余走 schema 里的 handler(row, ctx)
   function runRowAction(action, row) {
+    if (schema.readOnly) return
     if (action.action === 'edit') return openEdit(row)
     if (action.action === 'delete') return onDelete(row, action)
     if (typeof action.handler === 'function') {
-      return action.handler(row, { loadList, ElMessage })
+      const scope = scopeVersion
+      return action.handler(row, { loadList, ElMessage, isCurrent: () => scope === scopeVersion })
     }
   }
 

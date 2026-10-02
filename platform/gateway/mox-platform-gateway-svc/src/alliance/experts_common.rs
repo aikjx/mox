@@ -111,6 +111,60 @@ pub fn empty_graph() -> &'static ExpertGraph {
 }
 
 // =====================================================================
+// 零-B、多租户配额治理（A1 阶段二，2026-10-02）
+// =====================================================================
+
+/// 单租户专家数默认上限。
+///
+/// 取 1000 以保证单租户默认行为零回归：内置种子专家仅 10 个，且经
+/// `ExpertsSharedState::new()` 直接写入内层注册表（不经 `create_expert` handler，
+/// 不受配额约束）；线上由 `MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT` 覆盖。
+pub const DEFAULT_QUOTA_EXPERTS_PER_TENANT: u32 = 1000;
+
+/// 读取单租户专家数上限：env 覆盖 → 代码默认。
+///
+/// 管理写面（`create_expert`）每次创建时读取，env 修改即时生效、无需重启；
+/// env 缺失或非正整数一律回退默认，绝不误伤现有单租户。
+pub fn quota_experts_per_tenant() -> u32 {
+    std::env::var("MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT")
+        .ok()
+        .and_then(|v| v.parse::<u32>().ok())
+        .filter(|n| *n > 0)
+        .unwrap_or(DEFAULT_QUOTA_EXPERTS_PER_TENANT)
+}
+
+/// 配额守卫（纯函数，可单测）：用显式 `limit` 判定 `used` 是否超限。
+///
+/// 计数口径：该租户内层注册表的全部记录数。软删除（enabled=false）的专家记录仍
+/// 占用槽位——其 id 已被 `create_expert` 的 id 冲突检查永久保留、不可复用，故按
+/// "注册表里的专家记录数"计最诚实、最可复算。
+///
+/// 超限返回已构造好的 **409 Conflict** 响应，`data` 内含结构化配额/已用数，
+/// 供前端与调用方机器可读地处理冲突。
+pub fn check_expert_quota_with(used: usize, limit: u32, tenant: &str) -> Result<(), ApiResponse<Value>> {
+    if used >= limit as usize {
+        return Err(ApiResponse {
+            code: 409,
+            msg: format!("租户专家数已达上限（quota={limit}, used={used}）"),
+            data: Some(json!({
+                "error": "quota_exceeded",
+                "resource": "expert",
+                "tenant": tenant,
+                "quota": limit,
+                "used": used,
+                "limit": limit,
+            })),
+        });
+    }
+    Ok(())
+}
+
+/// 配额守卫（生产入口）：env 取上限后委托纯函数判定。
+pub fn check_expert_quota(used: usize, tenant: &str) -> Result<(), ApiResponse<Value>> {
+    check_expert_quota_with(used, quota_experts_per_tenant(), tenant)
+}
+
+// =====================================================================
 // 一、核心领域模型：ExpertDescriptor（专家描述符）
 // 对齐 docs/expert-alliance/expert-registry-and-protocol.md Schema
 // =====================================================================
@@ -551,14 +605,21 @@ pub struct ExpertsSharedState {
     pub dispatch_records: Arc<Mutex<Vec<DispatchRecord>>>,
     /// 能力图谱（tenant -> ExpertGraph）。A1 多租户：每租户一份独立图，按租户取/存。
     pub graph: Arc<Mutex<HashMap<String, ExpertGraph>>>,
-    /// 编排计划
+    /// 编排计划（plan_id -> plan；运行期按 plan.metadata["tenant_id"] 过滤，A1 既有读面）。
+    /// D4：写后立即 upsert 落 SQLite（collaboration_plans，按租户复合主键），启动读回。
     pub plans: Arc<Mutex<HashMap<String, CollaborationPlan>>>,
-    /// 编排执行历史
+    /// 编排执行历史（全局扁平 Vec；运行期按所属计划的租户过滤）。
+    /// D4：追加后立即落 SQLite（orchestration_history），启动按时序读回。
     pub orchestration_history: Arc<Mutex<Vec<OrchestrationRecord>>>,
-    /// 收藏集（专家ID集合）
-    pub favorites: Arc<Mutex<std::collections::HashSet<String>>>,
+    /// 收藏集（D4：按租户分区 tenant -> expert_id 集合；落 favorites 表，启动读回）。
+    pub favorites: Arc<Mutex<HashMap<String, std::collections::HashSet<String>>>>,
     /// 审计上下文（专家写操作审计留痕：注册/编辑/禁用/咨询/会话）
     pub audit: Arc<AuditContext>,
+    /// T4 进程内事件总线（tokio broadcast）。
+    ///
+    /// 真实业务 handler 在状态变更处 `emit`；启动时挂载事件日志消费者，把事件真实落
+    /// `alliance_event_log`（见 experts_events / experts_db）。生产路径非阻塞、失败不阻断业务。
+    pub events: Arc<super::experts_events::EventBus>,
 }
 
 impl ExpertsSharedState {
@@ -595,16 +656,27 @@ impl ExpertsSharedState {
                 save_graph(DEFAULT_TENANT, g);
             }
         }
+        // D4：进程内三项从 SQLite 读回，实现进程崩溃可恢复（按租户分区/过滤语义不变）
+        let plans = Arc::new(Mutex::new(load_all_plans()));
+        let orchestration_history = Arc::new(Mutex::new(load_all_history()));
+        let favorites = Arc::new(Mutex::new(load_all_favorites()));
+        // T4：进程内事件总线。启动即订阅事件日志消费者（仅在 tokio 运行时下 spawn；
+        // 同步测试上下文 noop，见 spawn_event_log_consumer）。
+        let events = Arc::new(super::experts_events::EventBus::new(128));
+        super::experts_events::spawn_event_log_consumer(events.clone());
+        // T4 对外出口：webhook 真实 HTTP 派发器（仅在运行时下 spawn；无订阅时空转零开销）
+        super::experts_events::spawn_webhook_dispatcher(events.clone());
         Self {
             registry,
             sessions,
             dispatcher_config: Arc::new(Mutex::new(DispatcherConfig::default())),
             dispatch_records: Arc::new(Mutex::new(Vec::new())),
             graph,
-            plans: Arc::new(Mutex::new(HashMap::new())),
-            orchestration_history: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            plans,
+            orchestration_history,
+            favorites,
             audit: build_audit_context(),
+            events,
         }
     }
 }
@@ -783,6 +855,43 @@ pub fn load_all_graphs() -> HashMap<String, ExpertGraph> {
 
 pub fn save_graph(tenant: &str, graph: &ExpertGraph) {
     crate::alliance::experts_db::save_graph(tenant, graph)
+}
+
+// ---- D4（v3）：进程内三项落盘包装（转发 experts_db，保持调用点零感知）----
+
+/// 启动加载全部租户的协作计划（plan_id -> plan）
+pub fn load_all_plans() -> HashMap<String, CollaborationPlan> {
+    crate::alliance::experts_db::load_all_plans()
+}
+
+/// upsert 单条计划落库（handler 写 plans 后调用）
+pub fn upsert_plan(tenant: &str, plan: &CollaborationPlan) {
+    crate::alliance::experts_db::upsert_plan(tenant, plan)
+}
+
+/// 启动加载全部租户的编排历史（按写入时序）
+pub fn load_all_history() -> Vec<OrchestrationRecord> {
+    crate::alliance::experts_db::load_all_history()
+}
+
+/// 追加一条历史落库（handler push history 后调用）
+pub fn insert_history_record(tenant: &str, rec: &OrchestrationRecord) {
+    crate::alliance::experts_db::insert_history_record(tenant, rec)
+}
+
+/// 启动加载全部租户的收藏集（tenant -> expert_id 集合）
+pub fn load_all_favorites() -> HashMap<String, std::collections::HashSet<String>> {
+    crate::alliance::experts_db::load_all_favorites()
+}
+
+/// 收藏落库（handler 收藏后调用）
+pub fn upsert_favorite(tenant: &str, expert_id: &str) {
+    crate::alliance::experts_db::upsert_favorite(tenant, expert_id)
+}
+
+/// 取消收藏落库（handler 取消收藏后调用）
+pub fn delete_favorite(tenant: &str, expert_id: &str) {
+    crate::alliance::experts_db::delete_favorite(tenant, expert_id)
 }
 
 // =====================================================================
@@ -1085,6 +1194,27 @@ mod tests {
         assert_eq!(limit, 10);
     }
 
+    // ── A1 阶段二：租户专家数配额治理（纯函数阈值，不碰全局 env）──
+
+    /// used < limit 放行；used >= limit 返回 409 且 body 含 quota/used/tenant。
+    #[test]
+    fn test_check_expert_quota_with_threshold() {
+        // 未超限 → Ok
+        assert!(check_expert_quota_with(1, 2, "tenant-x").is_ok());
+        // 恰好等于上限 → 拒绝（第 limit+1 个真实 409）
+        let resp = check_expert_quota_with(2, 2, "tenant-x").unwrap_err();
+        assert_eq!(resp.code, 409);
+        let d = resp.data.unwrap();
+        assert_eq!(d["error"], "quota_exceeded");
+        assert_eq!(d["resource"], "expert");
+        assert_eq!(d["quota"], 2);
+        assert_eq!(d["used"], 2);
+        assert_eq!(d["limit"], 2);
+        assert_eq!(d["tenant"], "tenant-x");
+        // 远超限同样 409
+        assert!(check_expert_quota_with(99, 2, "tenant-x").is_err());
+    }
+
     // ── 企业级审计链路验证 ──────────────────────────────────────
 
     /// 构造一个审计上下文（NoopSink，不落盘，仅验证内存哈希链增长）
@@ -1106,8 +1236,9 @@ mod tests {
             graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            favorites: Arc::new(Mutex::new(std::collections::HashMap::new())),
             audit: noop_audit_ctx(),
+            events: Arc::new(crate::alliance::experts_events::EventBus::new(16)),
         };
 
         let before = state.audit.chain_len();
@@ -1148,8 +1279,9 @@ mod tests {
             graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            favorites: Arc::new(Mutex::new(std::collections::HashMap::new())),
             audit: build_audit_context(),
+            events: Arc::new(crate::alliance::experts_events::EventBus::new(16)),
         };
         let before = state.audit.chain_len();
         emit_audit(

@@ -1,158 +1,128 @@
-// ====================================================================
-// system/security.rs — 系统管理子模块
-// ====================================================================
+//! Tenant-scoped persistent credential administration.
+use crate::{alliance::experts_common::TenantId, auth::ApiAuth, GatewayState};
+use axum::{
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
+use mox_platform_iam_core::{
+    api_keys::KeyCommand, audit_query::AuditQuery, permission_admin::AdminError,
+};
+use serde::Deserialize;
+use serde_json::json;
 
-use crate::GatewayState;
-use crate::auth::ApiAuth;
-use crate::system::{DEFAULT_TENANT, DEFAULT_USER, ok, err, q_str, resolve_tenant, now_iso, api_key_json};
-use axum::extract::{Path, Query, State};
-use axum::Json;
-use mox_api_protocol::{ApiResponse, api_error};
-use serde_json::{json, Value};
-use std::collections::HashMap;
-
-/// 管理面鉴权闸门（堵垂直越权）：仅当已认证身份的 roles 含 `admin` 才放行。
-///
-/// dev 后门令牌（dev_mode 且 token=dev-secret-token）已由认证中间件注入
-/// `roles=["admin"]`，故此处对 `admin` 的判定自然覆盖该后门场景。
-/// 非 admin → 返回 403 响应（handler 应提前返回）；放行返回 `None`。
-fn require_admin(user: &mox_platform_api::UserInfo) -> Option<ApiResponse<Value>> {
-    if user.roles.iter().any(|r| r == "admin") {
-        None
-    } else {
-        Some(api_error(403, "需要 admin 角色才能访问管理面端点"))
+fn failure(error: AdminError) -> Response {
+    let status = match error {
+        AdminError::Forbidden => StatusCode::FORBIDDEN,
+        AdminError::NotFound => StatusCode::NOT_FOUND,
+        AdminError::Invalid => StatusCode::BAD_REQUEST,
+        AdminError::Conflict => StatusCode::CONFLICT,
+        AdminError::Storage(error) => {
+            tracing::error!(%error,"Credential storage failed");
+            StatusCode::SERVICE_UNAVAILABLE
+        },
+    };
+    (status, Json(json!({"code":status.as_u16(),"message":"Credential operation failed"})))
+        .into_response()
+}
+async fn execute(s: GatewayState, tenant: String, actor: String, command: KeyCommand) -> Response {
+    match tokio::task::spawn_blocking(move || s.iam.administer_api_keys(&tenant, &actor, command))
+        .await
+    {
+        Ok(Ok(data)) => Json(json!({"code":0,"data":data})).into_response(),
+        Ok(Err(error)) => failure(error),
+        Err(_) => StatusCode::SERVICE_UNAVAILABLE.into_response(),
     }
 }
-
-pub(crate) async fn security_status(State(s): State<GatewayState>) -> ApiResponse<Value> {
-    ok(json!({
-        "auth_enabled": s.config.auth.enabled,
-        "rate_limit_enabled": s.config.rate_limit.enabled,
-        "iam": "ready",
-        "db": "sqlite",
-        "default_tenant": DEFAULT_TENANT,
-        "ts": now_iso(),
-    }))
+pub(crate) async fn security_status(
+    State(s): State<GatewayState>,
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
+) -> Response {
+    let iam = s.iam.clone();
+    match tokio::task::spawn_blocking(move || iam.check_permission_admin_scope(&tenant,&user.id,None,None)).await {
+        Ok(Ok(())) => Json(json!({"code":0,"data":{"auth_enabled":s.config.auth.enabled,"rate_limit_enabled":s.config.rate_limit.enabled,"credential_store":"sqlite","enterprise_ready":false}})).into_response(),
+        Ok(Err(error)) => failure(error),
+        Err(_) => StatusCode::SERVICE_UNAVAILABLE.into_response(),
+    }
 }
-
-/// GET /api/security/api-keys —— 凭证列表（SQLite 持久化，api_key 脱敏）
-
 pub(crate) async fn list_api_keys(
-    ApiAuth(user): ApiAuth,
     State(s): State<GatewayState>,
-) -> ApiResponse<Value> {
-    if let Some(resp) = require_admin(&user) {
-        return resp;
-    }
-    match s.iam.list_api_keys(DEFAULT_TENANT) {
-        Ok(list) => ok(json!(list
-            .iter()
-            .map(api_key_json)
-            .collect::<Vec<_>>())),
-        Err(e) => err(&format!("api key list: {e}")),
-    }
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
+    Query(query): Query<KeyPage>,
+) -> Response {
+    execute(s, tenant, user.id, KeyCommand::List { page: query.page, page_size: query.page_size })
+        .await
 }
-
-/// POST /api/security/api-keys —— 创建凭证（生成明文 key，注册 auth 中间件 + 持久化 SQLite）
-
+#[derive(Deserialize)]
+pub(crate) struct KeyPage {
+    #[serde(default = "first_page")]
+    page: u32,
+    #[serde(default = "default_page_size")]
+    page_size: u32,
+}
+fn first_page() -> u32 {
+    1
+}
+fn default_page_size() -> u32 {
+    20
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct CreateKey {
+    name: String,
+    expires_at: Option<String>,
+}
 pub(crate) async fn create_api_key(
-    ApiAuth(user): ApiAuth,
     State(s): State<GatewayState>,
-    Json(body): Json<Value>,
-) -> ApiResponse<Value> {
-    if let Some(resp) = require_admin(&user) {
-        return resp;
-    }
-    let name = body
-        .get("name")
-        .and_then(|v| v.as_str())
-        .unwrap_or("api-key")
-        .to_string();
-    let key = format!("mox_{}", uuid::Uuid::new_v4().simple());
-    s.auth.register_api_key(DEFAULT_USER, &key);
-    match s.iam.create_api_key(DEFAULT_TENANT, &name, &key, Some(DEFAULT_USER), None) {
-        Ok(k) => ok(json!({
-            "id": k.key_id,
-            "name": k.name,
-            "api_key": key,
-            "active": true,
-            "createdAt": k.created_at,
-        })),
-        Err(e) => err(&format!("api key create: {e}")),
-    }
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
+    Json(body): Json<CreateKey>,
+) -> Response {
+    execute(s, tenant, user.id, KeyCommand::Create { name: body.name, expires_at: body.expires_at })
+        .await
 }
-
-/// DELETE /api/security/api-keys/:id —— 吊销凭证（DB 吊销 + auth 中间件移除）
-
 pub(crate) async fn revoke_api_key(
-    ApiAuth(user): ApiAuth,
     State(s): State<GatewayState>,
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
     Path(id): Path<String>,
-) -> ApiResponse<Value> {
-    if let Some(resp) = require_admin(&user) {
-        return resp;
-    }
-    // 先从 DB 取出原始 key，用于从 auth 中间件内存表中移除
-    if let Ok(Some(k)) = s.iam.get_api_key(&id) {
-        s.auth.revoke_api_key(&k.api_key);
-    }
-    match s.iam.revoke_api_key(&id) {
-        Ok(_) => ok(json!(null)),
-        Err(e) => err(&format!("api key revoke: {e}")),
-    }
+) -> Response {
+    execute(s, tenant, user.id, KeyCommand::Revoke(id)).await
 }
-
-/// POST /api/security/validate —— 校验凭证明文
-
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ValidateKey {
+    api_key: String,
+}
 pub(crate) async fn validate_api_key(
     State(s): State<GatewayState>,
-    Json(body): Json<Value>,
-) -> ApiResponse<Value> {
-    let key = body.get("api_key").and_then(|v| v.as_str()).unwrap_or("");
-    match s.auth.validate_api_key(key) {
-        Some(uid) => ok(json!({
-            "valid": true,
-            "name": "api-key",
-            "user_id": uid,
-            "permissions": ["read", "write"],
-        })),
-        None => ok(json!({ "valid": false, "reason": "key not found or revoked" })),
-    }
-}
-
-/// GET /api/security/audit-log —— 审计日志（SQLite 读取）
-
-pub(crate) async fn audit_log(
+    TenantId(tenant): TenantId,
     ApiAuth(user): ApiAuth,
-    State(s): State<GatewayState>,
-    Query(q): Query<HashMap<String, String>>,
-) -> ApiResponse<Value> {
-    if let Some(resp) = require_admin(&user) {
-        return resp;
-    }
-    let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
-        Ok(t) => t,
-        Err(e) => return err(&format!("tenant resolve: {e}")),
-    };
-    match s.iam.list_audit_logs(&tenant) {
-        Ok(list) => ok(json!(list
-            .iter()
-            .map(|l| json!({
-                "id": l.log_id,
-                "action": l.action,
-                "actionDetail": l.action_detail,
-                "userId": l.user_id,
-                "userIp": l.user_ip,
-                "resourceType": l.resource_type,
-                "resourceId": l.resource_id,
-                "statusCode": l.status_code,
-                "httpMethod": l.http_method,
-                "httpPath": l.http_path,
-                "latencyMs": l.latency_ms,
-                "createdAt": l.created_at,
-            }))
-            .collect::<Vec<_>>())),
-        Err(e) => err(&format!("audit log: {e}")),
+    Json(body): Json<ValidateKey>,
+) -> Response {
+    let iam = s.iam.clone();
+    match tokio::task::spawn_blocking(move || {
+        iam.check_permission_admin_scope(&tenant,&user.id,None,None)?;
+        let principal = iam.authenticate_api_key_in_tenant(&body.api_key,&tenant)?;
+        Ok::<_,AdminError>(principal.filter(|p|p.tenant_id == tenant).map(|p|json!({"valid":true,"user_id":p.id,"tenant_id":p.tenant_id,"allowed_workflows":["inbox","notifications"]})).unwrap_or(json!({"valid":false})))
+    }).await {
+        Ok(Ok(data)) => Json(json!({"code":0,"data":data})).into_response(),
+        Ok(Err(error)) => failure(error),
+        Err(_) => StatusCode::SERVICE_UNAVAILABLE.into_response(),
     }
 }
-
+pub(crate) async fn audit_log(
+    State(s): State<GatewayState>,
+    TenantId(tenant): TenantId,
+    ApiAuth(user): ApiAuth,
+    Query(q): Query<AuditQuery>,
+) -> Response {
+    match tokio::task::spawn_blocking(move || s.iam.query_admin_audit(&tenant, &user.id, q)).await {
+        Ok(Ok(data)) => Json(json!({"code":0,"data":data})).into_response(),
+        Ok(Err(error)) => failure(error),
+        Err(_) => StatusCode::SERVICE_UNAVAILABLE.into_response(),
+    }
+}

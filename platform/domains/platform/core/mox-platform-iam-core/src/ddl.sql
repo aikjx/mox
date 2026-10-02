@@ -324,6 +324,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_action  ON audit_log(action);
 CREATE INDEX IF NOT EXISTS idx_audit_trace   ON audit_log(trace_id);
 CREATE INDEX IF NOT EXISTS idx_audit_request ON audit_log(request_id);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_tenant_time ON audit_log(tenant_id,julianday(created_at) DESC,log_id ASC);
 CREATE INDEX IF NOT EXISTS idx_audit_resource ON audit_log(resource_type, resource_id);
 
 -- ============================================================
@@ -452,5 +453,6 @@ CREATE TABLE IF NOT EXISTS sys_api_key (
   revoked_at   TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_sys_api_key_tenant ON sys_api_key(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_sys_api_key_tenant_created ON sys_api_key(tenant_id,created_at DESC,key_id ASC);
 CREATE INDEX IF NOT EXISTS idx_sys_api_key_key    ON sys_api_key(api_key);
 CREATE INDEX IF NOT EXISTS idx_sys_api_key_status ON sys_api_key(status);

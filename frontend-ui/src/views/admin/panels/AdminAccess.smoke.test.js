@@ -1,6 +1,8 @@
 // AdminAccess（手写旧版）面板冒烟：渲染不崩 + 凭证列表加载 + 按钮入口。
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import { useAuthStore } from '@/stores'
 import AdminAccess from './AdminAccess.vue'
 import { tableStubs, setupGlobals } from './_smoke.js'
 
@@ -12,8 +14,10 @@ vi.mock(import('@/api'), async (importOriginal) => ({ ...(await importOriginal()
 setupGlobals()
 
 beforeEach(() => {
+  setActivePinia(createPinia())
+  useAuthStore().accessToken = 'existing-unit-fixture'
   vi.clearAllMocks()
-  api.getApiKeys.mockResolvedValue([{ id: 1, name: '默认key', prefix: 'ak-', status: 'active' }])
+  api.getApiKeys.mockResolvedValue({ items: [{ id: 1, name: '默认key', active: true, eligibility: 'eligible' }], total: 1, page: 1, page_size: 20 })
 })
 
 describe('AdminAccess(旧) 冒烟', () => {

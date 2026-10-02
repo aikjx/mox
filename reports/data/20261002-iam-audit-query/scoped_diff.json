@@ -1,0 +1,26 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--check",
+    "--",
+    "platform/domains/platform/core/mox-platform-iam-core/src/audit_query.rs",
+    "platform/domains/platform/core/mox-platform-iam-core/src/lib.rs",
+    "platform/domains/platform/core/mox-platform-iam-core/src/ddl.sql",
+    "platform/gateway/mox-platform-gateway-svc/src/system/security.rs",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+    "frontend-ui/src/api/system.api.js",
+    "frontend-ui/src/utils/api-key.js",
+    "frontend-ui/src/utils/index.js",
+    "frontend-ui/src/utils/audit.node-test.mjs",
+    "frontend-ui/src/modules/admin-lowcode",
+    "frontend-ui/src/views/admin/panels/AdminAudit.vue",
+    "docs/modules/iam",
+    "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+    "reports/markdown/20261002-iam-audit-query.md"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "scoped_diff.log"
+}

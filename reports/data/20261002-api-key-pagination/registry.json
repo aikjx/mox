@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python",
+    "-m",
+    "unittest",
+    "scripts.tests.test_api_registry_generation"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "registry.log"
+}

@@ -208,7 +208,6 @@ impl GatewayState {
         // P0 安全：从环境变量解析 CORS 允许源（禁止通配符）
         config.resolve_cors_origins();
 
-        let auth = Arc::new(AuthMiddleware::new(config.auth.clone()));
         let rate_limiter = Arc::new(RateLimiter::new(config.rate_limit.clone()));
         let metrics = Arc::new(MetricsCollector::new(o11y::ObservabilityConfig {
             metrics_enabled: true,
@@ -233,13 +232,16 @@ impl GatewayState {
         let iam = Arc::new(IamRepository::new(Arc::new(parking_lot::Mutex::new(conn))));
         iam.init_schema().expect("iam init_schema");
         iam.seed().expect("iam seed");
+        let auth = Arc::new(AuthMiddleware::new(config.auth.clone()).with_iam(iam.clone()));
 
         // 统一流程引擎：预置人事/财务/业务三类审批流程定义
         let process_engine = Arc::new(ProcessEngine::new());
         crate::system::approval::seed_approval_processes(&process_engine);
 
         // 企业级功能统一状态：OA集成/低代码设计器/SSO/消息/文档
-        let enterprise = Arc::new(enterprise_features::EnterpriseState::new());
+        let enterprise = Arc::new(enterprise_features::EnterpriseState::with_message_center(
+            message_center::api::MessageCenterState::new().with_iam(iam.clone()),
+        ));
 
         Self {
             config: Arc::new(config),
@@ -287,7 +289,12 @@ pub fn build_host_router(state: GatewayState, role: deployment::HostRole) -> Rou
     // 布局归一化：共享状态构造、21 个路由单元 merge、Router<()> 状态类型升级
     // 全部收敛到 `modules` 模块，本函数只保留中间件分层职责（详见 modules.rs 文档）。
     let protected = if role == deployment::HostRole::All {
-        let states = modules::ModuleStates::new(state.runtime.clone(), state.logs.clone(), state.iam.clone());
+        let states = modules::ModuleStates::with_inbox(
+            state.runtime.clone(),
+            state.logs.clone(),
+            state.iam.clone(),
+            state.enterprise.message_center.clone(),
+        );
         modules::build_module_routers(&states, &state)
     } else {
         deployment::domain_router(role, &state)

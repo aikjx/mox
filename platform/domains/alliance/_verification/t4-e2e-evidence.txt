@@ -1,0 +1,82 @@
+# T4 事件驱动 E2E 真实证据（禁止 mock）
+# 日期：2026-10-02
+# 工程：platform/gateway/mox-platform-gateway-svc
+
+## 一、闭环与选型（价值×成本）
+
+落地闭环（T4 主线）：计划/任务状态变更事件 → 进程内 broadcast 总线 → 消费者写
+`alliance_event_log`（真实落库，可观察副作用）。
+
+候选闭环对比：
+- A 计划/任务状态主线：价值=即 T4 §2.4 卡片本身（前端免轮询 / 外部系统订阅生命周期联动 /
+  可观测数据骨干，对齐 Airflow3.0 事件驱动 / LangGraph 状态机事件）；成本=emit 点已在
+  orchestration handler 定位，消费者=新增一张表。价值高 / 成本低 → **落地**。
+- B 专家注册事件→审计增强/联动：价值=边际（审计链已覆盖注册，事件流仅重复留痕）；
+  成本=create/delete_expert 各加一行 emit。作为 A 的旁路真实 emit 点一并接入（消费者通用，
+  零额外成本），但不作为主闭环。
+
+总线选型：tokio::sync::broadcast。理由：
+1. tokio features=full（见 Cargo.toml），已含 sync::broadcast，**零新依赖**；
+2. 一对多广播，天然支持「事件日志消费者 + 未来 SSE 事件帧 + 外部系统订阅」多下游；
+3. 生产路径 send 非阻塞、无消费者返回 Err 被忽略，**失败不阻断业务**（与审计 best-effort 一致）；
+4. 有界 channel + Lagged 追赶，慢消费者不反压写路径。
+
+事件模型（experts_events.rs，按真实 emit 点收敛，不为枚举而枚举）：
+- PlanCreated            emit: generate_plan_handler / orchestrate
+- PlanStatusChanged      emit: execute_plan_handler / orchestrate（draft→running→completed/failed/partial）
+- ExpertRegistered       emit: create_expert
+- ExpertDisabled         emit: delete_expert
+信封：id(evt-uuid) + type + payload + source + tenant(A1) + occurred_at(RFC3339)。
+
+## 二、真实 E2E（真实 state + 真实业务操作 + 真实消费者 + 真实落库）
+
+集成测试：tests/t4_event_bus_e2e.rs
+链路：真实 tokio 运行时 + 真实 ExpertsSharedState::new() + 真实 SQLite（独立临时库）+
+真实 TCP + 生产 JWT 认证中间件。
+  1) POST /api/experts/plan/generate（真实 generate_plan_handler）→ emit PlanCreated；
+  2) POST /api/experts/plan/execute（真实 execute_plan_handler）→ 新租户无专家快速失败，
+     状态推进 draft→running→failed → emit 两次 PlanStatusChanged；
+  3) 事件经 broadcast 总线被 new() 启动时挂的真实消费者订阅 → 真实落 alliance_event_log；
+  4) 轮询读回断言：event_type / tenant / occurred_at / plan_id 齐备；跨租户隔离。
+旁路：POST /api/experts（tenant_admin JWT）→ create_expert → ExpertRegistered 落库。
+
+### 真实测试运行输出（cargo test --test t4_event_bus_e2e）
+```
+running 2 tests
+test t4_expert_register_event_is_emitted_over_real_http ... ok
+test t4_plan_lifecycle_events_flow_into_event_log_end_to_end ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+EXITCODE=0
+```
+
+断言要点（测试内真实断言，非桩）：
+- rows.len() >= 3（PlanCreated + ≥2×PlanStatusChanged）；
+- 每行 tenant_id == "t4-e2e"、event_id 以 "evt-" 开头、occurred_at 非空、plan_id 贯穿轨迹；
+- PlanStatusChanged 的 to 集合含 "running" 与某个终态（failed/partial/completed）；
+- payload.tenant / payload.occurred_at 结构化齐备；
+- 跨租户：load_event_log_by_tenant("t4-other-tenant") 为空（隔离）。
+
+## 三、测试基线复核
+- lib 单测：180（A2 后）→ 187（+7 事件总线/序列化/收发单测），0 failed。
+  `cargo test -p mox-platform-gateway-svc --lib` → test result: ok. 187 passed; 0 failed。
+- 集成：51（D4/A2 后）→ 本次新增 t4 2 个 E2E，全绿，无回归。
+- cargo check：干净通过（仅既有 unused 警告，非本次引入）。
+
+## 四、改动文件:行号（关键）
+- src/alliance/mod.rs：注册 pub mod experts_events;
+- src/alliance/experts_events.rs：新建（EventBus/AllianceEvent/Kind + spawn_event_log_consumer + 单测）
+- src/alliance/experts_common.rs：ExpertsSharedState 新增 events 字段；new() 建总线并挂消费者；补 2 处测试构造
+- src/alliance/experts_db.rs：SCHEMA_VERSION 3→4；init_schema 加 alliance_event_log 表；
+  insert_event_log(_conn) / load_event_log_by_tenant / EventLogRow
+- src/alliance/experts_orchestration.rs：orchestrate/generate_plan_handler/execute_plan_handler 真实 emit
+- src/alliance/experts_registry.rs：create_expert/delete_expert 真实 emit；补 make_test_state
+- src/alliance/{dispatcher,session,rbac,graph,ext}.rs：补 events 测试构造（编译适配）
+- tests/t4_event_bus_e2e.rs：新建 E2E（禁止 mock）
+
+## 五、诚实边界
+- 已落地：进程内 broadcast 总线 + 事件模型 + 事件日志消费者落库 + 真实 E2E。
+- 未落地（后续）：跨进程/多副本广播、SSE 事件帧推送、外部系统 Webhook 订阅；
+  这些需在总线之上再加外发层，本阶段仅进程内闭环。
+- 勘误：任务书将「事件驱动」误挂在「12 号 M1」，实际 M1=私有化交付产品化（信创/气隙离线包）；
+  事件驱动为 T4（§2.4）。本证据与文档均以 T4 为准。

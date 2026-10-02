@@ -19,7 +19,7 @@ const schema = markRaw(assertPageSchema(props.pageSchema))
 
 const {
   filteredRows, loading, submitting, dialogVisible, editingRow, isEdit,
-  total, serverMode, searchNonce,
+  total, pageSize, serverMode, searchNonce,
   loadList, onSearch, onPageChange, openCreate, openEdit, onSubmit, runRowAction,
 } = useCrudPage(schema)
 
@@ -94,6 +94,7 @@ onMounted(loadList)
       :row-key="schema.list.rowKey || 'id'"
       :show-pagination="schema.list.showPagination !== false"
       :server-pagination="serverMode"
+      :initial-page-size="pageSize"
       :total="total"
       @row-click="openEdit"
       @page-change="onPageChange"
@@ -102,7 +103,7 @@ onMounted(loadList)
       <template
         v-for="col in widgetColumns" #[`cell-${col.prop}`]="{ row }" :key="col.prop"
       >
-        <SchemaRenderer v-memo="[row.id, row.status, row.name, row.enabled]" :node="col" :row="row" />
+        <SchemaRenderer v-memo="[row]" :node="col" :row="row" />
       </template>
       <template #actions="{ row }">
         <el-button

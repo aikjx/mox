@@ -13,8 +13,9 @@
 //! - 探测失败只标记 Unhealthy，**不立即摘除**；连续失败由心跳租约到期后 reaper
 //!   兜底摘除，避免单次抖动误杀。
 //! - 探测成功且当前为 Unhealthy 时自动回册为 Active（Draining 保持，不自动复活）。
-//! - 配置 `health_probe_enabled=false`（默认）时 [`crate::server`] 不启动本任务，
-//!   行为与历史「仅被动心跳」完全一致。
+//! - D8（2026-10-02）：`health_probe_enabled` 默认开启，[`crate::server`] 默认即启动本
+//!   任务；设 `MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off` 可关闭，行为回退历史
+//!   「仅被动心跳租约」。
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -219,10 +220,11 @@ mod tests {
     }
 
     #[test]
-    fn probe_default_config_disables_task() {
-        // 默认配置下探测关闭，server 不启动探测任务（无副作用）。
+    fn probe_default_config_enables_task_d8() {
+        // D8（2026-10-02）：默认配置下主动健康探测开启，server 启动后台探测任务；
+        // 生产可由 MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off 关闭回退被动租约。
         let cfg = crate::Config::default();
-        assert!(!cfg.health_probe_enabled);
+        assert!(cfg.health_probe_enabled, "D8：主动健康探测应默认开启");
         assert_eq!(cfg.health_probe_interval_ms, 30_000);
         assert_eq!(cfg.health_probe_timeout_ms, 5_000);
     }

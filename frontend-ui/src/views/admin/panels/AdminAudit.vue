@@ -2,6 +2,7 @@
   <div class="adm-audit">
     <!-- Tab 切换 -->
     <div class="audit-tabs">
+      <el-button :type="activeTab === 'iam' ? 'primary' : 'default'" @click="switchTab('iam')">IAM 安全审计</el-button>
       <div
         class="audit-tab"
         :class="{ active: activeTab === 'operlog' }"
@@ -18,6 +19,10 @@
         <el-icon :size="16"><User /></el-icon>
         <span>登录日志</span>
       </div>
+    </div>
+    <div v-if="activeTab === 'iam'" class="panel card-pad">
+      <p>IAM 主源记录，与操作日志、登录日志分别查询；记录的 HTTP 状态不代表完整业务链路验收。</p>
+      <IamAuditPage :page-schema="auditPage" />
     </div>
 
     <!-- 操作日志 -->
@@ -250,7 +255,8 @@
 
 <script setup>
 import { formatDateTimeLocaleOr as fmtTime } from '@/utils'
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, defineAsyncComponent } from 'vue'
+import { auditPage, loadSchemaCrudPage } from '@/modules/admin-lowcode'
 import { Search, Refresh, Download, Delete, Document, User } from '@element-plus/icons-vue'
 import {
   getOperLogList, cleanOperLog, exportOperLog,
@@ -260,6 +266,7 @@ import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const activeTab = ref('operlog')
+const IamAuditPage = defineAsyncComponent(loadSchemaCrudPage)
 
 function switchTab(tab) {
   activeTab.value = tab

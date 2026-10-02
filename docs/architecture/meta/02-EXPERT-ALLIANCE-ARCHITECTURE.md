@@ -266,7 +266,7 @@ sequenceDiagram
 
 ## 四、数据库设计（专家联盟6张表）
 
-详见 [01-DATABASE-DDL.sql](docs/architecture/meta/01-DATABASE-DDL.sql) 中第七组：
+详见 [01-DATABASE-DDL.sql](./01-DATABASE-DDL.sql) 中第七组：
 
 | 表名 | 职责 |
 |------|------|

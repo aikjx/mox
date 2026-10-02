@@ -11,7 +11,7 @@ source_of_truth: V2.0目标架构需求规格（未落地）
 
 > 版本：v2.0 | 日期：2026-08-26 | 状态：企业级草案
 >
-> 文档导航：[README](docs/expert-alliance/v2/README.md) | [01-架构设计](docs/expert-alliance/v2/01-architecture.md) | [02-领域模型](docs/expert-alliance/v2/02-domain-model.md) | [03-业务流程](docs/expert-alliance/v2/03-business-flow.md) | [04-接口设计](docs/expert-alliance/v2/04-api-design.md) | [05-数据架构](docs/expert-alliance/v2/05-data-architecture.md) | [06-安全可观测](docs/expert-alliance/v2/06-security-observability.md) | [07-路线图](docs/expert-alliance/v2/07-roadmap.md)
+> 文档导航：[README](../v1/README.md) | [01-架构设计](./01-architecture.md) | [02-领域模型](./02-domain-model.md) | [03-业务流程](./03-business-flow.md) | [04-接口设计](./04-api-design.md) | [05-数据架构](./05-data-architecture.md) | [06-安全可观测](./06-security-observability.md) | [07-路线图](./07-roadmap.md)
 
 
 > ⚠️ **文档状态声明**  
@@ -433,4 +433,4 @@ infotopograph 平台已具备知识图谱存储、AI 推理、数据治理、流
 
 ---
 
-*下一篇：[01-企业级架构设计](docs/expert-alliance/v2/01-architecture.md)*
+*下一篇：[01-企业级架构设计](./01-architecture.md)*

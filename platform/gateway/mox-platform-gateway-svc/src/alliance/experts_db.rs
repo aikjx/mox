@@ -22,10 +22,13 @@
 //! 容错策略：与原 JSON 持久化一致——持久化失败仅记录 stderr 不阻断业务
 //! （内存态 `ExpertsSharedState` 仍是权威数据源，SQLite 为持久投影）。
 
-use crate::alliance::experts_common::{ExpertDescriptor, ExpertGraph, ExpertSession, GraphEdge, GraphNode};
+use crate::alliance::experts_common::{
+    CollaborationPlan, ExpertDescriptor, ExpertGraph, ExpertSession, GraphEdge, GraphNode,
+    OrchestrationRecord,
+};
 use rusqlite::{Connection, params};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 /// 数据库路径环境变量（测试/部署隔离用）
@@ -91,7 +94,14 @@ pub fn open_experts_db() -> Result<Connection, String> {
 /// v2：A1 多租户——experts/graph_nodes/graph_edges/graph_meta 全部引入
 /// `tenant_id TEXT NOT NULL DEFAULT 'default'`，主键升为复合键
 /// (tenant_id, id|seq|k)。存量 v1 库在迁移时把既有行统一归到 `default` 租户。
-const SCHEMA_VERSION: i32 = 2;
+/// v3：D4 进程内三项落盘——新增 collaboration_plans / orchestration_history /
+/// favorites 三张表（均带 `tenant_id` 复合主键）。三项此前为纯内存态、无历史数据，
+/// 故 v2→v3 仅由 `init_schema` 的 `CREATE TABLE IF NOT EXISTS` 建表 + bump
+/// `user_version`，无需数据搬迁。
+/// v4：T4 事件驱动——新增 alliance_event_log 事件轨迹表（事件总线消费者落库，带
+/// `tenant_id` 行级隔离）。全新表、无历史数据，故 v3→v4 同样仅由 `init_schema` 的
+/// `CREATE TABLE IF NOT EXISTS` 建表 + bump `user_version`，无需数据搬迁。
+const SCHEMA_VERSION: i32 = 4;
 
 /// 启动时按 `PRAGMA user_version` 做 schema 版本迁移。
 ///
@@ -321,6 +331,57 @@ fn init_schema(conn: &Connection) -> Result<(), String> {
             data_json  TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_bookings_expert ON bookings(expert_id);
+
+        -- D4（v3）：协作计划落盘（按租户复合主键；完整计划含 steps/metadata 存 data_json）
+        CREATE TABLE IF NOT EXISTS collaboration_plans (
+            tenant_id  TEXT NOT NULL DEFAULT 'default',
+            plan_id    TEXT NOT NULL,
+            title      TEXT NOT NULL DEFAULT '',
+            status     TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT '',
+            data_json  TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, plan_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_plans_tenant ON collaboration_plans(tenant_id);
+
+        -- D4（v3）：编排执行历史落盘（按租户 + execution_id 复合主键）
+        CREATE TABLE IF NOT EXISTS orchestration_history (
+            tenant_id    TEXT NOT NULL DEFAULT 'default',
+            execution_id TEXT NOT NULL,
+            plan_id      TEXT NOT NULL DEFAULT '',
+            status       TEXT NOT NULL DEFAULT '',
+            created_at   TEXT NOT NULL DEFAULT '',
+            data_json    TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, execution_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_history_tenant ON orchestration_history(tenant_id);
+
+        -- D4（v3）：专家收藏落盘（按租户隔离；租户内 expert_id 唯一）
+        CREATE TABLE IF NOT EXISTS favorites (
+            tenant_id TEXT NOT NULL,
+            expert_id TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY (tenant_id, expert_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_favorites_tenant ON favorites(tenant_id);
+
+        -- T4（v4）：事件轨迹日志（进程内事件总线消费者落库）。
+        -- 每行一个真实业务事件（计划创建/状态推进/专家注册·禁用），带租户行级隔离；
+        -- 结构化载荷存 payload（权威），热查询字段（event_type/plan_id）建列建索引。
+        CREATE TABLE IF NOT EXISTS alliance_event_log (
+            tenant_id   TEXT NOT NULL DEFAULT 'default',
+            event_id    TEXT NOT NULL,
+            event_type  TEXT NOT NULL,
+            source      TEXT NOT NULL DEFAULT '',
+            occurred_at TEXT NOT NULL DEFAULT '',
+            plan_id     TEXT NOT NULL DEFAULT '',
+            payload     TEXT NOT NULL,
+            created_at  TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY (tenant_id, event_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_event_log_tenant ON alliance_event_log(tenant_id);
+        CREATE INDEX IF NOT EXISTS idx_event_log_type ON alliance_event_log(event_type);
+        CREATE INDEX IF NOT EXISTS idx_event_log_plan ON alliance_event_log(plan_id);
         "#,
     )
     .map_err(|e| format!("初始化 schema 失败: {}", e))
@@ -328,6 +389,31 @@ fn init_schema(conn: &Connection) -> Result<(), String> {
 
 fn log_err(op: &str, err: &str) {
     eprintln!("[experts_db] {} 失败: {}", op, err);
+}
+
+/// A2（无状态化阶段一）：写穿 busy/locked 应用层重试循环。
+///
+/// 打开连接时已设 `busy_timeout=5s`（见 [`open_experts_db`]），WAL 下读写本不互斥，
+/// 仅多写者并发才会争锁。即便如此，跨进程写竞争在 busy_timeout 耗尽的极端情形下仍可能
+/// 返回 `SQLITE_BUSY` / `SQLITE_LOCKED`（错误串含 `locked`）。这里在应用层对「锁类瞬时错误」
+/// 再做有限次（≤5）退避重试，进一步降低多副本共享同一 SQLite 时写穿的瞬时失败率；
+/// 非锁类错误（如序列化失败）不重试，直接按既有约定 log_err 不阻断业务。
+fn retry_write<F: Fn() -> Result<(), String>>(op: &str, f: F) {
+    const MAX_ATTEMPTS: u32 = 5;
+    let mut attempt = 0;
+    loop {
+        attempt += 1;
+        match f() {
+            Ok(()) => return,
+            Err(e) if (e.contains("busy") || e.contains("locked")) && attempt < MAX_ATTEMPTS => {
+                std::thread::sleep(std::time::Duration::from_millis(40 * attempt as u64));
+            }
+            Err(e) => {
+                log_err(op, &e);
+                return;
+            }
+        }
+    }
 }
 
 fn table_count(conn: &Connection, table: &str) -> Result<i64, String> {
@@ -964,6 +1050,424 @@ pub fn load_bookings() -> Vec<Value> {
 }
 
 // =====================================================================
+// D4（v3）：进程内三项落盘——协作计划 / 编排历史 / 收藏集
+// =====================================================================
+//
+// 这三项此前为纯内存态（ExpertsSharedState.plans/orchestration_history/favorites），
+// 进程崩溃即丢。此处按既有「短连接 + WAL + 事务 + best-effort（失败仅记日志不阻断
+// 业务）」约定补齐持久投影：
+// - 写时：每次增/改后立即 upsert 单条（数据量小，单条 upsert 足矣，避免全量重写）；
+// - 启动：ExpertsSharedState::new() 调 load_all_* 一次读回全部租户分区，重建内存态；
+// - 租户：三表均以 (tenant_id, …) 为复合主键，与 A1 多租户行级隔离一致。
+//   plans/history 内存态保持 A1 既有「全局扁平 + handler 按 metadata.tenant_id 过滤」
+//   语义（plan_id/execution_id 为全局 UUID 不冲突）；favorites 内存态按租户分区。
+
+/// 单条 UPSERT 协作计划（ON CONFLICT(tenant_id, plan_id) DO UPDATE）。
+///
+/// `tenant` 取请求租户（plan.metadata["tenant_id"] 同源）；完整计划序列化进 data_json。
+pub fn upsert_plan_conn(conn: &Connection, tenant: &str, plan: &CollaborationPlan) -> Result<(), String> {
+    let data = serde_json::to_string(plan)
+        .map_err(|er| format!("序列化 plan {}: {}", plan.plan_id, er))?;
+    conn.execute(
+        "INSERT INTO collaboration_plans (tenant_id, plan_id, title, status, created_at, data_json)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         ON CONFLICT(tenant_id, plan_id) DO UPDATE SET
+            title = excluded.title, status = excluded.status,
+            created_at = excluded.created_at, data_json = excluded.data_json",
+        params![tenant, plan.plan_id, plan.title, plan.status, plan.created_at, data],
+    )
+    .map_err(|e| format!("upsert plan {}: {}", plan.plan_id, e))?;
+    Ok(())
+}
+
+/// upsert 单条计划落库（best-effort；A2：锁类错误走 busy 重试）
+pub fn upsert_plan(tenant: &str, plan: &CollaborationPlan) {
+    retry_write("upsert_plan", || {
+        open_experts_db().and_then(|conn| upsert_plan_conn(&conn, tenant, plan))
+    });
+}
+
+/// 启动期加载全部租户的协作计划（重建全局扁平 HashMap<plan_id, plan>）。
+///
+/// plan_id 为全局 UUID，跨租户不冲突；运行期按 plan.metadata["tenant_id"] 过滤（A1 既有读面）。
+pub fn load_all_plans() -> HashMap<String, CollaborationPlan> {
+    let mut map = HashMap::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_all_plans", &e);
+            return map;
+        }
+    };
+    if let Ok(rows) = conn
+        .prepare("SELECT data_json FROM collaboration_plans")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| row.get::<_, String>(0))
+                .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for s in rows.into_iter().flatten() {
+            match serde_json::from_str::<CollaborationPlan>(&s) {
+                Ok(p) => {
+                    map.insert(p.plan_id.clone(), p);
+                }
+                Err(er) => log_err("load_all_plans 反序列化", &er.to_string()),
+            }
+        }
+    }
+    map
+}
+
+/// 追加一条编排执行历史（INSERT；execution_id 全局唯一，冲突即覆盖更新）。
+pub fn insert_history_record_conn(
+    conn: &Connection,
+    tenant: &str,
+    rec: &OrchestrationRecord,
+) -> Result<(), String> {
+    let data = serde_json::to_string(rec)
+        .map_err(|er| format!("序列化 history {}: {}", rec.execution_id, er))?;
+    conn.execute(
+        "INSERT INTO orchestration_history (tenant_id, execution_id, plan_id, status, created_at, data_json)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         ON CONFLICT(tenant_id, execution_id) DO UPDATE SET
+            plan_id = excluded.plan_id, status = excluded.status,
+            created_at = excluded.created_at, data_json = excluded.data_json",
+        params![tenant, rec.execution_id, rec.plan_id, rec.status, rec.created_at, data],
+    )
+    .map_err(|e| format!("insert history {}: {}", rec.execution_id, e))?;
+    Ok(())
+}
+
+/// 追加一条历史落库（best-effort；A2：锁类错误走 busy 重试）
+pub fn insert_history_record(tenant: &str, rec: &OrchestrationRecord) {
+    retry_write("insert_history_record", || {
+        open_experts_db().and_then(|conn| insert_history_record_conn(&conn, tenant, rec))
+    });
+}
+
+/// 启动期加载全部租户的编排历史（按 created_at + rowid 升序，保持追加时序）。
+pub fn load_all_history() -> Vec<OrchestrationRecord> {
+    let mut out = Vec::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_all_history", &e);
+            return out;
+        }
+    };
+    if let Ok(rows) = conn
+        .prepare("SELECT data_json FROM orchestration_history ORDER BY created_at ASC, rowid ASC")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| row.get::<_, String>(0))
+                .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for s in rows.into_iter().flatten() {
+            if let Ok(r) = serde_json::from_str::<OrchestrationRecord>(&s) {
+                out.push(r);
+            }
+        }
+    }
+    out
+}
+
+/// 收藏某专家（租户内），UPSERT
+pub fn upsert_favorite_conn(conn: &Connection, tenant: &str, expert_id: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO favorites (tenant_id, expert_id, created_at) VALUES (?1, ?2, ?3)
+         ON CONFLICT(tenant_id, expert_id) DO NOTHING",
+        params![tenant, expert_id, crate::alliance::experts_common::now_iso()],
+    )
+    .map_err(|e| format!("upsert favorite {tenant}/{expert_id}: {e}"))?;
+    Ok(())
+}
+
+/// 收藏落库（best-effort；A2：锁类错误走 busy 重试）
+pub fn upsert_favorite(tenant: &str, expert_id: &str) {
+    retry_write("upsert_favorite", || {
+        open_experts_db().and_then(|conn| upsert_favorite_conn(&conn, tenant, expert_id))
+    });
+}
+
+/// 取消收藏（租户内）
+pub fn delete_favorite_conn(conn: &Connection, tenant: &str, expert_id: &str) -> Result<(), String> {
+    conn.execute(
+        "DELETE FROM favorites WHERE tenant_id = ?1 AND expert_id = ?2",
+        params![tenant, expert_id],
+    )
+    .map_err(|e| format!("delete favorite {tenant}/{expert_id}: {e}"))?;
+    Ok(())
+}
+
+/// 取消收藏落库（best-effort；A2：锁类错误走 busy 重试）
+pub fn delete_favorite(tenant: &str, expert_id: &str) {
+    retry_write("delete_favorite", || {
+        open_experts_db().and_then(|conn| delete_favorite_conn(&conn, tenant, expert_id))
+    });
+}
+
+/// 启动期加载全部租户的收藏集（tenant -> 该租户收藏的 expert_id 集合）。
+pub fn load_all_favorites() -> HashMap<String, HashSet<String>> {
+    let mut out: HashMap<String, HashSet<String>> = HashMap::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_all_favorites", &e);
+            return out;
+        }
+    };
+    if let Ok(rows) = conn
+        .prepare("SELECT tenant_id, expert_id FROM favorites")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                let t: String = row.get(0)?;
+                let e: String = row.get(1)?;
+                Ok((t, e))
+            })
+            .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for (t, e) in rows.into_iter().flatten() {
+            out.entry(t).or_default().insert(e);
+        }
+    }
+    out
+}
+
+// =====================================================================
+// T4（v4）：事件轨迹日志（alliance_event_log）——事件总线消费者落库
+// =====================================================================
+//
+// 进程内事件总线（experts_events）的消费者把每个真实业务事件（计划创建/状态推进/
+// 专家注册·禁用）追加到此表。与审计链互补：审计是安全合规视角（SHA-256 哈希链 +
+// 多 Sink），本表是**业务生命周期事件流视角**——前端免轮询、外部系统订阅联动、
+// 可观测数据骨干（T4 §2.4）。写路径遵循本模块约定：best-effort（失败仅记日志，
+// 不阻断业务），锁类错误走 retry_write。
+
+/// 一条事件轨迹记录（读回投影）
+#[derive(Debug, Clone)]
+pub struct EventLogRow {
+    pub tenant_id: String,
+    pub event_id: String,
+    pub event_type: String,
+    pub source: String,
+    pub occurred_at: String,
+    pub plan_id: String,
+    pub payload: Value,
+}
+
+/// 追加一条事件日志（INSERT OR IGNORE：event_id 全局唯一，重复投递幂等）。
+#[allow(clippy::too_many_arguments)]
+pub fn insert_event_log_conn(
+    conn: &Connection,
+    tenant: &str,
+    event_id: &str,
+    event_type: &str,
+    source: &str,
+    occurred_at: &str,
+    plan_id: &str,
+    payload: &Value,
+) -> Result<(), String> {
+    let data = serde_json::to_string(payload)
+        .map_err(|er| format!("序列化事件载荷 {event_id}: {er}"))?;
+    let created_at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    conn.execute(
+        "INSERT OR IGNORE INTO alliance_event_log
+            (tenant_id, event_id, event_type, source, occurred_at, plan_id, payload, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        params![tenant, event_id, event_type, source, occurred_at, plan_id, data, created_at],
+    )
+    .map_err(|e| format!("insert event_log {event_id}: {e}"))?;
+    Ok(())
+}
+
+/// 追加一条事件日志落库（best-effort；A2：锁类错误走 busy 重试）
+#[allow(clippy::too_many_arguments)]
+pub fn insert_event_log(
+    tenant: &str,
+    event_id: &str,
+    event_type: &str,
+    source: &str,
+    occurred_at: &str,
+    plan_id: &str,
+    payload: &Value,
+) {
+    retry_write("insert_event_log", || {
+        open_experts_db().and_then(|conn| {
+            insert_event_log_conn(
+                &conn, tenant, event_id, event_type, source, occurred_at, plan_id, payload,
+            )
+        })
+    });
+}
+
+/// 按租户读事件轨迹日志（按 occurred_at + rowid 升序，保持事件时序）。
+///
+/// 供 T4 E2E 断言与未来「事件流查询端点」使用；跨租户隔离（WHERE tenant_id=?）。
+pub fn load_event_log_by_tenant(tenant: &str) -> Vec<EventLogRow> {
+    let mut out = Vec::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_event_log_by_tenant", &e);
+            return out;
+        }
+    };
+    if let Ok(rows) = conn
+        .prepare(
+            "SELECT tenant_id, event_id, event_type, source, occurred_at, plan_id, payload
+             FROM alliance_event_log WHERE tenant_id = ?1
+             ORDER BY occurred_at ASC, rowid ASC",
+        )
+        .and_then(|mut stmt| {
+            stmt.query_map(params![tenant], |row| {
+                let tenant_id: String = row.get(0)?;
+                let event_id: String = row.get(1)?;
+                let event_type: String = row.get(2)?;
+                let source: String = row.get(3)?;
+                let occurred_at: String = row.get(4)?;
+                let plan_id: String = row.get(5)?;
+                let payload: String = row.get(6)?;
+                let payload: Value = serde_json::from_str(&payload).unwrap_or(Value::Null);
+                Ok(EventLogRow {
+                    tenant_id,
+                    event_id,
+                    event_type,
+                    source,
+                    occurred_at,
+                    plan_id,
+                    payload,
+                })
+            }).map(|rows| rows.collect::<Vec<_>>())
+        })
+    {
+        for r in rows.into_iter().flatten() {
+            out.push(r);
+        }
+    }
+    out
+}
+
+// =====================================================================
+// A2（无状态化阶段一，2026-10-02）：读路径实时查 SQLite
+// =====================================================================
+//
+// D4 之前的语义是「内存为主 + SQLite 备份」：多副本各持内存副本，A 写 B 不重启看不到。
+// A2 把 SQLite 立为这三项冷/低频数据的**唯一真相**：写已写穿（upsert/insert/delete 单条），
+// 此处把读面也改为**每次请求实时查 SQLite（按租户）**，从而跨实例即一致——B 不重启、
+// 不刷新本地缓存即可读到 A 刚写穿的行。本实例写后仍同步更新本地内存镜像（保持即时读与
+// 既有 handler 形状），但读面权威来源是下面这些函数。
+//
+// 成本说明：plans / history / favorites 均为冷/低频读（统计、历史列表、收藏开关），
+// 短连接 + SQLite 本地文件查询为亚毫秒级，单实例下与「读内存镜像」行为等价（写穿后
+// SQLite 与本地镜像一致），故单实例零回归。高频态 registry/graph 仍保持进程内（见报告）。
+
+/// 按租户实时读协作计划（plan_id -> plan）。
+///
+/// 读路径（orchestration_stats / history 过滤）改为调本函数：跨实例即一致，无需失效广播。
+/// 失败返回空表（与既有 load_* 容错约定一致，单实例下退化为「本实例镜像」等价空读）。
+pub fn load_plans_by_tenant(tenant: &str) -> HashMap<String, CollaborationPlan> {
+    let mut map = HashMap::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_plans_by_tenant", &e);
+            return map;
+        }
+    };
+    if let Ok(rows) = conn
+        .prepare("SELECT data_json FROM collaboration_plans WHERE tenant_id = ?1")
+        .and_then(|mut stmt| {
+            stmt.query_map(params![tenant], |row| row.get::<_, String>(0))
+                .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for s in rows.into_iter().flatten() {
+            if let Ok(p) = serde_json::from_str::<CollaborationPlan>(&s) {
+                map.insert(p.plan_id.clone(), p);
+            }
+        }
+    }
+    map
+}
+
+/// 按 (tenant, plan_id) 单点读计划（execute_plan_handler 读路径）。
+///
+/// 租户过滤下推到 SQL（`WHERE tenant_id=? AND plan_id=?`），跨租户访问自然 404，
+/// 不依赖内存 plan.metadata["tenant_id"] 二次校验。
+pub fn get_plan(tenant: &str, plan_id: &str) -> Option<CollaborationPlan> {
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("get_plan", &e);
+            return None;
+        }
+    };
+    conn.query_row(
+        "SELECT data_json FROM collaboration_plans WHERE tenant_id = ?1 AND plan_id = ?2",
+        params![tenant, plan_id],
+        |r| r.get::<_, String>(0),
+    )
+    .ok()
+    .and_then(|s| serde_json::from_str::<CollaborationPlan>(&s).ok())
+}
+
+/// 按租户实时读编排执行历史（按 created_at + rowid 升序，保持追加时序）。
+///
+/// history 表自带 `tenant_id` 列（D4 写入时即带租户），直接按租户查即可，
+/// 等价于既有「按本租户可见 plan 集合过滤 history」语义，且跨实例即一致。
+pub fn load_history_by_tenant(tenant: &str) -> Vec<OrchestrationRecord> {
+    let mut out = Vec::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_history_by_tenant", &e);
+            return out;
+        }
+    };
+    if let Ok(rows) = conn
+        .prepare("SELECT data_json FROM orchestration_history WHERE tenant_id = ?1 ORDER BY created_at ASC, rowid ASC")
+        .and_then(|mut stmt| {
+            stmt.query_map(params![tenant], |row| row.get::<_, String>(0))
+                .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for s in rows.into_iter().flatten() {
+            if let Ok(r) = serde_json::from_str::<OrchestrationRecord>(&s) {
+                out.push(r);
+            }
+        }
+    }
+    out
+}
+
+/// 按租户实时读收藏的 expert_id 集合（favorite toggle 的唯一真相判定）。
+///
+/// toggle handler 据此判断当前是否已收藏（跨实例一致），再回写本地内存镜像。
+pub fn load_favorites_by_tenant(tenant: &str) -> HashSet<String> {
+    let mut out = HashSet::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_favorites_by_tenant", &e);
+            return out;
+        }
+    };
+    if let Ok(rows) = conn
+        .prepare("SELECT expert_id FROM favorites WHERE tenant_id = ?1")
+        .and_then(|mut stmt| {
+            stmt.query_map(params![tenant], |row| row.get::<_, String>(0))
+                .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for e in rows.into_iter().flatten() {
+            out.insert(e);
+        }
+    }
+    out
+}
+
+// =====================================================================
 // 历史 JSON → SQLite 一次性迁移（启动期调用，幂等）
 // =====================================================================
 
@@ -1225,4 +1729,3 @@ mod incremental_tests {
         assert_eq!(v, "4");
     }
 }
-

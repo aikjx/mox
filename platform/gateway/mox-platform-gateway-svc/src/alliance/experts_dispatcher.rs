@@ -955,8 +955,9 @@ mod tests {
             graph: Arc::new(Mutex::new(HashMap::new())),
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
-            favorites: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            favorites: Arc::new(Mutex::new(std::collections::HashMap::new())),
             audit: crate::alliance::experts_common::build_audit_context(),
+            events: Arc::new(crate::alliance::experts_events::EventBus::new(16)),
         })
     }
 

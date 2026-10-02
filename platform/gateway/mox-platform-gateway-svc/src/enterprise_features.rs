@@ -52,6 +52,10 @@ pub struct EnterpriseState {
 
 impl EnterpriseState {
     pub fn new() -> Self {
+        Self::with_message_center(MessageCenterState::new())
+    }
+
+    pub fn with_message_center(message_center: MessageCenterState) -> Self {
         // 先构造被调度任务依赖的子状态，再把它们的引用注入 SchedulerState，
         // 使后台循环能真实清理 SSO pending、归档审计日志（非占位）。
         let sso = Arc::new(SsoState::new());
@@ -64,7 +68,7 @@ impl EnterpriseState {
             integration: Arc::new(IntegrationState::new()),
             designer: Arc::new(DesignerState::new()),
             sso,
-            message_center: Arc::new(MessageCenterState::new()),
+            message_center: Arc::new(message_center),
             document: Arc::new(DocumentState::new()),
             admin,
             scheduler,

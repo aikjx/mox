@@ -11,7 +11,7 @@ source_of_truth: 参考
 
 > 版本：v1.0 | 日期：2026-08-26
 >
-> 前置：[专家联盟总览](docs/expert-alliance/README.md) | [专家注册与协作协议](docs/expert-alliance/expert-registry-and-protocol.md)
+> 前置：[专家联盟总览](./README.md) | [专家注册与协作协议](./expert-registry-and-protocol.md)
 
 ---
 
@@ -613,4 +613,4 @@ Usage:
 
 ---
 
-*文档导航：[README](docs/expert-alliance/README.md) | [专家注册与协作协议](docs/expert-alliance/expert-registry-and-protocol.md) | [知识图谱关联关系设计](docs/expert-alliance/knowledge-graph-schema.md)*
+*文档导航：[README](./README.md) | [专家注册与协作协议](./expert-registry-and-protocol.md) | [知识图谱关联关系设计](docs/expert-alliance/knowledge-graph-schema.md)*

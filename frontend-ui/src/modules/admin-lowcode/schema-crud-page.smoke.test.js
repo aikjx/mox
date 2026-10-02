@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { h, provide, nextTick } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import SchemaCrudPage from './engine/SchemaCrudPage.vue'
 import { configPage } from './pages/config.page.js'
 import { accessPage } from './pages/access.page.js'
@@ -26,7 +27,7 @@ vi.mock(import('@/api'), async (importOriginal) => ({ ...(await importOriginal()
 
 // —— ElMessage / ElMessageBox 替身：捕获调用即可，不弹真实气泡 ——
 const msgs = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), warning: vi.fn() }))
-const mbxs = vi.hoisted(() => ({ confirm: vi.fn(), alert: vi.fn() }))
+const mbxs = vi.hoisted(() => ({ confirm: vi.fn(), alert: vi.fn(), close: vi.fn() }))
 vi.mock('element-plus/es/components/message/index', () => ({ ElMessage: msgs }))
 vi.mock('element-plus/es/components/message-box/index', () => ({ ElMessageBox: mbxs }))
 
@@ -101,6 +102,7 @@ const mountPage = (pageSchema) => mount(SchemaCrudPage, {
 })
 
 beforeEach(() => {
+  setActivePinia(createPinia())
   vi.clearAllMocks()
 })
 
@@ -159,10 +161,10 @@ describe('SchemaCrudPage · config 页（服务端分页 CRUD）', () => {
 
 describe('SchemaCrudPage · access 页（小数据量 + 自定义吊销动作）', () => {
   it('挂载后归一化凭证行，吊销入口仅对活跃凭证出现', async () => {
-    api.getApiKeys.mockResolvedValue([
-      { id: 1, name: '巡检客户端', status: 'active', scopes: ['read'], createdAt: '2026-09-01', lastUsed: '' },
-      { id: 2, name: '已废弃', status: 'revoked', scopes: [], createdAt: '2026-08-01', lastUsed: '2026-08-02' },
-    ])
+    api.getApiKeys.mockResolvedValue({ items: [
+      { id: 1, name: '巡检客户端', active: true, eligibility: 'eligible', createdAt: '2026-09-01', last_used_at: '' },
+      { id: 2, name: '已废弃', active: false, eligibility: 'revoked_or_inactive', createdAt: '2026-08-01', last_used_at: '2026-08-02' },
+    ], total: 2, page: 1, page_size: 20 })
     const w = mountPage(accessPage)
     await flushPromises()
     expect(api.getApiKeys).toHaveBeenCalledTimes(1)

@@ -2,14 +2,18 @@
 // system/permission.rs — 系统管理子模块
 // ====================================================================
 
-use crate::GatewayState;
-use crate::system::{DEFAULT_TENANT, DEFAULT_USER, ok, err, q_str, resolve_tenant, status_flag};
+use crate::{
+    system::{err, ok, q_str, resolve_tenant, status_flag, DEFAULT_TENANT},
+    GatewayState,
+};
 use axum::extract::{Path, Query, State};
-use mox_api_protocol::{ApiResponse, api_ok};
+use mox_api_protocol::{api_error, api_ok, ApiResponse};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-pub(crate) async fn current_user_handler(crate::auth::ApiAuth(user): crate::auth::ApiAuth) -> ApiResponse<Value> {
+pub(crate) async fn current_user_handler(
+    crate::auth::ApiAuth(user): crate::auth::ApiAuth,
+) -> ApiResponse<Value> {
     api_ok(json!(user))
 }
 
@@ -17,14 +21,23 @@ pub(crate) async fn current_user_handler(crate::auth::ApiAuth(user): crate::auth
 pub(crate) async fn get_permissions(
     State(s): State<GatewayState>,
     Query(q): Query<HashMap<String, String>>,
+    crate::alliance::experts_common::TenantId(tenant): crate::alliance::experts_common::TenantId,
+    crate::auth::ApiAuth(identity): crate::auth::ApiAuth,
 ) -> ApiResponse<Value> {
-    let tenant = match resolve_tenant(&s, &q_str(&q, "tenant_id", DEFAULT_TENANT)) {
-        Ok(t) => t,
-        Err(e) => return err(&format!("tenant resolve: {e}")),
+    if q.get("tenant_id").is_some_and(|value| value != &tenant)
+        || q.get("user_id").is_some_and(|value| value != &identity.id)
+    {
+        return api_error(403, "Permission scope conflicts with trusted identity");
+    }
+    let user = identity.id;
+    let roles = match s.iam.get_user_roles(&tenant, &user) {
+        Ok(roles) => roles,
+        Err(_) => return api_error(503, "IAM unavailable"),
     };
-    let user = q_str(&q, "user_id", DEFAULT_USER);
-    let roles = s.iam.get_user_roles(&tenant, &user).unwrap_or_default();
-    let perms = s.iam.get_user_permissions(&tenant, &user).unwrap_or_default();
+    let perms = match s.iam.get_user_permissions(&tenant, &user) {
+        Ok(perms) => perms,
+        Err(_) => return api_error(503, "IAM unavailable"),
+    };
     ok(json!({
         "user_id": user,
         "tenant_id": tenant,
@@ -60,4 +73,3 @@ pub(crate) async fn get_user_roles(
         Err(e) => err(&format!("user roles: {e}")),
     }
 }
-

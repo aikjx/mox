@@ -254,10 +254,10 @@
 
 | 案例 | 文件 | 原引用 | 修复后 |
 |------|------|--------|--------|
-| 案例1 | 归一化手册L15 | `](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)` | `](docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)` |
-| 案例2 | v2/README.md L42 | `](./00-requirements.md)` | `](docs/expert-alliance/v2/00-requirements.md)` |
+| 案例1 | 归一化手册L15 | `](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)` | `](../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)` |
+| 案例2 | v2/README.md L42 | `](../expert-alliance/_archive/v2/00-requirements.md)` | `](../expert-alliance/_archive/v2/00-requirements.md)` |
 | 案例3 | 26-V1.1 L22 | `](file:///d:/a10/aikjx/gitcode/infotopograph/platform/domains/mox-expert/src/rbac/policy.rs#L133-L158)` | `](platform/domains/mox-expert/src/rbac/policy.rs#L133-L158)` |
-| 案例4 | expert-alliance/README.md L676 | `](../architecture/microservices/README.md)` | `](docs/architecture/microservices/README.md)` |
+| 案例4 | expert-alliance/README.md L676 | `](../architecture/microservices/README.md)` | `](../README.md)` |
 | 案例5 | 代码对齐报告L445 | `` `docs/enterprise/26-...-V1.0.md` `` | `` `docs/_archive/expert-alliance/enterprise/26-...-V1.0.md` `` |
 
 ### 8.4 验证结果

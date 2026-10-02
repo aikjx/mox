@@ -1,0 +1,194 @@
+{
+  "date": "2026-10-02",
+  "status": "scoped_checks_passed",
+  "checks": {
+    "clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "-p",
+        "mox-platform-iam-core",
+        "--all-targets"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy.log"
+    },
+    "doc_links": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py",
+        "--repo"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "doc_links.log"
+    },
+    "frontend_build": {
+      "command": [
+        "npm.cmd",
+        "run",
+        "build"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph\\frontend-ui",
+      "exit_code": 0,
+      "log": "frontend_build.log"
+    },
+    "frontend_contract": {
+      "command": [
+        "node",
+        "--test",
+        "frontend-ui/src/utils/api-key.node-test.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_contract.log"
+    },
+    "frontend_module": {
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_module.log"
+    },
+    "frontend_schema_syntax": {
+      "command": [
+        "node",
+        "--check",
+        "frontend-ui/src/modules/admin-lowcode/contract/pageSchema.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_schema_syntax.log"
+    },
+    "iam_core_tests": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-iam-core"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "iam_core_tests.log",
+      "passed": 2
+    },
+    "locale": {
+      "command": [
+        "python",
+        "scripts/gate/check-locale-format-outlets.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "locale.log"
+    },
+    "ports": {
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ports.log"
+    },
+    "registry": {
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "scripts.tests.test_api_registry_generation"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "registry.log"
+    },
+    "rust_tests": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "inbox_http",
+        "--test",
+        "inbox_persistence",
+        "--test",
+        "delivery_truth",
+        "--test",
+        "trusted_tenant_http"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_tests.log",
+      "passed": 19
+    },
+    "scoped_diff": {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "platform/domains/platform/core/mox-platform-iam-core/src/ddl.sql",
+        "platform/gateway/mox-platform-gateway-svc/src/system/security.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs",
+        "frontend-ui/src/utils",
+        "frontend-ui/src/api/system.api.js",
+        "frontend-ui/src/views/admin/panels/AdminAccess.vue",
+        "frontend-ui/src/views/admin/panels/AdminAccess.smoke.test.js",
+        "frontend-ui/src/modules/admin-lowcode/composables/useCrudPage.js",
+        "frontend-ui/src/modules/admin-lowcode/pages/access.page.js",
+        "frontend-ui/src/modules/admin-lowcode/schema-crud-page.smoke.test.js",
+        "docs/modules/iam/API-KEYS.md",
+        "docs/modules/REAL-IMPLEMENTATION-STATUS.md"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "scoped_diff.log"
+    },
+    "scoped_format": {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "platform/domains/platform/core/mox-platform-iam-core/src/api_keys.rs",
+        "platform/gateway/mox-platform-gateway-svc/src/system/security.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/inbox_http.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "scoped_format.log"
+    }
+  },
+  "rust_tests_passed": 21,
+  "frontend_contract_tests_passed": 4,
+  "registry_tests_passed": 1,
+  "business_mock_services": false,
+  "actual_tcp_sqlite_jwt": true,
+  "browser_full_e2e_verified": false,
+  "full_enterprise_ready": false,
+  "cross_host_verified": false,
+  "configuration_state_is_authentication_proof": false,
+  "list_response_breaking_change": "array replaced by items/total/page/page_size",
+  "pagination_is_cross_request_snapshot": false,
+  "retained_warnings": {
+    "doc_paths": 215,
+    "ports": 284,
+    "clippy_existing": true,
+    "frontend_build_existing": true
+  },
+  "remaining": [
+    "audit pagination",
+    "dynamic scopes",
+    "legacy rotation and migration",
+    "browser workflow",
+    "deep-page performance and cross-host SLO"
+  ],
+  "source_manifest": "source-manifest.json"
+}

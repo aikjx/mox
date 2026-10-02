@@ -384,10 +384,10 @@ T0 (P0)  撰写 18·TOP-MASTER 全域顶层总设计（12 章节 + 三联盟 + 5
      ```
   2. 紧接着一行 banner：
      ```md
-     > **唯一治理入口**：[`docs/enterprise/00-INDEX.md`](enterprise/00-INDEX.md)  
-     > **顶层总设计（TOP-MASTER，最高权威）**：[`docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)  
-     > **产品手册（对外宣讲）**：[`docs/mox-mox-product-handbook-v3.md`](mox-mox-product-handbook-v3.md)  
-     > **唯一术语真相源**：[`docs/enterprise/GLOSSARY.md`](GLOSSARY.md)
+     > **唯一治理入口**：[`docs/enterprise/00-INDEX.md`](../../../enterprise/00-INDEX.md)  
+     > **顶层总设计（TOP-MASTER，最高权威）**：[`docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](../../../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)  
+     > **产品手册（对外宣讲）**：[`docs/mox-mox-product-handbook-v3.md`](../../../modules/mox-relgraph-product-handbook-v3.md)  
+     > **唯一术语真相源**：[`docs/enterprise/GLOSSARY.md`](../../../enterprise/GLOSSARY.md)
      ```
   3. 保持原有关图/全维快捷分区索引内容不变（NG2），只在原首屏上方插入上述四链接导航。
   4. 版本/日期：文档顶部补一行「最后更新：2026-08-23 · 导航 v1.1」。
@@ -417,10 +417,10 @@ T0 (P0)  撰写 18·TOP-MASTER 全域顶层总设计（12 章节 + 三联盟 + 5
   2. 原 "算子统一系统 (Operator Unified System)" 大标题保留为**第二行副标题**，前缀 `> 内部副品牌：**OUS**（Operator Unified System）· 关图（信息关联关系图）。**对外品牌统一使用"璇玑 mox"。**
   3. 紧接四行导航（与 docs/README 同文但相对路径改为 docs/ 下）：
      ```md
-     > 🏛 **TOP-MASTER 顶层总设计（唯一权威·最高调度权）**：[`docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)  
-     > 📚 **企业级文档治理入口（19 份文档 00~18，唯一真相源）**：[`docs/enterprise/00-INDEX.md`](docs/enterprise/00-INDEX.md)  
-     > 🎯 **产品手册 v3（对外介绍、开源 vs 企业版）**：[`docs/mox-mox-product-handbook-v3.md`](docs/mox-mox-product-handbook-v3.md)  
-     > 📐 **术语唯一基准**：[`docs/enterprise/GLOSSARY.md`](docs/enterprise/GLOSSARY.md)
+     > 🏛 **TOP-MASTER 顶层总设计（唯一权威·最高调度权）**：[`docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md`](../../../enterprise/18-全域顶层总设计-三联盟模式-V1.0.md)  
+     > 📚 **企业级文档治理入口（19 份文档 00~18，唯一真相源）**：[`docs/enterprise/00-INDEX.md`](../../../enterprise/00-INDEX.md)  
+     > 🎯 **产品手册 v3（对外介绍、开源 vs 企业版）**：[`docs/mox-mox-product-handbook-v3.md`](../../../modules/mox-relgraph-product-handbook-v3.md)  
+     > 📐 **术语唯一基准**：[`docs/enterprise/GLOSSARY.md`](../../../enterprise/GLOSSARY.md)
      ```
   4. 在 §项目定位（🌟 项目定位）段首句改为"璇玑 mox 是一套 **企业级全域归一化知识图谱底座与自动化治理系统**：…"，保留原 6 大公理 / 算子 / WASM 插件 / AI 智能体 等优势描述（NG2：原卖点不删，只换主定位）。
   5. §📁 项目结构段中，对 `platform/`、`frontend-ui/`、`docs/enterprise/`、`docs/specifications/` 的路径描述保持**真实存在路径**（不得再出现 `crates/`）。

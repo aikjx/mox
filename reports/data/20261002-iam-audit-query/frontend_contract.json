@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "frontend-ui/src/utils/api-key.node-test.mjs",
+    "frontend-ui/src/utils/audit.node-test.mjs"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "frontend_contract.log"
+}

@@ -1,0 +1,112 @@
+================================================================================
+D4 进程内三项落盘 + D8 探活默认开 —— 真实验证证据
+日期：2026-10-02
+工程：D:\a10\aikjx\gitcode\infotopograph
+================================================================================
+
+【说明】本证据来自真实端到端测试（禁止 mock）：真实 SQLite（独立临时库）+
+真实 ExpertsSharedState 启动加载路径，覆盖「写入 → 模拟崩溃重启 → 读回一致」闭环。
+测试文件：platform/gateway/mox-platform-gateway-svc/tests/d4_crash_recovery.rs
+测试用例：d4_write_then_restart_recovers_three_items_with_tenant_isolation
+
+--------------------------------------------------------------------------------
+一、被测对象（进程内三项，此前为纯内存态，进程崩溃即丢）
+--------------------------------------------------------------------------------
+1. plans              : ExpertsSharedState.plans        (HashMap<plan_id, CollaborationPlan>)
+2. orchestration_history: ExpertsSharedState.orchestration_history (Vec<OrchestrationRecord>)
+3. favorites          : ExpertsSharedState.favorites   (D4 起按租户分区 HashMap<tenant, HashSet<expert_id>>)
+
+落盘表（schema v3，PRAGMA user_version 2 -> 3）：
+- collaboration_plans   (tenant_id, plan_id) 复合主键 + data_json
+- orchestration_history (tenant_id, execution_id) 复合主键 + data_json
+- favorites             (tenant_id, expert_id) 复合主键
+写后持久化：每次写操作后立即 upsert/insert（best-effort，失败仅记日志不阻断业务，
+与既有 sessions/graph 持久化约定一致）。
+启动加载：ExpertsSharedState::new() 调 load_all_plans / load_all_history / load_all_favorites
+从同一份 data/experts.db 读回全部租户分区，重建内存态。
+
+--------------------------------------------------------------------------------
+二、真实写入数据（first boot，独立临时库 MOX_EXPERTS_DB_PATH=.../mox_d4_e2e_<pid>.db）
+--------------------------------------------------------------------------------
+首次 new() 后断言三项均为空（全新库）。随后按 handler 同样方式写内存态 + 立即落盘：
+
+tenant-a（租户 A）：
+  - plans:   plan-a1 (task_type=analysis, status=completed, 1 step, expert_ids=[exp-a-1, exp-b-1])
+             plan-a2 (task_type=research, status=completed)
+  - history: exec-a1 -> plan-a1, status=completed, steps_completed=1/1, duration_ms=42
+  - favorites: {exp-a-1, exp-a-2}
+  写后内存自检：plans.len()==3, history.len()==1（3=tenant-a 两个 + tenant-b 一个）
+
+tenant-b（租户 B，与 A 隔离）：
+  - plans:   plan-b1 (task_type=consulting, status=completed)
+  - favorites: {exp-b-1}
+
+--------------------------------------------------------------------------------
+三、模拟崩溃重启（drop state1，再次 ExpertsSharedState::new()）
+--------------------------------------------------------------------------------
+第二次 new() 从同一份 SQLite 读回，断言逐字段一致：
+
+[plans 读回]
+  - plans.len()==3（plan-a1 / plan-a2 / plan-b1 全部恢复）
+  - plan-a1.title == "协作计划·plan-a1"（逐字段一致）
+  - plan-a1.status == "completed"
+  - plan-a1.steps.len()==1，steps[0].result.solution=="真实结论A"
+  - plan-a1.metadata.tenant_id == "tenant-a"（租户标签随 data_json 恢复）
+  - plan-a1.expert_ids == [exp-a-1, exp-b-1]
+
+[租户隔离 · plans]（与 handler stats/history 的 metadata.tenant_id 过滤语义一致）
+  - tenant-a 可见 plan 数 == 2；不含 plan-b1（A 看不到 B）
+  - tenant-b 可见 plan 数 == 1（plan-b1）；不含 plan-a1、plan-a2（B 看不到 A）
+
+[history 读回]
+  - history.len()==1；exec-a1.plan_id==plan-a1，status==completed，duration_ms==42
+
+[favorites 读回 · 租户分区]
+  - tenant-a: {exp-a-1, exp-a-2}；不含 exp-b-1
+  - tenant-b: {exp-b-1}；不含 exp-a-1（跨租户收藏不泄漏）
+
+[二次重启幂等]
+  - 第三次 new() 后：plans.len()==3（不翻倍）、history.len()==1、tenant-a 收藏==2
+  （验证写后落盘为 upsert/insert 语义，重复加载不重复、不丢）
+
+--------------------------------------------------------------------------------
+四、测试命令与真实输出
+--------------------------------------------------------------------------------
+命令：
+  cargo test -p mox-platform-gateway-svc --test d4_crash_recovery -- --nocapture
+
+输出（真实）：
+  running 1 test
+  test d4_write_then_restart_recovers_three_items_with_tenant_isolation ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+
+--------------------------------------------------------------------------------
+五、回归测试结果（同一工作树，未触碰他人未提交改动）
+--------------------------------------------------------------------------------
+gateway lib 单测：        cargo test -p mox-platform-gateway-svc --lib
+                          => 180 passed; 0 failed
+gateway 集成测试：        cargo test -p mox-platform-gateway-svc --tests
+  experts_db_persistence   8 passed（既有 sessions/registry/graph 落盘路径零回归）
+  tenant_expert_isolation 1 passed（A1 多租户隔离零回归）
+  d4_crash_recovery       1 passed（本次新增）
+  其余 inbox/delivery/alliance_remote 等全部 0 failed
+registry-svc（D8）：     cargo test -p mox-alliance-registry-svc
+  lib 17 + 集成 11 = 28 passed; 0 failed
+  其中 health_probe::tests::probe_default_config_enables_task_d8 ... ok（D8 默认开新断言）
+
+cargo check -p mox-platform-gateway-svc --lib => exit 0（仅既有 drop-on-ref / unused-var 警告，
+与本次改动无关；本次新增代码无新警告）。
+
+--------------------------------------------------------------------------------
+六、D8 探活默认开（附带验证）
+--------------------------------------------------------------------------------
+platform/domains/alliance/svc/mox-alliance-registry-svc/src/app_state.rs:
+  Config::default().health_probe_enabled: false -> true（D8，2026-10-02）
+  env 覆盖保留：MOX_ALLIANCE_REGISTRY_PROBE_ENABLED=0/false/no/off 可关闭回退被动租约。
+探活端点公开白名单（routes.rs:124）/health、/metrics、/leadership、/api/registry/health
+始终放行，与 health_probe_enabled 无关——本次改默认值不触及路由鉴权，不破坏公开探活语义。
+
+================================================================================
+结论：D4 三项落盘恢复有真实端到端证据（写入->重启->逐字段一致 + 两租户隔离）；
+D8 探活默认开已落地且 env 可关。单租户(default)行为零回归，既有落盘路径无回归。
+================================================================================

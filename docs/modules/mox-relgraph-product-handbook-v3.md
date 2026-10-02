@@ -354,7 +354,7 @@ Rust 自研高性能知识图谱作为中枢，把需求、架构、业务流程
 六类实体做**归一化关联**的开源平台 —— AI 查询体验 = 本地数组查询体验。
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3-7C5CFF.svg)](./LICENSE)
-[![A+ Review](https://img.shields.io/badge/Enterprise%20Review-A%2B-19B26E.svg)](./.trae/specs/20260823-mox-storage-distributed-ai-unified-query/review.md)
+[![A+ Review](https://img.shields.io/badge/Enterprise%20Review-A%2B-19B26E.svg)](../specifications/tasks/20260823-enterprise-10task-scoring-checklist/review.md)
 [![129 Tests GREEN](https://img.shields.io/badge/Tests-129%20GREEN-7C5CFF)](./platform/backend-node/test)
 
 ## 特色 🌟
