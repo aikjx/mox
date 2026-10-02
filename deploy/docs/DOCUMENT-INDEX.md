@@ -46,14 +46,14 @@ L5 SQL/配置脚本层     1 份  图谱 DDL 脚本
 
 | crate 路径 | README | 内容摘要 |
 |---|---|---|
-| `platform/foundation/mox-platform-foundation/` | ✅ [README.md](../platform/foundation/mox-platform-foundation/README.md) | 基础类型定义 · 跨域共享数据结构 |
-| `platform/foundation/mox-cloud-foundation/` | ✅ [README.md](../platform/foundation/mox-cloud-foundation/README.md) | 云存储通用对象/卷/快照 Trait · STS/SM3/WORM |
+| `platform/foundation/mox-platform-foundation/` | ✅ [README.md](../../platform/foundation/mox-platform-foundation/README.md) | 基础类型定义 · 跨域共享数据结构 |
+| `platform/foundation/mox-cloud-foundation/` | ✅ [README.md](../../platform/foundation/mox-cloud-foundation/README.md) | 云存储通用对象/卷/快照 Trait · STS/SM3/WORM |
 
 ### L1 · gateway 网关层（无 README，入口在总纲 §C）
 
 | crate 路径 | README | 关键代码（见总纲附录 A8-A10） |
 |---|---|---|
-| `platform/gateway/mox-platform-gateway-svc/` | ❌（见总纲附录 C） | [build_gateway_router](../platform/gateway/mox-platform-gateway-svc/src/lib.rs#L23-L51) · [main.rs](../platform/gateway/mox-platform-gateway-svc/src/main.rs) · [routes.rs](../platform/gateway/mox-platform-gateway-svc/src/routes.rs) |
+| `platform/gateway/mox-platform-gateway-svc/` | ❌（见总纲附录 C） | [build_gateway_router](../../platform/gateway/mox-platform-gateway-svc/src/lib.rs#L23-L51) · [main.rs](../../platform/gateway/mox-platform-gateway-svc/src/main.rs) · [routes.rs](../../platform/gateway/mox-platform-gateway-svc/src/routes.rs) |
 
 ### L2 · api 纯契约层（8 份，全 README ❌ 空壳 trait）
 
@@ -71,15 +71,15 @@ L5 SQL/配置脚本层     1 份  图谱 DDL 脚本
 | 域 | crate 路径 | README | 文档内容 |
 |---|---|---|---|
 | **KG（4/4）** | | | |
-| | `platform/domains/kg/core/mox-kg-algo-core/` | ✅ [README.md](../platform/domains/kg/core/mox-kg-algo-core/README.md) | Brandes/harmonic/CNM/PageRank 算法说明 · 11 项数学红线 |
-| | `platform/domains/kg/core/mox-kg-meta-core/` | ✅ [README.md](../platform/domains/kg/core/mox-kg-meta-core/README.md) + [tasks.md](../platform/domains/kg/core/mox-kg-meta-core/tasks.md) | 元数据 Schema 管理 · 待办清单 |
+| | `platform/domains/kg/core/mox-kg-algo-core/` | ✅ [README.md](../../platform/domains/kg/core/mox-kg-algo-core/README.md) | Brandes/harmonic/CNM/PageRank 算法说明 · 11 项数学红线 |
+| | `platform/domains/kg/core/mox-kg-meta-core/` | ✅ [README.md](../../platform/domains/kg/core/mox-kg-meta-core/README.md) + [tasks.md](../../platform/domains/kg/core/mox-kg-meta-core/tasks.md) | 元数据 Schema 管理 · 待办清单 |
 | **Platform（7/7）** | | | |
 | | `platform/domains/platform/core/mox-platform-iam-core/` | ❌ | IAM 鉴权实现 |
 | | `platform/domains/platform/core/mox-platform-meta-core/` | ❌ | Meta 字段槽分配器 |
 | | `platform/domains/platform/core/mox-platform-datastore-core/` | ❌ | 通用数据存储 + slot 分配 |
 | | `platform/domains/platform/core/mox-platform-orchestrator-core/` | ❌ | 编排核心 |
 | | `platform/domains/platform/core/mox-platform-operator-core/` | ❌ | Operator 核心 |
-| | `platform/domains/platform/core/mox-platform-system-core/` | ✅ [README.md](../platform/domains/platform/core/mox-platform-system-core/README.md) | 系统配置 · 路径管理 |
+| | `platform/domains/platform/core/mox-platform-system-core/` | ✅ [README.md](../../platform/domains/platform/core/mox-platform-system-core/README.md) | 系统配置 · 路径管理 |
 | | `platform/domains/platform/core/mox-connector-core/` | ❌ | 连接器 |
 | | `platform/domains/platform/core/mox-plugin-core/` | ❌ | 插件系统 |
 | | `platform/domains/platform/core/mox-enterprise-core/` | ❌ | 企业核心 |
@@ -87,12 +87,12 @@ L5 SQL/配置脚本层     1 份  图谱 DDL 脚本
 | | `platform/domains/ai/core/mox-ai-core/` | ❌（代码有 4 Provider Traits：anthropic/openai/qwen/dto） | LLM Provider 抽象 · Chat/Graph/Reasoning/Registry/Router |
 | | `platform/domains/ai/core/mox-ai-intent-core/` | ❌（但 ADR-005 + 总纲附录 A19 引用） | 意图分类 + 专家打分 |
 | **Flow（2/2）** | | | |
-| | `platform/domains/flow/core/mox-flow-operator-core/` | ✅ [README.md](../platform/domains/flow/core/mox-flow-operator-core/README.md) | Operator 分类/守恒/核/扩展 |
-| | `platform/domains/flow/core/mox-flow-optimizer-core/` | ✅ [README.md](../platform/domains/flow/core/mox-flow-optimizer-core/README.md) | 优化器（CEM 算法待实现） |
+| | `platform/domains/flow/core/mox-flow-operator-core/` | ✅ [README.md](../../platform/domains/flow/core/mox-flow-operator-core/README.md) | Operator 分类/守恒/核/扩展 |
+| | `platform/domains/flow/core/mox-flow-optimizer-core/` | ✅ [README.md](../../platform/domains/flow/core/mox-flow-optimizer-core/README.md) | 优化器（CEM 算法待实现） |
 | **Data（3/3）** | | | |
 | | `platform/domains/data/core/mox-data-formula-core/` | ❌ | 公式库（中心性/社区/PageRank/stats） |
 | | `platform/domains/data/core/mox-data-norm-core/` | ❌ | 规范化（去重/合并/规则） |
-| | `platform/domains/data/core/mox-data-standards-core/` | ✅ [README.md](../platform/domains/data/core/mox-data-standards-core/README.md) + [tasks.md](../platform/domains/data/core/mox-data-standards-core/tasks.md) | 标准库 CRC32C/FIPS_HMAC/SigV4/SM2/SM3/SM4/STS_SM2/RFC5424 |
+| | `platform/domains/data/core/mox-data-standards-core/` | ✅ [README.md](../../platform/domains/data/core/mox-data-standards-core/README.md) + [tasks.md](../../platform/domains/data/core/mox-data-standards-core/tasks.md) | 标准库 CRC32C/FIPS_HMAC/SigV4/SM2/SM3/SM4/STS_SM2/RFC5424 |
 | **Voice（1/1）** | | | |
 | | `platform/domains/voice/core/mox-voice-dsp-core/` | ❌ | 数字信号处理核心 |
 | **L3 core README 覆盖率** | | **12/19 = 63%** | 待补：Platform 5 + AI 2 + Data 2 + Voice 1 |
@@ -103,32 +103,32 @@ L5 SQL/配置脚本层     1 份  图谱 DDL 脚本
 |---|---|---|---|
 | **KG（6/6）** | | | |
 | | `platform/domains/kg/svc/mox-kg-algo-core/` → 见 L3 | ✅ | （归入 core）|
-| | `platform/domains/kg/svc/mox-kg-storage-svc/` | ✅ [README.md](../platform/domains/kg/svc/mox-kg-storage-svc/README.md) | 图谱存储 SQLite/PG/Memory/Dual 多引擎 |
+| | `platform/domains/kg/svc/mox-kg-storage-svc/` | ✅ [README.md](../../platform/domains/kg/svc/mox-kg-storage-svc/README.md) | 图谱存储 SQLite/PG/Memory/Dual 多引擎 |
 | | `platform/domains/kg/svc/mox-kg-service-svc/` | ❌（**含 http_adapter.rs 关键代码**，见总纲附录 A11） | KG/AI HTTP 适配层（唯一已就绪的业务 HTTP 层） |
 | | `platform/domains/kg/svc/mox-kg-streams-svc/` | ❌ | 图谱流处理 |
 | | `platform/domains/kg/svc/mox-kg-spark-svc/` | ❌ | Spark 对接 |
 | | `platform/domains/kg/svc/mox-kg-fusion-svc/` | ❌（代码有 canonical 融合） | 实体融合/别名 |
-| | `platform/domains/kg/svc/mox-kg-hub-svc/` | ✅ [README.md](../platform/domains/kg/svc/mox-kg-hub-svc/README.md) | KG Hub 中枢 |
+| | `platform/domains/kg/svc/mox-kg-hub-svc/` | ✅ [README.md](../../platform/domains/kg/svc/mox-kg-hub-svc/README.md) | KG Hub 中枢 |
 | **AI（3/3）** | | | |
-| | `platform/domains/ai/svc/mox-ai-agent-svc/` | ✅ [README.md](../platform/domains/ai/svc/mox-ai-agent-svc/README.md) | Agent 引擎：多 agent/状态机/工具/对话图/工作流/caomei_e2e 测试 |
-| | `platform/domains/ai/svc/mox-ai-expert-svc/` | ✅ [README.md](../platform/domains/ai/svc/mox-ai-expert-svc/README.md) + [DESIGN.md](../platform/domains/ai/svc/mox-ai-expert-svc/DESIGN.md) + [DESIGN_STAGE2.md](../platform/domains/ai/svc/mox-ai-expert-svc/DESIGN_STAGE2.md) | **最复杂大模块**（80% 已实现）：Alliance/Audit/Domain/Experts/FlowLoader/RBAC/Verify 7 模块 · 专家评分 + 辩论合成 + CEM 优化 + 9 份 tests/benches |
-| | `platform/domains/ai/svc/mox-ai-flow-svc/` | ✅ [README.md](../platform/domains/ai/svc/mox-ai-flow-svc/README.md) + [artifact.md](../platform/domains/ai/svc/mox-ai-flow-svc/src/bin/flowopt.rs.artifact.md) | 流程自动化：代码生成/冲突/关键路径/数据流/管道/调度/拓扑 + flowopt bin |
+| | `platform/domains/ai/svc/mox-ai-agent-svc/` | ✅ [README.md](../../platform/domains/ai/svc/mox-ai-agent-svc/README.md) | Agent 引擎：多 agent/状态机/工具/对话图/工作流/caomei_e2e 测试 |
+| | `platform/domains/ai/svc/mox-ai-expert-svc/` | ✅ [README.md](../../platform/domains/ai/svc/mox-ai-expert-svc/README.md) + [DESIGN.md](../../platform/domains/ai/svc/mox-ai-expert-svc/DESIGN.md) + [DESIGN_STAGE2.md](../../platform/domains/ai/svc/mox-ai-expert-svc/DESIGN_STAGE2.md) | **最复杂大模块**（80% 已实现）：Alliance/Audit/Domain/Experts/FlowLoader/RBAC/Verify 7 模块 · 专家评分 + 辩论合成 + CEM 优化 + 9 份 tests/benches |
+| | `platform/domains/ai/svc/mox-ai-flow-svc/` | ✅ [README.md](../../platform/domains/ai/svc/mox-ai-flow-svc/README.md) + [artifact.md](../../platform/domains/ai/svc/mox-ai-flow-svc/src/bin/flowopt.rs.artifact.md) | 流程自动化：代码生成/冲突/关键路径/数据流/管道/调度/拓扑 + flowopt bin |
 | **Cloud（4/4）** | | | |
-| | `platform/domains/cloud/svc/mox-cloud-master-svc/` | ✅ [README.md](../platform/domains/cloud/svc/mox-cloud-master-svc/README.md) | 云盘 Master：卷分配/副本/快照 |
+| | `platform/domains/cloud/svc/mox-cloud-master-svc/` | ✅ [README.md](../../platform/domains/cloud/svc/mox-cloud-master-svc/README.md) | 云盘 Master：卷分配/副本/快照 |
 | | `platform/domains/cloud/svc/mox-cloud-s3-svc/` | ❌（S3 Server/sigv4/acl/cors/版本/lifecycle/glacier/mpu 全实现） | S3 兼容协议层 |
-| | `platform/domains/cloud/svc/mox-cloud-volume-svc/` | ✅ [README.md](../platform/domains/cloud/svc/mox-cloud-volume-svc/README.md) | 卷存储：Chunk 重建/GF256/ReedSolomon/Manifest/指标 |
+| | `platform/domains/cloud/svc/mox-cloud-volume-svc/` | ✅ [README.md](../../platform/domains/cloud/svc/mox-cloud-volume-svc/README.md) | 卷存储：Chunk 重建/GF256/ReedSolomon/Manifest/指标 |
 | | `platform/domains/cloud/svc/mox-cloud-filer-svc/` | ❌ | POSIX Filer：FUSE 客户端 + Meta SQLite/Redis/PG 分布式 |
 | **Data（4/4）** | | | |
-| | `platform/domains/data/svc/mox-data-catalog-svc/` | ✅ [README.md](../platform/domains/data/svc/mox-data-catalog-svc/README.md) | 数据目录 + 螺旋式索引 + catalog bin |
+| | `platform/domains/data/svc/mox-data-catalog-svc/` | ✅ [README.md](../../platform/domains/data/svc/mox-data-catalog-svc/README.md) | 数据目录 + 螺旋式索引 + catalog bin |
 | | `platform/domains/data/svc/mox-data-compliance-svc/` | ❌ | 合规：审计记录 + Legal Hold + 密级 |
 | | `platform/domains/data/svc/mox-data-etl-svc/` | ❌ | ETL 管道 · ABI 绑定 |
 | | `platform/domains/data/svc/mox-data-plane-svc/` | ❌ | 数据平面：FSHC/多部分/监听/挂载 |
 | **Flow（5/5）** | | | |
 | | `platform/domains/flow/svc/mox-flow-operator-core/` → L3 | ✅ | （归入 core）|
-| | `platform/domains/flow/svc/mox-flow-bridge-svc/` | ✅ [README.md](../platform/domains/flow/svc/mox-flow-bridge-svc/README.md) + [DESIGN.md](../platform/domains/flow/svc/mox-flow-bridge-svc/DESIGN.md) | Bridge：Hermes mini / 直播 / 规范化 / 插件 / 记录 + plugin.yaml + tests |
-| | `platform/domains/flow/svc/mox-flow-fusion-svc/` | ✅ [README.md](../platform/domains/flow/svc/mox-flow-fusion-svc/README.md) + 11 份 [fusion_docs/](../platform/domains/flow/svc/mox-flow-fusion-svc/data/fusion_docs/INDEX.md) | Fusion：注册中心 + PTDoc + 六维 + 统一化 + 11 份设计文档 PT-DOC-01~10 + INDEX + Dockerfile |
-| | `platform/domains/flow/svc/mox-flow-operator-wasm-svc/` | ✅ [README.md](../platform/domains/flow/svc/mox-flow-operator-wasm-svc/README.md) | WASM 沙箱 Operator |
-| | `platform/domains/flow/svc/mox-flow-primiflow-svc/` | ✅ [README.md](../platform/domains/flow/svc/mox-flow-primiflow-svc/README.md) + [trace_matrix.md](../platform/domains/flow/svc/mox-flow-primiflow-svc/src/gen/trace_matrix.md) + [examples/out](../platform/domains/flow/svc/mox-flow-primiflow-svc/examples/out/trace_matrix.md) | Primiflow：14 个 examples + gen 代码 + DDL/Schema 生成 + Graph HTML/MMD |
+| | `platform/domains/flow/svc/mox-flow-bridge-svc/` | ✅ [README.md](../../platform/domains/flow/svc/mox-flow-bridge-svc/README.md) + [DESIGN.md](../../platform/domains/flow/svc/mox-flow-bridge-svc/DESIGN.md) | Bridge：Hermes mini / 直播 / 规范化 / 插件 / 记录 + plugin.yaml + tests |
+| | `platform/domains/flow/svc/mox-flow-fusion-svc/` | ✅ [README.md](../../platform/domains/flow/svc/mox-flow-fusion-svc/README.md) + 11 份 [fusion_docs/](../../platform/domains/flow/svc/mox-flow-fusion-svc/data/fusion_docs/INDEX.md) | Fusion：注册中心 + PTDoc + 六维 + 统一化 + 11 份设计文档 PT-DOC-01~10 + INDEX + Dockerfile |
+| | `platform/domains/flow/svc/mox-flow-operator-wasm-svc/` | ✅ [README.md](../../platform/domains/flow/svc/mox-flow-operator-wasm-svc/README.md) | WASM 沙箱 Operator |
+| | `platform/domains/flow/svc/mox-flow-primiflow-svc/` | ✅ [README.md](../../platform/domains/flow/svc/mox-flow-primiflow-svc/README.md) + [trace_matrix.md](../../platform/domains/flow/svc/mox-flow-primiflow-svc/src/gen/trace_matrix.md) + `examples/out`（运行产物，未随仓库提供） | Primiflow：14 个 examples + gen 代码 + DDL/Schema 生成 + Graph HTML/MMD |
 | **Voice（5/5）** | | | |
 | | `platform/domains/voice/svc/mox-voice-core-svc/` | ❌ | 核心 |
 | | `platform/domains/voice/svc/mox-voice-asr-svc/` | ❌ | 语音识别 |
@@ -136,10 +136,10 @@ L5 SQL/配置脚本层     1 份  图谱 DDL 脚本
 | | `platform/domains/voice/svc/mox-voice-operator-svc/` | ❌ | Operator |
 | | `platform/domains/voice/svc/mox-voice-desktop-app/` | ❌ | 桌面应用（独立，非网关） |
 | **Market（1/1）** | | | |
-| | `platform/domains/market/svc/mox-market-template-svc/` | ✅ [README.md](../platform/domains/market/svc/mox-market-template-svc/README.md) | 模板市场（空壳，待 P2 实现） |
+| | `platform/domains/market/svc/mox-market-template-svc/` | ✅ [README.md](../../platform/domains/market/svc/mox-market-template-svc/README.md) | 模板市场（空壳，待 P2 实现） |
 | **Platform（2/2）** | | | |
 | | `platform/domains/platform/svc/mox-platform-enterprise-svc/` | ❌（**唯一生产 JWT + 动态实体 CRUD 已跑通的 3002 服务**，见总纲附录 A18） | 企业：IAM/租户/配额/JWT · 10 接口冒烟通过 3002 |
-| | `platform/domains/platform/svc/mox-platform-orchestrator-svc/` | ✅ [README.md](../platform/domains/platform/svc/mox-platform-orchestrator-svc/README.md) | 编排服务 |
+| | `platform/domains/platform/svc/mox-platform-orchestrator-svc/` | ✅ [README.md](../../platform/domains/platform/svc/mox-platform-orchestrator-svc/README.md) | 编排服务 |
 | **L4 svc README 覆盖率** | | **24/29 = 83%** | 待补：KG service/streams/spark/fusion + Cloud S3/Filer + Data 3 + Voice 5 = 11 份（其中 mox-kg-service-svc 因 HTTP 关键代码位置特殊需特别加 README 指出 http_adapter.rs） |
 
 ### L5 · sdk FFI 绑定层（2 份 · 全 ❌）

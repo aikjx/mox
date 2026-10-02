@@ -3,6 +3,7 @@
 //! 支持站内信 / 邮件 / 短信 / 飞书 / 钉钉 / 企业微信 等多渠道消息推送
 
 pub mod api;
+pub mod repository;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

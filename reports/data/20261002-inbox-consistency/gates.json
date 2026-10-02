@@ -1,0 +1,59 @@
+[
+  {
+    "name": "doc-links",
+    "command": [
+      "python",
+      "scripts/gate/check-doc-links.py",
+      "--repo"
+    ],
+    "exit_code": 1,
+    "log": "doc-links.log"
+  },
+  {
+    "name": "module-catalog",
+    "command": [
+      "python",
+      "scripts/registry/module_catalog.py",
+      "--check"
+    ],
+    "exit_code": 0,
+    "log": "module-catalog.log"
+  },
+  {
+    "name": "script-paths-selftest",
+    "command": [
+      "python",
+      "scripts/gate/check-script-paths.py",
+      "--selftest"
+    ],
+    "exit_code": 0,
+    "log": "script-paths-selftest.log"
+  },
+  {
+    "name": "script-paths",
+    "command": [
+      "python",
+      "scripts/gate/check-script-paths.py"
+    ],
+    "exit_code": 0,
+    "log": "script-paths.log"
+  },
+  {
+    "name": "frontend-gate",
+    "command": [
+      "python",
+      "scripts/gate/check-frontend-module.py"
+    ],
+    "exit_code": 0,
+    "log": "frontend-gate.log"
+  },
+  {
+    "name": "ports",
+    "command": [
+      "python",
+      "scripts/gate/verify-ports.py"
+    ],
+    "exit_code": 0,
+    "log": "ports.log"
+  }
+]

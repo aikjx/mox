@@ -80,7 +80,7 @@ def main():
     text = render(collect())
     if args.check:
         if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != text:
-            raise SystemExit("Module catalog is stale; run python tools/module_catalog.py")
+            raise SystemExit("Module catalog is stale; run python scripts/registry/module_catalog.py")
         print("Module catalog matches workspace and frontend sources")
     else:
         OUTPUT.parent.mkdir(parents=True, exist_ok=True)

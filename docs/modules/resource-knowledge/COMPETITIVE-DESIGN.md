@@ -12,8 +12,12 @@
 | Glean | 连接器获取内容与权限信息；删除传播依连接器事件和全量抓取机制而异 | 源内容、权限和删除分别记录同步游标/回执；定义撤权与删除传播时限，不把连接器活跃计数作为数据一致性完成 | R2/R4/R7 |
 | Azure AI Search | 支持安全过滤，部分原生身份/ACL 能力为 preview | 本系统以认证身份建立权限范围，授权先于召回/排名/统计；角色字符串匹配不能冒充身份提供方授权 | R2/R5 |
 | Nextcloud | 文件规则可覆盖读写/同步；所查 latest 文档指向 upcoming 36，且明确 Context Chat 不遵循该文件规则 | 所有字节、索引、问答和联盟引用逐出口验收，禁止从文件权限通过推断知识上下文权限通过；稳定发行版与应用组合须另行实机核验 | R2/R3/R5 |
+| n8n（2026-10-02 增量核验） | 队列模式拆分主节点与 worker，Redis 传递执行 ID；不支持队列模式使用文件系统保存二进制内容，SQLite 不建议用于 queue mode | 作业意图/结果由事务主源持久化；二进制内容走对象存储，工作队列不能承担唯一业务主源职责；本仓库 SQLite 站内箱仍限定同主机 | R3/R4 |
+| Temporal（2026-10-02 增量核验） | Activity 任务丢失依靠超时检测和重试；取消依赖 heartbeat，Activity 可接受或忽略取消 | 外部动作需要稳定业务幂等键和提供方回执；取消请求不能立即标为已取消，必须拒绝过期执行器提交；重试不证明外部副作用只发生一次 | R4/R7 |
 
 官方来源分别为 [Dify 流水线](https://docs.dify.ai/en/cloud/use-dify/knowledge/knowledge-pipeline/knowledge-pipeline-orchestration)、[Glean 搜索权限](https://docs.glean.com/administration/search/faq)、[Glean 删除与抓取](https://docs.glean.com/connectors/crawling-faq)、[Azure 查询授权](https://learn.microsoft.com/en-us/azure/search/search-document-level-access-overview)、[Nextcloud 文件访问规则](https://docs.nextcloud.com/server/latest/admin_manual/file_workflows/access_control.html)。资料核验日期不代表全部功能的发布日期；Azure preview、Nextcloud upcoming 不作为稳定生产能力已验收证据。
+
+增量来源：[n8n 官方队列模式文档源码](https://github.com/n8n-io/n8n-docs/blob/main/docs/deploy/host-n8n/configure-n8n/scaling/enable-queue-mode.md)、[Temporal Activity 执行](https://docs.temporal.io/activity-execution)。上述限制是部署及一致性取舍，不是对产品整体优劣的实测结论；本仓库也未完成对应集群能力。站内箱事务落地见[消息中心](docs/modules/message-center/README.md)。
 
 ## 本轮实现的设计改进
 

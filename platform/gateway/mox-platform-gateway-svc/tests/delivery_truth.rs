@@ -1,5 +1,6 @@
 use axum::{
     extract::{Path, State},
+    http::HeaderMap,
     Json,
 };
 use mox_platform_api::UserInfo;
@@ -31,7 +32,8 @@ fn identity() -> UserInfo {
 
 #[tokio::test]
 async fn unsupported_message_channels_never_create_sent_records() {
-    let state = Arc::new(MessageCenterState::new());
+    let directory = tempfile::tempdir().unwrap();
+    let state = Arc::new(MessageCenterState::with_db_path(directory.path().join("inbox.db")));
     let request: SendMessageRequest = serde_json::from_value(serde_json::json!({
         "message_type":"system", "title":"test", "content":"test",
         "channels":["email"], "receiver_emails":["recipient@example.com"]
@@ -41,17 +43,18 @@ async fn unsupported_message_channels_never_create_sent_records() {
         State(state.clone()),
         TenantId("tenant-a".into()),
         ApiAuth(identity()),
+        HeaderMap::new(),
         Json(request),
     )
     .await;
     assert_eq!(response.status().as_u16(), 501);
-    assert!(state.messages.read().await.is_empty());
-    assert!(state.send_records.read().await.is_empty());
+    assert_eq!(state.repository.stats("tenant-a", "inbox-owner").unwrap().total, 0);
 }
 
 #[tokio::test]
 async fn actual_self_inbox_records_verified_sender_and_receiver() {
-    let state = Arc::new(MessageCenterState::new());
+    let directory = tempfile::tempdir().unwrap();
+    let state = Arc::new(MessageCenterState::with_db_path(directory.path().join("inbox.db")));
     let request = serde_json::from_value(serde_json::json!({
         "message_type":"system", "title":"test", "content":"test",
         "channels":["in_app"], "receiver_ids":["inbox-owner"]
@@ -61,15 +64,25 @@ async fn actual_self_inbox_records_verified_sender_and_receiver() {
         State(state.clone()),
         TenantId("tenant-a".into()),
         ApiAuth(identity()),
+        HeaderMap::new(),
         Json(request),
     )
     .await;
     assert_eq!(response.status().as_u16(), 200);
-    let messages = state.messages.read().await;
-    let message = messages.values().next().unwrap();
+    let (messages, _) =
+        state.repository.list("tenant-a", "inbox-owner", 50, 0, None, None).unwrap();
+    let message = &messages[0];
     assert_eq!(message.tenant_id, "tenant-a");
     assert_eq!(message.sender_id, "inbox-owner");
-    assert_eq!(state.send_records.read().await[0].receiver_id, "inbox-owner");
+    assert_eq!(
+        state
+            .repository
+            .receipt("tenant-a", "inbox-owner", &message.message_id)
+            .unwrap()
+            .unwrap()
+            .receiver_id,
+        "inbox-owner"
+    );
 }
 
 #[tokio::test]

@@ -1,18 +1,20 @@
 # API 注册表（权威·接口↔实现一一对应）
 
-> 本文档为网关 3080 暴露的全部 API 的唯一权威清单，由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 直接生成（生成脚本 `scripts/doc/gen-api-registry.py`）。**声明即实现**：表中每一条都有对应源码注册与真实 handler，不存在纯占位条目。
+> 本清单由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 生成（生成脚本 `scripts/doc/gen-api-registry.py`）。清单覆盖上述静态注册元数据；动态组装的子路由以宿主源码和模块契约为准。注册与 ready 标记不代表功能、依赖或企业交付已验收，实际结论见[实现台账](docs/modules/REAL-IMPLEMENTATION-STATUS.md)。
+
+企业消息子路由与实际健康探测见[消息中心契约](docs/modules/message-center/README.md)；静态清单不作为全部路由已验收的证明。
 
 ## 1. 总览
 
 | 指标 | 值 |
 | --- | --- |
-| 注册路由总数 | **236 条**（全部 ready，全部有真实实现） |
-| 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |
+| 静态表注册路由数 | **243 条**（注册元数据数量，不是已验收功能数量） |
+| 静态表中的域分组 | 20 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc / storage / llm / cloud / graph / melody / rbac / voice |
 | 域描述符（业务规划） | **46 个**：ready 46（见 §3） |
 | 网关外进程 | 5 个：kg-hub / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
 | 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |
 
-## 2. 逐域注册表（236 条）
+## 2. 逐域注册表（243 条）
 
 按域分组，实现位置逐一标注；`ANY` 表示该方法+参数可匹配多方法（GET/POST/PUT/DELETE）。
 
@@ -174,7 +176,7 @@
 | `system.security.api_key_validate` | POST | `/api/security/validate` | L5 | 校验 API Key 明文 |
 | `system.security.audit_log` | GET | `/api/security/audit-log` | L5 | 审计日志（SQLite 读取） |
 
-### experts（54 条）
+### experts（61 条）
 
 实现：`experts_registry/collaboration/dispatcher/graph/orchestration/session/ext.rs` 七模块
 
@@ -215,13 +217,13 @@
 | `experts.graph.communities` | GET | `/api/expert-graph/communities` | L3 | 协作社区发现 |
 | `experts.graph.optimal_team` | POST | `/api/expert-graph/optimal-team` | L3 | 最优团队推荐 |
 | `experts.graph.rebuild` | POST | `/api/expert-graph/rebuild` | L3 | 重建协作图 |
-| `experts.graph.node_create` | POST | `/api/expert-graph/nodes` | L3 | 新增图谱节点（管理写面，RBAC graph.mutate） |
+| `experts.graph.node_create` | POST | `/api/expert-graph/nodes` | L3 | 新增图谱节点（管理写面） |
 | `experts.graph.node_update` | PUT | `/api/expert-graph/nodes/:id` | L3 | 更新图谱节点（合并式） |
 | `experts.graph.node_delete` | DELETE | `/api/expert-graph/nodes/:id` | L3 | 删除图谱节点（联动删关联边） |
 | `experts.graph.edge_create` | POST | `/api/expert-graph/edges` | L3 | 新增图谱边（source/target 须存在，重复边 409） |
 | `experts.graph.edge_update` | PUT | `/api/expert-graph/edges/:seq` | L3 | 更新图谱边（按 seq） |
 | `experts.graph.edge_delete` | DELETE | `/api/expert-graph/edges/:seq` | L3 | 删除图谱边（按 seq） |
-| `experts.graph.rag_expand` | POST | `/api/expert-graph/rag/expand` | L3 | 图 RAG 多跳邻域扩展（T2，读面公开，权重乘积聚合，向量融合待 #27） |
+| `experts.graph.rag_expand` | POST | `/api/expert-graph/rag/expand` | L3 | 图 RAG 多跳邻域扩展（T2，读面公开，权重乘积聚合） |
 | `experts.orch.orchestrate` | POST | `/api/experts/orchestrate` | L3 | 专家编排执行 |
 | `experts.orch.plan_generate` | POST | `/api/experts/plan/generate` | L3 | 生成协作计划 |
 | `experts.orch.plan_execute` | POST | `/api/experts/plan/execute` | L3 | 执行协作计划 |
@@ -341,9 +343,67 @@
 | `llm.health` | GET | `/api/llm/health` | L3 | LLM 配置概况（是否配置 Provider/路由策略，不发网络请求） |
 | `llm.routing` | GET | `/api/llm/routing` | L3 | LLM 路由策略配置（env 投影） |
 
+### cloud（7 条）
+
+实现：actuator.rs 静态登记；handler 位置待逐项核验
+
+| ID | 方法 | 路径 | 层 | 说明 |
+| --- | --- | --- | --- | --- |
+| `cloud.buckets.list` | GET | `/cloud/v1/buckets` | L5 | 列出存储桶（本地磁盘） |
+| `cloud.buckets.create` | POST | `/cloud/v1/buckets` | L5 | 创建存储桶（本地磁盘） |
+| `cloud.buckets.delete` | DELETE | `/cloud/v1/buckets/:bucket` | L5 | 删除空存储桶（S3 语义，非空 409） |
+| `cloud.objects.list` | GET | `/cloud/v1/buckets/:bucket/objects` | L5 | 列出桶内对象 |
+| `cloud.objects.put` | PUT | `/cloud/v1/buckets/:bucket/objects/:key` | L5 | 写入对象（原始字节） |
+| `cloud.objects.get` | GET | `/cloud/v1/buckets/:bucket/objects/:key` | L5 | 读取对象（流式下载） |
+| `cloud.objects.delete` | DELETE | `/cloud/v1/buckets/:bucket/objects/:key` | L5 | 删除对象 |
+
+### graph（3 条）
+
+实现：actuator.rs 静态登记；handler 位置待逐项核验
+
+| ID | 方法 | 路径 | 层 | 说明 |
+| --- | --- | --- | --- | --- |
+| `graph.overview` | GET | `/graph/v1/overview` | L2 | 图谱总览（规模/密度/标签/类型/关系分布） |
+| `graph.stats` | GET | `/graph/v1/stats` | L2 | 图谱统计（GraphStats 真实算法） |
+| `graph.communities` | GET | `/graph/v1/communities` | L2 | 社区发现（CNM 真实算法） |
+
+### melody（7 条）
+
+实现：actuator.rs 静态登记；handler 位置待逐项核验
+
+| ID | 方法 | 路径 | 层 | 说明 |
+| --- | --- | --- | --- | --- |
+| `melody.health` | GET | `/melody/v1/health` | L7 | 上游 melody2score 健康探测 |
+| `melody.recognize` | POST | `/melody/v1/recognize` | L7 | 旋律识别（透传） |
+| `melody.recognize-sample` | POST | `/melody/v1/recognize-sample` | L7 | 识别内置样例（透传） |
+| `melody.recognize-record` | POST | `/melody/v1/recognize-record` | L7 | 识别录音（透传） |
+| `melody.save-md` | POST | `/melody/v1/save-md` | L7 | 保存简谱 Markdown（透传） |
+| `melody.export-sheet` | POST | `/melody/v1/export-sheet` | L7 | 导出表格（透传） |
+| `melody.download` | GET | `/melody/v1/download/:fname` | L7 | 下载转谱产物（流式） |
+
+### rbac（3 条）
+
+实现：actuator.rs 静态登记；handler 位置待逐项核验
+
+| ID | 方法 | 路径 | 层 | 说明 |
+| --- | --- | --- | --- | --- |
+| `rbac.roles.list` | GET | `/rbac/v1/roles` | L1 | 角色列表（IAM list_roles 真实现） |
+| `rbac.permissions.list` | GET | `/rbac/v1/permissions` | L1 | 用户权限授予清单（IAM get_user_permissions） |
+| `rbac.current` | GET | `/rbac/v1/current` | L1 | 当前用户角色+权限摘要（Bearer 解析） |
+
+### voice（3 条）
+
+实现：actuator.rs 静态登记；handler 位置待逐项核验
+
+| ID | 方法 | 路径 | 层 | 说明 |
+| --- | --- | --- | --- | --- |
+| `voice.health` | GET | `/voice/v1/health` | L7 | 上游 melody2score 健康探测 |
+| `voice.samples` | GET | `/voice/v1/samples` | L7 | 上游样例音频列表 |
+| `voice.recognize` | POST | `/voice/v1/recognize` | L7 | 旋律识别（透传到上游） |
+
 ## 3. 业务域描述符（46 域·routes.rs DOMAINS）
 
-状态分布：ready 46。`ready`=有真实 handler 且已接线路由；`stub`=仅规划声明，不对外承诺；`beta`=可用但依赖外部进程。
+声明状态分布：ready 46。`ready`、`stub`、`beta` 均来自域描述符元数据；实际依赖、失败路径、持久化与业务结果须另行验收。
 
 | 能力组 | 数量 | 域（前缀） |
 | --- | --- | --- |
@@ -396,7 +456,7 @@ Start-Process target\debug\mox-server.exe -ArgumentList @("--port","3080") -Wind
 1. **单一权威源**：所有对外路由必须先登记到 `actuator.rs` `ROUTES`，再写 handler；`/actuator/mappings` 是唯一注册表视图。
 2. **前缀权威**：kg=`/kg/v1/*`；ai=`/ai/engine/*`；kb=`/api/kb/*`；alliance=`/api/alliance/*`；experts=`/api/experts*`；system/security=`/api/system/*`、`/api/security/*`；其余模块=`/api/<module>/*`。历史前缀（`/ai/v1`、`/kb/v1`、`/alliance/v1`）已废弃，一律 404。
 3. **新增路由闭环**：改 `actuator.rs`/`routes.rs` → 重跑 `scripts/doc/gen-api-registry.py`（CI 有 diff 门禁，漂移即失败）→ `cargo check -p mox-platform-gateway-svc` → 启动验证 `/actuator/mappings` 计数与新增路径 200。
-4. **状态语义**：`ready`=有真实 handler 且已接线路由；`stub`=仅规划；`beta`=可用但依赖外部进程。不允许出现"声明 ready 但无路由"的条目。
+4. **状态语义**：域声明、路由注册与业务验收分别记录；`ready` 元数据不能代替真实依赖、授权、失败和恢复测试。
 
 ## 6. 变更记录
 

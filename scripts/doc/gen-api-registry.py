@@ -43,6 +43,7 @@ for e in entries:
     by_dom.setdefault(e[4], []).append(e)
 
 order = ['actuator', 'platform', 'kg', 'ai', 'kb', 'alliance', 'system', 'experts', 'monitor', 'projects', 'workspace', 'notification', 'misc', 'storage', 'llm']
+order.extend(sorted(set(by_dom) - set(order)))
 
 IMPL = {
     'actuator': '`platform/gateway/mox-platform-gateway-svc/src/actuator.rs`',
@@ -66,14 +67,16 @@ lines = []
 A = lines.append
 A('# API 注册表（权威·接口↔实现一一对应）')
 A('')
-A('> 本文档为网关 3080 暴露的全部 API 的唯一权威清单，由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 直接生成（生成脚本 `scripts/doc/gen-api-registry.py`）。**声明即实现**：表中每一条都有对应源码注册与真实 handler，不存在纯占位条目。')
+A('> 本清单由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 生成（生成脚本 `scripts/doc/gen-api-registry.py`）。清单覆盖上述静态注册元数据；动态组装的子路由以宿主源码和模块契约为准。注册与 ready 标记不代表功能、依赖或企业交付已验收，实际结论见[实现台账](docs/modules/REAL-IMPLEMENTATION-STATUS.md)。')
+A('')
+A('企业消息子路由与实际健康探测见[消息中心契约](docs/modules/message-center/README.md)；静态清单不作为全部路由已验收的证明。')
 A('')
 A('## 1. 总览')
 A('')
 A('| 指标 | 值 |')
 A('| --- | --- |')
-A(f'| 注册路由总数 | **{len(entries)} 条**（全部 ready，全部有真实实现） |')
-A('| 业务域（网关内嵌） | 13 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc |')
+A(f'| 静态表注册路由数 | **{len(entries)} 条**（注册元数据数量，不是已验收功能数量） |')
+A(f'| 静态表中的域分组 | {len(by_dom)} 个：' + ' / '.join(domain for domain in order if domain in by_dom) + ' |')
 A(f'| 域描述符（业务规划） | **{len(domains)} 个**：{status_line}（见 §3） |')
 A('| 网关外进程 | 5 个：kg-hub / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |')
 A('| 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |')
@@ -87,7 +90,7 @@ for dom in order:
     items = by_dom.get(dom, [])
     A(f'### {dom}（{len(items)} 条）')
     A('')
-    A(f'实现：{IMPL.get(dom, "待补")}')
+    A(f'实现：{IMPL.get(dom, "actuator.rs 静态登记；handler 位置待逐项核验")}')
     A('')
     A('| ID | 方法 | 路径 | 层 | 说明 |')
     A('| --- | --- | --- | --- | --- |')
@@ -98,7 +101,7 @@ for dom in order:
 
 A(f'## 3. 业务域描述符（{len(domains)} 域·routes.rs DOMAINS）')
 A('')
-A(f'状态分布：{status_line}。`ready`=有真实 handler 且已接线路由；`stub`=仅规划声明，不对外承诺；`beta`=可用但依赖外部进程。')
+A(f'声明状态分布：{status_line}。`ready`、`stub`、`beta` 均来自域描述符元数据；实际依赖、失败路径、持久化与业务结果须另行验收。')
 A('')
 A('| 能力组 | 数量 | 域（前缀） |')
 A('| --- | --- | --- |')
@@ -151,7 +154,7 @@ A('')
 A('1. **单一权威源**：所有对外路由必须先登记到 `actuator.rs` `ROUTES`，再写 handler；`/actuator/mappings` 是唯一注册表视图。')
 A('2. **前缀权威**：kg=`/kg/v1/*`；ai=`/ai/engine/*`；kb=`/api/kb/*`；alliance=`/api/alliance/*`；experts=`/api/experts*`；system/security=`/api/system/*`、`/api/security/*`；其余模块=`/api/<module>/*`。历史前缀（`/ai/v1`、`/kb/v1`、`/alliance/v1`）已废弃，一律 404。')
 A('3. **新增路由闭环**：改 `actuator.rs`/`routes.rs` → 重跑 `scripts/doc/gen-api-registry.py`（CI 有 diff 门禁，漂移即失败）→ `cargo check -p mox-platform-gateway-svc` → 启动验证 `/actuator/mappings` 计数与新增路径 200。')
-A('4. **状态语义**：`ready`=有真实 handler 且已接线路由；`stub`=仅规划；`beta`=可用但依赖外部进程。不允许出现"声明 ready 但无路由"的条目。')
+A('4. **状态语义**：域声明、路由注册与业务验收分别记录；`ready` 元数据不能代替真实依赖、授权、失败和恢复测试。')
 A('')
 A('## 6. 变更记录')
 A('')
@@ -162,5 +165,17 @@ A('| 2026-09-06 | **注册表归一化（98→199）**：修正 ai/kb/alliance �
 A('| 2026-09-07 | **运行验证与语义修复**：5 进程全链路实测（编排器3001/kb8104/调度3100/执行3200/网关8080）；联盟远程模式激活（`MOX_ALLIANCE_*_URL`）；Mock 执行器全链路任务闭环 completed（5/5 节点）；readiness 语义修复（mock 模式如实就绪）；一键启停脚本落地 |')
 A('| 2026-09-07 | **Phase 0 落地（199→208）**：RBAC 域 3 条（IAM 真实仓储：角色/权限/当前用户）、Graph 域 3 条（与 kg 同源真实算法：总览/统计/社区）、Voice 域 3 条（桥接 melody2score :8012：健康/样例/识别）；三域描述符 stub→ready，全链路实测 200 |')
 
-open(os.path.join(REPO, 'docs', 'API-REGISTRY.md'), 'w', encoding='utf-8', newline='\n').write('\n'.join(lines))
+output_path = os.path.join(REPO, 'docs', 'API-REGISTRY.md')
+# Non-HTTP entries are maintained outside the actuator registry. Preserve their appendix.
+appendix_marker = '## 附：非 HTTP 入口'
+existing = None
+if os.path.exists(output_path):
+    with open(output_path, encoding='utf-8') as source:
+        existing = source.read()
+    if appendix_marker in existing:
+        lines.extend(['', existing[existing.index(appendix_marker):].rstrip()])
+generated = '\n'.join(lines) + '\n'
+if generated != existing:
+    with open(output_path, 'w', encoding='utf-8', newline='\n') as output:
+        output.write(generated)
 print(f'docs/API-REGISTRY.md generated: {len(entries)} routes, {len(domains)} domains')

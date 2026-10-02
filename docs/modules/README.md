@@ -6,6 +6,8 @@
 
 平台与前端当前开发状态、真实链路及未完成项见[真实实现验收台账](docs/modules/REAL-IMPLEMENTATION-STATUS.md)。
 
+[消息中心](docs/modules/message-center/README.md)：事务站内箱、幂等、已读回执、实际健康探测与集群演进边界。
+
 | 功能 | 后端归属 | 前端页面 | 路由模块 |
 |---|---|---|---|
 | 项目、任务与资源 | project / data | project | project |
@@ -35,9 +37,9 @@
 ## 持续维护
 
 ```powershell
-python tools/module_catalog.py
-python tools/module_catalog.py --check
-python tools/architecture_gate.py
+python scripts/registry/module_catalog.py
+python scripts/registry/module_catalog.py --check
+python scripts/gate/check-frontend-module.py
 python scripts/gate/verify-ports.py
 ```
 

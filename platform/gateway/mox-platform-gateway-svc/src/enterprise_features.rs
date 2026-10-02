@@ -144,26 +144,34 @@ pub fn build_enterprise_router_for_gateway(_gateway: &GatewayState) -> Router<Ga
 
 /// 企业级功能健康检查
 pub async fn enterprise_health_handler(
-    State(state): State<GatewayState>,
-) -> axum::Json<serde_json::Value> {
-    let _ = state.enterprise.clone();
-    axum::Json(serde_json::json!({
-        "status": "ok",
+    State(state): State<Arc<MessageCenterState>>,
+    crate::alliance::experts_common::TenantId(tenant): crate::alliance::experts_common::TenantId,
+    crate::auth::ApiAuth(user): crate::auth::ApiAuth,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    let repository = state.repository.clone();
+    let probe = tokio::task::spawn_blocking(move || repository.stats(&tenant, &user.id)).await;
+    let storage_ready = matches!(probe, Ok(Ok(_)));
+    if !storage_ready {
+        tracing::error!("Enterprise inbox storage probe failed");
+    }
+    let status = if storage_ready {
+        axum::http::StatusCode::OK
+    } else {
+        axum::http::StatusCode::SERVICE_UNAVAILABLE
+    };
+    (status, axum::Json(serde_json::json!({
+        "status": if storage_ready { "partial" } else { "degraded" },
+        "enterprise_ready": false,
+        "probe_scope": "current_user_inbox_storage",
         "modules": {
-            "integration": "ready",
-            "designer": "ready",
-            "sso": "ready",
-            "message_center": "ready",
-            "document": "ready",
-            "admin": "ready",
-            "scheduler": "ready",
-            "system_config": "ready",
-            "dictionary": "ready",
-            "operation_log": "ready",
-            "file_storage": "ready",
-            "organization": "ready",
-            "mailer": "ready",
+            "integration": "sync_not_implemented",
+            "message_center": if storage_ready { "self_inbox_storage_ready" } else { "storage_unavailable" },
+            "designer": "unverified", "sso": "unverified", "document": "unverified",
+            "admin": "unverified", "scheduler": "unverified", "system_config": "unverified",
+            "dictionary": "unverified", "operation_log": "unverified", "file_storage": "unverified",
+            "organization": "unverified", "mailer": "unverified"
         },
         "ts": chrono::Utc::now().to_rfc3339(),
-    }))
+    }))).into_response()
 }

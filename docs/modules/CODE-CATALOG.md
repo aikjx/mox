@@ -8,7 +8,7 @@
 
 ## 后端模块
 
-当前 workspace：**149** 个 crate。
+当前 workspace：**150** 个 crate。
 
 ### ai（14）
 
@@ -29,7 +29,7 @@
 | [mox-codeengine-core](<../../platform/domains/ai/core/mox-codeengine-core/Cargo.toml>) | core | — | runtime: mox-ai-flow-core |
 | [mox-codeengine-svc](<../../platform/domains/ai/svc/mox-codeengine-svc/Cargo.toml>) | svc | codeengine-server | runtime: mox-codeengine-core |
 
-### alliance（16）
+### alliance（17）
 
 | 模块 | 层/目录 | 可执行入口 | workspace 依赖 |
 |---|---|---|---|
@@ -42,6 +42,7 @@
 | [mox-alliance-executor-proto](<../../platform/domains/alliance/proto/mox-alliance-executor-proto/Cargo.toml>) | proto | — | runtime: mox-alliance-common-proto, mox-error, mox-platform-foundation |
 | [mox-alliance-executor-svc](<../../platform/domains/alliance/svc/mox-alliance-executor-svc/Cargo.toml>) | svc | mox-alliance-executor | dev: mox-alliance-executor-core<br>runtime: mox-ai-expert-proto, mox-ai-expert-svc, mox-alliance-api, mox-alliance-boot-config, mox-alliance-common-proto, mox-alliance-executor-core, mox-alliance-executor-proto, mox-alliance-scheduler-core, mox-api-crypto |
 | [mox-alliance-http-sdk](<../../platform/domains/alliance/sdk/mox-alliance-http-sdk/Cargo.toml>) | sdk | — | runtime: mox-alliance-api, mox-alliance-common-proto, mox-alliance-scheduler-core, mox-alliance-scheduler-proto, mox-api-crypto, mox-api-protocol |
+| [mox-alliance-mcp-server](<../../platform/domains/alliance/mcp/mox-alliance-mcp-server/Cargo.toml>) | mcp | mox-alliance-mcp-server | — |
 | [mox-alliance-registry-core](<../../platform/domains/alliance/core/mox-alliance-registry-core/Cargo.toml>) | core | — | runtime: mox-alliance-registry-proto |
 | [mox-alliance-registry-proto](<../../platform/domains/alliance/proto/mox-alliance-registry-proto/Cargo.toml>) | proto | — | — |
 | [mox-alliance-registry-svc](<../../platform/domains/alliance/svc/mox-alliance-registry-svc/Cargo.toml>) | svc | mox-alliance-registry | dev: mox-alliance-registry-core<br>runtime: mox-alliance-common-proto, mox-alliance-registry-core, mox-alliance-registry-proto, mox-api-crypto |
@@ -316,7 +317,7 @@
 - [frontend-ui/src/views/workspace/panels/WhiteboardPanel.vue](<../../frontend-ui/src/views/workspace/panels/WhiteboardPanel.vue>)
 - [frontend-ui/src/views/workspace/panels/WorkspaceHeader.vue](<../../frontend-ui/src/views/workspace/panels/WorkspaceHeader.vue>)
 
-### api（25）
+### api（26）
 
 - [frontend-ui/src/api/actuator.api.js](<../../frontend-ui/src/api/actuator.api.js>)
 - [frontend-ui/src/api/ai.api.js](<../../frontend-ui/src/api/ai.api.js>)
@@ -330,6 +331,7 @@
 - [frontend-ui/src/api/http.js](<../../frontend-ui/src/api/http.js>)
 - [frontend-ui/src/api/http.test.js](<../../frontend-ui/src/api/http.test.js>)
 - [frontend-ui/src/api/index.js](<../../frontend-ui/src/api/index.js>)
+- [frontend-ui/src/api/kb-edit.test.js](<../../frontend-ui/src/api/kb-edit.test.js>)
 - [frontend-ui/src/api/kb.api.js](<../../frontend-ui/src/api/kb.api.js>)
 - [frontend-ui/src/api/llm.api.js](<../../frontend-ui/src/api/llm.api.js>)
 - [frontend-ui/src/api/market.api.js](<../../frontend-ui/src/api/market.api.js>)

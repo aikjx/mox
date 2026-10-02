@@ -46,7 +46,15 @@
 
 - **章节跳号**：§3.3 之后直接跳 §3.6、§3.7——**§3.4、§3.5 缺失**（无标题占位，疑似删改后留洞）。
 - **§8 / §9 自述未重核**：frontmatter 明确写「§8/§9 本轮未重核，沿用 V1.0，未重核即不声称已核」。
-- **底部 3 条断链**（`check-doc-links.py` 实测确认）：第 327 行 `[v3 架构优化设计](v3/README.md)`、`[专家注册表协议](expert-registry-and-protocol.md)`、`[知识图谱Schema](knowledge-graph-schema.md)`——这三个文件实际都在 `_archive/v1/`、`_archive/v3/` 下，相对路径没补 `_archive/` 前缀。
+- **底部 3 条断链**（`check-doc-links.py` 实测确认）：第 327 行的原始链接如下（历史字面记录，不是本报告的导航链接）：
+
+```text
+[v3 架构优化设计](v3/README.md)
+[专家注册表协议](expert-registry-and-protocol.md)
+[知识图谱Schema](knowledge-graph-schema.md)
+```
+
+这三个文件实际都在 `_archive/v1/`、`_archive/v3/` 下，相对路径没补 `_archive/` 前缀。
 - **§2.1 运行时进程表漏登 registry-svc:3400**（表内 3080 列了两次：gateway + "模块化网关"）。
 - 行数表自注「无门禁校验，跨版本必然漂移」，不要拿里面的行数做结论。
 
@@ -73,7 +81,11 @@
 - **`ARC-INDEX.md` 登记行示例**：`| ea | domain | logical | mox_sys, iam | expert_registry, collaboration_dag, case_memory |`（SSoT = `docs/database/mox_sys/module-registry.yml`）
 - **`docs/API-REGISTRY.md`**：由 `scripts/doc/gen-api-registry.py` 从 `gateway/src/actuator.rs ROUTES` + `routes.rs DOMAINS` 自动生成，表头即「声明即实现」。当前 236 条路由 / 46 域描述符。**禁手改**；CI 跑「重生成 + diff」门禁，漂移即红。
 - **`docs/api/PORT-REGISTRY.md`**（PORT-REGISTRY-001 V1.2）：全仓端口唯一权威。分类 RUNTIME / ALLIANCE / ANCILLARY / LEGACY / DEPRECATED / TEST-ONLY / THIRD-PARTY。关键端口：网关 **3080**、前端 3020、调度 3100、执行 3200、专家桥 3300、注册中心 3400、codeengine 3210。DEPRECATED 禁止复用：**3010 / 3021 / 3717 / 8101–8104 / 8081–8082**。
-- **`docs/modules/CODE-CATALOG.md`**：由 `scripts/registry/module_catalog.py` 从 `cargo metadata` 生成，表头自注「请勿手改」。登记行示例：`| [mox-alliance-executor-svc](<../../platform/domains/alliance/svc/mox-alliance-executor-svc/Cargo.toml>) | svc | mox-alliance-executor | runtime: ... |`
+- **`docs/modules/CODE-CATALOG.md`**：由 `scripts/registry/module_catalog.py` 从 `cargo metadata` 生成，表头自注「请勿手改」。原文件登记行示例（相对路径属于原目录）：
+
+```text
+| [mox-alliance-executor-svc](<../../platform/domains/alliance/svc/mox-alliance-executor-svc/Cargo.toml>) | svc | mox-alliance-executor | runtime: ... |
+```
 
 ---
 
