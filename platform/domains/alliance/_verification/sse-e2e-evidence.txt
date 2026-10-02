@@ -1,0 +1,81 @@
+================================================================================
+T4 事件总线对外出口 · SSE 事件帧 + Webhook 真实端到端证据
+日期：2026-10-02
+测试文件：platform/gateway/mox-platform-gateway-svc/tests/sse_event_stream_e2e.rs
+================================================================================
+
+【结论】SSE 事件帧与 Webhook 均为真实端到端可跑（无 mock / 无示例帧）。
+
+--------------------------------------------------------------------------------
+一、运行环境与测试方式
+--------------------------------------------------------------------------------
+- 真实 tokio 运行时（#[tokio::test]）
+- 真实 ExpertsSharedState::new()（启动即挂事件日志消费者 + webhook 派发器）
+- 真实 SQLite（独立临时库 MOX_EXPERTS_DB_PATH=...）
+- 真实 TCP（tokio::net::TcpListener::bind("127.0.0.1:0") + axum::serve）
+- 真实生产 JWT 认证中间件（auth_middleware + AuthMiddleware，HS256 自签 token）
+- 真实 HTTP 客户端 reqwest::Client
+
+--------------------------------------------------------------------------------
+二、SSE 事件帧真实证据（test: sse_event_stream_delivers_real_business_frames_over_tcp）
+--------------------------------------------------------------------------------
+链路：GET /api/alliance/events/stream（带 Bearer token）→ 真实 TCP 长连接
+      → POST /api/experts/plan/generate（真实 generate_plan_handler → 真实 emit PlanCreated）
+      → 从真实字节流读到帧。
+
+服务端帧语义（experts_streams.rs::alliance_events_stream）：
+  event: PlanCreated
+  data: {"id":"evt-...","type":"PlanCreated","plan_id":"plan-...","task_type":"research",
+         "title":"...","source":"generate_plan_handler","tenant":"sse-e2e",
+         "occurred_at":"2026-10-02T...Z"}
+
+断言（全部通过）：
+  [PASS] HTTP 200，Content-Type 含 text/event-stream
+  [PASS] 字节流含 "event: PlanCreated"（命名事件帧，区别于既有 data-only 日志帧）
+  [PASS] 字节流含 "data:"
+  [PASS] data 含真实信封字段 "type":"PlanCreated"
+  [PASS] 信封租户 "tenant":"sse-e2e" 与连接租户匹配（服务端按租户过滤）
+  [PASS] 信封含真实 "plan_id":"plan-..."
+  [PASS] 信封含真实 "occurred_at" / "id":"evt-..."
+
+鉴权语义（test: sse_event_stream_requires_trusted_identity）：
+  [PASS] 无 Bearer token 访问 SSE 端点 → 401（与既有读面 TenantId 身份语义一致）
+
+--------------------------------------------------------------------------------
+三、Webhook 真实 HTTP 送达证据（test: webhook_receives_real_http_post_on_business_event）
+--------------------------------------------------------------------------------
+链路：起真实回环 axum 接收端（POST /hooks/collect）
+      → POST /api/alliance/events/webhooks 登记 {url, event_types:["ExpertRegistered"]}
+      → POST /api/experts（真实 create_expert → 真实 emit ExpertRegistered）
+      → 总线派发器（spawn_webhook_dispatcher）真实 reqwest POST 到回环 URL
+      → 接收端真实收到 HTTP body。
+
+断言（全部通过）：
+  [PASS] 登记 webhook → 200，返回 wh-<id>
+  [PASS] GET 列表能查到本租户订阅
+  [PASS] 回环接收端在 5s 内真实收到一次 HTTP POST（非模拟、非桩）
+  [PASS] POST body == 真实事件信封：type=ExpertRegistered / tenant 匹配 / expert_id=exp-wh-1 / id=evt-...
+  [PASS] DELETE 删除订阅返回 200（租户隔离删除生效）
+
+URL 校验（test: webhook_rejects_non_http_url）：
+  [PASS] ftp://... 非 http(s) URL → 400
+
+--------------------------------------------------------------------------------
+四、测试结果（cargo test -p mox-platform-gateway-svc）
+--------------------------------------------------------------------------------
+- lib 单元测试：189 passed, 0 failed（与改动前基线一致，零回归）
+- 集成测试：全部通过，0 failed；本文件新增 4 个用例全部 ok
+    sse_event_stream_delivers_real_business_frames_over_tcp ... ok
+    sse_event_stream_requires_trusted_identity ... ok
+    webhook_receives_real_http_post_on_business_event ... ok
+    webhook_rejects_non_http_url ... ok
+- cargo check -p mox-platform-gateway-svc：Finished，无 error
+
+--------------------------------------------------------------------------------
+五、诚实标注
+--------------------------------------------------------------------------------
+- Webhook 订阅表为进程内内存 HashMap（EventBus.webhooks），重启即失——未做持久化
+  （落盘需扩展 alliance_event_log 旁表，留作后续增强，此处不假称持久化）。
+- Webhook 派发失败/非 2xx 记日志并重试 1 次（间隔 300ms），仍失败即丢弃，不反压业务总线。
+- SSE 事件帧与既有「任务日志流」(/api/alliance/tasks/:id/logs/stream) 为独立通道，
+  未合并（理由见 backend-fix-report.md 本节）。

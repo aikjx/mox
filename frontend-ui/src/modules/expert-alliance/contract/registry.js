@@ -262,7 +262,7 @@ export function deleteResultText(result) {
  */
 export const EXPERT_WRITE_IDENTITY = Object.freeze({
   statement: '这三条写请求都带当前登录身份发出；网关对专家写路径没有角色判定，任何已认证身份都能注册 / 编辑 / 停用，身份只被写进审计链的行动者字段（没带身份则记为 system）。全域唯一一处 403 在协作面：目标专家已被禁用时拒绝，拒的是对象状态而不是调用方是谁',
-  evidence: ['config.rs:41', 'modules.rs:219', 'router/index.js:74', 'experts_common.rs:585', 'experts_dispatcher.rs:588', 'experts_collaboration.rs:797']
+  evidence: ['config.rs:41', 'modules.rs:234', 'router/index.js:74', 'experts_common.rs:585', 'experts_dispatcher.rs:588', 'experts_collaboration.rs:797']
 })
 
 /** 会诊房间凭证状态的取值常量。wire 权威 experts_registry.rs:672-676

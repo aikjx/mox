@@ -122,6 +122,9 @@
 | `alliance.tasks.status_poll` | GET | `/api/alliance/tasks/:id/status` | L4 | 任务状态轮询（供前端轮询） |
 | `alliance.tasks.plan` | GET | `/api/alliance/tasks/:id/plan` | L4 | 协作计划查询 |
 | `alliance.stats` | GET | `/api/alliance/stats` | L4 | 联盟统计（专家/任务/成功率） |
+| `alliance.events.stream` | GET | `/api/alliance/events/stream` | L4 | T4 业务事件帧 SSE 流（按租户；event:<Kind>+data:<信封>；experts_streams.rs） |
+<!-- webhook CRUD（POST/GET /api/alliance/events/webhooks、DELETE /api/alliance/events/webhooks/:id）后端已真实落地并经 E2E 验证，
+     但属运维管理面，本前端模块（expert-alliance）暂不挂 UI；按 contract.test.js 归为 DOC_UNREGISTERED_PENDING「欠登记」，不在此 ROWS 占位以免拉低接线覆盖率。 -->
 
 ### system（49 条）
 

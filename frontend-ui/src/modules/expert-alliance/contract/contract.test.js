@@ -276,7 +276,11 @@ describe('端点清单 ↔ docs/API-REGISTRY.md', () => {
   // 文档欠登记、模块也尚未定性的 Rust 路由：钉成明账，只减不增（挂载或后端删除后连条一起删）。
   const DOC_UNREGISTERED_PENDING = Object.freeze([
     '/api/ai/engine/flow-graph',
-    '/api/alliance/tasks/:id/qa'
+    '/api/alliance/tasks/:id/qa',
+    // T4 webhook CRUD：后端 experts_streams.rs 已真实落地并经 E2E 验证，
+    // 但属运维管理面，本前端模块不挂 UI（接入留给独立运维控制台），暂欠登记。
+    '/api/alliance/events/webhooks',
+    '/api/alliance/events/webhooks/:id'
   ])
 
   it('Rust 侧每条联盟/专家路由都在前端四态账上（挂载/禁用/待办/欠登记）', () => {
@@ -1407,7 +1411,7 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
     }
     const ANCHOR_TEXT = {
       'config.rs:41': 'enabled: true',
-      'modules.rs:219': 'modules.route_layer(',
+      'modules.rs:234': 'modules.route_layer(',
       'router/index.js:74': 'if (!token) {',
       'experts_common.rs:585': 'pub struct OptionalAuthUser',
       'experts_dispatcher.rs:588': 'AuditAction::ExpertDispatch',

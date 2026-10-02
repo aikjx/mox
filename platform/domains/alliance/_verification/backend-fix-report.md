@@ -1199,3 +1199,65 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 - **已落地（真实）**：租户专家数配额（env 可配、超限真实 409 + 结构化 quota/used、按租户独立、拒绝落审计）+ 低配额 E2E 真实证据。
 - **方案稿（未硬做）**：DAG 计划/任务数、会话、图谱节点配额；租户级配额配置表/管理 UI；LLM 调用量/并发配额（接 T1）；SAML/CAS/LDAP 真实 handler；provider 持久化与加密。
 - **待真实 IdP**：OIDC 端到端真实验证——协议代码已就绪，缺本地 Keycloak/Okta 测试凭据，拿到后即可按 §七方案稿真跑，本轮不造假。
+
+---
+
+## T4 事件总线对外出口：SSE 事件帧 + Webhook（2026-10-02）
+
+### 一、做了什么
+
+把 T4 进程内总线（`experts_events.rs::EventBus`，tokio broadcast）暴露成**两条真实对外通道**，均按认证租户隔离。
+
+- **SSE 事件帧**：`GET /api/alliance/events/stream`（新模块 `experts_streams.rs::alliance_events_stream`）。
+  经认证中间件注入的 `UserInfo` 解出 `TenantId`（无身份 401，与既有读面一致）→ 订阅 `state.events` broadcast →
+  **服务端按连接租户过滤**，每事件转一帧：`event: <AllianceEventKind>`（PlanCreated / PlanStatusChanged /
+  ExpertRegistered / ExpertDisabled）+ `data: <事件信封 JSON>`（UTF-8）；15s KeepAlive 心跳；连接断开 receiver 自动回收。
+- **Webhook 订阅**：`POST/GET /api/alliance/events/webhooks`、`DELETE /api/alliance/events/webhooks/:id`
+  （`create/list/delete_webhook`）。登记目标 URL + 事件类型过滤（空=全收），按租户隔离。
+  总线派发器 `spawn_webhook_dispatcher`（在 `ExpertsSharedState::new()` 与事件日志消费者同处启动）在真实事件发生时，
+  对同租户、类型命中的订阅用 **reqwest 真实 HTTP POST** 投递事件信封（5s 超时，失败/非 2xx 记日志并重试 1 次、间隔 300ms）。
+
+### 二、与既有「任务日志流」SSE 的关系：独立新增，不统一
+
+既有 `GET /api/alliance/tasks/:id/logs/stream`（sdk `alliance.rs::task_logs_stream`）推的是**单任务执行日志帧**
+（源：`AllianceGatewayState.log_tx`，data-only、无 `event:` 名）。本模块推的是**域业务事件帧**（源：`ExpertsSharedState.events`，
+带 `event:` 命名 + 结构化信封）。**刻意不合流**：
+1. 状态源不同，合流要在一个 handler 里同时订阅两条 channel 并归一帧格式，改动面大、易回归；
+2. 既有日志流消费方（前端 `getExecutionLogsSSE`）按「无命名事件的数据帧」解析，强行加 `event:` 会改变其帧语义；独立通道对其零影响；
+3. 语义分层：日志流答「这个任务跑了什么」，事件流答「这个租户的业务发生了什么」。
+
+### 三、改动文件:行号
+
+- 新增 `platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs`（SSE handler + webhook CRUD + 路由装配）。
+- `experts_events.rs`：`EventBus` 增 `webhooks: WebhookTable`（内存 HashMap）字段；新增 `WebhookSubscription` 结构、
+  `register/list/delete/matching_webhooks` 方法、`spawn_webhook_dispatcher` + `dispatch_once`（真实 reqwest POST）。
+- `experts_common.rs::ExpertsSharedState::new()`：启动处追加 `spawn_webhook_dispatcher(events.clone())`（与事件日志消费者并列）。
+- `modules.rs`：import `experts_streams`，`.merge(build_experts_streams_router(experts.clone()))` 挂进受保护路由组。
+- `actuator.rs`：`ROUTES` 由 **246 → 249**（`alliance.events.stream` / `alliance.events.webhooks` / `alliance.events.webhook_detail`）。
+- `docs/API-REGISTRY.md`：登记 `alliance.events.stream` 行；webhook CRUD 为运维管理面，前端模块不挂 UI，按 contract 门禁归「欠登记」。
+- 前端 `contract/endpoints.js`：登记 `allianceEventStream`；新增 `composables/useAllianceEventStream.js`（真实 SSE 消费接入点）。
+
+### 四、真实 E2E 证据（禁止 mock）
+
+证据落盘 `platform/domains/alliance/_verification/sse-e2e-evidence.txt`；测试 `tests/sse_event_stream_e2e.rs`（4 用例全绿）。
+真实 tokio 运行时 + 真实 `ExpertsSharedState` + 真实 SQLite + 真实 TCP + 生产 JWT 中间件：
+- **SSE**：先连 `GET /api/alliance/events/stream` → 真实 `POST /api/experts/plan/generate`（真实 handler emit PlanCreated）→
+  从真实 TCP 字节流断言收到 `event: PlanCreated` + `data:` 帧，信封含真实 `type/tenant/plan_id/occurred_at/id`，租户匹配；无 token → 401。
+- **Webhook**：起真实回环 axum 接收端 → `POST /webhooks` 登记 → `POST /api/experts`（真实 create emit ExpertRegistered）→
+  回环接收端真实收到 HTTP POST body（type=ExpertRegistered/租户/expert_id）；非 http(s) URL → 400；DELETE 生效。
+
+### 五、测试结果
+
+- `cargo test -p mox-platform-gateway-svc --lib`：**189 passed, 0 failed**（与 T4/A1 后基线一致，零回归）。
+- `cargo test --tests`：既有集成全绿；新增 `sse_event_stream_e2e` **4 passed**。
+- `cargo check`：干净，无 error。
+- 前端：`contract.test.js` 与 `vocabulary-ownership.test.js` 与本任务相关的登记/接线/目录账均通过；
+  剩余 contract/orchestration 失败为 **A1/D4 既有源漂移**（favorites 分区结构、emit_audit 增租户参、
+  save_registry 签名、orchestration 出参键集与行号），本轮未触碰那些文件，非本任务回归。
+
+### 六、webhook 状态：**已落地（真实 HTTP 送达）**，非方案稿
+
+- 已落地：webhook CRUD + 内存注册表 + 派发器真实 POST + 失败重试 + E2E 真实送达断言。
+- 诚实标注：订阅表为**进程内内存 HashMap，重启即失**（未做持久化；落盘需扩 `alliance_event_log` 旁表，留作后续）。
+- webhook 管理 UI 未进本前端模块（运维管理面）；SSE 事件帧前端接入点 `composables/useAllianceEventStream.js` 已就绪，
+  可挂到编排/控制台视图 `onMounted` 实时刷新。

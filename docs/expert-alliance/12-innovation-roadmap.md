@@ -110,7 +110,7 @@ scope: 依据 10-enterprise-maturity-review.md 的 P0 阻断项与 TOP 差距、
 - **依赖**：P0 的 N3（事件要落库才能回放）；与 T5 流式编排、A3 事件溯源共用事件模型，建议同一套事件 schema。
 - **落地路径**：① 定义 TaskLifecycleEvent / NodeLifecycleEvent 结构化事件（type、timestamp、task_id、node_id、actor、payload）；② 网关侧发布，SSE 升级为「日志帧 + 事件帧」双通道；③ 提供事件订阅端点（webhook 或 SSE）供外部系统消费；④ 事件落库（与 A3 共用），支持按 task 回放。
 - **依据**：10-#24（SSE 单向日志流）、D9/G5；11-我们弱②（可观测/tracing 短板）；LangGraph 借鉴点①（run 级结构化事件 + 时间线）、Airflow 3.0 事件驱动。
-- **落地状态（2026-10-02）**：**部分落地（进程内闭环）**。已建 `tokio::sync::broadcast` 进程内事件总线 + 事件模型（PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled，带 tenant），真实 handler emit、消费者落 `alliance_event_log`（schema v4），E2E 真实验证通过。**未做（后续）**：SSE 升级为「日志帧+事件帧」双通道、外部系统 webhook/SSE 订阅端点、跨进程/多副本广播——需在总线之上再加外发层。详见 `platform/domains/alliance/_verification/backend-fix-report.md` T4 节。
+- **落地状态（2026-10-02）**：**对外出口已闭环**。已建 `tokio::sync::broadcast` 进程内事件总线 + 事件模型（PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled，带 tenant），真实 handler emit、消费者落 `alliance_event_log`（schema v4）。**本轮新增**：② SSE 事件帧通道 `GET /api/alliance/events/stream`（按租户，`event:<Kind>+data:<信封>`，与既有任务日志流**独立**而非合并——理由见 backend-fix-report）；③ 外部订阅端点 webhook（CRUD + reqwest 真实 HTTP POST + 失败重试）。两者均真实端到端验证（sse-e2e-evidence.txt）。**未做（后续）**：跨进程/多副本广播（仍进程内）、webhook 订阅持久化（现内存重启即失）、事件回放/A3 共用。详见 `platform/domains/alliance/_verification/backend-fix-report.md` T4 节。
 
 ### 2.5 T5　流式编排（边执行边交付）
 

@@ -611,6 +611,10 @@ server {
 
 > 不开 `proxy_buffering off` 会导致 SSE 事件被 nginx 攒着不推，前端表现为"日志卡住"。
 
+> **T4 事件帧流（2026-10-02）**：新增 `GET /api/alliance/events/stream`（业务事件帧 SSE）与既有任务日志流同属 SSE 长连接，
+> 上面 `location /api/` 的 `proxy_buffering off / proxy_cache off / read&send_timeout 3600s` 三件套对它**同样适用、无需另配**。
+> webhook 出站为网关主动回环/外发 HTTP POST，不经过 nginx 入站配置；订阅 URL 须可达网关出口（5s 超时、失败重试 1 次）。
+
 ---
 
 ## 六、部署后一致性检查清单

@@ -19,6 +19,12 @@ export const ENDPOINTS = Object.freeze({
   taskNodes: { registry: 'alliance.tasks.nodes', method: 'GET', path: '/api/alliance/tasks/:id/nodes', nesting: 'nested' },
   taskLogs: { registry: 'alliance.tasks.logs', method: 'GET', path: '/api/alliance/tasks/:id/logs', nesting: 'nested' },
   taskLogStream: { registry: 'alliance.tasks.logs_stream', method: 'GET', path: '/api/alliance/tasks/:id/logs/stream', nesting: 'nested' },
+
+  // ── T4 事件总线对外出口（experts_streams.rs；与上面的任务日志流为独立通道）──
+  // SSE 事件帧流：不经 http 工厂，由 composables/useAllianceEventStream.js 以 fetch 直连。
+  allianceEventStream: { registry: 'alliance.events.stream', method: 'GET', path: '/api/alliance/events/stream', nesting: 'flat' },
+  // webhook CRUD（POST/GET /api/alliance/events/webhooks、DELETE .../:id）后端已真实落地并 E2E 验证，
+  // 但属运维管理面，本前端模块不挂 UI，归 contract.test.js 的 DOC_UNREGISTERED_PENDING「欠登记」，不在此登记。
   taskDag: { registry: 'alliance.tasks.dag', method: 'GET', path: '/api/alliance/tasks/:id/dag', nesting: 'nested' },
   taskFusion: { registry: 'alliance.tasks.fusion', method: 'GET', path: '/api/alliance/tasks/:id/fusion-result', nesting: 'nested' },
   expertSearch: { registry: 'alliance.experts.search', method: 'POST', path: '/api/alliance/experts/search', nesting: 'nested' },

@@ -1,19 +1,19 @@
 {
- "generated_at": "2026-10-02 20:36:26+0800",
+ "generated_at": "2026-10-02 21:28:43+0800",
  "scan_roots": [
   "docs"
  ],
  "recognizer": "scripts/gate/formula_ledger.py",
- "files": 370,
+ "files": 371,
  "claims": 7,
  "violations": 0,
- "blind": 8706,
+ "blind": 8718,
  "quoted": 6,
  "blind_reasons": {
-  "glued": 5256,
-  "latin": 1407,
-  "noise": 930,
-  "code": 179,
+  "glued": 5262,
+  "latin": 1410,
+  "noise": 932,
+  "code": 180,
   "no_fw_eq": 669,
   "ascii_eq": 264,
   "increment": 1
@@ -164,12 +164,12 @@
    "claims": 6,
    "violations": 0,
    "blind": {
-    "glued": 25,
-    "code": 18,
-    "noise": 42,
+    "glued": 31,
+    "code": 19,
+    "noise": 44,
     "ascii_eq": 4,
     "no_fw_eq": 18,
-    "latin": 9
+    "latin": 12
    },
    "quoted": 5
   },
@@ -3039,13 +3039,13 @@
  },
  "unclosed": [],
  "outside": {
-  "files": 307,
+  "files": 308,
   "dirs": 18,
   "root_files": 5,
   "skip_dirs": 12,
   "claims": 1,
   "violations": 0,
-  "blind": 1942,
+  "blind": 1943,
   "quoted": 0,
   "claim_files": [
    [

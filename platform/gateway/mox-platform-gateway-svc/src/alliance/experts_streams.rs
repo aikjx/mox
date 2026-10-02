@@ -163,10 +163,7 @@ pub async fn delete_webhook(
 pub fn build_experts_streams_router(state: Arc<ExpertsSharedState>) -> Router {
     Router::new()
         .route("/api/alliance/events/stream", get(alliance_events_stream))
-        .route(
-            "/api/alliance/events/webhooks",
-            post(create_webhook).get(list_webhooks),
-        )
+        .route("/api/alliance/events/webhooks", post(create_webhook).get(list_webhooks))
         .route("/api/alliance/events/webhooks/:id", delete(delete_webhook))
         .with_state(state)
 }

@@ -397,13 +397,14 @@ describe('联盟词表所有权：模块外不许自写模块已导出的名字'
       model: 'wire→视图的归一层，键名账在 normalize.js 与 L13，不重新打字取值',
       store: 'pinia 容器，取值一律从契约引；宽口径逐文件复扫（不要求引用契约）实测 2 处命中全在 alliance-experts.store.test.js 的夹具默认值与派生布尔（测试自己造数据，非界面出口）',
       api: '请求封装，携带的是路径与键，不是状态档名',
+      composables: 'T4 SSE 事件帧前端消费入口（useAllianceEventStream.js），只 import contract 端点名并按 SSE 协议切帧，不重新打字任何值域取值',
       _verification: 'markdown 证据，不是源码'
     }
     const moduleDirs = readdirSync(path.join(SRC_DIR, MODULE_DIR))
       .filter((n) => statSync(path.join(SRC_DIR, MODULE_DIR, n)).isDirectory())
     // 顺序＝塌缩→理由→空壳→未登记：每格各有一枚"它是第一个说谎的"变异体（撤条目／空理由／改名目录／新目录）。
     expect(Object.keys(DIR_ACCOUNT).length, 'L12 出账目录表塌缩实测=' + Object.keys(DIR_ACCOUNT).length
-      + '（少一条＝覆盖面静默扩大；要撤条目必须先改池子口径并留痕）').toBe(5)
+      + '（少一条＝覆盖面静默扩大；要撤条目必须先改池子口径并留痕）').toBe(6)
     const blankWhy = Object.keys(DIR_ACCOUNT).filter((k) => !DIR_ACCOUNT[k] || DIR_ACCOUNT[k].length < 8)
     expect(blankWhy, 'L12 出账理由为空或过短（没理由的出账不存在，同 EXEMPT 的 why 规矩）实测='
       + JSON.stringify(blankWhy)).toEqual([])

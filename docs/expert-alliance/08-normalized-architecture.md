@@ -395,6 +395,7 @@ docs/expert-alliance/
 | DAG 并行度信号量（T1a/N8） | dag_engine.rs:43 ENV_DAG_MAX_PARALLEL、:105 semaphore、:152-158、:587 acquire_owned（默认50，0=无界） | executor-core lib 41+e2e5+bench1 | ✅（两级配额/前端滑块留待 P1.5） |
 | LLM 多 Provider 路由 + scheduler 熔断 | scheduler-core/llm_router.rs:477（threshold5/60s） | scheduler-core 115 | ✅ |
 | SSE 日志流 | GET /api/alliance/tasks/:id/logs/stream（actuator.rs ROUTES）；前端 useSSE | gateway alliance 97 | ✅ |
+| T4 事件帧 SSE + webhook 外发（2026-10-02） | GET /api/alliance/events/stream（experts_streams.rs，按租户，event:<Kind>+data:<信封>）；webhook CRUD + reqwest 真实 POST 投递 | gateway lib 189 + sse_e2e 4 | ✅（SSE/webhook 真实 E2E；webhook 内存重启即失、跨副本广播留待） |
 | 会话管理 sessions/messages | experts_db.rs:132/148，SQLite 落盘 | gateway alliance 97 | ✅（单进程恢复 N11） |
 | 编排计划 plans / 编排历史（进程内） | experts_common.rs:468 HashMap / :470 Vec | 前端文案「仅本次进程」合规 | 🟡 进程内（D4 P1 落盘） |
 | 网关侧熔断器（独立内存） | experts_dispatcher.rs:494 | gateway alliance 97 | 🟡 与 scheduler 侧不共享（N10 设计取舍） |
