@@ -1,8 +1,8 @@
 # API 注册表（权威·接口↔实现一一对应）
 
-> 本清单由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 生成（生成脚本 `scripts/doc/gen-api-registry.py`）。清单覆盖上述静态注册元数据；动态组装的子路由以宿主源码和模块契约为准。注册与 ready 标记不代表功能、依赖或企业交付已验收，实际结论见[实现台账](docs/modules/REAL-IMPLEMENTATION-STATUS.md)。
+> 本清单由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 生成（生成脚本 `scripts/doc/gen-api-registry.py`）。清单覆盖上述静态注册元数据；动态组装的子路由以宿主源码和模块契约为准。注册与 ready 标记不代表功能、依赖或企业交付已验收，实际结论见[实现台账](modules/REAL-IMPLEMENTATION-STATUS.md)。
 
-企业消息子路由与实际健康探测见[消息中心契约](docs/modules/message-center/README.md)；静态清单不作为全部路由已验收的证明。
+企业消息子路由与实际健康探测见[消息中心契约](modules/message-center/README.md)；静态清单不作为全部路由已验收的证明。
 
 ## 1. 总览
 
