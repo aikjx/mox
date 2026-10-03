@@ -47,7 +47,7 @@
 - **Description**:
   分 4 个子任务，互不写对方源文件，可顺序执行：
   - **3A graph-algorithms**：AC-3 / AC-13。对 5 类算法（CNM / Brandes / Harmonic / PageRank+转置 / 激活扩散）每类至少补到 ≥2 条 `#[test]`；断言内容来自 reconcile_7x8.js 8 数据集的已知节点数/介数最大节点名；保证 Δ≤1e-6 的对账在 Rust 侧也有独立断言。
-  - **3B mox-expert verify + rbac + audit**：AC-7 / AC-8 / AC-14。verify 层 5 阻断级检查 = 至少 10 条 tests（5 通过 + 5 阻断）；rbac 66 组合至少 6 条表驱动 tests 覆盖 6×11=66；audit_hmac 至少 1 条伪造 payload 失败 + 1 条通过签名验证。
+  - **3B mox-expert verify + rbac + audit**：AC-7 / AC-8 / AC-14。verify 层 5 阻断级检查 = 至少 10 条 tests（5 通过 + 5 阻断）；rbac 66 组合至少 6 条表驱动 tests 覆盖 6×11＝66；audit_hmac 至少 1 条伪造 payload 失败 + 1 条通过签名验证。
   - **3C primiflow-fusion full_gate + sixdim_coverage**：AC-5 / AC-6。补到 full_gate cases ≥ 50 且通过 ≥ 90%；SixDim 覆盖率统计命令输出 P ≥ 90.0%（如未达则修复悬空绑定，不允许造假报告）。
   - **3D runtime AI 四端点 + AC-10 路由语义 + 三流程 E2E**：AC-4 / AC-9。补 router_semantics 的三条断言（静态优先/参数少/同参数长路径）；补 ai_engine routes 的存在；补 mox_e2e 三条（graph_bulk / file_upload_link / ai_full_rag） ≤ 28s。
 - **Acceptance Criteria Addressed**: AC-3, AC-4, AC-5, AC-6, AC-7, AC-8, AC-9, AC-13, AC-14

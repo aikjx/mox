@@ -57,7 +57,7 @@
 |:---:|--------------------------------------------------|--------------------------------------------------|---------------------|----------|
 | ⑭ | **T-Rust-01** 全仓 Rust 静态检查 & 单元测试基线：`cargo clippy --workspace --all-targets -- -D warnings ; cargo test --workspace -- --test-threads=8 --report-time`（必须 -D warnings=0 warn 才算过） | ✅ clippy 0 warning + test summary：passed ≥ 649 + failed = 0 + ignored = 6 + 测试二进制 ≥ 58。存结果 JSON 到 `docs/enterprise/_data/test-report-YYYYMMDD-T0-baseline.json`，SHA-256 算一下写 T4。 | 截图 ⑭a clippy 0 warn；⑭b test 649+ 全绿；JSON SHA-256（`Get-FileHash` 算） |  |
 | ⑮ | **T-Graph-02** 关图 Schema 14 节点族 × 19 边族 SoT 核对：`cargo run -p graph-schema-tool --bin schema_check -- graph.enterprise.json --strict`（如 graph-schema-tool 不存在=你必须先在 T2 中写这条命令的实现，或直接用脚本 `grep -c '"node_family"' graph.enterprise.json` 核对） | ✅ node_family 14 类 100% 出现；edge_family 19 类 100% 出现；孤立节点=0；断裂关系=0；**与 22 表 4/5 注入规则完全一致（对外 8 实体 E1~E8 全部存在于 14 族中）**。 | 截图 ⑮ 14/19 核对输出 + 注入规则 8/8 检查 |  |
-| ⑯ | **T-Alg-03** 7×8 算法对账 SoT（Δ≤1e-6 铁律）：`cd platform/domains/graph-algorithms ; cargo test --test reconcile -- --nocapture`（这就是 22 表 6 写死的对账脚本来源，不得换） | ✅ 7×8=56 条对账 56/56 全 PASS；每条 Δ≤1e-9 绿色占比 + 1e-9<Δ≤1e-6 橙色占比 + Δ>1e-6 红色=0（红色 0 才算通过）；输出 JSON 存 T0 基线。 | 截图 ⑯ 56 条全 PASS + 56/56 汇总行；JSON SHA-256 |  |
+| ⑯ | **T-Alg-03** 7×8 算法对账 SoT（Δ≤1e-6 铁律）：`cd platform/domains/graph-algorithms ; cargo test --test reconcile -- --nocapture`（这就是 22 表 6 写死的对账脚本来源，不得换） | ✅ 7×8＝56 条对账 56/56 全 PASS；每条 Δ≤1e-9 绿色占比 + 1e-9<Δ≤1e-6 橙色占比 + Δ>1e-6 红色=0（红色 0 才算通过）；输出 JSON 存 T0 基线。 | 截图 ⑯ 56 条全 PASS + 56/56 汇总行；JSON SHA-256 |  |
 | ⑰ | **T-RBAC-04** RBAC 严格模式 11 探针 SoT：`cargo run -p governance-console -- --probe --all 11` | ✅ Probe-01~11 11/11 全 PASS；每个探针详细 reason 存 JSON；**至少模拟 1 条探针失败场景（Mock 配置故意错）= 输出 10/11 结果证明你 FAIL 判定逻辑是对的（= 骗分检测：你如果永远 11/11 说明你没测 FAIL 分支 = 造假）**。 | 截图 ⑰-a 11/11 全过；⑰-b Mock 10/11 失败截图（证明你能识别 FAIL） |  |
 | ⑱ | **T-Gate-05** 治理闸门 Verify 14 专家 SoT：`cargo run -p mox-expert --bin mox_optimize -- --sample docs/architecture/graph/graph.enterprise.json --step Verify --strict 2>&1 | tail -40` | ✅ Verify 14 专家 14/14 全 PASS；每个专家处理节点数 ≥ 1；**至少模拟 1 个专家 WARN + 1 个专家 FAIL（Mock 输入故意）= 输出证明你三态（Pass/Warn/Fail）判定逻辑都能测出来**。 | 截图 ⑱-a 14/14 PASS；⑱-b 12/14（1WARN+1FAIL）Mock 图 |  |
 | ⑲ | **T-P9-06** P9 判重闸门 SoT：`python tools/guantu_gate.py --strict --similarity-threshold 0.95` + `cargo run -p info-graph -- dedup --strict` | ✅ python guantu_gate 新增缺陷 = 0；info-graph dedup 重复项 = 0；**至少模拟 1 条相似度 0.96≥0.95 的记录 = 调用合并端点时返回 403（= 你测红色禁用逻辑真实生效，不是前端 UI 只画个按钮）**。 | 截图 ⑲-a 0 新增缺陷；⑲-b Mock 0.96 合并端点 403 |  |
@@ -111,7 +111,7 @@
 ## 四、⭕ 你绝对不可动的 10 条（命中任意 = 测试计划/脚本/报告 直接作废）
 1. 出主观题（没有 SoT / 没有公开来源 / 没有 PASS 硬阈值 / 没有 1 行复现命令 / 没有 JSON / 没有 SHA-256）= 作废。
 2. 改题目放水（AI 30 题改成简单题、Δ≤1e-6 放宽到 1e-3、Lighthouse 90→85）= 作废。
-3. 改 8 步名 / 改 14 专家数 / 改 11 探针 / 改 7×8=56 对账 / 改 14×19 关图 / 改 15 Crate 数 = 作废（这些都是 22 号 9 大表写死的，你改 = 名实分裂）。
+3. 改 8 步名 / 改 14 专家数 / 改 11 探针 / 改 7×8＝56 对账 / 改 14×19 关图 / 改 15 Crate 数 = 作废（这些都是 22 号 9 大表写死的，你改 = 名实分裂）。
 4. 用 MSW / Mock 的数据当企业级真实验收（前端自验可用，**企业级 L2 放行 = 必须真实 Rust/Node/AI 跑通**）= 作废。
 5. 永远绿：Mock FAIL 场景 < 5 个大类 = 证明你脚本没有能力识别错误 = 作废（§1 ⑰⑱⑲㉒㉓ 至少 5 张 Mock FAIL = 这是硬门槛，缺一张都不行）。
 6. 棘轮下降：clippy warn > 0 / UT < 649 / 7×8 红色 ≥1 / 11 探针 <11 / 死代码 >8 / P9 >0 / AI <30 / Lighthouse <90 = 退化 FAIL，必须报告 FAIL，禁止偷偷放成 PASS。
@@ -201,8 +201,8 @@
 | T-治理-02（T0-08） | 16 §3 P9 0 新增缺陷 SoT / P9 判重算法公开余弦相似度阈值 0.95 | guantu_gate.py --strict + dedup 0 新增缺陷 + ≥0.95 禁合并 403 | `python tools/guantu_gate.py --strict --json > T-治理-02.json` + `curl -s -X POST /api/dedup/test-merge --json '{"id":SIM_096}' \| jq .code` | new_defects=0 AND merge_highsim_code=403 | `{new_defects, high_similarity_count, merge_forbidden_403=true, ratchet_trend, sha256}` |
 | T-治理-03 | 08 §2 Reconcile 7 对账 SoT（7 类任务 = 7×8 对账） | Reconcile 全量对完后输出 Δ 报告 = 56 条全部颜色正确，无 RED | `cargo run -p mox-expert --bin mox_optimize -- --step Reconcile --json > T-治理-03.json` | reconcile_red=0 | `{red,orange,green, reconcile_report_url, sha256}` |
 | T-治理-04 | 08 §2 Govern 治理最终裁决 SoT：Govern 对 8 步全程最终输出 = 通过/警告/失败 三态 | Govern 输入 T0~T0-18 18 题数据 = 全部 PASS → Govern 裁决 = ALLOW；改 1 题 FAIL → Govern 裁决 = DENY | `cargo run -p mox-expert --bin mox_optimize -- --step Govern --mock t0_pass=18 --json > T-治理-04a.json` + `--mock t0_pass=17` → DENY | a=ALLOW AND b=DENY | `{mock_t0_pass:18, verdict:ALLOW}; {mock_t0_pass:17, verdict:DENY}; sha256a+sha256b` |
-| T-治理-05 | 四闸门（06 §四 G1 需求/G2 架构/G3 实现/G4 治理）每闸门 10 项子项 × 4 = 40 子项全 PASS | 四闸门 40 子项全 PASS | `cargo run -p governance-console -- --gates detail --json > T-治理-05.json` | gates_40_subitems_pass=40 | `{gates:[{id, subitems_pass, subitems_total}], pass_count=40, total=40, sha256}` |
-| T-治理-06 | 需求覆盖率（21 §十一 99×4=396 钩 SoT）：后端自动化覆盖率 + 前端自动化覆盖率 + 测试自动化覆盖率 = 三项 ≥ 95% | 钩位自动映射到测试用例，覆盖率 396 钩全 PASS | `cargo run -p governance-console -- --coverage srs --json > T-治理-06.json` | coverage_srs_396_pct≥95，且前端≥90，后端≥95，测试≥95 | `{srs_total=396, covered, pct, fe_pct, be_pct, test_pct, missing_items:[], sha256}` |
+| T-治理-05 | 四闸门（06 §四 G1 需求/G2 架构/G3 实现/G4 治理）每闸门 10 项子项 × 4 ＝ 40 子项全 PASS | 四闸门 40 子项全 PASS | `cargo run -p governance-console -- --gates detail --json > T-治理-05.json` | gates_40_subitems_pass=40 | `{gates:[{id, subitems_pass, subitems_total}], pass_count=40, total=40, sha256}` |
+| T-治理-06 | 需求覆盖率（21 §十一 99×4＝396 钩 SoT）：后端自动化覆盖率 + 前端自动化覆盖率 + 测试自动化覆盖率 = 三项 ≥ 95% | 钩位自动映射到测试用例，覆盖率 396 钩全 PASS | `cargo run -p governance-console -- --coverage srs --json > T-治理-06.json` | coverage_srs_396_pct≥95，且前端≥90，后端≥95，测试≥95 | `{srs_total=396, covered, pct, fe_pct, be_pct, test_pct, missing_items:[], sha256}` |
 
 ### 第五大类 · T-AI（AI 四端点 4 题 = T0-11/12 + 2 扩展，共 4 题，严格单次+0 降级+SHA-256 匹配 99%+）
 | 题号 | 来源/SoT | 描述 | 命令 | 阈值 | JSON |
@@ -271,7 +271,7 @@
   10. 🔒 诚信声明（测试联盟 A 签字：「我承诺本次 48 题全部真实执行，严格单次、零重试、零放水、零骗分、SHA-256 留痕齐全，如有虚假愿负全责」）
   11. 📎 附录 A：17 份必读签字页
   12. 📎 附录 B：10 条实跑命令 ≥ 22 张截图（含 5 张 Mock FAIL 截图）
-  13. 📎 附录 C：所有 48 + 18 = 66 次执行 SHA-256 索引表（题号 + JSON 路径 + SHA-256 值）
+  13. 📎 附录 C：所有 48 + 18 ＝ 66 次执行 SHA-256 索引表（题号 + JSON 路径 + SHA-256 值）
   14. 📎 附录 D：8 大类 meta-test 自验报告汇总（证明不永远绿，至少 8 个 FAIL 证据）
 - 门槛：① 14 节齐全 = 缺 1 节 = T4 不合格；② FAIL 必须有根因分析，不许写「不知道为啥坏了」；③ 诚信声明 + 四方签字缺一不可。
 

@@ -155,7 +155,7 @@ A2：璇玑的对照 P0 维度得分以实跑证据（H1~H4 数据 + 代码审�
 | ID | 描述 | 证据来源 |
 |---|---|---|
 | **AC-01** | 存在 `T10-comparison-matrix.md` 与 `T10-comparison-matrix.json`，覆盖 P0~P4 × D01~D18 = 5×18 = 90 格，无空值 | `docs/enterprise/` 或 `.trae/specs/.../` 下的文件检查，JSON parse 成功 |
-| **AC-02** | 对比矩阵中，P0 每个维度都给出数值评分（0~100，整数），P1~P4 亦然 | JSON schema 校验，5×18=90 个整数分数 |
+| **AC-02** | 对比矩阵中，P0 每个维度都给出数值评分（0~100，整数），P1~P4 亦然 | JSON schema 校验，5×18＝90 个整数分数 |
 | **AC-03** | 存在 `T10-gap-analysis.md`，对 **P0 得分 < 任何 P1~P4 最高得分** 的维度给出 Critical/High/Medium/Low 差距分级，分级条目数 ≥ 4 | 文件存在 + 条目计数 |
 | **AC-04** | H1 高并发 harness：代码存在（`test/bench_governance_concurrency.js` 或等价 Rust 基准），可独立运行 exit=0，生成 concurrency.csv | 文件存在 + 实跑 exit=0 |
 | **AC-05** | H2 LLM 路由 harness：代码存在（`test/bench_llm_routing_strategies.js`），运行 exit=0，生成 routing.csv，策略 ≥ 3 种（priority/fallback/latency-warm）| 文件存在 + 实跑 + CSV 行数 ≥ 3 × 统计指标行数 |
@@ -168,7 +168,7 @@ A2：璇玑的对照 P0 维度得分以实跑证据（H1~H4 数据 + 代码审�
 | **AC-12** | O5 补丁：`ai-agent` flow_engine / workflow_engine 增加 **并发扇出 `ParallelNode` + 取消传播 `CancellationToken`**，单元测试 GREEN（并行数=8，取消 5s 内完成）| Rust `#[test]` 2 条 GREEN |
 | **AC-13** | 8 项优化全部具备 feature flag（默认开启），可通过环境变量全局关闭 | `process.env.DISABLE_OPTIM_*` 或等价被检查 |
 | **AC-14** | 优化后 `cargo clippy --workspace --all-targets -- -D warnings` exit=0（零告警保留） | 实跑 |
-| **AC-15** | 优化后 Node Mocha（三原套件 + 新 harness 自测）GREEN，总数 ≥ 126 + 20 = 146 | 实跑 `mocha test\mocha_*.js test\bench_*.js --grep ...` passes ≥ 146 |
+| **AC-15** | 优化后 Node Mocha（三原套件 + 新 harness 自测）GREEN，总数 ≥ 126 + 20 ＝ 146 | 实跑 `mocha test\mocha_*.js test\bench_*.js --grep ...` passes ≥ 146 |
 | **AC-16** | 存在 `T10-harness-summary.md`，列出所有 H1~H4 基线数据及 O1~O5 before-after 数据 | 文件存在 + before-after 配对 |
 
 ### 8.2 Rubric AC（评估型质量维度）

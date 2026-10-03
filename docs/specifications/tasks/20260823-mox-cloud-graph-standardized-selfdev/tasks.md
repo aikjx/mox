@@ -104,7 +104,7 @@ Grep 成品开源系统 (seaweed/juicefs/minio/ceph/nebula-graph/neo4j/janusgrap
 ### Completion Evidence
 
 ```
-[Cloud 25 tests 分拆：5×5 = 25 GREEN]
+[Cloud 25 tests 分拆：5×5 ＝ 25 GREEN]
   ObjectStorage: 5 (put_get/list/delete/head/multipart)
   MetaStorage:   5 (mkdir_stat/rmdir/rename/symlink/xattr_chmod)
   ChunkManager:  5 (alloc_write_read/delete/rebuild/stats/gc)
@@ -137,7 +137,7 @@ Grep 成品开源系统 (seaweed/juicefs/minio/ceph/nebula-graph/neo4j/janusgrap
 ### Completion Evidence
 
 ```
-[Graph 25 tests 分拆：5×5 = 25 GREEN（合计 T1+T2+T3 tests 50 GREEN）]
+[Graph 25 tests 分拆：5×5 ＝ 25 GREEN（合计 T1+T2+T3 tests 50 GREEN）]
   GraphQuery:         5 (vertex_crud/edge_crud/neighbors/k_hop/subgraph)
   GraphMeta:          5 (space_create/list/create_tag/create_edge_type/show_hosts)
   GraphAlgoSingle:    5 (ppr/cnm/betweenness/harmonic/density_rawBDE)
@@ -526,7 +526,7 @@ cargo test -p mox-standards --test t14_standards_matrix
 | TR15.1 | rule | 14 故障注入（与 SPEC-14 等价基线）全 GREEN（AC-15）：写 kill-1/2 节点、Raft kill-1 leader、网络分区、存储磁盘损坏、EC 重建、审计链篡改校验、CDC lag 自动恢复 = 14 绿 |
 | TR15.2 | rule | Raft kill-1 leader ≤ 5 s 选主完成 3 轮（= AC-16）|
 | TR15.3 | rule | 扩容 16→32 分片 rebalance ≤ 5 min 差 ≤10%（= AC-17） |
-| TR15.4 | rubric(≥ 1，AC-28) | TCO 7 年节约度：半自研 36 人·月 259 万 vs 商业版 1050 万；节约 >70% = 2；40~70% = 1；<40% = 0。阈值 ≥ 1。（计算表：¥2 万/人月 × 36 = 72 万第一年；后续 6 年每年 2 人 SRE = 48 万 × 6 = 288；合计 360 → 但 spec 基线 45% 复用 = 36 × 2 × 1 + 48 × 6 = 72 + 288 = 360 - 101 复用节约 = 259）|
+| TR15.4 | rubric(≥ 1，AC-28) | TCO 7 年节约度：半自研 36 人·月 259 万 vs 商业版 1050 万；节约 >70% = 2；40~70% = 1；<40% = 0。阈值 ≥ 1。（计算表：¥2 万/人月 × 36 ＝ 72 万第一年；后续 6 年每年 2 人 SRE = 48 万 × 6 = 288；合计 360 → 但 spec 基线 45% 复用 = 36 × 2 × 1 + 48 × 6 = 72 + 288 = 360 - 101 复用节约 = 259）|
 | TR15.5 | rubric(≥ 1) | 压测报告质量：0=缺失;1=基本数据;2=含 SLO 曲线 p50/p95/p99 + 3 场景 + 容量规划曲线。阈值 ≥ 1 |
 | TR15.6 | rule | /atlas/verify ha_slo_tco_completion ok=true + TCO 报告 PDF |
 

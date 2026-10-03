@@ -165,7 +165,7 @@
 | SE-12 | 四权分离（设计/开发/审计/运维）| ❌ 客户自己做 | ❌ | ❌ | ❌ | ✅ IAM + AWS Config | ✅ | 六角色矩阵中 Expert(开发) / Coordinator(设计) / Auditor(审计) / Admin(运维) 四权分离 |
 | SE-13 | 令牌认证 + RBAC 双写审计（拒+放均留痕）| ✅ 企业版 | ✅ | ✅ JWT | ✅ | ✅ SigV4 | ✅ | rbac_audit_middleware 三层；T14.1~14.4 28/28 PASS |
 | SE-14 | 产物来源追溯 ProvenanceMetrics（溯源加速比）| ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | mox-expert `ProvenanceMetrics(source_flow_id, dual_acceptance, speedup_ratio, conflict_count, expert_avg)` |
-| SE-15 | 开发璇玑 + 业务璇玑（双璇玑 14 维治理）| ❌（完全不存在）| ❌ | ❌ | ❌ | ❌ | ✅ | 7 业务 + 7 开发 = 14 专家；CodeIR 驱动开发七维自动并入（Plan E 已交付） |
+| SE-15 | 开发璇玑 + 业务璇玑（双璇玑 14 维治理）| ❌（完全不存在）| ❌ | ❌ | ❌ | ❌ | ✅ | 7 业务 + 7 开发 ＝ 14 专家；CodeIR 驱动开发七维自动并入（Plan E 已交付） |
 | | **小计 / 15** | 7 | 5 | 4 | 4 | 8 | **15 ✅ / 0 缺失** | |
 
 ---

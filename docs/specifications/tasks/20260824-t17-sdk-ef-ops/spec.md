@@ -73,7 +73,7 @@ pytest：platform/sdk/python/test/ 至少 30 passing cases（pytest -q 全绿）
 #### AC-C-05 SDK 跨语言示例 ID 对齐
 rule: 云盘 30 主题在 Rust/Node/Python 中共享 id 集 {cloud-001..cloud-030}；
 关系图 30 主题共享 id 集 {graph-001..graph-030}。
-生成 projects/t17-sdk-examples/matrix.json 列出 6×30=180 示例 id × 语言 × 路径。
+生成 projects/t17-sdk-examples/matrix.json 列出 6×30＝180 示例 id × 语言 × 路径。
 
 #### AC-C-06 SDK 总测试 ≥80
 rule: `cargo test -p mox-sdk-cloud -p mox-sdk-graph --test '*'` +

@@ -81,7 +81,7 @@ Batch A         Batch B                Batch C
   2. 每条 SID 命名：P1 AdminFull / P2 BucketOwner / P3 EditorWrite / P4 ViewerRO / P5 GuestList / P6 PublicRead / P7 DenyNonMFA / P8 DenyIP / P9 TagConditional / P10 VPCOnly
   3. 扩展 `MockIamProvider::evaluate_policies(policies, principal, action, resource) -> Result<bool, _>`：**Deny 优先短路**
 - **本地 TR**：
-  - **[rule] A-2.1**：10 × 3 = 30 场景单测（match/mismatch/prefix）；cargo test → 30/30 green
+  - **[rule] A-2.1**：10 × 3 ＝ 30 场景单测（match/mismatch/prefix）；cargo test → 30/30 green
   - **[rule] A-2.2**：Deny 覆盖 Allow 测试：(Allow+Deny Delete) × Delete action = false；(Allow+No Deny) × Delete = true
   - **[rule] A-2.3**：P7 DenyNonMFA 在 MFA=false 时全部拒绝
 
@@ -647,7 +647,7 @@ Batch A         Batch B                Batch C
 | Gate | 验证 | 对应任务 |
 |------|------|---------|
 | G-1 | T0 18 烟测 18/18 PASS | A-11/B-11 脚本中嵌入 |
-| G-2 | 7×8 算法对账 = 56 绿 | B-9 基线回归 |
+| G-2 | 7×8 算法对账 ＝ 56 绿 | B-9 基线回归 |
 | G-3 | 棘轮不下降（≥ last meta_latest.json） | F-2 |
 | G-4 | 四闸门（代码/文档/测试/安全）签名齐全 | 27 §T6 |
 

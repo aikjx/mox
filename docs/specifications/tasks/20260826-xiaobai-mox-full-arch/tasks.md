@@ -443,7 +443,7 @@ _（待实施时填写：分类报告混淆矩阵、140 路由零错日志、50 
 | T10-TR1 | rule | RBAC 角色矩阵 4 档 × 5 Capability × 3 资源 = 60 场景裁决全对（viewer 只能 view；editor 可 edit 不可 approve；admin 全过；auditor 仅 audit/metrics） | 60/60 correct | rbac_role_matrix_60.log |
 | T10-TR2 | rule | 通配符匹配：editor 授权 `write:flow:projectA/*` → `write:flow:projectA/sub/flow1` = allow；`write:flow:projectB/x` = deny；跨前缀 deny 10/10 | allow 10 deny 10 = 20/20 correct | rbac_wildcard_match_20.log |
 | T10-TR3 | rule | 跨租户隔离：tenantA admin 访问 `resource:tenantB/db/...` → reject 100%；AssumeRole 到 tenantB 后再访问 → allow（若目标角色有权限）；无 AssumeRole 跨租户访问=0 allow | 10/10 reject AND role-assume allow 10/10 | rbac_tenant_isolation_20.log |
-| T10-TR4 | rule | Capability 单入口断言：7 专家 × 每专家 3 越权检查点 = 21 检查点全走 `ctx.can()`；grep 专家文件 `role == "` 出现次数 = 0（无魔法字符串） | 0 occurrences AND 21/21 can() calls | single_entry_grep_21.log |
+| T10-TR4 | rule | Capability 单入口断言：7 专家 × 每专家 3 越权检查点 ＝ 21 检查点全走 `ctx.can()`；grep 专家文件 `role == "` 出现次数 = 0（无魔法字符串） | 0 occurrences AND 21/21 can() calls | single_entry_grep_21.log |
 | T10-TR5 | rule | STS 防提权：源 clearance=2(秘密) AssumeRole → 目标 clearance=3(机密) → SignError 令牌签名失败；解码后 target clearance <= source 才 pass |提权 fail 5/5 AND 不降级 pass 5/5 | sts_nopriv_escalation_10.log |
 | T10-TR6 | rule | 越权拒绝率 100%：50 条未授权请求（各类 cap×资源×角色无权限组合）→ reject 50/50；审计链写入 RbacDenied record 50 条完整；响应头 `X-Mox-Deny-Reason` 语义不泄漏 | 50/50 reject AND audit records 50 AND reason 无泄露 | rbac_deny_rate_50.log |
 | T10-TR7 | rule | 旧版双轨回归：原 context.can 硬编码用例（T4 既有 `rbac_editor_can_edit_flow` 等）→ 新单入口实现仍 100% 通过（零回归） | regression pass 10/10 | rbac_regression_old10.log |
@@ -595,7 +595,7 @@ _（待实施时填写：Alt+X 10 次录音成功率、4 状态截图对比、�
 ### Task-local Test Requirements (TR >= 10)
 | TR | 类型 | 内容 | 通过阈值 | 证据 |
 |---|---|---|---|---|
-| T13-TR1 | rule | 4 档会员默认配额：Free/Pro/Team/Enterprise 注册新租户 → QuotaConfig 6 字段与上表完全一致；共 4×6=24 字段值断言正确 | 24/24 = | membership_tier_quota_24.log |
+| T13-TR1 | rule | 4 档会员默认配额：Free/Pro/Team/Enterprise 注册新租户 → QuotaConfig 6 字段与上表完全一致；共 4×6＝24 字段值断言正确 | 24/24 = | membership_tier_quota_24.log |
 | T13-TR2 | rule | 跨租户数据隔离：创建 tenantA + tenantB 各 10 flow → tenantA token 访问 /flows list 仅 10 条（零 tenantB 数据）；RLS 绕过尝试（直接 SQL 注入 UNION SELECT）→ DB 层过滤；共 5 条绕过尝试 0 泄漏 | 10/10 isolation + 5/5 bypass blocked = 15/15 | cross_tenant_isolation_15.log |
 | T13-TR3 | rule | Quota 原子消耗：Free 并发=2 满 → 第 3 会话 QuotaExceeded；HTTP 429 + Retry-After 头 + 升级引导链接；滑动窗口 1 小时后自动解除（时间加速模拟） | 3rd=429 THEN 1h later 3rd=200 5/5 scenes | quota_exceeded_429_5.log |
 | T13-TR4 | rule | 升级付费：Free → Pro 点击支付宝/微信支付 → Stripe webhook `invoice.paid` → tier=Pro；配额立即生效（下一次 check_and_consume = Pro 值）；数据库 tier 与 QuotaConfig 同步变更 | webhook received AND tier update + quota update 3/3 | tier_upgrade_stripe_webhook3.log |
@@ -783,7 +783,7 @@ _（待实施时填写：LocalFirst 无网 10 轮报告、3 次 failover 切换�
   - `projects/xiaobai_voice/**` Python UT：92 tests
   - `frontend/**` Vitest：87 tests
   - `platform/**` 服务端 UT：63 tests
-  - **小计 Baseline = 407 + 92 + 87 + 63 = 649 tests**（T1-TR8 保证零回归）
+  - **小计 Baseline = 407 + 92 + 87 + 63 ＝ 649 tests**（T1-TR8 保证零回归）
 - 新增 UT 清单本任务负责新增 >= 180，目标 >= 180：
   - Task 2 ASR：新增 18 tests（对齐 12 TR 扩充边缘场景）
   - Task 3 TTS：新增 20 tests（对齐 14 TR 扩充）
@@ -830,7 +830,7 @@ _（待实施时填写：LocalFirst 无网 10 轮报告、3 次 failover 切换�
 | T17-TR5 | rule | Harness 4 关键通过率：LFirst/Free/Voice、CFall/Pro/Code、COnly/Ent/Comp、Team/Query 四组典型 → pass >= 95%（stages pass rate） | 4/4 groups rate >= 95% 每组 | harness_key4_groups_passrate.log |
 | T17-TR6 | rule | E2E 覆盖率要求：代码覆盖率（cargo tarpaulin + Python coverage）Rust 包 mox-expert 行覆盖 >= 80%；xiaobai_voice Python 包行覆盖 >= 75%；C0 覆盖率不接受 <70% 任何包 | rust>=80% AND python>=75% AND min>=70% | coverage_report_tarpaulin_html.log |
 | T17-TR7 | rule | Playwright 端到端语音对话 30 轮循环（T16 基准扩充）：录音→识别→发送→LLM→朗读 30 轮全闭环；成功率 100%；无对话窗无响应死等（单轮 timeout <= 60 s） | 30/30 success AND no timeout 30/30 | pw_voice_e2e_30runs_trace.html |
-| T17-TR8 | rule | P1-P4 缺陷 E2E 集成回归：4 缺陷各自经典复现场景 5 个版本 × 4 = 20 E2E → 全部通过（不复发）；Task 4-7 单测基础上更靠近用户端场景（HTTP 调用级 / 前端 UI 级） | 20/20 no regression | defect_p1p4_e2e_20.log |
+| T17-TR8 | rule | P1-P4 缺陷 E2E 集成回归：4 缺陷各自经典复现场景 5 个版本 × 4 ＝ 20 E2E → 全部通过（不复发）；Task 4-7 单测基础上更靠近用户端场景（HTTP 调用级 / 前端 UI 级） | 20/20 no regression | defect_p1p4_e2e_20.log |
 | T17-TR9 | rule | audio_play 死锁 24 h 浸泡：_PlaySession 100K 轮 play/stop/pause 随机切换；死锁检测计数 = 0；浸泡期间 session 状态机无 illegal state 转移（FSM guard 断言） | 100K/100K no deadlock detector=0 AND illegal transfer=0 | playback_soak_100k_rounds.log |
 | T17-TR10 | rule | 并发压力 E2E：50 并发会话 × 策略 3 模式 × tier 4 档 子集 = 100 并发组合；持续 10 min；错误率 <= 0.5%；P99 <= 5 s（放宽端到端） | err<=0.5% AND P99<=5s | e2e_concurrent_100x10min.csv |
 | T17-TR11 | rule | 信创 4 平台兼容回归：M4 信创机器（麒麟 V10 鲲鹏 920 / 统信 UOS 飞腾 2000+ / Windows Server 信创版 / 中标麒麟）× smoke 套件各 50 tests → 通过 >= 45 每平台（允许 <=5 个已知 skip，无 fail）；4/4 平台达标 | per platform pass>=45 AND fail=0 4/4 | xincompat_4platforms_200tests.log |

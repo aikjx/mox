@@ -1,5 +1,5 @@
 # T10 · 差距分级 & 优化候选（璇玑 v3.1 企业级优化路线图）
-> 输入：`T10-comparison-matrix.json`（P0 vs P1~P4 5×18=90 格）
+> 输入：`T10-comparison-matrix.json`（P0 vs P1~P4 5×18＝90 格）
 > 输出：差距条目 + Critical/High/Medium/Low 分级 + 企业落地风险说明 + 优化候选（至少 1 条 / 每条 Critical/High 必须映射到具体任务 T6~T12）
 
 ---

@@ -403,7 +403,7 @@ pub trait GovernContext {
    - `cargo build --workspace --all-targets`
    - `cargo test --workspace`（551+ tests）
    - `cargo clippy --workspace --all-targets -- -D warnings`
-2. Node 12 suites（SPEC-15 基线 12 套 + 新增 5 套 = 17 套）
+2. Node 12 suites（SPEC-15 基线 12 套 + 新增 5 套 ＝ 17 套）
 3. Rust Gateway 3 suites（SPEC-6 baseline：router_semantics / sidecar_degrade / ai_engine_e2e）
 4. 精度护栏：test-precision-guardrail.js（toFixed / LPA 出口 / RAW 展开 / d=0.85 / maxIter=30）
 5. Rubric 汇总打分：AC-22~26 + CEM 分（0.55Q+0.2S+0.1T+0.15Stability）

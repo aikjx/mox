@@ -36,7 +36,7 @@
   - 任何 FAIL → 定位 storage_postgres / atlas / registry 真实代码修复（禁止 allow）。
 - **Acceptance Criteria Addressed**: AC-T1, AC-T1-Quality
 - **Test Requirements**:
-  - `rule` TR-1.1: 4 类 × 4 步 = 16 条 CRUD；至少 8 条核心（每个实体至少 1C/1R/1U/1D 成功）；`mocha .../t1.js` exit=0。证据: outputs/t1.log。
+  - `rule` TR-1.1: 4 类 × 4 步 ＝ 16 条 CRUD；至少 8 条核心（每个实体至少 1C/1R/1U/1D 成功）；`mocha .../t1.js` exit=0。证据: outputs/t1.log。
   - `rule` TR-1.2: 每个实体有 2 条异常用例（非法 ID / 删不存在 / 缺字段），全通过；mocha exit=0。
   - `rubric` TR-1.3: 并发 50 写无脏写 & 幂等；维度: CRUD 韧性; Scale 0-5; 锚 1=写即崩/3=happy only/5=并发干净；阈值 ≥4。证据: t1 concurrent.log。
 - **Completion Evidence**:

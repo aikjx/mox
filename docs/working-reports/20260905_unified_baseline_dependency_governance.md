@@ -37,7 +37,7 @@
 | 范围 / 命令 | 结果 |
 |---|---|
 | `cargo test -p mox-ai-flow-core -p mox-ai-flow-svc -p mox-ai-expert-core -p mox-ai-expert-svc --lib` | 算法 Core 83、专家 Core 101、专家 Service 191 通过；专家 Service 原有 1 项 ignored；兼容门面无内嵌单测 |
-| `cargo test -p mox-ai-agent-svc -p mox-flow-operator-core -p mox-platform-operator-core --lib` | 133 + 41 + 26 = 200 通过 |
+| `cargo test -p mox-ai-agent-svc -p mox-flow-operator-core -p mox-platform-operator-core --lib` | 133 + 41 + 26 ＝ 200 通过 |
 | `cargo test -p mox-cloud-store-core --all-targets --features erasure` | 58 通过，包括分片丢失重建、字节一致性和装饰器组合矩阵 |
 | 联盟 scheduler/executor 的 Core、Service 四包 `--all-targets` | 136 通过，包括 1 项性能基准；随后基于新算法门面再跑功能集 `-- --skip bench_alliance_round7`，135 通过、1 项过滤 |
 | `cargo test -p mox-ai-flow-svc --test core_compatibility` | 1 通过，验证旧服务路径与 Core 类型身份、JSON 和 Mermaid 一致 |
