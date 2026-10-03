@@ -1,0 +1,42 @@
+§1.8x 收据｜`pair` 档收进「明细 append 必须是循环体的直呼语句」——守卫下的计数不再等于明细长度（对仓内只读）｜生成 2026-10-03 2255 前后
+单源 formula_ledger.py（修后）｜md5 2026b6c3284b｜539 行
+姊妹 check-doc-formulas.py｜判决段 md5 b2f5d4293a26｜1487 行｜守卫图像由该段现造
+判据 check-api-surface.py｜判决段 md5 eb24d81ae4f7｜2316 行
+修前图像（git cat-file blob HEAD:scripts/gate/{formula_ledger,check-doc-formulas}.py）｜单源 md5 ac10d8cf3e3e｜姊妹全文 md5 0fcaea1c304a
+上一轮收据 reports/data/recon-18w-accname-agnostic-2026-10-03-2228.txt｜md5 22932272ef5a（引用值＝22932272ef5a，相符＝True）
+
+[1] 真语料里所有字符串下标 append 写点（判据要看的正是这一层：它在不在循环体直呼）
+   姊妹：2 处
+      append@151   宿主 agg｜外层 for@137｜中间节点 ['If', 'Expr']｜循环体直呼＝False
+      append@153   宿主 agg｜外层 for@152｜中间节点 ['Expr']｜循环体直呼＝True
+   普查器：0 处
+
+[2] 守卫那一型：修前那把尺是盲的，修后当场退档
+   守卫锚点命中 1 次｜图像确变＝True｜图像可解析＝True
+   修前那把尺（HEAD 字节现装）打 HEAD 那份判决段：锚点 1 次｜原名 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'pair')]｜守卫后 [('FAIL', 386, 'same-iter'), ('FAIL 主张不闭合', 380, 'pair')]
+      按 (头, 档位) 投影：原名 [('FAIL', 'same-iter'), ('FAIL 主张不闭合', 'pair')]｜守卫后 [('FAIL', 'same-iter'), ('FAIL 主张不闭合', 'pair')]｜一字不变＝True（守卫只把下面的行号整体 +1，所以带行号的比较会把位移读成变化）
+      ⇒ 档位不变＝盲侧：计数照旧数全部、明细会跳，而修前那把尺仍判 pair
+   修后那把尺打当前判决段：原名 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'pair')]｜守卫后 [('FAIL', 386, 'same-iter'), ('FAIL 主张不闭合', 380, 'name-only')]（行号整体 +1 是插入那行守卫造成的位移，不是新站点）
+      退档名单 ['FAIL 主张不闭合']｜说明逐条 ['明细 agg[details] 的 append@154 被守卫（不在循环体直呼），计数键 violations 未必等于明细长度']
+
+[3] 收紧不许动真站点：未变异图像上的逐站点档位（修前 vs 修后）
+   修前 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'pair')]
+   修后 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'pair')]（说明：{('FAIL 主张不闭合', 379): '明细 agg[details]（append@153）的计数键 violations 被 return 读', ('FAIL', 385): '循环集合 outside_verdict(out) 逐字出现在 return（385 行）'}）
+   普查器侧键级复算 0 条（它自己无字符串下标 append 写点 ⇒ 无对象，不是一条恒空的红）
+
+[4] 常驻状态（只读命令现跑；读数按日期冻结在本文，正文不复述）
+   sister --selftest              rc 0｜SELFTEST 总 72 例，FAIL 0 例
+   api --selftest                 rc 0｜SELFTEST 总 74 例，FAIL 0 例
+   api --ledger                   rc 0｜LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+   sister --recognizer            rc 0｜RECOGNIZER PASS（算术尺只在 scripts/gate/formula_ledger.py 里定义，除归宿外在册 30 份与集外候选 99 份无一把自带；两本分母同一次现推、按构造不相交）
+   gate check-script-paths --selftest rc 0｜SELFTEST PASS=53 FAIL=0
+
+[5] 判定与边界
+   守卫型退档＝True｜修前对守卫型无感＝True｜真站点未动＝True｜上一轮收据在盘且 md5 相符＝True
+   边界① 判据写的是「append 那个 Expr 的父节点就是宿主 for」，所以被 `try`／`while`／再嵌一层 `for`
+      包住时同样退档；本轮只对 `if` 型有对照（变异体38），其余三型是判据覆盖而**无对照**，登记为待建的针。
+   边界② 退档方向是保守的假阴而不是假阳：`if True:` 这类恒真守卫下计数确实等于明细长度，尺子仍判 name-only
+      并要求人处置——这一格故意不做常量折叠（折叠等于把「守卫恒真」当成尺子能证的事）。
+   边界③ 档位那层的 `acc_names=("bad",)`（§1.8w [3] 只量未改）本轮仍未动：实测换名会让普查器 13 站点整片退
+      `blind`（响亮假阳，不是隐身），改它同时动两台仪器的分母，先定价再动。
+   未闭合 0 条：[]

@@ -317,7 +317,7 @@
 - [frontend-ui/src/views/workspace/panels/WhiteboardPanel.vue](<../../frontend-ui/src/views/workspace/panels/WhiteboardPanel.vue>)
 - [frontend-ui/src/views/workspace/panels/WorkspaceHeader.vue](<../../frontend-ui/src/views/workspace/panels/WorkspaceHeader.vue>)
 
-### api（27）
+### api（28）
 
 - [frontend-ui/src/api/actuator.api.js](<../../frontend-ui/src/api/actuator.api.js>)
 - [frontend-ui/src/api/ai.api.js](<../../frontend-ui/src/api/ai.api.js>)
@@ -333,6 +333,7 @@
 - [frontend-ui/src/api/index.js](<../../frontend-ui/src/api/index.js>)
 - [frontend-ui/src/api/kb-edit.test.js](<../../frontend-ui/src/api/kb-edit.test.js>)
 - [frontend-ui/src/api/kb.api.js](<../../frontend-ui/src/api/kb.api.js>)
+- [frontend-ui/src/api/kb.entities.integration.test.js](<../../frontend-ui/src/api/kb.entities.integration.test.js>)
 - [frontend-ui/src/api/llm.api.js](<../../frontend-ui/src/api/llm.api.js>)
 - [frontend-ui/src/api/market.api.js](<../../frontend-ui/src/api/market.api.js>)
 - [frontend-ui/src/api/melody.api.js](<../../frontend-ui/src/api/melody.api.js>)

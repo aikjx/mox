@@ -3,14 +3,10 @@ import { markRaw } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { getAuditLogs } from '@/api'
 import { parseAuditPage } from '@/utils'
-import { useAuthStore } from '@/stores/auth.store'
 
 export const auditPage = markRaw({
   key: 'iam-audit', readOnly: true,
-  identityScope: () => {
-    const auth = useAuthStore()
-    return [auth.accessToken, auth.userId, auth.tenantId]
-  },
+  identityScope: auth => [auth.accessToken, auth.userId, auth.tenantId],
   api: { list: async ({ pageNum = 1, pageSize = 20, ...filters } = {}) => {
     const data = parseAuditPage(await getAuditLogs({ page: pageNum, page_size: pageSize, ...filters }))
     return { list: data.items, total: data.total }

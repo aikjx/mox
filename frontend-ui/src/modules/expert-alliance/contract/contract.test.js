@@ -1426,7 +1426,7 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
     }
     const ANCHOR_TEXT = {
       'config.rs:41': 'enabled: true',
-      'modules.rs:234': 'modules.route_layer(',
+      'modules.rs:231': 'modules.route_layer(',
       'router/index.js:74': 'if (!token) {',
       'experts_common.rs:803': 'pub struct OptionalAuthUser',
       'experts_dispatcher.rs:596': 'AuditAction::ExpertDispatch',

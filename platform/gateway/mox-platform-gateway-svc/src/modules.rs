@@ -37,7 +37,7 @@ use crate::{
     alliance::{self, experts_collaboration, experts_common, experts_dispatcher, experts_ext,
         experts_graph, experts_orchestration, experts_registry, experts_session, experts_streams},
     cloud::CloudState,
-    dialogue_sediment, kb_ext, misc,
+    dialogue_sediment, misc,
     monitor, notification, projects_ext, proxy, system, workspace,
 };
 use crate::auth::{AuthMiddleware, auth_middleware};
@@ -66,7 +66,6 @@ pub struct ModuleStates {
     /// 杂项域状态（任务 / 项目列表）
     pub misc: Arc<misc::MiscState>,
     /// 知识库扩展域状态（文档-实体关联）
-    pub kb_ext: Arc<kb_ext::KbExtState>,
     /// 通知域状态（通知列表）
     pub notification: Arc<notification::NotificationState>,
     /// 知识库域共享状态（mox-kb-svc 唯一真源；KB 路由与对话沉淀共用）
@@ -108,7 +107,6 @@ impl ModuleStates {
             workspace: Arc::new(workspace::WorkspaceState::new()),
             projects: Arc::new(projects_ext::ProjectsState::new()),
             misc: Arc::new(misc::MiscState::new()),
-            kb_ext: Arc::new(kb_ext::KbExtState::new()),
             notification: Arc::new(notification::NotificationState::with_inbox(inbox)),
             kb: kb.clone(),
             cloud: cloud.clone(),
@@ -208,7 +206,6 @@ pub fn build_module_routers(states: &ModuleStates, gateway: &GatewayState) -> Ro
         )))
         // —— 杂项与通知 ——
         .merge(upgrade(misc::build_misc_router(states.misc.clone())))
-        .merge(upgrade(kb_ext::build_kb_ext_router(states.kb_ext.clone())))
         .merge(upgrade(notification::build_notification_router(
             states.notification.clone(),
         )))
@@ -238,7 +235,7 @@ pub fn build_module_routers(states: &ModuleStates, gateway: &GatewayState) -> Ro
 }
 
 /// Auth middleware runs outside this adapter. Only its trusted extension supplies identity.
-fn protected_kb_router(state: Arc<mox_kb_svc::KbState>) -> Router {
+pub fn protected_kb_router(state: Arc<mox_kb_svc::KbState>) -> Router {
     use axum::response::IntoResponse;
     use tower::ServiceExt;
     mox_kb_svc::handlers::build_kb_router_with_state(state.clone()).layer(from_fn(
@@ -268,6 +265,17 @@ fn protected_kb_router(state: Arc<mox_kb_svc::KbState>) -> Router {
                 if state.ensure_projection_ready().await.is_err() {
                     return axum::http::StatusCode::SERVICE_UNAVAILABLE.into_response();
                 }
+                // The scoped router must match a fresh request: retaining axum's private
+                // URL parameter extension duplicates :id during the second dispatch.
+                // Carry trusted identity and OriginalUri explicitly; headers/body/version
+                // stay intact, while route-local extraction metadata is rebuilt below.
+                let trusted_user = user.clone();
+                let original_uri = request.extensions().get::<axum::extract::OriginalUri>().cloned();
+                let (mut parts, body) = request.into_parts();
+                parts.extensions = Default::default();
+                parts.extensions.insert(trusted_user);
+                if let Some(uri) = original_uri { parts.extensions.insert(uri); }
+                let request = Request::from_parts(parts, body);
                 match mox_kb_svc::handlers::build_kb_router_with_state(Arc::new(
                     state.scoped(access),
                 ))
@@ -362,7 +370,6 @@ mod tests {
         assert!(Arc::ptr_eq(&states.workspace, &cloned.workspace));
         assert!(Arc::ptr_eq(&states.projects, &cloned.projects));
         assert!(Arc::ptr_eq(&states.misc, &cloned.misc));
-        assert!(Arc::ptr_eq(&states.kb_ext, &cloned.kb_ext));
         assert!(Arc::ptr_eq(&states.notification, &cloned.notification));
         assert!(Arc::ptr_eq(&states.kb, &cloned.kb));
     }

@@ -1,21 +1,21 @@
 {
- "generated_at": "2026-10-03 14:50:31+0800",
+ "generated_at": "2026-10-04 01:22:38+0800",
  "scan_roots": [
   "docs"
  ],
  "recognizer": "scripts/gate/formula_ledger.py",
  "files": 380,
- "claims": 44,
+ "claims": 47,
  "violations": 0,
- "blind": 8836,
+ "blind": 8841,
  "quoted": 6,
  "blind_reasons": {
-  "glued": 5414,
+  "glued": 5413,
   "latin": 1412,
-  "noise": 932,
+  "noise": 936,
   "code": 180,
-  "no_fw_eq": 670,
-  "ascii_eq": 227,
+  "no_fw_eq": 673,
+  "ascii_eq": 226,
   "increment": 1
  },
  "per_doc": {
@@ -158,9 +158,9 @@
    "blind": {
     "glued": 32,
     "code": 19,
-    "noise": 44,
+    "noise": 49,
     "ascii_eq": 4,
-    "no_fw_eq": 18,
+    "no_fw_eq": 21,
     "latin": 12
    },
    "quoted": 5
@@ -242,10 +242,10 @@
    "quoted": 0
   },
   "docs/architecture/OPTIMAL_ARCHITECTURE.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
-    "glued": 4,
+    "glued": 3,
     "latin": 1,
     "noise": 1
    },
@@ -1195,13 +1195,13 @@
    "quoted": 0
   },
   "docs/enterprise/GLOSSARY.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 45,
     "latin": 7,
     "no_fw_eq": 7,
-    "ascii_eq": 3,
+    "ascii_eq": 2,
     "noise": 5
    },
    "quoted": 0
@@ -2439,12 +2439,12 @@
    "quoted": 0
   },
   "docs/working-reports/20260823_cloud_drive_and_relgraph_selfdev_plan.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 70,
     "latin": 13,
-    "noise": 31,
+    "noise": 30,
     "no_fw_eq": 2
    },
    "quoted": 0
@@ -3041,18 +3041,34 @@
  },
  "unclosed": [],
  "outside": {
-  "files": 317,
+  "files": 320,
   "dirs": 18,
   "root_files": 5,
   "skip_dirs": 12,
-  "claims": 1,
+  "claims": 8,
   "violations": 0,
-  "blind": 1945,
+  "blind": 1938,
   "quoted": 0,
   "claim_files": [
    [
+    "reports/markdown/database-normalization-plan.md",
+    1
+   ],
+   [
+    "reports/markdown/docs-architecture-corpus.md",
+    1
+   ],
+   [
+    "reports/markdown/functional-requirements-knowledge-graph-delivery-report.md",
+    2
+   ],
+   [
     "reports/markdown/locale-family-collapse-20260929.md",
     1
+   ],
+   [
+    "reports/markdown/质量联盟总报告-V1.0.md",
+    3
    ]
   ]
  }

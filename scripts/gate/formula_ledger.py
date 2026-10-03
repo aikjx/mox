@@ -199,29 +199,34 @@ def scan_text(text, blank_lines=()):
     return dict(claims=claims, violations=viol, blind=blind, quoted=quoted)
 
 
-def _acc_subscript(node, acc_names):
-    """`agg["key"]` 这类下标读写点：返回 (宿主名, 键名)，否则 None。"""
-    if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
-            and node.value.id in acc_names and isinstance(node.slice, ast.Index)):
+def _sub_pair(node):
+    """`X["key"]` 这类字符串下标读写点：返回 (宿主名, 键名)，否则 None。
+
+    不带宿主名白名单：累加器叫什么由被复算的那份源码决定，尺子里硬写一份名单
+    就等于在单源之外藏第二份词汇（换名会让 pair 退成 name-only，是假阳而不是看不见，
+    但假阳同样要人来裁）。要判"同一个累加器"就按宿主名相等来判，不按名字在不在名单里。"""
+    if not (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)):
+        return None
+    if isinstance(node.slice, ast.Index):
         k = node.slice.value
         if isinstance(k, ast.Str):
             return node.value.id, k.s
-    if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
-            and node.value.id in acc_names and isinstance(node.slice, ast.Str)):
+    elif isinstance(node.slice, ast.Str):
         return node.value.id, node.slice.s
     return None
 
 
-def driven_provenance(src_text, prefixes=(), acc_names=("agg",)):
+def driven_provenance(src_text, prefixes=()):
     """`driven` 档的键级复算：那条红真由退出码读的那个键驱动吗。
 
-    `red_accum_screen` 的 `driven` 只到名字一级（循环与 return 都写到 `agg` 就算）。这里补两型更强的同源：
+    `red_accum_screen` 的 `driven` 只到名字一级（循环与 return 都写到同一个累加器就算）。这里补两型更强的同源：
       "same-iter"：驱动这条红的 `for` 的可迭代表达式，与 return 表达式里某一段**逐字相同**
                   （`ast.get_source_segment` 取原文，不靠 ast.dump 的写法）；
-      "pair"：红的循环走的是 `agg[键A]`（一张明细表），而 `agg[键B]` 的累加恰是"同一个来源表达式的长度"
-             ——两处写在同一个 `for` 里 ⇒ 键B 是键A 的计数，return 读键B 就等于读这条红的同一批数据。
+      "pair"：红的循环走的是 `X[键A]`（一张明细表），而 `X[键B]` 的累加恰是"同一个来源表达式的长度"
+             ——两处写在同一个 `for` 里、且宿主是同一个累加器 ⇒ 键B 是键A 的计数，
+             return 读键B 就等于读这条红的同一批数据。
     两型都不成立就退回 "name-only"（＝名字级，正是 `red_accum_screen` 已经说过的那一层），
-    名单照旧按名点名：计数与明细分家、或 return 换了别的键，这一格当场红。
+    名单照旧按名点名：计数与明细分家、宿主分家、或 return 换了别的键，这一格当场红。
     只读源码图像，不执行任何东西。"""
     lines = src_text.split("\n")
     tree = ast.parse(src_text)
@@ -242,20 +247,26 @@ def driven_provenance(src_text, prefixes=(), acc_names=("agg",)):
                 return f
         return None
 
-    # 每张明细表（append 进 agg[键]）与每个计数（agg[键] += len(来源)）的构造点
+    # 每张明细表（append 进 X[键]）与每个计数（X[键] += len(来源)）的构造点，按 (宿主名, 键名) 归档。
+    # 明细点另记"是不是循环体的直呼语句"：被 if／try 守卫时，计数就不再必然等于明细长度，
+    # 那句"键B 是键A 的计数"从可证变成猜测 ⇒ pair 不许再判（否则这一格是盲侧而不是判据）。
+    par = {}
+    for n in ast.walk(tree):
+        for c in ast.iter_child_nodes(n):
+            par[c] = n
     lists, counts = {}, {}
     for n in ast.walk(tree):
         if (isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)
                 and isinstance(n.value.func, ast.Attribute) and n.value.func.attr == "append"):
-            got = _acc_subscript(n.value.func.value, set(acc_names))
+            got = _sub_pair(n.value.func.value)
             if got:
-                lists.setdefault(got[1], []).append(n.lineno)
+                lists.setdefault(got, []).append((n.lineno, isinstance(par.get(n), ast.For)))
         elif isinstance(n, (ast.AugAssign, ast.Assign)):
             tgt = n.target if isinstance(n, ast.AugAssign) else n.targets[0]
-            got = _acc_subscript(tgt, set(acc_names))
+            got = _sub_pair(tgt)
             if got and isinstance(n.value, ast.Call) and isinstance(n.value.func, ast.Name) \
                     and n.value.func.id == "len" and n.value.args:
-                counts.setdefault(got[1], []).append((n.lineno, seg(n.value.args[0])))
+                counts.setdefault(got, []).append((n.lineno, seg(n.value.args[0])))
 
     def for_chain(lineno):
         return set(x.lineno for x in ast.walk(tree) if isinstance(x, ast.For)
@@ -279,38 +290,48 @@ def driven_provenance(src_text, prefixes=(), acc_names=("agg",)):
         ret_segs = [" ".join(s.split()) for s in
                     (seg(n.value) for n in ast.walk(fn) if isinstance(n, ast.Return) and n.value)]
         hit_ret = [s for s in ret_segs if iter_seg and iter_seg in s]
-        got = _acc_subscript(drv.iter, set(acc_names))
+        got = _sub_pair(drv.iter)
         if hit_ret:
             out.append((head, fname, ln, "same-iter", "循环集合 %s 逐字出现在 return（%d 行）"
                         % (iter_seg, ln)))
         elif got:
-            key = got[1]
-            pairs = []
-            for ck, sites in counts.items():
+            base, key = got
+            pairs, guarded = [], []
+            for (cb, ck), sites in counts.items():
+                if cb != base:
+                    continue
                 for cl, src_seg in sites:
-                    for ll in lists.get(key, []):
+                    for ll, bare in lists.get((base, key), []):
                         host = innermost_for_of_line(ll)
-                        if host is not None and for_chain(cl) & for_chain(ll) \
-                                and src_seg and src_seg == seg(host.iter):
-                            pairs.append((ck, cl, ll))
+                        if host is None or not (for_chain(cl) & for_chain(ll)) \
+                                or not src_seg or src_seg != seg(host.iter):
+                            continue
+                        (pairs if bare else guarded).append((ck, cl, ll))
             if pairs:
                 ck, cl, ll = pairs[0]
                 keys_in_ret = set()
                 for n in ast.walk(fn):
                     if isinstance(n, ast.Return) and n.value is not None:
                         for m in ast.walk(n.value):
-                            g = _acc_subscript(m, set(acc_names))
-                            if g:
+                            g = _sub_pair(m)
+                            if g and g[0] == base:
                                 keys_in_ret.add(g[1])
                 if ck in keys_in_ret:
-                    out.append((head, fname, ln, "pair", "明细 %s（append@%d）的计数键 %s 被 return 读"
-                                % (key, ll, ck)))
+                    out.append((head, fname, ln, "pair", "明细 %s[%s]（append@%d）的计数键 %s 被 return 读"
+                                % (base, key, ll, ck)))
                 else:
                     out.append((head, fname, ln, "name-only",
-                                "计数键 %s 不在 return 读的键集 %s 里" % (ck, sorted(keys_in_ret))))
+                                "计数键 %s 不在 return 读的 %s 键集 %s 里"
+                                % (ck, base, sorted(keys_in_ret))))
+            elif guarded:
+                ck, cl, ll = guarded[0]
+                out.append((head, fname, ln, "name-only",
+                            "明细 %s[%s] 的 append@%d 被守卫（不在循环体直呼），计数键 %s 未必等于明细长度"
+                            % (base, key, ll, ck)))
             else:
                 out.append((head, fname, ln, "name-only",
-                            "明细表 %s 没有同循环的长度累加点（append@%s）" % (key, lists.get(key))))
+                            "明细表 %s[%s] 没有同宿主同循环的长度累加点（append@%s）"
+                            % (base, key, [x[0] for x in lists.get((base, key), [])])))
         else:
             out.append((head, fname, ln, "name-only", "循环集合 %s 不逐字出现在任何 return" % iter_seg))
     return out

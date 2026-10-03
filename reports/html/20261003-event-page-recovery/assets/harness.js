@@ -4,6 +4,7 @@ import EventConnectionStatus from '/frontend-ui/src/modules/expert-alliance/comp
 import { useAllianceEventStream } from '/frontend-ui/src/modules/expert-alliance/composables/useAllianceEventStream.js'
 import { useAllianceExpertsStore } from '/frontend-ui/src/modules/expert-alliance/store/alliance-experts.store.js'
 import { useAuthStore } from '/frontend-ui/src/stores/auth.store.js'
+import '/frontend-ui/src/styles/global.css'
 import '/frontend-ui/src/styles/themes/index.css'
 
 createApp({

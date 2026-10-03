@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python",
+    "scripts/gate/verify-ports.py"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "ports.log"
+}

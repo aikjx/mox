@@ -18,10 +18,10 @@ export const kbCompareVersions = (id, payload) => http.post(`/kb/documents/${enc
 export const kbRevertVersion = (id, payload) => http.post(`/kb/documents/${encodeURIComponent(id)}/versions/revert`, payload)
 export const kbGetEntities = (id) => http.get(`/kb/documents/${encodeURIComponent(id)}/entities`)
 export const kbSearchEntities = (params) => http.get('/kb/entities/search', { params })
-export const kbLinkEntity = (docId, entityId) =>
-  http.post(`/kb/documents/${encodeURIComponent(docId)}/entities`, { entity_id: entityId })
-export const kbUnlinkEntity = (docId, entityId) =>
-  http.delete(`/kb/documents/${encodeURIComponent(docId)}/entities`, { data: { entity_id: entityId } })
+export const kbLinkEntity = (docId, payload) =>
+  http.post(`/kb/documents/${encodeURIComponent(docId)}/entities`, payload, { projectContext: false })
+export const kbUnlinkEntity = (docId, payload) =>
+  http.delete(`/kb/documents/${encodeURIComponent(docId)}/entities`, { data: payload, projectContext: false })
 // 挂图/解图都是文档级动作，两个 handler 都只取 Path(:id)，不收请求体
 export const kbGraphLink = (id) => http.post(`/kb/documents/${encodeURIComponent(id)}/graph-link`)
 export const kbGraphUnlink = (id) => http.delete(`/kb/documents/${encodeURIComponent(id)}/graph-link`)

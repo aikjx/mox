@@ -1,0 +1,124 @@
+# §1.8za 收据：第三条款「计数键必须被 return 读」的撤条款对照（task #23（己）结案）
+铸造时刻 2026-10-04 01:20:52+0800｜驱动 D:\tmp\18o-measure\recon_18za_mint.py（本文件由它一次写出，不许手改、不许追加）
+单源 scripts/gate/formula_ledger.py 27422 B／md5 2026b6c3284b（跑前跑后各取一次，相同＝本收据没动尺子）
+仪器 scripts/gate/check-doc-formulas.py 201056 B／md5 cc716f5809a1
+上一张同族收据 reports/data/recon-18z-clause-removal-2026-10-04-0028.txt md5 916023b357b8（现算，不是抄的）
+
+## 一、被撤的那一条款与撤法
+锚点串（单源里恰 1 次）：'                if ck in keys_in_ret:\n'
+撤法：'                if True:\n' ⇒ 只改单源的**内存副本**并 exec 成模块，不落盘、不改单源（md5 见证见上）。
+图像口径：PV_J ＝ 仪器源码 `\ndef cmd_selftest` 之前的全部字节（真语料，不是合成夹具）。
+五张图像互不相同＝True｜三个图像锚点各恰 1 次＝True
+
+## 二、5×2 矩阵（档位｜说明全文；插行型图像会移动行号，故矩阵不登记行号）
+
+### 图像「真语料」
+  入口筛 red_accum_screen(acc_names=('bad',)) 档位：['driven@379']
+  基线   pair｜明细 agg[details]（append@153）的计数键 violations 被 return 读
+  撤③   pair｜明细 agg[details]（append@153）的计数键 violations 被 return 读
+
+### 图像「if 守卫」
+  入口筛 red_accum_screen(acc_names=('bad',)) 档位：['driven@380']
+  基线   name-only｜明细 agg[details] 的 append@154 被守卫（不在循环体直呼），计数键 violations 未必等于明细长度
+  撤③   name-only｜明细 agg[details] 的 append@154 被守卫（不在循环体直呼），计数键 violations 未必等于明细长度
+
+### 图像「嵌套 for」
+  入口筛 red_accum_screen(acc_names=('bad',)) 档位：['driven@380']
+  基线   name-only｜明细表 agg[details] 没有同宿主同循环的长度累加点（append@[154]）
+  撤③   name-only｜明细表 agg[details] 没有同宿主同循环的长度累加点（append@[154]）
+
+### 图像「计数键改名」
+  入口筛 red_accum_screen(acc_names=('bad',)) 档位：['driven@379']
+  基线   name-only｜计数键 tally 不在 return 读的 agg 键集 ['violations'] 里
+  撤③   pair｜明细 agg[details]（append@153）的计数键 tally 被 return 读
+
+### 图像「return 摘键」
+  入口筛 red_accum_screen(acc_names=('bad',)) 档位：['blind@379']
+  基线   （无判决）
+  撤③   （无判决）
+
+## 三、判决（三条，逐条现量）
+⑴ §1.8z 那三张图像（真语料／if 守卫／嵌套 for）对第三条款**全部无感**：撤前撤后逐档位逐说明相同。
+    实测无感名单 ['真语料', 'if 守卫', '嵌套 for'] ⇒ 「那三张的覆盖面」不许记到第三条款名下（针＝变异体41·乙）。
+⑵ 第三条款的牙只在第四张「计数键改名」：基线 ['name-only'] → 撤③ ['pair']。
+    基线说明：计数键 tally 不在 return 读的 agg 键集 ['violations'] 里
+    撤③说明：明细 agg[details]（append@153）的计数键 tally 被 return 读
+    ⇒ 失效方向是**静默假阳且说明撒谎**：升成 pair 之后那句「被 return 读」是假的，
+      交出去的是 return 里那个旧键的数，而累加写进了改名后的键（针＝变异体41·甲）。
+⑶ 第五张「return 摘键」两侧都**无判决**，成因不在第三条款而在入口筛：
+    真语料入口筛 ['driven']，摘掉 return 里那条 agg["violations"] 之后变 ['blind']（本函数内此后不碰累加器）。
+    ⇒ 第三条款只有一条**窄走廊**可达：宿主名仍出现在 return 里（入口筛才判 driven），
+      而配对到的计数键不是 return 读的那个。把宿主读整条摘掉时站点退成 blind 档，
+      那一格属 blind 的账；空判决的成因点名到入口筛，不许读成「第三条款没牙」（针＝变异体41·丙）。
+
+## 四、三条款的失效方向对照（①②由 §1.8z 那张收据量出，本张只补③）
+①「明细 append 必须是循环体直呼」：撤掉＝if 守卫图像静默退回 pair ⇒ 静默假阳。
+②「计数键的来源表达式逐字等于明细宿主 for 的 iter」：撤掉＝真语料 pair 掉成 name-only ⇒ 响亮假阴。
+③「计数键必须被 return 读」：撤掉＝计数键改名图像升成 pair 且说明撒谎 ⇒ 静默假阳（本张现量）。
+⇒ §1.8y 边界二那句「删掉任何一条退档款，对应形状必须静默退回 pair」对②不成立（§1.8z 已订正），
+  对③成立但**只在第四张图像上**——那三张常用图像对③是盲的（本张订正的是覆盖面归属，不是方向）。
+
+## 五、边界（未闭合的部分明说）
+① 第四张图像的形状是「写侧改名、return 仍读旧键」，本仓真语料里当前 0 处；它是判据覆盖而非在册缺陷。
+② 撤③之后那句撒谎的说明**没有第二把尺去核**：本张只钉「档位升了＋说明含被 return 读」，
+  没有钉「说明与 return 里真实读到的键集一致」这条恒等式；那需要把 keys_in_ret 也印进说明才闭合。
+③ 入口筛的 acc_names=('bad',) 仍未改（task #23（丙）只量未定价），本张的⑶依赖它当前这一版行为。
+④ 本收据不登记文档图像与 census 工件：正文在收据之后落盘，那一轮的数由落盘后重渲的 census 自署。
+
+## 六、六条只读命令的末行判决（豁免只开一个形状，且当场证明在场）
+  [姊妹 --selftest] rc=0｜输出 79 行｜末行：SELFTEST 总 78 例，FAIL 0 例
+  [姊妹 --recognizer] rc=0｜输出 14 行｜末行：RECOGNIZER PASS（算术尺只在 scripts/gate/formula_ledger.py 里定义，除归宿外在册 30 份与集外候选 99 份无一把自带；两本分母同一次现推、按构造不相交）
+  [api --selftest] rc=1｜输出 75 行｜末行：SELFTEST 总 74 例，FAIL 2 例
+  [api --ledger] rc=1｜输出 85 行｜末行：LEDGER FAIL（红 1 项；公式 30 条，每条的值都来自同一个命名空间）
+  [check-script-paths --selftest] rc=0｜输出 55 行｜末行：SELFTEST PASS=53 FAIL=0
+  [check-doc-links] rc=0｜输出 127 行｜末行：[OK] 未发现断链
+
+豁免的形状只有一种：api 侧「文档镜像：托管块与现渲染不一致」。姊妹仪器两条、check-script-paths、check-doc-links
+四条必须 rc=0；api --ledger 只许红 1 项且那条红里必须出现上面那个形状串，
+api --selftest 只许 夹具M 一族红且同样必须出现那个串——不在形状里就整份 REFUSE。
+本驱动落盘之前 REFUSE 过两次，两次都是豁免自己的判据在动，不是闸门变绿：
+  第一次：豁免还没写，api --selftest rc=1 直接判死（那时还没有归因）。
+  第二次：豁免的形状判据写成「差异行必须含全角等号」，把用不等号的 `ASM-ANTI` 那一行误判成非语料计数。
+  修法是把判据换成实质条件：逐对抹掉数字后两侧必须完全相同（见下），而不是认某个符号。
+豁免的证据（本驱动在跑闸门之前现量，不是散文）：
+  近 30 分钟被改写的 .rs 9 份：['platform/domains/kg/svc/mox-kb-svc/src/entity.rs', 'platform/domains/kg/svc/mox-kb-svc/tests/entity_associations.rs', 'platform/gateway/mox-platform-gateway-svc/tests/kb_entity_gateway.rs', 'platform/gateway/mox-platform-gateway-svc/src/actuator.rs', 'platform/gateway/mox-platform-gateway-svc/src/modules.rs', 'platform/domains/kg/svc/mox-kb-svc/src/handlers.rs', 'platform/gateway/mox-platform-gateway-svc/src/kb_ext.rs', 'platform/domains/kg/svc/mox-kb-svc/src/document.rs', 'platform/domains/kg/svc/mox-kb-svc/src/lib.rs']
+  未跟踪的 .rs 3 份：['platform/domains/kg/svc/mox-kb-svc/src/entity.rs', 'platform/domains/kg/svc/mox-kb-svc/tests/entity_associations.rs', 'platform/gateway/mox-platform-gateway-svc/tests/kb_entity_gateway.rs']
+⇒ 托管块差异 8 行，逐行现量（盘上｜现渲）：
+     盘上 扫描 .rs 1387 个｜公式 30 条（红 0）｜引用对账 55 条：一致 28、漂移 27、引用不成立 0。
+     现渲 扫描 .rs 1388 个｜公式 30 条（红 0）｜引用对账 55 条：一致 29、漂移 26、引用不成立 0。
+     盘上 | `ASM-CLOSE` 在册装配节点 ＝ 按名字在册 ＋ 只靠签名新增 | 73 ＝ 61 ＋ 12 | 闭合 | census:assembly_nodes_indexed／indexed_by_name／indexed_by_signature |
+     现渲 | `ASM-CLOSE` 在册装配节点 ＝ 按名字在册 ＋ 只靠签名新增 | 72 ＝ 60 ＋ 12 | 闭合 | census:assembly_nodes_indexed／indexed_by_name／indexed_by_signature |
+     盘上 | `ASM-ANTI` 反对照：按签名匹配的总数**不是**加数（与按名字那批有重叠） | 73 ≠ 61 ＋ 32（=93） | 闭合 | 重叠 20 条 ⇒ 只按名字会读小 |
+     现渲 | `ASM-ANTI` 反对照：按签名匹配的总数**不是**加数（与按名字那批有重叠） | 72 ≠ 60 ＋ 32（=92） | 闭合 | 重叠 20 条 ⇒ 只按名字会读小 |
+     盘上 | `ONLY-ALL` 归一挂载面 ＝ 只在 All 档 ＋ 跨多档 ＋ 任何角色都到不了 | 379 ＝ 252 ＋ 127 ＋ 0 | 闭合 | surface:only_all_bucket／bucket_delta_never_reachable |
+     现渲 | `ONLY-ALL` 归一挂载面 ＝ 只在 All 档 ＋ 跨多档 ＋ 任何角色都到不了 | 379 ＝ 251 ＋ 128 ＋ 0 | 闭合 | surface:only_all_bucket／bucket_delta_never_reachable |
+     盘上 | `LBL-PART` 有归属路径 ＝ 同 site 双读数 ＋ 不同 site ＋ 根本没有 | 111 ＝ 111 ＋ 0 ＋ 0 | 闭合 | matrix:same_site_twin_count／different_site_twin_paths／no_twin_paths |
+     现渲 | `LBL-PART` 有归属路径 ＝ 同 site 双读数 ＋ 不同 site ＋ 根本没有 | 112 ＝ 112 ＋ 0 ＋ 0 | 闭合 | matrix:same_site_twin_count／different_site_twin_paths／no_twin_paths |
+     盘上 | `LBL-SUM` 有归属路径 ＝ 各臂独占数之和（前提：跨两维以上的路径为 0） | 111 ＝ 111 | 闭合 | matrix:labeled_paths／exclusive_by_label |
+     现渲 | `LBL-SUM` 有归属路径 ＝ 各臂独占数之和（前提：跨两维以上的路径为 0） | 112 ＝ 112 | 闭合 | matrix:labeled_paths／exclusive_by_label |
+     盘上 | `BUCKET-Kb` Kb 档：只看臂的档 ＝ 带分支的档 ＋ 分支判据吃掉的条数 | 379 ＝ 34 ＋ 345 | 闭合 | surface:buckets_tag_arm_only／branch_judgment_removed |
+     现渲 | `BUCKET-Kb` Kb 档：只看臂的档 ＝ 带分支的档 ＋ 分支判据吃掉的条数 | 379 ＝ 35 ＋ 344 | 闭合 | surface:buckets_tag_arm_only／branch_judgment_removed |
+     盘上 | `SUBST-Kb` Kb 档：标签求值得到的面 ＝ 钉死取值走树得到的面 | 34 ＝ 34 | 闭合 | surface:buckets_tag／buckets_substituted |
+     现渲 | `SUBST-Kb` Kb 档：标签求值得到的面 ＝ 钉死取值走树得到的面 | 35 ＝ 35 | 闭合 | surface:buckets_tag／buckets_substituted |
+  判据：逐对把数字抹成 # 之后两侧完全相同 ⇒ 差异全是计数漂移，没有条目增删或改名；
+  且差异行里含「扫描 .rs」那一行 ⇒ 归因链落在 .rs 语料上，与本轮改的两件 Python／文档无关。
+  元行：FAIL 文档镜像：托管块与现渲染不一致（行数 42 配 42，首个差异在第 3 行，共 8 行不同）
+处置：**不跑 `--ledger --write`**。并发作者的 Rust 还在飞（最近一份 4.7 分钟前落笔），
+  此刻重渲等于把一个移动靶钉进托管块，并且把他们飞行中的计数记到本轮名下。
+  等他们那批 .rs 收口后由他们自己重渲；本张只登记红的成因与形状，不吞掉它。
+
+## 七、这张收据与上一张的关系
+上一张（§1.8z）量了条款①②的撤条款方向，并明写「③未铸」；本张补③，
+并订正§1.8z 覆盖面归属里那句隐含的「三张图像够用于三条款」：够用于①②，对③是盲的。
+常驻针：变异体41·甲（牙）／41·乙（三张盲侧的归属）／41·丙（窄走廊与入口筛归因），
+三枚都在 scripts/gate/check-doc-formulas.py 的 --selftest 里，例数由其末行现印。
+
+## 八、本张顶替了谁（按 md5 点名，不按路径——被顶替的那张已删）
+同轮先铸过一张 md5 4a4a4410c218 的同族收据，已删（删前全库 grep 那个文件名，除它自己 0 命中）。
+它的缺陷：矩阵那五节的标题行只写了格式串却没做替换，落盘就是一串字面占位符——**图像名整列丢失**，
+五节只能靠出现顺序认。抓住它的不是驱动里的任何断言，而是落盘之后把收据读回来眼看。
+这一类（未替换的占位符／稳定地错）对镜像与逐字节比对都是盲的：两侧一致地错就一致地绿。
+所以本驱动新增一条写前自检：整份文本里不许再出现任何格式串残留，否则 REFUSE（见下条判决）。
+
+铸造完毕：recon-18za-clause3-return-read-2026-10-04-0115.txt
+写前自检：格式串残留 0 处 ⇒ 通过（这一格是第八节那类缺陷的常驻判据）

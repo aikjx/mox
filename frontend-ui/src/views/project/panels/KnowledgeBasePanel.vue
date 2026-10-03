@@ -592,6 +592,7 @@
                   </div>
                 </div>
                 <el-empty v-else :description="isGraphLinked ? '挂图响应未带回节点' : '尚未关联图谱'" :image-size="60" />
+                <KnowledgeEntityLinks v-if="selectedDoc?.id" :document="selectedDoc" />
               </div>
             </div>
           </el-tab-pane>
@@ -751,6 +752,7 @@ import {
   List, Grid, Loading, PriceTag
 } from '@element-plus/icons-vue'
 import * as api from '@/api'
+import { KnowledgeEntityLinks } from '@/components'
 import { useProject } from '@/composables'
 
 // ========== State ==========

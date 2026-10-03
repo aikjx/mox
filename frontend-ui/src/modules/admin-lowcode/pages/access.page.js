@@ -8,7 +8,6 @@ import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { getApiKeys, createApiKey, revokeApiKey } from '@/api'
 import { parseApiKeyPage, apiKeyEligibilityLabel } from '@/utils'
-import { useAuthStore } from '@/stores/auth.store'
 
 // 引擎 pageNum/pageSize 映射为 API page/page_size，不拉取全量。
 async function listKeys({ pageNum = 1, pageSize = 20 } = {}) {
@@ -28,10 +27,7 @@ async function showCreatedKey(created) {
 
 export const accessPage = markRaw({
   key: 'access',
-  identityScope: () => {
-    const auth = useAuthStore()
-    return [auth.accessToken, auth.userId, auth.tenantId]
-  },
+  identityScope: auth => [auth.accessToken, auth.userId, auth.tenantId],
   onIdentityChange: () => ElMessageBox.close(),
 
   api: {

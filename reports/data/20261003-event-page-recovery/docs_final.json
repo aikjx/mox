@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python",
+    "scripts/gate/check-doc-links.py"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "docs_final.log"
+}

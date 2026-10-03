@@ -1,0 +1,58 @@
+§1.8z 收据｜撤条款型对照：把 `pair` 的两条退档款各撤一次（只在单源的内存副本上撤，盘上单源一个字节没动）
+｜对仓内只读，唯一写＝本文｜生成 2026-10-04 00:28 前后
+单源 formula_ledger.py｜md5 2026b6c3284b｜539 行｜撤前撤后同一份（写后复算见 [5]）
+姊妹 check-doc-formulas.py 判决段｜md5 b2f5d4293a26｜1487 行｜三张图像的真语料就是它
+上一张收据 reports/data/recon-18y-guard-shapes-2026-10-03-2312.txt｜md5 fd29997620f9（引用值＝fd29997620f9，相符＝True）
+
+[1] 两条被撤的条款与它们的锚点（按串取，不按行号——行号会随编辑漂）
+   条款① 明细 append 必须是循环体直呼：锚点 1 次｜撤法＝把 `isinstance(par.get(n), ast.For)` 改成恒真
+   条款② 计数键的来源表达式必须逐字等于明细宿主 for 的 iter：锚点 1 次｜撤法＝只删 `src_seg != seg(host.iter)` 那半个条件
+   撤后单源图像 md5：撤① de7fa2614580｜撤② 228539e61a27（都与撤前 2026b6c3284b 不同＝确实撤到了字节）
+
+[2] 3 把尺 × 3 张图像的判决矩阵（格内＝档位；插行型图像的行号有位移，故只登记档位与说明，不带行号）
+   尺                                              真语料                      if 守卫                    嵌套 for                  
+   基线（不撤）                                         pair                     name-only                name-only               
+   撤①「明细 append 必须是循环体直呼」                         pair                     pair                     name-only               
+   撤②「计数键的来源表达式逐字等于明细宿主 for 的 iter」               name-only                name-only                name-only               
+   逐格说明（档位之外的第二通道，读它才知道退在哪一条款上）：
+      基线（不撤）                                         × 真语料       → 明细 agg[details]（append@153）的计数键 violations 被 return 读
+      基线（不撤）                                         × if 守卫     → 明细 agg[details] 的 append@154 被守卫（不在循环体直呼），计数键 violations 未必等于明细长度
+      基线（不撤）                                         × 嵌套 for    → 明细表 agg[details] 没有同宿主同循环的长度累加点（append@[154]）
+      撤①「明细 append 必须是循环体直呼」                         × 真语料       → 明细 agg[details]（append@153）的计数键 violations 被 return 读
+      撤①「明细 append 必须是循环体直呼」                         × if 守卫     → 明细 agg[details]（append@154）的计数键 violations 被 return 读
+      撤①「明细 append 必须是循环体直呼」                         × 嵌套 for    → 明细表 agg[details] 没有同宿主同循环的长度累加点（append@[154]）
+      撤②「计数键的来源表达式逐字等于明细宿主 for 的 iter」               × 真语料       → 计数键 claims 不在 return 读的 agg 键集 ['violations'] 里
+      撤②「计数键的来源表达式逐字等于明细宿主 for 的 iter」               × if 守卫     → 明细 agg[details] 的 append@154 被守卫（不在循环体直呼），计数键 claims 未必等于明细长度
+      撤②「计数键的来源表达式逐字等于明细宿主 for 的 iter」               × 嵌套 for    → 计数键 claims 不在 return 读的 agg 键集 ['violations'] 里
+
+[3] 归因：两条条款都承重，但失效方向相反
+   条款①（直呼）撤掉 ⇒ if 守卫图像**静默退回 pair**＝假阳，而且账面全绿（这正是「只钉加条款那一侧」买不到的东西）；
+      真语料与嵌套 for 两格照旧 ⇒ 撤的是这一条款，不是把整把尺弄坏（隔离两问都过）。
+   条款②（来源表达式逐字相同）撤掉 ⇒ **不是静默的**：真语料那条 pair 当场掉成 name-only（响亮假阴，
+      因为同函数里另一张计数表 `agg["claims"]` 也被配上了明细），嵌套 for 那一型仍 name-only、只是换了条款——
+      第三条款「计数键必须被 return 读」接住了它 ⇒ 这一型是**双重设防**，不是单点。
+   **订正**：§1.8y 边界二那句预测（「删掉任何一条退档款，对应形状必须静默退回 pair」）被本表现量否掉一半：
+      它对条款① 成立、对条款② 不成立。§1.8y 把嵌套 for 型归到 `pinned` 堆（靠既有「来源表达式」条款接住）
+      这句仍是对的——那是**当前尺**上真接住它的那一条；本表新量到的是「撤掉它之后还有第三条接住」。
+
+[4] 常驻状态（只读命令现跑；读数按日期冻结在本文，正文不复述）
+   sister --selftest                  rc 0｜SELFTEST 总 75 例，FAIL 0 例
+   sister --recognizer                rc 0｜RECOGNIZER PASS（算术尺只在 scripts/gate/formula_ledger.py 里定义，除归宿外在册 30 份与集外候选 99 份无一把自带；两本分母同一次现推、按构造不相交）
+   api --selftest                     rc 0｜SELFTEST 总 74 例，FAIL 0 例
+   api --ledger                       rc 0｜LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+   gate check-script-paths --selftest rc 0｜SELFTEST PASS=53 FAIL=0
+   gate check-doc-links               rc 0｜[OK] 未发现断链
+   census 工件（本收据**不重渲**它：§1.8z 正文尚未落盘，落盘后逐文档行号会移动，由同轮后一步单独重渲并按键归因）
+      现值 reports/data/doc-formula-census-2026-10-02.json｜md5 cc20dd94693c
+
+[5] 写后复算：盘上单源必须与撤前逐字节相同（撤条款只发生在内存里）
+   单源 md5 现算 2026b6c3284b｜与文首登记的 2026b6c3284b 相符＝True
+
+[6] 边界
+   边界① 撤条款只在内存副本上做：本收据落盘前后各复算一次单源 md5，不符即 REFUSE（[5]）。
+   边界② 三张图像里两张是插行型（`if` 守卫插 1 行、嵌套 for 插 1 行）⇒ 后续站点行号整体位移，
+      所以矩阵只登记档位与说明、不登记行号；这与 §1.8x 那条「插行型变异体的比较必须投影掉行号」同一条规矩。
+   边界③ 矩阵里的 `pairs[0]` 取的是 `counts` 字典的迭代序（真语料里 `agg["claims"]` 先于 `agg["violations"]`），
+      撤② 之后是哪一张计数表被配上明细由这个序决定 ⇒ 本表的说明文本依赖该序；换一份语料要重跑本表，不许照抄。
+   边界④ 本收据不登记文档图像与 census 工件的**落盘后**状态（正文在后），引用本文时只可引仪器侧读数。
+   未闭合 0 条：[]

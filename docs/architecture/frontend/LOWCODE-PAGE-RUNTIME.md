@@ -43,7 +43,7 @@ contract拥有PageDefinition/版本/验证与capability映射；engine拥有渲�
 
 2026-10-02：`readOnly` 必须为布尔值；开启后校验器拒绝 form、声明式新增/编辑/删除工具项及行操作，通用 composable 阻止内置写入口。自定义函数属于可信构建代码，本地只读模式不能替代服务端授权，也不是远程代码隔离机制。首个实际入口为 [IAM 安全审计](../../modules/iam/AUDIT.md)，查询、存储和权限事实由该模块权威文档维护。
 
-`identityScope()` 返回当前身份范围；身份变化或组件销毁会使旧请求失效，清空旧行与对话框。`onIdentityChange()` 为可选生命周期回调，两者均须为函数。服务器分页页面适配 pageNum/pageSize 到自身 API 契约。表格缓存依赖服务端新行引用 `[row]`，原位修改对象不会触发该缓存更新；当前引擎通过替换列表使用新行对象。
+`identityScope(auth)` 返回当前身份范围；auth 由运行时从现有认证 store 注入，页面声明不得导入 store 或触发模块注册。旧的无参回调仍可使用。身份变化或组件销毁会使旧请求失效，清空旧行与对话框。`onIdentityChange()` 为可选生命周期回调，两者均须为函数。服务器分页页面适配 pageNum/pageSize 到自身 API 契约。表格缓存依赖服务端新行引用 `[row]`，原位修改对象不会触发该缓存更新；当前引擎通过替换列表使用新行对象。
 
 DataTable 的 `initialPageSize` 从 composable 当前 pageSize 传入，确保初次进入和搜索重新挂载后，控件页大小与服务器请求一致。旧调用者不传该属性时保持 pageSizes 首项的默认行为。
 

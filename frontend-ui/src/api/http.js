@@ -199,6 +199,7 @@ export function registerProjectIdGetter(getter) {
 }
 
 function injectProjectToConfig(config) {
+  if (config.projectContext === false) return config
   if (!_projectIdGetter) return config
   let pid
   try { pid = _projectIdGetter() } catch {}

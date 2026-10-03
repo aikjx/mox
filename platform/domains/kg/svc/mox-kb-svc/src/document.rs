@@ -34,9 +34,9 @@ pub const CATEGORIES: &[(&str, &str)] = &[
 /// 知识库文档服务
 #[derive(Clone)]
 pub struct KbDocumentService {
-    backend: Arc<StoreBackend>,
+    pub(crate) backend: Arc<StoreBackend>,
     access: Option<crate::access::KnowledgeAccess>,
-    mutation: Arc<tokio::sync::Mutex<()>>,
+    pub(crate) mutation: Arc<tokio::sync::Mutex<()>>,
 }
 
 /// 文档摘要（索引条目，用于 list/stats）

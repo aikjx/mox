@@ -492,7 +492,7 @@ pub static ROUTES: [ApiRoute; 250] = [
     r("ai.engine.metrics", "GET", "/ai/engine/metrics", "L3", "ai", "ready", "AI 引擎运行指标（调用量/延迟/成功率）"),
 
     // =====================================================================
-    // KB 域（L2·云盘知识库·/api/kb/*·kb-svc handlers.rs nest /api 实现 + kb_ext.rs 扩展）
+    // KB 域（L2·云盘知识库·/api/kb/*·kb-svc handlers.rs nest /api 统一实现）
     // =====================================================================
     r("kb.documents.list", "ANY", "/api/kb/documents", "L2", "kb", "ready", "文档列表/上传/搜索（云盘根目录）"),
     r("kb.documents.detail", "ANY", "/api/kb/documents/:id", "L2", "kb", "ready", "文档详情/下载/删除/元数据更新"),
@@ -505,12 +505,12 @@ pub static ROUTES: [ApiRoute; 250] = [
     r("kb.versions.detail", "GET", "/api/kb/documents/:id/versions/:ver", "L2", "kb", "ready", "指定版本详情/下载"),
     r("kb.versions.compare", "POST", "/api/kb/documents/:id/versions/compare", "L2", "kb", "ready", "版本差异对比（diff）"),
     r("kb.versions.revert", "POST", "/api/kb/documents/:id/versions/revert", "L2", "kb", "ready", "回滚到指定版本"),
-    r("kb.entities.list", "ANY", "/api/kb/documents/:id/entities", "L2", "kb", "ready", "文档实体抽取结果/关联/解关联（handlers+ext）"),
+    r("kb.entities.list", "ANY", "/api/kb/documents/:id/entities", "L2", "kb", "ready", "文档抽取实体/版本化引用关联与解绑（主 KB）"),
     r("kb.graph.link", "ANY", "/api/kb/documents/:id/graph-link", "L2", "kb", "ready", "文档→知识图谱关联/挂图"),
     r("kb.documents.history", "GET", "/api/kb/documents/:id/history", "L2", "kb", "ready", "文档操作历史（审计）"),
     r("kb.stats.summary", "GET", "/api/kb/stats", "L2", "kb", "ready", "知识库统计（文档数/容量/活跃度）"),
     r("kb.history.list", "GET", "/api/kb/history", "L2", "kb", "ready", "全局操作历史（最近活动）"),
-    r("kb.entities.search", "GET", "/api/kb/entities/search", "L2", "kb", "ready", "实体语义搜索（kb_ext.rs）"),
+    r("kb.entities.search", "GET", "/api/kb/entities/search", "L2", "kb", "ready", "已授权文档实体名称搜索（主 KB）"),
 
     // =====================================================================
     // Alliance 域（L4·专家联盟·/api/alliance/*·mox-alliance-http-sdk alliance.rs 实现）

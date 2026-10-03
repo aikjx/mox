@@ -50,7 +50,7 @@ IMPL = {
     'platform': '`lib.rs`（内联路由）+ `proxy.rs`（反向代理 :3001/:8000）',
     'kg': '`platform/domains/kg/svc/mox-kg-service-svc/src/http_adapter.rs`',
     'ai': '`platform/domains/kg/svc/mox-kg-service-svc/src/http_adapter.rs`',
-    'kb': '`platform/domains/kg/svc/mox-kb-svc/src/handlers.rs`（nest `/api`）+ `kb_ext.rs`',
+    'kb': '`platform/domains/kg/svc/mox-kb-svc/src/handlers.rs`（nest `/api`；统一 KnowledgeAccess 授权）',
     'alliance': '`platform/domains/alliance/sdk/mox-alliance-http-sdk/src/alliance.rs`',
     'system': '`platform/gateway/mox-platform-gateway-svc/src/system/mod.rs`',
     'experts': '`experts_registry/collaboration/dispatcher/graph/orchestration/session/ext.rs` 七模块',

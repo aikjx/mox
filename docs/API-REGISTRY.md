@@ -74,7 +74,7 @@
 
 ### kb（17 条）
 
-实现：`platform/domains/kg/svc/mox-kb-svc/src/handlers.rs`（nest `/api`）+ `kb_ext.rs`
+实现：`platform/domains/kg/svc/mox-kb-svc/src/handlers.rs`（nest `/api`；统一 KnowledgeAccess 授权）
 
 | ID | 方法 | 路径 | 层 | 说明 |
 | --- | --- | --- | --- | --- |
@@ -89,12 +89,12 @@
 | `kb.versions.detail` | GET | `/api/kb/documents/:id/versions/:ver` | L2 | 指定版本详情/下载 |
 | `kb.versions.compare` | POST | `/api/kb/documents/:id/versions/compare` | L2 | 版本差异对比（diff） |
 | `kb.versions.revert` | POST | `/api/kb/documents/:id/versions/revert` | L2 | 回滚到指定版本 |
-| `kb.entities.list` | ANY | `/api/kb/documents/:id/entities` | L2 | 文档实体抽取结果/关联/解关联（handlers+ext） |
+| `kb.entities.list` | ANY | `/api/kb/documents/:id/entities` | L2 | 文档抽取实体/版本化引用关联与解绑（主 KB） |
 | `kb.graph.link` | ANY | `/api/kb/documents/:id/graph-link` | L2 | 文档→知识图谱关联/挂图 |
 | `kb.documents.history` | GET | `/api/kb/documents/:id/history` | L2 | 文档操作历史（审计） |
 | `kb.stats.summary` | GET | `/api/kb/stats` | L2 | 知识库统计（文档数/容量/活跃度） |
 | `kb.history.list` | GET | `/api/kb/history` | L2 | 全局操作历史（最近活动） |
-| `kb.entities.search` | GET | `/api/kb/entities/search` | L2 | 实体语义搜索（kb_ext.rs） |
+| `kb.entities.search` | GET | `/api/kb/entities/search` | L2 | 已授权文档实体名称搜索（主 KB） |
 
 ### alliance（23 条）
 

@@ -1,0 +1,14 @@
+{
+  "command": [
+    "rustfmt",
+    "--edition",
+    "2021",
+    "--check",
+    "platform/domains/kg/svc/mox-kb-svc/src/entity.rs",
+    "platform/domains/kg/svc/mox-kb-svc/tests/entity_associations.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/kb_entity_gateway.rs"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "format.log"
+}

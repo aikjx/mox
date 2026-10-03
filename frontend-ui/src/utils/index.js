@@ -5,7 +5,7 @@ export * from './message.utils'
 export {
   escapeHtml, simpleMarkdownRender, truncateText, KB_CATEGORIES, KB_STATUSES,
   getCategoryLabel, getCategoryTagType, getCategoryIcon, isAiAnalyzed,
-  getStatusType, getStatusLabel, getActionLabel, mapDoc, getTagSize,
+  getStatusType, getStatusLabel, getActionLabel, mapDoc, getTagSize, kbEntityMutation,
 } from './knowledgeBase.utils'
 export { safeUrl as kbSafeUrl } from './knowledgeBase.utils'
 export { timeValue, formatDateTime, formatDateTimeLocale, formatDateTimeLocaleOr, formatClockMinute, formatClockSecond, formatDateStamp, relativeTimeText, timeAgoOrDate } from './time'

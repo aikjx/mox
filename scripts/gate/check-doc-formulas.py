@@ -2628,6 +2628,194 @@ def cmd_selftest(args):
                    n37 == 1 and img37 != PV_J and w37 == ["FAIL 主张不闭合"],
                    "锚点 %d 次｜图像确变＝%s｜退档名单 %s（期望只那一条 pair）"
                    % (n37, img37 != PV_J, w37)))
+    # 明细 append 被守卫时，计数就不再必然等于明细长度 ⇒ pair 不许再判（盲侧收成判据）
+    PV_APP = ('            agg["details"].append(dict(path=rel, line=v["line"],'
+              ' span=v["span"], vals=v["vals"]))\n')
+    PV_APP_G = ('            if v["vals"]:\n'
+                '                agg["details"].append(dict(path=rel, line=v["line"],'
+                ' span=v["span"], vals=v["vals"]))\n')
+    n38 = PV_J.count(PV_APP)
+    img38 = PV_J.replace(PV_APP, PV_APP_G, 1)
+    w38 = sorted(set(h for h, _f, _l, v, _n in FL.driven_provenance(img38, ("FAIL ", "INFO "))
+                     if v == "name-only"))
+    n38b = [x for x in FL.driven_provenance(img38, ("FAIL ", "INFO ")) if x[3] == "name-only"]
+    checks.append(("变异体38 给那次明细 append 套一层守卫（`if v[\"vals\"]:`，计数照旧数全部）"
+                   "⇒ pair 必须退成 name-only 并在说明里点名"
+                   "「计数键未必等于明细长度」：这一型从前是尺子的盲侧（同宿主、同循环、同来源全成立，"
+                   "但明细会跳），现在它是一条判据",
+                   n38 == 1 and img38 != PV_J and w38 == ["FAIL 主张不闭合"]
+                   and bool(n38b) and "被守卫" in n38b[0][4],
+                   "锚点 %d 次｜图像确变＝%s｜退档名单 %s｜说明 %s"
+                   % (n38, img38 != PV_J, w38, n38b[0][4] if n38b else "（无）")))
+
+    # 判据覆盖 if／try／while／嵌套 for 四型，§1.8x 只铸了 if 型 ⇒ 其余三型各配一枚（task #23（丁））
+    def pv_indent(s, k):
+        return "".join((" " * k + x) + "\n" for x in s.split("\n") if x)
+
+    shapes39 = [
+        ("try", "            try:\n" + pv_indent(PV_APP, 4)
+         + "            except KeyError:\n                pass\n", "被守卫"),
+        ("while", "            once = True\n            while once:\n                once = False\n"
+         + pv_indent(PV_APP, 4), "被守卫"),
+        ("嵌套 for", "            for _once in (0,):\n" + pv_indent(PV_APP, 4), "没有同宿主同循环"),
+    ]
+    res39 = []
+    for tag39, rep39, want39 in shapes39:
+        img39 = PV_J.replace(PV_APP, rep39, 1)
+        prov39 = FL.driven_provenance(img39, ("FAIL ", "INFO "))
+        wk39 = sorted(set(h for h, _f, _l, v, _n in prov39 if v == "name-only"))
+        nt39 = [n for h, _f, _l, v, n in prov39 if v == "name-only"]
+        res39.append((tag39, img39 != PV_J, wk39, want39 in (nt39[0] if nt39 else "")))
+    checks.append(("变异体39 守卫的其余三型各一枚（`try`／`while`／再嵌一层 `for`）⇒ 那条 pair 都必须退成 "
+                   "name-only：判据覆盖的形状不许多于有对照的形状（§1.8x 只铸了 `if` 型）。退档走哪一条款按型现印"
+                   "——嵌一层 `for` 时明细的最内层宿主变了，退在「没有同宿主同循环的长度累加点」而不是「被守卫」",
+                   n38 == 1 and all(c and w == ["FAIL 主张不闭合"] and h for _t, c, w, h in res39),
+                   "逐型 %s" % ["%s：图像确变＝%s／退档 %s／说明命中该型条款＝%s" % (t, c, w, h)
+                                for t, c, w, h in res39]))
+    # 撤条款型对照（task #23（戊））：变异体38／39 只钉了「加了条款会不会退档」这一侧，
+    # 删条款那天账面照样全绿 ⇒ 每条款各铸一枚「撤掉它，看对应形状退到哪、退得响不响」。
+    # 撤法是把单源字节读进来、按锚点串只撤一条款、exec 成内存模块再跑同一批图像（不落盘、不改单源）。
+    FL_PATH40 = os.path.join(os.path.dirname(os.path.abspath(__file__)), "formula_ledger.py")
+    FL_SRC40 = _read_code(FL_PATH40).replace("\r\n", "\n")
+    C40A_OLD = ("                lists.setdefault(got, []).append((n.lineno,"
+                " isinstance(par.get(n), ast.For)))")
+    C40A_NEW = "                lists.setdefault(got, []).append((n.lineno, True))"
+    C40B_OLD = ("                        if host is None or not (for_chain(cl) & for_chain(ll)) \\\n"
+                "                                or not src_seg or src_seg != seg(host.iter):\n")
+    C40B_NEW = ("                        if host is None or not (for_chain(cl) & for_chain(ll)) \\\n"
+                "                                or not src_seg:\n")
+    n40a, n40b = FL_SRC40.count(C40A_OLD), FL_SRC40.count(C40B_OLD)
+
+    def fl_mut40(old, new):
+        ns = {"__name__": "fl_mut40", "__file__": FL_PATH40}
+        exec(compile(FL_SRC40.replace(old, new, 1), "fl_mut40", "exec"), ns)
+        return ns
+
+    def v40(ns, img):
+        return [(v, n) for h, _f, _l, v, n in ns["driven_provenance"](img, ("FAIL ", "INFO "))
+                if h == "FAIL 主张不闭合"]
+
+    IMG40 = (("真语料", PV_J),
+             ("if 守卫", PV_J.replace(PV_APP, PV_APP_G, 1)),
+             ("嵌套 for", PV_J.replace(PV_APP, "            for _once in (0,):\n"
+                                       + pv_indent(PV_APP, 4), 1)))
+    V40 = {}
+    for tag40, old40, new40 in (("基线", "\x00无此锚点\x00", ""),
+                                ("撤①", C40A_OLD, C40A_NEW),
+                                ("撤②", C40B_OLD, C40B_NEW)):
+        ns40 = fl_mut40(old40, new40)
+        V40[tag40] = dict((nm, v40(ns40, img)) for nm, img in IMG40)
+
+    def k40(tag, nm):
+        return [v for v, _n in V40[tag][nm]]
+
+    def s40(tag, nm):
+        return V40[tag][nm][0][1] if V40[tag][nm] else "（无）"
+
+    checks.append(("变异体40·甲 撤掉「明细 append 必须是循环体直呼」这一条款（把 `isinstance(par.get(n), ast.For)`"
+                   "改成恒真，只改单源的内存副本）⇒ `if` 守卫那张图像**静默退回 pair**：这就是「删条款那天账面全绿」"
+                   "的实证，失效方向是假阳。隔离两问：真语料那条 pair 必须照旧（撤的不是整把尺），"
+                   "嵌套 for 那张必须照旧 name-only（它不由这一条款接住）；基线两张守卫图像都必须 name-only",
+                   n40a == 1 and k40("基线", "if 守卫") == ["name-only"]
+                   and k40("撤①", "if 守卫") == ["pair"]
+                   and k40("撤①", "真语料") == ["pair"]
+                   and k40("撤①", "嵌套 for") == ["name-only"]
+                   and k40("基线", "嵌套 for") == ["name-only"],
+                   "锚点 %d 次｜if 守卫 基线→撤① %s→%s｜真语料 撤① %s｜嵌套 for 撤① %s（%s）"
+                   % (n40a, k40("基线", "if 守卫"), k40("撤①", "if 守卫"),
+                      k40("撤①", "真语料"), k40("撤①", "嵌套 for"), s40("撤①", "嵌套 for"))))
+    checks.append(("变异体40·乙 撤掉「计数键的来源表达式必须逐字等于明细宿主 for 的 iter」这一条款"
+                   "（只删 `src_seg != seg(host.iter)` 那半个条件）⇒ 失效方向**不是静默的**，与①相反："
+                   "真语料那条 pair 当场掉成 name-only（响亮假阴，因为另一张计数表 `agg[\"claims\"]` 也被配上了明细），"
+                   "而嵌套 for 那一型仍判 name-only、只是换了条款——第三条款「计数键必须被 return 读」接住了它。"
+                   "**这一枚现量否掉了 §1.8y 边界二那句预测**（「删掉任何一条退档款，对应形状必须静默退回 pair」）："
+                   "两条款的失效方向不同（①静默假阳／②响亮假阴），且嵌套 for 型是双重设防",
+                   n40b == 1 and k40("基线", "真语料") == ["pair"]
+                   and k40("撤②", "真语料") == ["name-only"]
+                   and "不在 return 读的" in s40("撤②", "真语料")
+                   and k40("撤②", "嵌套 for") == ["name-only"]
+                   and "不在 return 读的" in s40("撤②", "嵌套 for")
+                   and k40("撤②", "if 守卫") == ["name-only"]
+                   and "被守卫" in s40("撤②", "if 守卫"),
+                   "锚点 %d 次｜真语料 基线→撤② %s→%s（%s）｜嵌套 for 撤② %s（%s）｜if 守卫 撤② %s（%s）"
+                   % (n40b, k40("基线", "真语料"), k40("撤②", "真语料"), s40("撤②", "真语料"),
+                      k40("撤②", "嵌套 for"), s40("撤②", "嵌套 for"),
+                      k40("撤②", "if 守卫"), s40("撤②", "if 守卫"))))
+    # 第三条款「计数键必须被 return 读」的撤条款对照（task #23（己））。撤法只有一把 ⇒ 复用
+    # fl_mut40／v40，只换锚点与图像。期望值全部由探针现量后写入，没有照抄 §1.8z 的方向：
+    # 实测三条款的失效方向各不相同，而这一条款的可达走廊窄到只剩一种形状。
+    C41_OLD = "                if ck in keys_in_ret:\n"
+    C41_NEW = "                if True:\n"
+    n41 = FL_SRC40.count(C41_OLD)
+    PV_RET41 = '    return 1 if (agg["violations"] or outside_verdict(out)) else 0\n'
+    PV_RET41_X = '    return 1 if outside_verdict(out) else 0\n'
+    PV_CNT41_X = '        agg["tally"] += len(sp["violations"])\n'
+    IMG41 = (("真语料", PV_J),
+             ("if 守卫", PV_J.replace(PV_APP, PV_APP_G, 1)),
+             ("嵌套 for", PV_J.replace(PV_APP, "            for _once in (0,):\n"
+                                       + pv_indent(PV_APP, 4), 1)),
+             ("计数键改名", PV_J.replace(PV_CNT, PV_CNT41_X, 1)),
+             ("return 摘键", PV_J.replace(PV_RET41, PV_RET41_X, 1)))
+    V41 = {}
+    for tag41, old41, new41 in (("基线", "\x00无此锚点\x00", ""),
+                                ("撤③", C41_OLD, C41_NEW)):
+        ns41 = fl_mut40(old41, new41)
+        V41[tag41] = dict((nm, v40(ns41, img)) for nm, img in IMG41)
+
+    def k41(tag, nm):
+        return [v for v, _n in V41[tag][nm]]
+
+    def s41(tag, nm):
+        return V41[tag][nm][0][1] if V41[tag][nm] else "（无）"
+
+    def scr41(img):
+        # acc_names 显式给 ("bad",)：与 driven_provenance 自己的入口调用同口径，
+        # 用默认值量出来的档位不是这一条款真实经过的那条筛。
+        return [(k, n) for h, _f, _l, k, n
+                in FL.red_accum_screen(img, ("FAIL ", "INFO "), ("bad",))
+                if h == "FAIL 主张不闭合"]
+
+    SCR41 = dict((nm, scr41(img)) for nm, img in IMG41)
+    checks.append(("变异体41·甲 撤掉第三条款「计数键必须被 return 读」（把 `if ck in keys_in_ret:` 改成恒真，"
+                   "只改单源的内存副本）⇒ 失效方向是**静默假阳，而且说明自己撒谎**：把计数键的写侧改名"
+                   "（agg[violations] 的累加写成 agg[tally]）而 return 仍读旧键时，基线判 name-only 并点名"
+                   "「计数键 tally 不在 return 读的 agg 键集里」；撤掉之后升成 pair，说明却写"
+                   "「计数键 tally 被 return 读」——那个键根本没被 return 读，交出去的是另一个键的数。"
+                   "隔离一问：真语料那条 pair 撤前撤后必须照旧（撤的不是整把尺）",
+                   n41 == 1 and k41("基线", "计数键改名") == ["name-only"]
+                   and "不在 return 读的" in s41("基线", "计数键改名")
+                   and k41("撤③", "计数键改名") == ["pair"]
+                   and "被 return 读" in s41("撤③", "计数键改名")
+                   and k41("基线", "真语料") == ["pair"]
+                   and k41("撤③", "真语料") == ["pair"],
+                   "锚点 %d 次｜计数键改名 基线→撤③ %s→%s｜基线说明「%s」｜撤③说明「%s」｜真语料 %s→%s"
+                   % (n41, k41("基线", "计数键改名"), k41("撤③", "计数键改名"),
+                      s41("基线", "计数键改名"), s41("撤③", "计数键改名"),
+                      k41("基线", "真语料"), k41("撤③", "真语料"))))
+    checks.append(("变异体41·乙 §1.8z 那三张图像（真语料／`if` 守卫／嵌套 `for`）对第三条款**是盲的**："
+                   "撤前撤后逐档位逐说明一字不变（计数键 violations 本来就在 return 读的键集里，"
+                   "这一条款在那三张上从不参与判决）⇒ 这一枚钉的是「不许把那三张的覆盖面记到第三条款名下」。"
+                   "三条款的牙各在不同图像上：①在 `if` 守卫、②在真语料、③只在计数键改名——"
+                   "「覆盖 N 型」不等于「N 枚牙」，逐型都要有自己的图像",
+                   all(V41["基线"][nm] == V41["撤③"][nm] for nm in ("真语料", "if 守卫", "嵌套 for"))
+                   and V41["基线"]["计数键改名"] != V41["撤③"]["计数键改名"],
+                   "三张盲侧逐档相同＝%s｜计数键改名确变＝%s"
+                   % (["%s %s" % (nm, k41("基线", nm)) for nm in ("真语料", "if 守卫", "嵌套 for")],
+                      V41["基线"]["计数键改名"] != V41["撤③"]["计数键改名"])))
+    checks.append(("变异体41·丙 第三条款只有一条**窄走廊**可达：宿主名 agg 必须仍出现在 return 里"
+                   "（否则入口筛 red_accum_screen 先把站点降成 blind），而配对到的计数键又必须不是 return 读的那个。"
+                   "把 return 里那条 agg[violations] 整个摘掉时，站点在**入口筛**就退成 blind"
+                   "（说明「本函数内此后不碰累加器」），driven_provenance 一条判决都不出——"
+                   "那一格属 blind 档的账，与第三条款无关，撤不撤都是空。这一枚把「空判决」的成因点名到入口筛，"
+                   "不许读成「第三条款没牙」（自洽的 0 与真的没有同形）",
+                   k41("基线", "return 摘键") == [] and k41("撤③", "return 摘键") == []
+                   and [k for k, _n in SCR41["真语料"]] == ["driven"]
+                   and [k for k, _n in SCR41["return 摘键"]] == ["blind"]
+                   and "不碰累加器" in SCR41["return 摘键"][0][1],
+                   "入口筛档位 真语料 %s｜return 摘键 %s（%s）｜driven_provenance 判决条数 摘键 基线 %d 撤③ %d"
+                   % ([k for k, _n in SCR41["真语料"]], [k for k, _n in SCR41["return 摘键"]],
+                      SCR41["return 摘键"][0][1] if SCR41["return 摘键"] else "（无）",
+                      len(V41["基线"]["return 摘键"]), len(V41["撤③"]["return 摘键"]))))
     ascii_fix = ["7×8=1", "4 人 × 10 周 = 10 人月", "24 = 全资源模块化+图谱贯通 6",
                  "10=19 子集+对内 4", "2=8 节齐 + 30"]
     ar = []

@@ -1,0 +1,39 @@
+§1.8w 收据｜键级复算去掉累加器名白名单（「同宿主」改由宿主名相等判，不再靠尺子里硬写的名单）｜对仓内只读｜生成 2026-10-03 2228 前后
+单源 formula_ledger.py（修后）｜md5 6cc7054f1d96｜527 行
+姊妹 check-doc-formulas.py｜判决段 md5 049d776a86aa｜1484 行｜本尺现从该段取语料
+判据 check-api-surface.py｜判决段 md5 eb24d81ae4f7｜2316 行
+修前单源（git cat-file blob HEAD:scripts/gate/formula_ledger.py）｜md5 ac10d8cf3e3e｜518 行｜含 `_acc_subscript`／`acc_names` 字样 15 处
+被顶替的一次性现量 reports/data/recon-18v-driven-keylevel-2026-10-03-1437.txt｜md5 1a9b1daa2701（引用值＝1a9b1daa2701，相符＝True）
+
+[1] 同一次换名（`agg`→`totals`，真语料＝姊妹判决段整体机械改名）打在两把尺上
+   词边界命中 50 处｜图像确变＝True｜换名后残留旧名＝False｜换名图像可解析＝True
+   修前那把尺（HEAD 字节现装，白名单 `agg`）：原名 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'pair')]｜换名 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'name-only')]
+      ⇒ 换名把 pair 打成 name-only＝['FAIL 主张不闭合']（这就是 夹具AC 的牙：白名单在时，改名即假阳）
+   修后那把尺（宿主名相等，无名单）：原名 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'pair')]｜换名 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'pair')]
+   逐站点档位换名前后一字不变＝True｜修前会变＝True（两条合起来才叫这格有牙）
+
+[2] 宿主分家（把那次计数累加写到 `tally`，来源表达式与循环一个字没换）
+   锚点 1 次｜图像确变＝True｜换后逐站点 [('FAIL', 385, 'same-iter'), ('FAIL 主张不闭合', 379, 'name-only')]｜退档名单 ['FAIL 主张不闭合']
+   修前那把尺同样退档＝['FAIL 主张不闭合']（`tally` 本来就不在名单里）⇒ 这一枚不区分修前修后，它证的是「同宿主」承重，不是「名单外就看不见」
+
+[3] 第二份硬写词汇＝`red_accum_screen` 的 `acc_names=("bad",)`（档位那层）：现量它今天挡掉了谁
+   姊妹：站点 2｜档位 ['driven']｜driven ['FAIL', 'FAIL 主张不闭合']
+      被 `+=`／`.append` 写过的对象 25 个（名单只认 `bad`）：['agg', 'bad', 'blind_dyn', 'claims', 'dirs', 'dropped', 'eq_unflagged', 'hits', 'i', 'judged', 'kept', 'lines', 'mds', 'no_path', 'non_script', 'notes', 'other_files', 'out', 'parts', 'pending', 'per', 'rows', 'skip_dirs', 'tail', 'unparsable']
+      `bad`→`tally` 换名后：站点 2｜档位 ['driven']｜driven ['FAIL', 'FAIL 主张不闭合']｜图像确变＝True
+   普查器：站点 13｜档位 ['inc', 'ret']｜driven []
+      被 `+=`／`.append` 写过的对象 23 个（名单只认 `bad`）：['applied', 'arms', 'arts', 'arts_gen', 'bad', 'buf', 'cons', 'consumed', 'cross_res', 'd', 'depth', 'found', 'free', 'i', 'out', 'parts', 'per', 'pruned', 'rows', 'seen', 'segs', 'stack', 'tag']
+      `bad`→`tally` 换名后：站点 13｜档位 ['blind']｜driven []｜图像确变＝True
+
+[4] 常驻状态（只读命令现跑；读数按日期冻结在本文，正文不复述）
+   sister --selftest              rc 0｜SELFTEST 总 70 例，FAIL 0 例
+   api --selftest                 rc 0｜SELFTEST 总 74 例，FAIL 0 例
+   api --ledger                   rc 0｜LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+   sister --recognizer            rc 0｜RECOGNIZER PASS（算术尺只在 scripts/gate/formula_ledger.py 里定义，除归宿外在册 30 份与集外候选 99 份无一把自带；两本分母同一次现推、按构造不相交）
+   gate check-script-paths --selftest rc 0｜SELFTEST PASS=53 FAIL=0
+
+[5] 判定与边界
+   换名不变性（修后）＝True｜换名会打假阳（修前）＝True｜宿主分家必退档＝True｜上一轮收据在盘且 md5 相符＝True
+   边界① §1.8v 收据 [5] 那句「复算只认累加器名 agg；换成第三种命名 ⇒ 站点根本进不了 driven 档，是看不见不是看见了说没事」**是错的**，本轮现量否掉：driven 那一档从来不读 acc_names（它比的是循环 iter 里的名字与本函数 return 里的名字），换名后站点照旧 2 处 driven；真正掉的是键级那一层的 pair→name-only，即一条**响亮的假阳**（夹具AB 当场红），不是隐身。
+   边界② 白名单去掉后，「同宿主」由宿主名相等判 ⇒ 别人真把计数与明细写进两个不同宿主时照旧退档（[2]）；换来的新盲侧是**同宿主不同语义**（`agg["a"]` 与 `agg["b"]` 恰好同循环、且 b 的长度来自 a 的迭代对象）仍判 pair——这一型本轮没有对照，登记为待建的尺。
+   边界③ 档位那层的 `acc_names=("bad",)` 本轮**没动**（[3] 只量）：普查器 13 站点全靠 inc／ret 两档，改它的名单会同时动两台仪器的分母，代价与本轮那格不成比例；量到的换名读数留在本文供下一轮接手。
+   未闭合 0 条：[]

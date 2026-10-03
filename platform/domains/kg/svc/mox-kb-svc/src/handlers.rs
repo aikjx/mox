@@ -419,11 +419,44 @@ async fn kb_doc_entities(
     State(state): State<Arc<KbState>>,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
-    let doc = match state.docs.get(&id).await {
-        Ok(d) => d,
-        Err(error) => return document_error(error,&id),
-    };
-    ok(json!({ "doc_id": id, "entities": doc.entities, "relations": doc.relations }))
+    match state.docs.document_entities(&id).await {
+        Ok(data) => ok(data),
+        Err(error) => document_error(error, &id),
+    }
+}
+
+fn entity_error(error: crate::entity::EntityError) -> ApiResponse<Value> {
+    use crate::entity::EntityError;
+    match error {
+        EntityError::Invalid => err(StatusCode::BAD_REQUEST, "invalid_entity_request", "实体请求参数无效或关联数超限"),
+        EntityError::Conflict => err(StatusCode::CONFLICT, "entity_write_conflict", "来源、权限或关联已变化，请刷新后重试"),
+        EntityError::Storage(mox_base_store_core::StoreError::NotFound { .. }) => err(StatusCode::NOT_FOUND, "not_found", "文档或实体不存在"),
+        EntityError::Storage(error) => {
+            tracing::error!(error=%error, "knowledge entity storage request failed");
+            err(StatusCode::SERVICE_UNAVAILABLE, "entity_storage_failed", "实体存储暂不可用")
+        }
+    }
+}
+#[derive(Deserialize)]
+struct EntitySearchQuery {
+    #[serde(default)] q: String,
+    #[serde(rename = "type")] kind: Option<String>,
+    limit: Option<usize>,
+}
+async fn kb_entity_search(State(state): State<Arc<KbState>>, Query(query): Query<EntitySearchQuery>) -> ApiResponse<Value> {
+    match state.docs.search_entities(&query.q, query.kind.as_deref(), query.limit.unwrap_or(20)).await {
+        Ok(data) => ok(data), Err(error) => entity_error(error),
+    }
+}
+async fn kb_entity_link(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(request): Json<crate::entity::EntityMutation>) -> ApiResponse<Value> {
+    match state.docs.mutate_entity_reference(&id, &request, false).await {
+        Ok(data) => ok(data), Err(error) => entity_error(error),
+    }
+}
+async fn kb_entity_unlink(State(state): State<Arc<KbState>>, Path(id): Path<String>, Json(request): Json<crate::entity::EntityMutation>) -> ApiResponse<Value> {
+    match state.docs.mutate_entity_reference(&id, &request, true).await {
+        Ok(data) => ok(data), Err(error) => entity_error(error),
+    }
 }
 
 async fn kb_doc_graph_link(
@@ -641,7 +674,8 @@ pub fn build_kb_router_with_state(state: Arc<KbState>) -> Router {
         .route("/kb/documents/:id/versions/:ver", get(kb_doc_version))
         .route("/kb/documents/:id/versions/compare", post(kb_doc_compare_versions))
         .route("/kb/documents/:id/versions/revert", post(kb_doc_revert_version))
-        .route("/kb/documents/:id/entities", get(kb_doc_entities))
+        .route("/kb/documents/:id/entities", get(kb_doc_entities).post(kb_entity_link).delete(kb_entity_unlink))
+        .route("/kb/entities/search", get(kb_entity_search))
         .route("/kb/documents/:id/graph-link", post(kb_doc_graph_link).delete(kb_doc_graph_unlink))
         .route("/kb/documents/:id/history", get(kb_doc_history))
         .route("/kb/stats", get(kb_stats))

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "cargo",
+    "clippy",
+    "--all-targets"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "workspace_clippy.log"
+}

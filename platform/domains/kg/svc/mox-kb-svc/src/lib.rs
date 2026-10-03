@@ -32,6 +32,7 @@ pub mod model;
 
 pub mod analyze;
 pub mod document;
+pub mod entity;
 mod expert_gate;
 pub mod link;
 mod search;

@@ -10,6 +10,7 @@
 import { ref, shallowRef, reactive, computed, markRaw, watch, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+import { useAuthStore } from '@/stores'
 
 function normalizeList(data) {
   if (Array.isArray(data)) return data
@@ -86,7 +87,8 @@ export function useCrudPage(pageSchema) {
     }
   }
   if (typeof schema.identityScope === 'function') {
-    watch(schema.identityScope, () => {
+    const auth = useAuthStore()
+    watch(() => schema.identityScope(auth), () => {
       scopeVersion++
       rows.value = []
       total.value = 0

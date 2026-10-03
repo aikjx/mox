@@ -1,0 +1,13 @@
+{
+  "command": [
+    "npx.cmd",
+    "vitest",
+    "run",
+    "src/api/kb.entities.integration.test.js",
+    "src/views/workspace/workspace-kb.test.js",
+    "src/modules/expert-alliance/contract/contract.test.js"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph\\frontend-ui",
+  "exit_code": 1,
+  "log": "frontend_entities.log"
+}

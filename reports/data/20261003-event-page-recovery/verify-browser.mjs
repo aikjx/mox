@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { mkdir } from 'node:fs/promises'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readdirSync } from 'node:fs'
 import { build } from '../../../frontend-ui/node_modules/vite/dist/node/index.js'
 import vue from '../../../frontend-ui/node_modules/@vitejs/plugin-vue/dist/index.mjs'
 import { chromium, expect } from '../../../frontend-ui/node_modules/@playwright/test/index.mjs'
@@ -67,7 +67,16 @@ let browser,page
 try {
   vite.listen(port,'127.0.0.1');await once(vite,'listening')
   progress('vite listening')
-  browser=await chromium.launch({headless:true,executablePath:'C:/Users/mo/AppData/Local/ms-playwright/chromium-1228/chrome-win64/chrome.exe'})
+  let executablePath=process.env.MOX_PROBE_CHROMIUM || chromium.executablePath()
+  if(!process.env.MOX_PROBE_CHROMIUM && !existsSync(executablePath)) {
+    const cache=path.dirname(path.dirname(path.dirname(executablePath)))
+    const suffix=process.platform==='win32'?'chrome-win64/chrome.exe':'chrome-linux64/chrome'
+    const available=readdirSync(cache).filter(name=>/^chromium-\d+$/.test(name))
+      .sort((a,b)=>Number(b.split('-')[1])-Number(a.split('-')[1]))
+      .map(name=>path.join(cache,name,suffix)).find(candidate=>existsSync(candidate))
+    if(available) executablePath=available
+  }
+  browser=await chromium.launch({headless:true,executablePath})
   progress('browser launched')
   const context=await browser.newContext({viewport:{width:1100,height:750}})
   await context.addInitScript(({token})=>{

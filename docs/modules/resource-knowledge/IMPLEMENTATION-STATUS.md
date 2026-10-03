@@ -89,6 +89,61 @@ flowchart LR
 <a id="sequence"></a>
 ## 后续实施顺序与退出条件
 
+### 2026-10-04 R2 实体接口归一增量
+
+实体搜索与文档实体关联/解绑已迁入 `platform/domains/kg/svc/mox-kb-svc/src/handlers.rs`、`entity.rs`。网关移除独立 kb_ext 状态与路由合并；全部 KB 入口经同一 `modules::protected_kb_router`，将真实 JWT UserInfo 转为 KnowledgeAccess。历史 kb_ext.rs 只保留迁移说明，不再创建、加载或写入无归属关系集合。真实网关联调另发现旧适配器二次路由重复携带 axum 路径参数，导致带文档 ID 的接口 500；现重建请求路由元数据，显式保留 trusted UserInfo 与 OriginalUri，method/URI/headers/version/body 不变。未来新增领域所需请求扩展必须显式登记携带，不能沿用上一轮路由内部参数。该增量不等于完整 R2–R7 完成。
+
+**主源与边界。** 抽取实体来自 `kb/docs/{id}.json`；人工引用由同一 KbDocumentService 管理的 `kb/entity-links/{target_id}.json` 聚合保存，revision 与 items 一次对象提交。它是主 KB 的文档关联元数据，不是独立网关实体库；不复制实体正文/名称，不作为 GraphStore 已确认事实。源、目标文档与关联聚合并非跨对象事务：当前共享 mutation 锁只保证同一服务实例内 ACL、文档与关联写操作串行。跨进程 CAS、关联版本历史、删除级联及物理孤儿对账仍待开发。
+
+```mermaid
+flowchart LR
+  UI[项目知识库 / 实体引用组件] --> API[唯一 KB HTTP 接口]
+  API --> JWT[网关真实 JWT / trusted UserInfo]
+  JWT --> Policy[KnowledgeAccess / readonly / tenant / owner / readers]
+  Policy --> Docs[当前 KB 文档及抽取实体]
+  Policy --> Refs[主 KB 文档关联聚合 / revision]
+  Docs --> Store[store-core 内容寻址对象后端]
+  Refs --> Store
+  Docs --> Graph[现有文档挂图投影]
+```
+
+```mermaid
+flowchart TD
+  A[提交来源和目标版本令牌] --> B[校验参数 / 获取实例共享写锁]
+  B --> C[目标文档写权限 / 当前版本 / ACL / 关联 revision]
+  C --> D{关联或解绑}
+  D -->|关联| E[来源当前读权限 / 来源版本与 ACL / 实体存在]
+  D -->|解绑| F[按目标已有引用匹配 / 可清理已撤权来源]
+  E --> G[预先解析当前可见引用 / 增加 revision]
+  F --> G
+  G --> H[真实对象持久提交]
+  H -->|成功| I[返回权威关联结果 / 前端替换视图]
+  H -->|失败| J[503 / 前端停止使用旧写令牌]
+  C -->|冲突| K[409 / 刷新后重试]
+  E -->|不可见或不存在| L[404 / 不泄露来源内容]
+```
+
+**接口契约。** 对外仍为 `/api/kb/*`，前端 Axios baseURL 为 `/api`。统一成功信封由 ApiResponse 处理；客户端读实际 data，不拼装成功结果。
+
+| 方法与路径 | 真实行为及限制 |
+|---|---|
+| GET `/api/kb/entities/search` | q 为实体名称子串（大小写归一），可选 type 精确过滤；q 最多 256 字节，type 最多 64 字节，limit 1–100 默认 20。先授权再筛选和限额，按文档 ID/实体 ID 稳定排序；没有语义向量搜索声明。返回数组，项含 id/name/type/frequency/snippet、source_doc_id/source_version/source_acl_revision |
+| GET `/api/kb/documents/:id/entities` | 既有 entities/relations 保持；新增 linked_entities、current_version、acl_revision、links_revision。每次重新检查来源 ACL；来源被撤权/删除、版本变化或实体不再存在则隐藏该引用。linked_entities 不包含未授权来源副本 |
+| POST `/api/kb/documents/:id/entities` | 请求必须包含 entity_id/source_doc_id/source_version/source_acl_revision/expected_current_version/expected_acl_revision/expected_links_revision；可选 relation（非空且最多 64 字节，默认 references）。拒绝未知字段，不接受只有 entity_id 的旧请求。目标必须可写，来源必须当前可读；最多 256 条引用 |
+| DELETE `/api/kb/documents/:id/entities` | 同样必须提供上述令牌和引用身份；检查目标当前写权限及 revision，允许目标所有者删除曾合法引用但已撤权的来源，不要求重新获得来源读取权 |
+
+记录只保存引用身份、relation 与 created_at。来源版本变化不会把旧指针自动重新解释为新版本实体。修订冲突为 409；不可见/不存在统一 404；非法参数 400、JSON 结构缺失或未知字段 422；真实关联写入存储异常 503。GET 聚合读取沿用主 KB 存储错误 500。当前版本令牌下同一引用/同一 relation 重复关联不增加 revision，旧 revision 仍为 409；这不等于持久幂等键/回执。
+
+这两条关联写 API 显式关闭自动 project_id 注入（http 配置 projectContext=false），以文档 KnowledgeAccess 裁决权限；不得把当前选中项目当作知识库授权。
+
+项目 KnowledgeBasePanel 图谱页签新增 KnowledgeEntityLinks 组件，通过实际 API 搜索、引用、移除和刷新；原整篇文档挂图动作保留。组件按文档 ID/版本/ACL 及身份变化失效旧请求和结果；写失败显示错误并要求刷新，禁止本地 push/猜测成功。只读和所有者最终由服务端裁决。可复用组件和孤儿 useKnowledgeBase composable 都已更新请求契约，不能把组件验收泛化成其他模块或整个登录流程已验收。
+
+**旧数据迁移。** 保留 `kb_ext.entity_relations` 和 `data/kb_entity_relations.json`，不自动赋予租户或认领，未执行生产数据清查。人工迁移映射必须记录 old_record_id、target_document_id、tenant_id、owner_id、source_document_id、source_version、entity_id、relation、审核依据和结果；先备份，再通过目标主 KB 授权写接口逐条迁入，刷新 revision 并回读核验。缺少来源/归属证据的记录保留隔离，不能按字符串 entity_id 猜测。旧客户端升级为携带读接口发出的版本令牌；旧仅 entity_id 写法失败关闭。真实迁移与迁移工具仍是开放工作，不宣称已经完成。
+
+关联搜索仍扫描授权主文档，O(n)；只限定返回项数与片段长度，不宣称大规模容量、最优算法或分布式事务已通过。旧引用清理界面、已撤权引用的无内容删除标识、版本历史、加工队列、真实 OSS 和授权图事实投影仍按后续工作包推进。当前 KbAnalyzer 的专家评分仍是固定默认健康分，不能解释为已咨询专家或真实模型质量；专家注入及去除该不实评分是独立开放缺口。
+
+验收记录及逐项命令位于 `reports/data/20261004-kb-entity-normalization/`，说明见 `reports/markdown/20261004-kb-entity-normalization.md`；运行结果以实际日志和 summary 为准。
+
 | 顺序 | 工作包 | 必须通过的退出条件 |
 |---|---|---|
 | R2 | 系统授权贯穿 KB/图谱/检索，统一知识主源迁移 | 两租户、两所有者、管理员、共享、撤权、旧数据未归属场景全部失败关闭；迁移映射/备份/重启验证，不出现另一套可写主源 |

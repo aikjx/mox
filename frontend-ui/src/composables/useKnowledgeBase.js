@@ -15,6 +15,7 @@ import { unwrap, unwrapList } from '@/modules/_kernel/envelope'
 import { useProject } from '@/composables'
 import {
   mapDoc,
+  kbEntityMutation,
   KB_CATEGORIES,
   getCategoryLabel,
   getCategoryTagType,
@@ -41,6 +42,9 @@ export function useKnowledgeBase() {
   const aiAnalysis = ref(null)
   const entities = ref([])
   const linkedEntities = ref([])
+  const entityLinksRevision = ref(null)
+  let entityReadEpoch = 0
+  let entitySearchEpoch = 0
   const stats = ref({})
 
   const loading = ref(false)
@@ -258,27 +262,37 @@ export function useKnowledgeBase() {
 
   async function viewDocument(doc) {
     if (!doc) return
+    const viewEpoch = ++entityReadEpoch
+    entityLinksRevision.value = null
+    linkedEntities.value = []
     selectedDoc.value = doc
     detailTab.value = 'content'
     detailMode.value = 'view'
     detailVisible.value = true
     try {
       const fullDoc = await api.kbGetDocument(doc.id)
+      if (viewEpoch !== entityReadEpoch || selectedDoc.value?.id !== doc.id) return
       if (fullDoc) {
         selectedDoc.value = mapDoc(fullDoc)
       }
     } catch (e) {
+      if (viewEpoch !== entityReadEpoch || selectedDoc.value?.id !== doc.id) return
       console.error('[kb] viewDocument fetch failed:', e)
       ElMessage.error('文档详情加载失败：' + (e.message || '未知错误'))
     }
     fetchVersions(doc.id)
     fetchHistory(doc.id)
+    await loadEntityLinks(doc.id)
     if (doc.ai_analyzed) {
       loadAiAnalysis(doc.id)
     }
   }
 
   function closeDetail() {
+    entityReadEpoch++
+    entitySearchEpoch++
+    entityLinksRevision.value = null
+    searchResults.value = []
     detailVisible.value = false
     selectedDoc.value = null
     docVersions.value = []
@@ -453,12 +467,34 @@ export function useKnowledgeBase() {
 
   // ========== Entity Linking ==========
 
-  async function searchEntities() {
-    if (!linkSearchQuery.value.trim()) return
+  function applyEntityLinks(data) {
+    entities.value = data.entities || []
+    linkedEntities.value = data.linked_entities || []
+    entityLinksRevision.value = data.links_revision
+  }
+  async function loadEntityLinks(id) {
+    const epoch = ++entityReadEpoch
     try {
-      const data = await api.kbSearchEntities({ q: linkSearchQuery.value })
-      searchResults.value = unwrapList(unwrap(data))
+      const data = unwrap(await api.kbGetEntities(id))
+      if (epoch === entityReadEpoch && selectedDoc.value?.id === id) applyEntityLinks(data)
     } catch (e) {
+      if (epoch === entityReadEpoch && selectedDoc.value?.id === id) {
+        entityLinksRevision.value = null
+        linkedEntities.value = []
+        ElMessage.error('实体关联读取失败：' + (e.message || '未知错误'))
+      }
+    }
+  }
+
+  async function searchEntities() {
+    const epoch = ++entitySearchEpoch
+    const query = linkSearchQuery.value.trim()
+    if (!query) { searchResults.value = []; return }
+    try {
+      const data = await api.kbSearchEntities({ q: query, limit: 20 })
+      if (epoch === entitySearchEpoch) searchResults.value = unwrapList(unwrap(data))
+    } catch (e) {
+      if (epoch !== entitySearchEpoch) return
       searchResults.value = []
       console.error('[kb] searchEntities failed:', e)
       ElMessage.error('实体搜索失败：' + (e.message || '未知错误'))
@@ -466,24 +502,33 @@ export function useKnowledgeBase() {
   }
 
   async function linkEntity(ent) {
+    const doc = selectedDoc.value
+    const epoch = ++entityReadEpoch
     try {
-      await api.kbLinkEntity(selectedDoc.value.id, ent.id)
-      linkedEntities.value.push(ent)
+      const data = unwrap(await api.kbLinkEntity(doc.id, kbEntityMutation(doc, ent, entityLinksRevision.value)))
+      if (epoch !== entityReadEpoch || selectedDoc.value?.id !== doc.id) return
+      applyEntityLinks(data)
       showLinkDialog.value = false
       ElMessage.success('关联成功')
-    } catch {
-      ElMessage.error('关联失败')
+    } catch (e) {
+      if (epoch !== entityReadEpoch || selectedDoc.value?.id !== doc?.id) return
+      entityLinksRevision.value = null
+      ElMessage.error('关联失败，请刷新：' + (e.message || '未知错误'))
     }
   }
 
   async function unlinkEntity(ent) {
+    const doc = selectedDoc.value
+    const epoch = ++entityReadEpoch
     try {
-      await api.kbUnlinkEntity(selectedDoc.value.id, ent.id)
-      const idx = linkedEntities.value.findIndex(e => e.id === ent.id)
-      if (idx > -1) linkedEntities.value.splice(idx, 1)
+      const data = unwrap(await api.kbUnlinkEntity(doc.id, kbEntityMutation(doc, ent, entityLinksRevision.value)))
+      if (epoch !== entityReadEpoch || selectedDoc.value?.id !== doc.id) return
+      applyEntityLinks(data)
       ElMessage.success('已解除关联')
-    } catch {
-      ElMessage.error('操作失败')
+    } catch (e) {
+      if (epoch !== entityReadEpoch || selectedDoc.value?.id !== doc?.id) return
+      entityLinksRevision.value = null
+      ElMessage.error('解除关联失败，请刷新：' + (e.message || '未知错误'))
     }
   }
 

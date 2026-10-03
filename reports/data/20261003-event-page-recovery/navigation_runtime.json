@@ -1,0 +1,18 @@
+{
+  "command": [
+    "npm.cmd",
+    "--prefix",
+    "frontend-ui",
+    "test",
+    "--",
+    "--run",
+    "src/modules/wiring.test.js",
+    "src/modules/health-check.test.js",
+    "src/modules/domain-migration.test.js",
+    "src/stores/permission.store.test.js",
+    "src/modules/admin-lowcode/schema-crud-page.smoke.test.js"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "navigation_runtime.log"
+}

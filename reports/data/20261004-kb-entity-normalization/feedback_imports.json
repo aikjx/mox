@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python",
+    "frontend-ui/scripts/gate/check-ep-feedback-imports.py",
+    "--check"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "feedback_imports.log"
+}

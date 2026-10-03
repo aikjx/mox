@@ -113,6 +113,20 @@ export function mapDoc(d) {
   }
 }
 
+// Carry server-issued provenance and concurrency tokens; never invent defaults.
+export function kbEntityMutation(doc, entity, linksRevision) {
+  if (!doc?.current_version || !entity?.source_doc_id || !entity?.source_version || !entity?.id ||
+      ![doc.acl_revision, entity.source_acl_revision, linksRevision].every(v => Number.isSafeInteger(v) && v >= 0)) {
+    throw new Error('请刷新文档与实体来源后重试')
+  }
+  return {
+    entity_id: entity.id, source_doc_id: entity.source_doc_id,
+    source_version: entity.source_version, source_acl_revision: entity.source_acl_revision,
+    expected_current_version: doc.current_version, expected_acl_revision: doc.acl_revision,
+    expected_links_revision: linksRevision
+  }
+}
+
 // ========== 标签尺寸计算 ==========
 
 export function getTagSize(tags, count) {

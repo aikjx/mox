@@ -272,7 +272,7 @@ const BANNED = [
   // ↓ 写路径那一轮补的五枚（请求体错名 / 快照行错键 / 置信度幻影 / v 前缀双写）
   { re: /\bh\.(action|user|detail)\b/, why: '/kb/documents/:id/history 的行是版本快照，只有 version/note/title/created_at', sample: '{{ getActionLabel(h.action) }}' },
   { re: /\.confidence\b/, why: 'KbEntity 只有 id/name/type/frequency/snippet，没有置信度', sample: ':percentage="ent.confidence"' },
-  { re: /\b(linked_entities|doc_ids|analyzed_ids|target_version|version_from|version_to|entity_ids)\b/, why: '这批请求/响应键后端一概不收，挂图只有文档级', sample: 'await api.kbBatchAnalyze({ doc_ids: selectedDocs.value })' },
+  { re: /\b(doc_ids|analyzed_ids|target_version|version_from|version_to|entity_ids)\b/, why: '这批请求/响应键后端一概不收，挂图只有文档级', sample: 'await api.kbBatchAnalyze({ doc_ids: selectedDocs.value })' },
   { re: /\?\.(aiAnalysis|from|to)\b/, why: '响应里没有 aiAnalysis / from / to 三个键', sample: 'compareFrom.value = data?.from || v1' },
   { re: /v\{\{\s*[\w$]+\??\.version\s*\}\}/, why: '版本串自带 v 前缀（next_version 产出 v{n+1}），模板不许再补一次', sample: '<div class="version-badge">v{{ ver.version }}</div>' },
   { re: /kbSearch\(\{\s*q\b/, why: 'SearchRequest 的必填键是 query，发 q 会被 axum 的 Json 提取器拒成 422（且响应不是 {code,msg} 信封）', sample: "api.kbSearch({ q: linkSearchQuery.value, type: 'entity' })" },

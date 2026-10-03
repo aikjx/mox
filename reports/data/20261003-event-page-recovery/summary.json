@@ -1,1 +1,325 @@
-{"status":"final_gates_pending","real_browser_and_controller":"passed","full_frontend_tests":1072}
+{
+  "status": "verified_increment_full_platform_goal_still_active",
+  "finalized_utc": "2026-10-03T16:38:02.261660+00:00",
+  "head_at_finalization": "6caac6a8ba3a5b6a8f2908f4e168135612aceabf",
+  "scope": "Event recovery/shared page component and stores, low-code runtime identity injection, module navigation and orchestration provenance; not all enterprise capabilities",
+  "checks": {
+    "paths_selftest": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_selftest.log"
+    },
+    "paths": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths.log"
+    },
+    "docs": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs.log"
+    },
+    "ports": {
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ports.log"
+    },
+    "frontend_module": {
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_module.log"
+    },
+    "api_bindings": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-api-binding-kinds.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "api_bindings.log"
+    },
+    "feedback_imports": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-ep-feedback-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "feedback_imports.log"
+    },
+    "framework_imports": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-framework-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "framework_imports.log"
+    },
+    "theme": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-theme-tokens.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "theme.log"
+    },
+    "locale": {
+      "command": [
+        "python",
+        "scripts/gate/check-locale-format-outlets.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "locale.log"
+    },
+    "catalog": {
+      "command": [
+        "python",
+        "scripts/registry/module_catalog.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "catalog.log"
+    },
+    "formulas": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-formulas.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "formulas.log"
+    },
+    "api_surface": {
+      "command": [
+        "python",
+        "scripts/gate/check-api-surface.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "api_surface.log"
+    },
+    "diagrams": {
+      "command": [
+        "node",
+        "reports/data/20261003-architecture-performance/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log"
+    },
+    "node_transport": {
+      "command": [
+        "node",
+        "--test",
+        "frontend-ui/src/modules/expert-alliance/contract/event-stream.node-test.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "node_transport.log"
+    },
+    "diff": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff.log"
+    },
+    "format": {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--check",
+        "platform/gateway/mox-platform-gateway-svc/tests/event_page_recovery.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log"
+    },
+    "rust_final": {
+      "command": [
+        "cargo",
+        "test",
+        "--",
+        "--test-threads=1"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_final.log"
+    },
+    "workspace_clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--all-targets"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "workspace_clippy.log"
+    },
+    "frontend_build_final": {
+      "command": [
+        "npm.cmd",
+        "run",
+        "build"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph\\frontend-ui",
+      "exit_code": 0,
+      "log": "frontend_build_final.log"
+    },
+    "frontend_runtime_final": {
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "test"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_runtime_final.log"
+    },
+    "real_runtime_final": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "event_page_recovery",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "real_runtime_final.log"
+    },
+    "navigation_runtime": {
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "test",
+        "--",
+        "--run",
+        "src/modules/wiring.test.js",
+        "src/modules/health-check.test.js",
+        "src/modules/domain-migration.test.js",
+        "src/stores/permission.store.test.js",
+        "src/modules/admin-lowcode/schema-crud-page.smoke.test.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "navigation_runtime.log"
+    },
+    "docs_final": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs_final.log"
+    },
+    "diff_final": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff_final.log"
+    }
+  },
+  "default_member_rust_passed": 337,
+  "default_member_rust_ignored": 2,
+  "default_member_rust_result_groups": 49,
+  "frontend_test_files": 85,
+  "frontend_tests_passed": 1072,
+  "mermaid_diagrams_parsed": 42,
+  "real_probe": {
+    "markers": [
+      "REAL_RECOVERY:",
+      "REAL_BROWSER_RECOVERY:"
+    ],
+    "transport": "actual TCP, production JWT/routes, temporary SQLite",
+    "browser": "independent installed Chromium context, Vite-built shared component/composable/Pinia/Axios; no API response replacement",
+    "faults": [
+      "real EventBus overflow",
+      "unknown cursor to actual Rust 410",
+      "delay actual old-identity stats response"
+    ],
+    "not_covered": [
+      "login form",
+      "all product routes",
+      "external model/OSS",
+      "multi-instance failover"
+    ]
+  },
+  "test_boundary": "Legacy local unit API/component stubs remain; new favorite snapshot calls real Rust. Unit count is not an enterprise readiness claim.",
+  "sha256": {
+    "frontend-ui/src/modules/expert-alliance/contract/event-stream.js": "b7cf320862ab9909e1cca3c31307839ea096a73fb521624cc873654f5cb7bcd1",
+    "frontend-ui/src/modules/expert-alliance/contract/event-recovery.js": "dca1d4884517a92bf46c888181c5826c60f860219a9832fe6b2248362cce817c",
+    "frontend-ui/src/modules/expert-alliance/contract/favorite-request.js": "476c7c17a8292926f2e4aa6fc9d767f7c7b5606a5d053dcdf6fa36d404e02ab6",
+    "frontend-ui/src/modules/expert-alliance/contract/orchestration.js": "72a7a26c49d392524e7ca949d75b479a941a72b43cb0dd408850a17047385f62",
+    "frontend-ui/src/modules/expert-alliance/model/request-fence.js": "686d8c21f7012455e8151d14f3c57a38d3eae38b46bde8b744c7bbb1f39b6205",
+    "frontend-ui/src/modules/expert-alliance/composables/useAllianceEventStream.js": "fecd64d29cd8cd26e193b82dcf01144be1bd9a194cbe5285dc380aa7881e4433",
+    "frontend-ui/src/modules/expert-alliance/components/EventConnectionStatus.vue": "df1ef23b80fa99a24b3df7dc553bc84138f5cb9f48ff329e2e2da0c01d58d1b6",
+    "frontend-ui/src/modules/expert-alliance/store/alliance-experts.store.js": "54bd5b73e778e8d418c1e49ebeaf7b44da4c95e2a00837da7373b380b04bbe64",
+    "frontend-ui/src/modules/expert-alliance/store/alliance-orch.store.js": "73d6e369b7bf3d1451d6492049dedc7b44f955727f897646d95d5e910763c891",
+    "frontend-ui/src/modules/expert-alliance/views/AllianceExpertsView.vue": "513acdc05b43b97732a9e0207298d2bc34a1419037de5792182213ffeed7dcc5",
+    "frontend-ui/src/modules/expert-alliance/views/AllianceOrchestrationView.vue": "46eadf6c8fb50a2d8455f14bdad59afdf91e8501567e278b374afd972592655b",
+    "frontend-ui/src/modules/admin-lowcode/composables/useCrudPage.js": "eccce5d56fb557f7346efadd0b672d32bd645d7698c13881e99d91fbc1ab13fb",
+    "frontend-ui/src/modules/admin-lowcode/pages/access.page.js": "76e030affa1353f6b3a2295ace99cb03b61332d7e73800fd3110a89a444b7b0f",
+    "frontend-ui/src/modules/admin-lowcode/pages/audit.page.js": "53c77ae58992d5aedb32b88277b597b66e62516a2fa0e4579959206cc030ef76",
+    "frontend-ui/src/constants/nav.config.js": "bd044f6093314dc5b91302e84bdaeb350a85ae10f40246b81f401b1b856c80db",
+    "platform/gateway/mox-platform-gateway-svc/tests/event_page_recovery.rs": "5449851f4fdd5fb2667dd4a15dde2d1006c64ab0f0f1b5d85d584b2d417b6ba7",
+    "reports/data/20261003-event-page-recovery/verify-recovery.mjs": "3f0fbbc1714f864601e0c2d47eba62cc02e0fd972398fe2fa9526cf5d07fbd60",
+    "reports/data/20261003-event-page-recovery/verify-browser.mjs": "33ac8ad6bb1730a5683d7146501a0190075530472a1f4fa0746e296ef1f21cb9",
+    "reports/html/20261003-event-page-recovery/assets/harness.js": "31936d05817ac3abdcc14d16cf118ce78a4f00412e5d06f63cec56f6df84ae79",
+    "docs/expert-alliance/21-event-delivery-contract.md": "73699b54e8baf66c0701949987ffb75a04f92cde3b4ad7cc4ef6a42993d2ead6",
+    "docs/architecture/frontend/LOWCODE-PAGE-RUNTIME.md": "a9b6da8d6246f943317a1471f13ba782492254ab7676890ac75cf405f6eee6de"
+  },
+  "open_requirements": [
+    "Webhook durable outbox/signing/dead-letter/recovery",
+    "plan atomicity and cross-instance CAS/live events",
+    "KB extension relation/search source normalization and authority",
+    "real model/tool execution and OSS",
+    "26-module exit criteria, all business pages, production SLO/disaster recovery"
+  ]
+}

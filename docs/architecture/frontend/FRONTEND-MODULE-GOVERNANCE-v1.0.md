@@ -282,6 +282,8 @@ legacy 联盟工作台（`views/workspace/ExpertWorkspaceView.vue` + `composable
   旧代码去找 `data.aiAnalysis` 那一层包装 ⇒ "AI 分析"页签永远空；对比响应是 `{doc_id,diff}`，旧代码读 `data.from/data.to`；
   挂图响应是 `{graph_nodes,nodes_added,edges_added,graph_total_nodes,graph_total_edges}`。另一族是模板自己补前缀：
   `next_version()` 产出 `v1/v2/…`，而界面写了 `v{{ ver.version }}`、回滚提示 `v${version.version}`、对比对话框四处同形 ⇒ 显示成 `vv2`。
+> 2026-10-04 后续实现：以下病灶五为历史诊断。实体三接口已归入主 KB 授权入口，项目图谱页签新增真实实体引用组件；当前契约、权限与迁移边界唯一来源为 [资源知识实施台账](docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md#sequence)。本文不继续维护第二套接口事实。
+
 - **病灶五 · "搜索实体→逐个挂载"那套对话框的三条通道都是空的，但空的原因各不相同**（这条先把上一版的错判改对了：
   曾据 `handlers.rs` 的路由表断言 `kbSearchEntities`/`kbLinkEntity`/`kbUnlinkEntity` 指向不存在的路由——**错**，它们由网关自己的 `mox-platform-gateway-svc/src/kb_ext.rs` 注册：
   `/api/kb/entities/search` GET 与 `/api/kb/documents/:id/entities` POST/DELETE。逐条实测：
