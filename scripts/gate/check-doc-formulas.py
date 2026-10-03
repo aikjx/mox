@@ -461,6 +461,22 @@ def _unblind_variants(span):
     return [span, s, s.replace("=", FL.EQ_FW)]
 
 
+def _ascii_debt(span):
+    """ASCII 等号写的、归一化后就成立的真等式。它们今天**永久免检**（规则 2 把 ASCII 等号整档进盲区），
+    所以按欠账点名，不判红——2026-10-03 实测过升格的代价：真语料上会红 13 条，逐条读原文后
+    **没有一条是真错账**（`7×8=1` 是指标读数、`4 人 × 10 周 = 10 人月` 是跨单位换算、
+    `24 = 标题+标签 6` 是编号）。升格＝用假红换真免检，不划算，故只记欠账不动口径。"""
+    s = span
+    for ch in ("*", "`", '"', "“", "”", "「", "」"):
+        s = s.replace(ch, "")
+    if FL.EQ_FW in s or "=" not in s:
+        return False  # 全角等号的走正常主张通道；没有等号的不是等式
+    if not (FL.ADD_RE.search(s) or FL.MUL_RE.search(s)):
+        return False
+    r = FL.scan_text(s.replace("=", FL.EQ_FW))
+    return bool(r["claims"]) and not r["violations"]
+
+
 def blind_read_verdict(rel, blind, adjudicated=None):
     """第九本账（盲区读账）：盲区不是缺陷，把盲区读成「没有缺陷」才是缺陷。
     所以这一本只做三件事：
@@ -2562,7 +2578,6 @@ def cmd_selftest(args):
                    "无键级同源 %s｜逐条 %s" % (
                        PV_WEAK or "[]", ["%s→%s@%d" % (h, v, l) for h, _f, l, v, _n in PV_LIST])))
     PV_CNT = '        agg["violations"] += len(sp["violations"])\n'
-    PV_RET = "    return agg\n"
     n36a = PV_J.count(PV_CNT)
     img36a = PV_J.replace(PV_CNT, '        agg["violations"] += len(sp["claims"])\n', 1)
     w36a = sorted(set(h for h, _f, _l, v, _n in FL.driven_provenance(img36a, ("FAIL ", "INFO "))
@@ -2572,15 +2587,29 @@ def cmd_selftest(args):
                    n36a == 1 and img36a != PV_J and bool(w36a),
                    "锚点 %d 次｜图像确变＝%s｜退档名单 %s" % (n36a, img36a != PV_J, w36a)))
     n36b = PV_J.count(PV_CNT)
-    n36b2 = PV_J.count(PV_RET)
-    img36b = PV_J.replace(PV_CNT, "", 1).replace(PV_RET, PV_CNT + PV_RET, 1)
+    PV_TAIL = ('            agg["details"].append(dict(path=rel, line=v["line"],'
+               ' span=v["span"], vals=v["vals"]))\n    return agg\n')
+    PV_TAIL_B = PV_TAIL.replace('    return agg\n',
+                                '    agg["violations"] += len(sp["violations"])\n    return agg\n')
+    n36b2 = PV_J.count(PV_TAIL)
+    img36b = PV_J.replace(PV_CNT, "", 1).replace(PV_TAIL, PV_TAIL_B, 1)
     w36b = sorted(set(h for h, _f, _l, v, _n in FL.driven_provenance(img36b, ("FAIL ", "INFO "))
                       if v == "name-only"))
-    checks.append(("变异体36·乙 把那次计数累加搬出与明细表共同的循环（来源表达式没换但不再同循环）"
-                   "⇒ 只有 pair 那一型退档，same-iter 必须照旧有牙（两型各自独立，一枚针只撤一条通道）",
+    checks.append(("变异体36·乙 把那次计数累加搬出与明细表共同的循环（撤「同循环」这一条通道，"
+                   "来源表达式一个字没换）⇒ 只有 pair 那一型退档，same-iter 必须照旧有牙"
+                   "（两型各自独立，一枚针只撤一条通道）",
                    n36b == 1 and n36b2 == 1 and img36b != PV_J and w36b == ["FAIL 主张不闭合"],
-                   "累加锚点 %d 次｜return 锚点 %d 次｜退档名单 %s（期望只那一条 pair）"
+                   "累加锚点 %d 次｜落点锚点 %d 次｜退档名单 %s（期望只那一条 pair）"
                    % (n36b, n36b2, w36b)))
+    ascii_fix = ["7×8=1", "4 人 × 10 周 = 10 人月", "24 = 全资源模块化+图谱贯通 6",
+                 "10=19 子集+对内 4", "2=8 节齐 + 30"]
+    ar = []
+    for s in ascii_fix:
+        ar += blind_read_verdict("docs/a.md", [dict(line=1, span=s)], {})
+    checks.append(("盲区读账·ASCII 等号不升格：这 %d 条是 2026-10-03 从真语料逐条读原文取回的反例——"
+                   "分别是指标读数、跨单位换算、编号与标题，**没有一条是真错账**。升格会把它们读成"
+                   "不闭合的红，所以第九本账只认全角等号的嫌疑，ASCII 等号只记欠账不判红" % len(ascii_fix),
+                   not ar, "反例 %d 条／红 %s" % (len(ascii_fix), ar)))
     fails = 0
     for name, ok, detail in checks:
         print("%s %s  %s" % ("PASS" if ok else "FAIL", name, detail))
@@ -2595,7 +2624,7 @@ def cmd_blindread(args):
     分档数（glued=…／latin=…）回答的是「盲区有多少」，回答不了「盲区里有没有藏着错账」，
     所以嫌疑要解除遮蔽后交回唯一算源再判一次，判成真算术而不闭合的红在这里出。"""
     paths = walk_md(args.root)
-    total, by_reason, suspects, bad = 0, {}, [], []
+    total, by_reason, suspects, debts, bad = 0, {}, [], [], []
     for p in paths:
         rel, sp = _scan_file(p)
         total += len(sp["blind"])
@@ -2604,6 +2633,8 @@ def cmd_blindread(args):
         adj = {}
         for b in sp["blind"]:
             span = b.get("span") or ""
+            if _ascii_debt(span):
+                debts.append((rel, b.get("line"), span[:70]))
             if not FL.EQ_FW_RE.search(span) or not (FL.ADD_RE.search(span) or FL.MUL_RE.search(span)):
                 continue
             verdict = "非算术"
@@ -2619,9 +2650,13 @@ def cmd_blindread(args):
     print("盲区分档 " + "／".join("%s=%d" % (k, by_reason[k]) for k in sorted(by_reason)))
     for rel, line, span, verdict in suspects:
         print("嫌疑 %s:%d 「%s」判决 %s" % (rel, line, span, verdict))
+    for rel, line, span in debts:
+        print("欠账 %s:%d 「%s」真等式但用 ASCII 等号写，永久免检——改全角等号与加号才进复算"
+              % (rel, line, span))
     for b in bad:
         print("FAIL %s" % b)
-    print("BLINDREAD 盲区 %d 条，嫌疑 %d 条，红 %d 条" % (total, len(suspects), len(bad)))
+    print("BLINDREAD 盲区 %d 条，嫌疑 %d 条，欠账 %d 条，红 %d 条"
+          % (total, len(suspects), len(debts), len(bad)))
     return 1 if bad else 0
 
 
