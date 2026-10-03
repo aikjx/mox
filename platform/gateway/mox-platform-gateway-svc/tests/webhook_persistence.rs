@@ -30,18 +30,18 @@ fn webhook_write_then_restart_recovers_with_tenant_isolation_and_delete_persists
         "tenant-a",
         "http://127.0.0.1:9/hooks/a-all".into(),
         vec![],
-    );
+    ).unwrap();
     let wh_a2 = state1.events.register_webhook(
         "tenant-a",
         "http://127.0.0.1:9/hooks/a-registered".into(),
         vec!["ExpertRegistered".into(), "ExpertDisabled".into()],
-    );
+    ).unwrap();
     // ----- tenant-b：登记 1 个订阅 -----
     let wh_b1 = state1.events.register_webhook(
         "tenant-b",
         "http://127.0.0.1:9/hooks/b1".into(),
         vec!["PlanCreated".into()],
-    );
+    ).unwrap();
 
     // 内存自检（写后即入热投影）
     assert_eq!(state1.events.list_webhooks("tenant-a").len(), 2, "写后 tenant-a 应 2 个订阅");
@@ -84,10 +84,10 @@ fn webhook_write_then_restart_recovers_with_tenant_isolation_and_delete_persists
 
     // ========== 删除订阅后重启：删除须持久化 ==========
     // 在 state2 删除 wh_a2
-    assert!(state2.events.delete_webhook("tenant-a", &wh_a2.id), "删除 wh_a2 应命中");
-    assert!(!state2.events.delete_webhook("tenant-a", &wh_a2.id), "重复删除应返回 false");
+    assert!(state2.events.delete_webhook("tenant-a", &wh_a2.id).unwrap(), "删除 wh_a2 应命中");
+    assert!(!state2.events.delete_webhook("tenant-a", &wh_a2.id).unwrap(), "重复删除应返回 false");
     // 跨租户删除应失败（tenant-b 删不了 tenant-a 的 wh_a1）
-    assert!(!state2.events.delete_webhook("tenant-b", &wh_a1.id), "跨租户删除必须失败");
+    assert!(!state2.events.delete_webhook("tenant-b", &wh_a1.id).unwrap(), "跨租户删除必须失败");
     drop(state2);
 
     // 三次启动：wh_a2 已删不应恢复；wh_a1 / wh_b1 仍在

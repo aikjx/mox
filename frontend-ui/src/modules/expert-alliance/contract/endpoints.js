@@ -23,8 +23,9 @@ export const ENDPOINTS = Object.freeze({
   // ── T4 事件总线对外出口（experts_streams.rs；与上面的任务日志流为独立通道）──
   // SSE 事件帧流：不经 http 工厂，由 composables/useAllianceEventStream.js 以 fetch 直连。
   allianceEventStream: { registry: 'alliance.events.stream', method: 'GET', path: '/api/alliance/events/stream', nesting: 'flat' },
-  // webhook CRUD（POST/GET /api/alliance/events/webhooks、DELETE .../:id）后端已真实落地并 E2E 验证，
-  // 但属运维管理面，本前端模块不挂 UI，已登记进后端元数据，归 UNMOUNTED_ROUTES 明确记录。
+  webhooksList: { registry: 'alliance.events.webhooks', method: 'GET', path: '/api/alliance/events/webhooks', nesting: 'flat' },
+  webhookCreate: { registry: 'alliance.events.webhooks', method: 'POST', path: '/api/alliance/events/webhooks', nesting: 'flat' },
+  webhookDelete: { registry: 'alliance.events.webhook_detail', method: 'DELETE', path: '/api/alliance/events/webhooks/:id', nesting: 'flat' },
   taskDag: { registry: 'alliance.tasks.dag', method: 'GET', path: '/api/alliance/tasks/:id/dag', nesting: 'nested' },
   taskFusion: { registry: 'alliance.tasks.fusion', method: 'GET', path: '/api/alliance/tasks/:id/fusion-result', nesting: 'nested' },
   expertSearch: { registry: 'alliance.experts.search', method: 'POST', path: '/api/alliance/experts/search', nesting: 'nested' },
@@ -161,8 +162,6 @@ export const FORBIDDEN_ENDPOINTS = Object.freeze([
 // 所以后端新增路由时本表不会默默放过——必须先定性为 backlog（真能力，待做）或 rejected（有意不做）。
 // verdict=rejected 的每条都要能指出后端证据：重复源 / 零值桩 / 模板桩 / 虚假能力面 / 破坏性动作。
 export const UNMOUNTED_ROUTES = Object.freeze([
-  { registry: 'alliance.events.webhooks', verdict: 'rejected', reason: '运维订阅管理接口由 experts_streams.rs:109-144 提供真实 POST/GET；本模块广场与协作页面没有运维订阅管理职责，不用业务刷新顺带读取或创建外部投递配置，留给独立运维控制台显式接入' },
-  { registry: 'alliance.events.webhook_detail', verdict: 'rejected', reason: 'experts_streams.rs:147-155 为真实 DELETE 订阅操作，删除会停止事件外部投递；本模块无订阅管理及删除确认页面，不把破坏性运维动作挂到专家业务广场，独立控制台尚需开发验证' },
   { registry: 'alliance.tasks.fusion_alias', verdict: 'rejected', reason: '/fusion 与 /fusion-result 挂的是同一个 get_fusion_result（alliance.rs:1818-1819），模块走 taskFusion 一条源；挂两条会让融合结果有两个刷新入口' },
   { registry: 'alliance.stats', verdict: 'rejected', reason: 'handler 无 State 参数，八个键全为硬编码 0/0.0（alliance.rs:1100-1114），已在 FORBIDDEN_ENDPOINTS 内；平台 KPI 用 experts.registry.stats' },
   { registry: 'experts.registry.metrics', verdict: 'rejected', reason: '与 experts.registry.stats 同出一个 compute_platform_metrics（experts_registry.rs:485 与 :608 都调它），并列只会给同一组数字两个口径' },

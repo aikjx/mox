@@ -70,6 +70,8 @@ pub enum RbacAction {
     ResetAllDispatcher,
     /// 更新调度配置（PUT /api/experts/dispatcher/config）
     UpdateConfig,
+    /// Webhook 地址与订阅管理（读写均限制管理员）
+    ManageWebhooks,
 }
 
 impl RbacAction {
@@ -84,6 +86,7 @@ impl RbacAction {
             RbacAction::ResetDispatcher => "dispatcher.reset",
             RbacAction::ResetAllDispatcher => "dispatcher.reset_all",
             RbacAction::UpdateConfig => "dispatcher.config_update",
+            RbacAction::ManageWebhooks => "webhook.manage",
         }
     }
 
@@ -98,6 +101,7 @@ impl RbacAction {
             RbacAction::ResetDispatcher => "重置专家调度负载",
             RbacAction::ResetAllDispatcher => "重置全部专家调度负载",
             RbacAction::UpdateConfig => "更新调度配置",
+            RbacAction::ManageWebhooks => "管理事件订阅",
         }
     }
 }

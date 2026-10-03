@@ -29,4 +29,5 @@ pub mod experts_orchestration;
 pub mod experts_dispatcher;
 pub mod experts_rbac;
 pub mod experts_streams;
+mod webhook_policy;
 pub mod registry_client;

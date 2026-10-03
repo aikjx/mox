@@ -1,6 +1,6 @@
 # 专家联盟事件交付与恢复契约
 
-核验日期：2026-10-02。本文是事件订阅主题的增量权威；整体实现仍以 [当前架构](CURRENT-ARCHITECTURE.md) 为准。产品模块与需求编号沿用 [企业功能登记](../modules/enterprise-capabilities/README.md)，不另建一套模块目录。
+核验日期：2026-10-03。本文是事件订阅主题的增量权威；整体实现仍以 [当前架构](CURRENT-ARCHITECTURE.md) 为准。产品模块与需求编号沿用 [企业功能登记](../modules/enterprise-capabilities/README.md)，不另建一套模块目录。
 
 ## 1. 模块边界与单一事实源
 
@@ -12,7 +12,10 @@
 | 前端传输契约 | Bearer 身份、UTF-8 分帧、资源释放、缺口回调 | `contract/event-stream.js` | 不持有业务列表或生成业务结果 |
 | Vue 生命周期适配 | 从现有认证 store 取令牌，身份变化或组件释放时停止 | `composables/useAllianceEventStream.js` | 不自动订阅任何视图 |
 | 事件日志消费者 | 异步写 SQLite 可观察轨迹 | `spawn_event_log_consumer` | 不是与业务写入原子提交的 outbox |
-| Webhook 派发 | 对内存登记的同租户目标真实 HTTP POST | `spawn_webhook_dispatcher` | 当前没有持久订阅、签名、死信队列或可靠投递保证 |
+| Webhook 管理 | 管理员角色、认证租户、分页查询、SQLite 提交后更新热投影 | `experts_streams.rs` / `EventBus` | 不授予跨租户管理、不以日志代替提交 |
+| Webhook 出站策略 | 运维显式授权精确 origin，创建和投递均校验 | `webhook_policy.rs` | 不由租户管理员自行授权出站源、不提供 DNS 地址钉住 |
+| Webhook 派发 | 对恢复后的同租户目标真实 HTTP POST，禁止重定向和环境代理 | `spawn_webhook_dispatcher` | 没有签名、死信队列或可靠投递保证 |
+| 控制台订阅模块 | 契约端点 → API 严格投影 → 独立 Pinia store → 订阅组件 | `WebhookSubscriptions.vue` / `alliance-webhooks.store.js` | 不自动创建目标、不自动重试创建，不将保存当作送达 |
 
 ```mermaid
 flowchart LR
@@ -71,8 +74,51 @@ flowchart TD
 | EA-EVT-04 | 同租户事件、真实 ID、明确缺口且不泄漏全局数量 | 已实现；真实 broadcast / SSE body 验证 |
 | EA-EVT-05 | 页面刷新、断线可见、退避、恢复后的状态一致 | 待接入视图及真实浏览器验收 |
 | EA-EVT-06 | 业务写入与 outbox 原子提交、跨实例消费、去重、重放 | 待开发；现有日志消费者不满足 |
-| EA-EVT-07 | Webhook 管理授权、出站目标策略、防重定向与 DNS 重绑定、签名、持久订阅、死信与幂等 | 待开发；现有仅 URL 前缀校验和租户隔离，不满足企业生产门槛 |
+| EA-EVT-07 | Webhook 管理授权、出站目标策略、防重定向与 DNS 重绑定、签名、持久订阅、死信与幂等 | 部分实现：授权、精确 origin、禁重定向、持久提交及控制台已核验；DNS 地址钉住、签名、outbox、死信、幂等仍待开发 |
 
-优先顺序：先完成 Webhook 授权与出站边界，再接入页面可观察恢复；可靠事件交付基于持久 outbox 单独落地。前端不得拿 SSE 成功证明业务成功、Webhook 成功或外部模型成功。无跨实例、远程 CI 和完整浏览器端到端结论。
+后续优先顺序：出站 DNS 地址钉住与签名、持久 outbox 和投递幂等，再验证跨实例消费与恢复。前端不得拿 SSE 成功证明业务成功、Webhook 成功或外部模型成功。无跨实例、远程 CI 和完整浏览器端到端结论。
 
 本轮证据见 [验证报告](../../reports/markdown/20261002-alliance-event-contract.md)。需求追踪关联 EM-09 执行、EM-10 协作与 EM-26 运维；这些模块整体仍按企业登记中的独立验收项逐项交付。
+
+## 5. 2026-10-03 Webhook 管理增量与业务流程
+
+三个管理动作共享现有 JWT 身份和 `RbacAction::ManageWebhooks`：GET/POST `/api/alliance/events/webhooks`、DELETE `/api/alliance/events/webhooks/:id`。未认证 401；非 `super_admin/tenant_admin` 角色 403；跨租户删除 404。租户只取认证上下文，超管也不通过请求参数切换租户。拒绝复用现有 RBAC 审计。
+
+创建体为 `{url,event_types}`；URL 上限 2048 字节，HTTP(S)、无用户信息、查询参数或 fragment；过滤值只收四种真实事件，空数组表示全部。出站源配置及部署操作以 [部署模板 §2.6](09-deployment-templates.md#26-网关本地存储附件非联盟专属按需) 为权威。授权按 scheme/host/effective port 精确匹配，拒绝子域和端口漂移；仅创建、投递允许的 origin，由运维环境配置控制，默认拒绝全部。运维可显式授权内部接收源，因此这不是「所有内网地址永久禁止」策略；域名目标仍依赖受信 DNS，未做解析后 IP 钉住。
+
+GET 返回 `{webhooks,total}`，按 `created_at,id` 排序，支持既有 `page/page_size`，默认 20、上限 200。对象 `{id,tenant,url,event_types,created_at}` 由前端严格投影为 `{id,tenantId,url,eventTypes,createdAt}`；格式错误显式失败。列表来自本进程投递投影，不能据此声称跨进程一致性。
+
+```mermaid
+flowchart TD
+  UI[控制台显式读取或保存或确认删除] --> EP[端点契约与 API 信封归一]
+  EP --> AUTH[真实 JWT 与认证租户]
+  AUTH --> RBAC{管理员角色}
+  RBAC -->|否| DENY[401 或 403 与拒绝审计]
+  RBAC -->|是| OP{管理动作}
+  OP -->|读取| LIST[同租户排序分页]
+  OP -->|创建| VALID[精确 origin 与事件类型校验]
+  OP -->|删除| OWN[同租户对象校验]
+  VALID --> SQL[SQLite 实际写入]
+  OWN --> SQL
+  SQL -->|失败| FAIL[503 保留原投递投影]
+  SQL -->|成功| MEMORY[更新或删除热投影]
+  MEMORY --> OK[返回真实提交结果]
+  LIST --> OK
+  OK --> STORE{响应仍属于当前身份}
+  STORE -->|是| VIEW[更新订阅页面]
+  STORE -->|否| DROP[丢弃旧响应]
+```
+
+状态提交与事件投递是两条流程：SQLite 提交后才变更本进程目标；重建 state 从库恢复合法过滤器。过滤 JSON 损坏时跳过并记录错误，不能退化为空数组而扩大订阅。投递逐事件选取同租户、类型匹配目标，再检查当前 origin 策略，真实 POST；client 禁用重定向和环境代理，5 秒超时，最多两次尝试，中间等待 300ms。删除不会撤销已经取得目标快照或进入网络的请求。启动读库仍有旧 best-effort 路径，不能宣称依赖故障时启动健康已闭环。
+
+控制台通过 `WebhookSubscriptions` 与原任务、调度模块融合；没有额外路由或第二套权限系统。显式读取订阅，保存经真实接口确认后才清空表单，删除需要二次确认。已确认的写入与后续刷新失败分别提示；令牌、租户、用户切换清空地址和待删除确认，旧响应不进入新身份。创建请求丢失响应后仍可能出现提交不确定，需要重新读取核对，当前尚无创建幂等键。
+
+| 验收项 | 实际证据 | 当前边界 |
+|---|---|---|
+| EA-WH-01 管理授权与租户隔离 | 真实 JWT/TCP，普通用户 403、异租户 404；伪造前端角色仍被服务端拒绝 | 本租户管理员管理，不含个人 ACL |
+| EA-WH-02 写失败不假成功 | SQLite INSERT/DELETE 触发器真实报错，503、投影及重载状态不变 | 同进程热投影，不是分布式事务 |
+| EA-WH-03 出站源策略 | 未配置、其他端口、凭据、query、fragment、非 HTTP 协议 400；真实 302 接收端不被跟随 | DNS 钉住与签名尚未实现 |
+| EA-WH-04 合法过滤与持久恢复 | 实际 A 事件送达，B 租户及不匹配类型不投递；损坏过滤不扩大订阅；删除后重载不恢复 | 无可靠队列、恢复不等于进程崩溃测试 |
+| EA-WH-05 前后端融合 | 实际 Pinia/Axios → TCP → Rust → SQLite；切租户迟到响应、CRUD、注销不发请求 | 真实传输链路，尚无完整浏览器交互验收 |
+
+本轮增量证据见 [Webhook 模块报告](../../reports/markdown/20261003-webhook-management.md)。本模块只是 EM-02/EM-10/EM-26 的部分验收，不提升为全模块完成。后续还需创建配额/限流、幂等、独立健康状态及存储 IO 调度，解决当前同步 SQLite 与串行投递在压力下的阻塞。

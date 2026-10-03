@@ -2544,6 +2544,43 @@ def cmd_selftest(args):
                    "门限 %d→400→%d ／ 宇宙 %d 条→%d 条 ／ 拧后含占位符 %d 条" % (
                        orig_min, FL.OUTLET_MIN_PREFIX, len(tmpls), len(knob),
                        sum(1 for t in knob if "%" in t))))
+    # ── 夹具AB·driven 档的键级复算（§1.8v：`agg` 的构造住在本判决段里，所以由本文件自己判）──
+    PV_J = _read_code(os.path.abspath(__file__)).replace("\r\n", "\n").split("\ndef cmd_selftest")[0]
+    PV_SCR = FL.red_accum_screen(PV_J, ("FAIL ", "INFO "))
+    PV_DRV = sorted(set(x[0] for x in PV_SCR if x[3] == "driven"))
+    PV_LIST = FL.driven_provenance(PV_J, ("FAIL ", "INFO "))
+    PV_WEAK = sorted(set(h for h, _f, _l, v, _n in PV_LIST if v == "name-only"))
+    checks.append(("夹具AB·分母 driven 站点数必须等于键级复算的条数（两条尺共用同一条抽取口径，"
+                   "一边涨一边不涨＝复算漏了明天新加的那条红）",
+                   len(PV_LIST) == len(PV_DRV),
+                   "driven %d 条 %s｜键级复算 %d 条｜档位 %s" % (
+                       len(PV_DRV), PV_DRV, len(PV_LIST),
+                       sorted(set(v for _h, _f, _l, v, _n in PV_LIST)))))
+    checks.append(("夹具AB 每条 driven 的红都要有键级同源：pair＝那张明细表的计数键被 return 读，"
+                   "same-iter＝驱动这条红的表达式逐字出现在 return；只到名字一级的 name-only 不算有牙",
+                   bool(PV_LIST) and not PV_WEAK,
+                   "无键级同源 %s｜逐条 %s" % (
+                       PV_WEAK or "[]", ["%s→%s@%d" % (h, v, l) for h, _f, l, v, _n in PV_LIST])))
+    PV_CNT = '        agg["violations"] += len(sp["violations"])\n'
+    PV_RET = "    return agg\n"
+    n36a = PV_J.count(PV_CNT)
+    img36a = PV_J.replace(PV_CNT, '        agg["violations"] += len(sp["claims"])\n', 1)
+    w36a = sorted(set(h for h, _f, _l, v, _n in FL.driven_provenance(img36a, ("FAIL ", "INFO "))
+                      if v == "name-only"))
+    checks.append(("变异体36·甲 把计数键的来源换成另一张表（`violations` 不再数 `details`）"
+                   "⇒ 那条 pair 必须当场退成 name-only 并被点名（牙在\"数的是同一批数据\"这句话上）",
+                   n36a == 1 and img36a != PV_J and bool(w36a),
+                   "锚点 %d 次｜图像确变＝%s｜退档名单 %s" % (n36a, img36a != PV_J, w36a)))
+    n36b = PV_J.count(PV_CNT)
+    n36b2 = PV_J.count(PV_RET)
+    img36b = PV_J.replace(PV_CNT, "", 1).replace(PV_RET, PV_CNT + PV_RET, 1)
+    w36b = sorted(set(h for h, _f, _l, v, _n in FL.driven_provenance(img36b, ("FAIL ", "INFO "))
+                      if v == "name-only"))
+    checks.append(("变异体36·乙 把那次计数累加搬出与明细表共同的循环（来源表达式没换但不再同循环）"
+                   "⇒ 只有 pair 那一型退档，same-iter 必须照旧有牙（两型各自独立，一枚针只撤一条通道）",
+                   n36b == 1 and n36b2 == 1 and img36b != PV_J and w36b == ["FAIL 主张不闭合"],
+                   "累加锚点 %d 次｜return 锚点 %d 次｜退档名单 %s（期望只那一条 pair）"
+                   % (n36b, n36b2, w36b)))
     fails = 0
     for name, ok, detail in checks:
         print("%s %s  %s" % ("PASS" if ok else "FAIL", name, detail))

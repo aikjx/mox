@@ -23,6 +23,7 @@ import {
   appendMessageBody, createSessionBody, semanticSearchBody, sessionListQuery, similarSearchBody
 } from '@/modules/expert-alliance/contract'
 import { registerBody } from '@/modules/expert-alliance/contract'
+import { normWebhook, normWebhookList } from '@/modules/expert-alliance/model'
 
 // 模式 → 端点定义在 contract/collab.js，端点 → 归一化器在此收口，两表由 contract.test.js 对齐。
 const NORM_BY_ENDPOINT = {
@@ -56,6 +57,19 @@ export function createAllianceApi(httpClient = defaultHttp) {
   const get = (name, opts) => call(httpClient, name, opts)
 
   return {
+    async listWebhooks(page = 1) {
+      const { payload } = await get('webhooksList', { query: { page, page_size: 20 } })
+      return normWebhookList(payload)
+    },
+    async createWebhook(input) {
+      const { payload } = await get('webhookCreate', { body: { url: input.url.trim(), event_types: [...input.eventTypes] } })
+      return normWebhook(payload?.webhook)
+    },
+    async deleteWebhook(id) {
+      const { payload } = await get('webhookDelete', { params: { id } })
+      if (payload?.deleted !== id) throw new Error('删除结果未确认，请刷新后核对')
+      return id
+    },
     // ── 运行时 ────────────────────────────────────────────────
     async getRuntime() {
       const { payload } = await get('runtime')

@@ -1,0 +1,26 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "webhook_management",
+    "--test",
+    "webhook_persistence",
+    "--test",
+    "session_tenant_isolation",
+    "--test",
+    "favorite_transactions",
+    "--test",
+    "inbox_http",
+    "--test",
+    "trusted_tenant",
+    "--",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 101,
+  "log": "rust.log"
+}

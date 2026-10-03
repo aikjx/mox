@@ -17,6 +17,8 @@
 
 2026-10-03 会话增量：[会话隔离与提交契约](23-session-isolation-and-commit.md) 登记 EA-SES-01–07；真实双租户与 SQLite 故障验证修复越权读取、写失败假成功和即时咨询未落盘。其余生产边界见主源，验证见 [模块报告](../../reports/markdown/20261003-module-verification.md)。
 
+2026-10-03 Webhook 管理增量：[事件契约 §5](21-event-delivery-contract.md#5-2026-10-03-webhook-管理增量与业务流程) 统一管理员授权、精确出站源、持久提交及控制台接线，登记 EA-WH-01–05；验证范围和未完成的可靠投递能力见 [本轮报告](../../reports/markdown/20261003-webhook-management.md)。
+
 ## 一、文档总表
 
 2026-10-03 幂等联调增量：[对象与收藏契约](22-expert-object-contract.md) 登记 EA-OBJ-08/09；[验证报告](../../reports/markdown/20261003-favorite-idempotency.md) 包含真实 Pinia/Axios/生产 Rust 路由以及提交后 TCP 响应丢失验证。全功能仍以模块台账逐项验收。

@@ -135,6 +135,7 @@ last_updated: 2026-09-29
 | 变量 | 默认 | 代码位置 |
 |------|------|----------|
 | `MOX_EXPERTS_DB_PATH` | `data/experts.db` | `gateway/src/alliance/experts_db.rs:32,34,46` |
+| `MOX_WEBHOOK_ALLOWED_ORIGINS` | 未设/空=禁止全部 Webhook 出站；逗号分隔精确 HTTP(S) origin，不能包含路径、凭据、query、fragment | `platform/gateway/mox-platform-gateway-svc/src/alliance/webhook_policy.rs::allowed_target` |
 | `MOX_STORAGE_ROOT` | `<cwd>/data/storage` | `gateway/src/cloud.rs:44-48` |
 | `MOX_UPLOAD_DIR` | `./data/uploads` | `gateway/src/file_storage/api.rs:28-29` |
 | `MOX_STORE_DB_PATH` | （const 定义） | `gateway/src/store_json.rs:27` |

@@ -183,9 +183,8 @@ impl EventBus {
 
     /// 登记一个 webhook 订阅（按租户隔离）。
     ///
-    /// 先入内存热投影，再写穿 `alliance_webhooks`（best-effort，失败仅 log 不阻断——
-    /// 内存投影仍即时生效，落盘失败下次启动可能丢失该订阅，与本模块 best-effort 约定一致）。
-    pub fn register_webhook(&self, tenant: impl Into<String>, url: String, event_types: Vec<String>) -> WebhookSubscription {
+    /// SQLite 提交成功后才更新热投影；存储失败不改变投递目标。
+    pub fn register_webhook(&self, tenant: impl Into<String>, url: String, event_types: Vec<String>) -> Result<WebhookSubscription, String> {
         let wh = WebhookSubscription {
             id: gen_id("wh"),
             tenant: tenant.into(),
@@ -193,13 +192,15 @@ impl EventBus {
             event_types,
             created_at: now_iso(),
         };
-        self.webhooks.lock().insert(wh.id.clone(), wh.clone());
-        // v5：写穿 SQLite（best-effort）。event_types 序列化为 JSON 数组字符串存列。
-        let et_json = serde_json::to_string(&wh.event_types).unwrap_or_else(|_| "[]".to_string());
-        crate::alliance::experts_db::upsert_webhook(
+        let mut table = self.webhooks.lock();
+        let et_json = serde_json::to_string(&wh.event_types).map_err(|e| e.to_string())?;
+        let conn = crate::alliance::experts_db::open_experts_db()?;
+        crate::alliance::experts_db::upsert_webhook_conn(
+            &conn,
             &wh.id, &wh.tenant, &wh.url, &et_json, &wh.created_at,
-        );
-        wh
+        )?;
+        table.insert(wh.id.clone(), wh.clone());
+        Ok(wh)
     }
 
     /// 列出某租户的全部订阅
@@ -214,27 +215,31 @@ impl EventBus {
 
     /// 删除订阅（仅租户本人可删；返回是否真的删掉）。
     ///
-    /// 内存投影命中后立即删；再写穿 `alliance_webhooks`（best-effort），重启后不再恢复该订阅。
-    pub fn delete_webhook(&self, tenant: &str, id: &str) -> bool {
+    /// SQLite 删除成功后才停止投递；失败保留现有订阅。
+    pub fn delete_webhook(&self, tenant: &str, id: &str) -> Result<bool, String> {
         let mut g = self.webhooks.lock();
         let hit = matches!(g.get(id), Some(w) if w.tenant == tenant);
         if hit {
+            let conn = crate::alliance::experts_db::open_experts_db()?;
+            crate::alliance::experts_db::delete_webhook_row_conn(&conn, id, tenant)?;
             g.remove(id);
-            crate::alliance::experts_db::delete_webhook_row(id, tenant);
         }
-        hit
+        Ok(hit)
     }
 
     /// 启动期从 SQLite 读回全部 webhook 订阅，重建内存热投影（v5 重启恢复）。
     ///
     /// 由 `ExpertsSharedState::new()` 在总线创建后调用一次。读失败/空库则内存投影保持空
-    /// （与历史行为一致，不阻断启动）。event_types 列解析失败时降级为空数组（=全收），
-    /// 不丢弃整条订阅。
+    /// （与历史行为一致，不阻断启动）。event_types 列解析失败时跳过并记录错误，
+    /// 不得扩大为全事件订阅。
     pub fn restore_webhooks_from_db(&self) {
         let rows = crate::alliance::experts_db::load_all_webhooks();
         let mut g = self.webhooks.lock();
         for r in rows {
-            let event_types: Vec<String> = serde_json::from_str(&r.event_types).unwrap_or_default();
+            let Ok(event_types) = serde_json::from_str::<Vec<String>>(&r.event_types) else {
+                tracing::error!(webhook_id = %r.id, "invalid webhook filter; subscription not restored");
+                continue;
+            };
             g.insert(
                 r.id.clone(),
                 WebhookSubscription {
@@ -324,6 +329,8 @@ pub fn spawn_webhook_dispatcher(bus: Arc<EventBus>) {
         // 进程内一个共享 client（连接池）；rustls-tls 特性，回环 http 与外网 https 均可用
         let client = match reqwest::Client::builder()
             .timeout(Duration::from_secs(5))
+            .redirect(reqwest::redirect::Policy::none())
+            .no_proxy()
             .build()
         {
             Ok(c) => c,
@@ -359,9 +366,13 @@ pub fn spawn_webhook_dispatcher(bus: Arc<EventBus>) {
 
 /// 向单个 webhook URL 投递一次事件信封（最多 2 次尝试：失败后重试 1 次）。
 async fn dispatch_once(client: &reqwest::Client, url: &str, body: &[u8]) {
+    let Ok(target) = super::webhook_policy::allowed_target(url) else {
+        tracing::warn!("webhook target blocked by outbound origin policy");
+        return;
+    };
     for attempt in 0..2 {
         match client
-            .post(url)
+            .post(target.clone())
             .header("Content-Type", "application/json")
             .header("X-Alliance-Event", "alliance")
             .body(body.to_vec())
@@ -370,10 +381,10 @@ async fn dispatch_once(client: &reqwest::Client, url: &str, body: &[u8]) {
         {
             Ok(resp) if resp.status().is_success() => return,
             Ok(resp) => {
-                eprintln!("[webhook] {} -> HTTP {}（尝试 {}/2）", url, resp.status().as_u16(), attempt + 1);
+                tracing::warn!(status = resp.status().as_u16(), attempt, "webhook delivery failed");
             }
             Err(e) => {
-                eprintln!("[webhook] {} 投递失败（尝试 {}/2）: {e}", url, attempt + 1);
+                tracing::warn!(attempt, error = %e.without_url(), "webhook delivery failed");
             }
         }
         if attempt == 0 {

@@ -30,7 +30,7 @@
 use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     response::{
         sse::{Event, KeepAlive, Sse},
         IntoResponse, Response,
@@ -45,7 +45,10 @@ use tokio::sync::broadcast;
 
 use mox_api_protocol::{api_error, api_ok, ApiResponse};
 
-use super::experts_common::{ExpertsSharedState, TenantId};
+use super::{
+    experts_common::{parse_pagination, ExpertsSharedState, OptionalAuthUser, TenantId},
+    experts_rbac::{enforce_admin_or_respond, RbacAction},
+};
 
 // =====================================================================
 // SSE 事件帧：GET /api/alliance/events/stream
@@ -105,7 +108,7 @@ pub async fn alliance_events_stream(
 }
 
 // =====================================================================
-// Webhook 订阅：CRUD（内存，重启即失）
+// Webhook 管理：管理员授权 + SQLite 提交 + 内存投递投影
 // =====================================================================
 
 #[derive(Debug, Deserialize)]
@@ -121,38 +124,72 @@ pub struct CreateWebhookBody {
 pub async fn create_webhook(
     State(state): State<Arc<ExpertsSharedState>>,
     TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Json(body): Json<CreateWebhookBody>,
 ) -> ApiResponse<Value> {
-    let url = body.url.trim().to_string();
-    if url.is_empty() || (!url.starts_with("http://") && !url.starts_with("https://")) {
-        return api_error(400, "url 必须以 http:// 或 https:// 开头");
+    if let Err(response) =
+        enforce_admin_or_respond(&state, &user, &tenant, RbacAction::ManageWebhooks)
+    {
+        return response;
     }
-    if body.event_types.len() > 32 {
-        return api_error(400, "event_types 最多 32 项");
+    let url = match super::webhook_policy::allowed_target(body.url.trim()) {
+        Ok(url) => url.to_string(),
+        Err(message) => return api_error(400, message),
+    };
+    let allowed_types = ["PlanCreated", "PlanStatusChanged", "ExpertRegistered", "ExpertDisabled"];
+    if body.event_types.len() > allowed_types.len()
+        || body.event_types.iter().any(|t| !allowed_types.contains(&t.as_str()))
+    {
+        return api_error(400, "event_types 仅支持四种联盟事件，空数组表示全部");
     }
-    let wh = state.events.register_webhook(tenant, url, body.event_types);
-    api_ok(json!({ "webhook": wh }))
+    match state.events.register_webhook(tenant, url, body.event_types) {
+        Ok(wh) => api_ok(json!({ "webhook": wh })),
+        Err(error) => {
+            tracing::error!(%error, "webhook create commit failed");
+            api_error(503, "订阅未保存，请稍后重试")
+        },
+    }
 }
 
 /// GET /api/alliance/events/webhooks —— 列出本租户全部订阅。
 pub async fn list_webhooks(
     State(state): State<Arc<ExpertsSharedState>>,
     TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
+    Query(query): Query<std::collections::HashMap<String, String>>,
 ) -> ApiResponse<Value> {
-    let list = state.events.list_webhooks(&tenant);
-    api_ok(json!({ "webhooks": list, "total": list.len() }))
+    if let Err(response) =
+        enforce_admin_or_respond(&state, &user, &tenant, RbacAction::ManageWebhooks)
+    {
+        return response;
+    }
+    let mut list = state.events.list_webhooks(&tenant);
+    list.sort_by(|a, b| a.created_at.cmp(&b.created_at).then(a.id.cmp(&b.id)));
+    let total = list.len();
+    let (offset, limit) = parse_pagination(&query);
+    let items: Vec<_> = list.into_iter().skip(offset).take(limit).collect();
+    api_ok(json!({ "webhooks": items, "total": total }))
 }
 
 /// DELETE /api/alliance/events/webhooks/:id —— 删除本租户的一个订阅。
 pub async fn delete_webhook(
     State(state): State<Arc<ExpertsSharedState>>,
     TenantId(tenant): TenantId,
+    OptionalAuthUser(user): OptionalAuthUser,
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
-    if state.events.delete_webhook(&tenant, &id) {
-        api_ok(json!({ "deleted": id }))
-    } else {
-        api_error(404, format!("webhook {id} 不存在或不属于本租户"))
+    if let Err(response) =
+        enforce_admin_or_respond(&state, &user, &tenant, RbacAction::ManageWebhooks)
+    {
+        return response;
+    }
+    match state.events.delete_webhook(&tenant, &id) {
+        Ok(true) => api_ok(json!({ "deleted": id })),
+        Ok(false) => api_error(404, format!("webhook {id} 不存在或不属于本租户")),
+        Err(error) => {
+            tracing::error!(%error, "webhook delete commit failed");
+            api_error(503, "订阅未删除，请稍后重试")
+        },
     }
 }
 

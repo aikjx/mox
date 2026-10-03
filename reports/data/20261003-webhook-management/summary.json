@@ -1,0 +1,198 @@
+{
+  "date": "2026-10-03",
+  "status": "verified_slice_with_remaining_production_gaps",
+  "rust_tests": 23,
+  "frontend_contract_tests": 157,
+  "wire_coverage": {
+    "numerator": 74,
+    "denominator": 85,
+    "threshold": 0.85
+  },
+  "real_frontend_requests": 11,
+  "new_mock_services": false,
+  "browser_e2e": false,
+  "remote_ci": false,
+  "cross_host_recovery": false,
+  "all_modules_accepted": false,
+  "clippy_existing_warnings": 69,
+  "checks": [
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "webhook_management",
+        "--test",
+        "webhook_persistence",
+        "--test",
+        "session_tenant_isolation",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "inbox_http",
+        "--test",
+        "trusted_tenant_http",
+        "--test",
+        "alliance_stream_contract",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_release.log",
+      "name": "rust_release"
+    },
+    {
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "test",
+        "--",
+        "src/modules/expert-alliance/contract/contract.test.js",
+        "src/modules/expert-alliance/contract/sessions.test.js",
+        "src/modules/expert-alliance/contract/vocabulary-ownership.test.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "contracts_release.log",
+      "name": "contracts_release"
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "webhook_management",
+        "--test",
+        "webhook_persistence",
+        "--no-deps"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy.log",
+      "name": "clippy"
+    },
+    {
+      "name": "feedback",
+      "status": "pending"
+    },
+    {
+      "name": "paths",
+      "status": "pending"
+    },
+    {
+      "name": "ports",
+      "status": "pending"
+    },
+    {
+      "name": "docs",
+      "status": "pending"
+    },
+    {
+      "name": "diagrams",
+      "status": "pending"
+    },
+    {
+      "name": "diff",
+      "status": "pending"
+    },
+    {
+      "name": "format",
+      "status": "pending"
+    },
+    {
+      "name": "build",
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "run",
+        "build"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "build.log",
+      "capture": "Executed via exec_command; completion and output inspected"
+    },
+    {
+      "name": "module",
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "module.log",
+      "capture": "Executed via exec_command; completion and output inspected"
+    },
+    {
+      "name": "framework",
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-framework-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "framework.log",
+      "capture": "Executed via exec_command; completion and output inspected"
+    },
+    {
+      "name": "bindings",
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-api-binding-kinds.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "bindings.log",
+      "capture": "Executed via exec_command; completion and output inspected"
+    }
+  ],
+  "historical_failures": [
+    "red.log: normal JWT create returned 200 instead of 403",
+    "rust.json: wrong test target, corrected in rust_release.json"
+  ],
+  "remaining": [
+    "outbox",
+    "DNS address pinning",
+    "signature",
+    "creation idempotency and quotas",
+    "health and async storage",
+    "cross-instance delivery",
+    "browser verification"
+  ],
+  "source_sha256": {
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_events.rs": "f4ba393efc8f2c02dc7af8b3cbe2859fe9229f1c2ccee4d1c01fef8029664df3",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs": "de4d878501d6ec6273ecd39e75a5b9299fd295f12ced67bb75a46a65aaa847ba",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_rbac.rs": "04d4bcef9377beaf79349db7ab77cf4c5af9002bfac1bf41291f6fac82c073a1",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/webhook_policy.rs": "19a4e2931e6053425cd58422c25afad30d5810c22c95f496cf9e13f33ad4951a",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/mod.rs": "91875b3abfce066718c6c42d7138e3d97ec3f9b521b2804ff81db5da75acf566",
+    "platform/gateway/mox-platform-gateway-svc/tests/webhook_management.rs": "53c729a99abf4012dd2a920d742b7ee4780746c5bd6f8cbb0b99aa6911cbbecb",
+    "platform/gateway/mox-platform-gateway-svc/tests/webhook_persistence.rs": "6199d18916305736422cf29a3c83b5831083c977f6a8b302c7fab8c3e6fcaa6a",
+    "frontend-ui/src/modules/expert-alliance/contract/endpoints.js": "a6a5ba4be1172d4f8379714f027e2d8944c4363215d49cdb2b34d5845d0de0b7",
+    "frontend-ui/src/modules/expert-alliance/contract/webhooks.js": "0d3961cfda49536e5d92a13a46c5e5694377653d8a7302db9f18657a16c02a40",
+    "frontend-ui/src/modules/expert-alliance/contract/index.js": "935ebcfaedd050ea26846a6068b8a29e3bba30b65846434c0d5b98278df3a4e2",
+    "frontend-ui/src/modules/expert-alliance/api/alliance.api.js": "0e82e94a86ff2ad7383b6434b261fe0bd2301c20f1d970506b5c5ee777863c03",
+    "frontend-ui/src/modules/expert-alliance/model/webhooks.js": "532e7f971dd110c3ba8ad3d4d4c8c2f1b6193192f01c2b0206a9124b02bbc5bc",
+    "frontend-ui/src/modules/expert-alliance/model/index.js": "2f3d93a30044199c2716e1d1cc501def0d954ba867eeecc4c450b2cd593e33ca",
+    "frontend-ui/src/modules/expert-alliance/store/alliance-webhooks.store.js": "f2df6e1ad5c1449aef6dab32078139cc4ada193c9fb7a968b14cc49e4c71b5ae",
+    "frontend-ui/src/modules/expert-alliance/store/index.js": "6c27b667b5579f207daf75bc6275b61fd4d139f15169a4f38b739c0e9df4c2a6",
+    "frontend-ui/src/modules/expert-alliance/components/WebhookSubscriptions.vue": "2b0670c0062d91378e7e023c6c4ba3d2f55cea82a2a0220d55c815522ace1b28",
+    "frontend-ui/src/modules/expert-alliance/components/index.js": "855eab6e88c893df2d7723417ba35db059865d27ee7455c0b3e9c3ac0a404ddc",
+    "frontend-ui/src/modules/expert-alliance/views/AllianceConsoleView.vue": "81c3b11df4796291d31ecaa07453727f04fe2d317b1d0927cf9aff2b63f8b5b9",
+    "docs/expert-alliance/21-event-delivery-contract.md": "4143a2f833690fa54062564a351f87fb29302ad532ef563d801d9e086138d3df",
+    "docs/expert-alliance/09-deployment-templates.md": "881787a8cd2027908ef46e4e2ba55d9fec6975282c47245cf0ce8e279fb8a13d",
+    "docs/expert-alliance/INDEX.md": "1b27a0790f4a3bf68d33a2d8043b4dcc1a080269a2bfcc2650d05cbdb02bc7fd",
+    "docs/expert-alliance/CURRENT-ARCHITECTURE.md": "67b37744b32d7e5e360d875aa9c77149a7c635b17cd944d7fe2e75f25554af55",
+    "docs/expert-alliance/16-decision-and-state-ledger.md": "2d481673daa2e94a0f9c092d1ed4e24ca8e7d2f324ca38ca18d2f3ea2a24964a",
+    "reports/markdown/20261003-webhook-management.md": "b324c1a2f094400097ec16ebc79b8749ba34c8ff80f9946372242957c49f50e7"
+  }
+}

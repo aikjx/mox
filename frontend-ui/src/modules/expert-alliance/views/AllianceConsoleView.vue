@@ -13,6 +13,8 @@
       </div>
     </header>
 
+    <WebhookSubscriptions />
+
     <el-alert
       v-if="store.runtime?.simulated"
       class="ac-alert"
@@ -515,6 +517,7 @@
 </template>
 
 <script setup>
+import { WebhookSubscriptions } from '@/modules/expert-alliance/components'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'

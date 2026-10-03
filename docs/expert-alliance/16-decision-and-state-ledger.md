@@ -296,3 +296,5 @@ EA-EVT-01–04 已实现的传输与 SSE 语义，EA-EVT-05–07 待验收、可
 2026-10-03 收藏读取与刷新恢复增量：EA-OBJ-10/11 的权威为 [对象与收藏契约](22-expert-object-contract.md)。真实 JWT/SQLite/Rust 路由与 Pinia/Axios 联调验证批量只读快照、原键刷新恢复及损坏记录阻断。范围为同标签页 store/传输链路，未完成完整浏览器、跨标签页、跨主机和个人收藏验收；旧全量测试结论属于其当时源码快照，不能替代本次增量验证。证据见 [刷新恢复报告](../../reports/markdown/20261003-favorite-recovery.md)。
 
 2026-10-03 按模块验证增量：EA-SES-01–07 以 [会话契约](23-session-isolation-and-commit.md) 为权威。修复跨租户对象访问、分页/统计/搜索扫描分母泄露、提交失败假成功以及即时咨询只写内存；真实故障与重载 HTTP 证据见 [模块验证报告](../../reports/markdown/20261003-module-verification.md)。不提升为个人会话权限、跨进程一致性或全模块已验收。
+
+2026-10-03 Webhook 管理增量：以 [事件契约 §5](21-event-delivery-contract.md#5-2026-10-03-webhook-管理增量与业务流程) 为主源，记录 EA-WH-01–05；普通角色越权与提交失败假成功已修复，控制台管理通过实际 Pinia/Axios/Rust/JWT/SQLite 链路。23 项 Rust 集成与 157 项前端契约通过，两个实际 registry 接线使原 85% 门槛通过；仍无 outbox、签名、DNS 钉住和跨实例保证，证据见 [Webhook 报告](../../reports/markdown/20261003-webhook-management.md)。

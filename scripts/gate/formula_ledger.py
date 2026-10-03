@@ -194,6 +194,123 @@ def scan_text(text, blank_lines=()):
     return dict(claims=claims, violations=viol, blind=blind, quoted=quoted)
 
 
+def _acc_subscript(node, acc_names):
+    """`agg["key"]` 这类下标读写点：返回 (宿主名, 键名)，否则 None。"""
+    if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
+            and node.value.id in acc_names and isinstance(node.slice, ast.Index)):
+        k = node.slice.value
+        if isinstance(k, ast.Str):
+            return node.value.id, k.s
+    if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
+            and node.value.id in acc_names and isinstance(node.slice, ast.Str)):
+        return node.value.id, node.slice.s
+    return None
+
+
+def driven_provenance(src_text, prefixes=(), acc_names=("agg",)):
+    """`driven` 档的键级复算：那条红真由退出码读的那个键驱动吗。
+
+    `red_accum_screen` 的 `driven` 只到名字一级（循环与 return 都写到 `agg` 就算）。这里补两型更强的同源：
+      "same-iter"：驱动这条红的 `for` 的可迭代表达式，与 return 表达式里某一段**逐字相同**
+                  （`ast.get_source_segment` 取原文，不靠 ast.dump 的写法）；
+      "pair"：红的循环走的是 `agg[键A]`（一张明细表），而 `agg[键B]` 的累加恰是"同一个来源表达式的长度"
+             ——两处写在同一个 `for` 里 ⇒ 键B 是键A 的计数，return 读键B 就等于读这条红的同一批数据。
+    两型都不成立就退回 "name-only"（＝名字级，正是 `red_accum_screen` 已经说过的那一层），
+    名单照旧按名点名：计数与明细分家、或 return 换了别的键，这一格当场红。
+    只读源码图像，不执行任何东西。"""
+    lines = src_text.split("\n")
+    tree = ast.parse(src_text)
+    funcs = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+
+    def seg(node):
+        got = ast.get_source_segment(src_text, node)
+        return " ".join(got.split()) if got else ""
+
+    def innermost_for(fn, line):
+        cand = [n for n in ast.walk(fn) if isinstance(n, ast.For)
+                and n.lineno <= line <= n.end_lineno]
+        return min(cand, key=lambda n: n.end_lineno - n.lineno) if cand else None
+
+    def host_fn(name):
+        for f in funcs:
+            if f.name == name:
+                return f
+        return None
+
+    # 每张明细表（append 进 agg[键]）与每个计数（agg[键] += len(来源)）的构造点
+    lists, counts = {}, {}
+    for n in ast.walk(tree):
+        if (isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)
+                and isinstance(n.value.func, ast.Attribute) and n.value.func.attr == "append"):
+            got = _acc_subscript(n.value.func.value, set(acc_names))
+            if got:
+                lists.setdefault(got[1], []).append(n.lineno)
+        elif isinstance(n, (ast.AugAssign, ast.Assign)):
+            tgt = n.target if isinstance(n, ast.AugAssign) else n.targets[0]
+            got = _acc_subscript(tgt, set(acc_names))
+            if got and isinstance(n.value, ast.Call) and isinstance(n.value.func, ast.Name) \
+                    and n.value.func.id == "len" and n.value.args:
+                counts.setdefault(got[1], []).append((n.lineno, seg(n.value.args[0])))
+
+    def for_chain(lineno):
+        return set(x.lineno for x in ast.walk(tree) if isinstance(x, ast.For)
+                   and x.lineno <= lineno <= x.end_lineno)
+
+    def innermost_for_of_line(lineno):
+        cand = [x for x in ast.walk(tree) if isinstance(x, ast.For)
+                and x.lineno <= lineno <= x.end_lineno]
+        return min(cand, key=lambda x: x.end_lineno - x.lineno) if cand else None
+
+    out = []
+    for head, fname, ln, kind, _note in red_accum_screen(src_text, prefixes, ("bad",)):
+        if kind != "driven":
+            continue
+        fn = host_fn(fname)
+        drv = innermost_for(fn, ln) if fn is not None else None
+        if drv is None:
+            out.append((head, fname, ln, "name-only", "driven 却找不到宿主 for（判据自相矛盾）"))
+            continue
+        iter_seg = seg(drv.iter)
+        ret_segs = [" ".join(s.split()) for s in
+                    (seg(n.value) for n in ast.walk(fn) if isinstance(n, ast.Return) and n.value)]
+        hit_ret = [s for s in ret_segs if iter_seg and iter_seg in s]
+        got = _acc_subscript(drv.iter, set(acc_names))
+        if hit_ret:
+            out.append((head, fname, ln, "same-iter", "循环集合 %s 逐字出现在 return（%d 行）"
+                        % (iter_seg, ln)))
+        elif got:
+            key = got[1]
+            pairs = []
+            for ck, sites in counts.items():
+                for cl, src_seg in sites:
+                    for ll in lists.get(key, []):
+                        host = innermost_for_of_line(ll)
+                        if host is not None and for_chain(cl) & for_chain(ll) \
+                                and src_seg and src_seg == seg(host.iter):
+                            pairs.append((ck, cl, ll))
+            if pairs:
+                ck, cl, ll = pairs[0]
+                keys_in_ret = set()
+                for n in ast.walk(fn):
+                    if isinstance(n, ast.Return) and n.value is not None:
+                        for m in ast.walk(n.value):
+                            g = _acc_subscript(m, set(acc_names))
+                            if g:
+                                keys_in_ret.add(g[1])
+                if ck in keys_in_ret:
+                    out.append((head, fname, ln, "pair", "明细 %s（append@%d）的计数键 %s 被 return 读"
+                                % (key, ll, ck)))
+                else:
+                    out.append((head, fname, ln, "name-only",
+                                "计数键 %s 不在 return 读的键集 %s 里" % (ck, sorted(keys_in_ret))))
+            else:
+                out.append((head, fname, ln, "name-only",
+                            "明细表 %s 没有同循环的长度累加点（append@%s）" % (key, lists.get(key))))
+        else:
+            out.append((head, fname, ln, "name-only", "循环集合 %s 不逐字出现在任何 return" % iter_seg))
+    return out
+
+
 def blind_counts(blind):
     out = {}
     for b in blind:

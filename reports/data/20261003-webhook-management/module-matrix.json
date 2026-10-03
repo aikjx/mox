@@ -1,0 +1,388 @@
+{
+  "date": "2026-10-03",
+  "source": "docs/modules/enterprise-capabilities/registry.json",
+  "purpose": "Verification projection, not a second requirements authority",
+  "modules": [
+    {
+      "id": "EM-01",
+      "name": "共享基座与契约",
+      "authority": "docs/modules/CODE-CATALOG.md",
+      "requirements": [
+        "EM-01-R01",
+        "EM-01-R02",
+        "EM-01-R03"
+      ],
+      "status": "partial_real_verification",
+      "whole_module_accepted": false,
+      "verified_scope": "SQLite transactional favorite storage",
+      "evidence": [
+        "favorite_transactions"
+      ]
+    },
+    {
+      "id": "EM-02",
+      "name": "可信身份与业务权限",
+      "authority": "docs/modules/iam/README.md",
+      "requirements": [
+        "EM-02-R01",
+        "EM-02-R02",
+        "EM-02-R03"
+      ],
+      "status": "partial_real_verification",
+      "whole_module_accepted": false,
+      "verified_scope": "JWT tenant authority and actual webhook administrator RBAC",
+      "evidence": [
+        "trusted_tenant_http",
+        "webhook_management",
+        "inbox_http"
+      ]
+    },
+    {
+      "id": "EM-03",
+      "name": "API Key 生命周期",
+      "authority": "docs/modules/iam/API-KEYS.md",
+      "requirements": [
+        "EM-03-R01",
+        "EM-03-R02",
+        "EM-03-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-04",
+      "name": "安全审计",
+      "authority": "docs/modules/iam/AUDIT.md",
+      "requirements": [
+        "EM-04-R01",
+        "EM-04-R02",
+        "EM-04-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-05",
+      "name": "统一网关与宿主",
+      "authority": "docs/API-REGISTRY.md",
+      "requirements": [
+        "EM-05-R01",
+        "EM-05-R02",
+        "EM-05-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-06",
+      "name": "专家注册与能力目录",
+      "authority": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+      "requirements": [
+        "EM-06-R01",
+        "EM-06-R02",
+        "EM-06-R03"
+      ],
+      "status": "partial_real_verification",
+      "whole_module_accepted": false,
+      "verified_scope": "Expert favorites transactional boundary",
+      "evidence": [
+        "favorite_transactions"
+      ]
+    },
+    {
+      "id": "EM-07",
+      "name": "专家匹配与组队",
+      "authority": "docs/expert-alliance/08-normalized-architecture.md",
+      "requirements": [
+        "EM-07-R01",
+        "EM-07-R02",
+        "EM-07-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-08",
+      "name": "任务调度与状态",
+      "authority": "docs/expert-alliance/16-decision-and-state-ledger.md",
+      "requirements": [
+        "EM-08-R01",
+        "EM-08-R02",
+        "EM-08-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-09",
+      "name": "任务执行与工具",
+      "authority": "docs/expert-alliance/13-end-to-end-business-flow.md",
+      "requirements": [
+        "EM-09-R01",
+        "EM-09-R02",
+        "EM-09-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-10",
+      "name": "专家协作与结果融合",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-10-R01",
+        "EM-10-R02",
+        "EM-10-R03"
+      ],
+      "status": "partial_real_verification",
+      "whole_module_accepted": false,
+      "verified_scope": "Session tenant isolation and webhook subscription management",
+      "evidence": [
+        "session_tenant_isolation",
+        "webhook_management"
+      ]
+    },
+    {
+      "id": "EM-11",
+      "name": "模型提供方",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-11-R01",
+        "EM-11-R02",
+        "EM-11-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-12",
+      "name": "算子与插件运行时",
+      "authority": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "requirements": [
+        "EM-12-R01",
+        "EM-12-R02",
+        "EM-12-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-13",
+      "name": "低代码与全维配置",
+      "authority": "docs/standards/lowcode-dynamic-configuration.md",
+      "requirements": [
+        "EM-13-R01",
+        "EM-13-R02",
+        "EM-13-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-14",
+      "name": "业务工作流",
+      "authority": "docs/enterprise/33-持久化工作流引擎设计文档-ADR-14.md",
+      "requirements": [
+        "EM-14-R01",
+        "EM-14-R02",
+        "EM-14-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-15",
+      "name": "对象存储与 OSS",
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-15-R01",
+        "EM-15-R02",
+        "EM-15-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-16",
+      "name": "云盘文件资源",
+      "authority": "docs/modules/resource-knowledge/README.md",
+      "requirements": [
+        "EM-16-R01",
+        "EM-16-R02",
+        "EM-16-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-17",
+      "name": "知识目录与版本",
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-17-R01",
+        "EM-17-R02",
+        "EM-17-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-18",
+      "name": "知识加工作业",
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-18-R01",
+        "EM-18-R02",
+        "EM-18-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-19",
+      "name": "知识图谱与事实治理",
+      "authority": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "requirements": [
+        "EM-19-R01",
+        "EM-19-R02",
+        "EM-19-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-20",
+      "name": "授权检索与 RAG",
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-20-R01",
+        "EM-20-R02",
+        "EM-20-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-21",
+      "name": "数据目录与企业集成",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-21-R01",
+        "EM-21-R02",
+        "EM-21-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-22",
+      "name": "消息中心与通知",
+      "authority": "docs/modules/message-center/README.md",
+      "requirements": [
+        "EM-22-R01",
+        "EM-22-R02",
+        "EM-22-R03"
+      ],
+      "status": "partial_real_verification",
+      "whole_module_accepted": false,
+      "verified_scope": "Actual inbox HTTP regression",
+      "evidence": [
+        "inbox_http"
+      ]
+    },
+    {
+      "id": "EM-23",
+      "name": "项目与成果交付",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-23-R01",
+        "EM-23-R02",
+        "EM-23-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-24",
+      "name": "市场与模板包",
+      "authority": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "requirements": [
+        "EM-24-R01",
+        "EM-24-R02",
+        "EM-24-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-25",
+      "name": "语音与独立产品",
+      "authority": "docs/modules/CODE-CATALOG.md",
+      "requirements": [
+        "EM-25-R01",
+        "EM-25-R02",
+        "EM-25-R03"
+      ],
+      "status": "not_verified_this_batch",
+      "whole_module_accepted": false,
+      "verified_scope": "Not verified in this batch",
+      "evidence": []
+    },
+    {
+      "id": "EM-26",
+      "name": "运营与分布式交付",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "requirements": [
+        "EM-26-R01",
+        "EM-26-R02",
+        "EM-26-R03"
+      ],
+      "status": "partial_real_verification",
+      "whole_module_accepted": false,
+      "verified_scope": "Webhook management console and real delivery policy",
+      "evidence": [
+        "webhook_management",
+        "webhook_persistence",
+        "alliance_stream_contract"
+      ]
+    }
+  ]
+}

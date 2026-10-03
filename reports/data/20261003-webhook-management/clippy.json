@@ -1,0 +1,16 @@
+{
+  "command": [
+    "cargo",
+    "clippy",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "webhook_management",
+    "--test",
+    "webhook_persistence",
+    "--no-deps"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "clippy.log"
+}
