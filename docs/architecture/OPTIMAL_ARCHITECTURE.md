@@ -401,7 +401,7 @@ flowchart LR
 | 项目 | 状态 |
 |------|------|
 | 全量编译通过 | 🔧 修复feature中的旧dep引用 |
-| api/svcapi 双层契约创建 | ⏳ 待建（7个域×2层=14个crate） |
+| api/svcapi 双层契约创建 | ⏳ 待建（7 个域 × 2 层 ＝ 14 个 crate） |
 | 跨域依赖治理（21→<5） | ⏳ 待执行 |
 | runtime God Module 拆分 | ⏳ 待执行（编排器+各域自启动） |
 
