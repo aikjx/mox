@@ -432,6 +432,9 @@ def dircheck_verdict(dirs, account=None):
 # 所以等式从唯一算源的两个常量现拼：形状照样是等式，源码里却看不到记号。
 _NEEDLE_CLOSED = "6 %s 1 %s 4 %s 1" % (FL.EQ_FW, FL.ADD_FW, FL.ADD_FW)
 _NEEDLE_UNCLOSED = "9 %s 1 %s 4 %s 1" % (FL.EQ_FW, FL.ADD_FW, FL.ADD_FW)
+# 欠账针：ASCII 等号写的真等式。× 与 ASCII 等号都**不是**本仓的等式记号，所以源码里可以明写，
+# 不会被夹具K 当成散落的第二把尺。
+_NEEDLE_ASCII_EQ = "99×4=396"
 
 
 def _suspect_key(rel, b):
@@ -2601,6 +2604,30 @@ def cmd_selftest(args):
                    n36b == 1 and n36b2 == 1 and img36b != PV_J and w36b == ["FAIL 主张不闭合"],
                    "累加锚点 %d 次｜落点锚点 %d 次｜退档名单 %s（期望只那一条 pair）"
                    % (n36b, n36b2, w36b)))
+    # ── 夹具AC／变异体37：键级复算不许认宿主名（§1.8w：`agg` 白名单是单源之外硬写的第二份词汇）──
+    PV_A = sorted((h, l, v) for h, _f, l, v, _n in PV_LIST)
+    PV_REN = re.sub(r"\bagg\b", "totals", PV_J)
+    PV_B = sorted((h, l, v) for h, _f, l, v, _n
+                  in FL.driven_provenance(PV_REN, ("FAIL ", "INFO ")))
+    checks.append(("夹具AC 把判决段里的累加器整体换名（`agg`→`totals`，真语料不是合成夹具）"
+                   "⇒ 键级复算的逐站点档位必须一字不变：这把尺认的是「计数与明细同宿主、同循环链」这个结构，"
+                   "不是宿主叫什么名字（认名字＝别人一改命名，pair 就退成 name-only 打出一条假阳让人去裁）",
+                   PV_REN != PV_J and not re.search(r"\bagg\b", PV_REN)
+                   and bool(PV_A) and PV_A == PV_B,
+                   "旧名 %d 处｜换名后残留 %d 处｜换名前 %s｜换名后 %s" % (
+                       len(re.findall(r"\bagg\b", PV_J)), len(re.findall(r"\bagg\b", PV_REN)),
+                       PV_A, PV_B)))
+    PV_CNT37 = PV_CNT.replace('agg["violations"]', 'tally["violations"]')
+    n37 = PV_J.count(PV_CNT)
+    img37 = PV_J.replace(PV_CNT, PV_CNT37, 1)
+    w37 = sorted(set(h for h, _f, _l, v, _n in FL.driven_provenance(img37, ("FAIL ", "INFO "))
+                     if v == "name-only"))
+    checks.append(("变异体37 把那次计数累加写到另一个宿主上（`tally[\"violations\"]` 数的仍是 `details` 那批数据，"
+                   "来源表达式与循环一个字没换）⇒ pair 必须退成 name-only：「同宿主」这一条是承重的，"
+                   "不是键名撞上就算同源",
+                   n37 == 1 and img37 != PV_J and w37 == ["FAIL 主张不闭合"],
+                   "锚点 %d 次｜图像确变＝%s｜退档名单 %s（期望只那一条 pair）"
+                   % (n37, img37 != PV_J, w37)))
     ascii_fix = ["7×8=1", "4 人 × 10 周 = 10 人月", "24 = 全资源模块化+图谱贯通 6",
                  "10=19 子集+对内 4", "2=8 节齐 + 30"]
     ar = []
@@ -2610,6 +2637,13 @@ def cmd_selftest(args):
                    "分别是指标读数、跨单位换算、编号与标题，**没有一条是真错账**。升格会把它们读成"
                    "不闭合的红，所以第九本账只认全角等号的嫌疑，ASCII 等号只记欠账不判红" % len(ascii_fix),
                    not ar, "反例 %d 条／红 %s" % (len(ascii_fix), ar)))
+    dk = (_debt_kind(_NEEDLE_ASCII_EQ, ()) == "debt"
+          and _debt_kind(_NEEDLE_ASCII_EQ, ("「" + _NEEDLE_ASCII_EQ + "」",)) == "quote"
+          and _debt_kind("这一行里没有等式", ()) is None)
+    checks.append(("盲区读账·引文豁免：引文里的等式按设计不是本文的账（引文登记的是某轮曾印错成什么），"
+                   "所以不记欠账；本文自己写的才记。不豁免的话欠账里会永远躺着还不清的项——"
+                   "还不清的账不是账，是噪声",
+                   dk, "debt／quote／None 三态判定 %s" % dk))
     fails = 0
     for name, ok, detail in checks:
         print("%s %s  %s" % ("PASS" if ok else "FAIL", name, detail))
@@ -2619,21 +2653,36 @@ def cmd_selftest(args):
     return 1 if fails else 0
 
 
+def _debt_kind(span, qspans=()):
+    """欠账分类：引文里的等式按设计**不是本文的账**（引文通道登记的是"某轮曾印错成什么"），
+    所以不记欠账；本文自己写的才算。返回 debt／quote／None。
+    不豁免的话，欠账里会永远躺着两条还不清的项——还不清的账不是账，是噪声。"""
+    if not _ascii_debt(span):
+        return None
+    if any(span in q for q in qspans):
+        return "quote"
+    return "debt"
+
+
 def _read_corpus(paths, label):
     """一个语料（扫描集或集外宇宙）过一遍第九本账：分档、嫌疑逐条判决、欠账点名、塌缩兜底。
     抽成函数是因为"读"这件事对两个语料是同一件事——两处各写一遍就是两把尺，
     同一个道理（见 formula_ledger 的单一算源）。"""
-    total, by_reason, suspects, debts, bad = 0, {}, [], [], []
+    total, by_reason, suspects, debts, exempt, bad = 0, {}, [], [], [], []
     for p in paths:
         rel, sp = _scan_file(p)
         total += len(sp["blind"])
+        qspans = [q["span"] for q in sp["quoted"]]
         for b in sp["blind"]:
             by_reason[b["reason"]] = by_reason.get(b["reason"], 0) + 1
         adj = {}
         for b in sp["blind"]:
             span = b.get("span") or ""
-            if _ascii_debt(span):
+            kind = _debt_kind(span, qspans)
+            if kind == "debt":
                 debts.append((rel, b.get("line"), span[:70]))
+            elif kind == "quote":
+                exempt.append((rel, b.get("line"), span[:70]))
             if not FL.EQ_FW_RE.search(span) or not (FL.ADD_RE.search(span) or FL.MUL_RE.search(span)):
                 continue
             verdict = "非算术"
@@ -2645,7 +2694,7 @@ def _read_corpus(paths, label):
             suspects.append((rel, b.get("line"), span[:70], verdict))
         bad += blind_read_verdict(rel, sp["blind"], adj)
     return dict(label=label, files=len(paths), total=total, reasons=by_reason,
-                suspects=suspects, debts=debts,
+                suspects=suspects, debts=debts, exempt=exempt,
                 bad=bad + blind_read_corpus_verdict(total, paths, label))
 
 
@@ -2658,23 +2707,28 @@ def cmd_blindread(args):
     dirs, root_files = outside_top(REPO)
     opaths, _skip = outside_walk(REPO, dirs, root_files)
     books = [_read_corpus(walk_md(args.root), "扫描集"), _read_corpus(opaths, "集外宇宙")]
-    n_t = n_s = n_d = 0
+    n_t = n_s = n_d = n_e = 0
     for r in books:
-        print("盲区读账·%s .md %d 份／盲区 %d 条／嫌疑 %d 条／欠账 %d 条"
-              % (r["label"], r["files"], r["total"], len(r["suspects"]), len(r["debts"])))
+        print("盲区读账·%s .md %d 份／盲区 %d 条／嫌疑 %d 条／欠账 %d 条／引文豁免 %d 条"
+              % (r["label"], r["files"], r["total"], len(r["suspects"]), len(r["debts"]),
+                 len(r["exempt"])))
         print("  盲区分档 " + "／".join("%s=%d" % (k, r["reasons"][k]) for k in sorted(r["reasons"])))
         for rel, line, span, verdict in r["suspects"]:
             print("  嫌疑 %s:%d 「%s」判决 %s" % (rel, line, span, verdict))
         for rel, line, span in r["debts"]:
             print("  欠账 %s:%d 「%s」真等式但用 ASCII 等号写，永久免检——改全角等号与加号才进复算"
                   % (rel, line, span))
+        for rel, line, span in r["exempt"]:
+            print("  引文豁免 %s:%d 「%s」在引文里，按设计不是本文的账，不记欠账" % (rel, line, span))
         for b in r["bad"]:
             print("  FAIL %s" % b)
         n_t += r["total"]
         n_s += len(r["suspects"])
         n_d += len(r["debts"])
+        n_e += len(r["exempt"])
     nbad = sum(len(r["bad"]) for r in books)
-    print("BLINDREAD 盲区 %d 条，嫌疑 %d 条，欠账 %d 条，红 %d 条" % (n_t, n_s, n_d, nbad))
+    print("BLINDREAD 盲区 %d 条，嫌疑 %d 条，欠账 %d 条，引文豁免 %d 条，红 %d 条"
+          % (n_t, n_s, n_d, n_e, nbad))
     return 1 if nbad else 0
 
 
