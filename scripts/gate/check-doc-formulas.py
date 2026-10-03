@@ -439,15 +439,15 @@ def _suspect_key(rel, b):
     return "%s:%d:%s" % (rel, b.get("line"), (b.get("span") or "")[:40])
 
 
-def blind_read_corpus_verdict(total, files):
-    """第九本账的分母兜底（第 35 型）：全集读到盲区 0 条时，「盲区读账干净」是空集上的全称判据，
-    不构成判决。这一格**只红一次**——按文档红会把每份本就没有盲区项的干净文档都打成红，
+def blind_read_corpus_verdict(total, files, label="全集"):
+    """第九本账的分母兜底（第 35 型）：一个语料读到盲区 0 条时，「盲区读账干净」是空集上的全称判据，
+    不构成判决。这一格**每个语料只红一次**——按文档红会把每份本就没有盲区项的干净文档都打成红，
     那不是兜底，是把分母当成了红。"""
     bad = []
     if total:
         return bad
-    bad.append("盲区读账分母塌缩：全集 %d 份 .md 读到盲区 0 条（0 条时「读账干净」不构成判决——"
-               "先查扫描集是否为空，别读成仓里没有未判项）" % len(files))
+    bad.append("盲区读账分母塌缩：%s %d 份 .md 读到盲区 0 条（0 条时「读账干净」不构成判决——"
+               "先查扫描集是否为空，别读成仓里没有未判项）" % (label, len(files)))
     return bad
 
 
@@ -2619,11 +2619,10 @@ def cmd_selftest(args):
     return 1 if fails else 0
 
 
-def cmd_blindread(args):
-    """第九本账的出版口：把盲区**读**出来——读＝逐条点名＋给判决，不是印一个分档数。
-    分档数（glued=…／latin=…）回答的是「盲区有多少」，回答不了「盲区里有没有藏着错账」，
-    所以嫌疑要解除遮蔽后交回唯一算源再判一次，判成真算术而不闭合的红在这里出。"""
-    paths = walk_md(args.root)
+def _read_corpus(paths, label):
+    """一个语料（扫描集或集外宇宙）过一遍第九本账：分档、嫌疑逐条判决、欠账点名、塌缩兜底。
+    抽成函数是因为"读"这件事对两个语料是同一件事——两处各写一遍就是两把尺，
+    同一个道理（见 formula_ledger 的单一算源）。"""
     total, by_reason, suspects, debts, bad = 0, {}, [], [], []
     for p in paths:
         rel, sp = _scan_file(p)
@@ -2645,19 +2644,38 @@ def cmd_blindread(args):
             adj[_suspect_key(rel, b)] = verdict
             suspects.append((rel, b.get("line"), span[:70], verdict))
         bad += blind_read_verdict(rel, sp["blind"], adj)
-    bad += blind_read_corpus_verdict(total, paths)
-    print("盲区读账 扫描 .md %d 份／盲区 %d 条／嫌疑 %d 条" % (len(paths), total, len(suspects)))
-    print("盲区分档 " + "／".join("%s=%d" % (k, by_reason[k]) for k in sorted(by_reason)))
-    for rel, line, span, verdict in suspects:
-        print("嫌疑 %s:%d 「%s」判决 %s" % (rel, line, span, verdict))
-    for rel, line, span in debts:
-        print("欠账 %s:%d 「%s」真等式但用 ASCII 等号写，永久免检——改全角等号与加号才进复算"
-              % (rel, line, span))
-    for b in bad:
-        print("FAIL %s" % b)
-    print("BLINDREAD 盲区 %d 条，嫌疑 %d 条，欠账 %d 条，红 %d 条"
-          % (total, len(suspects), len(debts), len(bad)))
-    return 1 if bad else 0
+    return dict(label=label, files=len(paths), total=total, reasons=by_reason,
+                suspects=suspects, debts=debts,
+                bad=bad + blind_read_corpus_verdict(total, paths, label))
+
+
+def cmd_blindread(args):
+    """第九本账的出版口：把盲区**读**出来——读＝逐条点名＋给判决，不是印一个分档数。
+    分档数（glued=…／latin=…）回答的是「盲区有多少」，回答不了「盲区里有没有藏着错账」，
+    所以嫌疑要解除遮蔽后交回唯一算源再判一次，判成真算术而不闭合的红在这里出。
+    两个语料各读一遍：扫描集（docs/）与集外宇宙（顶层目录＋仓根那圈）。集外那圈原先只记数，
+    是"读"唯一没覆盖到的地方（2026-10-03 补上：320 份 .md／1945 条盲区／7 条欠账）。"""
+    dirs, root_files = outside_top(REPO)
+    opaths, _skip = outside_walk(REPO, dirs, root_files)
+    books = [_read_corpus(walk_md(args.root), "扫描集"), _read_corpus(opaths, "集外宇宙")]
+    n_t = n_s = n_d = 0
+    for r in books:
+        print("盲区读账·%s .md %d 份／盲区 %d 条／嫌疑 %d 条／欠账 %d 条"
+              % (r["label"], r["files"], r["total"], len(r["suspects"]), len(r["debts"])))
+        print("  盲区分档 " + "／".join("%s=%d" % (k, r["reasons"][k]) for k in sorted(r["reasons"])))
+        for rel, line, span, verdict in r["suspects"]:
+            print("  嫌疑 %s:%d 「%s」判决 %s" % (rel, line, span, verdict))
+        for rel, line, span in r["debts"]:
+            print("  欠账 %s:%d 「%s」真等式但用 ASCII 等号写，永久免检——改全角等号与加号才进复算"
+                  % (rel, line, span))
+        for b in r["bad"]:
+            print("  FAIL %s" % b)
+        n_t += r["total"]
+        n_s += len(r["suspects"])
+        n_d += len(r["debts"])
+    nbad = sum(len(r["bad"]) for r in books)
+    print("BLINDREAD 盲区 %d 条，嫌疑 %d 条，欠账 %d 条，红 %d 条" % (n_t, n_s, n_d, nbad))
+    return 1 if nbad else 0
 
 
 def main(argv=None):

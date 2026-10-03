@@ -395,7 +395,7 @@ dst.commit()
 
 * 创建 4 个内置角色（sys\_admin/sys\_developer/tenant\_admin/tenant\_user）× 2 租户 = 8 角色
 
-* 创建 11 资源 × 7 动作 = 77 权限（system 租户）
+* 创建 11 资源 × 7 动作 ＝ 77 权限（system 租户）
 
 * 为 sys\_admin 和 tenant\_admin 分配全部权限
 
