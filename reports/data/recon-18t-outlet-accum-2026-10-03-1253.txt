@@ -1,0 +1,52 @@
+§1.8t 前置收据｜判决出口「有牙筛」在两台仪器上的现量（对仓内只读）｜生成 2026-10-03 1253 前后
+判据 scripts/gate/check-api-surface.py｜判决段 md5 eb24d81ae4f7｜行数 2316
+单源 scripts/gate/formula_ledger.py｜md5 f81c9c9bb016｜另一台 scripts/gate/check-doc-formulas.py｜判决段 md5 64ab3f4c6ef0
+
+[1] 分母（有牙筛的输入必须与出口宇宙同一条抽取口径）
+   宇宙 13 条｜站点 13 处｜档位筛站点 13 处｜三者一致＝True
+
+[2] 逐站点档位（修后的真图：inc＝同函数内此后先遇累加动作，ret＝返值在调用点被累加）
+   inc   FAIL 引用找不到工件                             cmd_ledger:1849｜inc@1851
+   inc   FAIL 工件                                  cmd_ledger:1861｜inc@1862
+   inc   INFO 漂移                                  cmd_ledger:1899｜inc@1903
+   inc   FAIL 引用不成立                               cmd_ledger:1902｜inc@1903
+   inc   FAIL 文档镜像：方案文档不在                         cmd_ledger:1910｜inc@1911
+   inc   FAIL 散文里的加法不闭合                           cmd_ledger:1921｜inc@1922
+   inc   FAIL --write 需要文档里已有成对标记（先手工放两个标记行，别让脚本决定插在哪） cmd_ledger:1931｜inc@1932
+   inc   FAIL --write 被拒：块外逐行核验没过 ⇒ 一个字也没落盘       cmd_ledger:1943｜inc@1953
+   inc   FAIL --write 回读不一致（盘上字节与内存图像不同：          cmd_ledger:1951｜inc@1953
+   inc   FAIL 文档镜像：托管块标记缺失（跑 --ledger --write 之前先在文档里放好两个标记行） cmd_ledger:1961｜inc@1962
+   inc   FAIL 文档镜像：托管块与现渲染不一致（行数                  cmd_ledger:1970｜inc@1975
+   ret   FAIL 块外前段被改动（第                           audit_len_guard:1988｜guarded 返回值在 1942 行被累加
+   ret   FAIL 块外后段被改动（前                           audit_len_guard:1990｜guarded 返回值在 1942 行被累加
+   档位分布 [('inc', 11), ('ret', 2)]｜无牙站点（reset／blind）[]
+
+[3] 缺陷形状的对照：把本轮修好的那处还原成修前（四处唯一锚点，全在内存图像上）
+   锚点命中 1/1/1/1｜修前档位 [('inc', 9), ('reset', 2), ('ret', 2)]
+   修前无牙站点 ['FAIL 工件', 'FAIL 引用找不到工件']
+   这一张尺子的牙就在这一格：修前图上两条工件红印文案而不计数（LEDGER 照 PASS），文本级判据看不见，档位筛当场把两条列成 reset
+
+[4] 第二型通道自身的对照：撤掉 `if guard:` 之后那条 `bad += 1`（返值通道断开）
+   锚点命中 1 次（期望 1）｜图像确变＝True｜断开后无牙站点 ['FAIL 块外前段被改动（第', 'FAIL 块外后段被改动（前']
+   audit_len_guard 两条的档位：修后 ret（guarded 型：1940 存变量、1941 判、1942 加一），本尺若只认同行 `bad += f(...)` 就会把这俩读成 blind——那是尺子的盲区不是代码的缺陷
+
+[5] 另一台仪器（check-doc-formulas.py）：同一把尺套上去的量与它的第三型通道
+   print 形态宇宙 2 条｜append 形态宇宙 53 条（后者红进 bad 列表，本尺口径外）
+   blind FAIL 主张不闭合               cmd_census:379｜本函数内此后不碰累加器
+         下一行：# 集外边界自署：这句话的覆盖面是量出来的，不是"我们只管 docs/"
+   blind FAIL                     cmd_census:385｜本函数内此后不碰累加器
+         下一行：if args.json:
+   两处 blind 的第二问句（读源码，不是本尺的判定）：宿主函数末尾那一行——return 1 if (agg["violations"] or outside_verdict(out)) else 0
+   即：那两条文案各由一个集合驱动（agg["violations"]／outside_verdict(out)），而同一批集合就是退出码的算源 ⇒ 有牙，但牙不在累加器上也不在返值通道上。本尺第三型（按数据集合驱动的 rc）未建，故这两处只许登记，不许读成缺陷、也不许读成已通过
+
+[6] 常驻状态（收据只量形状，绿灯由现跑的那条只读命令给）
+   PASS 夹具N·分母 有牙筛的站点数必须等于出口基线（少一站＝抽取口径动了而这把尺没跟上）  站点 13 配基线 13｜档位分布 [('inc', 11), ('ret', 2)]
+   PASS 夹具N 十三条出口逐站点都得落在 inc／ret 两档：reset＝印了不拦的缺陷形状，blind＝本尺看不见的那种（不许被读成没问题）  无牙站点 []｜ret 档由 audit_len_guard 的返回值通道来（两型调用点：同行累加／存变量后由 if 分支累加）
+   PASS 变异体33 把本轮修好的那处还原成修前（撤两条 `bad += 1`＋把初值挪回红之后，四处唯一锚点）⇒ 有牙筛必须只把工件那两条判成无牙，别的一律照旧  锚点命中 1/1/1/1｜修前无牙站点 ['FAIL 工件', 'FAIL 引用找不到工件']｜修前档位 [('inc', 9), (
+   PASS 变异体33·乙 撤掉 `guard = audit_len_guard(...)` 之后那条 `bad += 1`（返值通道断开）⇒ 块外前段／后段两条必须立刻落进无牙名单（ret 档的牙就长在这一行上）  锚点命中 1｜无牙站点 ['FAIL 块外前段被改动（第', 'FAIL 块外后段
+   --selftest rc 0｜总例 70｜FAIL 0（夹具N 4 格含在其中：分母、逐站点两档、两枚对照）
+   这一行的例数是本轮现跑的读数，收据按日期冻结；文档正文不许复述它
+
+[7] 判定
+   有牙筛在 13 站点上与出口基线同分母＝True｜修后无牙站点 []｜两枚对照各自只指对站点＝True
+   另一台的 2 处 blind 已给第二问句并登记为待建口径（第三型：集合驱动的 rc）

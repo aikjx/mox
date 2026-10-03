@@ -85,13 +85,13 @@
 | T1 | DAG 并行度信号量与重试/重放 | 新技术 | P1 | 信号量（T1a）已闭环 2026-09-30；重放随 A3 规划中 P1 | 12 §2.1；依据 10-D5/N8/#15、11-弱⑦；本账 §一.1 N8 |
 | T2 | 图 RAG（知识图谱增强检索） | 新技术 | P1 | **已闭环（部分）**：2026-10-01 图谱纯检索落地（内存态加权多跳扩展，`POST /api/expert-graph/rag/expand`，权重乘积聚合，向量融合待 #27）；实现选择由规划期「SQLite 递归 CTE」改为内存态（state 无连接句柄，语义等价，A4 图库迁入时换查询实现） | 12 §2.2；依据 11-强①、10-#10/#11/N4/D7；本轮见 backend-fix-report.md「T2 图 RAG（2026-10-01）」 |
 | T3 | MCP 协议接入（Server 先行、Client 跟进；由 P3 提前） | 新技术 | P1 | **部分闭环**（2026-10-01 MCP Server 已落地：stdio 自实现 + 3 真实工具；Client/凭证托管留待） | 12 §2.3；依据 11-弱⑧；依赖 P0-N1/N2 |
-| T4 | 事件驱动架构（任务状态事件流，公共骨干） | 新技术 | P1 | 🟢 **对外出口已闭环（2026-10-02）**：`tokio::sync::broadcast` 进程内事件总线 + 事件模型（PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled，带 tenant），真实 handler emit、消费者落 `alliance_event_log`（schema v4）。**本轮新增真实对外出口**：① SSE 事件帧 `GET /api/alliance/events/stream`（按租户过滤，`event:<Kind>+data:<信封>`，15s 心跳，与既有任务日志流独立通道）；② webhook 订阅（CRUD + reqwest 真实 HTTP POST 投递 + 失败重试 1 次）。两者均真实端到端验证（sse-e2e-evidence.txt）。**前端消费侧（2026-10-02，部分闭环）**：编排台 `AllianceOrchestrationView` 已真实挂载该 SSE 流（onMounted 连接/onUnmounted 断开），帧→`alliance-orch.store.applyAllianceEvent`→`liveEvents` 可见 + 带 plan_id 帧防抖真拉统计/历史，免轮询；控制台/专家注册表/图谱视图的事件消费仍留待。**未做（后续）**：跨进程/多副本广播（仍进程内）、webhook 订阅持久化（现内存重启即失）、事件帧与任务日志流统一（刻意独立，理由见 backend-fix-report T4 节）。**勘误**：任务书曾把「事件驱动」误挂 M1；实际 M1=私有化交付产品化（见下行），事件驱动即本行 T4 | 12 §2.4；依据 10-#24/D9、11-弱②；backend-fix-report T4 节（2026-10-02） |
+| T4 | 事件驱动架构（任务状态事件流，公共骨干） | 新技术 | P1 | 🟢 **对外出口已闭环（2026-10-02）**：`tokio::sync::broadcast` 进程内事件总线 + 事件模型（PlanCreated/PlanStatusChanged/ExpertRegistered/ExpertDisabled，带 tenant），真实 handler emit、消费者落 `alliance_event_log`（schema v4）。**本轮新增真实对外出口**：① SSE 事件帧 `GET /api/alliance/events/stream`（按租户过滤，`event:<Kind>+data:<信封>`，15s 心跳，与既有任务日志流独立通道）；② webhook 订阅（CRUD + reqwest 真实 HTTP POST 投递 + 失败重试 1 次）。两者均真实端到端验证（sse-e2e-evidence.txt）。**前端消费侧（2026-10-02，部分闭环）**：编排台 `AllianceOrchestrationView` 已真实挂载该 SSE 流（onMounted 连接/onUnmounted 断开），帧→`alliance-orch.store.applyAllianceEvent`→`liveEvents` 可见 + 带 plan_id 帧防抖真拉统计/历史，免轮询；控制台/专家注册表/图谱视图的事件消费仍留待。**未做（后续）**：跨进程/多副本广播（仍进程内）、webhook 订阅持久化（2026-10-03 已闭环：schema v5 + alliance_webhooks 表写穿+启动读回，webhook_persistence.rs E2E；原内存重启即失已解）、事件帧与任务日志流统一（刻意独立，理由见 backend-fix-report T4 节）。**勘误**：任务书曾把「事件驱动」误挂 M1；实际 M1=私有化交付产品化（见下行），事件驱动即本行 T4 | 12 §2.4；依据 10-#24/D9、11-弱②；backend-fix-report T4 节（2026-10-02） |
 | T5 | 流式编排（边执行边交付） | 新技术 | P2 | 规划中 P2（依赖 T4） | 12 §2.5；依据 10-#6/#9 |
 | U1 | 画布式可视化编排（拖拽 DAG） | 新UI | P1 | **已闭环（MVP：能力图谱画布编辑，2026-10-01）**——在既有手写 SVG `GraphCanvas.vue` 上增强（不引 VueFlow/LogicFlow，守 G9 三栈归一、不做第四套渲染栈）：节点拖拽（视觉坐标只活前端 dragPositions，不入库）、Inspector 节点改/删（v-role-any 管理写面）、新增节点、点两节点连线（选 edge_type）、选中节点「展开邻域」走 T2 `expandGraphNeighborhood` 幂等并入。**未做（诚实标注）**：DAG 编排导出/预演、实时多人回显、虚拟滚动（G7 仍 P2）、拖拽坐标持久化。G9 三套栈归一与 U3 力导向/分层仍留待 | 12 §3.1；FFR「U1 画布 MVP（2026-10-01）」；本账 §五 2026-10-01 行；vitest 1044 全绿 |
 | U2 | 专家画像与匹配透明化（逐维打分可视化） | 新UI | P1 | **已闭环（2026-10-01）**。代码证据：scheduler-proto/matcher.rs `MatchedExpert.weights`；scheduler-core/modular_matcher.rs:286 带出实际权重；api/dto.rs `ExpertScoreView{domain,capability,health,priority,performance 各 {value,weight},total}`；scheduler-svc/routes.rs `/experts/search` 透出；http-sdk alliance.rs（本地降级）+ alliance_remote.rs（远程优先）两路径均透传。前端 `MatchExplainPanel.vue` 逐维条形图+权重标注+总分演算。**权重表（主路径默认）**：domain 0.35 / capability 0.30 / priority(=rating 权重) 0.20 / performance 0.10 / **health 0.05**；健康分 is_healthy?1.0:0.2，非硬过滤。**口径纠错**：旧账「健康度 0.15」系 bio/备用 matcher 权重误植，主路径实为 0.05。测试：scheduler-core 115 + scheduler-svc/http-sdk 38 全绿。 | 12 §3.2；15 U2；依据 10-#12、11-弱② |
 | U3 | 图谱可视化增强（力导向/分层/虚拟渲染） | 新UI | P2 | 规划中 P2（在 U1 选栈后） | 12 §3.3；依据 10-#40/G7/G8/G9/D10 |
 | U4 | 实时协作（多人围观/评论标注） | 新UI | P2 | 规划中 P2（依赖 A1/T4） | 12 §3.4；依据 11-Coze 借鉴 |
-| A1 | 多租户隔离（数据/配额/密钥 + SSO） | 新架构 | P1 | 🟢 **阶段二续（2026-10-02）**：阶段一数据/内存态按租户隔离、TenantId 提取器、审计带 tenant、两租户 E2E 已证（a1-e2e-evidence.txt）。**配额子项已闭环**：单租户专家数上限 `MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT`（默认 1000，env 覆盖），`create_expert` 超限真实 **409** + 结构化 `quota/used`，按租户独立计数，低配额 E2E 已证（a1-quota-e2e-evidence.txt）。**SSO 子项=方案稿/待真实 IdP**：OAuth2/OIDC 授权码交换已真实实现（reqwest 直连 token_endpoint），但本机无真实 IdP 凭据/无本地 Keycloak，端到端真实验证缺 IdP，不做假对接；SAML/CAS/LDAP 仍 501。**密钥托管 / 会话-任务-执行器分区 / 租户内 RBAC 细化 / 租户级配额配置表 = 阶段三（方案稿）**。依赖 P0-N2/G3/N1 均已闭环 | 12 §4.1；依据 11-弱③；backend-fix-report A1 阶段二节 |
+| A1 | 多租户隔离（数据/配额/密钥 + SSO） | 新架构 | P1 | 🟢 **阶段二续（2026-10-02）**：阶段一数据/内存态按租户隔离、TenantId 提取器、审计带 tenant、两租户 E2E 已证（a1-e2e-evidence.txt）。**配额子项已闭环**：单租户专家数上限 `MOX_ALLIANCE_QUOTA_EXPERTS_PER_TENANT`（默认 1000，env 覆盖），`create_expert` 超限真实 **409** + 结构化 `quota/used`，按租户独立计数，低配额 E2E 已证（a1-quota-e2e-evidence.txt）。**计划数配额维度（2026-10-03 补闭环）**：`count_plans_by_tenant` + `check_plan_quota` 挂 orchestrate/generate（env `MOX_ALLIANCE_QUOTA_PLANS_PER_TENANT` 默认 1000），超限真实 **409**，a3_plan_quota_tenant.rs 第 2 个计划 409 E2E 已证（execute 执行既有计划不新增行，故不挂）。**SSO 子项=方案稿/待真实 IdP**：OAuth2/OIDC 授权码交换已真实实现（reqwest 直连 token_endpoint），但本机无真实 IdP 凭据/无本地 Keycloak，端到端真实验证缺 IdP，不做假对接；SAML/CAS/LDAP 仍 501。**密钥托管 / 会话-任务-执行器分区 / 租户内 RBAC 细化 / 租户级配额配置表 = 阶段三（方案稿）**。依赖 P0-N2/G3/N1 均已闭环 | 12 §4.1；依据 11-弱③；backend-fix-report A1 阶段二节 |
 | A2 | 模块化微服务深化（fusion / memory 独立，网关无状态化） | 新架构 | P2 | 🟡 **部分闭环（阶段一：冷数据外移为 SQLite 唯一真相，2026-10-02）**：D4 已落盘的三项冷数据（collaboration_plans / orchestration_history / favorites）读路径由「内存为主」改为**按租户实时查 SQLite**（写穿 + busy 重试），两个活实例共享同一文件时 A 写穿、B 不重启即读到，跨实例一致 + 租户隔离 E2E 已证（a2-e2e-evidence.txt）。**registry/graph 高频态外移、执行器 task 状态、分布式通知/失效广播、多副本写冲突策略、memory/fusion 独立 = 阶段二（方案稿）** | 12 §4.2；依据 08 §十 P2、10-#9/#26/N11；backend-fix-report A2 节 |
 | A3 | 事件溯源（任务/审计可重放，审计送 SIEM） | 新架构 | P2 | 规划中 P2（依赖 T4 事件模型） | 12 §4.3；依据 10-#19/#28/#29/D4 |
 | A4 | 图数据库引入（关系层从 SQLite 升级） | 新架构 | P2 | 规划中 P2（关键约束：须可气隙/嵌入式，守住国密气隙卖点） | 12 §4.4；依据 10-#11/N4/D7 |
@@ -247,6 +247,7 @@
 | 2026-10-01 T2 | **图 RAG 落地**：POST /api/expert-graph/rag/expand（experts_graph.rs:1612），内存态加权多跳扩展（权重乘积聚合、hybrid_rerank 扩展点）；实现由规划期「SQLite 递归 CTE」改为内存态，A4 图库迁入时换查询实现 | 🟡 部分闭环（向量融合待 #27；gateway alliance 97 = 86+11 RAG） |
 | 2026-10-01 T3 | **MCP Server 落地**：platform/domains/alliance/mcp/mox-alliance-mcp-server/src/main.rs stdio 自实现 JSON-RPC 2.0（Content-Length 帧），3 工具 expert_search(:69)/optimal_team(:82)/graph_expand(:96)，非 HTTP 路由、不进 actuator ROUTES | 🟡 部分闭环（cargo test mox-alliance-mcp-server 5；Client/凭证托管留待 M2） |
 | 2026-10-01 U2 | **匹配透明化落地**：api/dto.rs:169 ScoreDim{value,weight}/:181 ExpertScoreView{domain,capability,health,priority,performance,total}，scheduler-svc /experts/search 透出，http-sdk+alliance_remote 双路径透传；前端 MatchExplainPanel.vue 逐维条形图（AllianceExpertsView 消费）；健康权重口径纠错 0.15→0.05 | ✅ 闭环（scheduler-core 115 + scheduler-svc/http-sdk 38 全绿） |
+| 2026-10-03 全维终验 | **前后端全维终验整合**：后端全量 **530 passed/0 failed**（gateway lib190+集成73；三 svc66；core181=scheduler115+executor50+registry16；mcp5；sdk15）+ 前端 **29 文件/675 用例 全绿 0 失败**；webhook 订阅落盘（v5）✅、计划数配额（a3 第2计划 409）✅ 两项历史 🟡 升闭环；前端注册表补挂 SSE + MatchExplainPanel mount(+3) | ✅ 全维终验（合计 1205/0；无 🔴；test_reset_expert 系既有并行 flaky 非真缺陷；明细见 §十一 + full-dimension-final-verification.md） |
 
 > 账实同步（2026-09-30）：14 权限模型、15 产品规范、16 总账三份文档均已落盘，见 §四 索引锚点编号 22/23/24。
 
@@ -264,4 +265,34 @@ LC-DIR-01、LC-STD-001、控制面/契约/存储/模块/前端/联盟配方文�
 
 ## 九、事件订阅与恢复增量（2026-10-02）
 
-EA-EVT-01–04 已实现的传输与 SSE 语义，EA-EVT-05–07 待验收、可靠交付和 Webhook 企业门槛，统一登记于 [事件交付契约](21-event-delivery-contract.md)。测试结论以 [本轮报告](../../reports/markdown/20261002-alliance-event-contract.md) 为准；旧契约断言的源码漂移失败保留，未宣布全仓测试通过。
+EA-EVT-01–04 已实现的传输与 SSE 语义，EA-EVT-05–07 待验收、可靠交付和 Webhook 企业门槛，统一登记于 [事件交付契约](21-event-delivery-contract.md)。测试结论以 [本轮报告](../../reports/markdown/20261002-alliance-event-contract.md) 为准。旧契约断言的源码漂移失败：**2026-10-02 已清理**——13 处锚点（行号/签名/出参键集）对齐当前真实源码，`npx vitest run src/modules/expert-alliance` 达 28 文件 / 667 用例全绿（0 失败），仅改前端测试断言、未改后端，明细见 `frontend-fix-report.md`「锚点漂移清理（2026-10-02）」节。
+
+## 十、对象边界与契约修复（2026-10-02）
+
+2026-10-03 幂等增量：EA-OBJ-08/09 的持久请求回执、重放不切换、当前状态投影和真实前后端失败重试已实现；证据见 [幂等报告](../../reports/markdown/20261003-favorite-idempotency.md)。整页持久尝试恢复、读接口及回执清理仍待开发。
+
+2026-10-03 事务增量：EA-OBJ-06/07 将 HTTP 收藏切换从 best-effort 改为 SQLite IMMEDIATE 对象校验与原子切换，提交成功再更新镜像；失败返回 503。验证与范围见 [事务报告](../../reports/markdown/20261003-favorite-transactions.md)，不外推为跨主机分布式或幂等重试完成。
+
+上轮 4 项旧契约断言已按当前租户及持久化事实修复；新发现的收藏跨租户/无效对象引用已通过对象检查拒绝。EA-OBJ-01–05 与存储失败、跨实例原子性缺口见 [对象契约](22-expert-object-contract.md)，原始失败及最终验证见 [增量报告](../../reports/markdown/20261002-alliance-contract-reconciliation.md)。不据此声明个人偏好、个人预约或完整生产验收完成。
+
+---
+
+## 十一、全维终验结论（2026-10-03）
+
+> 本节为本轮全维终验的总账登记；单一权威明细见 `platform/domains/alliance/_verification/full-dimension-final-verification.md`（后端 §一–§六 + 整合前端的 §七/§八）。纯文档整合，不改代码、不新增功能。
+
+- **范围**：后端 14 大类 50+ 子项逐项核证据 + 全量 cargo 实跑；前端 expert-alliance 模块逐项核证据 + 全量 vitest 实跑。
+- **全量测试（本轮实跑）**：
+  - 后端 **530 passed / 0 failed**（gateway-svc lib 190 + 集成 73；scheduler-core 115；executor-core 50；registry-core 16；三 svc 66；MCP 5；http-sdk 15）；`cargo check` 无 error（17 warning 全既有）。
+  - 前端 **29 文件 / 675 用例，100% 全绿 0 失败**（门禁 style21 / name-outlets15 / vocab19 / contract101 随全量复跑仍绿）。
+  - 合计 **1205 passed / 0 failed**。
+- **本轮两项历史 🟡 升 ✅（真实落地 + E2E 闭环）**：
+  1. **webhook 订阅落盘（T4）**：schema v4→v5 + `alliance_webhooks` 表，写穿 + 启动读回（`webhook_persistence.rs`：登记→模拟崩溃重启→逐字段恢复+跨租户隔离+删除持久化+二次重启幂等）。
+  2. **计划数配额（A1）**：`count_plans_by_tenant` + `check_plan_quota` 挂 orchestrate/generate（`a3_plan_quota_tenant.rs` 第 2 个计划真实 409，按租户独立计数）。
+- **前端本轮推进**：专家注册表补挂 SSE（`applyRegistryEvent` + AllianceExpertsView 挂流，+5 用例）；MatchExplainPanel 真实 mount 测试（+3 用例）。
+- **验证结论**：后端 50+ 子项**无 🔴**，唯一历史 🟡「webhook 重启即失」升 ✅；前端全维清单**全部 ✅**。唯一测试失败 `test_reset_expert` 定位为既有 `FAILURE_COUNTS` 并行 flaky（非本轮引入、非真缺陷；单独跑/全量复跑均绿，不弱化断言）。
+- **留待（方案稿，指引到报告）**：A2 阶段二（registry/graph 高频态外移、跨进程事件广播）、SSO 真实 handler（待真实 IdP）、MCP Client、控制台/图谱视图挂流、完整 view mount 测试、dispatcher 全局态测试隔离、画布 DAG 导出/预演/minimap/虚拟滚动/G9 三栈归一——详见 full-dimension-final-verification.md §八.4。
+
+2026-10-03 收藏读取与刷新恢复增量：EA-OBJ-10/11 的权威为 [对象与收藏契约](22-expert-object-contract.md)。真实 JWT/SQLite/Rust 路由与 Pinia/Axios 联调验证批量只读快照、原键刷新恢复及损坏记录阻断。范围为同标签页 store/传输链路，未完成完整浏览器、跨标签页、跨主机和个人收藏验收；旧全量测试结论属于其当时源码快照，不能替代本次增量验证。证据见 [刷新恢复报告](../../reports/markdown/20261003-favorite-recovery.md)。
+
+2026-10-03 按模块验证增量：EA-SES-01–07 以 [会话契约](23-session-isolation-and-commit.md) 为权威。修复跨租户对象访问、分页/统计/搜索扫描分母泄露、提交失败假成功以及即时咨询只写内存；真实故障与重载 HTTP 证据见 [模块验证报告](../../reports/markdown/20261003-module-verification.md)。不提升为个人会话权限、跨进程一致性或全模块已验收。

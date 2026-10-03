@@ -1,0 +1,9 @@
+{
+  "command": [
+    "node",
+    "reports/data/20261003-favorite-idempotency/parse-diagrams.mjs"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "diagrams.log"
+}

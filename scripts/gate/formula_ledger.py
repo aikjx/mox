@@ -30,6 +30,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 
 # 引文通道：「…」／“…” 里登记的是"某轮曾印错成什么"，不是本文件的账。
@@ -197,4 +198,199 @@ def blind_counts(blind):
     out = {}
     for b in blind:
         out[b["reason"]] = out.get(b["reason"], 0) + 1
+    return out
+
+
+OUTLET_MIN_PREFIX = 4
+
+
+def first_const(node):
+    """取一条输出语句里最左边的字面量：那条串的头就是这条红的名字。"""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.BinOp):
+        return first_const(node.left)
+    if isinstance(node, ast.JoinedStr):
+        for v in node.values:
+            got = first_const(v)
+            if got is not None:
+                return got
+    return None
+
+
+def red_outlet_sites(src_text, form, prefixes=()):
+    """判决出口的站点：一处输出算一个站点，带着它落在哪个函数、哪一行；宇宙从它派生。
+
+    两份仪器的红有两种形状，共用同一套取头／截断／嵌套递归的规则——规则写两遍就是两个口径，
+    而这两本账必须能对上同一条红：
+      form="append"：把消息塞进名为 `bad` 的列表累加器（红是数据）；
+      form="print"：打一条以 `prefixes` 打头的文案，再给整数加一（红是文案）。
+    截断后短于 `OUTLET_MIN_PREFIX` 的头等于"什么红都算命中"，按整串收。"""
+    found = []
+
+    def hit(node):
+        if form == "append":
+            return (isinstance(node.func, ast.Attribute) and node.func.attr == "append"
+                    and isinstance(node.func.value, ast.Name) and node.func.value.id == "bad")
+        return isinstance(node.func, ast.Name) and node.func.id == "print"
+
+    def scan(fn):
+        for n in ast.walk(fn):
+            if not (isinstance(n, ast.Call) and n.args and hit(n)):
+                continue
+            head = first_const(n.args[0])
+            if head is None:
+                continue
+            if form == "print" and not head.startswith(prefixes):
+                continue
+            cut = head.split("%")[0].rstrip()
+            found.append((cut if len(cut) >= OUTLET_MIN_PREFIX else head, fn.name, n.lineno))
+        for n in ast.walk(fn):
+            if isinstance(n, ast.FunctionDef) and n is not fn:
+                scan(n)
+
+    for n in ast.parse(src_text).body:
+        if isinstance(n, ast.FunctionDef):
+            scan(n)
+    return found
+
+
+def red_outlet_universe(src_text, form, prefixes=()):
+    return sorted({p for p, _f, _l in red_outlet_sites(src_text, form, prefixes)})
+
+
+def _acc_uses(node, name):
+    for n in ast.walk(node):
+        if isinstance(n, ast.Name) and n.id == name:
+            return True
+    return False
+
+
+def red_accum_screen(src_text, prefixes=(), acc_names=("bad",)):
+    """print 形态的出口：文案印出去之后，那里到底有没有一条把它算进判决的动作。
+
+    这台仪器的红是"打一条带标签的文案，再把整数加一"——两条通道各自独立，只钉文案时
+    "印了不拦"永远隐形（本轮实测：三份工件全删仍 LEDGER PASS／rc=0，根因是 `bad = 0`
+    这条初值落在两条红之后，累加无处可加）。逐站点给四档，档位不许被读成"没问题"：
+      "inc"   同一函数内、这条文案之后先遇到累加器动作（`A += ...` 或 `A = A + ...`）；
+      "ret"   本函数自己不累加，但 `return` 一个非零整数，且调用点把返回值加进累加器
+              （同行 `bad += f(...)` 或 `x = f(...)` 后由 `if x:` 分支加一，两型都认）；
+      "reset" 这条文案之后先遇到 `A = ...`（无牙的那个形状）；
+      "driven" 文案住在一个 `for` 里，而本函数的退出码读的是同一个名字（弱判据：只证同名，
+              键级同源要另读构造处；它不豁免任何人，只把"看不见"换成"看得见并按名点名"）；
+      "blind" 以上三档都不成立，函数里此后连累加器都不碰。
+    这一档不许被读成"没问题"，但也不许被读成"有缺陷"：本尺认累加器、返回值、循环集合三种通道，
+    第三种最早在 `check-doc-formulas.py` 的 `cmd_census` 上撞到（两条 FAIL 由
+    `agg["details"]`／`outside_verdict(out)` 驱动，退出码读的是同一批名字），于是建了 `driven`。
+    `driven` 只到名字一级 ⇒ 名单要按名点名，键级同源（`violations` 恰是 `details` 的计数）无尺；
+    真落不进三档的才叫 blind，逐站点印出来说明"这一处本尺没看见"，绝不折叠成一条绿。
+    只读源码图像，不执行任何东西。调用点的查找按函数名匹配（同名多处的语言在这里没有）。"""
+    acc = set(acc_names)
+    tree = ast.parse(src_text)
+    src_lines = src_text.split("\n")
+    funcs = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+
+    def innermost(line):
+        cand = [f for f in funcs if f.lineno <= line <= f.end_lineno]
+        if not cand:
+            return None
+        return min(cand, key=lambda f: f.end_lineno - f.lineno)
+
+    def events(fn):
+        out = []
+        for n in ast.walk(fn):
+            if isinstance(n, ast.AugAssign) and isinstance(n.target, ast.Name) and n.target.id in acc:
+                out.append((n.lineno, "inc", n.target.id))
+            elif isinstance(n, ast.Assign):
+                for t in n.targets:
+                    if isinstance(t, ast.Name) and t.id in acc:
+                        out.append((n.lineno, "inc" if _acc_uses(n.value, t.id) else "reset", t.id))
+        return sorted(out)
+
+    def returns_nonzero(fn):
+        """本函数有没有可能返回非零：`return` 的表达式子树里出现非零整数字面量即算。
+
+        只认 `return 1` 会把 `return 0 if ok else 1`（本仓 `audit_len_guard` 的真写法）判成
+        无返回值通道 ⇒ 有牙的红被读成 blind。放宽到有字面量即可，方向是保守的：
+        它只会少报 blind，不会把真的无牙形状放过（无牙的那型是整条通道都不碰累加器）。"""
+        for n in ast.walk(fn):
+            if not isinstance(n, ast.Return) or n.value is None:
+                continue
+            for m in ast.walk(n.value):
+                if isinstance(m, ast.Constant) and isinstance(m.value, int) and m.value:
+                    return True
+        return False
+
+    def call_site_accum(fn):
+        """调用点有没有把返回值算进累加器。实测有两种写法，只认同行那种会把好代码判成 blind：
+          "inline"：`bad += fn(...)` 同一行；
+          "guarded"：`x = fn(...)` 存进变量，随后 `if x:`（或 `if not x:`）的分支里给累加器加一
+                    ——本轮在本仓的 `audit_len_guard` 上撞到的正是这一型（1940 存、1941 判、1942 加）。
+        两型都只按行文本匹配并点名行号，档位由人复核；匹配不到就退回 blind，不许静默过。"""
+        inline = re.compile(r"\b(" + "|".join(sorted(acc)) + r")\s*\+=.*\b" + re.escape(fn.name) + r"\s*\(")
+        for i, s in enumerate(src_lines):
+            if inline.search(s):
+                return i + 1, "inline"
+        assign = re.compile(r"^\s*(\w+)\s*=\s*" + re.escape(fn.name) + r"\s*\(")
+        for i, s in enumerate(src_lines):
+            m = assign.match(s)
+            if not m:
+                continue
+            var = m.group(1)
+            tester = re.compile(r"^\s*if\s+(not\s+)?" + re.escape(var) + r"\b")
+            bump = re.compile(r"\b(" + "|".join(sorted(acc)) + r")\s*[-+]?=")
+            for j in range(i + 1, min(i + 24, len(src_lines))):
+                if tester.match(src_lines[j]):
+                    for k in range(j + 1, min(j + 5, len(src_lines))):
+                        if bump.search(src_lines[k]):
+                            return k + 1, "guarded"
+                    break
+        return None, None
+
+    def names_of(node):
+        return {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+
+    def enclosing_for(fn, line):
+        """包着这条文案的最里层 `for`：第三型通道的判据是"文案由哪个集合驱动"。"""
+        cand = [n for n in ast.walk(fn) if isinstance(n, (ast.For, ast.AsyncFor))
+                and n.lineno <= line <= n.end_lineno]
+        if not cand:
+            return None
+        return min(cand, key=lambda n: n.end_lineno - n.lineno)
+
+    def return_names(fn):
+        out = set()
+        for n in ast.walk(fn):
+            if isinstance(n, ast.Return) and n.value is not None:
+                out |= names_of(n.value)
+        return out
+
+    out = []
+    for head, fname, ln in red_outlet_sites(src_text, "print", prefixes):
+        fn = innermost(ln)
+        if fn is None:
+            out.append((head, fname, ln, "blind", "找不到宿主函数"))
+            continue
+        nxt = [e for e in events(fn) if e[0] > ln]
+        kind = nxt[0][1] if nxt else None
+        note = "%s@%d" % (nxt[0][1], nxt[0][0]) if nxt else "本函数内此后不碰累加器"
+        if kind != "inc":
+            at, shape = call_site_accum(fn)
+            if at and returns_nonzero(fn):
+                kind, note = "ret", "%s 返回值在 %d 行被累加" % (shape, at)
+            elif kind is None:
+                # 第三型：文案住在一个 `for` 里，而本函数的退出码读的是同一个名字
+                # （`check-doc-formulas.py` 的 `cmd_census`：`for v in agg["details"]` 与
+                #  `return 1 if (agg["violations"] or outside_verdict(out))` 共用 `agg`／`out`）。
+                # 这一档是**弱**判据——它只证明"驱动这条红的那个名字也出现在退出码里"，
+                # 键级同源（violations 是 details 的计数）要另读构造处；所以它不豁免任何人，
+                # 只把"看不见"换成"看得见但按名点名"。
+                drv = enclosing_for(fn, ln)
+                shared = sorted(names_of(drv.iter) & return_names(fn)) if drv is not None else []
+                if shared and returns_nonzero(fn):
+                    kind, note = "driven", "循环集合 %s 同名出现在本函数 return（%s）" % (
+                        "/".join(shared), fname)
+                else:
+                    kind = "blind"
+        out.append((head, fname, ln, kind, note))
     return out

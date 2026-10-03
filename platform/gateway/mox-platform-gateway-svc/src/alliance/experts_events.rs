@@ -116,8 +116,13 @@ impl AllianceEvent {
 /// Webhook 外部订阅（T4 对外出口）。
 ///
 /// 订阅者登记一个目标 URL 与事件类型过滤；总线派发器在真实事件发生时，把事件信封
-/// 原样 `POST` 到该 URL。**存储为进程内内存 HashMap**，重启即失（最小闭环；落盘需扩
-/// `alliance_event_log` 旁表，留作后续增强——此处诚实标注，不假称持久化）。
+/// 原样 `POST` 到该 URL。
+///
+/// **持久化（v5，2026-10-03 全维终验）**：注册表为「进程内内存 HashMap + SQLite 写穿」。
+/// CRUD 经 [`EventBus::register_webhook`] / [`EventBus::delete_webhook`] 写穿
+/// `alliance_webhooks` 表（experts_db），启动时 [`EventBus::restore_webhooks_from_db`]
+/// 一次读回重建内存态——**重启后订阅与派发自动恢复**，不再重启即失。内存 HashMap 仍是
+/// 派发器逐事件查匹配的热读投影（持锁仅快照克隆），权威源是 SQLite。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebhookSubscription {
     /// 订阅 ID（wh-<uuid>）
@@ -174,9 +179,12 @@ impl EventBus {
         self.tx.receiver_count()
     }
 
-    // ---- Webhook 注册表面（内存，重启即失） ----
+    // ---- Webhook 注册表面（内存热投影 + SQLite 写穿，v5 重启恢复） ----
 
-    /// 登记一个 webhook 订阅（按租户隔离）
+    /// 登记一个 webhook 订阅（按租户隔离）。
+    ///
+    /// 先入内存热投影，再写穿 `alliance_webhooks`（best-effort，失败仅 log 不阻断——
+    /// 内存投影仍即时生效，落盘失败下次启动可能丢失该订阅，与本模块 best-effort 约定一致）。
     pub fn register_webhook(&self, tenant: impl Into<String>, url: String, event_types: Vec<String>) -> WebhookSubscription {
         let wh = WebhookSubscription {
             id: gen_id("wh"),
@@ -186,6 +194,11 @@ impl EventBus {
             created_at: now_iso(),
         };
         self.webhooks.lock().insert(wh.id.clone(), wh.clone());
+        // v5：写穿 SQLite（best-effort）。event_types 序列化为 JSON 数组字符串存列。
+        let et_json = serde_json::to_string(&wh.event_types).unwrap_or_else(|_| "[]".to_string());
+        crate::alliance::experts_db::upsert_webhook(
+            &wh.id, &wh.tenant, &wh.url, &et_json, &wh.created_at,
+        );
         wh
     }
 
@@ -199,15 +212,39 @@ impl EventBus {
             .collect()
     }
 
-    /// 删除订阅（仅租户本人可删；返回是否真的删掉）
+    /// 删除订阅（仅租户本人可删；返回是否真的删掉）。
+    ///
+    /// 内存投影命中后立即删；再写穿 `alliance_webhooks`（best-effort），重启后不再恢复该订阅。
     pub fn delete_webhook(&self, tenant: &str, id: &str) -> bool {
         let mut g = self.webhooks.lock();
-        match g.get(id) {
-            Some(w) if w.tenant == tenant => {
-                g.remove(id);
-                true
-            }
-            _ => false,
+        let hit = matches!(g.get(id), Some(w) if w.tenant == tenant);
+        if hit {
+            g.remove(id);
+            crate::alliance::experts_db::delete_webhook_row(id, tenant);
+        }
+        hit
+    }
+
+    /// 启动期从 SQLite 读回全部 webhook 订阅，重建内存热投影（v5 重启恢复）。
+    ///
+    /// 由 `ExpertsSharedState::new()` 在总线创建后调用一次。读失败/空库则内存投影保持空
+    /// （与历史行为一致，不阻断启动）。event_types 列解析失败时降级为空数组（=全收），
+    /// 不丢弃整条订阅。
+    pub fn restore_webhooks_from_db(&self) {
+        let rows = crate::alliance::experts_db::load_all_webhooks();
+        let mut g = self.webhooks.lock();
+        for r in rows {
+            let event_types: Vec<String> = serde_json::from_str(&r.event_types).unwrap_or_default();
+            g.insert(
+                r.id.clone(),
+                WebhookSubscription {
+                    id: r.id,
+                    tenant: r.tenant_id,
+                    url: r.url,
+                    event_types,
+                    created_at: r.created_at,
+                },
+            );
         }
     }
 

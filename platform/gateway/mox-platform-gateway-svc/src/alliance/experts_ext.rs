@@ -18,15 +18,16 @@
 //! 历史 `data/experts_bookings.json` 在启动时自动导入并归档。
 
 use axum::{
-    Json, Router,
     extract::{Path, State},
+    http::HeaderMap,
     routing::{get, post, put},
+    Json, Router,
 };
+use mox_api_protocol::{api_error, api_ok, ApiResponse};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::sync::Arc;
-use mox_api_protocol::{ApiResponse, api_ok, api_error};
 
 use crate::alliance::experts_common::{ExpertsSharedState, OptionalAuthUser, DEFAULT_TENANT};
 
@@ -57,10 +58,7 @@ fn load_experts_bookings() -> Vec<Booking> {
 
 /// 预约写入：经 experts_db 事务化全量同步落 SQLite
 fn save_experts_bookings(bookings: &[Booking]) {
-    let rows: Vec<Value> = bookings
-        .iter()
-        .filter_map(|b| serde_json::to_value(b).ok())
-        .collect();
+    let rows: Vec<Value> = bookings.iter().filter_map(|b| serde_json::to_value(b).ok()).collect();
     crate::alliance::experts_db::save_bookings(&rows);
 }
 
@@ -79,10 +77,7 @@ struct ExpertsState {
 
 impl ExpertsState {
     fn new(shared: Arc<ExpertsSharedState>) -> Self {
-        Self {
-            bookings: Arc::new(Mutex::new(load_experts_bookings())),
-            shared,
-        }
+        Self { bookings: Arc::new(Mutex::new(load_experts_bookings())), shared }
     }
 }
 
@@ -131,41 +126,110 @@ async fn my_bookings(State(s): State<Arc<ExpertsState>>) -> ApiResponse<Value> {
 // =====================================================================
 // 2. POST /experts/{id}/favorite — 专家收藏切换
 // =====================================================================
+#[derive(Deserialize)]
+struct FavoriteQuery {
+    expert_ids: Vec<String>,
+}
+
+async fn query_expert_favorites(
+    OptionalAuthUser(user): OptionalAuthUser,
+    Json(body): Json<FavoriteQuery>,
+) -> ApiResponse<Value> {
+    let Some(user) = user else {
+        return api_error(401, "authentication required");
+    };
+    if body.expert_ids.len() > 100
+        || body.expert_ids.iter().any(|id| id.is_empty() || id.len() > 256)
+    {
+        return api_error(
+            400,
+            "favorite query requires at most 100 nonempty expert ids of at most 256 bytes",
+        );
+    }
+    let result = tokio::task::spawn_blocking(move || {
+        super::favorite_repository::read(&user.tenant_id, &body.expert_ids)
+    })
+    .await;
+    match result {
+        Ok(Ok(states)) => ok(
+            json!({ "items": states.into_iter().map(|(id, favorite)| json!({"expert_id":id,"favorite":favorite})).collect::<Vec<_>>() }),
+        ),
+        Ok(Err(super::favorite_repository::FavoriteError::NotFound)) => {
+            api_error(404, "expert not found")
+        },
+        other => {
+            tracing::error!(?other, "favorite snapshot read failed");
+            api_error(503, "favorite storage unavailable")
+        },
+    }
+}
+
 async fn toggle_expert_favorite(
     Path(id): Path<String>,
     State(s): State<Arc<ExpertsState>>,
     OptionalAuthUser(user): OptionalAuthUser,
+    headers: HeaderMap,
 ) -> ApiResponse<Value> {
-    // 收藏集合归一化：全域唯一真源为 ExpertsSharedState.favorites（D4 按租户分区）。
+    // SQLite 事务是收藏真源；共享 favorites 仅为提交后更新的租户镜像。
     // 租户取可信身份；无身份（无头请求）归 default，与历史行为零回归。
     let tenant = user
         .as_ref()
         .map(|u| u.tenant_id.clone())
         .unwrap_or_else(|| DEFAULT_TENANT.to_string());
-    // A2：is_fav 判定以 SQLite 为唯一真相（按租户实时查），跨实例即一致——
-    // 否则本实例启动时加载的内存镜像看不到其他副本刚写穿的收藏，会把方向 toggle 反。
-    let is_fav = crate::alliance::experts_db::load_favorites_by_tenant(&tenant).contains(&id);
-    // 再回写本实例内存镜像，保持即时读与既有 handler 形状（与 SQLite 写穿后一致）。
-    let mut favs = s.shared.favorites.lock();
-    let set = favs.entry(tenant.clone()).or_default();
-    if is_fav {
-        set.remove(&id);
-    } else {
-        set.insert(id.clone());
-    }
-    drop(set);
-    drop(favs);
-    // D4：写后立即落盘（租户隔离，best-effort）
-    if is_fav {
-        crate::alliance::experts_db::delete_favorite(&tenant, &id);
-    } else {
-        crate::alliance::experts_db::upsert_favorite(&tenant, &id);
-    }
+    let actor = user.as_ref().map(|user| user.id.clone()).unwrap_or_else(|| "system".into());
+    let key = match headers.get("idempotency-key") {
+        None => None,
+        Some(value) => match value.to_str() {
+            Ok(value)
+                if !value.is_empty()
+                    && value.len() <= 128
+                    && value.bytes().all(|c| c.is_ascii_alphanumeric() || b"-_.:".contains(&c)) =>
+            {
+                Some(value.to_owned())
+            },
+            _ => return api_error(400, "invalid idempotency key"),
+        },
+    };
+    // Serialize this instance's mirror updates; SQLite serializes all writers.
+    let shared = s.shared.clone();
+    let expert = id.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        let mut favorites = shared.favorites.lock();
+        let receipt =
+            super::favorite_repository::toggle_with_key(&tenant, &actor, &expert, key.as_deref())?;
+        let set = favorites.entry(tenant).or_default();
+        if receipt.current_favorite {
+            set.insert(expert);
+        } else {
+            set.remove(&expert);
+        }
+        Ok::<_, super::favorite_repository::FavoriteError>(receipt)
+    })
+    .await;
+    let receipt = match result {
+        Ok(Ok(receipt)) => receipt,
+        Ok(Err(super::favorite_repository::FavoriteError::Conflict)) => {
+            return api_error(409, "idempotency key belongs to another favorite request");
+        },
+        Ok(Err(super::favorite_repository::FavoriteError::NotFound)) => {
+            return api_error(404, "expert not found");
+        },
+        Ok(Err(super::favorite_repository::FavoriteError::Storage(error))) => {
+            tracing::error!(%error, "favorite transaction failed");
+            return api_error(503, "favorite storage unavailable");
+        },
+        Err(error) => {
+            tracing::error!(%error, "favorite worker failed");
+            return api_error(503, "favorite storage unavailable");
+        },
+    };
     ok(json!({
         "expert_id": id,
-        "favorite": !is_fav,
-        "action": if is_fav { "unfavorited" } else { "favorited" },
-        "updated_at": now_iso(),
+        "favorite": receipt.favorite,
+        "current_favorite": receipt.current_favorite,
+        "replayed": receipt.replayed,
+        "action": if receipt.favorite { "favorited" } else { "unfavorited" },
+        "updated_at": receipt.committed_at,
     }))
 }
 
@@ -311,6 +375,7 @@ pub fn build_experts_ext_router(shared: Arc<ExpertsSharedState>) -> Router {
     Router::new()
         .route("/api/experts/bookings/mine", get(my_bookings))
         .route("/api/experts/:id/favorite", post(toggle_expert_favorite))
+        .route("/api/experts/favorites/query", post(query_expert_favorites))
         .route("/api/experts/bookings", post(create_booking))
         .route("/api/experts/bookings/:id/cancel", put(cancel_booking))
         .route("/api/ai/engine/flow-graph", get(engine_flow_graph))
@@ -341,23 +406,19 @@ mod tests {
             plans: Arc::new(Mutex::new(HashMap::new())),
             orchestration_history: Arc::new(Mutex::new(Vec::new())),
             favorites: Arc::new(Mutex::new(HashMap::new())),
-            audit: Arc::new(
-                AuditContext::new(Arc::new(MultiSink::new().with_sink(Box::new(NoopSink)))),
-            ),
+            audit: Arc::new(AuditContext::new(Arc::new(
+                MultiSink::new().with_sink(Box::new(NoopSink)),
+            ))),
             events: Arc::new(crate::alliance::experts_events::EventBus::new(16)),
         })
     }
 
     #[test]
     fn test_resolve_expert_name() {
-        let shared = test_shared(vec![ExpertDescriptor::minimal(
-            "exp-1".into(),
-            "架构师·玄枢".into(),
-        )]);
+        let shared =
+            test_shared(vec![ExpertDescriptor::minimal("exp-1".into(), "架构师·玄枢".into())]);
         assert_eq!(resolve_expert_name(&shared, "exp-1").unwrap(), "架构师·玄枢");
-        assert!(resolve_expert_name(&shared, "exp-not-exist")
-            .unwrap_err()
-            .contains("not found"));
+        assert!(resolve_expert_name(&shared, "exp-not-exist").unwrap_err().contains("not found"));
     }
 
     #[test]
@@ -365,9 +426,7 @@ mod tests {
         let mut disabled = ExpertDescriptor::minimal("exp-2".into(), "已禁用专家".into());
         disabled.enabled = false;
         let shared = test_shared(vec![disabled]);
-        assert!(resolve_expert_name(&shared, "exp-2")
-            .unwrap_err()
-            .contains("disabled"));
+        assert!(resolve_expert_name(&shared, "exp-2").unwrap_err().contains("disabled"));
     }
 
     /// 回归：收藏必须落在全域共享态（D4 按租户分区），而不是本模块私有集合。

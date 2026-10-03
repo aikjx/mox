@@ -1839,12 +1839,16 @@ def cmd_ledger(args):
     print("现量时刻 %s｜扫描 .rs %d 个｜角色取值 %s（读自 %s:%s）"
           % (meta["generated_at"], cen.scanned, ",".join(variants) or "读不到", vrel or "-", vline or "-"))
     arts, arts_gen, cross_res = [], [], []
+    # bad 的初值必须在**第一条红之前**：工件那两条红（1846／1857）历史上印 FAIL 却不计数，
+    # 因为 bad = 0 落在它们之后——三条工件全丢也照样 LEDGER PASS（红 0 项）。
+    bad = 0
     loaded = {}
     for tag in ("census", "surface", "matrix"):
         name = newest_artifact(LEDGER_ART_PREFIX[tag])
         if name is None:
             print("FAIL 引用找不到工件 %s*.json（%s 这一路的每个数都没了来源）"
                   % (LEDGER_ART_PREFIX[tag], tag))
+            bad += 1
             arts.append(LEDGER_ART_PREFIX[tag] + "*（缺）")
             arts_gen.append("-")
             continue
@@ -1855,6 +1859,7 @@ def cmd_ledger(args):
                 art = json.load(fh)
         except ValueError as exc:
             print("FAIL 工件 %s 解析不了：%s" % (path, exc))
+            bad += 1
             arts_gen.append("-")
             continue
         loaded[tag] = art
@@ -1882,7 +1887,6 @@ def cmd_ledger(args):
     meta.update({"cross_total": len(LEDGER_CROSS), "cross_ok": len(LEDGER_CROSS) - len(drift) - len(unres),
                  "cross_drift": len(drift), "cross_unresolved": len(unres),
                  "arts": arts, "arts_gen": arts_gen})
-    bad = 0
     print("")
     print("%-12s %-52s %s" % ("公式", "现量等式", "判定"))
     for r in rows:
@@ -2245,6 +2249,46 @@ def run_fixture(src_text, root_fns, pin=None):
 CODE = open(os.path.abspath(__file__), encoding="utf-8").read()
 # 变异锚点只在判据侧数：锚点字面量本身也写在自检里，按整文件数会永远命中 2 次（本轮实测撞出）。
 JUDGE_SRC = CODE.split("\ndef cmd_selftest")[0]
+
+# 判决出口账的基线条数：由 `outlet_universe(JUDGE_SRC)` 现量（收据
+# reports/data/recon-11-verdict-outlets-2026-10-03-0948.txt）。新增一条红必须同轮改这个数，
+# 否则自检红在"宇宙对不上基线"——红模板清单会漏掉明天新加的那条红，一个整数不会。
+OUTLET_BASELINE = 13
+# 覆盖登记登记的是**片段**不是全串：全串要人手抄 13 条措辞，改一个标点就悬空（那是第二份红模板）。
+# 片段只许取自出口的字面量头——宇宙的口径是「截到第一个占位符为止」，住在 %s 之后的词在宇宙里
+# 根本不存在（本轮实测：登记「解析不了」命中 0 条，登记「FAIL 工件」才命中那一条）。收据
+# reports/data/recon-18s-outlet-needles-2026-10-03-1139.txt §[4]①。
+OUTLET_COVERED = [
+    "找不到工件", "FAIL 工件", "方案文档不在", "加法不闭合", "已有成对标记", "标记缺失",
+    "现渲染不一致", "逐行核验没过", "回读不一致", "引用不成立", "漂移", "块外前段", "块外后段",
+]
+# 这台仪器的红是一条以这两个标签打头的文案（另一台把红塞进累加器，没有标签这一维）。
+OUTLET_PREFIXES = ("FAIL ", "INFO ")
+
+
+def outlet_sites(src_text):
+    """判决出口站点：一处 print 算一个站点，带着函数名与行号；宇宙从它派生。
+
+    这台仪器的红不是往累加器塞消息，而是打一条带标签的文案再把整数加一 ⇒ 宇宙按 print
+    首参的字面量前缀收。整串以占位符开头（截出来空或过短）的文案等于"什么红都算命中"，按整串收。
+    口径必须是语法级：按文本数会把这句说明里的字样数成一个不存在的站点（本轮实测撞出）。
+    抽取本身不在这里另写一份：由 `formula_ledger` 单源（print 形态＋上面那对标签），
+    与文档那侧的累加器形态共用同一条「取最左字面量、在首个占位符处截、截短则按整串收」的规则。"""
+    return FL.red_outlet_sites(src_text, "print", OUTLET_PREFIXES)
+
+
+def outlet_universe(src_text):
+    """判决出口宇宙：站点前缀去重后排序。整串以占位符开头（截出来空或过短）的文案按整串收。"""
+    return sorted({p for p, _f, _l in outlet_sites(src_text)})
+
+
+def outlet_den_ok(n_sites):
+    """分母谓词只管一件事：不许在空集上把零证据印成满把握（第 35 型）。
+
+    「站点数＝唯一前缀数」是另一件事（第 30 型：两条红共用一个前缀＝撤一条不会被人察觉），
+    「站点数＝基线」是第三件（棘轮）。三件分开钉：一个旋钮同时动两条判决，红字就说不清哪格坏了。"""
+    return n_sites >= 1
+
 
 
 def patched_ns(old, new):
@@ -2659,6 +2703,371 @@ def cmd_selftest(_args):
                    red25 == ["DECL-PARSE"] and "%s" not in anti25["cite"]
                    and "重叠 2 条" in anti25["cite"],
                    "植入后红 %s ／ ASM-ANTI 说明「%s」" % (red25, anti25["cite"])))
+    # 判决出口账：这台仪器的红写成 print 文案＋整数累加器（不是把消息塞进累加器），
+    # 所以「每条红都有针」要先有一条能数出所有红的尺。本组钉三件各自独立的事：
+    # 站点数＝基线（棘轮）、站点数＝唯一前缀数（第 30 型）、站点非空（第 35 型），覆盖按名点出。
+    sites = outlet_sites(JUDGE_SRC)
+    universe = outlet_universe(JUDGE_SRC)
+    resolved = dict((f, [t for t in universe if f in t]) for f in OUTLET_COVERED)
+    dead_keys = ["%s(命中 %d)" % (f, len(h)) for f, h in sorted(resolved.items()) if len(h) != 1]
+    covered = sorted(set(h[0] for _f, h in resolved.items() if len(h) == 1))
+    uncovered = [t for t in universe if t not in covered]
+    dup_reg = len(covered) != len(OUTLET_COVERED)
+    sample = uncovered[:3]
+    checks.append(("夹具L·表亲 判决出口账（从判据源码现取，不写清单）：站点数＝基线、站点数＝唯一前缀数、"
+                   "登记片段必须各解析到恰一条出口（0 条＝死键、≥2 条＝歧义、两条片段解析到同一条＝冗余）、"
+                   "空集不许当判决（覆盖＋未覆盖＝宇宙是划分的恒等式，没牙，故不作为判据）",
+                   len(sites) == OUTLET_BASELINE and len(universe) == len(sites)
+                   and outlet_den_ok(len(sites)) and not dead_keys and not dup_reg,
+                   "站点 %d 配基线 %d｜唯一前缀 %d｜已覆盖 %d（登记表 %d 名）｜未覆盖 %d（点名 %d 名 %s）"
+                   "｜死键或歧义 %s｜冗余 %s" % (
+                       len(sites), OUTLET_BASELINE, len(universe), len(covered), len(OUTLET_COVERED),
+                       len(uncovered), len(sample), sample, dead_keys, dup_reg)))
+    planted = ("\ndef _planted_outlet():\n    print('FAIL 植入的出口只活在这份内存图像里 %s', 'x')\n"
+               "    print('INFO 植入的告示同样是一条出口 %s', 'x')\n")
+    grown = outlet_universe(JUDGE_SRC + planted)
+    checks.append(("变异体28 判据里新写一条红，出口账必须当场多两条（清单会漏掉明天新加的那条红，"
+                   "现取的宇宙不会）——只在本文件源码的内存图像上加，盘上一个字没动",
+                   len(grown) == len(universe) + 2
+                   and sorted(set(grown) - set(universe)) == ["FAIL 植入的出口只活在这份内存图像里",
+                                                              "INFO 植入的告示同样是一条出口"],
+                   "现取 %d → 植入后 %d｜新增名 %s" % (len(universe), len(grown), sorted(set(grown) - set(universe)))))
+    clash = ("\ndef _planted_clash():\n    print('FAIL 文档镜像：方案文档不在 %s', 'x')\n")
+    clash_sites = outlet_sites(JUDGE_SRC + clash)
+    checks.append(("变异体31 植入一条**与前缀共用**的红（第 30 型）⇒ 站点数必须加一而唯一前缀数不动，"
+                   "「站点＝唯一前缀」那条必须判否——共用前缀的两条红里撤一条没人会发现",
+                   len(clash_sites) == len(sites) + 1 and len({p for p, _f, _l in clash_sites}) == len(universe)
+                   and len(clash_sites) != len({p for p, _f, _l in clash_sites}),
+                   "植入后 站点 %d 配唯一前缀 %d｜共用者 %s" % (
+                       len(clash_sites), len({p for p, _f, _l in clash_sites}),
+                       [s for s in clash_sites if s[0] == "FAIL 文档镜像：方案文档不在"])))
+    mns = patched_ns('return FL.red_outlet_sites(src_text, "print", OUTLET_PREFIXES)',
+                     'return FL.red_outlet_sites(src_text, "print", ("FALX ",))')
+    shrunk = mns["outlet_sites"](JUDGE_SRC)
+    checks.append(("变异体29 撤掉出口账的前缀表（把这台仪器的两个标签换成一个不存在的串）⇒ 站点塌缩到 0，"
+                   "分母谓词必须跟着判否，不许静默通过（过滤器已住在单源里，这一枚是从本仪器的调用点拧的）",
+                   len(shrunk) == 0 and not outlet_den_ok(len(shrunk)) and outlet_den_ok(len(sites)),
+                   "塌缩后 %d 条｜塌缩时分母 %s｜真实图像分母 %s" % (
+                       len(shrunk), outlet_den_ok(len(shrunk)), outlet_den_ok(len(sites)))))
+    bns = patched_ns("OUTLET_BASELINE = 13", "OUTLET_BASELINE = 12")
+    checks.append(("变异体30 三条守卫各管一件事的牙：把 OUTLET_BASELINE 往下拧一格（内存图像）⇒ 棘轮必须判否，"
+                   "而分母谓词必须照旧判是（站点塌没塌与基线写几无关）——一条谓词若同时管两件事，"
+                   "红字就分不清是尺子掉了还是账变了",
+                   len(sites) != bns["OUTLET_BASELINE"] and bns["outlet_den_ok"](len(sites)),
+                   "真实站点 %d 配拧后基线 %d（棘轮 %s）｜拧后分母 %s" % (
+                       len(sites), bns["OUTLET_BASELINE"],
+                       len(sites) == bns["OUTLET_BASELINE"], bns["outlet_den_ok"](len(sites)))))
+    # 委托之后必须证明"这条调用真的走单源"：拧共享门限，本仪器的出口账要跟着变；
+    # 不变＝这里还藏着一份本地实现，明天的口径改动只会落在那份没人看的实现上。
+    orig_min = FL.OUTLET_MIN_PREFIX
+    FL.OUTLET_MIN_PREFIX = 400
+    try:
+        knob = outlet_sites(JUDGE_SRC)
+        knob_pref = {p for p, _f, _l in knob}
+    finally:
+        FL.OUTLET_MIN_PREFIX = orig_min
+    checks.append(("变异体32 出口抽取只有单源一个实现：抬高 FL 的前缀门限必须改动本仪器现取的站点"
+                   "（截短头全过不了关 ⇒ 收整串、含占位符），且还原后门限回到原值、站点回到基线",
+                   len(knob) == len(sites) and knob_pref != set(universe)
+                   and any("%" in p for p in knob_pref)
+                   and FL.OUTLET_MIN_PREFIX == orig_min and len(outlet_sites(JUDGE_SRC)) == OUTLET_BASELINE,
+                   "门限 %d→400→%d｜站点 %d→%d｜前缀集合改变 %s｜拧后含占位符 %d 条" % (
+                       orig_min, FL.OUTLET_MIN_PREFIX, len(sites), len(knob),
+                       knob_pref != set(universe), sum(1 for p in knob_pref if "%" in p))))
+    # ── 夹具M·十三条出口的逐枚对照针（§1.8s 的甲账）─────────────────────────
+    # 每枚针在一份内存图像上把该条出口打红，同时看三格：目标命中 ≥1、其余十二条一条都不多命中、
+    # 末行「红 N 项」等于预注册期望。第三格是本轮长出来的尺：只看文案会漏掉「印 FAIL 却不累加」
+    # 那两条（工件缺失／工件解析不了），它们靠这条尺才现形——所以它们的期望是 3 而不是 1。
+    # 语料复用只许开在读盘与两处纯函数上：Census 每枚针照旧新建、load 与 run_roots 照旧真跑。
+    # （反面实测：把一个已走树的 Census 焊给各枚针，同一份盘先印「红 5 项」后印「红 2 项」，
+    #   引用对账从 一致 28／漂移 27 变成 24／31，托管块那条红在没有任何注入时自己响。）
+    entry_of_frag = dict((f, h[0]) for f, h in resolved.items() if len(h) == 1)
+    KEY_LIST = [entry_of_frag[f] for f in OUTLET_COVERED if f in entry_of_frag]
+    MEMO = {"read": {}, "mask": {}, "defs": {}}
+    REAL_OPEN = open
+
+    def battery_ns(**patches):
+        ns = {"__file__": __file__, "__name__": "outlet_battery"}
+        exec(compile(CODE, "<battery>", "exec"), ns)
+        rt, mk, dfn = ns["read_text"], ns["mask"], ns["index_fn_defs"]
+
+        def _rt(path):
+            key = str(path)
+            if key not in MEMO["read"]:
+                MEMO["read"][key] = rt(path)
+            return MEMO["read"][key]
+
+        def _mk(text):
+            if text not in MEMO["mask"]:
+                MEMO["mask"][text] = mk(text)
+            return MEMO["mask"][text]
+
+        def _df(text):
+            if text not in MEMO["defs"]:
+                MEMO["defs"][text] = dfn(text)
+            return MEMO["defs"][text]
+
+        ns["read_text"], ns["mask"], ns["index_fn_defs"] = _rt, _mk, _df
+        for k, v in patches.items():
+            ns[k] = v
+        return ns
+
+    warm = battery_ns()
+    DOC_ABS_B = os.path.join(warm["REPO"], warm["LEDGER_DOC_PATH"].replace("/", os.sep))
+    with REAL_OPEN(DOC_ABS_B, "rb") as fh:
+        DOC_IMG = fh.read()
+    doc_lines = DOC_IMG.decode("utf-8").split("\n")
+    doc_span = warm["ledger_block_span"](doc_lines)
+    DISK_BLOCK = ("\n".join(doc_lines[doc_span[0]:doc_span[1] + 1]) + "\n") if doc_span else ""
+
+    def clean_render(_rows, _meta):
+        return DISK_BLOCK
+
+    NULL_CROSS = {"LEDGER_CROSS": [], "render_ledger_md": clean_render}
+
+    def with_null(extra):
+        d = dict(NULL_CROSS)
+        d.update(extra)
+        return d
+
+    def fire(ns, write=False):
+        seen = []
+        ns["print"] = lambda *a, **k: seen.append(" ".join(str(x) for x in a))
+
+        class _Args(object):
+            pass
+        _Args.write = write
+        _Args.show = 12
+        rc = ns["cmd_ledger"](_Args)
+        blob = "\n".join(seen)
+        hits = dict((t, blob.count(t)) for t in KEY_LIST)
+        m = re.search(r"LEDGER (?:PASS|FAIL)（红 (\d+) 项", blob)
+        return hits, (int(m.group(1)) if m else None), rc
+
+    class _MemFile(object):
+        def __init__(self, data=None, sink=None):
+            self._data = data
+            self._sink = sink
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return self._data
+
+        def write(self, data):
+            if self._sink is not None:
+                self._sink.append(data)
+
+    DOC_MEM_WRITES = []
+    DOC_MEM_SINK = []
+    DOC_MEM_READS = [0]
+
+    def open_doc_mem(path, mode="r", *a, **k):
+        sp = str(path).replace("\\", "/")
+        if not sp.endswith(".md"):
+            return REAL_OPEN(path, mode, *a, **k)
+        if "wb" in mode:
+            DOC_MEM_WRITES.append(sp)
+            return _MemFile(sink=DOC_MEM_SINK)
+        DOC_MEM_READS[0] += 1
+        return _MemFile(DOC_IMG if DOC_MEM_READS[0] == 1 else DOC_IMG[:len(DOC_IMG) // 2])
+
+    class _BadJson(object):
+        """json.load 只要一个带 read() 的出口，不必为此在本文件多开一个 io 依赖。"""
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return "{not json"
+
+    def open_bad_json(path, mode="r", *a, **k):
+        if str(path).replace("\\", "/").endswith("recon-battery-fake.json"):
+            return _BadJson()
+        return REAL_OPEN(path, mode, *a, **k)
+
+    cases = []
+
+    def one(frag, patches, expect_bad, write=False):
+        entry = entry_of_frag.get(frag)
+        if entry is None:
+            cases.append((frag, False, "登记片段没解析到唯一出口 ⇒ 无从打针"))
+            return
+        hits, bad, rc = fire(battery_ns(**patches), write=write)
+        others = sorted(k for k, v in hits.items() if k != entry and v)
+        cases.append((frag, hits.get(entry, 0) >= 1 and not others and bad == expect_bad,
+                      "目标命中 %s｜总红 %s 配期望 %s｜其余出口 %s｜rc %s"
+                      % (hits.get(entry, 0), bad, expect_bad, others or "[]", rc)))
+
+    FAKE_RENDER = {"LEDGER_CROSS": [],
+                   "render_ledger_md": lambda rows, meta: DISK_BLOCK + "本轮造的假行\n"}
+    base_hits, base_bad, base_rc = fire(battery_ns())
+    base_quiet = sorted(k for k, v in base_hits.items() if v and k != "INFO 漂移")
+    cases.append(("基线（未注入）", base_rc == 0 and base_bad == 0 and not base_quiet,
+                  "rc %s｜总红 %s｜除漂移外出口 %s（漂移 %d 条是并发语料的常态读数；"
+                  "托管块与盘上逐字节相同＝复用只开在读盘层的见证）"
+                  % (base_rc, base_bad, base_quiet or "[]", base_hits.get("INFO 漂移", 0))))
+    one("找不到工件", with_null({"newest_artifact": lambda prefix: None}), 3)
+    one("FAIL 工件", with_null({"open": open_bad_json,
+                               "newest_artifact": lambda prefix: "recon-battery-fake.json"}), 3)
+    one("方案文档不在", with_null({"LEDGER_DOC_PATH": "docs/__no_such_for_battery__.md"}), 1)
+    one("加法不闭合", with_null({"audit_prose_arith": lambda lines, span:
+                                ([(7, "样例主张", "各边不对")], [], 1, [])}), 1)
+    one("标记缺失", with_null({"ledger_block_span": lambda lines: None}), 1)
+    one("已有成对标记", with_null({"ledger_block_span": lambda lines: None}), 1, write=True)
+    one("现渲染不一致", dict(NULL_CROSS,
+                            render_ledger_md=lambda rows, meta: DISK_BLOCK + "本轮造的假行\n"), 1)
+    one("逐行核验没过", dict(FAKE_RENDER, audit_len_guard=lambda o, nw, at, end, nb: 1), 1, write=True)
+    one("回读不一致", dict(FAKE_RENDER, open=open_doc_mem), 1, write=True)
+    one("引用不成立", {"LEDGER_CROSS": [("census", "no_such_key_for_battery", "scanned_files", "scalar")],
+                      "render_ledger_md": clean_render}, 1)
+    one("漂移", {"LEDGER_CROSS": [("census", "scanned_files", "scanned_files", "scalar")],
+                "art_get": lambda art, key: (10 ** 9 + 7, True),
+                "render_ledger_md": clean_render}, 0)
+    ag = warm["audit_len_guard"]
+    OLD_B = ["p0", "p1", "BLOCK", "e0"]
+    ag_seen = {}
+    for tag, new in (("干净", ["p0", "p1", "BLOCK", "e0"]),
+                     ("只改块内", ["p0", "p1", "BLOCK2", "e0"]),
+                     ("前段被改", ["X", "p1", "BLOCK", "e0"]),
+                     ("后段被改", ["p0", "p1", "BLOCK", "Z"])):
+        got = []
+        warm["print"] = lambda *a, **k: got.append(" ".join(str(x) for x in a))
+        r = ag(OLD_B, new, 2, 2, 1)
+        ag_seen[tag] = (r, sorted(k for k in KEY_LIST if k in "\n".join(got)))
+    for frag, tag in (("块外前段", "前段被改"), ("块外后段", "后段被改")):
+        entry = entry_of_frag.get(frag)
+        r, hitk = ag_seen[tag]
+        cases.append((frag, entry is not None and r == 1 and hitk == [entry]
+                      and ag_seen["干净"] == (0, []),
+                      "最小图像「%s」返回 %s｜命中 %s｜干净样例 %s" % (tag, r, hitk, ag_seen["干净"])))
+    cases.append(("只改块内", ag_seen["只改块内"] == (0, []),
+                  "块内改动是这块尺的本职工作，返回 %s" % (ag_seen["只改块内"][0],)))
+    with REAL_OPEN(DOC_ABS_B, "rb") as fh:
+        DOC_AFTER = fh.read()
+    cases.append(("写路由未落盘", DOC_AFTER == DOC_IMG,
+                  "盘上文档 %d 字节 配针前 %d 字节｜内存缓冲收下的写 %d 次 %s"
+                  % (len(DOC_AFTER), len(DOC_IMG), len(DOC_MEM_SINK), sorted(set(DOC_MEM_WRITES)) or "[]")))
+    needle_frags = sorted(f for f, _ok, _d in cases if f in OUTLET_COVERED)
+    fired = sum(1 for _f, ok, _d in cases if ok)
+    for frag, ok, detail in cases:
+        checks.append(("夹具M 出口对照针「%s」只红自己" % frag, ok, detail))
+    checks.append(("夹具M·分母 登记表 13 名 ↔ 逐格 13 枚，缺一格即登记表在说谎（覆盖登记的是片段，"
+                   "由现取宇宙解析成全名；总格数＝13 枚针＋基线＋只改块内＋写路由四格）",
+                   needle_frags == sorted(OUTLET_COVERED) and len(cases) == len(OUTLET_COVERED) + 3
+                   and fired == len(cases),
+                   "登记 %d 名逐格点名 %d 枚｜总格 %d｜全绿 %s" % (
+                       len(OUTLET_COVERED), len(needle_frags), len(cases), fired == len(cases))))
+    # ── 夹具N·出口"有牙"静态筛（§1.8t：印了不拦从此是常驻判据，不是一次性探针）────
+    # 这台仪器的红是两条独立通道：印一条带标签的文案 ＋ 给整数加一。只钉文案的尺子看不见
+    # 第二条通道断了（本轮实测：三份工件全删仍 LEDGER PASS／红 0 项，根因是 `bad = 0`
+    # 落在两条红之后）。这一格把"每个站点都得有计数动作"钉成判据。
+    screen = FL.red_accum_screen(JUDGE_SRC, ("FAIL ", "INFO "))
+    sc_tally = {}
+    for _h, _f, _l, _k, _n in screen:
+        sc_tally[_k] = sc_tally.get(_k, 0) + 1
+    toothless = sorted(set(_h for _h, _f, _l, _k, _n in screen if _k in ("reset", "blind")))
+    checks.append(("夹具N·分母 有牙筛的站点数必须等于出口基线（少一站＝抽取口径动了而这把尺没跟上）",
+                   len(screen) == OUTLET_BASELINE,
+                   "站点 %d 配基线 %d｜档位分布 %s" % (
+                       len(screen), OUTLET_BASELINE, sorted(sc_tally.items()))))
+    checks.append(("夹具N 十三条出口逐站点都得落在 inc／ret 两档：reset＝印了不拦的缺陷形状，"
+                   "blind＝本尺看不见的那种（不许被读成没问题）",
+                   len(screen) == OUTLET_BASELINE and not toothless,
+                   "无牙站点 %s｜ret 档由 audit_len_guard 的返回值通道来（两型调用点：同行累加／"
+                   "存变量后由 if 分支累加）" % (toothless or "[]")))
+
+    drives = sorted(set(_h for _h, _f, _l, _k, _n in screen if _k == "driven"))
+    checks.append(("夹具N·边界 第三档 `driven`（循环集合的名字同名出现在退出码里）在本仪器一处都不许出现"
+                   "——它的红全部住在累加器或返值通道上；这一档在本侧点火＝有人把红改成只靠同名退出码撑着",
+                   not drives, "本仪器 driven 站点 %s" % (drives or "[]")))
+    SISTER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "check-doc-formulas.py")
+    try:
+        with open(SISTER, encoding="utf-8") as fh:
+            SCODE = fh.read().replace("\r\n", "\n").split("\ndef cmd_selftest")[0]
+        sister_err = None
+    except (IOError, OSError) as exc:
+        SCODE, sister_err = None, "%s" % exc
+    checks.append(("夹具N·丙 姊妹仪器源码必须读得到（读不到不是「那边没有红」）",
+                   SCODE is not None, "路径 %s｜%s" % (
+                       os.path.relpath(SISTER, REPO).replace("\\", "/"), sister_err or "已读"))
+                  )
+    if SCODE is not None:
+        s_uni = FL.red_outlet_universe(SCODE, "print", ("FAIL ", "INFO "))
+        s_scr = FL.red_accum_screen(SCODE, ("FAIL ", "INFO "))
+        s_kinds = sorted(set(k for _h, _f, _l, k, _n in s_scr))
+        s_driven = sorted(set(h for h, _f, _l, k, _n in s_scr if k == "driven"))
+        checks.append(("夹具N·丙 姊妹仪器那几条 print 形态的红必须全落在 inc／ret／driven 三档之内，"
+                       "一条都不许留在 blind（「循环集合驱动退出码」这一型自本轮起有档位，不再靠收据登记）",
+                       len(s_scr) == len(s_uni) > 0 and bool(s_kinds)
+                       and set(s_kinds) <= set(["inc", "ret", "driven"]),
+                       "print 形态站点 %d 配宇宙 %d｜档位 %s｜逐站点 %s" % (
+                           len(s_scr), len(s_uni), s_kinds,
+                           ["%s@%d" % (h, l) for h, _f, l, k, _n in s_scr])))
+        RET_OLD = '    return 1 if (agg["violations"] or outside_verdict(out)) else 0\n'
+        n34 = SCODE.count(RET_OLD)
+        img34 = SCODE.replace(RET_OLD, "    return 0\n", 1)
+        sc34 = FL.red_accum_screen(img34, ("FAIL ", "INFO "))
+        b34 = sorted(set(h for h, _f, _l, k, _n in sc34 if k == "blind"))
+        checks.append(("变异体34 把姊妹仪器那句退出码撤成 `return 0` ⇒ driven 的两条必须立刻退成 blind"
+                       "（这一档的牙真长在退出码那一行上，而不是换了个名字的豁免桶）",
+                       n34 == 1 and img34 != SCODE and len(sc34) == len(s_scr)
+                       and b34 == s_driven and bool(s_driven),
+                       "锚点命中 %d 次｜撤后 blind %s｜撤前 driven %s" % (n34, b34, s_driven)))
+
+    def m33_pairs(pairs):
+        """逐对替换，任何一对锚点数不为 1 就整对作废（宁可不红，不可拿没动过图的假对照报红）。"""
+        text = JUDGE_SRC
+        hits = []
+        for old, new in pairs:
+            n = text.count(old)
+            hits.append("%d" % n)
+            if n != 1:
+                return None, hits
+            text = text.replace(old, new, 1)
+        return text, hits
+
+    MUT33 = [
+        ('            print("FAIL 引用找不到工件 %s*.json（%s 这一路的每个数都没了来源）"\n'
+         '                  % (LEDGER_ART_PREFIX[tag], tag))\n            bad += 1\n',
+         '            print("FAIL 引用找不到工件 %s*.json（%s 这一路的每个数都没了来源）"\n'
+         '                  % (LEDGER_ART_PREFIX[tag], tag))\n'),
+        ('            print("FAIL 工件 %s 解析不了：%s" % (path, exc))\n            bad += 1\n',
+         '            print("FAIL 工件 %s 解析不了：%s" % (path, exc))\n'),
+        ('    bad = 0\n    loaded = {}\n', '    loaded = {}\n'),
+        ('                 "arts": arts, "arts_gen": arts_gen})\n',
+         '                 "arts": arts, "arts_gen": arts_gen})\n    bad = 0\n'),
+    ]
+    img33, hits33 = m33_pairs(MUT33)
+    sc33 = FL.red_accum_screen(img33, ("FAIL ", "INFO ")) if img33 else []
+    t33 = sorted(set(h for h, _f, _l, k, _n in sc33 if k in ("reset", "blind")))
+    tt33 = {}
+    for _h, _f, _l, k, _n in sc33:
+        tt33[k] = tt33.get(k, 0) + 1
+    checks.append(("变异体33 把本轮修好的那处还原成修前（撤两条 `bad += 1`＋把初值挪回红之后，"
+                   "四处唯一锚点）⇒ 有牙筛必须只把工件那两条判成无牙，别的一律照旧",
+                   img33 is not None and hits33 == ["1", "1", "1", "1"]
+                   and t33 == ["FAIL 工件", "FAIL 引用找不到工件"]
+                   and len(sc33) == OUTLET_BASELINE,
+                   "锚点命中 %s｜修前无牙站点 %s｜修前档位 %s（期望 reset 2／inc 9／ret 2）" % (
+                       "/".join(hits33), t33, sorted(tt33.items()))))
+    MUT33B = [('                    if guard:\n                        bad += 1\n',
+               '                    if guard:\n                        pass\n')]
+    img33b, hits33b = m33_pairs(MUT33B)
+    sc33b = FL.red_accum_screen(img33b, ("FAIL ", "INFO ")) if img33b else []
+    t33b = sorted(set(h for h, _f, _l, k, _n in sc33b if k in ("reset", "blind")))
+    checks.append(("变异体33·乙 撤掉 `guard = audit_len_guard(...)` 之后那条 `bad += 1`（返值通道断开）"
+                   "⇒ 块外前段／后段两条必须立刻落进无牙名单（ret 档的牙就长在这一行上）",
+                   img33b is not None and hits33b == ["1"]
+                   and t33b == ["FAIL 块外前段被改动（第", "FAIL 块外后段被改动（前"],
+                   "锚点命中 %s｜无牙站点 %s" % ("/".join(hits33b), t33b)))
     fails = 0
     for name, ok, detail in checks:
         print("%-4s %s  %s" % ("PASS" if ok else "FAIL", name, detail))

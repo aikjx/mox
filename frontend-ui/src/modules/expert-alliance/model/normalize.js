@@ -447,7 +447,7 @@ export function normFavorite(payload) {
   const p = payload || {}
   return {
     expertId: str(p.expert_id),
-    favorite: bool(p.favorite),
+    favorite: bool(p.current_favorite ?? p.favorite),
     action: str(p.action),
     updatedAt: str(p.updated_at)
   }
@@ -531,6 +531,7 @@ export function normSession(raw) {
   const messages = arr(s.messages).map(normSessionMessage)
   const meta = isObject(s.metadata) ? s.metadata : {}
   return {
+    tenantId: str(s.tenant_id),
     id: str(s.id),
     title: str(s.title),
     expertIds: arr(s.expert_ids).map(str),

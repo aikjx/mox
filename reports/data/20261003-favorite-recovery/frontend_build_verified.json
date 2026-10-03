@@ -1,0 +1,12 @@
+{
+  "command": [
+    "npm.cmd",
+    "--prefix",
+    "frontend-ui",
+    "run",
+    "build"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "frontend_build_verified.log"
+}

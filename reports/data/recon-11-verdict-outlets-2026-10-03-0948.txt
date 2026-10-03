@@ -1,0 +1,34 @@
+task #11 第一步·判决出口口径普查（只读；不抄夹具L，先量这边的形状）｜生成时刻 2026-10-03 09:48:00
+对象 scripts/gate/check-api-surface.py：150773 B／md5 47682460afb7／2710 行｜git 工作树状态见本收据末段
+对照仪器 scripts/gate/check-doc-formulas.py：172901 B／md5 67c461d6724b（夹具L 的宇宙是 bad.append(模板) 的首参前缀＝红是**数据**，现取 53 条）
+
+[1] 判决函数（含 bad 增量）逐名出账：3 个
+   cmd_role_surface   bad 增量  1 处／print 19 处／增量写法 1 种
+   cmd_role_matrix    bad 增量  1 处／print 19 处／增量写法 1 种
+   cmd_ledger         bad 增量 10 处／print 25 处／增量写法 4 种
+
+[2] 累加器写法有几种（一个事实几个源，先数清才有资格谈移植）：共 5 种
+    7 次｜bad += 1
+    2 次｜bad += 0 if ok else 1
+    1 次｜bad += 0 if not dup else 1
+    1 次｜bad += 0 if r["ok"] else 1
+    1 次｜bad += len(viol)
+
+[3] 红模板宇宙（本仪器把红写成 print 的文案，不写成 bad.append(模板)）：
+   FAIL／INFO 前缀宇宙 13 条（其中 FAIL 12 条）｜分布在 ['audit_len_guard', 'cmd_ledger']
+   逐名（首条与末条点名，条数由上面现推）：首『FAIL --write 回读不一致（盘上字节与内存图像不同：』｜末『INFO 漂移』
+   在 cmd_selftest 源码段里按串点名的 0 条｜未点名 13 条
+   本模式案例条数（checks.append 出现次数）＝ 43｜ SELFTEST 末行口径为「总 43 例」
+
+[4] 移植判据（本收据据此把 task #11 改写成可接手工作单）：
+   ① 夹具L 原样搬不过来：它的宇宙是 53 条 bad.append 前缀，这边对应的宇宙是 13 条 print 文案前缀，两者不同形；
+   ② 未点名 13 条**现在**钉成「未覆盖必须为空」会让常驻 CI 的 --selftest 恒红（该模式在 CI 执行宇宙里），
+      ⇒ 先钉分母（宇宙非空、逐名点出未点名者），覆盖账作为具名债登记，不假装已收口；
+   ③ 第 35 型（空集上的全称判据把零证据印成满把握）在这一侧同样成立：宇宙取空必须红，
+      所以宇宙条数本身是断言，不是可省的打印；
+   ④ 归一化已成立的那半不在这里：等式/加法的识别与复算由 formula_ledger.py 单源，cmd_ledger 真的用它由变异体27 钉住；
+      未成立的是**判决出口**这一半（13 条文案 5 种累加写法，无覆盖账）。
+
+[5] 现场状态（由 subprocess 现取，非回忆）：
+   git status 该文件『干净（无未提交改动）』｜HEAD 2ed420b6
+本探针除本收据外未在仓内写入任何文件。

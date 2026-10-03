@@ -395,7 +395,7 @@ docs/expert-alliance/
 | DAG 并行度信号量（T1a/N8） | dag_engine.rs:43 ENV_DAG_MAX_PARALLEL、:105 semaphore、:152-158、:587 acquire_owned（默认50，0=无界） | executor-core lib 41+e2e5+bench1 | ✅（两级配额/前端滑块留待 P1.5） |
 | LLM 多 Provider 路由 + scheduler 熔断 | scheduler-core/llm_router.rs:477（threshold5/60s） | scheduler-core 115 | ✅ |
 | SSE 日志流 | GET /api/alliance/tasks/:id/logs/stream（actuator.rs ROUTES）；前端 useSSE | gateway alliance 97 | ✅ |
-| T4 事件帧 SSE + webhook 外发（2026-10-02） | GET /api/alliance/events/stream（experts_streams.rs，按租户，event:<Kind>+data:<信封>）；webhook CRUD + reqwest 真实 POST 投递 | gateway lib 189 + sse_e2e 4 | ✅（SSE/webhook 真实 E2E；webhook 内存重启即失、跨副本广播留待） |
+| T4 事件帧 SSE + webhook 外发（2026-10-02） | GET /api/alliance/events/stream（experts_streams.rs，按租户，event:<Kind>+data:<信封>）；webhook CRUD + reqwest 真实 POST 投递 | gateway lib 189 + sse_e2e 4 | ✅（SSE/webhook 真实 E2E；webhook 订阅落盘已闭环 2026-10-03：schema v5 + alliance_webhooks 表写穿+启动读回（webhook_persistence.rs E2E）；跨副本广播仍留待） |
 | 会话管理 sessions/messages | experts_db.rs:132/148，SQLite 落盘 | gateway alliance 97 | ✅（单进程恢复 N11） |
 | 编排计划 plans / 编排历史（进程内） | experts_common.rs:468 HashMap / :470 Vec | 前端文案「仅本次进程」合规 | 🟡 进程内（D4 P1 落盘） |
 | 网关侧熔断器（独立内存） | experts_dispatcher.rs:494 | gateway alliance 97 | 🟡 与 scheduler 侧不共享（N10 设计取舍） |
@@ -469,4 +469,6 @@ docs/expert-alliance/
 | API-REGISTRY 总数 | 文首 236 / 实表 220 / 代码 ROUTES 243 | 🟡 文档落后代码 23 条（非联盟域），以代码为准 |
 
 > **总表统计（2026-10-01）**：✅闭环 **38** 项｜🟡部分/进程内/设计取舍 **14** 项｜🔴残留 **0** 项（原 🔴 N1/N2/N3/G1/G2/G3/WS 均已闭环或文档补记）。新增真实模块（图谱 CRUD N4、图 RAG T2、MCP Server T3、U1 画布、U2 透明化）已全部并入对应子表并核到行号与测试数。
+>
+> **全维终验补记（2026-10-03）**：本轮全维终验后，原 T4 行注「webhook 内存重启即失」已闭环（schema v4→v5 + `alliance_webhooks` 表，写穿 + 启动读回，`webhook_persistence.rs` E2E）；配额补「计划数 per tenant」维度（`count_plans_by_tenant`+`check_plan_quota` 挂 orchestrate/generate，`a3_plan_quota_tenant.rs` 第 2 个计划真实 409 E2E）。两项均为「✅ 行内子缺口注记」收口——webhook 行本就 ✅、专家数配额行本就 ✅，计划配额为新增维度，**不改变上表 ✅38 / 🟡14 / 🔴0（2026-10-01 基线）的计数口径**。终验数字：后端 530 passed/0 failed + 前端 29 文件/675 用例全绿（合计 1205/0），无 🔴。依据：`platform/domains/alliance/_verification/full-dimension-final-verification.md`（2026-10-03）。
 

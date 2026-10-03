@@ -420,7 +420,7 @@ const fn r(
 }
 
 /// 网关暴露的全部 API 注册表（与 lib.rs / system.rs / alliance.rs / proxy.rs 逐条对齐）。
-pub static ROUTES: [ApiRoute; 249] = [
+pub static ROUTES: [ApiRoute; 250] = [
     // =====================================================================
     // Actuator 域（L0·Spring Boot 风格管理面·actuator.rs 实现）
     // =====================================================================
@@ -655,6 +655,7 @@ pub static ROUTES: [ApiRoute; 249] = [
     r("experts.session.semantic_search", "POST", "/api/experts/semantic-search", "L3", "experts", "ready", "全局语义搜索"),
     r("experts.ext.bookings_mine", "GET", "/api/experts/bookings/mine", "L3", "experts", "ready", "我的预约"),
     r("experts.ext.favorite", "POST", "/api/experts/:id/favorite", "L3", "experts", "ready", "收藏专家"),
+    r("experts.ext.favorites.query", "POST", "/api/experts/favorites/query", "L3", "experts", "ready", "读取当前租户至多 100 位专家的 SQLite 收藏快照；只读"),
     r("experts.ext.bookings_create", "POST", "/api/experts/bookings", "L3", "experts", "ready", "创建预约"),
     r("experts.ext.bookings_cancel", "PUT", "/api/experts/bookings/:id/cancel", "L3", "experts", "ready", "取消预约"),
 

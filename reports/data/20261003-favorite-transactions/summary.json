@@ -1,0 +1,183 @@
+{
+  "status": "completed_for_documented_increment",
+  "rust_tests_passed": 12,
+  "frontend_contract_tests_passed": 120,
+  "independent_concurrent_sqlite_connections": 12,
+  "checks_passed": 8,
+  "new_service_mocks": 0,
+  "storage_failure_http_status": 503,
+  "committed_state_before_mirror_update": true,
+  "atomic_toggle_shared_sqlite_file": true,
+  "idempotent_network_retry": false,
+  "cross_host_distributed_guarantee": false,
+  "actual_multi_process_load_test": false,
+  "full_enterprise_ready": false,
+  "full_workspace_tests": false,
+  "full_browser_e2e": false,
+  "remote_ci_run": false,
+  "checks": [
+    {
+      "name": "rust_release",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "tenant_expert_isolation",
+        "--test",
+        "experts_db_persistence",
+        "--",
+        "--test-threads=1"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_release.log"
+    },
+    {
+      "name": "contract_tests_final",
+      "command": [
+        "npm.cmd",
+        "exec",
+        "--",
+        "vitest",
+        "run",
+        "src/modules/expert-alliance/contract/contract.test.js",
+        "src/modules/expert-alliance/contract/vocabulary-ownership.test.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph\\frontend-ui",
+      "exit_code": 0,
+      "log": "contract_tests_final.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "tenant_expert_isolation",
+        "--test",
+        "experts_db_persistence"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy.log"
+    },
+    {
+      "name": "format",
+      "command": [
+        "rustfmt",
+        "--check",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/favorite_repository.rs",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_ext.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/favorite_transactions.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/tenant_expert_isolation.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log"
+    },
+    {
+      "name": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/mod.rs",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_ext.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/tenant_expert_isolation.rs",
+        "frontend-ui/src/modules/expert-alliance/contract/contract.test.js",
+        "docs/expert-alliance/22-expert-object-contract.md",
+        "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+        "docs/expert-alliance/INDEX.md",
+        "docs/expert-alliance/16-decision-and-state-ledger.md"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff.log"
+    },
+    {
+      "name": "module",
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "module.log"
+    },
+    {
+      "name": "docs",
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs.log"
+    },
+    {
+      "name": "diagrams",
+      "command": [
+        "node",
+        "reports/data/20261003-favorite-transactions/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log"
+    }
+  ],
+  "source_manifest": [
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/alliance/favorite_repository.rs",
+      "sha256": "199a19f5accf28f7b91189f9b8e236ca5f919daecf52853ee703e56cbf99a65b"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/alliance/mod.rs",
+      "sha256": "42f0f3810e7a9836982fe988c6382c6dd22190ccda9fc1abcb7fb6db1435ef56"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_ext.rs",
+      "sha256": "afb8be99a6943ba92667fd55af449ee0b27663227a5d835c2bf6b580885d6dc9"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/tests/favorite_transactions.rs",
+      "sha256": "6a45fb69715330303fa7a2254c2a5f289442e7d4be4b1b6ca8fd2ef3aec2a2ca"
+    },
+    {
+      "path": "platform/gateway/mox-platform-gateway-svc/tests/tenant_expert_isolation.rs",
+      "sha256": "59c276c8b2cd372a64d248ccaabb1c7e0d3ce627f3dd08f8033ccdfb1ba03b3e"
+    },
+    {
+      "path": "frontend-ui/src/modules/expert-alliance/contract/contract.test.js",
+      "sha256": "2f0565fd462f19480e317b7800c96f0a55bef308aaa15ea59b0d1936553f3501"
+    },
+    {
+      "path": "docs/expert-alliance/22-expert-object-contract.md",
+      "sha256": "f31ae95855ea116947f29764f0f05f125f6a6e8b71027161d123d0dbf1c87d77"
+    },
+    {
+      "path": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+      "sha256": "f8d63f69d4cd906907d0e61fc640addf6c94092380d280ddae759eac39c3244e"
+    },
+    {
+      "path": "docs/expert-alliance/INDEX.md",
+      "sha256": "33cb7de9e0d25331de319b995a4c833a58915a477adf18b9ea4f2e1d9c9aebc4"
+    },
+    {
+      "path": "docs/expert-alliance/16-decision-and-state-ledger.md",
+      "sha256": "1eabfcb5e8908692c10a546de43e4c86e939e2c2bbc166f74eaff52b96edce3b"
+    }
+  ]
+}

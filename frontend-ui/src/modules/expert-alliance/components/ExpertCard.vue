@@ -117,7 +117,7 @@ const consultHint = computed(() => {
   const type = expertTypeLabel(props.expert.expertType)
   return `仅在线专家可即时接入（当前：${availabilityLabel(props.expert.availability.status)} · ${type}）`
 })
-const starTitle = computed(() => (props.favorite ? '取消收藏' : '收藏专家（收藏状态仅保留在本次会话）'))
+const starTitle = computed(() => (props.favorite ? '取消收藏' : '收藏专家'))
 
 const percentText = (v) => (v > 0 ? `${Math.round(v * 100)}%` : '—')
 const clampPercent = (v) => Math.max(0, Math.min(100, Math.round(Number(v) || 0)))

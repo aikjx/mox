@@ -1,0 +1,246 @@
+{
+  "status": "fixed_targeted_session_failures_with_remaining_quality_gaps",
+  "modules_in_registry": 26,
+  "modules_with_partial_real_verification": 5,
+  "all_modules_accepted": false,
+  "production_ready": false,
+  "new_business_mock": false,
+  "full_browser_dom_e2e": false,
+  "full_frontend_suite_verified": false,
+  "remote_ci_verified": false,
+  "cross_host_verified": false,
+  "red_proofs": [
+    "tenant_red",
+    "storage_red",
+    "ingress_red",
+    "pagination_red"
+  ],
+  "checked_commit_ingress_paths": 11,
+  "contract_tests_passed": 156,
+  "contract_tests_failed": 1,
+  "session_contract_tests_passed": 37,
+  "checks": [
+    {
+      "name": "module_regression_release",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "session_tenant_isolation",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "tenant_expert_isolation",
+        "--test",
+        "trusted_tenant_http",
+        "--test",
+        "inbox_persistence",
+        "--test",
+        "experts_db_persistence",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "module_regression_release.log"
+    },
+    {
+      "name": "session_handlers_final",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "alliance::experts_session::tests",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "session_handlers_final.log"
+    },
+    {
+      "name": "contract_release",
+      "command": [
+        "node",
+        "frontend-ui/node_modules/vitest/vitest.mjs",
+        "run",
+        "frontend-ui/src/modules/expert-alliance/contract/sessions.test.js",
+        "frontend-ui/src/modules/expert-alliance/contract/contract.test.js",
+        "frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js",
+        "--config",
+        "frontend-ui/vite.config.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 1,
+      "log": "contract_release.log"
+    },
+    {
+      "name": "frontend_build",
+      "command": [
+        "npm.cmd",
+        "run",
+        "build"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph\\frontend-ui",
+      "exit_code": 0,
+      "log": "frontend_build.log"
+    },
+    {
+      "name": "module",
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "module.log"
+    },
+    {
+      "name": "framework",
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-framework-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "framework.log"
+    },
+    {
+      "name": "bindings",
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-api-binding-kinds.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "bindings.log"
+    },
+    {
+      "name": "paths",
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths.log"
+    },
+    {
+      "name": "clippy_release",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "session_tenant_isolation",
+        "--no-deps"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy_release.log"
+    },
+    {
+      "name": "docs",
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py",
+        "--max-detail",
+        "5"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs.log"
+    },
+    {
+      "name": "diagrams",
+      "command": [
+        "node",
+        "reports/data/20261003-session-isolation/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log"
+    },
+    {
+      "name": "ledger",
+      "command": [
+        "python",
+        "scripts/gate/check-api-surface.py",
+        "--ledger",
+        "--write"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ledger.log"
+    },
+    {
+      "name": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff.log"
+    },
+    {
+      "name": "format",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_session.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/session_tenant_isolation.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log"
+    }
+  ],
+  "rust_test_groups_passed": [
+    8,
+    7,
+    6,
+    1,
+    1,
+    2,
+    9
+  ],
+  "rust_tests_passed": 34,
+  "final_checks_passed": 13,
+  "final_checks_failed": 1,
+  "strict_lint_clean": false,
+  "new_test_clippy_warnings": 0,
+  "source_manifest": {
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_common.rs": "669ab355626bba2936b06f54bba983f28b185944a694ebd464dfa03f06337c01",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_db.rs": "b51524c3d877760e954934f4e2d62ae8e8cb1fb5c7ee9cf4cef9e8d772c4005b",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_session.rs": "8a6f56297735550a8021e4ea594a1e4ee0bb2e3a3da5864694700553add665d2",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_collaboration.rs": "8904bff208fa59a7372343eb65d4daddbb3e762ecdf24ca61b852738a484e672",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_registry.rs": "bf7f3fe22c24d0c5a930303cc9a0985fff4182a24b7065cafe44405515c0d4e7",
+    "platform/gateway/mox-platform-gateway-svc/tests/session_tenant_isolation.rs": "3846cea0529e93ced2ccb106b3ed7fbc34189e0fe22b1ca8f9983dfaad225659",
+    "frontend-ui/src/modules/expert-alliance/model/normalize.js": "fe3d5d92463191205d0c0a7c2a24852c2ec4fd2c04613563cb863b0adf9d308f",
+    "frontend-ui/src/modules/expert-alliance/contract/sessions.test.js": "ce6663c8cde92295017fe4d963de99eb10d67da6e0abfcb36028cd71039619cd",
+    "frontend-ui/src/modules/expert-alliance/contract/registry.js": "63846f283a5147e3df2fd674ddbb39b70f9f19f565b01f49b1145b044c2eeaf1",
+    "frontend-ui/src/modules/expert-alliance/contract/contract.test.js": "8600657738c44a3177108f715166f5218b851511f75a92c6a6a87063c09ae795",
+    "docs/expert-alliance/23-session-isolation-and-commit.md": "f7bd077405def334547a806c9b02c3fad7e6484e2a993a33b240ca311f38c335",
+    "docs/expert-alliance/CURRENT-ARCHITECTURE.md": "8f745474dba6a2c8ca5e5d8fb98c3ee42de9a3826b2ddcda385ef6f9eb69823f",
+    "docs/expert-alliance/INDEX.md": "a2ad1d1bcc66c3d3d9dcaab5a6082637b64162d7a44f7f18205b5d1590cb3273",
+    "docs/expert-alliance/16-decision-and-state-ledger.md": "c10bbba346c6b9bd0869734056976869569d748d5ce16e52e499f13cb2342e5b",
+    "docs/modules/REAL-IMPLEMENTATION-STATUS.md": "74a4f7e8c959414e6c660d47974411bad154a149c2366bb55b2832c5e639b9ba",
+    "reports/data/20261003-session-isolation/module-matrix.json": "fcf5222ec6afe0fc0fe2a532c8d10a5857ad1529cc8648609f6f52f1d916b674",
+    "reports/markdown/20261003-module-verification.md": "3e13bda5a65a6b3053c6a2a6239408d0c15777e5df7b1e3bb278cc9464b43207"
+  }
+}

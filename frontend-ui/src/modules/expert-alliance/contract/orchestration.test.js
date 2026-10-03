@@ -149,15 +149,17 @@ describe('编排面路由 ↔ 网关 router 与注册表', () => {
 describe('编排面出参键集 ↔ Rust json! 字面量', () => {
   it('orchestrate 的 8 键与它的三个子形状', () => {
     blockWith(ORCH_ORCHESTRATE_KEYS, 'orchestrate 响应')
-    blockWith(ORCH_EXPERT_SUMMARY_KEYS, 'experts 摘要', 3)
+    // 去幻影化后 experts 摘要只在 orchestrate(:610) 与 plan/generate(:695) 两处拼 json!；execute 不再回 experts 摘要
+    blockWith(ORCH_EXPERT_SUMMARY_KEYS, 'experts 摘要', 2)
     blockWith(ORCH_PLAN_STEP_SUMMARY_KEYS, 'plan.steps[]')
     expect(ORCH_ORCHESTRATE_KEYS).toEqual(['orchestration_id', 'task', 'task_type', 'experts', 'plan', 'execution', 'result', 'created_at'])
   })
 
   it('execution 与 plan 两个内联包装的键集（不是独立 json!，只能按源码文本核）', () => {
     expect(ORCH_RS).toMatch(/"plan": \{\s*"plan_id": plan\.plan_id,\s*"steps": plan_steps_summary,\s*\}/)
+    // 去幻影化后 execution.status 不再是字面量 "completed"，而是读真实的 plan.status（:633）
     expect(ORCH_RS).toMatch(new RegExp(
-      `"execution": \\{${ORCH_EXECUTION_KEYS.map((k, i) => `\\s*"${k}": ${i === 0 ? '"completed"' : '[^,\\n]+'},`).join('')}\\s*\\}`
+      `"execution": \\{${ORCH_EXECUTION_KEYS.map((k, i) => `\\s*"${k}": ${i === 0 ? 'plan\\.status' : '[^,\\n]+'},`).join('')}\\s*\\}`
     ))
   })
 
@@ -166,11 +168,10 @@ describe('编排面出参键集 ↔ Rust json! 字面量', () => {
     blockWith(ORCH_PLAN_STEP_KEYS, 'plan/generate steps[]')
   })
 
-  it('plan/execute 的两种形状：成功 9 键、成环失败 8 键，差集恰是 error / completed_at+final_result', () => {
-    blockWith(ORCH_EXECUTE_KEYS, 'execute 成功形状')
-    blockWith(ORCH_EXECUTE_FAILED_KEYS, 'execute 失败形状')
-    expect(ORCH_EXECUTE_FAILED_KEYS.filter((k) => !ORCH_EXECUTE_KEYS.includes(k))).toEqual(['error'])
-    expect(ORCH_EXECUTE_KEYS.filter((k) => !ORCH_EXECUTE_FAILED_KEYS.includes(k))).toEqual(['completed_at', 'final_result'])
+  it('plan/execute 出参：单一形状，error/final_result 同为可空 Option（成环失败不再单独成块）', () => {
+    // 去幻影化后 execute_plan 末尾只吐一个 json! 块（:468-471）：error 与 final_result 都是 Option——
+    // 成功 error=null / 失败 final_result=null，不再是"成功 9 键 / 成环失败 8 键"两个不同键集的块。
+    blockWith(['plan_id', 'execution_id', 'status', 'overall_status', 'steps_executed', 'steps_total', 'error', 'duration_ms', 'final_result', 'evidence_kind'], 'execute 出参形状')
     blockWith(ORCH_EXECUTED_STEP_KEYS, 'steps_executed[]')
   })
 
@@ -185,9 +186,10 @@ describe('编排面出参键集 ↔ Rust json! 字面量', () => {
     expect(ORCH_HISTORY_KEYS).not.toContain('total_pages')
   })
 
-  it('融合结果 6 键与单步产出 7 键', () => {
+  it('融合结果 6 键与单步融合输入 5 键', () => {
     blockWith(ORCH_FUSION_KEYS, 'fuse_results 出参')
-    blockWith(ORCH_STEP_RESULT_KEYS, 'simulate_step_execution 出参')
+    // 去幻影化后单步产出改为真实咨询答复；喂给融合的中间块是 5 键（:452-453），不再是 simulate_step_execution 的 7 键
+    blockWith(['summary', 'key_findings', 'confidence', 'source', 'evidence_kind'], '单步融合输入')
   })
 
   it('历史行的键集与 OrchestrationRecord 字段逐字等集，且没有 skip_serializing_if', () => {
@@ -227,31 +229,35 @@ describe('ORCH_SIMULATED：每个常量仍钉在原来那一行', () => {
 })
 
 describe('恒为 0 的统计项与两个 status 口径', () => {
-  it('plan.status 只有 draft/running/completed 三处赋值，因此 ready 与 failed 两个计数没有写入路径', () => {
-    const assigns = [...new Set([...ORCH_RS.matchAll(/plan\.status = "(\w+)"\.to_string\(\)/g)].map((m) => m[1]))]
-    expect(assigns.sort()).toEqual(['completed', 'running'])
+  it('plan.status 的直赋只有 running；终态 failed/completed/partial 走条件三选一，ready 无写入路径', () => {
+    // 去幻影化后赋值语法由 .to_string() 改为 .into()；终态（:457-464）按 error 与是否全完成三选一。
+    const assigns = [...new Set([...ORCH_RS.matchAll(/plan\.status = "(\w+)"\.into\(\)/g)].map((m) => m[1]))]
+    expect(assigns.sort()).toEqual(['running'])
     expect(ORCH_RS).toContain('status: "draft".to_string()')
+    expect(ORCH_RS).toMatch(/plan\.status = if error\.is_some\(\) \{\s*"failed"/)
     expect(ORCH_RS).not.toMatch(/plan\.status = "ready"/)
-    expect(ORCH_RS).not.toMatch(/plan\.status = "failed"/)
-    expect(ORCH_ZERO_COUNTERS).toEqual(['plans_ready', 'plans_failed'])
+    expect(ORCH_ZERO_COUNTERS).toEqual(['plans_ready'])
     for (const k of ORCH_ZERO_COUNTERS) expect(ORCH_STATS_KEYS).toContain(k)
   })
 
-  it('成环失败分支直接 return，不写回 plan.status，所以 stats 永远看不见它', () => {
-    const failedBranch = ORCH_RS.match(/Err\(e\) => \{\s*return json!\(\{[\s\S]*?\}\);/)[0]
-    expect(failedBranch).toContain('"status": "failed"')
-    expect(failedBranch).not.toContain('plan.status')
+  it('成环错误折叠进统一结果：topological_sort 出错写入 error，终态条件把 plan.status 置 failed', () => {
+    // 去幻影化后没有独立的 `Err(e) => { return json!({...}) }` 分支；环检测错误先写 error（:398），
+    // 再由 :457-464 的终态条件把 plan.status 置 failed——失败会被 stats 与历史如实记录。
+    expect(ORCH_RS).toContain('let mut error = order.as_ref().err().cloned();')
+    expect(ORCH_RS).toMatch(/plan\.status = if error\.is_some\(\) \{\s*"failed"/)
   })
 
-  it('orchestrate 把失败也记成 completed：status 字面量出现在历史写入处', () => {
+  it('orchestrate 走真实咨询 DAG，历史行 status 读真实 plan.status（不再写死 completed）', () => {
     const handler = ORCH_RS.match(/async fn orchestrate\([\s\S]*?\n\}/)[0]
-    expect(handler).toContain('let exec_result = execute_plan(&mut plan, None);')
-    expect(handler).not.toMatch(/exec_result\["status"\]/)
-    expect(handler).toMatch(/status: "completed"\.to_string\(\)/)
+    expect(handler).toContain('let exec_result = execute_plan(&mut plan, None, &matched_experts).await;')
+    // 去幻影化后历史行 status 读 plan.status.clone()（:593），不再是字面量 "completed"。
+    expect(handler).toContain('status: plan.status.clone()')
+    expect(handler).not.toContain('status: "completed".to_string()')
   })
 
   it('zero 计数有专属说明；两口径对照只在历史真出现 failed 时给', () => {
-    expect(orchZeroCounterNote('plans_failed')).toMatch(/恒为 0/)
+    expect(orchZeroCounterNote('plans_ready')).toMatch(/恒为 0/)
+    expect(orchZeroCounterNote('plans_failed')).toBe('')
     expect(orchZeroCounterNote('plans_completed')).toBe('')
     expect(orchStatusSplitNote({ plans_failed: 0 }, [{ status: 'failed' }])).toMatch(/两个口径/)
     expect(orchStatusSplitNote({ plans_failed: 0 }, [{ status: 'completed' }])).toBe('')
@@ -287,7 +293,8 @@ describe('请求体：发哪些键由 handler 读什么决定', () => {
     expect(planExecuteBody({ planId: 'p1', stepIds: [] })).toEqual({ plan_id: 'p1', step_ids: [] })
     expect(planExecuteBody({ planId: 'p1' })).toEqual({ plan_id: 'p1' })
     expect(planExecuteBody({ planId: 'p1', stepIds: ['s1', ' s2 '] })).toEqual({ plan_id: 'p1', step_ids: ['s1', 's2'] })
-    expect(ORCH_RS).toContain('let execute_set: Option<std::collections::HashSet<String>> = step_ids.map')
+    // 去幻影化后变量改名 execute_set→selected，仍是 step_ids.map(...) 收集成 HashSet（:397）
+    expect(ORCH_RS).toContain('let selected = step_ids.map(|ids| ids.into_iter().collect::<std::collections::HashSet<_>>());')
   })
 
   it('plan_id 没有 serde default：缺了会在请求层被拒，页面拿不到 {code,msg} 信封', () => {
@@ -337,10 +344,11 @@ describe('步骤表与拓扑形状', () => {
     expect(orchFallbackNote()).toContain(`${ORCH_STEP_COUNT_BY_TASK_TYPE.__fallback} 步通用文案`)
   })
 
-  it('step_type 文案表就是契约列出的 7 类 + 兜底', () => {
-    const fn = ORCH_RS.match(/fn simulate_step_execution([\s\S]*?)\n\}\n/)[1]
-    expect([...fn.matchAll(/^\s{8}"(\w+)" =>/gm)].map((m) => m[1])).toEqual([...ORCH_STEP_TYPES])
-    expect(fn).toMatch(/^\s{8}_ =>/m)
+  it('step_type 文案表就是契约列出的 7 类', () => {
+    // 去幻影化后 simulate_step_execution 已删；step_type 改为 select_steps_for_task_type 元组表的首元素（:100-141）
+    const fn = ORCH_RS.match(/fn select_steps_for_task_type\([\s\S]*?\n\}/)[0]
+    const types = [...new Set([...fn.matchAll(/\("(\w+)", "[^"]*", "[^"]*"\)/g)].map((m) => m[1]))].sort()
+    expect(types).toEqual([...ORCH_STEP_TYPES].sort())
   })
 
   it('生成的依赖恒为单链：每步只依赖上一步，所以本面的图不可能成环', () => {
@@ -405,12 +413,14 @@ describe('分页与状态判定', () => {
     expect(orchExecuteOutcome({}).failed).toBe(false)
   })
 
-  it('易失性与演练提示都有固定话术，两张表都没有落库路径', () => {
-    expect(orchVolatileNote()).toMatch(/重启即归零/)
+  it('内存态仍是权威，D4 已把 plans/history 投影 SQLite；演练提示固定话术', () => {
+    expect(orchVolatileNote()).toMatch(/SQLite/)
     expect(orchRunDisclaimer()).toMatch(/Kahn/)
     expect(COMMON_RS).toContain('pub plans: Arc<Mutex<HashMap<String, CollaborationPlan>>>')
     expect(COMMON_RS).toContain('pub orchestration_history: Arc<Mutex<Vec<OrchestrationRecord>>>')
-    expect(DB_RS).not.toMatch(/plan|orchestr/i)
+    // D4 落盘：DB 层已有 plans/history 的写读投影（upsert_plan / insert_history_record）
+    expect(DB_RS).toContain('fn upsert_plan')
+    expect(DB_RS).toContain('fn insert_history_record')
   })
 })
 

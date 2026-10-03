@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python",
+    "scripts/gate/check-frontend-module.py"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "module.log"
+}

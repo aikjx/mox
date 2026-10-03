@@ -52,15 +52,17 @@ async fn two_tenants_create_experts_and_cannot_see_each_other() {
     std::env::set_var("MOX_EXPERTS_DB_PATH", &db);
 
     let state = Arc::new(ExpertsSharedState::new());
-    let mut config = AuthConfig::default();
-    config.enabled = true;
-    config.dev_mode = false;
-    config.jwt_secret = SECRET.into();
-    config.public_paths.clear();
+    let config = AuthConfig {
+        enabled: true,
+        dev_mode: false,
+        jwt_secret: SECRET.into(),
+        public_paths: vec![],
+        ..AuthConfig::default()
+    };
     let auth = Arc::new(AuthMiddleware::new(config));
 
     let app = build_experts_registry_router(state.clone())
-        .merge(build_experts_ext_router(state))
+        .merge(build_experts_ext_router(state.clone()))
         .layer(middleware::from_fn(move |req, next| auth_middleware(auth.clone(), req, next)));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -120,7 +122,7 @@ async fn two_tenants_create_experts_and_cannot_see_each_other() {
 
     // 跨租户直取：tenant-a token 访问 e2e-b-expert 详情应 404
     let detail = client
-        .get(format!("{}/e2e-b-expert", &url))
+        .get(format!("{url}/e2e-b-expert"))
         .bearer_auth(token("tenant-a", &["tenant_admin"]))
         .send()
         .await
@@ -144,10 +146,13 @@ async fn two_tenants_create_experts_and_cannot_see_each_other() {
 
     // Both tenants may favorite the same ID, but toggling one must not remove the other.
     for tenant in ["tenant-a", "tenant-b"] {
-        let created = client.post(&url)
+        let created = client
+            .post(&url)
             .bearer_auth(token(tenant, &["tenant_admin"]))
             .json(&expert_body("e2e-shared-id", tenant))
-            .send().await.unwrap();
+            .send()
+            .await
+            .unwrap();
         assert_eq!(created.status().as_u16(), 200);
         let favorite = client
             .post(format!("{url}/e2e-shared-id/favorite"))
@@ -169,10 +174,149 @@ async fn two_tenants_create_experts_and_cannot_see_each_other() {
     let body: serde_json::Value = unfavorite.json().await.unwrap();
     assert_eq!(body["data"]["favorite"], false);
 
-    for inaccessible in ["e2e-b-expert", "missing-expert"] {
-        let response = client.post(format!("{url}/{inaccessible}/favorite"))
+    for (tenant, expected) in [("tenant-a", false), ("tenant-b", true)] {
+        let response = client
+            .post(format!("{url}/favorites/query"))
+            .bearer_auth(token(tenant, &["tenant_admin"]))
+            .json(&serde_json::json!({"expert_ids":["e2e-shared-id"]}))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status().as_u16(), 200);
+        assert_eq!(
+            response.json::<serde_json::Value>().await.unwrap()["data"]["items"][0]["favorite"],
+            expected
+        );
+    }
+    for (ids, status) in [
+        (vec!["e2e-b-expert"; 1], 404),
+        (vec!["e2e-shared-id"; 101], 400),
+        (Vec::<&str>::new(), 200),
+    ] {
+        let response = client
+            .post(format!("{url}/favorites/query"))
             .bearer_auth(token("tenant-a", &["tenant_admin"]))
-            .send().await.unwrap();
+            .json(&serde_json::json!({"expert_ids":ids}))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status().as_u16(), status);
+    }
+    let conn = mox_platform_gateway_svc::alliance::experts_db::open_experts_db().unwrap();
+    conn.execute_batch("ALTER TABLE favorites RENAME COLUMN expert_id TO favorite_read_fault")
+        .unwrap();
+    let failed_read = client
+        .post(format!("{url}/favorites/query"))
+        .bearer_auth(token("tenant-a", &["tenant_admin"]))
+        .json(&serde_json::json!({"expert_ids":["e2e-shared-id"]}))
+        .send()
+        .await
+        .unwrap();
+    conn.execute_batch("ALTER TABLE favorites RENAME COLUMN favorite_read_fault TO expert_id")
+        .unwrap();
+    assert_eq!(failed_read.status().as_u16(), 503);
+
+    if let Ok(script) = std::env::var("MOX_FAVORITE_FRONTEND_PROBE") {
+        let output = tokio::process::Command::new("node")
+            .arg(script)
+            .env("FAVORITE_GATEWAY_URL", url.trim_end_matches("/api/experts"))
+            .env("FAVORITE_JWT", token("tenant-a", &["tenant_admin"]))
+            .env("FAVORITE_ROTATED_JWT", token("tenant-a", &["user"]))
+            .output()
+            .await
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "frontend probe failed: {} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        println!("{}", String::from_utf8_lossy(&output.stdout));
+    }
+
+    let mut committed_at = None;
+    for replayed in [false, true] {
+        let response = client
+            .post(format!("{url}/e2e-shared-id/favorite"))
+            .bearer_auth(token("tenant-a", &["tenant_admin"]))
+            .header("Idempotency-Key", "favorite-on")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status().as_u16(), 200);
+        let body: serde_json::Value = response.json().await.unwrap();
+        assert_eq!(body["data"]["favorite"], true);
+        assert_eq!(body["data"]["replayed"], replayed);
+        if let Some(previous) = &committed_at {
+            assert_eq!(&body["data"]["updated_at"], previous);
+        }
+        committed_at = Some(body["data"]["updated_at"].clone());
+    }
+    let changed = client
+        .post(format!("{url}/e2e-shared-id/favorite"))
+        .bearer_auth(token("tenant-a", &["tenant_admin"]))
+        .header("Idempotency-Key", "favorite-off")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(changed.status().as_u16(), 200);
+    let old_retry = client
+        .post(format!("{url}/e2e-shared-id/favorite"))
+        .bearer_auth(token("tenant-a", &["tenant_admin"]))
+        .header("Idempotency-Key", "favorite-on")
+        .send()
+        .await
+        .unwrap();
+    let body: serde_json::Value = old_retry.json().await.unwrap();
+    assert_eq!(body["data"]["favorite"], true);
+    assert_eq!(body["data"]["current_favorite"], false);
+    assert!(!state.favorites.lock()["tenant-a"].contains("e2e-shared-id"));
+    let conflict = client
+        .post(format!("{url}/e2e-a-expert/favorite"))
+        .bearer_auth(token("tenant-a", &["tenant_admin"]))
+        .header("Idempotency-Key", "favorite-on")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(conflict.status().as_u16(), 409);
+    let invalid = client
+        .post(format!("{url}/e2e-shared-id/favorite"))
+        .bearer_auth(token("tenant-a", &["tenant_admin"]))
+        .header("Idempotency-Key", "%invalid")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(invalid.status().as_u16(), 400);
+
+    // A real SQLite trigger failure must produce 503 and leave the mirror untouched.
+    mox_platform_gateway_svc::alliance::experts_db::open_experts_db().unwrap()
+        .execute_batch("CREATE TRIGGER fail_favorite BEFORE INSERT ON favorites BEGIN SELECT RAISE(ABORT,'storage failure'); END;").unwrap();
+    let failed = client
+        .post(format!("{url}/e2e-shared-id/favorite"))
+        .bearer_auth(token("tenant-a", &["tenant_admin"]))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(failed.status().as_u16(), 503);
+    assert!(!state
+        .favorites
+        .lock()
+        .get("tenant-a")
+        .is_some_and(|set| set.contains("e2e-shared-id")));
+    assert!(!mox_platform_gateway_svc::alliance::experts_db::load_favorites_by_tenant("tenant-a")
+        .contains("e2e-shared-id"));
+    mox_platform_gateway_svc::alliance::experts_db::open_experts_db()
+        .unwrap()
+        .execute_batch("DROP TRIGGER fail_favorite")
+        .unwrap();
+
+    for inaccessible in ["e2e-b-expert", "missing-expert"] {
+        let response = client
+            .post(format!("{url}/{inaccessible}/favorite"))
+            .bearer_auth(token("tenant-a", &["tenant_admin"]))
+            .send()
+            .await
+            .unwrap();
         assert_eq!(response.status().as_u16(), 404, "cannot favorite foreign or missing experts");
     }
 
@@ -204,5 +348,7 @@ async fn two_tenants_create_experts_and_cannot_see_each_other() {
     let favorites = recovered.favorites.lock();
     assert!(!favorites.get("tenant-a").is_some_and(|set| set.contains("e2e-shared-id")));
     assert!(favorites["tenant-b"].contains("e2e-shared-id"));
-    assert!(!favorites.get("tenant-a").is_some_and(|set| set.contains("e2e-b-expert") || set.contains("missing-expert")));
+    assert!(!favorites
+        .get("tenant-a")
+        .is_some_and(|set| set.contains("e2e-b-expert") || set.contains("missing-expert")));
 }

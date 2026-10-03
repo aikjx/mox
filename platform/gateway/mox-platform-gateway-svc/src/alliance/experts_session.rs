@@ -16,18 +16,39 @@
 //! - 响应信封统一 `mox_api_protocol::{ApiResponse, api_ok, api_error}`
 
 use axum::{
-    Json, Router,
     extract::{Path, Query, State},
     routing::{get, post},
+    Json, Router,
 };
 use mox_api_protocol::ApiResponse;
 use serde::Deserialize;
-use serde_json::{Value, json};
-use std::collections::HashMap;
-use std::sync::Arc;
+use serde_json::{json, Value};
+use std::{collections::HashMap, sync::Arc};
 
 use super::experts_common::*;
 use mox_audit::{AuditAction, AuditOutcome};
+
+// The state mutex remains held through commit. A failed transaction restores only
+// the touched row before any reader can observe the tentative mutation.
+pub(super) fn save_sessions(
+    sessions: &mut HashMap<String, ExpertSession>,
+    id: &str,
+    previous: Option<ExpertSession>,
+) -> Result<(), ApiResponse<Value>> {
+    if let Err(error) = super::experts_db::save_sessions_checked(sessions) {
+        match previous {
+            Some(session) => {
+                sessions.insert(id.to_owned(), session);
+            },
+            None => {
+                sessions.remove(id);
+            },
+        }
+        tracing::error!(%error, "session transaction failed");
+        return Err(err(503, "session storage unavailable"));
+    }
+    Ok(())
+}
 
 // =====================================================================
 // 一、请求体定义
@@ -112,6 +133,7 @@ pub struct SemanticSearchBody {
 
 fn session_to_list_view(session: &ExpertSession) -> Value {
     json!({
+        "tenant_id": session.tenant_id,
         "id": session.id,
         "title": session.title,
         "expert_ids": session.expert_ids,
@@ -161,6 +183,7 @@ async fn create_session(
     let session_id = gen_id("sess");
 
     let session = ExpertSession {
+        tenant_id: tenant.clone(),
         id: session_id.clone(),
         title: body.title.unwrap_or_default(),
         expert_ids: body.expert_ids.unwrap_or_default(),
@@ -178,11 +201,22 @@ async fn create_session(
 
     {
         let mut sessions = state.sessions.lock();
-        sessions.insert(session_id.clone(), session.clone());
-        save_sessions(&sessions);
+        let previous = sessions.insert(session_id.clone(), session.clone());
+        if let Err(response) = save_sessions(&mut sessions, &session_id, previous) {
+            return response;
+        }
     }
 
-    emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("session.create".into()), "session", &session_id, AuditOutcome::Success, Some(&format!("type={}", session.session_type)));
+    emit_audit(
+        &state,
+        &actor_from_opt_user(&user),
+        tenant.as_str(),
+        AuditAction::Unknown("session.create".into()),
+        "session",
+        &session_id,
+        AuditOutcome::Success,
+        Some(&format!("type={}", session.session_type)),
+    );
 
     ok(json!(session))
 }
@@ -206,6 +240,7 @@ async fn list_sessions(
     let sessions = state.sessions.lock();
     let mut filtered: Vec<&ExpertSession> = sessions
         .values()
+        .filter(|session| session.tenant_id == tenant)
         .filter(|s| {
             if let Some(st) = filter_status {
                 if s.status != st {
@@ -270,7 +305,7 @@ async fn session_stats(
     let now_str = now_iso();
     let today = date_part(&now_str);
 
-    let total_sessions = sessions.len();
+    let total_sessions = sessions.values().filter(|session| session.tenant_id == tenant).count();
     let mut active_sessions = 0u64;
     let mut archived_sessions = 0u64;
     let mut closed_sessions = 0u64;
@@ -281,12 +316,12 @@ async fn session_stats(
     let mut expert_counts: HashMap<String, u64> = HashMap::new();
     let mut type_dist: HashMap<String, u64> = HashMap::new();
 
-    for s in sessions.values() {
+    for s in sessions.values().filter(|session| session.tenant_id == tenant) {
         match s.status.as_str() {
             "active" => active_sessions += 1,
             "archived" => archived_sessions += 1,
             "closed" => closed_sessions += 1,
-            _ => {}
+            _ => {},
         }
         total_messages += s.messages.len() as u64;
 
@@ -310,16 +345,9 @@ async fn session_stats(
         *type_dist.entry(s.session_type.clone()).or_insert(0) += 1;
     }
 
-    let avg_messages = if total_sessions > 0 {
-        total_messages as f64 / total_sessions as f64
-    } else {
-        0.0
-    };
-    let avg_duration = if duration_count > 0 {
-        duration_sum / duration_count as f64
-    } else {
-        0.0
-    };
+    let avg_messages =
+        if total_sessions > 0 { total_messages as f64 / total_sessions as f64 } else { 0.0 };
+    let avg_duration = if duration_count > 0 { duration_sum / duration_count as f64 } else { 0.0 };
 
     // top_experts_by_sessions：按计数降序取前 10
     let mut top_experts: Vec<(String, u64)> = expert_counts.into_iter().collect();
@@ -354,7 +382,7 @@ async fn get_session(
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
     let sessions = state.sessions.lock();
-    match sessions.get(&id) {
+    match sessions.get(&id).filter(|session| session.tenant_id == tenant) {
         Some(session) => ok(json!(session)),
         None => err(404, format!("session not found: {id}")),
     }
@@ -372,7 +400,8 @@ async fn update_session(
     let now = now_iso();
     {
         let mut sessions = state.sessions.lock();
-        match sessions.get_mut(&id) {
+        let previous = sessions.get(&id).cloned();
+        match sessions.get_mut(&id).filter(|session| session.tenant_id == tenant) {
             Some(session) => {
                 if let Some(title) = body.title {
                     session.title = title;
@@ -393,9 +422,11 @@ async fn update_session(
                 }
                 session.last_active_at = now.clone();
                 let response = ok(json!(session.clone()));
-                save_sessions(&sessions);
+                if let Err(response) = save_sessions(&mut sessions, &id, previous) {
+                    return response;
+                }
                 response
-            }
+            },
             None => err(404, format!("session not found: {id}")),
         }
     }
@@ -412,9 +443,23 @@ async fn delete_session(
 ) -> ApiResponse<Value> {
     {
         let mut sessions = state.sessions.lock();
-        if sessions.remove(&id).is_some() {
-            save_sessions(&sessions);
-            emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("session.delete".into()), "session", &id, AuditOutcome::Success, None);
+        if !sessions.get(&id).is_some_and(|session| session.tenant_id == tenant) {
+            return err(404, format!("session not found: {id}"));
+        }
+        if let Some(previous) = sessions.remove(&id) {
+            if let Err(response) = save_sessions(&mut sessions, &id, Some(previous)) {
+                return response;
+            }
+            emit_audit(
+                &state,
+                &actor_from_opt_user(&user),
+                tenant.as_str(),
+                AuditAction::Unknown("session.delete".into()),
+                "session",
+                &id,
+                AuditOutcome::Success,
+                None,
+            );
             return ok(json!({
                 "deleted": true,
                 "session_id": id,
@@ -451,14 +496,26 @@ async fn append_message(
 
     {
         let mut sessions = state.sessions.lock();
-        match sessions.get_mut(&id) {
+        let previous = sessions.get(&id).cloned();
+        match sessions.get_mut(&id).filter(|session| session.tenant_id == tenant) {
             Some(session) => {
                 session.messages.push(message.clone());
                 session.last_active_at = now.clone();
-                save_sessions(&sessions);
-                emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("session.append_message".into()), "session", &id, AuditOutcome::Success, Some(&format!("msg_id={}", msg_id)));
+                if let Err(response) = save_sessions(&mut sessions, &id, previous) {
+                    return response;
+                }
+                emit_audit(
+                    &state,
+                    &actor_from_opt_user(&user),
+                    tenant.as_str(),
+                    AuditAction::Unknown("session.append_message".into()),
+                    "session",
+                    &id,
+                    AuditOutcome::Success,
+                    Some(&format!("msg_id={}", msg_id)),
+                );
                 ok(json!(message))
-            }
+            },
             None => err(404, format!("session not found: {id}")),
         }
     }
@@ -477,7 +534,7 @@ async fn similar_search(
     let min_score = body.min_score.unwrap_or(0.1);
 
     let sessions = state.sessions.lock();
-    let session = match sessions.get(&id) {
+    let session = match sessions.get(&id).filter(|session| session.tenant_id == tenant) {
         Some(s) => s,
         None => return err(404, format!("session not found: {id}")),
     };
@@ -533,7 +590,7 @@ async fn semantic_search(
     let mut total_messages_scanned = 0u64;
     let mut scored: Vec<(String, String, &SessionMessage, f64)> = Vec::new();
 
-    for session in sessions.values() {
+    for session in sessions.values().filter(|session| session.tenant_id == tenant) {
         // 会话级过滤
         if let Some(t) = filter_type {
             if session.session_type != t {
@@ -588,7 +645,7 @@ async fn export_session(
     Path(id): Path<String>,
 ) -> ApiResponse<Value> {
     let sessions = state.sessions.lock();
-    let session = match sessions.get(&id) {
+    let session = match sessions.get(&id).filter(|session| session.tenant_id == tenant) {
         Some(s) => s,
         None => return err(404, format!("session not found: {id}")),
     };
@@ -618,21 +675,33 @@ async fn archive_session(
     let now = now_iso();
     {
         let mut sessions = state.sessions.lock();
-        match sessions.get_mut(&id) {
+        let previous = sessions.get(&id).cloned();
+        match sessions.get_mut(&id).filter(|session| session.tenant_id == tenant) {
             Some(session) => {
                 session.status = "archived".into();
                 session.archived_at = Some(now.clone());
                 session.last_active_at = now.clone();
                 let message_count = session.messages.len();
-                save_sessions(&sessions);
-                emit_audit(&state, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("session.archive".into()), "session", &id, AuditOutcome::Success, Some(&format!("message_count={}", message_count)));
+                if let Err(response) = save_sessions(&mut sessions, &id, previous) {
+                    return response;
+                }
+                emit_audit(
+                    &state,
+                    &actor_from_opt_user(&user),
+                    tenant.as_str(),
+                    AuditAction::Unknown("session.archive".into()),
+                    "session",
+                    &id,
+                    AuditOutcome::Success,
+                    Some(&format!("message_count={}", message_count)),
+                );
                 ok(json!({
                     "session_id": id,
                     "status": "archived",
                     "archived_at": now,
                     "message_count": message_count,
                 }))
-            }
+            },
             None => err(404, format!("session not found: {id}")),
         }
     }
@@ -645,10 +714,7 @@ async fn archive_session(
 pub fn build_experts_session_router(state: Arc<ExpertsSharedState>) -> Router {
     Router::new()
         // 创建 + 列表（同路径不同方法，合并 MethodRouter）
-        .route(
-            "/api/experts/sessions",
-            post(create_session).get(list_sessions),
-        )
+        .route("/api/experts/sessions", post(create_session).get(list_sessions))
         // 统计（必须在 /:id 之前注册，避免 stats 被捕获为路径参数）
         .route("/api/experts/sessions/stats", get(session_stats))
         // 详情 + 更新 + 删除（同路径不同方法）
@@ -697,6 +763,7 @@ mod tests {
     fn make_session(id: &str, title: &str) -> ExpertSession {
         let now = now_iso();
         ExpertSession {
+            tenant_id: DEFAULT_TENANT.into(),
             id: id.into(),
             title: title.into(),
             expert_ids: vec!["exp-001".into()],
@@ -726,7 +793,13 @@ mod tests {
             tags: Some(vec!["rust".into(), "architecture".into()]),
             metadata: None,
         };
-        let resp = create_session(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Json(body)).await;
+        let resp = create_session(
+            State(state.clone()),
+            TenantId("default".into()),
+            OptionalAuthUser(None),
+            Json(body),
+        )
+        .await;
         let data = resp.data.unwrap();
         assert_eq!(data["status"], "active");
         assert_eq!(data["title"], " Rust 架构咨询");
@@ -744,13 +817,23 @@ mod tests {
         let session = make_session("sess-get-001", "获取测试");
         state.sessions.lock().insert("sess-get-001".into(), session);
 
-        let resp = get_session(State(state.clone()), TenantId("default".into()), Path("sess-get-001".into())).await;
+        let resp = get_session(
+            State(state.clone()),
+            TenantId("default".into()),
+            Path("sess-get-001".into()),
+        )
+        .await;
         let data = resp.data.unwrap();
         assert_eq!(data["id"], "sess-get-001");
         assert_eq!(data["title"], "获取测试");
 
         // 不存在返回 404
-        let resp404 = get_session(State(state.clone()), TenantId("default".into()), Path("nonexistent".into())).await;
+        let resp404 = get_session(
+            State(state.clone()),
+            TenantId("default".into()),
+            Path("nonexistent".into()),
+        )
+        .await;
         assert_eq!(resp404.code, 404);
     }
 
@@ -769,7 +852,8 @@ mod tests {
         let mut params = HashMap::new();
         params.insert("page".into(), "1".into());
         params.insert("page_size".into(), "2".into());
-        let resp = list_sessions(State(state.clone()), TenantId("default".into()), Query(params)).await;
+        let resp =
+            list_sessions(State(state.clone()), TenantId("default".into()), Query(params)).await;
         let data = resp.data.unwrap();
         assert_eq!(data["total"], 5);
         assert_eq!(data["page"], 1);
@@ -785,7 +869,8 @@ mod tests {
         let mut params2 = HashMap::new();
         params2.insert("page".into(), "3".into());
         params2.insert("page_size".into(), "2".into());
-        let resp2 = list_sessions(State(state.clone()), TenantId("default".into()), Query(params2)).await;
+        let resp2 =
+            list_sessions(State(state.clone()), TenantId("default".into()), Query(params2)).await;
         let data2 = resp2.data.unwrap();
         assert_eq!(data2["sessions"].as_array().unwrap().len(), 1);
     }
@@ -806,7 +891,14 @@ mod tests {
             attachments: None,
             rating: None,
         };
-        let resp = append_message(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Path("sess-msg-001".into()), Json(body)).await;
+        let resp = append_message(
+            State(state.clone()),
+            TenantId("default".into()),
+            OptionalAuthUser(None),
+            Path("sess-msg-001".into()),
+            Json(body),
+        )
+        .await;
         let data = resp.data.unwrap();
         assert_eq!(data["role"], "user");
         assert_eq!(data["content"], "如何设计高可用系统？");
@@ -866,7 +958,13 @@ mod tests {
             top_k: Some(2),
             min_score: Some(0.05),
         };
-        let resp = similar_search(State(state.clone()), TenantId("default".into()), Path("sess-sim-001".into()), Json(body)).await;
+        let resp = similar_search(
+            State(state.clone()),
+            TenantId("default".into()),
+            Path("sess-sim-001".into()),
+            Json(body),
+        )
+        .await;
         let data = resp.data.unwrap();
         assert_eq!(data["session_id"], "sess-sim-001");
         assert_eq!(data["query"], "微服务架构设计");
@@ -885,7 +983,13 @@ mod tests {
         let session = make_session("sess-arch-001", "归档测试");
         state.sessions.lock().insert("sess-arch-001".into(), session);
 
-        let resp = archive_session(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Path("sess-arch-001".into())).await;
+        let resp = archive_session(
+            State(state.clone()),
+            TenantId("default".into()),
+            OptionalAuthUser(None),
+            Path("sess-arch-001".into()),
+        )
+        .await;
         let data = resp.data.unwrap();
         assert_eq!(data["status"], "archived");
         assert_eq!(data["session_id"], "sess-arch-001");
@@ -916,7 +1020,13 @@ mod tests {
                 m
             }),
         };
-        let resp = update_session(State(state.clone()), TenantId("default".into()), Path("sess-upd-001".into()), Json(body)).await;
+        let resp = update_session(
+            State(state.clone()),
+            TenantId("default".into()),
+            Path("sess-upd-001".into()),
+            Json(body),
+        )
+        .await;
         let data = resp.data.unwrap();
         assert_eq!(data["title"], "新标题");
         assert_eq!(data["topic"], "新主题");
@@ -933,7 +1043,13 @@ mod tests {
         state.sessions.lock().insert("sess-del-001".into(), session);
         assert_eq!(state.sessions.lock().len(), 1);
 
-        let resp = delete_session(State(state.clone()), TenantId("default".into()), OptionalAuthUser(None), Path("sess-del-001".into())).await;
+        let resp = delete_session(
+            State(state.clone()),
+            TenantId("default".into()),
+            OptionalAuthUser(None),
+            Path("sess-del-001".into()),
+        )
+        .await;
         let data = resp.data.unwrap();
         assert_eq!(data["deleted"], true);
         assert_eq!(data["session_id"], "sess-del-001");
@@ -947,13 +1063,17 @@ mod tests {
         let mut s1 = make_session("sess-stats-001", "统计1");
         s1.status = "active".into();
         s1.session_type = "single".into();
-        s1.messages = vec![
-            SessionMessage {
-                id: "m1".into(), role: "user".into(), sender_id: "".into(),
-                sender_name: "".into(), content: "msg1".into(), msg_type: "text".into(),
-                attachments: vec![], rating: None, created_at: now_iso(),
-            },
-        ];
+        s1.messages = vec![SessionMessage {
+            id: "m1".into(),
+            role: "user".into(),
+            sender_id: "".into(),
+            sender_name: "".into(),
+            content: "msg1".into(),
+            msg_type: "text".into(),
+            attachments: vec![],
+            rating: None,
+            created_at: now_iso(),
+        }];
         let mut s2 = make_session("sess-stats-002", "统计2");
         s2.status = "archived".into();
         s2.session_type = "multi".into();

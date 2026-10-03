@@ -1,0 +1,48 @@
+§1.8u 前置收据｜有牙筛第三档 driven 在两台的现量＋键级同源的第二口径（对仓内只读）｜生成 2026-10-03 1322 前后
+判据 判决段 md5 eb24d81ae4f7（2316 行）｜姊妹 判决段 md5 64ab3f4c6ef0（1468 行）｜单源 md5 54f35e0e9349
+
+[1] 两台的档位分布（新档不许把旧档的红洗掉，所以两侧都逐站点印）
+   check-api-surface.py：宇宙 13 条｜站点 13 处｜档位 [('inc', 11), ('ret', 2)]｜无牙站点 []
+      inc    FAIL 引用找不到工件                           cmd_ledger:1849｜inc@1851
+      inc    FAIL 工件                                cmd_ledger:1861｜inc@1862
+      inc    INFO 漂移                                cmd_ledger:1899｜inc@1903
+      inc    FAIL 引用不成立                             cmd_ledger:1902｜inc@1903
+      inc    FAIL 文档镜像：方案文档不在                       cmd_ledger:1910｜inc@1911
+      inc    FAIL 散文里的加法不闭合                         cmd_ledger:1921｜inc@1922
+      inc    FAIL --write 需要文档里已有成对标记（先手工放两个标记行，别让脚本决定插在哪） cmd_ledger:1931｜inc@1932
+      inc    FAIL --write 被拒：块外逐行核验没过 ⇒ 一个字也没落盘     cmd_ledger:1943｜inc@1953
+      inc    FAIL --write 回读不一致（盘上字节与内存图像不同：        cmd_ledger:1951｜inc@1953
+      inc    FAIL 文档镜像：托管块标记缺失（跑 --ledger --write 之前先在文档里放好两个标记行） cmd_ledger:1961｜inc@1962
+      inc    FAIL 文档镜像：托管块与现渲染不一致（行数                cmd_ledger:1970｜inc@1975
+      ret    FAIL 块外前段被改动（第                         audit_len_guard:1988｜guarded 返回值在 1942 行被累加
+      ret    FAIL 块外后段被改动（前                         audit_len_guard:1990｜guarded 返回值在 1942 行被累加
+   check-doc-formulas.py：宇宙 2 条｜站点 2 处｜档位 [('driven', 2)]｜无牙站点 []
+      driven FAIL 主张不闭合                             cmd_census:379｜循环集合 agg 同名出现在本函数 return（cmd_census）
+      driven FAIL                                   cmd_census:385｜循环集合 out/outside_verdict 同名出现在本函数 return（cmd_census）
+
+[2] driven 是弱判据：它只证「循环集合的最左名字同名出现在 return 里」。键级同源另量一遍
+   `agg["violations"] +=` 的站点 [141]（循环链 [[137]]）
+   `agg["details"].append` 的站点 [153]（循环链 [[137, 152]]）
+   共处至少一个 `for`（宿主循环行号）的配对：[(141, 153, [137])]
+   退出码那行 [397]：return 1 if (agg["violations"] or outside_verdict(out)) else 0
+   结论的强度到此为止：名字级同源由本尺判（driven），键级同源由上面这对行号判（一次性现量，**没进常驻判据**——它要读两台的构造处，接进 selftest 等于让普查器依赖另一台的内部写法）
+
+[3] 这一档的牙（两枚对照，全在内存图像）
+   撤退出码（`return 0`）：锚点命中 1 次｜图像确变＝True｜driven 退成 blind ['FAIL', 'FAIL 主张不闭合']
+   撤循环（驱动集合换成空表）：锚点命中 1 次｜图像确变＝True｜档位 [('FAIL', 'blind'), ('FAIL 主张不闭合', 'driven')]
+   两枚的分工：前者证「牙在退出码那一行」，后者证「牙在驱动集合那一行」；只看前者会把「循环本身没跑」当成有牙——空 `for` 里那条 print 在撤循环后仍该被点名
+   本尺盲区仍在：空表驱动的那条 print 落到哪一档由 return 名字判，若 return 不再引用同名才显形（撤循环那行的现量见上面档位）
+
+[4] 常驻状态（两条只读命令现跑，读数按日期冻结在本文，正文不复述）
+   api --selftest     rc 0｜SELFTEST 总 74 例，FAIL 0 例
+      PASS 夹具N·边界 第三档 `driven`（循环集合的名字同名出现在退出码里）在本仪器一处都不许出现——它的红全部住在累加器或返值通道上；这一档在本侧点火＝有人把红改成只靠同名退出码撑着  本仪器 driven 站点 []
+      PASS 夹具N·丙 姊妹仪器源码必须读得到（读不到不是「那边没有红」）  路径 scripts/gate/check-doc-formulas.py｜已读
+      PASS 夹具N·丙 姊妹仪器那几条 print 形态的红必须全落在 inc／ret／driven 三档之内，一条都不许留在 blind（「循环集合驱动退出码」这一型自本轮起有档位，不再靠收据登记）  print 形态站点 2 配宇宙 2｜档位 ['driven'
+      PASS 变异体34 把姊妹仪器那句退出码撤成 `return 0` ⇒ driven 的两条必须立刻退成 blind（这一档的牙真长在退出码那一行上，而不是换了个名字的豁免桶）  锚点命中 1 次｜撤后 blind ['FAIL', 'FAIL 主张不闭合']｜
+      本仪器新增格数＝4（边界 1＋姊妹 2＋变异体34 1），例数 74 条、FAIL 0 条
+   api --ledger       rc 0｜LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+   sister --selftest  rc 0｜SELFTEST 总 63 例，FAIL 0 例
+
+[5] 判定
+   两台各自的站点数等于宇宙、且无牙名单皆空＝True｜driven 两枚对照各只撤一条通道即退成 blind／点名＝True
+   键级同源（violations 与 details 同住一个循环）现量到 1 对，登记为一次性证据、未进常驻判据

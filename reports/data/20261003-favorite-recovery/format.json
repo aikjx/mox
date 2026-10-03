@@ -1,0 +1,17 @@
+{
+  "command": [
+    "rustfmt",
+    "--edition",
+    "2021",
+    "--config",
+    "skip_children=true",
+    "--check",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/favorite_repository.rs",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_ext.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/favorite_transactions.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/tenant_expert_isolation.rs"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "format.log"
+}

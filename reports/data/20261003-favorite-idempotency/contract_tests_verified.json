@@ -1,0 +1,18 @@
+{
+  "command": [
+    "npm.cmd",
+    "--prefix",
+    "frontend-ui",
+    "exec",
+    "--",
+    "vitest",
+    "run",
+    "--config",
+    "frontend-ui/vite.config.js",
+    "frontend-ui/src/modules/expert-alliance/contract/contract.test.js",
+    "frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "contract_tests_verified.log"
+}

@@ -1,0 +1,19 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--check",
+    "--",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/mod.rs",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_ext.rs",
+    "platform/gateway/mox-platform-gateway-svc/tests/tenant_expert_isolation.rs",
+    "frontend-ui/src/modules/expert-alliance/contract/contract.test.js",
+    "docs/expert-alliance/22-expert-object-contract.md",
+    "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+    "docs/expert-alliance/INDEX.md",
+    "docs/expert-alliance/16-decision-and-state-ledger.md"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "diff.log"
+}

@@ -488,12 +488,12 @@ describe('出参面双向对齐', () => {
     }
   })
 
-  it('列表项是投影后的视图：13 个键、含 message_count、不含 messages', () => {
+  it('列表项是投影后的视图：14 个键、含可信租户与 message_count、不含 messages', () => {
     const view = rustFn('fn session_to_list_view(')
     const face = [...jsonFaces(view)].sort()
     expect(face).toEqual([
       'archived_at', 'created_at', 'expert_ids', 'id', 'last_active_at', 'message_count', 'metadata',
-      'session_type', 'status', 'tags', 'title', 'topic', 'user_id'
+      'session_type', 'status', 'tags', 'tenant_id', 'title', 'topic', 'user_id'
     ])
     expect(face).not.toContain('messages')
     expect(LIST_RS).toMatch(/\.map\(session_to_list_view\)/)
@@ -507,7 +507,8 @@ describe('出参面双向对齐', () => {
 
   it('ExpertSession 与 SessionMessage 的字段面全被读到，一个都没漏', () => {
     const sFace = fieldNames(SESSION_MODEL_RS)
-    expect(sFace.length).toBe(13)
+    expect(sFace.length).toBe(14)
+    expect(normSession({ tenant_id: 'tenant-a' }).tenantId).toBe('tenant-a')
     const sSrc = normFn('normSession')
     for (const key of sFace) expect(readsKey(sSrc, key), `normSession 丢了会话字段 ${key}`).toBe(true)
     for (const key of snakeReads(sSrc)) expect(SESSION_MODEL_RS + '\n' + SESSION_RS).toContain(`"${key}"`)

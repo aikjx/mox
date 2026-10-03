@@ -57,7 +57,7 @@ export const ORCH_EXECUTE_FAILED_KEYS = Object.freeze([
 ])
 
 /** execute 的 steps_executed[] 键（:494-500） */
-export const ORCH_EXECUTED_STEP_KEYS = Object.freeze(['step_id', 'name', 'status', 'result', 'duration_ms'])
+export const ORCH_EXECUTED_STEP_KEYS = Object.freeze(['step_id', 'name', 'status', 'duration_ms', 'result'])
 
 /** GET /api/experts/orchestration/stats 响应键（:820-835） */
 export const ORCH_STATS_KEYS = Object.freeze([
@@ -80,84 +80,80 @@ export const ORCH_RECORD_KEYS = Object.freeze([
 
 /**
  * 后端写死、不是算出来的常量。每条给出位置与源文件里的字面量，
- * 契约测试逐条断言字面量仍在原处——后端哪天换成真实实现，本表会先红，界面文案随之收。
+ * 契约测试逐条断言字面量仍在原处——后端哪天换实现，本表会先红，界面文案随之收。
+ * 2026-10-02 去幻影化后：步骤内容改为真实模型咨询（不再是 simulate_step_execution 的写死文案，
+ * confidence 也不再恒 0.85）；本表只保留当前源码里仍真实存在的硬编码字面量。
  */
 export const ORCH_SIMULATED = Object.freeze([
   {
-    id: 'step_result_confidence',
-    at: 'experts_orchestration.rs:271',
-    literal: '"confidence": 0.85',
-    field: 'result.confidence（每一步）',
-    text: '每一步的置信度恒为 0.85：它不来自任何评分过程'
+    id: 'step_initial_pending',
+    at: 'experts_orchestration.rs:187',
+    literal: 'status: "pending".to_string(),',
+    field: 'plan.steps[].status 初值',
+    text: '新生成的步骤一律 pending，与任务内容无关'
   },
   {
-    id: 'step_result_expert',
-    at: 'experts_orchestration.rs:488',
-    literal: 'simulate_step_execution(step, &[])',
-    field: 'result.expert（每一步）',
-    text: '执行器把专家表传成空数组，所以步骤结果里的 expert 永远是 null——即便计划本身选了专家'
-  },
-  {
-    id: 'step_duration',
-    at: 'experts_orchestration.rs:493',
-    literal: 'let duration_ms = 10 + (completed_count as u64) * 5;',
-    field: 'steps_executed[].duration_ms',
-    text: '步骤耗时是 10+5×序号 算出来的序号函数，与工作量无关；只有顶层 duration_ms 是真实计时'
-  },
-  {
-    id: 'step_status',
-    at: 'experts_orchestration.rs:497',
-    literal: '"status": "completed",',
-    field: 'steps_executed[].status',
-    text: '每个步骤都无条件记为 completed：模拟执行没有失败分支，所以"全部完成"不含信息量'
-  },
-  {
-    id: 'orchestrate_execution_status',
-    at: 'experts_orchestration.rs:659',
-    literal: '"status": "completed",',
-    field: 'execution.status',
-    text: 'orchestrate 的 execution.status 是字面量：该 handler 丢弃了 execute_plan 的返回值状态（:607 之后没读 status），成环失败也会显示 completed'
-  },
-  {
-    id: 'orchestrate_record_status',
-    at: 'experts_orchestration.rs:621',
-    literal: 'status: "completed".to_string()',
-    field: 'history 行的 status（经 orchestrate 写入时）',
-    text: 'orchestrate 写进历史的 status 也是字面量 completed，因此历史里来自本面的行没有 failed'
+    id: 'plan_init_draft',
+    at: 'experts_orchestration.rs:204',
+    literal: 'status: "draft".to_string(),',
+    field: 'plan.status 初值',
+    text: '新生成的计划一律 draft'
   },
   {
     id: 'plan_generate_status',
-    at: 'experts_orchestration.rs:727',
+    at: 'experts_orchestration.rs:718',
     literal: '"status": "draft",',
-    field: 'plan.status（plan/generate）',
-    text: '新生成的计划一律记 draft，与内容无关'
-  },
-  {
-    id: 'step_findings',
-    at: 'experts_orchestration.rs:230',
-    literal: 'let (summary, key_findings) = match step.step_type.as_str() {',
-    field: 'result.summary / result.key_findings',
-    text: '步骤正文是按 step_type 查表得到的固定中文文案（intake/research/analysis/consult/review/synthesize/validate 七类 + 兜底），没有模型调用'
+    field: 'plan/generate 响应 status',
+    text: 'plan/generate 响应里 status 字面 draft'
   },
   {
     id: 'step_list',
-    at: 'experts_orchestration.rs:101',
+    at: 'experts_orchestration.rs:102',
     literal: 'match task_type {',
-    field: 'plan.steps[].name / description / step_type / depends_on',
+    field: 'plan.steps[].name / description / step_type',
     text: '步骤清单本身也是查表：四张专用表 + 一张兜底表（research/consulting/development/analysis），任务写什么都不改变步数与顺序'
+  },
+  {
+    id: 'evidence_kind',
+    at: 'experts_orchestration.rs:471',
+    literal: '"evidence_kind": "model_response"',
+    field: 'execute.evidence_kind',
+    text: '标记产出来自真实模型咨询——去幻影化后步骤正文是真的，不是写死文案表'
+  },
+  {
+    id: 'default_task_type',
+    at: 'experts_orchestration.rs:527',
+    literal: 'unwrap_or_else(|| "general".into())',
+    field: 'task_type 缺省',
+    text: 'orchestrate 未带 task_type 时后端填 general'
+  },
+  {
+    id: 'default_fusion',
+    at: 'experts_orchestration.rs:528',
+    literal: 'unwrap_or_else(|| "weighted".into())',
+    field: 'fusion_strategy 缺省',
+    text: 'orchestrate 未带 fusion_strategy 时后端填 weighted'
+  },
+  {
+    id: 'match_score_floor',
+    at: 'experts_orchestration.rs:538',
+    literal: '*s > 0.2',
+    field: '候选专家过滤门槛',
+    text: '匹配分低于 0.2 的候选被 filter 掉'
   }
 ])
 
 /**
  * 恒为 0 的统计项：不是"暂时没有"，而是**没有任何代码路径能写出这个值**。
- * plan.status 全文只被赋三次：draft（:203 生成时）、running（:469 执行开始）、completed（:511 全部完成）。
- * 环检测失败分支（:452-463）直接 return，不改 plan.status，所以 plans_failed 也永远读不到值。
+ * 去幻影化后 plan.status 写入路径为：draft（:204 生成）、running（:409/:740 执行开始）、
+ * 终态 failed/completed/partial（:457-464 按 error 与是否全完成三选一）。
+ * 因此 plans_failed 已有写入路径（stats :821 真计数），不再恒 0；只剩 plans_ready 无人写。
  */
-export const ORCH_ZERO_COUNTERS = Object.freeze(['plans_ready', 'plans_failed'])
+export const ORCH_ZERO_COUNTERS = Object.freeze(['plans_ready'])
 
 export function orchZeroCounterNote(key) {
   if (!ORCH_ZERO_COUNTERS.includes(key)) return ''
-  return `${key} 恒为 0：后端从未把 plan.status 写成该值（只有 draft/running/completed 三处赋值，:203/:469/:511），这条 0 不是"没有失败"，是"没有能记录失败的代码"`
+  return `${key} 恒为 0：后端从未把 plan.status 写成该值（只有 draft/running/failed/completed/partial 五个写入路径），这条 0 不是"没有"，是"没有能记录它的代码"`
 }
 
 /** 历史侧的反证：plans_failed 恒 0，但经 plan/execute 的历史行 status 可以是 failed（:750 读 overall_status） */
@@ -367,9 +363,9 @@ export function orchRunDisclaimer() {
   return '本次编排的依赖排序与选人来自真实注册表（Kahn 拓扑 + compute_match_score），但每个步骤的正文、置信度与耗时由后端模拟生成（experts_orchestration.rs:221-274,493）——可以当作流程演练，不能当作专家结论'
 }
 
-/** 数据易失性提示：plans 与 orchestration_history 都是进程内 HashMap/Vec，没有 save_*（experts_common.rs:468/:470） */
+/** D4 落盘后：plans/orchestration_history 仍以进程内内存态为权威，但写后立即投影 SQLite（best-effort），重启可从库里恢复 */
 export function orchVolatileNote() {
-  return '计划表与执行历史都在网关进程内（plans :468 / orchestration_history :470，二者均无落库路径），重启即归零；这里不是"计划库"，也不代表累计历史'
+  return '计划表与执行历史以网关进程内内存态为权威（plans / orchestration_history），D4 起写后立即投影 SQLite（upsert_plan / insert_history_record），崩溃可恢复；持久化失败仅记日志不阻断业务'
 }
 
 /**

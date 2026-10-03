@@ -1,0 +1,18 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "session_tenant_isolation",
+    "--test",
+    "experts_db_persistence",
+    "--",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "tenant_green.log"
+}

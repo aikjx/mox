@@ -1,10 +1,13 @@
 // 专家广场状态：列表/筛选/收藏/预约/即时咨询的唯一持有者。
 // 视图只读绑定 + 只发意图；所有后端错误经 error 单点冒泡，不在 api 层吞掉。
 import { defineStore } from 'pinia'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { useAuthStore } from '@/stores'
 import { allianceApi } from '@/modules/expert-alliance/api'
 import { BOOKING_STATUS, expertDisplayName, expertNameOr, isConsultable } from '@/modules/expert-alliance/contract'
 import { deleteResultText, expertDraftProblem, expertFormDraft, expertPatch } from '@/modules/expert-alliance/contract'
+import { createFavoriteRequest, favoriteRejectionIsDefinitive } from '@/modules/expert-alliance/contract'
+import { favoriteJournalScope, readFavoriteJournal, writeFavoriteJournal } from '@/modules/expert-alliance/contract'
 
 const EMPTY_FILTERS = () => ({ search: '', domain: '', skill: '', status: '', expertType: '', sort: '' })
 // 分页由 store 单独管（page/pageSize），可被筛选覆盖的只有后端认识的这几个字段
@@ -12,6 +15,31 @@ export const EXPERT_FILTER_KEYS = Object.freeze(Object.keys(EMPTY_FILTERS()))
 
 export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
   const api = allianceApi
+  const auth = useAuthStore()
+  const favoriteAttempts = new Map()
+  let favoriteEpoch = 0
+  let listSequence = 0
+  let favoriteVersion = 0
+  let journalScope = null
+  let journalError = ''
+
+  function restoreFavoriteAttempts() {
+    journalScope = null
+    journalError = ''
+    favoriteAttempts.clear()
+    if (!auth.accessToken) return
+    try {
+      journalScope = favoriteJournalScope(auth.userInfo)
+      for (const [id, attempt] of readFavoriteJournal(globalThis.sessionStorage, journalScope)) favoriteAttempts.set(id, attempt)
+    } catch (e) { journalError = e?.message || '待确认收藏记录不可读取' }
+  }
+
+  function persistFavoriteAttempts() {
+    if (journalError) throw new Error(journalError)
+    if (!journalScope) throw new Error('收藏操作需要完整的用户和租户身份')
+    writeFavoriteJournal(globalThis.sessionStorage, journalScope, favoriteAttempts)
+  }
+  restoreFavoriteAttempts()
 
   const experts = ref([])
   const total = ref(0)
@@ -19,10 +47,9 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
   const pageSize = ref(24)
   const filters = reactive(EMPTY_FILTERS())
 
-  // 后端只有 POST /api/experts/:id/favorite（切换语义），没有收藏读接口，
-  // 因此收藏态是「本次会话内」的本地投影，绝不伪造初始值。
+  // 当前页投影来自 SQLite 批量快照；待确认请求沿用同一幂等键恢复。
   const favorites = ref(new Set())
-  const favoriteSessionOnly = true
+  const favoriteSessionOnly = false
 
   const bookings = ref([])
   const bookingCounts = reactive({ pending: 0, confirmed: 0, completed: 0, cancelled: 0 })
@@ -40,6 +67,22 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
   const loading = reactive({ list: false, bookings: false, action: false, stats: false, capabilities: false, metrics: false, match: false })
   const error = reactive({ list: '', bookings: '', action: '', stats: '', capabilities: '', metrics: '', match: '' })
   const notice = ref('')
+  watch(() => [auth.accessToken, auth.userInfo?.id, auth.userInfo?.tenant_id], (current, previous) => {
+    const samePrincipal = current[0] && previous[0] && current[1] && current[1] === previous[1] && current[2] === previous[2]
+    favoriteEpoch++
+    listSequence++
+    if (!samePrincipal) {
+      // Keep the old principal's uncertain journal isolated; never replay it as the new user.
+      restoreFavoriteAttempts()
+      favorites.value = new Set()
+      experts.value = []
+      total.value = 0
+    }
+    loading.list = false
+    loading.action = false
+    error.action = ''
+    notice.value = ''
+  }, { flush: 'sync' })
 
   const onlineCount = computed(() => experts.value.filter((e) => isConsultable(e.availability.status)).length)
   const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
@@ -82,19 +125,43 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
   }
 
   async function loadExperts() {
+    const sequence = ++listSequence
+    const epoch = favoriteEpoch
+    const current = () => sequence === listSequence && epoch === favoriteEpoch
     loading.list = true
     error.list = ''
     try {
       const res = await api.listExperts({ ...filters, page: page.value, pageSize: pageSize.value })
+      if (!current()) return
+      await recoverFavorites(current)
+      if (!current()) return
+      const version = favoriteVersion
+      const states = await api.readFavorites(res.items.map(e => e.id))
+      if (!current()) return
+      if (version !== favoriteVersion || loading.action) throw new Error('收藏状态正在更新，请稍后刷新')
+      favorites.value = new Set(states.filter(e => e.favorite).map(e => e.expertId))
       experts.value = res.items
       total.value = res.total
       page.value = res.page
     } catch (e) {
+      if (!current()) return
       error.list = e?.msg || e?.message || '专家列表获取失败'
       experts.value = []
       total.value = 0
     } finally {
-      loading.list = false
+      if (current()) loading.list = false
+    }
+  }
+
+  async function recoverFavorites(current = () => true) {
+    if (journalError) throw new Error(journalError)
+    // Do not race recovery against a user-initiated write.
+    if (loading.action) throw new Error('收藏请求正在处理，请稍后刷新')
+    for (const attempt of [...favoriteAttempts.values()]) {
+      if (!current()) return
+      const receipt = await toggleFavorite({ id: attempt.expertId })
+      if (!current()) return
+      if (!receipt) throw new Error(error.action || '待确认收藏请求恢复失败')
     }
   }
 
@@ -203,26 +270,54 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
   }
 
   /** 写操作单点执行：成功可选回填提示，失败写入 error.action 并返回 null */
-  async function run(fn, successMessage = '') {
+  async function run(fn, successMessage = '', isCurrent = () => true) {
     loading.action = true
     error.action = ''
     notice.value = ''
     try {
       const result = await fn()
+      if (!isCurrent()) return null
       notice.value = successMessage
       return result
     } catch (e) {
+      if (!isCurrent()) return null
       error.action = e?.msg || e?.message || '操作失败'
       return null
     } finally {
-      loading.action = false
+      if (isCurrent()) loading.action = false
     }
   }
 
   async function toggleFavorite(expert) {
     if (!expert?.id) return null
-    const res = await run(() => api.toggleFavorite(expert.id))
-    if (!res) return null
+    if (loading.action) return null
+    favoriteVersion++
+    const epoch = favoriteEpoch
+    const isCurrent = () => epoch === favoriteEpoch
+    const res = await run(async () => {
+      const attempt = favoriteAttempts.get(expert.id) || createFavoriteRequest(expert.id)
+      favoriteAttempts.set(expert.id, attempt)
+      persistFavoriteAttempts()
+      try {
+        const receipt = await api.toggleFavorite(attempt.expertId, { idempotencyKey: attempt.key })
+        if (isCurrent()) {
+          favoriteAttempts.delete(expert.id)
+          try { persistFavoriteAttempts() } catch (e) { favoriteAttempts.set(expert.id, attempt); throw e }
+        }
+        return receipt
+      } catch (e) {
+        if (isCurrent() && favoriteRejectionIsDefinitive(e)) {
+          favoriteAttempts.delete(expert.id)
+          try { persistFavoriteAttempts() } catch (failure) { favoriteAttempts.set(expert.id, attempt); throw failure }
+        }
+        throw e
+      }
+    }, '', isCurrent)
+    favoriteVersion++
+    if (!res) {
+      if (isCurrent() && favoriteAttempts.has(expert.id)) error.action += '；再次点击或刷新页面将沿用原请求恢复确认'
+      return null
+    }
     // 以服务端返回为准，本地 Set 只做镜像
     const set = new Set(favorites.value)
     if (res.favorite) set.add(res.expertId)
@@ -339,6 +434,34 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
     return res
   }
 
+  // ── T4 SSE 注册表实时面（useAllianceEventStream → 本 store）──────────────
+  // 与编排台同口径：事件帧只是「该重拉了」的防抖提示，绝不本地猜算列表/计数——
+  // 真值永远由 loadExperts/loadStats 真拉回。只按信封形状（带 expert_id＝注册表身份变更：
+  // 注册/停用/改档）判定，不硬编码事件名字面量，避免在 store 里重打契约值域。
+  let registryTimer = null
+
+  /**
+   * 收一帧 T4 业务事件。带 expert_id 的帧意味着注册表现行已变（别处注册/停用/改档），
+   * 防抖 800ms 合并突发帧后真拉列表与统计；不带 expert_id 的帧（Plan* 等）与本页无关，忽略。
+   * 返回是否命中注册表身份帧，便于单测断言「store 因该帧而动」。
+   */
+  function applyRegistryEvent(kind, envelope = {}) {
+    if (!envelope.expert_id) return false
+    if (registryTimer) clearTimeout(registryTimer)
+    registryTimer = setTimeout(() => {
+      registryTimer = null
+      loadExperts()
+      loadStats()
+      // 能力目录只在用户已点开过的前提下才补拉，不替用户起一次他没要的请求
+      if (capabilities.value) loadCapabilities()
+    }, 800)
+    return true
+  }
+
+  function clearRegistryEventTimer() {
+    if (registryTimer) { clearTimeout(registryTimer); registryTimer = null }
+  }
+
   return {
     experts, total, page, pageSize, filters, bookings, bookingCounts, stats,
     capabilities, expertMetrics, expertMatches,
@@ -348,8 +471,9 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
     isFavorite, setFilters, resetFilters, goPage,
     loadExperts, loadBookings, loadStats, loadCapabilities, loadExpertMetrics,
     searchExpertMatches, clearExpertMatches,
-    toggleFavorite, createBooking, cancelBooking,
+    toggleFavorite, recoverFavorites, createBooking, cancelBooking,
     consultNow, openRoom, joinTeam,
-    registerExpert, saveExpert, removeExpert
+    registerExpert, saveExpert, removeExpert,
+    applyRegistryEvent, clearRegistryEventTimer
   }
 })

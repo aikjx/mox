@@ -164,6 +164,50 @@ pub fn check_expert_quota(used: usize, tenant: &str) -> Result<(), ApiResponse<V
     check_expert_quota_with(used, quota_experts_per_tenant(), tenant)
 }
 
+/// 单租户协作计划数默认上限（全维终验 · DAG 计划维度，2026-10-03）。
+///
+/// A1 阶段二时 plans 还是全局扁平内存 HashMap、按租户计数需全表扫描，故当时如实不做；
+/// A2 把 plans 立为 SQLite 唯一真相（`collaboration_plans(tenant_id, plan_id)` + 租户索引），
+/// 计数变 O(index) 真实廉价，本轮补齐第二个真实可测维度。默认 1000 不误伤现有单租户
+/// （单次测试/演示远低于此），线上由 `MOX_ALLIANCE_QUOTA_PLANS_PER_TENANT` 覆盖。
+pub const DEFAULT_QUOTA_PLANS_PER_TENANT: u32 = 1000;
+
+/// 读取单租户协作计划数上限：env 覆盖 → 代码默认（每次 generate/orchestrate 实时读取，env 即时生效）。
+pub fn quota_plans_per_tenant() -> u32 {
+    std::env::var("MOX_ALLIANCE_QUOTA_PLANS_PER_TENANT")
+        .ok()
+        .and_then(|v| v.parse::<u32>().ok())
+        .filter(|n| *n > 0)
+        .unwrap_or(DEFAULT_QUOTA_PLANS_PER_TENANT)
+}
+
+/// 计划配额守卫（纯函数，可单测）：计数口径 = 该租户 `collaboration_plans` 行数。
+///
+/// 超限同样返回 **409 Conflict**（与专家数配额一致语义），`data` 含结构化 quota/used。
+/// 计数由 [`experts_db::count_plans_by_tenant`] 实时查库得到（跨实例即一致）。
+pub fn check_plan_quota_with(used: usize, limit: u32, tenant: &str) -> Result<(), ApiResponse<Value>> {
+    if used >= limit as usize {
+        return Err(ApiResponse {
+            code: 409,
+            msg: format!("租户协作计划数已达上限（quota={limit}, used={used}）"),
+            data: Some(json!({
+                "error": "quota_exceeded",
+                "resource": "plan",
+                "tenant": tenant,
+                "quota": limit,
+                "used": used,
+                "limit": limit,
+            })),
+        });
+    }
+    Ok(())
+}
+
+/// 计划配额守卫（生产入口）：env 取上限后委托纯函数判定。
+pub fn check_plan_quota(used: usize, tenant: &str) -> Result<(), ApiResponse<Value>> {
+    check_plan_quota_with(used, quota_plans_per_tenant(), tenant)
+}
+
 // =====================================================================
 // 一、核心领域模型：ExpertDescriptor（专家描述符）
 // 对齐 docs/expert-alliance/expert-registry-and-protocol.md Schema
@@ -378,6 +422,9 @@ fn default_msg_type() -> String { "text".into() }
 /// 专家会话
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExpertSession {
+    /// Trusted owning tenant; historical unmarked records belong only to default.
+    #[serde(default = "default_session_tenant")]
+    pub tenant_id: String,
     /// 会话唯一 ID
     pub id: String,
     /// 会话标题
@@ -415,6 +462,10 @@ pub struct ExpertSession {
     /// 归档时间
     #[serde(default)]
     pub archived_at: Option<String>,
+}
+
+fn default_session_tenant() -> String {
+    DEFAULT_TENANT.to_string()
 }
 
 fn default_session_type() -> String { "single".into() }
@@ -663,6 +714,8 @@ impl ExpertsSharedState {
         // T4：进程内事件总线。启动即订阅事件日志消费者（仅在 tokio 运行时下 spawn；
         // 同步测试上下文 noop，见 spawn_event_log_consumer）。
         let events = Arc::new(super::experts_events::EventBus::new(128));
+        // v5（全维终验）：webhook 订阅落盘——启动从 SQLite 读回重建内存注册表，重启恢复。
+        events.restore_webhooks_from_db();
         super::experts_events::spawn_event_log_consumer(events.clone());
         // T4 对外出口：webhook 真实 HTTP 派发器（仅在运行时下 spawn；无订阅时空转零开销）
         super::experts_events::spawn_webhook_dispatcher(events.clone());
@@ -1129,12 +1182,12 @@ pub fn err(code: u16, msg: impl Into<String>) -> ApiResponse<Value> {
 
 /// 分页参数解析
 pub fn parse_pagination(params: &HashMap<String, String>) -> (usize, usize) {
-    let page = params.get("page").and_then(|v| v.parse().ok()).unwrap_or(1);
-    let page_size = params.get("page_size").or_else(|| params.get("limit"))
+    let page: usize = params.get("page").and_then(|v| v.parse().ok()).unwrap_or(1);
+    let page_size: usize = params.get("page_size").or_else(|| params.get("limit"))
         .and_then(|v| v.parse().ok()).unwrap_or(20);
     let page = page.max(1);
     let page_size = page_size.clamp(1, 200);
-    ((page - 1) * page_size, page_size)
+    ((page - 1).saturating_mul(page_size), page_size)
 }
 
 // =====================================================================
@@ -1213,6 +1266,26 @@ mod tests {
         assert_eq!(d["tenant"], "tenant-x");
         // 远超限同样 409
         assert!(check_expert_quota_with(99, 2, "tenant-x").is_err());
+    }
+
+    // ── 全维终验：租户协作计划数配额（纯函数阈值，不碰全局 env）──
+
+    /// used < limit 放行；used >= limit 返回 409 且 body 含 quota/used/resource=plan。
+    #[test]
+    fn test_check_plan_quota_with_threshold() {
+        assert!(check_plan_quota_with(0, 1, "tenant-y").is_ok());
+        assert!(check_plan_quota_with(1, 1, "tenant-y").is_ok() == false, "used==limit 应拒绝");
+        // 恰好等于上限 → 拒绝（第 limit+1 个真实 409）
+        let resp = check_plan_quota_with(1, 1, "tenant-y").unwrap_err();
+        assert_eq!(resp.code, 409);
+        let d = resp.data.unwrap();
+        assert_eq!(d["error"], "quota_exceeded");
+        assert_eq!(d["resource"], "plan");
+        assert_eq!(d["quota"], 1);
+        assert_eq!(d["used"], 1);
+        assert_eq!(d["tenant"], "tenant-y");
+        // 远超限同样 409
+        assert!(check_plan_quota_with(999, 1, "tenant-y").is_err());
     }
 
     // ── 企业级审计链路验证 ──────────────────────────────────────

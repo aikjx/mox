@@ -541,3 +541,130 @@ Read 证据：
   不强行起重型 mount 引入脆弱面。
 - 既有 17 个 Rust 锚点漂移失败本轮未修（不修未触及的后端源文件），如实保留。
 
+
+
+---
+
+## 锚点漂移清理（2026-10-02）
+
+### 起因
+上一轮 SSE 挂载后基线为「28 文件 / 667 用例，650 过 / 17 失败」，失败全在 `contract/` 下钉
+Rust 源码文本的锚点测试。本轮目标：把这批因后端真实改动（A1 多租户、D4 落盘、T4 事件，
+以及「模拟执行」整体重写为「真实模型咨询 DAG」）产生的行号/签名/出参键集漂移，逐一对齐到
+**当前真实源码**，只改前端测试断言，不改后端/业务代码、不删测试、不弱化断言语义。
+
+### 进场实况复核（与上轮报告的出入）
+- 本轮进场首跑实况为 **13 失败 / 654 通过**（28 文件 / 667 用例），分布：`orchestration.test.js` 12 +
+  `dispatcher.test.js` 1。
+- 上轮记录的 `contract.test.js` 4 个失败，已随并发未提交改动转绿（本轮复跑 contract.test.js 101 用例全过），
+  无需再动。git 工作树干净（除本任务临时分析脚本），最新提交 `309db3c8`（核心能力文档去幻影化重写）。
+
+### 断言清单（旧钉值 → 当前真实值 → 处理）
+
+| # | 测试文件:断言 | 后端文件:行 | 旧钉值 | 当前真实值 | 处理 |
+|---|---|---|---|---|---|
+| 1 | dispatcher.test.js:542 | experts_registry.rs:893 | `save_registry(&reg)` | `save_registry(tenant.as_str(), reg)`（A1 增租户参） | 正则对齐；捕获窗口 90→140 避免截断在 `save_registry(tenant.` |
+| 2 | orchestration.test.js:152 | experts_orchestration.rs:610/695 | experts 摘要 `[id,name,title]` 命中 3 处 | 只在 orchestrate、plan/generate 两处拼，命中 2 处 | times 3→2 |
+| 3 | orchestration.test.js:160 | :633 | execution 内联包装 `"status":"completed"` 字面量 | `"status": plan.status` | 正则 `"completed"`→`plan\.status` |
+| 4 | orchestration.test.js:169-175 | :468-471 | execute 分「成功 9 键 / 成环失败 8 键」两块，差集 error/completed_at+final_result | 去幻影化后只吐**单一 10 键块**：`[plan_id,execution_id,status,overall_status,steps_executed,steps_total,error,duration_ms,final_result,evidence_kind]`，error/final_result 同为可空 Option | 两块合一，改单块字面量断言；删差集断言 |
+| 5 | orchestration.test.js:190 | :452-453 | `simulate_step_execution` 单步 7 键块 | 单步融合输入 5 键 `[summary,key_findings,confidence,source,evidence_kind]` | 字面量对齐（函数已删） |
+| 6 | orchestration.test.js:232-240 | :409/:457-464/:821 | plan.status `.to_string()` 直赋 completed/running；ready/failed 均无写入路径 | 赋值改 `.into()`，直赋仅 running；终态 failed/completed/partial 走 `if error {...} else if {...} else {...}` 三选一；stats 现真计 plans_failed | 重写断言；`ORCH_ZERO_COUNTERS` 由 `['plans_ready','plans_failed']` 收紧为 `['plans_ready']` |
+| 7 | orchestration.test.js:242-246 | :398/:457 | 成环 `Err(e)=>{return json!{...}}` 独立分支，不写 plan.status | 环错先写 `error`，终态条件把 plan.status 置 failed | 重写为折叠语义断言 |
+| 8 | orchestration.test.js:248-253 | :564/:593 | `execute_plan(&mut plan, None)`；历史行 `status:"completed".to_string()` | `execute_plan(&mut plan, None, &matched_experts).await`；历史行 `status: plan.status.clone()` | 文本对齐 |
+| 9 | orchestration.test.js:296 | :397 | `let execute_set: Option<HashSet<String>> = step_ids.map` | `let selected = step_ids.map(\|ids\| ids.into_iter().collect::<HashSet<_>>())` | 文本对齐（变量改名） |
+| 10 | orchestration.test.js:347-351 | :100-141 | `fn simulate_step_execution` 的 `"type" =>` match 臂（7 类 + `_` 兜底） | step_type 七类散落在 `select_steps_for_task_type` 的 `("type","name","desc")` 元组表首元素 | 改为从元组表提取唯一值排序比对 |
+| 11 | orchestration.test.js:416-422 | experts_db.rs:1068/1122 | `DB_RS not.toMatch(/plan\|orchestr/i)`（两表无落库）；`orchVolatileNote` 含「重启即归零」 | D4 已落盘：`upsert_plan`/`insert_history_record`；内存态仍权威、SQLite 为 best-effort 投影 | 改断言落盘函数存在；note 改 SQLite 口径 |
+| 12 | contract/orchestration.js `ORCH_SIMULATED` | 多处 | 9 条钉 simulate 常量（:271 confidence0.85/:488 expert空数组/:493/:497/:659/:621/:727/:230/:101） | 重建为 8 条真实硬编码字面量（pending:187 / draft init:204 / generate draft:718 / step表:102 / evidence_kind:471 / general:527 / weighted:528 / 0.2 门槛:538） | 整表重建 |
+| 13 | views/AllianceOrchestrationView.vue:236,262 | :175-178 / :839-919 | 模板坐标引用 :174、:920 指向空行 | 端点收窄到非空行 | 坐标修正；同步把视图三条已失真的静态说明（result.expert 恒 null / confidence 恒0.85 / plans_failed 恒0）改为去幻影化后的真口径 |
+
+另：`ORCH_EXECUTED_STEP_KEYS` 键序对齐源码实际顺序（`duration_ms` 在 `result` 前，:446-447）。
+
+### 验证结果
+- `npx vitest run src/modules/expert-alliance`：**Test Files 28 passed (28) / Tests 667 passed (667)，0 失败**。
+- 新增失败 **0**；棘轮（registry-name-outlets 15）、style.test(21)、vocabulary-ownership(19)、contract.test(101)、
+  forbidden-revival / legacy-collab-revival 等门禁随全量复跑仍绿，未触发新失败。
+- 本轮只改前端测试断言与视图说明文案；未改后端 Rust 源码、未改 normalize.js 业务归一化层。
+
+### 留待 / 诚实标注
+- 并发未提交的后端工作（`experts_ext.rs`、`tests/tenant_expert_isolation.rs` 等 A1 租户隔离他人改动）
+  与本批锚点无强耦合，更新断言均基于当前文件真实内容，未依赖未提交工作。
+- `ORCH_EXECUTE_FAILED_KEYS` 常量在测试中断言里不再被引用（保留导出，仍描述 normalize 语义，
+  不删以免跨 normalize.js 业务层改动）；非 lint/门禁失败。
+- 未发现「断言对、代码错」的真实缺陷——漂移全部来自后端真实改动，断言已如实跟进，无糊弄性弱化。
+
+---
+
+## 全维终验（2026-10-03）
+
+- 范围：expert-alliance 前端模块全维终验——逐项核证据、全量 vitest 实跑、优化推进与修复闭环。
+- 基线（本轮进场首跑，实跑）：**28 文件 / 667 用例 100% 全绿，0 失败**，与「锚点漂移清理轮」一致。
+- 本轮未触碰他人并发未提交文件 `contract/contract.test.js`（M）；本轮改动落在 store/experts、views/Experts、新增测试。
+
+### 1. 全维验证清单（逐项证据）
+
+| 功能面 | 验证方式 | 结果 |
+|---|---|---|
+| U1 画布·拖拽移动节点 | `components/GraphCanvas.vue:136-164`（pointerdown/move/up，emit `drag`）；`store/alliance-graph.store.js:347 setNodePosition`→`dragPositions`（:47）；`layout` computed 叠加拖拽覆盖 :62-73；`loadGraph` 清位 :105。证据测试：`components/graph-canvas.test.js`（点节点上抛 select）、`store/alliance-graph.store.test.js`（拖拽覆盖/重取清位） | ✅ |
+| U1 画布·连线 | `GraphCanvas.vue:12` `is-link-source` 高亮、:358 store `canvasClickNode` 态机（无源头→记起点；点同点→取消；点异点→pendingEdge）；`createGraphEdge` :262。证据测试：`graph-canvas.test.js`「连线起点高亮」、store「连线态机」 | ✅ |
+| U1 画布·邻域展开 | `GraphNodeInspector.vue:32`「展开邻域」按钮→`onExpand` :146→`store.expandSelectedNeighborhood` :429（seed=选中节点、maxDepth=2）；`mergeRagResults` :393 幂等并入（按 id 与 source\|target\|edgeType 去重），不调 loadGraph。证据测试：store「展开并入/RAG 幂等」 | ✅ |
+| U1 画布·节点增删 | `GraphNodeInspector.vue:36-37` 编辑/删除（`:35 v-role-any`）→`updateGraphNode` :132/`deleteGraphNode` :142；视图新增节点对话框→`createGraphNode`；store CRUD :229-271。证据测试：store「CRUD 重取」 | ✅ |
+| U2 透明面板·权重 0.05 口径 | `components/MatchExplainPanel.vue:18` 文案「健康度按 **0.05** 加权（非过滤…）」；五维 domain/capability/priority/performance/health :42-46。证据测试：本轮新增 `match-explain-panel.test.js`（0.05 文案、五维条） | ✅ |
+| U2 透明面板·维度条 | `MatchExplainPanel.vue:8-14` 每维 mxe-row 画 value/weight/contrib；挂载点 `views/AllianceExpertsView.vue:129`（`:scores="m.scores"`）；`v-if="scores"` 缺省不渲染 :2 | ✅ |
+| SSE·composable | `composables/useAllianceEventStream.js:7-21`（getToken→Bearer、watch auth 变化→stop、`onScopeDispose` 双保险）；传输契约 `contract/event-stream.js:33 createAllianceEventStream`（AbortController/reader.cancel/releaseLock） | ✅ |
+| SSE·store | `store/alliance-orch.store.js:40 liveEvents`、`:225 applyAllianceEvent`、`:243-250` 带 plan_id 才防抖 800ms 真拉、30 条上限 :241。证据测试：`store/alliance-orch.event.test.js`（5） | ✅ |
+| SSE·视图挂载（编排台） | `views/AllianceOrchestrationView.vue:284` import、:314 use、:322 `onMounted start()`、:325 `onUnmounted stop()`；模板 :18/:25 `v-for="ev in store.liveEvents"` | ✅ |
+| SSE·防泄漏 | onUnmounted stop + composable `onScopeDispose`（useAllianceEventStream.js:19）+ event-stream.js `finally` 里 `reader.cancel()/releaseLock()` :69-76 + watch auth→stop :15-18。证据测试：`contract/event-stream.lifecycle.test.js`（3：真发 fetch Bearer/真帧解析进 onEvent/stop 真 cancel） | ✅ |
+| 按钮权限·v-role-any | 活代码 10 处：`GraphNodeInspector.vue:35`、`AllianceConsoleView.vue:41/228/245`、`AllianceGraphView.vue:14/15/18`、`AllianceExpertsView.vue:11/220/221`；统一 `['super_admin','tenant_admin']`，与路由 requiresRole、后端 ADMIN_ROLES 三端同源 | ✅ |
+| 契约·单向依赖 | contract 生产文件仅内部互引（dispatcher.js:7→graph.js、mode.js:13→enums.js、registry.js:13→graph.js），零反向 import api/store/views；`api/alliance.api.js:3-25` 仅 import contract + http 工厂 + kernel envelope；store 依赖 api+contract+model | ✅ |
+| 契约·双向守卫 | `contract/contract.test.js`（101 用例：端点清单↔docs/API-REGISTRY 双向、禁用端点不复活）；`contract/graph.test.js`（32：GRAPH_NODE_TYPE↔Rust builder 双向钉死）；`contract/dispatcher.test.js`/`orchestration.test.js`/`sessions.test.js`/`mode.test.js`/`registry.test.js` | ✅ |
+| 契约·样式/词汇/棘轮门禁 | `style.test.js`（21：.agc-/.agn-/.agv- 块内、主题令牌、不跨 .vue 复用）；`registry-name-outlets.test.js`（15：裸 `.name` 兜底/模板直出双向台账）；`vocabulary-ownership.test.js`（19：词表所有权、视图不重打契约取值） | ✅ |
+| 视图·编排台/图谱/专家/控制台 | 编排台 `AllianceOrchestrationView.vue`（SSE 实时面板）；图谱 `AllianceGraphView.vue`（重建 :14、编辑模式开关 :15、新增节点 :18）；专家 `AllianceExpertsView.vue`（注册 :11/编辑 :220/停用 :221 + 匹配面板 :129）；控制台 `AllianceConsoleView.vue`（保存调度 :41、单专家重置 :228、全量重置 :245） | ✅ |
+| store/api 方法面 | 6 store（orch/graph/experts/console/sessions/collab）各有 *.store.test.js；`api/alliance.api.js` + `alliance.api.test.js`（58）；`contract/endpoints.js` 端点 key 由 contract.test 101 项对齐 docs/API-REGISTRY | ✅ |
+
+> 说明：6 个终端 view（编排台/图谱/专家/控制台/协作/会话）仍无挂载测试——它们重度依赖 Element Plus + 多 store + auth，硬挂脆弱；本轮以纯呈现组件 `MatchExplainPanel` 的真实 mount 测试补空（见下），完整 view 挂载如实列入留待。
+
+### 2. vitest 全量真实数字（实跑）
+
+- 命令：`npx vitest run src/modules/expert-alliance`
+- **终验结果：Test Files 29 passed (29) / Tests 675 passed (675)，0 失败，exit 0。**
+- 对比基线 28 文件 / 667 用例：新增 1 个测试文件（match-explain-panel.test.js）+ 8 用例（experts store 5 + mount 3）= 675。
+- 失败分析：**0 失败**，无需逐条归因；进场 17 个 Rust 锚点漂移已于上轮「锚点漂移清理」对齐真实源码，本轮复跑仍全绿。
+- 门禁复跑：style(21)、registry-name-outlets(15)、vocabulary-ownership(19)、contract(101) 随全量复跑仍绿，**未新增任何失败**。
+
+### 3. 优化推进项（本轮真实落地）
+
+**a) 专家注册表补挂 SSE（消费 ExpertRegistered/ExpertDisabled）——选它的理由**
+- 编排台已消费 `PlanCreated/PlanStatusChanged`；而 `ExpertRegistered/ExpertDisabled` 帧此前只进编排台事件流面板，**不重拉专家表**——它们的天然消费面是注册表本身。
+- 路由 `/alliance/experts` 已 `requiresRole: ['super_admin','tenant_admin']`（index.js:152），挂流只对管理员，**不会给全体用户开 SSE 连接**。
+- 价值：另一管理员注册/停用/改档专家时，本页自动刷新，免手动「刷新」。
+- 改动：
+  - `store/alliance-experts.store.js`：新增 `applyRegistryEvent(kind, envelope)` / `clearRegistryEventTimer()`。**按信封形状判定**（带 `expert_id`＝注册表身份变更：注册/停用/改档），不硬编码事件名字面量（避免在 store 重打契约值域、不触词汇门禁）；800ms 防抖合并突发帧后真拉 `loadExperts()`+`loadStats()`，仅当 `capabilities.value` 已加载才补拉目录（不替用户起他没要的请求）。与编排台同口径：帧只作「该重拉了」的提示，真值永远真拉回，不本地猜。
+  - `views/AllianceExpertsView.vue`：vue import 补 `onUnmounted`；import `useAllianceEventStream`；setup 顶层建 `eventStream`（onEvent→`store.applyRegistryEvent`，onError 静默）；`onMounted` 末尾 `start()`、新增 `onUnmounted(() => eventStream.stop())`。
+  - 测试：`store/alliance-experts.store.test.js` 新增 describe「T4 SSE 注册表事件帧 → 防抖真拉列表」5 用例（命中真拉 / 突发两帧合并 / 不带 expert_id 的 Plan 帧忽略 / 目录已加载才补拉 / clear 挂起未触发重拉）。
+
+**b) 组件级 mount 测试补 1 个（U2 组件此前零测试）**
+- 新建 `components/match-explain-panel.test.js`（@vue/test-utils 真 mount，3 用例）：
+  1. `scores=null` → 整个 `.mxe-root` 不渲染（降级路径不破坏卡片）；
+  2. 带 scores → 5 个 `.mxe-row`、总分演算行、健康度 0.05 口径文案、五维标签齐全；
+  3. **驱动数据变化时 DOM 跟随重渲染**：`setProps({matchScore:0.923})` → 总分行从 0.500 变 0.923；改 health 维 value 1.0→0.2 → 该行值与贡献同步刷新。
+- 说明：MatchExplainPanel 是纯呈现组件（无 Element Plus、无 store），由 `AllianceExpertsView` 从 `store.expertMatches` 喂 scores；选它是因它最可测、最稳健，不拖入 Element Plus/多 store 的脆弱挂载。完整 view 的 store→DOM 挂载仍如实留待。
+
+**c) 其他低成本高价值：本轮刻意只做 a/b 两项**
+- 未给注册表页新增可见事件流面板：那会引入新模板 + CSS + 词表账，与「实时刷新」的核心价值无关，属过度设计；保持最小可回退。
+
+**d) 体量大项——产方案稿，本轮不硬做（诚实标注）**
+- **画布 DAG 导出为 planner 可执行 JSON + 预演校验**：可在 `model/dag.js` 上加纯函数 `exportDagJson(execution)` + `validateDag(dag)`，再在编排台加「导出/预演」按钮；建议先做纯函数 + 单测（无 UI 依赖），再接 UI。工作量约 1 个独立模块。
+- **minimap / 虚拟滚动 / 分层渲染**：当前 `GraphCanvas` 手写 SVG、节点全量直出；minimap 需第二套 viewBox 缩略视口（加一个 <svg> 缩略层即可，成本中）；虚拟滚动在专家列表（`AllianceExpertsView` 分页已是 24/页，压力不大），优先级低。
+- **G9 三栈归一**：模块内 GraphCanvas（手写 SVG）vs legacy 力导向/echarts 三套并存，归一属跨视图大改，需单独立项，不在终验轮范围。
+
+### 4. 修复清单
+
+- **本轮无真缺陷需修复**：进场基线 28/667 全绿，全量跑无失败；a/b 改动后 29/675 仍全绿，未引入新缺陷。
+- 验证手段：除全量 vitest 外，另用临时 SFC 编译探针（`@vitejs/plugin-vue` 真编译两个改动的视图，跑完即删）确认 `AllianceExpertsView.vue` / `AllianceOrchestrationView.vue` 编译无错——因 6 个 view 无挂载测试，视图 script 改动此前不被测试覆盖，探针补齐这一缺口。
+
+### 5. 留待项及原因
+
+- **控制台 / 图谱视图未挂流**：Expert* 帧本轮已被注册表消费；控制台任务列表挂流（任务状态实时刷新）价值中等、成本与注册表页相当，留待下轮按需；图谱视图重建/邻域是手动触发，挂流收益低。
+- **完整 view 的 store→DOM mount 测试仍缺**：本轮补的是纯呈现组件 MatchExplainPanel；6 个终端 view 依赖 Element Plus + 多 store + auth，挂载脆弱，留待引入全站测试基座后再补。
+- **DAG 导出/预演、minimap、虚拟滚动、G9 三栈归一**：见 §3d 方案稿，本轮不硬做。
+- 本轮改动全部可回退：store 删 `applyRegistryEvent/clearRegistryEventTimer` 两函数与导出、视图删 eventStream 三行接线、删两个新增测试文件即还原。

@@ -21,6 +21,7 @@ pub mod experts_collaboration;
 pub mod experts_db;
 pub mod experts_events;
 pub mod experts_ext;
+pub mod favorite_repository;
 pub mod experts_session;
 pub mod experts_graph;
 pub mod experts_registry;

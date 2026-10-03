@@ -276,11 +276,7 @@ describe('端点清单 ↔ docs/API-REGISTRY.md', () => {
   // 文档欠登记、模块也尚未定性的 Rust 路由：钉成明账，只减不增（挂载或后端删除后连条一起删）。
   const DOC_UNREGISTERED_PENDING = Object.freeze([
     '/api/ai/engine/flow-graph',
-    '/api/alliance/tasks/:id/qa',
-    // T4 webhook CRUD：后端 experts_streams.rs 已真实落地并经 E2E 验证，
-    // 但属运维管理面，本前端模块不挂 UI（接入留给独立运维控制台），暂欠登记。
-    '/api/alliance/events/webhooks',
-    '/api/alliance/events/webhooks/:id'
+    '/api/alliance/tasks/:id/qa'
   ])
 
   it('Rust 侧每条联盟/专家路由都在前端四态账上（挂载/禁用/待办/欠登记）', () => {
@@ -445,10 +441,18 @@ describe('专家域枚举 ↔ experts_common.rs / experts_ext.rs', () => {
     const favorite = EXPERTS_EXT_RS.match(/async fn toggle_expert_favorite\([\s\S]*?\n\}/)?.[0]
     expect(favorite, '收藏 handler 必须存在').toBeTruthy()
     expect(favorite).toContain('u.tenant_id.clone()')
-    expect(favorite).toContain('load_favorites_by_tenant(&tenant)')
-    expect(favorite).toContain('favs.entry(tenant.clone()).or_default()')
-    expect(favorite).toContain('delete_favorite(&tenant, &id)')
-    expect(favorite).toContain('upsert_favorite(&tenant, &id)')
+    expect(favorite).toContain('api_error(404, "expert not found")')
+    expect(favorite).toContain('tokio::task::spawn_blocking')
+    expect(favorite).toContain('favorite_repository::toggle_with_key(')
+    expect(favorite).toContain('receipt.current_favorite')
+    expect(favorite).toContain('api_error(409, "idempotency key belongs to another favorite request")')
+    expect(favorite).toContain('api_error(503, "favorite storage unavailable")')
+    const repository = src('platform/gateway/mox-platform-gateway-svc/src/alliance/favorite_repository.rs')
+    expect(repository).toContain('transaction_with_behavior(TransactionBehavior::Immediate)')
+    expect(repository).toContain('SELECT EXISTS(SELECT 1 FROM experts WHERE tenant_id=?1 AND id=?2)')
+    expect(repository).toContain('DELETE FROM favorites WHERE tenant_id=?1 AND expert_id=?2')
+    expect(repository).toContain('INSERT INTO favorites(tenant_id,expert_id,created_at)')
+    expect(repository).toContain('tx.commit()?')
   })
 
   it('可取消判定与后端拒绝条件互斥', () => {
@@ -1420,9 +1424,9 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
       'config.rs:41': 'enabled: true',
       'modules.rs:234': 'modules.route_layer(',
       'router/index.js:74': 'if (!token) {',
-      'experts_common.rs:750': 'pub struct OptionalAuthUser',
+      'experts_common.rs:803': 'pub struct OptionalAuthUser',
       'experts_dispatcher.rs:596': 'AuditAction::ExpertDispatch',
-      'experts_collaboration.rs:783': '已被禁用'
+      'experts_collaboration.rs:789': '已被禁用'
     }
     for (const ref of EXPERT_WRITE_IDENTITY.evidence) {
       expect(ref, '身份提示缺了后端位置').toMatch(/\.[a-z]+:\d+/)
@@ -1435,7 +1439,7 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
       expect(ANCHOR_TEXT[ref], `证据 ${ref} 没登记「这一行该写什么」`).toBeTruthy()
       expect(at, `证据 ${ref} 指的那一行不含「${ANCHOR_TEXT[ref]}」⇒ 行号漂了`).toContain(ANCHOR_TEXT[ref])
     }
-    // 分母：登记了锚点的证据条数，与提示里印出的证据数必须同为 5
+    // 分母：登记了锚点的证据条数，与提示里印出的证据数必须同为 6
     expect(EXPERT_WRITE_IDENTITY.evidence.length).toBe(Object.keys(ANCHOR_TEXT).length)
   })
 

@@ -1,0 +1,87 @@
+§1.8o 发布态载体·收口轮（第八本账在 HEAD~1，第九本账在 HEAD，集外探针已退役，本轮补定价行）｜生成时刻 2026-10-03 07:57:53｜本文件 reports/data/selftest-formula-2026-10-03-0757.txt
+仪器图像 scripts/gate/check-doc-formulas.py：154009 B／md5 3662cc24fdf8（＝HEAD 那张 3662cc24fdf8；HEAD~1 是 147958 B／md5 a2a070a9e7a4）｜上一张载体 selftest-formula-2026-10-02-2313.txt 自署 147958 B／md5 a2a070a9e7a4
+   提交归属（T0 由 git log 现取，utf-8 显式解码）：2ed420b6 feat(gate): 第九本账盲区读账入册，公式仪器对盲区有视力（嫌疑逐条点名＋真算术不闭合转红，全集塌缩兜底）／309db3c8 feat(gate): 企业功能需求契约入 CI，事件交付契约与核心能力文档去幻影化重写
+文档图像 docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md：182940 B／md5 e9c7aa709d90／行数 1502｜本仓 census 工件：58415 B／md5 f1fd4fd47f9b／generated_at 2026-10-02 23:58:45+0800
+同日既有载体（自署值从那份文件现取，非回忆）：selftest-formula-2026-10-03-0745.txt：自署文档图像 e9c7aa709d90（182940 B）｜本版现取 e9c7aa709d90（182940 B）｜相同＝True
+   顶替原因（点名上一版的错话）：那一版把「本轮写过什么」写成硬编散文——写死了一处行号与「块外 N 行逐字节未动」，而它判定时的文档图像在那之前已被并发作者另行重渲染（托管块行数也变了），那句自述不再描述盘上那张。本版改为两幅图像现算的行差，硬编数字全部撤掉。
+本轮我发起过的写只有一处：`check-api-surface.py --ledger --write` 重渲染托管块（写前像 doc-before-ledgerwrite-4d560740d67c.md，182940 B／md5 4d560740d67c）。但当前文档图像不是那张写前像＋我一行的和——两幅图像现算：当前相对写前像变动 12 行（前几处：505 512 513 514 515 517）／当前相对 HEAD 变动 13 行（前几处：505 512 513 514 515 517）｜行数 1502 配 1502 配 1502（当前／写前像／HEAD）。两侧行差不同＝判定时刻的图像还带着并发作者自己的渲染，所以本载体不自述“那一行就是我写的全部”，只自述可复算的行差。
+除那一处之外本轮无仓内写入；上一轮的正文改动只有 行 1266（定价收据那条），连同托管块至今未提交。
+本轮例数 58／FAIL 0／红模板 47／未覆盖 []／死键 []（活体；上一张载体 58／0／44，差额 +0／+3）
+
+── [1] 活体读数（进程外，接线时 CI 跑的就是这十条；图像身份在块前后各取一次）──
+   块前 3662cc24fdf8／块后 3662cc24fdf8／T0 3662cc24fdf8 ⇒ 三条读数同吃一张图＝True
+   check-doc-formulas：--selftest rc=0｜--dircheck rc=0｜--dir-account rc=0｜--recognizer rc=0｜--census rc=0
+   api-surface --selftest rc=0｜--ledger rc=0｜check-script-paths --check rc=0｜doc-links rc=0｜MCP --selftest rc=0
+   --ledger 末行：LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+   --ledger 若红，红的形状：0 个数值格不同，变动值集合（盘上→现渲）＝无｜该现渲一侧读的是**活体工作区**，此刻未提交的 .rs 有 12 条（并发作者正在改网关挂载面），所以镜像红≠文档腐烂，也可能是别人在飞行中的码
+   api-surface --selftest 末行：SELFTEST 总 43 例，FAIL 0 例
+   doc-links 总体 206（WARN 串 120 次；总体由该仪器自己的行取）
+   两口径头行逐字节相同＝True｜--dir-account 单行＝True
+   现普查（临时件，不覆盖仓内工件）：files 379／claims 7／violations 0／blind 8873／quoted 6／per_doc 301 份／不闭合 0
+
+── [2] 仪器因子：HEAD~1 图像 × 现语料 vs HEAD 图像 × 现语料，同一时刻各跑一遍全量普查 ──
+   装载搬根（REPO 冻在默认参数里，`def reco_outside_audit(repo=REPO,…)` 那种签名）：HEAD~1 侧常量 1／默认参数 10 处，HEAD 侧 1／10 处；仓内那张算出的根就是仓根，按定义 0 处可搬，它的角色是下面的分母对照（把它当"实测 0／0"来炫耀是假账：控制组不可能 nonzero）
+   集外代码分母（无参现量）：HEAD~1 99 份／HEAD 快照 99 份／仓内直读 99 份｜上一张载体印的那格名为「集外基线 99 份」（那一版没有 HEAD~1／HEAD 两侧对照，只有一个数，所以这里只与它比一次）｜与本轮仓内直读相同＝True
+   形状自检（排在双跑普查之前，代价＝一次 docs/docs-hub 的扫描）：进程内 census 返回体「files 1／claims 0／violations 0／blind 0／quoted 0／per_doc 0 份」｜工件「files 379／claims 7／violations 0／blind 8866／quoted 6／per_doc 301 份／不闭合 0」｜两者差的那格「不闭合」由 cmd_census 在工件侧算，不在 census() 里（本轮前两次死法就是把两者当同一个格式刷：KeyError 'unclosed'）
+   总数 HEAD~1 侧：files 379／claims 7／violations 0／blind 8873／quoted 6／per_doc 301 份
+   总数 HEAD 侧　　 ：files 379／claims 7／violations 0／blind 8873／quoted 6／per_doc 301 份
+   逐 doc 差：只在 HEAD~1 侧 0／只在 HEAD 侧 0／字段不同 0 ⇒ 仪器因子为空（0 个 doc 键）
+   成本实测（全量普查一次）：HEAD~1 0.8 s／HEAD 0.8 s｜确定性双跑（同图同语料，全量 docs）0.9 s＋0.8 s ⇒ 两遍逐字段相同＝True（相差 0 个 doc 键：无）且双跑之间语料指纹未动＝True。初稿在这里写的是「全量单跑已上百秒，所以只在子树上量」——那句是没现量的前提，本轮撤掉，双跑的代价与它买到的覆盖面印在同一行里。
+
+── [3] 语料因子：现普查（HEAD 图像）vs 仓内工件（第三副图像×23:58 语料；那副图像的 md5 e0ea4003e9e5／153534 B 自署于碰撞收据 reports/data/collision-18o-2026-10-03-0008.txt:10，本载体不复算它，只复算它留下的工件）──
+   工件侧总数：files 379／claims 7／violations 0／blind 8866／quoted 6／per_doc 301 份／不闭合 0
+   逐 doc 差：只在现普查 0／只在工件 0／字段不同 2，合计 2 份
+      字段动 docs/expert-alliance/08-normalized-architecture.md：blind:{'latin': 20, 'no_fw_eq': 8, 'glued': 23, 'noise': 2, 'code': 3, 'ascii_eq': 1}→{'latin': 19, 'no_fw_eq': 8, 'glued': 22, 'noise': 2, 'code': 3, 'ascii_eq': 1}｜未提交＝True 仪器因子＝False
+      字段动 docs/expert-alliance/16-decision-and-state-ledger.md：blind:{'glued': 46, 'noise': 4, 'no_fw_eq': 6, 'latin': 8, 'ascii_eq': 3}→{'glued': 42, 'noise': 4, 'no_fw_eq': 5, 'latin': 8, 'ascii_eq': 3}｜未提交＝True 仪器因子＝False
+   归因宇宙：docs 未提交 9 条（docs/API-REGISTRY.md docs/architecture/API-SURFACE-AUTHORITY-PLAN-v0.1.md docs/architecture/assets/bench_results_round7.json docs/expert-alliance/08-normalized-architecture.md docs/expert-alliance/16-decision-and-state-ledger.md docs/expert-alliance/22-expert-object-contract.md）／工件生成时刻之后提交动过的 docs 0 条
+   无法归因的份数＝0 无
+   语料指纹（docs/*.md 路径+尺寸+mtime_ns）普查两跑之间：未动（fp0 5e65686fbce5／fp1 5e65686fbce5）
+
+── [4] 例数／红模板的对账（前置 4）──
+   上一张载体（selftest-formula-2026-10-02-2313.txt，基准从文件那一行现取）：例数 58／FAIL 0／红模板 44
+   HEAD~1 图像进程内现量：58 例／FAIL 9／红模板 44｜HEAD 图像进程内现量：58 例／FAIL 9／红模板 47
+   HEAD~1 侧 FAIL：FAIL 夹具M CI 接线账：『接了 CI』的宇宙取自 c／FAIL 变异体20 注释里的写法不算接线：名单仪器只写进 ／FAIL 变异体21 `echo` 里的命令串不算接线（本仓／FAIL 夹具O 文档声称的『CI 门禁』逐条对账：名单来源／FAIL 变异体23 声称只住在 echo 文案里时必须读成／FAIL 夹具Q 反向账：CI 每次真在跑、且住在 */ga／FAIL 夹具R 第三本账：AGENTS.md 宣传的『一键／FAIL 夹具S 第四维：CI 与一键必须**以同一组参数*／FAIL 变异体28 参数账的五条通道各钉一枚：① 同路径不｜HEAD 侧 FAIL：FAIL 夹具M CI 接线账：『接了 CI』的宇宙取自 c／FAIL 变异体20 注释里的写法不算接线：名单仪器只写进 ／FAIL 变异体21 `echo` 里的命令串不算接线（本仓／FAIL 夹具O 文档声称的『CI 门禁』逐条对账：名单来源／FAIL 变异体23 声称只住在 echo 文案里时必须读成／FAIL 夹具Q 反向账：CI 每次真在跑、且住在 */ga／FAIL 夹具R 第三本账：AGENTS.md 宣传的『一键／FAIL 夹具S 第四维：CI 与一键必须**以同一组参数*／FAIL 变异体28 参数账的五条通道各钉一枚：① 同路径不
+   进程内 FAIL 9 条 vs 活体 FAIL 0 例不是矛盾，且有对照：把**仓内那张**（scripts/gate/check-doc-formulas.py，模块文件在真路径）同法进程内跑一遍，FAIL 0 例／名单 空 ⇒ 快照侧那批 FAIL 是『模块住在仓外、按 __file__ 找不到的那族』，不是判定退化；两副图像同语境各崩一遍、名单逐条相同＝True，所以 +0／+3 的差额仍只落在红模板档
+   读法：旧图像现量与载体登记值相符 ⇒ 相对基线的差额 +0／+3 全部落在图像换代（第九本账，commit 见上）里，不落在我改的 .md 正文上；我的正文改动只有那一行（行 1266），它不动仪器。
+
+── [5] 归因结论：对上碰撞收据 0008 的四条前置 ──
+   前置 1（自署值＋FAIL 0）：盘上＝HEAD＝快照 3662cc24fdf8，活体 --selftest rc=0／FAIL 0 例 ⇒ 满足
+   前置 2（--recognizer rc=0）：活体 rc=0 ⇒ 满足；那条红曾来自集外探针 `.recon_blind.py:12／:38`，该文件此刻已不在盘上（它的作者执行了自己那句「用完即删」，出路 a，不是我删的）
+   前置 3（census 逐 doc 差只落在被动过的那份）：仪器因子 0 个键（已命名给第九本账的换代）、语料差 2 份里无法归因 0 份 ⇒ 闭合
+   前置 4（例数／红模板相对上一张载体）：差额 +0／+3，方向由旧图像现量 58／44 对上基线 58／44 判给图像换代 ⇒ 闭合
+
+── MUST 判定（25 条）──
+   满足 盘上图像＝提交态图像（自署的不再是别人未提交的那张）
+   满足 对照侧图像可重建：备份＝HEAD~1 的 blob＝上一张载体自署的 md5
+   满足 活体 --selftest rc=0 且 FAIL 0 例
+   满足 活体 --recognizer rc=0
+   满足 例数自洽：PASS/FAIL 行条数＝SELFTEST 总 N 例
+   满足 红模板↔针 双向为空（未覆盖／死键都是空）
+   满足 旧图像（HEAD~1）现量例数＝上一张载体登记值
+   满足 旧图像（HEAD~1）现量红模板＝上一张载体登记值 ⇒ 差额全在图像换代里
+   满足 进程内两副图像的 FAIL 名单逐条相同（同语境对照：差额只可能来自红模板档，不来自『某侧自己崩了』；这些 FAIL 全是 CI 接线族在仓外快照上的路径探针，活体 rc=0）
+   满足 现图像（HEAD）在进程内现量与活体一致（例数／红模板两项）
+   满足 装载语境有对照：仓内那张进程内 FAIL 名单为空 ⇒ 快照侧的 FAIL 是语境产物，不是某一副图像自己崩了（两副图像的名单仍要求逐条相同）
+   满足 census 逐 doc 差：无法归因份数＝0（归因宇宙＝未提交 ∪ 工件后提交 ∪ 仪器因子）
+   满足 --dircheck rc=0
+   满足 --dir-account rc=0 且单行
+   满足 两口径头行逐字节相同
+   满足 --census rc=0（只写 D:/tmp 临时件）
+   满足 普查违反 0／不闭合 0
+   满足 姊妹门禁全 rc=0（api-surface 两模式／script-paths／doc-links／治理 MCP）
+   满足 台账镜像无红项（LEDGER 末行现取）
+   满足 普查双跑之间语料未动（差只对这一分钟负责）
+   满足 确定性（同图同语料两遍逐字段相同）在全量 docs 语料上成立且语料指纹未动（相差 0 个 doc 键）
+   满足 搬根只是搬家：同一张图像在仓内直读与在快照里搬根后读到同一个集外分母（99 份）
+   满足 文档图像在驱动运行期间未动（本驱动对仓内只读，载体是唯一写入）
+   满足 本轮声称的那次写没被还原：当前文档 md5 ≠ 我的写前像 md5，且行差非空（12 行变动／12 行删除）
+   满足 同日既有载体逐张点名，其自署文档图像 md5 必须真的从那份文件里抽取成功（抽不到就红，不许把'顶替'写成一句形容词）
+MUST 判定：全部满足（25 条）
+
+── 本载体没做的事（诚实登记，不留到下一轮回忆）──
+   ① 确定性双跑已升到全量 docs 语料（成本印在 [2]，初稿那句"上百秒"的降级理由已撤）；仍**没**双跑的是集外侧那本账（--recognizer 的候选集与位点账），它的确定性本载体没量；② 23:58 那份语料取不回（只有 git 里那份），所以 [3] 的工件侧是第三副图像渲染的，其差额只能命名不能逐字段复算；
+   ③ 第九本账自己的判据对不对——那是作者的账，本载体只量它对普查读数与例数／红模板的影响；
+   ④ 裁决点 6（--recognizer 要不要进 CI 执行宇宙）与裁决点 8（防御项是否各配理由）仍未裁，耗时定价在 reports/data/cost-18o-counterfactual-2026-10-03-0022.txt，本载体不复述；
+   ⑤ 我的正文那一行（行 1266）与本轮托管块都还未提交，提交权在用户手上，本载体不声称任何提交状态。
+   结尾复测：仪器此刻 3662cc24fdf8（T0 3662cc24fdf8，相同＝True）；不同＝别人又提交了，快照侧归属不变。
+   结尾复测：census 工件此刻 f1fd4fd47f9b／58415 B（T0 f1fd4fd47f9b／58415 B，相同＝True；generated_at 现取 2026-10-02 23:58:45+0800）。本驱动对它只读，不同＝并发作者用他自己的图像重渲染——那张工件是活的派生产物，不是本载体的账。

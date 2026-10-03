@@ -537,8 +537,9 @@ describe('负载重置契约', () => {
   it('两个 reset 都不落库，而咨询会落库——所以"归零"是可被回写的内存态', () => {
     expect(RESET_ONE).not.toMatch(/save_registry/)
     expect(RESET_ALL).not.toMatch(/save_registry/)
-    const consult = REGISTRY_RS.match(/exp\.availability\.current_load \+= 1;[\s\S]{0,90}/)[0]
-    expect(consult).toMatch(/save_registry\(&reg\)/)
+    const consult = REGISTRY_RS.match(/exp\.availability\.current_load \+= 1;[\s\S]{0,140}/)[0]
+    // A1 多租户后 save_registry 先取租户：签名由 save_registry(&reg) 变为 save_registry(tenant.as_str(), reg)
+    expect(consult).toMatch(/save_registry\(tenant\.as_str\(\), reg\)/)
   })
 
   it('全量重置覆盖整张注册表（含停用者），人数只能引后端计数', () => {

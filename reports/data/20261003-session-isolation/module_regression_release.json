@@ -1,0 +1,26 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "session_tenant_isolation",
+    "--test",
+    "favorite_transactions",
+    "--test",
+    "tenant_expert_isolation",
+    "--test",
+    "trusted_tenant_http",
+    "--test",
+    "inbox_persistence",
+    "--test",
+    "experts_db_persistence",
+    "--",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "module_regression_release.log"
+}

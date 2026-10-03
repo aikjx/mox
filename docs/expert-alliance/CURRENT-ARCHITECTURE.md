@@ -206,13 +206,13 @@ platform/domains/alliance/
 | 专家注册表 | SQLite | 网关 experts_db.rs（表 experts） | 专家 CRUD、可用性状态；启动 load_registry、变更 save_registry |
 | 协作任务 | SQLite + JSON | scheduler-core/storage | 任务状态、节点记录 |
 | 执行状态 + 融合结果 | SQLite（WAL）或 JSON | executor-svc/state_sink.rs → `data/alliance_tasks.db` / `.json` | 任务级 + 节点级增量落盘；融合输出以保留行 `__fusion_output__` 持久化，进程重启后 `/result`、`/fusion-result` 仍可读回 |
-| 专家会话 | 内存 + SQLite | 网关表 sessions / session_messages | load_sessions / save_sessions（`experts_common.rs:626-630`） |
+| 专家会话 | 内存 + SQLite | 网关表 sessions / session_messages | [会话授权与提交契约](23-session-isolation-and-commit.md)：可信租户、旧数据 default、checked 提交失败 503 与回滚；跨进程/SLO 未验收 |
 | 知识图谱关联 | **内存 + SQLite** | 网关表 graph_nodes / graph_edges / graph_meta | save_graph 定义于 `experts_common.rs:637-638`、`:499` 有调用点。**本节此前记为「进程内结构」，与代码不符** |
-| 专家收藏 favorites | 进程内 | `experts_common.rs`（HashSet） | experts_db.rs 内零命中：**重启即失** |
-| 编排计划 plans | 进程内 | `experts_common.rs:468`（`Arc<Mutex<HashMap<String, CollaborationPlan>>>`） | experts_db.rs 无 plans 表：**重启即失**，且无任何 GET 列表端点，计划内容只在 POST 响应里可见 |
-| 编排历史 orchestration_history | 进程内 | `experts_common.rs:470`（`Arc<Mutex<Vec<OrchestrationRecord>>>`） | experts_db.rs 无对应表：重启后 GET orchestration/stats 归零、history 返回空 records |
+| 专家收藏 favorites | SQLite + 租户内存镜像（2026-10-03 恢复复核） | [对象与收藏契约](22-expert-object-contract.md) | 同文件原子 toggle，失败 503；带键持久回执、批量权威读取及同标签页待确认请求恢复已验证；跨主机、跨标签页及个人收藏未完成 |
+| 编排计划 plans | SQLite + 内存镜像（2026-10-02 存储复核） | `experts_db.rs::upsert_plan/load_all_plans`，表 collaboration_plans | 启动重载；本轮 D4 测试只验证存储，不证明模型执行或崩溃后的任务续跑 |
+| 编排历史 orchestration_history | SQLite + 内存镜像（2026-10-02 存储复核） | `experts_db.rs::insert_history_record/load_all_history`，表 orchestration_history | 启动重载；完整业务恢复与跨实例查询仍须单独验收 |
 
-**「进程内」那四行的共同后果**：这些端点返回空列表只证明「本进程内没有」，不证明「从未发生」。界面文案不得把 orchestration/history 的空结果写成"尚无编排记录"这类历史断言——同族的先例是 circuit_breakers 恒为 `[]`（无写侧）与 engine_status 恒为字面量 running。
+**2026-10-02 纠正**：收藏、计划和编排历史已经存在真实 SQLite 写入与启动重载路径，不能继续描述成“无对应表、重启即失”。本轮证据见 [对象与存储增量报告](../../reports/markdown/20261002-alliance-contract-reconciliation.md)。空查询结果仍须结合租户、筛选和真实存储读取判断，不代表全局“从未发生”；存储重载也不等于运行任务续跑。
 
 **注意**：当前无外部 Redis/PostgreSQL/pgvector 依赖，全部嵌入式存储。
 

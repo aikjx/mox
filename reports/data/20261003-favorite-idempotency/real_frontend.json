@@ -1,0 +1,16 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "tenant_expert_isolation",
+    "--",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "real_frontend.log"
+}

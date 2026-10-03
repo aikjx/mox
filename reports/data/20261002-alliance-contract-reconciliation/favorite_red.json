@@ -1,0 +1,15 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "tenant_expert_isolation",
+    "--",
+    "--test-threads=1"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 101,
+  "log": "favorite_red.log"
+}

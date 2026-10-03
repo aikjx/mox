@@ -520,3 +520,66 @@ describe('智能匹配（POST /api/alliance/experts/search）', () => {
     expect(store.loading.match).toBe(false)
   })
 })
+
+describe('T4 SSE 注册表事件帧 → 防抖真拉列表', () => {
+  // 帧信封形状对齐后端 experts_events.rs（ExpertRegistered/ExpertDisabled 带 expert_id）。
+  const expertRegistered = { id: 'evt-r1', type: 'ExpertRegistered', expert_id: 'exp-new', source: 'register_expert', tenant: 't', occurred_at: '2026-10-03T09:00:00Z' }
+  const expertDisabled = { id: 'evt-d1', type: 'ExpertDisabled', expert_id: 'exp-old', source: 'delete_expert', tenant: 't', occurred_at: '2026-10-03T09:01:00Z' }
+  const planFrame = { id: 'evt-p1', type: 'PlanStatusChanged', plan_id: 'plan-1', from: 'draft', to: 'running', source: 'execute', tenant: 't', occurred_at: '2026-10-03T09:02:00Z' }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    api.listExperts.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 24 })
+    api.expertsStats.mockResolvedValue({ total: 0, online: 0 })
+    api.listExpertCapabilities.mockResolvedValue({ items: [], capabilities: [] })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('带 expert_id 的注册帧命中，800ms 防抖后真拉列表与统计', () => {
+    const store = useAllianceExpertsStore()
+    expect(store.applyRegistryEvent('ExpertRegistered', expertRegistered)).toBe(true)
+    // 防抖窗口内不应发请求
+    expect(api.listExperts).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(800)
+    expect(api.listExperts).toHaveBeenCalledTimes(1)
+    expect(api.expertsStats).toHaveBeenCalledTimes(1)
+    // 能力目录用户没点开过（capabilities 为 null），不替他起请求
+    expect(api.listExpertCapabilities).not.toHaveBeenCalled()
+  })
+
+  it('突发两帧防抖合并成一次重拉', () => {
+    const store = useAllianceExpertsStore()
+    store.applyRegistryEvent('ExpertRegistered', expertRegistered)
+    store.applyRegistryEvent('ExpertDisabled', expertDisabled)
+    vi.advanceTimersByTime(800)
+    expect(api.listExperts).toHaveBeenCalledTimes(1)
+    expect(api.expertsStats).toHaveBeenCalledTimes(1)
+  })
+
+  it('不带 expert_id 的帧（Plan*）与注册表无关，忽略且不重拉', () => {
+    const store = useAllianceExpertsStore()
+    expect(store.applyRegistryEvent('PlanStatusChanged', planFrame)).toBe(false)
+    vi.advanceTimersByTime(2000)
+    expect(api.listExperts).not.toHaveBeenCalled()
+    expect(api.expertsStats).not.toHaveBeenCalled()
+  })
+
+  it('能力目录已加载过时，身份变更帧一并补拉目录', () => {
+    const store = useAllianceExpertsStore()
+    store.capabilities = { items: [], capabilities: [] }
+    store.applyRegistryEvent('ExpertDisabled', expertDisabled)
+    vi.advanceTimersByTime(800)
+    expect(api.listExperts).toHaveBeenCalledTimes(1)
+    expect(api.listExpertCapabilities).toHaveBeenCalledTimes(1)
+  })
+
+  it('clearRegistryEventTimer 挂起未触发的防抖重拉', () => {
+    const store = useAllianceExpertsStore()
+    store.applyRegistryEvent('ExpertRegistered', expertRegistered)
+    store.clearRegistryEventTimer()
+    vi.advanceTimersByTime(2000)
+    expect(api.listExperts).not.toHaveBeenCalled()
+  })
+})

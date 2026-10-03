@@ -15,7 +15,15 @@
 
 2026-10-02 增量：[事件交付与恢复契约](21-event-delivery-contract.md) 统一 SSE、日志、Webhook 与前端生命周期边界，登记 EA-EVT-01–07 验收项。该主题的日期化事实覆盖旧稿中相同主题的表述；不改变全域历史测试统计，也不代表 Webhook 或完整页面达到生产门槛。
 
-## 一、文档总表（编号 00–28，闭环）
+2026-10-03 会话增量：[会话隔离与提交契约](23-session-isolation-and-commit.md) 登记 EA-SES-01–07；真实双租户与 SQLite 故障验证修复越权读取、写失败假成功和即时咨询未落盘。其余生产边界见主源，验证见 [模块报告](../../reports/markdown/20261003-module-verification.md)。
+
+## 一、文档总表
+
+2026-10-03 幂等联调增量：[对象与收藏契约](22-expert-object-contract.md) 登记 EA-OBJ-08/09；[验证报告](../../reports/markdown/20261003-favorite-idempotency.md) 包含真实 Pinia/Axios/生产 Rust 路由以及提交后 TCP 响应丢失验证。全功能仍以模块台账逐项验收。
+
+2026-10-03 收藏事务增量：[对象与收藏契约](22-expert-object-contract.md) 已登记真实失败回执与共享 SQLite 文件的原子切换；[验证报告](../../reports/markdown/20261003-favorite-transactions.md) 保留独立连接并发、实际触发器故障与 HTTP 证据。
+
+2026-10-02 对象边界增量：[专家对象与收藏租户契约](22-expert-object-contract.md)，覆盖收藏真实对象校验、按租户持久化及软停用恢复。上轮 4 项契约失败已在本轮修复，证据独立记录，不覆盖历史日志。
 
 | 编号 | 文件 | 标题 | 权威等级 | 定位 | 阅读顺序 | 冲突时以谁为准 |
 |---|---|---|---|---|---|---|

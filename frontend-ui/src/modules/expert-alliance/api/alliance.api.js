@@ -1,7 +1,7 @@
 // 联盟 API 层：端点取自 contract/endpoints.js，信封与字段取自 model/normalize.js。
 // 本层不做 UI 决策、不 catch 业务错误——错误一律以 ApiError 冒泡给 store。
 import { http as defaultHttp } from '@/api'
-import { ENDPOINTS, expertListQuery, requestPath } from '@/modules/expert-alliance/contract'
+import { ENDPOINTS, expertListQuery, requestPath, createFavoriteRequest, favoriteRequestHeaders } from '@/modules/expert-alliance/contract'
 import { unwrap, unwrapList, envelopeMeta } from '@/modules/_kernel/envelope.js'
 import {
   normAction, normAlgorithmAnalysis, normBooking, normBookingCancel, normBookingList, normCapabilities, normCollaborators, normCommunities,
@@ -34,7 +34,7 @@ const NORM_BY_ENDPOINT = {
   algorithmAnalysis: normAlgorithmAnalysis
 }
 
-function call(httpClient, name, { params = {}, body, query } = {}) {
+function call(httpClient, name, { params = {}, body, query, headers, retryOnPost = false } = {}) {
   const ep = ENDPOINTS[name]
   const url = requestPath(name, params)
   return httpClient.request({
@@ -42,6 +42,8 @@ function call(httpClient, name, { params = {}, body, query } = {}) {
     method: ep.method,
     data: body,
     params: query,
+    headers,
+    _retryOnPost: retryOnPost,
     // 错误由本模块的 store/view 单点呈现，避免 http.js 拦截器与页面双重弹提示
     silent: true
   }).then((res) => ({
@@ -400,9 +402,24 @@ export function createAllianceApi(httpClient = defaultHttp) {
       const { payload } = await get('bookingCancel', { params: { id } })
       return normBookingCancel(payload)
     },
-    /** 收藏为切换语义，返回值即最新状态；后端无「收藏列表」读接口，故收藏态只在本次会话内维护 */
-    async toggleFavorite(expertId) {
-      const { payload } = await get('expertFavorite', { params: { id: expertId } })
+    /** 读取真实收藏快照；一个专家页最多 200 位，拆为至多两个 100 位批次。 */
+    async readFavorites(expertIds) {
+      if (!Array.isArray(expertIds) || expertIds.length > 200) throw new Error('收藏读取最多支持一个专家页（200 位）')
+      const batches = [expertIds.slice(0, 100)]
+      if (expertIds.length > 100) batches.push(expertIds.slice(100))
+      const states = await Promise.all(batches.map(async ids => {
+        const { payload } = await get('expertFavoritesQuery', { body: { expert_ids: ids } })
+        if (!Array.isArray(payload?.items) || payload.items.length !== ids.length || payload.items.some((item, i) => item?.expert_id !== ids[i] || typeof item.favorite !== 'boolean')) {
+          throw new Error('收藏读取响应格式错误')
+        }
+        return payload.items.map(item => ({ expertId: item.expert_id, favorite: item.favorite }))
+      }))
+      return states.flat()
+    },
+    async toggleFavorite(expertId, { idempotencyKey = createFavoriteRequest(expertId).key } = {}) {
+      const { payload } = await get('expertFavorite', {
+        params: { id: expertId }, headers: favoriteRequestHeaders(idempotencyKey), retryOnPost: true
+      })
       return normFavorite(payload)
     },
     async consultNow(expertId, { topic = '即时咨询', question, channel = 'text' } = {}) {

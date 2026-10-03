@@ -572,7 +572,7 @@ async fn platform_overview(
     let experts_count = enabled.len();
 
     let active_sessions_count = sessions.values()
-        .filter(|sess| sess.status == "active")
+        .filter(|sess| sess.tenant_id == tenant && sess.status == "active")
         .count();
 
     let today_consultations: u64 = enabled.iter().map(|e| e.metrics.today_consultations).sum();
@@ -864,6 +864,7 @@ async fn consult_now_real(
             meta.insert("question".into(), json!(q));
         }
         let session = ExpertSession {
+            tenant_id: tenant.clone(),
             id: session_id.clone(),
             title: topic.clone(),
             expert_ids: vec![id.clone()],
@@ -878,7 +879,10 @@ async fn consult_now_real(
             last_active_at: now.clone(),
             archived_at: None,
         };
-        sessions.insert(session_id.clone(), session);
+        let previous = sessions.insert(session_id.clone(), session);
+        if let Err(response) = super::experts_session::save_sessions(&mut sessions, &session_id, previous) {
+            return response;
+        }
     }
 
     //  increment expert consultation counters（按租户）

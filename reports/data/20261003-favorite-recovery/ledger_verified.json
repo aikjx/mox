@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python",
+    "scripts/gate/check-api-surface.py",
+    "--ledger",
+    "--write"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "ledger_verified.log"
+}

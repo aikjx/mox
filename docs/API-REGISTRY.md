@@ -1,20 +1,20 @@
 # API 注册表（权威·接口↔实现一一对应）
 
-> 本清单由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 生成（生成脚本 `scripts/doc/gen-api-registry.py`）。清单覆盖上述静态注册元数据；动态组装的子路由以宿主源码和模块契约为准。注册与 ready 标记不代表功能、依赖或企业交付已验收，实际结论见[实现台账](modules/REAL-IMPLEMENTATION-STATUS.md)。
+> 本清单由 `platform/gateway/mox-platform-gateway-svc/src/actuator.rs` 的 `ROUTES` 静态表与 `routes.rs` 的 `DOMAINS` 生成（生成脚本 `scripts/doc/gen-api-registry.py`）。清单覆盖上述静态注册元数据；动态组装的子路由以宿主源码和模块契约为准。注册与 ready 标记不代表功能、依赖或企业交付已验收，实际结论见[实现台账](docs/modules/REAL-IMPLEMENTATION-STATUS.md)。
 
-企业消息子路由与实际健康探测见[消息中心契约](modules/message-center/README.md)；静态清单不作为全部路由已验收的证明。
+企业消息子路由与实际健康探测见[消息中心契约](docs/modules/message-center/README.md)；静态清单不作为全部路由已验收的证明。
 
 ## 1. 总览
 
 | 指标 | 值 |
 | --- | --- |
-| 静态表注册路由数 | **246 条**（注册元数据数量，不是已验收功能数量） |
+| 静态表注册路由数 | **250 条**（注册元数据数量，不是已验收功能数量） |
 | 静态表中的域分组 | 20 个：actuator / platform / kg / ai / kb / alliance / system / experts / monitor / projects / workspace / notification / misc / storage / llm / cloud / graph / melody / rbac / voice |
 | 域描述符（业务规划） | **46 个**：ready 46（见 §3） |
 | 网关外进程 | 5 个：kg-hub / alliance-executor / alliance-scheduler / primiflow / melody2score（见 §4） |
 | 鉴权 | 全部业务路由经 `Authorization: Bearer <dev-secret-token>`（JWT）保护；管理面 `/health /metrics /actuator` 公开 |
 
-## 2. 逐域注册表（246 条）
+## 2. 逐域注册表（250 条）
 
 按域分组，实现位置逐一标注；`ANY` 表示该方法+参数可匹配多方法（GET/POST/PUT/DELETE）。
 
@@ -96,7 +96,7 @@
 | `kb.history.list` | GET | `/api/kb/history` | L2 | 全局操作历史（最近活动） |
 | `kb.entities.search` | GET | `/api/kb/entities/search` | L2 | 实体语义搜索（kb_ext.rs） |
 
-### alliance（20 条）
+### alliance（23 条）
 
 实现：`platform/domains/alliance/sdk/mox-alliance-http-sdk/src/alliance.rs`
 
@@ -122,9 +122,9 @@
 | `alliance.tasks.status_poll` | GET | `/api/alliance/tasks/:id/status` | L4 | 任务状态轮询（供前端轮询） |
 | `alliance.tasks.plan` | GET | `/api/alliance/tasks/:id/plan` | L4 | 协作计划查询 |
 | `alliance.stats` | GET | `/api/alliance/stats` | L4 | 联盟统计（专家/任务/成功率） |
-| `alliance.events.stream` | GET | `/api/alliance/events/stream` | L4 | T4 业务事件帧 SSE 流（按租户；event:<Kind>+data:<信封>；experts_streams.rs） |
-<!-- webhook CRUD（POST/GET /api/alliance/events/webhooks、DELETE /api/alliance/events/webhooks/:id）后端已真实落地并经 E2E 验证，
-     但属运维管理面，本前端模块（expert-alliance）暂不挂 UI；按 contract.test.js 归为 DOC_UNREGISTERED_PENDING「欠登记」，不在此 ROWS 占位以免拉低接线覆盖率。 -->
+| `alliance.events.stream` | GET | `/api/alliance/events/stream` | L4 | T4 业务事件帧 SSE 流（按租户，event:<Kind>+data:<信封>） |
+| `alliance.events.webhooks` | ANY | `/api/alliance/events/webhooks` | L4 | Webhook 订阅登记/列表（内存，重启即失） |
+| `alliance.events.webhook_detail` | DELETE | `/api/alliance/events/webhooks/:id` | L4 | 删除本租户 webhook 订阅 |
 
 ### system（49 条）
 
@@ -182,7 +182,7 @@
 | `system.security.api_key_validate` | POST | `/api/security/validate` | L5 | 校验 API Key 明文 |
 | `system.security.audit_log` | GET | `/api/security/audit-log` | L5 | 审计日志（SQLite 读取） |
 
-### experts（61 条）
+### experts（62 条）
 
 实现：`experts_registry/collaboration/dispatcher/graph/orchestration/session/ext.rs` 七模块
 
@@ -247,6 +247,7 @@
 | `experts.session.semantic_search` | POST | `/api/experts/semantic-search` | L3 | 全局语义搜索 |
 | `experts.ext.bookings_mine` | GET | `/api/experts/bookings/mine` | L3 | 我的预约 |
 | `experts.ext.favorite` | POST | `/api/experts/:id/favorite` | L3 | 收藏专家 |
+| `experts.ext.favorites.query` | POST | `/api/experts/favorites/query` | L3 | 读取当前租户至多 100 位专家的 SQLite 收藏快照；只读 |
 | `experts.ext.bookings_create` | POST | `/api/experts/bookings` | L3 | 创建预约 |
 | `experts.ext.bookings_cancel` | PUT | `/api/experts/bookings/:id/cancel` | L3 | 取消预约 |
 

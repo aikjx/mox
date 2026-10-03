@@ -1,0 +1,19 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "tenant_expert_isolation",
+    "--test",
+    "experts_db_persistence",
+    "--test",
+    "d4_crash_recovery",
+    "--",
+    "--test-threads=1"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "rust_persistence_final.log"
+}

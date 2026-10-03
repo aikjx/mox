@@ -233,25 +233,24 @@
       <ul class="aov-notes">
         <li>
           拓扑排序是<strong>真的</strong>：<code>topological_sort</code>（:39-92）用 Kahn 算法并带环检测；
-          但 <code>generate_plan</code> 产出的依赖恒为单链（:174-177），所以这条链不可能成环——
+          但 <code>generate_plan</code> 产出的依赖恒为单链（:175-178），所以这条链不可能成环——
           <strong>本面的失败分支在正常输入下走不到</strong>，能走到说明计划来自别处。
         </li>
         <li>
           选人是<strong>真的</strong>：<code>compute_match_score</code> 对注册表打分，门槛 0.2、take(max_experts)（:591-600）。
-          步骤的 <code>expert_id</code> 也是在候选池里取 argmax（:159-172），但执行结果里的 <code>result.expert</code> 恒为 null——
-          执行器把专家表传成了空数组（:488）。
+          步骤按候选 argmax 绑定专家（:159-172）；去幻影化后每步直接走真实模型咨询，结果行不再回带 expert 字段。
         </li>
         <li>
-          步骤正文是<strong>查表</strong>：按 <code>step_type</code> 取固定中文文案（:230-263），confidence 恒 0.85、
-          耗时 = 10 + 5×序号、status 无条件 completed（:271/:493/:497）。
+          步骤正文是<strong>真实模型咨询</strong>：去幻影化后每步调真实模型，喂给融合的中间块为 5 键（:452-453，evidence_kind=model_response），
+          不再是 step_type 查表的写死文案，confidence 也不再恒 0.85。
         </li>
         <li>
           <code>plan/execute</code> 成环时后端返回 <strong>HTTP 200 + status:"failed"</strong>（:452-463 由 :766 原样 ok），
           所以这一页判成败只读 body，状态码不参与。
         </li>
         <li>
-          <code>plans_ready</code> 与 <code>plans_failed</code> 永远为 0：plan.status 全文只有 draft/running/completed 三处赋值
-          （:203/:469/:511）。历史侧却能出现 failed 行（读 overall_status，:750）——两个口径不能互相引用。
+          只有 <code>plans_ready</code> 恒为 0：plan.status 的写入路径为 draft（:204）、running（:409/:740）、
+          终态 failed/completed/partial（:457-464）；去幻影化后 failed 已被 stats（:821）与历史如实记录，plans_failed 不再恒 0。
         </li>
         <li>
           历史分页<strong>不走</strong>后端的 <code>parse_pagination</code>：page/page_size 直接 parse（:936-937），
@@ -259,7 +258,7 @@
         </li>
         <li>
           <code>orchestration/plugins</code> 那条路由没有挂：六条硬编码数组、version 一律 2.0.0，
-          声明的 <code>webhook_url</code>/<code>retry_count</code> 无人读取（:839-920），挂上来是虚假能力面。
+          声明的 <code>webhook_url</code>/<code>retry_count</code> 无人读取（:839-919），挂上来是虚假能力面。
         </li>
       </ul>
       <h3 class="aov-h3">常量与模拟字段清单（与源码逐条对齐，后端改掉即测试先红）</h3>

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "frontend-ui/src/modules/expert-alliance/contract/favorite-request.node-test.mjs"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "node.log"
+}

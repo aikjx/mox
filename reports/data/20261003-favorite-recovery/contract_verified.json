@@ -1,0 +1,13 @@
+{
+  "command": [
+    "node",
+    "frontend-ui/node_modules/vitest/vitest.mjs",
+    "run",
+    "frontend-ui/src/modules/expert-alliance/contract/contract.test.js",
+    "--config",
+    "frontend-ui/vite.config.js"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "contract_verified.log"
+}

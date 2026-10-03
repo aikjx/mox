@@ -774,6 +774,12 @@ async fn consult_expert(
     TenantId(tenant): TenantId,
     Json(body): Json<ConsultBody>,
 ) -> ApiResponse<Value> {
+    // Reject a foreign session before a provider call and recheck under the write lock.
+    if body.session_id.as_ref().is_some_and(|id| {
+        state.sessions.lock().get(id).is_some_and(|session| session.tenant_id != tenant)
+    }) {
+        return err(404, "session not found");
+    }
     // 验证专家存在且 enabled
     let expert = {
         let all_reg = state.registry.lock();
@@ -797,7 +803,12 @@ async fn consult_expert(
 
     {
         let mut sessions = state.sessions.lock();
+        let previous = sessions.get(&session_id).cloned();
+        if sessions.get(&session_id).is_some_and(|session| session.tenant_id != tenant) {
+            return err(404, "session not found");
+        }
         let session = sessions.entry(session_id.clone()).or_insert_with(|| ExpertSession {
+            tenant_id: tenant.clone(),
             id: session_id.clone(),
             title: body.question.chars().take(50).collect(),
             expert_ids: vec![id.clone()],
@@ -840,7 +851,9 @@ async fn consult_expert(
         });
 
         session.last_active_at = now.clone();
-        save_sessions(&sessions);
+        if let Err(response) = super::experts_session::save_sessions(&mut sessions, &session_id, previous) {
+            return response;
+        }
     }
 
     ok(json!({
@@ -912,7 +925,9 @@ async fn multi_consult(
 
     {
         let mut sessions = state.sessions.lock();
+        let previous = sessions.get(&session_id).cloned();
         sessions.insert(session_id.clone(), ExpertSession {
+            tenant_id: tenant.clone(),
             id: session_id.clone(),
             title: body.question.chars().take(50).collect(),
             expert_ids: expert_ids.clone(),
@@ -950,7 +965,9 @@ async fn multi_consult(
             last_active_at: now.clone(),
             archived_at: None,
         });
-        save_sessions(&sessions);
+        if let Err(response) = super::experts_session::save_sessions(&mut sessions, &session_id, previous) {
+            return response;
+        }
     }
 
     // 构造 experts 列表
@@ -1011,8 +1028,10 @@ async fn debate(
     // 持久化会话
     {
         let mut sessions = state.sessions.lock();
+        let previous = sessions.get(&debate_id).cloned();
         let expert_ids: Vec<String> = debaters.iter().map(|e| e.id.clone()).collect();
         sessions.insert(debate_id.clone(), ExpertSession {
+            tenant_id: tenant.clone(),
             id: debate_id.clone(),
             title: format!("辩论：{}", body.topic.chars().take(40).collect::<String>()),
             expert_ids,
@@ -1037,7 +1056,9 @@ async fn debate(
             last_active_at: now,
             archived_at: None,
         });
-        save_sessions(&sessions);
+        if let Err(response) = super::experts_session::save_sessions(&mut sessions, &debate_id, previous) {
+            return response;
+        }
     }
 
     ok(result)
@@ -1241,7 +1262,9 @@ async fn intelligent_consult(
     // 持久化会话
     {
         let mut sessions = state.sessions.lock();
+        let previous = sessions.get(&consultation_id).cloned();
         sessions.insert(consultation_id.clone(), ExpertSession {
+            tenant_id: tenant.clone(),
             id: consultation_id.clone(),
             title: body.question.chars().take(50).collect(),
             expert_ids: vec![best_expert.id.clone()],
@@ -1283,7 +1306,9 @@ async fn intelligent_consult(
             last_active_at: now,
             archived_at: None,
         });
-        save_sessions(&sessions);
+        if let Err(response) = super::experts_session::save_sessions(&mut sessions, &consultation_id, previous) {
+            return response;
+        }
     }
 
     ok(json!({
@@ -1468,8 +1493,10 @@ async fn enterprise_consult(
     // 持久化会话
     {
         let mut sessions = state.sessions.lock();
+        let previous = sessions.get(&consultation_id).cloned();
         let expert_ids: Vec<String> = assigned.iter().map(|(e, _)| e.id.clone()).collect();
         sessions.insert(consultation_id.clone(), ExpertSession {
+            tenant_id: tenant.clone(),
             id: consultation_id.clone(),
             title: format!("企业咨询：{} - {}", body.company_name, body.problem_statement.chars().take(30).collect::<String>()),
             expert_ids,
@@ -1505,7 +1532,9 @@ async fn enterprise_consult(
             last_active_at: now.clone(),
             archived_at: None,
         });
-        save_sessions(&sessions);
+        if let Err(response) = super::experts_session::save_sessions(&mut sessions, &consultation_id, previous) {
+            return response;
+        }
     }
 
     ok(json!({

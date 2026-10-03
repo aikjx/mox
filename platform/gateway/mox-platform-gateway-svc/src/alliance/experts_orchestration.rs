@@ -524,6 +524,12 @@ async fn orchestrate(
     if body.task.trim().is_empty() {
         return err(400, "缺少编排任务描述（task/question）");
     }
+    // 全维终验（DAG 计划数配额）：A2 后 plans 按租户落库，计数 O(index) 真实廉价。
+    // 超限真实 409（与专家数配额同语义），不生成/不落库计划。
+    let used_plans = crate::alliance::experts_db::count_plans_by_tenant(tenant.as_str());
+    if let Err(resp) = check_plan_quota(used_plans as usize, tenant.as_str()) {
+        return resp;
+    }
     let task_type = body.task_type.unwrap_or_else(|| "general".into());
     let fusion_strategy = body.fusion_strategy.unwrap_or_else(|| "weighted".into());
     let max_experts = body.max_experts.unwrap_or(3);
@@ -648,6 +654,11 @@ async fn generate_plan_handler(
 ) -> ApiResponse<Value> {
     if body.task.trim().is_empty() {
         return err(400, "缺少任务描述（task/question）");
+    }
+    // 全维终验（DAG 计划数配额）：与 orchestrate 同口径，超限真实 409。
+    let used_plans = crate::alliance::experts_db::count_plans_by_tenant(tenant.as_str());
+    if let Err(resp) = check_plan_quota(used_plans as usize, tenant.as_str()) {
+        return resp;
     }
     let task_type = body.task_type.unwrap_or_else(|| "general".into());
     let fusion_strategy = body.fusion_strategy.unwrap_or_else(|| "weighted".into());

@@ -48,7 +48,7 @@
       <el-select v-model="store.filters.sort" class="ax-select ax-sort" placeholder="排序" clearable @change="applyFilter">
         <el-option v-for="o in sortOptions" :key="o.value" :label="o.label" :value="o.value" />
       </el-select>
-      <el-switch v-model="favoriteOnly" active-text="只看收藏" />
+      <el-switch v-model="favoriteOnly" active-text="只看本页收藏" />
       <el-tag v-if="store.filters.domain" class="ax-domain-tag" type="primary" effect="light" size="small" closable
         @close="clearDomainFilter">领域筛选：{{ store.filters.domain }}</el-tag>
       <el-button text :icon="RefreshLeft" @click="resetAll">重置</el-button>
@@ -318,7 +318,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import {
   Calendar, ChatDotRound, Delete, EditPen, Plus, Refresh, RefreshLeft, Search, Star, Trophy
 } from '@element-plus/icons-vue'
@@ -329,6 +329,7 @@ import { ExpertRankBoard } from '@/modules/expert-alliance/components'
 import { MatchExplainPanel } from '@/modules/expert-alliance/components'
 import { ExpertRegistryForm } from '@/modules/expert-alliance/components'
 import { useAllianceExpertsStore } from '@/modules/expert-alliance/store'
+import { useAllianceEventStream } from '@/modules/expert-alliance/composables/useAllianceEventStream'
 import {
   EXPERT_AVAILABILITY, EXPERT_TYPE,
   availabilityLabel, expertDerivedCells, expertStatsCells, expertTypeLabel, pricingText, sortLabel, verificationLabel
@@ -591,12 +592,23 @@ async function onOpenRoom(booking) {
   }
 }
 
+// T4 SSE 真实挂载：本路由 /alliance/experts 已 requiresRole 限管理员（index.js:152），
+// 故开流只对管理员；别的管理员注册/停用/改档专家时，本页收到带 expert_id 的帧 →
+// store.applyRegistryEvent 防抖真拉列表，免手动刷新。连接失败静默（读数仍可手动「刷新」）。
+const eventStream = useAllianceEventStream({
+  onEvent: (kind, envelope) => store.applyRegistryEvent(kind, envelope),
+  onError: () => {}
+})
+
 onMounted(async () => {
   await store.loadExperts()
   // 预约与平台统计都是次要面板，首屏列表之后再取，避免与列表争抢同一渲染帧
   store.loadBookings()
   store.loadStats()
+  eventStream.start()
 })
+
+onUnmounted(() => eventStream.stop())
 
 watch(tab, (v) => {
   if (v === 'bookings' && !store.bookings.length && !store.loading.bookings) store.loadBookings()

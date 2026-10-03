@@ -1,0 +1,19 @@
+{
+  "command": [
+    "cargo",
+    "clippy",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "favorite_transactions",
+    "--test",
+    "tenant_expert_isolation",
+    "--no-deps",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 101,
+  "log": "clippy_owned.log"
+}

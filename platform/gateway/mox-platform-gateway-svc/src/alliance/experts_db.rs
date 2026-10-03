@@ -101,7 +101,11 @@ pub fn open_experts_db() -> Result<Connection, String> {
 /// v4：T4 事件驱动——新增 alliance_event_log 事件轨迹表（事件总线消费者落库，带
 /// `tenant_id` 行级隔离）。全新表、无历史数据，故 v3→v4 同样仅由 `init_schema` 的
 /// `CREATE TABLE IF NOT EXISTS` 建表 + bump `user_version`，无需数据搬迁。
-const SCHEMA_VERSION: i32 = 4;
+/// v5：全维终验（2026-10-03）——webhook 外部订阅表落盘（alliance_webhooks）。此前 webhook
+/// 注册为进程内内存 HashMap、重启即失；现新增本表，CRUD 写穿 + 启动读回，重启恢复订阅。
+/// 全新表、无历史数据，故 v4→v5 同样仅由 `init_schema` 的 `CREATE TABLE IF NOT EXISTS`
+/// 建表 + bump `user_version`，无需数据搬迁。
+const SCHEMA_VERSION: i32 = 5;
 
 /// 启动时按 `PRAGMA user_version` 做 schema 版本迁移。
 ///
@@ -382,6 +386,17 @@ fn init_schema(conn: &Connection) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_event_log_tenant ON alliance_event_log(tenant_id);
         CREATE INDEX IF NOT EXISTS idx_event_log_type ON alliance_event_log(event_type);
         CREATE INDEX IF NOT EXISTS idx_event_log_plan ON alliance_event_log(plan_id);
+
+        -- v5（全维终验）：webhook 外部订阅落盘（重启恢复；此前为进程内内存 HashMap）。
+        -- id 全局主键；tenant_id 行级隔离；event_types 为 JSON 数组字符串（空=全收）。
+        CREATE TABLE IF NOT EXISTS alliance_webhooks (
+            id          TEXT PRIMARY KEY,
+            tenant_id   TEXT NOT NULL,
+            url         TEXT NOT NULL,
+            event_types TEXT NOT NULL DEFAULT '[]',
+            created_at  TEXT NOT NULL DEFAULT ''
+        );
+        CREATE INDEX IF NOT EXISTS idx_webhooks_tenant ON alliance_webhooks(tenant_id);
         "#,
     )
     .map_err(|e| format!("初始化 schema 失败: {}", e))
@@ -606,10 +621,15 @@ fn save_sessions_conn(
 
 /// 全量同步会话到 SQLite（单事务；消息投影同事务重建）
 pub fn save_sessions(sessions: &HashMap<String, ExpertSession>) {
-    let res = open_experts_db().and_then(|conn| save_sessions_conn(&conn, sessions));
+    let res = save_sessions_checked(sessions);
     if let Err(e) = res {
         log_err("save_sessions", &e);
     }
+}
+
+/// Callers that publish a success receipt must propagate a failed commit.
+pub fn save_sessions_checked(sessions: &HashMap<String, ExpertSession>) -> Result<(), String> {
+    open_experts_db().and_then(|conn| save_sessions_conn(&conn, sessions))
 }
 
 /// 从 SQLite 加载会话（messages 含在 data_json 中，失败返回空表）
@@ -1349,6 +1369,109 @@ pub fn load_event_log_by_tenant(tenant: &str) -> Vec<EventLogRow> {
 }
 
 // =====================================================================
+// v5（全维终验，2026-10-03）：webhook 外部订阅落盘（alliance_webhooks）
+// =====================================================================
+//
+// T4 webhook 此前为进程内内存 HashMap（experts_events::WebhookTable），重启即失。
+// 本表把订阅持久化为「写穿 + 启动读回」：CRUD handler 写后立即 upsert/delete 单行，
+// 启动时 `load_all_webhooks` 一次读回重建内存注册表，重启后订阅与派发器自动恢复。
+// 与 favorites/event_log 同约定：best-effort（失败仅 log_err 不阻断业务），锁类错误走
+// retry_write。event_types 以 JSON 数组字符串存列（空数组 = 全收）。
+
+/// 一条 webhook 订阅（读回投影；event_types 为 JSON 数组字符串，由调用方解析）
+#[derive(Debug, Clone)]
+pub struct WebhookRow {
+    pub id: String,
+    pub tenant_id: String,
+    pub url: String,
+    pub event_types: String,
+    pub created_at: String,
+}
+
+/// upsert 一条 webhook 订阅（id 全局主键；重复登记同 id 覆盖更新）。
+#[allow(clippy::too_many_arguments)]
+pub fn upsert_webhook_conn(
+    conn: &Connection,
+    id: &str,
+    tenant: &str,
+    url: &str,
+    event_types: &str,
+    created_at: &str,
+) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO alliance_webhooks (id, tenant_id, url, event_types, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(id) DO UPDATE SET
+            tenant_id = excluded.tenant_id,
+            url = excluded.url,
+            event_types = excluded.event_types,
+            created_at = excluded.created_at",
+        params![id, tenant, url, event_types, created_at],
+    )
+    .map_err(|e| format!("upsert webhook {id}: {e}"))?;
+    Ok(())
+}
+
+/// 落盘一条 webhook 订阅（best-effort；锁类错误走 busy 重试）
+#[allow(clippy::too_many_arguments)]
+pub fn upsert_webhook(id: &str, tenant: &str, url: &str, event_types: &str, created_at: &str) {
+    retry_write("upsert_webhook", || {
+        open_experts_db().and_then(|conn| {
+            upsert_webhook_conn(&conn, id, tenant, url, event_types, created_at)
+        })
+    });
+}
+
+/// 删除一条 webhook 订阅（按 id + 租户，防跨租户删）。
+pub fn delete_webhook_row_conn(conn: &Connection, id: &str, tenant: &str) -> Result<(), String> {
+    conn.execute(
+        "DELETE FROM alliance_webhooks WHERE id = ?1 AND tenant_id = ?2",
+        params![id, tenant],
+    )
+    .map_err(|e| format!("delete webhook {id}/{tenant}: {e}"))?;
+    Ok(())
+}
+
+/// 删除一条 webhook 订阅落盘（best-effort；锁类错误走 busy 重试）
+pub fn delete_webhook_row(id: &str, tenant: &str) {
+    retry_write("delete_webhook_row", || {
+        open_experts_db().and_then(|conn| delete_webhook_row_conn(&conn, id, tenant))
+    });
+}
+
+/// 启动期加载全部 webhook 订阅（重建内存注册表用；失败返回空表，与既有 load_* 容错约定一致）。
+pub fn load_all_webhooks() -> Vec<WebhookRow> {
+    let mut out = Vec::new();
+    let conn = match open_experts_db() {
+        Ok(c) => c,
+        Err(e) => {
+            log_err("load_all_webhooks", &e);
+            return out;
+        }
+    };
+    if let Ok(rows) = conn
+        .prepare("SELECT id, tenant_id, url, event_types, created_at FROM alliance_webhooks ORDER BY rowid ASC")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                Ok(WebhookRow {
+                    id: row.get(0)?,
+                    tenant_id: row.get(1)?,
+                    url: row.get(2)?,
+                    event_types: row.get(3)?,
+                    created_at: row.get(4)?,
+                })
+            })
+            .map(|iter| iter.collect::<Result<Vec<_>, _>>())
+        })
+    {
+        for r in rows.into_iter().flatten() {
+            out.push(r);
+        }
+    }
+    out
+}
+
+// =====================================================================
 // A2（无状态化阶段一，2026-10-02）：读路径实时查 SQLite
 // =====================================================================
 //
@@ -1389,6 +1512,28 @@ pub fn load_plans_by_tenant(tenant: &str) -> HashMap<String, CollaborationPlan> 
         }
     }
     map
+}
+
+/// 按租户实时统计计划数（全维终验 · DAG 计划配额计数口径，2026-10-03）。
+///
+/// A2 后 plans 已按 `(tenant_id, plan_id)` 复合键落 SQLite 且有 `idx_plans_tenant` 索引，
+/// 故按租户计数为一次 O(index) 查询——这是「DAG 计划数配额」的真实可数基础
+/// （A1 阶段二时 plans 还是全局扁平 HashMap、需全表扫描，故当时如实不做）。
+/// 失败返回 0（容错约定：DB 不可用时按「无占用」放行，不阻断业务写路径）。
+pub fn count_plans_by_tenant(tenant: &str) -> i64 {
+    match open_experts_db() {
+        Ok(conn) => conn
+            .query_row(
+                "SELECT COUNT(*) FROM collaboration_plans WHERE tenant_id = ?1",
+                params![tenant],
+                |r| r.get::<_, i64>(0),
+            )
+            .unwrap_or(0),
+        Err(e) => {
+            log_err("count_plans_by_tenant", &e);
+            0
+        }
+    }
 }
 
 /// 按 (tenant, plan_id) 单点读计划（execute_plan_handler 读路径）。

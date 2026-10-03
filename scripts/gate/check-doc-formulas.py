@@ -182,10 +182,12 @@ def outside_top(repo=REPO):
     return dirs, mds
 
 
-def outside_walk(repo, dirs, root_files, prune=None):
+def outside_walk(repo, dirs, root_files, nested=None, prune=None):
     """集外侧的读路：剪枝集与 walk_md 同源（都取自 DIR_ACCOUNT 的条目名），
-       再叠一份只针对代码族的 OUTSIDE_NESTED——那一圈在跟踪面里一份 .md 也没有，由 夹具W 现印。"""
+       再叠一份只针对代码族的 OUTSIDE_NESTED——那一圈在跟踪面里一份 .md 也没有，由 夹具W 现印。
+       嵌套名单当参数喂进来（§1.8p 第十本账的逐名反事实要能撤掉一名再走一遍），不改全局＝仪器不留痕迹。"""
     pr = prune_dirs() if prune is None else prune
+    ne = OUTSIDE_NESTED if nested is None else nested
     got, skip_dirs = [], 0
     for d in dirs:
         for dirpath, dirnames, filenames in os.walk(os.path.join(repo, d)):
@@ -195,7 +197,7 @@ def outside_walk(repo, dirs, root_files, prune=None):
                 dirnames[:] = []
                 continue
             drop = [n for n in dirnames
-                    if n.startswith(".") or n in OUTSIDE_NESTED or n in pr]
+                    if n.startswith(".") or n in ne or n in pr]
             skip_dirs += len(drop)
             dirnames[:] = [n for n in dirnames if n not in drop]
             got.extend(os.path.join(dirpath, f) for f in filenames if f.endswith(".md"))
@@ -1165,6 +1167,140 @@ def reco_exclusion_account(repo=REPO):
     return rows, len(base), skip0
 
 
+def outside_exclusion_account(repo=REPO):
+    """第十本账（§1.8p）：集外侧 .md 的嵌套名单逐名反事实——撤掉一名再走一遍集外语料，
+       量它新放出几份 .md、少走几个目录。与 第八本账 同一形状，所以两本账印在同一份输出里
+       （跨账恒等式要两侧同刻现量，不许一侧是本轮读数、另一侧是回忆）。
+
+       名单当参数喂进 outside_walk ⇒ 不改全局，仪器不在盘上留痕迹。少走目录是两次计数的差，
+       撤掉一名可能让**新进入的子树**里去数别的跳过名，差可以是负的——符号不是判据，逐名读数才是。
+       每行第五格是「撤掉这名后放出的路径里落在 docs/ 下的条数」：集外侧的剪枝名单本不该伸进扫描集，
+       一旦伸进去，这份账报的就不再是「集外多读了几个文件」而是「集内被挡了几个文件」，两者不同价。
+    """
+    dirs, root_files = outside_top(repo)
+    base, skip0 = outside_walk(repo, dirs, root_files)
+    base_set = set(base)
+    nested = set(OUTSIDE_NESTED)
+    rel = lambda p: os.path.relpath(p, repo).replace(os.sep, "/")
+    rows = []
+    for name in sorted(nested):
+        paths, skip = outside_walk(repo, dirs, root_files, frozenset(nested - {name}))
+        exposed = sorted(rel(p) for p in set(paths) - base_set)
+        rows.append((name, len(exposed), skip0 - skip, "／".join(exposed[:2]),
+                     sum(1 for p in exposed if p.startswith("docs/"))))
+    return rows, len(base), skip0
+
+
+def outside_exclusion_verdict(rows, out_md, nested, skip_names):
+    """六条红：名单塌缩／逐名读数缺行／集外 .md 分母塌缩（此时逐名读数与恒等式都在空集上恒真）／
+       嵌套名单重打了目录账的名字（第二源）／一名既无代价又不与顶层名单重叠（没有任何读数支持它留在集）／
+       反事实放出的路径落进 docs/（那份名单越过了集内外边界，报的不再是集外代价而是集内缺口）。
+
+       只吃参数与 prune_dirs()，不碰磁盘 ⇒ 夹具能在内存里逐条打红（承 第八本账 那条路子）。
+    """
+    bad = []
+    sk = set(skip_names)
+    if not nested:
+        bad.append("集外 .md 嵌套名单塌缩（0 个名字＝没有边界声明，代价账无从谈起）")
+    elif len(rows) != len(set(nested)):
+        bad.append("集外 .md 排除代价账塌缩（名单 %d 名／反事实读数 %d 行，缺的那几名没有代价记录）"
+                   % (len(set(nested)), len(rows)))
+    if out_md < 1:
+        bad.append("集外 .md 排除代价账分母塌缩（集外读到 0 份，此时逐名读数与恒等式在空集上恒真）")
+    dup = sorted(set(nested) & set(prune_dirs()))
+    if dup:
+        bad.append("集外 .md 名单重打了目录账的名字 %s（一个事实一个源：那份排除只能由 DIR_ACCOUNT 条目名派生）"
+                   % "／".join(dup))
+    orphan = sorted(n for n, files, dirs, _s, _ud in rows if not files and not dirs and n not in sk)
+    if orphan:
+        bad.append("集外 .md 名单里有 %d 名既不放文件也不减目录、顶层名单也不含它 %s"
+                   "（既不点火也不与任何在册口径共用＝没有读数支持它继续留在集）"
+                   % (len(orphan), "／".join(orphan)))
+    bleed = sorted(set(n for n, _f, _d, _s, ud in rows if ud))
+    if bleed:
+        bad.append("集外 .md 反事实放出的路径里有集内目录名下的 %d 名 %s"
+                   "（集外侧的剪枝名单伸进了扫描集：本账报的从「集外多读几份」变成「集内被挡几份」，两件事不同价）"
+                   % (len(bleed), "／".join(bleed)))
+    return bad
+
+
+# 六条通道一张表（前缀, 变异锚点, 内存对照的入参）：变异体34 用它逐条打红、夹具Z 用它逐条撤分支、
+# BATTERY 用它当针。三份对照各写一遍＝改一条红要记得改三处，那正是「清单会漏掉明天新加的那条红」的自家版本。
+OUT_EX_CASES = [
+    ("集外 .md 嵌套名单塌缩（0 个名字＝没有边界声明，代价账无从谈起）",
+     '    if not nested:\n        bad.append("集外 .md 嵌套名单塌缩',
+     ([], 5, [], OUTSIDE_SKIP)),
+    ("集外 .md 排除代价账塌缩（名单",
+     '    elif len(rows) != len(set(nested)):\n        bad.append("集外 .md 排除代价账塌缩',
+     ([("a", 1, 0, "x/y.md", 0)], 5, ["a", "b"], [])),
+    ("集外 .md 排除代价账分母塌缩（集外读到 0 份，此时逐名读数与恒等式在空集上恒真）",
+     '    if out_md < 1:\n        bad.append("集外 .md 排除代价账分母塌缩',
+     ([("a", 1, 0, "x/y.md", 0)], 0, ["a"], [])),
+    ("集外 .md 名单重打了目录账的名字",
+     '    if dup:\n        bad.append("集外 .md 名单重打了目录账的名字',
+     ([("_archive", 1, 0, "x/y.md", 0)], 5, ["_archive"], [])),
+    ("集外 .md 名单里有",
+     '    if orphan:\n        bad.append("集外 .md 名单里有',
+     ([("ghost", 0, 0, "", 0)], 5, ["ghost"], [])),
+    ("集外 .md 反事实放出的路径里有集内目录名下的",
+     '    if bleed:\n        bad.append("集外 .md 反事实放出的路径里有集内目录名下的',
+     ([("a", 3, 0, "docs/x.md", 3)], 5, ["a"], [])),
+]
+
+
+OUT_EX_HOME_FN = "outside_exclusion_verdict"
+
+
+def _ex_witness(src=None):
+    """夹具Z 的机器：把第十本账的判决函数从源码里现抠出来，逐条分支在内存里 `and False`，
+       要求撤第 k 条只让第 k 枚针哑、其余五枚照红。
+
+       默认读盘上那份（跑起来时盘＝运行图像，见证是对着真身跑的）；`src=` 是留给牙的——
+       一个只会「读自己那份磁盘图像」的见证没法在不改仓内文件的前提下证明它会红，
+       所以把图像当参数喂进来，撤分支／抠不到函数／锚点不唯一三种坏法都能只坏在内存里
+       （坏法本身由 夹具AA 常驻复跑，不留在临时脚本里）。
+       累加器故意不叫 bad：这些消息是「见证自己坏了」，不是判决通道，不该进红模板台账。
+    """
+    notes = []
+    src = _read_code(os.path.abspath(__file__)) if src is None else src
+    fns = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef)
+           and n.name == OUT_EX_HOME_FN]
+    if len(fns) != 1:
+        return ["判决函数在本文件源码里不是恰好 1 个（现量 %d）＝抠不出可变异的源码，见证作废"
+                % len(fns)], "抠取失败"
+    seg = ast.get_source_segment(src, fns[0]) or ""
+    n_tpl = seg.count('bad.append("集外 .md ')
+    if n_tpl != len(OUT_EX_CASES):
+        notes.append("判决源码里的红模板现量 %d 条 ≠ 通道表 %d 条＝有条道没被见证（新增判决要同轮补通道）"
+                     % (n_tpl, len(OUT_EX_CASES)))
+    ns0 = {"prune_dirs": prune_dirs}
+    exec(compile(seg, "<ex-base>", "exec"), ns0)
+    base = {p: len(ns0["outside_exclusion_verdict"](*args)) for p, _a, args in OUT_EX_CASES}
+    if sorted(base.values()) != [1] * len(OUT_EX_CASES):
+        notes.append("未变异基线不是每枚各红 1 条 %s＝先修对照再来撤分支" % base)
+        return notes, "基线 %s" % base
+    per = []
+    for i, (p, anch, _args) in enumerate(OUT_EX_CASES):
+        if seg.count(anch) != 1:
+            notes.append("锚点第 %d 条（%s）在判决源码里命中 %d 次（不唯一＝可能撤错分支或一条没撤）"
+                         % (i + 1, p[:14], seg.count(anch)))
+            continue
+        mut = seg.replace(anch, anch.replace(":\n", " and False:\n", 1), 1)
+        if mut == seg:
+            notes.append("锚点第 %d 条撤不动（源码里没有 `:\\n` 那个形状＝分支写法变了）" % (i + 1))
+            continue
+        ns = {"prune_dirs": prune_dirs}
+        exec(compile(mut, "<ex-mut-%d>" % i, "exec"), ns)
+        got = {q: len(ns["outside_exclusion_verdict"](*ar)) for q, _a2, ar in OUT_EX_CASES}
+        want = dict(base)
+        want[p] = 0
+        ok = got == want
+        per.append((i + 1, "哑自己＋其余照红" if ok else got))
+        if not ok:
+            notes.append("撤掉第 %d 条（%s）后各针红数 %s ≠ 期望 %s" % (i + 1, p[:14], got, want))
+    return notes, "红模板现量 %d／基线每枚 1 条／逐条撤分支 %s" % (n_tpl, per)
+
+
 def reco_weak_sites(src):
     """弱尺（非 Python 仪器）：整行含全角记号即算，不区分它是不是正则位点。"""
     return [(i, ln.strip()[:64]) for i, ln in enumerate(src.splitlines(), 1)
@@ -1251,7 +1387,29 @@ def cmd_recognizer(args):
           % (len(rows), " ".join(ign) or "无", " ".join(dead) or "无"))
     print("    名单来源：构建派生字面量 %d 个 + 目录账派生名 %d 个（prune_dirs 现推，代码侧不再手写第二份）｜集外基线 %d 份｜少走目录 %d 个"
           % (len(RECO_GENERATED_NESTED), len(prune_dirs()), n_base, n_skip))
-    bad = bad + out["bad"] + ex_bad
+    # 第十本账（§1.8p）：集外侧 .md 那一圈自己的嵌套名单。第八本账量的是**代码**语料的排除代价，
+    # 而 .md 语料用的是另一份名单（OUTSIDE_NESTED），此前只在普查里量过点火面、没进判决。
+    _tc = time.perf_counter()
+    o_rows, o_base, o_skip = outside_exclusion_account()
+    o_cost = time.perf_counter() - _tc
+    o_bad = outside_exclusion_verdict(o_rows, o_base, OUTSIDE_NESTED, OUTSIDE_SKIP)
+    o_fire = ["%s：%d 份/目录 %+d" % (r[0], r[1], r[2]) for r in o_rows if r[1] or r[2]]
+    o_dead = [r[0] for r in o_rows if not r[1] and not r[2]]
+    o_bleed = sum(r[4] for r in o_rows)
+    print("    集外 .md 嵌套排除代价账 %d 名（每名撤掉再走一遍，逐名反事实耗时 %.1f s）｜"
+          "点火的 %s｜从不点火（防御项，按名出账，撤与不撤本账不判）%s｜放出里落在集内的 %d 条（本账只许算集外）"
+          % (len(o_rows), o_cost, " ".join(o_fire) or "无", " ".join(o_dead) or "无", o_bleed))
+    for r in o_rows:
+        if r[3]:
+            print("     放出样例 %s → %s" % (r[0], r[3]))
+    print("    跨账恒等式（两本名单同一份输出里现量）：NESTED %d 名／SKIP %d 名／交集 %d 名（%s）｜"
+          "只在 NESTED（%s）｜只在 SKIP（%s）｜集外 .md 基线 %d 份／少走目录 %d 个"
+          % (len(OUTSIDE_NESTED), len(OUTSIDE_SKIP), len(set(OUTSIDE_NESTED) & set(OUTSIDE_SKIP)),
+             " ".join(sorted(set(OUTSIDE_NESTED) & set(OUTSIDE_SKIP))) or "无",
+             " ".join(sorted(set(OUTSIDE_NESTED) - set(OUTSIDE_SKIP))) or "无",
+             " ".join(sorted(set(OUTSIDE_SKIP) - set(OUTSIDE_NESTED))) or "无",
+             o_base, o_skip))
+    bad = bad + out["bad"] + ex_bad + o_bad
     if bad:
         print("RECOGNIZER FAIL：%s" % "／".join(bad))
         return 1
@@ -1597,41 +1755,12 @@ def cmd_selftest(args):
                    "BOM 已剥离 %s ／ 解析失败 %d ／ 点名 %s" % (
                        not src_bom.startswith(BOM), len(rep_bom["unparsable"]),
                        [h["path"] for h in rep_bom["foreign"]])))
-    def _first_const(node):
-        """取一条 `bad.append(…)` 里最左边的字面量：格式化串的头就是这条红的名字。"""
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            return node.value
-        if isinstance(node, ast.BinOp):
-            return _first_const(node.left)
-        if isinstance(node, ast.JoinedStr):
-            for v in node.values:
-                got = _first_const(v)
-                if got is not None:
-                    return got
-        return None
-
     def _tmpl_prefixes():
-        """红模板从**本文件自己的源码**现取，不写清单——清单会漏掉明天新加的那条红。"""
-        tree = ast.parse(_read_code(os.path.abspath(__file__)))
-        found = set()
-
-        def scan(fn):
-            for n in ast.walk(fn):
-                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) \
-                        and n.func.attr == "append" and isinstance(n.func.value, ast.Name) \
-                        and n.func.value.id == "bad" and n.args:
-                    head = _first_const(n.args[0])
-                    if head is not None:
-                        cut = head.split("%")[0].rstrip()
-                        # 头为空的模板（整串都以占位符开头）等于"什么红都算命中"，按整串收，不许它当万能前缀
-                        found.add(cut if len(cut) >= 4 else head)
-            for n in ast.walk(fn):
-                if isinstance(n, ast.FunctionDef) and n is not fn:
-                    scan(n)
-        for n in tree.body:
-            if isinstance(n, ast.FunctionDef):
-                scan(n)
-        return sorted(found)
+        """红模板从**本文件自己的源码**现取，不写清单——清单会漏掉明天新加的那条红。
+        抽取口径不在这里另写一份：由 `formula_ledger` 单源（本机把红写成 `bad.append(模板)`，
+        即 `form="append"`；普查器那侧写成 `print("FAIL …")`，即 `form="print"`），
+        两侧共用同一条「取最左字面量、在首个占位符处截、截短则按整串收」的规则。"""
+        return FL.red_outlet_universe(_read_code(os.path.abspath(__file__)), "append")
 
     tmpls = _tmpl_prefixes()
 
@@ -2198,6 +2327,98 @@ def cmd_selftest(args):
                                 + e33_empty + e33_dup])) == 5,
                    "①%s ｜②%s ｜③%s ｜④%s ｜⑤%s" % (
                        e33_hidden, e33_short, e33_zero, e33_empty, e33_dup)))
+    # 夹具Y／变异体34：第十本账（§1.8p）——集外侧 .md 那份嵌套名单自己的代价账。
+    # 名单在 10-02 之前只在普查里量过「挡了多少目录」，从没进过判决：撤掉一名会放出几份 .md、
+    # 少走几个目录，此前只能靠人肉走一遍。这里把它收进和 第八本账 同一形状的逐名反事实。
+    o_rows, o_base, o_skip = outside_exclusion_account()
+    o_bad = outside_exclusion_verdict(o_rows, o_base, OUTSIDE_NESTED, OUTSIDE_SKIP)
+    o_census_files = outside_census()["files"]
+    o_ignited = {r[0] for r in o_rows if r[1] or r[2]}
+    o_must_fire = set(OUTSIDE_NESTED) - set(OUTSIDE_SKIP)
+    o_bleed = sum(r[4] for r in o_rows)
+    checks.append(("夹具Y 第十本账（集外 .md 嵌套排除代价账）在真语料上必须五件都成立："
+                   "① 名单每名都有一行反事实读数（行数＝名单长度）且集外基线非空；② 代价账整条零红；"
+                   "③ 这份名单不重打目录账的名字（与 prune_dirs 不相交——那份排除只能由 DIR_ACCOUNT 条目名派生）；"
+                   "④ 顶层名单没覆盖的名字必须真点火（放出份数≠0 或少走目录≠0），只在不与 OUTSIDE_SKIP 重叠时要求："
+                   "重叠的那几名是防御项，撤与不撤由顶层名单兜着，本账不判它们死；"
+                   "⑤ 逐名反事实的基线与普查那把尺读到同一份集外分母（%d 份＝%d 份，不等说明代价账偷偷换了扫描口径），"
+                   "且放出的路径里落在 docs/ 名下的必须 0 条（越界就不叫集外代价而叫集内缺口）"
+                   % (o_base, o_census_files),
+                   len(o_rows) == len(set(OUTSIDE_NESTED)) and o_base > 0 and o_bad == []
+                   and set(OUTSIDE_NESTED).isdisjoint(prune_dirs())
+                   and o_must_fire <= o_ignited and o_base == o_census_files and o_bleed == 0,
+                   "名单 %d 名／集外基线 %d 份（普查那把尺 %d 份）／少走目录 %d 个｜"
+                   "逐名（名单, 放出份数, 少走目录, 放出里集内条数）%s｜顶层名单没覆盖须点火的 %s／实际点火 %s｜"
+                   "与目录账交集 %s｜代价账红 %s" % (
+                       len(set(OUTSIDE_NESTED)), o_base, o_census_files, o_skip,
+                       [(r[0], r[1], r[2], r[4]) for r in o_rows],
+                       sorted(o_must_fire), sorted(o_ignited),
+                       sorted(set(OUTSIDE_NESTED) & set(prune_dirs())), o_bad)))
+
+    v34 = [outside_exclusion_verdict(*args) for _p, _anch, args in OUT_EX_CASES]
+    checks.append(("变异体34 第十本账的六条通道各钉一枚且各只红自己那条：① 名单整体为空只红名单塌缩；"
+                   "② 少一行反事实读数只红账塌缩（那一名没有代价记录）；③ 集外基线读到 0 份只红分母塌缩"
+                   "（第 35 型：0 份时逐名读数与恒等式都在空集上恒真）；④ 一名既不放文件也不减目录、"
+                   "顶层名单也不含它只红孤儿名；⑤ 名单里出现目录账的名字只红第二源；"
+                   "⑥ 反事实放出的路径落在 docs/ 名下只红越界——六枚红各归自己的前缀且前缀两两不同，"
+                   "任何一枚多红别家就说明两条通道共用一条判据",
+                   all(len(r) == 1 and r[0].startswith(p)
+                       for r, (p, _a, _n) in zip(v34, OUT_EX_CASES))
+                   and len(set([r[0].split("（")[0] for r in v34 if r])) == len(OUT_EX_CASES),
+                   " ／ ".join("%s" % (r,) for r in v34)))
+
+    z_notes, z_detail = _ex_witness()
+    checks.append(("夹具Z 第十本账的六枚针必须各自穿孔：把判决函数从本文件源码现抠（抠到的不是恰好一个函数就红、"
+                   "抠到的红模板条数≠通道表条数也红、锚点在源码里不唯一或撤不动同样红——见证自己坏了不许静默跳过），"
+                   "再在内存里逐条 `and False` 短路：撤第 k 条只许第 k 枚针哑、其余五枚照红，六次都得对上。"
+                   "（承 第 34 型：撤了通道而对应那枚针不红＝针根本没穿这条通道，不是判决变得更稳；"
+                   "_ex_witness 收 src 参数＝这台见证自己的三条守卫可以在不改仓内文件的前提下逐条撞红，"
+                   "撞法见 §1.8p；全程 compile＋exec 在内存里跑，一个字节都不写盘）",
+                   z_notes == [], z_detail))
+
+    # 夹具AA：夹具Z 自己的牙。把它的判决函数源码现抠出来当注入面（表里那份锚点字符串不在这一段里，
+    # 所以每处坏法在段内都只命中 1 次——不检查这一条就会造出「replace 打了个空炮而格子照样绿」的假见证）。
+    # 「同一条分支复制两份」这一型在构造上够不着：锚点含 bad.append("集外 .md ，复制它就同时把红模板条数抄错，
+    # 于是被前一条守卫先接住（顺序决定哪格被见证），所以这里只留命中 0 次那一侧（戊）。
+    aa_src = _read_code(os.path.abspath(__file__))
+    aa_fns = [n for n in ast.parse(aa_src).body if isinstance(n, ast.FunctionDef)
+              and n.name == OUT_EX_HOME_FN]
+    aa_seg = ast.get_source_segment(aa_src, aa_fns[0]) if len(aa_fns) == 1 else ""
+    aa_out = [] if len(aa_fns) == 1 else [
+        "判决函数在盘上源码里不是恰好 1 个（现量 %d）＝注入面抠不出来，四型坏法全都没跑" % len(aa_fns)]
+    AA = [
+        ("甲 有一条红的开头被改写（通道表还在、源码里的红模板条数对不上）",
+         'bad.append("%s' % OUT_EX_CASES[5][0], 'bad.append("ZZ%s' % OUT_EX_CASES[5][0],
+         "红模板现量 5 条"),
+        ("乙 判决函数被改名（抠不到＝见证必须作废，不许静默通过）",
+         "def %s(" % OUT_EX_HOME_FN, "def %s_x(" % OUT_EX_HOME_FN, "不是恰好 1 个"),
+        ("丁 有一条分支永远不成立（对照打不红＝基线不对就不许往下撤）",
+         OUT_EX_CASES[2][1].split("\n")[0], "    if False:", "未变异基线不是每枚各红 1 条"),
+        ("戊 有一条分支换了写法（锚点命中 0 次＝撤错分支或一条没撤）",
+         OUT_EX_CASES[3][1].split("\n")[0], OUT_EX_CASES[3][1].split("\n")[0] + "  # 写法变了",
+         "命中 0 次"),
+    ]
+    for label, old, new, want in AA:
+        if aa_seg.count(old) != 1:
+            aa_out.append("%s：注入锚点在判决源码里命中 %d 次＝这一例改到的可能不是我要改的那处"
+                          % (label[:2], aa_seg.count(old)))
+            continue
+        mut = aa_seg.replace(old, new, 1)
+        if mut == aa_seg:
+            aa_out.append("%s：注入没落地（replace 打了空炮）" % label[:2])
+            continue
+        nts, _det = _ex_witness(mut)
+        if not nts:
+            aa_out.append("%s 坏法注入后夹具Z 仍然 notes=[]＝这台见证没有牙" % label[:2])
+        elif not any(want in x for x in nts):
+            aa_out.append("%s 红了但不是因为预期的那条守卫（期望含「%s」，现量 %s）"
+                          % (label[:2], want, nts))
+    checks.append(("夹具AA 夹具Z 的四型坏法必须各撞红自己那条守卫——甲 红模板条数对不上／乙 抠不到函数／"
+                   "丁 对照打不红（基线先作废）／戊 锚点命中 0 次；"
+                   "注入前先断言锚点在段内恰好 1 次且 replace 真落地（否则＝静默 no-op 的假见证），"
+                   "注入后还要求 notes 非空**且**红的原因是预期那条（红错原因也算没牙）。"
+                   "全部只改内存里那份判决源码：夹具L 扫的是盘上文件，所以这一格不会顺手给自己配出六枚新针",
+                   aa_out == [], "四型各撞红预期守卫 ／ 异常 %s" % aa_out))
     BATTERY = [
         ("第二把尺", lambda: reco_verdict(reco_audit(
             [HOME_STUB, ("scripts/gate/second_fw.py", SECOND_FW)]))),
@@ -2288,6 +2509,9 @@ def cmd_selftest(args):
             "docs/a.md", [dict(line=3, span=_NEEDLE_UNCLOSED)],
             {_suspect_key("docs/a.md", dict(line=3, span=_NEEDLE_UNCLOSED)): "真算术"})),
     ]
+    # 第十本账的六枚针由通道表派生（同一条对照既打红变异体34，也当 夹具L 的针）——
+    # 在 BATTERY 里再手抄一遍就会有两份会各自腐烂的对照。
+    BATTERY += [(p, (lambda a=args: outside_exclusion_verdict(*a))) for p, _anch, args in OUT_EX_CASES]
     clean_dir = dircheck_verdict(["docs/architecture"], [("架构目录", "L2 架构文，一条主题一个目录")])
     covered, dead, errs = {}, [], []
     for key, f in BATTERY:
@@ -2305,6 +2529,21 @@ def cmd_selftest(args):
                    len(tmpls) >= 6 and not uncovered and not dead and not errs and clean_dir == [],
                    "红模板 %d 条 ／ 未覆盖 %s ／ 死键 %s ／ 异常 %s ／ 合法目录账不误报 %s" % (
                        len(tmpls), uncovered, dead, errs, clean_dir)))
+    # 单源必须被"拧单源"打破：把 FL 的前缀门限抬高到没有任何截短头能过关，本文件的红模板宇宙
+    # 必须跟着变（变成整串，里头带占位符）。拧不动＝这里还藏着第二把尺，明天的改动只落在那把没人看的尺上。
+    orig_min = FL.OUTLET_MIN_PREFIX
+    FL.OUTLET_MIN_PREFIX = 400
+    try:
+        knob = FL.red_outlet_universe(_read_code(os.path.abspath(__file__)), "append")
+    finally:
+        FL.OUTLET_MIN_PREFIX = orig_min
+    checks.append(("变异体35 红模板抽取只有单源一个实现：抬高 FL 的前缀门限必须改动本文件的宇宙，"
+                   "且还原后门限回到原值（宇宙按名点到几处不由这里判——上面那格夹具L 管）",
+                   knob != tmpls and any("%" in t for t in knob)
+                   and FL.OUTLET_MIN_PREFIX == orig_min,
+                   "门限 %d→400→%d ／ 宇宙 %d 条→%d 条 ／ 拧后含占位符 %d 条" % (
+                       orig_min, FL.OUTLET_MIN_PREFIX, len(tmpls), len(knob),
+                       sum(1 for t in knob if "%" in t))))
     fails = 0
     for name, ok, detail in checks:
         print("%s %s  %s" % ("PASS" if ok else "FAIL", name, detail))

@@ -1,0 +1,236 @@
+{
+  "scope": "EA-OBJ-10/11 favorite authority read and same-tab pending recovery",
+  "status": "implemented_with_quality_gaps",
+  "checks": [
+    {
+      "name": "rust_frontend_release",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "tenant_expert_isolation",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_frontend_release.log"
+    },
+    {
+      "name": "node_final",
+      "command": [
+        "node",
+        "--test",
+        "frontend-ui/src/modules/expert-alliance/contract/favorite-journal.node-test.mjs",
+        "frontend-ui/src/modules/expert-alliance/contract/favorite-request.node-test.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "node_final.log"
+    },
+    {
+      "name": "contract_final",
+      "command": [
+        "node",
+        "frontend-ui/node_modules/vitest/vitest.mjs",
+        "run",
+        "frontend-ui/src/modules/expert-alliance/contract/contract.test.js",
+        "frontend-ui/src/modules/expert-alliance/contract/vocabulary-ownership.test.js",
+        "--config",
+        "frontend-ui/vite.config.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 1,
+      "log": "contract_final.log"
+    },
+    {
+      "name": "frontend_build_verified",
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "run",
+        "build"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_build_verified.log"
+    },
+    {
+      "name": "module",
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "module.log"
+    },
+    {
+      "name": "framework",
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-framework-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "framework.log"
+    },
+    {
+      "name": "bindings",
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-api-binding-kinds.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "bindings.log"
+    },
+    {
+      "name": "paths_release",
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_release.log"
+    },
+    {
+      "name": "ledger_verified",
+      "command": [
+        "python",
+        "scripts/gate/check-api-surface.py",
+        "--ledger",
+        "--write"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ledger_verified.log"
+    },
+    {
+      "name": "diagrams",
+      "command": [
+        "node",
+        "reports/data/20261003-favorite-recovery/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log"
+    },
+    {
+      "name": "docs_verified",
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py",
+        "--max-detail",
+        "5"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs_verified.log"
+    },
+    {
+      "name": "format",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/favorite_repository.rs",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_ext.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/favorite_transactions.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/tenant_expert_isolation.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log"
+    },
+    {
+      "name": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff.log"
+    },
+    {
+      "name": "clippy_standard",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "tenant_expert_isolation",
+        "--no-deps"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy_standard.log"
+    }
+  ],
+  "rust_tests_passed": 8,
+  "node_tests_passed": 5,
+  "contract_tests_passed": 119,
+  "contract_tests_failed": 1,
+  "actual_frontend_http_probe": true,
+  "business_mock_added": false,
+  "production_ready": false,
+  "all_functions_complete": false,
+  "full_browser_dom_e2e": false,
+  "remote_ci_verified": false,
+  "cross_host_verified": false,
+  "legacy_store_double_tests_migrated": false,
+  "strict_lint_passed": false,
+  "remaining": [
+    "wire independent webhook operations console to satisfy unchanged 85 percent coverage gate",
+    "migrate historical store service-double tests to real fixtures",
+    "strict lint backlog",
+    "receipt retention",
+    "personal favorites",
+    "cross-tab coordination"
+  ],
+  "final_check_count": 14,
+  "final_checks_passed": 13,
+  "final_checks_failed": 1,
+  "source_manifest": {
+    ".github/workflows/ci.yml": "389adf2d3369db4929555ea2b8a730056a07da0db5b5566c157cc409965341f7",
+    "docs/API-REGISTRY.md": "a18b75aebe4a105d280db5048b96f04a81642ad038b48729b61f110034844781",
+    "docs/expert-alliance/22-expert-object-contract.md": "8b853b22757bd2f82aa5a7455b85975ab6eb229c1b38dd9431ad73db6dc043d7",
+    "docs/expert-alliance/CURRENT-ARCHITECTURE.md": "5f7c9a4a758a6440be86a1bfa0799f14d4a7ed62b122969434809d8da6707214",
+    "docs/expert-alliance/16-decision-and-state-ledger.md": "f4c67db012d88458ea1f14fc34bcb13145ad9c30f95655b1d4e532913901791f",
+    "docs/modules/REAL-IMPLEMENTATION-STATUS.md": "33c4d3a8e02ff4f852204bd65375b2c09f0cc90e4dc2e6252b26136da14e2a60",
+    "frontend-ui/src/modules/expert-alliance/api/alliance.api.js": "0db02ae7e3227b46d46ddfbe7fe0c31c270a274bdae2e929e397cf31a069cb1e",
+    "frontend-ui/src/modules/expert-alliance/contract/endpoints.js": "d39999a8f9fc4a79e0d9060345724b0105f432e50321a9ef2cfb66c8af76bb40",
+    "frontend-ui/src/modules/expert-alliance/contract/contract.test.js": "42d9d0ae43af0b57dd476cb2b64ba25c6b63b8d8b91fe453f9f14471fe721bd6",
+    "frontend-ui/src/modules/expert-alliance/contract/index.js": "b87b8128d3e0a287824ebdc6ad5b2f26fce63a93ef762d1920372cd06c87d094",
+    "frontend-ui/src/modules/expert-alliance/contract/favorite-request.js": "6495999684d743960f39530d5093b3fdc08099cdfdd184fc0762e228d59c8115",
+    "frontend-ui/src/modules/expert-alliance/contract/favorite-journal.js": "8c35637fdcef9905c63d7df8247a6ccedc1ecfe1b2b4aff33cab1a9ac7fb4c4f",
+    "frontend-ui/src/modules/expert-alliance/contract/favorite-journal.node-test.mjs": "8fd4b303c4e2ffab6c51206d2d25d7c61fc991d18f529ffa1525eca4cc1c37fe",
+    "frontend-ui/src/modules/expert-alliance/store/alliance-experts.store.js": "c1c681a7119c625ad4f5d4821c8a8cb27b993e205bd947ab3af1e0cb5c13e847",
+    "frontend-ui/src/modules/expert-alliance/components/ExpertCard.vue": "a2004eaa517c460cc9e936e6e2781e6e29d5060f95e28247a353bb110702c62e",
+    "frontend-ui/src/modules/expert-alliance/views/AllianceExpertsView.vue": "3893d3b6a67f2c35ee8db8f6d5ab06a6ea26eec37672bc66739b62c4604b1e20",
+    "platform/gateway/mox-platform-gateway-svc/src/actuator.rs": "985105902ad56798e6562752fb574fdd8a36f8da37638e2a8b2044bece2213b6",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_ext.rs": "32b37ac41f49a4d04aead076b9d27e9c661d8a75b1ca40c5dc9746f5dcce7570",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/favorite_repository.rs": "20aa85fbae845cad1d99267c01a4198fdd6a74985a1213cf7912792e66f91958",
+    "platform/gateway/mox-platform-gateway-svc/tests/favorite_transactions.rs": "b68869b5ed777ae0609c607beec062fc168e865ae3131689a4126a1d196c09fb",
+    "platform/gateway/mox-platform-gateway-svc/tests/tenant_expert_isolation.rs": "914836a9d3c0fc2861ad2776b1a00644d959aa1218bc51b6aa207b5bcf7b29b0",
+    "reports/data/20261003-favorite-recovery/verify-store.mjs": "da6d61fb4035513d5cc38559668febf13c90eb6c09fefc11b1badb2b6d788edc",
+    "reports/markdown/20261003-favorite-recovery.md": "eb84770a47aaaf5476ccf431f1ef993bedfb4e83972725a18ae75265fe9dc6c1"
+  }
+}

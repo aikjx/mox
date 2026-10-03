@@ -1,0 +1,21 @@
+§1.8r 判决出口抽取单源化·对账收据（两台仪器各自的本地实现退役，并入 formula_ledger 一份实现）｜生成时刻 2026-10-03 10:21:51｜本文件 reports/data/recon-18r-outlet-single-source-2026-10-03-1021.txt
+[1] 图像身份三件（当前现取／git HEAD 现取／同日最晚载体自署）。HEAD 是外部锚：recon-11 收据点的就是 HEAD 那张 api 图像（47682460afb7 命中＝True）。本收据不重建旧字节，只印顶替关系。
+   check-doc-formulas.py 当前 172910 B／md5 57b2919912e7｜HEAD 154009 B／md5 3662cc24fdf8｜上一张载体 selftest-formula-2026-10-03-1000.txt 自署 67c461d6724b（相同＝False，那张描述的是本轮之前的图像）
+   check-api-surface.py 当前 158846 B／md5 c88ce702e727｜HEAD 150773 B／md5 47682460afb7
+   formula_ledger.py 当前 11646 B／md5 f56244103e98｜HEAD 9311 B／md5 3493ed5a7591｜OUTLET_MIN_PREFIX=4
+[2] 一个事实一个源的出现次数账（当前图像现取；期望次数写死在这里，因为它就是本轮要证的那件事）：
+   _first_const（doc 侧被退役的本地字面量取头）                       当前 0 处（期望 0）
+   _lit_head（api 侧被退役的本地字面量取头）                          当前 0 处（期望 0）
+   ast.parse（api 侧不再自己解析）                               当前 0 处（期望 0）
+   FL 里共享实现的定义处数：def red_outlet_sites 1／def red_outlet_universe 1／def first_const 1｜HEAD 那张 0／0／0（本轮新增）
+   api 侧 `import ast` 现取 0 处（退役后未用到的 import 也一并删，留着就是『还有第二把尺』的假象）
+[3] 宇宙条数在换实现前后相同，且两把尺逐条相同（独立尺是本文件内嵌的另一份 AST 走法，故意不复用 FL）：
+   doc 侧 FL 现取 53 条／独立尺 53 条／逐条相同＝True｜上一张载体 selftest-formula-2026-10-03-1000.txt 自署红模板 53 条（本轮活体 53 条）
+   api 侧 FL 现取 13 条／独立尺 13 条／逐条相同＝True｜recon-11 收据（md5 d6022df78988）自署宇宙 13 条（本轮活体 13 条／基线 13／唯一前缀 13）
+[4] 例数增量：doc 62→63（+1）｜api 末行 49 例。新增格在当前图像各恰 1 处、在 HEAD 图像 0 处——HEAD 是本轮之前的更早锚，它没有这一格 ⇒ 这一格确实是本轮新写的，不是把旧格复述成新增。
+   变异体35                    锚点 当前 1 处／HEAD 0 处｜活体 PASS 行 1 行
+   变异体32                    锚点 当前 1 处／HEAD 0 处｜活体 PASS 行 1 行
+   两枚拧单源格在活体输出里各恰一行 PASS＝True｜拧动读数（doc） 4→400→4 ／ 宇宙 53 条→53 条 ／ 拧后含占位符 43 条｜（api） 4→400→4｜站点 13→13｜前缀集合改变 True｜拧后含占位符 10 条
+[5] 活体门禁 11 条逐条 rc（本收据判定所依赖的全在这）：verify-ports.py rc=0／check-script-paths --selftest rc=0／check-script-paths --check rc=0／check-frontend-module.py rc=0／check-locale-format-outlets --selftest rc=0／check-locale-format-outlets rc=0／enterprise_capabilities --check rc=0／doc-formulas --selftest rc=0／api-surface --selftest rc=0／api-surface --ledger rc=0／mox-governance-mcp --selftest rc=0
+[6] 余账（如实写零，不假装收口）：api 侧 OUTLET_COVERED 仍为空表 ⇒ 13 条红的覆盖是 [] 名，已覆盖 0／未覆盖 13（这一格在夹具L·表亲 的输出里现取）；给每条红配内存对照针是 task #11 的（甲），本轮没做。
+   --ledger 末行：LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）｜本轮三件写入（两台仪器 + FL）均未提交，同日载体 9 张全部保留（glob 现取，不手写名单）。

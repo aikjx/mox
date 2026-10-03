@@ -99,7 +99,7 @@ jobs:
         run: |
           python scripts/registry/enterprise_capabilities.py --check
           python -m unittest scripts.tests.test_enterprise_capabilities -v
-          node --test frontend-ui/src/modules/message-center/contract/send.node-test.mjs frontend-ui/src/utils/api-key.node-test.mjs frontend-ui/src/utils/audit.node-test.mjs frontend-ui/src/modules/expert-alliance/contract/event-stream.node-test.mjs
+          node --test frontend-ui/src/modules/message-center/contract/send.node-test.mjs frontend-ui/src/utils/api-key.node-test.mjs frontend-ui/src/utils/audit.node-test.mjs frontend-ui/src/modules/expert-alliance/contract/event-stream.node-test.mjs frontend-ui/src/modules/expert-alliance/contract/favorite-request.node-test.mjs frontend-ui/src/modules/expert-alliance/contract/favorite-journal.node-test.mjs
 
       - name: 核心公式识别器的牙（只验仪器自己有没有坏，不替维护者选字形口径）
         run: |
