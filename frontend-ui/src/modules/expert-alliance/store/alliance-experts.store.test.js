@@ -1,6 +1,13 @@
 // 广场 store 单元测试：只验状态流转与错误单点，信封/字段归一由 contract 层负责。
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { spawn } from 'node:child_process'
+import { createRequire } from 'node:module'
+import { mkdtemp, readFile, writeFile, unlink, rmdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import http from '@/api/http'
+const nodeAxios = createRequire(import.meta.url)('axios')
 
 const { api } = vi.hoisted(() => ({
   api: {
@@ -21,7 +28,51 @@ const { api } = vi.hoisted(() => ({
     deleteExpert: vi.fn()
   }
 }))
-vi.mock('../api/alliance.api.js', () => ({ allianceApi: api }))
+// Legacy local state stubs remain; the new batch read uses real Rust/JWT/SQLite.
+vi.mock('../api/alliance.api.js', async importOriginal => {
+  const actual = await importOriginal()
+  return { ...actual, allianceApi: { ...api, readFavorites: actual.allianceApi.readFavorites } }
+})
+
+let service, serviceDone, serviceFolder, serviceIdentity, oldBase, oldAdapter
+beforeAll(async () => {
+  serviceFolder = await mkdtemp(path.join(tmpdir(), 'mox-store-read-'))
+  const ready = path.join(serviceFolder, 'ready.json')
+  const env = { ...process.env, MOX_RECOVERY_SERVICE_READY: ready, MOX_RECOVERY_SERVICE_STOP: path.join(serviceFolder, 'stop') }
+  delete env.MOX_RECOVERY_PROBE
+  delete env.MOX_RECOVERY_BROWSER_PROBE
+  service = spawn('cargo', ['test', '-p', 'mox-platform-gateway-svc', '--test', 'event_page_recovery', '--', '--test-threads=1'], {
+    cwd: path.resolve(process.cwd(), '..'), env, stdio: ['ignore', 'ignore', 'ignore']
+  })
+  serviceDone = new Promise((resolve, reject) => { service.on('error', reject); service.on('exit', resolve) })
+  const deadline = Date.now() + 60000
+  while (Date.now() < deadline) {
+    try { serviceIdentity = JSON.parse(await readFile(ready, 'utf8')); break } catch { /* Atomic ready file is not present yet. */ }
+    if (service.exitCode !== null) throw new Error('Real Rust store fixture exited before becoming ready')
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+  if (!serviceIdentity) throw new Error('Real Rust store fixture did not become ready')
+  await unlink(ready)
+  oldBase = http.defaults.baseURL
+  oldAdapter = http.defaults.adapter
+  http.defaults.baseURL = serviceIdentity.base + '/api'
+  http.defaults.adapter = nodeAxios.getAdapter('http')
+  for (const id of ['e1', 'e2', 'a', 'b', 'c']) {
+    const response = await nodeAxios.post(serviceIdentity.base + '/api/experts', { id, name: id }, { adapter: nodeAxios.getAdapter('http'), headers: { Authorization: `Bearer ${serviceIdentity.token}` } })
+    expect(response.status).toBe(200)
+  }
+}, 65000)
+
+afterAll(async () => {
+  http.defaults.baseURL = oldBase
+  http.defaults.adapter = oldAdapter
+  if (!serviceFolder) return
+  const stop = path.join(serviceFolder, 'stop')
+  await writeFile(stop, 'stop', 'utf8')
+  if (service) expect(await serviceDone).toBe(0)
+  await unlink(stop)
+  await rmdir(serviceFolder)
+}, 15000)
 
 const { useAllianceExpertsStore, EXPERT_FILTER_KEYS } = await import('./alliance-experts.store.js')
 const { EXPERT_QUERY_KEYS } = await import('../contract/endpoints.js')
@@ -38,6 +89,10 @@ const booking = (id, status = 'pending') => ({ id, expertId: 'e1', expertName: '
 const fail = (msg) => Object.assign(new Error(msg), { name: 'ApiError', msg })
 
 beforeEach(() => {
+  localStorage.clear()
+  sessionStorage.clear()
+  localStorage.setItem('mox_access_token', serviceIdentity.token)
+  localStorage.setItem('mox_user_info', JSON.stringify({ id: 'recovery-user', tenant_id: 'mine' }))
   setActivePinia(createPinia())
   vi.clearAllMocks()
   api.listMyBookings.mockResolvedValue({ items: [], total: 0, counts: { pending: 0, confirmed: 0, completed: 0, cancelled: 0 } })
@@ -114,15 +169,15 @@ describe('收藏', () => {
     expect(store.isFavorite('e1')).toBe(true)
     expect(store.notice).toBe('已收藏 专家e1')
 
-    api.toggleFavorite.mockRejectedValue(fail('401 未登录'))
+    api.toggleFavorite.mockRejectedValue(Object.assign(fail('401 未登录'), { status: 401 }))
     await store.toggleFavorite(expert('e2'))
     expect(store.isFavorite('e2')).toBe(false)
     expect(store.error.action).toBe('401 未登录')
   })
 
-  it('后端没有收藏读接口，store 明确标为会话级', () => {
+  it('收藏为服务端持久化投影，初始未读取时集合为空', () => {
     const store = useAllianceExpertsStore()
-    expect(store.favoriteSessionOnly).toBe(true)
+    expect(store.favoriteSessionOnly).toBe(false)
     expect(store.favoriteCount).toBe(0)
   })
 })

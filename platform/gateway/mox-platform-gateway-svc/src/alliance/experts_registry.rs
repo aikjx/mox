@@ -24,7 +24,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::experts_common::*;
-use super::experts_events::{self, AllianceEventKind};
+use super::experts_events::{AllianceEvent, AllianceEventKind};
 use super::experts_rbac::{RbacAction, enforce_admin_or_respond};
 use mox_api_protocol::ApiResponse;
 use mox_audit::{AuditAction, AuditOutcome};
@@ -372,55 +372,58 @@ async fn create_expert(
         _ => gen_id("exp"),
     };
 
-    let mut all = s.registry.lock();
-    let reg = all.entry(tenant.clone()).or_default();
-    if reg.contains_key(&id) {
-        return err(400, format!("expert id already exists: {}", id));
-    }
+    tokio::task::spawn_blocking(move || {
+        let mut all = s.registry.lock();
+        let reg = all.entry(tenant.clone()).or_default();
+        if reg.contains_key(&id) {
+            return err(400, format!("expert id already exists: {}", id));
+        }
 
-    // A1 阶段二：租户专家数配额治理——超限真实 409（冲突语义），
-    // 响应体 data 含 quota/used；拒绝照旧落审计链（quota.denied）。
-    if let Err(resp) = check_expert_quota(reg.len(), tenant.as_str()) {
-        emit_audit(
-            &s,
-            &actor_from_opt_user(&user),
-            tenant.as_str(),
-            AuditAction::Unknown("quota.denied".into()),
-            "expert",
-            &id,
-            AuditOutcome::Failure,
-            Some(&format!(
-                "quota={}, used={}",
-                quota_experts_per_tenant(),
-                reg.len()
-            )),
+        // A1 阶段二：租户专家数配额治理——超限真实 409（冲突语义），
+        // 响应体 data 含 quota/used；拒绝照旧落审计链（quota.denied）。
+        if let Err(resp) = check_expert_quota(reg.len(), tenant.as_str()) {
+            emit_audit(
+                &s,
+                &actor_from_opt_user(&user),
+                tenant.as_str(),
+                AuditAction::Unknown("quota.denied".into()),
+                "expert",
+                &id,
+                AuditOutcome::Failure,
+                Some(&format!(
+                    "quota={}, used={}",
+                    quota_experts_per_tenant(),
+                    reg.len()
+                )),
+            );
+            return resp;
+        }
+
+        let mut exp = ExpertDescriptor::minimal(id.clone(), name);
+        merge_expert_from_value(&mut exp, &body);
+        exp.created_at = now_iso();
+        exp.updated_at = exp.created_at.clone();
+
+        let event = AllianceEvent::new(
+            AllianceEventKind::ExpertRegistered { expert_id: id.clone(), name: exp.name.clone() },
+            tenant.as_str(), "create_expert",
         );
-        return resp;
-    }
+        if super::experts_db::save_expert_checked(tenant.as_str(), &exp, true, Some(&event)).is_err() {
+            return err(503, "expert and event could not be saved");
+        }
+        reg.insert(id.clone(), exp.clone());
 
-    let mut exp = ExpertDescriptor::minimal(id.clone(), name);
-    merge_expert_from_value(&mut exp, &body);
-    exp.created_at = now_iso();
-    exp.updated_at = exp.created_at.clone();
+        emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.register".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", exp.name)));
 
-    reg.insert(id.clone(), exp.clone());
-    save_registry(tenant.as_str(), reg);
+        // The identical durable envelope is broadcast only after commit.
+        s.events.emit(event);
 
-    emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.register".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", exp.name)));
-
-    // T4：专家注册事件（与审计并存，事件流视角；best-effort 不阻断业务）
-    experts_events::emit(
-        &s,
-        AllianceEventKind::ExpertRegistered { expert_id: id.clone(), name: exp.name.clone() },
-        tenant.as_str(),
-        "create_expert",
-    );
-
-    ok(json!({
-        "expert": expert_json(&exp),
-        "created": true,
-        "id": id,
-    }))
+        ok(json!({
+            "expert": expert_json(&exp),
+            "created": true,
+            "id": id,
+        }))
+    }).await.unwrap_or_else(|_| err(503, "expert write result is unknown; read state before retry"))
 }
 
 /// PUT /api/experts/:id — 合并式更新专家信息
@@ -436,22 +439,27 @@ async fn update_expert(
         return resp;
     }
 
-    let mut all = s.registry.lock();
-    let reg = all.entry(tenant.clone()).or_default();
-    match reg.get_mut(&id) {
-        Some(exp) if exp.enabled => {
-            merge_expert_from_value(exp, &body);
-            exp.updated_at = now_iso();
-            let updated = exp.clone();
-            save_registry(tenant.as_str(), reg);
-            emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.update".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", updated.name)));
-            ok(json!({
-                "expert": expert_json(&updated),
-                "updated": true,
-            }))
+    tokio::task::spawn_blocking(move || {
+        let mut all = s.registry.lock();
+        let reg = all.entry(tenant.clone()).or_default();
+        match reg.get(&id) {
+            Some(exp) if exp.enabled => {
+                let mut updated = exp.clone();
+                merge_expert_from_value(&mut updated, &body);
+                updated.updated_at = now_iso();
+                if super::experts_db::save_expert_checked(tenant.as_str(), &updated, false, None).is_err() {
+                    return err(503, "expert could not be saved");
+                }
+                reg.insert(id.clone(), updated.clone());
+                emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.update".into()), "expert", &id, AuditOutcome::Success, Some(&format!("name={}", updated.name)));
+                ok(json!({
+                    "expert": expert_json(&updated),
+                    "updated": true,
+                }))
+            }
+            _ => err(404, format!("expert not found: {}", id)),
         }
-        _ => err(404, format!("expert not found: {}", id)),
-    }
+    }).await.unwrap_or_else(|_| err(503, "expert write result is unknown; read state before retry"))
 }
 
 /// DELETE /api/experts/:id — 软删除专家（enabled=false + deleted_at）
@@ -466,31 +474,35 @@ async fn delete_expert(
         return resp;
     }
 
-    let mut all = s.registry.lock();
-    let reg = all.entry(tenant.clone()).or_default();
-    match reg.get_mut(&id) {
-        Some(exp) => {
-            exp.enabled = false;
-            exp.updated_at = now_iso();
-            exp.metadata.insert("deleted_at".into(), json!(now_iso()));
-            save_registry(tenant.as_str(), reg);
-            emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.disable".into()), "expert", &id, AuditOutcome::Success, Some("soft_delete"));
-            // T4：专家禁用/软删除事件
-            experts_events::emit(
-                &s,
-                AllianceEventKind::ExpertDisabled { expert_id: id.clone() },
-                tenant.as_str(),
-                "delete_expert",
-            );
-            ok(json!({
-                "id": id,
-                "deleted": true,
-                "soft_delete": true,
-                "message": "expert has been soft-deleted",
-            }))
+    tokio::task::spawn_blocking(move || {
+        let mut all = s.registry.lock();
+        let reg = all.entry(tenant.clone()).or_default();
+        match reg.get(&id) {
+            Some(exp) => {
+                let mut disabled = exp.clone();
+                disabled.enabled = false;
+                disabled.updated_at = now_iso();
+                disabled.metadata.insert("deleted_at".into(), json!(now_iso()));
+                let event = AllianceEvent::new(
+                    AllianceEventKind::ExpertDisabled { expert_id: id.clone() },
+                    tenant.as_str(), "delete_expert",
+                );
+                if super::experts_db::save_expert_checked(tenant.as_str(), &disabled, false, Some(&event)).is_err() {
+                    return err(503, "expert and event could not be saved");
+                }
+                reg.insert(id.clone(), disabled);
+                emit_audit(&s, &actor_from_opt_user(&user), tenant.as_str(), AuditAction::Unknown("expert.disable".into()), "expert", &id, AuditOutcome::Success, Some("soft_delete"));
+                s.events.emit(event);
+                ok(json!({
+                    "id": id,
+                    "deleted": true,
+                    "soft_delete": true,
+                    "message": "expert has been soft-deleted",
+                }))
+            }
+            None => err(404, format!("expert not found: {}", id)),
         }
-        None => err(404, format!("expert not found: {}", id)),
-    }
+    }).await.unwrap_or_else(|_| err(503, "expert write result is unknown; read state before retry"))
 }
 
 // =====================================================================
@@ -1096,6 +1108,8 @@ mod tests {
     // 测试 1：创建专家（POST /api/experts）
     #[tokio::test]
     async fn test_create_expert() {
+        let db = tempfile::tempdir().unwrap();
+        std::env::set_var("MOX_EXPERTS_DB_PATH", db.path().join("experts.db"));
         let state = make_test_state();
         let body = json!({
             "name": "测试专家·甲",
@@ -1129,8 +1143,11 @@ mod tests {
     // 测试 3：合并式更新专家（PUT /api/experts/:id）
     #[tokio::test]
     async fn test_update_expert_merge() {
+        let db = tempfile::tempdir().unwrap();
+        std::env::set_var("MOX_EXPERTS_DB_PATH", db.path().join("experts.db"));
         let state = make_test_state();
         seed_expert(&state, "exp-update-001", "原名称", vec!["ai"]);
+        save_registry("default", &state.registry.lock()["default"]);
 
         let body = json!({
             "title": "更新后的头衔",
@@ -1151,8 +1168,11 @@ mod tests {
     // 测试 4：软删除专家（DELETE /api/experts/:id）
     #[tokio::test]
     async fn test_soft_delete_expert() {
+        let db = tempfile::tempdir().unwrap();
+        std::env::set_var("MOX_EXPERTS_DB_PATH", db.path().join("experts.db"));
         let state = make_test_state();
         seed_expert(&state, "exp-del-001", "待删除专家", vec!["data"]);
+        save_registry("default", &state.registry.lock()["default"]);
 
         let resp = delete_expert(State(state.clone()), TenantId("default".into()), admin_user(), Path("exp-del-001".into())).await;
         let data = resp.data.unwrap();

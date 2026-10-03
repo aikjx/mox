@@ -1,0 +1,332 @@
+{
+  "date": "2026-10-03",
+  "status": "verified_increment_with_open_global_acceptance",
+  "module_structure": {
+    "modules": 26,
+    "requirements": 78,
+    "workspace_packages": 150,
+    "whole_modules_accepted_this_batch": 0
+  },
+  "rust_integration_tests": 26,
+  "unique_rust_tests": 26,
+  "separate_performance_repeat_counted_as_new_test": false,
+  "frontend_contract_tests": 157,
+  "registry_unit_tests": 6,
+  "performance": {
+    "configured_concurrency": 2,
+    "fast_delivery_microseconds": [
+      1969,
+      445,
+      419,
+      546,
+      529,
+      444,
+      455,
+      426,
+      422,
+      400,
+      412,
+      587,
+      452,
+      513,
+      417,
+      445,
+      431,
+      646,
+      495,
+      451,
+      422,
+      408,
+      412,
+      405,
+      460,
+      452,
+      461,
+      415,
+      406,
+      405
+    ],
+    "observed_peak": 2,
+    "runtime_probe_ms_under_sqlite_lock": 63,
+    "scope": "single host current-thread Tokio, real TCP and SQLite, not production SLO",
+    "slow_target_released_after_fast": true,
+    "sample_count": 30,
+    "median_microseconds": 444.5,
+    "p95_nearest_rank_microseconds": 646,
+    "max_microseconds": 1969,
+    "baseline": "Unrelated tenant failed 500ms deadline while actual slow receiver remained held",
+    "production_slo": false
+  },
+  "checks": [
+    {
+      "command": [
+        "cargo",
+        "metadata",
+        "--no-deps",
+        "--format-version",
+        "1"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "metadata.log",
+      "name": "metadata"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/registry/enterprise_capabilities.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "registry.log",
+      "name": "registry"
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests",
+        "-p",
+        "test_enterprise_capabilities.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "registry_tests.log",
+      "name": "registry_tests"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/registry/module_catalog.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "catalog_final.log",
+      "name": "catalog_final"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "webhook_performance",
+        "--test",
+        "webhook_management",
+        "--test",
+        "webhook_persistence",
+        "--test",
+        "session_tenant_isolation",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "inbox_http",
+        "--test",
+        "trusted_tenant_http",
+        "--test",
+        "alliance_stream_contract",
+        "--test",
+        "t4_event_bus_e2e",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_final.log",
+      "name": "rust_final"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "webhook_performance",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "performance_final.log",
+      "name": "performance_final"
+    },
+    {
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "test",
+        "--",
+        "src/modules/expert-alliance/contract/contract.test.js",
+        "src/modules/expert-alliance/contract/sessions.test.js",
+        "src/modules/expert-alliance/contract/vocabulary-ownership.test.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "contract.log",
+      "name": "contract"
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "webhook_performance",
+        "--test",
+        "webhook_management",
+        "--no-deps"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy.log",
+      "name": "clippy"
+    },
+    {
+      "command": [
+        "node",
+        "reports/data/20261003-architecture-performance/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log",
+      "name": "diagrams"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_selftest.log",
+      "name": "paths_selftest"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths.log",
+      "name": "paths"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs.log",
+      "name": "docs"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ports.log",
+      "name": "ports"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff.log",
+      "name": "diff"
+    },
+    {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/webhook_performance.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log",
+      "name": "format"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-api-surface.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "api_selftest.log",
+      "name": "api_selftest"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-formulas.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "formulas_selftest.log",
+      "name": "formulas_selftest"
+    }
+  ],
+  "no_new_mock": true,
+  "browser_e2e": false,
+  "remote_ci": false,
+  "production_slo": false,
+  "actual_cloud_oss_roundtrip": false,
+  "full_workspace_build_or_test": false,
+  "existing_clippy_library_warnings": 69,
+  "historical_failures": [
+    "performance_red: test setup missed consumer readiness; corrected without altering production",
+    "performance_red_ready: actual unrelated tenant timeout above 500ms",
+    "catalog_red: generated inventory drift; regenerated canonical source"
+  ],
+  "remaining": [
+    "transactional business outbox",
+    "ordered/idempotent signed delivery",
+    "DNS pinning",
+    "tenant fairness/quotas",
+    "knowledge and file source version linking",
+    "unified KB migration",
+    "actual OSS and model integration",
+    "full browser and cross-host SLO"
+  ],
+  "source_sha256": {
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_events.rs": "10c341c967bebbfdc9b0f146f1e324949d1843bc2a77e723520b030540d63358",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs": "bd87d5f25ce0db1c61ce6c1fe1867385dd58d25ad9563ada0328a66777c86f90",
+    "platform/gateway/mox-platform-gateway-svc/tests/webhook_performance.rs": "6da71af91d5e46584ffe58fee4a864d1c57e79d8360a923abb5ec5890d004513",
+    "docs/expert-alliance/09-deployment-templates.md": "1e309d4e37f6a08816cb5ba19ada4ee9b9decb06aed43d63c4eee144c319c445",
+    "docs/expert-alliance/21-event-delivery-contract.md": "b098793208dc4fa655f2002b9421ae3d3c5ac773f99efb6c7a085286690a11c4",
+    "docs/expert-alliance/INDEX.md": "f1f5be01228c48d413100463f3d3ebde32420792cdeed74f084bc2f8c2326e1d",
+    "docs/expert-alliance/CURRENT-ARCHITECTURE.md": "0315bae485d0a5d297c5d2e0bd30f4fd01565e8e0e6138193dc87425584da8e2",
+    "docs/expert-alliance/16-decision-and-state-ledger.md": "179edcba411de5353338c05baba868b58ae4c6b3e8fdb6289e94e78f90f6de88",
+    "docs/modules/CODE-CATALOG.md": "da32ae88b5cf5db010573c037c6181da3fdffb12834c6e929a51cad4222a39d5",
+    "docs/modules/REAL-IMPLEMENTATION-STATUS.md": "7e9dd202e37fe8bec6c77e834c11aeb4ac47e8538bf033d172e784ae63c0afba",
+    "docs/specifications/tasks/20261002-enterprise-module-normalization/todo.md": "ce7d6f9fd7238c6cc7b52b351f7071d45f8ab35bb443f3358a66805926998c80",
+    "reports/markdown/20261003-architecture-performance.md": "b49ae5d4db5bd07a8da387b8212bef893205a41dbd28771df181f5bcad530042"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "rustfmt",
+    "--edition",
+    "2021",
+    "--check",
+    "platform/gateway/mox-platform-gateway-svc/tests/event_page_recovery.rs"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "format.log"
+}

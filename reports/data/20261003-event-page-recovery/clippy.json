@@ -1,0 +1,12 @@
+{
+  "command": [
+    "cargo",
+    "clippy",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--all-targets"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "clippy.log"
+}

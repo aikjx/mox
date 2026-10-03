@@ -1311,7 +1311,7 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
   it('PUT 要求 enabled、DELETE 写 false，且全网关没有再启用的写入口', () => {
     expect(UPDATE).toMatch(/Some\(exp\) if exp\.enabled =>/)
     expect(UPDATE).toMatch(/err\(404, format!\("expert not found/)
-    expect(REMOVE).toContain('exp.enabled = false;')
+    expect(REMOVE).toContain('disabled.enabled = false;')
     expect(REMOVE).toContain('"soft_delete": true')
     const dir = path.join(ROOT, 'platform/gateway/mox-platform-gateway-svc/src/alliance')
     const all = readdirSync(dir).filter((f) => f.endsWith('.rs')).map((f) => readFileSync(path.join(dir, f), 'utf8')).join('\n')
@@ -1321,10 +1321,14 @@ describe('专家注册面契约 ↔ merge_expert_from_value / create|update|dele
   })
 
   it('软删会落盘，重启也回不来', () => {
-    expect(REMOVE).toContain('save_registry(tenant.as_str(), reg);')
+    const commit = 'save_expert_checked(tenant.as_str(), &disabled, false, Some(&event))'
+    expect(REMOVE).toContain(commit)
+    expect(REMOVE.indexOf(commit)).toBeLessThan(REMOVE.indexOf('reg.insert(id.clone(), disabled)'))
+    expect(REMOVE.indexOf(commit)).toBeLessThan(REMOVE.indexOf('s.events.emit(event)'))
     const DB = src('platform/gateway/mox-platform-gateway-svc/src/alliance/experts_db.rs')
     expect(DB).toMatch(/enabled\s+INTEGER NOT NULL DEFAULT 1/)
-    expect(DB).toMatch(/e\.enabled as i64/)
+    expect(DB).toMatch(/expert\.enabled as i64/)
+    expect(DB).toContain('WHERE tenant_id=?1 AND id=?2')
   })
 
   it('字符串能力简写会伪造熟练度，所以契约走对象形并要求手填', () => {

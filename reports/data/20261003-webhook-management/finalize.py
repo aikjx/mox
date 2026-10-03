@@ -24,7 +24,7 @@ for item in registry["modules"]:
 (folder / "module-matrix.json").write_text(json.dumps({"date":"2026-10-03","source":source,
     "purpose":"Verification projection, not a second requirements authority","modules":modules},ensure_ascii=False,indent=2),encoding="utf-8")
 checks = []
-for name in ["rust_release", "contracts_release", "clippy", "feedback", "paths", "ports", "docs", "diagrams", "diff", "format"]:
+for name in ["rust_release", "contracts_release", "clippy", "feedback", "paths_selftest", "paths", "ports", "docs", "diagrams", "diff", "format"]:
     file = folder / (name + ".json")
     checks.append(dict(json.loads(file.read_text(encoding="utf-8")), name=name) if file.exists() else {"name":name,"status":"pending"})
 for name, command in [("build",["npm.cmd","--prefix","frontend-ui","run","build"]),

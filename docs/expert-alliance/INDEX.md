@@ -19,6 +19,8 @@
 
 2026-10-03 Webhook 管理增量：[事件契约 §5](21-event-delivery-contract.md#5-2026-10-03-webhook-管理增量与业务流程) 统一管理员授权、精确出站源、持久提交及控制台接线，登记 EA-WH-01–05；验证范围和未完成的可靠投递能力见 [本轮报告](../../reports/markdown/20261003-webhook-management.md)。
 
+2026-10-03 事件性能增量：[事件契约 §6](21-event-delivery-contract.md#6-2026-10-03-有界投递与存储调度增量) 登记 EA-WH-06/07；有界并发与线程池存储修复慢目标及锁等待阻塞，延迟/上限/真实链路证据见 [架构与性能报告](../../reports/markdown/20261003-architecture-performance.md)。并发不保证有序完成，饱和公平和可靠 outbox 仍开放。
+
 ## 一、文档总表
 
 2026-10-03 幂等联调增量：[对象与收藏契约](22-expert-object-contract.md) 登记 EA-OBJ-08/09；[验证报告](../../reports/markdown/20261003-favorite-idempotency.md) 包含真实 Pinia/Axios/生产 Rust 路由以及提交后 TCP 响应丢失验证。全功能仍以模块台账逐项验收。
@@ -104,3 +106,10 @@
 ---
 
 *本索引随 `expert-alliance-whitepaper.html` 一并维护。新增文档请在此表追加一行并标注权威等级；收官后状态以 08 §十三 与 16 号台账时间线为准。*
+
+专家管理事务增量权威： [21 事件交付契约 §7](21-event-delivery-contract.md#7-专家管理提交与事件记录原子化2026-10-03)，管理回执登记于 [22 专家对象契约](22-expert-object-contract.md)，证据见 [事务验证报告](../../reports/markdown/20261003-expert-atomicity.md)。
+
+SSE 显式续传权威：[21 事件契约 §8](21-event-delivery-contract.md#8-sse-持久续传契约2026-10-03-增量)，证据：[续传验证报告](../../reports/markdown/20261003-event-resume.md)。
+
+
+页面恢复与迟到响应归属权威：[21 事件契约 §9](21-event-delivery-contract.md#9-页面恢复与迟到响应归属2026-10-03-增量)，运行证据：[页面恢复与全量前端回归报告](../../reports/markdown/20261003-event-page-recovery.md)。

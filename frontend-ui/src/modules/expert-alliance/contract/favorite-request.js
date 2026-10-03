@@ -10,6 +10,13 @@ export function favoriteRequestHeaders(key) {
   return { 'Idempotency-Key': key }
 }
 
+export function favoriteQueryBody(expertIds) {
+  if (!Array.isArray(expertIds) || expertIds.length > 100) throw new Error('收藏批次最多支持 100 位专家')
+  const body = {}
+  body.expert_ids = [...expertIds]
+  return body
+}
+
 export function favoriteRejectionIsDefinitive(error) {
   return [400, 401, 403, 404, 409, 413, 422].includes(Number(error?.status ?? error?.response?.status))
 }

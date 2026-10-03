@@ -3,6 +3,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores'
+import { createRequestFence } from '@/modules/expert-alliance/model'
 import { allianceApi } from '@/modules/expert-alliance/api'
 import { BOOKING_STATUS, expertDisplayName, expertNameOr, isConsultable } from '@/modules/expert-alliance/contract'
 import { deleteResultText, expertDraftProblem, expertFormDraft, expertPatch } from '@/modules/expert-alliance/contract'
@@ -16,6 +17,7 @@ export const EXPERT_FILTER_KEYS = Object.freeze(Object.keys(EMPTY_FILTERS()))
 export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
   const api = allianceApi
   const auth = useAuthStore()
+  const readFence = createRequestFence()
   const favoriteAttempts = new Map()
   let favoriteEpoch = 0
   let listSequence = 0
@@ -70,6 +72,9 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
   watch(() => [auth.accessToken, auth.userInfo?.id, auth.userInfo?.tenant_id], (current, previous) => {
     const samePrincipal = current[0] && previous[0] && current[1] && current[1] === previous[1] && current[2] === previous[2]
     favoriteEpoch++
+    readFence.invalidate()
+    metricsToken++; matchToken++
+    clearRegistryEventTimer()
     listSequence++
     if (!samePrincipal) {
       // Keep the old principal's uncertain journal isolated; never replay it as the new user.
@@ -77,9 +82,13 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
       favorites.value = new Set()
       experts.value = []
       total.value = 0
+      bookings.value = []
+      Object.keys(bookingCounts).forEach(key => { bookingCounts[key] = 0 })
+      stats.value = null; capabilities.value = null
+      expertMetrics.value = null; expertMatches.value = null
     }
-    loading.list = false
-    loading.action = false
+    Object.keys(loading).forEach(key => { loading[key] = false })
+    Object.keys(error).forEach(key => { error[key] = '' })
     error.action = ''
     notice.value = ''
   }, { flush: 'sync' })
@@ -166,43 +175,54 @@ export const useAllianceExpertsStore = defineStore('allianceExperts', () => {
   }
 
   async function loadBookings() {
+    const current = readFence.begin('bookings')
     loading.bookings = true
     error.bookings = ''
     try {
       const res = await api.listMyBookings()
+      if (!current()) return
       bookings.value = res.items
       Object.assign(bookingCounts, res.counts)
     } catch (e) {
+      if (!current()) return
       error.bookings = e?.msg || e?.message || '我的预约获取失败'
       bookings.value = []
     } finally {
-      loading.bookings = false
+      if (current()) loading.bookings = false
     }
   }
 
   async function loadStats() {
+    const current = readFence.begin('stats')
     loading.stats = true
     error.stats = ''
     try {
-      stats.value = await api.expertsStats()
+      const next = await api.expertsStats()
+      if (!current()) return
+      stats.value = next
     } catch (e) {
+      if (!current()) return
       error.stats = e?.msg || e?.message || '平台统计获取失败'
       stats.value = null
     } finally {
-      loading.stats = false
+      if (current()) loading.stats = false
     }
   }
 
   async function loadCapabilities() {
+    const current = readFence.begin('capabilities')
     loading.capabilities = true
     error.capabilities = ''
     try {
-      capabilities.value = await api.listExpertCapabilities()
+      const next = await api.listExpertCapabilities()
+      if (!current()) return
+      capabilities.value = next
     } catch (e) {
+      if (!current()) return
       error.capabilities = e?.msg || e?.message || '能力目录获取失败'
       capabilities.value = null
     } finally {
-      loading.capabilities = false
+      if (current()) loading.capabilities = false
     }
   }
 

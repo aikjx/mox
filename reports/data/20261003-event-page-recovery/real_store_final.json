@@ -1,0 +1,14 @@
+{
+  "command": [
+    "npm.cmd",
+    "--prefix",
+    "frontend-ui",
+    "test",
+    "--",
+    "--run",
+    "src/modules/expert-alliance/store/alliance-experts.store.test.js"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "real_store_final.log"
+}

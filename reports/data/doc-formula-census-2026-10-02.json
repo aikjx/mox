@@ -1,13 +1,13 @@
 {
- "generated_at": "2026-10-03 13:24:42+0800",
+ "generated_at": "2026-10-03 14:50:31+0800",
  "scan_roots": [
   "docs"
  ],
  "recognizer": "scripts/gate/formula_ledger.py",
  "files": 380,
- "claims": 7,
+ "claims": 44,
  "violations": 0,
- "blind": 8873,
+ "blind": 8836,
  "quoted": 6,
  "blind_reasons": {
   "glued": 5414,
@@ -15,7 +15,7 @@
   "noise": 932,
   "code": 180,
   "no_fw_eq": 670,
-  "ascii_eq": 264,
+  "ascii_eq": 227,
   "increment": 1
  },
  "per_doc": {
@@ -833,14 +833,13 @@
    "quoted": 0
   },
   "docs/enterprise/18-全域顶层总设计-三联盟模式-V1.0.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 146,
     "no_fw_eq": 12,
     "latin": 13,
     "noise": 16,
-    "ascii_eq": 1,
     "code": 1
    },
    "quoted": 0
@@ -898,27 +897,27 @@
    "quoted": 0
   },
   "docs/enterprise/23-竞品MOX功能对比与可用性判定报告-V1.0.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 62,
     "latin": 21,
     "no_fw_eq": 23,
-    "ascii_eq": 3,
+    "ascii_eq": 2,
     "code": 1,
     "noise": 16
    },
    "quoted": 0
   },
   "docs/enterprise/24-全资源模块化与知识图谱贯通-企业级开发完成总控-V1.0.md": {
-   "claims": 0,
+   "claims": 3,
    "violations": 0,
    "blind": {
     "glued": 62,
     "code": 3,
     "latin": 34,
     "no_fw_eq": 15,
-    "ascii_eq": 10,
+    "ascii_eq": 7,
     "noise": 23
    },
    "quoted": 0
@@ -935,7 +934,7 @@
    "quoted": 0
   },
   "docs/enterprise/26-前端开发专家主控提示词与流程透明化最佳实践清单-V1.0.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "latin": 44,
@@ -943,15 +942,15 @@
     "code": 6,
     "no_fw_eq": 40,
     "noise": 25,
-    "ascii_eq": 12
+    "ascii_eq": 11
    },
    "quoted": 0
   },
   "docs/enterprise/27-企业级测试与评测主控提示词与MOX自动化测试报告-V1.0.md": {
-   "claims": 0,
+   "claims": 5,
    "violations": 0,
    "blind": {
-    "ascii_eq": 27,
+    "ascii_eq": 22,
     "noise": 57,
     "glued": 220,
     "no_fw_eq": 55,
@@ -1614,15 +1613,14 @@
    "quoted": 0
   },
   "docs/modules/专家联盟-MOX业务流程归一化手册-V1.0.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 79,
     "no_fw_eq": 6,
     "noise": 27,
     "code": 2,
-    "latin": 28,
-    "ascii_eq": 1
+    "latin": 28
    },
    "quoted": 0
   },
@@ -1770,13 +1768,13 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260823-enterprise-10task-scoring-checklist/tasks.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "noise": 6,
     "glued": 23,
     "latin": 19,
-    "ascii_eq": 3,
+    "ascii_eq": 2,
     "no_fw_eq": 1
    },
    "quoted": 0
@@ -1793,11 +1791,10 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260823-enterprise-compare-top-oss-ai-products-optimize/T10-gap-analysis.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 51,
-    "ascii_eq": 1,
     "latin": 3,
     "noise": 5,
     "no_fw_eq": 1
@@ -1827,14 +1824,14 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260823-enterprise-compare-top-oss-ai-products-optimize/spec.md": {
-   "claims": 0,
+   "claims": 2,
    "violations": 0,
    "blind": {
     "noise": 10,
     "latin": 9,
     "glued": 37,
     "no_fw_eq": 2,
-    "ascii_eq": 10,
+    "ascii_eq": 8,
     "code": 1
    },
    "quoted": 0
@@ -1885,12 +1882,12 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260823-enterprise-ready-build-verify/tasks.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 22,
     "latin": 8,
-    "ascii_eq": 4,
+    "ascii_eq": 3,
     "no_fw_eq": 2
    },
    "quoted": 0
@@ -1930,28 +1927,27 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260823-mox-cloud-graph-standardized-selfdev/tasks.md": {
-   "claims": 0,
+   "claims": 3,
    "violations": 0,
    "blind": {
     "latin": 48,
     "glued": 110,
     "no_fw_eq": 8,
     "noise": 13,
-    "ascii_eq": 10,
-    "code": 1
+    "code": 1,
+    "ascii_eq": 7
    },
    "quoted": 0
   },
   "docs/specifications/tasks/20260823-mox-full-enterprise-architecture/review2.md": {
-   "claims": 0,
+   "claims": 2,
    "violations": 0,
    "blind": {
     "latin": 24,
     "no_fw_eq": 5,
     "glued": 69,
     "code": 2,
-    "noise": 2,
-    "ascii_eq": 2
+    "noise": 2
    },
    "quoted": 0
   },
@@ -1968,13 +1964,13 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260823-mox-full-enterprise-architecture/tasks.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 36,
     "latin": 12,
     "noise": 12,
-    "ascii_eq": 6,
+    "ascii_eq": 5,
     "no_fw_eq": 1,
     "code": 1
    },
@@ -2119,12 +2115,12 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/spec.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 86,
     "latin": 47,
-    "ascii_eq": 18,
+    "ascii_eq": 17,
     "noise": 12,
     "no_fw_eq": 5,
     "code": 1
@@ -2132,25 +2128,24 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260824-t10-t11-t17-cloud-graph-sdk-ef-ops/tasks.md": {
-   "claims": 0,
+   "claims": 2,
    "violations": 0,
    "blind": {
     "latin": 29,
     "glued": 40,
-    "ascii_eq": 5,
     "noise": 4,
+    "ascii_eq": 3,
     "code": 4,
     "no_fw_eq": 5
    },
    "quoted": 0
   },
   "docs/specifications/tasks/20260824-t17-sdk-ef-ops/spec.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 18,
     "latin": 10,
-    "ascii_eq": 1,
     "noise": 1
    },
    "quoted": 0
@@ -2340,14 +2335,14 @@
    "quoted": 0
   },
   "docs/specifications/tasks/20260826-xiaobai-mox-full-arch/tasks.md": {
-   "claims": 0,
+   "claims": 4,
    "violations": 0,
    "blind": {
     "latin": 96,
     "glued": 171,
     "code": 4,
     "noise": 12,
-    "ascii_eq": 12,
+    "ascii_eq": 8,
     "no_fw_eq": 4
    },
    "quoted": 0
@@ -2550,12 +2545,11 @@
    "quoted": 0
   },
   "docs/working-reports/20260903_moxfs_phase4_verification_report.md": {
-   "claims": 0,
+   "claims": 5,
    "violations": 0,
    "blind": {
     "latin": 8,
     "glued": 16,
-    "ascii_eq": 5,
     "no_fw_eq": 2,
     "noise": 5
    },
@@ -2646,12 +2640,11 @@
    "quoted": 0
   },
   "docs/working-reports/20260905_unified_baseline_dependency_governance.md": {
-   "claims": 0,
+   "claims": 1,
    "violations": 0,
    "blind": {
     "glued": 8,
-    "latin": 2,
-    "ascii_eq": 1
+    "latin": 2
    },
    "quoted": 0
   },
@@ -3048,13 +3041,13 @@
  },
  "unclosed": [],
  "outside": {
-  "files": 315,
+  "files": 317,
   "dirs": 18,
   "root_files": 5,
   "skip_dirs": 12,
   "claims": 1,
   "violations": 0,
-  "blind": 1944,
+  "blind": 1945,
   "quoted": 0,
   "claim_files": [
    [

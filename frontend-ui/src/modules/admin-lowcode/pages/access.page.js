@@ -8,7 +8,7 @@ import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { getApiKeys, createApiKey, revokeApiKey } from '@/api'
 import { parseApiKeyPage, apiKeyEligibilityLabel } from '@/utils'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth.store'
 
 // 引擎 pageNum/pageSize 映射为 API page/page_size，不拉取全量。
 async function listKeys({ pageNum = 1, pageSize = 20 } = {}) {

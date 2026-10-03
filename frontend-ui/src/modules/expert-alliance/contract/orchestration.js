@@ -1,12 +1,8 @@
 // 编排面契约：唯一权威是网关 alliance/experts_orchestration.rs 的六个 handler
 // 与 experts_common.rs 的 OrchestrationRecord / ExpertsSharedState。
 //
-// 本面与已挂载的其它面有一处根本差别：**拓扑与统计是真的，步骤内容不是**。
-// topological_sort（:39-92）是货真价实的 Kahn 算法并带环检测，compute_match_score 与 stats 的
-// 全部算式都读真实注册表；但每个步骤的产出出自 simulate_step_execution 的写死文案表（:230-263），
-// confidence 恒 0.85（:271），耗时按 10+5×序号算出（:493）。
-// 所以整面贴一个"模拟"标签会低估真实部分，不贴就是拿样板文冒充专家结论——
-// 只能逐字段标来源，见 ORCH_PROVENANCE。界面必须复用这张表，不得另写一套措辞。
+// 步骤模板仍来自固定表；执行必须调用真实模型，终态取决于响应与治理判定。
+// 模型分析不等于执行外部动作。字段来源由 ORCH_PROVENANCE 唯一标注。
 
 /** POST /api/experts/orchestrate 响应键（:649-666，顺序即 Rust 声明顺序） */
 export const ORCH_ORCHESTRATE_KEYS = Object.freeze([
@@ -101,7 +97,7 @@ export const ORCH_SIMULATED = Object.freeze([
   },
   {
     id: 'plan_generate_status',
-    at: 'experts_orchestration.rs:718',
+    at: 'experts_orchestration.rs:729',
     literal: '"status": "draft",',
     field: 'plan/generate 响应 status',
     text: 'plan/generate 响应里 status 字面 draft'
@@ -122,21 +118,21 @@ export const ORCH_SIMULATED = Object.freeze([
   },
   {
     id: 'default_task_type',
-    at: 'experts_orchestration.rs:527',
+    at: 'experts_orchestration.rs:533',
     literal: 'unwrap_or_else(|| "general".into())',
     field: 'task_type 缺省',
     text: 'orchestrate 未带 task_type 时后端填 general'
   },
   {
     id: 'default_fusion',
-    at: 'experts_orchestration.rs:528',
+    at: 'experts_orchestration.rs:534',
     literal: 'unwrap_or_else(|| "weighted".into())',
     field: 'fusion_strategy 缺省',
     text: 'orchestrate 未带 fusion_strategy 时后端填 weighted'
   },
   {
     id: 'match_score_floor',
-    at: 'experts_orchestration.rs:538',
+    at: 'experts_orchestration.rs:544',
     literal: '*s > 0.2',
     field: '候选专家过滤门槛',
     text: '匹配分低于 0.2 的候选被 filter 掉'
@@ -314,7 +310,8 @@ export function orchHistoryPages(res) {
 
 export const ORCH_PROVENANCE = Object.freeze({
   real: { tone: 'success', label: '真实计算', text: '由注册表与请求算出，可在后端源码找到算式' },
-  simulated: { tone: 'warning', label: '模拟产出', text: '出自 simulate_step_execution 的写死文案表，没有模型调用' },
+  simulated: { tone: 'warning', label: '固定模板', text: '步骤模板来自任务类型表，尚未按任务动态生成' },
+  model: { tone: 'warning', label: '模型分析', text: '来自真实模型响应及融合，不构成外部操作已经完成的证据' },
   literal: { tone: 'danger', label: '常量', text: '后端写死的字面量，不随输入变化，不含判断信息' },
   wallclock: { tone: 'success', label: '真实计时', text: 'std::time::Instant 测得的本次进程内耗时' }
 })
@@ -323,20 +320,20 @@ export const ORCH_PROVENANCE = Object.freeze({
 export const ORCH_FIELD_PROVENANCE = Object.freeze({
   'orchestrate.experts': 'real',
   'orchestrate.plan.steps': 'real',
-  'orchestrate.execution.status': 'literal',
+  'orchestrate.execution.status': 'real',
   'orchestrate.execution.steps_completed': 'real',
   'orchestrate.execution.duration_ms': 'wallclock',
-  'orchestrate.result.summary': 'simulated',
-  'orchestrate.result.key_findings': 'simulated',
-  'orchestrate.result.recommendations': 'simulated',
-  'orchestrate.result.confidence': 'literal',
+  'orchestrate.result.summary': 'model',
+  'orchestrate.result.key_findings': 'model',
+  'orchestrate.result.recommendations': 'model',
+  'orchestrate.result.confidence': 'model',
   'orchestrate.result.fusion_strategy': 'real',
-  'orchestrate.result.step_summaries': 'simulated',
-  'execute.steps_executed[].status': 'literal',
-  'execute.steps_executed[].duration_ms': 'literal',
-  'execute.steps_executed[].result.expert': 'literal',
-  'execute.steps_executed[].result.confidence': 'literal',
-  'execute.final_result.confidence': 'literal',
+  'orchestrate.result.step_summaries': 'model',
+  'execute.steps_executed[].status': 'real',
+  'execute.steps_executed[].duration_ms': 'wallclock',
+  'execute.steps_executed[].result.expert': 'real',
+  'execute.steps_executed[].result.confidence': 'model',
+  'execute.final_result.confidence': 'model',
   'execute.error': 'real',
   'plan.status': 'literal',
   'plan.steps[].name': 'simulated',
@@ -350,7 +347,7 @@ export const ORCH_FIELD_PROVENANCE = Object.freeze({
   'stats.avg_steps_per_plan': 'real',
   'stats.top_used_experts': 'real',
   'stats.plans_ready': 'literal',
-  'stats.plans_failed': 'literal'
+  'stats.plans_failed': 'real'
 })
 
 export function orchProvenanceOf(fieldPath) {
@@ -360,7 +357,7 @@ export function orchProvenanceOf(fieldPath) {
 
 /** 界面上方那条自陈：一次编排之后必须让用户知道"跑的是真拓扑、假步骤" */
 export function orchRunDisclaimer() {
-  return '本次编排的依赖排序与选人来自真实注册表（Kahn 拓扑 + compute_match_score），但每个步骤的正文、置信度与耗时由后端模拟生成（experts_orchestration.rs:221-274,493）——可以当作流程演练，不能当作专家结论'
+  return '依赖排序与选人来自真实注册表（Kahn 拓扑 + compute_match_score）；步骤模板按任务类型固定，正文来自真实模型咨询与融合，耗时由进程实测。模型分析不能证明外部操作已执行；请按执行终态与实际产物核对结果。'
 }
 
 /** D4 落盘后：plans/orchestration_history 仍以进程内内存态为权威，但写后立即投影 SQLite（best-effort），重启可从库里恢复 */
@@ -375,7 +372,7 @@ export function orchVolatileNote() {
 export function orchEmptyExpertsNote(res) {
   const n = Array.isArray(res?.experts) ? res.experts.length : null
   if (n === null || n > 0) return ''
-  return '后端没有选出任何专家：候选要先 enabled 且 availability.status ≠ offline，再被匹配分数门槛 0.2 过滤（:591-593），指定 expert_ids 时还会再 retain 一次（:597-599）。步骤依然生成了——它们本来就与专家无关（result.expert 恒 null）'
+  return '后端没有选出任何专家：候选须启用且在线，通过匹配门槛 0.2 与指定 expert_ids 筛选。执行需要真实可用专家；空候选不会产生成功的模型结果。'
 }
 
 /** orchestrate/plan 响应里的步骤列表：两个面的包装层级不同，取值口径在此收口 */

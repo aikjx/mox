@@ -1,0 +1,262 @@
+{
+  "scope": "gateway library and ten selected integration targets; frontend contracts, real transport and build",
+  "checks": {
+    "rust_verified": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "--test",
+        "event_stream_resume",
+        "--test",
+        "alliance_stream_contract",
+        "--test",
+        "expert_mutation_atomicity",
+        "--test",
+        "t4_event_bus_e2e",
+        "--test",
+        "trusted_tenant_http",
+        "--test",
+        "session_tenant_isolation",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "webhook_management",
+        "--test",
+        "webhook_performance",
+        "--test",
+        "webhook_persistence",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_verified.log"
+    },
+    "contract_final": {
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "test",
+        "--",
+        "src/modules/expert-alliance/contract/contract.test.js",
+        "src/modules/expert-alliance/contract/sessions.test.js",
+        "src/modules/expert-alliance/contract/vocabulary-ownership.test.js",
+        "src/modules/expert-alliance/contract/event-stream.lifecycle.test.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "contract_final.log"
+    },
+    "node_transport": {
+      "command": [
+        "node",
+        "--test",
+        "frontend-ui/src/modules/expert-alliance/contract/event-stream.node-test.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "node_transport.log"
+    },
+    "frontend_build": {
+      "command": [
+        "npm.cmd",
+        "run",
+        "build"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph\\frontend-ui",
+      "exit_code": 0,
+      "log": "frontend_build.log"
+    },
+    "clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "event_stream_resume",
+        "--no-deps"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy.log"
+    },
+    "catalog": {
+      "command": [
+        "python",
+        "scripts/registry/module_catalog.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "catalog.log"
+    },
+    "diagrams": {
+      "command": [
+        "node",
+        "reports/data/20261003-architecture-performance/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log"
+    },
+    "paths_selftest": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_selftest.log"
+    },
+    "paths": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths.log"
+    },
+    "docs": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs.log"
+    },
+    "ports": {
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ports.log"
+    },
+    "frontend_module": {
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_module.log"
+    },
+    "diff": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff.log"
+    },
+    "format": {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/event_replay.rs",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/event_stream_resume.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log"
+    },
+    "api_bindings": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-api-binding-kinds.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "api_bindings.log"
+    },
+    "framework_imports": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-framework-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "framework_imports.log"
+    },
+    "feedback_imports": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-ep-feedback-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "feedback_imports.log"
+    }
+  },
+  "rust_passed": 209,
+  "rust_library_passed": 191,
+  "rust_integration_passed": 18,
+  "frontend_contract_passed": 160,
+  "node_transport_passed": 4,
+  "mermaid_diagrams": 41,
+  "real_frontend_probe": {
+    "MOX_EVENT_RESUME_PROBE": "D:\\a10\\aikjx\\gitcode\\infotopograph\\reports\\data\\20261003-event-resume\\verify-stream.mjs",
+    "result_marker_present": true,
+    "counted_in_rust_integration": true
+  },
+  "original_failures": [
+    "red.json",
+    "frontend_red_ready.json",
+    "cors_red.json"
+  ],
+  "probe_setup_failure_retained": "frontend_red.json",
+  "warnings": {
+    "clippy_existing_library": 69,
+    "doc_historical_backtick_paths": 206,
+    "ports": 284,
+    "frontend_comment_pairing": 26
+  },
+  "source_sha256": {
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/event_replay.rs": "d0f5e226fc79db2532c36162f698851c46182c3e43ffcd253eaaf752fe62152b",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs": "b6170433e266cc093b6107433cb5cee498473d5d52d8ce5f615d9f026cbd602c",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/mod.rs": "2fc92fa1ebd0028378ae0bc7b42ef128956c34000cd44130ab969d4fdbd440e8",
+    "platform/gateway/mox-platform-gateway-svc/src/lib.rs": "67535143eff9fac7c6b63fdd65ec5e10fb736de2470227921c13aa78f7fce1fb",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_db.rs": "02ba412da6e539f5e0ad6bae55efff476101f5f0725f9dc55ec9493cbcca50e3",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_registry.rs": "8fb8f4cde2f564cf20f3de2c0c5470051a542c4465bbadc29d6d99ccbc498194",
+    "platform/gateway/mox-platform-gateway-svc/tests/event_stream_resume.rs": "898fd529900869273443b68436d75a2da2d3e4a11f4b89bc5a7a907e2127ecb5",
+    "frontend-ui/src/modules/expert-alliance/contract/event-stream.js": "c4e9ac54802684a8d35529bb29036168ae1baff3a66d1f7855196ab75d8922df",
+    "frontend-ui/src/modules/expert-alliance/composables/useAllianceEventStream.js": "48aea34d8f5499cd890864de1257629cfb40bce7ab6ca875ecbfb386b961b21a",
+    "reports/data/20261003-event-resume/verify-stream.mjs": "09c6aa1f55269706186c0cf08900f8b4a786dad5e4196bb84afe39bb7b764b74",
+    "docs/expert-alliance/21-event-delivery-contract.md": "d5aea69b1610ba2ffbebd06f467e89cfe82082f5c6f836ed431c7724e20d345d",
+    "docs/expert-alliance/CURRENT-ARCHITECTURE.md": "203eb2a59889ebea7a375daf659aa6229908b5668649435ba170484214bcf153",
+    "docs/expert-alliance/16-decision-and-state-ledger.md": "a5a2da5a13f675988e9224fdbec28abd423a4ec8841666aa9d3beab44b4f94c1",
+    "docs/expert-alliance/INDEX.md": "050feb1398361726da8f954a8f0341eec96cd0654e75f1277c6b67bfeaf35c0e",
+    "docs/modules/REAL-IMPLEMENTATION-STATUS.md": "7d57f5176e7f55a71628e6b48861e5bbf0c27beb179224ba516c49d6f50f7ce0",
+    "docs/specifications/tasks/20261002-enterprise-module-normalization/todo.md": "c52799a1598e4843e93d5d91f9ea9ac6e593d8a614143ce643093cc2d94eea81"
+  },
+  "not_accepted": [
+    "Webhook outbox",
+    "process crash recovery",
+    "cross-instance realtime broadcast",
+    "automatic reconnect",
+    "whole workspace",
+    "real OSS",
+    "browser end-to-end",
+    "production SLO"
+  ]
+}

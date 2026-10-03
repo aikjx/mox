@@ -79,32 +79,94 @@
       "name": "clippy"
     },
     {
-      "name": "feedback",
-      "status": "pending"
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-ep-feedback-imports.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "feedback.log",
+      "name": "feedback"
     },
     {
-      "name": "paths",
-      "status": "pending"
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_selftest.log",
+      "name": "paths_selftest"
     },
     {
-      "name": "ports",
-      "status": "pending"
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths.log",
+      "name": "paths"
     },
     {
-      "name": "docs",
-      "status": "pending"
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ports.log",
+      "name": "ports"
     },
     {
-      "name": "diagrams",
-      "status": "pending"
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs.log",
+      "name": "docs"
     },
     {
-      "name": "diff",
-      "status": "pending"
+      "command": [
+        "node",
+        "reports/data/20261003-webhook-management/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log",
+      "name": "diagrams"
     },
     {
-      "name": "format",
-      "status": "pending"
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff.log",
+      "name": "diff"
+    },
+    {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/webhook_policy.rs",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_streams.rs",
+        "platform/gateway/mox-platform-gateway-svc/tests/webhook_management.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log",
+      "name": "format"
     },
     {
       "name": "build",
@@ -175,7 +237,7 @@
     "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_rbac.rs": "04d4bcef9377beaf79349db7ab77cf4c5af9002bfac1bf41291f6fac82c073a1",
     "platform/gateway/mox-platform-gateway-svc/src/alliance/webhook_policy.rs": "19a4e2931e6053425cd58422c25afad30d5810c22c95f496cf9e13f33ad4951a",
     "platform/gateway/mox-platform-gateway-svc/src/alliance/mod.rs": "91875b3abfce066718c6c42d7138e3d97ec3f9b521b2804ff81db5da75acf566",
-    "platform/gateway/mox-platform-gateway-svc/tests/webhook_management.rs": "53c729a99abf4012dd2a920d742b7ee4780746c5bd6f8cbb0b99aa6911cbbecb",
+    "platform/gateway/mox-platform-gateway-svc/tests/webhook_management.rs": "339391e4ebd1c37b480695e2670fe3d5c20ee866802bfb3d74216327ccb37acf",
     "platform/gateway/mox-platform-gateway-svc/tests/webhook_persistence.rs": "6199d18916305736422cf29a3c83b5831083c977f6a8b302c7fab8c3e6fcaa6a",
     "frontend-ui/src/modules/expert-alliance/contract/endpoints.js": "a6a5ba4be1172d4f8379714f027e2d8944c4363215d49cdb2b34d5845d0de0b7",
     "frontend-ui/src/modules/expert-alliance/contract/webhooks.js": "0d3961cfda49536e5d92a13a46c5e5694377653d8a7302db9f18657a16c02a40",

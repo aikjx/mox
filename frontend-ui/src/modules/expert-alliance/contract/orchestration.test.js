@@ -216,15 +216,18 @@ describe('ORCH_SIMULATED：每个常量仍钉在原来那一行', () => {
     }
   })
 
-  it('档位都取自 ORCH_PROVENANCE，且标 literal 的字段不少于清单覆盖的常量面', () => {
+  it('档位取自唯一来源表，真实终态、计时与模型产出不能标成常量', () => {
     for (const [path, tier] of Object.entries(ORCH_FIELD_PROVENANCE)) {
       expect(ORCH_PROVENANCE[tier], `${path} 的档位 ${tier} 未定义`).toBeTruthy()
     }
-    const literalPaths = Object.entries(ORCH_FIELD_PROVENANCE).filter(([, v]) => v === 'literal').map(([k]) => k)
-    expect(literalPaths.length).toBeGreaterThanOrEqual(6)
-    for (const p of ['orchestrate.execution.status', 'plan.status', 'execute.steps_executed[].status', 'execute.steps_executed[].result.confidence']) {
-      expect(literalPaths, `${p} 应被标成 literal`).toContain(p)
-    }
+    expect(ORCH_FIELD_PROVENANCE['plan.status']).toBe('literal')
+    expect(ORCH_FIELD_PROVENANCE['stats.plans_ready']).toBe('literal')
+    for (const p of ['orchestrate.execution.status', 'execute.steps_executed[].status', 'stats.plans_failed']) expect(ORCH_FIELD_PROVENANCE[p]).toBe('real')
+    expect(ORCH_FIELD_PROVENANCE['execute.steps_executed[].duration_ms']).toBe('wallclock')
+    expect(ORCH_FIELD_PROVENANCE['execute.steps_executed[].result.confidence']).toBe('model')
+    expect(ORCH_RS).toContain('"status": plan.status')
+    expect(ORCH_RS).toContain('step_start.elapsed().as_millis()')
+    expect(ORCH_RS).toContain('generate_expert_answer(expert, &question).await')
   })
 })
 
@@ -496,8 +499,8 @@ describe('归一化产物与 wire 键一一对应', () => {
   })
 
   it('来源角标：literal 与 simulated 各自成档，未登记的字段返回 null 由界面按真实计算渲染', () => {
-    expect(orchProvenanceOf('orchestrate.execution.status').tier).toBe('literal')
-    expect(orchProvenanceOf('orchestrate.result.summary').tier).toBe('simulated')
+    expect(orchProvenanceOf('orchestrate.execution.status').tier).toBe('real')
+    expect(orchProvenanceOf('orchestrate.result.summary').tier).toBe('model')
     expect(orchProvenanceOf('orchestrate.experts').tier).toBe('real')
     expect(orchProvenanceOf('stats.total_plans').tier).toBe('real')
     expect(orchProvenanceOf('未登记字段')).toBe(null)

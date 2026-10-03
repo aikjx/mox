@@ -78,8 +78,7 @@ import {
   User,
   UserFilled,
   VideoPlay,
-  View,
-  Warning
+  View
 } from '@element-plus/icons-vue'
 
 export const NAV_ICONS = Object.freeze({
@@ -144,8 +143,7 @@ export const NAV_ICONS = Object.freeze({
   User,
   UserFilled,
   VideoPlay,
-  View,
-  Warning
+  View
 })
 
 export function navIconNames() {

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "cargo",
+    "metadata",
+    "--no-deps",
+    "--format-version",
+    "1"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "metadata.log"
+}

@@ -87,7 +87,7 @@ describe('formatDateTimeLocaleOr 单出口（F1 族收口）', () => {
     ]
     for (const rel of consumers) {
       const src = fs.readFileSync(path.join(SRC, rel), 'utf8')
-      expect(src, rel).toContain("import { formatDateTimeLocaleOr as fmtTime } from '@/utils'")
+      expect(src, rel).toMatch(/import\s*\{\s*formatDateTimeLocaleOr as fmtTime(?:\s*,[^}]+)?\s*\}\s*from '@\/utils'/)
       expect(src, rel).toContain('fmtTime(')
       expect(src, rel).not.toContain('catch { return String(t) }')
     }

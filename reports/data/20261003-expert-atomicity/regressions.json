@@ -1,0 +1,29 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "expert_mutation_atomicity",
+    "--test",
+    "t4_event_bus_e2e",
+    "--test",
+    "trusted_tenant_http",
+    "--test",
+    "session_tenant_isolation",
+    "--test",
+    "favorite_transactions",
+    "--test",
+    "webhook_management",
+    "--test",
+    "webhook_performance",
+    "--test",
+    "webhook_persistence",
+    "--",
+    "--test-threads=1"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "regressions.log"
+}

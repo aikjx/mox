@@ -1,7 +1,7 @@
 // 联盟 API 层：端点取自 contract/endpoints.js，信封与字段取自 model/normalize.js。
 // 本层不做 UI 决策、不 catch 业务错误——错误一律以 ApiError 冒泡给 store。
 import { http as defaultHttp } from '@/api'
-import { ENDPOINTS, expertListQuery, requestPath, createFavoriteRequest, favoriteRequestHeaders } from '@/modules/expert-alliance/contract'
+import { ENDPOINTS, expertListQuery, requestPath, createFavoriteRequest, favoriteRequestHeaders, favoriteQueryBody } from '@/modules/expert-alliance/contract'
 import { unwrap, unwrapList, envelopeMeta } from '@/modules/_kernel/envelope.js'
 import {
   normAction, normAlgorithmAnalysis, normBooking, normBookingCancel, normBookingList, normCapabilities, normCollaborators, normCommunities,
@@ -422,7 +422,7 @@ export function createAllianceApi(httpClient = defaultHttp) {
       const batches = [expertIds.slice(0, 100)]
       if (expertIds.length > 100) batches.push(expertIds.slice(100))
       const states = await Promise.all(batches.map(async ids => {
-        const { payload } = await get('expertFavoritesQuery', { body: { expert_ids: ids } })
+        const { payload } = await get('expertFavoritesQuery', { body: favoriteQueryBody(ids) })
         if (!Array.isArray(payload?.items) || payload.items.length !== ids.length || payload.items.some((item, i) => item?.expert_id !== ids[i] || typeof item.favorite !== 'boolean')) {
           throw new Error('收藏读取响应格式错误')
         }

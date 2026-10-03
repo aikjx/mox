@@ -136,6 +136,7 @@ last_updated: 2026-09-29
 |------|------|----------|
 | `MOX_EXPERTS_DB_PATH` | `data/experts.db` | `gateway/src/alliance/experts_db.rs:32,34,46` |
 | `MOX_WEBHOOK_ALLOWED_ORIGINS` | 未设/空=禁止全部 Webhook 出站；逗号分隔精确 HTTP(S) origin，不能包含路径、凭据、query、fragment | `platform/gateway/mox-platform-gateway-svc/src/alliance/webhook_policy.rs::allowed_target` |
+| `MOX_WEBHOOK_CONCURRENCY` | 默认 `8`，合法整数 `1..=64`；进程内共享 dispatcher 的在途投递上限，重试等待也占用槽；非法值停止该 dispatcher 并记录错误 | `platform/gateway/mox-platform-gateway-svc/src/alliance/experts_events.rs::spawn_webhook_dispatcher` |
 | `MOX_STORAGE_ROOT` | `<cwd>/data/storage` | `gateway/src/cloud.rs:44-48` |
 | `MOX_UPLOAD_DIR` | `./data/uploads` | `gateway/src/file_storage/api.rs:28-29` |
 | `MOX_STORE_DB_PATH` | （const 定义） | `gateway/src/store_json.rs:27` |

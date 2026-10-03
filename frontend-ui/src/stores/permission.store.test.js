@@ -1,8 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-// loadPermissions 走 http，本测试只验归一化与判定逻辑，不发真实请求
-vi.mock('@/api/http', () => ({ default: { get: vi.fn() } }))
+// These local normalization actions need neither a request nor an HTTP replacement.
 
 import { usePermissionStore } from './permission.store'
 

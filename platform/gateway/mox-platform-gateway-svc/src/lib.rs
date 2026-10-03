@@ -257,12 +257,70 @@ impl GatewayState {
     }
 }
 
+#[cfg(test)]
+mod cors_resume_tests {
+    #[tokio::test]
+    async fn configured_origin_can_preflight_authenticated_event_resume() {
+        let app = axum::Router::new()
+            .route("/api/alliance/events/stream", axum::routing::get(|| async { "" }))
+            .layer(super::gateway_cors_layer(&["http://localhost:3020".into()]));
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}/api/alliance/events/stream", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        let client = reqwest::Client::new();
+        let response = client.request(reqwest::Method::OPTIONS, &url)
+            .header("Origin", "http://localhost:3020")
+            .header("Access-Control-Request-Method", "GET")
+            .header("Access-Control-Request-Headers", "authorization,last-event-id")
+            .send().await.unwrap();
+        assert_eq!(response.status().as_u16(), 200);
+        assert_eq!(response.headers()["access-control-allow-origin"], "http://localhost:3020");
+        assert_eq!(response.headers()["access-control-allow-credentials"], "true");
+        let headers = response.headers()["access-control-allow-headers"].to_str().unwrap();
+        assert!(headers.split(',').any(|header| header.trim() == "last-event-id"));
+        let response = client.request(reqwest::Method::OPTIONS, &url)
+            .header("Origin", "http://unconfigured.invalid")
+            .header("Access-Control-Request-Method", "GET")
+            .header("Access-Control-Request-Headers", "authorization,last-event-id")
+            .send().await.unwrap();
+        assert!(!response.headers().contains_key("access-control-allow-origin"));
+        server.abort();
+    }
+}
+
+fn gateway_cors_layer(origins: &[String]) -> CorsLayer {
+    let cors_origins: Vec<axum::http::HeaderValue> = origins
+        .iter()
+        .filter_map(|o| axum::http::HeaderValue::from_str(o).ok())
+        .collect();
+    CorsLayer::new()
+        .allow_origin(AllowOrigin::list(cors_origins))
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+            axum::http::Method::OPTIONS,
+            axum::http::Method::PATCH,
+        ])
+        .allow_headers([
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::AUTHORIZATION,
+            axum::http::HeaderName::from_static("last-event-id"),
+            axum::http::HeaderName::from_static("x-api-key"),
+            axum::http::HeaderName::from_static("x-requested-with"),
+            axum::http::HeaderName::from_static("x-mox-crypto"),
+        ])
+        .expose_headers([axum::http::HeaderName::from_static("x-mox-crypto")])
+        .allow_credentials(true)
+}
+
 /// 构建企业级网关 Router
 ///
 /// 中间件分层（从外到内）：
 /// 1. CORS 跨域
 /// 2. 限流（令牌桶）
-/// 3. 认证（JWT + API Key）—— 业务路由组与 Actuator 管理面均经此鉴权（见各路由组 route_layer）
+/// 3. 认证（JWT + API Key）—— 业务路由组与 Actuator 管理面均经此鉴权
 /// 4. 业务路由
 pub fn build_gateway_router(state: GatewayState) -> Router {
     build_host_router(state, deployment::HostRole::All)
@@ -308,31 +366,7 @@ pub fn build_host_router(state: GatewayState, role: deployment::HostRole) -> Rou
 
     // P0 安全：CORS 收紧 — 禁止 Any 通配，使用配置中的具体 origin 列表，
     // 允许 credentials，限定 methods 和 headers。
-    let cors_origins: Vec<axum::http::HeaderValue> = state
-        .config
-        .cors_allowed_origins
-        .iter()
-        .filter_map(|o| axum::http::HeaderValue::from_str(o).ok())
-        .collect();
-    let cors_layer = CorsLayer::new()
-        .allow_origin(AllowOrigin::list(cors_origins))
-        .allow_methods([
-            axum::http::Method::GET,
-            axum::http::Method::POST,
-            axum::http::Method::PUT,
-            axum::http::Method::DELETE,
-            axum::http::Method::OPTIONS,
-            axum::http::Method::PATCH,
-        ])
-        .allow_headers([
-            axum::http::header::CONTENT_TYPE,
-            axum::http::header::AUTHORIZATION,
-            axum::http::HeaderName::from_static("x-api-key"),
-            axum::http::HeaderName::from_static("x-requested-with"),
-            axum::http::HeaderName::from_static("x-mox-crypto"),
-        ])
-        .expose_headers([axum::http::HeaderName::from_static("x-mox-crypto")])
-        .allow_credentials(true);
+    let cors_layer = gateway_cors_layer(&state.config.cors_allowed_origins);
 
     let app: Router<GatewayState> = Router::<GatewayState>::new()
         .merge(actuator)

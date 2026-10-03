@@ -1,0 +1,2141 @@
+{
+  "capability_authority": "docs/modules/enterprise-capabilities/registry.json",
+  "modules": [
+    {
+      "id": "EM-01",
+      "name": "共享基座与契约",
+      "authority": "docs/modules/CODE-CATALOG.md",
+      "authority_sha256": "da32ae88b5cf5db010573c037c6181da3fdffb12834c6e929a51cad4222a39d5",
+      "authority_headings": [
+        "# 全仓代码模块目录",
+        "## 后端模块",
+        "### ai（14）",
+        "### alliance（17）",
+        "### base（7）",
+        "### cloud（13）",
+        "### data（10）",
+        "### flow（18）",
+        "### foundation（2）",
+        "### kb（2）",
+        "### kg（12）",
+        "### market（2）",
+        "### platform（43）",
+        "### project（2）",
+        "### voice（8）",
+        "## 前端入口与功能文件",
+        "### router（11）",
+        "### views（71）",
+        "### api（27）",
+        "### stores（11）"
+      ],
+      "depends_on": [],
+      "owners": [
+        "platform/foundation",
+        "platform/shared",
+        "platform/domains/base",
+        "platform/domains/foundation"
+      ],
+      "flow": [
+        "接收类型化输入",
+        "校验版本与约束",
+        "调用基础能力",
+        "返回实际结果"
+      ],
+      "requirements": [
+        {
+          "id": "EM-01-R01",
+          "acceptance": "标识与错误具有明确类型，不以字符串隐式改变租户或状态"
+        },
+        {
+          "id": "EM-01-R02",
+          "acceptance": "配置与秘密引用分离，缺失依赖明确失败"
+        },
+        {
+          "id": "EM-01-R03",
+          "acceptance": "基础能力测试覆盖重启、并发和实际存储故障"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-02",
+      "name": "可信身份与业务权限",
+      "authority": "docs/modules/iam/README.md",
+      "authority_sha256": "8129f85ee8150a2ffabce3c99fdd6d9a1fdfc4c71e5244d836785a5d38afd22c",
+      "authority_headings": [
+        "# IAM 业务权限管理",
+        "## 模块边界",
+        "## 业务流程",
+        "## API 契约",
+        "## 旧入口保护与归一范围",
+        "## 运行与验证边界"
+      ],
+      "depends_on": [
+        "EM-01"
+      ],
+      "owners": [
+        "platform/domains/platform/core/mox-platform-iam-core",
+        "platform/gateway/mox-platform-gateway-svc/src/auth.rs"
+      ],
+      "flow": [
+        "验证凭证",
+        "读取实际启用身份",
+        "计算同租户有效权限",
+        "允许或拒绝资源操作"
+      ],
+      "requirements": [
+        {
+          "id": "EM-02-R01",
+          "acceptance": "逐出口从可信身份绑定租户，伪造头或跨租户输入拒绝"
+        },
+        {
+          "id": "EM-02-R02",
+          "acceptance": "权限授予、撤销、继承和循环处理以同一策略执行"
+        },
+        {
+          "id": "EM-02-R03",
+          "acceptance": "管理变更与审计原子提交，旧凭证撤权场景必须验证"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-03",
+      "name": "API Key 生命周期",
+      "authority": "docs/modules/iam/API-KEYS.md",
+      "authority_sha256": "6d68b2463f7f16ef3d45d4e7fd8078f43d990e7fd7cb495b692215017fbdecc5",
+      "authority_headings": [
+        "# API Key 生命周期与真实鉴权",
+        "## 边界与流程",
+        "## 管理 API",
+        "## 机器授权范围",
+        "## 历史兼容与剩余边界"
+      ],
+      "depends_on": [
+        "EM-02"
+      ],
+      "owners": [
+        "platform/domains/platform/core/mox-platform-iam-core/src/api_keys.rs"
+      ],
+      "flow": [
+        "实际管理员请求",
+        "事务创建或撤销",
+        "实时校验密钥与身份",
+        "返回回执或拒绝"
+      ],
+      "requirements": [
+        {
+          "id": "EM-03-R01",
+          "acceptance": "只在创建回执展示原始密钥，持久化使用哈希"
+        },
+        {
+          "id": "EM-03-R02",
+          "acceptance": "密钥鉴权校验实际用户、租户、过期和支持的业务范围"
+        },
+        {
+          "id": "EM-03-R03",
+          "acceptance": "轮换、速率与配额须由真实运行策略执行"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-04",
+      "name": "安全审计",
+      "authority": "docs/modules/iam/AUDIT.md",
+      "authority_sha256": "103676c97029dbcb8be5e563b453c694e2fdf9ac67da3efc3764b9ab04b628e2",
+      "authority_headings": [
+        "# IAM 安全审计查询",
+        "## 模块和流程",
+        "## API 契约",
+        "## 低代码规范",
+        "## 验收与边界"
+      ],
+      "depends_on": [
+        "EM-02"
+      ],
+      "owners": [
+        "platform/domains/platform/core/mox-platform-iam-core/src/audit_query.rs"
+      ],
+      "flow": [
+        "实际管理员查询",
+        "同一读快照授权与过滤",
+        "计数并读取单页",
+        "返回真实记录"
+      ],
+      "requirements": [
+        {
+          "id": "EM-04-R01",
+          "acceptance": "过滤、排序、分页和计数保持同一可信租户快照"
+        },
+        {
+          "id": "EM-04-R02",
+          "acceptance": "缺失状态保留未知，不补成功码或零耗时"
+        },
+        {
+          "id": "EM-04-R03",
+          "acceptance": "多来源映射、敏感字段、保留恢复与完整性链逐项验收"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-05",
+      "name": "统一网关与宿主",
+      "authority": "docs/API-REGISTRY.md",
+      "authority_sha256": "a18b75aebe4a105d280db5048b96f04a81642ad038b48729b61f110034844781",
+      "authority_headings": [
+        "# API 注册表（权威·接口↔实现一一对应）",
+        "## 1. 总览",
+        "## 2. 逐域注册表（250 条）",
+        "### actuator（10 条）",
+        "### platform（6 条）",
+        "### kg（6 条）",
+        "### ai（4 条）",
+        "### kb（17 条）",
+        "### alliance（23 条）",
+        "### system（49 条）",
+        "### experts（62 条）",
+        "### monitor（12 条）",
+        "### projects（14 条）",
+        "### workspace（7 条）",
+        "### notification（4 条）",
+        "### misc（5 条）",
+        "### storage（4 条）",
+        "### llm（4 条）",
+        "### cloud（7 条）",
+        "### graph（3 条）"
+      ],
+      "depends_on": [
+        "EM-01",
+        "EM-02"
+      ],
+      "owners": [
+        "platform/gateway/mox-platform-gateway-svc"
+      ],
+      "flow": [
+        "接收真实请求",
+        "中间件认证与限流",
+        "委派领域命令或查询",
+        "记录并返回实际状态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-05-R01",
+          "acceptance": "静态注册与真实挂载分开统计，端口只引用注册表"
+        },
+        {
+          "id": "EM-05-R02",
+          "acceptance": "领域算法不继续堆入宿主，跨模块经契约调用"
+        },
+        {
+          "id": "EM-05-R03",
+          "acceptance": "未实现能力明确拒绝，健康结果来自实际依赖探测"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-06",
+      "name": "专家注册与能力目录",
+      "authority": "docs/expert-alliance/CURRENT-ARCHITECTURE.md",
+      "authority_sha256": "0315bae485d0a5d297c5d2e0bd30f4fd01565e8e0e6138193dc87425584da8e2",
+      "authority_headings": [
+        "# 专家联盟当前实现架构",
+        "## 一、物理代码分布",
+        "### 1.1 Crate 拓扑（16 crates）",
+        "### 1.2 网关内联模块（gateway/src/alliance/）",
+        "## 二、服务拓扑与端口",
+        "### 2.1 运行时进程",
+        "### 2.2 进程间调用",
+        "## 三、核心组件职责",
+        "### 3.1 调度器（scheduler-svc:3100）",
+        "### 3.2 执行器（executor-svc:3200）",
+        "### 3.3 网关内联层（gateway:3080）",
+        "### 3.7 协作计划生成器",
+        "## 四、数据流",
+        "### 4.1 任务创建到完成",
+        "### 4.2 专家匹配流程",
+        "## 五、存储与持久化",
+        "## 六、API 接口",
+        "### 6.1 网关对外（:3080）",
+        "### 6.2 调度器内部（:3100）",
+        "### 3.6 专家模型三层架构"
+      ],
+      "depends_on": [
+        "EM-02",
+        "EM-05"
+      ],
+      "owners": [
+        "platform/domains/alliance/svc/mox-alliance-registry-svc",
+        "platform/gateway/mox-platform-gateway-svc/src/alliance"
+      ],
+      "flow": [
+        "受权专家登记",
+        "校验能力契约",
+        "持久化注册与版本",
+        "查询或禁用专家"
+      ],
+      "requirements": [
+        {
+          "id": "EM-06-R01",
+          "acceptance": "区分目录能力与可执行、健康、已部署能力"
+        },
+        {
+          "id": "EM-06-R02",
+          "acceptance": "注册、修改、禁用按租户与权限裁决"
+        },
+        {
+          "id": "EM-06-R03",
+          "acceptance": "运行租约、健康变更及版本引用可追踪"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-07",
+      "name": "专家匹配与组队",
+      "authority": "docs/expert-alliance/08-normalized-architecture.md",
+      "authority_sha256": "cf3ede760c275bad5ec6a6da00bf5effa417446411e61d3a32ca7091250d27e4",
+      "authority_headings": [
+        "# 专家联盟企业级模块化归一化架构",
+        "## 一、文档导航与权威链",
+        "### 1.1 专家联盟文档全景（2026-09-27 实测）",
+        "### 1.2 01-07 与 CURRENT V1.1 的三类硬冲突（已核实）",
+        "## 二、模块清单与物理代码分布（三目录打通）",
+        "### 2.1 后端 platform（16 crates + 网关 11 文件）",
+        "### 2.2 前端 frontend-ui（模块 + 视图两层）",
+        "### 2.3 文档 docs（01-08 + 关联权威）",
+        "## 三、全维功能矩阵（三方对齐）",
+        "## 四、服务拓扑与端口单表",
+        "## 五、运行开关（MOX_* 环境变量）单一参考",
+        "## 六、存储与持久化三栏对账",
+        "## 七、API 清单与路由前缀",
+        "### 7.1 前端模块契约纪律（已核实）",
+        "### 7.2 legacy 层必须清理的 3 个点",
+        "## 八、状态机与枚举字典（统一版）",
+        "## 九、已核实缺口清单（按严重度排序）",
+        "### 🔴 高严重度",
+        "### 🟡 中严重度",
+        "### 🟢 低严重度 / 观察项"
+      ],
+      "depends_on": [
+        "EM-06"
+      ],
+      "owners": [
+        "platform/domains/alliance/core/mox-alliance-scheduler-core"
+      ],
+      "flow": [
+        "规范化任务约束",
+        "筛选受权可用候选",
+        "计算评分与组队",
+        "返回理由和无解状态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-07-R01",
+          "acceptance": "先校验硬约束再评分，不让高分绕过权限与能力限制"
+        },
+        {
+          "id": "EM-07-R02",
+          "acceptance": "评分版本、权重与证据固定，稳定同分排序"
+        },
+        {
+          "id": "EM-07-R03",
+          "acceptance": "无可用专家、预算不足与组合不可行明确返回失败"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-08",
+      "name": "任务调度与状态",
+      "authority": "docs/expert-alliance/16-decision-and-state-ledger.md",
+      "authority_sha256": "179edcba411de5353338c05baba868b58ae4c6b3e8fdb6289e94e78f90f6de88",
+      "authority_headings": [
+        "# 16 专家联盟决策与状态总账",
+        "## 一、总账总表（核心交付）",
+        "### 1.1 后端缺口 N1–N11（源自 BVR §三，08 §九登记）",
+        "### 1.2 前端缺口 G1–G10（源自 FVR §五，08 §九登记）",
+        "### 1.3 D 系列差距（源自 12 §1.1，由 10 评审 P0/差距归纳）",
+        "### 1.4 P0 前置底线四项（12 §1.3 三行 P0 拆为 A/B/C/D）",
+        "### 1.5 规划项 T1–T5 / U1–U4 / A1–A4 / M1–M4（源自 12 §1.3，均未动工）",
+        "## 二、设计取舍汇总（不是缺陷、是选择）",
+        "## 三、冲突裁决链确认（最终权威源表）",
+        "## 四、文档体系最终索引锚点（INDEX 编号 00–21 全表）",
+        "## 五、主线条目（时间线，每步一行）",
+        "## 六、2026-10-01 文档治理增量",
+        "## 七、逐目录低代码文档增量（2026-10-01）",
+        "## 八、业务计划与执行归一化增量（2026-10-01）",
+        "## 九、事件订阅与恢复增量（2026-10-02）",
+        "## 十、对象边界与契约修复（2026-10-02）",
+        "## 十一、全维终验结论（2026-10-03）"
+      ],
+      "depends_on": [
+        "EM-07"
+      ],
+      "owners": [
+        "platform/domains/alliance/svc/mox-alliance-scheduler-svc"
+      ],
+      "flow": [
+        "幂等接纳任务",
+        "冻结计划与配置版本",
+        "领取与租约续期",
+        "记录执行回执和终态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-08-R01",
+          "acceptance": "任务与幂等键持久化，重复请求不生成第二任务"
+        },
+        {
+          "id": "EM-08-R02",
+          "acceptance": "租约与 fencing 防止过期执行者提交状态"
+        },
+        {
+          "id": "EM-08-R03",
+          "acceptance": "取消、超时、重试、崩溃恢复和跨实例一致性真实验证"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-09",
+      "name": "任务执行与工具",
+      "authority": "docs/expert-alliance/13-end-to-end-business-flow.md",
+      "authority_sha256": "99e9df7f3485f6eee72133c69e482777e7aec038f188ae8ce8bedd4fda9218d7",
+      "authority_headings": [
+        "# 13 专家联盟端到端全业务流程",
+        "## 一、流程总览",
+        "### 1.1 端到端叙事（远程形态，生产）",
+        "### 1.2 文本流程图（远程形态）",
+        "### 1.3 全链路总图（2026-10-01 收官更新）",
+        "## 二、主流程逐步详解",
+        "### 2.1 任务创建",
+        "### 2.2 意图识别",
+        "### 2.3 专家匹配",
+        "### 2.4 计划生成（DAG）",
+        "### 2.5 执行（DAG 引擎）",
+        "### 2.6 结果融合",
+        "### 2.7 交付",
+        "### 2.8 反馈闭环",
+        "## 三、本地形态 vs 远程形态差异",
+        "## 四、附加流程",
+        "### 4.1 专家入驻与可用性维护",
+        "### 4.2 专家咨询/协作会话",
+        "### 4.3 图谱构建与查询",
+        "### 4.4 多活与故障转移（HA）"
+      ],
+      "depends_on": [
+        "EM-08",
+        "EM-12"
+      ],
+      "owners": [
+        "platform/domains/alliance/svc/mox-alliance-executor-svc"
+      ],
+      "flow": [
+        "校验任务令牌与版本",
+        "执行真实注册工具",
+        "采集输出和副作用回执",
+        "提交受 fencing 保护的结果"
+      ],
+      "requirements": [
+        {
+          "id": "EM-09-R01",
+          "acceptance": "模型文本与工具执行事实分开记录"
+        },
+        {
+          "id": "EM-09-R02",
+          "acceptance": "工具输入、资源访问和外部副作用受权且限额"
+        },
+        {
+          "id": "EM-09-R03",
+          "acceptance": "未知外部结果先对账，不能简单重试声称恰好一次"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-10",
+      "name": "专家协作与结果融合",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "7e9dd202e37fe8bec6c77e834c11aeb4ac47e8538bf033d172e784ae63c0afba",
+      "authority_headings": [
+        "# 平台与前端真实实现及验收台账",
+        "## 范围与方法",
+        "## 模块状态与退出条件",
+        "## 真实业务链路",
+        "## 验收规则"
+      ],
+      "depends_on": [
+        "EM-07",
+        "EM-11"
+      ],
+      "owners": [
+        "platform/domains/ai/core/mox-ai-alliance-engine"
+      ],
+      "flow": [
+        "校验咨询 DAG",
+        "逐依赖调用真实提供方",
+        "治理检查与失败停止",
+        "融合分析并标注来源"
+      ],
+      "requirements": [
+        {
+          "id": "EM-10-R01",
+          "acceptance": "DAG 环、缺依赖和失败传播有确定语义"
+        },
+        {
+          "id": "EM-10-R02",
+          "acceptance": "真实提供方不可用即失败，禁止模板答案冒充推理"
+        },
+        {
+          "id": "EM-10-R03",
+          "acceptance": "融合结果带来源与实测时间，人工决定和外部执行另行授权"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-11",
+      "name": "模型提供方",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "7e9dd202e37fe8bec6c77e834c11aeb4ac47e8538bf033d172e784ae63c0afba",
+      "authority_headings": [
+        "# 平台与前端真实实现及验收台账",
+        "## 范围与方法",
+        "## 模块状态与退出条件",
+        "## 真实业务链路",
+        "## 验收规则"
+      ],
+      "depends_on": [
+        "EM-02"
+      ],
+      "owners": [
+        "platform/domains/ai",
+        "platform/domains/platform/core"
+      ],
+      "flow": [
+        "读取受权模型绑定",
+        "校验预算与请求",
+        "调用真实模型服务",
+        "记录实际响应或失败"
+      ],
+      "requirements": [
+        {
+          "id": "EM-11-R01",
+          "acceptance": "配置缺失、超时、提供方拒绝不回退假成功"
+        },
+        {
+          "id": "EM-11-R02",
+          "acceptance": "令牌消耗与费用区分估算、实测和未知"
+        },
+        {
+          "id": "EM-11-R03",
+          "acceptance": "密钥不进入页面、日志和导出包，变更有版本及回滚"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-12",
+      "name": "算子与插件运行时",
+      "authority": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "authority_sha256": "ff877d343e5921ddaa1dd4fbda41c388fe8e03773e987ec23d0cece1da083b53",
+      "authority_headings": [
+        "# 低代码模块装配与行业包设计",
+        "## 1. 可复用单位与最小业务包",
+        "## 2. 能力复用与装配顺序",
+        "## 3. 参考场景：采购申请审查（目标样例）",
+        "## 4. 接入、升级和退出",
+        "## 5. 与既有文档关联"
+      ],
+      "depends_on": [
+        "EM-01",
+        "EM-02"
+      ],
+      "owners": [
+        "platform/domains/flow",
+        "platform/domains/platform/core"
+      ],
+      "flow": [
+        "解析能力引用",
+        "校验版本权限与输入",
+        "调用已注册执行器",
+        "返回类型化真实输出"
+      ],
+      "requirements": [
+        {
+          "id": "EM-12-R01",
+          "acceptance": "安装、注册和实际可执行状态分开"
+        },
+        {
+          "id": "EM-12-R02",
+          "acceptance": "未知能力与不兼容类型在执行前拒绝"
+        },
+        {
+          "id": "EM-12-R03",
+          "acceptance": "运行隔离、网络范围、秘密注入和卸载依赖可验证"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-13",
+      "name": "低代码与全维配置",
+      "authority": "docs/standards/lowcode-dynamic-configuration.md",
+      "authority_sha256": "69df459765a7ebc4e21173e225204fca082d4cd0ccb27db0ebed5a9c08e03df7",
+      "authority_headings": [
+        "# LC-STD-001 企业级低代码与全维动态配置规范",
+        "## 1. 范围与产品原则",
+        "## 2. 全维配置矩阵（LC-D01–20）",
+        "## 3. 统一配置对象与版本",
+        "## 4. 作用域继承与约束合成",
+        "## 5. 编制、发布与运行闭环",
+        "## 6. 全面与高效的工程实现",
+        "## 7. 企业级验收矩阵",
+        "## 8. 分目录设计入口"
+      ],
+      "depends_on": [
+        "EM-02",
+        "EM-12"
+      ],
+      "owners": [
+        "frontend-ui/src/modules/admin-lowcode",
+        "platform/shared/mox-config-core"
+      ],
+      "flow": [
+        "编辑类型化配置草稿",
+        "校验依赖与权限",
+        "冻结并发布版本",
+        "运行绑定与回滚"
+      ],
+      "requirements": [
+        {
+          "id": "EM-13-R01",
+          "acceptance": "远程配置仅数据，不 eval 或任意远程 import"
+        },
+        {
+          "id": "EM-13-R02",
+          "acceptance": "任务冻结 release，配置变更不能悄悄改变在途任务"
+        },
+        {
+          "id": "EM-13-R03",
+          "acceptance": "只读模式、身份切换、并发编辑和失败回滚均有证据"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-14",
+      "name": "业务工作流",
+      "authority": "docs/enterprise/33-持久化工作流引擎设计文档-ADR-14.md",
+      "authority_sha256": "fca107c885b086c13267a159685be9975de2264a9d1478a943b02eda0f6a1993",
+      "authority_headings": [
+        "# 持久化工作流引擎设计文档（DURABLE EXECUTION ENGINE · ADR-14）",
+        "## §1 问题诊断与设计目标",
+        "### 1.1 当前缺口（WHY DURABLE EXECUTION）",
+        "### 1.2 设计目标",
+        "### 1.3 设计原则",
+        "## §2 核心架构",
+        "### 2.1 整体架构图",
+        "### 2.2 核心概念",
+        "### 2.3 工作流状态机",
+        "## §3 事件溯源设计",
+        "### 3.1 事件类型",
+        "### 3.2 事件存储表结构",
+        "### 3.3 状态重建（Fold）",
+        "## §4 持久化与恢复",
+        "### 4.1 检查点机制",
+        "### 4.2 任务队列",
+        "### 4.3 重试策略",
+        "### 4.4 Saga 补偿",
+        "## §5 与现有系统的集成",
+        "### 5.1 现有算子迁移"
+      ],
+      "depends_on": [
+        "EM-12",
+        "EM-13"
+      ],
+      "owners": [
+        "platform/domains/flow"
+      ],
+      "flow": [
+        "启动冻结版本的流程",
+        "验证节点与审批权限",
+        "持久化推进或等待",
+        "补偿并交付终态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-14-R01",
+          "acceptance": "状态推进与作业意图原子记录，重启可继续"
+        },
+        {
+          "id": "EM-14-R02",
+          "acceptance": "人工审批身份、授权和重复决定明确裁决"
+        },
+        {
+          "id": "EM-14-R03",
+          "acceptance": "补偿不是撤销已发生外部事实，未知回执须先对账"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-15",
+      "name": "对象存储与 OSS",
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "e16e1895c4a6c6386d3cf202d4bc64284f2998a64675db1de84e2825bbba0fb8",
+      "authority_headings": [
+        "# 资源知识模块实施状态与验收台账",
+        "## 模块状态",
+        "## 已落地链路与待归一边界",
+        "## 当前接口与兼容性",
+        "## R2 增量：知识资源授权",
+        "## R2 增量：只读共享与撤权",
+        "## 条件编辑与过期加工保护",
+        "## 统计 IO 优化与文本引用",
+        "## 后续实施顺序与退出条件",
+        "## 验收证据"
+      ],
+      "depends_on": [
+        "EM-02"
+      ],
+      "owners": [
+        "platform/domains/cloud"
+      ],
+      "flow": [
+        "校验对象访问与绑定",
+        "执行实际对象 IO",
+        "校验完整性与回执",
+        "记录位置或待对账状态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-15-R01",
+          "acceptance": "真实 PUT HEAD GET RANGE LIST DELETE 与重启验证"
+        },
+        {
+          "id": "EM-15-R02",
+          "acceptance": "ETag、签名和提供方差异来自实测能力矩阵"
+        },
+        {
+          "id": "EM-15-R03",
+          "acceptance": "切换与迁移不丢旧对象，未知写结果可对账"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-16",
+      "name": "云盘文件资源",
+      "authority": "docs/modules/resource-knowledge/README.md",
+      "authority_sha256": "c9870514ed218a60f45ea57e658abcc9a4e59b2f8627d4b382889f53c36206ad",
+      "authority_headings": [
+        "# 系统、云盘、知识库、知识图谱与对象存储设计入口",
+        "## 能力地图与设计顺序",
+        "## 设计文档与权威关系",
+        "## 阶段交付"
+      ],
+      "depends_on": [
+        "EM-15"
+      ],
+      "owners": [
+        "platform/domains/cloud",
+        "frontend-ui/src/views"
+      ],
+      "flow": [
+        "受权上传并取得对象回执",
+        "提交文件版本元数据",
+        "移动分享或回收",
+        "撤权并保留可追踪版本"
+      ],
+      "requirements": [
+        {
+          "id": "EM-16-R01",
+          "acceptance": "移动只变目录元数据，不重写对象字节"
+        },
+        {
+          "id": "EM-16-R02",
+          "acceptance": "共享撤权、回收恢复与知识源版本引用一致"
+        },
+        {
+          "id": "EM-16-R03",
+          "acceptance": "孤儿对象、元数据失败与配额提交可对账"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-17",
+      "name": "知识目录与版本",
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "e16e1895c4a6c6386d3cf202d4bc64284f2998a64675db1de84e2825bbba0fb8",
+      "authority_headings": [
+        "# 资源知识模块实施状态与验收台账",
+        "## 模块状态",
+        "## 已落地链路与待归一边界",
+        "## 当前接口与兼容性",
+        "## R2 增量：知识资源授权",
+        "## R2 增量：只读共享与撤权",
+        "## 条件编辑与过期加工保护",
+        "## 统计 IO 优化与文本引用",
+        "## 后续实施顺序与退出条件",
+        "## 验收证据"
+      ],
+      "depends_on": [
+        "EM-15"
+      ],
+      "owners": [
+        "platform/domains/kb",
+        "platform/domains/cloud/core/mox-cloud-kb-core"
+      ],
+      "flow": [
+        "提交受权知识源",
+        "校验预期内容版本",
+        "归档并更新版本",
+        "发布或共享可见内容"
+      ],
+      "requirements": [
+        {
+          "id": "EM-17-R01",
+          "acceptance": "明确唯一可写主源及历史模型迁移映射"
+        },
+        {
+          "id": "EM-17-R02",
+          "acceptance": "内容版本 CAS 与 ACL 检查覆盖所有写路径"
+        },
+        {
+          "id": "EM-17-R03",
+          "acceptance": "分享撤权、删除和旧引用的可见性实际验证"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-18",
+      "name": "知识加工作业",
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "e16e1895c4a6c6386d3cf202d4bc64284f2998a64675db1de84e2825bbba0fb8",
+      "authority_headings": [
+        "# 资源知识模块实施状态与验收台账",
+        "## 模块状态",
+        "## 已落地链路与待归一边界",
+        "## 当前接口与兼容性",
+        "## R2 增量：知识资源授权",
+        "## R2 增量：只读共享与撤权",
+        "## 条件编辑与过期加工保护",
+        "## 统计 IO 优化与文本引用",
+        "## 后续实施顺序与退出条件",
+        "## 验收证据"
+      ],
+      "depends_on": [
+        "EM-17",
+        "EM-11"
+      ],
+      "owners": [
+        "platform/domains/kb",
+        "platform/domains/ai"
+      ],
+      "flow": [
+        "冻结源版本与加工配置",
+        "领取租约并执行解析",
+        "校验源与权限仍有效",
+        "提交投影或拒绝旧作业"
+      ],
+      "requirements": [
+        {
+          "id": "EM-18-R01",
+          "acceptance": "作业持久化并带源版本、配置版本、generation 与预算"
+        },
+        {
+          "id": "EM-18-R02",
+          "acceptance": "取消或过期作业不能覆盖新版内容或 ACL"
+        },
+        {
+          "id": "EM-18-R03",
+          "acceptance": "真实 OCR 模型与索引失败、重试和重建均可追踪"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-19",
+      "name": "知识图谱与事实治理",
+      "authority": "docs/modules/resource-knowledge/BUSINESS-FLOWS.md",
+      "authority_sha256": "d0e23e47fab0152293e55e94c2eb34b8400a147f8f61678fc40d45be14fffa4a",
+      "authority_headings": [
+        "# 资源知识业务流程与失败恢复",
+        "## 当前实现链路与失败出口",
+        "### A. 知识编辑、加工、版本与检索",
+        "### B. 共享、撤权与恢复",
+        "### C. 文件与对话：当前边界",
+        "### 全链路导航",
+        "## 1. 上传与云盘管理（RK-BP01）",
+        "## 2. 文件/内联内容进入知识空间（RK-BP02）",
+        "## 3. 挂图、知识问答与专家联盟（RK-BP03）",
+        "## 4. 对话沉淀（RK-BP04）",
+        "## 5. 撤权、回收与彻底删除（RK-BP05）",
+        "## 6. 提供方启用与迁移（RK-BP06）",
+        "## 7. 首个验收样例"
+      ],
+      "depends_on": [
+        "EM-17",
+        "EM-18"
+      ],
+      "owners": [
+        "platform/domains/kg"
+      ],
+      "flow": [
+        "获取受权版本化来源",
+        "抽取或提交事实候选",
+        "确认事实并写投影",
+        "失效删除与重建对账"
+      ],
+      "requirements": [
+        {
+          "id": "EM-19-R01",
+          "acceptance": "图关系保留源版本及证据，不覆盖交易或文件主源"
+        },
+        {
+          "id": "EM-19-R02",
+          "acceptance": "写权限、人工确认和来源删除级联一致"
+        },
+        {
+          "id": "EM-19-R03",
+          "acceptance": "投影可重建且 generation 拒绝旧加工覆盖"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-20",
+      "name": "授权检索与 RAG",
+      "authority": "docs/modules/resource-knowledge/IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "e16e1895c4a6c6386d3cf202d4bc64284f2998a64675db1de84e2825bbba0fb8",
+      "authority_headings": [
+        "# 资源知识模块实施状态与验收台账",
+        "## 模块状态",
+        "## 已落地链路与待归一边界",
+        "## 当前接口与兼容性",
+        "## R2 增量：知识资源授权",
+        "## R2 增量：只读共享与撤权",
+        "## 条件编辑与过期加工保护",
+        "## 统计 IO 优化与文本引用",
+        "## 后续实施顺序与退出条件",
+        "## 验收证据"
+      ],
+      "depends_on": [
+        "EM-17",
+        "EM-19",
+        "EM-11"
+      ],
+      "owners": [
+        "platform/domains/kb",
+        "platform/domains/kg"
+      ],
+      "flow": [
+        "规范化检索问题",
+        "授权范围内召回候选",
+        "排序并核对版本引用",
+        "生成回答与实际证据"
+      ],
+      "requirements": [
+        {
+          "id": "EM-20-R01",
+          "acceptance": "候选召回先授权，失效和未发布内容不能进入结果"
+        },
+        {
+          "id": "EM-20-R02",
+          "acceptance": "引用绑定真实文档版本及文本偏移或文件页码"
+        },
+        {
+          "id": "EM-20-R03",
+          "acceptance": "召回率、引用准确性、延迟与成本由真实样本评测"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-21",
+      "name": "数据目录与企业集成",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "7e9dd202e37fe8bec6c77e834c11aeb4ac47e8538bf033d172e784ae63c0afba",
+      "authority_headings": [
+        "# 平台与前端真实实现及验收台账",
+        "## 范围与方法",
+        "## 模块状态与退出条件",
+        "## 真实业务链路",
+        "## 验收规则"
+      ],
+      "depends_on": [
+        "EM-02",
+        "EM-14"
+      ],
+      "owners": [
+        "platform/domains/data"
+      ],
+      "flow": [
+        "读取受权真实源",
+        "规范化映射与增量游标",
+        "提交目标真实事务",
+        "保存回执并重试对账"
+      ],
+      "requirements": [
+        {
+          "id": "EM-21-R01",
+          "acceptance": "未接通源和目标时返回未实现，不造同步数量"
+        },
+        {
+          "id": "EM-21-R02",
+          "acceptance": "目标提交与游标推进有明确原子边界及重放策略"
+        },
+        {
+          "id": "EM-21-R03",
+          "acceptance": "权限删除变更、失败重试与差异对账实际验证"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-22",
+      "name": "消息中心与通知",
+      "authority": "docs/modules/message-center/README.md",
+      "authority_sha256": "7575bc94ee021db576d1c0bfc05e2e0c0df454467c37fb3ecbeefcf5b5aedd1c",
+      "authority_headings": [
+        "# 消息中心：事务收件箱与交付边界",
+        "## 模块归属与事实主源",
+        "## 已实现业务流程",
+        "## HTTP 契约",
+        "## 事务与部署约束",
+        "## 分阶段退出条件",
+        "### 通知入口归一（2026-10-02 增量）",
+        "## IAM 跨用户交付（2026-10-02 增量）",
+        "## 发送页面与输入边界（2026-10-02）",
+        "## 历史验收证据"
+      ],
+      "depends_on": [
+        "EM-02"
+      ],
+      "owners": [
+        "platform/gateway/mox-platform-gateway-svc/src/message_center",
+        "frontend-ui/src/components/NotificationCenter.vue",
+        "frontend-ui/src/modules/message-center"
+      ],
+      "flow": [
+        "受权发送与幂等请求",
+        "真实 IAM 检查全部收件人",
+        "事务提交消息与独立回执",
+        "读取与标记已读"
+      ],
+      "requirements": [
+        {
+          "id": "EM-22-R01",
+          "acceptance": "全部收件人事务提交，冲突和存储失败不报成功"
+        },
+        {
+          "id": "EM-22-R02",
+          "acceptance": "前端按实际 message_id 确认，未知网络结果沿原幂等键重试"
+        },
+        {
+          "id": "EM-22-R03",
+          "acceptance": "外部渠道必须 outbox 与真实提供方回执，限流容量和保留可验证"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-23",
+      "name": "项目与成果交付",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "7e9dd202e37fe8bec6c77e834c11aeb4ac47e8538bf033d172e784ae63c0afba",
+      "authority_headings": [
+        "# 平台与前端真实实现及验收台账",
+        "## 范围与方法",
+        "## 模块状态与退出条件",
+        "## 真实业务链路",
+        "## 验收规则"
+      ],
+      "depends_on": [
+        "EM-08",
+        "EM-17",
+        "EM-22"
+      ],
+      "owners": [
+        "platform/domains/project",
+        "frontend-ui/src/views/project"
+      ],
+      "flow": [
+        "创建受权项目目标",
+        "关联任务与资源版本",
+        "汇总实际完成证据",
+        "交付成果并记录接受"
+      ],
+      "requirements": [
+        {
+          "id": "EM-23-R01",
+          "acceptance": "进度只来自实际阶段与回执，未知不补固定比例"
+        },
+        {
+          "id": "EM-23-R02",
+          "acceptance": "项目归属及资源引用不能绕过领域 ACL"
+        },
+        {
+          "id": "EM-23-R03",
+          "acceptance": "接受、退回与重新交付有版本化决定和审计"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-24",
+      "name": "市场与模板包",
+      "authority": "docs/modules/LOWCODE-MODULE-ASSEMBLY.md",
+      "authority_sha256": "ff877d343e5921ddaa1dd4fbda41c388fe8e03773e987ec23d0cece1da083b53",
+      "authority_headings": [
+        "# 低代码模块装配与行业包设计",
+        "## 1. 可复用单位与最小业务包",
+        "## 2. 能力复用与装配顺序",
+        "## 3. 参考场景：采购申请审查（目标样例）",
+        "## 4. 接入、升级和退出",
+        "## 5. 与既有文档关联"
+      ],
+      "depends_on": [
+        "EM-12",
+        "EM-13"
+      ],
+      "owners": [
+        "platform/domains/market"
+      ],
+      "flow": [
+        "检查包来源与许可",
+        "验证依赖和类型引用",
+        "受权安装指定版本",
+        "升级回滚或退出"
+      ],
+      "requirements": [
+        {
+          "id": "EM-24-R01",
+          "acceptance": "模板预览不表示安装发布或执行成功"
+        },
+        {
+          "id": "EM-24-R02",
+          "acceptance": "安装不复制 IAM 存储或重建第二配置规范"
+        },
+        {
+          "id": "EM-24-R03",
+          "acceptance": "升级迁移与退出保留交易事实并检查在途引用"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-25",
+      "name": "语音与独立产品",
+      "authority": "docs/modules/CODE-CATALOG.md",
+      "authority_sha256": "da32ae88b5cf5db010573c037c6181da3fdffb12834c6e929a51cad4222a39d5",
+      "authority_headings": [
+        "# 全仓代码模块目录",
+        "## 后端模块",
+        "### ai（14）",
+        "### alliance（17）",
+        "### base（7）",
+        "### cloud（13）",
+        "### data（10）",
+        "### flow（18）",
+        "### foundation（2）",
+        "### kb（2）",
+        "### kg（12）",
+        "### market（2）",
+        "### platform（43）",
+        "### project（2）",
+        "### voice（8）",
+        "## 前端入口与功能文件",
+        "### router（11）",
+        "### views（71）",
+        "### api（27）",
+        "### stores（11）"
+      ],
+      "depends_on": [
+        "EM-02",
+        "EM-11"
+      ],
+      "owners": [
+        "platform/domains/voice",
+        "projects"
+      ],
+      "flow": [
+        "校验媒体权限与格式",
+        "调用真实媒体提供方",
+        "处理取消与资源清理",
+        "返回实际制品及状态"
+      ],
+      "requirements": [
+        {
+          "id": "EM-25-R01",
+          "acceptance": "上传格式大小时长与资源预算受控"
+        },
+        {
+          "id": "EM-25-R02",
+          "acceptance": "真实 ASR TTS 或媒体生成输出可验证，不用预置制品冒充"
+        },
+        {
+          "id": "EM-25-R03",
+          "acceptance": "取消、重试、制品 ACL 和成本有实际运行证据"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    },
+    {
+      "id": "EM-26",
+      "name": "运营与分布式交付",
+      "authority": "docs/modules/REAL-IMPLEMENTATION-STATUS.md",
+      "authority_sha256": "7e9dd202e37fe8bec6c77e834c11aeb4ac47e8538bf033d172e784ae63c0afba",
+      "authority_headings": [
+        "# 平台与前端真实实现及验收台账",
+        "## 范围与方法",
+        "## 模块状态与退出条件",
+        "## 真实业务链路",
+        "## 验收规则"
+      ],
+      "depends_on": [
+        "EM-05",
+        "EM-04"
+      ],
+      "owners": [
+        "platform/gateway/mox-platform-gateway-svc/src/actuator.rs",
+        "deploy",
+        "scripts/startup"
+      ],
+      "flow": [
+        "探测实际运行依赖",
+        "采集 trace 指标与异常",
+        "按 SLO 告警和降级",
+        "灰度回滚或恢复验真"
+      ],
+      "requirements": [
+        {
+          "id": "EM-26-R01",
+          "acceptance": "readiness 不从静态 ready 标记或 HTTP 200 推断"
+        },
+        {
+          "id": "EM-26-R02",
+          "acceptance": "跨主机故障转移和恢复必须真实部署演练"
+        },
+        {
+          "id": "EM-26-R03",
+          "acceptance": "延迟容量成本安全和升级回滚具有可重复基准"
+        }
+      ],
+      "implementation_status": "requires_per_requirement_real_verification",
+      "whole_module_accepted_this_batch": false
+    }
+  ],
+  "module_count": 26,
+  "requirements": 78,
+  "workspace_packages": 150,
+  "workspace_default_members": 19,
+  "packages": [
+    {
+      "name": "mox-ai-flow-sdk",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\sdk\\mox-ai-flow-sdk\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-flow-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\core\\mox-ai-flow-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-foundation",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-platform-foundation\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-model-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-model-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-graph-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-graph-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-arch-test",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\arch-test\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-gateway-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\gateway\\mox-platform-gateway-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-expert-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\svc\\mox-ai-expert-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-expert-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\core\\mox-ai-expert-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-expert-proto",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\proto\\mox-ai-expert-proto\\Cargo.toml"
+    },
+    {
+      "name": "mox-error",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-error\\Cargo.toml"
+    },
+    {
+      "name": "mox-audit",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-audit\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-flow-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\svc\\mox-ai-flow-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-sdk",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\sdk\\mox-kg-sdk\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-algo-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\core\\mox-kg-algo-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-unified-contract",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-unified-contract\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-http-sdk",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\sdk\\mox-alliance-http-sdk\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-common-proto",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\proto\\mox-alliance-common-proto\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-executor-proto",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\proto\\mox-alliance-executor-proto\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-scheduler-proto",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\proto\\mox-alliance-scheduler-proto\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-scheduler-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\core\\mox-alliance-scheduler-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-config-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\core\\mox-alliance-config-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\core\\mox-alliance-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-api-crypto",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-api-crypto\\Cargo.toml"
+    },
+    {
+      "name": "mox-api-protocol",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-api-protocol\\Cargo.toml"
+    },
+    {
+      "name": "mox-auth-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-auth-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-unified-process-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-unified-process-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-kb-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\svc\\mox-kb-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-base-store-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\base\\mox-base-store-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-sdk",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\sdk\\mox-cloud-sdk\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-store-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\core\\mox-cloud-store-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-foundation",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-cloud-foundation\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-kernel",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\core\\mox-cloud-kernel\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-storage-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\svc\\mox-kg-storage-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-meta-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\core\\mox-kg-meta-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-service-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\svc\\mox-kg-service-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-framework",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-framework\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-iam-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-iam-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-observability",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-platform-observability\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-paths",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\foundation\\mox-platform-paths\\Cargo.toml"
+    },
+    {
+      "name": "mox-rbac-engine",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\foundation\\mox-rbac-engine\\Cargo.toml"
+    },
+    {
+      "name": "mox-pipeline-framework",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\foundation\\mox-pipeline-framework\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-voice-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\voice\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-market-api",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\market\\api\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-formula-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\core\\mox-data-formula-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-norm-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\core\\mox-data-norm-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-intent-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\core\\mox-ai-intent-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-voice-dsp-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\voice\\core\\mox-voice-dsp-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-operator-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-operator-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-operator-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-operator-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-optimizer-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-optimizer-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-algo-alliance-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-algo-alliance-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-unified-storage-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-unified-storage-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-unified-meta-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-unified-meta-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-unified-arch-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-unified-arch-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-unified-perm-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-unified-perm-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-lowcode-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-lowcode-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-unified-frontend-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-unified-frontend-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-ai-assistant-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-ai-assistant-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-unified-platform",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\core\\mox-flow-unified-platform\\Cargo.toml"
+    },
+    {
+      "name": "mox-event-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-event-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-standards-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\core\\mox-data-standards-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-system-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-system-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-meta-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-meta-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\core\\mox-ai-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-alliance-engine",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\core\\mox-ai-alliance-engine\\Cargo.toml"
+    },
+    {
+      "name": "mox-codeengine-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\core\\mox-codeengine-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-codeengine-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\svc\\mox-codeengine-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-streams-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\svc\\mox-kg-streams-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-spark-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\svc\\mox-kg-spark-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-hub-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\svc\\mox-kg-hub-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-fusion-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\svc\\mox-kg-fusion-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-agent-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\svc\\mox-ai-agent-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-market-template-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\market\\svc\\mox-market-template-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-ai-intent-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\ai\\svc\\mox-ai-intent-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-project-graph-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\project\\core\\mox-project-graph-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-kg-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-project-graph-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\project\\svc\\mox-project-graph-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-operator-wasm-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\svc\\mox-flow-operator-wasm-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-primiflow-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\svc\\mox-flow-primiflow-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-fusion-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\svc\\mox-flow-fusion-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-bridge-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\svc\\mox-flow-bridge-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-flow-ea-workspace-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\flow\\svc\\mox-flow-ea-workspace-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-unified-algo-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-unified-algo-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-plane-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\svc\\mox-data-plane-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-etl-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\svc\\mox-data-etl-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-compliance-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\svc\\mox-data-compliance-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-catalog-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\svc\\mox-data-catalog-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-master-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\svc\\mox-cloud-master-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-volume-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\svc\\mox-cloud-volume-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-domain-traits",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\core\\mox-cloud-domain-traits\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-s3-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\svc\\mox-cloud-s3-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-filer-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\svc\\mox-cloud-filer-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-kb-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\core\\mox-cloud-kb-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-config-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-config-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-rebalance-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\svc\\mox-cloud-rebalance-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-voice-core-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\voice\\svc\\mox-voice-core-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-voice-asr-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\voice\\svc\\mox-voice-asr-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-voice-intent-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\voice\\svc\\mox-voice-intent-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-voice-operator-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\voice\\svc\\mox-voice-operator-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-orchestrator-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\svc\\mox-platform-orchestrator-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-module-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-module-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-enterprise-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\svc\\mox-platform-enterprise-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-datastore-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-datastore-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-orchestrator-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-orchestrator-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-content-publisher",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\svc\\mox-content-publisher\\Cargo.toml"
+    },
+    {
+      "name": "mox-connector-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-connector-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-integration-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-platform-integration-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-enterprise-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-enterprise-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-plugin-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-plugin-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-dsql-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\core\\mox-dsql-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-cache-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-cache-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-observability-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-observability-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-platform-test-harness",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\sdk\\mox-platform-test-harness\\Cargo.toml"
+    },
+    {
+      "name": "mox-plugin-sdk",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\sdk\\mox-plugin-sdk\\Cargo.toml"
+    },
+    {
+      "name": "mox-voice-desktop-app",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\voice\\svc\\mox-voice-desktop-app\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-admin-sdk",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\sdk\\mox-cloud-admin-sdk\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-formula-native",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\sdk\\mox-data-formula-native\\Cargo.toml"
+    },
+    {
+      "name": "mox-data-norm-intent-native",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\data\\sdk\\mox-data-norm-intent-native\\Cargo.toml"
+    },
+    {
+      "name": "mox-voice-dsp-py",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\voice\\sdk\\mox-voice-dsp-py\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-registry-proto",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\proto\\mox-alliance-registry-proto\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-registry-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\core\\mox-alliance-registry-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-executor-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\core\\mox-alliance-executor-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-boot-config",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\core\\mox-alliance-boot-config\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-scheduler-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\svc\\mox-alliance-scheduler-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-registry-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\svc\\mox-alliance-registry-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-executor-svc",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\svc\\mox-alliance-executor-svc\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-sdk",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\sdk\\mox-alliance-sdk\\Cargo.toml"
+    },
+    {
+      "name": "mox-alliance-mcp-server",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\alliance\\mcp\\mox-alliance-mcp-server\\Cargo.toml"
+    },
+    {
+      "name": "mox-base-model-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\base\\mox-base-model-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-base-index-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\base\\mox-base-index-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-base-graph-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\base\\mox-base-graph-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-base-query-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\base\\mox-base-query-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-base-perm-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\base\\mox-base-perm-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-base-lifecycle-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\base\\mox-base-lifecycle-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-server-runtime",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-server-runtime\\Cargo.toml"
+    },
+    {
+      "name": "mox-resilience-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-resilience-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-lock-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\shared\\mox-lock-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-kg-server",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kg\\svc\\mox-kg-server\\Cargo.toml"
+    },
+    {
+      "name": "mox-cloud-server",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\cloud\\svc\\mox-cloud-server\\Cargo.toml"
+    },
+    {
+      "name": "mox-iam-server",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\platform\\svc\\mox-iam-server\\Cargo.toml"
+    },
+    {
+      "name": "mox-kb-core",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kb\\core\\mox-kb-core\\Cargo.toml"
+    },
+    {
+      "name": "mox-kb-server",
+      "manifest_path": "D:\\a10\\aikjx\\gitcode\\infotopograph\\platform\\domains\\kb\\svc\\mox-kb-server\\Cargo.toml"
+    }
+  ],
+  "candidates": [
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1128,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1133,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1138,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1143,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1148,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1284,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1289,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1294,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1299,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1304,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1431,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1436,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1441,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1446,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1451,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1535,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1540,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1545,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1550,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1555,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1560,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1565,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1570,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1575,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1580,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1693,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1698,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1703,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1708,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1713,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1718,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1723,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1728,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1733,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1738,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1860,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1865,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1870,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1875,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/data/core/mox-data-standards-core/tests/t14_standards_matrix.rs",
+      "line": 1880,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "unimplemented!()"
+    },
+    {
+      "path": "platform/domains/flow/svc/mox-flow-primiflow-svc/src/gen/c5.rs",
+      "line": 140,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "\"/// {} (工具: {:?})\\nfn {}(input: &Value) -> anyhow::Result<Value> {{ todo!(\\\"实现 {}\\\") }}\\n\\n\","
+    },
+    {
+      "path": "platform/domains/kg/svc/mox-kg-service-svc/tests/t9_r3_graph_service.rs",
+      "line": 8,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "//! RED Evidence: 156 failed (all todo!() stubs)."
+    },
+    {
+      "path": "platform/domains/platform/core/mox-platform-meta-core/src/codegen/mod.rs",
+      "line": 14,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "//! - 生成器自身不得产出 `todo!()` 骨架；"
+    },
+    {
+      "path": "platform/domains/platform/core/mox-platform-meta-core/src/codegen/tpl_crud.rs",
+      "line": 7,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "//! 全部产物为确定性拼接，同输入字节级一致；生成器不产出任何 `todo!()` 骨架。"
+    },
+    {
+      "path": "platform/domains/platform/core/mox-platform-system-core/tests/t6_dip_orchestrator.rs",
+      "line": 566,
+      "kind": "unimplemented_or_501_candidate",
+      "excerpt": "// 新增：Mock 真实返回值用例（TDD RED-GREEN：9× unimplemented!() 必须替换）"
+    }
+  ],
+  "candidate_interpretation": "Static review candidates only, not proven defects or completed functionality",
+  "accepted_whole_modules_this_batch": 0,
+  "purpose": "Snapshot evidence; not a second requirements or production state authority"
+}

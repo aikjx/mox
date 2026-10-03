@@ -1,9 +1,9 @@
 // 编排面状态：只持有表单、最近一次响应与读数，一切规则取自 contract/orchestration.js。
-// 本 store 的一条硬约束：**不把后端的字面量当成运行结果**——execution.status / step.status /
-// plan.status 都是常量（ORCH_SIMULATED），界面要显示它们就得同时显示来源角标，
-// 所以这里把角标与提示语一并派生，视图不得另算。
+// 实际执行、模型产出、计划模板与初值分别标来源；视图不另算这些口径。
 import { defineStore } from 'pinia'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { useAuthStore } from '@/stores'
+import { createRequestFence } from '@/modules/expert-alliance/model'
 import { allianceApi } from '@/modules/expert-alliance/api'
 import {
   ORCH_DEFAULT_FUSION_STRATEGY, ORCH_DEFAULT_TASK_TYPE, ORCH_MAX_EXPERTS_DEFAULT, ORCH_SIMULATED,
@@ -16,6 +16,8 @@ import {
 const HISTORY_PAGE_SIZE = 20
 
 export const useAllianceOrchStore = defineStore('allianceOrch', () => {
+  const auth = useAuthStore()
+  const requests = createRequestFence()
   const api = allianceApi
 
   const form = reactive({
@@ -39,6 +41,16 @@ export const useAllianceOrchStore = defineStore('allianceOrch', () => {
   // 统计/历史的真值永远由 loadStats/loadHistory 真拉回，帧只作「该重拉了」的提示。
   const liveEvents = ref([])
   let statsTimer = null
+  watch(() => [auth.accessToken, auth.userInfo?.id, auth.userInfo?.tenant_id], () => {
+    requests.invalidate()
+    clearLiveEvents()
+    orchestration.value = null; plan.value = null; execution.value = null; stats.value = null
+    history.value = { records: [], total: 0, page: 1, pageSize: HISTORY_PAGE_SIZE }
+    form.expertIds = []
+    Object.keys(loading).forEach(key => { loading[key] = false })
+    Object.keys(error).forEach(key => { error[key] = '' })
+  }, { flush: 'sync' })
+
 
   // 一次页面动作只留一条最近结果：编排与计划互不覆盖，视图分别绑定三个 ref
   const wire = computed(() => ({
@@ -101,34 +113,42 @@ export const useAllianceOrchStore = defineStore('allianceOrch', () => {
 
   async function runOrchestrate() {
     if (validation.value) return null
+    const current = requests.begin('run')
     loading.run = true
     error.run = ''
     orchestration.value = null
     try {
-      orchestration.value = await api.orchestrate(wire.value)
+      const next = await api.orchestrate(wire.value)
+      if (!current()) return null
+      orchestration.value = next
       return orchestration.value
     } catch (e) {
+      if (!current()) return null
       error.run = e?.msg || e?.message || '编排请求失败'
       return null
     } finally {
-      loading.run = false
+      if (current()) loading.run = false
     }
   }
 
   async function generatePlan() {
     if (validation.value) return null
+    const current = requests.begin('plan')
     loading.plan = true
     error.plan = ''
     plan.value = null
     execution.value = null
     try {
-      plan.value = await api.generateOrchPlan(wire.value)
+      const next = await api.generateOrchPlan(wire.value)
+      if (!current()) return null
+      plan.value = next
       return plan.value
     } catch (e) {
+      if (!current()) return null
       error.plan = e?.msg || e?.message || '计划生成失败'
       return null
     } finally {
-      loading.plan = false
+      if (current()) loading.plan = false
     }
   }
 
@@ -138,36 +158,45 @@ export const useAllianceOrchStore = defineStore('allianceOrch', () => {
       error.execute = problem
       return null
     }
+    const current = requests.begin('execute')
     loading.execute = true
     error.execute = ''
     execution.value = null
     try {
       // step_ids 传数组＝只跑这些步（Some(集合)），传 undefined＝全跑；空数组是"一步都不跑"，语义不同故不合并
-      execution.value = await api.executeOrchPlan({ planId: plan.value.planId, stepIds })
+      const next = await api.executeOrchPlan({ planId: plan.value.planId, stepIds })
+      if (!current()) return null
+      execution.value = next
       return execution.value
     } catch (e) {
+      if (!current()) return null
       error.execute = e?.msg || e?.message || '计划执行失败'
       return null
     } finally {
-      loading.execute = false
+      if (current()) loading.execute = false
     }
   }
 
   async function loadStats() {
+    const current = requests.begin('stats')
     loading.stats = true
     error.stats = ''
     try {
-      stats.value = await api.getOrchStats()
+      const next = await api.getOrchStats()
+      if (!current()) return null
+      stats.value = next
       return stats.value
     } catch (e) {
+      if (!current()) return null
       error.stats = e?.msg || e?.message || '编排统计读取失败'
       return null
     } finally {
-      loading.stats = false
+      if (current()) loading.stats = false
     }
   }
 
   async function loadHistory(page) {
+    const current = requests.begin('history')
     loading.history = true
     error.history = ''
     try {
@@ -177,13 +206,15 @@ export const useAllianceOrchStore = defineStore('allianceOrch', () => {
         status: filters.status,
         taskType: filters.taskType
       })
+      if (!current()) return null
       history.value = next
       return next
     } catch (e) {
+      if (!current()) return null
       error.history = e?.msg || e?.message || '编排历史读取失败'
       return null
     } finally {
-      loading.history = false
+      if (current()) loading.history = false
     }
   }
 
@@ -201,6 +232,8 @@ export const useAllianceOrchStore = defineStore('allianceOrch', () => {
   }
 
   function reset() {
+    requests.invalidate()
+    Object.keys(loading).forEach(key => { loading[key] = false })
     form.task = ''
     form.taskType = ''
     form.fusionStrategy = ''

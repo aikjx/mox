@@ -3,6 +3,7 @@
 // el-table/el-table-column 用 provide-rows 替身驱动行，其余 EP 标签按未知元素渲染。
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { h, provide, inject } from 'vue'
+import { createPinia } from 'pinia'
 import { mount, flushPromises } from '@vue/test-utils'
 import AdminRole from './AdminRole.vue'
 
@@ -60,6 +61,7 @@ const FormDialog = {
 
 const mountPanel = () => mount(AdminRole, {
   global: {
+    plugins: [createPinia()],
     stubs: {
       FormDialog,
       'el-table': ElTable,

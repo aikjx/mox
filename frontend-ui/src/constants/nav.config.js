@@ -255,6 +255,7 @@ export const MODULE_SIDEBAR_CONFIG = {
   workflow: { title: '工作流', subtitle: '流程编排', sections: [] },
   market: { title: '算子商城', subtitle: '发现与分享', sections: [] },
   admin: { title: '系统设置', subtitle: '配置与管理', sections: [] },
+  'message-center': { title: '消息中心', subtitle: '站内沟通', sections: [] },
 }
 
 // ===== 模块化页面导航自动挂载 =====

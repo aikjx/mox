@@ -484,6 +484,53 @@ fn save_registry_conn(
     tx.commit().map_err(|e| e.to_string())
 }
 
+/// Commit one expert mutation and its optional event record in the same transaction.
+/// Does not replace other rows in this tenant. Callers publish/update projections after success.
+pub fn save_expert_checked(
+    tenant: &str,
+    expert: &ExpertDescriptor,
+    create: bool,
+    event: Option<&super::experts_events::AllianceEvent>,
+) -> Result<(), String> {
+    let data = serde_json::to_string(expert).map_err(|e| e.to_string())?;
+    let conn = open_experts_db()?;
+    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    let sql = if create {
+        "INSERT INTO experts (tenant_id,id,name,title,organization,expert_type,status,enabled,avg_rating,created_at,updated_at,data_json)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)"
+    } else {
+        "UPDATE experts SET name=?3,title=?4,organization=?5,expert_type=?6,status=?7,
+         enabled=?8,avg_rating=?9,created_at=?10,updated_at=?11,data_json=?12
+         WHERE tenant_id=?1 AND id=?2"
+    };
+    let changed = tx.execute(sql, params![tenant, expert.id, expert.name, expert.title,
+        expert.organization, expert.expert_type, expert.availability.status,
+        expert.enabled as i64, expert.metrics.avg_rating, expert.created_at,
+        expert.updated_at, data]).map_err(|e| e.to_string())?;
+    if changed != 1 {
+        return Err("expert mutation did not affect exactly one row".into());
+    }
+    if let Some(event) = event {
+        if event.tenant != tenant {
+            return Err("expert event tenant mismatch".into());
+        }
+        let payload = serde_json::to_value(event).map_err(|e| e.to_string())?;
+        insert_event_log_conn(&tx, tenant, &event.id, event.kind.type_name(),
+            &event.source, &event.occurred_at, event.kind.plan_id().unwrap_or(""), &payload)?;
+        // INSERT OR IGNORE is intentional for the consumer, but a producer must
+        // confirm the exact envelope exists (including a trigger's RAISE(IGNORE)).
+        let recorded: i64 = tx.query_row(
+            "SELECT COUNT(*) FROM alliance_event_log WHERE tenant_id=?1 AND event_id=?2 AND payload=?3",
+            params![tenant, event.id, serde_json::to_string(&payload).map_err(|e| e.to_string())?],
+            |row| row.get(0),
+        ).map_err(|e| e.to_string())?;
+        if recorded != 1 {
+            return Err("expert event was not recorded".into());
+        }
+    }
+    tx.commit().map_err(|e| e.to_string())
+}
+
 /// 全量同步某租户的专家注册表到 SQLite（单事务；失败仅记录不阻断）
 pub fn save_registry(tenant: &str, registry: &HashMap<String, ExpertDescriptor>) {
     let res = open_experts_db().and_then(|conn| save_registry_conn(&conn, tenant, registry));

@@ -1,0 +1,32 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "mox-platform-gateway-svc",
+    "--test",
+    "webhook_performance",
+    "--test",
+    "webhook_management",
+    "--test",
+    "webhook_persistence",
+    "--test",
+    "session_tenant_isolation",
+    "--test",
+    "favorite_transactions",
+    "--test",
+    "inbox_http",
+    "--test",
+    "trusted_tenant_http",
+    "--test",
+    "alliance_stream_contract",
+    "--test",
+    "t4_event_bus_e2e",
+    "--",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 0,
+  "log": "rust_final.log"
+}

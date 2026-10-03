@@ -13,6 +13,8 @@
       </div>
     </header>
 
+    <EventConnectionStatus :connection="eventStream.connection" @reconnect="eventStream.start()" />
+
     <div class="ax-stats">
       <div v-for="s in statsCells" :key="s.label" class="ax-kpi">
         <b>{{ s.value }}</b><span>{{ s.label }}</span>
@@ -323,6 +325,7 @@ import {
   Calendar, ChatDotRound, Delete, EditPen, Plus, Refresh, RefreshLeft, Search, Star, Trophy
 } from '@element-plus/icons-vue'
 import { ExpertCard } from '@/modules/expert-alliance/components'
+import { EventConnectionStatus } from '@/modules/expert-alliance/components'
 import { ExpertBookingPanel } from '@/modules/expert-alliance/components'
 import { ExpertCapabilityMatrix } from '@/modules/expert-alliance/components'
 import { ExpertRankBoard } from '@/modules/expert-alliance/components'
@@ -594,10 +597,13 @@ async function onOpenRoom(booking) {
 
 // T4 SSE 真实挂载：本路由 /alliance/experts 已 requiresRole 限管理员（index.js:152），
 // 故开流只对管理员；别的管理员注册/停用/改档专家时，本页收到带 expert_id 的帧 →
-// store.applyRegistryEvent 防抖真拉列表，免手动刷新。连接失败静默（读数仍可手动「刷新」）。
+// store.applyRegistryEvent 防抖真拉列表；恢复控制器处理缺口、错误和手动重连。
 const eventStream = useAllianceEventStream({
   onEvent: (kind, envelope) => store.applyRegistryEvent(kind, envelope),
-  onError: () => {}
+  refresh: async () => {
+    await Promise.all([store.loadExperts(), store.loadStats()])
+    if (store.error.list || store.error.stats) throw new Error(store.error.list || store.error.stats)
+  }
 })
 
 onMounted(async () => {
@@ -608,7 +614,7 @@ onMounted(async () => {
   eventStream.start()
 })
 
-onUnmounted(() => eventStream.stop())
+onUnmounted(() => { eventStream.stop(); store.clearRegistryEventTimer() })
 
 watch(tab, (v) => {
   if (v === 'bookings' && !store.bookings.length && !store.loading.bookings) store.loadBookings()

@@ -3,7 +3,7 @@ import { markRaw } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { getAuditLogs } from '@/api'
 import { parseAuditPage } from '@/utils'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth.store'
 
 export const auditPage = markRaw({
   key: 'iam-audit', readOnly: true,

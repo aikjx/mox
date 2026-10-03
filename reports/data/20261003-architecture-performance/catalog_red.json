@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python",
+    "scripts/registry/module_catalog.py",
+    "--check"
+  ],
+  "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+  "exit_code": 1,
+  "log": "catalog.log"
+}

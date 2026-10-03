@@ -1,4 +1,4 @@
-// Domain events are refresh hints, never an execution result or replay log.
+// Live or resumed domain events are refresh hints, never an execution result.
 export function createEventFrameParser(onFrame, limit = 1024 * 1024) {
   let line = '', kind = 'message', data = [], size = 0, afterCR = false
   function finishLine() {
@@ -33,7 +33,7 @@ export function createEventFrameParser(onFrame, limit = 1024 * 1024) {
 export function createAllianceEventStream({ url, getToken, onEvent, onError, onOpen, onClose, onGap } = {}) {
   let controller = null
   function stop() { controller?.abort(); controller = null }
-  async function start() {
+  async function start({ lastEventId } = {}) {
     stop()
     const current = new AbortController()
     controller = current
@@ -41,11 +41,20 @@ export function createAllianceEventStream({ url, getToken, onEvent, onError, onO
     try {
       const token = getToken?.()
       if (!token) throw new Error('请先登录再订阅联盟事件')
+      const headers = { Accept: 'text/event-stream', Authorization: `Bearer ${token}` }
+      if (lastEventId !== undefined) {
+        if (typeof lastEventId !== 'string' || !/^[\x21-\x7e]{1,256}$/.test(lastEventId)) {
+          throw new Error('Last-Event-ID 必须是 1–256 个 ASCII 可见字符')
+        }
+        headers['Last-Event-ID'] = lastEventId
+      }
       const response = await fetch(url, {
-        headers: { Accept: 'text/event-stream', Authorization: `Bearer ${token}` },
-        credentials: 'include', signal: current.signal
+        headers,
+        credentials: 'include', cache: 'no-store', signal: current.signal
       })
-      if (!response.ok || !response.body) throw new Error(`事件流打开失败: HTTP ${response.status}`)
+      if (!response.ok || !response.body) {
+        throw Object.assign(new Error(`事件流打开失败: HTTP ${response.status}`), { status: response.status })
+      }
       if (!response.headers.get('content-type')?.toLowerCase().includes('text/event-stream')) {
         throw new Error('事件流响应类型错误')
       }

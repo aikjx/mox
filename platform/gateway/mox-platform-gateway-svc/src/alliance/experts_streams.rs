@@ -31,6 +31,7 @@ use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::{
     extract::{Path, Query, State},
+    http::HeaderMap,
     response::{
         sse::{Event, KeepAlive, Sse},
         IntoResponse, Response,
@@ -65,41 +66,102 @@ pub async fn alliance_events_stream(
     State(state): State<Arc<ExpertsSharedState>>,
     TenantId(tenant): TenantId,
 ) -> Response {
-    let rx = state.events.subscribe();
+    alliance_events_stream_resume(State(state), TenantId(tenant), HeaderMap::new()).await
+}
 
+async fn alliance_events_stream_resume(
+    State(state): State<Arc<ExpertsSharedState>>,
+    TenantId(tenant): TenantId,
+    headers: HeaderMap,
+) -> Response {
+    let rx = state.events.subscribe();
+    let mut replay = std::collections::VecDeque::new();
+    let mut overlap = std::collections::HashSet::new();
+    if let Some(cursor) = headers.get("last-event-id") {
+        let Ok(cursor) = cursor.to_str() else {
+            return api_error::<Value>(400, "invalid Last-Event-ID").into_response();
+        };
+        if cursor.is_empty()
+            || cursor.len() > 256
+            || !cursor.bytes().all(|b| (33..=126).contains(&b))
+        {
+            return api_error::<Value>(400, "invalid Last-Event-ID").into_response();
+        }
+        let cursor = cursor.to_string();
+        overlap.insert(cursor.clone());
+        let scoped_tenant = tenant.clone();
+        use super::event_replay::ReplayError;
+        match tokio::task::spawn_blocking(move || {
+            super::event_replay::load_after(&scoped_tenant, &cursor)
+        })
+        .await
+        {
+            Ok(Ok(events)) => {
+                overlap.extend(events.iter().map(|event| event.id.clone()));
+                replay.extend(events);
+            },
+            Ok(Err(ReplayError::CursorGone)) => {
+                return api_error::<Value>(
+                    410,
+                    "event cursor unavailable; refresh authoritative state",
+                )
+                .into_response()
+            },
+            Ok(Err(ReplayError::RefreshRequired)) => {
+                return api_error::<Value>(
+                    409,
+                    "event replay limit exceeded; refresh authoritative state",
+                )
+                .into_response()
+            },
+            Ok(Err(ReplayError::Storage(error))) => {
+                tracing::error!(%error, "event replay storage failed");
+                return api_error::<Value>(503, "event history unavailable").into_response();
+            },
+            Err(error) => {
+                tracing::error!(%error, "event replay task failed");
+                return api_error::<Value>(503, "event history unavailable").into_response();
+            },
+        }
+    }
     let tenant_owned = tenant;
     let stream: std::pin::Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> = Box::pin(
-        stream::unfold((rx, tenant_owned), |(mut rx, t)| async move {
-            loop {
-                match rx.recv().await {
-                    Ok(ev) => {
-                        // 租户隔离：非本租户事件跳过，不下发
-                        if ev.tenant != t {
-                            continue;
-                        }
-                        let name = ev.kind.type_name().to_string();
-                        let Ok(data) = serde_json::to_string(&ev) else {
-                            tracing::error!(event_id = %ev.id, "alliance event serialization failed");
-                            continue;
-                        };
-                        return Some((
-                            Ok(Event::default().id(ev.id).event(name).data(data)),
-                            (rx, t),
-                        ));
-                    },
-                    Err(broadcast::error::RecvError::Lagged(_)) => {
-                        return Some((
-                            // Global lag must not disclose other tenants' event counts.
-                            Ok(Event::default()
-                                .event("StreamGap")
-                                .data(r#"{"reason":"lagged","action":"refresh"}"#)),
-                            (rx, t),
-                        ));
-                    },
-                    Err(broadcast::error::RecvError::Closed) => return None,
+        stream::unfold(
+            (rx, tenant_owned, replay, overlap),
+            |(mut rx, t, mut replay, overlap)| async move {
+                loop {
+                    let replayed = replay.pop_front();
+                    let from_history = replayed.is_some();
+                    match if let Some(event) = replayed { Ok(event) } else { rx.recv().await } {
+                        Ok(ev) => {
+                            // 租户隔离：非本租户事件跳过，不下发
+                            if ev.tenant != t || (!from_history && overlap.contains(&ev.id)) {
+                                continue;
+                            }
+                            let name = ev.kind.type_name().to_string();
+                            let Ok(data) = serde_json::to_string(&ev) else {
+                                tracing::error!(event_id = %ev.id, "alliance event serialization failed");
+                                continue;
+                            };
+                            return Some((
+                                Ok(Event::default().id(ev.id).event(name).data(data)),
+                                (rx, t, replay, overlap),
+                            ));
+                        },
+                        Err(broadcast::error::RecvError::Lagged(_)) => {
+                            return Some((
+                                // Global lag must not disclose other tenants' event counts.
+                                Ok(Event::default()
+                                    .event("StreamGap")
+                                    .data(r#"{"reason":"lagged","action":"refresh"}"#)),
+                                (rx, t, replay, overlap),
+                            ));
+                        },
+                        Err(broadcast::error::RecvError::Closed) => return None,
+                    }
                 }
-            }
-        }),
+            },
+        ),
     );
 
     Sse::new(stream)
@@ -142,11 +204,19 @@ pub async fn create_webhook(
     {
         return api_error(400, "event_types 仅支持四种联盟事件，空数组表示全部");
     }
-    match state.events.register_webhook(tenant, url, body.event_types) {
-        Ok(wh) => api_ok(json!({ "webhook": wh })),
-        Err(error) => {
+    match tokio::task::spawn_blocking(move || {
+        state.events.register_webhook(tenant, url, body.event_types)
+    })
+    .await
+    {
+        Ok(Ok(wh)) => api_ok(json!({ "webhook": wh })),
+        Ok(Err(error)) => {
             tracing::error!(%error, "webhook create commit failed");
             api_error(503, "订阅未保存，请稍后重试")
+        },
+        Err(error) => {
+            tracing::error!(%error, "webhook create task failed");
+            api_error(503, "保存结果未确认，请读取订阅列表核对")
         },
     }
 }
@@ -163,12 +233,22 @@ pub async fn list_webhooks(
     {
         return response;
     }
-    let mut list = state.events.list_webhooks(&tenant);
-    list.sort_by(|a, b| a.created_at.cmp(&b.created_at).then(a.id.cmp(&b.id)));
-    let total = list.len();
-    let (offset, limit) = parse_pagination(&query);
-    let items: Vec<_> = list.into_iter().skip(offset).take(limit).collect();
-    api_ok(json!({ "webhooks": items, "total": total }))
+    match tokio::task::spawn_blocking(move || {
+        let mut list = state.events.list_webhooks(&tenant);
+        list.sort_by(|a, b| a.created_at.cmp(&b.created_at).then(a.id.cmp(&b.id)));
+        let total = list.len();
+        let (offset, limit) = parse_pagination(&query);
+        let items: Vec<_> = list.into_iter().skip(offset).take(limit).collect();
+        json!({ "webhooks": items, "total": total })
+    })
+    .await
+    {
+        Ok(payload) => api_ok(payload),
+        Err(error) => {
+            tracing::error!(%error, "webhook query task failed");
+            api_error(503, "订阅暂时无法读取")
+        },
+    }
 }
 
 /// DELETE /api/alliance/events/webhooks/:id —— 删除本租户的一个订阅。
@@ -183,12 +263,19 @@ pub async fn delete_webhook(
     {
         return response;
     }
-    match state.events.delete_webhook(&tenant, &id) {
-        Ok(true) => api_ok(json!({ "deleted": id })),
-        Ok(false) => api_error(404, format!("webhook {id} 不存在或不属于本租户")),
-        Err(error) => {
+    let requested_id = id.clone();
+    match tokio::task::spawn_blocking(move || state.events.delete_webhook(&tenant, &requested_id))
+        .await
+    {
+        Ok(Ok(true)) => api_ok(json!({ "deleted": id })),
+        Ok(Ok(false)) => api_error(404, format!("webhook {id} 不存在或不属于本租户")),
+        Ok(Err(error)) => {
             tracing::error!(%error, "webhook delete commit failed");
             api_error(503, "订阅未删除，请稍后重试")
+        },
+        Err(error) => {
+            tracing::error!(%error, "webhook delete task failed");
+            api_error(503, "删除结果未确认，请读取订阅列表核对")
         },
     }
 }
@@ -203,7 +290,7 @@ pub async fn delete_webhook(
 /// 复用同一份 [`ExpertsSharedState`]（故订阅的就是真实业务 emit 的那条总线）。
 pub fn build_experts_streams_router(state: Arc<ExpertsSharedState>) -> Router {
     Router::new()
-        .route("/api/alliance/events/stream", get(alliance_events_stream))
+        .route("/api/alliance/events/stream", get(alliance_events_stream_resume))
         .route("/api/alliance/events/webhooks", post(create_webhook).get(list_webhooks))
         .route("/api/alliance/events/webhooks/:id", delete(delete_webhook))
         .with_state(state)

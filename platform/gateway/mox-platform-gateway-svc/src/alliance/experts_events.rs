@@ -192,14 +192,14 @@ impl EventBus {
             event_types,
             created_at: now_iso(),
         };
-        let mut table = self.webhooks.lock();
         let et_json = serde_json::to_string(&wh.event_types).map_err(|e| e.to_string())?;
         let conn = crate::alliance::experts_db::open_experts_db()?;
         crate::alliance::experts_db::upsert_webhook_conn(
             &conn,
             &wh.id, &wh.tenant, &wh.url, &et_json, &wh.created_at,
         )?;
-        table.insert(wh.id.clone(), wh.clone());
+        // IDs are immutable UUIDs; unrelated tenants must not wait on storage under this mutex.
+        self.webhooks.lock().insert(wh.id.clone(), wh.clone());
         Ok(wh)
     }
 
@@ -217,12 +217,11 @@ impl EventBus {
     ///
     /// SQLite 删除成功后才停止投递；失败保留现有订阅。
     pub fn delete_webhook(&self, tenant: &str, id: &str) -> Result<bool, String> {
-        let mut g = self.webhooks.lock();
-        let hit = matches!(g.get(id), Some(w) if w.tenant == tenant);
+        let hit = matches!(self.webhooks.lock().get(id), Some(w) if w.tenant == tenant);
         if hit {
             let conn = crate::alliance::experts_db::open_experts_db()?;
             crate::alliance::experts_db::delete_webhook_row_conn(&conn, id, tenant)?;
-            g.remove(id);
+            self.webhooks.lock().remove(id);
         }
         Ok(hit)
     }
@@ -297,15 +296,14 @@ pub fn spawn_event_log_consumer(bus: Arc<EventBus>) {
                             continue;
                         }
                     };
-                    crate::alliance::experts_db::insert_event_log(
-                        &ev.tenant,
-                        &ev.id,
-                        ev.kind.type_name(),
-                        &ev.source,
-                        &ev.occurred_at,
-                        ev.kind.plan_id().unwrap_or(""),
-                        &payload,
-                    );
+                    if let Err(error) = tokio::task::spawn_blocking(move || {
+                        crate::alliance::experts_db::insert_event_log(
+                            &ev.tenant, &ev.id, ev.kind.type_name(), &ev.source,
+                            &ev.occurred_at, ev.kind.plan_id().unwrap_or(""), &payload,
+                        );
+                    }).await {
+                        tracing::error!(%error, "event log storage task failed");
+                    }
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
                     eprintln!("[event_bus] 消费者落后丢弃 {n} 条事件，继续追赶");
@@ -325,7 +323,17 @@ pub fn spawn_webhook_dispatcher(bus: Arc<EventBus>) {
     if tokio::runtime::Handle::try_current().is_err() {
         return;
     }
+    let concurrency = match std::env::var("MOX_WEBHOOK_CONCURRENCY") {
+        Err(std::env::VarError::NotPresent) => 8,
+        Ok(value) => match value.parse::<usize>() {
+            Ok(limit) if (1..=64).contains(&limit) => limit,
+            _ => { tracing::error!("MOX_WEBHOOK_CONCURRENCY must be 1..=64; dispatcher disabled"); return; }
+        },
+        Err(_) => { tracing::error!("invalid MOX_WEBHOOK_CONCURRENCY; dispatcher disabled"); return; }
+    };
     tokio::spawn(async move {
+        use futures::{stream::FuturesUnordered, StreamExt};
+        use std::collections::VecDeque;
         // 进程内一个共享 client（连接池）；rustls-tls 特性，回环 http 与外网 https 均可用
         let client = match reqwest::Client::builder()
             .timeout(Duration::from_secs(5))
@@ -340,25 +348,38 @@ pub fn spawn_webhook_dispatcher(bus: Arc<EventBus>) {
             }
         };
         let mut rx = bus.subscribe();
+        let mut active = FuturesUnordered::new();
+        // At most one event's target snapshot waits locally; no unbounded per-event spawn.
+        let mut pending: VecDeque<(String, Arc<Vec<u8>>)> = VecDeque::new();
         loop {
-            let ev = match rx.recv().await {
-                Ok(ev) => ev,
-                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
-                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
-            };
-            let targets = bus.matching_webhooks(&ev.tenant, ev.kind.type_name());
-            if targets.is_empty() {
+            while active.len() < concurrency {
+                let Some((url, body)) = pending.pop_front() else { break };
+                let client = client.clone();
+                active.push(async move { dispatch_once(&client, &url, &body).await });
+            }
+            if !pending.is_empty() || active.len() == concurrency {
+                active.next().await;
                 continue;
             }
-            let body = match serde_json::to_vec(&ev) {
-                Ok(b) => b,
-                Err(e) => {
-                    eprintln!("[webhook] 序列化事件 {} 失败: {e}", ev.id);
-                    continue;
+            tokio::select! {
+                _ = active.next(), if !active.is_empty() => {},
+                event = rx.recv() => {
+                    let ev = match event {
+                        Ok(ev) => ev,
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(count)) => {
+                            tracing::warn!(count, "webhook broadcast lag; events lost, delivery not durable");
+                            continue;
+                        },
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                    };
+                    let targets = bus.matching_webhooks(&ev.tenant, ev.kind.type_name());
+                    if targets.is_empty() { continue; }
+                    let body = match serde_json::to_vec(&ev) {
+                        Ok(body) => Arc::new(body),
+                        Err(error) => { tracing::error!(%error, event_id = %ev.id, "webhook serialization failed"); continue; }
+                    };
+                    pending.extend(targets.into_iter().map(|wh| (wh.url, body.clone())));
                 }
-            };
-            for wh in targets {
-                dispatch_once(&client, &wh.url, &body).await;
             }
         }
     });

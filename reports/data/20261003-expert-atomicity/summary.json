@@ -1,0 +1,197 @@
+{
+  "scope": "gateway library and eight selected real integration targets; frontend contract tests",
+  "checks": {
+    "rust_verified": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--lib",
+        "--test",
+        "expert_mutation_atomicity",
+        "--test",
+        "t4_event_bus_e2e",
+        "--test",
+        "trusted_tenant_http",
+        "--test",
+        "session_tenant_isolation",
+        "--test",
+        "favorite_transactions",
+        "--test",
+        "webhook_management",
+        "--test",
+        "webhook_performance",
+        "--test",
+        "webhook_persistence",
+        "--",
+        "--test-threads=1"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "rust_verified.log"
+    },
+    "contract_final": {
+      "command": [
+        "npm.cmd",
+        "--prefix",
+        "frontend-ui",
+        "test",
+        "--",
+        "src/modules/expert-alliance/contract/contract.test.js",
+        "src/modules/expert-alliance/contract/sessions.test.js",
+        "src/modules/expert-alliance/contract/vocabulary-ownership.test.js"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "contract_final.log"
+    },
+    "clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "mox-platform-gateway-svc",
+        "--test",
+        "expert_mutation_atomicity",
+        "--no-deps"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "clippy.log"
+    },
+    "diagrams": {
+      "command": [
+        "node",
+        "reports/data/20261003-architecture-performance/parse-diagrams.mjs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diagrams.log"
+    },
+    "paths_selftest": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py",
+        "--selftest"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths_selftest.log"
+    },
+    "paths": {
+      "command": [
+        "python",
+        "scripts/gate/check-script-paths.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "paths.log"
+    },
+    "docs_final": {
+      "command": [
+        "python",
+        "scripts/gate/check-doc-links.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "docs_final.log"
+    },
+    "ports": {
+      "command": [
+        "python",
+        "scripts/gate/verify-ports.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "ports.log"
+    },
+    "diff": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "diff.log"
+    },
+    "format": {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2021",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "platform/gateway/mox-platform-gateway-svc/tests/expert_mutation_atomicity.rs"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "format.log"
+    },
+    "frontend_module": {
+      "command": [
+        "python",
+        "scripts/gate/check-frontend-module.py"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "frontend_module.log"
+    },
+    "api_bindings": {
+      "command": [
+        "python",
+        "frontend-ui/scripts/gate/check-api-binding-kinds.py",
+        "--check"
+      ],
+      "cwd": "D:\\a10\\aikjx\\gitcode\\infotopograph",
+      "exit_code": 0,
+      "log": "api_bindings.log"
+    }
+  },
+  "rust_passed": 206,
+  "rust_library_passed": 190,
+  "rust_integration_passed": 16,
+  "frontend_contract_passed": 157,
+  "mermaid_diagrams": 40,
+  "original_failure": {
+    "log": "red.log",
+    "cargo_exit_code": 101,
+    "expected_http": 503,
+    "actual_http": 200
+  },
+  "intermediate_failures_retained": [
+    "green.log",
+    "registry_unit.log",
+    "contract.log",
+    "docs.log"
+  ],
+  "warnings": {
+    "clippy_existing_library": 69,
+    "doc_historical_backtick_paths": 206,
+    "ports": 284,
+    "frontend_comment_pairing": 26
+  },
+  "source_sha256": {
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_db.rs": "02ba412da6e539f5e0ad6bae55efff476101f5f0725f9dc55ec9493cbcca50e3",
+    "platform/gateway/mox-platform-gateway-svc/src/alliance/experts_registry.rs": "8fb8f4cde2f564cf20f3de2c0c5470051a542c4465bbadc29d6d99ccbc498194",
+    "platform/gateway/mox-platform-gateway-svc/tests/expert_mutation_atomicity.rs": "2808092c64893e84bd288d19015df71805a09d0a55afb87985da392fbfde7ab2",
+    "frontend-ui/src/modules/expert-alliance/contract/contract.test.js": "8030d41aa2a3ab82d1915f2143c06d0282ea61b9d3e2c75304a228d0bd200100",
+    "docs/expert-alliance/21-event-delivery-contract.md": "e1d772a1fe07de48a34bfe744b543745155e9a880d03ded7be25b897751da7ec",
+    "docs/expert-alliance/22-expert-object-contract.md": "074b6d383a718e6b1f48b514d9b5e0e0922b3c34fceded61696ea0c7a6952bcd",
+    "docs/expert-alliance/CURRENT-ARCHITECTURE.md": "a97355d365c619dc8bb8d099e620e076dd68c92d5a0ceda80c9705b1fcf8899d",
+    "docs/expert-alliance/16-decision-and-state-ledger.md": "0b3462479fedce26892f4b137e74014c8b4963642ea6974702e1ac7ab8beff21",
+    "docs/expert-alliance/INDEX.md": "d8508cb392f1c05aa3aeadeb1b263c3da04b779fb667db3e2438e94e5dac2df9",
+    "docs/specifications/tasks/20261002-enterprise-module-normalization/todo.md": "0aaffff8a2118f5cc695ba7b723fa5dc62a9d8a6dbd66d57c287788c0ca34a40"
+  },
+  "not_accepted": [
+    "reliable outbox delivery",
+    "crash replay",
+    "cross-process CAS",
+    "whole workspace",
+    "production SLO",
+    "real OSS",
+    "browser end-to-end"
+  ]
+}

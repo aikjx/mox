@@ -1,0 +1,43 @@
+§1.8v 收据｜driven 档的键级复算（pair／same-iter）升成常驻判据（对仓内只读）｜生成 2026-10-03 1437 前后
+单源 formula_ledger.py｜md5 85384127046c｜513 行
+姊妹 check-doc-formulas.py｜判决段 md5 81c571f95c3c｜1484 行｜本尺现从该段取宇宙
+判据 check-api-surface.py｜判决段 md5 eb24d81ae4f7｜2316 行
+被顶替的一次性现量 reports/data/recon-18u-driven-bucket-2026-10-03-1322.txt｜md5 9bd4f8feb832（引用值＝9bd4f8feb832，相符＝True）
+
+[1] 分母：driven 站点数必须等于键级复算条数（同一把抽取尺，一条尺不许有两条口径）
+   姊妹：print 形态站点 2｜driven 2 条 ['FAIL', 'FAIL 主张不闭合']｜键级复算 2 条｜两数相等＝True
+   普查器：站点 13｜driven 0 条｜键级复算 0 条 ⇒ 本尺今天在普查器侧无对象可复算（不是一条恒空的红，因为分母格比的是两个现量而非钉死 2）
+
+[2] 逐站点档位（pair＝明细表的计数键被 return 读；same-iter＝驱动红的表达式逐字出现在 return）
+   pair       FAIL 主张不闭合             cmd_census:379｜明细 details（append@153）的计数键 violations 被 return 读
+   same-iter  FAIL                   cmd_census:385｜循环集合 outside_verdict(out) 逐字出现在 return（385 行）
+   只到名字一级（name-only）的站点 []
+
+[3] 两型的牙各自长在另一条通道上（三枚内存对照，每枚只撤一条）
+   锚点唯一性：累加锚点 1 次｜落点锚点 1 次（两枚对照各用一次，命中数即图像确变的证据）
+   甲 换来源表达式（violations 不再数 details 那张表，仍在同一循环）：图像确变＝True
+   甲                      复算 2 条｜退档 ['FAIL 主张不闭合']｜档位 ['FAIL 主张不闭合→name-only', 'FAIL→same-iter']
+   乙 搬出共同循环（来源表达式一个字没换， dedent 到函数级）：图像确变＝True｜两枚都只让 pair 退档，same-iter 照旧 ⇒ 两型各自独立
+   乙                      复算 2 条｜退档 ['FAIL 主张不闭合']｜档位 ['FAIL 主张不闭合→name-only', 'FAIL→same-iter']
+   丙 撤退出码（两型共同的下游，复算条数必须跟着归零） 复算 0 条｜退档 []｜档位 []
+   丙 的锚点命中 1 次；这一枚证的是「复算条数跟着档位走」而非钉死 2 条——档位空而复算仍报 2 条＝漏抽
+
+[4] 常驻状态（只读命令现跑；读数按日期冻结在本文，正文不复述）
+   sister --selftest                rc 0｜SELFTEST 总 68 例，FAIL 0 例
+      PASS 夹具AB·分母 driven 站点数必须等于键级复算的条数（两条尺共用同一条抽取口径，一边涨一边不涨＝复算漏了明天新加的那条红）  driven 2 条 ['FAIL', 'FAIL 主张不闭合']｜键级复算 2 条｜档位 ['pair', 'same-iter']
+      PASS 夹具AB 每条 driven 的红都要有键级同源：pair＝那张明细表的计数键被 return 读，same-iter＝驱动这条红的表达式逐字出现在 return；只到名字一级的 name-only 不算有牙  无键级同源 []｜逐条 ['FAIL 主张不闭合→pair@379', 'FA
+      PASS 变异体36·甲 把计数键的来源换成另一张表（`violations` 不再数 `details`）⇒ 那条 pair 必须当场退成 name-only 并被点名（牙在"数的是同一批数据"这句话上）  锚点 1 次｜图像确变＝True｜退档名单 ['FAIL 主张不闭合']
+      PASS 变异体36·乙 把那次计数累加搬出与明细表共同的循环（撤「同循环」这一条通道，来源表达式一个字没换）⇒ 只有 pair 那一型退档，same-iter 必须照旧有牙（两型各自独立，一枚针只撤一条通道）  累加锚点 1 次｜落点锚点 1 次｜退档名单 ['FAIL 主张不闭合']（期望只那一
+   api --selftest                   rc 0｜SELFTEST 总 74 例，FAIL 0 例
+      PASS 夹具N·丙 姊妹仪器源码必须读得到（读不到不是「那边没有红」）  路径 scripts/gate/check-doc-formulas.py｜已读
+      PASS 夹具N·丙 姊妹仪器那几条 print 形态的红必须全落在 inc／ret／driven 三档之内，一条都不许留在 blind（「循环集合驱动退出码」这一型自本轮起有档位，不再靠收据登记）  print 形态站点 2 配宇宙 2｜档位 ['driven']｜逐站点 ['FAIL 主张不闭合
+      PASS 变异体34 把姊妹仪器那句退出码撤成 `return 0` ⇒ driven 的两条必须立刻退成 blind（这一档的牙真长在退出码那一行上，而不是换了个名字的豁免桶）  锚点命中 1 次｜撤后 blind ['FAIL', 'FAIL 主张不闭合']｜撤前 driven ['FAIL',
+   api --ledger                     rc 0｜LEDGER PASS（红 0 项；公式 30 条，每条的值都来自同一个命名空间）
+   sister --recognizer              rc 0｜RECOGNIZER PASS（算术尺只在 scripts/gate/formula_ledger.py 里定义，除归宿外在册 30 份与集外候选 99 份无一把自带；两本分母同一次现推、按构造不相交）
+   gate check-script-paths --selftest rc 0｜SELFTEST PASS=53 FAIL=0
+
+[5] 判定与边界
+   分母两条尺同数＝True｜三枚对照各只撤自己那条通道且另一型照旧＝True｜撤退出码时复算跟着归零＝True
+   边界① 复算只认累加器名 agg（键级那一层）与 bad（档位那一层）；换成第三种命名 ⇒ 站点根本进不了 driven 档，分母格比的是两个现量所以不会假装通过，但也不会点名——它是「看不见」不是「看见了说没事」
+   边界② pair 只要求两处写在**同一条**外层 for 的循环链里，所以「计数写在外层、明细写在内层」仍判 pair；乙 证的是「完全搬出所有共同循环」必退档，比这更窄的情形未裁
+   边界③ 普查器侧目前 driven 为空（它自己的红全住 inc／ret），所以键级复算在那侧无对象——若将来出现 driven 站点，夹具N·边界 会先响亮地红，而不是把新档当豁免桶
